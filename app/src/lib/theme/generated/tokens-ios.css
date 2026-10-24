@@ -180,7 +180,7 @@
   --native-color-on-top-bar: #000000;
   --native-color-top-bar-scrolled: var(--ios-material);
   --native-color-top-bar-scrolled-edge: rgba(60, 60, 67, 0.12);
-  --native-color-bar-button: rgba(255, 255, 255, 0.7);
+  --native-color-bar-button: var(--native-color-tab-bar);
   --native-color-on-bar-button: #2f6f4f;
   --native-color-tab-bar: rgba(255, 255, 255, 0.7);
   --native-color-tab-pill: rgba(0, 0, 0, 0.075);
@@ -254,7 +254,7 @@
   --native-color-on-top-bar: #ffffff;
   --native-color-top-bar-scrolled: var(--ios-material);
   --native-color-top-bar-scrolled-edge: rgba(84, 84, 88, 0.5);
-  --native-color-bar-button: rgba(153, 153, 153, 0.17);
+  --native-color-bar-button: var(--native-color-tab-bar);
   --native-color-on-bar-button: #7fcb9d;
   --native-color-tab-bar: rgba(153, 153, 153, 0.17);
   --native-color-tab-pill: rgba(255, 255, 255, 0.14);
@@ -302,7 +302,6 @@
   --native-color-on-button-outline: #245a40;
   --native-color-on-button-plain: #245a40;
   --native-color-top-bar-scrolled: rgba(255, 255, 255, 0.94);
-  --native-color-bar-button: rgba(255, 255, 255, 0.65);
   --native-color-on-bar-button: #245a40;
   --native-color-tab-bar: rgba(255, 255, 255, 0.65);
   --native-color-on-tab-current: #245a40;
@@ -334,7 +333,6 @@
   --native-color-on-button-outline: #a8e0bf;
   --native-color-on-button-plain: #a8e0bf;
   --native-color-top-bar-scrolled: rgba(0, 0, 0, 0.88);
-  --native-color-bar-button: rgba(153, 153, 153, 0.13);
   --native-color-on-bar-button: #a8e0bf;
   --native-color-tab-bar: rgba(153, 153, 153, 0.13);
   --native-color-on-tab-current: #a8e0bf;
@@ -350,7 +348,6 @@
 :root[data-platform="ios"][data-transparency="reduced"],
 :root[data-platform="ios"][data-transparency="reduced"] [data-theme="light"] {
   --native-color-top-bar-scrolled: #f2f2f3;
-  --native-color-bar-button: #f2f2f3;
   --native-color-tab-bar: #f2f2f3;
   --native-color-cover-badge: #f2f2f3;
   --native-color-menu: #f2f2f3;
@@ -360,7 +357,6 @@
 :root[data-platform="ios"][data-transparency="reduced"][data-theme="dark"],
 :root[data-platform="ios"][data-transparency="reduced"] [data-theme="dark"] {
   --native-color-top-bar-scrolled: #141414;
-  --native-color-bar-button: #141414;
   --native-color-tab-bar: #141414;
   --native-color-cover-badge: #141414;
   --native-color-menu: #141414;
