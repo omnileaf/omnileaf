@@ -78,6 +78,14 @@
   --native-spacing-top-bar: 64px;
   --native-spacing-top-bar-lift: var(--spacing-title-gap);
   --native-shadow-bar-button-lift: none;
+  --native-spacing-tab-bar: 64px;
+  --native-spacing-tab-bar-inset: 0px;
+  --native-spacing-tab-bar-inline: 0px;
+  --native-spacing-tab-cell: 100%;
+  --native-text-tab: calc(0.75rem * var(--text-scale));
+  --native-leading-tab: calc(16 / 12);
+  --native-weight-tab: 500;
+  --native-tracking-tab: 0.5px;
 }
 
 :root[data-platform="android"],
@@ -127,6 +135,11 @@
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
   --native-color-on-bar-button: #191d1a;
+  --native-color-tab-bar: #e9f0e8;
+  --native-color-tab-pill: #d0e8d7;
+  --native-color-on-tab: #58615a;
+  --native-color-on-tab-current: #326a4d;
+  --native-color-on-tab-pill: #415749;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -176,4 +189,9 @@
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
   --native-color-on-bar-button: #e0e3df;
+  --native-color-tab-bar: #141b17;
+  --native-color-tab-pill: #2b4033;
+  --native-color-on-tab: #a4aea5;
+  --native-color-on-tab-current: #a4d1b4;
+  --native-color-on-tab-pill: #adc5b4;
 }

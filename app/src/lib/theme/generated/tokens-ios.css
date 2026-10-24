@@ -78,6 +78,14 @@
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
   --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
+  --native-spacing-tab-bar: 62px;
+  --native-spacing-tab-bar-inset: 4px;
+  --native-spacing-tab-bar-inline: 10px;
+  --native-spacing-tab-cell: 84px;
+  --native-text-tab: 0.625rem;
+  --native-leading-tab: calc(12 / 10);
+  --native-weight-tab: 590;
+  --native-tracking-tab: 0;
 }
 
 :root[data-platform="ios"],
@@ -127,6 +135,11 @@
   --native-color-top-bar-scrolled-edge: var(--ios-separator);
   --native-color-bar-button: rgba(255, 255, 255, 0.78);
   --native-color-on-bar-button: #2f6f4f;
+  --native-color-tab-bar: var(--glass);
+  --native-color-tab-pill: rgba(118, 118, 128, 0.12);
+  --native-color-on-tab: #000000;
+  --native-color-on-tab-current: #2f6f4f;
+  --native-color-on-tab-pill: #2f6f4f;
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -176,4 +189,9 @@
   --native-color-top-bar-scrolled-edge: var(--ios-separator);
   --native-color-bar-button: rgba(44, 44, 46, 0.72);
   --native-color-on-bar-button: #7fcb9d;
+  --native-color-tab-bar: var(--glass);
+  --native-color-tab-pill: rgba(118, 118, 128, 0.24);
+  --native-color-on-tab: #ffffff;
+  --native-color-on-tab-current: #7fcb9d;
+  --native-color-on-tab-pill: #7fcb9d;
 }

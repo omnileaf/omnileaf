@@ -123,4 +123,17 @@
   --native-color-top-bar-scrolled-edge: var(--border);
   --native-color-bar-button: var(--card);
   --native-color-on-bar-button: var(--foreground);
+  --native-color-tab-bar: var(--bar);
+  --native-color-tab-pill: var(--glass-pill);
+  --native-color-on-tab: var(--muted-foreground);
+  --native-color-on-tab-current: var(--color-accent);
+  --native-color-on-tab-pill: var(--color-accent);
+  --native-spacing-tab-bar: var(--spacing-floating-bar);
+  --native-spacing-tab-bar-inset: var(--spacing-xs);
+  --native-spacing-tab-bar-inline: var(--spacing-xs);
+  --native-spacing-tab-cell: 100%;
+  --native-text-tab: var(--text-tab);
+  --native-leading-tab: var(--text-tab--line-height);
+  --native-weight-tab: var(--font-weight-semibold);
+  --native-tracking-tab: 0;
 }

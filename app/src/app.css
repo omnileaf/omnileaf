@@ -1005,7 +1005,6 @@
   --color-android-tonal: var(--android-tonal);
   --color-android-outline: var(--android-outline);
   --color-android-inverse-primary: var(--android-inverse-primary);
-  --color-android-tab-ink: var(--android-tab-ink);
   --color-snackbar-muted: color-mix(
     in oklch,
     var(--background) 82%,

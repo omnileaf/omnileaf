@@ -14,7 +14,7 @@ import {
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const SERIES_COUNT = 12;
-const NAVIGATION_BAR_HEIGHT = 80;
+const NAVIGATION_BAR_HEIGHT = 64;
 const TOP_APP_BAR_HEIGHT = 64;
 const STATE_LAYER = /\/ 0\.08\)/;
 
@@ -75,7 +75,7 @@ test("sets a phone's page title as title large, 22px on a 28px line in a 64px to
   expect((await boxOf(heading)).height).toBe(TOP_APP_BAR_HEIGHT);
 });
 
-test("puts the 80px navigation bar on the surface container, with the tonal pill behind the current section", async ({
+test("puts the 64px navigation bar on the surface container, with the secondary container pill behind the current section", async ({
   page,
 }) => {
   await openLibrary(page);
@@ -85,19 +85,24 @@ test("puts the 80px navigation bar on the surface container, with the tonal pill
   );
   const navigation = page.getByRole("navigation", { name: "Main" });
 
-  expect((await boxOf(navigation)).height).toBe(NAVIGATION_BAR_HEIGHT);
+  expect((await boxOf(navigation.getByRole("list"))).height).toBe(
+    NAVIGATION_BAR_HEIGHT,
+  );
   await expect(navigation).toHaveCSS(
     "background-color",
-    await tokenColour(page, "--android-container"),
+    await tokenColour(page, "--native-color-tab-bar"),
   );
   await expect(
     navigation
       .getByRole("link", { name: "Library" })
       .locator('[data-slot="navigation-pill"]'),
-  ).toHaveCSS("background-color", await tokenColour(page, "--android-tonal"));
+  ).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--native-color-tab-pill"),
+  );
 });
 
-test("labels the current section at 600 in the foreground and the others at 500 in the bar's ink", async ({
+test("labels every section as label medium at 500, the current one in the accent and the others muted", async ({
   page,
 }) => {
   await openLibrary(page);
@@ -110,15 +115,15 @@ test("labels the current section at 600 in the foreground and the others at 500 
   const current = navigation.getByRole("link", { name: "Library" });
   const other = navigation.getByRole("link", { name: "Browse" });
 
-  await expect(current).toHaveCSS("font-weight", "600");
+  await expect(current).toHaveCSS("font-weight", "500");
   await expect(current).toHaveCSS(
     "color",
-    await tokenColour(page, "--foreground"),
+    await tokenColour(page, "--native-color-on-tab-current"),
   );
   await expect(other).toHaveCSS("font-weight", "500");
   await expect(other).toHaveCSS(
     "color",
-    await tokenColour(page, "--android-tab-ink"),
+    await tokenColour(page, "--native-color-on-tab"),
   );
 });
 

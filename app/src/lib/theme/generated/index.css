@@ -126,6 +126,19 @@
   --color-native-top-bar-scrolled-edge: var(--native-color-top-bar-scrolled-edge);
   --color-native-bar-button: var(--native-color-bar-button);
   --color-native-on-bar-button: var(--native-color-on-bar-button);
+  --color-native-tab-bar: var(--native-color-tab-bar);
+  --color-native-tab-pill: var(--native-color-tab-pill);
+  --color-native-on-tab: var(--native-color-on-tab);
+  --color-native-on-tab-current: var(--native-color-on-tab-current);
+  --color-native-on-tab-pill: var(--native-color-on-tab-pill);
+  --spacing-native-tab-bar: var(--native-spacing-tab-bar);
+  --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
+  --spacing-native-tab-bar-inline: var(--native-spacing-tab-bar-inline);
+  --spacing-native-tab-cell: var(--native-spacing-tab-cell);
+  --text-native-tab: var(--native-text-tab);
+  --leading-native-tab: var(--native-leading-tab);
+  --font-weight-native-tab: var(--native-weight-tab);
+  --tracking-native-tab: var(--native-tracking-tab);
 }
 
 @media (prefers-reduced-motion: reduce) {
