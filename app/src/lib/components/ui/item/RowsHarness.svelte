@@ -44,6 +44,17 @@
   </li>
 </ul>
 
+<ul aria-label="Picked rows">
+  <li>
+    <Item look="row" aria-label="Picked row" aria-selected="true">
+      <ItemContent>
+        <ItemTitle>Volume 3</ItemTitle>
+        <ItemDescription>Page 14 of 192</ItemDescription>
+      </ItemContent>
+    </Item>
+  </li>
+</ul>
+
 <ul aria-label="Pressable rows">
   <li>
     <Item look="row">

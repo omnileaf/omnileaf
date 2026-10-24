@@ -108,6 +108,22 @@ test("draws iOS's hairline between rows from where the text starts", async () =>
   expect(rule.backgroundColor).toBe("rgba(60, 60, 67, 0.12)");
 });
 
+test.each([
+  { theme: "light", fill: "rgb(209, 209, 214)", muted: "oklch(0.4 0.01 286)" },
+  { theme: "dark", fill: "rgb(58, 58, 60)", muted: "oklch(0.74 0.01 286)" },
+])(
+  "fills iOS's picked row in systemGray4 and darkens its grey words to stay legible in $theme",
+  async ({ theme, fill, muted }) => {
+    await renderRows("ios");
+    document.documentElement.dataset.theme = theme;
+
+    const picked = element("Picked row");
+
+    expect(getComputedStyle(picked).backgroundColor).toBe(fill);
+    expect(slot(picked, "item-description").color).toBe(muted);
+  },
+);
+
 test("draws no dividers and no chevron on Android", async () => {
   await renderRows("android");
 
