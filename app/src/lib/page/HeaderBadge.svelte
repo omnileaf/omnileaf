@@ -8,9 +8,14 @@
   let {
     icon: Icon,
     look,
-  }: { icon: Glyph; look: Extract<BadgeLook, `header-${string}`> } = $props();
+    class: className,
+  }: {
+    icon: Glyph;
+    look: Extract<BadgeLook, `header-${string}`>;
+    class?: string;
+  } = $props();
 </script>
 
-<Badge {look} aria-hidden="true">
+<Badge {look} class={className} aria-hidden="true">
   <Icon size={ICON_SIZE} />
 </Badge>
