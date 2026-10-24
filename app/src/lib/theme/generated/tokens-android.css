@@ -110,6 +110,29 @@
   --native-spacing-menu-rule-inline: 12px;
   --native-spacing-menu-rule-block: 4px;
   --native-shadow-menu-lift: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --native-radius-notice: 4px;
+  --native-radius-notice-tall: 4px;
+  --native-spacing-notice: 48px;
+  --native-spacing-notice-block: 4px;
+  --native-spacing-notice-tall-block: 14px;
+  --native-spacing-notice-one-line-words-block: 0px;
+  --native-spacing-notice-start: 16px;
+  --native-spacing-notice-end: 8px;
+  --native-spacing-notice-action: 40px;
+  --native-spacing-notice-action-inline: 12px;
+  --native-text-notice-title: calc(0.875rem * var(--text-scale));
+  --native-leading-notice-title: calc(20 / 14);
+  --native-weight-notice-title: 400;
+  --native-tracking-notice-title: 0.25px;
+  --native-text-notice-body: calc(0.875rem * var(--text-scale));
+  --native-leading-notice-body: calc(20 / 14);
+  --native-weight-notice-body: 400;
+  --native-tracking-notice-body: 0.25px;
+  --native-text-notice-label: calc(0.875rem * var(--text-scale));
+  --native-leading-notice-label: calc(20 / 14);
+  --native-weight-notice-label: 500;
+  --native-tracking-notice-label: 0.1px;
+  --native-shadow-notice-lift: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
 }
 
 :root[data-platform="android"],
@@ -177,6 +200,10 @@
   --native-color-menu-chosen: #c0fbff;
   --native-color-on-menu-chosen: #276266;
   --native-color-menu-rule: #abb4ac;
+  --native-color-notice: #0b0f0c;
+  --native-color-on-notice: #9a9e99;
+  --native-color-notice-action: transparent;
+  --native-color-on-notice-action: #bcf9d3;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -244,4 +271,8 @@
   --native-color-menu-chosen: #bbf5f9;
   --native-color-on-menu-chosen: #235f63;
   --native-color-menu-rule: #414a43;
+  --native-color-notice: #f7faf5;
+  --native-color-on-notice: #525652;
+  --native-color-notice-action: transparent;
+  --native-color-on-notice-action: #3e6750;
 }

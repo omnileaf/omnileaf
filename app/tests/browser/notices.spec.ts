@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { Platform } from "../../src/lib/ipc/bindings.ts";
+
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -28,9 +30,16 @@ const POINTER_ACTION_HEIGHT = 24;
 const POINTER_ACTION_RADIUS = 4;
 const POINTER_ACTION_SIZE = "12px";
 const POINTER_ACTION_WEIGHT = "500";
-const TOUCH_ACTION_HEIGHT = 48;
+const ANDROID_ACTION_HEIGHT = 40;
 const ANDROID_ACTION_SIZE = "14px";
-const ANDROID_ACTION_WEIGHT = "600";
+const ANDROID_ACTION_WEIGHT = "500";
+const ANDROID_ACTION_INK = "rgb(188, 249, 211)";
+const PHONE_NOTICES: Readonly<
+  Partial<Record<Platform, { readonly fill: string; readonly corner: string }>>
+> = {
+  ios: { fill: "rgba(246, 246, 246, 0.73)", corner: "26px" },
+  android: { fill: "rgb(11, 15, 12)", corner: "4px" },
+};
 const LONG_WAIT_MS = 60_000;
 const NARROW_WINDOW = { width: 360, height: 800 };
 const DESKTOP_PLATFORMS = ["linux", "macos", "windows"] as const;
@@ -338,7 +347,7 @@ test.describe("on Android", () => {
     await expect(title).toHaveCSS("font-size", TITLE_SIZE);
   });
 
-  test("keeps the warning's action on one 48px line on a phone", async ({
+  test("keeps the warning's action on one 40px line on a phone", async ({
     page,
   }) => {
     const { card } = await failToAddAFolder(page);
@@ -346,10 +355,10 @@ test.describe("on Android", () => {
 
     const action = card.getByRole("button", { name: "Choose another folder" });
 
-    expect((await boxOf(action)).height).toBe(TOUCH_ACTION_HEIGHT);
+    expect((await boxOf(action)).height).toBe(ANDROID_ACTION_HEIGHT);
   });
 
-  test("fills the warning's action in the warning ink with 14px semibold type on a phone", async ({
+  test("draws the warning's action as the snackbar's 14px text action on a phone", async ({
     page,
   }) => {
     const { card } = await failToAddAFolder(page);
@@ -357,11 +366,40 @@ test.describe("on Android", () => {
 
     const action = card.getByRole("button", { name: "Choose another folder" });
 
-    await expect(action).toHaveCSS(
-      "background-color",
-      await colourOf(page, "--color-on-warning"),
-    );
+    await expect(action).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(action).toHaveCSS("color", ANDROID_ACTION_INK);
     await expect(action).toHaveCSS("font-size", ANDROID_ACTION_SIZE);
     await expect(action).toHaveCSS("font-weight", ANDROID_ACTION_WEIGHT);
   });
+});
+
+test.describe("a notice on a phone", { tag: "@native" }, () => {
+  test("draws the warning as the platform's own notice", async ({
+    page,
+    platform,
+  }) => {
+    const expected =
+      platform === undefined ? undefined : PHONE_NOTICES[platform];
+    test.skip(expected === undefined, "iOS and Android phones only");
+
+    const { card } = await failToAddAFolder(page);
+
+    await expect(card).toHaveCSS("background-color", expected?.fill ?? "");
+    await expect(card).toHaveCSS(
+      "border-top-left-radius",
+      expected?.corner ?? "",
+    );
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+
+      await failToAddAFolder(page);
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });

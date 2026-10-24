@@ -5,10 +5,9 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { FolderProblem, MissingFolder } from "#lib/ipc/bindings.ts";
   import type { ToastHandle } from "#lib/notices/notices.ts";
-  import ToastCard, {
-    TOAST_ICON_SIZE,
-    WARNING_ACTION,
-  } from "#lib/notices/ToastCard.svelte";
+  import { toastLook } from "#lib/notices/toast-look.ts";
+  import ToastCard, { TOAST_ICON_SIZE } from "#lib/notices/ToastCard.svelte";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { MissingFolderActions } from "./missing-folder-notices.ts";
@@ -30,7 +29,7 @@
   } as const satisfies Record<FolderProblem["kind"], Remedy>;
 
   const SECONDARY =
-    "rounded-full border border-warning-action-edge px-lg text-label font-medium min-block-touch-target android:font-semibold desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:block-xl desktop:min-block-xl";
+    "rounded-full border border-warning-action-edge px-lg text-label font-medium min-block-touch-target android:medium:font-semibold desktop:rounded-toast-action desktop:px-sm desktop:text-caption desktop:block-xl desktop:min-block-xl";
 
   let {
     missing,
@@ -43,6 +42,8 @@
     toast: ToastHandle;
     handlers: MissingFolderActions;
   } = $props();
+
+  const look = toastLook(currentPlatform());
 
   const { name } = $derived(missing.folder);
   const count = $derived(missing.hiddenSeries);
@@ -115,7 +116,7 @@
       <Button
         type="button"
         look="inverse"
-        class={WARNING_ACTION}
+        class={look.warningAction}
         onclick={() => {
           handlers.find(missing);
         }}
@@ -125,7 +126,7 @@
       <Button
         type="button"
         look="tinted"
-        class={SECONDARY}
+        class={[SECONDARY, look.action]}
         onclick={() => {
           handlers.unlink(missing);
         }}
@@ -136,7 +137,7 @@
       <Button
         type="button"
         look="inverse"
-        class={WARNING_ACTION}
+        class={look.warningAction}
         onclick={() => {
           handlers.signIn(missing);
         }}
@@ -147,7 +148,7 @@
       <Button
         type="button"
         look="inverse"
-        class={WARNING_ACTION}
+        class={look.warningAction}
         onclick={() => {
           handlers.tryAgain(missing);
         }}
@@ -158,7 +159,7 @@
       <Button
         type="button"
         look="inverse"
-        class={WARNING_ACTION}
+        class={look.warningAction}
         onclick={() => {
           handlers.showAnyway(missing);
         }}
@@ -168,7 +169,7 @@
       <Button
         type="button"
         look="tinted"
-        class={SECONDARY}
+        class={[SECONDARY, look.action]}
         onclick={() => {
           handlers.find(missing);
         }}
