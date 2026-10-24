@@ -156,6 +156,12 @@
   --shadow-native-select-ring-lift: var(--native-shadow-select-ring-lift);
   --color-native-sheet: var(--native-color-sheet);
   --color-native-scrim: var(--native-color-scrim);
+  --color-native-dialog: var(--native-color-dialog);
+  --radius-native-dialog: var(--native-radius-dialog);
+  --spacing-native-dialog: var(--native-spacing-dialog);
+  --spacing-native-dialog-text-inline: var(--native-spacing-dialog-text-inline);
+  --spacing-native-dialog-text-gap: var(--native-spacing-dialog-text-gap);
+  --spacing-native-dialog-button: var(--native-spacing-dialog-button);
   --color-native-sheet-handle: var(--native-color-sheet-handle);
   --radius-native-sheet: var(--native-radius-sheet);
   --spacing-native-sheet-handle: var(--native-spacing-sheet-handle);

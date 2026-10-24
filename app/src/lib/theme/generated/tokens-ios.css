@@ -94,6 +94,11 @@
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --native-radius-dialog: 34px;
+  --native-spacing-dialog: 320px;
+  --native-spacing-dialog-text-inline: 14px;
+  --native-spacing-dialog-text-gap: 10px;
+  --native-spacing-dialog-button: 48px;
   --native-radius-sheet: 38px;
   --native-spacing-sheet-handle: 36px;
   --native-spacing-sheet-handle-thickness: 5px;
@@ -196,6 +201,7 @@
   --native-color-select-ring: #ffffff;
   --native-color-sheet: #ffffff;
   --native-color-scrim: rgba(0, 0, 0, 0.2);
+  --native-color-dialog: rgba(247, 247, 247, 0.8);
   --native-color-sheet-handle: rgba(60, 60, 67, 0.3);
   --native-color-menu: rgba(248, 248, 250, 0.85);
   --native-color-on-menu: #000000;
@@ -272,6 +278,7 @@
   --native-color-select-ring: #ffffff;
   --native-color-sheet: #1c1c1e;
   --native-color-scrim: rgba(0, 0, 0, 0.47);
+  --native-color-dialog: rgba(26, 26, 26, 0.9);
   --native-color-sheet-handle: rgba(235, 235, 245, 0.3);
   --native-color-menu: rgba(26, 26, 26, 0.8);
   --native-color-on-menu: #ffffff;
@@ -314,6 +321,7 @@
   --native-color-on-tab-pill: #245a40;
   --native-color-cover-badge: rgba(255, 255, 255, 0.92);
   --native-color-cover-accent: #245a40;
+  --native-color-dialog: #f3f3f5;
   --native-color-menu: #f6f6f9;
   --native-color-notice: #f6f6f9;
   --native-color-on-notice-action: #245a40;
@@ -347,6 +355,7 @@
   --native-color-on-tab-pill: #a8e0bf;
   --native-color-cover-badge: rgba(0, 0, 0, 0.85);
   --native-color-cover-accent: #a8e0bf;
+  --native-color-dialog: #0d0d0e;
   --native-color-menu: #0e0e0e;
   --native-color-notice: #0e0e0e;
   --native-color-on-notice-action: #a8e0bf;
@@ -358,6 +367,7 @@
   --native-color-top-bar-scrolled: #f2f2f3;
   --native-color-tab-bar: #f2f2f3;
   --native-color-cover-badge: #f2f2f3;
+  --native-color-dialog: #f2f2f2;
   --native-color-menu: #f2f2f3;
   --native-color-notice: #f2f2f3;
 }
@@ -367,6 +377,7 @@
   --native-color-top-bar-scrolled: #141414;
   --native-color-tab-bar: #141414;
   --native-color-cover-badge: #141414;
+  --native-color-dialog: #141414;
   --native-color-menu: #141414;
   --native-color-notice: #141414;
 }

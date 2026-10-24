@@ -96,6 +96,12 @@
   --native-spacing-select: 18px;
   --native-spacing-select-edge: 2px;
   --native-shadow-select-ring-lift: none;
+  --native-color-dialog: var(--dialog-surface);
+  --native-radius-dialog: var(--radius-panel);
+  --native-spacing-dialog: var(--spacing-dialog);
+  --native-spacing-dialog-text-inline: 0px;
+  --native-spacing-dialog-text-gap: var(--spacing-lg);
+  --native-spacing-dialog-button: var(--spacing-touch-button);
   --native-radius-sheet: 28px;
   --native-spacing-sheet-handle: 32px;
   --native-spacing-sheet-handle-thickness: 4px;
