@@ -37,6 +37,7 @@
     movedTo,
     type Reveal,
   } from "#lib/virtual-grid/grid-keys.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
@@ -53,6 +54,7 @@
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
+  import { coverTileLook } from "./cover-tile";
   import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -96,6 +98,7 @@
     ),
   );
   const baseLook = coverLook(DEFAULT_LIBRARY_VIEW.coversPerRow);
+  const tile = coverTileLook(currentPlatform());
   const coversTrack = $derived(
     fitsToWidth ? "grid-cols-covers-fit" : "grid-cols-covers-per-row",
   );
@@ -322,6 +325,7 @@
           <div
             class={[
               "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+              tile.cover,
               pickedRing(one),
             ]}
           >
@@ -332,7 +336,12 @@
               <CoverBadges series={one} onCovers={view.onCovers} />
             {/if}
             {#if isSelecting}
-              <SelectionMark isOn={selection?.has(one.id) === true} />
+              <SelectionMark
+                isOn={selection?.has(one.id) === true}
+                class={tile.mark}
+                onClass={tile.markOn}
+                offClass={tile.markOff}
+              />
             {/if}
           </div>
           {#if share !== undefined}
@@ -389,6 +398,7 @@
       <div
         class={[
           "@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+          tile.cover,
           pickedRing(one),
         ]}
       >
@@ -399,7 +409,12 @@
           <CoverBadges series={one} onCovers={view.onCovers} />
         {/if}
         {#if isSelecting}
-          <SelectionMark isOn={selection?.has(one.id) === true} />
+          <SelectionMark
+            isOn={selection?.has(one.id) === true}
+            class={tile.mark}
+            onClass={tile.markOn}
+            offClass={tile.markOff}
+          />
         {/if}
         <div
           class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
@@ -441,6 +456,7 @@
         title={shown.title}
         class={[
           "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+          tile.cover,
           pickedRing(one),
         ]}
       >
@@ -451,7 +467,12 @@
           <CoverBadges series={one} onCovers={view.onCovers} />
         {/if}
         {#if isSelecting}
-          <SelectionMark isOn={selection?.has(one.id) === true} />
+          <SelectionMark
+            isOn={selection?.has(one.id) === true}
+            class={tile.mark}
+            onClass={tile.markOn}
+            offClass={tile.markOff}
+          />
         {/if}
         <p class="sr-only">{shown.title}</p>
       </div>

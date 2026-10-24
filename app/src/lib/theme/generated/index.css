@@ -139,6 +139,19 @@
   --leading-native-tab: var(--native-leading-tab);
   --font-weight-native-tab: var(--native-weight-tab);
   --tracking-native-tab: var(--native-tracking-tab);
+  --radius-native-cover: var(--native-radius-cover);
+  --color-native-cover-badge: var(--native-color-cover-badge);
+  --color-native-on-cover-badge: var(--native-color-on-cover-badge);
+  --radius-native-cover-badge: var(--native-radius-cover-badge);
+  --spacing-native-cover-badge: var(--native-spacing-cover-badge);
+  --spacing-native-downloaded-mark: var(--native-spacing-downloaded-mark);
+  --color-native-cover-accent: var(--native-color-cover-accent);
+  --color-native-on-cover-accent: var(--native-color-on-cover-accent);
+  --color-native-select-ring: var(--native-color-select-ring);
+  --radius-native-select: var(--native-radius-select);
+  --spacing-native-select: var(--native-spacing-select);
+  --spacing-native-select-edge: var(--native-spacing-select-edge);
+  --shadow-native-select-ring-lift: var(--native-shadow-select-ring-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {

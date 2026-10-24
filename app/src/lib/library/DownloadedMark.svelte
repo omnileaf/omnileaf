@@ -6,7 +6,10 @@
 
   const MARK_ICON_SIZE = 12;
 
-  let { class: className }: { class?: ClassValue } = $props();
+  let {
+    class: className,
+    iconClass,
+  }: { class?: ClassValue; iconClass?: ClassValue } = $props();
 </script>
 
 <span
@@ -17,5 +20,5 @@
     className,
   ]}
 >
-  <Download size={MARK_ICON_SIZE} aria-hidden="true" />
+  <Download size={MARK_ICON_SIZE} aria-hidden="true" class={iconClass} />
 </span>

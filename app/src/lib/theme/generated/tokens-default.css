@@ -136,4 +136,17 @@
   --native-leading-tab: var(--text-tab--line-height);
   --native-weight-tab: var(--font-weight-semibold);
   --native-tracking-tab: 0;
+  --native-radius-cover: var(--radius-cover);
+  --native-color-cover-badge: var(--card);
+  --native-color-on-cover-badge: var(--foreground);
+  --native-radius-cover-badge: var(--radius-label-badge);
+  --native-spacing-cover-badge: var(--spacing-xl);
+  --native-spacing-downloaded-mark: var(--spacing-downloaded-mark);
+  --native-color-cover-accent: var(--color-accent);
+  --native-color-on-cover-accent: var(--color-on-accent);
+  --native-color-select-ring: var(--border);
+  --native-radius-select: var(--radius-series-check);
+  --native-spacing-select: var(--spacing-series-check);
+  --native-spacing-select-edge: 2px;
+  --native-shadow-select-ring-lift: none;
 }
