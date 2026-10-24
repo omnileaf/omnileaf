@@ -839,7 +839,9 @@
           </div>
         {/if}
         <div
-          {@attach tabsShown && swipesBetweenTabs(swipeTab)}
+          {@attach tabsShown &&
+            !selection.isSelecting &&
+            swipesBetweenTabs(swipeTab)}
           class="mbs-lg touch-pan-y medium:mbs-xl"
         >
           {#if groups.length > 0}
