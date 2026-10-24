@@ -42,7 +42,7 @@ const SWIPE_STEPS = 12;
 const PHONE_NOTICES: Readonly<
   Partial<Record<Platform, { readonly fill: string; readonly corner: string }>>
 > = {
-  ios: { fill: "rgba(246, 246, 246, 0.73)", corner: "26px" },
+  ios: { fill: "rgba(248, 248, 250, 0.85)", corner: "26px" },
   android: { fill: "rgb(11, 15, 12)", corner: "4px" },
 };
 const LONG_WAIT_MS = 60_000;

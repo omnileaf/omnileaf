@@ -43,7 +43,7 @@
   --ios-chip-green: oklch(0.55 0.15 150);
   --ios-chip-orange: oklch(0.6 0.16 50);
   --ios-grouped-cell: oklch(1 0 0);
-  --ios-separator: oklch(0.235 0.004 286 / 22%);
+  --ios-separator: rgba(60, 60, 67, 0.12);
   --ios-fill: oklch(0.235 0.004 286 / 8%);
   --ios-material: oklch(0.985 0 0 / 78%);
   --ios-glass-edge: oklch(1 0 0 / 70%);
@@ -140,7 +140,7 @@
   --ios-chip-green: oklch(0.58 0.15 150);
   --ios-chip-orange: oklch(0.62 0.16 50);
   --ios-grouped-cell: oklch(0.218 0.004 286);
-  --ios-separator: oklch(0.6 0.01 286 / 36%);
+  --ios-separator: rgba(84, 84, 88, 0.5);
   --ios-fill: oklch(0.6 0.01 286 / 24%);
   --ios-material: oklch(0.2 0 0 / 72%);
   --ios-glass-edge: oklch(1 0 0 / 10%);

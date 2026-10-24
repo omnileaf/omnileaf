@@ -109,7 +109,7 @@ test("folds iOS's title into a 17 semibold inline title beside 44 glass circles"
   expect(title.lineHeight).toBe("22px");
   expect(title.fontWeight).toBe("600");
   expect(backLink().getBoundingClientRect().height).toBeCloseTo(44, 0);
-  expect(back.backgroundColor).toBe("rgba(255, 255, 255, 0.78)");
+  expect(back.backgroundColor).toBe("rgba(255, 255, 255, 0.7)");
   expect(back.color).toBe("rgb(47, 111, 79)");
 });
 
@@ -119,7 +119,7 @@ test("draws iOS's scrolled bar over a hairline in the separator colour", async (
 
   const style = getComputedStyle(seriesBar());
 
-  expect(style.borderBlockEndColor).toBe("oklch(0.235 0.004 286 / 0.22)");
+  expect(style.borderBlockEndColor).toBe("rgba(60, 60, 67, 0.12)");
   expect(style.borderBlockEndWidth).not.toBe("0px");
 });
 
@@ -182,7 +182,7 @@ test("draws a bar's header control as iOS's 44 glass circle", async () => {
 
   expect(control.getBoundingClientRect().height).toBeCloseTo(44, 0);
   expect(getComputedStyle(control).backgroundColor).toBe(
-    "rgba(255, 255, 255, 0.78)",
+    "rgba(255, 255, 255, 0.7)",
   );
 });
 

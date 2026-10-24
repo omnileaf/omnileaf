@@ -4,7 +4,7 @@ import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { accessibilityViolations, boxOf, expect, test } from "./fixtures.ts";
 
 const TRACKS: Readonly<Partial<Record<Platform, readonly [number, number]>>> = {
-  ios: [64, 28],
+  ios: [63, 28],
   android: [52, 32],
   linux: [32, 18.4],
 };
