@@ -46,9 +46,9 @@ const LOOKS: readonly SwitchLook[] = [
   },
   {
     platform: "ios",
-    track: [64, 28],
-    knobOff: 38,
-    knobOn: 38,
+    track: [63, 28],
+    knobOff: 37,
+    knobOn: 37,
     trackOff: "rgba(60, 60, 67, 0.3)",
     trackOn: "oklch(0.6 0.17 149)",
     knobOffFill: "oklch(1 0 0)",
@@ -166,13 +166,13 @@ test("draws the iOS knob as a capsule, wider than it is tall", async () => {
 
   const knob = knobOf("Off").getBoundingClientRect();
 
-  expect(knob.width).toBeCloseTo(38, 0);
+  expect(knob.width).toBeCloseTo(37, 0);
   expect(knob.height).toBeCloseTo(24, 0);
 });
 
 test.each([
-  { theme: "light", track: "rgb(36, 138, 61)" },
-  { theme: "dark", track: "rgb(48, 219, 91)" },
+  { theme: "light", track: "rgb(0, 137, 50)" },
+  { theme: "dark", track: "rgb(74, 217, 104)" },
 ])(
   "darkens the iOS switch's green under Increase Contrast in $theme",
   async ({ theme, track }) => {

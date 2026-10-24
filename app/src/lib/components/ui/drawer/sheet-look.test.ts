@@ -73,7 +73,7 @@ test("rounds iOS's sheet by 38 on a white surface under a 36 by 5 grabber", asyn
   expect(sizeOf(handle)).toEqual([36, 5]);
   expect(getComputedStyle(handle).borderRadius).not.toBe("0px");
   expect(backgroundOf(handle)).toBe("rgba(60, 60, 67, 0.3)");
-  expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0.4)");
+  expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0.2)");
 });
 
 test("darkens iOS's sheet and grabber for the dark theme", async () => {
@@ -83,7 +83,7 @@ test("darkens iOS's sheet and grabber for the dark theme", async () => {
 
   expect(backgroundOf(sheet)).toBe("rgb(28, 28, 30)");
   expect(backgroundOf(handle)).toBe("rgba(235, 235, 245, 0.3)");
-  expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0.4)");
+  expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0.47)");
 });
 
 test("rounds Android's sheet by 28 with a 32 by 4 handle centred in a 48 tall area", async () => {

@@ -53,13 +53,13 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws iOS's menu as a 34 rounded glass card of 40 tall capsule rows", async () => {
+test("draws iOS's menu as a 32 rounded glass card of 40 tall capsule rows", async () => {
   await page.viewport(PHONE.width, PHONE.height);
 
   const menu = await openMenuOn("ios", "light");
 
-  expect(style(menu).backgroundColor).toBe("rgba(246, 246, 246, 0.73)");
-  expect(style(menu).borderTopLeftRadius).toBe("34px");
+  expect(style(menu).backgroundColor).toBe("rgba(248, 248, 250, 0.85)");
+  expect(style(menu).borderTopLeftRadius).toBe("32px");
   expect(style(menu).padding).toBe("10px 8px");
   expect(style(menu).borderTopWidth).toBe("0px");
   expect(item("Mark read").getBoundingClientRect().height).toBeCloseTo(40, 0);
@@ -106,7 +106,7 @@ test("rules iOS's menu groups with an inset hairline and leads the check", async
   const [rule] = rules(menu);
   const grid = radio("Grid");
 
-  expect(rule && style(rule).borderTopColor).toBe("rgba(60, 60, 67, 0.29)");
+  expect(rule && style(rule).borderTopColor).toBe("rgba(60, 60, 67, 0.12)");
   expect(rule && style(rule).marginInline).toBe("16px");
   expect(rule && style(rule).marginBlock).toBe("10px");
   expect(checkOf(grid).getBoundingClientRect().left).toBeLessThan(
@@ -121,7 +121,7 @@ test("darkens iOS's menu for the dark theme", async () => {
 
   const menu = await openMenuOn("ios", "dark");
 
-  expect(style(menu).backgroundColor).toBe("rgba(32, 32, 32, 0.8)");
+  expect(style(menu).backgroundColor).toBe("rgba(26, 26, 26, 0.8)");
   expect(style(item("Mark read")).color).toBe("rgb(255, 255, 255)");
 });
 
