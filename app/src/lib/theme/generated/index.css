@@ -161,6 +161,21 @@
   --spacing-native-sheet-handle-start: var(--native-spacing-sheet-handle-start);
   --spacing-native-sheet-handle-area: var(--native-spacing-sheet-handle-area);
   --spacing-native-sheet-handle-end: var(--native-spacing-sheet-handle-end);
+  --color-native-menu: var(--native-color-menu);
+  --color-native-on-menu: var(--native-color-on-menu);
+  --color-native-menu-chosen: var(--native-color-menu-chosen);
+  --color-native-on-menu-chosen: var(--native-color-on-menu-chosen);
+  --color-native-menu-rule: var(--native-color-menu-rule);
+  --radius-native-menu: var(--native-radius-menu);
+  --radius-native-menu-item: var(--native-radius-menu-item);
+  --radius-native-menu-item-end: var(--native-radius-menu-item-end);
+  --spacing-native-menu-block: var(--native-spacing-menu-block);
+  --spacing-native-menu-inline: var(--native-spacing-menu-inline);
+  --spacing-native-menu-item: var(--native-spacing-menu-item);
+  --spacing-native-menu-item-inline: var(--native-spacing-menu-item-inline);
+  --spacing-native-menu-rule-inline: var(--native-spacing-menu-rule-inline);
+  --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
+  --shadow-native-menu-lift: var(--native-shadow-menu-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {

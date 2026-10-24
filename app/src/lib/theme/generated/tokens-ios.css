@@ -100,6 +100,15 @@
   --native-spacing-sheet-handle-start: 5px;
   --native-spacing-sheet-handle-area: 10px;
   --native-spacing-sheet-handle-end: 0px;
+  --native-radius-menu: 34px;
+  --native-radius-menu-item: 999px;
+  --native-radius-menu-item-end: 999px;
+  --native-spacing-menu-block: 10px;
+  --native-spacing-menu-inline: 8px;
+  --native-spacing-menu-item: 40px;
+  --native-spacing-menu-item-inline: 16px;
+  --native-spacing-menu-rule-inline: 16px;
+  --native-spacing-menu-rule-block: 10px;
 }
 
 :root[data-platform="ios"],
@@ -162,6 +171,12 @@
   --native-color-sheet: #ffffff;
   --native-color-scrim: rgba(0, 0, 0, 0.4);
   --native-color-sheet-handle: rgba(60, 60, 67, 0.3);
+  --native-color-menu: rgba(246, 246, 246, 0.73);
+  --native-color-on-menu: #000000;
+  --native-color-menu-chosen: transparent;
+  --native-color-on-menu-chosen: #000000;
+  --native-color-menu-rule: rgba(60, 60, 67, 0.29);
+  --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.25);
 }
 
 :root[data-platform="ios"][data-theme="dark"],
@@ -224,4 +239,10 @@
   --native-color-sheet: #1c1c1e;
   --native-color-scrim: rgba(0, 0, 0, 0.4);
   --native-color-sheet-handle: rgba(235, 235, 245, 0.3);
+  --native-color-menu: rgba(32, 32, 32, 0.8);
+  --native-color-on-menu: #ffffff;
+  --native-color-menu-chosen: transparent;
+  --native-color-on-menu-chosen: #ffffff;
+  --native-color-menu-rule: rgba(84, 84, 88, 0.6);
+  --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.45);
 }

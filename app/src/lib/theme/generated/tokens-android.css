@@ -100,6 +100,16 @@
   --native-spacing-sheet-handle-start: 22px;
   --native-spacing-sheet-handle-area: 48px;
   --native-spacing-sheet-handle-end: 22px;
+  --native-radius-menu: 16px;
+  --native-radius-menu-item: 4px;
+  --native-radius-menu-item-end: 12px;
+  --native-spacing-menu-block: 4px;
+  --native-spacing-menu-inline: 4px;
+  --native-spacing-menu-item: 48px;
+  --native-spacing-menu-item-inline: 12px;
+  --native-spacing-menu-rule-inline: 12px;
+  --native-spacing-menu-rule-block: 4px;
+  --native-shadow-menu-lift: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
 }
 
 :root[data-platform="android"],
@@ -162,6 +172,11 @@
   --native-color-sheet: #eff5ee;
   --native-color-scrim: #00000052;
   --native-color-sheet-handle: #58615a66;
+  --native-color-menu: #eff5ee;
+  --native-color-on-menu: #2c352e;
+  --native-color-menu-chosen: #c0fbff;
+  --native-color-on-menu-chosen: #276266;
+  --native-color-menu-rule: #abb4ac;
 }
 
 :root[data-platform="android"][data-theme="dark"],
@@ -224,4 +239,9 @@
   --native-color-sheet: #0f1511;
   --native-color-scrim: #00000052;
   --native-color-sheet-handle: #a4aea566;
+  --native-color-menu: #0f1511;
+  --native-color-on-menu: #dee8df;
+  --native-color-menu-chosen: #bbf5f9;
+  --native-color-on-menu-chosen: #235f63;
+  --native-color-menu-rule: #414a43;
 }

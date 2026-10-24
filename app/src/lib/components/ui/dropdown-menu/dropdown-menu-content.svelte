@@ -5,6 +5,9 @@
   } from "bits-ui";
 
   import { cn } from "#lib/components/cn.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
+  import { menuLook } from "../menu-look.ts";
 
   const OPENER_GAP_PX = 8;
   const SCREEN_EDGE_GAP_PX = 8;
@@ -15,6 +18,7 @@
     class: className,
     ...restProps
   }: DropdownMenuPrimitive.ContentProps & { to?: PortalProps["to"] } = $props();
+  const look = menuLook(currentPlatform());
 </script>
 
 <DropdownMenuPrimitive.Portal {to}>
@@ -23,7 +27,8 @@
     sideOffset={OPENER_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(
-      "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-menu-pad text-foreground fade-motion shadow-menu backdrop-blur-menu android:px-none android:py-sm",
+      "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-menu-pad text-foreground fade-motion shadow-menu backdrop-blur-menu android:medium:px-none android:medium:py-sm",
+      look.surface,
       className,
     )}
     {...restProps}

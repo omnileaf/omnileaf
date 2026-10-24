@@ -18,6 +18,8 @@ interface PlatformLook {
   readonly font: RegExp;
 }
 
+const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
+
 const LOOKS: readonly PlatformLook[] = [
   {
     platform: "linux",
@@ -82,6 +84,7 @@ afterEach(() => {
 
 for (const look of LOOKS) {
   test(`draws menus, tooltips, switches and secondary text in the ${look.platform} layer`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
     document.documentElement.dataset.platform = look.platform;
     document.documentElement.dataset.theme = "light";
     await render(PlatformSurfacesHarness);

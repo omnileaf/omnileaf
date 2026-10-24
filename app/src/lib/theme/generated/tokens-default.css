@@ -158,4 +158,19 @@
   --native-spacing-sheet-handle-start: var(--spacing-sheet-handle-gap);
   --native-spacing-sheet-handle-area: calc(var(--spacing-sheet-handle-gap) + var(--spacing-sheet-handle-block));
   --native-spacing-sheet-handle-end: 0px;
+  --native-color-menu: var(--menu-surface);
+  --native-color-on-menu: var(--foreground);
+  --native-color-menu-chosen: transparent;
+  --native-color-on-menu-chosen: var(--foreground);
+  --native-color-menu-rule: var(--menu-edge);
+  --native-radius-menu: var(--menu-radius);
+  --native-radius-menu-item: var(--radius-menu-item);
+  --native-radius-menu-item-end: var(--radius-menu-item);
+  --native-spacing-menu-block: var(--spacing-menu-pad);
+  --native-spacing-menu-inline: var(--spacing-menu-pad);
+  --native-spacing-menu-item: var(--spacing-menu-item);
+  --native-spacing-menu-item-inline: var(--spacing-menu-item-inline);
+  --native-spacing-menu-rule-inline: 0px;
+  --native-spacing-menu-rule-block: var(--spacing-xs);
+  --native-shadow-menu-lift: var(--menu-shadow);
 }
