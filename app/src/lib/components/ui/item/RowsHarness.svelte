@@ -46,7 +46,7 @@
 
 <ul aria-label="Picked rows">
   <li>
-    <Item look="row" aria-label="Picked row" aria-selected="true">
+    <Item look="row" aria-label="Picked row" data-picked>
       <ItemContent>
         <ItemTitle>Volume 3</ItemTitle>
         <ItemDescription>Page 14 of 192</ItemDescription>
