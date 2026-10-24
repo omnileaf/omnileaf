@@ -18,6 +18,8 @@ interface DialogLook {
 }
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
+const PHONE = { width: 390, height: 844 } as const;
+const TABLET = { width: 820, height: 1180 } as const;
 
 const LOOKS: readonly DialogLook[] = [
   {
@@ -64,6 +66,29 @@ function shadowOf(token: string): string {
   const shadow = getComputedStyle(probe).boxShadow;
   probe.remove();
   return shadow;
+}
+
+async function openAlertOn(
+  platform: Platform,
+  window: { readonly width: number; readonly height: number },
+): Promise<HTMLElement> {
+  await page.viewport(window.width, window.height);
+  document.documentElement.dataset.platform = platform;
+  document.documentElement.dataset.theme = "light";
+  await render(ConfirmDialogHarness, { phoneLook: "dialog" });
+  const dialog = page.getByRole("alertdialog", { name: "Delete downloads?" });
+  await expect.element(dialog).toBeVisible();
+  return dialog.element() as HTMLElement;
+}
+
+function overlay(): Element {
+  const found = document.querySelector(
+    "[data-dialog-overlay], [data-alert-dialog-overlay]",
+  );
+  if (found === null) {
+    throw new Error("the alert drew no dimming layer");
+  }
+  return found;
 }
 
 afterEach(() => {
@@ -130,4 +155,37 @@ test("leaves room for the focus ring around the buttons", async () => {
 
   expect(button.left - area.left).toBeGreaterThanOrEqual(ringReach);
   expect(area.bottom - button.bottom).toBeGreaterThanOrEqual(ringReach);
+});
+
+test("draws iOS's alert 320 wide on 34 rounded glass, 16 in, over a light dim", async () => {
+  const alert = await openAlertOn("ios", PHONE);
+  const style = getComputedStyle(alert);
+
+  expect(alert.getBoundingClientRect().width).toBeCloseTo(320, 0);
+  expect(style.paddingTop).toBe("16px");
+  expect(style.borderTopLeftRadius).toBe("34px");
+  expect(style.borderTopWidth).toBe("0px");
+  expect(style.backgroundColor).toBe("rgba(247, 247, 247, 0.8)");
+  expect(getComputedStyle(overlay()).backgroundColor).toBe(
+    "rgba(0, 0, 0, 0.2)",
+  );
+});
+
+test("sets iOS's alert actions as 48 tall grey capsules with Delete in red words", async () => {
+  await openAlertOn("ios", PHONE);
+  const remove = page.getByRole("button", { name: "Delete" }).element();
+  const style = getComputedStyle(remove);
+
+  expect(remove.getBoundingClientRect().height).toBeCloseTo(48, 0);
+  expect(style.backgroundColor).toBe("rgba(118, 118, 128, 0.12)");
+  expect(style.color).toBe(resolvedColour("--destructive", "color"));
+  expect(Number.parseFloat(style.borderTopLeftRadius)).toBeGreaterThanOrEqual(
+    remove.getBoundingClientRect().height / 2,
+  );
+});
+
+test("keeps today's alert on an iPad", async () => {
+  const alert = await openAlertOn("ios", TABLET);
+
+  expect(getComputedStyle(alert).borderTopLeftRadius).toBe("10px");
 });

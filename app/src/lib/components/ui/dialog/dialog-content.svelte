@@ -19,7 +19,7 @@
 
 <DialogPrimitive.Portal>
   <DialogPrimitive.Overlay
-    class="fixed inset-none z-dialog bg-scrim fade-motion"
+    class="fixed inset-none z-dialog bg-scrim fade-motion max-medium:bg-native-scrim"
   />
   <DialogPrimitive.Content
     bind:ref
