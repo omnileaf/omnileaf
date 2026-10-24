@@ -90,7 +90,6 @@
   --native-color-row-pressed: var(--pressed-fill);
   --native-color-row-selected: var(--pressed-fill);
   --native-color-on-row-selected-muted: var(--secondary-text);
-  --native-color-on-row-selected-accent: var(--primary);
   --native-color-button-outline: var(--color-button-outline);
   --native-color-on-button-outline: var(--color-foreground);
   --native-color-button-outline-edge: var(--color-button-outline-edge);
