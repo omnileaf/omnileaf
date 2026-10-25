@@ -4,19 +4,32 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import ProblemScreen from "#lib/problems/ProblemScreen.svelte";
 
   const NOT_FOUND = 404;
 
+  const TODAYS_ACTIONS: ActionGroupLook = {
+    group: "",
+    main: "flex items-center justify-center rounded-control bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed desktop:px-lg desktop:text-label desktop:min-block-pointer-button",
+    other: "",
+  };
+
   const isMissing = $derived(page.status === NOT_FOUND);
+  const width = new WindowWidth();
+  const actions = $derived(
+    actionGroupLook(currentPlatform(), width.current, TODAYS_ACTIONS),
+  );
 </script>
 
 {#snippet goToLibrary()}
-  <a
-    href={resolve(SECTION_ROUTE_IDS.library)}
-    class="flex items-center justify-center rounded-control bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed ios:max-medium:rounded-phone-button android:max-medium:rounded-full touch:max-medium:text-callout touch:max-medium:min-block-phone-button desktop:px-lg desktop:text-label desktop:min-block-pointer-button"
-  >
+  <a href={resolve(SECTION_ROUTE_IDS.library)} class={actions.main}>
     {m.problem_go_to_library()}
   </a>
 {/snippet}

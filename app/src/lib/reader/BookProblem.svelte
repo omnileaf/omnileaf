@@ -16,6 +16,11 @@
     EmptyMedia,
   } from "#lib/components/ui/empty/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -27,8 +32,11 @@
   const BUTTON_ICON_SIZE = 16;
   const BUTTON =
     "flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button px-lg text-body font-medium whitespace-nowrap transition-control min-block-touch-target expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
-  const PRIMARY = `${BUTTON} bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed`;
-  const OUTLINE = `${BUTTON} border border-border bg-card disabled:opacity-60 ios:border-transparent ios:bg-ios-fill`;
+  const TODAYS_ACTIONS: ActionGroupLook = {
+    group: "flex flex-col items-center gap-sm expanded:flex-row",
+    main: `${BUTTON} bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed`,
+    other: `${BUTTON} border border-border bg-card disabled:opacity-60 ios:border-transparent ios:bg-ios-fill`,
+  };
   const SAYINGS = {
     missing: {
       icon: FolderSearch,
@@ -63,6 +71,10 @@
       : resolve("/(app)/series/[id]", { id: place.series }),
   );
   const showFile = $derived(showFileLabel(platform));
+  const width = new WindowWidth();
+  const actions = $derived(
+    actionGroupLook(platform, width.current, TODAYS_ACTIONS),
+  );
 </script>
 
 <main
@@ -87,20 +99,20 @@
         </h1>
         <EmptyDescription class="text-small">{saying.body()}</EmptyDescription>
       </div>
-      <div class="flex flex-col items-center gap-sm expanded:flex-row">
+      <div class={actions.group}>
         {#if seriesHref === undefined}
-          <a href={libraryHref} class={PRIMARY}>
+          <a href={libraryHref} class={actions.main}>
             <Library size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {m.reader_back_label()}
           </a>
         {:else}
-          <a href={seriesHref} class={PRIMARY}>
+          <a href={seriesHref} class={actions.main}>
             <ArrowLeft size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {m.reader_back_to_the_series()}
           </a>
         {/if}
         {#if kind === "unreadable"}
-          <button type="button" disabled class={OUTLINE}>
+          <button type="button" disabled class={actions.other}>
             <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {m.reader_coming_soon({ feature: showFile })}
           </button>
