@@ -143,6 +143,7 @@
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
+  const readsQuietly = $derived(!isPointer(platform));
   const reading = untrack(() =>
     seriesReadingDirection(
       book.series,
@@ -457,6 +458,9 @@
     }
     const finished = resolve("/read/[book]", { book: book.id });
     startNextBook();
+    if (readsQuietly) {
+      return;
+    }
     notices.offerUndo({
       title: m.reader_now_reading({ title: named.next.title }),
       undo: () => {
@@ -517,7 +521,7 @@
     }
     const isOn = !isBookmarked;
     const pages = spread.filter((page) => bookmarks.has(page) !== isOn);
-    if (await keepBookmarks(bookmarks, pages, isOn)) {
+    if ((await keepBookmarks(bookmarks, pages, isOn)) && !readsQuietly) {
       notices.offerUndo({
         title: pagesWord(pages, isOn),
         undo: () => {
@@ -592,6 +596,9 @@
       }
       return;
     }
+    if (readsQuietly) {
+      return;
+    }
     notices.show({
       tone: "plain",
       icon: BookOpen,
@@ -612,6 +619,7 @@
   function sayDirectionFound(): void {
     const noticed = seenOnce(`omnileaf.directionFound.${book.series}`);
     if (
+      readsQuietly ||
       noticed.isSeen ||
       !reading.isDetected ||
       reading.direction !== "rightToLeft"
