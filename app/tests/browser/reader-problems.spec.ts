@@ -175,3 +175,44 @@ test.describe(
     });
   },
 );
+
+const BACK_ICONS: Readonly<Partial<Record<string, string>>> = {
+  ios: "chevron-left",
+  android: "arrow-left",
+};
+
+test.describe(
+  "a problem screen's way back, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: failingWith("internal", PLACE) });
+
+    test("is the platform's own back button, with the series named only on Android", async ({
+      page,
+      platform,
+    }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      const back = page
+        .getByRole("navigation")
+        .getByRole("link", { name: `Back to ${BOOK_SERIES_TITLE}` });
+      const seriesName = page
+        .getByRole("navigation")
+        .getByText(BOOK_SERIES_TITLE, { exact: true })
+        .first();
+
+      await expect(back).toBeVisible();
+      const icon = platform === undefined ? undefined : BACK_ICONS[platform];
+      if (icon === undefined) {
+        return;
+      }
+      await expect(back.locator(`[data-icon="${icon}"]`)).toHaveCount(1);
+      const box = await back.boundingBox();
+      expect(box?.height).toBeCloseTo(box?.width ?? 0, 0);
+      if (platform === "ios") {
+        await expect(seriesName).toBeHidden();
+      } else {
+        await expect(seriesName).toBeVisible();
+      }
+    });
+  },
+);

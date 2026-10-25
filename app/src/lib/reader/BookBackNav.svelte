@@ -2,19 +2,28 @@
   import { ChevronLeft } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { cn } from "#lib/components/cn.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbPage,
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { BookPlace } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
 
   let { place }: { place: BookPlace | null } = $props();
 
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isOnPhone = $derived(isPhone(platform, width.current));
+  const namesSeries = $derived(!(isOnPhone && platform === "ios"));
   const libraryHref = resolve("/(app)");
   const seriesHref = $derived(
     place === null
@@ -32,11 +41,17 @@
     aria-label={place === null
       ? m.reader_back_label()
       : m.reader_back_to_series({ series: place.seriesTitle })}
-    class={READER_BUTTON}
+    class={isOnPhone
+      ? cn("flex items-center justify-center", NATIVE_TOP_BAR.barButton)
+      : READER_BUTTON}
   >
-    <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
+    {#if isOnPhone}
+      <Icon name={backIcon(platform)} />
+    {:else}
+      <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
+    {/if}
   </a>
-  {#if place !== null && seriesHref !== undefined}
+  {#if place !== null && seriesHref !== undefined && namesSeries}
     <a
       href={seriesHref}
       aria-hidden="true"
