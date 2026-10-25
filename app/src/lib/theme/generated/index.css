@@ -162,6 +162,7 @@
   --spacing-native-dialog-text-inline: var(--native-spacing-dialog-text-inline);
   --spacing-native-dialog-text-gap: var(--native-spacing-dialog-text-gap);
   --spacing-native-dialog-button: var(--native-spacing-dialog-button);
+  --spacing-native-action-group: var(--native-spacing-action-group);
   --color-native-sheet-handle: var(--native-color-sheet-handle);
   --radius-native-sheet: var(--native-radius-sheet);
   --spacing-native-sheet-medium: var(--native-spacing-sheet-medium);
