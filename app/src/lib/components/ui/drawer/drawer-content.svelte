@@ -10,7 +10,7 @@
   import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
-  import { sheetLook } from "./sheet.ts";
+  import { type SheetBackdrop, type SheetHeight, sheetLook } from "./sheet.ts";
   import { SheetDrag } from "./sheet-drag.svelte.ts";
 
   let {
@@ -18,11 +18,15 @@
     class: className,
     onDismiss,
     to = "body",
+    height = "fit",
+    backdrop = "dimmed",
     children,
     ...restProps
   }: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
     onDismiss: () => void;
     to?: PortalProps["to"];
+    height?: SheetHeight;
+    backdrop?: SheetBackdrop;
     children: Snippet;
   } = $props();
 
@@ -55,11 +59,12 @@
 
 <DialogPrimitive.Portal {to}>
   <DialogPrimitive.Overlay
-    class={[
+    class={cn(
       "fixed inset-none z-dialog bg-scrim",
       look.scrim,
+      look.backdrops[backdrop],
       !drag.isDragging && "fade-motion",
-    ]}
+    )}
     style={drag.isDragging
       ? `opacity: ${String(drag.backdropOpacity)}`
       : undefined}
@@ -70,6 +75,7 @@
     class={cn(
       "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:data-starting-style:translate-y-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       look.surface,
+      look.heights[height],
       !drag.isDragging &&
         "motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass",
       className,

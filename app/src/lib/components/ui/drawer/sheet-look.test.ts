@@ -9,6 +9,7 @@ import ConfirmDialogHarness from "#lib/page/ConfirmDialogHarness.svelte";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import DrawerHarness from "./DrawerHarness.svelte";
+import type { SheetBackdrop, SheetHeight } from "./sheet.ts";
 
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 820, height: 1180 };
@@ -31,10 +32,11 @@ async function sheetOn(
   platform: Platform,
   theme: string,
   callerClass?: string,
+  shape: { height?: SheetHeight; backdrop?: SheetBackdrop } = {},
 ): Promise<DrawnSheet> {
   document.documentElement.dataset.theme = theme;
   followCorePlatform(platform);
-  await render(DrawerHarness, { class: callerClass });
+  await render(DrawerHarness, { class: callerClass, ...shape });
   const sheet = page.getByRole("dialog", { name: "Volume 3" });
   await expect.element(sheet).toBeVisible();
   return {
@@ -174,4 +176,48 @@ test.each<[Platform, string]>([
   await expect.element(sheet).toBeVisible();
 
   expect(getComputedStyle(sheet.element()).borderTopLeftRadius).toBe(corner);
+});
+
+test.each<[Platform, SheetHeight, number]>([
+  ["ios", "medium", PHONE.height * 0.5],
+  ["ios", "large", PHONE.height * 0.92],
+  ["android", "large", PHONE.height - 48],
+])("opens %s's %s sheet %d tall", async (platform, height, tall) => {
+  await page.viewport(PHONE.width, PHONE.height);
+
+  const { sheet } = await sheetOn(platform, "light", undefined, { height });
+
+  expect(sheet.getBoundingClientRect().height).toBeCloseTo(tall, 0);
+});
+
+test("fits Android's medium sheet to its content", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+
+  const { sheet } = await sheetOn("android", "light", undefined, {
+    height: "medium",
+  });
+
+  expect(sheet.getBoundingClientRect().height).toBeLessThan(PHONE.height * 0.5);
+});
+
+test("keeps a large sheet to its content on an iPad", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const { sheet } = await sheetOn("ios", "light", undefined, {
+    height: "large",
+  });
+
+  expect(sheet.getBoundingClientRect().height).toBeLessThan(
+    TABLET.height * 0.5,
+  );
+});
+
+test("leaves the page undimmed behind a clear sheet", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+
+  const { scrim } = await sheetOn("ios", "light", undefined, {
+    backdrop: "clear",
+  });
+
+  expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0)");
 });
