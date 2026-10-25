@@ -8,8 +8,6 @@ export const NATIVE_TOP_BAR = {
     "text-native-bar-title leading-native-bar-title font-native-bar-title tracking-native-bar-title text-native-on-top-bar",
   barButton:
     "shrink-0 rounded-full bg-native-bar-button text-native-on-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios block-native-target inline-native-target",
-  barButtonGroup:
-    "flex shrink-0 items-center rounded-full bg-native-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios *:bg-transparent *:shadow-none *:backdrop-blur-none",
   edge: "border-be-(length:--native-spacing-hairline)",
   scrolled:
     "border-native-top-bar-scrolled-edge bg-native-top-bar-scrolled backdrop-blur-ios",

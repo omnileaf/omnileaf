@@ -21,6 +21,7 @@ import {
   tokenColour,
   viewportOf,
 } from "./fixtures.ts";
+import { openSortAndFilter } from "./library-controls.ts";
 import type { WireSeries } from "./series-catalog.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 
@@ -498,7 +499,7 @@ for (const { platform, weight, colour, isTouch } of [
       page,
     }) => {
       await openLibrary(page);
-      await filterButton(page).click();
+      await openSortAndFilter(page);
       const panel = isTouch
         ? page.getByRole("dialog", { name: "Sort and filter" })
         : filterAndSort(page);
@@ -867,7 +868,7 @@ for (const platform of ["android", "ios"] as const) {
 
     test("sizes Sort by and its direction for a finger", async ({ page }) => {
       await openLibrary(page);
-      await filterButton(page).click();
+      await openSortAndFilter(page);
       const panel = page.getByRole("dialog", { name: "Sort and filter" });
       await settle(panel);
 

@@ -132,7 +132,7 @@
     >
       {title}
     </span>
-    <div class={NATIVE_TOP_BAR.barButtonGroup}>
+    <div class="flex shrink-0 items-center gap-md">
       {@render actions()}
     </div>
   </div>

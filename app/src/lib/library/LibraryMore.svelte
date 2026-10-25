@@ -1,8 +1,10 @@
 <script lang="ts">
   import {
     Ellipsis,
+    ListFilter,
     Pencil,
     Settings,
+    SlidersHorizontal,
     SquareCheck,
     Tags,
   } from "@lucide/svelte";
@@ -23,10 +25,22 @@
   const ICON_SIZE = 20;
   const ITEM_ICON_SIZE = 16;
 
+  interface FoldedChoices {
+    readonly onSortAndFilter: () => void;
+    readonly onViewOptions: () => void;
+  }
+
   let {
     keepsLabels,
     onSelect,
-  }: { keepsLabels: boolean; onSelect: () => void } = $props();
+    folded,
+    trigger = $bindable(null),
+  }: {
+    keepsLabels: boolean;
+    onSelect: () => void;
+    folded?: FoldedChoices | undefined;
+    trigger?: HTMLElement | null;
+  } = $props();
 
   function openLibrarySettings(): void {
     void goto(resolve("/(app)/settings/library"));
@@ -36,7 +50,7 @@
 <DropdownMenu>
   <DropdownMenuTrigger>
     {#snippet child({ props: menuProps })}
-      <Tooltip label={m.library_more()} {...menuProps}>
+      <Tooltip bind:ref={trigger} label={m.library_more()} {...menuProps}>
         {#snippet child({ props })}
           <Button
             {...props}
@@ -51,6 +65,16 @@
     {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent to="main" align="end">
+    {#if folded !== undefined}
+      <DropdownMenuItem onSelect={folded.onSortAndFilter}>
+        <ListFilter size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {m.library_filter_and_sort()}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={folded.onViewOptions}>
+        <SlidersHorizontal size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {m.library_view_options()}
+      </DropdownMenuItem>
+    {/if}
     <DropdownMenuItem {onSelect}>
       <SquareCheck size={ITEM_ICON_SIZE} aria-hidden="true" />
       {m.library_select_series()}
