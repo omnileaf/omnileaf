@@ -364,6 +364,8 @@ export const TOKEN_THEME = {
     "native-sheet-handle-end",
     "native-sheet-handle-start",
     "native-sheet-handle-thickness",
+    "native-sheet-large",
+    "native-sheet-medium",
     "native-switch-inset",
     "native-switch-inset-on",
     "native-switch-knob",

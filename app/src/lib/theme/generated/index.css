@@ -164,6 +164,8 @@
   --spacing-native-dialog-button: var(--native-spacing-dialog-button);
   --color-native-sheet-handle: var(--native-color-sheet-handle);
   --radius-native-sheet: var(--native-radius-sheet);
+  --spacing-native-sheet-medium: var(--native-spacing-sheet-medium);
+  --spacing-native-sheet-large: var(--native-spacing-sheet-large);
   --spacing-native-sheet-handle: var(--native-spacing-sheet-handle);
   --spacing-native-sheet-handle-thickness: var(--native-spacing-sheet-handle-thickness);
   --spacing-native-sheet-handle-start: var(--native-spacing-sheet-handle-start);
