@@ -19,6 +19,8 @@ const ON_PAGE_14 = {
   startPage: 13,
 } as const;
 
+const TABLET = { width: 820, height: 1180 };
+
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
 
 function readsQuietly(platform: Platform | undefined): boolean {
@@ -70,6 +72,14 @@ test.describe("the reader on a phone", { tag: "@native" }, () => {
         page.getByRole("img", { name: "Page 14", exact: true }),
       ).toBeVisible();
       await expectNotice(notice(page, "Back on page 14"), platform);
+    });
+
+    test("still says where it opened on a tablet", async ({ page }) => {
+      await page.setViewportSize(TABLET);
+
+      await openBook(page);
+
+      await expect(notice(page, "Back on page 14")).toBeVisible();
     });
   });
 

@@ -19,7 +19,8 @@
     type Platform,
   } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone, isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -143,7 +144,8 @@
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
-  const readsQuietly = $derived(!isPointer(platform));
+  const width = new WindowWidth();
+  const readsQuietly = $derived(isPhone(platform, width.current));
   const reading = untrack(() =>
     seriesReadingDirection(
       book.series,
