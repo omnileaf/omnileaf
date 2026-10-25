@@ -1,8 +1,6 @@
 <script lang="ts">
   import { EyeOff } from "@lucide/svelte";
 
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 18;
@@ -11,27 +9,14 @@
     onPointer,
     showsHint = true,
   }: { onPointer: boolean; showsHint?: boolean } = $props();
-
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const isOnPhone = $derived(isPhone(platform, width.current));
 </script>
 
 <span
-  class={[
-    "absolute inset-none flex flex-col items-center justify-center gap-xs text-center",
-    isOnPhone
-      ? "bg-native-veil text-native-on-veil backdrop-blur-glass"
-      : "bg-veil text-foreground",
-  ]}
+  class="absolute inset-none flex flex-col items-center justify-center gap-xs bg-veil text-center text-foreground touch:max-medium:bg-native-veil touch:max-medium:text-native-on-veil"
 >
   <span
     aria-hidden="true"
-    class={[
-      "flex items-center justify-center",
-      !isOnPhone &&
-        "rounded-full bg-card shadow-card-rest block-veil-disc inline-veil-disc",
-    ]}
+    class="flex items-center justify-center rounded-full bg-card shadow-card-rest block-veil-disc inline-veil-disc touch:max-medium:bg-transparent touch:max-medium:shadow-none"
   >
     <EyeOff size={ICON_SIZE} />
   </span>

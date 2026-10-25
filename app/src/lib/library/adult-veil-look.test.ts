@@ -36,12 +36,11 @@ afterEach(() => {
 });
 
 test.each<Platform>(["ios", "android"])(
-  "dims and blurs the whole cover on %s phones, with white words and a plain mark",
+  "dims the whole cover on %s phones, with white words and a plain mark",
   async (platform) => {
     const { veil, mark } = await veilOn(platform, PHONE);
 
     expect(veil.color).toBe("rgb(255, 255, 255)");
-    expect(veil.backdropFilter).toContain("blur");
     expect(mark.backgroundColor).toBe("rgba(0, 0, 0, 0)");
   },
 );
