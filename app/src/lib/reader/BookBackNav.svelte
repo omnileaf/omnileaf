@@ -2,7 +2,7 @@
   import { ChevronLeft } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import { cn } from "#lib/components/cn.ts";
+  import { buttonClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
@@ -10,17 +10,17 @@
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
-  import type { BookPlace } from "#lib/ipc/bindings.ts";
+  import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
-  import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
 
-  let { place }: { place: BookPlace | null } = $props();
+  let { place, platform }: { place: BookPlace | null; platform: Platform } =
+    $props();
 
-  const platform = currentPlatform();
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
   const namesSeries = $derived(!(isOnPhone && platform === "ios"));
@@ -42,7 +42,7 @@
       ? m.reader_back_label()
       : m.reader_back_to_series({ series: place.seriesTitle })}
     class={isOnPhone
-      ? cn("flex items-center justify-center", NATIVE_TOP_BAR.barButton)
+      ? buttonClasses("header-control", platform, { width: width.current })
       : READER_BUTTON}
   >
     {#if isOnPhone}

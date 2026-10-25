@@ -55,6 +55,7 @@
   class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
   <BookBackNav
+    {platform}
     place={{
       id: book.id,
       title: book.title,
