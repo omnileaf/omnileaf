@@ -1,16 +1,15 @@
 import type { Page } from "@playwright/test";
 
-import { expect, MEDIUM_MIN_WIDTH, viewportOf } from "./fixtures.ts";
+import { expect } from "./fixtures.ts";
 
-/** An iPhone keeps Sort and filter and View options in the library's More menu rather than in its bar. */
 export async function foldsIntoMore(page: Page): Promise<boolean> {
-  await expect(
-    page.getByRole("main").getByRole("heading", { level: 1 }),
-  ).toBeVisible();
-  const platform = await page.evaluate(
-    () => document.documentElement.dataset.platform,
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
+  const bar = main.locator("[data-title-bar]");
+  return (
+    (await bar.count()) > 0 &&
+    (await bar.getByRole("button", { name: /^Sort and filter/ }).count()) === 0
   );
-  return platform === "ios" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
 }
 
 async function pressLibraryControl(page: Page, name: string): Promise<void> {

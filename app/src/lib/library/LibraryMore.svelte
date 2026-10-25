@@ -26,6 +26,7 @@
   const ITEM_ICON_SIZE = 16;
 
   interface FoldedChoices {
+    readonly filtersCount: number;
     readonly onSortAndFilter: () => void;
     readonly onViewOptions: () => void;
   }
@@ -68,7 +69,9 @@
     {#if folded !== undefined}
       <DropdownMenuItem onSelect={folded.onSortAndFilter}>
         <ListFilter size={ITEM_ICON_SIZE} aria-hidden="true" />
-        {m.library_filter_and_sort()}
+        {folded.filtersCount === 0
+          ? m.library_filter_and_sort()
+          : m.library_filter_and_sort_filtered({ count: folded.filtersCount })}
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={folded.onViewOptions}>
         <SlidersHorizontal size={ITEM_ICON_SIZE} aria-hidden="true" />

@@ -83,7 +83,8 @@
   import ViewOptions from "#lib/library/ViewOptions.svelte";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { isPhone, isPointer } from "#lib/page/platform.ts";
+  import { isPointer } from "#lib/page/platform.ts";
+  import { hasLargeTitle } from "#lib/page/top-bar.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -353,8 +354,7 @@
   let moreTrigger: HTMLElement | null = $state(null);
   const width = new WindowWidth();
   const foldsIntoMore = $derived(
-    data.appInfo.platform === "ios" &&
-      isPhone(data.appInfo.platform, width.current),
+    hasLargeTitle(data.appInfo.platform, width.current),
   );
   let headHeight = $state(0);
   const isDocked = $derived(docksFilter && isFilterOpen);
@@ -741,6 +741,7 @@
           bind:trigger={moreTrigger}
           folded={foldsIntoMore
             ? {
+                filtersCount: filtersOn(chosenListing.filter),
                 onSortAndFilter: () => {
                   isFilterOpen = true;
                   isCountWanted = true;
