@@ -132,3 +132,24 @@ test("opens Sort and filter and View options from More on an iPhone", async ({
     page.getByRole("dialog", { name: "View options" }),
   ).toBeVisible();
 });
+
+test("draws each of History's bar buttons on its own glass circle on an iPhone", async ({
+  page,
+}) => {
+  await page.goto("/history");
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "iPads keep the title beside its buttons",
+  );
+  const buttons = page
+    .locator("[data-title-bar]")
+    .getByRole("button")
+    .or(page.locator("[data-title-bar]").getByRole("link"));
+  await expect(buttons.first()).toBeVisible();
+
+  for (const button of await buttons.all()) {
+    await expect(button).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const box = await boxOf(button);
+    expect(box.width).toBeCloseTo(box.height, 0);
+  }
+});
