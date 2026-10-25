@@ -68,10 +68,14 @@
   {#snippet child({ props })}
     <Button
       {...props}
-      {...phone ?? { look: LOOKS[placement] }}
+      {...phone === undefined
+        ? { look: LOOKS[placement] }
+        : { variant: phone.variant, size: phone.size }}
       class={[
         "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
-        phone === undefined && ["font-semibold", PLACEMENTS[placement]],
+        phone === undefined
+          ? ["font-semibold", PLACEMENTS[placement]]
+          : phone.fit,
       ]}
     >
       <Plus size={ICON_SIZE} />

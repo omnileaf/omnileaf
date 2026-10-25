@@ -834,11 +834,14 @@
       >
         <Button
           type="button"
-          {...tryAgainPhone ?? { look: "outline" }}
+          {...tryAgainPhone === undefined
+            ? { look: "outline" }
+            : { variant: tryAgainPhone.variant, size: tryAgainPhone.size }}
           class={[
             "mbs-lg flex items-center gap-sm",
-            tryAgainPhone === undefined &&
-              "rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button",
+            tryAgainPhone === undefined
+              ? "rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+              : tryAgainPhone.fit,
           ]}
           onclick={() => {
             void library.load();

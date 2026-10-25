@@ -20,16 +20,29 @@ export type ActionRank = "main" | "other";
 export interface PhoneAction {
   readonly variant: ButtonVariant;
   readonly size: ButtonSize;
+  readonly fit: string;
 }
 
-type PhoneActions = Readonly<Record<ActionRank, PhoneAction>>;
+interface PhoneActions {
+  readonly group: string;
+  readonly fit: string;
+  readonly main: Omit<PhoneAction, "fit">;
+  readonly other: Omit<PhoneAction, "fit">;
+}
+
+const DIMMED_WHEN_DISABLED = "disabled:opacity-60";
 
 const PHONE_ACTIONS: Readonly<Record<Platform, PhoneActions | undefined>> = {
   ios: {
+    group:
+      "mx-auto inline-grid grid-flow-row justify-items-stretch gap-md max-inline-native-action-group",
+    fit: `whitespace-normal text-balance text-center ${DIMMED_WHEN_DISABLED}`,
     main: { variant: "primary", size: "large" },
     other: { variant: "secondary", size: "large" },
   },
   android: {
+    group: "flex flex-col items-center gap-sm",
+    fit: `max-inline-full ${DIMMED_WHEN_DISABLED}`,
     main: { variant: "primary", size: "regular" },
     other: { variant: "outline", size: "regular" },
   },
@@ -38,30 +51,22 @@ const PHONE_ACTIONS: Readonly<Record<Platform, PhoneActions | undefined>> = {
   windows: undefined,
 };
 
-const DIMMED_WHEN_DISABLED = "disabled:opacity-60";
-
-const PHONE_GROUPS = {
-  ios: {
-    group:
-      "mx-auto inline-grid grid-flow-row justify-items-stretch gap-md max-inline-native-action-group",
-    action: `whitespace-normal text-balance text-center ${DIMMED_WHEN_DISABLED}`,
-  },
-  android: {
-    group: "flex flex-col items-center gap-sm",
-    action: `max-inline-full ${DIMMED_WHEN_DISABLED}`,
-  },
-} satisfies Partial<Record<Platform, { group: string; action: string }>>;
+function phoneActionsOn(
+  platform: Platform,
+  width: WidthClass,
+): PhoneActions | undefined {
+  return isPhone(platform, width) ? PHONE_ACTIONS[platform] : undefined;
+}
 
 export function phoneAction(
   platform: Platform,
   width: WidthClass,
   rank: ActionRank,
 ): PhoneAction | undefined {
-  return isPhone(platform, width) ? PHONE_ACTIONS[platform]?.[rank] : undefined;
-}
-
-function classesOf(platform: Platform, action: PhoneAction): string {
-  return variantClasses(action.variant, action.size, false, platform);
+  const actions = phoneActionsOn(platform, width);
+  return actions === undefined
+    ? undefined
+    : { ...actions[rank], fit: actions.fit };
 }
 
 export function actionGroupLook(
@@ -69,14 +74,15 @@ export function actionGroupLook(
   width: WidthClass,
   today: ActionGroupLook,
 ): ActionGroupLook {
-  const actions = PHONE_ACTIONS[platform];
-  if (actions === undefined || !isPhone(platform, width)) {
+  const actions = phoneActionsOn(platform, width);
+  if (actions === undefined) {
     return today;
   }
-  const phone = platform === "ios" ? PHONE_GROUPS.ios : PHONE_GROUPS.android;
+  const classesOf = (rank: ActionRank): string =>
+    `${variantClasses(actions[rank].variant, actions[rank].size, false, platform)} ${actions.fit}`;
   return {
-    group: phone.group,
-    main: `${classesOf(platform, actions.main)} ${phone.action}`,
-    other: `${classesOf(platform, actions.other)} ${phone.action}`,
+    group: actions.group,
+    main: classesOf("main"),
+    other: classesOf("other"),
   };
 }
