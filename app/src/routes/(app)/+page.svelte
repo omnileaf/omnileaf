@@ -85,6 +85,7 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { hasLargeTitle } from "#lib/page/top-bar.ts";
+  import { phoneAction } from "#lib/page/action-group.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -353,6 +354,9 @@
   let isViewOpen = $state(false);
   let moreTrigger: HTMLElement | null = $state(null);
   const width = new WindowWidth();
+  const tryAgainPhone = $derived(
+    phoneAction(data.appInfo.platform, width.current, "other"),
+  );
   const foldsIntoMore = $derived(
     hasLargeTitle(data.appInfo.platform, width.current),
   );
@@ -830,8 +834,12 @@
       >
         <Button
           type="button"
-          look="outline"
-          class="mbs-lg flex items-center gap-sm rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+          {...tryAgainPhone ?? { look: "outline" }}
+          class={[
+            "mbs-lg flex items-center gap-sm",
+            tryAgainPhone === undefined &&
+              "rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button",
+          ]}
           onclick={() => {
             void library.load();
           }}
