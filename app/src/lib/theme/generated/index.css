@@ -146,6 +146,8 @@
   --color-native-on-cover-badge: var(--native-color-on-cover-badge);
   --radius-native-cover-badge: var(--native-radius-cover-badge);
   --spacing-native-cover-badge: var(--native-spacing-cover-badge);
+  --color-native-veil: var(--native-color-veil);
+  --color-native-on-veil: var(--native-color-on-veil);
   --spacing-native-downloaded-mark: var(--native-spacing-downloaded-mark);
   --color-native-cover-accent: var(--native-color-cover-accent);
   --color-native-on-cover-accent: var(--native-color-on-cover-accent);

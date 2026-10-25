@@ -91,6 +91,8 @@
   --native-radius-cover: 4px;
   --native-radius-cover-badge: var(--radius-label-badge);
   --native-spacing-cover-badge: var(--spacing-xl);
+  --native-color-veil: color-mix(in oklch, color-mix(in oklch, #000000 78%, var(--primary)) 68%, transparent);
+  --native-color-on-veil: #ffffff;
   --native-spacing-downloaded-mark: 6px;
   --native-radius-select: 2px;
   --native-spacing-select: 18px;
