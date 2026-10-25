@@ -104,3 +104,21 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("a damaged book, on a phone", { tag: "@native" }, () => {
+  test("centres its badge, title and count, as the phone's problem screens do", async ({
+    page,
+    platform,
+  }) => {
+    await openDamagedBook(page);
+    await expect(heading(page)).toBeFocused();
+
+    const alignment = await heading(page).evaluate(
+      (element) => getComputedStyle(element).textAlign,
+    );
+
+    expect(alignment).toBe(
+      platform === "ios" || platform === "android" ? "center" : "start",
+    );
+  });
+});
