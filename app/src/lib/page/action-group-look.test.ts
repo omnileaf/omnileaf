@@ -49,7 +49,13 @@ test("stacks iOS's actions as large capsules sharing the wider one's width, 12 a
 test("stacks Android's actions at their own width, centred, 8 apart", async () => {
   const [main, other] = await actionsOn("android", PHONE);
 
+  const group = page
+    .getByRole("group", { name: "Actions" })
+    .element()
+    .getBoundingClientRect();
+
   expect(main.height).toBeCloseTo(40, 0);
+  expect(main.width).toBeLessThan(group.width);
   expect(main.width).not.toBeCloseTo(other.width, 0);
   expect(main.left + main.width / 2).toBeCloseTo(
     other.left + other.width / 2,

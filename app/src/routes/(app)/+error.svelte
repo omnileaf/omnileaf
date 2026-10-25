@@ -16,7 +16,7 @@
   const NOT_FOUND = 404;
 
   const TODAYS_ACTIONS: ActionGroupLook = {
-    group: "",
+    group: "contents",
     main: "flex items-center justify-center rounded-control bg-accent px-xl font-bold text-on-accent transition-control min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed desktop:px-lg desktop:text-label desktop:min-block-pointer-button",
     other: "",
   };
@@ -29,9 +29,11 @@
 </script>
 
 {#snippet goToLibrary()}
-  <a href={resolve(SECTION_ROUTE_IDS.library)} class={actions.main}>
-    {m.problem_go_to_library()}
-  </a>
+  <div class={actions.group}>
+    <a href={resolve(SECTION_ROUTE_IDS.library)} class={actions.main}>
+      {m.problem_go_to_library()}
+    </a>
+  </div>
 {/snippet}
 
 {#if isMissing}

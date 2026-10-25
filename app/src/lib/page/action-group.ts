@@ -11,7 +11,9 @@ export interface ActionGroupLook {
   readonly other: string;
 }
 
-const WRAPPING_CAPSULE = "whitespace-normal text-balance text-center";
+const DIMMED_WHEN_DISABLED = "disabled:opacity-60";
+
+const WRAPPING_CAPSULE = `whitespace-normal text-balance text-center ${DIMMED_WHEN_DISABLED}`;
 
 const PHONE_ACTIONS: Readonly<Record<Platform, ActionGroupLook | undefined>> = {
   ios: {
@@ -22,8 +24,8 @@ const PHONE_ACTIONS: Readonly<Record<Platform, ActionGroupLook | undefined>> = {
   },
   android: {
     group: "flex flex-col items-center gap-sm",
-    main: `${variantClasses("primary", "regular", false, "android")} max-inline-full`,
-    other: `${variantClasses("outline", "regular", false, "android")} max-inline-full`,
+    main: `${variantClasses("primary", "regular", false, "android")} max-inline-full ${DIMMED_WHEN_DISABLED}`,
+    other: `${variantClasses("outline", "regular", false, "android")} max-inline-full ${DIMMED_WHEN_DISABLED}`,
   },
   linux: undefined,
   macos: undefined,
