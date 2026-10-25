@@ -189,3 +189,12 @@ test("keeps today's alert on an iPad", async () => {
 
   expect(getComputedStyle(alert).borderTopLeftRadius).toBe("10px");
 });
+
+test("keeps today's alert and dim on an Android phone", async () => {
+  const alert = await openAlertOn("android", PHONE);
+
+  expect(getComputedStyle(alert).borderTopLeftRadius).not.toBe("34px");
+  expect(getComputedStyle(overlay()).backgroundColor).toBe(
+    resolvedColour("--overlay", "backgroundColor"),
+  );
+});

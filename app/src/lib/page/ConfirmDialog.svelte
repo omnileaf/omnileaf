@@ -58,10 +58,11 @@
 >
   <ModalContent
     wideClass={DIALOG}
-    phoneLook={phoneLook === "dialog" ? "dialog" : "drawer"}
+    phoneLook={isAlert ? "dialog" : "drawer"}
     phoneClass={isAlert
       ? cn(DIALOG, alert.surface)
       : "gap-lg rounded-ss-confirm-sheet rounded-se-confirm-sheet px-sheet-inline pbe-page-bottom max-block-dialog-limit"}
+    phoneOverlayClass={alert.scrim}
     onDismiss={onCancel}
   >
     <div class="flex items-center gap-md">
