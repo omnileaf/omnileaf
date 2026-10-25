@@ -113,12 +113,13 @@ test.describe("a damaged book, on a phone", { tag: "@native" }, () => {
     await openDamagedBook(page);
     await expect(heading(page)).toBeFocused();
 
-    const alignment = await heading(page).evaluate(
-      (element) => getComputedStyle(element).textAlign,
+    const expected =
+      platform === "ios" || platform === "android" ? "center" : "start";
+    const count = page.getByText(
+      `${String(PAGE_COUNT)} of its ${String(PROMISED_PAGES)} pages can be read.`,
     );
 
-    expect(alignment).toBe(
-      platform === "ios" || platform === "android" ? "center" : "start",
-    );
+    await expect(heading(page)).toHaveCSS("text-align", expected);
+    await expect(count).toHaveCSS("text-align", expected);
   });
 });

@@ -207,6 +207,7 @@ test.describe(
       }
       await expect(back.locator(`[data-icon="${icon}"]`)).toHaveCount(1);
       const box = await back.boundingBox();
+      expect(box).not.toBeNull();
       expect(box?.height).toBeCloseTo(box?.width ?? 0, 0);
       if (platform === "ios") {
         await expect(seriesName).toBeHidden();
