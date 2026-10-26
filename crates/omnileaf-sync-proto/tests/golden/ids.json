@@ -65,6 +65,14 @@
     {
       "key": "source.local.v1",
       "id": "2f459482-bb88-8f49-b795-205dedca106b"
+    },
+    {
+      "key": "profile.default.v1",
+      "id": "767c5c13-abfd-8f4a-8c57-9d6a095c701d"
+    },
+    {
+      "key": "profile.shared.v1",
+      "id": "ec4608de-8243-8e4c-abb8-093f1404dc5a"
     }
   ]
 }

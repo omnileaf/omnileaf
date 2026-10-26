@@ -10,6 +10,8 @@ const LOCAL_BOOK_KEY: KeyName = KeyName::new("book.local.v1");
 const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
 const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
+const DEFAULT_PROFILE_KEY: KeyName = KeyName::new("profile.default.v1");
+const SHARED_PROFILE_KEY: KeyName = KeyName::new("profile.shared.v1");
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum KeyError {
@@ -75,6 +77,7 @@ entity_id!(BookId);
 entity_id!(SeriesId);
 entity_id!(CategoryId);
 entity_id!(SourceId);
+entity_id!(ProfileId);
 
 impl BookId {
     #[must_use]
@@ -98,6 +101,18 @@ impl CategoryId {
     pub fn from_name(name: &str) -> Result<Self, KeyError> {
         let key = NaturalKey::new(CATEGORY_KEY).part(norm(name).as_bytes())?;
         Ok(Self(key.id()))
+    }
+}
+
+impl ProfileId {
+    #[must_use]
+    pub fn default_profile() -> Self {
+        Self(NaturalKey::new(DEFAULT_PROFILE_KEY).id())
+    }
+
+    #[must_use]
+    pub fn shared() -> Self {
+        Self(NaturalKey::new(SHARED_PROFILE_KEY).id())
     }
 }
 

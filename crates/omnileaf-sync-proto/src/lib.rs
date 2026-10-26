@@ -11,7 +11,7 @@ pub use fingerprint::{
     Fingerprint, FingerprintError, FingerprintKind, FolderImage, FolderManifest, ImageEntry,
     RAW1_SAMPLE_COUNT,
 };
-pub use id::{BookId, CategoryId, IdError, KeyError, SeriesId, SourceId};
+pub use id::{BookId, CategoryId, IdError, KeyError, ProfileId, SeriesId, SourceId};
 pub use node::{NODE_ID_LENGTH, NodeId, NodeIdError};
 pub use norm::norm;
 pub use register::{MergeClass, Register, Stamp};
