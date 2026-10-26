@@ -11,7 +11,7 @@ mod speed_trial;
 mod strip;
 mod timing_budget;
 
-pub use archive::{ArchiveEntry, Compression, cbz};
+pub use archive::{ArchiveEntry, Compression, cbz, cut_inside_entry};
 pub use cb7::{Packing, cb7};
 pub use encoded_page::{
     ENCODED_PAGE_HEIGHT, ENCODED_PAGE_INK, ENCODED_PAGE_PAPER, ENCODED_PAGE_WIDTH,
