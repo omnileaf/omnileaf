@@ -29,7 +29,21 @@ const UNFINISHED_COPY: &str = "library.sqlite.partial";
 const WRITE_AHEAD_LOG: &str = "library.sqlite-wal";
 const WRITE_AHEAD_LOG_INDEX: &str = "library.sqlite-shm";
 const SET_ASIDE_DATABASE: &str = "library-moved.sqlite";
+const SET_ASIDE_WRITE_AHEAD_LOG: &str = "library-moved.sqlite-wal";
+const SET_ASIDE_WRITE_AHEAD_LOG_INDEX: &str = "library-moved.sqlite-shm";
 const SECOND_SET_ASIDE_DATABASE: &str = "library-moved-2.sqlite";
+const SIDECAR_SET_ASIDES: [(&str, &str); 2] = [
+    (WRITE_AHEAD_LOG, SET_ASIDE_WRITE_AHEAD_LOG),
+    (WRITE_AHEAD_LOG_INDEX, SET_ASIDE_WRITE_AHEAD_LOG_INDEX),
+];
+const DATABASE_SET_ASIDE: (&str, &str) = (DATABASE_FILE, SET_ASIDE_DATABASE);
+const SET_ASIDE_ONCE: [&str; 5] = [
+    SET_ASIDE_DATABASE,
+    SET_ASIDE_WRITE_AHEAD_LOG,
+    SET_ASIDE_WRITE_AHEAD_LOG_INDEX,
+    SECOND_SET_ASIDE_DATABASE,
+    DATABASE_FILE,
+];
 const BACKUP_FOLDER: &str = "backups";
 const OLDER_BACKUP: &str = "schema-v1.sqlite";
 const NEWER_BACKUP: &str = "schema-v2.sqlite";
@@ -167,6 +181,16 @@ async fn move_cut_short_out_of_a_locked_home(
     leave_sqlite_index_beside(old);
     lock(old);
     setting
+}
+
+fn rename_by_hand(folder: &Path, renames: &[(&str, &str)]) {
+    for (name, new_name) in renames {
+        fs::rename(folder.join(name), folder.join(new_name)).unwrap();
+    }
+}
+
+fn which_exist<const N: usize>(folder: &Path, names: [&str; N]) -> [bool; N] {
+    names.map(|name| folder.join(name).exists())
 }
 
 fn write_backup(home: &Path, name: &str, made_at_ms: u64) {
@@ -348,6 +372,46 @@ async fn sets_the_old_library_aside_on_the_next_launch_when_it_could_not_at_firs
 
     assert_eq!(home, other.path());
     assert!(!old.path().join(DATABASE_FILE).exists());
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn pairs_the_old_library_with_its_log_after_a_set_aside_cut_short_between_renames() {
+    let data = ScratchFolder::new("move-aside-sidecars-cut-data");
+    let old = ScratchFolder::new("move-aside-sidecars-cut-old");
+    let other = ScratchFolder::new("move-aside-sidecars-cut-other");
+    let setting = move_cut_short_out_of_a_locked_home(data.path(), old.path(), other.path()).await;
+    setting.home().await.unwrap();
+    unlock(old.path());
+    rename_by_hand(old.path(), &SIDECAR_SET_ASIDES);
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        which_exist(old.path(), SET_ASIDE_ONCE),
+        [true, true, true, false, false]
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn finishes_a_set_aside_cut_short_after_its_renames() {
+    let data = ScratchFolder::new("move-aside-renamed-data");
+    let old = ScratchFolder::new("move-aside-renamed-old");
+    let other = ScratchFolder::new("move-aside-renamed-other");
+    let setting = move_cut_short_out_of_a_locked_home(data.path(), old.path(), other.path()).await;
+    setting.home().await.unwrap();
+    unlock(old.path());
+    rename_by_hand(old.path(), &SIDECAR_SET_ASIDES);
+    rename_by_hand(old.path(), &[DATABASE_SET_ASIDE]);
+
+    let home = setting.home().await.unwrap();
+
+    assert_eq!(home, other.path());
+    assert_eq!(
+        which_exist(old.path(), SET_ASIDE_ONCE),
+        [true, true, true, false, false]
+    );
 }
 
 #[cfg(unix)]
