@@ -2,7 +2,6 @@ use std::{
     ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
-    time::SystemTime,
 };
 
 use omnileaf_db::library_copy::{copy_library, is_copy_of};
@@ -74,15 +73,12 @@ fn copy_backups(from: &Path, to: &Path) -> io::Result<()> {
 
 fn copy_backup(backup: &Path, copy: &Path) -> io::Result<()> {
     let unfinished = copy.with_extension(UNFINISHED_BACKUP_EXTENSION);
-    fs::copy(backup, &unfinished)?;
-    set_made_at(&unfinished, fs::metadata(backup)?.modified()?)?;
+    let mut original = fs::File::open(backup)?;
+    let mut written = fs::File::create(&unfinished)?;
+    io::copy(&mut original, &mut written)?;
+    written.set_modified(original.metadata()?.modified()?)?;
+    written.sync_all()?;
     fs::rename(&unfinished, copy)
-}
-
-fn set_made_at(copy: &Path, made_at: SystemTime) -> io::Result<()> {
-    let file = fs::File::options().write(true).open(copy)?;
-    file.set_modified(made_at)?;
-    file.sync_all()
 }
 
 #[tracing::instrument(skip_all, fields(folder = %folder.display()))]

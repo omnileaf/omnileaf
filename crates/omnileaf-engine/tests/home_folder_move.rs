@@ -182,6 +182,12 @@ fn write_backup(home: &Path, name: &str, made_at_ms: u64) {
         .unwrap();
 }
 
+fn make_read_only(path: &Path) {
+    let mut permissions = fs::metadata(path).unwrap().permissions();
+    permissions.set_readonly(true);
+    fs::set_permissions(path, permissions).unwrap();
+}
+
 fn write_backups(home: &Path) {
     write_backup(home, OLDER_BACKUP, OLDER_BACKUP_AT_MS);
     write_backup(home, NEWER_BACKUP, NEWER_BACKUP_AT_MS);
@@ -461,6 +467,24 @@ async fn copies_the_finished_backups_into_the_new_home() {
     let other = ScratchFolder::new("move-backups-other");
     library_read_in(data.path()).await;
     write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        backups_in(other.path()),
+        [backup(OLDER_BACKUP), backup(NEWER_BACKUP)]
+    );
+}
+
+#[tokio::test]
+async fn copies_a_read_only_backup_into_the_new_home() {
+    let data = ScratchFolder::new("move-backups-read-only-data");
+    let other = ScratchFolder::new("move-backups-read-only-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    make_read_only(&data.path().join(BACKUP_FOLDER).join(OLDER_BACKUP));
     let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
     setting.move_to(other.path()).await.unwrap();
 
