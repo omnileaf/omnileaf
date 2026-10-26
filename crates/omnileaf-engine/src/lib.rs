@@ -20,6 +20,7 @@ mod file_type;
 mod folder_watch;
 mod found_library;
 mod history;
+mod home_folder_setting;
 mod ipc_brand;
 mod lane;
 mod library;
@@ -90,6 +91,7 @@ pub use history::{
     BookSessions, HistoryCursor, HistoryEntry, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LocalDay, ReadTo, ReadingDay, ReadingSummary, ReadingWeek,
 };
+pub use home_folder_setting::{HomeChoice, HomeFolderError, HomeFolderSetting};
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_book::{
