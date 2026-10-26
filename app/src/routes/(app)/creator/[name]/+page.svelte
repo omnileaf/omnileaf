@@ -4,10 +4,7 @@
 
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
-  import {
-    buttonClasses,
-    variantClasses,
-  } from "#lib/components/ui/button/looks.ts";
+  import { buttonClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
@@ -20,7 +17,10 @@
   import { coverTileLook } from "#lib/library/cover-tile.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { phoneAction } from "#lib/page/action-group.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
   import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import PageHeading from "#lib/page/PageHeading.svelte";
@@ -38,6 +38,11 @@
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
   const BACK_ICON_SIZE = 20;
   const ICON_SIZE = 16;
+  const TODAYS_ACTIONS: ActionGroupLook = {
+    group: "contents",
+    main: "",
+    other: SERIES_CONTROL,
+  };
 
   let { data }: PageProps = $props();
 
@@ -47,19 +52,10 @@
   const platform = $derived(data.appInfo.platform);
   const isOnPhone = $derived(isPhone(platform, width.current));
   const tile = $derived(coverTileLook(platform));
-  const libraryAction = $derived.by(() => {
-    const phone = phoneAction(platform, width.current, "other");
-    return phone === undefined
-      ? cn(SERIES_CONTROL, "mbs-lg")
-      : cn(
-          variantClasses(phone.variant, phone.size, false, platform),
-          phone.fit,
-          "mbs-lg",
-        );
-  });
-  const hasToolbar = $derived(
-    DESKTOPS.includes(data.appInfo.platform) && isWide.current,
+  const actions = $derived(
+    actionGroupLook(platform, width.current, TODAYS_ACTIONS),
   );
+  const hasToolbar = $derived(DESKTOPS.includes(platform) && isWide.current);
   const look = $derived(screenshotMode.isOn ? standInLook : realLook);
   const back = $derived(
     data.from === undefined
@@ -206,10 +202,12 @@
       title={m.creator_empty({ name: data.name })}
       body={m.creator_empty_body()}
     >
-      <a href={resolve("/(app)")} class={libraryAction}>
-        <Library size={ICON_SIZE} aria-hidden="true" />
-        {m.series_back_label()}
-      </a>
+      <div class={actions.group}>
+        <a href={resolve("/(app)")} class={cn(actions.other, "mbs-lg")}>
+          <Library size={ICON_SIZE} aria-hidden="true" />
+          {m.series_back_label()}
+        </a>
+      </div>
     </EmptyState>
   {/if}
 </div>
