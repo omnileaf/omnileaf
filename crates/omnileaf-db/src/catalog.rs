@@ -32,7 +32,7 @@ pub(crate) mod stored_id;
 
 pub(crate) use book::series_of_book;
 pub use book::{NewBook, add_book, record_page_count, remove_books_without_files};
-pub use book_details::{AgeRating, BookDetails, ReadingDirection};
+pub use book_details::{AgeRating, BookDetails, BookPerson, PersonRole, ReadingDirection};
 pub use book_to_read::{BookToRead, book_to_read};
 pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};
