@@ -105,7 +105,7 @@
     scheduledRescansSettingForDocument(),
   );
   setSkipUpNextSetting(skipUpNextSettingForDocument());
-  setSmartFeatures(smartFeaturesForDocument());
+  const smartFeatures = setSmartFeatures(smartFeaturesForDocument());
   setOpensOnSetting(opensOnSettingForDocument());
   setTimeFormatSetting(timeFormatSettingForDocument());
   const animations = setAnimationsSetting(animationsSettingForDocument());
@@ -166,6 +166,12 @@
   $effect(() => {
     if (data.libraryProblem === null) {
       void commands.setBookOpen(bookPresence.isBeingRead);
+    }
+  });
+
+  $effect(() => {
+    if (data.libraryProblem === null) {
+      void commands.setLearnsReadingSpeed(smartFeatures.learnsReadingSpeed);
     }
   });
 
