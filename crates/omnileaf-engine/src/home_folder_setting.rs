@@ -10,7 +10,7 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     FoundLibrary, LibraryError, describe_error, found_library_in,
-    home_move::{finish_move, prepare_move, set_aside_library_in},
+    home_move::{finish_move, prepare_move, set_aside_library_in, sync_folder},
     library::DATABASE_FILE,
 };
 
@@ -269,14 +269,6 @@ fn holds_a_library(home: &Path) -> Result<bool, HomeFolderError> {
             source,
         })
     })
-}
-
-/// POSIX makes a rename durable only once the folder holding it is synced, and Windows won't open a folder as a file to sync it.
-fn sync_folder(folder: &Path) -> io::Result<()> {
-    if cfg!(unix) {
-        fs::File::open(folder)?.sync_all()?;
-    }
-    Ok(())
 }
 
 fn write_whole(path: &Path, text: &[u8]) -> io::Result<()> {

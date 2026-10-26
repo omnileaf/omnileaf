@@ -107,6 +107,14 @@ fn set_aside_name(number: u32) -> String {
     }
 }
 
+/// POSIX makes a rename durable only once the folder holding it is synced, and Windows won't open a folder as a file to sync it.
+pub(crate) fn sync_folder(folder: &Path) -> io::Result<()> {
+    if cfg!(unix) {
+        fs::File::open(folder)?.sync_all()?;
+    }
+    Ok(())
+}
+
 fn suffixed(path: &Path, suffix: &str) -> PathBuf {
     let mut name = OsString::from(path);
     name.push(suffix);
