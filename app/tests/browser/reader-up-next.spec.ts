@@ -179,6 +179,16 @@ test("keeps the stats in three columns at the largest text, wrapping inside them
   ).toBe(true);
 });
 
+test("lets the title be scrolled to at the largest text", async ({ page }) => {
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await openBook(page);
+  await turnPastTheEnd(page);
+
+  await upNext(page).scrollIntoViewIfNeeded();
+
+  expect((await boxOf(upNext(page))).y).toBeGreaterThanOrEqual(0);
+});
+
 test.describe("a book whose reading isn't timed", () => {
   test.use({
     backend: {

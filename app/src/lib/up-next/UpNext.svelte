@@ -150,7 +150,7 @@
     </Breadcrumb>
   </nav>
   <div
-    class="flex flex-1 items-center justify-center overflow-y-auto px-lg py-xl"
+    class="flex flex-1 items-center-safe justify-center overflow-y-auto px-lg py-xl"
   >
     <section
       aria-labelledby="{id}-heading"

@@ -37,7 +37,7 @@
       <p class="text-title font-semibold wrap-break-word tabular-nums">
         {value}
       </p>
-      <p class="text-caption text-muted">{label}</p>
+      <p class="text-caption wrap-break-word text-muted">{label}</p>
     </div>
   {/each}
 </Card>
