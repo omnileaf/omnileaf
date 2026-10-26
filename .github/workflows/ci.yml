@@ -457,6 +457,15 @@ jobs:
           SHARD: ${{ matrix.shard }}/${{ matrix.of }}
         run: node tests/write-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.txt"
 
+      - name: Check that the test list runs exactly this shard's tests
+        if: needs.changes.outputs.app != 'false'
+        working-directory: app
+        env:
+          SHARD: ${{ matrix.shard }}/${{ matrix.of }}
+        run: |
+          pnpm exec playwright test --list --reporter=json --test-list "$RUNNER_TEMP/shard-tests.txt" > "$RUNNER_TEMP/shard-tests.json"
+          node tests/check-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.json"
+
       - name: Run the app's browser tests
         id: app-browser-tests
         if: needs.changes.outputs.app != 'false'
