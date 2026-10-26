@@ -4,19 +4,29 @@
 
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
+  import { buttonClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbPage,
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
+  import { coverTileLook } from "#lib/library/cover-tile.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
+  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
+  import PageHeading from "#lib/page/PageHeading.svelte";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { isPhone } from "#lib/page/platform.ts";
+  import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { roleName } from "#lib/series/creator-role.ts";
@@ -28,14 +38,24 @@
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
   const BACK_ICON_SIZE = 20;
   const ICON_SIZE = 16;
+  const TODAYS_ACTIONS: ActionGroupLook = {
+    group: "contents",
+    main: "",
+    other: SERIES_CONTROL,
+  };
 
   let { data }: PageProps = $props();
 
   const screenshotMode = getScreenshotMode();
   const isWide = new MediaQuery(EXPANDED_QUERY);
-  const hasToolbar = $derived(
-    DESKTOPS.includes(data.appInfo.platform) && isWide.current,
+  const width = new WindowWidth();
+  const platform = $derived(data.appInfo.platform);
+  const isOnPhone = $derived(isPhone(platform, width.current));
+  const tile = $derived(coverTileLook(platform));
+  const actions = $derived(
+    actionGroupLook(platform, width.current, TODAYS_ACTIONS),
   );
+  const hasToolbar = $derived(DESKTOPS.includes(platform) && isWide.current);
   const look = $derived(screenshotMode.isOn ? standInLook : realLook);
   const back = $derived(
     data.from === undefined
@@ -87,19 +107,36 @@
   </PageToolbar>
 {:else}
   <header class="-ms-page-start -mbs-title-gap ps-series-bar-start pbe-xs">
-    <a
-      href={back.href}
-      data-back-link
-      aria-label={back.label}
-      class={cn(
-        "flex items-center justify-center gap-2xs rounded-full",
-        SERIES_CHIP,
-        "ios:ps-sm ios:pe-md ios:inline-auto ios:max-inline-creator-crumb",
-      )}
-    >
-      <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" class="shrink-0" />
-      <span class="hidden truncate text-body ios:inline">{back.short}</span>
-    </a>
+    {#if isOnPhone}
+      <a
+        href={back.href}
+        data-back-link
+        aria-label={back.label}
+        class={buttonClasses("header-control", platform, {
+          width: width.current,
+        })}
+      >
+        <Icon name={backIcon(platform)} />
+      </a>
+    {:else}
+      <a
+        href={back.href}
+        data-back-link
+        aria-label={back.label}
+        class={cn(
+          "flex items-center justify-center gap-2xs rounded-full",
+          SERIES_CHIP,
+          "ios:ps-sm ios:pe-md ios:inline-auto ios:max-inline-creator-crumb",
+        )}
+      >
+        <ChevronLeft
+          size={BACK_ICON_SIZE}
+          aria-hidden="true"
+          class="shrink-0"
+        />
+        <span class="hidden truncate text-body ios:inline">{back.short}</span>
+      </a>
+    {/if}
   </header>
 {/if}
 <div
@@ -109,12 +146,16 @@
   ]}
 >
   <div class="flex flex-col gap-2xs">
-    <h1
-      tabindex="-1"
-      class="text-page-title font-bold tracking-tight wrap-break-word expanded:text-series-title"
-    >
-      {data.name}
-    </h1>
+    {#if isOnPhone}
+      <PageHeading title={data.name} size="large" />
+    {:else}
+      <h1
+        tabindex="-1"
+        class="text-page-title font-bold tracking-tight wrap-break-word expanded:text-series-title"
+      >
+        {data.name}
+      </h1>
+    {/if}
     {#if data.series.length > 0}
       <p class="text-small text-muted">
         {m.creator_series_count({ count: data.series.length })}
@@ -134,7 +175,10 @@
             class="flex flex-col gap-icon-gap expanded:gap-sm"
           >
             <span
-              class="relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip"
+              class={cn(
+                "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+                tile.cover,
+              )}
             >
               <CoverImage cover={shown.cover} {coverUrl} />
             </span>
@@ -158,10 +202,12 @@
       title={m.creator_empty({ name: data.name })}
       body={m.creator_empty_body()}
     >
-      <a href={resolve("/(app)")} class={cn(SERIES_CONTROL, "mbs-lg")}>
-        <Library size={ICON_SIZE} aria-hidden="true" />
-        {m.series_back_label()}
-      </a>
+      <div class={actions.group}>
+        <a href={resolve("/(app)")} class={cn(actions.other, "mbs-lg")}>
+          <Library size={ICON_SIZE} aria-hidden="true" />
+          {m.series_back_label()}
+        </a>
+      </div>
     </EmptyState>
   {/if}
 </div>
