@@ -29,7 +29,11 @@ const IOS_BAR_BUTTON_PX = 44;
 const ANDROID_TARGET_PX = 48;
 const ANDROID_BUTTON_PX = 40;
 const ANDROID_ICON_PX = 24;
+const ANDROID_ROW_PX = 56;
+const ANDROID_SHEET_TITLE = { size: "22px", leading: "28px", weight: "400" };
 const READER_THEME = "dark";
+const BACK_TO_LIBRARY = "Back to the library";
+const MORE_ROWS = ["Mark read", "Start over", "Show the file", BACK_TO_LIBRARY];
 const NO_BLUR = "none";
 const CLEAR = "rgba(0, 0, 0, 0)";
 const BACK_TO_SERIES = `Back to ${BOOK_SERIES_TITLE}`;
@@ -40,6 +44,10 @@ const CAPSULE_INLINE_PADDING = "12px";
 const BESIDE_CAPSULE_PX = 16;
 const IOS_MENU_MAX_PX = 320;
 const MIRRORED = "-1 1";
+const CONTROLS_HIDE_AFTER_MS = 3000;
+const FRAME_MS = 16;
+const CONTROLS_PAUSE_AHEAD_MS = 500;
+const SHEET_SLIDE_MS = 500;
 const LONG_BOOK_TITLE =
   "Volume 3 · Letters from Across the Northern Sea, Written Every Winter by the Lighthouse Keeper";
 const STRIP_PAGE_SIZE = { width: 800, height: 2400 };
@@ -66,6 +74,23 @@ function readerActions(page: Page): Locator {
 
 function quickSettings(page: Page): Locator {
   return page.getByRole("group", { name: "Quick settings" });
+}
+
+function controlBars(page: Page): Locator {
+  return page.locator("main > header, main > div:has(input[type=range])");
+}
+
+async function expectControlsHidden(page: Page): Promise<void> {
+  for (const bar of await controlBars(page).all()) {
+    await expect(bar).toHaveCSS("opacity", "0");
+  }
+}
+
+async function openBookBeforeControlsHide(page: Page): Promise<void> {
+  await page.clock.install();
+  await openBook(page);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + CONTROLS_PAUSE_AHEAD_MS);
 }
 
 function spillsOf(within: Locator): Promise<string[]> {
@@ -601,6 +626,84 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     );
   });
 
+  test("opens Android's More as a sheet of 56 dp rows under the book, its series and page", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+
+    await expect(sheet).toContainText(`${BOOK_SERIES_TITLE} · ${FIRST_PAGE}`);
+    const heading = sheet.getByRole("heading", { name: BOOK_TITLE });
+    await expect(heading).toHaveCSS("font-size", ANDROID_SHEET_TITLE.size);
+    await expect(heading).toHaveCSS("line-height", ANDROID_SHEET_TITLE.leading);
+    await expect(heading).toHaveCSS("font-weight", ANDROID_SHEET_TITLE.weight);
+    for (const name of MORE_ROWS) {
+      const row = sheet.getByRole(
+        name === BACK_TO_LIBRARY ? "link" : "button",
+        {
+          name,
+        },
+      );
+      expect((await boxOf(row)).height).toBe(ANDROID_ROW_PX);
+    }
+    const rule = sheet.getByRole("separator");
+    await expect(rule).toHaveCount(1);
+    await expect(rule).toHaveCSS(
+      "border-top-color",
+      await tokenColour(page, "--native-color-menu-rule", READER_THEME),
+    );
+  });
+
+  test("gives the Android phone's coming-soon More row no pressed look", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+    const row = sheet.getByRole("button", { name: "Show the file" });
+    const box = await boxOf(row);
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await settle(row);
+
+    await expect(row).toHaveCSS("background-color", CLEAR);
+    await page.mouse.up();
+  });
+
+  test("names the Android phone's coming-soon More row in a tooltip once a finger is held on it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+    const row = sheet.getByRole("button", { name: "Show the file" });
+
+    await holdFingerOn(page, row);
+
+    await expect(comingSoonTooltip(page, "Show the file")).toBeVisible();
+  });
+
   test("centres the iPhone's Light title over its sheet in a longer language", async ({
     page,
     platform,
@@ -665,6 +768,64 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     ]);
 
     expect(overlaps).toEqual([]);
+  });
+
+  test("keeps Android's bars up on More once Escape closes its sheet, and lets them hide when focus leaves", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBookBeforeControlsHide(page);
+    const more = topBar(page).getByRole("button", { name: "More" });
+    await more.click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await expect(sheet).toBeVisible();
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet.locator(":focus")).toBeAttached();
+    await page.mouse.move(
+      viewportOf(page).width / 2,
+      (await boxOf(sheet)).y / 2,
+    );
+
+    await page.keyboard.press("Escape");
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet).toBeHidden();
+    await expect(more).toBeFocused();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+    for (const bar of await controlBars(page).all()) {
+      await expect(bar).not.toHaveClass(/opacity-0/);
+    }
+    await more.blur();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+
+    await expectControlsHidden(page);
+  });
+
+  test("lets Android's bars hide again once More's sheet closes with a tap beside it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBookBeforeControlsHide(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await expect(sheet).toBeVisible();
+
+    await page.mouse.click(
+      viewportOf(page).width / 2,
+      (await boxOf(sheet)).y / 2,
+    );
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet).toBeHidden();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+
+    await expectControlsHidden(page);
   });
 
   test("keeps one glass bar and More's sheet on a tablet", async ({ page }) => {

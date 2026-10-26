@@ -6,10 +6,10 @@ const ABOUT_ROW =
 
 export const ITEM_LOOKS = {
   row: [
-    "flex inline-full items-center gap-native-row-gap text-start transition-control hover:bg-hover active:bg-native-row-selected data-picked:bg-native-row-selected py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",
+    "flex inline-full items-center gap-native-row-gap text-start transition-control not-aria-disabled:hover:bg-hover not-aria-disabled:active:bg-native-row-selected data-picked:bg-native-row-selected py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",
     "**:data-[slot=item-title]:text-native-row-title **:data-[slot=item-title]:leading-native-row-title **:data-[slot=item-title]:font-native-row-title **:data-[slot=item-title]:tracking-native-row-title",
     "**:data-[slot=item-description]:text-native-row-subtitle **:data-[slot=item-description]:leading-native-row-subtitle **:data-[slot=item-description]:tracking-native-row-subtitle",
-    "active:[--secondary-text:var(--native-color-on-row-selected-muted)] data-picked:[--secondary-text:var(--native-color-on-row-selected-muted)]",
+    "not-aria-disabled:active:[--secondary-text:var(--native-color-on-row-selected-muted)] data-picked:[--secondary-text:var(--native-color-on-row-selected-muted)]",
   ].join(" "),
   folder:
     "flex items-center gap-md py-sm ps-md pe-sm min-block-row expanded:min-block-row-compact",
@@ -21,6 +21,8 @@ export const ITEM_LOOKS = {
     "flex flex-wrap items-center gap-md py-sm ps-list-row pe-sm min-block-4xl",
   "history-phone":
     "flex flex-1 items-center gap-md ps-md pe-xs transition-control min-inline-none min-block-history-row hover:bg-hover active:bg-pressed desktop:large:hidden",
+  "reader-sheet-action":
+    "flex items-center gap-md rounded-control px-md text-body font-medium min-block-touch-target not-aria-disabled:hover:bg-hover",
   "history-desktop":
     "hidden flex-1 items-center gap-lg min-inline-none min-block-history-row-wide desktop:large:flex",
 } satisfies Record<string, string>;

@@ -21,6 +21,8 @@
     DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
+  import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
+  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
@@ -33,8 +35,21 @@
   import ReaderIcon from "./ReaderIcon.svelte";
 
   const ITEM_ICON_SIZE = 16;
-  const SHEET_ACTION =
-    "flex items-center gap-md rounded-control px-md text-body font-medium min-block-touch-target hover:bg-hover";
+  const SHEET = {
+    heading: "text-title font-bold",
+    list: "flex flex-col px-sm pbs-sm pbe-sheet-bottom",
+    row: "reader-sheet-action",
+    title: "font-medium",
+    rule: "my-xs border-border",
+  } as const;
+  const PHONE_SHEET = {
+    heading:
+      "text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title",
+    list: "flex flex-col pbs-sm pbe-sheet-bottom",
+    row: "row",
+    title: "",
+    rule: "mx-lg my-sm border-native-menu-rule",
+  } as const;
 
   let {
     title,
@@ -61,6 +76,7 @@
   const floats = $derived(chrome.floats);
   const isOnPhone = $derived(chrome.isOnPhone);
   const button = $derived(readerButton(platform, chrome.width));
+  const sheet = $derived(isOnPhone ? PHONE_SHEET : SHEET);
   const heading = $derived(moreHeading(title, seriesTitle));
   const headingId = $props.id();
   let isSheetOpen = $state(false);
@@ -165,45 +181,96 @@
       size={READER_ICON_SIZE}
     />
   </Button>
-  <Dialog.Root bind:open={isSheetOpen}>
+  <Dialog.Root
+    open={isSheetOpen}
+    onOpenChange={(isNowOpen: boolean) => {
+      if (!isNowOpen) {
+        closeSheet();
+      }
+    }}
+  >
     <DrawerContent onDismiss={closeSheet} to="main">
-      <DialogTitle class="px-sheet-inline pbs-sheet-gap text-title font-bold">
-        {title}
-      </DialogTitle>
-      <div class="flex flex-col px-sm pbs-sm pbe-sheet-bottom">
-        <Button
-          type="button"
-          look="row"
-          class={SHEET_ACTION}
-          onclick={() => {
-            closeSheet();
-            onMarkRead();
-          }}
+      <div class="flex flex-col px-sheet-inline pbs-sheet-gap">
+        <DialogTitle class={sheet.heading}>{title}</DialogTitle>
+        {#if isOnPhone}
+          <p class="text-small text-muted">
+            {m.reader_book_at_page({
+              title: seriesTitle,
+              page: pageNumber,
+              count: pageCount,
+            })}
+          </p>
+        {/if}
+      </div>
+      <div class={sheet.list}>
+        <Item look={sheet.row}>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="button"
+              look="row"
+              onclick={() => {
+                closeSheet();
+                onMarkRead();
+              }}
+            >
+              <ReaderIcon
+                name="eye"
+                fallback={Eye}
+                isKit={isOnPhone}
+                size={READER_ICON_SIZE}
+              />
+              <ItemTitle class={sheet.title}>{m.reader_mark_read()}</ItemTitle>
+            </Button>
+          {/snippet}
+        </Item>
+        <Item look={sheet.row}>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="button"
+              look="row"
+              onclick={() => {
+                closeSheet();
+                onStartOver();
+              }}
+            >
+              <ReaderIcon
+                name="rotate-ccw"
+                fallback={RotateCcw}
+                isKit={isOnPhone}
+                size={READER_ICON_SIZE}
+              />
+              <ItemTitle class={sheet.title}>{m.reader_start_over()}</ItemTitle>
+            </Button>
+          {/snippet}
+        </Item>
+        <ComingSoon
+          label={showFile}
+          class={cn(ITEM_LOOKS[sheet.row], "text-muted")}
         >
-          <Eye size={READER_ICON_SIZE} aria-hidden="true" />
-          {m.reader_mark_read()}
-        </Button>
-        <Button
-          type="button"
-          look="row"
-          class={SHEET_ACTION}
-          onclick={() => {
-            closeSheet();
-            onStartOver();
-          }}
-        >
-          <RotateCcw size={READER_ICON_SIZE} aria-hidden="true" />
-          {m.reader_start_over()}
-        </Button>
-        <ComingSoon label={showFile} class={cn(SHEET_ACTION, "text-muted")}>
-          <FolderOpen size={READER_ICON_SIZE} aria-hidden="true" />
-          {showFile}
+          <ReaderIcon
+            name="folder-open"
+            fallback={FolderOpen}
+            isKit={isOnPhone}
+            size={READER_ICON_SIZE}
+          />
+          <ItemTitle class={sheet.title}>{showFile}</ItemTitle>
         </ComingSoon>
-        <hr class="my-xs border-border" />
-        <a href={resolve("/(app)")} class={SHEET_ACTION}>
-          <Library size={READER_ICON_SIZE} aria-hidden="true" />
-          {m.reader_back_label()}
-        </a>
+        <hr class={sheet.rule} />
+        <Item look={sheet.row}>
+          {#snippet child({ props })}
+            <a {...props} href={resolve("/(app)")}>
+              <ReaderIcon
+                name="library"
+                fallback={Library}
+                isKit={isOnPhone}
+                size={READER_ICON_SIZE}
+              />
+              <ItemTitle class={sheet.title}>{m.reader_back_label()}</ItemTitle>
+            </a>
+          {/snippet}
+        </Item>
       </div>
     </DrawerContent>
   </Dialog.Root>
