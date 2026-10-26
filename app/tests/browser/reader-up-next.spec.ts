@@ -64,7 +64,10 @@ const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } satisfies Record<
   PhonePlatform,
   number
 >;
-const SUBTITLE_WEIGHT = "400";
+const PHONE_LABEL_TYPE = {
+  ios: { size: "15px", tracking: "-0.23px", weight: "590" },
+  android: { size: "14px", tracking: "0.1px", weight: "500" },
+} satisfies Record<PhonePlatform, PhoneType>;
 const NO_SPACES = "One_Piece_Vol_105_Digital_Colored_Edition";
 const TABLET_TITLE_SIZE = "20px";
 const TABLET_READ_LOOK = {
@@ -401,9 +404,24 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
 
     await expectType(upNext(page), PHONE_TITLE_TYPE[platform]);
     await expectType(figure(page), PHONE_FIGURE_TYPE[platform]);
-    await expect(
+  });
+
+  test("sets the Up next label in the phone's own type", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+
+    await expectType(
       page.getByRole("heading", { level: 2, name: "Up next" }),
-    ).toHaveCSS("font-weight", SUBTITLE_WEIGHT);
+      PHONE_LABEL_TYPE[platform],
+    );
   });
 
   test("centres itself in the space under the way back when it fits", async ({

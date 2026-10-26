@@ -253,7 +253,7 @@
           <CardHeader class="px-lg expanded:px-xl">
             <CardTitle
               class={isOnPhone
-                ? `${ROW_SUBTITLE_TYPE} font-regular text-muted`
+                ? "text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label text-muted"
                 : "text-body expanded:text-title"}
               >{m.reader_up_next()}</CardTitle
             >
