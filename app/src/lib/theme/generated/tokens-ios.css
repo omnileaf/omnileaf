@@ -148,6 +148,15 @@
   --native-spacing-notice-inline: 8px;
   --native-spacing-notice-top: 54px;
   --native-spacing-continue-cover: 72px;
+  --native-text-end-title: calc(1.375rem * var(--text-scale));
+  --native-leading-end-title: calc(28 / 22);
+  --native-weight-end-title: 700;
+  --native-text-end-stat: calc(1.25rem * var(--text-scale));
+  --native-leading-end-stat: calc(25 / 20);
+  --native-weight-end-stat: 590;
+  --native-text-end-book: calc(1.25rem * var(--text-scale));
+  --native-leading-end-book: calc(25 / 20);
+  --native-weight-end-book: 600;
 }
 
 :root[data-platform="ios"],

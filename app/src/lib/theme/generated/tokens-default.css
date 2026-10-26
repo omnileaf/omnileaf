@@ -221,4 +221,13 @@
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;
   --native-spacing-continue-cover: 0px;
+  --native-text-end-title: var(--text-title);
+  --native-leading-end-title: var(--text-title--line-height);
+  --native-weight-end-title: var(--font-weight-semibold);
+  --native-text-end-stat: var(--text-title);
+  --native-leading-end-stat: var(--text-title--line-height);
+  --native-weight-end-stat: var(--font-weight-semibold);
+  --native-text-end-book: var(--text-group-title);
+  --native-leading-end-book: var(--text-group-title--line-height);
+  --native-weight-end-book: var(--font-weight-semibold);
 }

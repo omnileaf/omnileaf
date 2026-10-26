@@ -1397,6 +1397,10 @@
   grid-template-columns: auto minmax(0, 1fr);
 }
 
+@utility grid-cols-stats {
+  grid-template-columns: repeat(3, minmax(0, auto));
+}
+
 @utility series-band-fade-across {
   mask-image: linear-gradient(to right, black 65%, transparent);
 }

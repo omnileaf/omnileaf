@@ -25,6 +25,7 @@
     CardHeader,
     CardTitle,
   } from "#lib/components/ui/card/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
@@ -35,6 +36,8 @@
     type SeriesNeighbour,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookId } from "#lib/reader/opened-book.ts";
   import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
@@ -60,6 +63,8 @@
     "flex items-center justify-center gap-sm rounded-shadcn-button bg-accent px-lg text-center text-body font-medium text-on-accent transition-control min-inline-none min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
   const SECONDARY =
     "flex items-center justify-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-center text-body font-medium transition-control min-inline-none min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control ios:border-transparent ios:bg-ios-fill";
+  const PHONE_MUTED_LINE =
+    "text-native-row-subtitle leading-native-row-subtitle tracking-native-row-subtitle";
 
   let {
     book,
@@ -80,6 +85,9 @@
   } = $props();
 
   const skipUpNext = getSkipUpNextSetting();
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isOnPhone = $derived(isPhone(platform, width.current));
   const smartFeatures = getSmartFeatures();
   const id = $props.id();
   let heading: HTMLHeadingElement | undefined = $state();
@@ -156,23 +164,41 @@
       aria-labelledby="{id}-heading"
       class="pointer-events-auto flex flex-col gap-lg inline-full max-inline-up-next"
     >
-      <div class="flex items-start gap-md">
-        <span
-          aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
-        >
-          <CircleCheck size={CHECK_SIZE} />
-        </span>
+      <div
+        class={isOnPhone
+          ? "flex flex-col items-center gap-sm text-center"
+          : "flex items-start gap-md"}
+      >
+        {#if isOnPhone}
+          <Icon
+            name="circle-check"
+            class="text-native-on-button-plain block-up-next-check inline-up-next-check"
+          />
+        {:else}
+          <span
+            aria-hidden="true"
+            class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
+          >
+            <CircleCheck size={CHECK_SIZE} />
+          </span>
+        {/if}
         <div class="flex flex-col gap-2xs min-inline-none">
           <h2
             id="{id}-heading"
             bind:this={heading}
             tabindex="-1"
-            class="text-title font-semibold text-pretty"
+            class={isOnPhone
+              ? "text-native-end-title/native-end-title font-native-end-title text-balance wrap-break-word"
+              : "text-title font-semibold text-pretty"}
           >
             {m.reader_finished({ title })}
           </h2>
-          <p class="text-small text-muted expanded:hidden">
+          <p
+            class={[
+              isOnPhone ? PHONE_MUTED_LINE : "text-small",
+              "text-muted expanded:hidden",
+            ]}
+          >
             {time === undefined
               ? m.reader_marked_read_in({ series: seriesTitle })
               : m.reader_marked_read_in_after({ series: seriesTitle, time })}
@@ -190,7 +216,10 @@
       <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
         {#if next !== null && nextHref !== undefined}
           <CardHeader class="px-lg expanded:px-xl">
-            <CardTitle class="text-body expanded:text-title"
+            <CardTitle
+              class={isOnPhone
+                ? `${PHONE_MUTED_LINE} text-muted`
+                : "text-body expanded:text-title"}
               >{m.reader_up_next()}</CardTitle
             >
           </CardHeader>
@@ -208,10 +237,19 @@
             </span>
             <span class="flex flex-col gap-2xs min-inline-none">
               <span
-                class="line-clamp-2 text-group-title font-semibold expanded:text-body"
-                >{next.title}</span
+                class={[
+                  "line-clamp-2",
+                  isOnPhone
+                    ? "text-native-end-book/native-end-book font-native-end-book wrap-break-word"
+                    : "text-group-title font-semibold expanded:text-body",
+                ]}>{next.title}</span
               >
-              <span class="text-small text-muted">{nextDetails(next)}</span>
+              <span
+                class={[
+                  isOnPhone ? PHONE_MUTED_LINE : "text-small",
+                  "text-muted",
+                ]}>{nextDetails(next)}</span
+              >
             </span>
           </CardContent>
           <CardFooter
@@ -255,10 +293,13 @@
           </CardFooter>
         {:else}
           <CardHeader class="px-lg expanded:px-xl">
-            <CardTitle class="text-body expanded:text-title"
+            <CardTitle
+              class={isOnPhone
+                ? "text-native-end-book/native-end-book font-native-end-book"
+                : "text-body expanded:text-title"}
               >{m.reader_series_finished()}</CardTitle
             >
-            <CardDescription class="text-small"
+            <CardDescription class={isOnPhone ? PHONE_MUTED_LINE : "text-small"}
               >{m.reader_series_finished_body()}</CardDescription
             >
           </CardHeader>
