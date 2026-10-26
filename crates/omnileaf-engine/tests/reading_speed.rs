@@ -169,6 +169,46 @@ async fn opens_a_book_with_the_time_a_page_took_in_the_reading_before() {
 }
 
 #[tokio::test]
+async fn opens_a_book_knowing_no_reading_speed_while_learning_it_is_off() {
+    let shelf = Shelf::with_a_book("speed-off").await;
+    shelf.read_on(5, 10).await;
+    shelf.library.set_learns_reading_speed(false);
+    shelf.read_on(5, 20).await;
+    shelf.read_on(5, 12).await;
+
+    let opened = shelf.open().await;
+
+    assert_eq!(opened.seconds_per_page, None);
+}
+
+#[tokio::test]
+async fn opens_a_book_with_the_speed_learned_once_learning_it_is_back_on() {
+    let shelf = Shelf::with_a_book("speed-back-on").await;
+    shelf.library.set_learns_reading_speed(false);
+    shelf.read_on(5, 10).await;
+    shelf.read_on(5, 20).await;
+    shelf.read_on(5, 12).await;
+    shelf.library.set_learns_reading_speed(true);
+
+    let opened = shelf.open().await;
+
+    assert_eq!(opened.seconds_per_page, Some(12));
+}
+
+#[tokio::test]
+async fn knows_no_time_left_in_a_series_while_learning_the_reading_speed_is_off() {
+    let shelf = Shelf::with_a_book("time-left-off").await;
+    shelf.read_on(5, 10).await;
+    shelf.read_on(5, 20).await;
+    shelf.read_on(5, 12).await;
+    shelf.library.set_learns_reading_speed(false);
+
+    let seconds_left = shelf.seconds_left().await;
+
+    assert_eq!(seconds_left, None);
+}
+
+#[tokio::test]
 async fn knows_no_time_left_in_a_series_before_reading_was_timed() {
     let shelf = Shelf::with_a_book("time-left-untimed").await;
 
