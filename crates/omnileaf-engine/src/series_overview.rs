@@ -125,6 +125,7 @@ mod tests {
                 cover: None,
                 folder: None,
                 pages_left,
+                is_rated_adult: false,
             },
             None,
             seconds_per_page,

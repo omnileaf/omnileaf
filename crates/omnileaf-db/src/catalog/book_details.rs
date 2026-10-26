@@ -195,6 +195,23 @@ impl NamedStatements<'_> {
 }
 
 impl PersonRole {
+    const ALL: [Self; 7] = [
+        Self::Writer,
+        Self::Penciller,
+        Self::Inker,
+        Self::Colourist,
+        Self::Letterer,
+        Self::CoverArtist,
+        Self::Editor,
+    ];
+
+    pub(crate) fn stored(name: String) -> Result<Self, Error> {
+        Self::ALL
+            .into_iter()
+            .find(|role| role.as_stored() == name)
+            .ok_or(Error::UnsupportedPersonRole { name })
+    }
+
     const fn as_stored(self) -> &'static str {
         match self {
             Self::Writer => "writer",
