@@ -14,6 +14,7 @@ pub mod history;
 mod icu_versions;
 mod letter_case;
 pub mod library_contents;
+pub mod library_copy;
 pub mod library_listing;
 pub mod library_tabs;
 pub mod library_view;
