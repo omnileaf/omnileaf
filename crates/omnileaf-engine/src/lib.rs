@@ -15,6 +15,7 @@ mod device_class;
 mod error_chain;
 mod external_storage;
 mod file_in_storage;
+mod file_type;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod folder_watch;
 mod found_library;
