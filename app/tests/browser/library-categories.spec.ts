@@ -710,3 +710,147 @@ test.describe("every category on a phone", { tag: "@native" }, () => {
     expect(made.height).toBeCloseTo(SHEET_BUTTON[platform], 0);
   });
 });
+
+test.describe("swiping through more categories than fit", () => {
+  const FILLED = sampleSeries(3);
+
+  test.use({
+    backend: {
+      ...backendWith(MANY_CATEGORIES),
+      categorySeries: (_category, after, listing) =>
+        pagedSeries(() => FILLED)(after, listing),
+      categorySeriesCount: () => FILLED.length,
+    },
+  });
+
+  test("brings the chosen tab into the strip as the covers are swiped", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+    const last = MANY_CATEGORIES.at(-1)?.name ?? "";
+
+    await swipeToLastCategory(page);
+
+    await expect(tabs(page).getByRole("tab", { name: last })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect.poll(() => isWholeInStrip(page, last)).toBe(true);
+  });
+
+  test("holds the covers still on a drag past the first or last category", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+
+    const atFirst = await draggedBy(page, SWIPE_PX);
+    const towardsNext = await draggedBy(page, -SWIPE_PX);
+    await swipeToLastCategory(page);
+    const atLast = await draggedBy(page, -SWIPE_PX);
+
+    expect(atFirst).toBe(0);
+    expect(towardsNext).toBeLessThan(0);
+    expect(atLast).toBe(0);
+  });
+});
+
+async function draggedBy(page: Page, x: number): Promise<number> {
+  const list = seriesList(page);
+  const box = await boxOf(list);
+  const start = { x: box.x + box.width / 2, y: box.y + box.height / 3 };
+  const touch = { pointerType: "touch", pointerId: 9, isPrimary: true };
+  await list.dispatchEvent("pointerdown", {
+    ...touch,
+    clientX: start.x,
+    clientY: start.y,
+  });
+  await list.dispatchEvent("pointermove", {
+    ...touch,
+    clientX: start.x + x,
+    clientY: start.y,
+  });
+  const moved = await list.evaluate(
+    (element) => element.getBoundingClientRect().left,
+  );
+  await list.dispatchEvent("pointercancel", touch);
+  return moved - box.x;
+}
+
+async function swipeToLastCategory(page: Page): Promise<void> {
+  for (let swiped = 0; swiped < MANY_CATEGORIES.length; swiped += 1) {
+    await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
+  }
+}
+
+test.describe("a category of one series", () => {
+  const ONE = sampleSeries(1);
+
+  test.use({
+    backend: {
+      ...backendWith(CATEGORIES),
+      categorySeries: (_category, after, listing) =>
+        pagedSeries(() => ONE)(after, listing),
+      categorySeriesCount: () => ONE.length,
+    },
+  });
+
+  test("swipes on from the empty screen below its cover", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+    await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(1);
+
+    await swipeBelowCovers(page, -SWIPE_PX);
+
+    await expect(
+      tabs(page).getByRole("tab", { name: "Comics" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+async function swipeBelowCovers(page: Page, x: number): Promise<void> {
+  const list = await boxOf(seriesList(page));
+  const screen = viewportOf(page);
+  const start = {
+    x: screen.width / 2,
+    y: (list.y + list.height + screen.height) / 2,
+  };
+  await page.evaluate(
+    ({ from, by, steps }) => {
+      const target = document.elementFromPoint(from.x, from.y);
+      if (target === null) {
+        throw new Error("nothing is drawn below the covers");
+      }
+      const send = (type: string, moved: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            pointerType: "touch",
+            pointerId: 11,
+            isPrimary: true,
+            clientX: from.x + moved,
+            clientY: from.y,
+          }),
+        );
+      send("pointerdown", 0);
+      for (let step = 1; step <= steps; step += 1) {
+        send("pointermove", (by * step) / steps);
+      }
+      send("pointerup", by);
+    },
+    { from: start, by: x, steps: SWIPE_STEPS },
+  );
+}
+
+async function isWholeInStrip(page: Page, name: string): Promise<boolean> {
+  const strip = await boxOf(tabs(page));
+  const tab = await boxOf(tabs(page).getByRole("tab", { name }));
+  return (
+    tab.x >= strip.x - EDGE_TOLERANCE &&
+    tab.x + tab.width <= strip.x + strip.width + EDGE_TOLERANCE
+  );
+}

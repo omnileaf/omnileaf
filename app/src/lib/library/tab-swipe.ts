@@ -11,6 +11,15 @@ export function isAcross({ x, y }: { x: number; y: number }): boolean {
   );
 }
 
+function textDirectionOf(area: HTMLElement): TextDirection {
+  return getComputedStyle(area).direction === "rtl" ? "rtl" : "ltr";
+}
+
+function stepOf(moved: number, direction: TextDirection): 1 | -1 {
+  const towardsStart = moved < 0;
+  return (direction === "ltr") === towardsStart ? 1 : -1;
+}
+
 export function tabSwipedTo({
   moved,
   width,
@@ -29,9 +38,7 @@ export function tabSwipedTo({
   if (moved === 0 || (!isFar && !isFlick)) {
     return 0;
   }
-  const towardsStart = moved < 0;
-  const isForward = direction === "ltr" ? towardsStart : !towardsStart;
-  return isForward ? 1 : -1;
+  return stepOf(moved, direction);
 }
 
 const EDGE_PX = 24;
@@ -41,6 +48,7 @@ interface SwipeStart {
   readonly y: number;
   readonly at: number;
   readonly pointer: number;
+  readonly direction: TextDirection;
 }
 
 /** Leaves a touch that starts at the screen's edge to the system's own back gesture. */
@@ -50,6 +58,7 @@ function isAtEdge(x: number): boolean {
 
 export function swipesBetweenTabs(
   onSwipe: (step: 1 | -1) => void,
+  canStep: (step: 1 | -1) => boolean,
 ): (area: HTMLElement) => () => void {
   return (area) => {
     let start: SwipeStart | undefined;
@@ -69,6 +78,7 @@ export function swipesBetweenTabs(
         y: event.clientY,
         at: event.timeStamp,
         pointer: event.pointerId,
+        direction: textDirectionOf(area),
       };
     };
     const move = (event: PointerEvent) => {
@@ -83,7 +93,8 @@ export function swipesBetweenTabs(
         return;
       }
       isSwiping = true;
-      area.style.translate = `${String(moved.x)}px 0`;
+      const isHeld = !canStep(stepOf(moved.x, start.direction));
+      area.style.translate = isHeld ? "" : `${String(moved.x)}px 0`;
     };
     const up = (event: PointerEvent) => {
       if (start?.pointer !== event.pointerId) {
@@ -95,12 +106,11 @@ export function swipesBetweenTabs(
             moved,
             width: area.clientWidth,
             velocity: moved / Math.max(event.timeStamp - start.at, 1),
-            direction:
-              getComputedStyle(area).direction === "rtl" ? "rtl" : "ltr",
+            direction: start.direction,
           })
         : 0;
       reset();
-      if (step !== 0) {
+      if (step !== 0 && canStep(step)) {
         onSwipe(step);
       }
     };

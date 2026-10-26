@@ -5,6 +5,7 @@
   import { SvelteSet } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
@@ -34,6 +35,7 @@
   const ICON_SIZE = 16;
   const SHEET_ICON_SIZE = 18;
   const SETTINGS_ROUTE = "/(app)/settings/library/tabs";
+  const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
   let {
     arranged,
@@ -46,6 +48,7 @@
   } = $props();
 
   const platform = currentPlatform();
+  const animations = getAnimationsSetting();
   const width = new WindowWidth();
   const isWide = $derived(width.current !== "compact");
   const onPhone = $derived(isPhone(platform, width.current));
@@ -91,12 +94,38 @@
     };
   });
 
-  function choose(tab: string): void {
-    onChoose(tab);
-    flushSync();
-    strip
-      ?.querySelector(`[data-tab="${CSS.escape(tab)}"]`)
-      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  let followedTab: string | undefined;
+
+  $effect(() => {
+    const tab = strip?.querySelector<HTMLElement>(
+      `[data-tab="${CSS.escape(chosen)}"]`,
+    );
+    if (strip == null || tab == null) {
+      return;
+    }
+    const isChange = followedTab !== undefined && followedTab !== chosen;
+    followedTab = chosen;
+    if (onPhone) {
+      strip.scrollBy({
+        left: stepToCentre(strip, tab),
+        behavior: isChange && movesSmoothly() ? "smooth" : "auto",
+      });
+    } else if (isChange) {
+      tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  });
+
+  function movesSmoothly(): boolean {
+    return (
+      animations.isOn("navigation") &&
+      !window.matchMedia(REDUCED_MOTION).matches
+    );
+  }
+
+  function stepToCentre(within: HTMLElement, tab: HTMLElement): number {
+    const shown = within.getBoundingClientRect();
+    const box = tab.getBoundingClientRect();
+    return box.left + box.width / 2 - (shown.left + shown.width / 2);
   }
 
   function moveWithArrows(event: KeyboardEvent): void {
@@ -111,10 +140,11 @@
     const next =
       tabs[(at + (isRightToLeft ? -step : step) + tabs.length) % tabs.length];
     if (next !== undefined) {
-      choose(next.id);
+      onChoose(next.id);
+      flushSync();
       strip
         ?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(next.id)}"]`)
-        ?.focus();
+        ?.focus({ preventScroll: true });
     }
   }
 
@@ -144,7 +174,7 @@
         aria-selected={isChosen}
         tabindex={isChosen ? 0 : -1}
         onclick={() => {
-          choose(tab.id);
+          onChoose(tab.id);
         }}
         class={[
           "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:min-block-pointer-button touch:touch-target-across",
@@ -177,7 +207,7 @@
           <p class="px-sm py-xs text-small font-semibold">
             {m.library_more_categories()}
           </p>
-          <DropdownMenuRadioGroup value={chosen} onValueChange={choose}>
+          <DropdownMenuRadioGroup value={chosen} onValueChange={onChoose}>
             {#each tucked as tab (tab.id)}
               <DropdownMenuRadioItem value={tab.id}>
                 {tab.name}
@@ -251,7 +281,7 @@
                 ? ITEM_LOOKS.row
                 : "flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed"}
               onclick={() => {
-                choose(tab.id);
+                onChoose(tab.id);
                 isSheetOpen = false;
               }}
             >
