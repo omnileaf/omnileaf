@@ -667,6 +667,25 @@ async fn stays_in_the_old_home_when_the_new_home_holds_another_backup_by_that_na
     );
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn stays_in_the_old_home_when_the_copied_backups_cannot_be_synced() {
+    let data = ScratchFolder::new("move-backups-unsynced-data");
+    let other = ScratchFolder::new("move-backups-unsynced-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    let copies = other.path().join(BACKUP_FOLDER);
+    fs::create_dir(&copies).unwrap();
+    forbid_listing(&copies);
+
+    let home = setting.home().await.unwrap();
+
+    unlock(&copies);
+    assert_eq!(home, data.path());
+}
+
 #[tokio::test]
 async fn stays_in_the_old_home_when_the_backups_cannot_be_copied() {
     let data = ScratchFolder::new("move-backups-blocked-data");

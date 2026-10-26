@@ -69,7 +69,10 @@ fn copy_backups(from: &Path, to: &Path) -> io::Result<()> {
             copy_backup(&backup, &copy)?;
         }
     }
-    Ok(())
+    match sync_folder(&copies) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        outcome => outcome,
+    }
 }
 
 fn is_already_copied(backup: &Path, copy: &Path) -> io::Result<bool> {
