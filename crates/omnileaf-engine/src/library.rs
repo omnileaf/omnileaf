@@ -62,6 +62,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
+    library_listing::SMART_FILTERS_KEPT,
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -380,7 +381,10 @@ impl Library {
     }
 
     pub fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
-        Ok(LibraryFilterChoices::default())
+        Ok(LibraryFilterChoices {
+            smart: SMART_FILTERS_KEPT.to_vec(),
+            ..LibraryFilterChoices::default()
+        })
     }
 
     pub fn series_labels(&self, _series: Vec<SeriesId>) -> Result<SeriesLabels, LibraryError> {
