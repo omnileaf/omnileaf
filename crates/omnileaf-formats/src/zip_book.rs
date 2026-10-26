@@ -169,7 +169,7 @@ pub(crate) fn archive_from(
     Ok(archive)
 }
 
-fn check_page(
+pub(crate) fn check_page(
     path: &Path,
     page: &Page,
     compressed: u64,

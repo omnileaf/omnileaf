@@ -4,8 +4,8 @@ use omnileaf_sync_proto::Fingerprint;
 
 use crate::{
     ComicInfo, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
-    folder::FolderBook, natural_cmp, parse_comic_info, sevenz_book::SevenZipBook,
-    zip_book::ZipBook,
+    error::read_failed, folder::FolderBook, natural_cmp, parse_comic_info,
+    salvaged_zip_book::SalvagedZipBook, sevenz_book::SevenZipBook, zip_book::ZipBook,
 };
 
 const FIRST_PAGE: usize = 0;
@@ -21,15 +21,30 @@ pub enum Book {
     Archive(ZipBook),
     SevenZip(SevenZipBook),
     Folder(FolderBook),
+    Salvaged(SalvagedZipBook),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Damage {
+    EndsEarly,
 }
 
 impl Book {
+    #[must_use]
+    pub fn damage(&self) -> Option<Damage> {
+        match self {
+            Self::Salvaged(_) => Some(Damage::EndsEarly),
+            Self::Archive(_) | Self::SevenZip(_) | Self::Folder(_) => None,
+        }
+    }
+
     #[must_use]
     pub fn pages(&self) -> &[Page] {
         match self {
             Self::Archive(book) => book.pages(),
             Self::SevenZip(book) => book.pages(),
             Self::Folder(book) => book.pages(),
+            Self::Salvaged(book) => book.pages(),
         }
     }
 
@@ -51,6 +66,7 @@ impl Book {
             Self::Archive(book) => book.read_page(index),
             Self::SevenZip(book) => book.read_page(index),
             Self::Folder(book) => book.read_page(index),
+            Self::Salvaged(book) => book.read_page(index),
         }
     }
 
@@ -59,6 +75,7 @@ impl Book {
             Self::Archive(book) => book.read_page_start(index, length),
             Self::SevenZip(book) => book.read_page_start(index, length),
             Self::Folder(book) => book.read_page_start(index, length),
+            Self::Salvaged(book) => book.read_page_start(index, length),
         }
     }
 
@@ -67,6 +84,7 @@ impl Book {
             Self::Archive(book) => (book.path().to_owned(), book.read_comic_info()?),
             Self::SevenZip(book) => (book.path().to_owned(), book.read_comic_info()?),
             Self::Folder(book) => (book.path().to_owned(), book.read_comic_info()?),
+            Self::Salvaged(book) => (book.path().to_owned(), book.read_comic_info()?),
         };
         xml.map(|xml| {
             parse_comic_info(&xml).map_err(|source| FormatError::BadComicInfo { path, source })
@@ -79,6 +97,7 @@ impl Book {
             Self::Archive(book) => book.fingerprint(),
             Self::SevenZip(book) => book.fingerprint(),
             Self::Folder(book) => book.fingerprint(),
+            Self::Salvaged(book) => book.fingerprint(),
         }
     }
 }
@@ -102,6 +121,22 @@ pub fn open_book_in(
         Container::SevenZip(file) => {
             SevenZipBook::from_file(file, path, limits).map(Book::SevenZip)
         }
+    }
+}
+
+pub fn salvage_book_in(
+    storage: &Arc<dyn Storage>,
+    path: &Path,
+    limits: &Limits,
+) -> Result<Book, FormatError> {
+    match open_book_in(Arc::clone(storage), path, limits) {
+        Err(damaged @ FormatError::Corrupt { .. }) => {
+            let file = storage.open(path).map_err(read_failed(path))?;
+            SalvagedZipBook::salvaged_from(file, path, limits)?
+                .map(Book::Salvaged)
+                .ok_or(damaged)
+        }
+        opened => opened,
     }
 }
 
