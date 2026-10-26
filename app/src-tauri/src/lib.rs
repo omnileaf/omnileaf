@@ -39,6 +39,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(desktop)]
+use omnileaf_engine::HomeFolderSetting;
 use omnileaf_engine::{
     Core, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock, describe_error,
 };
@@ -159,7 +161,20 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
+#[cfg(desktop)]
+fn library_folders(app: &App, data_dir: Option<&Path>) -> Result<LibraryFolders, Box<dyn Error>> {
+    let data_folder = match data_dir {
+        Some(data_dir) => data_dir.to_path_buf(),
+        None => app.path().app_data_dir()?,
+    };
+    let setting = HomeFolderSetting::in_folder(data_folder);
+    app.manage(setting.clone());
+    let home = tauri::async_runtime::block_on(setting.home())?;
+    Ok(LibraryFolders::from(home))
+}
+
 /// On iOS the Files app shows the documents folder as On My iPhone › Omnileaf, so the database stays out of it.
+#[cfg(mobile)]
 fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryFolders> {
     if let Some(data_dir) = data_dir {
         return Ok(LibraryFolders::from(data_dir.to_path_buf()));
