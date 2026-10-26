@@ -1962,6 +1962,22 @@
   "reader_shortcuts_close": "⟦Çļöšé ķéýƀöáŕð šĥöŕţçûţš··········⟧",
   "reader_jump_to_book": "⟦Ĵûɱþ ţö á ƀööķ······⟧",
   "reader_jump_from_book": "⟦{title}, Ĵûɱþ ţö á ƀööķ··········⟧",
+  "reader_jump_from_series_book": [
+    {
+      "declarations": [
+        "input series",
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦{series} {title} · Þáĝé {formattedPage} öƒ {formattedCount}, Ĵûɱþ ţö á ƀööķ······························⟧"
+      }
+    }
+  ],
+  "reader_page_after_book": "⟦· {page}····⟧",
   "reader_jump_close": "⟦Çļöšé Ĵûɱþ ţö á ƀööķ········⟧",
   "reader_jump_loading": "⟦Ļöáðíñĝ ţĥé šéŕíéš' ƀööķš··········⟧",
   "reader_jump_subtitle": [
@@ -2057,6 +2073,7 @@
   "reader_crop_borders": "⟦Çŕöþ ŵĥíţé ƀöŕðéŕš········⟧",
   "reader_volume_keys": "⟦Ţûŕñ þáĝéš ŵíţĥ ţĥé ṽöļûɱé ķéýš·············⟧",
   "reader_volume_keys_help": "⟦Öñļý íñ ţĥé ŕéáðéŕ; éṽéŕýŵĥéŕé éļšé ţĥéý çĥáñĝé ţĥé ṽöļûɱé.························⟧",
+  "reader_actions": "⟦Ŕéáðéŕ áçţíöñš······⟧",
   "reader_more": "⟦Ṁöŕé··⟧",
   "reader_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
   "reader_start_over": "⟦Šţáŕţ öṽéŕ····⟧",

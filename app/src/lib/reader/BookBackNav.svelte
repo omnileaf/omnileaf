@@ -1,22 +1,18 @@
 <script lang="ts">
-  import { ChevronLeft } from "@lucide/svelte";
-
   import { resolve } from "$app/paths";
-  import { buttonClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbPage,
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
-  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
-  import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
+  import { readerBackLook } from "./reader-bar.ts";
+  import ReaderBackArrow from "./ReaderBackArrow.svelte";
 
   let { place, platform }: { place: BookPlace | null; platform: Platform } =
     $props();
@@ -41,15 +37,9 @@
     aria-label={place === null
       ? m.reader_back_label()
       : m.reader_back_to_series({ series: place.seriesTitle })}
-    class={isOnPhone
-      ? buttonClasses("header-control", platform, { width: width.current })
-      : READER_BUTTON}
+    class={readerBackLook(platform, width.current)}
   >
-    {#if isOnPhone}
-      <Icon name={backIcon(platform)} />
-    {:else}
-      <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
-    {/if}
+    <ReaderBackArrow {platform} {isOnPhone} />
   </a>
   {#if place !== null && seriesHref !== undefined && namesSeries}
     <a

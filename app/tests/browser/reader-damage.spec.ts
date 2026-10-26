@@ -22,6 +22,7 @@ import {
 } from "./reader-book.ts";
 
 const PROMISED_PAGES = PAGE_COUNT + 6;
+const MIRRORED = "-1 1";
 
 test.use({
   backend: {
@@ -140,6 +141,30 @@ test.describe("a damaged book, on a phone", { tag: "@native" }, () => {
     const titleEdge =
       expected === "start" ? title.x : title.x + title.width / 2;
     expect(badgeEdge).toBeCloseTo(titleEdge, 0);
+  });
+
+  test("mirrors the phone's back arrow in right-to-left text", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openDamagedBook(page);
+    await expect(heading(page)).toBeVisible();
+
+    await page.evaluate(() => {
+      document.documentElement.dir = "rtl";
+    });
+
+    await expect(
+      page
+        .getByRole("navigation")
+        .getByRole("link")
+        .first()
+        .locator("[data-icon]"),
+    ).toHaveCSS("scale", MIRRORED);
   });
 });
 

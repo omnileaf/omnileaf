@@ -12,13 +12,12 @@
     DropdownMenuContent,
     DropdownMenuRadioItem,
   } from "#lib/components/ui/dropdown-menu/index.ts";
+  import { cn } from "#lib/components/cn.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import {
-    QUICK_SETTING_ICON_SIZE,
-    QUICK_SETTING_LIT,
-    QUICK_SETTING_LOOK,
-  } from "#lib/reader/quick-setting.ts";
+  import { quickSettingLook } from "#lib/reader/quick-setting.ts";
+  import { getReaderChrome } from "#lib/reader/reader-chrome.svelte.ts";
+  import ReaderIcon from "#lib/reader/ReaderIcon.svelte";
   import {
     DIRECTION_CHOICES,
     type DirectionChoice,
@@ -33,6 +32,7 @@
     leftToRight: m.reader_direction_automatic_left_to_right,
     rightToLeft: m.reader_direction_automatic_right_to_left,
   } as const;
+  const CHOICE_ICON_SIZE = 16;
   const CHOICE_ICONS = {
     automatic: Scan,
     leftToRight: ArrowRight,
@@ -50,6 +50,8 @@
   } = $props();
 
   const isAutomatic = $derived(reading.choice === "automatic");
+  const chrome = getReaderChrome();
+  const look = $derived(quickSettingLook(chrome.platform, chrome.width));
 
   function choiceName(choice: DirectionChoice): string {
     return choice === "automatic"
@@ -67,21 +69,20 @@
 
 <DropdownMenu.Root {onOpenChange}>
   <DropdownMenu.Trigger
-    class={[
-      QUICK_SETTING_LOOK,
-      reading.direction === "rightToLeft" && QUICK_SETTING_LIT,
-    ]}
+    class={cn(look.button, reading.direction === "rightToLeft" && look.lit)}
   >
-    <ArrowLeftRight
-      size={QUICK_SETTING_ICON_SIZE}
-      aria-hidden="true"
+    <ReaderIcon
+      name="arrow-left-right"
+      fallback={ArrowLeftRight}
+      isKit={look.hasKitIcons}
+      size={look.iconSize}
       class="shrink-0"
     />
-    <span class="grid">
+    <span class="grid min-inline-none">
       {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
         <span
           class={[
-            "col-start-1 row-start-1",
+            "col-start-1 row-start-1 truncate",
             reading.direction !== shown && "invisible",
           ]}
           aria-hidden={reading.direction !== shown}
@@ -100,7 +101,7 @@
       {m.reader_direction_auto()}
     </span>
     <ChevronDown
-      size={QUICK_SETTING_ICON_SIZE}
+      size={look.iconSize}
       aria-hidden="true"
       class="hidden shrink-0 opacity-50 expanded:block"
     />
@@ -114,7 +115,7 @@
         {@const Icon = CHOICE_ICONS[choice]}
         <DropdownMenuRadioItem value={choice}>
           <span class="flex items-center gap-sm">
-            <Icon size={QUICK_SETTING_ICON_SIZE} aria-hidden="true" />
+            <Icon size={CHOICE_ICON_SIZE} aria-hidden="true" />
             {choiceName(choice)}
           </span>
         </DropdownMenuRadioItem>

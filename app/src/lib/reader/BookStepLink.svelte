@@ -7,7 +7,9 @@
   import type { SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
+  import { READER_ICON_SIZE, readerButton } from "./reader-bar.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
 
   type Step = "previous" | "next";
 
@@ -17,20 +19,22 @@
       label: m.reader_previous_chapter,
       unavailable: m.reader_no_previous_chapter,
       icon: ChevronsLeft,
+      kitIcon: "chevrons-left",
     },
     next: {
       label: m.reader_next_chapter,
       unavailable: m.reader_no_next_chapter,
       icon: ChevronsRight,
+      kitIcon: "chevrons-right",
     },
   } as const satisfies Record<Step, unknown>;
-
-  const LOOK = READER_BUTTON;
 
   let { step, neighbour }: { step: Step; neighbour: SeriesNeighbour | null } =
     $props();
 
   const shape = $derived(STEPS[step]);
+  const chrome = getReaderChrome();
+  const look = $derived(readerButton(chrome.platform, chrome.width));
 </script>
 
 {#if neighbour === null}
@@ -41,8 +45,13 @@
     aria-label={shape.unavailable()}
   >
     {#snippet child({ props })}
-      <Button {...props} look="icon" class={[LOOK, "opacity-40"]}>
-        <shape.icon size={ICON_SIZE} aria-hidden="true" />
+      <Button {...props} look="icon" class={[look, "opacity-40"]}>
+        <ReaderIcon
+          name={shape.kitIcon}
+          fallback={shape.icon}
+          isKit={chrome.floats}
+          size={ICON_SIZE}
+        />
       </Button>
     {/snippet}
   </Tooltip>
@@ -55,9 +64,14 @@
         href={resolve("/read/[book]", { book: neighbour.id })}
         data-sveltekit-replacestate
         aria-label={label}
-        class={LOOK}
+        class={look}
       >
-        <shape.icon size={ICON_SIZE} aria-hidden="true" />
+        <ReaderIcon
+          name={shape.kitIcon}
+          fallback={shape.icon}
+          isKit={chrome.floats}
+          size={ICON_SIZE}
+        />
       </a>
     {/snippet}
   </Tooltip>
