@@ -237,4 +237,8 @@
   --native-leading-end-card-title: var(--text-title--line-height);
   --native-tracking-end-card-title: 0;
   --native-weight-end-card-title: var(--font-weight-semibold);
+  --native-text-end-stat-label: var(--text-caption);
+  --native-leading-end-stat-label: var(--text-caption--line-height);
+  --native-tracking-end-stat-label: 0;
+  --native-weight-end-stat-label: var(--font-weight-regular);
 }

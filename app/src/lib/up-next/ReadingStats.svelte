@@ -48,7 +48,16 @@
       >
         {value}
       </p>
-      <p class="text-caption wrap-break-word text-muted">{label}</p>
+      <p
+        class={[
+          isOnPhone
+            ? "text-native-end-stat-label/native-end-stat-label font-native-end-stat-label tracking-native-end-stat-label"
+            : "text-caption",
+          "wrap-break-word text-muted",
+        ]}
+      >
+        {label}
+      </p>
     </div>
   {/each}
 </Card>

@@ -56,6 +56,10 @@ const PHONE_FIGURE_TYPE = {
   ios: { size: "20px", tracking: "-0.45px", weight: "590" },
   android: { size: "24px", tracking: "normal", weight: "400" },
 } satisfies Record<PhonePlatform, PhoneType>;
+const PHONE_STAT_LABEL_TYPE = {
+  ios: { size: "13px", tracking: "-0.08px", weight: "400" },
+  android: { size: "12px", tracking: "0.5px", weight: "500" },
+} satisfies Record<PhonePlatform, PhoneType>;
 const PHONE_CARD_TITLE_TYPE = {
   ios: { size: "22px", tracking: "-0.26px", weight: "700" },
   android: { size: "22px", tracking: "normal", weight: "400" },
@@ -404,6 +408,10 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
 
     await expectType(upNext(page), PHONE_TITLE_TYPE[platform]);
     await expectType(figure(page), PHONE_FIGURE_TYPE[platform]);
+    await expectType(
+      stats(page).getByText("pages", { exact: true }),
+      PHONE_STAT_LABEL_TYPE[platform],
+    );
   });
 
   test("sets the Up next label in the phone's own type", async ({

@@ -240,6 +240,10 @@
   --leading-native-end-card-title: var(--native-leading-end-card-title);
   --tracking-native-end-card-title: var(--native-tracking-end-card-title);
   --font-weight-native-end-card-title: var(--native-weight-end-card-title);
+  --text-native-end-stat-label: var(--native-text-end-stat-label);
+  --leading-native-end-stat-label: var(--native-leading-end-stat-label);
+  --tracking-native-end-stat-label: var(--native-tracking-end-stat-label);
+  --font-weight-native-end-stat-label: var(--native-weight-end-stat-label);
 }
 
 @media (prefers-reduced-motion: reduce) {

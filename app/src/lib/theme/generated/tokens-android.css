@@ -169,6 +169,10 @@
   --native-leading-end-card-title: calc(28 / 22);
   --native-tracking-end-card-title: 0px;
   --native-weight-end-card-title: 400;
+  --native-text-end-stat-label: calc(0.75rem * var(--text-scale));
+  --native-leading-end-stat-label: calc(16 / 12);
+  --native-tracking-end-stat-label: 0.5px;
+  --native-weight-end-stat-label: 500;
 }
 
 :root[data-platform="android"],

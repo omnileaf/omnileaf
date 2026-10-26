@@ -164,6 +164,10 @@
   --native-leading-end-card-title: calc(28 / 22);
   --native-tracking-end-card-title: -0.26px;
   --native-weight-end-card-title: 700;
+  --native-text-end-stat-label: calc(0.8125rem * var(--text-scale));
+  --native-leading-end-stat-label: calc(18 / 13);
+  --native-tracking-end-stat-label: -0.08px;
+  --native-weight-end-stat-label: 400;
 }
 
 :root[data-platform="ios"],
