@@ -1077,6 +1077,40 @@ mod tests {
     }
 
     #[test]
+    fn keeps_every_book_kept_from_before_details_were_kept_with_none_read_yet() {
+        let scratch = ScratchLibrary::new("book-details-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..40]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=2 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, ?2, x'', 0)",
+                    (book(number).as_bytes(), format!("Volume {number:02}")),
+                )
+                .unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let counted: (u32, u32) = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book), (SELECT count(*) FROM book_details)",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(counted, (2, 0));
+    }
+
+    #[test]
     fn moves_a_book_s_pages_left_onto_its_series_through_their_keys() {
         let scratch = ScratchLibrary::new("pages-left-of-book-plan");
 
