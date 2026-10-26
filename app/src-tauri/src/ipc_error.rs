@@ -207,6 +207,9 @@ impl From<HomeFolderError> for IpcError {
             | HomeFolderError::Unstorable { .. }
             | HomeFolderError::LibraryMissing { .. }
             | HomeFolderError::NoLibraryThere { .. }
+            | HomeFolderError::LibraryThere { .. }
+            | HomeFolderError::OverlapsHome { .. }
+            | HomeFolderError::Unmoved { .. }
             | HomeFolderError::Interrupted(_) => Self::internal(&error),
         }
     }

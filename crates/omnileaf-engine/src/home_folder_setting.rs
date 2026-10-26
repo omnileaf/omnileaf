@@ -8,7 +8,11 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tokio::task::spawn_blocking;
 
-use crate::{FoundLibrary, LibraryError, found_library_in, library::DATABASE_FILE};
+use crate::{
+    FoundLibrary, LibraryError, describe_error, found_library_in,
+    home_move::{finish_move, prepare_move},
+    library::DATABASE_FILE,
+};
 
 const SETTING_FILE: &str = "home-folder.json";
 const UNSAVED_SETTING_FILE: &str = "home-folder.json.partial";
@@ -39,6 +43,7 @@ enum Placement {
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum StoredHome {
     At { home: PathBuf },
+    Moving { from: PathBuf, to: PathBuf },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -71,6 +76,16 @@ pub enum HomeFolderError {
     LibraryMissing { path: PathBuf },
     #[error("use the library in {}, which holds none", path.display())]
     NoLibraryThere { path: PathBuf },
+    #[error("move the library into {}, which already holds one", path.display())]
+    LibraryThere { path: PathBuf },
+    #[error("move the library into {}, which sits inside the home folder or around it", path.display())]
+    OverlapsHome { path: PathBuf },
+    #[error("move the library into {}", path.display())]
+    Unmoved {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
     #[error("read the folder chosen as the home folder")]
     Library(#[from] LibraryError),
     #[error("run blocking home folder work")]
@@ -120,6 +135,24 @@ impl HomeFolderSetting {
         spawn_blocking(move || setting.store(&stored)).await?
     }
 
+    #[tracing::instrument(skip_all, fields(chosen = %chosen.display()))]
+    pub async fn move_to(&self, chosen: &Path) -> Result<(), HomeFolderError> {
+        let to = chosen.to_path_buf();
+        if found_library_in(chosen).await?.is_some() {
+            return Err(HomeFolderError::LibraryThere { path: to });
+        }
+        if self.placement_of(chosen).await? != Placement::Apart {
+            return Err(HomeFolderError::OverlapsHome { path: to });
+        }
+        let setting = self.clone();
+        spawn_blocking(move || {
+            let from = setting.current_home()?;
+            prepare_move(&to)?;
+            setting.store(&StoredHome::Moving { from, to })
+        })
+        .await?
+    }
+
     async fn placement_of(&self, chosen: &Path) -> Result<Placement, HomeFolderError> {
         let setting = self.clone();
         let chosen = chosen.to_path_buf();
@@ -140,27 +173,44 @@ impl HomeFolderSetting {
     fn checked_home(&self) -> Result<PathBuf, HomeFolderError> {
         match self.stored_home()? {
             None => Ok(self.data_folder.clone()),
-            Some(home) if holds_a_library(&home)? => Ok(home),
-            Some(home) => Err(HomeFolderError::LibraryMissing { path: home }),
+            Some(StoredHome::At { home }) if holds_a_library(&home)? => Ok(home),
+            Some(StoredHome::At { home }) => Err(HomeFolderError::LibraryMissing { path: home }),
+            Some(StoredHome::Moving { from, to }) => self.settle_move(from, to),
         }
     }
 
-    fn current_home(&self) -> Result<PathBuf, HomeFolderError> {
-        Ok(self
-            .stored_home()?
-            .unwrap_or_else(|| self.data_folder.clone()))
+    fn settle_move(&self, from: PathBuf, to: PathBuf) -> Result<PathBuf, HomeFolderError> {
+        let home = match finish_move(&from, &to) {
+            Ok(()) => to,
+            Err(error) => {
+                tracing::error!(error = %describe_error(&error), "move the library into the new home folder, so it stays where it was");
+                if !holds_a_library(&from)? {
+                    return Err(HomeFolderError::LibraryMissing { path: from });
+                }
+                from
+            }
+        };
+        self.store(&StoredHome::At { home: home.clone() })?;
+        Ok(home)
     }
 
-    fn stored_home(&self) -> Result<Option<PathBuf>, HomeFolderError> {
+    fn current_home(&self) -> Result<PathBuf, HomeFolderError> {
+        Ok(match self.stored_home()? {
+            None => self.data_folder.clone(),
+            Some(StoredHome::At { home } | StoredHome::Moving { from: home, .. }) => home,
+        })
+    }
+
+    fn stored_home(&self) -> Result<Option<StoredHome>, HomeFolderError> {
         let path = self.data_folder.join(SETTING_FILE);
         let text = match fs::read(&path) {
             Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(source) => return Err(HomeFolderError::Unreadable { path, source }),
         };
-        let StoredHome::At { home } = serde_json::from_slice(&text)
-            .map_err(|source| HomeFolderError::Malformed { path, source })?;
-        Ok(Some(home))
+        serde_json::from_slice(&text)
+            .map(Some)
+            .map_err(|source| HomeFolderError::Malformed { path, source })
     }
 
     fn store(&self, stored: &StoredHome) -> Result<(), HomeFolderError> {
@@ -182,7 +232,7 @@ impl HomeFolderSetting {
 impl StoredHome {
     fn home(&self) -> &Path {
         match self {
-            Self::At { home } => home,
+            Self::At { home } | Self::Moving { to: home, .. } => home,
         }
     }
 }

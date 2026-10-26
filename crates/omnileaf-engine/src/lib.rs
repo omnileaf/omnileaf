@@ -21,6 +21,7 @@ mod folder_watch;
 mod found_library;
 mod history;
 mod home_folder_setting;
+mod home_move;
 mod ipc_brand;
 mod lane;
 mod library;
