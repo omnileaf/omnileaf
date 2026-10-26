@@ -6,7 +6,10 @@
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { isPhone } from "#lib/page/platform.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
-  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import {
+    hasLargeTitle as hasLargeTitleOn,
+    NATIVE_TOP_BAR,
+  } from "#lib/page/top-bar.ts";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
 
@@ -23,9 +26,7 @@
     $props();
 
   const width = new WindowWidth();
-  const hasLargeTitle = $derived(
-    platform === "ios" && isPhone(platform, width.current),
-  );
+  const hasLargeTitle = $derived(hasLargeTitleOn(platform, width.current));
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
 
@@ -132,7 +133,7 @@
     >
       {title}
     </span>
-    <div class={NATIVE_TOP_BAR.barButtonGroup}>
+    <div class={NATIVE_TOP_BAR.barButtonRow}>
       {@render actions()}
     </div>
   </div>

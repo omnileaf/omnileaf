@@ -22,19 +22,25 @@
     mostThatFit,
     hasCategories,
     onChoose,
+    isOpen = $bindable(false),
+    button = $bindable(null),
+    showsButton = true,
+    returnFocusTo = null,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
     mostThatFit: number | undefined;
     hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
+    isOpen?: boolean;
+    button?: HTMLElement | null;
+    showsButton?: boolean;
+    returnFocusTo?: HTMLElement | null;
   } = $props();
 
   const isWide = new MediaQuery(MEDIUM_QUERY);
   const titleId = $props.id();
 
-  let button = $state<HTMLElement | null>(null);
-  let isOpen = $state(false);
   let direction: "ltr" | "rtl" = $state("ltr");
 
   function open(): void {
@@ -50,39 +56,41 @@
 
   function focusButton(event: Event): void {
     event.preventDefault();
-    button?.focus();
+    (showsButton ? button : returnFocusTo)?.focus();
   }
 </script>
 
-<Tooltip
-  bind:ref={button}
-  label={m.library_view_options()}
-  type="button"
-  aria-haspopup="dialog"
-  aria-expanded={isOpen}
-  aria-label={m.library_view_options()}
-  onclick={open}
->
-  {#snippet child({ props })}
-    <Button
-      {...props}
-      look="header-control"
-      class={[
-        "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
-        isOpen
-          ? "large:bg-accent-soft"
-          : "hover:tint-hover active:tint-pressed",
-      ]}
-    >
-      <SlidersHorizontal
-        size={ICON_SIZE}
-        aria-hidden="true"
-        class="large:block-lg large:inline-lg"
-      />
-      <span class="hidden large:inline">{m.library_view()}</span>
-    </Button>
-  {/snippet}
-</Tooltip>
+{#if showsButton}
+  <Tooltip
+    bind:ref={button}
+    label={m.library_view_options()}
+    type="button"
+    aria-haspopup="dialog"
+    aria-expanded={isOpen}
+    aria-label={m.library_view_options()}
+    onclick={open}
+  >
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="header-control"
+        class={[
+          "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
+          isOpen
+            ? "large:bg-accent-soft"
+            : "hover:tint-hover active:tint-pressed",
+        ]}
+      >
+        <SlidersHorizontal
+          size={ICON_SIZE}
+          aria-hidden="true"
+          class="large:block-lg large:inline-lg"
+        />
+        <span class="hidden large:inline">{m.library_view()}</span>
+      </Button>
+    {/snippet}
+  </Tooltip>
+{/if}
 
 {#if isWide.current}
   <Popover.Root bind:open={isOpen}>

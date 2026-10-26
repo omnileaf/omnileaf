@@ -84,11 +84,12 @@
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer } from "#lib/page/platform.ts";
+  import { hasLargeTitle } from "#lib/page/top-bar.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -349,6 +350,12 @@
   );
   let isFilterOpen = $state(false);
   let filterButton: HTMLElement | null = $state(null);
+  let isViewOpen = $state(false);
+  let moreTrigger: HTMLElement | null = $state(null);
+  const width = new WindowWidth();
+  const foldsIntoMore = $derived(
+    hasLargeTitle(data.appInfo.platform, width.current),
+  );
   let headHeight = $state(0);
   const isDocked = $derived(docksFilter && isFilterOpen);
 
@@ -715,6 +722,8 @@
           onOpen={() => {
             isCountWanted = true;
           }}
+          showsButton={!foldsIntoMore}
+          returnFocusTo={moreTrigger}
         />
         <ViewOptions
           view={loaded.view}
@@ -724,8 +733,24 @@
           onChoose={(chosen: LibraryView) => {
             view.choose(chosen);
           }}
+          bind:isOpen={isViewOpen}
+          showsButton={!foldsIntoMore}
+          returnFocusTo={moreTrigger}
         />
         <LibraryMore
+          bind:trigger={moreTrigger}
+          folded={foldsIntoMore
+            ? {
+                filtersCount: filtersOn(chosenListing.filter),
+                onSortAndFilter: () => {
+                  isFilterOpen = true;
+                  isCountWanted = true;
+                },
+                onViewOptions: () => {
+                  isViewOpen = true;
+                },
+              }
+            : undefined}
           {keepsLabels}
           onSelect={() => {
             selection.begin();

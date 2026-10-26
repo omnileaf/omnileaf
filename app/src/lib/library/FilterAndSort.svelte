@@ -30,6 +30,8 @@
     button = $bindable(null),
     onChoose,
     onOpen,
+    showsButton = true,
+    returnFocusTo = null,
   }: {
     listing: LibraryListing;
     choices: LibraryFilterChoices;
@@ -40,6 +42,8 @@
     button?: HTMLElement | null;
     onChoose: (listing: LibraryListing) => void;
     onOpen: () => void;
+    showsButton?: boolean;
+    returnFocusTo?: HTMLElement | null;
   } = $props();
 
   const titleId = $props.id();
@@ -66,54 +70,56 @@
 
   function focusButton(event: Event): void {
     event.preventDefault();
-    button?.focus();
+    (showsButton ? button : returnFocusTo)?.focus();
   }
 </script>
 
-<Tooltip
-  bind:ref={button}
-  label={buttonLabel}
-  type="button"
-  aria-haspopup={docks ? undefined : "dialog"}
-  aria-controls={docks && isOpen ? panelId : undefined}
-  aria-expanded={isOpen}
-  aria-label={buttonLabel}
-  onclick={toggle}
->
-  {#snippet child({ props })}
-    <Button
-      {...props}
-      look="header-control"
-      class={[
-        "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
-        isOpen
-          ? "large:bg-accent-soft"
-          : "hover:tint-hover active:tint-pressed",
-      ]}
-    >
-      <ListFilter
-        size={ICON_SIZE}
-        aria-hidden="true"
-        class="large:block-lg large:inline-lg"
-      />
-      <span class="hidden large:inline">{m.library_filter()}</span>
-      {#if filtersCount > 0}
-        <span
+{#if showsButton}
+  <Tooltip
+    bind:ref={button}
+    label={buttonLabel}
+    type="button"
+    aria-haspopup={docks ? undefined : "dialog"}
+    aria-controls={docks && isOpen ? panelId : undefined}
+    aria-expanded={isOpen}
+    aria-label={buttonLabel}
+    onclick={toggle}
+  >
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="header-control"
+        class={[
+          "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
+          isOpen
+            ? "large:bg-accent-soft"
+            : "hover:tint-hover active:tint-pressed",
+        ]}
+      >
+        <ListFilter
+          size={ICON_SIZE}
           aria-hidden="true"
-          class="absolute inset-e-2xs inset-bs-2xs flex items-center justify-center rounded-full border-2 border-background bg-accent px-2xs text-caption font-bold text-on-accent min-inline-filter-badge large:hidden"
-        >
-          {numbers.format(filtersCount)}
-        </span>
-        <span
-          aria-hidden="true"
-          class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
-        >
-          {numbers.format(filtersCount)}
-        </span>
-      {/if}
-    </Button>
-  {/snippet}
-</Tooltip>
+          class="large:block-lg large:inline-lg"
+        />
+        <span class="hidden large:inline">{m.library_filter()}</span>
+        {#if filtersCount > 0}
+          <span
+            aria-hidden="true"
+            class="absolute inset-e-2xs inset-bs-2xs flex items-center justify-center rounded-full border-2 border-background bg-accent px-2xs text-caption font-bold text-on-accent min-inline-filter-badge large:hidden"
+          >
+            {numbers.format(filtersCount)}
+          </span>
+          <span
+            aria-hidden="true"
+            class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
+          >
+            {numbers.format(filtersCount)}
+          </span>
+        {/if}
+      </Button>
+    {/snippet}
+  </Tooltip>
+{/if}
 
 {#if !docks}
   <Dialog.Root bind:open={isOpen}>
