@@ -2,10 +2,18 @@ import type { Locator, Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 
-import { boxOf, expect, test, tokenColour } from "./fixtures.ts";
+import {
+  boxOf,
+  expect,
+  LARGEST_TEXT_SCALE,
+  setTextScale,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const TABLET = { width: 820, height: 1180 };
+const NARROWEST_WINDOW = { width: 200, height: 568 };
 
 type PhonePlatform = Extract<Platform, "ios" | "android">;
 
@@ -186,6 +194,56 @@ test.describe(
       );
     });
 
+    test("rings the details row inside its plate when focused from the keyboard", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+
+      await openSeries(page);
+      await details(page).focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+
+      await expect(details(page)).toBeFocused();
+      await expect(details(page)).toHaveCSS("outline-style", "solid");
+      expect(
+        parseFloat(
+          await details(page).evaluate(
+            (row) => getComputedStyle(row).outlineOffset,
+          ),
+        ),
+      ).toBeLessThan(0);
+    });
+
+    test("truncates a long reading state inside the narrowest window at the largest text", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+      await page.addInitScript(() => {
+        window.localStorage.setItem("omnileaf.language", "en-XA");
+      });
+      await page.setViewportSize(NARROWEST_WINDOW);
+      await setTextScale(page, LARGEST_TEXT_SCALE);
+
+      await openSeries(page);
+      const state = page
+        .getByRole("region", { name: /⟦/ })
+        .first()
+        .getByRole("button", { name: /^⟦Ŕéáðíñĝ šţáţé/ });
+      const box = await boxOf(state);
+
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(NARROWEST_WINDOW.width);
+    });
+
     test("keeps today's details button on a tablet", async ({
       page,
       platform,
@@ -221,6 +279,22 @@ test.describe(
       expect(start.y).toBeGreaterThan(cover.y + cover.height);
     });
 
+    test("draws a book in the continue card's cover slot when the series has no cover", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+
+      await openSeries(page);
+
+      await expect(
+        continueCard(page).locator("[data-continue-cover] svg"),
+      ).toBeVisible();
+    });
+
     test("keeps the continue card without its cover on a tablet", async ({
       page,
       platform,
@@ -239,7 +313,7 @@ test.describe(
       ).toHaveCount(0);
     });
 
-    test("colours a creator's name as the phone's own link", async ({
+    test("colours a creator's name as the phone's own link, still underlined", async ({
       page,
       platform,
     }) => {
@@ -254,7 +328,10 @@ test.describe(
         "color",
         await tokenColour(page, "--native-color-on-button-plain"),
       );
-      await expect(creatorLink(page)).toHaveCSS("text-decoration-line", "none");
+      await expect(creatorLink(page)).toHaveCSS(
+        "text-decoration-line",
+        "underline",
+      );
     });
 
     test("keeps a creator's name underlined on a tablet", async ({
