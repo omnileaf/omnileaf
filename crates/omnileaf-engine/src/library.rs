@@ -24,6 +24,7 @@ use omnileaf_db::{
         show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
+    hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
     history::{
         book_reading_time, book_sessions, clear_history, days_in_a_row, hide_book_from_history,
         history_page, reading_since, reading_summary, reading_time_by_day, restore_book_to_history,
@@ -44,18 +45,19 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
-    HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices,
-    LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay,
-    LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
+    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor, FolderId,
+    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
+    HistoryPage, HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter,
+    LibraryFilterChoices, LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
+    LibraryView, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
     UnreachableShare, UtcOffset,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
     file_in_storage::FileInStorage,
+    file_type::HiddenFileTypes,
     history::whole_seconds,
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
@@ -156,6 +158,10 @@ pub enum LibraryError {
     FolderNotFound { id: FolderId },
     #[error("series {id} isn't in the library")]
     SeriesNotFound { id: SeriesId },
+    #[error("book {id} isn't in the library")]
+    BookNotFound { id: BookId },
+    #[error("hide the files like book {id}, whose type the library reads")]
+    FileTypeRead { id: BookId },
     #[error("move library folder {id} to a folder the library already reads")]
     FolderAlreadyInLibrary { id: FolderId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
@@ -261,7 +267,7 @@ impl Library {
         )
         .await?;
         let root = self.link(locator).await?;
-        let target = self.target(root, RootKind::Linked, files);
+        let target = self.target(root, RootKind::Linked, files).await?;
         scan(
             self.store.database(),
             target,
@@ -828,6 +834,35 @@ impl Library {
             .await?)
     }
 
+    pub async fn hide_files_like(&self, book: BookId) -> Result<FileType, LibraryError> {
+        let found = self
+            .book_to_read(book)
+            .await?
+            .ok_or(LibraryError::BookNotFound { id: book })?;
+        let file_type = FileType::of(&found.location)
+            .filter(FileType::can_be_hidden)
+            .ok_or(LibraryError::FileTypeRead { id: book })?;
+        let hidden = file_type.clone();
+        self.store
+            .database()
+            .write(move |transaction| hide_file_type(transaction, hidden.as_str()))
+            .await?;
+        Ok(file_type)
+    }
+
+    pub async fn show_file_type(&self, file_type: FileType) -> Result<(), LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| show_file_type(transaction, file_type.as_str()))
+            .await?)
+    }
+
+    async fn hidden_file_types(&self) -> Result<HiddenFileTypes, LibraryError> {
+        let stored = self.store.database().read(hidden_file_types).await?;
+        Ok(stored.into_iter().collect())
+    }
+
     pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
         let stored = self.store.database().read(adult_content).await?;
         Ok(stored.map(AdultContent::from).unwrap_or_default())
@@ -1251,7 +1286,7 @@ impl Library {
         .await?
         {
             Ok(layout) => {
-                let target = self.target(root, kind, files);
+                let target = self.target(root, kind, files).await?;
                 let outcome =
                     rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
                 if let RescanOutcome::Rescanned(changes) = &outcome
@@ -1584,14 +1619,20 @@ impl Library {
         })
     }
 
-    fn target(&self, root: RootId, kind: RootKind, files: RootFiles) -> Target {
-        Target {
+    async fn target(
+        &self,
+        root: RootId,
+        kind: RootKind,
+        files: RootFiles,
+    ) -> Result<Target, LibraryError> {
+        Ok(Target {
             root,
             kind,
             storage: files.storage,
             folder: files.folder,
+            hidden: self.hidden_file_types().await?,
             added_at_ms: self.now_ms(),
-        }
+        })
     }
 
     fn schedule(&self) -> sync::MutexGuard<'_, RescanSchedule> {

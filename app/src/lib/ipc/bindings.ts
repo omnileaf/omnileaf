@@ -386,7 +386,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],

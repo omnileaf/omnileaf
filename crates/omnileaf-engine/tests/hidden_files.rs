@@ -1,0 +1,167 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "each test scans its own generated folder in a scratch library, so a failed set-up should stop the test"
+)]
+
+#[expect(dead_code, reason = "these tests write whole books, never loose pages")]
+mod books;
+#[expect(
+    dead_code,
+    reason = "these tests read the books of a series, never how many series there are"
+)]
+mod scanned;
+mod support;
+
+use std::fs;
+
+use books::write_book;
+use omnileaf_engine::{
+    BookId, FileChanges, FileType, Library, LibraryError, LibraryListing, RescanOutcome,
+    SeriesBookListing,
+};
+use scanned::Scanned;
+use support::ScratchFolder;
+
+const SERIES: &str = "Sample Series 01";
+const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+
+struct Hiding {
+    scanned: Scanned,
+    _comics: ScratchFolder,
+}
+
+impl Hiding {
+    async fn new(name: &str) -> Self {
+        let comics = ScratchFolder::new(name);
+        write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
+        write_book(&comics.path().join(SERIES).join("v02.cbr"), 2);
+        let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+        Self {
+            scanned,
+            _comics: comics,
+        }
+    }
+
+    fn library(&self) -> &Library {
+        &self.scanned.library
+    }
+
+    async fn book(&self, title: &str) -> BookId {
+        let library = self.library();
+        let series = library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap()
+            .series
+            .first()
+            .unwrap()
+            .id;
+        library
+            .series_books(series, SeriesBookListing::default(), None)
+            .await
+            .unwrap()
+            .books
+            .into_iter()
+            .find(|book| book.title == title)
+            .unwrap()
+            .id
+    }
+
+    async fn hide_like(&self, title: &str) -> FileType {
+        let book = self.book(title).await;
+        self.library().hide_files_like(book).await.unwrap()
+    }
+
+    async fn rescan(&self) -> RescanOutcome {
+        self.library()
+            .rescan_folder(self.scanned.id, |_| {})
+            .await
+            .unwrap()
+            .outcome
+    }
+}
+
+#[tokio::test]
+async fn hides_files_of_a_type_the_app_does_not_read_like_a_book_s() {
+    let hiding = Hiding::new("hide-cbr").await;
+
+    let hidden = hiding.hide_like("v02").await;
+
+    assert_eq!(hidden.to_string(), "cbr");
+}
+
+#[tokio::test]
+async fn leaves_files_of_a_hidden_type_out_of_the_library_once_it_rescans() {
+    let hiding = Hiding::new("hide-rescan").await;
+    hiding.hide_like("v02").await;
+
+    let outcome = hiding.rescan().await;
+
+    assert_eq!(
+        outcome,
+        RescanOutcome::Rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(hiding.scanned.books_in(SERIES), ["v01"]);
+}
+
+#[tokio::test]
+async fn leaves_files_of_a_hidden_type_out_of_a_folder_added_later() {
+    let hiding = Hiding::new("hide-added").await;
+    hiding.hide_like("v02").await;
+    let later = ScratchFolder::new("hide-added-later");
+    write_book(&later.path().join("Sample Series 02").join("v01.cbz"), 3);
+    fs::write(
+        later.path().join("Sample Series 02").join("v02.cbr"),
+        RAR_SIGNATURE,
+    )
+    .unwrap();
+
+    let scan = hiding
+        .library()
+        .add_folder(later.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!((scan.books, scan.unsupported_books), (1, 0));
+}
+
+#[tokio::test]
+async fn finds_files_of_a_type_shown_again() {
+    let hiding = Hiding::new("hide-undone").await;
+    let hidden = hiding.hide_like("v02").await;
+    hiding.library().show_file_type(hidden).await.unwrap();
+
+    let outcome = hiding.rescan().await;
+
+    assert_eq!(outcome, RescanOutcome::Rescanned(FileChanges::default()));
+    assert_eq!(hiding.scanned.books_in(SERIES), ["v01", "v02"]);
+}
+
+#[tokio::test]
+async fn refuses_to_hide_files_of_a_type_the_app_reads() {
+    let hiding = Hiding::new("hide-read").await;
+    let book = hiding.book("v01").await;
+
+    let hidden = hiding.library().hide_files_like(book).await;
+
+    assert!(
+        matches!(hidden, Err(LibraryError::FileTypeRead { id }) if id == book),
+        "{hidden:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_hide_files_like_a_book_the_library_does_not_hold() {
+    let hiding = Hiding::new("hide-missing").await;
+    let missing = BookId::try_from("0190a3e4-0000-8000-8000-00000000ffff".to_owned()).unwrap();
+
+    let hidden = hiding.library().hide_files_like(missing).await;
+
+    assert!(
+        matches!(hidden, Err(LibraryError::BookNotFound { id }) if id == missing),
+        "{hidden:?}"
+    );
+}

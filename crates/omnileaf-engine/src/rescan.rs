@@ -60,6 +60,7 @@ pub(crate) async fn rescan(
     if looks_unplugged(target.kind, &layout, &stored) {
         return Ok(RescanOutcome::FoundEmpty);
     }
+    let layout = layout.leaving_out(&target.hidden);
     let planning = target.clone();
     let (mut plan, to_read) = spawn_blocking(move || Plan::new(&planning, layout, stored)).await?;
     record_changed(database, &target, &mut plan, to_read, on_progress).await?;

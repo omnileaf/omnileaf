@@ -19,6 +19,7 @@ use tokio::{sync::watch, task::spawn_blocking};
 use crate::{
     LibraryError,
     clock::unix_ms,
+    file_type::HiddenFileTypes,
     library_layout::{FoundBook, Layout, find_books, folder_name},
 };
 
@@ -76,6 +77,7 @@ pub(crate) struct Target {
     pub(crate) kind: RootKind,
     pub(crate) storage: Arc<dyn Storage>,
     pub(crate) folder: PathBuf,
+    pub(crate) hidden: HiddenFileTypes,
     pub(crate) added_at_ms: i64,
 }
 
@@ -129,6 +131,7 @@ pub(crate) async fn scan(
     layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<FolderScan, LibraryError> {
+    let layout = layout.leaving_out(&target.hidden);
     let total = saturating_u32(layout.books.len());
     let mut tally = Tally::default();
     on_progress(ScanProgress::Reading { scanned: 0, total });
@@ -263,6 +266,7 @@ mod tests {
             kind: RootKind::Linked,
             storage: Arc::new(LocalStorage),
             folder: PathBuf::from("/media/Sample Library"),
+            hidden: HiddenFileTypes::default(),
             added_at_ms: 0,
         };
         let found = FoundBook {
