@@ -37,6 +37,7 @@ pub struct SeriesFilter {
     pub started: Inclusion,
     /// Has every book marked read.
     pub finished: Inclusion,
+    pub last_read_before_ms: Option<i64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -79,6 +80,7 @@ impl SeriesFilter {
         unread: Inclusion::Any,
         started: Inclusion::Any,
         finished: Inclusion::Any,
+        last_read_before_ms: None,
     };
 }
 
@@ -159,5 +161,38 @@ const fn admitted(filter: SeriesFilter, stage: ReadingStage) -> Option<i64> {
         Some(stage.stored())
     } else {
         None
+    }
+}
+
+macro_rules! smart_conditions {
+    () => {
+        " AND (:last_read_before_ms IS NULL
+            OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))"
+    };
+}
+
+pub(crate) use smart_conditions;
+
+pub(crate) struct FilterParams {
+    stages: StageParams,
+    last_read_before_ms: Option<i64>,
+}
+
+impl FilterParams {
+    pub(crate) const fn of(filter: SeriesFilter) -> Self {
+        Self {
+            stages: StageParams::of(filter),
+            last_read_before_ms: filter.last_read_before_ms,
+        }
+    }
+
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 4] {
+        let [unstarted, in_progress, finished] = self.stages.named();
+        [
+            unstarted,
+            in_progress,
+            finished,
+            (":last_read_before_ms", &self.last_read_before_ms),
+        ]
     }
 }
