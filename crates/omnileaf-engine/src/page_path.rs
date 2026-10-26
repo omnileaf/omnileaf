@@ -1,7 +1,6 @@
 use std::{fmt, str::FromStr};
 
 use omnileaf_cache::{CacheError, CacheKey};
-use omnileaf_imaging::CroppedSides;
 use omnileaf_sync_proto::BookId;
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
@@ -47,14 +46,6 @@ impl PageCrop {
             CROPPED => Some(Self::Borders),
             SIDES_CROPPED => Some(Self::SideBorders),
             _ => None,
-        }
-    }
-
-    pub(crate) const fn sides(self) -> Option<CroppedSides> {
-        match self {
-            Self::Whole => None,
-            Self::Borders => Some(CroppedSides::All),
-            Self::SideBorders => Some(CroppedSides::LeftAndRight),
         }
     }
 }

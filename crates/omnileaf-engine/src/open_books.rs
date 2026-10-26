@@ -1,9 +1,10 @@
 use std::{
     collections::VecDeque,
-    sync::{Arc, Mutex, MutexGuard, PoisonError},
+    sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError},
 };
 
 use omnileaf_formats::{Book, Damage, FormatError, Limits, salvage_book_in};
+use omnileaf_imaging::BookSideBorders;
 use omnileaf_sync_proto::BookId;
 
 use crate::{PageCrop, PagePath, file_in_storage::FileInStorage};
@@ -23,6 +24,7 @@ pub(crate) struct OpenBook {
     pub(crate) page_count: usize,
     pub(crate) damage: Option<Damage>,
     book: Arc<Mutex<Book>>,
+    side_borders: Arc<OnceLock<Option<BookSideBorders>>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -54,6 +56,13 @@ impl OpenBook {
     pub(crate) fn lock(&self) -> MutexGuard<'_, Book> {
         self.book.lock().unwrap_or_else(PoisonError::into_inner)
     }
+
+    pub(crate) fn side_borders_once(
+        &self,
+        measure: impl FnOnce() -> Option<BookSideBorders>,
+    ) -> Option<BookSideBorders> {
+        *self.side_borders.get_or_init(measure)
+    }
 }
 
 impl OpenBooks {
@@ -80,6 +89,7 @@ impl OpenBooks {
             page_count: book.pages().len(),
             damage: book.damage(),
             book: Arc::new(Mutex::new(book)),
+            side_borders: Arc::default(),
         };
         let mut kept = self.opened();
         kept.retain(|book| book.file != file);

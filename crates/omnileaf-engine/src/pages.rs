@@ -11,7 +11,8 @@ use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
 use omnileaf_imaging::{
-    CroppedSides, ImagingError, PageFormat, crop_white_borders, page_size, shrink_page, transcode,
+    CroppedSides, ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders,
+    page_size, shrink_page, transcode,
 };
 use tokio::sync::oneshot;
 
@@ -27,6 +28,7 @@ use crate::{
     open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
     page_lane::{AskedPageError, PageLane},
     page_sizes::{PageSizes, SizeFill, SizeFills, fill_sizes, opening_window, probe_window},
+    side_borders::book_side_borders,
 };
 
 /// Changes whenever pages are transcoded differently, so no transcode made the old way is served again.
@@ -373,13 +375,27 @@ impl Shared {
         }
         let bytes = opened.lock().read_page(index)?;
         let whole = self.prepared(path.cropped(PageCrop::Whole), bytes)?;
-        let page = Arc::new(match path.crop.sides() {
-            Some(sides) => self.cropped(path, whole, sides),
-            None => whole,
-        });
+        let page = Arc::new(self.cropped_as_asked(opened, path, whole));
         let weight = u64::try_from(page.bytes.len()).unwrap_or(u64::MAX);
         self.memory().insert(path, Arc::clone(&page), weight);
         Ok(page)
+    }
+
+    fn cropped_as_asked(&self, opened: &OpenBook, path: PagePath, whole: ServedPage) -> ServedPage {
+        match path.crop {
+            PageCrop::Whole => whole,
+            PageCrop::Borders => self.cropped(path, whole, |page| {
+                let _decoding = self.decodes.hold();
+                crop_white_borders(page, CroppedSides::All)
+            }),
+            PageCrop::SideBorders => self.cropped(path, whole, |page| {
+                let Some(book) = book_side_borders(opened, &self.decodes, self.transcodes()) else {
+                    return Ok(None);
+                };
+                let _decoding = self.decodes.hold();
+                crop_side_borders(page, book)
+            }),
+        }
     }
 
     fn prepared(&self, path: PagePath, bytes: Vec<u8>) -> Result<ServedPage, PageError> {
@@ -418,7 +434,12 @@ impl Shared {
         })
     }
 
-    fn cropped(&self, path: PagePath, whole: ServedPage, sides: CroppedSides) -> ServedPage {
+    fn cropped(
+        &self,
+        path: PagePath,
+        whole: ServedPage,
+        crop: impl FnOnce(&[u8]) -> Result<Option<Transcoded>, ImagingError>,
+    ) -> ServedPage {
         let key = match path.cache_key() {
             Ok(key) => key,
             Err(error) => {
@@ -435,11 +456,7 @@ impl Shared {
                 bytes: kept,
             };
         }
-        let cropped = {
-            let _decoding = self.decodes.hold();
-            crop_white_borders(&whole.bytes, sides)
-        };
-        match cropped {
+        match crop(&whole.bytes) {
             Ok(Some(cropped)) => {
                 if let Some(Err(error)) = cache.map(|cache| cache.put(&key, &cropped.bytes)) {
                     tracing::warn!(%path, error = %describe_error(&error), "keep a cropped page for next time");
