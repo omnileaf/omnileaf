@@ -7,6 +7,7 @@ mod shrink;
 mod size;
 mod thumbnail;
 mod transcode;
+mod white_borders;
 
 pub use error::ImagingError;
 pub use format::{ImageFormat, is_whole_jpeg};
@@ -16,3 +17,4 @@ pub use shrink::shrink_page;
 pub use size::Size;
 pub use thumbnail::{THUMBNAIL_WIDTH, Thumbnail, thumbnail};
 pub use transcode::{Transcoded, transcode};
+pub use white_borders::{CroppedSides, crop_white_borders};
