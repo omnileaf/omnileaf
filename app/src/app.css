@@ -1364,6 +1364,10 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
+@utility grid-cols-sheet-header {
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
+}
+
 @utility grid-strip-zones {
   grid-template-rows: 3fr 4fr 3fr;
 }
