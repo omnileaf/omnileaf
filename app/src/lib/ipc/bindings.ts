@@ -52,6 +52,7 @@ export const commands = {
 	seriesTitle: string,
 } | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
+	hideFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("hide_file_type", { fileType })),
 	showFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("show_file_type", { fileType })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),

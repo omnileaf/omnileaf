@@ -1338,6 +1338,7 @@ export function sampleBackend(
         "the sample library reads every file in it",
       );
     },
+    hideFileType: () => null,
     showFileType: () => null,
     bookmarkPages: (id, pages, isBookmarked) => {
       const kept = bookmarks.get(id) ?? new Set<number>();
