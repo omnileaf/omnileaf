@@ -82,6 +82,10 @@ export class FakeShelf {
     this.#bookAt(index).isNew = true;
   }
 
+  retitle(index: number, title: string): void {
+    this.#bookAt(index).title = title;
+  }
+
   readTo(index: number, page: number): void {
     this.#bookAt(index).reading = { state: "started", page };
   }
