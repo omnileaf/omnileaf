@@ -141,7 +141,7 @@ fn set_aside_name(number: u32) -> String {
     }
 }
 
-/// POSIX makes a rename durable only once the folder holding it is synced, and Windows won't open a folder as a file to sync it.
+/// POSIX makes a rename durable only once the folder holding it is synced, and Windows opens a folder only with `FILE_FLAG_BACKUP_SEMANTICS`, which a plain `File::open` doesn't pass.
 pub(crate) fn sync_folder(folder: &Path) -> io::Result<()> {
     if cfg!(unix) {
         fs::File::open(folder)?.sync_all()?;
