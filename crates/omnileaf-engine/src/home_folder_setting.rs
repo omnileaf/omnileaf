@@ -24,7 +24,15 @@ pub enum HomeChoice {
     Current,
     Found { library: FoundLibrary },
     FoundFromANewerVersion,
+    OverlapsHome,
     Empty,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Placement {
+    Current,
+    Overlapping,
+    Apart,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -83,13 +91,13 @@ impl HomeFolderSetting {
 
     #[tracing::instrument(skip_all, fields(chosen = %chosen.display()))]
     pub async fn choose(&self, chosen: &Path) -> Result<HomeChoice, HomeFolderError> {
-        let setting = self.clone();
-        let current = spawn_blocking(move || setting.current_home()).await??;
-        if is_same_folder(chosen, &current) {
+        let placement = self.placement_of(chosen).await?;
+        if placement == Placement::Current {
             return Ok(HomeChoice::Current);
         }
         match found_library_in(chosen).await {
             Ok(Some(library)) => Ok(HomeChoice::Found { library }),
+            Ok(None) if placement == Placement::Overlapping => Ok(HomeChoice::OverlapsHome),
             Ok(None) => Ok(HomeChoice::Empty),
             Err(error) if error.was_written_by_a_newer_version() => {
                 Ok(HomeChoice::FoundFromANewerVersion)
@@ -110,6 +118,23 @@ impl HomeFolderSetting {
             home: chosen.to_path_buf(),
         };
         spawn_blocking(move || setting.store(&stored)).await?
+    }
+
+    async fn placement_of(&self, chosen: &Path) -> Result<Placement, HomeFolderError> {
+        let setting = self.clone();
+        let chosen = chosen.to_path_buf();
+        spawn_blocking(move || {
+            let current = canonical(&setting.current_home()?);
+            let chosen = canonical(&chosen);
+            Ok(if chosen == current {
+                Placement::Current
+            } else if chosen.starts_with(&current) || current.starts_with(&chosen) {
+                Placement::Overlapping
+            } else {
+                Placement::Apart
+            })
+        })
+        .await?
     }
 
     fn checked_home(&self) -> Result<PathBuf, HomeFolderError> {
@@ -180,10 +205,6 @@ fn write_whole(path: &Path, text: &[u8]) -> io::Result<()> {
     file.sync_all()
 }
 
-fn is_same_folder(one: &Path, other: &Path) -> bool {
-    one == other
-        || matches!(
-            (fs::canonicalize(one), fs::canonicalize(other)),
-            (Ok(one), Ok(other)) if one == other
-        )
+fn canonical(folder: &Path) -> PathBuf {
+    fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf())
 }

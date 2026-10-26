@@ -117,6 +117,22 @@ async fn finds_a_library_a_newer_version_wrote_in_a_chosen_folder() {
 }
 
 #[tokio::test]
+async fn finds_an_empty_folder_inside_the_home_or_around_it_overlapping() {
+    let parent = ScratchFolder::new("setting-overlap");
+    let data = parent.path().join("Home");
+    let setting = new_library_in(&data).await;
+    let inside = data.join("Inside");
+    fs::create_dir_all(&inside).unwrap();
+
+    let choices = [
+        setting.choose(&inside).await.unwrap(),
+        setting.choose(parent.path()).await.unwrap(),
+    ];
+
+    assert_eq!(choices, [HomeChoice::OverlapsHome; 2]);
+}
+
+#[tokio::test]
 async fn opens_the_library_it_was_told_to_use_from_then_on() {
     let data = ScratchFolder::new("setting-use-data");
     let other = ScratchFolder::new("setting-use-other");
