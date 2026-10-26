@@ -854,3 +854,32 @@ async function isWholeInStrip(page: Page, name: string): Promise<boolean> {
     tab.x + tab.width <= strip.x + strip.width + EDGE_TOLERANCE
   );
 }
+
+test.describe("more categories than fit, before the strip is first measured", () => {
+  test.use({ backend: backendWith(MANY_CATEGORIES) });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.IntersectionObserver = class {
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+        takeRecords(): IntersectionObserverEntry[] {
+          return [];
+        }
+        readonly root = null;
+        readonly rootMargin = "";
+        readonly thresholds = [];
+      } as unknown as typeof IntersectionObserver;
+    });
+  });
+
+  test("draws no tab cut off at the strip's edge on screens wide enough for More", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+    await openLibrary(page);
+
+    expect(await cutTabs(page)).toEqual([]);
+  });
+});

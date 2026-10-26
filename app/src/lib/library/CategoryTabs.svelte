@@ -70,29 +70,39 @@
     if (root === null) {
       return;
     }
+    const tabs = [...root.querySelectorAll<HTMLElement>("[data-tab]")];
+    const shown = root.getBoundingClientRect();
+    for (const tab of tabs) {
+      const box = tab.getBoundingClientRect();
+      markHidden(tab, box.left < shown.left || box.right > shown.right);
+    }
     const watching = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const id = (entry.target as HTMLElement).dataset.tab;
-          if (id === undefined) {
-            continue;
-          }
-          if (entry.intersectionRatio < 1) {
-            hidden.add(id);
-          } else {
-            hidden.delete(id);
-          }
+          markHidden(entry.target, entry.intersectionRatio < 1);
         }
       },
       { root, threshold: 1 },
     );
-    for (const tab of root.querySelectorAll("[data-tab]")) {
+    for (const tab of tabs) {
       watching.observe(tab);
     }
     return () => {
       watching.disconnect();
     };
   });
+
+  function markHidden(tab: Element, isHidden: boolean): void {
+    const id = (tab as HTMLElement).dataset.tab;
+    if (id === undefined) {
+      return;
+    }
+    if (isHidden) {
+      hidden.add(id);
+    } else {
+      hidden.delete(id);
+    }
+  }
 
   let followedTab: string | undefined;
 
