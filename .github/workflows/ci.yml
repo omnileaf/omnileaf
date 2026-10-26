@@ -313,6 +313,8 @@ jobs:
     name: browser test build
     needs: changes
     if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false') }}
+    outputs:
+      shards: ${{ steps.shards.outputs.shards }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -327,6 +329,16 @@ jobs:
           node-version-file: .node-version
           cache: ${{ needs.changes.outputs.app != 'false' && 'pnpm' || '' }}
 
+      - name: Share the browser tests out across shards
+        id: shards
+        env:
+          IS_APP_CHANGED: ${{ needs.changes.outputs.app != 'false' }}
+          REST_SHARDS: 36
+          SCREENS_SHARDS: 12
+        run: |
+          if [ "$IS_APP_CHANGED" = true ]; then rest=$REST_SHARDS screens=$SCREENS_SHARDS; else rest=1 screens=0; fi
+          echo "shards=$(jq -nc --argjson rest "$rest" --argjson screens "$screens" '[range(1; $rest + 1) | {group: "rest", shard: ., of: $rest}] + [range(1; $screens + 1) | {group: "screens", shard: ., of: $screens}]')" >> "$GITHUB_OUTPUT"
+
       - name: Install interface dependencies
         if: needs.changes.outputs.app != 'false'
         run: pnpm install --frozen-lockfile
@@ -337,6 +349,15 @@ jobs:
           VITE_SAMPLE_LIBRARY: "on"
           VITE_KIT_PAGE: "on"
         run: pnpm --dir app build
+
+      - name: List each group's tests
+        if: needs.changes.outputs.app != 'false'
+        working-directory: app
+        run: |
+          mkdir -p browser-test-lists
+          for group in rest screens; do
+            PLAYWRIGHT_GROUP=$group pnpm exec playwright test --list --reporter=json > "browser-test-lists/$group.json"
+          done
 
       - name: Keep the build for the shards
         if: needs.changes.outputs.app != 'false'
@@ -350,6 +371,7 @@ jobs:
             app/build/
             app/.svelte-kit/output/
             app/src/lib/paraglide/
+            app/browser-test-lists/
 
   browser:
     name: browser tests (${{ matrix.group }} ${{ matrix.shard }}/${{ matrix.of }})
@@ -360,30 +382,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { group: rest, shard: 1, of: 16 }
-          - { group: rest, shard: 2, of: 16 }
-          - { group: rest, shard: 3, of: 16 }
-          - { group: rest, shard: 4, of: 16 }
-          - { group: rest, shard: 5, of: 16 }
-          - { group: rest, shard: 6, of: 16 }
-          - { group: rest, shard: 7, of: 16 }
-          - { group: rest, shard: 8, of: 16 }
-          - { group: rest, shard: 9, of: 16 }
-          - { group: rest, shard: 10, of: 16 }
-          - { group: rest, shard: 11, of: 16 }
-          - { group: rest, shard: 12, of: 16 }
-          - { group: rest, shard: 13, of: 16 }
-          - { group: rest, shard: 14, of: 16 }
-          - { group: rest, shard: 15, of: 16 }
-          - { group: rest, shard: 16, of: 16 }
-          - { group: screens, shard: 1, of: 4 }
-          - { group: screens, shard: 2, of: 4 }
-          - { group: screens, shard: 3, of: 4 }
-          - { group: screens, shard: 4, of: 4 }
+        include: ${{ fromJSON(needs.browser-build.outputs.shards) }}
     env:
       PLAYWRIGHT_GROUP: ${{ matrix.group }}
-      PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ matrix.of }}
       OMNILEAF_APP_BUILT: "on"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -449,18 +450,25 @@ jobs:
           path: ~/browser-packages
           key: ${{ steps.browser-packages.outputs.key }}
 
+      - name: Pick this shard's tests by how long they take
+        if: needs.changes.outputs.app != 'false'
+        working-directory: app
+        env:
+          SHARD: ${{ matrix.shard }}/${{ matrix.of }}
+        run: node tests/write-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.txt"
+
       - name: Run the app's browser tests
         id: app-browser-tests
         if: needs.changes.outputs.app != 'false'
-        run: pnpm --dir app test:e2e
+        run: pnpm --dir app test:e2e --test-list "$RUNNER_TEMP/shard-tests.txt"
 
       - name: Run the website's browser tests
-        if: ${{ !cancelled() && matrix.group == 'rest' && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
+        if: ${{ !cancelled() && matrix.group == 'rest' && matrix.shard == matrix.of && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
         run: pnpm --dir site test:e2e
 
       - name: Time the interface on its own
         if: matrix.group == 'rest' && matrix.shard == 1 && needs.changes.outputs.app != 'false'
-        run: env -u PLAYWRIGHT_SHARD pnpm --dir app test:e2e --project speed --no-deps
+        run: env -u PLAYWRIGHT_GROUP pnpm --dir app test:e2e --project speed --no-deps
 
       - name: Keep the traces of failed tests
         if: failure()
