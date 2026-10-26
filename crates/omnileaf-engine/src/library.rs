@@ -748,11 +748,11 @@ impl Library {
         self.reading.put_away().await
     }
 
-    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
     pub(crate) async fn seconds_per_page(&self) -> Result<Option<u32>, LibraryError> {
         Ok(self.store.database().read(seconds_per_page).await?)
     }
 
+    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
