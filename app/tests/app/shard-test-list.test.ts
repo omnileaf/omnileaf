@@ -253,6 +253,7 @@ test("lists every test in exactly one shard, even when a title cannot be written
     declaredInHelper("light.spec.ts", "webkit-phone", "holds still"),
     declaredInHelper("light.spec.ts", "webkit-phone", "fits", "at 360px"),
     declaredInHelper("dark.spec.ts", "webkit-phone", "fits", "at 390px"),
+    declaredInHelper("dark.spec.ts", "webkit-phone", "holds still"),
     declaredInHelper("dark.spec.ts", "chromium-phone", "holds still"),
     ...Array.from({ length: 40 }, (_, index) =>
       listed("webkit-tablet", `test ${String(index)}`),
