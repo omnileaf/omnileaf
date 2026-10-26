@@ -114,7 +114,7 @@
 </script>
 
 <section
-  class="flex flex-col divide-y divide-border rounded-card border border-border bg-card px-lg py-xs"
+  class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"
 >
   <div class={FIELD}>
     <DetailFieldHead
@@ -272,7 +272,7 @@
       onToggle={() => {
         onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
       }}
-      class="px-none"
+      class="-mx-lg -mbe-xs inline-auto"
     />
   {/if}
 </section>
