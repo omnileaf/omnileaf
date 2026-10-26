@@ -3,10 +3,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
-  import {
-    type ButtonVariant,
-    variantClasses,
-  } from "#lib/components/ui/button/looks.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import type {
@@ -14,8 +11,9 @@
     ReadMark,
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
+  import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ComingSoonControl from "./ComingSoonControl.svelte";
@@ -23,28 +21,25 @@
 
   const ICON_SIZE = 16;
 
-  interface PhoneActions {
+  interface PhoneLayout {
     readonly row: string;
     readonly state: string;
     readonly stateChevron: IconName;
     readonly chevron: string;
-    readonly other: ButtonVariant;
   }
 
-  const PHONE_ACTIONS: Readonly<Record<Platform, PhoneActions | undefined>> = {
+  const PHONE_LAYOUTS: Readonly<Record<Platform, PhoneLayout | undefined>> = {
     ios: {
       row: "flex flex-wrap items-center justify-center gap-md",
-      state: "",
+      state: "min-inline-none max-inline-full",
       stateChevron: "chevrons-up-down",
       chevron: "",
-      other: "secondary",
     },
     android: {
       row: "flex items-center gap-sm",
       state: "flex-1 justify-start min-inline-none",
       stateChevron: "chevron-down",
       chevron: "ms-auto",
-      other: "outline",
     },
     linux: undefined,
     macos: undefined,
@@ -63,9 +58,13 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const phone = $derived(
-    isPhone(platform, width.current) ? PHONE_ACTIONS[platform] : undefined,
-  );
+  const phone = $derived.by(() => {
+    const other = phoneAction(platform, width.current, "other");
+    const layout = PHONE_LAYOUTS[platform];
+    return other === undefined || layout === undefined
+      ? undefined
+      : { ...layout, other: other.variant };
+  });
   const isAllRead = $derived(overview.readCount === overview.bookCount);
   const state = $derived.by(() => {
     if (isAllRead) {
@@ -97,7 +96,7 @@
       )}
     >
       <Icon name="book-open" class="shrink-0" />
-      <span class="truncate">{state}</span>
+      <span class="truncate min-inline-none">{state}</span>
       <Icon name={phone.stateChevron} class={cn("shrink-0", phone.chevron)} />
     </ComingSoonControl>
     <ComingSoonControl
