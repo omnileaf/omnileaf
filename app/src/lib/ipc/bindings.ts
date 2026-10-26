@@ -112,6 +112,8 @@ export const commands = {
 	/**  Crosses as a plain number, which holds every such date exactly. */
 	lastBackupAtMs: number | null,
 } | null>("found_library"),
+	chooseHomeFolder: () => typedError<{ kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "empty" } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
+	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -358,6 +360,8 @@ export type HistorySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 };
+
+export type HomeChoice = { kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "empty" };
 
 export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
 

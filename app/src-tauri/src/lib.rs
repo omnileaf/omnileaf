@@ -13,6 +13,7 @@ mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
 mod full_screen;
+mod home_folder;
 mod icon_actions;
 mod ipc_error;
 mod library_events;
@@ -76,6 +77,7 @@ pub fn run() {
         .manage(Core::new())
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
+        .manage(home_folder::ChosenHome::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
