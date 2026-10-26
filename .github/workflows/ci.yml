@@ -347,6 +347,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           path: |
+            app/build/
             app/.svelte-kit/output/
             app/src/lib/paraglide/
 
