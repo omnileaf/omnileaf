@@ -1,6 +1,8 @@
 use std::error::Error;
 
-use omnileaf_engine::{CrashReportError, LibraryError, OpenBookError, describe_error};
+use omnileaf_engine::{
+    CrashReportError, HomeFolderError, LibraryError, OpenBookError, describe_error,
+};
 use serde::Serialize;
 use specta::Type;
 
@@ -195,6 +197,21 @@ impl From<LibraryError> for IpcError {
     }
 }
 
+impl From<HomeFolderError> for IpcError {
+    fn from(error: HomeFolderError) -> Self {
+        match error {
+            HomeFolderError::Library(error) => error.into(),
+            HomeFolderError::Unreadable { .. }
+            | HomeFolderError::Malformed { .. }
+            | HomeFolderError::Unsaved { .. }
+            | HomeFolderError::Unstorable { .. }
+            | HomeFolderError::LibraryMissing { .. }
+            | HomeFolderError::NoLibraryThere { .. }
+            | HomeFolderError::Interrupted(_) => Self::internal(&error),
+        }
+    }
+}
+
 impl From<CrashReportError> for IpcError {
     fn from(error: CrashReportError) -> Self {
         tracing::warn!(error = %describe_error(&error), "handle a crash report");
@@ -277,6 +294,26 @@ mod tests {
                 IpcErrorCode::CursorForAnotherList,
                 IpcErrorCode::Internal,
             ]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_a_chosen_home_folder_could_not_be_read() {
+        let chosen = PathBuf::from("/media/Sample Library");
+        let unreadable = LibraryError::FolderUnreadable {
+            path: chosen.clone(),
+            source: io::Error::from(io::ErrorKind::PermissionDenied),
+        };
+
+        let codes = [
+            HomeFolderError::Library(unreadable),
+            HomeFolderError::NoLibraryThere { path: chosen },
+        ]
+        .map(|error| IpcError::from(error).code);
+
+        assert_eq!(
+            codes,
+            [IpcErrorCode::FolderUnreadable, IpcErrorCode::Internal]
         );
     }
 

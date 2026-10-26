@@ -1464,6 +1464,8 @@ export function sampleBackend(
             lastBackupAtMs: LAST_BACKUP_MS,
           }
         : null,
+    chooseHomeFolder: () => null,
+    useFoundLibrary: () => null,
     firstLaunchFinished: () => hasFinishedFirstLaunch,
     finishFirstLaunch: () => {
       hasFinishedFirstLaunch = true;

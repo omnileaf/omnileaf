@@ -13,6 +13,7 @@ mod folder_storage;
 #[cfg(desktop)]
 mod folder_watch;
 mod full_screen;
+mod home_folder;
 mod icon_actions;
 mod ipc_error;
 mod library_events;
@@ -39,6 +40,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(desktop)]
+use omnileaf_engine::HomeFolderSetting;
 use omnileaf_engine::{
     Core, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock, describe_error,
 };
@@ -74,6 +77,7 @@ pub fn run() {
         .manage(Core::new())
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
+        .manage(home_folder::ChosenHome::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
@@ -131,7 +135,7 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(StoragePlaces {
         database_folder: folders.database.clone(),
     });
-    let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
+    let library = tauri::async_runtime::block_on(Library::open(folders.clone(), SystemClock))?;
     #[cfg(target_os = "android")]
     let library = tree_storage::read_trees(app, library, data_dir);
     app.manage(LibraryChangesForwarding::start(
@@ -141,7 +145,9 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(library);
     app.manage(ScheduledRescans::start(app.handle().clone()));
     #[cfg(desktop)]
-    app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
+    app.manage(folder_watch::FolderWatching::start(
+        app, &folders, data_dir,
+    )?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
     #[cfg(target_os = "macos")]
@@ -157,7 +163,20 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
+#[cfg(desktop)]
+fn library_folders(app: &App, data_dir: Option<&Path>) -> Result<LibraryFolders, Box<dyn Error>> {
+    let data_folder = match data_dir {
+        Some(data_dir) => data_dir.to_path_buf(),
+        None => app.path().app_data_dir()?,
+    };
+    let setting = HomeFolderSetting::in_folder(data_folder);
+    app.manage(setting.clone());
+    let home = tauri::async_runtime::block_on(setting.home())?;
+    Ok(LibraryFolders::from(home))
+}
+
 /// On iOS the Files app shows the documents folder as On My iPhone › Omnileaf, so the database stays out of it.
+#[cfg(mobile)]
 fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryFolders> {
     if let Some(data_dir) = data_dir {
         return Ok(LibraryFolders::from(data_dir.to_path_buf()));

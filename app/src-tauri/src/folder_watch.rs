@@ -3,10 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use omnileaf_engine::{AppFiles, FolderWatchSwitch, Library};
+use omnileaf_engine::{AppFiles, FolderWatchSwitch, Library, LibraryFolders};
 use tauri::{App, Manager, async_runtime::JoinHandle};
 
-use crate::{CACHE_FOLDER, library_folders};
+use crate::CACHE_FOLDER;
 
 /// `WebKitGTK` keeps the webview's data and cache in these entries of the app's local data folder, which on Linux is also the library's home.
 #[cfg(target_os = "linux")]
@@ -31,9 +31,13 @@ pub(crate) struct FolderWatching {
 }
 
 impl FolderWatching {
-    pub(crate) fn start(app: &App, data_dir: Option<&Path>) -> tauri::Result<Self> {
+    pub(crate) fn start(
+        app: &App,
+        library: &LibraryFolders,
+        data_dir: Option<&Path>,
+    ) -> tauri::Result<Self> {
         let app_files = AppFiles {
-            library: library_folders(app, data_dir)?,
+            library: library.clone(),
             folders: own_folders(app, data_dir)?,
         };
         let app = app.handle().clone();
