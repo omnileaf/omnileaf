@@ -27,6 +27,11 @@ pub(crate) fn prepare_move(to: &Path) -> Result<(), HomeFolderError> {
 
 #[tracing::instrument(skip_all, fields(from = %from.display(), to = %to.display()))]
 pub(crate) fn finish_move(from: &Path, to: &Path) -> Result<(), HomeFolderError> {
+    place_copy(from, to)?;
+    sync_folder(to).map_err(unmoved(to))
+}
+
+fn place_copy(from: &Path, to: &Path) -> Result<(), HomeFolderError> {
     let original = from.join(DATABASE_FILE);
     let placed = to.join(DATABASE_FILE);
     let unfinished = to.join(UNFINISHED_COPY);

@@ -148,6 +148,12 @@ fn unlock(folder: &Path) {
 }
 
 #[cfg(unix)]
+fn forbid_listing(folder: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(folder, fs::Permissions::from_mode(0o333)).unwrap();
+}
+
+#[cfg(unix)]
 async fn move_cut_short_out_of_a_locked_home(
     data: &Path,
     old: &Path,
@@ -336,6 +342,23 @@ async fn sets_the_old_library_aside_on_the_next_launch_when_it_could_not_at_firs
 
     assert_eq!(home, other.path());
     assert!(!old.path().join(DATABASE_FILE).exists());
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn stays_in_the_old_home_when_the_new_home_cannot_be_synced() {
+    let data = ScratchFolder::new("move-unsynced-data");
+    let other = ScratchFolder::new("move-unsynced-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    forbid_listing(other.path());
+
+    let home = setting.home().await.unwrap();
+
+    unlock(other.path());
+    assert_eq!(home, data.path());
+    assert!(data.path().join(DATABASE_FILE).exists());
 }
 
 #[tokio::test]
