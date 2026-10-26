@@ -92,7 +92,7 @@ pub(crate) fn set_aside_library_in(folder: &Path) -> io::Result<()> {
     for suffix in SIDECARS_THEN_DATABASE {
         rename_if_present(&suffixed(&database, suffix), &suffixed(&set_aside, suffix))?;
     }
-    Ok(())
+    sync_folder(folder)
 }
 
 fn unused_set_aside_path(folder: &Path) -> io::Result<PathBuf> {

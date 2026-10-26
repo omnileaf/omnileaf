@@ -346,6 +346,25 @@ async fn sets_the_old_library_aside_on_the_next_launch_when_it_could_not_at_firs
 
 #[cfg(unix)]
 #[tokio::test]
+async fn keeps_the_move_when_the_old_home_cannot_be_synced() {
+    let data = ScratchFolder::new("move-old-unsynced-data");
+    let old = ScratchFolder::new("move-old-unsynced-old");
+    let other = ScratchFolder::new("move-old-unsynced-other");
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    library_read_in(old.path()).await;
+    setting.use_library_in(old.path()).await.unwrap();
+    setting.move_to(other.path()).await.unwrap();
+    forbid_listing(old.path());
+
+    let home = setting.home().await.unwrap();
+
+    unlock(old.path());
+    assert_eq!(home, other.path());
+    assert!(old.path().join(SET_ASIDE_DATABASE).exists());
+}
+
+#[cfg(unix)]
+#[tokio::test]
 async fn stays_in_the_old_home_when_the_new_home_cannot_be_synced() {
     let data = ScratchFolder::new("move-unsynced-data");
     let other = ScratchFolder::new("move-unsynced-other");
