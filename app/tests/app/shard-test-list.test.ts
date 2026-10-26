@@ -4,7 +4,9 @@ import {
   type ListedTest,
   listedTests,
   shardTestList,
+  shardTests,
   testDurations,
+  testListMismatch,
   testPath,
   type Timings,
 } from "../shard-test-list.ts";
@@ -82,6 +84,29 @@ function declaredInHelper(
 ): ListedTest {
   return { project, file, declaredIn: "checks.ts", titles };
 }
+
+const HARD_TO_LIST_TESTS: readonly ListedTest[] = [
+  listed("chromium-phone", "opens Settings › Library"),
+  listed("chromium-phone", "Settings", "opens"),
+  listed("chromium-phone", "Settings", "has 2 > 1 items"),
+  listed("chromium-phone", "Settings", " padded"),
+  listed("chromium-phone", "Settings"),
+  listed("chromium-phone", "menu", "opens"),
+  listed("chromium-phone", "menu", "opens", "twice"),
+  listed("chromium-phone", "menu", "closes"),
+  listed("webkit-phone", "menu", "opens"),
+  listed("webkit-phone", "menu", "closes"),
+  listed("webkit-phone", "notes", "shows the note"),
+  listed("webkit-phone", "notes", "shows the note\nacross lines"),
+  declaredInHelper("light.spec.ts", "webkit-phone", "holds still"),
+  declaredInHelper("light.spec.ts", "webkit-phone", "fits", "at 360px"),
+  declaredInHelper("dark.spec.ts", "webkit-phone", "fits", "at 390px"),
+  declaredInHelper("dark.spec.ts", "webkit-phone", "holds still"),
+  declaredInHelper("dark.spec.ts", "chromium-phone", "holds still"),
+  ...Array.from({ length: 40 }, (_, index) =>
+    listed("webkit-tablet", `test ${String(index)}`),
+  ),
+];
 
 function shardsOf(
   tests: readonly ListedTest[],
@@ -237,28 +262,7 @@ test("puts the same tests in the same shards whatever order they are listed in",
 });
 
 test("lists every test in exactly one shard, even when a title cannot be written in a test list", () => {
-  const tests = [
-    listed("chromium-phone", "opens Settings › Library"),
-    listed("chromium-phone", "Settings", "opens"),
-    listed("chromium-phone", "Settings", "has 2 > 1 items"),
-    listed("chromium-phone", "Settings", " padded"),
-    listed("chromium-phone", "Settings"),
-    listed("chromium-phone", "menu", "opens"),
-    listed("chromium-phone", "menu", "opens", "twice"),
-    listed("chromium-phone", "menu", "closes"),
-    listed("webkit-phone", "menu", "opens"),
-    listed("webkit-phone", "menu", "closes"),
-    listed("webkit-phone", "notes", "shows the note"),
-    listed("webkit-phone", "notes", "shows the note\nacross lines"),
-    declaredInHelper("light.spec.ts", "webkit-phone", "holds still"),
-    declaredInHelper("light.spec.ts", "webkit-phone", "fits", "at 360px"),
-    declaredInHelper("dark.spec.ts", "webkit-phone", "fits", "at 390px"),
-    declaredInHelper("dark.spec.ts", "webkit-phone", "holds still"),
-    declaredInHelper("dark.spec.ts", "chromium-phone", "holds still"),
-    ...Array.from({ length: 40 }, (_, index) =>
-      listed("webkit-tablet", `test ${String(index)}`),
-    ),
-  ];
+  const tests = HARD_TO_LIST_TESTS;
 
   const shards = shardsOf(tests, {}, 7);
 
@@ -267,6 +271,26 @@ test("lists every test in exactly one shard, even when a title cannot be written
       shardsRunning(shards, listedTest),
       `${listedTest.project} ${testPath(listedTest)}`,
     ).toHaveLength(1);
+  }
+});
+
+test("gives each shard exactly the tests its test list runs", () => {
+  const total = 7;
+
+  const shards = Array.from({ length: total }, (_, index) => {
+    const shard = { current: index + 1, total };
+    return {
+      lines: shardTestList(HARD_TO_LIST_TESTS, {}, shard),
+      assigned: shardTests(HARD_TO_LIST_TESTS, {}, shard),
+    };
+  });
+
+  for (const { lines, assigned } of shards) {
+    expect(new Set(assigned)).toEqual(
+      new Set(
+        HARD_TO_LIST_TESTS.filter((listedTest) => runs(lines, listedTest)),
+      ),
+    );
   }
 });
 
@@ -324,4 +348,39 @@ test("rejects more shards than there are tests to share out", () => {
   expect(() =>
     shardTestList([listed("p", "a")], {}, { current: 1, total: 2 }),
   ).toThrow("2 shards");
+});
+
+test("finds no mismatch when Playwright lists exactly the tests a shard was given", () => {
+  const assigned = [listed("p", "a"), listed("q", "a"), listed("p", "b", "c")];
+
+  const mismatch = testListMismatch(
+    assigned,
+    assigned.toReversed().map((listedTest) => ({ ...listedTest })),
+  );
+
+  expect(mismatch).toEqual({ missing: [], extra: [] });
+});
+
+test("names the tests Playwright leaves out of a shard and the ones it adds", () => {
+  const mismatch = testListMismatch(
+    [listed("p", "a"), listed("p", "b")],
+    [listed("p", "b"), listed("q", "a")],
+  );
+
+  expect(mismatch).toEqual({
+    missing: [listed("p", "a")],
+    extra: [listed("q", "a")],
+  });
+});
+
+test("tells apart tests whose titles join into the same path", () => {
+  const mismatch = testListMismatch(
+    [listed("p", "a › b")],
+    [listed("p", "a", "b")],
+  );
+
+  expect(mismatch).toEqual({
+    missing: [listed("p", "a › b")],
+    extra: [listed("p", "a", "b")],
+  });
 });

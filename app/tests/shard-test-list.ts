@@ -12,6 +12,11 @@ export type Timings = Readonly<
   Record<string, Readonly<Record<string, number>>>
 >;
 
+export interface TestListMismatch {
+  readonly missing: readonly ListedTest[];
+  readonly extra: readonly ListedTest[];
+}
+
 interface TestRun {
   readonly test: ListedTest;
   readonly durationMs: number | undefined;
@@ -24,6 +29,7 @@ interface Scope {
 
 interface Unit {
   readonly line: string;
+  readonly tests: readonly ListedTest[];
   readonly specFiles: ReadonlySet<string>;
   readonly durationMs: number;
 }
@@ -137,6 +143,44 @@ export function shardTestList(
   timings: Timings,
   shard: Shard,
 ): string[] {
+  return testListOf(shardUnits(tests, timings, shard));
+}
+
+export function shardTests(
+  tests: readonly ListedTest[],
+  timings: Timings,
+  shard: Shard,
+): ListedTest[] {
+  return shardUnits(tests, timings, shard).flatMap((unit) => unit.tests);
+}
+
+export function testListMismatch(
+  assigned: readonly ListedTest[],
+  listed: readonly ListedTest[],
+): TestListMismatch {
+  return {
+    missing: withoutTestsIn(assigned, listed),
+    extra: withoutTestsIn(listed, assigned),
+  };
+}
+
+function withoutTestsIn(
+  tests: readonly ListedTest[],
+  others: readonly ListedTest[],
+): ListedTest[] {
+  const otherIds = new Set(others.map(testId));
+  return tests.filter((test) => !otherIds.has(testId(test)));
+}
+
+function testId(test: ListedTest): string {
+  return JSON.stringify([test.project, test.file, ...test.titles]);
+}
+
+function shardUnits(
+  tests: readonly ListedTest[],
+  timings: Timings,
+  shard: Shard,
+): Unit[] {
   if (tests.some((test) => test.project === LOAD_ONLY_PROJECT)) {
     throw new Error(
       `A project named ${JSON.stringify(LOAD_ONLY_PROJECT)} would run from the lines that only load a spec file`,
@@ -159,7 +203,7 @@ export function shardTestList(
     lightest.units.push(unit);
     lightest.durationMs += unit.durationMs;
   }
-  return testListOf(bins[shard.current - 1]?.units ?? []);
+  return bins[shard.current - 1]?.units ?? [];
 }
 
 /** Playwright loads only the spec files a test list names and matches each test by the file that declares it, so a test declared in a helper needs a line naming its spec file that matches no project. */
@@ -213,14 +257,19 @@ function unitsOf(tests: readonly ListedTest[], timings: Timings): Unit[] {
     DURATION_WITHOUT_TIMINGS_MS;
   const units = new Map<
     string,
-    { specFiles: Set<string>; durationMs: number }
+    { tests: ListedTest[]; specFiles: Set<string>; durationMs: number }
   >();
   for (const test of tests) {
     const line = prefixLines(test).find((prefix) => lines.has(prefix));
     if (line === undefined) {
       throw new Error(`No test list line covers ${testPath(test)}`);
     }
-    const unit = units.get(line) ?? { specFiles: new Set(), durationMs: 0 };
+    const unit = units.get(line) ?? {
+      tests: [],
+      specFiles: new Set(),
+      durationMs: 0,
+    };
+    unit.tests.push(test);
     if (test.declaredIn !== test.file) {
       unit.specFiles.add(test.file);
     }
