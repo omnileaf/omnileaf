@@ -99,6 +99,7 @@ const projects: Project<PlatformOption>[] = [
 
 export default defineConfig<PlatformOption>({
   testDir: "tests/browser",
+  fullyParallel: true,
   forbidOnly: true,
   retries: 0,
   reporter: "list",

@@ -5,7 +5,7 @@ import { checkEveryScreenIn } from "./screen-checks.ts";
 
 const SCREEN_TIMEOUT_MS = 90_000;
 
-test.describe.configure({ mode: "parallel", timeout: SCREEN_TIMEOUT_MS });
+test.describe.configure({ timeout: SCREEN_TIMEOUT_MS });
 
 checkEveryScreenIn("light", {
   checks: [
