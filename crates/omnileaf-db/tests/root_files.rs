@@ -13,8 +13,9 @@ use std::{
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, StoredFile,
-        add_root, record_scanned_books, remove_book_files, remove_books_without_files, root_files,
+        BookDetails, BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook,
+        StoredFile, add_root, record_scanned_books, remove_book_files, remove_books_without_files,
+        root_files,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
@@ -60,6 +61,7 @@ impl Library {
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root,
                 location: PathBuf::from(location),

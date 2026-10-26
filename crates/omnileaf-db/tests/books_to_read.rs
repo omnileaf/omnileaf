@@ -14,9 +14,9 @@ use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     catalog::{
-        BookFile, BookReading, BookToRead, NewRoot, NewSeries, PageDimensions, PlaceInSeries,
-        RootId, RootKind, RootLocator, ScannedBook, SeriesNeighbour, add_root, book_to_read,
-        page_dimensions, place_in_series, record_scanned_books, remove_book_files,
+        BookDetails, BookFile, BookReading, BookToRead, NewRoot, NewSeries, PageDimensions,
+        PlaceInSeries, RootId, RootKind, RootLocator, ScannedBook, SeriesNeighbour, add_root,
+        book_to_read, page_dimensions, place_in_series, record_scanned_books, remove_book_files,
         store_page_dimensions,
     },
     store::Store,
@@ -76,6 +76,7 @@ impl Library {
             title: title_of(number),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root: self.root,
                 location,

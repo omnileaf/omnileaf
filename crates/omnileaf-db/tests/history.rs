@@ -19,9 +19,9 @@ use std::{
 use omnileaf_db::{
     Error,
     catalog::{
-        BookFile, BookReading, Cursor, NewRoot, NewSeries, Page, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, ScannedBook, add_root, record_scanned_books, remove_book_files,
-        remove_books_without_files,
+        BookDetails, BookFile, BookReading, Cursor, NewRoot, NewSeries, Page, PageRequest,
+        PageSize, RootId, RootKind, RootLocator, ScannedBook, add_root, record_scanned_books,
+        remove_book_files, remove_books_without_files,
     },
     history::{
         BookSessions, HistoryEntry, HistoryOf, ReadingSince, ReadingSummary, book_reading_time,
@@ -105,6 +105,7 @@ impl History {
             title: title_of(series, number),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root: self.root,
                 location: location_of(series, number),
