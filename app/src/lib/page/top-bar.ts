@@ -7,6 +7,8 @@ import { isPhone } from "./platform";
 export const NATIVE_TOP_BAR = {
   pageTitle:
     "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar",
+  largeTitle:
+    "flex items-center text-native-large-title leading-native-large-title font-native-large-title tracking-native-large-title text-native-on-top-bar",
   barTitle:
     "text-native-bar-title leading-native-bar-title font-native-bar-title tracking-native-bar-title text-native-on-top-bar",
   barButton:
@@ -32,5 +34,34 @@ export function backIcon(platform: Platform): IconName {
 }
 
 export function hasLargeTitle(platform: Platform, width: WidthClass): boolean {
+  return isPhone(platform, width);
+}
+
+export function foldsBarActionsIntoMore(
+  platform: Platform,
+  width: WidthClass,
+): boolean {
   return platform === "ios" && isPhone(platform, width);
+}
+
+export interface FoldingBarLook {
+  readonly row: string;
+  readonly title: string;
+}
+
+const CENTRED_TITLE: FoldingBarLook = { row: "", title: "px-sm text-center" };
+
+const FOLDING_BARS = {
+  ios: CENTRED_TITLE,
+  android: {
+    row: "box-content pbs-safe-top pbe-none min-block-native-top-bar",
+    title: "ps-lg pe-sm text-start",
+  },
+  linux: CENTRED_TITLE,
+  macos: CENTRED_TITLE,
+  windows: CENTRED_TITLE,
+} satisfies Record<Platform, FoldingBarLook>;
+
+export function foldingBarLook(platform: Platform): FoldingBarLook {
+  return FOLDING_BARS[platform];
 }

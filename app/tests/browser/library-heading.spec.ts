@@ -336,7 +336,7 @@ for (const platform of PLATFORMS) {
         test.use({ backend: backendFor(platform, library) });
 
         for (const width of PHONE_WIDTHS) {
-          test(`keeps the buttons on the title's row, or above an iPhone's large title, and moves the count and label under it at ${String(width)}px`, async ({
+          test(`keeps the buttons on the title's row, or above a phone's large title, and moves the count and label under it at ${String(width)}px`, async ({
             page,
           }, testInfo) => {
             test.skip(
@@ -362,7 +362,7 @@ for (const platform of PLATFORMS) {
             const isNarrowDesktopWindow =
               platform === "linux" && isStackedUnder(buttons, title, count);
             const isAboveLargeTitle =
-              platform === "ios" &&
+              (platform === "ios" || platform === "android") &&
               buttons.every((button) => button.y + button.height <= title.y);
             expect(
               isOnTitleRow || isNarrowDesktopWindow || isAboveLargeTitle,
