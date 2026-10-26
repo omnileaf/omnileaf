@@ -120,6 +120,7 @@ macro_rules! app_commands {
             found_library,
             choose_home_folder,
             use_found_library,
+            move_home_folder,
             first_launch_finished,
             finish_first_launch,
             set_app_language,
@@ -878,6 +879,15 @@ async fn choose_home_folder(
 async fn use_found_library(app: AppHandle) -> Result<(), IpcError> {
     let (setting, chosen) = home_folder::chosen(&app)?;
     setting.use_library_in(&chosen).await?;
+    app.request_restart();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn move_home_folder(app: AppHandle) -> Result<(), IpcError> {
+    let (setting, chosen) = home_folder::chosen(&app)?;
+    setting.move_to(&chosen).await?;
     app.request_restart();
     Ok(())
 }
