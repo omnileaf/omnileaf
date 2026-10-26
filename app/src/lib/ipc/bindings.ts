@@ -104,6 +104,7 @@ export const commands = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
 	outcome: RescanOutcome,
+	skippedTypes?: SkippedType[],
 } | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
 	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
 	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
@@ -313,6 +314,7 @@ export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
 	outcome: RescanOutcome,
+	skippedTypes?: SkippedType[],
 };
 
 export type FolderScan = {

@@ -7,7 +7,7 @@ use omnileaf_db::catalog::{ScannedBook, StoredFile};
 use omnileaf_sync_proto::BookId;
 
 use crate::{
-    FileChanges,
+    FileChanges, SkippedType,
     library_layout::{FoundBook, Layout},
     scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
     unread_books::UnreadBooks,
@@ -57,6 +57,12 @@ pub(crate) struct Recording {
 pub(crate) struct Forgetting {
     pub(crate) gone: Vec<PathBuf>,
     pub(crate) replaced: Vec<Replacement>,
+}
+
+pub(crate) struct Finished {
+    pub(crate) changes: FileChanges,
+    pub(crate) skipped_types: Vec<SkippedType>,
+    pub(crate) forgetting: Forgetting,
 }
 
 impl Plan {
@@ -135,17 +141,19 @@ impl Plan {
         recording
     }
 
-    pub(crate) fn finish(self) -> (FileChanges, Forgetting) {
-        let forgetting = Forgetting {
-            gone: self.gone,
-            replaced: self.replaced,
-        };
-        let changes = FileChanges {
-            unreadable_books: self.unread.unreadable,
-            unsupported_books: self.unread.unsupported,
-            ..self.changes
-        };
-        (changes, forgetting)
+    pub(crate) fn finish(self) -> Finished {
+        Finished {
+            changes: FileChanges {
+                unreadable_books: self.unread.unreadable,
+                unsupported_books: self.unread.unsupported,
+                ..self.changes
+            },
+            skipped_types: self.unread.skipped.into(),
+            forgetting: Forgetting {
+                gone: self.gone,
+                replaced: self.replaced,
+            },
+        }
     }
 
     fn compare(

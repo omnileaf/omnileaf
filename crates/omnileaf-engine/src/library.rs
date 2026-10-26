@@ -71,7 +71,7 @@ use crate::{
     moved_home::move_home,
     network_share::unreachable_share_of,
     reading_progress::{ReadingProgress, ReadingSaved},
-    rescan::rescan,
+    rescan::{Rescan, rescan},
     rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::{Check, RescanSchedule},
     scan::{Target, find_books_in, saturating_u32, scan, walk},
@@ -1298,16 +1298,21 @@ impl Library {
             .await?;
         let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding { found: 0 });
-        let outcome = if let Some(files) = self.files_of(&root.locator) {
+        let rescan = if let Some(files) = self.files_of(&root.locator) {
             self.rescan_files(root.id, root.kind, files, on_progress)
                 .await?
         } else {
             tracing::warn!("keep the books of a folder this device can't open");
-            RescanOutcome::Unreachable
+            RescanOutcome::Unreachable.into()
         };
-        self.note_availability(root.id, root.unavailable_since_ms, &outcome)
+        self.note_availability(root.id, root.unavailable_since_ms, &rescan.outcome)
             .await?;
-        Ok(FolderRescan { id, name, outcome })
+        Ok(FolderRescan {
+            id,
+            name,
+            outcome: rescan.outcome,
+            skipped_types: rescan.skipped_types,
+        })
     }
 
     async fn rescan_files(
@@ -1316,7 +1321,7 @@ impl Library {
         kind: RootKind,
         files: RootFiles,
         mut on_progress: impl FnMut(ScanProgress) + Send,
-    ) -> Result<RescanOutcome, LibraryError> {
+    ) -> Result<Rescan, LibraryError> {
         match walk(
             Arc::clone(&files.storage),
             files.folder.clone(),
@@ -1326,18 +1331,18 @@ impl Library {
         {
             Ok(layout) => {
                 let target = self.target(root, kind, files).await?;
-                let outcome =
+                let rescanned =
                     rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
-                if let RescanOutcome::Rescanned(changes) = &outcome
+                if let RescanOutcome::Rescanned(changes) = &rescanned.outcome
                     && changes.removed > 0
                 {
                     self.note_catalog_written();
                 }
-                Ok(outcome)
+                Ok(rescanned)
             }
             Err(error) => {
                 tracing::warn!(%error, "keep the books of a folder the rescan can't read");
-                Ok(RescanOutcome::Unreachable)
+                Ok(RescanOutcome::Unreachable.into())
             }
         }
     }
