@@ -42,7 +42,7 @@ export const SCREENS = {
 const SPEED_SPECS = "**/*.speed.ts";
 const NATIVE_SPECS = /@native/;
 const DESKTOP_ONLY_SPECS = "**/*.desktop.spec.ts";
-const SCREEN_SWEEPS = new RegExp(SCREEN_SWEEP_TAG);
+const SCREEN_SWEEPS = new RegExp(`${SCREEN_SWEEP_TAG}\\b`);
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
 const group = testGroupFromEnvironment(process.env.PLAYWRIGHT_GROUP);
