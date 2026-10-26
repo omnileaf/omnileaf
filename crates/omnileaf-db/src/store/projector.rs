@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use omnileaf_sync_proto::{BookId, ProfileId, Value};
 use rusqlite::Connection;
@@ -14,6 +14,9 @@ use crate::{
 
 const REGISTERS_SHOWN_IN_PROFILE: &str = "SELECT entity, id, field, value FROM sync_register
     WHERE profile IN (?1, ?2)";
+const PROJECT_BOOK_STATE: &str =
+    "INSERT INTO book_state (book_id, position_page, furthest_page, is_read)
+    VALUES (?1, ?2, ?3, ?4)";
 
 const PROJECT_POSITION: &str = "INSERT INTO book_state (book_id, position_page) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET position_page = excluded.position_page";
@@ -21,6 +24,13 @@ const PROJECT_FURTHEST: &str = "INSERT INTO book_state (book_id, furthest_page) 
     ON CONFLICT (book_id) DO UPDATE SET furthest_page = excluded.furthest_page";
 const PROJECT_READ: &str = "INSERT INTO book_state (book_id, is_read) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET is_read = excluded.is_read";
+
+#[derive(Default)]
+struct BookStateRow {
+    position_page: Option<u32>,
+    furthest_page: Option<u32>,
+    is_read: Option<bool>,
+}
 
 enum Projection {
     Position { book: BookId, page: Option<u32> },
@@ -44,6 +54,22 @@ impl Projection {
                 is_read: flag(value).ok()?,
             },
         })
+    }
+
+    const fn book(&self) -> BookId {
+        match *self {
+            Self::Position { book, .. } | Self::Furthest { book, .. } | Self::Read { book, .. } => {
+                book
+            }
+        }
+    }
+
+    const fn fill(&self, row: &mut BookStateRow) {
+        match *self {
+            Self::Position { page, .. } => row.position_page = page,
+            Self::Furthest { page, .. } => row.furthest_page = page,
+            Self::Read { is_read, .. } => row.is_read = is_read,
+        }
     }
 
     fn apply(&self, connection: &Connection) -> rusqlite::Result<usize> {
@@ -72,9 +98,19 @@ pub(crate) fn project(connection: &Connection, key: Key, value: Value) -> Result
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
     let mut projected = BTreeSet::new();
+    let mut rows: BTreeMap<BookId, BookStateRow> = BTreeMap::new();
     for (key, projection) in shown_projections(connection)? {
-        projection.apply(connection)?;
+        projection.fill(rows.entry(projection.book()).or_default());
         projected.insert(key);
+    }
+    let mut insert = connection.prepare(PROJECT_BOOK_STATE)?;
+    for (book, row) in rows {
+        insert.execute((
+            book.as_bytes(),
+            row.position_page,
+            row.furthest_page,
+            row.is_read,
+        ))?;
     }
     tracing::info!(
         registers = projected.len(),
