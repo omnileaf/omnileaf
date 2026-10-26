@@ -629,6 +629,9 @@ test.describe("a series with details while Screenshot mode is on", () => {
   });
 });
 
+const PHONE_BUTTON_WEIGHT = "500";
+const REGULAR_WEIGHT = "400";
+
 for (const platform of ["linux", "android"] as const) {
   test.describe(`a series being read on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -639,14 +642,22 @@ for (const platform of ["linux", "android"] as const) {
       },
     });
 
-    test("names its reading state in regular type", async ({ page }) => {
+    test("names its reading state in regular type, or in an Android phone's button weight", async ({
+      page,
+    }) => {
+      const isAndroidPhone =
+        platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH;
+
       await openSeries(page);
 
       await expect(
         about(page)
           .getByRole("button", { name: "Reading state: Reading" })
           .getByText("Reading", { exact: true }),
-      ).toHaveCSS("font-weight", "400");
+      ).toHaveCSS(
+        "font-weight",
+        isAndroidPhone ? PHONE_BUTTON_WEIGHT : REGULAR_WEIGHT,
+      );
     });
   });
 }

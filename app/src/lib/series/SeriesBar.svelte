@@ -63,15 +63,15 @@
     class={cn(
       "flex items-center justify-center gap-2xs rounded-full",
       barChip(platform, width.current),
-      "ios:ps-sm ios:pe-md ios:inline-auto",
+      !isNative && "ios:ps-sm ios:pe-md ios:inline-auto",
     )}
   >
     {#if isNative}
       <Icon name={backIcon(platform)} class="shrink-0" />
     {:else}
       <ChevronLeft size={BACK_ICON_SIZE} aria-hidden="true" class="shrink-0" />
+      <span class="hidden text-body ios:inline">{m.series_back()}</span>
     {/if}
-    <span class="hidden text-body ios:inline">{m.series_back()}</span>
   </a>
   <span
     aria-hidden="true"

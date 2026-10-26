@@ -5,7 +5,13 @@
     name,
     seriesCount,
     from,
-  }: { name: string; seriesCount: number; from: string } = $props();
+    linkClass,
+  }: {
+    name: string;
+    seriesCount: number;
+    from: string;
+    linkClass: string;
+  } = $props();
 
   const href = $derived(
     resolve(
@@ -16,10 +22,7 @@
 </script>
 
 {#if seriesCount > 1}
-  <a
-    {href}
-    class="rounded-link text-foreground underline decoration-foreground/40 underline-offset-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent touch:touch-target-around"
-  >
+  <a {href} class={linkClass}>
     {name}
   </a>
 {:else}

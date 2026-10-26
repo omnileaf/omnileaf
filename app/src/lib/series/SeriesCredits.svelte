@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SeriesCreator } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { roleName } from "./creator-role.ts";
@@ -19,6 +21,8 @@
     onShowAll: () => void;
   } = $props();
 
+  const platform = currentPlatform();
+  const width = new WindowWidth();
   const credits = $derived(creditsOf(creators));
   const lines = $derived.by(() => {
     if (credits === undefined) {
@@ -55,7 +59,12 @@
           more: m.series_more_creators({ count: credits.more }),
           count: creators.length,
         })}
-        class="font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline touch:touch-target-around"
+        class={[
+          "font-medium underline-offset-4 hover:underline focus-visible:underline touch:touch-target-around",
+          isPhone(platform, width.current)
+            ? "text-native-on-button-plain"
+            : "text-foreground",
+        ]}
         onclick={onShowAll}
       >
         {m.series_more_creators({ count: credits.more })}
