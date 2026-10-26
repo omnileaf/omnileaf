@@ -331,6 +331,7 @@ for (const { screen, backend, reach, label, isShownOn } of ICON_ACTIONS) {
         const action = await reach(page);
         await action.hover();
         await expect(tooltipOf(page, label)).toBeVisible();
+        await settle(tooltipOf(page, label));
 
         const violations = await accessibilityViolations(page);
 
