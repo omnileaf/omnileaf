@@ -23,10 +23,24 @@
     CollapsibleContent,
     CollapsibleTrigger,
   } from "#lib/components/ui/collapsible/index.ts";
-  import type { ReadMark, SeriesOverview } from "#lib/ipc/bindings.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import {
+    Item,
+    ItemContent,
+    ItemMedia,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
+  import type {
+    Platform,
+    ReadMark,
+    SeriesOverview,
+  } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -40,6 +54,28 @@
 
   const ICON_SIZE = 16;
   const NO_COVER_ICON_SIZE = 32;
+
+  interface DetailsRow {
+    readonly plate: string;
+    readonly closed: IconName;
+    readonly open: IconName;
+  }
+
+  const DETAILS_ROWS: Readonly<Record<Platform, DetailsRow | undefined>> = {
+    ios: {
+      plate: "overflow-hidden rounded-native-group bg-native-group",
+      closed: "chevron-right",
+      open: "chevron-down",
+    },
+    android: {
+      plate: "-ms-page-start -me-page-end",
+      closed: "chevron-down",
+      open: "chevron-up",
+    },
+    linux: undefined,
+    macos: undefined,
+    windows: undefined,
+  };
 
   let {
     overview,
@@ -56,6 +92,12 @@
     onMarkAll: (mark: ReadMark) => Promise<void>;
     onEditDetails: (() => void) | undefined;
   } = $props();
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const detailsRow = $derived(
+    isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
+  );
 
   let areDetailsOpen = $state(false);
   let details: HTMLElement | undefined = $state();
@@ -175,19 +217,38 @@
     </Card>
   {:else if overview.bookCount > 0}
     <Collapsible bind:open={areDetailsOpen} class="flex flex-col gap-md">
-      <CollapsibleTrigger
-        class={cn(SERIES_CONTROL, "justify-between text-foreground")}
-      >
-        <span class="flex items-center gap-sm">
-          <Info size={ICON_SIZE} aria-hidden="true" />
-          {m.series_details()}
-        </span>
-        {#if areDetailsOpen}
-          <ChevronUp size={ICON_SIZE} aria-hidden="true" />
-        {:else}
-          <ChevronDown size={ICON_SIZE} aria-hidden="true" />
-        {/if}
-      </CollapsibleTrigger>
+      {#if detailsRow === undefined}
+        <CollapsibleTrigger
+          class={cn(SERIES_CONTROL, "justify-between text-foreground")}
+        >
+          <span class="flex items-center gap-sm">
+            <Info size={ICON_SIZE} aria-hidden="true" />
+            {m.series_details()}
+          </span>
+          {#if areDetailsOpen}
+            <ChevronUp size={ICON_SIZE} aria-hidden="true" />
+          {:else}
+            <ChevronDown size={ICON_SIZE} aria-hidden="true" />
+          {/if}
+        </CollapsibleTrigger>
+      {:else}
+        <div class={detailsRow.plate}>
+          <Item look="row">
+            {#snippet child({ props })}
+              <CollapsibleTrigger {...props}>
+                <ItemMedia><Icon name="info" /></ItemMedia>
+                <ItemContent
+                  ><ItemTitle>{m.series_details()}</ItemTitle></ItemContent
+                >
+                <Icon
+                  name={areDetailsOpen ? detailsRow.open : detailsRow.closed}
+                  class="shrink-0 text-muted"
+                />
+              </CollapsibleTrigger>
+            {/snippet}
+          </Item>
+        </div>
+      {/if}
       <CollapsibleContent>
         <Card class="p-lg shadow-card-rest">
           <SeriesDetailsList {overview} bind:ref={details} />
