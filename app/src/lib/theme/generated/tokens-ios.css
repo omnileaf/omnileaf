@@ -187,6 +187,7 @@
   --native-weight-end-stat-label: 400;
   --native-color-accent-hover: #00000000;
   --native-color-accent-pressed: #00000000;
+  --native-spacing-book-progress: 56px;
 }
 
 :root[data-platform="ios"],

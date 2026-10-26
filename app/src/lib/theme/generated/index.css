@@ -273,6 +273,7 @@
   --font-weight-native-end-stat-label: var(--native-weight-end-stat-label);
   --color-native-accent-hover: var(--native-color-accent-hover);
   --color-native-accent-pressed: var(--native-color-accent-pressed);
+  --spacing-native-book-progress: var(--native-spacing-book-progress);
 }
 
 @media (prefers-reduced-motion: reduce) {

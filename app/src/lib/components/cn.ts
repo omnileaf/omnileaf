@@ -336,6 +336,7 @@ export const TOKEN_THEME = {
     "menu-item-inline",
     "menu-pad",
     "native-action-group",
+    "native-book-progress",
     "native-button",
     "native-button-inline",
     "native-button-large",
