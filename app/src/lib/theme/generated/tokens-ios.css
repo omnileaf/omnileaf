@@ -147,6 +147,7 @@
   --native-tracking-notice-label: -0.23px;
   --native-spacing-notice-inline: 8px;
   --native-spacing-notice-top: 54px;
+  --native-spacing-continue-cover: 72px;
 }
 
 :root[data-platform="ios"],

@@ -220,4 +220,5 @@
   --native-shadow-notice-lift: var(--shadow-toast);
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;
+  --native-spacing-continue-cover: 0px;
 }

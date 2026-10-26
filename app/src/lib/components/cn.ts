@@ -322,6 +322,7 @@ export const TOKEN_THEME = {
     "native-button-large-inline",
     "native-button-small",
     "native-button-small-inline",
+    "native-continue-cover",
     "native-cover-badge",
     "native-dialog",
     "native-dialog-button",

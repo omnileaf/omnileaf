@@ -366,7 +366,7 @@
             onRescan={rescan}
           />
         {:else}
-          <ContinueCard {overview} isWide={isWide.current} />
+          <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
           {#if books?.list.kind === "failed"}
             <p class="text-body text-muted">{m.series_books_failed()}</p>
           {:else if books?.list.kind === "loaded"}
