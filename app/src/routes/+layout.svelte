@@ -165,6 +165,12 @@
 
   $effect(() => {
     if (data.libraryProblem === null) {
+      void commands.setBookOpen(bookPresence.isOpen);
+    }
+  });
+
+  $effect(() => {
+    if (data.libraryProblem === null) {
       void commands.setScheduledRescans(
         scheduledRescans.isOnFor(data.appInfo.platform),
       );
