@@ -23,7 +23,7 @@ const NATIVE_ROWS: readonly RowLook[] = [
   {
     platform: "ios",
     oneLine: 52,
-    twoLines: 68,
+    twoLines: 72,
     title: "17px",
     subtitle: "15px",
     start: "16px",
@@ -104,8 +104,8 @@ test("draws iOS's hairline between rows from where the text starts", async () =>
   const rule = ruleAbove(element("Two lines"));
 
   expect(rule.insetInlineStart).toBe("16px");
-  expect(rule.blockSize).toBe("0.5px");
-  expect(rule.backgroundColor).toBe("rgba(60, 60, 67, 0.29)");
+  expect(rule.blockSize).toBe("1px");
+  expect(rule.backgroundColor).toBe("rgba(60, 60, 67, 0.12)");
 });
 
 test("draws no dividers and no chevron on Android", async () => {
