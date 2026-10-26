@@ -30,7 +30,7 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=?)"]
+            ["SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)"]
         );
     }
 }
