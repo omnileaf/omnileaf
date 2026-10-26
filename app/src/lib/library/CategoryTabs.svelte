@@ -70,12 +70,8 @@
     if (root === null) {
       return;
     }
-    const tabs = [...root.querySelectorAll<HTMLElement>("[data-tab]")];
-    const shown = root.getBoundingClientRect();
-    for (const tab of tabs) {
-      const box = tab.getBoundingClientRect();
-      markHidden(tab, box.left < shown.left || box.right > shown.right);
-    }
+    measureTabs(root);
+    const buttons = tabs.flatMap(({ id }) => buttonOf(root, id) ?? []);
     const watching = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -84,13 +80,26 @@
       },
       { root, threshold: 1 },
     );
-    for (const tab of tabs) {
-      watching.observe(tab);
+    for (const button of buttons) {
+      watching.observe(button);
     }
     return () => {
       watching.disconnect();
     };
   });
+
+  function buttonOf(root: HTMLElement, id: string): HTMLElement | null {
+    return root.querySelector<HTMLElement>(`[data-tab="${CSS.escape(id)}"]`);
+  }
+
+  function measureTabs(root: HTMLElement): void {
+    const shown = root.getBoundingClientRect();
+    hidden.clear();
+    for (const button of root.querySelectorAll("[data-tab]")) {
+      const box = button.getBoundingClientRect();
+      markHidden(button, box.left < shown.left || box.right > shown.right);
+    }
+  }
 
   function markHidden(tab: Element, isHidden: boolean): void {
     const id = (tab as HTMLElement).dataset.tab;
@@ -107,10 +116,8 @@
   let followedTab: string | undefined;
 
   $effect(() => {
-    const tab = strip?.querySelector<HTMLElement>(
-      `[data-tab="${CSS.escape(chosen)}"]`,
-    );
-    if (strip == null || tab == null) {
+    const tab = strip === null ? null : buttonOf(strip, chosen);
+    if (strip === null || tab === null) {
       return;
     }
     const isChange = followedTab !== undefined && followedTab !== chosen;
@@ -152,9 +159,9 @@
     if (next !== undefined) {
       onChoose(next.id);
       flushSync();
-      strip
-        ?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(next.id)}"]`)
-        ?.focus({ preventScroll: true });
+      if (strip !== null) {
+        buttonOf(strip, next.id)?.focus({ preventScroll: true });
+      }
     }
   }
 

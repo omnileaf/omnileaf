@@ -5,7 +5,7 @@ import {
   type LibraryCategory,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -511,6 +511,44 @@ test.describe("with more categories than fit", () => {
       const seaStories = tabs(page).getByRole("tab", { name: "Sea stories" });
       await expect(seaStories).toBeFocused();
       await expect(seaStories).toHaveAttribute("aria-selected", "true");
+      await expect.poll(() => cutTabs(page)).toEqual([]);
+    });
+  });
+
+  test.describe("added while the library is open", () => {
+    let keptCategories: readonly LibraryCategory[] = CATEGORIES;
+
+    test.use({
+      backend: {
+        ...backendWith(MANY_CATEGORIES),
+        libraryCategories: () => [...keptCategories],
+      },
+    });
+
+    test.beforeEach(({ page }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "phones scroll their tabs",
+      );
+      keptCategories = CATEGORIES;
+    });
+
+    test("tucks the new tabs that don't fit into More", async ({ page }) => {
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await openLibrary(page);
+      const last = MANY_CATEGORIES.at(-1)?.name ?? "";
+
+      keptCategories = MANY_CATEGORIES;
+      await emitFakeEvent(page, "library-changed");
+      await expect(
+        tabs(page).getByRole("tab", { name: last, includeHidden: true }),
+      ).toBeAttached();
+      await page.getByRole("button", { name: "More" }).click();
+
+      await expect(
+        page.getByRole("menu").getByRole("menuitemradio", { name: last }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
       await expect.poll(() => cutTabs(page)).toEqual([]);
     });
   });
