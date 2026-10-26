@@ -1,9 +1,15 @@
+use std::{
+    panic,
+    sync::atomic::{AtomicUsize, Ordering},
+    thread,
+};
+
 use omnileaf_cache::{CacheError, CacheKey, DiskCache};
 use omnileaf_formats::FormatError;
-use omnileaf_imaging::{BookSideBorders, ImagingError, measure_side_borders};
+use omnileaf_imaging::{BookSideBorders, ImagingError, PageSideBorders, measure_side_borders};
 
 use crate::{
-    decode_permits::DecodePermits,
+    decode_permits::{DECODES_AT_ONCE, DecodePermits},
     describe_error,
     open_books::{BookFileAt, OpenBook},
 };
@@ -78,17 +84,56 @@ fn kept_or_measured(
 }
 
 fn measured(opened: &OpenBook, decodes: &DecodePermits) -> Result<BookSideBorders, MeasureError> {
-    let pages = (0..opened.page_count)
-        .map(|index| {
-            let page = opened
-                .lock()
-                .read_page(index)
-                .map_err(|source| MeasureError::Read { index, source })?;
-            let _decoding = decodes.hold();
-            measure_side_borders(&page).map_err(|source| MeasureError::Measure { index, source })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(BookSideBorders::of_pages(pages))
+    let next = AtomicUsize::new(0);
+    let measure_the_rest = || measure_pages_from(&next, opened, decodes);
+    let measured = thread::scope(|scope| {
+        let measurers: Vec<_> = (0..DECODES_AT_ONCE.min(opened.page_count))
+            .map(|_| scope.spawn(measure_the_rest))
+            .collect();
+        measurers
+            .into_iter()
+            .map(|measurer| {
+                measurer
+                    .join()
+                    .unwrap_or_else(|stop| panic::resume_unwind(stop))
+            })
+            .collect::<Result<Vec<_>, _>>()
+    })?;
+    Ok(BookSideBorders::of_pages(measured.into_iter().flatten()))
+}
+
+fn measure_pages_from(
+    next: &AtomicUsize,
+    opened: &OpenBook,
+    decodes: &DecodePermits,
+) -> Result<Vec<PageSideBorders>, MeasureError> {
+    let mut measured = Vec::new();
+    loop {
+        let index = next.fetch_add(1, Ordering::Relaxed);
+        if index >= opened.page_count {
+            return Ok(measured);
+        }
+        match measure_page(opened, decodes, index) {
+            Ok(page) => measured.push(page),
+            Err(error) => {
+                next.store(opened.page_count, Ordering::Relaxed);
+                return Err(error);
+            }
+        }
+    }
+}
+
+fn measure_page(
+    opened: &OpenBook,
+    decodes: &DecodePermits,
+    index: usize,
+) -> Result<PageSideBorders, MeasureError> {
+    let page = opened
+        .lock()
+        .read_page(index)
+        .map_err(|source| MeasureError::Read { index, source })?;
+    let _decoding = decodes.hold();
+    measure_side_borders(&page).map_err(|source| MeasureError::Measure { index, source })
 }
 
 fn side_borders_key(file: BookFileAt) -> Result<CacheKey, CacheError> {
