@@ -6,12 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
-  import {
-    Item,
-    ItemContent,
-    ItemDescription,
-    ItemTitle,
-  } from "#lib/components/ui/item/index.ts";
+  import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import type { PhonePlatform } from "#lib/page/platform.ts";
@@ -19,11 +14,9 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { bookActions } from "./book-actions";
-  import { bookSummary } from "./book-reading";
-  import BookMarks from "./BookMarks.svelte";
   import BookMenu from "./BookMenu.svelte";
-  import BookProgress from "./BookProgress.svelte";
   import BookRowText from "./BookRowText.svelte";
+  import PhoneBookRowText from "./PhoneBookRowText.svelte";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
   import { RowSwipe } from "./row-swipe.svelte";
@@ -255,39 +248,11 @@
                 href={resolve("/read/[book]", { book: book.id })}
                 draggable="false"
               >
-                <ItemContent class="gap-2xs min-inline-none">
-                  <span class="flex items-center gap-icon-gap min-inline-none">
-                    <ItemTitle
-                      class={[
-                        "min-inline-none",
-                        hasTwoLineTitles
-                          ? "line-clamp-2 wrap-break-word min-block-two-lines"
-                          : "truncate",
-                        book.reading.state === "read" && "text-muted",
-                      ]}
-                    >
-                      {book.title}
-                    </ItemTitle>
-                    <BookMarks {book} />
-                  </span>
-                  <ItemDescription class="truncate"
-                    >{bookSummary(book)}</ItemDescription
-                  >
-                  {#if phone.progress === "below"}
-                    <span class="mbs-xs flex block-progress-thin">
-                      <BookProgress
-                        {book}
-                        class="inline-native-book-progress max-inline-full"
-                      />
-                    </span>
-                  {/if}
-                </ItemContent>
-                {#if phone.progress === "beside"}
-                  <BookProgress
-                    {book}
-                    class="shrink-0 inline-native-book-progress"
-                  />
-                {/if}
+                <PhoneBookRowText
+                  {book}
+                  progress={phone.progress}
+                  hasTwoLineTitle={hasTwoLineTitles}
+                />
               </a>
             {/snippet}
           </Item>
