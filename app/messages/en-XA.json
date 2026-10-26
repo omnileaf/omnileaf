@@ -1780,6 +1780,7 @@
   ],
   "series_select": "⟦Šéļéçţ···⟧",
   "series_select_all": "⟦Šéļéçţ áļļ····⟧",
+  "series_deselect_all": "⟦Ðéšéļéçţ áļļ·····⟧",
   "series_select_book": "⟦Šéļéçţ {title}······⟧",
   "series_selected_count": [
     {
@@ -1811,6 +1812,7 @@
   ],
   "series_selection_toolbar": "⟦Šéļéçţéð ƀööķš······⟧",
   "series_clear_selection": "⟦Çļéáŕ ţĥé šéļéçţíöñ········⟧",
+  "series_selection_done": "⟦Ðöñé··⟧",
   "series_clear_selection_with_key": "⟦{key}, çļéáŕ ţĥé šéļéçţíöñ···········⟧",
   "series_escape_key": "⟦Éšç··⟧",
   "series_column_actions": "⟦Áçţíöñš···⟧",

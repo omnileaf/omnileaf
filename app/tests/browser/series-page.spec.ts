@@ -37,6 +37,7 @@ const LIBRARY_CHANGED = "library-changed";
 const READING_SAVED = "reading-saved";
 const JUST_UNDER = 6;
 const SWIPED_PAST_HALFWAY = 0.7;
+const SWIPED_PART_WAY = 0.3;
 const READ = { state: "read" } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const ON_PAGE_15 = { state: "started", page: 15 } as const;
@@ -1540,17 +1541,21 @@ test.describe("on Android", () => {
     const all = shown(page, "All");
     await all.evaluate((segment, top) => {
       segment.closest("main")?.scrollBy({
-        top: segment.getBoundingClientRect().top - top - 1,
+        top: segment.getBoundingClientRect().top - top + 1,
       });
     }, barTop);
     await framesPassed(page);
-    const touched = await all.evaluate((segment) => {
+    const touched = await all.evaluate((segment, top) => {
       const box = segment.getBoundingClientRect();
+      const under = top + 1;
+      if (under < box.top || under > box.bottom) {
+        return "the All segment is not under the bar";
+      }
       return document
-        .elementFromPoint(box.left + box.width / 2, box.top + 1)
+        .elementFromPoint(box.left + box.width / 2, under)
         ?.closest("[role=group]")
         ?.getAttribute("aria-label");
-    });
+    }, barTop);
 
     expect(touched).toBe("Selected books");
   });
@@ -1728,16 +1733,35 @@ test.describe("swiping back from the edge on an iPhone", () => {
 
     await expect(page).toHaveURL(/\/$/);
   });
+
+  test("keeps the picked books' actions in place while a swipe back is on its way to end picking", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the picked books' actions float in place of the tab bar on phones",
+    );
+    await openFromTheLibrary(page);
+    const start = await boxOf(page.getByRole("main"));
+    await pickBooks(page, 4);
+    const actions = await boxOf(selectedBooks(page));
+    await expect.poll(() => swipes).toBeDefined();
+
+    await swipes?.send({ kind: "moved", progress: SWIPED_PART_WAY });
+
+    expect((await boxOf(page.getByRole("main"))).x).toBe(start.x);
+    expect((await boxOf(selectedBooks(page))).y).toBeCloseTo(actions.y, 0);
+  });
 });
 
 test.describe("on an iPhone", () => {
-  const SNUG_GAP = 20;
+  const FLOATING_GAP = 40;
 
   test.use({
     backend: { ...SHELF_BACKEND, appInfo: onPlatform("ios").backend.appInfo },
   });
 
-  test("keeps the picked books' actions just above the tab bar", async ({
+  test("floats the picked books' actions in place of the tab bar", async ({
     page,
   }) => {
     test.skip(
@@ -1747,14 +1771,13 @@ test.describe("on an iPhone", () => {
     await openSeries(page);
     await pickBooks(page, 4);
 
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
     const actions = await boxOf(
       page.getByRole("group", { name: "Selected books" }),
     );
-    const tabBar = await boxOf(page.getByRole("navigation", { name: "Main" }));
-
-    const gap = tabBar.y - (actions.y + actions.height);
+    const gap = viewportOf(page).height - (actions.y + actions.height);
     expect(gap).toBeGreaterThanOrEqual(0);
-    expect(gap).toBeLessThanOrEqual(SNUG_GAP);
+    expect(gap).toBeLessThanOrEqual(FLOATING_GAP);
   });
 });
 

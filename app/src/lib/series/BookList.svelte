@@ -59,6 +59,7 @@
     onNearEnd,
     selection,
     onStartPicking,
+    onPickedNone,
     onMark,
     onSwiped,
   }: {
@@ -70,6 +71,7 @@
     onNearEnd: () => void;
     selection: Selection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
+    onPickedNone: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
     onSwiped: (
       book: SeriesBook,
@@ -121,7 +123,32 @@
 
 {#snippet row(book: SeriesBook)}
   {@const isPicked = selection.has(book.id)}
-  {#if selection.isSelecting}
+  {#if selection.isSelecting && phone !== undefined}
+    <Item look="row" data-picked={isPicked || undefined} class="cursor-pointer">
+      {#snippet child({ props })}
+        <label {...props}>
+          <Checkbox
+            bind:checked={
+              () => isPicked,
+              () => {
+                selection.toggle(book.id);
+                if (selection.count === 0) {
+                  onPickedNone();
+                }
+              }
+            }
+            aria-label={m.series_select_book({ title: book.title })}
+            class="rounded-native-select block-native-select inline-native-select aria-checked:border-native-button-primary aria-checked:bg-native-button-primary aria-checked:text-native-on-button-primary"
+          />
+          <PhoneBookRowText
+            {book}
+            progress={phone.progress}
+            hasTwoLineTitle={hasTwoLineTitles}
+          />
+        </label>
+      {/snippet}
+    </Item>
+  {:else if selection.isSelecting}
     <label
       data-picked={isPicked || undefined}
       class={[

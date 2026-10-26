@@ -1,11 +1,13 @@
 <script lang="ts">
   import { BookmarkPlus, Eye, EyeOff, List, X } from "@lucide/svelte";
+  import { Portal } from "bits-ui";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
     Platform,
@@ -16,7 +18,12 @@
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
-  import { phoneOf } from "#lib/page/platform.ts";
+  import { type PhonePlatform, phoneOf } from "#lib/page/platform.ts";
+  import {
+    DOCKED_BAR,
+    DOCKED_ROW,
+    FLOATING_BAR,
+  } from "#lib/navigation/tab-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { shortcut } from "#lib/shortcut.ts";
@@ -27,15 +34,63 @@
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import { SERIES_CONTROL } from "./series-control.ts";
+  import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
+  type BarControl = "close" | "done" | "selectAll";
+
+  interface PhonePicking {
+    readonly leading: readonly BarControl[];
+    readonly trailing: readonly BarControl[];
+    readonly endsWhenNonePicked: boolean;
+    readonly hasDeselectAll: boolean;
+    readonly title: string;
+    readonly toolbar: string;
+    readonly toolbarRow: string;
+    readonly action: string;
+    readonly isIconOnly: boolean;
+    readonly isDocked: boolean;
+  }
+
+  const PHONE_PICKING: Readonly<Record<PhonePlatform, PhonePicking>> = {
+    ios: {
+      leading: ["selectAll"],
+      trailing: ["done"],
+      endsWhenNonePicked: false,
+      hasDeselectAll: true,
+      title: "text-center",
+      toolbar: FLOATING_BAR,
+      toolbarRow: "flex items-center gap-2xs max-inline-full",
+      action: "disabled:text-faint",
+      isIconOnly: true,
+      isDocked: false,
+    },
+    android: {
+      leading: ["close"],
+      trailing: ["selectAll"],
+      endsWhenNonePicked: true,
+      hasDeselectAll: false,
+      title: "",
+      toolbar: `fixed inset-x-none inset-be-none z-tab-bar ps-safe-start pbe-safe-bottom ${DOCKED_BAR}`,
+      toolbarRow: `flex ${DOCKED_ROW}`,
+      action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
+      isIconOnly: false,
+      isDocked: true,
+    },
+  };
+
   const ICON_SIZE = 18;
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
-    { mark: "read", icon: Eye, label: m.series_mark_read },
-    { mark: "unread", icon: EyeOff, label: m.series_mark_unread },
+    { mark: "read", icon: Eye, glyph: "eye", label: m.series_mark_read },
+    {
+      mark: "unread",
+      icon: EyeOff,
+      glyph: "eye-off",
+      label: m.series_mark_unread,
+    },
   ] as const;
 
   let {
@@ -85,6 +140,11 @@
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const width = new WindowWidth();
   const phonePlatform = $derived(phoneOf(platform, width.current));
+  const phone = $derived(
+    phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
+  );
+  let toolbarHeight = $state(0);
+  const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
   const notices = getNotices();
   const headingId = $props.id();
   const dates = $derived(
@@ -97,10 +157,14 @@
 
   let outcome: Outcome = $state({ kind: "none" });
   let section: HTMLElement | undefined = $state();
+  let toolbar: HTMLElement | undefined = $state();
   let heading: HTMLElement | null = $state(null);
   let selectAllBox: HTMLElement | null = $state(null);
 
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
+  const isAllPicked = $derived(
+    phone?.hasDeselectAll === true && isComplete && selection.hasAll(ids),
+  );
 
   async function startPickingFrom(book: SeriesBook): Promise<void> {
     outcome = { kind: "none" };
@@ -114,12 +178,15 @@
     return (
       focused === null ||
       focused === document.body ||
-      (section?.contains(focused) ?? false)
+      [section, toolbar].some((part) => part?.contains(focused) === true)
     );
   }
 
+  let endings = 0;
+
   async function end(): Promise<void> {
     const isFocusToKeep = isFocusHereOrLost();
+    endings += 1;
     selection.end();
     if (isFocusToKeep) {
       await tick();
@@ -130,14 +197,20 @@
   let isPickingAll = $state(false);
 
   async function pickAll(): Promise<void> {
+    const endsBefore = endings;
     isPickingAll = true;
     try {
       await onLoadAll();
     } finally {
       isPickingAll = false;
     }
+    if (endings !== endsBefore) {
+      return;
+    }
     selection.pickAll(ids);
-    outcome = { kind: "pickedAll", count: selection.count };
+    if (!isPhonePicking) {
+      outcome = { kind: "pickedAll", count: selection.count };
+    }
   }
 
   async function markBooks(picked: BookId[], read: ReadMark): Promise<boolean> {
@@ -238,6 +311,18 @@
         return m.series_selected_count({ count: shown.count });
     }
   }
+
+  function endPicking(): void {
+    void end();
+  }
+
+  function pickAllShown(): void {
+    void pickAll();
+  }
+
+  function pickNone(): void {
+    selection.pickOnly([]);
+  }
 </script>
 
 <svelte:window
@@ -264,13 +349,26 @@
   class="flex flex-col gap-sm"
 >
   <div
+    data-picking-bar={isPhonePicking || undefined}
     class={[
       "flex items-center gap-sm min-block-series-back",
       selection.isSelecting &&
-        "sticky -inset-bs-page-top z-series-bar -mx-page-start bg-background px-page-start pbs-series-bar-top pbe-xs",
+        "sticky -inset-bs-page-top z-series-bar -mx-page-start px-page-start pbs-series-bar-top pbe-xs",
+      isPhonePicking
+        ? "flex-wrap bg-native-grouped-ground"
+        : selection.isSelecting && "bg-background",
     ]}
   >
-    {#if selection.isSelecting}
+    {#if isPhonePicking}
+      <BarControls
+        controls={phone?.leading ?? []}
+        {isPickingAll}
+        {isAllPicked}
+        onEnd={endPicking}
+        onPickAll={pickAllShown}
+        onPickNone={pickNone}
+      />
+    {:else if selection.isSelecting}
       <Tooltip
         label={m.series_clear_selection()}
         type="button"
@@ -294,9 +392,11 @@
       bind:this={heading}
       id={headingId}
       tabindex="-1"
+      aria-live={isPhonePicking ? "polite" : undefined}
       class={[
         "text-group-title font-semibold",
         selection.isSelecting && "flex-1",
+        isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
         isWide.current && "sr-only",
       ]}
     >
@@ -304,7 +404,16 @@
         ? m.series_selected_count({ count: selection.count })
         : m.series_books_heading({ count: bookCount })}
     </h2>
-    {#if !selection.isSelecting && !isWide.current}
+    {#if isPhonePicking}
+      <BarControls
+        controls={phone?.trailing ?? []}
+        {isPickingAll}
+        {isAllPicked}
+        onEnd={endPicking}
+        onPickAll={pickAllShown}
+        onPickNone={pickNone}
+      />
+    {:else if !selection.isSelecting && !isWide.current}
       <p class="flex-1 text-small text-muted">
         {bookmarkCount > 0
           ? m.series_read_and_bookmarked({
@@ -424,6 +533,11 @@
       onStartPicking={(book: SeriesBook) => {
         void startPickingFrom(book);
       }}
+      onPickedNone={() => {
+        if (phone?.endsWhenNonePicked === true) {
+          void end();
+        }
+      }}
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
@@ -435,13 +549,52 @@
         void markSwiped(book, read, how);
       }}
     />
-    {#if selection.isSelecting && selection.count > 0}
+    {#if isPhonePicking && phone !== undefined}
+      <Portal>
+        <div
+          bind:this={toolbar}
+          role="group"
+          aria-label={m.series_selection_toolbar()}
+          bind:offsetHeight={toolbarHeight}
+          class={phone.toolbar}
+        >
+          <div class={phone.toolbarRow}>
+            {#each MARKS as { mark: read, glyph, label } (read)}
+              <Button
+                type="button"
+                variant="plain"
+                {...phone.isIconOnly ? { iconOnly: true, label: label() } : {}}
+                disabled={selection.count === 0}
+                class={phone.action}
+                onclick={() => {
+                  void mark(read);
+                }}
+              >
+                <Icon name={glyph} />
+                {#if !phone.isIconOnly}
+                  {label()}
+                {/if}
+              </Button>
+            {/each}
+          </div>
+        </div>
+      </Portal>
+      {#if phone.isDocked}
+        <Portal to="main">
+          <div
+            aria-hidden="true"
+            class="shrink-0"
+            style:block-size="{toolbarHeight}px"
+          ></div>
+        </Portal>
+      {/if}
+    {:else if selection.isSelecting && selection.count > 0}
       <Card
         role="group"
         aria-label={m.series_selection_toolbar()}
-        class="sticky inset-be-lg grid grid-cols-3 gap-2xs p-xs shadow-popover ios:max-medium:inset-be-none"
+        class="sticky inset-be-lg grid grid-cols-3 gap-2xs p-xs shadow-popover"
       >
-        {#each MARKS as { mark: read, icon: Icon, label } (read)}
+        {#each MARKS as { mark: read, icon: MarkIcon, label } (read)}
           <Button
             type="button"
             look="bar-icon"
@@ -450,7 +603,7 @@
               void mark(read);
             }}
           >
-            <Icon size={ACTION_ICON_SIZE} aria-hidden="true" />
+            <MarkIcon size={ACTION_ICON_SIZE} aria-hidden="true" />
             {label()}
           </Button>
         {/each}
