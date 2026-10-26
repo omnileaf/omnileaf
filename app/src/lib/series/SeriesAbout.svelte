@@ -233,7 +233,10 @@
         </CollapsibleTrigger>
       {:else}
         <div class={detailsRow.plate}>
-          <Item look="row">
+          <Item
+            look="row"
+            class="focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+          >
             {#snippet child({ props })}
               <CollapsibleTrigger {...props}>
                 <ItemMedia><Icon name="info" /></ItemMedia>
