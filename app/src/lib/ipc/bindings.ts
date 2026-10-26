@@ -463,7 +463,6 @@ export type LibrarySeries = {
 	language: string | null,
 	/**  Holds chapters downloaded from a source, which a local library never does. */
 	hasDownloads: boolean,
-	/**  The book Continue opens, absent until the library works it out for its list. */
 	continuesFrom: string & { readonly __brand: "BookId" } | null,
 	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
 	isAdult: boolean,

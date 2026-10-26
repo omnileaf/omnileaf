@@ -20,8 +20,8 @@ use std::{
 
 use omnileaf_engine::{
     BookId, BookReading, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
-    LibraryListing, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark, ReadingSaved,
-    ResourceRouter, SeriesBookListing, SeriesId, UtcOffset,
+    LibraryListing, LibrarySeries, OpenedBook, ProbedFormat, READING_SAVE_DELAY, ReadMark,
+    ReadingSaved, ResourceRouter, SeriesBookListing, SeriesId, UtcOffset,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use support::{FixedClock, ScratchFolder};
@@ -104,12 +104,16 @@ impl Shelf {
     }
 
     async fn series(&self) -> SeriesId {
+        self.listed_series().await.id
+    }
+
+    async fn listed_series(&self) -> LibrarySeries {
         let listed = self
             .library
             .series(LibraryListing::default(), None)
             .await
             .unwrap();
-        listed.series.first().unwrap().id
+        listed.series.into_iter().next().unwrap()
     }
 
     async fn book(&self, index: usize) -> BookId {
@@ -133,7 +137,10 @@ impl Shelf {
     }
 
     async fn open(&self, index: usize) -> OpenedBook {
-        let book = self.book(index).await;
+        self.open_book(self.book(index).await).await
+    }
+
+    async fn open_book(&self, book: BookId) -> OpenedBook {
         self.router
             .open_book(&self.library, book, Vec::<ProbedFormat>::new())
             .await
@@ -309,6 +316,21 @@ async fn reads_a_series_with_the_page_reached_in_its_book_read_now_before_that_p
         overview.up_next.map(|book| book.reading),
         Some(started_on(5))
     );
+}
+
+#[tokio::test(start_paused = true)]
+async fn continues_a_series_from_the_book_and_page_its_reading_reached() {
+    let shelf = Shelf::with_two_books("continued").await;
+    let second = shelf.restore(1).await;
+    shelf.show(&second, 3).await;
+    shelf.close(&second).await;
+
+    let continued = match shelf.listed_series().await.continues_from {
+        Some(book) => Some((book, shelf.open_book(book).await.start_page)),
+        None => None,
+    };
+
+    assert_eq!(continued, Some((shelf.book(1).await, 3)));
 }
 
 #[tokio::test(start_paused = true)]

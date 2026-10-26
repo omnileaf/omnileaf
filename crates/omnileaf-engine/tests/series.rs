@@ -13,8 +13,8 @@ use std::{
 };
 
 use omnileaf_engine::{
-    Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySort, LibrarySortBy, ReadMark,
-    SeriesId, SortDirection,
+    BookId, Clock, Inclusion, Library, LibraryFilter, LibraryListing, LibrarySeries, LibrarySort,
+    LibrarySortBy, ReadMark, SeriesBookListing, SeriesId, SortDirection,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, NOW_UNIX_MS, ScratchFolder};
@@ -403,6 +403,66 @@ async fn leaves_the_series_as_before_once_the_books_it_marked_read_are_marked_un
         .await
         .unwrap();
     assert_eq!(after.series, before.series);
+}
+
+async fn first_series(library: &Library) -> LibrarySeries {
+    let page = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    page.series.into_iter().next().unwrap()
+}
+
+async fn books_of(library: &Library, series: SeriesId) -> Vec<BookId> {
+    let page = library
+        .series_books(series, SeriesBookListing::default(), None)
+        .await
+        .unwrap();
+    page.books.into_iter().map(|book| book.id).collect()
+}
+
+#[tokio::test]
+async fn continues_a_series_from_its_first_book_not_marked_read() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-continued").await;
+    let books = books_of(&library, first_series(&library).await.id).await;
+    library
+        .mark_books(vec![books[0]], ReadMark::Read)
+        .await
+        .unwrap();
+
+    let continued = first_series(&library).await.continues_from;
+
+    assert_eq!(continued, Some(books[1]));
+}
+
+#[tokio::test]
+async fn offers_no_book_to_continue_in_a_series_not_yet_started() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-not-started").await;
+
+    let page = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+
+    let continued: Vec<Option<BookId>> = page
+        .series
+        .iter()
+        .map(|series| series.continues_from)
+        .collect();
+    assert_eq!(continued, [None, None, None]);
+}
+
+#[tokio::test]
+async fn offers_no_book_to_continue_in_a_series_read_to_the_end() {
+    let (library, _comics, _home) = library_with_the_sample_series("series-read-through").await;
+    library
+        .mark_series_read(vec![first_series(&library).await.id])
+        .await
+        .unwrap();
+
+    let continued = first_series(&library).await.continues_from;
+
+    assert_eq!(continued, None);
 }
 
 #[tokio::test]
