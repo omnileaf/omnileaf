@@ -6,11 +6,23 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
+  import {
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import type { PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { bookActions } from "./book-actions";
+  import { bookSummary } from "./book-reading";
+  import BookMarks from "./BookMarks.svelte";
+  import BookMenu from "./BookMenu.svelte";
+  import BookProgress from "./BookProgress.svelte";
   import BookRowText from "./BookRowText.svelte";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
@@ -23,8 +35,32 @@
   const LONG_PRESS_MS = 500;
   const SWIPE_ICON_SIZE = 20;
 
+  interface PhoneList {
+    readonly plate: string;
+    readonly surface: string;
+    readonly progress: "beside" | "below";
+    readonly more: "menu" | "sheet";
+  }
+
+  const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
+    ios: {
+      plate: "overflow-hidden rounded-native-group bg-native-group",
+      surface: "bg-native-group",
+      progress: "beside",
+      more: "menu",
+    },
+    android: {
+      plate: "-ms-page-start -me-page-end",
+      surface: "bg-native-grouped-ground",
+      progress: "below",
+      more: "sheet",
+    },
+  };
+
   let {
+    phone: phonePlatform,
     books,
+    seriesTitle,
     isComplete,
     onNearEnd,
     selection,
@@ -32,7 +68,9 @@
     onMark,
     onSwiped,
   }: {
+    phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
+    seriesTitle: string;
     isComplete: boolean;
     onNearEnd: () => void;
     selection: Selection<BookId>;
@@ -45,7 +83,18 @@
     ) => void;
   } = $props();
 
+  const phone = $derived(
+    phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
+  );
   const longPress = new LongPress(LONG_PRESS_MS);
+  const grid = $derived({
+    items: books,
+    key: (book: SeriesBook) => book.id,
+    label: m.series_books_list(),
+    isComplete,
+    onNearEnd,
+    cell: row,
+  });
   const ids = $derived(books.map((book) => book.id));
   const swipeActions = getSwipeActionsSetting();
   const swipe = new RowSwipe(
@@ -144,7 +193,10 @@
         role="presentation"
         data-swiped
         class={[
-          "relative flex touch-pan-y items-center gap-xs bg-card py-sm ps-md pe-2xs select-none min-block-book-row",
+          "relative flex touch-pan-y items-center select-none",
+          phone === undefined
+            ? "gap-xs bg-card py-sm ps-md pe-2xs min-block-book-row"
+            : phone.surface,
           !swipe.isDragging &&
             "motion-safe:transition-transform motion-safe:duration-slide",
         ]}
@@ -162,9 +214,13 @@
             releasePress();
           }
         }}
-        onpointerup={() => {
+        onpointerupcapture={(event) => {
+          const isRowGesture = swipe.isDragging || swipe.isRevealed(book.id);
           releasePress();
           swiped(book, swipe.released());
+          if (isRowGesture) {
+            event.stopPropagation();
+          }
         }}
         onpointercancel={() => {
           releasePress();
@@ -178,22 +234,82 @@
           event.preventDefault();
         }}
       >
-        <a
-          href={resolve("/read/[book]", { book: book.id })}
-          draggable="false"
-          class="flex flex-1 items-center self-stretch min-inline-none"
-        >
-          <BookRowText {book} />
-        </a>
-        <BookSheet
-          {book}
-          onMark={(chosen: ReadMark) => {
-            onMark([book.id], chosen);
-          }}
-          onSelect={() => {
-            onStartPicking(book);
-          }}
-        />
+        {#if phone === undefined}
+          <a
+            href={resolve("/read/[book]", { book: book.id })}
+            draggable="false"
+            class="flex flex-1 items-center self-stretch min-inline-none"
+          >
+            <BookRowText {book} />
+          </a>
+        {:else}
+          <Item
+            look="row"
+            class={["self-stretch min-inline-none", ROW_FOCUS_RING]}
+          >
+            {#snippet child({ props })}
+              <a
+                {...props}
+                href={resolve("/read/[book]", { book: book.id })}
+                draggable="false"
+              >
+                <ItemContent class="gap-2xs min-inline-none">
+                  <span class="flex items-center gap-icon-gap min-inline-none">
+                    <ItemTitle
+                      class={[
+                        "truncate min-inline-none",
+                        book.reading.state === "read" && "text-muted",
+                      ]}
+                    >
+                      {book.title}
+                    </ItemTitle>
+                    <BookMarks {book} />
+                  </span>
+                  <ItemDescription class="truncate"
+                    >{bookSummary(book)}</ItemDescription
+                  >
+                  {#if phone.progress === "below"}
+                    <span class="mbs-xs flex block-progress-thin">
+                      <BookProgress
+                        {book}
+                        class="inline-native-book-progress max-inline-full"
+                      />
+                    </span>
+                  {/if}
+                </ItemContent>
+                {#if phone.progress === "beside"}
+                  <BookProgress
+                    {book}
+                    class="shrink-0 inline-native-book-progress"
+                  />
+                {/if}
+              </a>
+            {/snippet}
+          </Item>
+        {/if}
+        {#if phone?.more === "menu"}
+          <BookMenu
+            {book}
+            phone={{ seriesTitle }}
+            onMark={(chosen: ReadMark) => {
+              onMark([book.id], chosen);
+            }}
+            onSelect={() => {
+              onStartPicking(book);
+            }}
+          />
+        {:else}
+          <BookSheet
+            {book}
+            isOnPhone={phone !== undefined}
+            onMark={(chosen: ReadMark) => {
+              onMark([book.id], chosen);
+            }}
+            onSelect={() => {
+              onStartPicking(book);
+            }}
+          />
+        {/if}
       </div>
     </div>
   {/if}
@@ -208,15 +324,16 @@
   }}
 />
 
-<Card class="overflow-hidden shadow-card-rest">
-  <VirtualGrid
-    items={books}
-    key={(book: SeriesBook) => book.id}
-    label={m.series_books_list()}
-    {isComplete}
-    {onNearEnd}
-    class="grid-cols-1"
-    itemClass="border-be border-border last:border-be-0 ios-grouped:border-ios-separator"
-    cell={row}
-  />
-</Card>
+{#if phone === undefined}
+  <Card class="overflow-hidden shadow-card-rest">
+    <VirtualGrid
+      {...grid}
+      class="grid-cols-1"
+      itemClass="border-be border-border last:border-be-0 ios-grouped:border-ios-separator"
+    />
+  </Card>
+{:else}
+  <div data-book-plate class={phone.plate}>
+    <VirtualGrid {...grid} class="row-rules grid-cols-1" />
+  </div>
+{/if}

@@ -8,6 +8,7 @@ import {
   followCorePlatform,
   hasNativeLook,
   isPhone,
+  phoneOf,
   usesCommandKey,
 } from "./platform";
 
@@ -34,6 +35,20 @@ test.each(DESKTOPS)("never counts a %s window as a phone", (platform) => {
   for (const width of WIDTHS) {
     expect(isPhone(platform, width)).toBe(false);
   }
+});
+
+test.each(TOUCH)("names a compact %s screen's phone", (platform) => {
+  expect(phoneOf(platform, "compact")).toBe(platform);
+});
+
+test("names no phone for a tablet or a desktop window", () => {
+  const named = [...TOUCH, ...DESKTOPS].flatMap((platform) =>
+    WIDTHS.filter(
+      (width) => width !== "compact" || DESKTOPS.includes(platform),
+    ).map((width) => phoneOf(platform, width)),
+  );
+
+  expect(named.every((phone) => phone === undefined)).toBe(true);
 });
 
 test.each(APPLE)("uses the Command key on %s", (platform) => {

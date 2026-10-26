@@ -138,6 +138,7 @@ async function startPickingFrom(page: Page, index: number): Promise<void> {
   await page
     .getByRole("dialog", { name: shelf.titleOf(index) })
     .getByRole("button", { name: "Select", exact: true })
+    .or(page.getByRole("menuitem", { name: "Select", exact: true }))
     .click();
 }
 

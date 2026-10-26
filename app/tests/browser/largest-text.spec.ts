@@ -329,6 +329,11 @@ for (const platform of PLATFORMS) {
               await page
                 .getByRole("dialog")
                 .getByRole("button", { name: "Select", exact: true })
+                .or(
+                  page
+                    .getByRole("menu")
+                    .getByRole("menuitem", { name: "Select", exact: true }),
+                )
                 .click();
             }
           }

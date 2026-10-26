@@ -444,6 +444,7 @@
                   books={screenshotMode.isOn
                     ? books.list.items.map(standInBook)
                     : books.list.items}
+                  seriesTitle={overview.title}
                   bookCount={found.overview.bookCount}
                   readCount={found.overview.readCount}
                   bookmarkCount={found.overview.bookmarkCount}

@@ -15,7 +15,8 @@
   } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import { phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { shortcut } from "#lib/shortcut.ts";
@@ -39,6 +40,7 @@
 
   let {
     books,
+    seriesTitle,
     bookCount,
     readCount,
     bookmarkCount,
@@ -52,6 +54,7 @@
     platform,
   }: {
     books: readonly SeriesBook[];
+    seriesTitle: string;
     bookCount: number;
     readCount: number;
     bookmarkCount: number;
@@ -80,6 +83,8 @@
 
   const selection = new Selection<BookId>();
   const isWide = new MediaQuery(EXPANDED_QUERY);
+  const width = new WindowWidth();
+  const phonePlatform = $derived(phoneOf(platform, width.current));
   const notices = getNotices();
   const headingId = $props.id();
   const dates = $derived(
@@ -404,7 +409,9 @@
     {/if}
   {:else}
     <BookList
+      phone={phonePlatform}
       books={shownBooks}
+      {seriesTitle}
       {isComplete}
       {onNearEnd}
       {selection}

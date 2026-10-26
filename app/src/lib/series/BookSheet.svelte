@@ -17,8 +17,6 @@
   import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { bookActions } from "./book-actions";
@@ -30,17 +28,16 @@
 
   let {
     book,
+    isOnPhone,
     onMark,
     onSelect,
   }: {
     book: SeriesBook;
+    isOnPhone: boolean;
     onMark: (mark: ReadMark) => void;
     onSelect: () => void;
   } = $props();
 
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const isOnPhone = $derived(isPhone(platform, width.current));
   const action = $derived(
     isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
   );
