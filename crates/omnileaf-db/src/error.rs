@@ -26,6 +26,15 @@ pub enum Error {
     BackupFile { path: PathBuf, source: io::Error },
     #[error("backup path {} isn't valid Unicode", path.display())]
     BackupPathNotUnicode { path: PathBuf },
+    #[error("copy the library database to {}", path.display())]
+    Copy {
+        path: PathBuf,
+        source: rusqlite::Error,
+    },
+    #[error("copy path {} isn't valid Unicode", path.display())]
+    CopyPathNotUnicode { path: PathBuf },
+    #[error("check the library database copied to {}, which differs from the original", path.display())]
+    CopyDiffers { path: PathBuf },
     #[error("apply migration {name}")]
     Migrate {
         name: &'static str,
