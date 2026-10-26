@@ -827,6 +827,8 @@ export function sampleBackend(
     matchSystemBars: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
+    captureVolumeKeys: () => null,
+    releaseVolumeKeys: () => null,
     libraryFolders: () => ({
       folders: [
         {

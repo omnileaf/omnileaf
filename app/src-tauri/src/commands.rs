@@ -42,6 +42,7 @@ use crate::{
     system_settings, system_sign_in,
     tray::{TrayItemChosen, TrayMenu},
     version_details,
+    volume_keys::{self, PageTurn},
 };
 
 macro_rules! app_commands {
@@ -54,6 +55,8 @@ macro_rules! app_commands {
             match_system_bars,
             watch_back_swipes,
             allow_back_swipe,
+            capture_volume_keys,
+            release_volume_keys,
             library_folders,
             library_series,
             library_series_count,
@@ -367,6 +370,18 @@ async fn watch_back_swipes(app: AppHandle, on_swipe: Channel<BackSwipe>) -> Resu
 #[specta::specta]
 async fn allow_back_swipe(app: AppHandle, edge: Option<SwipeEdge>) -> Result<(), IpcError> {
     back_swipe::allow(&app, edge).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn capture_volume_keys(app: AppHandle, on_turn: Channel<PageTurn>) -> Result<(), IpcError> {
+    volume_keys::capture(&app, on_turn).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn release_volume_keys(app: AppHandle) -> Result<(), IpcError> {
+    volume_keys::release(&app).await
 }
 
 #[tauri::command]
