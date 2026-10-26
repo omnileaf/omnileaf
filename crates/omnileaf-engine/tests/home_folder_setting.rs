@@ -132,6 +132,21 @@ async fn finds_an_empty_folder_inside_the_home_or_around_it_overlapping() {
     assert_eq!(choices, [HomeChoice::OverlapsHome; 2]);
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn finds_a_folder_not_made_yet_inside_a_home_reached_through_a_link_overlapping() {
+    let parent = ScratchFolder::new("setting-overlap-link");
+    let real = parent.path().join("Real");
+    let linked = parent.path().join("Linked");
+    fs::create_dir_all(&real).unwrap();
+    std::os::unix::fs::symlink(&real, &linked).unwrap();
+    let setting = new_library_in(&linked).await;
+
+    let choice = setting.choose(&linked.join("Inside")).await.unwrap();
+
+    assert_eq!(choice, HomeChoice::OverlapsHome);
+}
+
 #[tokio::test]
 async fn opens_the_library_it_was_told_to_use_from_then_on() {
     let data = ScratchFolder::new("setting-use-data");

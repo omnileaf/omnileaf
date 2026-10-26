@@ -205,6 +205,21 @@ fn write_whole(path: &Path, text: &[u8]) -> io::Result<()> {
     file.sync_all()
 }
 
+/// Canonicalizing resolves links and, on Windows, gives a `\\?\` verbatim path, so a folder not made yet is compared through its nearest folder that exists.
 fn canonical(folder: &Path) -> PathBuf {
-    fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf())
+    let mut not_made_yet = Vec::new();
+    let mut existing = folder;
+    loop {
+        if let Ok(found) = fs::canonicalize(existing) {
+            return not_made_yet
+                .into_iter()
+                .rev()
+                .fold(found, |path, name| path.join(name));
+        }
+        let (Some(parent), Some(name)) = (existing.parent(), existing.file_name()) else {
+            return folder.to_path_buf();
+        };
+        not_made_yet.push(name);
+        existing = parent;
+    }
 }
