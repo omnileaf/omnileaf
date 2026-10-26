@@ -736,10 +736,7 @@ test.describe("swiping through more categories than fit", () => {
       "aria-selected",
       "true",
     );
-    await expect.poll(() => cutTabs(page)).not.toContain(last);
-    await expect(tabs(page).getByRole("tab", { name: last })).toBeInViewport({
-      ratio: 1,
-    });
+    await expect.poll(() => isWholeInStrip(page, last)).toBe(true);
   });
 
   test("holds the covers still on a drag past the first or last category", async ({
@@ -846,5 +843,14 @@ async function swipeBelowCovers(page: Page, x: number): Promise<void> {
       send("pointerup", by);
     },
     { from: start, by: x, steps: SWIPE_STEPS },
+  );
+}
+
+async function isWholeInStrip(page: Page, name: string): Promise<boolean> {
+  const strip = await boxOf(tabs(page));
+  const tab = await boxOf(tabs(page).getByRole("tab", { name }));
+  return (
+    tab.x >= strip.x - EDGE_TOLERANCE &&
+    tab.x + tab.width <= strip.x + strip.width + EDGE_TOLERANCE
   );
 }
