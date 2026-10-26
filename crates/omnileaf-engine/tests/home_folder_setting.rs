@@ -101,6 +101,22 @@ async fn finds_a_chosen_folder_without_a_library_empty() {
 }
 
 #[tokio::test]
+async fn finds_a_library_a_newer_version_wrote_in_a_chosen_folder() {
+    let data = ScratchFolder::new("setting-found-newer-data");
+    let other = ScratchFolder::new("setting-found-newer-other");
+    let setting = new_library_in(data.path()).await;
+    library_read_in(other.path()).await;
+    Connection::open(other.path().join(DATABASE_FILE))
+        .unwrap()
+        .pragma_update(None, "user_version", SCHEMA_FROM_THE_FUTURE)
+        .unwrap();
+
+    let choice = setting.choose(other.path()).await;
+
+    assert!(matches!(choice, Ok(HomeChoice::FoundFromANewerVersion)));
+}
+
+#[tokio::test]
 async fn opens_the_library_it_was_told_to_use_from_then_on() {
     let data = ScratchFolder::new("setting-use-data");
     let other = ScratchFolder::new("setting-use-other");

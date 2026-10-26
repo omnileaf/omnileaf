@@ -23,6 +23,7 @@ pub struct HomeFolderSetting {
 pub enum HomeChoice {
     Current,
     Found { library: FoundLibrary },
+    FoundFromANewerVersion,
     Empty,
 }
 
@@ -87,10 +88,14 @@ impl HomeFolderSetting {
         if is_same_folder(chosen, &current) {
             return Ok(HomeChoice::Current);
         }
-        Ok(match found_library_in(chosen).await? {
-            Some(library) => HomeChoice::Found { library },
-            None => HomeChoice::Empty,
-        })
+        match found_library_in(chosen).await {
+            Ok(Some(library)) => Ok(HomeChoice::Found { library }),
+            Ok(None) => Ok(HomeChoice::Empty),
+            Err(error) if error.was_written_by_a_newer_version() => {
+                Ok(HomeChoice::FoundFromANewerVersion)
+            }
+            Err(error) => Err(error.into()),
+        }
     }
 
     #[tracing::instrument(skip_all, fields(chosen = %chosen.display()))]
