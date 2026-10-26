@@ -501,7 +501,7 @@ fn remove_library_tag(tag: String) -> Result<Vec<SeriesId>, IpcError> {
 async fn library_filter_choices(
     library: State<'_, Library>,
 ) -> Result<LibraryFilterChoices, IpcError> {
-    Ok(library.filter_choices()?)
+    Ok(library.filter_choices().await?)
 }
 
 #[tauri::command]

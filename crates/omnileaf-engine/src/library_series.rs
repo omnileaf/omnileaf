@@ -4,7 +4,7 @@ use omnileaf_db::catalog::{Cursor, Page, SeriesSummary};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{BookId, CoverPath, ipc_brand::branded_string};
+use crate::{AdultContent, BookId, CoverPath, ipc_brand::branded_string};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -39,26 +39,30 @@ pub struct SeriesId(pub(crate) omnileaf_sync_proto::SeriesId);
 #[serde(into = "String", try_from = "String")]
 pub struct SeriesCursor(pub(crate) Cursor);
 
-impl From<SeriesSummary> for LibrarySeries {
-    fn from(series: SeriesSummary) -> Self {
+impl LibrarySeries {
+    fn new(series: SeriesSummary, adult: AdultContent) -> Self {
         Self {
             id: SeriesId(series.id),
             title: series.title,
             book_count: series.book_count,
             unread_count: series.unread_count,
             cover: series.cover.map(CoverPath),
-            language: None,
+            language: series.language,
             has_downloads: false,
             continues_from: series.continues_from.map(BookId),
-            is_adult: false,
+            is_adult: adult.counts_as_adult(series.is_rated_adult),
         }
     }
 }
 
-impl From<Page<SeriesSummary>> for SeriesPage {
-    fn from(page: Page<SeriesSummary>) -> Self {
+impl SeriesPage {
+    pub(crate) fn new(page: Page<SeriesSummary>, adult: AdultContent) -> Self {
         Self {
-            series: page.items.into_iter().map(LibrarySeries::from).collect(),
+            series: page
+                .items
+                .into_iter()
+                .map(|series| LibrarySeries::new(series, adult))
+                .collect(),
             next: page.next.map(SeriesCursor),
         }
     }
@@ -115,8 +119,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn carries_no_language_downloads_or_18_plus_until_the_library_reads_them() {
-        let series = LibrarySeries::from(SeriesSummary {
+    fn carries_no_downloads_until_the_library_works_them_out() {
+        let summary = SeriesSummary {
             id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
             title: "Sample Series 04".to_owned(),
             book_count: 8,
@@ -124,13 +128,12 @@ mod tests {
             added_at_ms: 0,
             cover: None,
             continues_from: None,
-            language: None,
-            is_rated_adult: false,
-        });
+            language: Some("en".to_owned()),
+            is_rated_adult: true,
+        };
 
-        assert_eq!(
-            (series.language, series.has_downloads, series.is_adult),
-            (None, false, false)
-        );
+        let series = LibrarySeries::new(summary, AdultContent::default());
+
+        assert!(!series.has_downloads);
     }
 }
