@@ -12,7 +12,7 @@ use omnileaf_db::{
     Error,
     store::{Changed, Key, LatestKey, MaximumKey, Store},
 };
-use omnileaf_sync_proto::{BookId, Value};
+use omnileaf_sync_proto::{BookId, ProfileId, Value};
 use proptest::{collection::vec, option, prelude::*};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, raise_furthest, set_position};
 use support::ScratchFolder;
@@ -111,10 +111,11 @@ async fn rebuilds_around_registers_a_newer_version_wrote() {
     store
         .database()
         .write(|transaction| {
-            Ok(transaction.execute_batch(
-                "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, value)
-                 VALUES ('book', zeroblob(16), 'rating', 'lww', 1, zeroblob(16), 1, x'05'),
-                        ('category', zeroblob(16), 'name', 'lww', 1, zeroblob(16), 2, x'f6')",
+            Ok(transaction.execute(
+                "INSERT INTO sync_register (profile, entity, id, field, class, hlc, node, seq, value)
+                 VALUES (?1, 'book', zeroblob(16), 'rating', 'lww', 1, zeroblob(16), 1, x'05'),
+                        (?1, 'category', zeroblob(16), 'name', 'lww', 1, zeroblob(16), 2, x'f6')",
+                [ProfileId::default_profile().as_bytes()],
             )?)
         })
         .await
@@ -135,8 +136,8 @@ async fn rebuilds_around_registers_holding_what_their_field_cannot() {
         .database()
         .write(|transaction| {
             let mut insert = transaction.prepare(
-                "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, rank, value)
-                 VALUES ('book', ?1, ?2, ?3, 1, zeroblob(16), ?4, ?5, ?6)",
+                "INSERT INTO sync_register (profile, entity, id, field, class, hlc, node, seq, rank, value)
+                 VALUES (?7, 'book', ?1, ?2, ?3, 1, zeroblob(16), ?4, ?5, ?6)",
             )?;
             insert.execute(rusqlite::params![
                 book(2).as_bytes(),
@@ -144,7 +145,8 @@ async fn rebuilds_around_registers_holding_what_their_field_cannot() {
                 "lww",
                 2,
                 None::<u32>,
-                Value::Bool(true).to_cbor()
+                Value::Bool(true).to_cbor(),
+                ProfileId::default_profile().as_bytes()
             ])?;
             insert.execute(rusqlite::params![
                 book(3).as_bytes(),
@@ -152,7 +154,8 @@ async fn rebuilds_around_registers_holding_what_their_field_cannot() {
                 "lww",
                 3,
                 None::<u32>,
-                [0xff_u8]
+                [0xff_u8],
+                ProfileId::default_profile().as_bytes()
             ])?;
             insert.execute(rusqlite::params![
                 [0_u8; 16],
@@ -160,7 +163,8 @@ async fn rebuilds_around_registers_holding_what_their_field_cannot() {
                 "max",
                 4,
                 Some(1),
-                Value::Unsigned(1).to_cbor()
+                Value::Unsigned(1).to_cbor(),
+                ProfileId::default_profile().as_bytes()
             ])?;
             insert.execute(rusqlite::params![
                 book(4).as_bytes(),
@@ -168,7 +172,8 @@ async fn rebuilds_around_registers_holding_what_their_field_cannot() {
                 "lww",
                 5,
                 None::<u32>,
-                Value::Unsigned(1 << 32).to_cbor()
+                Value::Unsigned(1 << 32).to_cbor(),
+                ProfileId::default_profile().as_bytes()
             ])?;
             Ok(())
         })

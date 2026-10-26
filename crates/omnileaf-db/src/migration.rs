@@ -70,6 +70,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0034_keep_how_many_pages_each_book_holds"),
     migration!("0035_track_how_many_pages_each_series_has_left"),
     migration!("0036_remember_the_share_of_each_library_root"),
+    migration!("0037_key_sync_registers_by_profile"),
 ];
 
 pub(crate) fn pending(
@@ -221,7 +222,9 @@ fn latest_version(migrations: &[Migration]) -> u32 {
 mod tests {
     use std::{fs, path::Path};
 
-    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SourceId};
+    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, ProfileId, SourceId};
+
+    use rusqlite::types::Value;
 
     use super::*;
     use crate::{
@@ -611,6 +614,9 @@ mod tests {
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
+            .execute_batch(&registers_as_the_store_writes_them())
+            .unwrap();
+        connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
@@ -638,6 +644,9 @@ mod tests {
             .block_on(written)
             .unwrap();
         drop(store);
+        connection
+            .execute_batch(REGISTERS_AS_KEPT_BEFORE_PROFILES)
+            .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
@@ -657,6 +666,38 @@ mod tests {
         }
     }
 
+    const REGISTERS_AS_KEPT_BEFORE_PROFILES: &str = "DROP INDEX sync_register_by_profile;
+        ALTER TABLE sync_register DROP COLUMN profile;
+        ALTER TABLE sync_local DROP COLUMN profile;";
+
+    const REGISTER_COLUMNS: &str = "entity, id, field, class, hlc, node, seq, rank, value, ext";
+
+    fn stored_registers(connection: &Connection, columns: &str) -> Vec<Vec<Value>> {
+        let mut statement = connection
+            .prepare(&format!("SELECT {columns} FROM sync_register ORDER BY seq"))
+            .unwrap();
+        let column_count = statement.column_count();
+        statement
+            .query_map([], |row| {
+                (0..column_count)
+                    .map(|index| row.get(index))
+                    .collect::<rusqlite::Result<_>>()
+            })
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    fn registers_as_the_store_writes_them() -> String {
+        let profile = ProfileId::default_profile().to_string().replace('-', "");
+        format!(
+            "ALTER TABLE sync_local ADD COLUMN profile BLOB NOT NULL DEFAULT x'{profile}';
+            ALTER TABLE sync_register ADD COLUMN profile BLOB NOT NULL DEFAULT x'{profile}';
+            CREATE UNIQUE INDEX sync_register_by_profile
+                ON sync_register (profile, entity, id, field);"
+        )
+    }
+
     const SESSIONS_AS_THE_STORE_WRITES_THEM: &str =
         "ALTER TABLE reading_session ADD COLUMN first_page INTEGER";
     const SESSIONS_AS_SCHEMA_26_KEPT_THEM: &str =
@@ -670,6 +711,9 @@ mod tests {
             ClockAt(9_000),
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(&registers_as_the_store_writes_them())
+            .unwrap();
         connection
             .execute_batch(SESSIONS_AS_THE_STORE_WRITES_THEM)
             .unwrap();
@@ -701,6 +745,9 @@ mod tests {
             .block_on(written)
             .unwrap();
         drop(store);
+        connection
+            .execute_batch(REGISTERS_AS_KEPT_BEFORE_PROFILES)
+            .unwrap();
         connection
             .execute_batch(SESSIONS_AS_SCHEMA_26_KEPT_THEM)
             .unwrap();
@@ -795,6 +842,9 @@ mod tests {
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
+            .execute_batch(&registers_as_the_store_writes_them())
+            .unwrap();
+        connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
@@ -817,6 +867,9 @@ mod tests {
             .block_on(written)
             .unwrap();
         drop(store);
+        connection
+            .execute_batch(REGISTERS_AS_KEPT_BEFORE_PROFILES)
+            .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
@@ -891,6 +944,9 @@ mod tests {
         );
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
+            .execute_batch(&registers_as_the_store_writes_them())
+            .unwrap();
+        connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
                  VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
@@ -918,6 +974,9 @@ mod tests {
             .block_on(written)
             .unwrap();
         drop(store);
+        connection
+            .execute_batch(REGISTERS_AS_KEPT_BEFORE_PROFILES)
+            .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
@@ -929,6 +988,47 @@ mod tests {
             )
             .unwrap();
         assert_eq!(pages_left, (60, 0));
+    }
+
+    #[test]
+    fn moves_every_register_kept_before_profiles_into_the_default_profile_unchanged() {
+        let scratch = ScratchLibrary::new("registers-by-profile-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..36]).unwrap(),
+            ClockAt(9_000),
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(&registers_as_the_store_writes_them())
+            .unwrap();
+        let written = store.write(|writer| {
+            writer.set_position(book(1), 4)?;
+            writer.raise_furthest(book(1), 12)?;
+            writer.set_read(book(2), true)
+        });
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+        connection
+            .execute_batch(REGISTERS_AS_KEPT_BEFORE_PROFILES)
+            .unwrap();
+        let before = stored_registers(&connection, REGISTER_COLUMNS);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let default_profile = ProfileId::default_profile().as_bytes().to_vec();
+        let kept_in_the_default_profile: Vec<Vec<Value>> = before
+            .into_iter()
+            .map(|register| [vec![Value::Blob(default_profile.clone())], register].concat())
+            .collect();
+        assert_eq!(kept_in_the_default_profile.len(), 3);
+        assert_eq!(
+            stored_registers(&connection, &format!("profile, {REGISTER_COLUMNS}")),
+            kept_in_the_default_profile
+        );
     }
 
     #[test]

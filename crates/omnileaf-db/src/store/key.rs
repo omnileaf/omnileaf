@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{BookId, IdError};
+use omnileaf_sync_proto::{BookId, IdError, ProfileId};
 
 const BOOK: &str = "book";
 const POSITION: &str = "pos";
@@ -35,6 +35,7 @@ impl From<MaximumKey> for Key {
 }
 
 pub(crate) struct Address {
+    pub(crate) profile: ProfileId,
     pub(crate) entity: &'static str,
     pub(crate) id: [u8; 16],
     pub(crate) field: &'static str,
@@ -48,10 +49,10 @@ impl Key {
         }
     }
 
-    pub(crate) const fn address(self) -> Address {
+    pub(crate) const fn address(self, profile: ProfileId) -> Address {
         match self {
-            Self::Latest(key) => key.address(),
-            Self::Maximum(key) => key.address(),
+            Self::Latest(key) => key.address(profile),
+            Self::Maximum(key) => key.address(profile),
         }
     }
 
@@ -67,24 +68,25 @@ impl Key {
 }
 
 impl LatestKey {
-    pub(crate) const fn address(self) -> Address {
+    pub(crate) const fn address(self, profile: ProfileId) -> Address {
         match self {
-            Self::BookPosition(book) => book_field(book, POSITION),
-            Self::BookRead(book) => book_field(book, READ),
+            Self::BookPosition(book) => book_field(profile, book, POSITION),
+            Self::BookRead(book) => book_field(profile, book, READ),
         }
     }
 }
 
 impl MaximumKey {
-    pub(crate) const fn address(self) -> Address {
+    pub(crate) const fn address(self, profile: ProfileId) -> Address {
         match self {
-            Self::BookFurthest(book) => book_field(book, FURTHEST),
+            Self::BookFurthest(book) => book_field(profile, book, FURTHEST),
         }
     }
 }
 
-const fn book_field(book: BookId, field: &'static str) -> Address {
+const fn book_field(profile: ProfileId, book: BookId, field: &'static str) -> Address {
     Address {
+        profile,
         entity: BOOK,
         id: *book.as_bytes(),
         field,
@@ -119,7 +121,7 @@ mod tests {
         let read_back: Vec<Option<Key>> = keys
             .iter()
             .map(|key| {
-                let address = key.address();
+                let address = key.address(ProfileId::default_profile());
                 Key::stored(address.entity, &address.id, address.field).unwrap()
             })
             .collect();

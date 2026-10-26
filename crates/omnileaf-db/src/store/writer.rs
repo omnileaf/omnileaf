@@ -162,7 +162,12 @@ impl<'t> Writer<'t> {
         };
         let seq = self.local.next_seq();
         self.note_stage_before(key.book())?;
-        if register::upsert(self.connection, &key.address(), &register, seq)? {
+        if register::upsert(
+            self.connection,
+            &key.address(self.local.profile()),
+            &register,
+            seq,
+        )? {
             projector::project(self.connection, key, value)?;
             self.local.advance_seq_saturating();
             self.changed.insert(key);
