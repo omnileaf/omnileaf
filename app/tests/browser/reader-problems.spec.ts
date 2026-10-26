@@ -136,3 +136,42 @@ test.describe("a book that failed to open for a reason of the app's own", () => 
     ).toBeVisible();
   });
 });
+
+const WAY_BACK_HEIGHT: Readonly<Partial<Record<string, number>>> = {
+  ios: 50,
+  android: 40,
+};
+
+test.describe(
+  "a book that failed to open, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: failingWith("internal", PLACE) });
+
+    test("draws the way back as the platform's own button", async ({
+      page,
+      platform,
+    }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      const wayBack = problem(page).getByRole("link", {
+        name: "Back to the series",
+      });
+
+      await expect(wayBack).toBeVisible();
+      const expected =
+        platform === undefined ? undefined : WAY_BACK_HEIGHT[platform];
+      if (expected !== undefined) {
+        expect((await wayBack.boundingBox())?.height).toBeCloseTo(expected, 0);
+      }
+    });
+
+    test("has no accessibility violations", async ({ page }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      await expect(
+        page.getByRole("heading", { name: "Something went wrong" }),
+      ).toBeFocused();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  },
+);
