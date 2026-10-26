@@ -25,6 +25,115 @@ struct BookState {
     is_read: Option<bool>,
 }
 
+const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
+
+fn another_profile() -> ProfileId {
+    ANOTHER_PROFILE.parse().unwrap()
+}
+
+#[tokio::test]
+async fn shows_each_profile_its_own_place_in_the_same_book() {
+    let folder = ScratchFolder::new("profile-places");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 3).await.unwrap();
+    store.switch_profile(another_profile()).await.unwrap();
+    set_position(&store, book(1), 7).await.unwrap();
+    let in_another_profile = book_states(&store).await;
+
+    store
+        .switch_profile(ProfileId::default_profile())
+        .await
+        .unwrap();
+
+    assert_eq!(in_another_profile, [position_only(book(1), 7)]);
+    assert_eq!(book_states(&store).await, [position_only(book(1), 3)]);
+}
+
+#[tokio::test]
+async fn starts_a_profile_it_switches_to_with_nothing_read() {
+    let folder = ScratchFolder::new("profile-fresh");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 3).await.unwrap();
+
+    store.switch_profile(another_profile()).await.unwrap();
+
+    assert_eq!(book_states(&store).await, []);
+}
+
+#[tokio::test]
+async fn announces_the_keys_of_both_profiles_when_switching() {
+    let folder = ScratchFolder::new("profile-announce");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 3).await.unwrap();
+    store.switch_profile(another_profile()).await.unwrap();
+    raise_furthest(&store, book(2), 5).await;
+    let mut changes = store.subscribe();
+
+    store
+        .switch_profile(ProfileId::default_profile())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        changes.try_recv(),
+        Ok(Changed::Registers {
+            keys: BTreeSet::from([
+                Key::from(LatestKey::BookPosition(book(1))),
+                Key::from(MaximumKey::BookFurthest(book(2))),
+            ]),
+            recounted: true,
+        })
+    );
+}
+
+#[tokio::test]
+async fn leaves_what_shows_unchanged_when_a_register_of_another_profile_arrives() {
+    let folder = ScratchFolder::new("profile-arrives");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_position(&store, book(1), 3).await.unwrap();
+    insert_register(
+        &store,
+        another_profile(),
+        book(1),
+        "pos",
+        Value::Unsigned(9),
+    )
+    .await;
+    insert_register(
+        &store,
+        another_profile(),
+        book(2),
+        "read",
+        Value::Bool(true),
+    )
+    .await;
+
+    store.rebuild_projections().await.unwrap();
+
+    assert_eq!(book_states(&store).await, [position_only(book(1), 3)]);
+}
+
+#[tokio::test]
+async fn shows_the_shared_space_to_every_profile() {
+    let folder = ScratchFolder::new("profile-shared");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    insert_register(
+        &store,
+        ProfileId::shared(),
+        book(2),
+        "read",
+        Value::Bool(true),
+    )
+    .await;
+    store.rebuild_projections().await.unwrap();
+    let in_the_default_profile = book_states(&store).await;
+
+    store.switch_profile(another_profile()).await.unwrap();
+
+    assert_eq!(in_the_default_profile, [read_only(book(2))]);
+    assert_eq!(book_states(&store).await, [read_only(book(2))]);
+}
+
 #[tokio::test]
 async fn projects_each_reading_register_into_the_book_state() {
     let folder = ScratchFolder::new("project");
@@ -283,6 +392,50 @@ async fn forget_book_states(store: &Store) {
     store
         .database()
         .write(|transaction| Ok(transaction.execute("DELETE FROM book_state", [])?))
+        .await
+        .unwrap();
+}
+
+fn read_only(book: BookId) -> BookState {
+    BookState {
+        book,
+        position_page: None,
+        furthest_page: None,
+        is_read: Some(true),
+    }
+}
+
+fn position_only(book: BookId, page: u64) -> BookState {
+    BookState {
+        book,
+        position_page: Some(page),
+        furthest_page: None,
+        is_read: None,
+    }
+}
+
+async fn insert_register(
+    store: &Store,
+    profile: ProfileId,
+    book: BookId,
+    field: &'static str,
+    value: Value,
+) {
+    store
+        .database()
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO sync_register (profile, entity, id, field, class, hlc, node, seq, value)
+                 VALUES (?1, 'book', ?2, ?3, 'lww', ?4, zeroblob(16), 1, ?5)",
+                rusqlite::params![
+                    profile.as_bytes(),
+                    book.as_bytes(),
+                    field,
+                    1,
+                    value.to_cbor()
+                ],
+            )?)
+        })
         .await
         .unwrap();
 }

@@ -56,3 +56,16 @@ impl LocalReplica {
         Ok(())
     }
 }
+
+pub(crate) fn current_profile(connection: &Connection) -> Result<ProfileId, Error> {
+    Ok(
+        connection.query_row("SELECT profile FROM sync_local", [], |row| {
+            stored_id(row, "profile")
+        })?,
+    )
+}
+
+pub(crate) fn switch_profile(connection: &Connection, profile: ProfileId) -> Result<(), Error> {
+    connection.execute("UPDATE sync_local SET profile = ?1", [profile.as_bytes()])?;
+    Ok(())
+}

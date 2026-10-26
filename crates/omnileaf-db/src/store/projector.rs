@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use omnileaf_sync_proto::{BookId, Value};
+use omnileaf_sync_proto::{BookId, ProfileId, Value};
 use rusqlite::Connection;
 
 use crate::{
@@ -8,8 +8,12 @@ use crate::{
     store::{
         Changed,
         key::{Key, LatestKey, MaximumKey},
+        local::current_profile,
     },
 };
+
+const REGISTERS_SHOWN_IN_PROFILE: &str = "SELECT entity, id, field, value FROM sync_register
+    WHERE profile IN (?1, ?2)";
 
 const PROJECT_POSITION: &str = "INSERT INTO book_state (book_id, position_page) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET position_page = excluded.position_page";
@@ -67,18 +71,10 @@ pub(crate) fn project(connection: &Connection, key: Key, value: Value) -> Result
 #[tracing::instrument(skip_all)]
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
-    let mut statement = connection.prepare("SELECT entity, id, field, value FROM sync_register")?;
-    let mut registers = statement.query([])?;
     let mut projected = BTreeSet::new();
-    while let Some(register) = registers.next()? {
-        let entity: String = register.get(0)?;
-        let id: Vec<u8> = register.get(1)?;
-        let field: String = register.get(2)?;
-        let value: Vec<u8> = register.get(3)?;
-        if let Some((key, projection)) = projectable(&entity, &id, &field, &value) {
-            projection.apply(connection)?;
-            projected.insert(key);
-        }
+    for (key, projection) in shown_projections(connection)? {
+        projection.apply(connection)?;
+        projected.insert(key);
     }
     tracing::info!(
         registers = projected.len(),
@@ -88,6 +84,28 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
         keys: projected,
         recounted: true,
     })
+}
+
+pub(crate) fn shown_keys(connection: &Connection) -> Result<BTreeSet<Key>, Error> {
+    Ok(shown_projections(connection)?
+        .into_iter()
+        .map(|(key, _)| key)
+        .collect())
+}
+
+fn shown_projections(connection: &Connection) -> Result<Vec<(Key, Projection)>, Error> {
+    let profile = current_profile(connection)?;
+    let mut statement = connection.prepare(REGISTERS_SHOWN_IN_PROFILE)?;
+    let mut registers = statement.query([profile.as_bytes(), ProfileId::shared().as_bytes()])?;
+    let mut shown = Vec::new();
+    while let Some(register) = registers.next()? {
+        let entity: String = register.get(0)?;
+        let id: Vec<u8> = register.get(1)?;
+        let field: String = register.get(2)?;
+        let value: Vec<u8> = register.get(3)?;
+        shown.extend(projectable(&entity, &id, &field, &value));
+    }
+    Ok(shown)
 }
 
 fn projectable(entity: &str, id: &[u8], field: &str, cbor: &[u8]) -> Option<(Key, Projection)> {
