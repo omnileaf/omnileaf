@@ -274,7 +274,7 @@ jobs:
         run: cargo xtask check --only interface
 
   browser:
-    name: browser tests (${{ matrix.shard }}/${{ strategy.job-total }})
+    name: browser tests (${{ matrix.group }} ${{ matrix.shard }}/${{ matrix.of }})
     needs: changes
     if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false') }}
     runs-on: ubuntu-24.04
@@ -282,9 +282,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        include:
+          - { group: rest, shard: 1, of: 16 }
+          - { group: rest, shard: 2, of: 16 }
+          - { group: rest, shard: 3, of: 16 }
+          - { group: rest, shard: 4, of: 16 }
+          - { group: rest, shard: 5, of: 16 }
+          - { group: rest, shard: 6, of: 16 }
+          - { group: rest, shard: 7, of: 16 }
+          - { group: rest, shard: 8, of: 16 }
+          - { group: rest, shard: 9, of: 16 }
+          - { group: rest, shard: 10, of: 16 }
+          - { group: rest, shard: 11, of: 16 }
+          - { group: rest, shard: 12, of: 16 }
+          - { group: rest, shard: 13, of: 16 }
+          - { group: rest, shard: 14, of: 16 }
+          - { group: rest, shard: 15, of: 16 }
+          - { group: rest, shard: 16, of: 16 }
+          - { group: screens, shard: 1, of: 4 }
+          - { group: screens, shard: 2, of: 4 }
+          - { group: screens, shard: 3, of: 4 }
+          - { group: screens, shard: 4, of: 4 }
     env:
-      PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+      PLAYWRIGHT_GROUP: ${{ matrix.group }}
+      PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ matrix.of }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -336,7 +357,7 @@ jobs:
           echo "Kept $(find "$HOME/browser-packages" -name '*.deb' | wc -l) system packages for the next run"
 
       - name: Keep the test browsers' system packages for later runs
-        if: github.ref == 'refs/heads/main' && matrix.shard == 1 && steps.restore-browser-packages.outputs.cache-hit != 'true'
+        if: github.ref == 'refs/heads/main' && matrix.group == 'rest' && matrix.shard == 1 && steps.restore-browser-packages.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/browser-packages
@@ -348,18 +369,18 @@ jobs:
         run: pnpm --dir app test:e2e
 
       - name: Run the website's browser tests
-        if: ${{ !cancelled() && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
+        if: ${{ !cancelled() && matrix.group == 'rest' && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
         run: pnpm --dir site test:e2e
 
       - name: Time the interface on its own
-        if: matrix.shard == 1 && needs.changes.outputs.app != 'false'
+        if: matrix.group == 'rest' && matrix.shard == 1 && needs.changes.outputs.app != 'false'
         run: env -u PLAYWRIGHT_SHARD pnpm --dir app test:e2e --project speed --no-deps
 
       - name: Keep the traces of failed tests
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: browser-test-traces-${{ matrix.shard }}
+          name: browser-test-traces-${{ matrix.group }}-${{ matrix.shard }}
           path: |
             app/test-results/
             site/test-results/
