@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use omnileaf_db::catalog::{AgeRating, BookDetails, ReadingDirection};
+use omnileaf_db::catalog::{AgeRating, BookDetails, BookPerson, PersonRole, ReadingDirection};
 use omnileaf_formats::{self as formats, Book, ComicInfo};
 
 use crate::error_chain::describe_error;
@@ -18,17 +18,29 @@ pub(crate) fn read_details(book: &mut Book, file: &Path) -> BookDetails {
 }
 
 fn details_of(info: ComicInfo) -> BookDetails {
+    let people = [
+        (PersonRole::Writer, info.writers),
+        (PersonRole::Penciller, info.pencillers),
+        (PersonRole::Inker, info.inkers),
+        (PersonRole::Colourist, info.colourists),
+        (PersonRole::Letterer, info.letterers),
+        (PersonRole::CoverArtist, info.cover_artists),
+        (PersonRole::Editor, info.editors),
+    ]
+    .into_iter()
+    .flat_map(|(role, names)| names.into_iter().map(move |name| BookPerson { role, name }))
+    .collect();
     BookDetails {
         series: info.series,
         number: info.number,
         title: info.title,
         volume: info.volume,
         summary: info.summary,
-        people: Vec::new(),
+        people,
         publisher: info.publisher,
         format: info.format,
-        genres: Vec::new(),
-        tags: Vec::new(),
+        genres: info.genres,
+        tags: info.tags,
         language: info.language,
         reading_direction: info.reading_direction.map(stored_direction),
         age_rating: info.age_rating.map(stored_rating),
