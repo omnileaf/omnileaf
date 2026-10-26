@@ -32,7 +32,7 @@
   --native-spacing-segment: 40px;
   --native-spacing-segment-inline: 0px;
   --native-radius-segmented: 0px;
-  --native-radius-segment: 12px;
+  --native-radius-segment: 8px;
   --native-radius-segment-end: 20px;
   --native-radius-segment-selected: 20px;
   --native-text-segment: calc(0.875rem * var(--text-scale));
