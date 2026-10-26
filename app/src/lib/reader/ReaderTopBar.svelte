@@ -25,8 +25,8 @@
   import ComingSoon from "#lib/reader/ComingSoon.svelte";
 
   import {
+    READER_BARS,
     READER_CAPSULE,
-    READER_GLASS,
     READER_ICON_SIZE,
     readerBackLook,
     readerButton,
@@ -94,8 +94,9 @@
   class={floats
     ? "relative isolate flex items-center gap-sm before:pointer-events-none before:absolute before:-inset-x-reader-bar-inline before:-inset-bs-reader-bar-top before:-inset-be-reader-scrim-fade before:z-behind before:reader-top-scrim before:backdrop-blur-ios"
     : cn(
-        READER_GLASS,
+        READER_BARS,
         "flex items-center gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
+        isOnPhone && "gap-sm",
       )}
 >
   <Tooltip
@@ -288,7 +289,7 @@
         <ReaderIcon
           name="bookmark"
           fallback={Bookmark}
-          isKit={floats}
+          isKit={isOnPhone}
           size={READER_ICON_SIZE}
         />
       </ComingSoon>
@@ -304,12 +305,12 @@
           <Button
             {...props}
             look="icon"
-            class={cn(button, bookmark.isPressed && !floats && "bg-hover")}
+            class={cn(button, bookmark.isPressed && !isOnPhone && "bg-hover")}
           >
             <ReaderIcon
               name={bookmark.isPressed ? "bookmark-filled" : "bookmark"}
               fallback={Bookmark}
-              isKit={floats}
+              isKit={isOnPhone}
               size={READER_ICON_SIZE}
               isFilled={bookmark.isPressed}
             />
@@ -328,12 +329,12 @@
         <Button
           {...props}
           look="icon"
-          class={cn(button, isSettingsOpen && !floats && "bg-hover")}
+          class={cn(button, isSettingsOpen && !isOnPhone && "bg-hover")}
         >
           <ReaderIcon
             name="sliders-horizontal"
             fallback={SlidersHorizontal}
-            isKit={floats}
+            isKit={isOnPhone}
             size={READER_ICON_SIZE}
           />
         </Button>

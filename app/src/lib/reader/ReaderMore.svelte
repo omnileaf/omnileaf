@@ -59,6 +59,7 @@
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const chrome = getReaderChrome();
   const floats = $derived(chrome.floats);
+  const isOnPhone = $derived(chrome.isOnPhone);
   const button = $derived(readerButton(platform, chrome.width));
   const heading = $derived(moreHeading(title, seriesTitle));
   const headingId = $props.id();
@@ -84,7 +85,7 @@
           <ReaderIcon
             name="ellipsis"
             fallback={Ellipsis}
-            isKit={floats}
+            isKit={isOnPhone}
             size={READER_ICON_SIZE}
           />
         </Button>
@@ -157,7 +158,12 @@
       onOpenChange(true);
     }}
   >
-    <Ellipsis size={READER_ICON_SIZE} aria-hidden="true" />
+    <ReaderIcon
+      name="ellipsis"
+      fallback={Ellipsis}
+      isKit={isOnPhone}
+      size={READER_ICON_SIZE}
+    />
   </Button>
   <Dialog.Root bind:open={isSheetOpen}>
     <DrawerContent onDismiss={closeSheet} to="main">
