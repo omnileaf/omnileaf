@@ -1,6 +1,6 @@
 <script lang="ts" generics="Option extends string">
   import type { LucideProps } from "@lucide/svelte";
-  import type { Component } from "svelte";
+  import type { Component, Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
   import {
@@ -27,6 +27,7 @@
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
+    readonly crowded?: Snippet | undefined;
   }
 
   const LOOKS = {
@@ -89,6 +90,7 @@
     onChoose,
     onFit,
     class: className,
+    crowded,
   }: Props = $props();
 
   const look = $derived(LOOKS[size]);
@@ -109,6 +111,7 @@
   let fittedColumns: number | undefined = $state();
   const columns = $derived(fittedColumns ?? options.length);
   const isOneRow = $derived(columns === options.length);
+  const isCrowded = $derived(crowded !== undefined && !isOneRow);
 
   $effect(() => {
     if (track === null || ruler === undefined) {
@@ -138,7 +141,7 @@
     ? undefined
     : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
   class={[
-    "relative",
+    isCrowded ? "invisible absolute inset-x-none" : "relative",
     isOneRow ? "flex" : "grid",
     isNative
       ? NATIVE_LOOK.track
@@ -204,3 +207,6 @@
     {/each}
   </span>
 </RadioGroup>
+{#if isCrowded}
+  {@render crowded?.()}
+{/if}
