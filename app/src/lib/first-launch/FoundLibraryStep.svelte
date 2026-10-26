@@ -34,6 +34,15 @@
   const facts: readonly HomeFact[] = $derived.by(() => {
     const numbers = new Intl.NumberFormat(getLocale());
     const dates = new Intl.DateTimeFormat(getLocale(), { dateStyle: "long" });
+    const lastBackup =
+      found.lastBackupAtMs === null
+        ? []
+        : [
+            {
+              term: m.first_launch_found_last_backup(),
+              detail: dates.format(found.lastBackupAtMs),
+            },
+          ];
     return [
       {
         term: m.first_launch_found_series(),
@@ -43,10 +52,7 @@
         term: m.first_launch_found_books(),
         detail: numbers.format(found.books),
       },
-      {
-        term: m.first_launch_found_last_backup(),
-        detail: dates.format(found.lastBackupAtMs),
-      },
+      ...lastBackup,
     ];
   });
 </script>
