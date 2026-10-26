@@ -110,7 +110,7 @@ test("leaves Android's connected buttons unpadded, so three labels share a phone
   expect(getComputedStyle(segment("Light")).paddingInlineStart).toBe("0px");
 });
 
-test("rounds both outer ends of Android's connected buttons", async () => {
+test("rounds both outer ends of Android's connected buttons and keeps 8 inside, as Android draws them", async () => {
   followCorePlatform("android");
   await renderThemeChoice();
 
@@ -119,7 +119,7 @@ test("rounds both outer ends of Android's connected buttons", async () => {
 
   expect(first.borderTopLeftRadius).toBe("20px");
   expect(last.borderTopRightRadius).toBe("20px");
-  expect(first.borderTopRightRadius).toBe("12px");
+  expect(first.borderTopRightRadius).toBe("8px");
 });
 
 test("keeps today's raised segment on Linux", async () => {
