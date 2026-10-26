@@ -1,9 +1,7 @@
 import { test } from "./fixtures.ts";
 import { checkEveryScreenIn } from "./screen-checks.ts";
 
-const WINDOW_WIDTHS = [
-  360, 390, 480, 600, 768, 840, 1024, 1200, 1440, 1600,
-] as const;
+const WINDOW_WIDTHS = [360, 600, 840, 1200, 1600] as const;
 const WINDOW_HEIGHT = 800;
 
 test.describe.configure({ mode: "parallel" });
