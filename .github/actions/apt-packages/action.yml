@@ -1,0 +1,58 @@
+name: Install system packages
+description: Installs Ubuntu packages, reusing the ones earlier runs downloaded and keeping them from main only, so a slow mirror cannot stall the job.
+
+inputs:
+  packages:
+    description: The packages to install, separated by spaces.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Name the system packages
+      id: packages
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$PACKAGES" | sha256sum | cut -c1-16)
+        echo "prefix=apt-packages-$digest" >> "$GITHUB_OUTPUT"
+        echo "key=apt-packages-$digest-$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the system packages
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/apt-packages
+        key: ${{ steps.packages.outputs.key }}
+        restore-keys: ${{ steps.packages.outputs.prefix }}
+
+    - name: Put the system packages back
+      shell: bash
+      run: |
+        if compgen -G "$HOME/apt-packages/*.deb" > /dev/null; then
+          sudo cp "$HOME"/apt-packages/*.deb /var/cache/apt/archives/
+        fi
+
+    - name: Install the system packages
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $PACKAGES
+
+    - name: Collect the system packages the install downloaded
+      if: github.ref == 'refs/heads/main' && steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get autoclean
+        rm -rf "$HOME/apt-packages"
+        mkdir -p "$HOME/apt-packages"
+        find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$HOME/apt-packages" {} +
+        echo "Kept $(find "$HOME/apt-packages" -name '*.deb' | wc -l) system packages for the next run"
+
+    - name: Keep the system packages for later runs
+      if: github.ref == 'refs/heads/main' && steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/apt-packages
+        key: ${{ steps.packages.outputs.key }}

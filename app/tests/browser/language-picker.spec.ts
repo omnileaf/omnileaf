@@ -220,8 +220,8 @@ test.describe("on an Android phone", () => {
   test("lists every option in one group of 56px rows over a footnote", async ({
     page,
   }) => {
-    await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto(LANGUAGE_PAGE);
 
     const system = await boxOf(option(page, SYSTEM_OPTION));
     const english = await boxOf(option(page, "English"));
@@ -235,8 +235,8 @@ test.describe("on an Android phone", () => {
   });
 
   test("leads back to General", async ({ page }) => {
-    await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto(LANGUAGE_PAGE);
 
     await expect(
       page.getByRole("link", { name: "Back to General" }),
@@ -251,8 +251,8 @@ test.describe("on an Android tablet", () => {
   test("lists every option in one card of 48px rows with a 20px check", async ({
     page,
   }) => {
-    await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
+    await page.goto(LANGUAGE_PAGE);
 
     const system = await boxOf(option(page, SYSTEM_OPTION));
     const english = await boxOf(option(page, "English"));
@@ -286,8 +286,8 @@ test.describe("on a desktop", () => {
   test("keeps General selected beside the page from 840px", async ({
     page,
   }) => {
-    await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto(LANGUAGE_PAGE);
 
     await expect(
       page
@@ -298,8 +298,8 @@ test.describe("on a desktop", () => {
   });
 
   test("leads back to General through a link under 840px", async ({ page }) => {
-    await page.goto(LANGUAGE_PAGE);
     test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
+    await page.goto(LANGUAGE_PAGE);
 
     await expect(
       page.getByRole("link", { name: "Back to General" }),

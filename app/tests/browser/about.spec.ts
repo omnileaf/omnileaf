@@ -181,8 +181,8 @@ for (const platform of ["android", "ios"] as const) {
     test("lists the version details with a copy button, on 64px rows", async ({
       page,
     }) => {
-      await openAbout(page);
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      await openAbout(page);
 
       const version = page
         .getByRole("listitem")
@@ -248,11 +248,11 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
     test(`heads the pane with the version over 56px rows, with a ${String(buttonHeight)}px copy button`, async ({
       page,
     }) => {
-      await openAbout(page);
       test.skip(
         platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH,
         "tablets only",
       );
+      await openAbout(page);
 
       const button = await boxOf(copyButton(page));
       const sourceRow = await boxOf(linkRow(page, "Source code"));
@@ -286,13 +286,13 @@ test.describe("in a desktop window under 600px", () => {
   test("keeps the copy button inside the window in a longer language", async ({
     page,
   }) => {
+    const { width } = viewportOf(page);
+    test.skip(width >= MEDIUM_MIN_WIDTH, "under 600px only");
     await page.addInitScript(() => {
       window.localStorage.setItem("omnileaf.language", "en-XA");
     });
     await page.goto(ABOUT_PAGE);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("⟦");
-    const { width } = viewportOf(page);
-    test.skip(width >= MEDIUM_MIN_WIDTH, "under 600px only");
 
     const button = await boxOf(versionRowButton(page));
 

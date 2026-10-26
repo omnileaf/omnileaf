@@ -134,9 +134,9 @@ test("keeps the warning until it's dismissed", async ({ page }) => {
 test("shows the warning full width just above the navigation on phones", async ({
   page,
 }) => {
-  const { card } = await failToAddAFolder(page);
   const viewport = viewportOf(page);
   test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+  const { card } = await failToAddAFolder(page);
 
   const box = await boxOf(card);
   const navigation = await boxOf(
@@ -151,9 +151,9 @@ test("shows the warning full width just above the navigation on phones", async (
 test("shows the warning in the bottom corner on tablets and desktops", async ({
   page,
 }) => {
-  const { card } = await failToAddAFolder(page);
   const viewport = viewportOf(page);
   test.skip(viewport.width < MEDIUM_MIN_WIDTH, "tablets and desktops only");
+  const { card } = await failToAddAFolder(page);
 
   const box = await boxOf(card);
 
@@ -344,8 +344,8 @@ test.describe("on Android", () => {
   });
 
   test("sets the warning's title at 14px on a phone", async ({ page }) => {
-    const { card } = await failToAddAFolder(page);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    const { card } = await failToAddAFolder(page);
 
     const title = card.getByText(UNREADABLE_TITLE, { exact: true });
 
@@ -355,8 +355,8 @@ test.describe("on Android", () => {
   test("keeps the warning's action on one 40px line on a phone", async ({
     page,
   }) => {
-    const { card } = await failToAddAFolder(page);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    const { card } = await failToAddAFolder(page);
 
     const action = card.getByRole("button", { name: "Choose another folder" });
 
@@ -366,8 +366,8 @@ test.describe("on Android", () => {
   test("draws the warning's action as the snackbar's 14px text action on a phone", async ({
     page,
   }) => {
-    const { card } = await failToAddAFolder(page);
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    const { card } = await failToAddAFolder(page);
 
     const action = card.getByRole("button", { name: "Choose another folder" });
 

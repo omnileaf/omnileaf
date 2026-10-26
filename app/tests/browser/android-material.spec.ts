@@ -65,8 +65,8 @@ test("sets a page's headline at regular weight, as Material 3 does", async ({
 test("sets a small top app bar's title as title large, 22px on a 28px line in a 64px bar", async ({
   page,
 }) => {
-  await page.goto("/settings");
   test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+  await page.goto("/settings");
 
   const heading = page.getByRole("heading", { level: 1, name: "Settings" });
 
@@ -78,11 +78,11 @@ test("sets a small top app bar's title as title large, 22px on a 28px line in a 
 test("puts the 64px navigation bar on the surface container, with the secondary container pill behind the current section", async ({
   page,
 }) => {
-  await openLibrary(page);
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "wider screens list the sections in a rail or a drawer",
   );
+  await openLibrary(page);
   const navigation = page.getByRole("navigation", { name: "Main" });
 
   expect((await boxOf(navigation.getByRole("list"))).height).toBe(
@@ -105,11 +105,11 @@ test("puts the 64px navigation bar on the surface container, with the secondary 
 test("labels every section as label medium at 500, the current one in the accent and the others muted", async ({
   page,
 }) => {
-  await openLibrary(page);
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "wider screens list the sections in a rail or a drawer",
   );
+  await openLibrary(page);
   const navigation = page.getByRole("navigation", { name: "Main" });
 
   const current = navigation.getByRole("link", { name: "Library" });

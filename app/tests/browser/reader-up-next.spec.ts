@@ -238,8 +238,8 @@ for (const { way, turn } of TURNS_AGAIN) {
 test("names the series and the book finished in a breadcrumb on desktops", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(!isWide(page), "phones show only the way back");
+  await openBook(page);
 
   await turnPastTheEnd(page);
 

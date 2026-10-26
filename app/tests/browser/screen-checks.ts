@@ -14,10 +14,13 @@ import {
 } from "./fixtures.ts";
 import { iconsOffTheirLine } from "./icon-lines.ts";
 import { SCREENS, type Screen, visit } from "./screens.ts";
+import { SCREEN_SWEEP_TAG } from "../test-group.ts";
 import { targetsTooSmall } from "./target-sizes.ts";
 import { overlaps, textClippedUnmarked } from "./text-fit.ts";
 
 type Theme = "light" | "dark";
+
+export type PlatformPace = "side by side" | "one after another";
 
 export interface ScreenCheck {
   readonly name: string;
@@ -87,11 +90,41 @@ async function checkScreen(
   }
 }
 
+async function checkEachPlatform(
+  platforms: readonly Platform[],
+  pace: PlatformPace,
+  check: (platform: Platform) => Promise<void>,
+): Promise<void> {
+  if (pace === "one after another") {
+    for (const platform of platforms) {
+      await check(platform);
+    }
+    return;
+  }
+  const settled = await Promise.allSettled(platforms.map(check));
+  const failed = settled.find(
+    (outcome): outcome is PromiseRejectedResult =>
+      outcome.status === "rejected",
+  );
+  if (failed !== undefined) {
+    throw failed.reason;
+  }
+}
+
 export function checkEveryScreenIn(
   theme: Theme,
-  { checks, passes }: { checks: readonly ScreenCheck[]; passes: string } = {
+  {
+    checks,
+    passes,
+    pace,
+  }: {
+    checks: readonly ScreenCheck[];
+    passes: string;
+    pace: PlatformPace;
+  } = {
     checks: CHECKS,
     passes: "passes the screen checks",
+    pace: "side by side",
   },
 ): void {
   test.use({
@@ -105,15 +138,18 @@ export function checkEveryScreenIn(
   });
 
   for (const screen of SCREENS) {
-    test(`${screen.name} ${passes}`, async ({
-      browser,
-      browserName,
-      hasTouch,
-    }) => {
-      for (const platform of platformsShownBy({ browserName, hasTouch })) {
-        await test.step(`on ${platform}`, () =>
-          checkScreen(browser, screen, { platform, theme, checks }));
-      }
-    });
+    test(
+      `${screen.name} ${passes}`,
+      { tag: SCREEN_SWEEP_TAG },
+      async ({ browser, browserName, hasTouch }) => {
+        await checkEachPlatform(
+          platformsShownBy({ browserName, hasTouch }),
+          pace,
+          (platform) =>
+            test.step(`on ${platform}`, () =>
+              checkScreen(browser, screen, { platform, theme, checks })),
+        );
+      },
+    );
   }
 }

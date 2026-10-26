@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::SeriesId;
+use omnileaf_sync_proto::{BookId, SeriesId};
 use rusqlite::{Connection, Row, named_params};
 
 use crate::{
@@ -128,6 +128,7 @@ pub struct SeriesSummary {
     pub unread_count: u32,
     pub added_at_ms: i64,
     pub cover: Option<Cover>,
+    pub continues_from: Option<BookId>,
 }
 
 /// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.

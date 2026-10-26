@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
 import {
@@ -210,3 +210,99 @@ test.describe("a creator with a long name and a series with an unbroken title", 
     });
   });
 });
+
+const PHONE_COVER_CORNER = { ios: "6px", android: "4px" } as const;
+const PHONE_SECOND_BUTTON_HEIGHT = { ios: 50, android: 40 } as const;
+const TABLET = { width: 820, height: 1180 };
+
+function backToSeries(page: Page): Locator {
+  return page.getByRole("link", { name: `Back to ${SERIES_TITLE}` });
+}
+
+test.describe("a creator on a phone", { tag: "@native" }, () => {
+  test.use({ backend: backendWith(THEIR_SERIES) });
+
+  test("shows the way back as a circle holding only its chevron, above the name", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+
+    await openCreatorFromSeries(page);
+    const back = await boxOf(backToSeries(page));
+    const name = await boxOf(page.getByRole("heading", { level: 1 }));
+
+    expect(back.width).toBeCloseTo(back.height, 0);
+    await expect(backToSeries(page)).toHaveText("");
+    expect(name.y).toBeGreaterThanOrEqual(back.y + back.height);
+  });
+
+  test("keeps the named way back on an iPad", async ({ page, platform }) => {
+    if (platform !== "ios") {
+      test.skip();
+      return;
+    }
+    await page.setViewportSize(TABLET);
+
+    await openCreatorFromSeries(page);
+
+    await expect(backToSeries(page)).toHaveText(SERIES_TITLE);
+  });
+
+  test("rounds each cover as the phone's own tile", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+
+    await openCreatorFromSeries(page);
+    const cover = page
+      .getByRole("list", { name: `Series by ${CREATOR}` })
+      .getByRole("link")
+      .first()
+      .locator(":scope > span")
+      .first();
+
+    await expect(cover).toHaveCSS(
+      "border-top-left-radius",
+      PHONE_COVER_CORNER[platform],
+    );
+  });
+});
+
+test.describe(
+  "a creator whose series have gone, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: backendWith([]) });
+
+    test("leads back to the library with the phone's own second button", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+
+      await openCreatorFromSeries(page);
+      const button = await boxOf(
+        page
+          .getByRole("main")
+          .getByRole("link", { name: "Back to the library" })
+          .last(),
+      );
+
+      expect(button.height).toBeCloseTo(
+        PHONE_SECOND_BUTTON_HEIGHT[platform],
+        0,
+      );
+    });
+  },
+);

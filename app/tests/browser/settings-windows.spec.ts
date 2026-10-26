@@ -35,11 +35,11 @@ test.describe("on Windows", () => {
   test("sets the shell on Mica and the page on a layer with a rounded corner", async ({
     page,
   }) => {
-    await page.goto("/settings/general");
     test.skip(
       viewportOf(page).width < EXPANDED_MIN_WIDTH,
       "the desktop shell from 840px",
     );
+    await page.goto("/settings/general");
     const main = page.getByRole("main");
     await expect(main).toBeVisible();
 
@@ -57,11 +57,11 @@ test.describe("on Windows", () => {
   test("marks the open page in both navigations with a short accent bar", async ({
     page,
   }) => {
-    await page.goto("/settings/general");
     test.skip(
       viewportOf(page).width < EXPANDED_MIN_WIDTH,
       "the Settings nav shows beside the page from 840px",
     );
+    await page.goto("/settings/general");
     const accent = await tokenColour(page, "--color-accent");
 
     for (const link of [

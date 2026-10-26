@@ -223,8 +223,8 @@ test("keeps the shown books' segments as wide as they were as the choice changes
 test("closes the list with Escape before leaving the book", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(!isWide(page), "phones close the drawer like any sheet");
+  await openBook(page);
   await openJumpList(page);
 
   await page.keyboard.press("Escape");
@@ -370,8 +370,8 @@ test.describe("a long series", () => {
   });
 
   test("clears Find a book with Escape before closing", async ({ page }) => {
-    await openBook(page);
     test.skip(!isWide(page), "phones close the drawer like any sheet");
+    await openBook(page);
     const list = await openJumpList(page);
     const find = list.getByRole("searchbox", { name: "Find a book" });
     await find.fill("v2");

@@ -22,11 +22,11 @@ test.use({
 test("sets the library's large title under its buttons on an iPhone, folding it into the bar on scrolling", async ({
   page,
 }) => {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "iPads keep the title beside its buttons",
   );
+  await page.goto("/");
   const bar = page.locator("[data-title-bar]");
   const title = page.getByRole("heading", { level: 1, name: "Library" });
   const barTitle = bar.getByText("Library", { exact: true });
@@ -42,11 +42,11 @@ test("sets the library's large title under its buttons on an iPhone, folding it 
 });
 
 test("keeps the title beside its buttons on a wide iPad", async ({ page }) => {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "iPhones set a large title under the buttons",
   );
+  await page.goto("/");
 
   await expect(page.locator("[data-title-bar]")).toHaveCount(0);
 });
@@ -73,11 +73,11 @@ test("raises no error when the window narrows from an iPad's width to an iPhone'
 test("keeps the folded title clear of Search and More, two glass circles 12 apart", async ({
   page,
 }) => {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "iPads keep the title beside its buttons",
   );
+  await page.goto("/");
   const bar = page.locator("[data-title-bar]");
   const barTitle = bar.getByText("Library", { exact: true });
   const search = bar.getByRole("link", { name: "Search" });
@@ -106,11 +106,11 @@ test("keeps the folded title clear of Search and More, two glass circles 12 apar
 test("opens Sort and filter and View options from More on an iPhone", async ({
   page,
 }) => {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "iPads keep their own buttons",
   );
+  await page.goto("/");
   const more = page
     .locator("[data-title-bar]")
     .getByRole("button", { name: "More" });
@@ -136,11 +136,11 @@ test("opens Sort and filter and View options from More on an iPhone", async ({
 test("draws each of History's bar buttons on its own glass circle on an iPhone", async ({
   page,
 }) => {
-  await page.goto("/history");
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
     "iPads keep the title beside its buttons",
   );
+  await page.goto("/history");
   const buttons = page
     .locator("[data-title-bar]")
     .getByRole("button")

@@ -25,6 +25,8 @@ pub(crate) struct Step {
     pub(crate) args: &'static [&'static str],
 }
 
+pub(crate) const TEST: &str = "test";
+
 pub(crate) const STEPS: &[Step] = &[
     Step {
         name: "format",
@@ -69,7 +71,7 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
-        name: "test",
+        name: TEST,
         group: Group::Rust,
         program: "cargo",
         args: &[
@@ -438,6 +440,44 @@ pub(crate) fn select(steps: &[Step], only: Option<Group>) -> Vec<&Step> {
         .collect()
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct UnknownStep(pub(crate) String);
+
+impl fmt::Display for UnknownStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "no check named `{}` in the selected group", self.0)
+    }
+}
+
+impl Error for UnknownStep {}
+
+pub(crate) fn narrow<'a>(
+    selected: Vec<&'a Step>,
+    steps: &[String],
+    skip: &[String],
+) -> Result<Vec<&'a Step>, UnknownStep> {
+    if let Some(unknown) = steps
+        .iter()
+        .chain(skip)
+        .find(|name| !selected.iter().any(|step| step.name == name.as_str()))
+    {
+        return Err(UnknownStep(unknown.clone()));
+    }
+    Ok(selected
+        .into_iter()
+        .filter(|step| steps.is_empty() || steps.iter().any(|name| name == step.name))
+        .filter(|step| !skip.iter().any(|name| name == step.name))
+        .collect())
+}
+
+pub(crate) fn args_with_partition<'a>(step: &'a Step, partition: Option<&'a str>) -> Vec<&'a str> {
+    let mut args = step.args.to_vec();
+    if let Some(partition) = partition.filter(|_| step.name == TEST) {
+        args.extend(["--partition", partition]);
+    }
+    args
+}
+
 pub(crate) fn run_all<'a>(
     steps: impl IntoIterator<Item = &'a Step>,
     runner: &impl Runner,
@@ -676,5 +716,79 @@ mod tests {
 
         let names: Vec<&str> = selected.iter().map(|step| step.name).collect();
         assert_eq!(names, ["first", "third"]);
+    }
+
+    fn named(names: &[&str]) -> Vec<String> {
+        names.iter().map(|name| (*name).to_owned()).collect()
+    }
+
+    fn narrowed_names(steps: &[&str], skip: &[&str]) -> Result<Vec<&'static str>, UnknownStep> {
+        narrow(select(THREE_STEPS, None), &named(steps), &named(skip))
+            .map(|narrowed| narrowed.iter().map(|step| step.name).collect())
+    }
+
+    #[test]
+    fn keeps_every_selected_step_when_none_is_named_or_skipped() {
+        assert_eq!(
+            narrowed_names(&[], &[]),
+            Ok(vec!["first", "second", "third"])
+        );
+    }
+
+    #[test]
+    fn keeps_only_the_named_steps_in_their_usual_order() {
+        assert_eq!(
+            narrowed_names(&["third", "first"], &[]),
+            Ok(vec!["first", "third"])
+        );
+    }
+
+    #[test]
+    fn leaves_out_the_skipped_steps() {
+        assert_eq!(narrowed_names(&[], &["second"]), Ok(vec!["first", "third"]));
+    }
+
+    #[test]
+    fn refuses_to_run_a_step_that_is_not_selected() {
+        assert_eq!(
+            narrowed_names(&["fourth"], &[]),
+            Err(UnknownStep("fourth".to_owned()))
+        );
+    }
+
+    #[test]
+    fn refuses_to_skip_a_step_that_is_not_selected() {
+        assert_eq!(
+            narrowed_names(&[], &["fourth"]),
+            Err(UnknownStep("fourth".to_owned()))
+        );
+    }
+
+    fn rust_step(name: &str) -> &'static Step {
+        STEPS
+            .iter()
+            .find(|step| step.group == Group::Rust && step.name == name)
+            .unwrap()
+    }
+
+    #[test]
+    fn runs_only_its_partition_of_the_tests() {
+        let args = args_with_partition(rust_step("test"), Some("hash:2/3"));
+
+        assert_eq!(args.last_chunk(), Some(&["--partition", "hash:2/3"]));
+    }
+
+    #[test]
+    fn runs_every_test_without_a_partition() {
+        let args = args_with_partition(rust_step("test"), None);
+
+        assert_eq!(args, rust_step("test").args);
+    }
+
+    #[test]
+    fn leaves_the_other_steps_whole_with_a_partition() {
+        let args = args_with_partition(rust_step("lint"), Some("hash:2/3"));
+
+        assert_eq!(args, rust_step("lint").args);
     }
 }

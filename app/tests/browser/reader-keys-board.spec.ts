@@ -104,11 +104,11 @@ test("lists the reader's keys in a sheet opened with the question mark", async (
 test("sets the keys in two columns, auto scroll and zoom beside turning pages, in a 720px sheet on desktops", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "narrower windows keep one column",
   );
+  await openBook(page);
 
   await page.keyboard.press("Shift+?");
   await settle(sheet(page));
@@ -185,11 +185,11 @@ test("slides the sheet in and fades the page behind it without @starting-style, 
 test("opens the sheet from the keyboard button on desktops", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "phones leave keyboard shortcuts out",
   );
+  await openBook(page);
 
   await page.getByRole("button", { name: "Keyboard shortcuts" }).click();
 

@@ -115,11 +115,11 @@ test("lets no swipe go back from a top-level section", async ({ page }) => {
 test("lets no swipe go back where the sections are listed beside and no back arrow shows", async ({
   page,
 }) => {
-  await page.goto("/settings/general");
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "the sections are listed beside only on wide screens",
   );
+  await page.goto("/settings/general");
 
   await expect(heading(page, "General")).toBeVisible();
   await expect.poll(lastAllowedEdge).toBeNull();
