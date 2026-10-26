@@ -226,12 +226,15 @@
   --spacing-native-continue-cover: var(--native-spacing-continue-cover);
   --text-native-end-title: var(--native-text-end-title);
   --leading-native-end-title: var(--native-leading-end-title);
+  --tracking-native-end-title: var(--native-tracking-end-title);
   --font-weight-native-end-title: var(--native-weight-end-title);
   --text-native-end-stat: var(--native-text-end-stat);
   --leading-native-end-stat: var(--native-leading-end-stat);
+  --tracking-native-end-stat: var(--native-tracking-end-stat);
   --font-weight-native-end-stat: var(--native-weight-end-stat);
   --text-native-end-book: var(--native-text-end-book);
   --leading-native-end-book: var(--native-leading-end-book);
+  --tracking-native-end-book: var(--native-tracking-end-book);
   --font-weight-native-end-book: var(--native-weight-end-book);
 }
 

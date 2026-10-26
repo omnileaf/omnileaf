@@ -223,11 +223,14 @@
   --native-spacing-continue-cover: 0px;
   --native-text-end-title: var(--text-title);
   --native-leading-end-title: var(--text-title--line-height);
+  --native-tracking-end-title: 0;
   --native-weight-end-title: var(--font-weight-semibold);
   --native-text-end-stat: var(--text-title);
   --native-leading-end-stat: var(--text-title--line-height);
+  --native-tracking-end-stat: 0;
   --native-weight-end-stat: var(--font-weight-semibold);
   --native-text-end-book: var(--text-group-title);
   --native-leading-end-book: var(--text-group-title--line-height);
+  --native-tracking-end-book: 0;
   --native-weight-end-book: var(--font-weight-semibold);
 }
