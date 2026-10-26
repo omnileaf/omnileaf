@@ -11,8 +11,8 @@ use std::{
 };
 
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, GENERATED_LIBRARY_NAME, GeneratedLibrary, Packing, PageShape,
-    SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, ScratchFolder, cb7, cbz, full_chroma_scan_jpeg,
+    ArchiveEntry, Compression, DrawnScan, GENERATED_LIBRARY_NAME, GeneratedLibrary, Packing,
+    PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, ScratchFolder, cb7, cbz, full_chroma_scan_jpeg,
     incompressible_bytes, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
     write_generated_library, write_sample_library,
 };
@@ -27,6 +27,10 @@ const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
 const SOF0_COMPONENT_LENGTH: usize = 3;
 const TWICE_EACH_WAY: u8 = 0x22;
 const ONCE_EACH_WAY: u8 = 0x11;
+const SCAN_GRAIN: u8 = 12;
+const JPEG_ERROR: u8 = 8;
+const PAPER: [u8; 3] = [236, 234, 230];
+const INK: [u8; 3] = [40, 38, 36];
 
 fn dimensions(png: &[u8]) -> (u32, u32) {
     let reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
@@ -46,6 +50,13 @@ fn jpeg_dimensions(jpeg: &[u8]) -> (u32, u32) {
     decoder.read_info().unwrap();
     let info = decoder.info().unwrap();
     (u32::from(info.width), u32::from(info.height))
+}
+
+fn jpeg_pixels(jpeg: &[u8]) -> ((usize, usize), Vec<u8>) {
+    let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    let pixels = decoder.decode().unwrap();
+    let info = decoder.info().unwrap();
+    ((usize::from(info.width), usize::from(info.height)), pixels)
 }
 
 fn jpeg_sampling_factors(jpeg: &[u8]) -> Vec<u8> {
@@ -206,6 +217,35 @@ fn generates_the_same_subsampled_scan_every_time() {
     let second = subsampled_scan_jpeg(SEED).unwrap();
 
     assert_eq!(first, second);
+}
+
+#[test]
+fn draws_a_scan_as_drawn_darkened_by_no_more_than_its_grain() {
+    let scan = DrawnScan {
+        width: 64,
+        height: 48,
+        seed: SEED,
+        grain: SCAN_GRAIN,
+    };
+
+    let jpeg = scan
+        .to_jpeg(|column, _| if column < 32 { PAPER } else { INK })
+        .unwrap();
+
+    let (size, pixels) = jpeg_pixels(&jpeg);
+    assert_eq!(size, (64, 48));
+    let [paper, ink] = [(8, 24), (56, 24)].map(|(column, row)| {
+        let at = (row * 64 + column) * 3;
+        pixels[at..at + 3].to_vec()
+    });
+    let is_drawn = |found: &[u8], drawn: [u8; 3]| {
+        found.iter().zip(drawn).all(|(found, drawn)| {
+            *found <= drawn.saturating_add(JPEG_ERROR)
+                && *found >= drawn.saturating_sub(SCAN_GRAIN + JPEG_ERROR)
+        })
+    };
+    assert!(is_drawn(&paper, PAPER), "{paper:?}");
+    assert!(is_drawn(&ink, INK), "{ink:?}");
 }
 
 #[test]

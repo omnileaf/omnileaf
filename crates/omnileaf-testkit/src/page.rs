@@ -16,6 +16,52 @@ const FULL_CHROMA_SCAN_GRAIN: u8 = 16;
 const SUBSAMPLED_SCAN_GRAIN: u8 = 20;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DrawnScan {
+    pub width: u16,
+    pub height: u16,
+    pub seed: u64,
+    pub grain: u8,
+}
+
+impl DrawnScan {
+    pub fn to_jpeg(self, draw: impl Fn(u32, u32) -> [u8; 3]) -> Result<Vec<u8>, FixtureError> {
+        self.grained(&draw).to_jpeg(SamplingFactor::R_4_2_0)
+    }
+
+    fn grained(self, draw: &impl Fn(u32, u32) -> [u8; 3]) -> RgbImage {
+        let Self {
+            width,
+            height,
+            seed,
+            grain,
+        } = self;
+        let width = u32::from(width);
+        let darken = move |channel: u8, noise: u8| {
+            channel.saturating_sub(noise.checked_rem(grain).unwrap_or(0))
+        };
+        let pixels = (0..u32::from(height))
+            .flat_map(|row| {
+                (0..width).flat_map(move |column| {
+                    let [red, green, blue, ..] =
+                        splitmix64(seed ^ u64::from(row * width + column)).to_le_bytes();
+                    let [drawn_red, drawn_green, drawn_blue] = draw(column, row);
+                    [
+                        darken(drawn_red, red),
+                        darken(drawn_green, green),
+                        darken(drawn_blue, blue),
+                    ]
+                })
+            })
+            .collect();
+        RgbImage {
+            pixels,
+            width,
+            height: u32::from(height),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PageShape {
     Portrait,
     Spread,
@@ -89,27 +135,13 @@ pub fn incompressible_bytes(seed: u64, length: usize) -> Vec<u8> {
 
 fn scan_jpeg(seed: u64, grain: u8, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {
     let ground = tint(seed, 0);
-    let width = u32::from(SCAN_WIDTH);
-    let pixels: Vec<u8> = (0..u32::from(SCAN_HEIGHT))
-        .flat_map(|row| {
-            (0..width).flat_map(move |column| {
-                let [red, green, blue, ..] =
-                    splitmix64(seed ^ u64::from(row * width + column)).to_le_bytes();
-                let [ground_red, ground_green, ground_blue] = ground;
-                [
-                    ground_red.saturating_sub(red % grain),
-                    ground_green.saturating_sub(green % grain),
-                    ground_blue.saturating_sub(blue % grain),
-                ]
-            })
-        })
-        .collect();
-    let scan = RgbImage {
-        pixels,
-        width,
-        height: u32::from(SCAN_HEIGHT),
+    let scan = DrawnScan {
+        width: SCAN_WIDTH,
+        height: SCAN_HEIGHT,
+        seed,
+        grain,
     };
-    scan.to_jpeg(chroma)
+    scan.grained(&|_, _| ground).to_jpeg(chroma)
 }
 
 struct RgbImage {
