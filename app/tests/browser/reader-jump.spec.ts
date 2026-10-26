@@ -284,7 +284,7 @@ for (const platform of ["android", "linux"] as const) {
   });
 }
 
-test.describe("after picking a book", () => {
+test.describe("after picking a book", { tag: "@native" }, () => {
   test.use({
     backend: {
       ...shelfOf(EIGHT_BOOKS),
@@ -309,6 +309,7 @@ test.describe("after picking a book", () => {
 
   test("says it's back on the book's saved page, naming the book, with Start over", async ({
     page,
+    platform,
   }) => {
     await openBook(page);
     const list = await openJumpList(page);
@@ -316,6 +317,13 @@ test.describe("after picking a book", () => {
     await list.getByRole("link", { name: PICKED.title }).click();
 
     const shown = toast(page, `Back on page 14 of ${String(PAGES)}`);
+    if (platform === "ios" || platform === "android") {
+      await expect(
+        page.getByRole("img", { name: "Page 14", exact: true }),
+      ).toBeVisible();
+      await expect(shown).toHaveCount(0);
+      return;
+    }
     await expect(shown).toContainText(PICKED.title);
     await expect(
       shown.getByRole("button", { name: "Start over" }),

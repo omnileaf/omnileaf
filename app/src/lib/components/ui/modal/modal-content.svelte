@@ -21,6 +21,7 @@
     phoneLook = "drawer",
     wideClass,
     phoneClass,
+    phoneOverlayClass,
     onDismiss,
     children,
     ...restProps
@@ -29,6 +30,7 @@
     phoneLook?: "drawer" | "dialog";
     wideClass?: string;
     phoneClass?: string;
+    phoneOverlayClass?: string;
     onDismiss: () => void;
     children: Snippet<[ModalView]>;
   } = $props();
@@ -37,7 +39,12 @@
 </script>
 
 {#if !isWide.current && phoneLook === "dialog"}
-  <DialogContent bind:ref class={phoneClass} {...restProps}>
+  <DialogContent
+    bind:ref
+    class={phoneClass}
+    overlayClass={phoneOverlayClass}
+    {...restProps}
+  >
     {@render children("phone")}
   </DialogContent>
 {:else if !isWide.current}

@@ -556,7 +556,7 @@ test("draws a one-line toast on an iOS phone as a 48 tall glass capsule rounded 
     .element();
 
   expect(getComputedStyle(card).backgroundColor).toBe(
-    "rgba(246, 246, 246, 0.73)",
+    "rgba(248, 248, 250, 0.85)",
   );
   expect(getComputedStyle(card).backdropFilter).toContain("blur(");
   expect(getComputedStyle(card).borderTopWidth).toBe("0px");
@@ -605,7 +605,7 @@ test("rounds an iOS phone toast with a second line to the grouped card's corner"
     .element();
 
   expect(getComputedStyle(card).backgroundColor).toBe(
-    "rgba(246, 246, 246, 0.73)",
+    "rgba(248, 248, 250, 0.85)",
   );
   expect(getComputedStyle(card).borderTopLeftRadius).toBe("26px");
   expect(getComputedStyle(body).color).toBe("rgb(0, 0, 0)");

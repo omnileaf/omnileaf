@@ -10,16 +10,18 @@
   let {
     ref = $bindable(null),
     class: className,
+    overlayClass,
     children,
     ...restProps
   }: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
     children: Snippet;
+    overlayClass?: string | undefined;
   } = $props();
 </script>
 
 <DialogPrimitive.Portal>
   <DialogPrimitive.Overlay
-    class="fixed inset-none z-dialog bg-scrim fade-motion"
+    class={cn("fixed inset-none z-dialog bg-scrim fade-motion", overlayClass)}
   />
   <DialogPrimitive.Content
     bind:ref

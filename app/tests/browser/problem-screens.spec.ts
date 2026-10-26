@@ -23,8 +23,8 @@ const BODY_LINE_HEIGHT_RATIO = 1.5;
 
 const SHAPES = {
   linux: { badge: 36, icon: 18, body: 14, button: 36, buttonCorner: 10 },
-  android: { badge: 40, icon: 20, body: 15, button: 52, buttonCorner: 26 },
-  ios: { badge: 40, icon: 20, body: 15, button: 52, buttonCorner: 14 },
+  android: { badge: 40, icon: 20, body: 15, button: 40, buttonCorner: 20 },
+  ios: { badge: 40, icon: 20, body: 15, button: 50, buttonCorner: 25 },
 } as const;
 
 function problemTitle(page: Page): Locator {

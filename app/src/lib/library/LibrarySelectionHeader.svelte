@@ -5,7 +5,8 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
-  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone, isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 20;
@@ -21,6 +22,9 @@
     onSelectAll: () => void;
     onCancel: () => void;
   } = $props();
+
+  const width = new WindowWidth();
+  const onPhone = $derived(isPhone(platform, width.current));
 </script>
 
 <h1 class="sr-only">{m.library_title()}</h1>
@@ -38,8 +42,10 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        look="icon"
-        class="block-touch-target inline-touch-target in-toolbar:block-pointer-button in-toolbar:inline-pointer-button"
+        look={onPhone ? "header-control" : "icon"}
+        class={onPhone
+          ? undefined
+          : "block-touch-target inline-touch-target in-toolbar:block-pointer-button in-toolbar:inline-pointer-button"}
       >
         <X size={ICON_SIZE} aria-hidden="true" />
       </Button>
@@ -53,9 +59,11 @@
   </p>
   <Button
     type="button"
-    look="text"
+    {...onPhone ? { variant: "plain" } : { look: "text" }}
     aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
-    class="flex items-center gap-sm px-xs text-body min-block-touch-target in-toolbar:text-small in-toolbar:min-block-pointer-button"
+    class={onPhone
+      ? undefined
+      : "flex items-center gap-sm px-xs text-body min-block-touch-target in-toolbar:text-small in-toolbar:min-block-pointer-button"}
     onclick={onSelectAll}
   >
     {m.library_select_all()}

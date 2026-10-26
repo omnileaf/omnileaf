@@ -644,3 +644,69 @@ test.describe("opening on a chosen tab", () => {
     await chosenTab(page, "All");
   });
 });
+
+test.describe("every category on a phone", { tag: "@native" }, () => {
+  const ROW_TITLE_SIZE = { ios: "17px", android: "16px" } as const;
+  const RULE = {
+    ios: { colour: "rgba(60, 60, 67, 0.12)", height: "1px" },
+    android: { colour: "rgba(0, 0, 0, 0)", height: "0px" },
+  } as const;
+  const SHEET_BUTTON = { ios: 50, android: 40 } as const;
+
+  test.use({ backend: backendWith(CATEGORIES) });
+
+  async function openEveryCategory(page: Page) {
+    await openLibrary(page);
+    await page.getByRole("button", { name: "Every category" }).click();
+    const sheet = page.getByRole("dialog", { name: "Categories" });
+    await settle(sheet);
+    return sheet;
+  }
+
+  test("lists the categories as the phone's own rows", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+
+    const sheet = await openEveryCategory(page);
+    const look = await sheet
+      .getByRole("radio")
+      .nth(1)
+      .evaluate((row) => {
+        const title = row.querySelector("[data-slot=item-title]") ?? row;
+        return {
+          titleSize: getComputedStyle(title).fontSize,
+          rule: {
+            colour: getComputedStyle(row, "::after").backgroundColor,
+            height: getComputedStyle(row, "::after").height,
+          },
+        };
+      });
+
+    expect(look.titleSize).toBe(ROW_TITLE_SIZE[platform]);
+    expect(look.rule).toEqual(RULE[platform]);
+  });
+
+  test("sets Edit and New category as the phone's own buttons", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+
+    const sheet = await openEveryCategory(page);
+    const edit = await boxOf(sheet.getByRole("button", { name: "Edit" }));
+    const made = await boxOf(
+      sheet.getByRole("button", { name: "New category" }),
+    );
+
+    expect(edit.height).toBeCloseTo(SHEET_BUTTON[platform], 0);
+    expect(made.height).toBeCloseTo(SHEET_BUTTON[platform], 0);
+  });
+});

@@ -3,6 +3,9 @@
 
   import { Button, type ButtonLook } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { phoneAction } from "#lib/page/action-group.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { FolderAdding } from "./folder-adding.svelte";
@@ -44,6 +47,13 @@
   } = $props();
 
   const isInHeading = $derived(placement === "page-heading");
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const phone = $derived(
+    placement === "empty-state"
+      ? phoneAction(platform, width.current, "main")
+      : undefined,
+  );
 </script>
 
 <Tooltip
@@ -58,10 +68,14 @@
   {#snippet child({ props })}
     <Button
       {...props}
-      look={LOOKS[placement]}
+      {...phone === undefined
+        ? { look: LOOKS[placement] }
+        : { variant: phone.variant, size: phone.size }}
       class={[
-        "inline-flex shrink-0 items-center justify-center font-semibold disabled:opacity-60",
-        PLACEMENTS[placement],
+        "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
+        phone === undefined
+          ? ["font-semibold", PLACEMENTS[placement]]
+          : phone.fit,
       ]}
     >
       <Plus size={ICON_SIZE} />

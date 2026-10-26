@@ -1,12 +1,17 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { isPhone } from "#lib/page/platform.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
-  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import {
+    foldingBarLook,
+    hasLargeTitle as hasLargeTitleOn,
+    NATIVE_TOP_BAR,
+  } from "#lib/page/top-bar.ts";
 
   import ScreenshotModeLabel from "./ScreenshotModeLabel.svelte";
 
@@ -23,8 +28,9 @@
     $props();
 
   const width = new WindowWidth();
+  const foldingBar = $derived(foldingBarLook(platform));
   const hasLargeTitle = $derived(
-    platform === "ios" && isPhone(platform, width.current),
+    hasLargeTitleOn(platform, width.current) && actions !== undefined,
   );
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
@@ -116,29 +122,31 @@
   <div
     bind:this={bar}
     data-title-bar
-    class={[
+    class={cn(
       "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
       NATIVE_TOP_BAR.edge,
+      foldingBar.row,
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
-    ]}
+    )}
   >
     <span
       aria-hidden="true"
       class={[
-        "pointer-events-none flex-1 truncate px-sm text-center min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        "pointer-events-none flex-1 truncate min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        foldingBar.title,
         NATIVE_TOP_BAR.barTitle,
         isTitleUnderBar ? "opacity-100" : "opacity-0",
       ]}
     >
       {title}
     </span>
-    <div class={NATIVE_TOP_BAR.barButtonGroup}>
+    <div class={NATIVE_TOP_BAR.barButtonRow}>
       {@render actions()}
     </div>
   </div>
 {/if}
 <PageToolbar
-  class={isPhone(platform, width.current)
+  class={isPhone(platform, width.current) && !hasLargeTitle
     ? `@container text-body ${NATIVE_TOP_BAR.lift}`
     : "@container text-body"}
 >
@@ -157,7 +165,7 @@
           attention !== undefined && "flex items-center",
         ]}
       >
-        <PageHeading {title} />
+        <PageHeading {title} size={hasLargeTitle ? "large" : "page"} />
         {@render attention?.()}
       </div>
       {#if count !== undefined}

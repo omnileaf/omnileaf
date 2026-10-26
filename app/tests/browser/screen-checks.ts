@@ -74,7 +74,7 @@ async function checkScreen(
   const context = await browser.newContext();
   try {
     const page = await openFakeApp(context, screen.backend(platform));
-    await visit(page, screen);
+    await visit(page, screen, platform);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 
     for (const check of checks) {

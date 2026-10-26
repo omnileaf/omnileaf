@@ -88,6 +88,8 @@
   --native-leading-row-subtitle: var(--text-detail--line-height);
   --native-tracking-row-subtitle: 0;
   --native-color-row-pressed: var(--pressed-fill);
+  --native-color-row-selected: var(--pressed-fill);
+  --native-color-on-row-selected-muted: var(--secondary-text);
   --native-color-button-outline: var(--color-button-outline);
   --native-color-on-button-outline: var(--color-foreground);
   --native-color-button-outline-edge: var(--color-button-outline-edge);
@@ -111,6 +113,10 @@
   --native-leading-page-title: var(--text-page-title--line-height);
   --native-weight-page-title: var(--font-weight-bold);
   --native-tracking-page-title: var(--tracking-tight);
+  --native-text-large-title: var(--text-page-title);
+  --native-leading-large-title: var(--text-page-title--line-height);
+  --native-weight-large-title: var(--font-weight-bold);
+  --native-tracking-large-title: var(--tracking-tight);
   --native-text-bar-title: var(--text-body);
   --native-leading-bar-title: var(--text-body--line-height);
   --native-weight-bar-title: var(--font-weight-semibold);
@@ -141,6 +147,8 @@
   --native-color-on-cover-badge: var(--foreground);
   --native-radius-cover-badge: var(--radius-label-badge);
   --native-spacing-cover-badge: var(--spacing-xl);
+  --native-color-veil: var(--color-veil);
+  --native-color-on-veil: var(--foreground);
   --native-spacing-downloaded-mark: var(--spacing-downloaded-mark);
   --native-color-cover-accent: var(--color-accent);
   --native-color-on-cover-accent: var(--color-on-accent);
@@ -151,8 +159,17 @@
   --native-shadow-select-ring-lift: none;
   --native-color-sheet: var(--bottom-sheet-surface);
   --native-color-scrim: var(--overlay);
+  --native-color-dialog: var(--dialog-surface);
+  --native-radius-dialog: var(--radius-panel);
+  --native-spacing-dialog: var(--spacing-dialog);
+  --native-spacing-dialog-text-inline: 0px;
+  --native-spacing-dialog-text-gap: var(--spacing-lg);
+  --native-spacing-dialog-button: var(--spacing-touch-button);
+  --native-spacing-action-group: 100%;
   --native-color-sheet-handle: var(--sheet-handle);
   --native-radius-sheet: var(--radius-bottom-sheet);
+  --native-spacing-sheet-medium: fit-content;
+  --native-spacing-sheet-large: fit-content;
   --native-spacing-sheet-handle: var(--spacing-sheet-handle);
   --native-spacing-sheet-handle-thickness: var(--spacing-sheet-handle-block);
   --native-spacing-sheet-handle-start: var(--spacing-sheet-handle-gap);

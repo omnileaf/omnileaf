@@ -19,6 +19,7 @@ import {
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
+import { foldsIntoMore, openSortAndFilter } from "./library-controls.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const WIDTHS = [
@@ -74,12 +75,17 @@ function headingOf(page: Page): Locator {
 
 /** The heading, or on iOS phones the title bar above it, whichever holds the heading's buttons. */
 const PHONE_CONTROLS = 4;
+const IPHONE_CONTROLS = 2;
 const DESKTOP_CONTROLS = 3;
 
-function controlsShownOn(testInfo: TestInfo): number {
+function phoneControlsOn(platform: Platform): number {
+  return platform === "ios" ? IPHONE_CONTROLS : PHONE_CONTROLS;
+}
+
+function controlsShownOn(testInfo: TestInfo, platform: Platform): number {
   return testInfo.project.name.endsWith("desktop")
     ? DESKTOP_CONTROLS
-    : PHONE_CONTROLS;
+    : phoneControlsOn(platform);
 }
 
 function buttonsOf(page: Page): Locator {
@@ -271,7 +277,7 @@ for (const platform of PLATFORMS) {
             );
             await page.goto("/");
             await expect(controlsOf(buttonsOf(page))).toHaveCount(
-              library === "empty" ? 0 : controlsShownOn(testInfo),
+              library === "empty" ? 0 : controlsShownOn(testInfo, platform),
             );
             if (library === "filled") {
               await expect(countOf(page)).toBeVisible();
@@ -330,7 +336,7 @@ for (const platform of PLATFORMS) {
         test.use({ backend: backendFor(platform, library) });
 
         for (const width of PHONE_WIDTHS) {
-          test(`keeps the buttons on the title's row, or above an iPhone's large title, and moves the count and label under it at ${String(width)}px`, async ({
+          test(`keeps the buttons on the title's row, or above a phone's large title, and moves the count and label under it at ${String(width)}px`, async ({
             page,
           }, testInfo) => {
             test.skip(
@@ -339,7 +345,7 @@ for (const platform of PLATFORMS) {
             );
             await openAt(page, width, screenshotMode);
             await expect(controlsOf(buttonsOf(page))).toHaveCount(
-              library === "empty" ? 0 : PHONE_CONTROLS,
+              library === "empty" ? 0 : phoneControlsOn(platform),
             );
 
             const parts = await settledHeading(page);
@@ -356,7 +362,7 @@ for (const platform of PLATFORMS) {
             const isNarrowDesktopWindow =
               platform === "linux" && isStackedUnder(buttons, title, count);
             const isAboveLargeTitle =
-              platform === "ios" &&
+              (platform === "ios" || platform === "android") &&
               buttons.every((button) => button.y + button.height <= title.y);
             expect(
               isOnTitleRow || isNarrowDesktopWindow || isAboveLargeTitle,
@@ -431,7 +437,7 @@ test.describe("the heading at the largest text size on an ios phone", () => {
       const parts = await settledHeading(page);
 
       expect(await linesOf(title)).toBe(1);
-      expect(parts.controls).toHaveLength(PHONE_CONTROLS);
+      expect(parts.controls).toHaveLength(IPHONE_CONTROLS);
       for (const [, button] of parts.controls) {
         expect(button.y + button.height).toBeLessThanOrEqual(parts.title.y);
       }
@@ -500,9 +506,7 @@ test.describe("the heading as a filter changes the count", () => {
       await expect(countOf(page)).toBeVisible();
       const before = await settledHeading(page);
 
-      await buttonsOf(page)
-        .getByRole("button", { name: /^Sort and filter/ })
-        .click();
+      await openSortAndFilter(page);
       const panel = page.getByRole("dialog", { name: "Sort and filter" });
       await settle(panel);
       await panel
@@ -543,17 +547,24 @@ for (const platform of PLATFORMS) {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
       const heading = buttonsOf(page);
+      const folded = await foldsIntoMore(page);
       const named = [
-        [
-          heading.getByRole("button", { name: english.library_view_options }),
-          english.library_view_options,
-        ],
-        [
-          heading.getByRole("button", {
-            name: english.library_filter_and_sort,
-          }),
-          english.library_filter_and_sort,
-        ],
+        ...(folded
+          ? []
+          : ([
+              [
+                heading.getByRole("button", {
+                  name: english.library_view_options,
+                }),
+                english.library_view_options,
+              ],
+              [
+                heading.getByRole("button", {
+                  name: english.library_filter_and_sort,
+                }),
+                english.library_filter_and_sort,
+              ],
+            ] as const)),
         [
           heading.getByRole("link", { name: english.search_open }),
           english.search_open,
@@ -592,9 +603,21 @@ for (const platform of PLATFORMS) {
 
         const heading = buttonsOf(page);
 
-        await expect(
-          heading.getByRole("button", { name: english.library_view_options }),
-        ).toBeVisible();
+        if (await foldsIntoMore(page)) {
+          await heading
+            .getByRole("button", { name: english.library_more })
+            .click();
+          await expect(
+            page.getByRole("menuitem", { name: english.library_view_options }),
+          ).toBeVisible();
+          await page.keyboard.press("Escape");
+        } else {
+          await expect(
+            heading.getByRole("button", {
+              name: english.library_view_options,
+            }),
+          ).toBeVisible();
+        }
         await expect(
           heading.getByRole("button", { name: english.library_add_folder }),
         ).toHaveCount(0);
