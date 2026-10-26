@@ -1,3 +1,4 @@
+import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
@@ -24,7 +25,7 @@ const PHONE: ListRowLook = {
   link: `${LINK} transition-control active:bg-native-row-selected active:[--secondary-text:var(--native-color-on-row-selected-muted)]`,
   title:
     "line-clamp-2 wrap-break-word text-native-row-title leading-native-row-title font-native-row-title tracking-native-row-title",
-  meta: "text-native-row-subtitle leading-native-row-subtitle tracking-native-row-subtitle text-muted",
+  meta: `${ROW_SUBTITLE_TYPE} text-muted`,
 };
 
 export function listRowLook(
