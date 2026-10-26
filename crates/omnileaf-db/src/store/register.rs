@@ -7,9 +7,9 @@ const LAST_WRITER_WINS: &str = "lww";
 const MAXIMUM: &str = "max";
 
 const UPSERT: &str =
-    "INSERT INTO sync_register (entity, id, field, class, hlc, node, seq, rank, value)
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-    ON CONFLICT (entity, id, field) DO UPDATE SET
+    "INSERT INTO sync_register (profile, entity, id, field, class, hlc, node, seq, rank, value)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+    ON CONFLICT (profile, entity, id, field) DO UPDATE SET
         class = excluded.class, hlc = excluded.hlc, node = excluded.node, seq = excluded.seq,
         rank = excluded.rank, value = excluded.value, ext = excluded.ext
     WHERE (excluded.class = 'max', coalesce(excluded.rank, 0), excluded.hlc, excluded.node,
@@ -27,6 +27,7 @@ pub(crate) fn upsert(
         MergeClass::Maximum { rank } => (MAXIMUM, Some(rank)),
     };
     let changed = connection.prepare(UPSERT)?.execute((
+        address.profile.as_bytes(),
         address.entity,
         address.id,
         address.field,
@@ -44,17 +45,20 @@ pub(crate) fn upsert(
 mod tests {
     use std::path::Path;
 
-    use omnileaf_sync_proto::{Hlc, NodeId, Stamp};
+    use omnileaf_sync_proto::{Hlc, NodeId, ProfileId, Stamp};
     use proptest::{collection::vec, prelude::*, sample::subsequence};
 
     use super::*;
     use crate::migration::{self, MIGRATIONS};
 
-    const ADDRESS: Address = Address {
-        entity: "book",
-        id: [0x11; 16],
-        field: "max",
-    };
+    fn address() -> Address {
+        Address {
+            profile: ProfileId::default_profile(),
+            entity: "book",
+            id: [0x11; 16],
+            field: "max",
+        }
+    }
 
     fn migrated() -> Connection {
         let mut connection = Connection::open_in_memory().unwrap();
@@ -120,7 +124,7 @@ mod tests {
 
             let mut merged: Option<Register> = None;
             for register in delivered {
-                let won = upsert(&connection, &ADDRESS, &register, 1).unwrap();
+                let won = upsert(&connection, &address(), &register, 1).unwrap();
                 let kept = merged.clone().map_or(register.clone(), |kept| kept.merge(register));
                 prop_assert_eq!(won, merged.as_ref() != Some(&kept));
                 merged = Some(kept);

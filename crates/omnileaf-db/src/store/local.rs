@@ -1,25 +1,34 @@
-use omnileaf_sync_proto::{Hlc, NODE_ID_LENGTH, NodeId, Stamp};
+use omnileaf_sync_proto::{Hlc, NODE_ID_LENGTH, NodeId, ProfileId, Stamp};
 use rusqlite::Connection;
 
-use crate::Error;
+use crate::{Error, catalog::stored_id::stored_id};
 
 pub(crate) struct LocalReplica {
     node: NodeId,
     hlc: Hlc,
     next_seq: u64,
+    profile: ProfileId,
 }
 
 impl LocalReplica {
     pub(crate) fn read(connection: &Connection) -> Result<Self, Error> {
-        let local =
-            connection.query_row("SELECT node_id, hlc, next_seq FROM sync_local", [], |row| {
+        let local = connection.query_row(
+            "SELECT node_id, hlc, next_seq, profile FROM sync_local",
+            [],
+            |row| {
                 Ok(Self {
-                    node: NodeId::from(row.get::<_, [u8; NODE_ID_LENGTH]>(0)?),
-                    hlc: Hlc::from(row.get::<_, u64>(1)?),
-                    next_seq: row.get(2)?,
+                    node: NodeId::from(row.get::<_, [u8; NODE_ID_LENGTH]>("node_id")?),
+                    hlc: Hlc::from(row.get::<_, u64>("hlc")?),
+                    next_seq: row.get("next_seq")?,
+                    profile: stored_id(row, "profile")?,
                 })
-            })?;
+            },
+        )?;
         Ok(local)
+    }
+
+    pub(crate) const fn profile(&self) -> ProfileId {
+        self.profile
     }
 
     pub(crate) fn stamp(&mut self, now_unix_ms: u64) -> Result<Stamp, Error> {

@@ -10,13 +10,20 @@ const REGISTER_WRITER: &str = "crates/omnileaf-db/src/store/register.rs";
 const LOCAL_WRITER: &str = "crates/omnileaf-db/src/store/local.rs";
 const SESSION_WRITER: &str = "crates/omnileaf-db/src/store/session.rs";
 const SYNC_LOCAL: &str = "sync_local";
+const SYNC_REGISTER: &str = "sync_register";
 const SYNC_TABLE_WRITERS: &[(&str, &str)] = &[
-    ("sync_register", REGISTER_WRITER),
+    (SYNC_REGISTER, REGISTER_WRITER),
     (SYNC_LOCAL, LOCAL_WRITER),
     ("reading_session", SESSION_WRITER),
 ];
 const MIGRATIONS: &str = "crates/omnileaf-db/migrations/";
 const SYNC_LOCAL_SEED: &str = "crates/omnileaf-db/migrations/0005_create_sync_registers.sql";
+const REGISTERS_KEYED_BY_PROFILE: &str =
+    "crates/omnileaf-db/migrations/0037_key_sync_registers_by_profile.sql";
+const MIGRATION_WRITES: &[(&str, &str)] = &[
+    (SYNC_LOCAL_SEED, SYNC_LOCAL),
+    (REGISTERS_KEYED_BY_PROFILE, SYNC_REGISTER),
+];
 const SQL_EXTENSION: &str = ".sql";
 const RUST_EXTENSION: &str = ".rs";
 const SOURCE_ROOTS: &[&str] = &["crates/", "app/src-tauri/"];
@@ -101,7 +108,7 @@ pub(crate) fn check(files: &[RepositoryFile<'_>]) -> Vec<Violation> {
         for table in written_tables(&lowered(file)) {
             if let Some(&writer) = writers.get(table.as_str())
                 && writer != file.path
-                && !is_sync_local_seed(file.path, &table)
+                && !is_allowed_migration_write(file.path, &table)
             {
                 violations.push(Violation::ForeignWrite {
                     path: file.path.to_owned(),
@@ -135,8 +142,8 @@ fn is_migration(path: &str) -> bool {
     path.starts_with(MIGRATIONS) && path.ends_with(SQL_EXTENSION)
 }
 
-fn is_sync_local_seed(path: &str, table: &str) -> bool {
-    path == SYNC_LOCAL_SEED && table == SYNC_LOCAL
+fn is_allowed_migration_write(path: &str, table: &str) -> bool {
+    MIGRATION_WRITES.contains(&(path, table))
 }
 
 fn is_product_source(path: &str) -> bool {
@@ -382,6 +389,37 @@ mod tests {
                 path: "crates/omnileaf-db/migrations/0007_backfill_registers.sql".to_owned(),
                 table: "sync_register".to_owned(),
                 writer: REGISTER_WRITER,
+            }]
+        );
+    }
+
+    #[test]
+    fn lets_the_migration_that_keys_registers_by_profile_move_them() {
+        let move_into_profiles = text(
+            REGISTERS_KEYED_BY_PROFILE,
+            "INSERT INTO sync_register (profile, entity) SELECT x'00', entity FROM old_registers;",
+        );
+
+        let violations = check(&library_with([move_into_profiles]));
+
+        assert_eq!(violations, []);
+    }
+
+    #[test]
+    fn flags_the_migration_that_keys_registers_by_profile_writing_anything_else() {
+        let move_into_profiles = text(
+            REGISTERS_KEYED_BY_PROFILE,
+            "INSERT INTO book_state (book_id) SELECT id FROM book;",
+        );
+
+        let violations = check(&library_with([move_into_profiles]));
+
+        assert_eq!(
+            violations,
+            [Violation::ForeignWrite {
+                path: REGISTERS_KEYED_BY_PROFILE.to_owned(),
+                table: "book_state".to_owned(),
+                writer: PROJECTOR,
             }]
         );
     }

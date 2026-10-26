@@ -8,7 +8,8 @@ mod support;
 use std::fmt::Write;
 
 use omnileaf_sync_proto::{
-    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, SeriesId, SourceId, Value, norm,
+    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, ProfileId, SeriesId, SourceId,
+    Value, norm,
 };
 use serde::Deserialize;
 
@@ -52,6 +53,8 @@ fn ids_match_the_golden_vectors() {
             ("series.local.v1", Some(input)) => SeriesId::local(input).unwrap().to_string(),
             ("category.v1", Some(input)) => CategoryId::from_name(input).unwrap().to_string(),
             ("source.local.v1", None) => SourceId::local().to_string(),
+            ("profile.default.v1", None) => ProfileId::default_profile().to_string(),
+            ("profile.shared.v1", None) => ProfileId::shared().to_string(),
             (key, input) => panic!("no derivation for key {key} from {input:?}"),
         };
         assert_eq!(id, vector.id, "{} {:?}", vector.key, vector.input);
