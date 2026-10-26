@@ -45,7 +45,7 @@
       aria-describedby={description === undefined
         ? undefined
         : `${id}-description`}
-      class={["shrink-0 rounded-full", FOCUS]}
+      class={["native-target shrink-0 rounded-full", FOCUS]}
     />
   </div>
 {:else}
