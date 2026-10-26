@@ -107,6 +107,9 @@
     aria-label={m.search_field()}
     placeholder={m.search_field()}
     maxlength={SEARCH_MAX_CHARS}
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false"
     value={text}
     class="no-search-cancel text-body large:text-search-wide"
     oninput={typeIn}

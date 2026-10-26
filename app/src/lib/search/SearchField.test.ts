@@ -24,3 +24,23 @@ test("clears the typed text and keeps the field focused", async () => {
   expect(typed).toEqual([""]);
   await expect.element(screen.getByRole("combobox")).toHaveFocus();
 });
+
+test("leaves typed titles as typed, without the keyboard's corrections", async () => {
+  const screen = await render(SearchField, {
+    text: "",
+    conditions: [],
+    onType: () => undefined,
+    onRemove: () => undefined,
+    onEscape: () => undefined,
+    listId: "results",
+    activeId: undefined,
+    hasChoices: false,
+    onKey: () => false,
+  });
+
+  const field = screen.getByRole("combobox");
+
+  await expect.element(field).toHaveAttribute("autocorrect", "off");
+  await expect.element(field).toHaveAttribute("autocapitalize", "none");
+  await expect.element(field).toHaveAttribute("spellcheck", "false");
+});
