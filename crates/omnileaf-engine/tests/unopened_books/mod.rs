@@ -9,17 +9,20 @@ use omnileaf_engine::{
     BookId, Library, LibraryListing, OpenedBook, PagePath, Resource, ResourceRouter,
     SeriesBookListing,
 };
-use omnileaf_testkit::{ArchiveEntry, Compression, cbz, subsampled_scan_jpeg};
+use omnileaf_testkit::{ArchiveEntry, Compression, FixtureError, cbz};
 
 use crate::support::{FixedClock, ScratchFolder};
 
 pub(crate) const BOOKS: u64 = 40;
 const PAGES_PER_BOOK: usize = 30;
 
-pub(crate) fn write_scanned_library(root: &Path) {
+pub(crate) fn write_scanned_library(
+    root: &Path,
+    draw_scan: impl Fn(u64) -> Result<Vec<u8>, FixtureError>,
+) {
     for book in 0..BOOKS {
         let series = format!("Sample Series {book:02}");
-        let scan = subsampled_scan_jpeg(book).unwrap();
+        let scan = draw_scan(book).unwrap();
         let entries: Vec<ArchiveEntry> = (0..PAGES_PER_BOOK)
             .map(|index| ArchiveEntry {
                 name: format!("{index:03}.jpg"),

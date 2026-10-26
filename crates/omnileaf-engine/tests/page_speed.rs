@@ -8,7 +8,7 @@ mod unopened_books;
 use std::{num::NonZeroUsize, time::Duration};
 
 use omnileaf_engine::Resource;
-use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
+use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget, subsampled_scan_jpeg};
 use support::ScratchFolder;
 use unopened_books::{BOOKS, ColdRouter, UnopenedBooks, write_scanned_library};
 
@@ -32,7 +32,7 @@ async fn opens_a_book_never_opened_before_to_its_first_page_within_150_ms_at_p95
     };
     let comics = ScratchFolder::new("page-speed-comics");
     let folder = comics.path().join(FOLDER);
-    write_scanned_library(&folder);
+    write_scanned_library(&folder, subsampled_scan_jpeg);
 
     let outcome = trial
         .run(
