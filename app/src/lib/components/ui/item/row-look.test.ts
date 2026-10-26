@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followDisplayModes } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import RowsHarness from "./RowsHarness.svelte";
@@ -40,9 +41,12 @@ const NATIVE_ROWS: readonly RowLook[] = [
   },
 ];
 
-async function renderRows(platform: Platform): Promise<void> {
+async function renderRows(
+  platform: Platform,
+  theme: "light" | "dark" = "light",
+): Promise<void> {
   followCorePlatform(platform);
-  document.documentElement.dataset.theme = "light";
+  document.documentElement.dataset.theme = theme;
   await render(RowsHarness);
 }
 
@@ -77,6 +81,7 @@ function ruleAbove(row: HTMLElement): CSSStyleDeclaration {
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
   document.body.replaceChildren();
 });
 
@@ -106,6 +111,31 @@ test("draws iOS's hairline between rows from where the text starts", async () =>
   expect(rule.insetInlineStart).toBe("16px");
   expect(rule.blockSize).toBe("1px");
   expect(rule.backgroundColor).toBe("rgba(60, 60, 67, 0.12)");
+});
+
+test.each([
+  { theme: "light", fill: "rgb(209, 209, 214)", muted: "oklch(0.4 0.01 286)" },
+  { theme: "dark", fill: "rgb(58, 58, 60)", muted: "oklch(0.74 0.01 286)" },
+] as const)(
+  "fills iOS's picked row in systemGray4 and darkens its grey words to stay legible in $theme",
+  async ({ theme, fill, muted }) => {
+    await renderRows("ios", theme);
+
+    const picked = element("Picked row");
+
+    expect(getComputedStyle(picked).backgroundColor).toBe(fill);
+    expect(slot(picked, "item-description").color).toBe(muted);
+  },
+);
+
+test("deepens iOS's picked row a step under Increase Contrast", async () => {
+  followDisplayModes({ contrast: "more", transparency: undefined });
+
+  await renderRows("ios");
+
+  expect(getComputedStyle(element("Picked row")).backgroundColor).toBe(
+    "rgb(188, 188, 192)",
+  );
 });
 
 test("draws no dividers and no chevron on Android", async () => {

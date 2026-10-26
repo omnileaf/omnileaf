@@ -60,6 +60,8 @@
   --native-text-row-subtitle: calc(0.875rem * var(--text-scale));
   --native-leading-row-subtitle: calc(1.25 / 0.875);
   --native-tracking-row-subtitle: 0.25px;
+  --native-color-row-selected: var(--native-color-row-pressed);
+  --native-color-on-row-selected-muted: var(--secondary-text);
   --native-spacing-button-small: 32px;
   --native-spacing-button-large: 56px;
   --native-spacing-button-small-inline: 12px;
