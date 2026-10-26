@@ -121,6 +121,7 @@ macro_rules! app_commands {
             finish_first_launch,
             set_app_language,
             set_scheduled_rescans,
+            set_book_open,
             copy_version_details,
             open_project_link,
             problem_report,
@@ -906,6 +907,16 @@ fn set_scheduled_rescans(
     if let Some(watching) = app.try_state::<crate::folder_watch::FolderWatching>() {
         watching.turn(is_on);
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn set_book_open(library: State<'_, Library>, is_open: bool) {
+    library.set_book_open(is_open);
 }
 
 #[tauri::command]
