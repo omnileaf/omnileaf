@@ -92,11 +92,11 @@ const speedProject: Project = {
   use: { browserName: "chromium", ...SCREENS.desktop },
 };
 
-/** A shard leaves the speed project out, since depending on every other project would pull them all into one shard. */
+/** A shard or a group leaves the speed project out, since depending on every other project would pull them all into it. */
 const projects: Project<PlatformOption>[] = [
   ...screenProjects,
   ...(group === "screens" ? [] : nativeProjects),
-  ...(shard === null && group !== "screens" ? [speedProject] : []),
+  ...(shard === null && group === null ? [speedProject] : []),
 ];
 
 export default defineConfig<PlatformOption>({
