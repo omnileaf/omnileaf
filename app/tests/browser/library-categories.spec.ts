@@ -786,3 +786,65 @@ async function swipeToLastCategory(page: Page): Promise<void> {
     await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
   }
 }
+
+test.describe("a category of one series", () => {
+  const ONE = sampleSeries(1);
+
+  test.use({
+    backend: {
+      ...backendWith(CATEGORIES),
+      categorySeries: (_category, after, listing) =>
+        pagedSeries(() => ONE)(after, listing),
+      categorySeriesCount: () => ONE.length,
+    },
+  });
+
+  test("swipes on from the empty screen below its cover", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.use.hasTouch !== true, "a finger swipes");
+    await openLibrary(page);
+    await swipeCovers(page, { x: -SWIPE_PX, y: 0 });
+    await expect(seriesList(page).getByRole("listitem")).toHaveCount(1);
+
+    await swipeBelowCovers(page, -SWIPE_PX);
+
+    await expect(
+      tabs(page).getByRole("tab", { name: "Comics" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+async function swipeBelowCovers(page: Page, x: number): Promise<void> {
+  const list = await boxOf(seriesList(page));
+  const screen = viewportOf(page);
+  const start = {
+    x: screen.width / 2,
+    y: (list.y + list.height + screen.height) / 2,
+  };
+  await page.evaluate(
+    ({ from, by, steps }) => {
+      const target = document.elementFromPoint(from.x, from.y);
+      if (target === null) {
+        throw new Error("nothing is drawn below the covers");
+      }
+      const send = (type: string, moved: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            pointerType: "touch",
+            pointerId: 11,
+            isPrimary: true,
+            clientX: from.x + moved,
+            clientY: from.y,
+          }),
+        );
+      send("pointerdown", 0);
+      for (let step = 1; step <= steps; step += 1) {
+        send("pointermove", (by * step) / steps);
+      }
+      send("pointerup", by);
+    },
+    { from: start, by: x, steps: SWIPE_STEPS },
+  );
+}

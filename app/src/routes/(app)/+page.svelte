@@ -885,7 +885,7 @@
               swipeTab,
               (step) => tabBeside(step) !== undefined,
             )}
-          class="mbs-lg touch-pan-y medium:mbs-xl"
+          class="mbs-lg flex-1 touch-pan-y medium:mbs-xl"
         >
           {#if groups.length > 0}
             {@const covers = {
