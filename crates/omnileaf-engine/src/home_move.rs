@@ -1,6 +1,7 @@
 use std::{
     ffi::OsString,
-    fs, io,
+    fs,
+    io::{self, BufRead, BufReader},
     path::{Path, PathBuf},
 };
 
@@ -63,12 +64,44 @@ fn copy_backups(from: &Path, to: &Path) -> io::Result<()> {
         let entry = entry?;
         let backup = entry.path();
         let copy = copies.join(entry.file_name());
-        if is_finished_backup(&backup) && !copy.try_exists()? {
+        if is_finished_backup(&backup) && !is_already_copied(&backup, &copy)? {
             fs::create_dir_all(&copies)?;
             copy_backup(&backup, &copy)?;
         }
     }
     Ok(())
+}
+
+fn is_already_copied(backup: &Path, copy: &Path) -> io::Result<bool> {
+    if !copy.try_exists()? {
+        return Ok(false);
+    }
+    if holds_the_same_bytes(backup, copy)? {
+        Ok(true)
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("{} holds another backup by that name", copy.display()),
+        ))
+    }
+}
+
+fn holds_the_same_bytes(original: &Path, copy: &Path) -> io::Result<bool> {
+    let mut original = BufReader::new(fs::File::open(original)?);
+    let mut copy = BufReader::new(fs::File::open(copy)?);
+    loop {
+        let original_bytes = original.fill_buf()?;
+        let copy_bytes = copy.fill_buf()?;
+        let compared = original_bytes.len().min(copy_bytes.len());
+        if compared == 0 {
+            return Ok(original_bytes.is_empty() && copy_bytes.is_empty());
+        }
+        if original_bytes.get(..compared) != copy_bytes.get(..compared) {
+            return Ok(false);
+        }
+        original.consume(compared);
+        copy.consume(compared);
+    }
 }
 
 fn copy_backup(backup: &Path, copy: &Path) -> io::Result<()> {

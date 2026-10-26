@@ -561,7 +561,26 @@ async fn copies_the_backups_again_after_a_move_cut_short_while_copying_them() {
 }
 
 #[tokio::test]
-async fn keeps_a_backup_the_new_home_already_holds() {
+async fn finishes_a_move_cut_short_after_copying_a_backup() {
+    let data = ScratchFolder::new("move-backup-copied-data");
+    let other = ScratchFolder::new("move-backup-copied-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    write_backup(other.path(), OLDER_BACKUP, OLDER_BACKUP_AT_MS);
+
+    let home = setting.home().await.unwrap();
+
+    assert_eq!(home, other.path());
+    assert_eq!(
+        backups_in(other.path()),
+        [backup(OLDER_BACKUP), backup(NEWER_BACKUP)]
+    );
+}
+
+#[tokio::test]
+async fn stays_in_the_old_home_when_the_new_home_holds_another_backup_by_that_name() {
     let data = ScratchFolder::new("move-backups-there-data");
     let other = ScratchFolder::new("move-backups-there-other");
     library_read_in(data.path()).await;
@@ -571,18 +590,16 @@ async fn keeps_a_backup_the_new_home_already_holds() {
     fs::create_dir_all(other.path().join(BACKUP_FOLDER)).unwrap();
     fs::write(
         other.path().join(BACKUP_FOLDER).join(OLDER_BACKUP),
-        "a backup already there",
+        "another library's backup",
     )
     .unwrap();
 
-    setting.home().await.unwrap();
+    let home = setting.home().await.unwrap();
 
+    assert_eq!(home, data.path());
     assert_eq!(
-        backups_in(other.path()),
-        [
-            (OLDER_BACKUP.to_owned(), b"a backup already there".to_vec()),
-            backup(NEWER_BACKUP)
-        ]
+        file_in(&other.path().join(BACKUP_FOLDER), OLDER_BACKUP),
+        Some(b"another library's backup".to_vec())
     );
 }
 
