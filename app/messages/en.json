@@ -2080,6 +2080,7 @@
     }
   ],
   "reader_coming_soon": "{feature} · coming soon",
+  "reader_more_volume": "· {volume}",
   "reader_finished": "{title} finished",
   "reader_marked_read": "Marked as read",
   "reader_marked_read_after": "Marked as read · {time}",
