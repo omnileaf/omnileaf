@@ -7,12 +7,14 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 
 const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
 const SWITCH_HELP =
   "New books show up without a rescan. Turn off to save battery.";
 const TOUCH_TARGET = 44;
+const PHONE_MAX_WIDTH = 599;
 
 const IS_ON_BY_DEFAULT = {
   android: false,
@@ -91,9 +93,12 @@ for (const platform of ["ios", "android", "linux"] as const) {
     test("spans the pane in a row tall enough to touch", async ({ page }) => {
       await page.goto("/settings/advanced");
       const checks = scheduledRescansSwitch(page);
+      const isIPhone =
+        platform === "ios" && viewportOf(page).width <= PHONE_MAX_WIDTH;
+      const rowOfSwitch = isIPhone ? checks.locator("..") : checks;
 
-      const row = await boxOf(checks);
-      const pane = await boxOf(checks.locator(".."));
+      const row = await boxOf(rowOfSwitch);
+      const pane = await boxOf(rowOfSwitch.locator(".."));
 
       expect(row.x).toBeCloseTo(pane.x, 0);
       expect(row.width).toBeCloseTo(pane.width, 0);

@@ -519,3 +519,49 @@ test.describe("while the library keeps no edits", () => {
     ).toHaveCount(0);
   });
 });
+
+test.describe("the 18+ mark on a phone", { tag: "@native" }, () => {
+  test("toggles from its switch alone on an iPhone, and from the whole row on android", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    const shown = await openEditor(page);
+    const mark = shown.getByRole("switch", { name: "Mark as 18+" });
+
+    await shown.getByText("Mark as 18+", { exact: true }).click();
+
+    if (platform === "ios") {
+      await expect(mark).not.toBeChecked();
+      await mark.click();
+    }
+    await expect(mark).toBeChecked();
+  });
+
+  test("fills the card's whole width when its row is pressed on android", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "an iPhone row draws no pressed fill");
+    const shown = await openEditor(page);
+    const row = shown.getByRole("switch", { name: "Mark as 18+" });
+
+    const edges = await row.evaluate((element) => {
+      const card = element.closest("section");
+      const own = element.getBoundingClientRect();
+      const around = card?.getBoundingClientRect();
+      return {
+        start: own.left - (around?.left ?? Number.NaN),
+        end: (around?.right ?? Number.NaN) - own.right,
+        bottom: (around?.bottom ?? Number.NaN) - own.bottom,
+      };
+    });
+
+    expect(edges.start).toBeLessThanOrEqual(1);
+    expect(edges.end).toBeLessThanOrEqual(1);
+    expect(edges.bottom).toBeLessThanOrEqual(1);
+  });
+});
