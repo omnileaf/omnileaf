@@ -12,11 +12,11 @@
 </script>
 
 <span
-  class="absolute inset-none flex flex-col items-center justify-center gap-xs bg-veil text-center text-foreground"
+  class="absolute inset-none flex flex-col items-center justify-center gap-xs bg-veil text-center text-foreground touch:max-medium:bg-native-veil touch:max-medium:text-native-on-veil"
 >
   <span
     aria-hidden="true"
-    class="flex items-center justify-center rounded-full bg-card shadow-card-rest block-veil-disc inline-veil-disc"
+    class="flex items-center justify-center rounded-full bg-card shadow-card-rest block-veil-disc inline-veil-disc touch:max-medium:bg-transparent touch:max-medium:shadow-none"
   >
     <EyeOff size={ICON_SIZE} />
   </span>

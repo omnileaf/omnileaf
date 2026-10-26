@@ -2,7 +2,7 @@
   import { Check, ChevronDown, Pencil, Plus } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
   import { flushSync } from "svelte";
-  import { MediaQuery, SvelteSet } from "svelte/reactivity";
+  import { SvelteSet } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -17,8 +17,11 @@
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
+  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
-  import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
+  import { phoneAction } from "#lib/page/action-group.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
@@ -42,7 +45,12 @@
     onChoose: (tab: string) => void;
   } = $props();
 
-  const isWide = new MediaQuery(MEDIUM_QUERY);
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isWide = $derived(width.current !== "compact");
+  const onPhone = $derived(isPhone(platform, width.current));
+  const editPhone = $derived(phoneAction(platform, width.current, "other"));
+  const newPhone = $derived(phoneAction(platform, width.current, "main"));
   const tabs = $derived<readonly Tab[]>(
     arranged.map(({ id, name }) => ({ id: tabKey(id), name })),
   );
@@ -150,7 +158,7 @@
       </button>
     {/each}
   </div>
-  {#if isWide.current}
+  {#if isWide}
     <DropdownMenu>
       <DropdownMenuTrigger>
         {#snippet child({ props })}
@@ -228,7 +236,10 @@
         <div
           role="radiogroup"
           aria-labelledby={titleId}
-          class="flex flex-col overflow-auto px-sm pbs-sm min-block-none"
+          class={[
+            "flex flex-col overflow-auto pbs-sm min-block-none",
+            onPhone ? "row-rules" : "px-sm",
+          ]}
         >
           {#each tabs as tab (tab.id)}
             {@const isChosen = tab.id === chosen}
@@ -236,13 +247,15 @@
               type="button"
               role="radio"
               aria-checked={isChosen}
-              class="flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed"
+              class={onPhone
+                ? ITEM_LOOKS.row
+                : "flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed"}
               onclick={() => {
                 choose(tab.id);
                 isSheetOpen = false;
               }}
             >
-              <span class="flex-1">{tab.name}</span>
+              <span data-slot="item-title" class="flex-1">{tab.name}</span>
               {#if isChosen}
                 <Check size={ICON_SIZE} aria-hidden="true" />
               {/if}
@@ -252,8 +265,15 @@
         <div class="flex gap-sm px-sheet-inline pbs-md pbe-sheet-bottom">
           <Button
             type="button"
-            look="outline"
-            class="flex flex-1 items-center justify-center gap-sm rounded-full text-body min-block-touch-target"
+            {...editPhone === undefined
+              ? { look: "outline" }
+              : { variant: editPhone.variant, size: editPhone.size }}
+            class={[
+              "flex flex-1 items-center justify-center gap-sm",
+              editPhone === undefined
+                ? "rounded-full text-body min-block-touch-target"
+                : editPhone.fit,
+            ]}
             onclick={openSettings}
           >
             <Pencil size={ICON_SIZE} aria-hidden="true" />
@@ -261,8 +281,15 @@
           </Button>
           <Button
             type="button"
-            look="tinted"
-            class="flex flex-1 items-center justify-center gap-sm rounded-full bg-chip text-body font-semibold min-block-touch-target"
+            {...newPhone === undefined
+              ? { look: "tinted" }
+              : { variant: newPhone.variant, size: newPhone.size }}
+            class={[
+              "flex flex-1 items-center justify-center gap-sm",
+              newPhone === undefined
+                ? "rounded-full bg-chip text-body font-semibold min-block-touch-target"
+                : newPhone.fit,
+            ]}
             onclick={openSettings}
           >
             <Plus size={ICON_SIZE} aria-hidden="true" />

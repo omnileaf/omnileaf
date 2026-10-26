@@ -7,6 +7,7 @@ import {
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   test,
@@ -245,4 +246,32 @@ test("selecting has no accessibility violations", async ({ page }) => {
   const violations = await accessibilityViolations(page);
 
   expect(violations).toEqual([]);
+});
+
+test.describe("the selection header on a phone", { tag: "@native" }, () => {
+  const BAR_BUTTON = { ios: 44, android: 48 } as const;
+  const PLAIN_BUTTON = { ios: 34, android: 40 } as const;
+
+  test("ends selecting from the phone's own bar button and offers Select all as a plain button", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openLibrary(page);
+
+    await startSelecting(page, 1);
+    const cancel = await boxOf(
+      page.getByRole("button", { name: "Cancel selecting" }).first(),
+    );
+    const selectAll = await boxOf(
+      page.getByRole("button", { name: /^Select all/ }),
+    );
+
+    expect(cancel.width).toBeCloseTo(BAR_BUTTON[platform], 0);
+    expect(cancel.height).toBeCloseTo(BAR_BUTTON[platform], 0);
+    expect(selectAll.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
+  });
 });

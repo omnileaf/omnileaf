@@ -31,6 +31,7 @@ import {
   expect,
   fakeAppInfo,
   framesPassed,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
 } from "./fixtures.ts";
@@ -45,7 +46,7 @@ import {
 } from "./reader-book.ts";
 import { sampleSeries, type WireSeries } from "./series-catalog.ts";
 
-type Shown = (page: Page) => Locator;
+type Shown = (page: Page, platform: Platform) => Locator | undefined;
 
 export interface Screen {
   readonly name: string;
@@ -303,8 +304,15 @@ function firstResult(page: Page): Locator {
   return page.getByRole("option").first();
 }
 
-function backOnPageToast(page: Page): Locator {
-  return page.getByRole("listitem").filter({ hasText: "Back on page 14" });
+function isQuietPhoneReader(page: Page, platform: Platform): boolean {
+  const isPhoneSized = (page.viewportSize()?.width ?? 0) < MEDIUM_MIN_WIDTH;
+  return isPhoneSized && (platform === "ios" || platform === "android");
+}
+
+function backOnPageToast(page: Page, platform: Platform): Locator | undefined {
+  return isQuietPhoneReader(page, platform)
+    ? undefined
+    : page.getByRole("listitem").filter({ hasText: "Back on page 14" });
 }
 
 function warningToast(page: Page): Locator {
@@ -605,11 +613,18 @@ export const SCREENS: readonly Screen[] = [
   },
 ];
 
-export async function visit(page: Page, screen: Screen): Promise<void> {
+export async function visit(
+  page: Page,
+  screen: Screen,
+  platform: Platform,
+): Promise<void> {
   await screen.prepare?.(page);
   await screen.open(page);
   for (const shown of screen.shows) {
-    await expect(shown(page)).toBeVisible();
+    const locator = shown(page, platform);
+    if (locator !== undefined) {
+      await expect(locator).toBeVisible();
+    }
   }
   await settleOnceAnswered(page);
 }

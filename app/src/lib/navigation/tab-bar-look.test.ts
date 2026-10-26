@@ -92,7 +92,7 @@ test("sits iOS's current tab on a 54 tall pill inset 4, in the accent", async ()
   expect(pill.height).toBeCloseTo(54, 0);
   expect(pill.top - capsule.top).toBeCloseTo(4, 0);
   expect(getComputedStyle(glassPill()).backgroundColor).toBe(
-    "rgba(118, 118, 128, 0.12)",
+    "rgba(0, 0, 0, 0.075)",
   );
   expect(getComputedStyle(tab("Library")).color).toBe("rgb(47, 111, 79)");
   expect(getComputedStyle(iconOf("Library")).color).toBe("rgb(47, 111, 79)");
@@ -104,7 +104,7 @@ test("fills iOS's glass tab bar solid under Reduce Transparency", async () => {
 
   await renderOnPhoneInLight("ios");
 
-  expect(getComputedStyle(bar()).backgroundColor).toBe("rgb(247, 247, 247)");
+  expect(getComputedStyle(bar()).backgroundColor).toBe("rgb(242, 242, 243)");
 });
 
 test("sets iOS's tab labels at 10 on a 12 line, semibold, beside 22 icons", async () => {

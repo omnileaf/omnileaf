@@ -6,6 +6,11 @@ import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import { expect, onPlatform, settle, test } from "./fixtures.ts";
 import { goToStep } from "./first-launch-steps.ts";
+import {
+  foldsIntoMore,
+  openLibraryMore,
+  pressViewOptions,
+} from "./library-controls.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 type Messages = typeof english;
@@ -91,10 +96,7 @@ const CONTROLS: readonly SegmentedControl[] = [
     backend: withSeries,
     open: async (page, messages) => {
       await page.goto("/");
-      await page
-        .getByRole("main")
-        .getByRole("button", { name: messages.library_view_options })
-        .click();
+      await pressViewOptions(page, messages);
       const options = page.getByRole("dialog", {
         name: messages.library_view_options,
       });
@@ -356,15 +358,18 @@ function displayGroup(page: Page): Locator {
     .getByRole("radiogroup", { name: english.library_view_display });
 }
 
-function rowsInFirstFrame(page: Page): Promise<number> {
+function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
   return page.evaluate(
-    (opener) =>
+    ({ opener, isFolded }) =>
       new Promise<number>((resolve) => {
-        document
-          .querySelector<HTMLButtonElement>(
-            `main button[aria-label="${opener}"]`,
-          )
-          ?.click();
+        const button = isFolded
+          ? [...document.querySelectorAll<HTMLElement>("[role=menuitem]")].find(
+              (item) => item.textContent.trim() === opener,
+            )
+          : document.querySelector<HTMLButtonElement>(
+              `main button[aria-label="${opener}"]`,
+            );
+        button?.click();
         requestAnimationFrame(() => {
           const segments =
             document
@@ -379,7 +384,7 @@ function rowsInFirstFrame(page: Page): Promise<number> {
           );
         });
       }),
-    english.library_view_options,
+    { opener: english.library_view_options, isFolded },
   );
 }
 
@@ -404,13 +409,12 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
     }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto("/");
-      await expect(
-        page
-          .getByRole("main")
-          .getByRole("button", { name: english.library_view_options }),
-      ).toBeVisible();
+      const folded = await foldsIntoMore(page);
+      if (folded) {
+        await openLibraryMore(page);
+      }
 
-      const firstFrame = await rowsInFirstFrame(page);
+      const firstFrame = await rowsInFirstFrame(page, folded);
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
@@ -426,10 +430,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       await addStyle(page, CLASSIC_SCROLLBARS);
       const errors = await listenForErrors(page);
       await page.goto("/");
-      await page
-        .getByRole("main")
-        .getByRole("button", { name: english.library_view_options })
-        .click();
+      await pressViewOptions(page);
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
@@ -445,10 +446,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         height: wrappedHeight - Math.round(rowStep / 2),
       });
 
-      await page
-        .getByRole("main")
-        .getByRole("button", { name: english.library_view_options })
-        .click();
+      await pressViewOptions(page);
       await nextFrames(page);
       for (const sweptWidth of [
         ...SWEEP_WIDTHS,

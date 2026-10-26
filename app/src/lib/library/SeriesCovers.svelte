@@ -37,6 +37,7 @@
     movedTo,
     type Reveal,
   } from "#lib/virtual-grid/grid-keys.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
@@ -46,6 +47,7 @@
   import CoverImage from "./CoverImage.svelte";
   import DownloadedMark from "./DownloadedMark.svelte";
   import LanguageBadge from "./LanguageBadge.svelte";
+  import { listRowLook } from "./list-row-look.ts";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
@@ -98,7 +100,10 @@
     ),
   );
   const baseLook = coverLook(DEFAULT_LIBRARY_VIEW.coversPerRow);
-  const tile = coverTileLook(currentPlatform());
+  const platform = currentPlatform();
+  const tile = coverTileLook(platform);
+  const width = new WindowWidth();
+  const rowLook = $derived(listRowLook(platform, width.current));
   const coversTrack = $derived(
     fitsToWidth ? "grid-cols-covers-fit" : "grid-cols-covers-per-row",
   );
@@ -492,16 +497,13 @@
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
-  <div
-    class="flex items-center gap-xs border-be border-border"
-    data-series-id={one.id}
-  >
+  <div class={rowLook.row} data-series-id={one.id}>
     <SeriesLink
       {...revealing(one, shown.title)}
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class="flex flex-1 items-center gap-md rounded-control py-list-row-block min-inline-none"
+      class={rowLook.link}
     >
       {#if isSelecting}
         <span class="relative shrink-0 block-series-check inline-series-check">
@@ -520,11 +522,11 @@
         {/if}
       </span>
       <span class="flex flex-col gap-xs min-inline-none">
-        <span class="line-clamp-2 font-medium wrap-break-word">
+        <span data-slot="item-title" class={rowLook.title}>
           {shown.title}
         </span>
         <span class="flex flex-wrap items-center gap-sm">
-          <span class="text-detail text-muted">
+          <span class={rowLook.meta}>
             {m.library_series_books({ count: one.bookCount })}
           </span>
           {#if view.onCovers.showsLanguage && one.language !== null && !veiled}

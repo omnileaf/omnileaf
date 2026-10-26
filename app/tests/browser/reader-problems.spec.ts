@@ -136,3 +136,84 @@ test.describe("a book that failed to open for a reason of the app's own", () => 
     ).toBeVisible();
   });
 });
+
+const WAY_BACK_HEIGHT: Readonly<Partial<Record<string, number>>> = {
+  ios: 50,
+  android: 40,
+};
+
+test.describe(
+  "a book that failed to open, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: failingWith("internal", PLACE) });
+
+    test("draws the way back as the platform's own button", async ({
+      page,
+      platform,
+    }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      const wayBack = problem(page).getByRole("link", {
+        name: "Back to the series",
+      });
+
+      await expect(wayBack).toBeVisible();
+      const expected =
+        platform === undefined ? undefined : WAY_BACK_HEIGHT[platform];
+      if (expected !== undefined) {
+        expect((await wayBack.boundingBox())?.height).toBeCloseTo(expected, 0);
+      }
+    });
+
+    test("has no accessibility violations", async ({ page }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      await expect(
+        page.getByRole("heading", { name: "Something went wrong" }),
+      ).toBeFocused();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  },
+);
+
+const BACK_ICONS: Readonly<Partial<Record<string, string>>> = {
+  ios: "chevron-left",
+  android: "arrow-left",
+};
+
+test.describe(
+  "a problem screen's way back, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: failingWith("internal", PLACE) });
+
+    test("is the platform's own back button, with the series named only on Android", async ({
+      page,
+      platform,
+    }) => {
+      await page.goto(`/read/${BOOK_ID}`);
+      const back = page
+        .getByRole("navigation")
+        .getByRole("link", { name: `Back to ${BOOK_SERIES_TITLE}` });
+      const seriesName = page
+        .getByRole("navigation")
+        .getByText(BOOK_SERIES_TITLE, { exact: true })
+        .first();
+
+      await expect(back).toBeVisible();
+      const icon = platform === undefined ? undefined : BACK_ICONS[platform];
+      if (icon === undefined) {
+        return;
+      }
+      await expect(back.locator(`[data-icon="${icon}"]`)).toHaveCount(1);
+      const box = await back.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.height).toBeCloseTo(box?.width ?? 0, 0);
+      if (platform === "ios") {
+        await expect(seriesName).toBeHidden();
+      } else {
+        await expect(seriesName).toBeVisible();
+      }
+    });
+  },
+);
