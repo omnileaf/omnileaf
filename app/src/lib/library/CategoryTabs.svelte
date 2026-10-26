@@ -120,13 +120,17 @@
     if (strip === null || tab === null) {
       return;
     }
-    const isChange = followedTab !== undefined && followedTab !== chosen;
+    const isFirst = followedTab === undefined;
+    const isChange = !isFirst && followedTab !== chosen;
     followedTab = chosen;
     if (onPhone) {
       strip.scrollBy({
         left: stepToCentre(strip, tab),
         behavior: isChange && movesSmoothly() ? "smooth" : "auto",
       });
+    } else if (isFirst) {
+      strip.scrollBy({ left: stepIntoView(strip, tab) });
+      measureTabs(strip);
     } else if (isChange) {
       tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
@@ -143,6 +147,15 @@
     const shown = within.getBoundingClientRect();
     const box = tab.getBoundingClientRect();
     return box.left + box.width / 2 - (shown.left + shown.width / 2);
+  }
+
+  function stepIntoView(within: HTMLElement, tab: HTMLElement): number {
+    const shown = within.getBoundingClientRect();
+    const box = tab.getBoundingClientRect();
+    if (box.left < shown.left) {
+      return box.left - shown.left;
+    }
+    return Math.max(0, box.right - shown.right);
   }
 
   function moveWithArrows(event: KeyboardEvent): void {

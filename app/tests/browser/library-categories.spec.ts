@@ -920,4 +920,22 @@ test.describe("more categories than fit, before the strip is first measured", ()
 
     expect(await cutTabs(page)).toEqual([]);
   });
+
+  test("draws the tab it opens on whole, with no tab cut off, on screens wide enough for More", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+    await page.goto("/settings/library/tabs");
+    await page
+      .getByRole("combobox", { name: "The library opens on" })
+      .selectOption({ label: "Sea stories" });
+
+    await page.goto("/");
+
+    await expect(
+      tabs(page).getByRole("tab", { name: "Sea stories" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(await isWholeInStrip(page, "Sea stories")).toBe(true);
+    expect(await cutTabs(page)).toEqual([]);
+  });
 });
