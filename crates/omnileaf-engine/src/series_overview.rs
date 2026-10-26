@@ -18,7 +18,6 @@ pub struct SeriesOverview {
     pub folder: Option<String>,
     /// The book reading goes on from, absent once every book is read.
     pub up_next: Option<SeriesBook>,
-    /// The kind of book, such as manga or a light novel, absent until the library reads the books' details.
     pub format: Option<String>,
     pub creators: Vec<SeriesCreator>,
     pub summary: Option<String>,
@@ -38,7 +37,6 @@ pub struct RelatedSeries {
     pub book_count: u32,
     pub read_count: u32,
     pub reason: RelatedReason,
-    /// Counts as 18+, which a library that reads no age ratings and keeps no marks never does.
     pub is_adult: bool,
 }
 
