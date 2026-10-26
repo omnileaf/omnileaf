@@ -51,6 +51,10 @@ const PHONE_FIGURE_SIZE = { ios: "20px", android: "24px" } satisfies Record<
   string
 >;
 const TABLET_TITLE_SIZE = "20px";
+const TABLET_READ_LOOK = {
+  ios: { height: 50, corner: "14px" },
+  android: { height: 48, corner: "9999px" },
+} satisfies Record<PhonePlatform, { height: number; corner: string }>;
 
 test.use({
   backend: {
@@ -326,6 +330,12 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     return stats(page).getByText(String(PAGE_COUNT), { exact: true });
   }
 
+  function upNextCard(page: Page): Locator {
+    return page.locator("[data-slot=card]").filter({
+      has: page.getByRole("heading", { level: 2, name: "Up next" }),
+    });
+  }
+
   test("centres the check above the title", async ({ page, platform }) => {
     if (platform !== "ios" && platform !== "android") {
       test.skip();
@@ -376,6 +386,104 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
 
     await expect(upNext(page)).toHaveCSS("text-align", "start");
     await expect(upNext(page)).toHaveCSS("font-size", TABLET_TITLE_SIZE);
+  });
+
+  test("sets Skip this screen in a grouped row, on the cards' plate and toggled from its switch alone on an iPhone", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await turnPastTheEnd(page);
+
+    await page
+      .getByRole("main")
+      .getByText("Skip this screen", { exact: true })
+      .click();
+
+    await expect(skipSwitch(page)).toBeChecked({
+      checked: platform === "android",
+    });
+    if (platform === "ios") {
+      await expect(skipSwitch(page).locator("../..")).toHaveCSS(
+        "background-color",
+        await upNextCard(page).evaluate(
+          (card) => getComputedStyle(card).backgroundColor,
+        ),
+      );
+    }
+  });
+
+  test("rings the Skip this screen switch inside its plate when focused from the keyboard", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await turnPastTheEnd(page);
+
+    await skipSwitch(page).focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+
+    await expect(skipSwitch(page)).toBeFocused();
+    await expect(skipSwitch(page)).toHaveCSS("outline-style", "solid");
+    expect(
+      parseFloat(
+        await skipSwitch(page).evaluate(
+          (control) => getComputedStyle(control).outlineOffset,
+        ),
+      ),
+    ).toBeLessThan(0);
+  });
+
+  test("keeps today's Read button and Skip this screen row on a tablet", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.setViewportSize(TABLET);
+    await openBook(page);
+    await turnPastTheEnd(page);
+    const read = page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` });
+
+    await page
+      .getByRole("main")
+      .getByText("Skip this screen", { exact: true })
+      .click();
+
+    expect((await boxOf(read)).height).toBe(TABLET_READ_LOOK[platform].height);
+    await expect(read).toHaveCSS(
+      "border-start-start-radius",
+      TABLET_READ_LOOK[platform].corner,
+    );
+    await expect(skipSwitch(page)).toBeChecked();
+  });
+
+  test("draws a book in the cover's place when the next book has no cover", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+
+    await expect(
+      upNextCard(page).locator("[data-up-next-cover] svg"),
+    ).toBeVisible();
   });
 
   test("keeps the buttons as wide as each other and everything inside the window at the largest text in a long language", async ({
