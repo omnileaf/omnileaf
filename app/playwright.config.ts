@@ -3,10 +3,14 @@ import { defineConfig, type Project } from "@playwright/test";
 import type { Platform } from "./src/lib/ipc/bindings.ts";
 
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
+import { previewPortFromEnvironment } from "./tests/preview-port.ts";
 import { shardFromEnvironment } from "./tests/shard.ts";
 
-const PREVIEW_PORT = 4173;
+const PREVIEW_PORT = previewPortFromEnvironment(
+  process.env.OMNILEAF_PREVIEW_PORT,
+);
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
+const BUILD_AND_SERVE_MS = 180_000;
 
 export const SCREENS = {
   phone: {
@@ -102,5 +106,6 @@ export default defineConfig<PlatformOption>({
     env: { VITE_SAMPLE_LIBRARY: "on", VITE_KIT_PAGE: "on" },
     url: PREVIEW_URL,
     reuseExistingServer: false,
+    timeout: BUILD_AND_SERVE_MS,
   },
 });
