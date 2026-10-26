@@ -1471,6 +1471,7 @@ export function sampleBackend(
     },
     setAppLanguage: () => null,
     setScheduledRescans: () => undefined,
+    setBookOpen: () => undefined,
     copyVersionDetails: () => null,
     openProjectLink: () => null,
     problemReport: () => ({

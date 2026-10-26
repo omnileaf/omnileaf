@@ -29,6 +29,10 @@
   });
 
   $effect(() => {
+    bookPresence.isBeingRead = isFound;
+  });
+
+  $effect(() => {
     if (!isFound) {
       return;
     }
@@ -52,6 +56,7 @@
   onMount(() => {
     return () => {
       bookPresence.isOpen = false;
+      bookPresence.isBeingRead = false;
       void commands.changeFullScreen("leave");
     };
   });
