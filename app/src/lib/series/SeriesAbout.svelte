@@ -30,6 +30,7 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import type {
     Platform,
@@ -233,10 +234,7 @@
         </CollapsibleTrigger>
       {:else}
         <div class={detailsRow.plate}>
-          <Item
-            look="row"
-            class="focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
-          >
+          <Item look="row" class={ROW_FOCUS_RING}>
             {#snippet child({ props })}
               <CollapsibleTrigger {...props}>
                 <ItemMedia><Icon name="info" /></ItemMedia>
