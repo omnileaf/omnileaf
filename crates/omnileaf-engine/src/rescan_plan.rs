@@ -10,6 +10,7 @@ use crate::{
     FileChanges,
     library_layout::{FoundBook, Layout},
     scan::{FileStamp, Target, UnreadableBook, saturating_u32, warn_unreadable},
+    unread_books::UnreadBooks,
 };
 
 pub(crate) struct ToRead {
@@ -30,6 +31,7 @@ pub(crate) struct KnownFile {
 
 pub(crate) struct Plan {
     changes: FileChanges,
+    unread: UnreadBooks,
     gone: Vec<PathBuf>,
     gone_books: BTreeMap<BookId, u32>,
     replaced: Vec<Replacement>,
@@ -73,6 +75,7 @@ impl Plan {
                 unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
                 ..FileChanges::default()
             },
+            unread: UnreadBooks::default(),
             gone: Vec::new(),
             gone_books: BTreeMap::new(),
             replaced: Vec::new(),
@@ -101,13 +104,8 @@ impl Plan {
                     self.leave_out(known);
                     continue;
                 }
-                Err(unread) if unread.is_unsupported_archive() => {
-                    self.changes.unsupported_books =
-                        self.changes.unsupported_books.saturating_add(1);
-                    continue;
-                }
-                Err(_) => {
-                    self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
+                Err(unread) => {
+                    self.unread.count(&unread);
                     continue;
                 }
             };
@@ -142,7 +140,12 @@ impl Plan {
             gone: self.gone,
             replaced: self.replaced,
         };
-        (self.changes, forgetting)
+        let changes = FileChanges {
+            unreadable_books: self.unread.unreadable,
+            unsupported_books: self.unread.unsupported,
+            ..self.changes
+        };
+        (changes, forgetting)
     }
 
     fn compare(
@@ -151,20 +154,19 @@ impl Plan {
         found: FoundBook,
         stored: &mut BTreeMap<PathBuf, StoredFile>,
     ) -> Option<ToRead> {
-        let Ok(location) = found
-            .path
-            .strip_prefix(&target.folder)
-            .map(Path::to_path_buf)
-        else {
-            self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
-            return None;
+        let location = match found.path.strip_prefix(&target.folder) {
+            Ok(location) => location.to_path_buf(),
+            Err(outside) => {
+                self.unread.count(&outside.into());
+                return None;
+            }
         };
         let known = stored.remove(&location);
         match FileStamp::read(&target.storage, &found.path) {
             Ok(stamp) => Known::of(known, location, stamp).map(|known| ToRead { found, known }),
             Err(error) => {
                 warn_unreadable(&found, &error);
-                self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
+                self.unread.count(&error);
                 None
             }
         }

@@ -68,6 +68,7 @@ mod series_details;
 mod series_overview;
 mod side_borders;
 mod storage_use;
+mod unread_books;
 mod utc_offset;
 mod version_details;
 mod windows_share;

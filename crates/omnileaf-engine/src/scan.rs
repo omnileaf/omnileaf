@@ -22,6 +22,7 @@ use crate::{
     clock::unix_ms,
     file_type::HiddenFileTypes,
     library_layout::{FoundBook, Layout, find_books, folder_name},
+    unread_books::UnreadBooks,
 };
 
 pub(crate) const BOOKS_PER_BATCH: usize = 32;
@@ -72,13 +73,6 @@ impl UnreadableBook {
     pub(crate) fn is_hidden(&self) -> bool {
         matches!(self, Self::HiddenType(_))
     }
-
-    pub(crate) fn is_unsupported_archive(&self) -> bool {
-        matches!(
-            self,
-            Self::Format(FormatError::ArchiveNotSupportedYet { .. })
-        )
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -101,8 +95,7 @@ pub(crate) struct Target {
 struct Tally {
     scanned: u32,
     books: u32,
-    unreadable_books: u32,
-    unsupported_books: u32,
+    unread: UnreadBooks,
     series: BTreeSet<SeriesId>,
 }
 
@@ -174,8 +167,8 @@ pub(crate) async fn scan(
         name: folder_name(&target.folder),
         series: saturating_u32(tally.series.len()),
         books: tally.books,
-        unreadable_books: tally.unreadable_books,
-        unsupported_books: tally.unsupported_books,
+        unreadable_books: tally.unread.unreadable,
+        unsupported_books: tally.unread.unsupported,
         unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
     })
 }
@@ -190,11 +183,7 @@ impl Tally {
                     self.books = self.books.saturating_add(1);
                     found.push(book);
                 }
-                Err(unread) if unread.is_hidden() => {}
-                Err(unread) if unread.is_unsupported_archive() => {
-                    self.unsupported_books = self.unsupported_books.saturating_add(1);
-                }
-                Err(_) => self.unreadable_books = self.unreadable_books.saturating_add(1),
+                Err(unread) => self.unread.count(&unread),
             }
         }
         found
