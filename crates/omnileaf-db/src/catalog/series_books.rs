@@ -32,6 +32,40 @@ macro_rules! not_read {
     };
 }
 
+macro_rules! first_book_in_series {
+    ($series_local_id:literal, $($condition:expr),+) => {
+        concat!(
+            "SELECT book.id FROM book
+            LEFT JOIN book_state ON book_state.book_id = book.id
+            WHERE book.series_local_id = ", $series_local_id,
+            $(" AND ", $condition,)+
+            " ORDER BY book.title_sort_key, book.id LIMIT 1"
+        )
+    };
+}
+
+macro_rules! book_up_next {
+    ($series_local_id:literal) => {
+        concat!(
+            "coalesce((",
+            $crate::catalog::series_books::first_book_in_series!(
+                $series_local_id,
+                "book_state.is_started IS 1",
+                $crate::catalog::series_books::not_read!()
+            ),
+            "), (",
+            $crate::catalog::series_books::first_book_in_series!(
+                $series_local_id,
+                $crate::catalog::series_books::not_read!()
+            ),
+            "))"
+        )
+    };
+}
+
+pub(crate) use first_book_in_series;
+pub(crate) use not_read;
+
 const FIRST_IN_SERIES: &str = books_in_series!("ASC");
 const NEXT_IN_SERIES: &str = books_in_series!(
     "ASC",
@@ -42,9 +76,15 @@ const PREVIOUS_IN_SERIES: &str = books_in_series!(
     "DESC",
     "(book.title_sort_key, book.id) < (:after_key, :after_id)"
 );
-const FIRST_UNREAD_IN_SERIES: &str = books_in_series!("ASC", not_read!());
-const FIRST_STARTED_UNREAD: &str =
-    books_in_series!("ASC", "book_state.is_started IS 1", not_read!());
+const UP_NEXT: &str = concat!(
+    "SELECT book.id, book.title_sort_key,
+        book_state.is_read, book_state.is_started, book_state.position_page
+    FROM book
+    LEFT JOIN book_state ON book_state.book_id = book.id
+    WHERE book.id = (SELECT ",
+    book_up_next!("series.local_id"),
+    " FROM series WHERE series.id = :series)"
+);
 const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count FROM book WHERE id = ?1";
 const UNREAD_IN_SERIES: &str = concat!(
     "SELECT book.id FROM book
@@ -229,18 +269,15 @@ fn books_before(connection: &Connection, book: &Position) -> Result<u32, Error> 
 #[tracing::instrument(skip_all, fields(%series))]
 pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookSummary>, Error> {
     let _snapshot = snapshot(connection)?;
-    for query in [FIRST_STARTED_UNREAD, FIRST_UNREAD_IN_SERIES] {
-        let mut statement = connection.prepare(query)?;
-        let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
-        if let Some(row) = rows.next()? {
-            let (mut book, cursor) =
-                stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
-            book.position = books_before(connection, &cursor)? + 1;
-            fill_details(connection, &mut book)?;
-            return Ok(Some(book));
-        }
-    }
-    Ok(None)
+    let mut statement = connection.prepare(UP_NEXT)?;
+    let mut rows = statement.query(named_params! { ":series": series.as_bytes() })?;
+    let Some(row) = rows.next()? else {
+        return Ok(None);
+    };
+    let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
+    book.position = books_before(connection, &cursor)? + 1;
+    fill_details(connection, &mut book)?;
+    Ok(Some(book))
 }
 
 pub fn unread_books(connection: &Connection, series: SeriesId) -> Result<Vec<BookId>, Error> {
@@ -387,15 +424,26 @@ mod tests {
     fn finds_what_is_up_next_by_walking_the_series_books_in_order_without_scanning_or_sorting() {
         let scratch = ScratchLibrary::new("up-next-plan");
 
-        let plans =
-            [FIRST_STARTED_UNREAD, FIRST_UNREAD_IN_SERIES].map(|query| scratch.query_plan(query));
+        let plan = scratch.query_plan(UP_NEXT);
 
-        let walking_in_order = [
-            "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)",
-            "SCALAR SUBQUERY 1",
+        let walking_in_order = |subquery: u8| {
+            [
+                format!("CORRELATED SCALAR SUBQUERY {subquery}"),
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
+                "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned(),
+            ]
+        };
+        let expected: Vec<String> = [
+            "SEARCH book USING PRIMARY KEY (id=?)",
+            "SCALAR SUBQUERY 3",
             "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-            "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
-        ];
-        assert_eq!(plans, [walking_in_order, walking_in_order]);
+        ]
+        .map(ToOwned::to_owned)
+        .into_iter()
+        .chain(walking_in_order(1))
+        .chain(walking_in_order(2))
+        .chain(["SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned()])
+        .collect();
+        assert_eq!(plan, expected);
     }
 }
