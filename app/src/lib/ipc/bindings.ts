@@ -544,7 +544,6 @@ export type OpenedBook = {
 	readingDirection: ReadingDirection | null,
 	/**  Counting from 0; absent while the library keeps no bookmarks. */
 	bookmarkedPages: number[] | null,
-	/**  Absent while the library doesn't check a book's pages against what its file promises. */
 	damage: BookDamage | null,
 	/**  About how long a page takes to read, absent until the library has timed enough reading. */
 	secondsPerPage: number | null,

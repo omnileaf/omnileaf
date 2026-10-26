@@ -15,14 +15,15 @@ use std::{
 };
 
 use omnileaf_engine::{
-    BookId, BookPlace, BookReading, Library, LibraryListing, OpenBookError, OpenedBook,
-    PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource, ResourceRouter,
-    SeriesBookListing, SeriesId,
+    BookDamage, BookId, BookPlace, BookReading, DamageCause, Library, LibraryListing,
+    OpenBookError, OpenedBook, PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource,
+    ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
-    INK_OVER_PAPER_JXL, PageShape, cbz, page_jpeg, page_png, strip_jpeg, webp_header_only,
+    INK_OVER_PAPER_JXL, PageShape, cbz, cut_inside_entry, page_jpeg, page_png, strip_jpeg,
+    webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -40,6 +41,7 @@ const SPREAD: PageDimensions = PageDimensions {
     height: 600,
 };
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
+const PAGES_LEFT_WHOLE: u32 = 3;
 /// A byte JPEG lets any marker begin with, which a decoder skips but the size reader here doesn't.
 const FILL_BYTE: u8 = 0xFF;
 
@@ -148,6 +150,12 @@ impl Reader {
             .await
             .unwrap();
         books.books.iter().map(|book| book.page_count).collect()
+    }
+
+    fn cut_short(&self) {
+        let archive = cbz(&page_entries(&portrait_pages(SEED)), Compression::Deflated).unwrap();
+        let entry = usize::try_from(PAGES_LEFT_WHOLE).unwrap();
+        fs::write(self.book_path(), cut_inside_entry(&archive, entry).unwrap()).unwrap();
     }
 
     fn forget_page_counts(&self) {
@@ -412,11 +420,68 @@ async fn knows_no_place_for_a_book_missing_from_the_library() {
 }
 
 #[tokio::test]
-async fn leaves_a_books_damage_unchecked_while_the_library_checks_none() {
-    let reader = Reader::with_book("no-damage-check").await;
+async fn finds_no_damage_in_a_whole_book() {
+    let reader = Reader::with_book("no-damage").await;
 
     let opened = reader.open(NOTHING_UNDECODABLE).await;
 
+    assert_eq!(opened.damage, None);
+}
+
+#[tokio::test]
+async fn opens_the_pages_that_work_of_a_book_whose_file_ends_early() {
+    let reader = Reader::with_book("damage-ends-early").await;
+    reader.cut_short();
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.pages.len(), PAGES_LEFT_WHOLE as usize);
+    assert_eq!(
+        opened.damage,
+        Some(BookDamage {
+            promised_pages: PAGES,
+            cause: DamageCause::ArchiveEndsEarly,
+        })
+    );
+}
+
+#[tokio::test]
+async fn reads_the_last_page_that_works_of_a_book_whose_file_ends_early() {
+    let reader = Reader::with_book("damage-read").await;
+    reader.cut_short();
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let last = usize::try_from(PAGES_LEFT_WHOLE - 1).unwrap();
+
+    let page = reader.page(&opened, last).await;
+
+    let expected = page_jpeg(SEED, PAGES_LEFT_WHOLE - 1, PageShape::Portrait).unwrap();
+    assert_eq!(page, served("image/jpeg", expected));
+}
+
+#[tokio::test]
+async fn keeps_reporting_the_pages_a_damaged_book_lost_each_time_it_opens() {
+    let reader = Reader::with_book("damage-again").await;
+    reader.cut_short();
+    reader.open(NOTHING_UNDECODABLE).await;
+
+    let again = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(
+        again.damage.map(|damage| damage.promised_pages),
+        Some(PAGES)
+    );
+    assert_eq!(reader.page_counts().await, [Some(PAGES)]);
+}
+
+#[tokio::test]
+async fn opens_the_pages_that_work_with_no_damage_named_while_the_library_never_counted_them() {
+    let reader = Reader::with_book("damage-uncounted").await;
+    reader.cut_short();
+    reader.forget_page_counts();
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.pages.len(), PAGES_LEFT_WHOLE as usize);
     assert_eq!(opened.damage, None);
 }
 

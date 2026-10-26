@@ -1,4 +1,5 @@
 use omnileaf_db::catalog;
+use omnileaf_formats::Damage;
 use omnileaf_imaging::PageFormat;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -25,7 +26,6 @@ pub struct OpenedBook {
     pub reading_direction: Option<ReadingDirection>,
     /// Counting from 0; absent while the library keeps no bookmarks.
     pub bookmarked_pages: Option<Vec<u32>>,
-    /// Absent while the library doesn't check a book's pages against what its file promises.
     pub damage: Option<BookDamage>,
     /// About how long a page takes to read, absent until the library has timed enough reading.
     pub seconds_per_page: Option<u32>,
@@ -43,6 +43,30 @@ pub struct BookDamage {
 #[serde(rename_all = "camelCase")]
 pub enum DamageCause {
     ArchiveEndsEarly,
+}
+
+impl BookDamage {
+    pub(crate) fn of(
+        found: Option<Damage>,
+        promised: Option<u32>,
+        readable: usize,
+    ) -> Option<Self> {
+        let cause = found?.into();
+        let promised_pages = promised
+            .filter(|&promised| usize::try_from(promised).is_ok_and(|count| count > readable))?;
+        Some(Self {
+            promised_pages,
+            cause,
+        })
+    }
+}
+
+impl From<Damage> for DamageCause {
+    fn from(damage: Damage) -> Self {
+        match damage {
+            Damage::EndsEarly => Self::ArchiveEndsEarly,
+        }
+    }
 }
 
 /// Where a book sits, found without opening its file, so a book that won't open still names its way back.
