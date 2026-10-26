@@ -3,7 +3,7 @@ use std::ops::Range;
 use crate::{
     ImagingError, Size, Transcoded,
     decode::{Decoded, Source},
-    transcode::{Layout, Pixels, encode},
+    transcode::{Chroma, Layout, Pixels, encode_with_chroma},
 };
 
 const CELL_EDGE: usize = 4;
@@ -32,7 +32,7 @@ pub fn crop_white_borders(
         return Ok(None);
     };
     match kept_region(&page, sides).and_then(|kept| page.cropped_to(&kept)) {
-        Some(cropped) => encode(&cropped).map(Some),
+        Some(cropped) => encode_with_chroma(&cropped, Chroma::HalvedEachWay).map(Some),
         None => Ok(None),
     }
 }
@@ -213,13 +213,27 @@ impl<'pixels> Grid<'pixels, Rgb> {
             width: u32::try_from(kept.columns.len()).ok()?,
             height: u32::try_from(kept.rows.len()).ok()?,
         };
-        let mut samples = Vec::with_capacity(kept.rows.len() * kept.columns.len() * 3);
-        for row in self.rows().skip(kept.rows.start).take(kept.rows.len()) {
-            samples.extend_from_slice(row.get(kept.columns.clone())?.as_flattened());
-        }
+        let rows = self
+            .rows()
+            .skip(kept.rows.start)
+            .take(kept.rows.len())
+            .map(|row| row.get(kept.columns.clone()))
+            .collect::<Option<Vec<_>>>()?;
+        let is_grey = rows
+            .iter()
+            .copied()
+            .flatten()
+            .all(|[red, green, blue]| red == green && green == blue);
+        let (layout, samples) = if is_grey {
+            let levels = rows.iter().copied().flatten().map(|[level, ..]| *level);
+            (Layout::Grey, levels.collect())
+        } else {
+            let channels = rows.iter().flat_map(|row| row.as_flattened());
+            (Layout::Rgb, channels.copied().collect())
+        };
         Some(Pixels {
             size,
-            layout: Layout::Rgb,
+            layout,
             samples,
         })
     }

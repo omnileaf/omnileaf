@@ -5,7 +5,9 @@ use std::{
 };
 
 use image_webp::WebPDecoder;
-use jpeg_encoder::{ColorType as JpegColour, Encoder as JpegEncoder};
+use jpeg_encoder::{
+    ChromaSubsamplingMethod, ColorType as JpegColour, Encoder as JpegEncoder, SamplingFactor,
+};
 use jxl_oxide::{AllocTracker, JxlImage, PixelFormat};
 use png::{BitDepth, ColorType as PngColour, Encoder as PngEncoder};
 
@@ -130,14 +132,35 @@ fn decode_jxl(page: &[u8]) -> Result<Pixels, ImagingError> {
     })
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Chroma {
+    Full,
+    HalvedEachWay,
+}
+
 pub(crate) fn encode(pixels: &Pixels) -> Result<Transcoded, ImagingError> {
+    encode_with_chroma(pixels, Chroma::Full)
+}
+
+pub(crate) fn encode_with_chroma(
+    pixels: &Pixels,
+    chroma: Chroma,
+) -> Result<Transcoded, ImagingError> {
     let jpeg_size = u16::try_from(pixels.size.width)
         .ok()
         .zip(u16::try_from(pixels.size.height).ok());
     match (pixels.layout.jpeg_colour(), jpeg_size) {
         (Some(colour), Some((width, height))) => {
             let mut bytes = Vec::new();
-            JpegEncoder::new(&mut bytes, JPEG_QUALITY)
+            let mut encoder = JpegEncoder::new(&mut bytes, JPEG_QUALITY);
+            match chroma {
+                Chroma::Full => encoder.set_sampling_factor(SamplingFactor::F_1_1),
+                Chroma::HalvedEachWay => {
+                    encoder.set_sampling_factor(SamplingFactor::F_2_2);
+                    encoder.set_chroma_subsampling_method(ChromaSubsamplingMethod::Average);
+                }
+            }
+            encoder
                 .encode(&pixels.samples, width, height, colour)
                 .map_err(ImagingError::Encode)?;
             Ok(Transcoded {

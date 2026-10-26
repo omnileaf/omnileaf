@@ -1,8 +1,10 @@
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "the pages are generated in memory, so a failure should stop the test"
 )]
 
+use jpeg_decoder::PixelFormat;
 use omnileaf_imaging::{CroppedSides, ImagingError, PageFormat, Size, crop_white_borders};
 use omnileaf_testkit::DrawnScan;
 use png::{BitDepth, ColorType, Encoder};
@@ -18,6 +20,13 @@ const HEAVY_GRAIN: u8 = 24;
 const WHITE: [u8; 3] = [255, 255, 255];
 const SCANNER_GREY: [u8; 3] = [228, 226, 222];
 const INK: [u8; 3] = [40, 38, 36];
+const GREY_INK: [u8; 3] = [40; 3];
+const RED_INK: [u8; 3] = [200, 40, 40];
+const SOF0: [u8; 2] = [0xFF, 0xC0];
+const SOF0_COMPONENT_COUNT_OFFSET: usize = 9;
+const SOF0_COMPONENT_LENGTH: usize = 3;
+const TWICE_EACH_WAY: u8 = 0x22;
+const ONCE_EACH_WAY: u8 = 0x11;
 const LIGHT_TONE: [u8; 3] = [238, 238, 238];
 const SHADOW: u8 = 170;
 const DARKEST_PAPER: u8 = 128;
@@ -87,15 +96,39 @@ fn framed(margins: Margins, paper: [u8; 3]) -> Vec<u8> {
     .unwrap()
 }
 
-fn inked(jpeg: &[u8]) -> Inked {
+fn decoded_rgb(jpeg: &[u8]) -> (Size, Vec<u8>) {
     let mut decoder = jpeg_decoder::Decoder::new(jpeg);
     let pixels = decoder.decode().unwrap();
     let info = decoder.info().unwrap();
-    let page = Size {
+    let size = Size {
         width: u32::from(info.width),
         height: u32::from(info.height),
     };
-    let width = usize::from(info.width);
+    match info.pixel_format {
+        PixelFormat::L8 => (size, pixels.iter().flat_map(|level| [*level; 3]).collect()),
+        PixelFormat::RGB24 | PixelFormat::L16 | PixelFormat::CMYK32 => (size, pixels),
+    }
+}
+
+fn pixel_format(jpeg: &[u8]) -> PixelFormat {
+    let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    decoder.read_info().unwrap();
+    decoder.info().unwrap().pixel_format
+}
+
+fn sampling_factors(jpeg: &[u8]) -> Vec<u8> {
+    let marker = jpeg.windows(2).position(|pair| pair == SOF0).unwrap();
+    let count_at = marker + SOF0_COMPONENT_COUNT_OFFSET;
+    jpeg[count_at + 1..]
+        .chunks(SOF0_COMPONENT_LENGTH)
+        .take(usize::from(jpeg[count_at]))
+        .map(|component| component[1])
+        .collect()
+}
+
+fn inked(jpeg: &[u8]) -> Inked {
+    let (page, pixels) = decoded_rgb(jpeg);
+    let width = usize::try_from(page.width).unwrap();
     let (pixels, _) = pixels.as_chunks::<3>();
     let ink: Vec<(u32, u32)> = pixels
         .iter()
@@ -206,6 +239,45 @@ fn crops_a_margin_under_heavy_scanner_grain() {
 
     assert_eq!(cropped.ink, MARGINS.content(scan_size()));
     assert!(is_close_around_ink(cropped.paper_around.top), "{cropped:?}");
+}
+
+#[test]
+fn crops_a_grey_page_into_a_grey_jpeg() {
+    let page = png_of(scan_size(), |column, row| {
+        if MARGINS.surround(scan_size(), (column, row)) {
+            WHITE
+        } else {
+            GREY_INK
+        }
+    });
+
+    let cropped = crop_white_borders(&page, CroppedSides::All)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(pixel_format(&cropped.bytes), PixelFormat::L8);
+}
+
+#[test]
+fn halves_the_chroma_of_a_colour_page_it_crops_each_way() {
+    let page = SCAN
+        .to_jpeg(|column, row| {
+            if MARGINS.surround(scan_size(), (column, row)) {
+                WHITE
+            } else {
+                RED_INK
+            }
+        })
+        .unwrap();
+
+    let cropped = crop_white_borders(&page, CroppedSides::All)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(
+        sampling_factors(&cropped.bytes),
+        [TWICE_EACH_WAY, ONCE_EACH_WAY, ONCE_EACH_WAY]
+    );
 }
 
 #[test]
