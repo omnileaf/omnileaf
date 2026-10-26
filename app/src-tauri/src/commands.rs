@@ -29,7 +29,7 @@ use crate::{
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
-    home_folder::{self, ChosenHome, NothingChosen},
+    home_folder::{self, ChosenHome},
     icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
@@ -876,12 +876,7 @@ async fn choose_home_folder(
 #[tauri::command]
 #[specta::specta]
 async fn use_found_library(app: AppHandle) -> Result<(), IpcError> {
-    let (Some(setting), Some(chosen)) = (
-        home_folder::setting(&app),
-        app.state::<ChosenHome>().folder(),
-    ) else {
-        return Err(IpcError::internal(&NothingChosen));
-    };
+    let (setting, chosen) = home_folder::chosen(&app)?;
     setting.use_library_in(&chosen).await?;
     app.request_restart();
     Ok(())
