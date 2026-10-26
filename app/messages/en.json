@@ -1527,6 +1527,7 @@
   "series_no_match": "No book in this series matches “{search}”.",
   "series_find_book": "Find a book",
   "series_sort": "Sort: {order}",
+  "series_show_choice": "Show: {shown}",
   "series_order_first_first": "In order",
   "series_order_last_first": "Last first",
   "series_column_book": "Book",

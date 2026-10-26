@@ -162,6 +162,8 @@
   --spacing-native-select-edge: var(--native-spacing-select-edge);
   --shadow-native-select-ring-lift: var(--native-shadow-select-ring-lift);
   --color-native-sheet: var(--native-color-sheet);
+  --color-native-grouped-sheet: var(--native-color-grouped-sheet);
+  --color-native-sheet-group: var(--native-color-sheet-group);
   --color-native-scrim: var(--native-color-scrim);
   --color-native-dialog: var(--native-color-dialog);
   --radius-native-dialog: var(--native-radius-dialog);

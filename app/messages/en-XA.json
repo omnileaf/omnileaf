@@ -1527,6 +1527,7 @@
   "series_no_match": "⟦Ñö ƀööķ íñ ţĥíš šéŕíéš ɱáţçĥéš “{search}”.·················⟧",
   "series_find_book": "⟦Ƒíñð á ƀööķ·····⟧",
   "series_sort": "⟦Šöŕţ: {order}······⟧",
+  "series_show_choice": "⟦Šĥöŵ: {shown}······⟧",
   "series_order_first_first": "⟦Íñ öŕðéŕ····⟧",
   "series_order_last_first": "⟦Ļášţ ƒíŕšţ····⟧",
   "series_column_book": "⟦Ɓööķ··⟧",

@@ -20,6 +20,7 @@ test.each<[ItemLook, string[]]>([
   ["history-phone", ["flex", "gap-md", "desktop:large:hidden"]],
   ["history-desktop", ["hidden", "min-inline-none", "desktop:large:flex"]],
   ["reader-sheet-action", ["gap-md", "px-md", "min-block-touch-target"]],
+  ["reader-jump-row", ["flex-col", "border-s-2", "py-sm"]],
   [
     "settings-section",
     ["ps-list-row", "hover:bg-hover", "android:min-block-settings-entry"],

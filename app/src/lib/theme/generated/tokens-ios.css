@@ -231,6 +231,8 @@
   --native-color-on-cover-accent: #ffffff;
   --native-color-select-ring: #ffffff;
   --native-color-sheet: #ffffff;
+  --native-color-grouped-sheet: #f2f2f7;
+  --native-color-sheet-group: #ffffff;
   --native-color-scrim: rgba(0, 0, 0, 0.2);
   --native-color-dialog: rgba(247, 247, 247, 0.8);
   --native-color-sheet-handle: rgba(60, 60, 67, 0.3);
@@ -308,6 +310,8 @@
   --native-color-on-cover-accent: #0f2418;
   --native-color-select-ring: #ffffff;
   --native-color-sheet: #1c1c1e;
+  --native-color-grouped-sheet: #1c1c1e;
+  --native-color-sheet-group: #2c2c2e;
   --native-color-scrim: rgba(0, 0, 0, 0.47);
   --native-color-dialog: rgba(26, 26, 26, 0.9);
   --native-color-sheet-handle: rgba(235, 235, 245, 0.3);
@@ -352,6 +356,8 @@
   --native-color-on-tab-pill: #245a40;
   --native-color-cover-badge: rgba(255, 255, 255, 0.92);
   --native-color-cover-accent: #245a40;
+  --native-color-grouped-sheet: #ebebf0;
+  --native-color-sheet-group: #ffffff;
   --native-color-dialog: #f3f3f5;
   --native-color-menu: #f6f6f9;
   --native-color-notice: #f6f6f9;
@@ -386,6 +392,8 @@
   --native-color-on-tab-pill: #a8e0bf;
   --native-color-cover-badge: rgba(0, 0, 0, 0.85);
   --native-color-cover-accent: #a8e0bf;
+  --native-color-grouped-sheet: #242426;
+  --native-color-sheet-group: #363638;
   --native-color-dialog: #0d0d0e;
   --native-color-menu: #0e0e0e;
   --native-color-notice: #0e0e0e;

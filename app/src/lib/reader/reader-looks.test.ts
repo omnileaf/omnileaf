@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 
+import { jumpListPhoneLook } from "./jump-list-look.ts";
 import { quickSettingLook } from "./quick-setting.ts";
 import { floatsReaderBars, READER_BUTTON, readerButton } from "./reader-bar.ts";
 
@@ -50,5 +51,14 @@ test.each(SCREENS)(
     expect(quickSettingLook(platform, width).toggleLabel === "sr-only").toBe(
       screen === "iPhone",
     );
+  },
+);
+
+test.each(SCREENS)(
+  "gives Jump to a book its phone look on the $screen only if it is a phone",
+  ({ platform, width, screen }) => {
+    const look = jumpListPhoneLook(platform, width);
+
+    expect(look !== undefined).toBe(PHONES.has(screen));
   },
 );

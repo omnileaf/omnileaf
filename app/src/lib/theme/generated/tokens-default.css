@@ -159,6 +159,8 @@
   --native-spacing-select-edge: 2px;
   --native-shadow-select-ring-lift: none;
   --native-color-sheet: var(--bottom-sheet-surface);
+  --native-color-grouped-sheet: var(--bottom-sheet-surface);
+  --native-color-sheet-group: var(--card);
   --native-color-scrim: var(--overlay);
   --native-color-dialog: var(--dialog-surface);
   --native-radius-dialog: var(--radius-panel);

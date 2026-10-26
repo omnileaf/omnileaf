@@ -234,6 +234,8 @@
   --native-color-on-cover-accent: #e6ffed;
   --native-color-select-ring: #737d75;
   --native-color-sheet: #eff5ee;
+  --native-color-grouped-sheet: #eff5ee;
+  --native-color-sheet-group: transparent;
   --native-color-scrim: #00000052;
   --native-color-sheet-handle: #58615a66;
   --native-color-menu: #eff5ee;
@@ -306,6 +308,8 @@
   --native-color-on-cover-accent: #1f4833;
   --native-color-select-ring: #6e7870;
   --native-color-sheet: #0f1511;
+  --native-color-grouped-sheet: #0f1511;
+  --native-color-sheet-group: transparent;
   --native-color-scrim: #00000052;
   --native-color-sheet-handle: #a4aea566;
   --native-color-menu: #0f1511;
