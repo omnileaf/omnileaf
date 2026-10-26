@@ -567,9 +567,13 @@
     }
   }
 
-  function swipeTab(step: 1 | -1): void {
+  function tabBeside(step: 1 | -1): string | undefined {
     const order = shownTabs.map(({ id }) => tabKey(id));
-    const next = order[order.indexOf(chosenTabKey) + step];
+    return order[order.indexOf(chosenTabKey) + step];
+  }
+
+  function swipeTab(step: 1 | -1): void {
+    const next = tabBeside(step);
     if (next !== undefined) {
       chooseTab(next);
     }
@@ -877,7 +881,10 @@
         <div
           {@attach tabsShown &&
             !selection.isSelecting &&
-            swipesBetweenTabs(swipeTab)}
+            swipesBetweenTabs(
+              swipeTab,
+              (step) => tabBeside(step) !== undefined,
+            )}
           class="mbs-lg touch-pan-y medium:mbs-xl"
         >
           {#if groups.length > 0}
