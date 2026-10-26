@@ -117,6 +117,7 @@ export const commands = {
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
 	setScheduledRescans: (isOn: boolean) => __TAURI_INVOKE<void>("set_scheduled_rescans", { isOn }),
 	setBookOpen: (isOpen: boolean) => __TAURI_INVOKE<void>("set_book_open", { isOpen }),
+	setLearnsReadingSpeed: (isOn: boolean) => __TAURI_INVOKE<void>("set_learns_reading_speed", { isOn }),
 	copyVersionDetails: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_version_details")),
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
