@@ -101,7 +101,9 @@ impl Lookup {
 mod tests {
     use super::*;
     use crate::{
-        catalog::staged_rows::plans::{merging, merging_each_stage, with_covers},
+        catalog::staged_rows::plans::{
+            continuing_from_the_book_up_next, merging, merging_each_stage, with_covers,
+        },
         scratch::ScratchLibrary,
     };
 
@@ -112,10 +114,20 @@ mod tests {
 
     /// The numbers SQLite gives each stage's list of matched series, then its two cover subqueries, outer first.
     const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, (u8, u8)); 3] =
-        [(5, (4, 2)), (10, (9, 7)), (15, (14, 12))];
+        [(5, (4, 2)), (12, (11, 9)), (17, (16, 14))];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (7, 8);
 
     fn matching_each_stage(series_step: &str) -> Vec<String> {
-        merging(SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(list, covers)| {
+        let [unstarted, in_progress, finished] = matched_stages(series_step);
+        merging([
+            unstarted,
+            continuing_from_the_book_up_next(in_progress, IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES),
+            finished,
+        ])
+    }
+
+    fn matched_stages(series_step: &str) -> [Vec<String>; 3] {
+        SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(list, covers)| {
             let matched_once: &[&str] = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].0 {
                 &["MATERIALIZE matched", MATCH_PHRASES]
             } else {
@@ -127,7 +139,7 @@ mod tests {
                 .chain(["SCAN matched", "CREATE BLOOM FILTER"].map(ToOwned::to_owned))
                 .collect();
             with_covers(steps, covers)
-        }))
+        })
     }
 
     #[test]

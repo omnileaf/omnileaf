@@ -18,7 +18,6 @@ pub struct LibrarySeries {
     pub language: Option<String>,
     /// Holds chapters downloaded from a source, which a local library never does.
     pub has_downloads: bool,
-    /// The book Continue opens, absent until the library works it out for its list.
     pub continues_from: Option<BookId>,
     /// Counts as 18+, which a library that reads no age ratings and keeps no marks never does.
     pub is_adult: bool,
@@ -50,7 +49,7 @@ impl From<SeriesSummary> for LibrarySeries {
             cover: series.cover.map(CoverPath),
             language: None,
             has_downloads: false,
-            continues_from: None,
+            continues_from: series.continues_from.map(BookId),
             is_adult: false,
         }
     }
@@ -116,7 +115,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn carries_no_language_downloads_book_to_continue_or_18_plus_until_the_library_reads_them() {
+    fn carries_no_language_downloads_or_18_plus_until_the_library_reads_them() {
         let series = LibrarySeries::from(SeriesSummary {
             id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
             title: "Sample Series 04".to_owned(),
@@ -124,16 +123,12 @@ mod tests {
             unread_count: 6,
             added_at_ms: 0,
             cover: None,
+            continues_from: None,
         });
 
         assert_eq!(
-            (
-                series.language,
-                series.has_downloads,
-                series.continues_from,
-                series.is_adult
-            ),
-            (None, false, None, false)
+            (series.language, series.has_downloads, series.is_adult),
+            (None, false, false)
         );
     }
 }

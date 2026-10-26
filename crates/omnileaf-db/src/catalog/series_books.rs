@@ -69,6 +69,7 @@ macro_rules! book_up_next {
     };
 }
 
+pub(crate) use book_up_next;
 pub(crate) use first_book_in_series;
 pub(crate) use holds_a_started_book_not_read;
 pub(crate) use not_read;
@@ -346,7 +347,7 @@ pub(crate) fn stored_reading(row: &Row<'_>) -> rusqlite::Result<BookReading> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scratch::ScratchLibrary;
+    use crate::{catalog::staged_rows::plans::finding_the_book_up_next, scratch::ScratchLibrary};
 
     #[test]
     fn starts_a_series_books_and_their_reading_state_by_index_without_scanning_or_sorting() {
@@ -433,13 +434,6 @@ mod tests {
 
         let plan = scratch.query_plan(UP_NEXT);
 
-        let walking_in_order = |subquery: u8| {
-            [
-                format!("CORRELATED SCALAR SUBQUERY {subquery}"),
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
-                "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned(),
-            ]
-        };
         let expected: Vec<String> = [
             "SEARCH book USING PRIMARY KEY (id=?)",
             "SCALAR SUBQUERY 3",
@@ -447,8 +441,7 @@ mod tests {
         ]
         .map(ToOwned::to_owned)
         .into_iter()
-        .chain(walking_in_order(1))
-        .chain(walking_in_order(2))
+        .chain(finding_the_book_up_next((1, 2)))
         .chain(["SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned()])
         .collect();
         assert_eq!(plan, expected);

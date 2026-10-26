@@ -8,7 +8,7 @@ use crate::{
         cursor::Position,
         series_listing::{SeriesFilter, StageParams},
         series_page::SeriesSummary,
-        stored_id::stored_id,
+        stored_id::{stored_id, stored_optional_id},
     },
     title_key::{TitleStamp, stored_stamp},
 };
@@ -28,12 +28,18 @@ pub(crate) struct TitlePlace {
 
 /// The listed series at the stage bound as `$stage` that meet `$condition`, which hold at least one book.
 macro_rules! series_at_stage {
-    ($stage:literal, $condition:expr) => {
+    (
+        stage: $stage:literal,
+        continues_from: $continues_from:expr,
+        condition: $condition:expr $(,)?
+    ) => {
         concat!(
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
                 series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                series.unread_count
+                series.unread_count, ",
+            $continues_from,
+            " AS continues_from
             FROM series ",
             $crate::catalog::cover::join_series_cover!(),
             " WHERE series.reading_stage = ",
@@ -55,26 +61,50 @@ macro_rules! listing {
         $crate::catalog::staged_rows::Listing {
             first_page_query: concat!(
                 $with,
-                $crate::catalog::staged_rows::series_at_stage!(":unstarted", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":unstarted",
+                    continues_from: "NULL",
+                    condition: $condition,
+                },
                 " UNION ALL ",
-                $crate::catalog::staged_rows::series_at_stage!(":in_progress", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":in_progress",
+                    continues_from: $crate::catalog::series_books::book_up_next!(),
+                    condition: $condition,
+                },
                 " UNION ALL ",
-                $crate::catalog::staged_rows::series_at_stage!(":finished", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":finished",
+                    continues_from: "NULL",
+                    condition: $condition,
+                },
                 " ORDER BY ",
                 $order,
                 " LIMIT :limit"
             ),
             next_page_query: concat!(
                 $with,
-                $crate::catalog::staged_rows::series_at_stage!(":unstarted", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":unstarted",
+                    continues_from: "NULL",
+                    condition: $condition,
+                },
                 " AND ",
                 $seek,
                 " UNION ALL ",
-                $crate::catalog::staged_rows::series_at_stage!(":in_progress", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":in_progress",
+                    continues_from: $crate::catalog::series_books::book_up_next!(),
+                    condition: $condition,
+                },
                 " AND ",
                 $seek,
                 " UNION ALL ",
-                $crate::catalog::staged_rows::series_at_stage!(":finished", $condition),
+                $crate::catalog::staged_rows::series_at_stage! {
+                    stage: ":finished",
+                    continues_from: "NULL",
+                    condition: $condition,
+                },
                 " AND ",
                 $seek,
                 " ORDER BY ",
@@ -215,19 +245,48 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         unread_count: row.get("unread_count")?,
         added_at_ms: row.get("added_at_ms")?,
         cover: stored_cover(row)?,
+        continues_from: stored_optional_id(row, "continues_from")?,
     })
 }
 
 #[cfg(test)]
 pub(crate) mod plans {
     /// The numbers SQLite gives each stage's two cover subqueries, outer first.
-    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (7, 5), (11, 9)];
+    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (9, 7), (13, 11)];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (5, 6);
 
     pub(crate) fn merging_each_stage(series_step: &str) -> Vec<String> {
-        merging(
-            COVER_SUBQUERIES_OF_EACH_STAGE
-                .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries)),
-        )
+        let [unstarted, in_progress, finished] = COVER_SUBQUERIES_OF_EACH_STAGE
+            .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries));
+        merging([
+            unstarted,
+            continuing_from_the_book_up_next(in_progress, IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES),
+            finished,
+        ])
+    }
+
+    pub(crate) fn continuing_from_the_book_up_next(
+        stage_steps: Vec<String>,
+        subqueries: (u8, u8),
+    ) -> Vec<String> {
+        stage_steps
+            .into_iter()
+            .chain(finding_the_book_up_next(subqueries))
+            .collect()
+    }
+
+    pub(crate) fn finding_the_book_up_next((started, unread): (u8, u8)) -> Vec<String> {
+        [started, unread]
+            .into_iter()
+            .flat_map(|subquery| {
+                [
+                    format!("CORRELATED SCALAR SUBQUERY {subquery}"),
+                    "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)"
+                        .to_owned(),
+                    "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN".to_owned(),
+                ]
+            })
+            .collect()
     }
 
     pub(crate) fn with_covers(stage_steps: Vec<String>, (outer, inner): (u8, u8)) -> Vec<String> {
