@@ -356,11 +356,11 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     });
   }
 
-  test("centres the check above the title", async ({ page, platform }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+  test("centres the check above the title on an iPhone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "iPhones only");
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -370,6 +370,19 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     expect(mark.x + mark.width / 2).toBeCloseTo(viewportOf(page).width / 2, 0);
     expect(mark.y + mark.height).toBeLessThanOrEqual(title.y);
     await expect(upNext(page)).toHaveCSS("text-align", "center");
+  });
+
+  test("starts the title at the edge with no check on an Android phone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android phones only");
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+
+    await expect(check(page)).toHaveCount(0);
+    await expect(upNext(page)).toHaveCSS("text-align", "start");
   });
 
   test("sets the title and the stats in the phone's own type", async ({

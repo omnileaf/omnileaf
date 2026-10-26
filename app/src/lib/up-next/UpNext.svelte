@@ -101,6 +101,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
+  const centresHead = $derived(isOnPhone && platform === "ios");
   const actions = $derived(
     acrossTheCard(actionGroupLook(platform, width.current, CARD_ACTIONS)),
   );
@@ -193,15 +194,15 @@
     >
       <div
         class={isOnPhone
-          ? "flex flex-col items-center gap-sm text-center"
+          ? ["flex flex-col gap-sm", centresHead && "items-center text-center"]
           : "flex items-start gap-md"}
       >
-        {#if isOnPhone}
+        {#if centresHead}
           <Icon
             name="circle-check"
             class="text-native-on-button-plain block-up-next-check inline-up-next-check"
           />
-        {:else}
+        {:else if !isOnPhone}
           <span
             aria-hidden="true"
             class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
