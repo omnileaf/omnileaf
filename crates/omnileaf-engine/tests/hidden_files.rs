@@ -240,6 +240,40 @@ async fn counts_unreadable_files_of_a_type_shown_again() {
 }
 
 #[tokio::test]
+async fn hides_a_file_type_a_scan_skipped_so_rescans_skip_its_files_no_more() {
+    let comics = ScratchFolder::new("hide-skipped-type");
+    write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
+    comics.write(&format!("{SERIES}/v02.cbr"), RAR_SIGNATURE);
+    let (scanned, scan, _) = Scanned::folder("hide-skipped-type", comics.path()).await;
+    let skipped = scan.skipped_types.first().unwrap().file_type.clone();
+
+    scanned.library.hide_file_type(skipped).await.unwrap();
+    let rescan = scanned
+        .library
+        .rescan_folder(scanned.id, |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (rescan.outcome, rescan.skipped_types),
+        (RescanOutcome::Rescanned(FileChanges::default()), Vec::new())
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_hide_a_file_type_the_app_reads() {
+    let hiding = Hiding::new("hide-type-read").await;
+    let read = FileType::try_from("cbz".to_owned()).unwrap();
+
+    let hidden = hiding.library().hide_file_type(read.clone()).await;
+
+    assert!(
+        matches!(&hidden, Err(LibraryError::ReadTypeKept { file_type }) if *file_type == read),
+        "{hidden:?}"
+    );
+}
+
+#[tokio::test]
 async fn refuses_to_hide_files_of_a_type_the_app_reads() {
     let hiding = Hiding::new("hide-read").await;
     let book = hiding.book("v01").await;

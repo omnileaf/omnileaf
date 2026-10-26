@@ -164,6 +164,8 @@ pub enum LibraryError {
     BookNotFound { id: BookId },
     #[error("hide the files like book {id}, whose type the library reads")]
     FileTypeRead { id: BookId },
+    #[error("hide {file_type} files, a type the library reads and so keeps")]
+    ReadTypeKept { file_type: FileType },
     #[error("move library folder {id} to a folder the library already reads")]
     FolderAlreadyInLibrary { id: FolderId },
     #[error("remove library folder {id}, the home folder the library always keeps")]
@@ -884,6 +886,13 @@ impl Library {
             .ok_or(LibraryError::FileTypeRead { id: book })?;
         self.keep_hidden(file_type.clone()).await?;
         Ok(file_type)
+    }
+
+    pub async fn hide_file_type(&self, file_type: FileType) -> Result<(), LibraryError> {
+        if !file_type.can_be_hidden() {
+            return Err(LibraryError::ReadTypeKept { file_type });
+        }
+        self.keep_hidden(file_type).await
     }
 
     async fn keep_hidden(&self, file_type: FileType) -> Result<(), LibraryError> {

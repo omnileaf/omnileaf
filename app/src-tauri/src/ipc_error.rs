@@ -182,7 +182,7 @@ impl From<LibraryError> for IpcError {
             LibraryError::BookNotFound { .. } => {
                 (IpcErrorCode::BookNotFound, "that book isn't in the library")
             }
-            LibraryError::FileTypeRead { .. } => (
+            LibraryError::FileTypeRead { .. } | LibraryError::ReadTypeKept { .. } => (
                 IpcErrorCode::FileTypeRead,
                 "the library reads files of that type, so it keeps them",
             ),
@@ -341,6 +341,15 @@ mod tests {
             codes,
             [IpcErrorCode::BookNotFound, IpcErrorCode::FileTypeRead]
         );
+    }
+
+    #[test]
+    fn tells_the_interface_a_file_type_it_reads_stays_in_the_library() {
+        let file_type = FileType::try_from("cbz".to_owned()).unwrap();
+
+        let code = code_for(LibraryError::ReadTypeKept { file_type });
+
+        assert_eq!(code, IpcErrorCode::FileTypeRead);
     }
 
     #[test]
