@@ -42,7 +42,7 @@ export const commands = {
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
-	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
+	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
 	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
 	id: string & { readonly __brand: "BookId" },

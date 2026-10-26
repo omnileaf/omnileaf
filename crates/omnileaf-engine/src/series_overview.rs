@@ -1,4 +1,4 @@
-use omnileaf_db::catalog::{self, BookSummary, PersonRole, SeriesFileDetails};
+use omnileaf_db::catalog::{self, BookSummary, PersonRole, PersonSeries, SeriesFileDetails};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -120,6 +120,17 @@ impl SeriesOverview {
             tags: Vec::new(),
             related: Vec::new(),
             seconds_left,
+        }
+    }
+}
+
+impl From<PersonSeries> for CreatorSeries {
+    fn from(series: PersonSeries) -> Self {
+        Self {
+            id: SeriesId(series.id),
+            title: series.title,
+            cover: series.cover.map(CoverPath),
+            role: CreatorRole::of(&series.roles),
         }
     }
 }
