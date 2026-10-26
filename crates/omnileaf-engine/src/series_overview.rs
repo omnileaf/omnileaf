@@ -1,4 +1,4 @@
-use omnileaf_db::catalog::{self, BookSummary};
+use omnileaf_db::catalog::{self, BookSummary, PersonRole, SeriesFileDetails};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -78,6 +78,24 @@ pub enum CreatorRole {
 }
 
 impl SeriesOverview {
+    pub(crate) fn described_by(self, details: SeriesFileDetails) -> Self {
+        Self {
+            format: details.format,
+            creators: details
+                .people
+                .into_iter()
+                .map(|person| SeriesCreator {
+                    role: CreatorRole::of(&person.roles),
+                    name: person.name,
+                    series_count: person.series_count,
+                })
+                .collect(),
+            summary: details.summary,
+            tags: details.tags,
+            ..self
+        }
+    }
+
     pub(crate) fn new(
         overview: catalog::SeriesOverview,
         up_next: Option<BookSummary>,
@@ -105,6 +123,29 @@ impl SeriesOverview {
             related: Vec::new(),
             seconds_left,
         }
+    }
+}
+
+impl CreatorRole {
+    pub(crate) fn of(roles: &[PersonRole]) -> Option<Self> {
+        let tells_the_story = roles.contains(&PersonRole::Writer);
+        let draws = roles.iter().copied().any(draws);
+        match (tells_the_story, draws) {
+            (true, true) => Some(Self::StoryAndArt),
+            (true, false) => Some(Self::Story),
+            (false, true) => Some(Self::Art),
+            (false, false) => None,
+        }
+    }
+}
+
+const fn draws(role: PersonRole) -> bool {
+    match role {
+        PersonRole::Penciller
+        | PersonRole::Inker
+        | PersonRole::Colourist
+        | PersonRole::CoverArtist => true,
+        PersonRole::Writer | PersonRole::Letterer | PersonRole::Editor => false,
     }
 }
 

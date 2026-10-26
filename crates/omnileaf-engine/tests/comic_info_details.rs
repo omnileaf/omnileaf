@@ -11,7 +11,10 @@ mod books;
 mod support;
 
 use books::write_book_with;
-use omnileaf_engine::{AdultContent, Library, LibraryListing, LibrarySeries};
+use omnileaf_engine::{
+    AdultContent, CreatorRole, Library, LibraryListing, LibrarySeries, SeriesCreator, SeriesId,
+    SeriesPerson,
+};
 use support::{FixedClock, ScratchFolder};
 
 const SERIES_01: &str = "Sample Series 01";
@@ -27,6 +30,23 @@ const EVERYONE_IN_ENGLISH: &str = "<ComicInfo>
     <LanguageISO>en</LanguageISO>
     <AgeRating>Everyone</AgeRating>
 </ComicInfo>";
+
+const FIRST_VOLUME: &str = "<ComicInfo>
+    <Writer>Sample Author</Writer>
+    <Penciller>Sample Artist</Penciller>
+    <Letterer>Sample Letterer</Letterer>
+    <Format>Digital</Format>
+    <Tags>harbour</Tags>
+</ComicInfo>";
+const SECOND_VOLUME: &str = "<ComicInfo>
+    <Summary>A sample summary.</Summary>
+    <Writer>Sample Author</Writer>
+    <Penciller>Sample Author</Penciller>
+    <Format>Print</Format>
+    <Genre>Mystery</Genre>
+    <AgeRating>X18+</AgeRating>
+</ComicInfo>";
+const BY_THE_SAME_AUTHOR: &str = "<ComicInfo><Writer>Sample Author</Writer></ComicInfo>";
 
 struct Scanned {
     library: Library,
@@ -54,6 +74,15 @@ impl Scanned {
             _comics: comics,
             _home: home,
         }
+    }
+
+    async fn series_named(&self, title: &str) -> SeriesId {
+        self.listed()
+            .await
+            .into_iter()
+            .find(|series| series.title == title)
+            .unwrap()
+            .id
     }
 
     async fn listed(&self) -> Vec<LibrarySeries> {
@@ -146,5 +175,85 @@ async fn offers_the_languages_and_tags_the_library_holds_to_filter_by() {
                 "storms".to_owned()
             ]
         )
+    );
+}
+
+fn creator(name: &str, role: Option<CreatorRole>, series_count: u32) -> SeriesCreator {
+    SeriesCreator {
+        name: name.to_owned(),
+        role,
+        series_count,
+    }
+}
+
+fn person(name: &str, role: Option<CreatorRole>) -> SeriesPerson {
+    SeriesPerson {
+        name: name.to_owned(),
+        role,
+    }
+}
+
+async fn scanned_with_two_volumes(name: &str) -> Scanned {
+    Scanned::with(
+        name,
+        &[
+            (SERIES_01, FIRST_VOLUME),
+            (SERIES_01, SECOND_VOLUME),
+            (SERIES_02, BY_THE_SAME_AUTHOR),
+        ],
+    )
+    .await
+}
+
+#[tokio::test]
+async fn sums_up_a_series_with_the_format_summary_creators_and_tags_its_books_give() {
+    let scanned = scanned_with_two_volumes("details-overview").await;
+    let series = scanned.series_named(SERIES_01).await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    assert_eq!(
+        (overview.format.as_deref(), overview.summary.as_deref()),
+        (Some("Digital"), Some("A sample summary."))
+    );
+    assert_eq!(
+        overview.creators,
+        [
+            creator("Sample Artist", Some(CreatorRole::Art), 1),
+            creator("Sample Author", Some(CreatorRole::StoryAndArt), 2),
+            creator("Sample Letterer", None, 1),
+        ]
+    );
+    assert_eq!(overview.tags, ["harbour", "Mystery"]);
+}
+
+#[tokio::test]
+async fn gives_the_details_a_series_files_name_with_nothing_edited() {
+    let scanned = scanned_with_two_volumes("details-from-files").await;
+    let series = scanned.series_named(SERIES_01).await;
+
+    let details = scanned.library.series_details(series).await.unwrap();
+
+    assert_eq!(
+        (
+            details.title.from_file.as_str(),
+            details.summary.from_file.as_deref(),
+            details.tags.from_file.as_slice(),
+            details.is_rated_adult,
+        ),
+        (
+            SERIES_01,
+            Some("A sample summary."),
+            ["harbour".to_owned(), "Mystery".to_owned()].as_slice(),
+            true
+        )
+    );
+    assert_eq!(
+        details.people.from_file,
+        [
+            person("Sample Artist", Some(CreatorRole::Art)),
+            person("Sample Author", Some(CreatorRole::StoryAndArt)),
+            person("Sample Letterer", None),
+        ]
     );
 }

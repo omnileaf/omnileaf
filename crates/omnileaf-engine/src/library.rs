@@ -21,8 +21,8 @@ use omnileaf_db::{
         mark_root_unavailable, missing_roots, page_dimensions, place_in_series, record_page_count,
         relocate_roots, remember_root_share, remove_book_files, remove_books_without_files,
         remove_root, root_book_count, root_files, root_share, root_shares, series_books,
-        series_count, series_overview, series_page, series_titles, show_root_while_missing,
-        store_page_dimensions, unread_books, up_next,
+        series_count, series_file_details, series_overview, series_page, series_titles,
+        show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -486,15 +486,18 @@ impl Library {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((overview, up_next(connection, series)?)))
+                Ok(Some((
+                    overview,
+                    up_next(connection, series)?,
+                    series_file_details(connection, series)?,
+                )))
             })
             .await?;
-        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesOverview::new(
-            overview,
-            up_next,
-            self.seconds_per_page().await?,
-        ))
+        let (overview, up_next, details) = found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(
+            SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
+                .described_by(details),
+        )
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
@@ -505,13 +508,22 @@ impl Library {
 
     pub async fn series_details(&self, id: SeriesId) -> Result<SeriesDetails, LibraryError> {
         let series = id.0;
-        let overview = self
+        let (overview, details) = self
             .store
             .database()
-            .read(move |connection| series_overview(connection, series))
+            .read(move |connection| {
+                let Some(overview) = series_overview(connection, series)? else {
+                    return Ok(None);
+                };
+                Ok(Some((overview, series_file_details(connection, series)?)))
+            })
             .await?
             .ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesDetails::from_files(overview.title))
+        Ok(SeriesDetails::from_files(
+            overview.title,
+            details,
+            overview.is_rated_adult,
+        ))
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.
