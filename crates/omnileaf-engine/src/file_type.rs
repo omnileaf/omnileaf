@@ -1,5 +1,6 @@
 use std::{collections::BTreeSet, fmt, path::Path};
 
+use omnileaf_formats::FormatError;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -36,6 +37,11 @@ impl FileType {
 
     pub(crate) fn can_be_hidden(&self) -> bool {
         self.is_book() && !self.is_read()
+    }
+
+    pub(crate) fn is_unsupported_given(&self, failure: &FormatError) -> bool {
+        let is_archive_not_read_yet = matches!(failure, FormatError::ArchiveNotSupportedYet { .. });
+        is_archive_not_read_yet && self.can_be_hidden()
     }
 
     pub(crate) fn as_str(&self) -> &str {

@@ -114,15 +114,12 @@ pub(crate) enum PageError {
 
 impl OpenBookError {
     fn unreadable(id: BookId, file_type: Option<FileType>, source: FormatError) -> Self {
-        let is_archive_not_read_yet = matches!(source, FormatError::ArchiveNotSupportedYet { .. });
         match file_type {
-            Some(file_type) if is_archive_not_read_yet && file_type.can_be_hidden() => {
-                Self::UnsupportedType {
-                    id,
-                    file_type,
-                    source,
-                }
-            }
+            Some(file_type) if file_type.is_unsupported_given(&source) => Self::UnsupportedType {
+                id,
+                file_type,
+                source,
+            },
             Some(_) | None => Self::Unreadable { id, source },
         }
     }
