@@ -58,12 +58,12 @@ function popover(page: Page): Locator {
 }
 
 async function openLibraryOnADesktop(page: Page): Promise<void> {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH ||
       test.info().project.use.isMobile === true,
     "the desktop's sidebar",
   );
+  await page.goto("/");
   await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
 }
 

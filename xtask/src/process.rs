@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    check::{Runner, Step},
+    check::{self, Runner, Step},
     workspace,
 };
 
@@ -18,6 +18,7 @@ pub(crate) trait Machine {
 pub(crate) struct Process {
     root: PathBuf,
     env: Vec<(&'static str, OsString)>,
+    test_partition: Option<String>,
 }
 
 impl Process {
@@ -25,11 +26,17 @@ impl Process {
         Self {
             root: workspace::root(),
             env: Vec::new(),
+            test_partition: None,
         }
     }
 
     pub(crate) fn with_step_env(mut self, key: &'static str, value: impl Into<OsString>) -> Self {
         self.env.push((key, value.into()));
+        self
+    }
+
+    pub(crate) fn with_test_partition(mut self, partition: Option<String>) -> Self {
+        self.test_partition = partition;
         self
     }
 }
@@ -39,7 +46,10 @@ impl Runner for Process {
     fn run(&self, step: &Step) -> io::Result<bool> {
         println!("==> {}", step.name);
         command_for(step.program)
-            .args(step.args)
+            .args(check::args_with_partition(
+                step,
+                self.test_partition.as_deref(),
+            ))
             .envs(self.env.iter().map(|(key, value)| (key, value)))
             .current_dir(&self.root)
             .status()

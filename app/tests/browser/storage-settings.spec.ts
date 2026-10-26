@@ -126,11 +126,11 @@ test("clears the covers at once", async ({ page }) => {
 test("sums Storage up by the space Omnileaf uses in the Settings list", async ({
   page,
 }) => {
-  await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
     "settings opens its first section beside the list",
   );
+  await page.goto("/settings");
 
   await expect(
     page.getByRole("main").getByRole("link", { name: /^Storage/ }),

@@ -259,8 +259,8 @@ test("sizes the rows as the boards do", async ({ page }) => {
 test("finds a book from a field beside the show choices on desktops", async ({
   page,
 }) => {
-  await openBooks(page);
   test.skip(!isWide(page), "phones open the field from a button");
+  await openBooks(page);
 
   const field = page.getByRole("searchbox", { name: "Find a book" });
 

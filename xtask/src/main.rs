@@ -52,6 +52,33 @@ struct Cli {
     command: Command,
 }
 
+#[derive(clap::Args)]
+struct Narrowing {
+    /// Run only this check, by the name it prints; repeat it for more.
+    #[arg(long = "step", value_name = "NAME")]
+    steps: Vec<String>,
+    /// Leave out this check, by the name it prints; repeat it for more.
+    #[arg(long, value_name = "NAME")]
+    skip: Vec<String>,
+    /// Run only this nextest partition of the tests, such as `hash:1/3`.
+    #[arg(long)]
+    partition: Option<String>,
+}
+
+impl Narrowing {
+    fn apply(
+        &self,
+        selected: Vec<&'static check::Step>,
+    ) -> anyhow::Result<Vec<&'static check::Step>> {
+        let steps = check::narrow(selected, &self.steps, &self.skip)?;
+        anyhow::ensure!(
+            self.partition.is_none() || steps.iter().any(|step| step.name == check::TEST),
+            "--partition only applies when the test step runs"
+        );
+        Ok(steps)
+    }
+}
+
 #[derive(Subcommand)]
 enum Command {
     /// Print which areas a change touches since a commit, as `area=true` or `area=false` lines for CI to choose its jobs from; every area when no commit is given.
@@ -65,6 +92,8 @@ enum Command {
         /// Run only this group of checks.
         #[arg(long, value_enum)]
         only: Option<check::Group>,
+        #[command(flatten)]
+        narrowing: Narrowing,
         /// The Android device or emulator `--only android` tests on, by name; it picks one when left out.
         #[arg(long)]
         android_device: Option<String>,
@@ -150,12 +179,15 @@ fn main() -> anyhow::Result<()> {
         Command::Changes { base } => print_changed_areas(base.as_deref())?,
         Command::Check {
             only,
+            narrowing,
             android_device,
             ios_device,
         } => {
+            let steps = narrowing.apply(check::select(check::STEPS, only))?;
             let process =
-                process_for_check(only, android_device.as_deref(), ios_device.as_deref())?;
-            check::run_all(check::select(check::STEPS, only), &process)?;
+                process_for_check(only, android_device.as_deref(), ios_device.as_deref())?
+                    .with_test_partition(narrowing.partition);
+            check::run_all(steps, &process)?;
         }
         Command::Bindings => regenerate_bindings()?,
         Command::Dev {

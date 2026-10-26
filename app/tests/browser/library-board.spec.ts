@@ -131,12 +131,12 @@ test("counts a series' unread books on a primary badge", async ({ page }) => {
 });
 
 test("spaces the covers as the boards do", async ({ page }) => {
-  await page.goto("/");
   const width = viewportOf(page).width;
   test.skip(
     width >= MEDIUM_MIN_WIDTH && width < LARGE_MIN_WIDTH,
     "the boards draw phones and desktops",
   );
+  await page.goto("/");
   const gaps = width < MEDIUM_MIN_WIDTH ? GAPS.phone : GAPS.desktop;
   const items = page
     .getByRole("list", { name: "Series" })

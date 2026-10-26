@@ -176,11 +176,11 @@ for (const platform of ["android", "ios", "linux"] as const) {
     });
 
     test("summarises Advanced by what it holds", async ({ page }) => {
-      await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
         "settings opens its first section beside the list",
       );
+      await page.goto("/settings");
 
       const advanced = advancedSummaryRow(page);
 
@@ -428,11 +428,11 @@ for (const platform of ["android", "ios", "linux"] as const) {
     });
 
     test("summarises Advanced by what it holds", async ({ page }) => {
-      await page.goto("/settings");
       test.skip(
         !showsSummaries(page, platform),
         "settings opens its first section beside the list",
       );
+      await page.goto("/settings");
 
       const advanced = advancedSummaryRow(page);
 

@@ -268,11 +268,11 @@ test.describe("with two categories", () => {
   test("lists every tab in a sheet from the chevron on phones", async ({
     page,
   }) => {
-    await openLibrary(page);
     test.skip(
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
       "wider screens tuck the tabs into More",
     );
+    await openLibrary(page);
 
     await page.getByRole("button", { name: "Every category" }).click();
     const sheet = page.getByRole("dialog", { name: "Categories" });
@@ -288,11 +288,11 @@ test.describe("with two categories", () => {
 
   test.describe("beside the desktop sidebar", () => {
     test.beforeEach(async ({ page }) => {
-      await openLibrary(page);
       test.skip(
         viewportOf(page).width < EXPANDED_MIN_WIDTH,
         "the desktop sidebar opens from 840px",
       );
+      await openLibrary(page);
     });
 
     test("starts the tab strip 24px after the sidebar", async ({ page }) => {

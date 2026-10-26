@@ -163,8 +163,8 @@ for (const platform of ["android", "ios"] as const) {
     test("lists the packages on 48px rows and leads back to About", async ({
       page,
     }) => {
-      await openLicences(page);
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      await openLicences(page);
 
       const row = await boxOf(
         groupSection(page, MOST_USED.name).getByRole("link").first(),
@@ -207,11 +207,11 @@ for (const { platform, rowHeight } of PANE_ROWS) {
     test(`lists the packages on ${String(rowHeight)}px rows in 14px text`, async ({
       page,
     }) => {
-      await openLicences(page);
       test.skip(
         platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH,
         "tablets only",
       );
+      await openLicences(page);
 
       const link = groupSection(page, MOST_USED.name).getByRole("link").first();
       const row = await boxOf(link);

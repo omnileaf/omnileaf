@@ -57,12 +57,12 @@ function seriesList(page: Page): Locator {
 }
 
 async function openTheLibraryOnADesktop(page: Page): Promise<void> {
-  await page.goto("/");
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH ||
       test.info().project.use.isMobile === true,
     "the desktop's Screenshot mode shortcut",
   );
+  await page.goto("/");
   await expect(seriesList(page)).toBeVisible();
 }
 

@@ -156,11 +156,11 @@ test.describe("on desktop, the crash report dialog", () => {
   });
 
   test("is a 420px card where the window has room", async ({ page }) => {
-    await page.goto("/");
     test.skip(
       viewportOf(page).width <= DIALOG_LOOK.width,
       "windows wider than the card",
     );
+    await page.goto("/");
 
     const card = await boxOf(prompt(page));
 
@@ -269,9 +269,9 @@ for (const platform of ["android", "ios"] as const) {
     });
 
     test.beforeEach(async ({ page }) => {
+      test.skip(!isPhoneScreen(page, platform), "phones only");
       await page.emulateMedia({ colorScheme: "light" });
       await page.goto("/");
-      test.skip(!isPhoneScreen(page, platform), "phones only");
       await expect(prompt(page)).toBeVisible();
     });
 

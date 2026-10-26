@@ -25,9 +25,9 @@ test.describe("a segmented control", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    const choice = await openAppearance(page);
     const native = platform === undefined ? undefined : NATIVE_SIZES[platform];
     test.skip(native === undefined, "today's look on this platform");
+    const choice = await openAppearance(page);
 
     const track = await boxOf(choice);
     const segment = await boxOf(choice.getByRole("radio").first());

@@ -243,8 +243,8 @@ test.describe("a series with one creator, a summary and tags", () => {
   test("ends the card's progress row with its button on desktops", async ({
     page,
   }) => {
-    await openSeries(page);
     test.skip(!hasToolbar(page), "the desktop's card");
+    await openSeries(page);
     const card = continueCard(page);
 
     const bar = await boxOf(card.getByRole("progressbar"));
@@ -315,8 +315,8 @@ test.describe("a series with one creator, a summary and tags", () => {
   test("puts the way back and the page's name in a 56px toolbar on desktops", async ({
     page,
   }) => {
-    await openSeries(page);
     test.skip(!hasToolbar(page), "the desktop's toolbar");
+    await openSeries(page);
     const toolbar = page.locator("[data-page-toolbar]");
 
     const bar = await boxOf(toolbar);
@@ -334,11 +334,11 @@ test.describe("a series with one creator, a summary and tags", () => {
   test("keeps the way back and the series' actions on round chips over the band on phones", async ({
     page,
   }) => {
-    await openSeries(page);
     test.skip(
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
       "the phone's bar over the band",
     );
+    await openSeries(page);
     const back = page.getByRole("link", { name: "Back to the library" });
     const more = page.getByRole("button", { name: `More for ${SERIES_TITLE}` });
 

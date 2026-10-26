@@ -6,8 +6,6 @@ const WINDOW_WIDTHS = [
 ] as const;
 const WINDOW_HEIGHT = 800;
 
-test.describe.configure({ mode: "parallel" });
-
 for (const width of WINDOW_WIDTHS) {
   test.describe(`in a window ${String(width)}px wide`, () => {
     test.use({ viewport: { width, height: WINDOW_HEIGHT } });

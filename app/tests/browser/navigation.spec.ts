@@ -158,11 +158,11 @@ for (const platform of ["android", "ios"] as const) {
     test.use(onPlatform(platform));
 
     test("goes back to Settings from a settings section", async ({ page }) => {
-      await page.goto("/settings/about");
       test.skip(
         viewportOf(page).width >= EXPANDED_MIN_WIDTH,
         "the section list stays beside the section on desktop",
       );
+      await page.goto("/settings/about");
 
       await page.getByRole("link", { name: "Back to Settings" }).click();
 
@@ -177,8 +177,8 @@ for (const platform of ["android", "ios"] as const) {
 test("keeps Settings at the far end of the rail and the sidebar", async ({
   page,
 }) => {
-  await page.goto("/");
   test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "side navigation only");
+  await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Main" });
 
   const bar = await boxOf(navigation);
@@ -205,8 +205,8 @@ for (const { platform, rowHeight, iconSize } of [
     test(`draws the sidebar's rows ${String(rowHeight)}px tall with ${String(iconSize)}px icons`, async ({
       page,
     }) => {
-      await page.goto("/");
       test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "sidebar only");
+      await page.goto("/");
       const library = page
         .getByRole("navigation", { name: "Main" })
         .getByRole("link", { name: "Library" });

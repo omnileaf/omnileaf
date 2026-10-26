@@ -99,8 +99,8 @@ test("moves focus to the problem as it opens", async ({ page }) => {
 test("sets the problem lower on desktops, as the board does", async ({
   page,
 }) => {
-  await page.goto(MISSING_ADDRESS);
   test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "desktops only");
+  await page.goto(MISSING_ADDRESS);
 
   const problem = await boxOf(
     page.getByRole("main").locator("section").locator(":scope > *").first(),
