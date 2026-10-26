@@ -14,7 +14,7 @@ export type Timings = Readonly<
 
 interface TestRun {
   readonly test: ListedTest;
-  readonly durationMs: number;
+  readonly durationMs: number | undefined;
 }
 
 interface Scope {
@@ -49,6 +49,9 @@ export function listedTests(report: unknown): ListedTest[] {
 export function testDurations(report: unknown): Timings {
   const timings: Record<string, Record<string, number>> = {};
   for (const { test, durationMs } of testRuns(report)) {
+    if (durationMs === undefined) {
+      continue;
+    }
     timings[testPath(test)] = {
       ...timings[testPath(test)],
       [test.project]: durationMs,
@@ -114,8 +117,12 @@ function specRuns(spec: unknown, { file, describes }: Scope): TestRun[] {
   );
 }
 
-function totalDurationMs(results: unknown): number {
-  return listOf(results).reduce<number>(
+function totalDurationMs(results: unknown): number | undefined {
+  const attempts = listOf(results);
+  if (attempts.length === 0) {
+    return undefined;
+  }
+  return attempts.reduce<number>(
     (total, result) =>
       total +
       (isRecord(result) && typeof result.duration === "number"

@@ -169,18 +169,14 @@ test("lists every test in a report once per project, with the file declaring it,
   ]);
 });
 
-test("times each test by adding up its attempts", () => {
+test("times each test by adding up its attempts, leaving out a test that never ran", () => {
   const timings = testDurations(REPORT);
 
   expect(timings).toEqual({
-    "about.spec.ts › shows the version": {
-      "chromium-phone": 1200,
-      "webkit-phone": 0,
-    },
+    "about.spec.ts › shows the version": { "chromium-phone": 1200 },
     "about.spec.ts › with a clipboard › copies the details": {
       "chromium-phone": 700,
     },
-    "screens.spec.ts › in the dark theme › holds still": { "webkit-phone": 0 },
   });
 });
 
