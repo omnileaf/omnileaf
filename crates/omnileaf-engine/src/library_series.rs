@@ -14,12 +14,10 @@ pub struct LibrarySeries {
     pub book_count: u32,
     pub unread_count: u32,
     pub cover: Option<CoverPath>,
-    /// The language the books' details name, absent until the library reads them.
     pub language: Option<String>,
     /// Holds chapters downloaded from a source, which a local library never does.
     pub has_downloads: bool,
     pub continues_from: Option<BookId>,
-    /// Counts as 18+, which a library that reads no age ratings and keeps no marks never does.
     pub is_adult: bool,
 }
 
