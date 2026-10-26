@@ -165,7 +165,7 @@
 
   $effect(() => {
     if (data.libraryProblem === null) {
-      void commands.setBookOpen(bookPresence.isOpen);
+      void commands.setBookOpen(bookPresence.isBeingRead);
     }
   });
 
