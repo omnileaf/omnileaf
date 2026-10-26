@@ -17,4 +17,5 @@ checkEveryScreenIn("light", {
     },
   ],
   passes: "holds still and stays in sight while each control is used",
+  pace: "one after another",
 });

@@ -5,6 +5,10 @@ import type { Platform } from "./src/lib/ipc/bindings.ts";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 import { previewPortFromEnvironment } from "./tests/preview-port.ts";
 import { shardFromEnvironment } from "./tests/shard.ts";
+import {
+  SCREEN_SWEEP_TAG,
+  testGroupFromEnvironment,
+} from "./tests/test-group.ts";
 
 const PREVIEW_PORT = previewPortFromEnvironment(
   process.env.OMNILEAF_PREVIEW_PORT,
@@ -36,8 +40,10 @@ export const SCREENS = {
 const SPEED_SPECS = "**/*.speed.ts";
 const NATIVE_SPECS = /@native/;
 const DESKTOP_ONLY_SPECS = "**/*.desktop.spec.ts";
+const SCREEN_SWEEPS = new RegExp(SCREEN_SWEEP_TAG);
 
 const shard = shardFromEnvironment(process.env.PLAYWRIGHT_SHARD);
+const group = testGroupFromEnvironment(process.env.PLAYWRIGHT_GROUP);
 
 /** Playwright gives each shard a contiguous run of tests in project order, and WebKit takes about twice as long as Chromium, so each shard pairs a Chromium project with a WebKit one. */
 const PROJECT_ORDER = [
@@ -55,6 +61,8 @@ const PROJECT_ORDER = [
 const screenProjects = PROJECT_ORDER.map(([browserName, screen]) => ({
   name: `${browserName}-${screen}`,
   testIgnore: screen === "desktop" ? [] : [DESKTOP_ONLY_SPECS],
+  ...(group === "screens" ? { grep: SCREEN_SWEEPS } : {}),
+  ...(group === "rest" ? { grepInvert: SCREEN_SWEEPS } : {}),
   use: { browserName, ...SCREENS[screen] },
 })) satisfies Project[];
 
@@ -85,8 +93,8 @@ const speedProject: Project = {
 /** A shard leaves the speed project out, since depending on every other project would pull them all into one shard. */
 const projects: Project<PlatformOption>[] = [
   ...screenProjects,
-  ...nativeProjects,
-  ...(shard === null ? [speedProject] : []),
+  ...(group === "screens" ? [] : nativeProjects),
+  ...(shard === null && group !== "screens" ? [speedProject] : []),
 ];
 
 export default defineConfig<PlatformOption>({
