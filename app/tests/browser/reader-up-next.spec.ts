@@ -42,14 +42,29 @@ const TABLET = { width: 820, height: 1180 };
 
 type PhonePlatform = Extract<Platform, "ios" | "android">;
 
-const PHONE_TITLE_SIZE = { ios: "22px", android: "28px" } satisfies Record<
+interface PhoneType {
+  readonly size: string;
+  readonly tracking: string;
+}
+
+const PHONE_TITLE_TYPE = {
+  ios: { size: "22px", tracking: "-0.26px" },
+  android: { size: "28px", tracking: "normal" },
+} satisfies Record<PhonePlatform, PhoneType>;
+const PHONE_FIGURE_TYPE = {
+  ios: { size: "20px", tracking: "-0.45px" },
+  android: { size: "24px", tracking: "normal" },
+} satisfies Record<PhonePlatform, PhoneType>;
+const PHONE_CARD_TITLE_TYPE = {
+  ios: { size: "20px", tracking: "-0.45px" },
+  android: { size: "22px", tracking: "normal" },
+} satisfies Record<PhonePlatform, PhoneType>;
+const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } satisfies Record<
   PhonePlatform,
-  string
+  number
 >;
-const PHONE_FIGURE_SIZE = { ios: "20px", android: "24px" } satisfies Record<
-  PhonePlatform,
-  string
->;
+const SUBTITLE_WEIGHT = "400";
+const NO_SPACES = "One_Piece_Vol_105_Digital_Colored_Edition";
 const TABLET_TITLE_SIZE = "20px";
 const TABLET_READ_LOOK = {
   ios: { height: 50, corner: "14px" },
@@ -330,6 +345,11 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     return stats(page).getByText(String(PAGE_COUNT), { exact: true });
   }
 
+  async function expectType(text: Locator, type: PhoneType): Promise<void> {
+    await expect(text).toHaveCSS("font-size", type.size);
+    await expect(text).toHaveCSS("letter-spacing", type.tracking);
+  }
+
   function upNextCard(page: Page): Locator {
     return page.locator("[data-slot=card]").filter({
       has: page.getByRole("heading", { level: 2, name: "Up next" }),
@@ -364,14 +384,70 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
 
     await turnPastTheEnd(page);
 
-    await expect(upNext(page)).toHaveCSS(
-      "font-size",
-      PHONE_TITLE_SIZE[platform],
+    await expectType(upNext(page), PHONE_TITLE_TYPE[platform]);
+    await expectType(figure(page), PHONE_FIGURE_TYPE[platform]);
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Up next" }),
+    ).toHaveCSS("font-weight", SUBTITLE_WEIGHT);
+  });
+
+  test("centres itself in the space under the way back when it fits", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+    const section = page.getByRole("region", { name: FINISHED });
+    const content = await boxOf(section);
+    const room = await boxOf(section.locator(".."));
+
+    expect(content.y - room.y).toBeCloseTo(
+      room.y + room.height - (content.y + content.height),
+      0,
     );
-    await expect(figure(page)).toHaveCSS(
-      "font-size",
-      PHONE_FIGURE_SIZE[platform],
-    );
+  });
+
+  test.describe("with titles that have no spaces", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: (id) => ({
+          ...readerBook(NOT_STARTED),
+          id,
+          title: NO_SPACES,
+          seriesTitle: NO_SPACES,
+          next: { ...NEXT_BOOK, title: NO_SPACES },
+        }),
+        readingSummary: () => SUMMARY,
+      },
+    });
+
+    test("keeps them inside the window, with the buttons' words centred", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+      await page.goto(`/read/${BOOK_ID}`);
+      await expect(
+        page.getByRole("heading", { level: 1, name: NO_SPACES }),
+      ).toBeAttached();
+
+      await page.keyboard.press("End");
+      await page.keyboard.press("ArrowRight");
+      const read = page.getByRole("link", { name: `Read ${NO_SPACES}` });
+
+      await expect(read).toBeVisible();
+      await expect(read).toHaveCSS("text-align", "center");
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
   });
 
   test("keeps today's title on a tablet", async ({ page, platform }) => {
@@ -545,6 +621,88 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     const violations = await accessibilityViolations(page);
 
     expect(violations).toEqual([]);
+  });
+
+  test.describe("at the end of a series", () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        openBook: () => ({ ...readerBook(NOT_STARTED), next: null }),
+        readingSummary: () => SUMMARY,
+      },
+    });
+
+    function seriesFinished(page: Page): Locator {
+      return page.getByRole("heading", {
+        level: 2,
+        name: "You've read every book in this series",
+      });
+    }
+
+    test("leads back to the series and then the library on the phone's own buttons", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openBook(page);
+      await turnPastTheEnd(page);
+      const main = page.getByRole("main");
+
+      const series = await boxOf(
+        main.getByRole("link", { name: "Back to the series" }),
+      );
+      const library = await boxOf(
+        main.getByRole("link", { name: "Back to the library" }),
+      );
+
+      expect(series.height).toBe(PHONE_BUTTON_HEIGHT[platform]);
+      expect(library.height).toBe(PHONE_BUTTON_HEIGHT[platform]);
+      expect(library.width).toBeCloseTo(series.width, 0);
+      expect(library.y).toBeGreaterThan(series.y + series.height);
+    });
+
+    test("sets the card's title in the phone's own type", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openBook(page);
+
+      await turnPastTheEnd(page);
+
+      await expectType(seriesFinished(page), PHONE_CARD_TITLE_TYPE[platform]);
+    });
+
+    test("keeps everything inside the window at the largest text in a long language", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios" && platform !== "android") {
+        test.skip();
+        return;
+      }
+      await page.addInitScript(() => {
+        window.localStorage.setItem("omnileaf.language", "en-XA");
+      });
+      await setTextScale(page, LARGEST_TEXT_SCALE);
+      await openBook(page);
+
+      await page.keyboard.press("End");
+      await page.keyboard.press("ArrowRight");
+
+      await expect(
+        page
+          .getByRole("main")
+          .getByRole("link", { name: /^⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý/ }),
+      ).toBeVisible();
+      expect(await sidewaysOverflow(page)).toEqual([]);
+    });
   });
 });
 

@@ -18,7 +18,6 @@
     BreadcrumbPage,
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
-  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Card,
     CardContent,
@@ -28,6 +27,7 @@
     CardTitle,
   } from "#lib/components/ui/card/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
@@ -38,7 +38,10 @@
     type SeriesNeighbour,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
-  import { type ActionRank, phoneAction } from "#lib/page/action-group.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -69,12 +72,12 @@
     "flex items-center justify-center gap-sm rounded-shadcn-button bg-accent px-lg text-center text-body font-medium text-on-accent transition-control min-inline-none min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
   const SECONDARY =
     "flex items-center justify-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-center text-body font-medium transition-control min-inline-none min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control ios:border-transparent ios:bg-ios-fill";
-  const TODAYS_ACTIONS = {
+  const CARD_ACTIONS = {
+    group: "flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl",
     main: cn(PRIMARY, "inline-full expanded:flex-1"),
     other: cn(SECONDARY, "inline-full expanded:flex-1"),
-  } satisfies Record<ActionRank, string>;
-  const PHONE_MUTED_LINE =
-    "text-native-row-subtitle leading-native-row-subtitle tracking-native-row-subtitle";
+  } satisfies ActionGroupLook;
+  const ACROSS_THE_CARD = "inline-full whitespace-normal text-center";
 
   let {
     book,
@@ -98,10 +101,12 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
-  const actions = $derived({
-    main: actionLook("main"),
-    other: actionLook("other"),
-  });
+  const actions = $derived(
+    acrossTheCard(actionGroupLook(platform, width.current, CARD_ACTIONS)),
+  );
+  const actionLabel = $derived(
+    isOnPhone ? "min-inline-none wrap-anywhere" : "truncate",
+  );
   const smartFeatures = getSmartFeatures();
   const id = $props.id();
   let heading: HTMLHeadingElement | undefined = $state();
@@ -121,15 +126,14 @@
       : readingTime(summary.readSeconds),
   );
 
-  function actionLook(rank: ActionRank): string {
-    const phone = phoneAction(platform, width.current, rank);
-    return phone === undefined
-      ? TODAYS_ACTIONS[rank]
-      : cn(
-          variantClasses(phone.variant, phone.size, false, platform),
-          phone.fit,
-          "inline-full",
-        );
+  function acrossTheCard(look: ActionGroupLook): ActionGroupLook {
+    return isOnPhone
+      ? {
+          group: CARD_ACTIONS.group,
+          main: cn(look.main, ACROSS_THE_CARD),
+          other: cn(look.other, ACROSS_THE_CARD),
+        }
+      : look;
   }
 
   function nextDetails(next: SeriesNeighbour): string {
@@ -182,12 +186,10 @@
       </BreadcrumbItem>
     </Breadcrumb>
   </nav>
-  <div
-    class="flex flex-1 items-center-safe justify-center overflow-y-auto px-lg py-xl"
-  >
+  <div class="flex flex-1 flex-col overflow-y-auto px-lg py-xl">
     <section
       aria-labelledby="{id}-heading"
-      class="pointer-events-auto flex flex-col gap-lg inline-full max-inline-up-next"
+      class="pointer-events-auto m-auto flex flex-col gap-lg inline-full max-inline-up-next"
     >
       <div
         class={isOnPhone
@@ -207,28 +209,35 @@
             <CircleCheck size={CHECK_SIZE} />
           </span>
         {/if}
-        <div class="flex flex-col gap-2xs min-inline-none">
+        <div
+          class={[
+            "flex flex-col gap-2xs min-inline-none",
+            isOnPhone && "self-stretch",
+          ]}
+        >
           <h2
             id="{id}-heading"
             bind:this={heading}
             tabindex="-1"
             class={isOnPhone
-              ? "text-native-end-title/native-end-title font-native-end-title text-balance wrap-break-word"
+              ? "text-native-end-title/native-end-title font-native-end-title tracking-native-end-title text-balance wrap-break-word"
               : "text-title font-semibold text-pretty"}
           >
             {m.reader_finished({ title })}
           </h2>
           <p
             class={[
-              isOnPhone ? PHONE_MUTED_LINE : "text-small",
-              "text-muted expanded:hidden",
+              isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
+              "wrap-break-word text-muted expanded:hidden",
             ]}
           >
             {time === undefined
               ? m.reader_marked_read_in({ series: seriesTitle })
               : m.reader_marked_read_in_after({ series: seriesTitle, time })}
           </p>
-          <p class="hidden text-small text-muted expanded:block">
+          <p
+            class="hidden text-small wrap-break-word text-muted expanded:block"
+          >
             {time === undefined
               ? m.reader_marked_read()
               : m.reader_marked_read_after({ time })}
@@ -236,14 +245,14 @@
         </div>
       </div>
       {#if stats !== undefined}
-        <ReadingStats {title} {...stats} />
+        <ReadingStats {title} {...stats} {isOnPhone} />
       {/if}
       <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
         {#if next !== null && nextHref !== undefined}
           <CardHeader class="px-lg expanded:px-xl">
             <CardTitle
               class={isOnPhone
-                ? `${PHONE_MUTED_LINE} text-muted`
+                ? `${ROW_SUBTITLE_TYPE} font-regular text-muted`
                 : "text-body expanded:text-title"}
               >{m.reader_up_next()}</CardTitle
             >
@@ -273,28 +282,26 @@
                 class={[
                   "line-clamp-2",
                   isOnPhone
-                    ? "text-native-end-book/native-end-book font-native-end-book wrap-break-word"
+                    ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book wrap-break-word"
                     : "text-group-title font-semibold expanded:text-body",
                 ]}>{next.title}</span
               >
               <span
                 class={[
-                  isOnPhone ? PHONE_MUTED_LINE : "text-small",
+                  isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
                   "text-muted",
                 ]}>{nextDetails(next)}</span
               >
             </span>
           </CardContent>
-          <CardFooter
-            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
-          >
+          <CardFooter class={actions.group}>
             <a href={nextHref} data-sveltekit-replacestate class={actions.main}>
               <Play
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class={[!isOnPhone && "truncate"]}
+              <span class={actionLabel}
                 >{m.reader_read_next({ title: next.title })}</span
               >
               <Kbd
@@ -309,9 +316,7 @@
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class={[!isOnPhone && "truncate"]}
-                >{m.reader_back_to_the_series()}</span
-              >
+              <span class={actionLabel}>{m.reader_back_to_the_series()}</span>
               <Kbd
                 aria-hidden="true"
                 class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
@@ -323,26 +328,23 @@
           <CardHeader class="px-lg expanded:px-xl">
             <CardTitle
               class={isOnPhone
-                ? "text-native-end-book/native-end-book font-native-end-book"
+                ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book"
                 : "text-body expanded:text-title"}
               >{m.reader_series_finished()}</CardTitle
             >
-            <CardDescription class={isOnPhone ? PHONE_MUTED_LINE : "text-small"}
+            <CardDescription
+              class={isOnPhone ? ROW_SUBTITLE_TYPE : "text-small"}
               >{m.reader_series_finished_body()}</CardDescription
             >
           </CardHeader>
-          <CardFooter
-            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
-          >
+          <CardFooter class={actions.group}>
             <a href={seriesHref} class={actions.main}>
               <ArrowLeft
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class={[!isOnPhone && "truncate"]}
-                >{m.reader_back_to_the_series()}</span
-              >
+              <span class={actionLabel}>{m.reader_back_to_the_series()}</span>
             </a>
             <a href={resolve("/(app)")} class={actions.other}>
               <Library
@@ -350,9 +352,7 @@
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class={[!isOnPhone && "truncate"]}
-                >{m.reader_back_label()}</span
-              >
+              <span class={actionLabel}>{m.reader_back_label()}</span>
             </a>
           </CardFooter>
         {/if}

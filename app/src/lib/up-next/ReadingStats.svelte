@@ -1,8 +1,6 @@
 <script lang="ts">
   import { Card } from "#lib/components/ui/card/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -11,16 +9,15 @@
     readSeconds,
     pageCount,
     secondsPerPage,
+    isOnPhone,
   }: {
     title: string;
     readSeconds: number;
     pageCount: number;
     secondsPerPage: number;
+    isOnPhone: boolean;
   } = $props();
 
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const isOnPhone = $derived(isPhone(platform, width.current));
   const pages = $derived(new Intl.NumberFormat(getLocale()).format(pageCount));
   const stats = $derived([
     { value: readingTime(readSeconds), label: m.reader_stat_reading() },
@@ -44,7 +41,7 @@
       <p
         class={[
           isOnPhone
-            ? "text-native-end-stat/native-end-stat font-native-end-stat"
+            ? "text-native-end-stat/native-end-stat font-native-end-stat tracking-native-end-stat"
             : "text-title font-semibold",
           "wrap-break-word tabular-nums",
         ]}
