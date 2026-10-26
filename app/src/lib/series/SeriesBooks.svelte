@@ -6,6 +6,7 @@
 
   import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import type { ButtonVariant } from "#lib/components/ui/button/looks.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -52,6 +53,8 @@
     readonly action: string;
     readonly isIconOnly: boolean;
     readonly isDocked: boolean;
+    readonly emptyAction: ButtonVariant;
+    readonly emptyActionHasIcon: boolean;
   }
 
   const PHONE_PICKING: Readonly<Record<PhonePlatform, PhonePicking>> = {
@@ -66,6 +69,8 @@
       action: "disabled:text-faint",
       isIconOnly: true,
       isDocked: false,
+      emptyAction: "plain",
+      emptyActionHasIcon: false,
     },
     android: {
       leading: ["close"],
@@ -78,6 +83,8 @@
       action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
       isIconOnly: false,
       isDocked: true,
+      emptyAction: "secondary",
+      emptyActionHasIcon: true,
     },
   };
 
@@ -144,6 +151,11 @@
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
   let toolbarHeight = $state(0);
+  const emptyAction = $derived(
+    phone === undefined
+      ? { look: "outline" as const, class: SERIES_CONTROL }
+      : { variant: phone.emptyAction },
+  );
   const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
   const notices = getNotices();
   const headingId = $props.id();
@@ -453,19 +465,23 @@
   />
   {#if isComplete && shownBooks.length === 0}
     <Card
-      class="flex flex-col items-center gap-md px-lg py-xl text-center shadow-card-rest expanded:p-2xl"
+      class={[
+        "flex flex-col items-center gap-md px-lg py-xl text-center expanded:p-2xl",
+        phone === undefined && "shadow-card-rest",
+      ]}
     >
       {#if search.trim() !== ""}
         <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
         <Button
           type="button"
-          look="outline"
-          class={SERIES_CONTROL}
+          {...emptyAction}
           onclick={() => {
             search = "";
           }}
         >
-          <X size={ICON_SIZE} aria-hidden="true" />
+          {#if phone?.emptyActionHasIcon !== false}
+            <X size={ICON_SIZE} aria-hidden="true" />
+          {/if}
           {m.series_clear_search()}
         </Button>
       {:else}
@@ -476,13 +492,14 @@
         </p>
         <Button
           type="button"
-          look="outline"
-          class={SERIES_CONTROL}
+          {...emptyAction}
           onclick={() => {
             onListing({ ...listing, shown: "all" });
           }}
         >
-          <List size={ICON_SIZE} aria-hidden="true" />
+          {#if phone?.emptyActionHasIcon !== false}
+            <List size={ICON_SIZE} aria-hidden="true" />
+          {/if}
           {m.series_show_all_books()}
         </Button>
       {/if}
