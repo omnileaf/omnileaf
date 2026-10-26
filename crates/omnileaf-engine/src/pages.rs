@@ -11,8 +11,8 @@ use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
 use omnileaf_imaging::{
-    CroppedSides, ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders,
-    page_size, shrink_page, transcode,
+    ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders, page_size,
+    shrink_page, transcode,
 };
 use tokio::sync::oneshot;
 
@@ -386,7 +386,7 @@ impl Shared {
             PageCrop::Whole => whole,
             PageCrop::Borders => self.cropped(path, whole, |page| {
                 let _decoding = self.decodes.hold();
-                crop_white_borders(page, CroppedSides::All)
+                crop_white_borders(page)
             }),
             PageCrop::SideBorders => self.cropped(path, whole, |page| {
                 let Some(book) = book_side_borders(opened, &self.decodes, self.transcodes()) else {
