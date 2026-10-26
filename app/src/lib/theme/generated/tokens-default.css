@@ -161,6 +161,8 @@
   --native-spacing-dialog-button: var(--spacing-touch-button);
   --native-color-sheet-handle: var(--sheet-handle);
   --native-radius-sheet: var(--radius-bottom-sheet);
+  --native-spacing-sheet-medium: fit-content;
+  --native-spacing-sheet-large: fit-content;
   --native-spacing-sheet-handle: var(--spacing-sheet-handle);
   --native-spacing-sheet-handle-thickness: var(--spacing-sheet-handle-block);
   --native-spacing-sheet-handle-start: var(--spacing-sheet-handle-gap);

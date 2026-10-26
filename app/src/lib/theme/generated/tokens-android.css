@@ -103,6 +103,8 @@
   --native-spacing-dialog-text-gap: var(--spacing-lg);
   --native-spacing-dialog-button: var(--spacing-touch-button);
   --native-radius-sheet: 28px;
+  --native-spacing-sheet-medium: fit-content;
+  --native-spacing-sheet-large: calc(100dvh - var(--system-inset-top, 0px) - 48px);
   --native-spacing-sheet-handle: 32px;
   --native-spacing-sheet-handle-thickness: 4px;
   --native-spacing-sheet-handle-start: 22px;
