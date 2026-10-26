@@ -11,6 +11,7 @@ import {
 
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${String(PREVIEW_PORT)}`;
+const CI_WORKERS = 4;
 
 export const SCREENS = {
   phone: {
@@ -97,6 +98,7 @@ export default defineConfig<PlatformOption>({
   testDir: "tests/browser",
   forbidOnly: true,
   retries: 0,
+  ...(process.env.CI === undefined ? {} : { workers: CI_WORKERS }),
   reporter: "list",
   use: {
     ...TEST_BROWSER_CONTEXT,
