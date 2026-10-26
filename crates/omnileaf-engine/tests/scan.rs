@@ -8,12 +8,14 @@ mod details;
 mod scanned;
 mod support;
 
-use std::fs;
+use std::{fs, path::Path};
 
 use books::{write_book, write_book_with, write_page};
 use details::stored_details;
 use omnileaf_db::rusqlite::types::Value;
-use omnileaf_engine::{FileChanges, FolderScan, LibraryError, RescanOutcome, ScanProgress};
+use omnileaf_engine::{
+    FileChanges, FileType, FolderScan, LibraryError, RescanOutcome, ScanProgress, SkippedType,
+};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
     ArchiveEntry, Packing, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cb7, page_png,
@@ -63,6 +65,9 @@ fn owned_pairs(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
         .collect()
 }
 
+const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const LOCATIONS_LISTED_PER_TYPE: usize = 20;
+
 fn sample_library(name: &str) -> ScratchFolder {
     let folder = ScratchFolder::new(name);
     write_sample_library(folder.path()).unwrap();
@@ -104,6 +109,7 @@ async fn scans_each_series_folder_into_a_series_of_its_books() {
             unreadable_books: 0,
             unsupported_books: 0,
             unreadable_folders: 0,
+            skipped_types: Vec::new(),
         }
     );
 }
@@ -287,6 +293,71 @@ async fn counts_the_rar_books_it_cannot_open_yet_apart_from_damaged_ones() {
     assert_eq!(
         (scan.books, scan.unreadable_books, scan.unsupported_books),
         (1, 1, 1)
+    );
+}
+
+fn cbr() -> FileType {
+    FileType::try_from("cbr".to_owned()).unwrap()
+}
+
+fn location_in_series(name: &str) -> String {
+    Path::new("Sample Series 01")
+        .join(name)
+        .display()
+        .to_string()
+}
+
+#[tokio::test]
+async fn lists_a_file_it_skips_for_a_type_the_app_does_not_read() {
+    let comics = ScratchFolder::new("scan-skipped");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    comics.write("Sample Series 01/v02.cbr", RAR_SIGNATURE);
+
+    let (_, scan, _) = Scanned::folder("scan-skipped", comics.path()).await;
+
+    assert_eq!(
+        scan.skipped_types,
+        [SkippedType {
+            file_type: cbr(),
+            files: 1,
+            first_locations: vec![location_in_series("v02.cbr")],
+        }]
+    );
+}
+
+#[tokio::test]
+async fn lists_no_file_of_a_type_it_reads_that_holds_an_archive_it_cannot() {
+    let comics = ScratchFolder::new("scan-skipped-cbz");
+    comics.write("Sample Series 01/v01.cbz", RAR_SIGNATURE);
+
+    let (_, scan, _) = Scanned::folder("scan-skipped-cbz", comics.path()).await;
+
+    assert_eq!(
+        (scan.unsupported_books, scan.skipped_types),
+        (1, Vec::new())
+    );
+}
+
+#[tokio::test]
+async fn lists_only_the_first_files_of_a_type_it_skips_with_how_many_it_skipped() {
+    let comics = ScratchFolder::new("scan-skipped-many");
+    let names: Vec<String> = (1..=25).map(|volume| format!("v{volume:02}.cbr")).collect();
+    for name in &names {
+        comics.write(&format!("Sample Series 01/{name}"), RAR_SIGNATURE);
+    }
+
+    let (_, scan, _) = Scanned::folder("scan-skipped-many", comics.path()).await;
+
+    assert_eq!(
+        scan.skipped_types,
+        [SkippedType {
+            file_type: cbr(),
+            files: 25,
+            first_locations: names[..LOCATIONS_LISTED_PER_TYPE]
+                .iter()
+                .map(|name| location_in_series(name))
+                .collect(),
+        }]
     );
 }
 

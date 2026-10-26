@@ -20,8 +20,9 @@ use crate::{
     LibraryError,
     book_details::read_details,
     clock::unix_ms,
-    file_type::HiddenFileTypes,
+    file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
+    skipped_types::{SkippedFile, SkippedType},
     unread_books::UnreadBooks,
 };
 
@@ -44,6 +45,8 @@ pub struct FolderScan {
     pub unreadable_books: u32,
     pub unsupported_books: u32,
     pub unreadable_folders: u32,
+    #[specta(optional)]
+    pub skipped_types: Vec<SkippedType>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -52,6 +55,12 @@ pub(crate) enum UnreadableBook {
     Format(#[from] FormatError),
     #[error("open the book, a file of a type the library hides")]
     HiddenType(#[source] FormatError),
+    #[error("open the book, a {} file this build can't read", .skipped.file_type)]
+    UnsupportedType {
+        skipped: Box<SkippedFile>,
+        #[source]
+        source: FormatError,
+    },
     #[error("read when the book last changed")]
     Metadata(#[from] io::Error),
     #[error("name the book's series")]
@@ -61,12 +70,22 @@ pub(crate) enum UnreadableBook {
 }
 
 impl UnreadableBook {
-    fn opening(path: &Path, hidden: &HiddenFileTypes, source: FormatError) -> Self {
-        let is_archive_not_read_yet = matches!(source, FormatError::ArchiveNotSupportedYet { .. });
-        if is_archive_not_read_yet && hidden.hides(path) {
-            Self::HiddenType(source)
-        } else {
-            Self::Format(source)
+    fn opening(location: &Path, hidden: &HiddenFileTypes, source: FormatError) -> Self {
+        match FileType::of(location) {
+            Some(file_type) if file_type.is_unsupported_given(&source) => {
+                if hidden.hides(location) {
+                    Self::HiddenType(source)
+                } else {
+                    Self::UnsupportedType {
+                        skipped: Box::new(SkippedFile {
+                            file_type,
+                            location: location.to_path_buf(),
+                        }),
+                        source,
+                    }
+                }
+            }
+            Some(_) | None => Self::Format(source),
         }
     }
 
@@ -170,6 +189,7 @@ pub(crate) async fn scan(
         unreadable_books: tally.unread.unreadable,
         unsupported_books: tally.unread.unsupported,
         unreadable_folders: saturating_u32(layout.unreadable_folders.len()),
+        skipped_types: tally.unread.skipped.into(),
     })
 }
 
@@ -215,7 +235,7 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
-        .map_err(|source| UnreadableBook::opening(&found.path, &target.hidden, source))?;
+        .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
     let page_count = saturating_u32(book.pages().len());
     let details = read_details(&mut book, &found.path);

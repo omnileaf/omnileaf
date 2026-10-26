@@ -14,6 +14,7 @@ export const commands = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+	skippedTypes?: SkippedType[],
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	linkLibraryFolder: (folder: string, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("link_library_folder", { folder, onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
@@ -321,6 +322,7 @@ export type FolderScan = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+	skippedTypes?: SkippedType[],
 };
 
 export type FoundLibrary = {
@@ -746,6 +748,12 @@ export type SeriesPerson = {
 };
 
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";
+
+export type SkippedType = {
+	fileType: FileType,
+	files: number,
+	firstLocations: string[],
+};
 
 export type SmartFilter = 
 /**  Under 30 minutes left, at the reader's own reading speed. */

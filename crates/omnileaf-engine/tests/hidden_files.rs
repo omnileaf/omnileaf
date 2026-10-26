@@ -210,6 +210,18 @@ async fn counts_a_damaged_file_of_a_hidden_type_as_unreadable() {
 }
 
 #[tokio::test]
+async fn lists_no_file_of_a_hidden_type_among_those_a_scan_skips() {
+    let hiding = Hiding::new("hide-skipped").await;
+    hiding.hide_like("v02").await;
+    let later = ScratchFolder::new("hide-skipped-later");
+    later.write("Sample Series 02/v01.cbr", RAR_SIGNATURE);
+
+    let scan = hiding.add_later(&later).await;
+
+    assert_eq!(scan.skipped_types, []);
+}
+
+#[tokio::test]
 async fn counts_unreadable_files_of_a_type_shown_again() {
     let hiding = Hiding::new("hide-undone").await;
     hiding.write_rar("v03.cbr");
