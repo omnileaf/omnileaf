@@ -131,7 +131,7 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(StoragePlaces {
         database_folder: folders.database.clone(),
     });
-    let library = tauri::async_runtime::block_on(Library::open(folders, SystemClock))?;
+    let library = tauri::async_runtime::block_on(Library::open(folders.clone(), SystemClock))?;
     #[cfg(target_os = "android")]
     let library = tree_storage::read_trees(app, library, data_dir);
     app.manage(LibraryChangesForwarding::start(
@@ -141,7 +141,9 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
     app.manage(library);
     app.manage(ScheduledRescans::start(app.handle().clone()));
     #[cfg(desktop)]
-    app.manage(folder_watch::FolderWatching::start(app, data_dir)?);
+    app.manage(folder_watch::FolderWatching::start(
+        app, &folders, data_dir,
+    )?);
     #[cfg(target_os = "ios")]
     folder_access::reopen_picked_folders_in_background(app.handle().clone());
     #[cfg(target_os = "macos")]
