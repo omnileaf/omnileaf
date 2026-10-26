@@ -9,6 +9,7 @@ mod writer;
 use std::{collections::BTreeSet, sync::Arc};
 
 pub use key::{Key, LatestKey, MaximumKey};
+use omnileaf_sync_proto::ProfileId;
 pub use reading_state::{ReadingState, reading_state};
 pub use session::{Continuity, SessionPlace};
 use tokio::sync::broadcast;
@@ -102,6 +103,26 @@ impl Store {
             move |changed| announce(&subscribers, changed),
         );
         async move { rebuilt.await.map(drop) }
+    }
+
+    pub fn switch_profile(
+        &self,
+        profile: ProfileId,
+    ) -> impl Future<Output = Result<(), Error>> + use<> {
+        let subscribers = self.subscribers.clone();
+        let switched = self.database.write_then(
+            move |transaction| {
+                let shown_before = projector::shown_keys(transaction)?;
+                local::switch_profile(transaction, profile)?;
+                let mut changed = projector::rebuild(transaction)?;
+                if let Changed::Registers { keys, .. } = &mut changed {
+                    keys.extend(shown_before);
+                }
+                Ok(changed)
+            },
+            move |changed| announce(&subscribers, changed),
+        );
+        async move { switched.await.map(drop) }
     }
 
     pub fn sort_titles_for(
