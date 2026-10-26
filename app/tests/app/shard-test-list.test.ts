@@ -99,6 +99,15 @@ interface TestListLine {
   readonly titles: readonly string[];
 }
 
+/** Mirrors how Playwright 1.64 reads a `--test-list` file: it splits the file on `\n`, trims each line and skips blank lines and `#` comments. */
+function testListLines(lines: readonly string[]): string[] {
+  return lines
+    .join("\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("#"));
+}
+
 /** Mirrors how Playwright 1.64 reads a `--test-list` line: it splits on `›` when the line has one, else on `>`, and trims each part. */
 function parsed(line: string): TestListLine {
   const delimiter = line.includes("›") ? "›" : ">";
@@ -110,7 +119,7 @@ function parsed(line: string): TestListLine {
 
 /** Mirrors how Playwright 1.64 runs a `--test-list`: it loads only the spec files the lines name, then runs a test when a line names its project and the file declaring it, and starts its title path. */
 function runs(lines: readonly string[], listedTest: ListedTest): boolean {
-  const parsedLines = lines.map(parsed);
+  const parsedLines = testListLines(lines).map(parsed);
   return (
     parsedLines.some(({ file }) => file === listedTest.file) &&
     parsedLines.some(
@@ -239,6 +248,8 @@ test("lists every test in exactly one shard, even when a title cannot be written
     listed("chromium-phone", "menu", "closes"),
     listed("webkit-phone", "menu", "opens"),
     listed("webkit-phone", "menu", "closes"),
+    listed("webkit-phone", "notes", "shows the note"),
+    listed("webkit-phone", "notes", "shows the note\nacross lines"),
     declaredInHelper("light.spec.ts", "webkit-phone", "holds still"),
     declaredInHelper("light.spec.ts", "webkit-phone", "fits", "at 360px"),
     declaredInHelper("dark.spec.ts", "webkit-phone", "fits", "at 390px"),
@@ -278,9 +289,13 @@ test("rejects a project that a line loading a file would run", () => {
   ).toThrow("load only");
 });
 
-test("keeps a test whose title cannot be written in a test list with the rest of its describe", () => {
+test.each([
+  "opens Settings › Library",
+  "shows the note\nacross lines",
+  "shows the note\racross lines",
+])("keeps a test titled %j with the rest of its describe", (title) => {
   const tests = [
-    listed("p", "Settings", "opens Settings › Library"),
+    listed("p", "Settings", title),
     listed("p", "Settings", "opens"),
     listed("p", "other"),
   ];
