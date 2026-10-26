@@ -133,7 +133,6 @@ function phoneSeriesButtons(page: Page): Record<string, Locator> {
     findABook: main.getByRole("button", { name: "Find a book" }),
     tags: main.getByRole("button", { name: `Tags for ${SERIES_TITLE}` }),
     markRead: main.getByRole("button", { name: `Mark ${SERIES_TITLE} read` }),
-    details: main.getByRole("button", { name: "Details" }),
   };
 }
 
@@ -515,7 +514,7 @@ test.describe("on an Android phone", () => {
   test.describe("on a series", () => {
     test.use({ backend: seriesOn("android") });
 
-    test("draws Find a book, Sort, Tags, Mark read, Details and Continue as pills", async ({
+    test("draws Find a book, Sort, Tags, Mark read and Continue as pills", async ({
       page,
     }) => {
       await openSeries(page);

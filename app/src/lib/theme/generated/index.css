@@ -223,6 +223,7 @@
   --shadow-native-notice-lift: var(--native-shadow-notice-lift);
   --spacing-native-notice-inline: var(--native-spacing-notice-inline);
   --spacing-native-notice-top: var(--native-spacing-notice-top);
+  --spacing-native-continue-cover: var(--native-spacing-continue-cover);
 }
 
 @media (prefers-reduced-motion: reduce) {
