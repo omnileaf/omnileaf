@@ -154,6 +154,37 @@ async fn drops_each_pass_before_setting_up_the_next() {
     );
 }
 
+struct LoggedSample<'log> {
+    log: &'log RefCell<Vec<&'static str>>,
+}
+
+impl Drop for LoggedSample<'_> {
+    fn drop(&mut self) {
+        self.log.borrow_mut().push("drop sample");
+    }
+}
+
+#[tokio::test]
+async fn sets_up_each_isolated_sample_before_it_and_drops_it_after() {
+    let log = RefCell::new(Vec::new());
+
+    repeated(2, Statistic::Median)
+        .run_isolated(
+            async |_| (),
+            async |()| {
+                log.borrow_mut().push("set up sample");
+                LoggedSample { log: &log }
+            },
+            async |(), _| log.borrow_mut().push("sample"),
+        )
+        .await;
+
+    assert_eq!(
+        log.into_inner(),
+        ["set up sample", "sample", "drop sample"].repeat(4 * 2)
+    );
+}
+
 #[tokio::test]
 async fn keeps_the_warm_up_out_of_the_outcome() {
     let outcome = once().run(async |_| (), async |()| {}).await;
