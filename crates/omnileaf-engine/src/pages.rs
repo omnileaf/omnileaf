@@ -19,6 +19,7 @@ use crate::{
     decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_type::FileType,
     lane::{Job, LaneStopped},
     library::BookToOpen,
     open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
@@ -73,6 +74,13 @@ pub enum OpenBookError {
         #[source]
         source: FormatError,
     },
+    #[error("read the {file_type} file of book {id}, a type this build can't read")]
+    UnsupportedType {
+        id: BookId,
+        file_type: FileType,
+        #[source]
+        source: FormatError,
+    },
     #[error("find the book in the library")]
     Library(#[from] LibraryError),
     #[error("open the book on the page lane")]
@@ -95,6 +103,22 @@ pub(crate) enum PageError {
     Lane(#[from] LaneStopped),
     #[error("read the page on the page lane")]
     Asked(#[from] AskedPageError),
+}
+
+impl OpenBookError {
+    fn unreadable(id: BookId, file_type: Option<FileType>, source: FormatError) -> Self {
+        let is_archive_not_read_yet = matches!(source, FormatError::ArchiveNotSupportedYet { .. });
+        match file_type {
+            Some(file_type) if is_archive_not_read_yet && !file_type.is_read() => {
+                Self::UnsupportedType {
+                    id,
+                    file_type,
+                    source,
+                }
+            }
+            Some(_) | None => Self::Unreadable { id, source },
+        }
+    }
 }
 
 impl PageError {
@@ -178,6 +202,7 @@ impl Pages {
         let located = library
             .book_file(found)
             .ok_or(OpenBookError::FolderClosed { id })?;
+        let file_type = FileType::of(&located.path);
         let reading = found.reading;
         let (opened, sizes, probed, direction) = self
             .lane
@@ -200,7 +225,7 @@ impl Pages {
                 })
             })
             .await?
-            .map_err(|source| OpenBookError::Unreadable { id, source })?;
+            .map_err(|source| OpenBookError::unreadable(id, file_type, source))?;
         match probed {
             Some(window) if window.len() < opened.page_count => {
                 self.fill_sizes_later(&opened, found.file, sizes.clone(), window);

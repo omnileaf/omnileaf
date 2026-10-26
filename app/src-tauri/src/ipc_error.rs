@@ -37,6 +37,7 @@ pub(crate) enum IpcErrorCode {
     CursorForAnotherList,
     BookNotFound,
     BookUnreadable,
+    BookTypeUnsupported,
     BookmarksNotKept,
     LabelsNotKept,
     DetailsNotKept,
@@ -214,6 +215,10 @@ impl From<OpenBookError> for IpcError {
                 IpcErrorCode::BookUnreadable,
                 "the book's file could not be read",
             ),
+            OpenBookError::UnsupportedType { .. } => (
+                IpcErrorCode::BookTypeUnsupported,
+                "the book's file is of a type this app can't read",
+            ),
             OpenBookError::Library(error) => return error.into(),
             OpenBookError::Lane(_) => return Self::internal(&error),
         };
@@ -226,8 +231,8 @@ impl From<OpenBookError> for IpcError {
 mod tests {
     use std::{io, path::PathBuf};
 
-    use omnileaf_engine::{BookId, FolderId, LaneStopped, SeriesId};
-    use omnileaf_formats::FormatError;
+    use omnileaf_engine::{BookId, FileType, FolderId, LaneStopped, SeriesId};
+    use omnileaf_formats::{FormatError, UnsupportedArchive};
 
     use super::*;
 
@@ -317,10 +322,20 @@ mod tests {
                 path: PathBuf::from("/media/Sample Library/Sample Series 01 v01.cbz"),
             },
         };
+        let rar = PathBuf::from("/media/Sample Library/Sample Series 01 v02.cbr");
+        let unsupported = OpenBookError::UnsupportedType {
+            id,
+            file_type: FileType::of(&rar).unwrap(),
+            source: FormatError::ArchiveNotSupportedYet {
+                path: rar,
+                archive: UnsupportedArchive::Rar,
+            },
+        };
 
         let codes = [
             OpenBookError::BookNotFound { id },
             unreadable,
+            unsupported,
             OpenBookError::Library(LibraryError::SeriesNotFound { id: series }),
             OpenBookError::Lane(LaneStopped),
         ]
@@ -331,6 +346,7 @@ mod tests {
             [
                 IpcErrorCode::BookNotFound,
                 IpcErrorCode::BookUnreadable,
+                IpcErrorCode::BookTypeUnsupported,
                 IpcErrorCode::SeriesNotFound,
                 IpcErrorCode::Internal,
             ]

@@ -4,10 +4,11 @@ const READ_BOOK_TYPES: [&str; 2] = ["cbz", "cb7"];
 const BOOK_TYPES_NOT_READ_YET: [&str; 1] = ["cbr"];
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct FileType(String);
+pub struct FileType(String);
 
 impl FileType {
-    pub(crate) fn of(path: &Path) -> Option<Self> {
+    #[must_use]
+    pub fn of(path: &Path) -> Option<Self> {
         let extension = path.extension()?.to_str()?;
         Some(Self(extension.to_ascii_lowercase()))
     }
