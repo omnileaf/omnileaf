@@ -17,13 +17,19 @@ use omnileaf_db::{
     rusqlite::{Connection, OpenFlags},
     store::{Store, reading_state},
 };
-use omnileaf_engine::{FolderKind, HomeFolderError, HomeFolderSetting, Library, found_library_in};
+use omnileaf_engine::{
+    FolderKind, HomeChoice, HomeFolderError, HomeFolderSetting, Library, found_library_in,
+};
 use omnileaf_sync_proto::BookId;
 use omnileaf_testkit::write_sample_library;
 use support::{FixedClock, ScratchFolder};
 
 const DATABASE_FILE: &str = "library.sqlite";
 const UNFINISHED_COPY: &str = "library.sqlite.partial";
+const WRITE_AHEAD_LOG: &str = "library.sqlite-wal";
+const WRITE_AHEAD_LOG_INDEX: &str = "library.sqlite-shm";
+const SET_ASIDE_DATABASE: &str = "library-moved.sqlite";
+const SECOND_SET_ASIDE_DATABASE: &str = "library-moved-2.sqlite";
 const BACKUP_FOLDER: &str = "backups";
 const OLDER_BACKUP: &str = "schema-v1.sqlite";
 const NEWER_BACKUP: &str = "schema-v2.sqlite";
@@ -115,6 +121,48 @@ fn name_of(folder: &Path) -> String {
     folder.file_name().unwrap().to_str().unwrap().to_owned()
 }
 
+fn file_in(folder: &Path, name: &str) -> Option<Vec<u8>> {
+    fs::read(folder.join(name)).ok()
+}
+
+/// SQLite reads a write-ahead-log database in a folder it cannot write only once the database's shared-memory index is there.
+#[cfg(unix)]
+fn leave_sqlite_index_beside(home: &Path) {
+    read_only(home)
+        .query_row("SELECT count(*) FROM sqlite_schema", [], |row| {
+            row.get::<_, i64>(0)
+        })
+        .unwrap();
+}
+
+#[cfg(unix)]
+fn lock(folder: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(folder, fs::Permissions::from_mode(0o555)).unwrap();
+}
+
+#[cfg(unix)]
+fn unlock(folder: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(folder, fs::Permissions::from_mode(0o755)).unwrap();
+}
+
+#[cfg(unix)]
+async fn move_cut_short_out_of_a_locked_home(
+    data: &Path,
+    old: &Path,
+    to: &Path,
+) -> HomeFolderSetting {
+    let setting = HomeFolderSetting::in_folder(data.to_path_buf());
+    library_read_in(old).await;
+    setting.use_library_in(old).await.unwrap();
+    setting.move_to(to).await.unwrap();
+    copy_by_hand(old, to);
+    leave_sqlite_index_beside(old);
+    lock(old);
+    setting
+}
+
 fn write_backup(home: &Path, name: &str, made_at_ms: u64) {
     let backups = home.join(BACKUP_FOLDER);
     fs::create_dir_all(&backups).unwrap();
@@ -194,7 +242,7 @@ async fn keeps_reading_the_books_left_in_the_old_home() {
 }
 
 #[tokio::test]
-async fn leaves_the_old_library_as_it_was() {
+async fn keeps_the_old_library_set_aside_as_it_was() {
     let data = ScratchFolder::new("move-untouched-data");
     let other = ScratchFolder::new("move-untouched-other");
     library_read_in(data.path()).await;
@@ -204,7 +252,90 @@ async fn leaves_the_old_library_as_it_was() {
 
     close(open(&setting.home().await.unwrap()).await).await;
 
-    assert_eq!(database_of(data.path()), before);
+    assert_eq!(file_in(data.path(), SET_ASIDE_DATABASE), Some(before));
+}
+
+#[tokio::test]
+async fn offers_no_library_in_the_old_home_once_moved() {
+    let data = ScratchFolder::new("move-offer-data");
+    let other = ScratchFolder::new("move-offer-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    setting.home().await.unwrap();
+
+    let choice = setting.choose(data.path()).await.unwrap();
+
+    assert_eq!(choice, HomeChoice::Empty);
+}
+
+#[tokio::test]
+async fn sets_the_old_library_aside_beside_one_set_aside_before() {
+    let data = ScratchFolder::new("move-aside-twice-data");
+    let other = ScratchFolder::new("move-aside-twice-other");
+    library_read_in(data.path()).await;
+    let before = database_of(data.path());
+    fs::write(data.path().join(SET_ASIDE_DATABASE), "set aside before").unwrap();
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        (
+            file_in(data.path(), SET_ASIDE_DATABASE),
+            file_in(data.path(), SECOND_SET_ASIDE_DATABASE)
+        ),
+        (Some(b"set aside before".to_vec()), Some(before))
+    );
+}
+
+#[tokio::test]
+async fn leaves_no_write_ahead_log_where_the_old_library_was() {
+    let data = ScratchFolder::new("move-sidecars-data");
+    let other = ScratchFolder::new("move-sidecars-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    copy_by_hand(data.path(), other.path());
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        [WRITE_AHEAD_LOG, WRITE_AHEAD_LOG_INDEX].map(|sidecar| data.path().join(sidecar).exists()),
+        [false, false]
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn keeps_the_move_when_the_old_library_cannot_be_set_aside() {
+    let data = ScratchFolder::new("move-locked-data");
+    let old = ScratchFolder::new("move-locked-old");
+    let other = ScratchFolder::new("move-locked-other");
+    let setting = move_cut_short_out_of_a_locked_home(data.path(), old.path(), other.path()).await;
+
+    let home = setting.home().await.unwrap();
+
+    unlock(old.path());
+    assert_eq!(home, other.path());
+    assert!(old.path().join(DATABASE_FILE).exists());
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn sets_the_old_library_aside_on_the_next_launch_when_it_could_not_at_first() {
+    let data = ScratchFolder::new("move-unlocked-data");
+    let old = ScratchFolder::new("move-unlocked-old");
+    let other = ScratchFolder::new("move-unlocked-other");
+    let setting = move_cut_short_out_of_a_locked_home(data.path(), old.path(), other.path()).await;
+    setting.home().await.unwrap();
+    unlock(old.path());
+
+    let home = setting.home().await.unwrap();
+
+    assert_eq!(home, other.path());
+    assert!(!old.path().join(DATABASE_FILE).exists());
 }
 
 #[tokio::test]

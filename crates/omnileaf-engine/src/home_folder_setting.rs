@@ -10,7 +10,7 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     FoundLibrary, LibraryError, describe_error, found_library_in,
-    home_move::{finish_move, prepare_move},
+    home_move::{finish_move, prepare_move, set_aside_library_in},
     library::DATABASE_FILE,
 };
 
@@ -44,6 +44,7 @@ enum Placement {
 enum StoredHome {
     At { home: PathBuf },
     Moving { from: PathBuf, to: PathBuf },
+    Moved { from: PathBuf, to: PathBuf },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -173,31 +174,45 @@ impl HomeFolderSetting {
     fn checked_home(&self) -> Result<PathBuf, HomeFolderError> {
         match self.stored_home()? {
             None => Ok(self.data_folder.clone()),
-            Some(StoredHome::At { home }) if holds_a_library(&home)? => Ok(home),
-            Some(StoredHome::At { home }) => Err(HomeFolderError::LibraryMissing { path: home }),
+            Some(StoredHome::At { home }) => home_with_library(home),
             Some(StoredHome::Moving { from, to }) => self.settle_move(from, to),
+            Some(StoredHome::Moved { from, to }) => self.leave_behind(&from, to),
         }
     }
 
     fn settle_move(&self, from: PathBuf, to: PathBuf) -> Result<PathBuf, HomeFolderError> {
-        let home = match finish_move(&from, &to) {
-            Ok(()) => to,
+        if let Err(error) = finish_move(&from, &to) {
+            tracing::error!(error = %describe_error(&error), "move the library into the new home folder, so it stays where it was");
+            let home = home_with_library(from)?;
+            self.store(&StoredHome::At { home: home.clone() })?;
+            return Ok(home);
+        }
+        self.store(&StoredHome::Moved {
+            from: from.clone(),
+            to: to.clone(),
+        })?;
+        self.leave_behind(&from, to)
+    }
+
+    fn leave_behind(&self, old_home: &Path, home: PathBuf) -> Result<PathBuf, HomeFolderError> {
+        let home = home_with_library(home)?;
+        match sync_folder(&self.data_folder).and_then(|()| set_aside_library_in(old_home)) {
+            Ok(()) => self.store(&StoredHome::At { home: home.clone() })?,
             Err(error) => {
-                tracing::error!(error = %describe_error(&error), "move the library into the new home folder, so it stays where it was");
-                if !holds_a_library(&from)? {
-                    return Err(HomeFolderError::LibraryMissing { path: from });
-                }
-                from
+                tracing::warn!(old_home = %old_home.display(), error = %describe_error(&error), "set aside the library left in the old home folder, so it's tried again on the next launch");
             }
-        };
-        self.store(&StoredHome::At { home: home.clone() })?;
+        }
         Ok(home)
     }
 
     fn current_home(&self) -> Result<PathBuf, HomeFolderError> {
         Ok(match self.stored_home()? {
             None => self.data_folder.clone(),
-            Some(StoredHome::At { home } | StoredHome::Moving { from: home, .. }) => home,
+            Some(
+                StoredHome::At { home }
+                | StoredHome::Moving { from: home, .. }
+                | StoredHome::Moved { to: home, .. },
+            ) => home,
         })
     }
 
@@ -232,8 +247,18 @@ impl HomeFolderSetting {
 impl StoredHome {
     fn home(&self) -> &Path {
         match self {
-            Self::At { home } | Self::Moving { to: home, .. } => home,
+            Self::At { home } | Self::Moving { to: home, .. } | Self::Moved { to: home, .. } => {
+                home
+            }
         }
+    }
+}
+
+fn home_with_library(home: PathBuf) -> Result<PathBuf, HomeFolderError> {
+    if holds_a_library(&home)? {
+        Ok(home)
+    } else {
+        Err(HomeFolderError::LibraryMissing { path: home })
     }
 }
 
@@ -244,6 +269,14 @@ fn holds_a_library(home: &Path) -> Result<bool, HomeFolderError> {
             source,
         })
     })
+}
+
+/// POSIX makes a rename durable only once the folder holding it is synced, and Windows won't open a folder as a file to sync it.
+fn sync_folder(folder: &Path) -> io::Result<()> {
+    if cfg!(unix) {
+        fs::File::open(folder)?.sync_all()?;
+    }
+    Ok(())
 }
 
 fn write_whole(path: &Path, text: &[u8]) -> io::Result<()> {

@@ -1,4 +1,9 @@
-use std::{fs, io, path::Path, time::SystemTime};
+use std::{
+    ffi::OsString,
+    fs, io,
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use omnileaf_db::library_copy::{copy_library, is_copy_of};
 
@@ -10,6 +15,8 @@ use crate::{
 
 const UNFINISHED_COPY: &str = "library.sqlite.partial";
 const UNFINISHED_BACKUP_EXTENSION: &str = "sqlite.partial";
+const SET_ASIDE_STEM: &str = "library-moved";
+const SIDECARS_THEN_DATABASE: [&str; 3] = ["-wal", "-shm", ""];
 
 pub(crate) fn prepare_move(to: &Path) -> Result<(), HomeFolderError> {
     fs::create_dir_all(to)
@@ -71,6 +78,46 @@ fn set_made_at(copy: &Path, made_at: SystemTime) -> io::Result<()> {
     let file = fs::File::options().write(true).open(copy)?;
     file.set_modified(made_at)?;
     file.sync_all()
+}
+
+#[tracing::instrument(skip_all, fields(folder = %folder.display()))]
+pub(crate) fn set_aside_library_in(folder: &Path) -> io::Result<()> {
+    let database = folder.join(DATABASE_FILE);
+    let set_aside = unused_set_aside_path(folder)?;
+    for suffix in SIDECARS_THEN_DATABASE {
+        rename_if_present(&suffixed(&database, suffix), &suffixed(&set_aside, suffix))?;
+    }
+    Ok(())
+}
+
+fn unused_set_aside_path(folder: &Path) -> io::Result<PathBuf> {
+    for number in 1..=u32::MAX {
+        let path = folder.join(set_aside_name(number));
+        if !path.try_exists()? {
+            return Ok(path);
+        }
+    }
+    Err(io::ErrorKind::AlreadyExists.into())
+}
+
+fn set_aside_name(number: u32) -> String {
+    match number {
+        1 => format!("{SET_ASIDE_STEM}.sqlite"),
+        _ => format!("{SET_ASIDE_STEM}-{number}.sqlite"),
+    }
+}
+
+fn suffixed(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = OsString::from(path);
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+fn rename_if_present(path: &Path, to: &Path) -> io::Result<()> {
+    match fs::rename(path, to) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        outcome => outcome,
+    }
 }
 
 fn remove_if_present(path: &Path) -> io::Result<()> {
