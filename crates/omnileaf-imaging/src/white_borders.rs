@@ -6,15 +6,15 @@ use crate::{
     transcode::{Chroma, Layout, Pixels, encode_with_chroma},
 };
 
-const CELL_EDGE: usize = 4;
+pub(crate) const CELL_EDGE: usize = 4;
 const PAPER_TOLERANCE: u8 = 12;
 const SPECK_TOLERANCE: u8 = 48;
 const DARKEST_PAPER: u8 = 208;
 const MOST_PAPER_TINT: u8 = 24;
-const THINNEST_BORDER_SHARE: usize = 100;
-const LEAST_KEPT_SHARE: usize = 2;
+pub(crate) const THINNEST_BORDER_SHARE: usize = 100;
+pub(crate) const LEAST_KEPT_SHARE: usize = 2;
 
-type Rgb = [u8; 3];
+pub(crate) type Rgb = [u8; 3];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CroppedSides {
@@ -65,7 +65,7 @@ fn kept_span(length: usize, (start_cells, end_cells): (usize, usize)) -> Option<
 }
 
 #[derive(Clone, Copy)]
-struct Cell {
+pub(crate) struct Cell {
     mean: Rgb,
     darkest: Rgb,
     lightest: Rgb,
@@ -152,25 +152,25 @@ impl Paper {
     }
 }
 
-struct Region {
-    rows: Range<usize>,
-    columns: Range<usize>,
+pub(crate) struct Region {
+    pub(crate) rows: Range<usize>,
+    pub(crate) columns: Range<usize>,
 }
 
-struct Grid<'items, T> {
+pub(crate) struct Grid<'items, T> {
     items: &'items [T],
-    width: usize,
-    height: usize,
+    pub(crate) width: usize,
+    pub(crate) height: usize,
 }
 
-struct Cells {
+pub(crate) struct Cells {
     items: Vec<Cell>,
     width: usize,
     height: usize,
 }
 
 impl Cells {
-    fn grid(&self) -> Grid<'_, Cell> {
+    pub(crate) fn grid(&self) -> Grid<'_, Cell> {
         Grid {
             items: &self.items,
             width: self.width,
@@ -190,7 +190,7 @@ impl<'items, T: Copy> Grid<'items, T> {
 }
 
 impl<'pixels> Grid<'pixels, Rgb> {
-    fn of(decoded: &'pixels Decoded) -> Option<Self> {
+    pub(crate) fn of(decoded: &'pixels Decoded) -> Option<Self> {
         let width = usize::try_from(decoded.size.width).ok()?;
         let height = usize::try_from(decoded.size.height).ok()?;
         let (items, _) = decoded.rgb.as_chunks::<3>();
@@ -201,7 +201,7 @@ impl<'pixels> Grid<'pixels, Rgb> {
         })
     }
 
-    fn cells(&self, edge: usize) -> Cells {
+    pub(crate) fn cells(&self, edge: usize) -> Cells {
         let width = self.width.div_ceil(edge);
         let height = self.height.div_ceil(edge);
         let mut sums: Vec<CellSum> = (0..width).map(|_| CellSum::EMPTY).collect();
@@ -224,7 +224,7 @@ impl<'pixels> Grid<'pixels, Rgb> {
         }
     }
 
-    fn cropped_to(&self, kept: &Region) -> Option<Pixels> {
+    pub(crate) fn cropped_to(&self, kept: &Region) -> Option<Pixels> {
         let size = Size {
             width: u32::try_from(kept.columns.len()).ok()?,
             height: u32::try_from(kept.rows.len()).ok()?,
@@ -264,7 +264,7 @@ impl Grid<'_, Cell> {
         border_rows(self.rows().rev())
     }
 
-    fn left_border(&self) -> usize {
+    pub(crate) fn left_border(&self) -> usize {
         let Some(paper) = Paper::of(self.column(0)) else {
             return 0;
         };
@@ -276,7 +276,7 @@ impl Grid<'_, Cell> {
         })
     }
 
-    fn right_border(&self) -> usize {
+    pub(crate) fn right_border(&self) -> usize {
         let Some(paper) = Paper::of(self.column(self.width.saturating_sub(1))) else {
             return 0;
         };
