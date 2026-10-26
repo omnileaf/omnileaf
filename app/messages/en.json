@@ -1818,6 +1818,7 @@
   "series_column_actions": "Actions",
   "series_book_more": "More for {title}",
   "series_book_more_short": "More",
+  "series_book_context_menu": "{book} · {reading}",
   "series_continue_reading": "Continue reading",
   "series_start_reading": "Start reading",
   "series_mark_read": "Mark read",

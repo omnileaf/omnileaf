@@ -33,6 +33,7 @@
     readonly surface: string;
     readonly progress: "beside" | "below";
     readonly more: "menu" | "sheet";
+    readonly longPress: "menu" | "pick";
   }
 
   const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
@@ -41,12 +42,14 @@
       surface: "bg-native-group",
       progress: "beside",
       more: "menu",
+      longPress: "menu",
     },
     android: {
       plate: "-ms-page-start -me-page-end",
       surface: "bg-native-grouped-ground",
       progress: "below",
       more: "sheet",
+      longPress: "pick",
     },
   };
 
@@ -84,6 +87,8 @@
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
   const longPress = new LongPress(LONG_PRESS_MS);
+  let menuFor: BookId | undefined = $state();
+  let isContextMenu = $state(false);
   const grid = $derived({
     items: books,
     key: (book: SeriesBook) => book.id,
@@ -104,6 +109,17 @@
       swipeActions.actionFor(outcome.side) === "markRead"
     ) {
       onSwiped(book, bookActions(book.reading).mark, "swiped");
+    }
+  }
+
+  function held(book: SeriesBook): void {
+    swipe.cancelled();
+    swipe.close();
+    if (phone?.longPress === "menu") {
+      menuFor = book.id;
+      isContextMenu = true;
+    } else {
+      onStartPicking(book);
     }
   }
 
@@ -228,7 +244,7 @@
             swipe.pressed(event, book.id, event.currentTarget);
           }
           longPress.pressed(event, () => {
-            onStartPicking(book);
+            held(book);
           });
         }}
         onpointermove={(event) => {
@@ -237,7 +253,10 @@
           }
         }}
         onpointerupcapture={(event) => {
-          const isRowGesture = swipe.isDragging || swipe.isRevealed(book.id);
+          const isRowGesture =
+            swipe.isDragging ||
+            swipe.isRevealed(book.id) ||
+            (isContextMenu && menuFor === book.id);
           releasePress();
           swiped(book, swipe.released());
           if (isRowGesture) {
@@ -288,6 +307,18 @@
           <BookMenu
             {book}
             phone={{ seriesTitle }}
+            bind:open={
+              () => menuFor === book.id,
+              (isOpen: boolean) => {
+                if (isOpen) {
+                  menuFor = book.id;
+                } else if (menuFor === book.id) {
+                  menuFor = undefined;
+                  isContextMenu = false;
+                }
+              }
+            }
+            isContext={isContextMenu && menuFor === book.id}
             onMark={(chosen: ReadMark) => {
               onMark([book.id], chosen);
             }}

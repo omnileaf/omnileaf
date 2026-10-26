@@ -24,18 +24,40 @@
   let {
     book,
     phone,
+    open = $bindable(false),
+    isContext = false,
     onMark,
     onSelect,
   }: {
     book: SeriesBook;
     phone?: { readonly seriesTitle: string };
+    open?: boolean;
+    isContext?: boolean;
     onMark: (mark: ReadMark) => void;
     onSelect?: () => void;
   } = $props();
 
   const headingId = $props.id();
+  const naming = $derived(
+    isContext
+      ? {
+          "aria-label": m.series_book_context_menu({
+            book: book.title,
+            reading: bookSummary(book),
+          }),
+        }
+      : phone !== undefined
+        ? { "aria-labelledby": headingId }
+        : {},
+  );
   const actions = $derived(bookActions(book.reading));
   let isPickingNext = false;
+
+  function close(): void {
+    open = false;
+  }
+
+  $effect(() => close);
 
   function startPickingOnceClosed(event: Event): void {
     if (isPickingNext) {
@@ -46,7 +68,7 @@
   }
 </script>
 
-<DropdownMenu>
+<DropdownMenu bind:open>
   {#if phone !== undefined}
     <DropdownMenuTrigger>
       {#snippet child({ props })}
@@ -82,11 +104,11 @@
   <DropdownMenuContent
     to="main"
     align="end"
-    {...phone === undefined ? {} : { "aria-labelledby": headingId }}
+    {...naming}
     onCloseAutoFocus={startPickingOnceClosed}
     class="min-inline-book-menu"
   >
-    {#if phone !== undefined}
+    {#if phone !== undefined && !isContext}
       {@const heading = moreHeading(book.title, phone.seriesTitle)}
       <p
         id={headingId}
