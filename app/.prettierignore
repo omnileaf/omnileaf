@@ -10,3 +10,4 @@ src-tauri/gen/
 src/lib/ipc/bindings.ts
 test-results/
 src/lib/licences/*.json
+tests/browser-timings.json
