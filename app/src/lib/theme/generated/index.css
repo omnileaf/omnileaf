@@ -236,6 +236,10 @@
   --leading-native-end-book: var(--native-leading-end-book);
   --tracking-native-end-book: var(--native-tracking-end-book);
   --font-weight-native-end-book: var(--native-weight-end-book);
+  --text-native-end-card-title: var(--native-text-end-card-title);
+  --leading-native-end-card-title: var(--native-leading-end-card-title);
+  --tracking-native-end-card-title: var(--native-tracking-end-card-title);
+  --font-weight-native-end-card-title: var(--native-weight-end-card-title);
 }
 
 @media (prefers-reduced-motion: reduce) {

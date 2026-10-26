@@ -45,19 +45,20 @@ type PhonePlatform = Extract<Platform, "ios" | "android">;
 interface PhoneType {
   readonly size: string;
   readonly tracking: string;
+  readonly weight: string;
 }
 
 const PHONE_TITLE_TYPE = {
-  ios: { size: "22px", tracking: "-0.26px" },
-  android: { size: "28px", tracking: "normal" },
+  ios: { size: "22px", tracking: "-0.26px", weight: "700" },
+  android: { size: "28px", tracking: "normal", weight: "400" },
 } satisfies Record<PhonePlatform, PhoneType>;
 const PHONE_FIGURE_TYPE = {
-  ios: { size: "20px", tracking: "-0.45px" },
-  android: { size: "24px", tracking: "normal" },
+  ios: { size: "20px", tracking: "-0.45px", weight: "590" },
+  android: { size: "24px", tracking: "normal", weight: "400" },
 } satisfies Record<PhonePlatform, PhoneType>;
 const PHONE_CARD_TITLE_TYPE = {
-  ios: { size: "20px", tracking: "-0.45px" },
-  android: { size: "22px", tracking: "normal" },
+  ios: { size: "22px", tracking: "-0.26px", weight: "700" },
+  android: { size: "22px", tracking: "normal", weight: "400" },
 } satisfies Record<PhonePlatform, PhoneType>;
 const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } satisfies Record<
   PhonePlatform,
@@ -348,6 +349,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
   async function expectType(text: Locator, type: PhoneType): Promise<void> {
     await expect(text).toHaveCSS("font-size", type.size);
     await expect(text).toHaveCSS("letter-spacing", type.tracking);
+    await expect(text).toHaveCSS("font-weight", type.weight);
   }
 
   function upNextCard(page: Page): Locator {

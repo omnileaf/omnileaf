@@ -160,6 +160,10 @@
   --native-leading-end-book: calc(25 / 20);
   --native-tracking-end-book: -0.45px;
   --native-weight-end-book: 600;
+  --native-text-end-card-title: calc(1.375rem * var(--text-scale));
+  --native-leading-end-card-title: calc(28 / 22);
+  --native-tracking-end-card-title: -0.26px;
+  --native-weight-end-card-title: 700;
 }
 
 :root[data-platform="ios"],
