@@ -65,7 +65,7 @@ fn last_backup_at_ms(backups: &Path) -> Result<Option<i64>, LibraryError> {
     Ok(newest)
 }
 
-fn is_finished_backup(path: &Path) -> bool {
+pub(crate) fn is_finished_backup(path: &Path) -> bool {
     path.is_file()
         && path
             .extension()

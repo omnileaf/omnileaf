@@ -5,7 +5,11 @@
 
 mod support;
 
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::Path,
+    time::{Duration, SystemTime},
+};
 
 use omnileaf_db::{
     Config, Database,
@@ -13,13 +17,20 @@ use omnileaf_db::{
     rusqlite::{Connection, OpenFlags},
     store::{Store, reading_state},
 };
-use omnileaf_engine::{FolderKind, HomeFolderError, HomeFolderSetting, Library};
+use omnileaf_engine::{FolderKind, HomeFolderError, HomeFolderSetting, Library, found_library_in};
 use omnileaf_sync_proto::BookId;
 use omnileaf_testkit::write_sample_library;
 use support::{FixedClock, ScratchFolder};
 
 const DATABASE_FILE: &str = "library.sqlite";
 const UNFINISHED_COPY: &str = "library.sqlite.partial";
+const BACKUP_FOLDER: &str = "backups";
+const OLDER_BACKUP: &str = "schema-v1.sqlite";
+const NEWER_BACKUP: &str = "schema-v2.sqlite";
+const UNFINISHED_BACKUP: &str = "schema-v3.sqlite.partial";
+const OLDER_BACKUP_AT_MS: u64 = 1_780_000_000_000;
+const NEWER_BACKUP_AT_MS: u64 = 1_785_000_000_000;
+const UNFINISHED_BACKUP_AT_MS: u64 = 1_789_000_000_000;
 const PAGE_READ_TO: u32 = 5;
 
 async fn open(home: &Path) -> Library {
@@ -102,6 +113,46 @@ fn copy_by_hand(from: &Path, to: &Path) {
 
 fn name_of(folder: &Path) -> String {
     folder.file_name().unwrap().to_str().unwrap().to_owned()
+}
+
+fn write_backup(home: &Path, name: &str, made_at_ms: u64) {
+    let backups = home.join(BACKUP_FOLDER);
+    fs::create_dir_all(&backups).unwrap();
+    let backup = backups.join(name);
+    fs::write(&backup, name).unwrap();
+    fs::File::options()
+        .write(true)
+        .open(&backup)
+        .unwrap()
+        .set_modified(SystemTime::UNIX_EPOCH + Duration::from_millis(made_at_ms))
+        .unwrap();
+}
+
+fn write_backups(home: &Path) {
+    write_backup(home, OLDER_BACKUP, OLDER_BACKUP_AT_MS);
+    write_backup(home, NEWER_BACKUP, NEWER_BACKUP_AT_MS);
+    write_backup(home, UNFINISHED_BACKUP, UNFINISHED_BACKUP_AT_MS);
+}
+
+fn backups_in(home: &Path) -> Vec<(String, Vec<u8>)> {
+    let Ok(entries) = fs::read_dir(home.join(BACKUP_FOLDER)) else {
+        return Vec::new();
+    };
+    let mut backups: Vec<_> = entries
+        .map(|entry| {
+            let entry = entry.unwrap();
+            (
+                entry.file_name().into_string().unwrap(),
+                fs::read(entry.path()).unwrap(),
+            )
+        })
+        .collect();
+    backups.sort();
+    backups
+}
+
+fn backup(name: &str) -> (String, Vec<u8>) {
+    (name.to_owned(), name.as_bytes().to_vec())
 }
 
 #[tokio::test]
@@ -229,4 +280,131 @@ async fn stays_in_the_old_home_when_another_library_reached_the_new_one_first() 
 
     assert_eq!(home, data.path());
     assert_eq!(database_of(other.path()), theirs);
+}
+
+#[tokio::test]
+async fn copies_the_finished_backups_into_the_new_home() {
+    let data = ScratchFolder::new("move-backups-data");
+    let other = ScratchFolder::new("move-backups-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        backups_in(other.path()),
+        [backup(OLDER_BACKUP), backup(NEWER_BACKUP)]
+    );
+}
+
+#[tokio::test]
+async fn dates_the_moved_library_by_the_backups_it_brought() {
+    let data = ScratchFolder::new("move-backup-dates-data");
+    let other = ScratchFolder::new("move-backup-dates-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        found_library_in(other.path())
+            .await
+            .unwrap()
+            .unwrap()
+            .last_backup_at_ms,
+        Some(i64::try_from(NEWER_BACKUP_AT_MS).unwrap())
+    );
+}
+
+#[tokio::test]
+async fn leaves_the_backups_in_the_old_home() {
+    let data = ScratchFolder::new("move-backups-kept-data");
+    let other = ScratchFolder::new("move-backups-kept-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        backups_in(data.path()),
+        [
+            backup(OLDER_BACKUP),
+            backup(NEWER_BACKUP),
+            backup(UNFINISHED_BACKUP)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn copies_the_backups_again_after_a_move_cut_short_while_copying_them() {
+    let data = ScratchFolder::new("move-backups-partial-data");
+    let other = ScratchFolder::new("move-backups-partial-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    write_backup(
+        other.path(),
+        &format!("{OLDER_BACKUP}.partial"),
+        OLDER_BACKUP_AT_MS,
+    );
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        backups_in(other.path()),
+        [backup(OLDER_BACKUP), backup(NEWER_BACKUP)]
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_backup_the_new_home_already_holds() {
+    let data = ScratchFolder::new("move-backups-there-data");
+    let other = ScratchFolder::new("move-backups-there-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    fs::create_dir_all(other.path().join(BACKUP_FOLDER)).unwrap();
+    fs::write(
+        other.path().join(BACKUP_FOLDER).join(OLDER_BACKUP),
+        "a backup already there",
+    )
+    .unwrap();
+
+    setting.home().await.unwrap();
+
+    assert_eq!(
+        backups_in(other.path()),
+        [
+            (OLDER_BACKUP.to_owned(), b"a backup already there".to_vec()),
+            backup(NEWER_BACKUP)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn stays_in_the_old_home_when_the_backups_cannot_be_copied() {
+    let data = ScratchFolder::new("move-backups-blocked-data");
+    let other = ScratchFolder::new("move-backups-blocked-other");
+    library_read_in(data.path()).await;
+    write_backups(data.path());
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    fs::write(
+        other.path().join(BACKUP_FOLDER),
+        "a file where the backups go",
+    )
+    .unwrap();
+
+    let home = setting.home().await.unwrap();
+
+    assert_eq!(home, data.path());
+    assert!(!other.path().join(DATABASE_FILE).exists());
 }

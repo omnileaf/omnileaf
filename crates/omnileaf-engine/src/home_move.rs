@@ -1,10 +1,15 @@
-use std::{fs, io, path::Path};
+use std::{fs, io, path::Path, time::SystemTime};
 
 use omnileaf_db::library_copy::{copy_library, is_copy_of};
 
-use crate::{HomeFolderError, LibraryError, library::DATABASE_FILE};
+use crate::{
+    HomeFolderError, LibraryError,
+    found_library::is_finished_backup,
+    library::{BACKUP_FOLDER, DATABASE_FILE},
+};
 
 const UNFINISHED_COPY: &str = "library.sqlite.partial";
+const UNFINISHED_BACKUP_EXTENSION: &str = "sqlite.partial";
 
 pub(crate) fn prepare_move(to: &Path) -> Result<(), HomeFolderError> {
     fs::create_dir_all(to)
@@ -28,12 +33,44 @@ pub(crate) fn finish_move(from: &Path, to: &Path) -> Result<(), HomeFolderError>
         };
     }
     remove_if_present(&unfinished).map_err(unmoved(to))?;
+    copy_backups(from, to).map_err(unmoved(to))?;
     copy_library(&original, &unfinished).map_err(LibraryError::from)?;
     if placed.try_exists().map_err(unmoved(to))? {
         remove_if_present(&unfinished).map_err(unmoved(to))?;
         return Err(library_there(to));
     }
     fs::rename(&unfinished, &placed).map_err(unmoved(to))
+}
+
+fn copy_backups(from: &Path, to: &Path) -> io::Result<()> {
+    let entries = match fs::read_dir(from.join(BACKUP_FOLDER)) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+        entries => entries?,
+    };
+    let copies = to.join(BACKUP_FOLDER);
+    for entry in entries {
+        let entry = entry?;
+        let backup = entry.path();
+        let copy = copies.join(entry.file_name());
+        if is_finished_backup(&backup) && !copy.try_exists()? {
+            fs::create_dir_all(&copies)?;
+            copy_backup(&backup, &copy)?;
+        }
+    }
+    Ok(())
+}
+
+fn copy_backup(backup: &Path, copy: &Path) -> io::Result<()> {
+    let unfinished = copy.with_extension(UNFINISHED_BACKUP_EXTENSION);
+    fs::copy(backup, &unfinished)?;
+    set_made_at(&unfinished, fs::metadata(backup)?.modified()?)?;
+    fs::rename(&unfinished, copy)
+}
+
+fn set_made_at(copy: &Path, made_at: SystemTime) -> io::Result<()> {
+    let file = fs::File::options().write(true).open(copy)?;
+    file.set_modified(made_at)?;
+    file.sync_all()
 }
 
 fn remove_if_present(path: &Path) -> io::Result<()> {
