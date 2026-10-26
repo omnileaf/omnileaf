@@ -71,6 +71,10 @@
   --native-leading-page-title: calc(41 / 34);
   --native-weight-page-title: 700;
   --native-tracking-page-title: 0.4px;
+  --native-text-large-title: calc(2.125rem * var(--text-scale));
+  --native-leading-large-title: calc(41 / 34);
+  --native-weight-large-title: 700;
+  --native-tracking-large-title: 0.4px;
   --native-text-bar-title: calc(1.0625rem * var(--text-scale));
   --native-leading-bar-title: calc(22 / 17);
   --native-weight-bar-title: 600;

@@ -113,6 +113,10 @@
   --native-leading-page-title: var(--text-page-title--line-height);
   --native-weight-page-title: var(--font-weight-bold);
   --native-tracking-page-title: var(--tracking-tight);
+  --native-text-large-title: var(--text-page-title);
+  --native-leading-large-title: var(--text-page-title--line-height);
+  --native-weight-large-title: var(--font-weight-bold);
+  --native-tracking-large-title: var(--tracking-tight);
   --native-text-bar-title: var(--text-body);
   --native-leading-bar-title: var(--text-body--line-height);
   --native-weight-bar-title: var(--font-weight-semibold);
