@@ -249,6 +249,17 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       await revealRows(page);
 
       await expectEvenRowsWhileScrolling(page);
+      await page
+        .locator("[data-book-plate] li")
+        .nth(1)
+        .getByRole("button")
+        .click();
+      await page
+        .locator(
+          '[role="menuitem"]:has(.lucide-list-checks), [role="dialog"] button:has(.lucide-list-checks)',
+        )
+        .click();
+      await expectEvenRowsWhileScrolling(page);
     });
   }
 
