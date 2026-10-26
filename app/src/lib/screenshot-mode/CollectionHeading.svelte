@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
@@ -28,7 +29,9 @@
 
   const width = new WindowWidth();
   const foldingBar = $derived(foldingBarLook(platform));
-  const hasLargeTitle = $derived(hasLargeTitleOn(platform, width.current));
+  const hasLargeTitle = $derived(
+    hasLargeTitleOn(platform, width.current) && actions !== undefined,
+  );
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
 
@@ -119,12 +122,12 @@
   <div
     bind:this={bar}
     data-title-bar
-    class={[
+    class={cn(
       "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
       NATIVE_TOP_BAR.edge,
       foldingBar.row,
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
-    ]}
+    )}
   >
     <span
       aria-hidden="true"

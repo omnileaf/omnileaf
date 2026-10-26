@@ -37,6 +37,13 @@ export function hasLargeTitle(platform: Platform, width: WidthClass): boolean {
   return isPhone(platform, width);
 }
 
+export function foldsBarActionsIntoMore(
+  platform: Platform,
+  width: WidthClass,
+): boolean {
+  return platform === "ios" && isPhone(platform, width);
+}
+
 export interface FoldingBarLook {
   readonly row: string;
   readonly title: string;
@@ -47,7 +54,7 @@ const CENTRED_TITLE: FoldingBarLook = { row: "", title: "px-sm text-center" };
 const FOLDING_BARS = {
   ios: CENTRED_TITLE,
   android: {
-    row: "min-block-native-top-bar",
+    row: "box-content pbs-safe-top pbe-none min-block-native-top-bar",
     title: "ps-lg pe-sm text-start",
   },
   linux: CENTRED_TITLE,

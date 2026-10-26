@@ -362,7 +362,7 @@ for (const platform of PLATFORMS) {
             const isNarrowDesktopWindow =
               platform === "linux" && isStackedUnder(buttons, title, count);
             const isAboveLargeTitle =
-              platform !== "linux" &&
+              (platform === "ios" || platform === "android") &&
               buttons.every((button) => button.y + button.height <= title.y);
             expect(
               isOnTitleRow || isNarrowDesktopWindow || isAboveLargeTitle,

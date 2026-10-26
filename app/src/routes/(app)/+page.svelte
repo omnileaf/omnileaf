@@ -84,7 +84,7 @@
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer } from "#lib/page/platform.ts";
-  import { hasLargeTitle } from "#lib/page/top-bar.ts";
+  import { foldsBarActionsIntoMore } from "#lib/page/top-bar.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
@@ -358,8 +358,7 @@
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
   const foldsIntoMore = $derived(
-    data.appInfo.platform === "ios" &&
-      hasLargeTitle(data.appInfo.platform, width.current),
+    foldsBarActionsIntoMore(data.appInfo.platform, width.current),
   );
   let headHeight = $state(0);
   const isDocked = $derived(docksFilter && isFilterOpen);

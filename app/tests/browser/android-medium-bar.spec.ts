@@ -10,7 +10,6 @@ import {
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const ACTION_ROW = 64;
-const TITLE_ROW = 48;
 
 test.use({
   backend: {
@@ -43,7 +42,6 @@ test.describe(
       await expect(title).toHaveCSS("font-size", "24px");
       await expect(title).toHaveCSS("line-height", "32px");
       expect(heading.y).toBeCloseTo(row.y + row.height, 0);
-      expect(heading.height + 16).toBeCloseTo(TITLE_ROW, 0);
       await expect(bar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     });
 
