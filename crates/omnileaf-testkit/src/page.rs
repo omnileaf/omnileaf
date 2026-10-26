@@ -14,6 +14,8 @@ const SCAN_WIDTH: u16 = 1800;
 const SCAN_HEIGHT: u16 = 2700;
 const FULL_CHROMA_SCAN_GRAIN: u8 = 16;
 const SUBSAMPLED_SCAN_GRAIN: u8 = 20;
+const WHITE_MARGIN: u32 = 90;
+const WHITE: [u8; 3] = [255; 3];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DrawnScan {
@@ -123,6 +125,24 @@ pub fn subsampled_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
     scan_jpeg(seed, SUBSAMPLED_SCAN_GRAIN, SamplingFactor::R_4_2_0)
 }
 
+pub fn margined_scan_jpeg(seed: u64) -> Result<Vec<u8>, FixtureError> {
+    let ground = tint(seed, 0);
+    let (width, height) = (u32::from(SCAN_WIDTH), u32::from(SCAN_HEIGHT));
+    let is_margin = |column: u32, row: u32| {
+        column < WHITE_MARGIN
+            || row < WHITE_MARGIN
+            || column >= width - WHITE_MARGIN
+            || row >= height - WHITE_MARGIN
+    };
+    full_size_scan(seed, SUBSAMPLED_SCAN_GRAIN).to_jpeg(|column, row| {
+        if is_margin(column, row) {
+            WHITE
+        } else {
+            ground
+        }
+    })
+}
+
 #[must_use]
 pub fn incompressible_bytes(seed: u64, length: usize) -> Vec<u8> {
     (0_u64..)
@@ -135,13 +155,18 @@ pub fn incompressible_bytes(seed: u64, length: usize) -> Vec<u8> {
 
 fn scan_jpeg(seed: u64, grain: u8, chroma: SamplingFactor) -> Result<Vec<u8>, FixtureError> {
     let ground = tint(seed, 0);
-    let scan = DrawnScan {
+    full_size_scan(seed, grain)
+        .grained(&|_, _| ground)
+        .to_jpeg(chroma)
+}
+
+const fn full_size_scan(seed: u64, grain: u8) -> DrawnScan {
+    DrawnScan {
         width: SCAN_WIDTH,
         height: SCAN_HEIGHT,
         seed,
         grain,
-    };
-    scan.grained(&|_, _| ground).to_jpeg(chroma)
+    }
 }
 
 struct RgbImage {
