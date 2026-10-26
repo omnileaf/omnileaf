@@ -16,6 +16,7 @@ const FAILED: BookProblem = "failed";
 const SHOWN_ON_FAILURE = {
   bookNotFound: MISSING,
   bookUnreadable: UNREADABLE,
+  bookTypeUnsupported: UNREADABLE,
   folderPickerUnavailable: FAILED,
   folderChooserMissing: FAILED,
   folderUnreadable: FAILED,

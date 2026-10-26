@@ -42,6 +42,7 @@ const SPREAD: PageDimensions = PageDimensions {
 };
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
 const PAGES_LEFT_WHOLE: u32 = 3;
+const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 /// A byte JPEG lets any marker begin with, which a decoder skips but the size reader here doesn't.
 const FILL_BYTE: u8 = 0xFF;
 
@@ -614,6 +615,46 @@ async fn refuses_to_open_a_book_whose_file_cannot_be_read() {
     let reader = Reader::with_book("unreadable-file").await;
     let book = reader.book().await;
     fs::write(reader.book_path(), b"no longer an archive").unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::Unreadable { .. })),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
+    let comics = ScratchFolder::new("unsupported-type-comics");
+    let series = comics.path().join(FOLDER).join(SERIES);
+    fs::create_dir_all(&series).unwrap();
+    let file = series.join(format!("{BOOK}.cbr"));
+    let archive = cbz(&page_entries(&portrait_pages(SEED)), Compression::Deflated).unwrap();
+    fs::write(&file, archive).unwrap();
+    let reader = Reader::over("unsupported-type", comics).await;
+    let book = reader.book().await;
+    fs::write(&file, RAR_SIGNATURE).unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::UnsupportedType { .. })),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
+    let reader = Reader::with_book("unsupported-inside-cbz").await;
+    let book = reader.book().await;
+    fs::write(reader.book_path(), RAR_SIGNATURE).unwrap();
 
     let opened = reader
         .router

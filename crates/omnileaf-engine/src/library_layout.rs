@@ -6,7 +6,7 @@ use std::{
 
 use omnileaf_formats::{self as formats, Entry, Storage, is_ignored, is_page_image};
 
-const COMIC_EXTENSIONS: &[&str] = &["cbz", "cbr", "cb7"];
+use crate::file_type::FileType;
 
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
@@ -163,14 +163,7 @@ pub(crate) fn folder_name(folder: &Path) -> String {
 }
 
 pub(crate) fn is_comic(name: &OsStr) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(OsStr::to_str)
-        .is_some_and(|extension| {
-            COMIC_EXTENSIONS
-                .iter()
-                .any(|comic| extension.eq_ignore_ascii_case(comic))
-        })
+    FileType::of(Path::new(name)).is_some_and(|found| found.is_book())
 }
 
 #[cfg(test)]
