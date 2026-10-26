@@ -122,6 +122,7 @@ macro_rules! app_commands {
             set_app_language,
             set_scheduled_rescans,
             set_book_open,
+            set_learns_reading_speed,
             copy_version_details,
             open_project_link,
             problem_report,
@@ -917,6 +918,16 @@ fn set_scheduled_rescans(
 )]
 fn set_book_open(library: State<'_, Library>, is_open: bool) {
     library.set_book_open(is_open);
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn set_learns_reading_speed(library: State<'_, Library>, is_on: bool) {
+    library.set_learns_reading_speed(is_on);
 }
 
 #[tauri::command]

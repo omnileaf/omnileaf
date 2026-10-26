@@ -2,7 +2,10 @@ use std::{
     collections::BTreeMap,
     fs, io, mem,
     path::{Path, PathBuf},
-    sync::{self, Arc, PoisonError},
+    sync::{
+        self, Arc, PoisonError,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -112,6 +115,7 @@ pub struct Library {
     catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
     schedule_gate: watch::Sender<ScheduleGate>,
+    learns_reading_speed: AtomicBool,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     local_storage: Arc<dyn omnileaf_formats::Storage>,
     open_tree: Option<OpenTree>,
@@ -212,6 +216,7 @@ impl Library {
             catalog_change_lock: Mutex::new(()),
             schedule: sync::Mutex::default(),
             schedule_gate: watch::Sender::new(ScheduleGate::default()),
+            learns_reading_speed: AtomicBool::new(true),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
             open_tree: None,
@@ -454,16 +459,15 @@ impl Library {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((
-                    overview,
-                    up_next(connection, series)?,
-                    seconds_per_page(connection)?,
-                )))
+                Ok(Some((overview, up_next(connection, series)?)))
             })
             .await?;
-        let (overview, up_next, seconds_per_page) =
-            found.ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesOverview::new(overview, up_next, seconds_per_page))
+        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(SeriesOverview::new(
+            overview,
+            up_next,
+            self.seconds_per_page().await?,
+        ))
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
@@ -748,11 +752,14 @@ impl Library {
         self.reading.put_away().await
     }
 
-    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
     pub(crate) async fn seconds_per_page(&self) -> Result<Option<u32>, LibraryError> {
+        if !self.learns_reading_speed.load(Ordering::Relaxed) {
+            return Ok(None);
+        }
         Ok(self.store.database().read(seconds_per_page).await?)
     }
 
+    /// Saves the page reached in the book read now, and keeps `book`'s length for when the reader restores it.
     pub(crate) async fn start_reading(
         &self,
         book: BookId,
@@ -1167,6 +1174,10 @@ impl Library {
     pub fn set_scheduled_rescans(&self, is_on: bool) {
         self.schedule_gate
             .send_if_modified(|gate| mem::replace(&mut gate.is_on, is_on) != is_on);
+    }
+
+    pub fn set_learns_reading_speed(&self, is_on: bool) {
+        self.learns_reading_speed.store(is_on, Ordering::Relaxed);
     }
 
     pub fn set_book_open(&self, is_open: bool) {

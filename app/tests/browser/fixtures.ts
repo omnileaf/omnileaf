@@ -176,6 +176,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   setAppLanguage: () => null,
   setScheduledRescans: () => undefined,
   setBookOpen: () => undefined,
+  setLearnsReadingSpeed: () => undefined,
   matchSystemBars: () => null,
   watchBackSwipes: () => null,
   allowBackSwipe: () => null,
