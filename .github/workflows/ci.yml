@@ -78,15 +78,35 @@ jobs:
         run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --verbose .'
 
   rust:
-    name: rust gate (${{ matrix.platform }})
+    name: rust gate (linux)
     needs: changes
     if: ${{ !cancelled() }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - if: needs.changes.outputs.native != 'false'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: needs.changes.outputs.native != 'false'
+        uses: ./.github/actions/rust-gate
+
+  rust-windows:
+    name: rust gate (windows ${{ matrix.part }})
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
+    runs-on: windows-2025
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON((github.event_name != 'pull_request' || github.base_ref == 'main') && '[{"platform":"linux","runner":"ubuntu-24.04"},{"platform":"windows","runner":"windows-2025","budget-slack":2}]' || '[{"platform":"linux","runner":"ubuntu-24.04"}]') }}
+        include:
+          - { part: lint, cache: lint, check: --step lint }
+          - { part: tests 1/3, cache: tests, check: --step test --partition hash:1/3 }
+          - { part: tests 2/3, cache: tests, check: --step test --partition hash:2/3 }
+          - { part: tests 3/3, cache: tests, check: --step test --partition hash:3/3 }
+          - { part: budgets, cache: budgets, check: --skip lint --skip test }
     steps:
       - if: needs.changes.outputs.native != 'false'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,7 +116,21 @@ jobs:
       - if: needs.changes.outputs.native != 'false'
         uses: ./.github/actions/rust-gate
         with:
-          budget-slack: ${{ matrix.budget-slack }}
+          budget-slack: 2
+          cache-key: ${{ matrix.cache }}
+          check-args: ${{ matrix.check }}
+
+  rust-windows-gate:
+    name: rust gate (windows)
+    needs: rust-windows
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Pass only when every part passed, or none were needed
+        env:
+          PARTS: ${{ needs.rust-windows.result }}
+        run: test "$PARTS" = success || test "$PARTS" = skipped
 
   rust-macos:
     name: rust gate (macos)
@@ -631,7 +665,7 @@ jobs:
 
   prune-caches:
     name: prune caches
-    needs: [rust, rust-macos, portable, coverage, fixtures, fixtures-macos, interface, browser, android, ios, app, app-macos]
+    needs: [rust, rust-windows, rust-macos, portable, coverage, fixtures, fixtures-macos, interface, browser, android, ios, app, app-macos]
     if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
     runs-on: ubuntu-24.04
     timeout-minutes: 5

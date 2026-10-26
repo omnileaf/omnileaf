@@ -6,6 +6,14 @@ inputs:
     description: The OMNILEAF_BUDGET_SLACK to allow for stalls on shared runners; none when empty.
     required: false
     default: ""
+  check-args:
+    description: The `cargo xtask check` arguments that narrow the gate to one part of it; the whole gate when empty.
+    required: false
+    default: ""
+  cache-key:
+    description: The build cache to keep apart for a part of the gate that builds something the other parts don't; the job's own cache when empty.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -21,6 +29,7 @@ runs:
 
     - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
+        key: ${{ inputs.cache-key }}
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
     - uses: taiki-e/install-action@a4d3f3f761dcd95cce1b72cb61cb6d1963438177 # v2.87.30
@@ -41,4 +50,6 @@ runs:
 
     - name: Run the gate
       shell: bash
-      run: cargo xtask check --only rust
+      env:
+        CHECK_ARGS: ${{ inputs.check-args }}
+      run: cargo xtask check --only rust $CHECK_ARGS
