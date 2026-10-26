@@ -6,9 +6,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-private fun pressed(keyCode: Int, repeatCount: Int = 0) = KeyPress(keyCode, KeyEvent.ACTION_DOWN, repeatCount)
+private fun pressed(keyCode: Int) = KeyPress(keyCode, KeyEvent.ACTION_DOWN)
 
-private fun lifted(keyCode: Int) = KeyPress(keyCode, KeyEvent.ACTION_UP, 0)
+private fun lifted(keyCode: Int) = KeyPress(keyCode, KeyEvent.ACTION_UP)
 
 class VolumeKeyCaptureTest {
   private val turns = mutableListOf<PageTurn>()
@@ -57,13 +57,14 @@ class VolumeKeyCaptureTest {
   }
 
   @Test
-  fun `keeps a held key from Android without turning again`() {
+  fun `turns again with each repeat of a held key`() {
     val capture = captured()
 
-    val isKept = capture.handle(pressed(KeyEvent.KEYCODE_VOLUME_DOWN, repeatCount = 1))
+    capture.handle(pressed(KeyEvent.KEYCODE_VOLUME_DOWN))
+    val isKept = capture.handle(pressed(KeyEvent.KEYCODE_VOLUME_DOWN))
 
     assertTrue(isKept)
-    assertEquals(emptyList<PageTurn>(), turns)
+    assertEquals(listOf(PageTurn.NEXT, PageTurn.NEXT), turns)
   }
 
   @Test
