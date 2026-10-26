@@ -32,12 +32,18 @@ macro_rules! not_read {
     };
 }
 
+macro_rules! holds_a_started_book_not_read {
+    () => {
+        "series.started_count > series.read_count"
+    };
+}
+
 macro_rules! first_book_in_series {
-    ($series_local_id:literal, $($condition:expr),+) => {
+    ($($condition:expr),+) => {
         concat!(
             "SELECT book.id FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = ", $series_local_id,
+            WHERE book.series_local_id = series.local_id",
             $(" AND ", $condition,)+
             " ORDER BY book.title_sort_key, book.id LIMIT 1"
         )
@@ -45,25 +51,26 @@ macro_rules! first_book_in_series {
 }
 
 macro_rules! book_up_next {
-    ($series_local_id:literal) => {
+    () => {
         concat!(
-            "coalesce((",
+            "CASE WHEN ",
+            $crate::catalog::series_books::holds_a_started_book_not_read!(),
+            " THEN (",
             $crate::catalog::series_books::first_book_in_series!(
-                $series_local_id,
                 "book_state.is_started IS 1",
                 $crate::catalog::series_books::not_read!()
             ),
-            "), (",
+            ") ELSE (",
             $crate::catalog::series_books::first_book_in_series!(
-                $series_local_id,
                 $crate::catalog::series_books::not_read!()
             ),
-            "))"
+            ") END"
         )
     };
 }
 
 pub(crate) use first_book_in_series;
+pub(crate) use holds_a_started_book_not_read;
 pub(crate) use not_read;
 
 const FIRST_IN_SERIES: &str = books_in_series!("ASC");
@@ -82,7 +89,7 @@ const UP_NEXT: &str = concat!(
     FROM book
     LEFT JOIN book_state ON book_state.book_id = book.id
     WHERE book.id = (SELECT ",
-    book_up_next!("series.local_id"),
+    book_up_next!(),
     " FROM series WHERE series.id = :series)"
 );
 const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count FROM book WHERE id = ?1";
@@ -436,7 +443,7 @@ mod tests {
         let expected: Vec<String> = [
             "SEARCH book USING PRIMARY KEY (id=?)",
             "SCALAR SUBQUERY 3",
-            "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+            "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)",
         ]
         .map(ToOwned::to_owned)
         .into_iter()
