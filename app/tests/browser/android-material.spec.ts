@@ -62,13 +62,13 @@ test("sets a page's headline at regular weight, as Material 3 does", async ({
   await expect(libraryHeading(page)).toHaveCSS("font-weight", "400");
 });
 
-test("sets a phone's page title as title large, 22px on a 28px line in a 64px top app bar", async ({
+test("sets a small top app bar's title as title large, 22px on a 28px line in a 64px bar", async ({
   page,
 }) => {
-  await openLibrary(page);
+  await page.goto("/settings");
   test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
 
-  const heading = libraryHeading(page);
+  const heading = page.getByRole("heading", { level: 1, name: "Settings" });
 
   await expect(heading).toHaveCSS("font-size", "22px");
   await expect(heading).toHaveCSS("line-height", "28px");

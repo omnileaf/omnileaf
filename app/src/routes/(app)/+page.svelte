@@ -358,7 +358,8 @@
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
   const foldsIntoMore = $derived(
-    hasLargeTitle(data.appInfo.platform, width.current),
+    data.appInfo.platform === "ios" &&
+      hasLargeTitle(data.appInfo.platform, width.current),
   );
   let headHeight = $state(0);
   const isDocked = $derived(docksFilter && isFilterOpen);
