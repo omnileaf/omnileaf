@@ -17,7 +17,7 @@ const BOOK_TO_READ: &str =
     "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
         library_root.tree_name, library_root.tree_place, book_file.location, book.title, series.id AS series_id, series.title AS series_title,
         book_file.id AS file_id, book_file.rev,
-        book_state.is_read, book_state.is_started, book_state.position_page
+        book_state.is_read, book_state.is_started, book_state.position_page, book.page_count
     FROM book
     JOIN series ON series.local_id = book.series_local_id
     JOIN book_file ON book_file.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = ?1)
@@ -39,6 +39,7 @@ pub struct BookToRead {
     pub root: RootLocator,
     pub location: PathBuf,
     pub reading: BookReading,
+    pub page_count: Option<u32>,
 }
 
 /// None for a book missing from the catalog or left with no file to read.
@@ -61,6 +62,7 @@ fn stored_book(book: BookId, row: &Row<'_>) -> rusqlite::Result<BookToRead> {
         root: stored_locator(row, ROOT_LOCATOR_KIND_COLUMN)?,
         location: native_path::stored_native_path(row, FILE_LOCATION_COLUMN)?,
         reading: stored_reading(row)?,
+        page_count: row.get("page_count")?,
     })
 }
 

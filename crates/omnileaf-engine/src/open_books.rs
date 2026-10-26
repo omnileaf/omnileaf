@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard, PoisonError},
 };
 
-use omnileaf_formats::{Book, FormatError, Limits, open_book_in};
+use omnileaf_formats::{Book, Damage, FormatError, Limits, salvage_book_in};
 use omnileaf_sync_proto::BookId;
 
 use crate::{PagePath, file_in_storage::FileInStorage};
@@ -21,6 +21,7 @@ pub(crate) struct BookFileAt {
 pub(crate) struct OpenBook {
     pub(crate) file: BookFileAt,
     pub(crate) page_count: usize,
+    pub(crate) damage: Option<Damage>,
     book: Arc<Mutex<Book>>,
 }
 
@@ -72,14 +73,11 @@ impl OpenBooks {
         if let Some(book) = self.get(file) {
             return Ok(book);
         }
-        let book = open_book_in(
-            Arc::clone(&stored.storage),
-            &stored.path,
-            &Limits::default(),
-        )?;
+        let book = salvage_book_in(&stored.storage, &stored.path, &Limits::default())?;
         let opened = OpenBook {
             file,
             page_count: book.pages().len(),
+            damage: book.damage(),
             book: Arc::new(Mutex::new(book)),
         };
         let mut kept = self.opened();

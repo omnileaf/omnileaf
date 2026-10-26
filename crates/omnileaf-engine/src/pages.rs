@@ -14,8 +14,8 @@ use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transco
 use tokio::sync::oneshot;
 
 use crate::{
-    BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, PageThumbnailPath, ProbedFormat,
-    ReadingDirection, SeriesId,
+    BookDamage, BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, PageThumbnailPath,
+    ProbedFormat, ReadingDirection, SeriesId,
     decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -212,7 +212,10 @@ impl Pages {
         if let Err(error) = library.start_reading(id, opened.page_count).await {
             tracing::debug!(error = %describe_error(&error), "save the page reached in the book read before this one");
         }
-        if let Err(error) = library.record_page_count(id, opened.page_count).await {
+        let damage = BookDamage::of(opened.damage, found.page_count, opened.page_count);
+        if damage.is_none()
+            && let Err(error) = library.record_page_count(id, opened.page_count).await
+        {
             tracing::warn!(error = %describe_error(&error), "keep how many pages the book holds");
         }
         let seconds_per_page = library.seconds_per_page().await.unwrap_or_else(|error| {
@@ -221,13 +224,10 @@ impl Pages {
         });
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(&opened, start_index(found.reading, opened.page_count));
-        Ok(opened_book(
-            to_open,
-            &sizes,
-            start,
-            direction,
-            seconds_per_page,
-        ))
+        Ok(OpenedBook {
+            damage,
+            ..opened_book(to_open, &sizes, start, direction, seconds_per_page)
+        })
     }
 
     fn fill_sizes_later(

@@ -168,6 +168,16 @@ async fn finds_a_book_its_series_and_the_file_it_is_read_from() {
 }
 
 #[tokio::test]
+async fn finds_how_many_pages_the_library_counted_in_a_book() {
+    let library = Library::open("to-read-page-count").await;
+    library.record(1, location_of(1), 100).await;
+
+    let found = library.to_read(book(1)).await.unwrap();
+
+    assert_eq!(found.page_count, Some(1));
+}
+
+#[tokio::test]
 async fn finds_nothing_to_read_for_a_book_the_library_does_not_hold() {
     let library = Library::open("to-read-missing").await;
     library.record(1, location_of(1), 100).await;
