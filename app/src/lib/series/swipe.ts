@@ -14,6 +14,8 @@ export interface SwipeEnd {
   /** Pixels moved toward the row's inline end, negative toward its start. */
   readonly travel: number;
   readonly rowWidth: number;
+  readonly openPx: number;
+  readonly actPastOpenPx: number;
 }
 
 export function swipeOutcome(
@@ -25,9 +27,12 @@ export function swipeOutcome(
   if (distance < REVEAL_PX || !canSwipe(side)) {
     return { kind: "rest" };
   }
-  return distance >= swiped.rowWidth * ACT_SHARE
-    ? { kind: "act", side }
-    : { kind: "reveal", side };
+  const halfRow = swiped.rowWidth * ACT_SHARE;
+  const actAt =
+    swiped.openPx === 0
+      ? halfRow
+      : Math.max(halfRow, swiped.openPx + swiped.actPastOpenPx);
+  return distance >= actAt ? { kind: "act", side } : { kind: "reveal", side };
 }
 
 export function isSidewaysDrag(across: number, down: number): boolean {

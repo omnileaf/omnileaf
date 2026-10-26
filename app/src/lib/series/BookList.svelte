@@ -19,7 +19,7 @@
   import PhoneBookRowText from "./PhoneBookRowText.svelte";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
-  import { RowSwipe } from "./row-swipe.svelte";
+  import { REVEALED_PX, RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
   import { getSwipeActionsSetting } from "./swipe-actions.svelte";
 
@@ -27,6 +27,9 @@
 
   const LONG_PRESS_MS = 500;
   const SWIPE_ICON_SIZE = 20;
+  const CAPSULE_GAP_PX = 8;
+  const CAPSULE_WIDEST_REVEAL_PX = 156;
+  const CAPSULE_ACT_PAST_OPEN_PX = 48;
 
   interface PhoneList {
     readonly plate: string;
@@ -34,6 +37,7 @@
     readonly progress: "beside" | "below";
     readonly more: "menu" | "sheet";
     readonly longPress: "menu" | "pick";
+    readonly isSwipeCapsule: boolean;
   }
 
   const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
@@ -43,6 +47,7 @@
       progress: "beside",
       more: "menu",
       longPress: "menu",
+      isSwipeCapsule: true,
     },
     android: {
       plate: "-ms-page-start -me-page-end",
@@ -50,6 +55,7 @@
       progress: "below",
       more: "sheet",
       longPress: "pick",
+      isSwipeCapsule: false,
     },
   };
 
@@ -121,6 +127,21 @@
     } else {
       onStartPicking(book);
     }
+  }
+
+  function capsuleRevealPx(row: HTMLElement): number {
+    const word = row.parentElement?.querySelector("[data-swipe-action] > *");
+    const action = word?.parentElement;
+    if (!(word instanceof HTMLElement) || action == null) {
+      return REVEALED_PX;
+    }
+    const style = getComputedStyle(action);
+    const measured =
+      word.offsetWidth +
+      Number.parseFloat(style.paddingInlineStart) +
+      Number.parseFloat(style.paddingInlineEnd) +
+      CAPSULE_GAP_PX;
+    return Math.min(Math.max(measured, REVEALED_PX), CAPSULE_WIDEST_REVEAL_PX);
   }
 
   function releasePress(): void {
@@ -198,11 +219,15 @@
     {@const action =
       side === undefined ? "nothing" : swipeActions.actionFor(side)}
     {@const mark = bookActions(book.reading).mark}
+    {@const isCapsule = phone?.isSwipeCapsule === true && action === "markRead"}
     <div class="relative overflow-hidden">
       {#if side !== undefined && action === "markRead"}
         <div
           class={[
-            "absolute inset-none flex items-center bg-accent px-sm text-on-accent",
+            "absolute inset-none flex items-center",
+            isCapsule
+              ? "bg-native-grouped-ground p-2xs"
+              : "bg-accent px-sm text-on-accent",
             side === "towardEnd" ? "justify-start" : "justify-end",
           ]}
         >
@@ -211,19 +236,35 @@
             look="icon"
             tabindex={swipe.isRevealed(book.id) ? 0 : -1}
             aria-hidden={!swipe.isRevealed(book.id)}
-            class="flex-col gap-2xs px-md text-caption font-bold min-block-touch-target"
+            data-swipe-action
+            style={isCapsule
+              ? `inline-size: ${String(Math.max(Math.abs(swipe.offsetOf(book.id)) - CAPSULE_GAP_PX, 0))}px`
+              : undefined}
+            class={isCapsule
+              ? "gap-xs self-stretch overflow-hidden rounded-full bg-native-button-primary px-md text-caption font-bold whitespace-nowrap text-native-on-button-primary"
+              : "flex-col gap-2xs px-md text-caption font-bold min-block-touch-target"}
             onclick={() => {
               swipe.close();
               onSwiped(book, mark, "tapped");
             }}
           >
-            {#if mark === "read"}
-              <Eye size={SWIPE_ICON_SIZE} aria-hidden="true" />
-              {m.series_mark_read()}
-            {:else}
-              <EyeOff size={SWIPE_ICON_SIZE} aria-hidden="true" />
-              {m.series_mark_unread()}
-            {/if}
+            <span
+              class={[
+                "flex items-center",
+                isCapsule ? "gap-xs" : "flex-col gap-2xs",
+                isCapsule && swipe.isRevealed(book.id)
+                  ? "text-center whitespace-normal min-inline-none"
+                  : "shrink-0",
+              ]}
+            >
+              {#if mark === "read"}
+                <Eye size={SWIPE_ICON_SIZE} aria-hidden="true" />
+                {m.series_mark_read()}
+              {:else}
+                <EyeOff size={SWIPE_ICON_SIZE} aria-hidden="true" />
+                {m.series_mark_unread()}
+              {/if}
+            </span>
           </Button>
         </div>
       {/if}
@@ -235,6 +276,7 @@
           phone === undefined
             ? "gap-xs bg-card py-sm ps-md pe-2xs min-block-book-row"
             : phone.surface,
+          isCapsule && "rounded-full",
           !swipe.isDragging &&
             "motion-safe:transition-transform motion-safe:duration-slide",
         ]}
@@ -258,7 +300,17 @@
             swipe.isRevealed(book.id) ||
             (isContextMenu && menuFor === book.id);
           releasePress();
-          swiped(book, swipe.released());
+          swiped(
+            book,
+            swipe.released(
+              phone?.isSwipeCapsule === true
+                ? {
+                    revealPx: () => capsuleRevealPx(event.currentTarget),
+                    actPastOpenPx: CAPSULE_ACT_PAST_OPEN_PX,
+                  }
+                : undefined,
+            ),
+          );
           if (isRowGesture) {
             event.stopPropagation();
           }
