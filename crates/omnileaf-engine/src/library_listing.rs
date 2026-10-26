@@ -5,6 +5,9 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+const DAY_MS: i64 = 24 * 60 * 60 * 1000;
+const UNOPENED_UNTIL_FORGOTTEN_MS: i64 = 90 * DAY_MS;
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryListing {
@@ -124,11 +127,11 @@ impl Default for LibraryListing {
     }
 }
 
-impl From<LibraryListing> for SeriesListing {
-    fn from(listing: LibraryListing) -> Self {
-        Self {
+impl LibraryListing {
+    pub(crate) fn at(&self, now_ms: i64) -> SeriesListing {
+        SeriesListing {
             sort: SeriesSort {
-                order: match listing.sort.by {
+                order: match self.sort.by {
                     LibrarySortBy::Title => SeriesOrder::Title,
                     LibrarySortBy::DateAdded => SeriesOrder::DateAdded,
                     LibrarySortBy::LastRead => SeriesOrder::LastRead,
@@ -136,9 +139,9 @@ impl From<LibraryListing> for SeriesListing {
                     LibrarySortBy::UnreadCount => SeriesOrder::UnreadCount,
                     LibrarySortBy::TimeLeft => SeriesOrder::TimeLeft,
                 },
-                direction: listing.sort.direction.into(),
+                direction: self.sort.direction.into(),
             },
-            filter: (&listing.filter).into(),
+            filter: self.filter.at(now_ms),
         }
     }
 }
@@ -174,13 +177,16 @@ impl From<SeriesListing> for LibraryListing {
     }
 }
 
-impl From<&LibraryFilter> for SeriesFilter {
-    fn from(filter: &LibraryFilter) -> Self {
-        Self {
-            unread: filter.unread.into(),
-            started: filter.started.into(),
-            finished: filter.finished.into(),
-            ..SeriesFilter::NONE
+impl LibraryFilter {
+    pub(crate) fn at(&self, now_ms: i64) -> SeriesFilter {
+        SeriesFilter {
+            unread: self.unread.into(),
+            started: self.started.into(),
+            finished: self.finished.into(),
+            last_read_before_ms: self
+                .smart
+                .contains(&SmartFilter::Forgotten)
+                .then(|| now_ms.saturating_sub(UNOPENED_UNTIL_FORGOTTEN_MS)),
         }
     }
 }
@@ -220,12 +226,15 @@ impl From<StoredInclusion> for Inclusion {
 mod tests {
     use super::*;
 
+    const NOW_MS: i64 = 1_790_000_000_000;
+    const NINETY_DAYS_MS: i64 = 7_776_000_000;
+
     #[test]
     fn lists_a_new_library_from_a_to_z_unfiltered() {
         let listing = LibraryListing::default();
 
         assert_eq!(
-            SeriesListing::from(listing),
+            listing.at(NOW_MS),
             SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title))
         );
     }
@@ -294,6 +303,18 @@ mod tests {
     }
 
     #[test]
+    fn asks_for_the_series_last_read_more_than_ninety_days_ago_once_forgotten_is_on() {
+        let filter = LibraryFilter {
+            smart: vec![SmartFilter::Forgotten],
+            ..LibraryListing::default().filter
+        };
+
+        let stored = filter.at(NOW_MS);
+
+        assert_eq!(stored.last_read_before_ms, Some(NOW_MS - NINETY_DAYS_MS));
+    }
+
+    #[test]
     fn starts_a_new_library_with_no_smart_filter_on() {
         assert_eq!(LibraryListing::default().filter.smart, Vec::new());
     }
@@ -313,7 +334,7 @@ mod tests {
             },
         };
 
-        let read = LibraryListing::from(SeriesListing::from(listing.clone()));
+        let read = LibraryListing::from(listing.at(NOW_MS));
 
         assert_eq!(read, listing);
     }

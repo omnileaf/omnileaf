@@ -15,9 +15,9 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
-        SeriesFilter, SeriesListing, add_root, book_to_read, bookmarked_roots, cover_file,
-        folder_series_count, folder_series_page, hidden_series_count, home_root, library_root,
-        library_roots, mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
+        add_root, book_to_read, bookmarked_roots, cover_file, folder_series_count,
+        folder_series_page, hidden_series_count, home_root, library_root, library_roots,
+        mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
         place_in_series, record_page_count, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
         root_shares, series_books, series_count, series_overview, series_page, series_titles,
@@ -322,7 +322,7 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = SeriesListing::from(listing);
+        let listing = listing.at(self.now_ms());
         let page = self
             .store
             .database()
@@ -341,7 +341,7 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = SeriesListing::from(listing);
+        let listing = listing.at(self.now_ms());
         let page = self
             .store
             .database()
@@ -355,7 +355,7 @@ impl Library {
         folder: FolderId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
-        let filter = SeriesFilter::from(&filter);
+        let filter = filter.at(self.now_ms());
         Ok(self
             .store
             .database()
@@ -408,7 +408,7 @@ impl Library {
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
-        let filter = SeriesFilter::from(&filter);
+        let filter = filter.at(self.now_ms());
         Ok(self
             .store
             .database()
@@ -425,7 +425,7 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let search = StoredSearch::parse(&search)?;
+        let search = StoredSearch::parse(&search, self.now_ms())?;
         let page = self
             .store
             .database()
@@ -446,7 +446,7 @@ impl Library {
     }
 
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
-        let search = StoredSearch::parse(&search)?;
+        let search = StoredSearch::parse(&search, self.now_ms())?;
         Ok(self
             .store
             .database()
@@ -793,7 +793,7 @@ impl Library {
 
     #[tracing::instrument(skip_all)]
     pub async fn set_listing(&self, listing: LibraryListing) -> Result<(), LibraryError> {
-        let stored = SeriesListing::from(listing);
+        let stored = listing.at(self.now_ms());
         Ok(self
             .store
             .database()
