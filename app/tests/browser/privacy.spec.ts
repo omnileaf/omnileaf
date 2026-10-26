@@ -116,16 +116,16 @@ test.describe("on a touch screen", () => {
   });
 
   test("summarises Screenshot mode in the settings list", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "settings opens its first section beside the list",
+    );
     await page.goto("/settings/privacy/screenshot-mode");
     await page
       .getByRole("switch", { name: "Screenshot mode", exact: true })
       .click();
 
     await page.goto("/settings");
-    test.skip(
-      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
-      "settings opens its first section beside the list",
-    );
 
     await expect(
       page.getByRole("main").getByRole("link", { name: /^Privacy/ }),

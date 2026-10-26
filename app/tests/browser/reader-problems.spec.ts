@@ -85,8 +85,8 @@ test.describe("a book whose file couldn't be opened", () => {
   test("names the series and the book in a breadcrumb on desktops", async ({
     page,
   }) => {
-    await page.goto(`/read/${BOOK_ID}`);
     test.skip(!isWide(page), "phones show only the way back");
+    await page.goto(`/read/${BOOK_ID}`);
 
     await expect(
       page.getByRole("navigation", { name: "Breadcrumb" }),

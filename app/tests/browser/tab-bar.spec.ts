@@ -22,9 +22,9 @@ test.describe("on iOS", () => {
   test("floats the bottom bar inset from the screen's edges on phones", async ({
     page,
   }) => {
-    await page.goto("/");
     const viewport = viewportOf(page);
     test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
 
     const bar = await navigationBox(page);
 
@@ -40,9 +40,9 @@ test.describe("on iOS", () => {
   test("leaves room under the page so the floating bar never covers content", async ({
     page,
   }) => {
-    await page.goto("/");
     const viewport = viewportOf(page);
     test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
 
     const bar = await navigationBox(page);
     const clearance = await page
@@ -55,9 +55,9 @@ test.describe("on iOS", () => {
   test("keeps the rail and sidebar on tablets and desktops", async ({
     page,
   }) => {
-    await page.goto("/");
     const viewport = viewportOf(page);
     test.skip(viewport.width < MEDIUM_MIN_WIDTH, "tablets and desktops only");
+    await page.goto("/");
 
     const navigation = await navigationBox(page);
 
@@ -87,9 +87,9 @@ test.describe("on Android", () => {
   test.use(onPlatform("android"));
 
   test("keeps the bottom bar full width on phones", async ({ page }) => {
-    await page.goto("/");
     const viewport = viewportOf(page);
     test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
 
     const bar = await navigationBox(page);
 

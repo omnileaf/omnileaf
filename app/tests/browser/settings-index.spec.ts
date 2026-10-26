@@ -40,11 +40,11 @@ test.use({
 });
 
 test("summarises each section from what the app stores", async ({ page }) => {
-  await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
     "settings opens its first section beside the list",
   );
+  await page.goto("/settings");
   const main = page.getByRole("main");
 
   for (const { section, summary } of SUMMARIES) {
@@ -57,14 +57,14 @@ test("summarises each section from what the app stores", async ({ page }) => {
 test("follows the light or dark choice in Appearance's summary", async ({
   page,
 }) => {
-  await page.goto("/settings/appearance");
-  await page.getByRole("radio", { name: "Dark" }).click();
-
-  await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
     "settings opens its first section beside the list",
   );
+  await page.goto("/settings/appearance");
+  await page.getByRole("radio", { name: "Dark" }).click();
+
+  await page.goto("/settings");
 
   await expect(
     page.getByRole("main").getByRole("link", { name: /^Appearance/ }),
@@ -74,11 +74,11 @@ test("follows the light or dark choice in Appearance's summary", async ({
 test("points each section's chevron toward the end of the line in a right-to-left language", async ({
   page,
 }) => {
-  await page.goto("/settings");
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
     "settings opens its first section beside the list",
   );
+  await page.goto("/settings");
   const general = page
     .getByRole("main")
     .getByRole("link", { name: /^General/ });
@@ -96,12 +96,12 @@ for (const colorScheme of ["light", "dark"] as const) {
   test(`the Settings list has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {
-    await page.emulateMedia({ colorScheme });
-    await page.goto("/settings");
     test.skip(
       viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       "settings opens its first section beside the list",
     );
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/settings");
     await expect(
       page.getByRole("main").getByRole("link", { name: /^About/ }),
     ).toBeVisible();

@@ -41,8 +41,8 @@ test.describe("on a desktop", () => {
   test("opens the first settings section beside the list from 840px", async ({
     page,
   }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/");
 
     await page
       .getByRole("navigation", { name: "Main" })
@@ -59,8 +59,8 @@ test.describe("on a desktop", () => {
   });
 
   test("opens Settings on its list of pages under 840px", async ({ page }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
+    await page.goto("/");
 
     await page
       .getByRole("navigation", { name: "Main" })
@@ -78,8 +78,8 @@ test.describe("on a desktop", () => {
   });
 
   test("lists the sections in the phone's order", async ({ page }) => {
-    await page.goto("/settings/general");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/general");
 
     await expect(sectionList(page).getByRole("link")).toHaveText(
       SECTIONS_IN_ORDER,
@@ -89,8 +89,8 @@ test.describe("on a desktop", () => {
   test("names where a page sits in a breadcrumb bar, with an arrow back from a nested page", async ({
     page,
   }) => {
-    await page.goto("/settings/advanced/animations");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/advanced/animations");
     const trail = page.getByRole("navigation", { name: "Breadcrumb" });
 
     await expect(trail.getByRole("link")).toHaveText(["Settings", "Advanced"]);
@@ -105,8 +105,8 @@ test.describe("on a desktop", () => {
   test("draws the arrow back from a nested page in the foreground colour", async ({
     page,
   }) => {
-    await page.goto("/settings/advanced/animations");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/advanced/animations");
 
     await expect(
       page.getByRole("link", { name: "Back to Advanced" }),
@@ -116,8 +116,8 @@ test.describe("on a desktop", () => {
   test("titles the sections list in small semibold muted text", async ({
     page,
   }) => {
-    await page.goto("/settings/general");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/general");
     const title = sectionList(page)
       .locator("..")
       .getByText("Settings", { exact: true });
@@ -133,8 +133,8 @@ test.describe("on a desktop", () => {
   test("focuses the first settings section's heading without a focus ring when opened from the keyboard", async ({
     page,
   }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/");
 
     await page
       .getByRole("navigation", { name: "Main" })
@@ -147,8 +147,8 @@ test.describe("on a desktop", () => {
   });
 
   test("switches settings sections from the list", async ({ page }) => {
-    await page.goto("/settings/library");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/library");
 
     await sectionList(page).getByRole("link", { name: "About" }).click();
 
@@ -164,8 +164,8 @@ test.describe("on a desktop", () => {
   test("marks the open section in the sidebar's accent on 32px rows", async ({
     page,
   }) => {
-    await page.goto("/settings/appearance");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "two panes only");
+    await page.goto("/settings/appearance");
     const open = sectionList(page).getByRole("link", { name: "Appearance" });
 
     const row = await boxOf(open);
@@ -181,8 +181,8 @@ test.describe("on a desktop", () => {
   test("leads a section back to settings through a link under 840px", async ({
     page,
   }) => {
-    await page.goto("/settings/about");
     test.skip(viewportOf(page).width >= EXPANDED_MIN_WIDTH, "one pane only");
+    await page.goto("/settings/about");
 
     const back = page.getByRole("link", { name: "Back to Settings" });
 
@@ -200,11 +200,11 @@ for (const platform of ["android", "ios"] as const) {
     test("keeps the settings sections to their own page below the sidebar width", async ({
       page,
     }) => {
-      await page.goto("/settings/about");
       test.skip(
         viewportOf(page).width >= EXPANDED_MIN_WIDTH,
         "below the sidebar width only",
       );
+      await page.goto("/settings/about");
 
       await expect(sectionList(page)).toBeHidden();
       await expect(
@@ -215,12 +215,12 @@ for (const platform of ["android", "ios"] as const) {
     test("leads a section back to settings with a 48px arrow on a tablet", async ({
       page,
     }) => {
-      await page.goto("/settings/about");
       const { width } = viewportOf(page);
       test.skip(
         width < MEDIUM_MIN_WIDTH || width >= EXPANDED_MIN_WIDTH,
         "rail width only",
       );
+      await page.goto("/settings/about");
       const back = await boxOf(
         page.getByRole("link", { name: "Back to Settings" }),
       );
@@ -243,8 +243,8 @@ test.describe("on an iOS phone", () => {
   test("leads a section back to settings with a 17px chevron and label", async ({
     page,
   }) => {
-    await page.goto("/settings/about");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/settings/about");
 
     const back = page.getByRole("link", { name: "Back to Settings" });
 
@@ -263,8 +263,8 @@ for (const platform of ["android", "ios", "linux"] as const) {
     test("points the way back to settings toward the start of the line", async ({
       page,
     }) => {
-      await page.goto("/settings/about");
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      await page.goto("/settings/about");
       const back = page.getByRole("link", { name: "Back to Settings" });
       await expect(back).toBeVisible();
       await page.evaluate(() => {

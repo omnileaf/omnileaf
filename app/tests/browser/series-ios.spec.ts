@@ -48,11 +48,11 @@ test("lays the series page on the iOS grouped ground, its cards as grouped cells
 test("raises the chosen segment of a segmented control, as iOS does", async ({
   page,
 }) => {
-  await openSeries(page);
   test.skip(
     viewportOf(page).width >= EXPANDED_MIN_WIDTH,
     "the iPad's wide layout is drawn apart",
   );
+  await openSeries(page);
 
   const chosen = page
     .getByRole("group", { name: "Show" })

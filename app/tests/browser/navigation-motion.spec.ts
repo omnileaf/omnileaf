@@ -150,8 +150,8 @@ interface IconMoveScreens {
 function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
   for (const { label, startFrom, move } of ICON_MOVES) {
     test(`moves the ${label} icon as it becomes selected`, async ({ page }) => {
-      await page.goto(startFrom);
       test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+      await page.goto(startFrom);
       await settle(navigation(page));
 
       const started = await animationsStartedWhile(page, () =>
@@ -168,8 +168,8 @@ function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
   test("keeps the icon still while the section stays the same", async ({
     page,
   }) => {
-    await page.goto("/settings");
     test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
+    await page.goto("/settings");
     const icon = tab(page, "Settings").locator("svg");
     await settle(icon);
 
@@ -220,8 +220,8 @@ function testTurningTheScreen(): void {
   test("keeps the selected tab still when the screen turns and back", async ({
     page,
   }) => {
-    await page.goto("/history");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/history");
     await settle(navigation(page));
 
     const started = await animationsStartedWhile(page, async () => {
@@ -235,8 +235,8 @@ function testTurningTheScreen(): void {
   test("keeps a tab picked sideways still when the screen turns back", async ({
     page,
   }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
     await turnTheScreen(page);
     await openTabAndSettle(page, "History");
 
@@ -255,11 +255,11 @@ test.describe("on Android", () => {
   test("grows the new tab's pill in and fades the old one out", async ({
     page,
   }) => {
-    await page.goto("/");
     test.skip(
       viewportOf(page).width >= EXPANDED_MIN_WIDTH,
       "bar and rail only",
     );
+    await page.goto("/");
     await settle(navigation(page));
 
     const started = await animationsStartedWhile(page, () =>
@@ -273,8 +273,8 @@ test.describe("on Android", () => {
   });
 
   test("only fades the sidebar's highlight", async ({ page }) => {
-    await page.goto("/history");
     test.skip(viewportOf(page).width < EXPANDED_MIN_WIDTH, "sidebar only");
+    await page.goto("/history");
 
     const motion = await motionIn(navigation(page));
 
@@ -292,8 +292,8 @@ test.describe("on iOS", () => {
   test.use(onPlatform("ios"));
 
   test("slides one glass pill under the new tab", async ({ page }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
     await expect(glassPill(page)).toHaveCount(1);
 
     await openTabAndSettle(page, "History");
@@ -311,8 +311,8 @@ test.describe("on iOS", () => {
   test("slides the glass pill the other way in right-to-left layouts", async ({
     page,
   }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
     await expect(
       page.getByRole("heading", { level: 1, name: "Library" }),
     ).toBeVisible();
@@ -329,8 +329,8 @@ test.describe("on iOS", () => {
   });
 
   test("bounces the new tab's icon", async ({ page }) => {
-    await page.goto("/");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
     await settle(navigation(page));
 
     const started = await animationsStartedWhile(page, () =>
@@ -343,11 +343,11 @@ test.describe("on iOS", () => {
   testTurningTheScreen();
 
   test("only fades the rail's and sidebar's highlight", async ({ page }) => {
-    await page.goto("/history");
     test.skip(
       viewportOf(page).width < MEDIUM_MIN_WIDTH,
       "tablets and desktops only",
     );
+    await page.goto("/history");
 
     const motion = await motionIn(navigation(page));
 

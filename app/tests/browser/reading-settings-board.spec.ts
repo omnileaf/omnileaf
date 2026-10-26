@@ -150,8 +150,8 @@ test("puts each label of Pages and Light beside its control, on phones as on des
 test("names the layouts in full and says how to zoom, on phones", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(isWide(page), "desktops name them One and Two beside the label");
+  await openBook(page);
 
   const panel = await openSettings(page);
 
@@ -268,8 +268,8 @@ test("keeps the page layouts' boxes still as the choice changes", async ({
 test("closes the panel with Escape before leaving the book", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(!isWide(page), "phones close the drawer like any sheet");
+  await openBook(page);
   await openSettings(page);
 
   await page.keyboard.press("Escape");

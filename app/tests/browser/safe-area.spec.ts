@@ -89,13 +89,13 @@ test("keeps the page heading below the status bar", async ({ page }) => {
 });
 
 test("keeps the rail and sidebar below the status bar", async ({ page }) => {
-  await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
-
-  await page.goto("/");
   test.skip(
     viewportOf(page).width < MEDIUM_MIN_WIDTH,
     "tablets and desktops only",
   );
+  await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
+
+  await page.goto("/");
   const firstLink = await boxOf(navigationLinks(page).first());
 
   expect(firstLink.y).toBeGreaterThanOrEqual(STATUS_BAR);
@@ -224,11 +224,11 @@ test.describe("on iOS", () => {
   test("floats the bottom bar just above the home indicator", async ({
     page,
   }) => {
+    const viewport = viewportOf(page);
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
     await emulateSafeArea(page, { top: STATUS_BAR, bottom: HOME_INDICATOR });
 
     await page.goto("/");
-    const viewport = viewportOf(page);
-    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
     const bar = await boxOf(mainNavigation(page));
 
     expect(viewport.height - bar.y - bar.height).toBe(FLOATING_BAR_GAP);
@@ -252,9 +252,9 @@ test.describe("on Android", () => {
   test("keeps the bottom bar above the gesture bar the app reports", async ({
     page,
   }) => {
-    await page.goto("/");
     const viewport = viewportOf(page);
     test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/");
     await provideSystemInsets(page, { top: STATUS_BAR, bottom: GESTURE_BAR });
 
     const lastLink = await boxOf(navigationLinks(page).last());

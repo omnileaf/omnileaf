@@ -55,11 +55,11 @@ test("goes back to the series with the mouse's back button", async ({
 test("names the series and its keys in the back button's tooltip on desktops", async ({
   page,
 }) => {
-  await openBook(page);
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "phones have no keys to name",
   );
+  await openBook(page);
 
   await page
     .locator("main > header")

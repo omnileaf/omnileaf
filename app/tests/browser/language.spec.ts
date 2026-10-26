@@ -82,8 +82,8 @@ test.describe("on an Android phone", () => {
   test.use(onPlatform("android"));
 
   test("explains the system language under a 56px row", async ({ page }) => {
-    await page.goto("/settings/general");
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/settings/general");
 
     const row = await boxOf(languageRow(page));
 
@@ -97,8 +97,8 @@ test.describe("on an Android tablet", () => {
   test.use(onPlatform("android"));
 
   test("shows the Language row 48px tall", async ({ page }) => {
-    await page.goto("/settings/general");
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
+    await page.goto("/settings/general");
 
     const row = await boxOf(languageRow(page));
 
