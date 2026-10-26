@@ -3,7 +3,7 @@
 
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
-  import { buttonClasses } from "#lib/components/ui/button/looks.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -23,10 +23,10 @@
     const phone = phoneAction(platform, width.current, "main");
     return phone === undefined
       ? TODAYS_LOOK
-      : buttonClasses("primary", platform, {
-          variant: phone.variant,
-          size: phone.size,
-        });
+      : cn(
+          variantClasses(phone.variant, phone.size, false, platform),
+          phone.fit,
+        );
   });
 
   function goOn(book: SeriesBook): string {
