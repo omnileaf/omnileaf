@@ -85,7 +85,7 @@ pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_w
 pub use file_type::FileType;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
-pub use found_library::FoundLibrary;
+pub use found_library::{FoundLibrary, found_library_in};
 pub use history::{
     BookSessions, HistoryCursor, HistoryEntry, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LocalDay, ReadTo, ReadingDay, ReadingSummary, ReadingWeek,

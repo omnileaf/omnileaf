@@ -74,7 +74,7 @@ use crate::{
 };
 
 pub(crate) const DATABASE_FILE: &str = "library.sqlite";
-const BACKUP_FOLDER: &str = "backups";
+pub(crate) const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const BOOKS_PER_PAGE: u16 = 100;

@@ -110,7 +110,7 @@ export const commands = {
 	series: number,
 	books: number,
 	/**  Crosses as a plain number, which holds every such date exactly. */
-	lastBackupAtMs: number,
+	lastBackupAtMs: number | null,
 } | null>("found_library"),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
@@ -317,7 +317,7 @@ export type FoundLibrary = {
 	series: number,
 	books: number,
 	/**  Crosses as a plain number, which holds every such date exactly. */
-	lastBackupAtMs: number,
+	lastBackupAtMs: number | null,
 };
 
 export type FullScreenChange = "toggle" | "leave";
