@@ -16,6 +16,7 @@
   import type { BookDamage, OpenedBook, Platform } from "#lib/ipc/bindings.ts";
   import { actionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPhone } from "#lib/page/platform.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -42,6 +43,7 @@
   const readable = $derived(book.pages.length);
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
+  const isOnPhone = $derived(isPhone(platform, width.current));
   const actions = $derived(
     actionGroupLook(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -53,6 +55,7 @@
   class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
   <BookBackNav
+    {platform}
     place={{
       id: book.id,
       title: book.title,
@@ -64,7 +67,12 @@
     class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl"
   >
     <section class="flex flex-col gap-lg inline-full max-inline-damaged-book">
-      <div class="flex items-center gap-md">
+      <div
+        class={[
+          "flex items-center gap-md",
+          isOnPhone && "flex-col text-center",
+        ]}
+      >
         <EmptyMedia class="shrink-0">
           <FileExclamationPoint size={HEADING_ICON_SIZE} aria-hidden="true" />
         </EmptyMedia>
@@ -75,7 +83,7 @@
           {m.reader_damaged_title({ title: book.title })}
         </h1>
       </div>
-      <p class="text-body expanded:text-small">
+      <p class={["text-body expanded:text-small", isOnPhone && "text-center"]}>
         {m.reader_damaged_count({
           readable,
           promised: damage.promisedPages,

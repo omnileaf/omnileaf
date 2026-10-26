@@ -73,7 +73,7 @@
   data-ground="grouped"
   class="flex flex-col bg-background text-foreground min-block-dvh touch:bg-native-grouped-ground"
 >
-  <BookBackNav {place} />
+  <BookBackNav {place} {platform} />
   <div class="flex flex-1 items-center justify-center px-xl pbe-xl">
     <Empty
       class="gap-lg max-inline-book-problem expanded:max-inline-book-problem-wide"
