@@ -882,12 +882,16 @@ impl Library {
         let file_type = FileType::of(&found.location)
             .filter(FileType::can_be_hidden)
             .ok_or(LibraryError::FileTypeRead { id: book })?;
-        let hidden = file_type.clone();
-        self.store
-            .database()
-            .write(move |transaction| hide_file_type(transaction, hidden.as_str()))
-            .await?;
+        self.keep_hidden(file_type.clone()).await?;
         Ok(file_type)
+    }
+
+    async fn keep_hidden(&self, file_type: FileType) -> Result<(), LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .write(move |transaction| hide_file_type(transaction, file_type.as_str()))
+            .await?)
     }
 
     pub async fn show_file_type(&self, file_type: FileType) -> Result<(), LibraryError> {
