@@ -38,12 +38,8 @@ pub fn crop_white_borders(
 }
 
 fn kept_region(page: &Grid<'_, Rgb>, sides: CroppedSides) -> Option<Region> {
-    let summed = page.cells();
-    let cells = Grid {
-        items: &summed,
-        width: page.width.div_ceil(CELL_EDGE),
-        height: page.height.div_ceil(CELL_EDGE),
-    };
+    let cells = page.cells(CELL_EDGE);
+    let cells = cells.grid();
     let rows = match sides {
         CroppedSides::All => (cells.top_border(), cells.bottom_border()),
         CroppedSides::LeftAndRight => (0, 0),
@@ -167,6 +163,22 @@ struct Grid<'items, T> {
     height: usize,
 }
 
+struct Cells {
+    items: Vec<Cell>,
+    width: usize,
+    height: usize,
+}
+
+impl Cells {
+    fn grid(&self) -> Grid<'_, Cell> {
+        Grid {
+            items: &self.items,
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
+
 impl<'items, T: Copy> Grid<'items, T> {
     fn rows(&self) -> impl DoubleEndedIterator<Item = &'items [T]> + Clone {
         self.items.chunks_exact(self.width)
@@ -189,23 +201,27 @@ impl<'pixels> Grid<'pixels, Rgb> {
         })
     }
 
-    fn cells(&self) -> Vec<Cell> {
-        let mut sums: Vec<CellSum> = (0..self.width.div_ceil(CELL_EDGE))
-            .map(|_| CellSum::EMPTY)
-            .collect();
-        let mut cells = Vec::with_capacity(sums.len() * self.height.div_ceil(CELL_EDGE));
-        for band in self.items.chunks(self.width * CELL_EDGE) {
+    fn cells(&self, edge: usize) -> Cells {
+        let width = self.width.div_ceil(edge);
+        let height = self.height.div_ceil(edge);
+        let mut sums: Vec<CellSum> = (0..width).map(|_| CellSum::EMPTY).collect();
+        let mut items = Vec::with_capacity(width * height);
+        for band in self.items.chunks(self.width * edge) {
             sums.fill_with(|| CellSum::EMPTY);
             for row in band.chunks_exact(self.width) {
-                for (sum, pixels) in sums.iter_mut().zip(row.chunks(CELL_EDGE)) {
+                for (sum, pixels) in sums.iter_mut().zip(row.chunks(edge)) {
                     for pixel in pixels {
                         sum.add(*pixel);
                     }
                 }
             }
-            cells.extend(sums.iter().map(CellSum::cell));
+            items.extend(sums.iter().map(CellSum::cell));
         }
-        cells
+        Cells {
+            items,
+            width,
+            height,
+        }
     }
 
     fn cropped_to(&self, kept: &Region) -> Option<Pixels> {
