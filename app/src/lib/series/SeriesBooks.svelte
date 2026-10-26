@@ -327,6 +327,7 @@
     {/if}
   </div>
   <BookListingChoices
+    phone={phonePlatform}
     {listing}
     onChoose={onListing}
     {search}

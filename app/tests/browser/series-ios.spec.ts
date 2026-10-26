@@ -4,6 +4,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
   test,
   tokenColour,
   viewportOf,
@@ -54,13 +55,18 @@ test("raises the chosen segment of a segmented control, as iOS does", async ({
   );
   await openSeries(page);
 
+  const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
   const chosen = page
     .getByRole("group", { name: "Show" })
+    .or(page.getByRole("radiogroup", { name: "Show" }))
     .getByRole("radio", { checked: true });
 
   await expect(chosen).not.toHaveCSS("box-shadow", "none");
   await expect(chosen).toHaveCSS(
     "background-color",
-    await tokenColour(page, "--ios-grouped-cell"),
+    await tokenColour(
+      page,
+      isPhone ? "--native-color-segment-selected" : "--ios-grouped-cell",
+    ),
   );
 });

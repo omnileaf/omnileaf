@@ -169,10 +169,14 @@ function selectAllControl(page: Page): Locator {
     : page.getByRole("button", { name: "Select all" });
 }
 
-function shown(page: Page, name: string): Locator {
+function showChoices(page: Page): Locator {
   return page
     .getByRole("group", { name: "Show" })
-    .getByRole("radio", { name, exact: true });
+    .or(page.getByRole("radiogroup", { name: "Show" }));
+}
+
+function shown(page: Page, name: string): Locator {
+  return showChoices(page).getByRole("radio", { name, exact: true });
 }
 
 async function edgesMissedWithin(
@@ -207,33 +211,45 @@ async function edgesMissedWithin(
 }
 
 async function fitPhoneToShowRow(page: Page): Promise<void> {
-  const spare = await page
-    .getByRole("group", { name: "Show" })
-    .evaluate((group) =>
-      [...group.children].reduce((room, segment) => {
-        const alone = segment.cloneNode(true);
-        if (!(alone instanceof HTMLElement)) {
-          throw new Error("a Show segment is not an element");
-        }
-        alone.style.position = "absolute";
-        group.append(alone);
-        const natural = alone.getBoundingClientRect().width;
-        alone.remove();
-        const { marginInlineStart, marginInlineEnd } =
-          getComputedStyle(segment);
-        return (
-          room -
-          natural -
-          Number.parseFloat(marginInlineStart) -
-          Number.parseFloat(marginInlineEnd)
-        );
-      }, group.clientWidth),
-    );
+  const spare = await showChoices(page).evaluate((group) => {
+    const segments = [...group.querySelectorAll(":scope > [role=radio]")];
+    const track = getComputedStyle(group);
+    const room =
+      group.clientWidth -
+      Number.parseFloat(track.paddingInlineStart) -
+      Number.parseFloat(track.paddingInlineEnd) -
+      (segments.length - 1) * Number.parseFloat(track.columnGap);
+    return segments.reduce((left, segment) => {
+      const alone = segment.cloneNode(true);
+      if (!(alone instanceof HTMLElement)) {
+        throw new Error("a Show segment is not an element");
+      }
+      alone.style.position = "absolute";
+      group.append(alone);
+      const natural = alone.getBoundingClientRect().width;
+      alone.remove();
+      const { marginInlineStart, marginInlineEnd } = getComputedStyle(segment);
+      return (
+        left -
+        natural -
+        Number.parseFloat(marginInlineStart) -
+        Number.parseFloat(marginInlineEnd)
+      );
+    }, room);
+  });
   const viewport = viewportOf(page);
   await page.setViewportSize({
     ...viewport,
     width: viewport.width - Math.floor(spare),
   });
+  await page.evaluate(
+    () =>
+      new Promise((refitted) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => requestAnimationFrame(refitted)),
+        ),
+      ),
+  );
 }
 
 async function revealSearch(page: Page): Promise<void> {
@@ -1485,16 +1501,17 @@ test.describe("on Android", () => {
     },
   });
 
-  test("gives each Show segment a 48 dp target while drawing All as wide as its name", async ({
-    page,
-  }) => {
+  test("gives each Show segment a 48 dp target", async ({ page }) => {
     test.skip(
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-      "only a phone draws All narrower than a touch",
+      "only a phone sets the Show choices on the segmented control",
     );
     await openSeries(page);
     await fitPhoneToShowRow(page);
 
+    const tops = await Promise.all(
+      SHOW_CHOICES.map(async (name) => (await boxOf(shown(page, name))).y),
+    );
     const missed = await Promise.all(
       SHOW_CHOICES.map(async (name) => ({
         name,
@@ -1505,10 +1522,8 @@ test.describe("on Android", () => {
       })),
     );
 
+    expect(tops).toEqual(SHOW_CHOICES.map(() => tops[0]));
     expect(missed).toEqual(SHOW_CHOICES.map((name) => ({ name, missed: [] })));
-    expect((await boxOf(shown(page, "All"))).width).toBeLessThan(
-      ANDROID_TOUCH_TARGET_PX,
-    );
   });
 
   test("lets the selected books bar take a touch over the All segment scrolled under it", async ({

@@ -5,6 +5,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
   test,
   tokenColour,
   viewportOf,
@@ -37,6 +38,14 @@ const shelf = eightBooks();
 
 test.use({ backend: shelf.backend() });
 
+function tokenValue(page: Page, token: string): Promise<string> {
+  return page.evaluate(
+    (name) =>
+      getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
+    token,
+  );
+}
+
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
@@ -67,7 +76,10 @@ async function openBooks(page: Page): Promise<void> {
 }
 
 function showChoice(page: Page, name: string): Locator {
-  return page.getByRole("group", { name: "Show" }).getByRole("radio", { name });
+  return page
+    .getByRole("group", { name: "Show" })
+    .or(page.getByRole("radiogroup", { name: "Show" }))
+    .getByRole("radio", { name });
 }
 
 function booksTable(page: Page): Locator {
@@ -218,15 +230,25 @@ for (const platform of ["android", "ios"] as const) {
       backend: { ...shelf.backend(), appInfo: () => fakeAppInfo(platform) },
     });
 
-    test("sets the chosen show choice semibold in the foreground", async ({
+    test("sets the chosen show choice semibold in the foreground, or as the phone's chosen segment", async ({
       page,
     }) => {
+      const isPhone = viewportOf(page).width < MEDIUM_MIN_WIDTH;
+
       await openBooks(page);
 
-      await expect(showChoice(page, "All")).toHaveCSS("font-weight", "600");
+      await expect(showChoice(page, "All")).toHaveCSS(
+        "font-weight",
+        isPhone
+          ? await tokenValue(page, "--native-weight-segment-selected")
+          : "600",
+      );
       await expect(showChoice(page, "All")).toHaveCSS(
         "color",
-        await tokenColour(page, "--foreground"),
+        await tokenColour(
+          page,
+          isPhone ? "--native-color-on-segment-selected" : "--foreground",
+        ),
       );
     });
   });

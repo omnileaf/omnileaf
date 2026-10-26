@@ -27,6 +27,7 @@
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
+    readonly segmentClass?: ClassValue;
     readonly crowded?: Snippet | undefined;
   }
 
@@ -90,6 +91,7 @@
     onChoose,
     onFit,
     class: className,
+    segmentClass,
     crowded,
   }: Props = $props();
 
@@ -180,6 +182,7 @@
             : chosen === option
               ? "bg-raised font-semibold text-foreground shadow-raised"
               : "font-medium text-foreground hover:bg-hover",
+        segmentClass,
       ]}
     >
       <SegmentFace
@@ -196,7 +199,7 @@
     class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
   >
     {#each options as option (option)}
-      <span class={["flex flex-none items-center", face]}>
+      <span class={["flex flex-none items-center", face, segmentClass]}>
         <SegmentFace
           label={labels[option]()}
           icon={icons?.[option]}
