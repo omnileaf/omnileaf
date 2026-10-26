@@ -34,7 +34,7 @@ interface Bin {
 }
 
 const TITLE_SEPARATOR = " › ";
-const TEST_LIST_SEPARATORS = /[\n\r›>]/u;
+const TEST_LIST_SEPARATORS = /[\n\r›]/u;
 const DURATION_WITHOUT_TIMINGS_MS = 1;
 const LOAD_ONLY_PROJECT = "load only";
 
@@ -177,7 +177,7 @@ function longestFirst(a: Unit, b: Unit): number {
   return b.durationMs - a.durationMs || (a.line < b.line ? -1 : 1);
 }
 
-/** Playwright reads a `--test-list` file line by line and matches each line as a title-path prefix after splitting it on `›` or `>` and trimming each part, so a title holding a line break or either of those, or padded with spaces, cannot be named on its own line. */
+/** Playwright reads a `--test-list` file line by line and splits a line holding `›` on `›` alone, trimming each part, so a title holding `\n` or `›`, or padded with spaces, cannot be named on its own line. */
 function isWritableInTestList(title: string): boolean {
   return (
     title !== "" && title === title.trim() && !TEST_LIST_SEPARATORS.test(title)

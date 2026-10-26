@@ -305,6 +305,20 @@ test.each([
   expect(shards).toContainEqual(["[p] › a.spec.ts › Settings"]);
 });
 
+test("names a test titled with > on its own line", () => {
+  const tests = [
+    listed("p", "Settings", "has 2 > 1 items"),
+    listed("p", "Settings", "opens"),
+    listed("p", "other"),
+  ];
+
+  const shards = shardsOf(tests, {}, 2);
+
+  expect(shards.flat()).toContain(
+    "[p] › a.spec.ts › Settings › has 2 > 1 items",
+  );
+});
+
 test("rejects more shards than there are tests to share out", () => {
   expect(() =>
     shardTestList([listed("p", "a")], {}, { current: 1, total: 2 }),
