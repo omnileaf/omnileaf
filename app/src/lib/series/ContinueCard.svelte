@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { BookImage } from "@lucide/svelte";
+
   import {
     Card,
     CardContent,
@@ -31,6 +33,8 @@
     coverUrl: CoverUrl;
     isWide: boolean;
   } = $props();
+
+  const NO_COVER_ICON_SIZE = 24;
 
   const platform = currentPlatform();
   const width = new WindowWidth();
@@ -91,8 +95,11 @@
   >
     <span
       data-continue-cover
-      class="relative row-span-4 aspect-cover self-start overflow-hidden rounded-native-cover bg-chip inline-native-continue-cover"
+      class="relative row-span-4 flex aspect-cover items-center justify-center self-start overflow-hidden rounded-native-cover bg-chip text-muted inline-native-continue-cover"
     >
+      {#if cover.kind === "none"}
+        <BookImage size={NO_COVER_ICON_SIZE} aria-hidden="true" />
+      {/if}
       <CoverImage {cover} {coverUrl} />
     </span>
     <CardTitle id={titleId} class="text-body">{heading(next)}</CardTitle>
