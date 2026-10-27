@@ -6,15 +6,15 @@
 mod library_seed;
 mod support;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
         AndroidTree, AppleBookmark, BookDetails, BookFile, BookReading, NewRoot, NewSeries, RootId,
-        RootKind, RootLocator, ScannedBook, SeriesOverview, TreeUri, add_root,
-        record_scanned_books, series_overview, up_next,
+        RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming, SeriesOverview, Sourced,
+        TreeUri, ValueSource, add_root, record_scanned_books, series_overview, up_next,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -23,6 +23,8 @@ use support::{ScratchFolder, library_config};
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const ROOT_FOLDER: &str = "/media/Sample Library";
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
+const SERIES_YEAR: u16 = 2019;
+const TAGGED_LANGUAGE: &str = "ja";
 const FOLDER_BOOKMARK: &[u8] = b"bookmark of the sample library";
 const SERIES: &str = "Sample Series 01";
 const FIVE_VOLUMES: &[&str] = &[
@@ -64,12 +66,16 @@ impl Library {
     }
 
     async fn with_files_in(folder: RootLocator, titles: &[&str]) -> Self {
+        Self::with_books_in(folder, titles, &Placing::by_name()).await
+    }
+
+    async fn with_books_in(folder: RootLocator, titles: &[&str], placing: &Placing) -> Self {
         let library = Self::with(&[]).await;
         let root = library.add_root(folder).await;
         let scanned: Vec<ScannedBook> = titles
             .iter()
             .map(|&title| ScannedBook {
-                series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+                series: placing.series.clone(),
                 named_series: None,
                 fingerprint: fingerprint(SERIES, title),
                 title: title.to_owned(),
@@ -83,7 +89,7 @@ impl Library {
                     modified_at_ms: ADDED_AT_MS,
                 },
                 numbering: None,
-                name_language: None,
+                name_language: placing.name_language.clone(),
             })
             .collect();
         library
@@ -124,7 +130,10 @@ impl Library {
     }
 
     async fn overview(&self, series: &str) -> Option<SeriesOverview> {
-        let id = series_id(series);
+        self.overview_of(series_id(series)).await
+    }
+
+    async fn overview_of(&self, id: SeriesId) -> Option<SeriesOverview> {
         self.database
             .read(move |connection| series_overview(connection, id))
             .await
@@ -138,6 +147,41 @@ impl Library {
             .await
             .unwrap()
             .map(|book| (book.title, book.reading))
+    }
+}
+
+struct Placing {
+    series: NewSeries,
+    name_language: Option<String>,
+}
+
+impl Placing {
+    fn by_name() -> Self {
+        Self {
+            series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+            name_language: None,
+        }
+    }
+
+    fn tagged_in_a_dated_folder() -> Self {
+        let naming = SeriesNaming {
+            title: Sourced {
+                value: SERIES.to_owned(),
+                source: ValueSource::FolderName,
+            },
+            year: Some(Sourced {
+                value: SERIES_YEAR,
+                source: ValueSource::FolderName,
+            }),
+        };
+        let folder = SeriesFolder {
+            linked_folder: "Sample Library",
+            location: Path::new(SERIES),
+        };
+        Self {
+            series: NewSeries::folder(folder, naming, ADDED_AT_MS).unwrap(),
+            name_language: Some(TAGGED_LANGUAGE.to_owned()),
+        }
     }
 }
 
@@ -179,7 +223,9 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
         SeriesOverview {
             id: series_id(SERIES),
             title: SERIES.to_owned(),
+            title_source: None,
             year: None,
+            language: None,
             book_count: 5,
             read_count: 2,
             cover: None,
@@ -187,6 +233,34 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             pages_left: None,
             is_rated_adult: false,
         }
+    );
+}
+
+#[tokio::test]
+async fn names_where_the_title_year_and_language_of_a_series_came_from() {
+    let placing = Placing::tagged_in_a_dated_folder();
+    let library = Library::with_books_in(
+        RootLocator::Path(PathBuf::from(ROOT_FOLDER)),
+        &["Volume 01"],
+        &placing,
+    )
+    .await;
+
+    let overview = library.overview_of(placing.series.id()).await.unwrap();
+
+    assert_eq!(
+        (overview.title_source, overview.year, overview.language),
+        (
+            Some(ValueSource::FolderName),
+            Some(Sourced {
+                value: SERIES_YEAR,
+                source: ValueSource::FolderName,
+            }),
+            Some(Sourced {
+                value: TAGGED_LANGUAGE.to_owned(),
+                source: ValueSource::FileName,
+            }),
+        )
     );
 }
 

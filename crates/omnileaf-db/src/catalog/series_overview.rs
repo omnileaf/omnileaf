@@ -1,18 +1,19 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, OptionalExtension, Row};
+use rusqlite::{Connection, OptionalExtension, Row, types::FromSql};
 
 use crate::{
     Error,
     catalog::{
-        Cover, Numbering, RootLocator, cover::stored_cover, numbering::stored_numbering,
-        root::stored_locator, stored_id::stored_id,
+        Cover, Numbering, RootLocator, Sourced, ValueSource, cover::stored_cover,
+        numbering::stored_numbering, root::stored_locator, stored_id::stored_id,
     },
 };
 
 const OVERVIEW_OF_SERIES: &str = concat!(
     "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
         library_root.tree_name, library_root.tree_place,
-        series.id AS id, series.title, series.year, series.book_count, series.read_count,
+        series.id AS id, series.title, series.title_source, series.year, series.year_source,
+        series.language, series.language_source, series.book_count, series.read_count,
         series.pages_left, series.uncounted_books, series.adult_rated_books > 0 AS is_rated_adult,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
@@ -31,7 +32,10 @@ const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 pub struct SeriesOverview {
     pub id: SeriesId,
     pub title: String,
-    pub year: Option<u16>,
+    /// Absent for a series keyed by name alone, which its next rescan files by folder.
+    pub title_source: Option<ValueSource>,
+    pub year: Option<Sourced<u16>>,
+    pub language: Option<Sourced<String>>,
     pub book_count: u32,
     pub read_count: u32,
     /// The cover the library shows for the series, absent while none of its books has a file.
@@ -76,7 +80,9 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
     Ok(SeriesOverview {
         id: stored_id(row, "id")?,
         title: row.get("title")?,
-        year: row.get("year")?,
+        title_source: row.get("title_source")?,
+        year: sourced(row, "year", "year_source")?,
+        language: sourced(row, "language", "language_source")?,
         book_count: row.get("book_count")?,
         read_count: row.get("read_count")?,
         cover,
@@ -84,6 +90,18 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         pages_left: counted_pages_left(row)?,
         is_rated_adult: row.get("is_rated_adult")?,
     })
+}
+
+fn sourced<T: FromSql>(
+    row: &Row<'_>,
+    value: &str,
+    source: &str,
+) -> rusqlite::Result<Option<Sourced<T>>> {
+    let value: Option<T> = row.get(value)?;
+    let source: Option<ValueSource> = row.get(source)?;
+    Ok(value
+        .zip(source)
+        .map(|(value, source)| Sourced { value, source }))
 }
 
 fn counted_pages_left(row: &Row<'_>) -> rusqlite::Result<Option<u32>> {
