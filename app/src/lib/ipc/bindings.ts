@@ -477,7 +477,7 @@ export type LibraryFolder = {
 	isAvailable: boolean,
 };
 
-export type LibraryGrouping = "none" | "category" | "folder";
+export type LibraryGrouping = "none" | "category" | "folder" | "creator";
 
 export type LibraryListing = {
 	sort: LibrarySort,

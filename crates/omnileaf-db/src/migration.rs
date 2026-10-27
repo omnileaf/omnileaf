@@ -80,6 +80,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0044_index_the_series_holding_a_book_stored_twice"),
     migration!("0045_rename_the_book_title_sort_key_to_reading_order_key"),
     migration!("0046_keep_the_kind_and_numbers_of_each_book"),
+    migration!("0047_group_the_library_by_creator"),
 ];
 
 pub(crate) fn pending(
@@ -239,6 +240,9 @@ mod tests {
     use crate::{
         Database, Language, connection,
         first_launch::first_launch_finished,
+        library_view::{
+            LibraryDisplay, LibraryGrouping, OnCovers, StoredLibraryView, library_view,
+        },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
         title_key::TitleCollation,
@@ -1348,6 +1352,50 @@ mod tests {
             .collect();
 
         assert_eq!(accepted, Vec::<&str>::new());
+    }
+
+    #[test]
+    fn keeps_the_view_stored_before_series_could_be_grouped_by_creator() {
+        let scratch = ScratchLibrary::new("library-view-creator-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..46]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_view (
+                    id, display, phone_covers_per_row, tablet_covers_per_row,
+                    desktop_covers_per_row, shows_item_counts, shows_unread_count,
+                    shows_downloaded, shows_language, shows_reading_progress,
+                    shows_continue_button, shows_continue_row, fits_covers_to_width,
+                    shows_category_tabs, group_by
+                 )
+                 VALUES (1, 'list', 4, 7, 10, 1, 1, 0, 1, 0, 1, 1, 0, 0, 'folder');",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let view = library_view(&connection).unwrap().unwrap();
+        assert_eq!(
+            view,
+            StoredLibraryView {
+                display: LibraryDisplay::List,
+                group_by: LibraryGrouping::Folder,
+                shows_category_tabs: false,
+                phone_covers_per_row: 4,
+                tablet_covers_per_row: 7,
+                desktop_covers_per_row: 10,
+                fits_covers_to_width: false,
+                shows_item_counts: true,
+                shows_continue_row: true,
+                on_covers: OnCovers {
+                    shows_unread_count: true,
+                    shows_downloaded: false,
+                    shows_language: true,
+                    shows_reading_progress: false,
+                    shows_continue_button: true,
+                },
+            }
+        );
     }
 
     #[test]

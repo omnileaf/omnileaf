@@ -32,6 +32,7 @@ pub enum LibraryGrouping {
     None,
     Category,
     Folder,
+    Creator,
 }
 
 #[expect(
@@ -207,6 +208,7 @@ impl From<LibraryView> for StoredLibraryView {
                 LibraryGrouping::None => StoredGrouping::None,
                 LibraryGrouping::Category => StoredGrouping::Category,
                 LibraryGrouping::Folder => StoredGrouping::Folder,
+                LibraryGrouping::Creator => StoredGrouping::Creator,
             },
             shows_category_tabs: view.shows_category_tabs,
             shows_item_counts: view.shows_item_counts,
@@ -237,6 +239,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 StoredGrouping::None => LibraryGrouping::None,
                 StoredGrouping::Category => LibraryGrouping::Category,
                 StoredGrouping::Folder => LibraryGrouping::Folder,
+                StoredGrouping::Creator => LibraryGrouping::Creator,
             },
             shows_category_tabs: stored.shows_category_tabs,
             shows_item_counts: stored.shows_item_counts,
@@ -380,6 +383,18 @@ mod tests {
     fn stores_covers_only_and_reads_it_back() {
         let view = LibraryView {
             display: LibraryDisplay::Covers,
+            ..LibraryView::default()
+        };
+
+        let read = LibraryView::try_from(StoredLibraryView::from(view));
+
+        assert_eq!(read, Ok(view));
+    }
+
+    #[test]
+    fn stores_a_view_grouped_by_creator_and_reads_it_back() {
+        let view = LibraryView {
+            group_by: LibraryGrouping::Creator,
             ..LibraryView::default()
         };
 

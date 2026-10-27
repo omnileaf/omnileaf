@@ -49,6 +49,7 @@ pub enum LibraryGrouping {
     None,
     Category,
     Folder,
+    Creator,
 }
 
 #[expect(
@@ -197,11 +198,12 @@ impl LibraryGrouping {
             Self::None => "none",
             Self::Category => "category",
             Self::Folder => "folder",
+            Self::Creator => "creator",
         }
     }
 
     fn stored(name: String) -> Result<Self, Error> {
-        [Self::None, Self::Category, Self::Folder]
+        [Self::None, Self::Category, Self::Folder, Self::Creator]
             .into_iter()
             .find(|grouping| grouping.as_stored() == name)
             .ok_or(Error::UnsupportedLibraryGrouping { name })
