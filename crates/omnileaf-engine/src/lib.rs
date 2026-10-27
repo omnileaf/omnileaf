@@ -126,8 +126,8 @@ pub use network_share::{NetworkShare, ShareAddress, ShareLookup, ShareSignIn, Un
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use opened_book::{
-    BookDamage, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions, ProbedFormat,
-    ReadingDirection, SeriesNeighbour,
+    BookDamage, BookFile, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions,
+    ProbedFormat, ReadingDirection, SeriesNeighbour,
 };
 pub use page_path::{MalformedPagePath, PageCrop, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};

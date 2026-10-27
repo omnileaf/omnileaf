@@ -90,6 +90,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   hideFilesLike: () => "cbr",
   hideFileType: () => null,
   showFileType: () => null,
+  hiddenFileTypes: () => [],
+  bookFile: () => null,
   libraryCategories: () => [],
   seriesLabels: () => ({
     keepsLabels: false,

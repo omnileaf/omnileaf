@@ -4,16 +4,16 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
-    HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
-    LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
-    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
-    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
-    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
+    AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions,
+    BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType,
+    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
+    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges,
+    Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
+    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
+    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
+    ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -84,6 +84,8 @@ macro_rules! app_commands {
             hide_files_like,
             hide_file_type,
             show_file_type,
+            hidden_file_types,
+            book_file,
             mark_books,
             mark_series_read,
             open_book,
@@ -631,6 +633,21 @@ async fn hide_file_type(library: State<'_, Library>, file_type: FileType) -> Res
 #[specta::specta]
 async fn show_file_type(library: State<'_, Library>, file_type: FileType) -> Result<(), IpcError> {
     Ok(library.show_file_type(file_type).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn hidden_file_types(library: State<'_, Library>) -> Result<Vec<FileType>, IpcError> {
+    Ok(library.hidden_types().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn book_file(
+    library: State<'_, Library>,
+    book: BookId,
+) -> Result<Option<BookFile>, IpcError> {
+    Ok(library.book_file_name(book).await?)
 }
 
 #[tauri::command]
