@@ -3,25 +3,33 @@ use crate::{
     catalog::{BookNumber, NumberRange, Numbering},
 };
 
-const VOLUMES: u8 = 0;
-const CHAPTERS: u8 = 1;
-const SPECIALS: u8 = 2;
-
-const VOLUME_BOOK: u8 = 0;
-const CHAPTER_IN_VOLUME: u8 = 1;
-const OUTSIDE_VOLUMES: u8 = 0;
-
 const NUMBERED: u8 = 0;
 const UNNUMBERED: u8 = 1;
 
-const NO_NUMBERS: NumberRange = NumberRange::single(BookNumber::from_thousandths(0));
-const PLACE_WIDTH: usize = 3 + 4 * size_of::<u32>();
+const FLAG_WIDTH: usize = size_of::<u8>();
+const NUMBER_WIDTH: usize = size_of::<u32>();
+const RANGE_WIDTH: usize = NUMBER_WIDTH + NUMBER_WIDTH;
+const VOLUME_WIDTH: usize = NUMBER_WIDTH + FLAG_WIDTH + NUMBER_WIDTH;
+const ENTRY_NUMBER_WIDTH: usize = FLAG_WIDTH + RANGE_WIDTH;
+const PLACE_WIDTH: usize = FLAG_WIDTH + VOLUME_WIDTH + ENTRY_NUMBER_WIDTH;
 
-struct Place {
-    section: u8,
-    volume: NumberRange,
-    entry: u8,
-    number: Option<NumberRange>,
+enum Place {
+    Volumes {
+        volume: NumberRange,
+        entry: VolumeEntry,
+    },
+    Chapters {
+        number: Option<NumberRange>,
+    },
+    Specials {
+        number: Option<NumberRange>,
+    },
+}
+
+#[derive(Clone, Copy)]
+enum VolumeEntry {
+    VolumeBook,
+    Chapter { number: Option<NumberRange> },
 }
 
 pub(crate) fn reading_order_key(numbering: Option<&Numbering>, title: &str) -> Vec<u8> {
@@ -38,56 +46,81 @@ pub(crate) fn reading_order_key(numbering: Option<&Numbering>, title: &str) -> V
 impl Place {
     fn of(numbering: &Numbering) -> Self {
         match *numbering {
-            Numbering::Volume { numbers } => Self::in_volumes(numbers.value, VOLUME_BOOK, None),
+            Numbering::Volume { numbers } => Self::Volumes {
+                volume: numbers.value,
+                entry: VolumeEntry::VolumeBook,
+            },
             Numbering::Chapter {
                 number,
                 volume: Some(volume),
-            } => Self::in_volumes(
-                NumberRange::single(volume.value),
-                CHAPTER_IN_VOLUME,
-                number.map(|number| number.value),
-            ),
+            } => Self::Volumes {
+                volume: NumberRange::single(volume.value),
+                entry: VolumeEntry::Chapter {
+                    number: number.map(|number| number.value),
+                },
+            },
             Numbering::Chapter {
                 number,
                 volume: None,
-            } => Self::outside_volumes(CHAPTERS, number.map(|number| number.value)),
-            Numbering::Special { number } => {
-                Self::outside_volumes(SPECIALS, number.map(|number| number.value))
-            }
+            } => Self::Chapters {
+                number: number.map(|number| number.value),
+            },
+            Numbering::Special { number } => Self::Specials {
+                number: number.map(|number| number.value),
+            },
         }
     }
 
-    const fn in_volumes(volume: NumberRange, entry: u8, number: Option<NumberRange>) -> Self {
-        Self {
-            section: VOLUMES,
-            volume,
-            entry,
-            number,
-        }
-    }
-
-    const fn outside_volumes(section: u8, number: Option<NumberRange>) -> Self {
-        Self {
-            section,
-            volume: NO_NUMBERS,
-            entry: OUTSIDE_VOLUMES,
-            number,
+    const fn section(&self) -> u8 {
+        match self {
+            Self::Volumes { .. } => 0,
+            Self::Chapters { .. } => 1,
+            Self::Specials { .. } => 2,
         }
     }
 
     fn push_onto(&self, key: &mut Vec<u8>) {
-        let (numbered, number) = match self.number {
-            Some(number) => (NUMBERED, number),
-            None => (UNNUMBERED, NO_NUMBERS),
-        };
-        key.push(self.section);
-        push_number(key, self.volume.first());
-        key.push(self.entry);
-        push_number(key, self.volume.last());
-        key.push(numbered);
-        push_number(key, number.first());
-        push_number(key, number.last());
+        key.push(self.section());
+        match *self {
+            Self::Volumes { volume, entry } => {
+                push_number(key, volume.first());
+                key.push(entry.position());
+                push_number(key, volume.last());
+                push_entry_number(key, entry.number());
+            }
+            Self::Chapters { number } | Self::Specials { number } => {
+                key.extend_from_slice(&[0; VOLUME_WIDTH]);
+                push_entry_number(key, number);
+            }
+        }
     }
+}
+
+impl VolumeEntry {
+    const fn position(self) -> u8 {
+        match self {
+            Self::VolumeBook => 0,
+            Self::Chapter { .. } => 1,
+        }
+    }
+
+    const fn number(self) -> Option<NumberRange> {
+        match self {
+            Self::VolumeBook => None,
+            Self::Chapter { number } => number,
+        }
+    }
+}
+
+fn push_entry_number(key: &mut Vec<u8>, number: Option<NumberRange>) {
+    let Some(number) = number else {
+        key.push(UNNUMBERED);
+        key.extend_from_slice(&[0; RANGE_WIDTH]);
+        return;
+    };
+    key.push(NUMBERED);
+    push_number(key, number.first());
+    push_number(key, number.last());
 }
 
 fn push_number(key: &mut Vec<u8>, number: BookNumber) {
