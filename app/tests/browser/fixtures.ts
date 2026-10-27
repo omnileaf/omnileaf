@@ -26,6 +26,7 @@ import {
   type FakeBackend,
   installFakeBackend,
 } from "./fake-backend.ts";
+import { CROP_SUFFIXES } from "./reader-book.ts";
 
 export { sidewaysOverflow } from "./sideways-overflow.ts";
 
@@ -143,7 +144,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
       message: "that book isn't in the library",
     });
   },
-  croppedPagePaths: (paths) => paths,
+  croppedPagePaths: (paths, crop) =>
+    paths.map((path) => `${path}${CROP_SUFFIXES[crop]}`),
   readingRestored: () => null,
   pageShown: () => null,
   closeBook: () => null,
