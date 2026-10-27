@@ -53,6 +53,13 @@ const LONG_BOOK_TITLE =
 const STRIP_PAGE_SIZE = { width: 800, height: 2400 };
 const SECONDS_PER_PAGE = 15;
 const NO_TINT = "none";
+const STATUS_BAR_PX = 24;
+const GESTURE_BAR_PX = 24;
+const ANDROID_TOP_BAR_PX = 64;
+const ANDROID_BOTTOM_BAR_BLOCK_PX = 8;
+const SQUARE = "0px";
+const NO_BORDER = "0px";
+const NO_SHADOW = "none";
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
@@ -66,6 +73,22 @@ async function openBook(page: Page): Promise<void> {
 
 function topBar(page: Page): Locator {
   return page.locator("main > header");
+}
+
+function bottomBar(page: Page): Locator {
+  return page.locator("main > div:has(input[type=range]) > div");
+}
+
+async function provideSystemBars(page: Page): Promise<void> {
+  await page.evaluate(
+    ([top, bottom]) => {
+      const root = document.documentElement.style;
+      root.setProperty("--system-inset-top", `${String(top)}px`);
+      root.setProperty("--system-inset-bottom", `${String(bottom)}px`);
+    },
+    [STATUS_BAR_PX, GESTURE_BAR_PX] as const,
+  );
+  await settle(page.getByRole("main"));
 }
 
 function readerActions(page: Page): Locator {
@@ -610,7 +633,7 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     await expect(next).not.toHaveCSS("background-image", NO_TINT);
   });
 
-  test("lays Android's bars on the kit's top bar container colour", async ({
+  test("runs Android's bars edge to edge on the container colour, past the status and gesture bars, as the boards draw them", async ({
     page,
     platform,
   }) => {
@@ -619,11 +642,42 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
       return;
     }
     await openBook(page);
-
-    await expect(topBar(page).locator("> div")).toHaveCSS(
-      "background-color",
-      await tokenColour(page, "--native-color-top-bar-scrolled", READER_THEME),
+    await provideSystemBars(page);
+    const { width, height } = viewportOf(page);
+    const container = await tokenColour(
+      page,
+      "--native-color-top-bar-scrolled",
+      READER_THEME,
     );
+
+    const top = await boxOf(topBar(page).locator("> div"));
+    const bottom = await boxOf(bottomBar(page));
+
+    expect(top).toEqual({
+      x: 0,
+      y: 0,
+      width,
+      height: STATUS_BAR_PX + ANDROID_TOP_BAR_PX,
+    });
+    expect([bottom.x, bottom.width, bottom.y + bottom.height]).toEqual([
+      0,
+      width,
+      height,
+    ]);
+    await expect(topBar(page).locator("> div")).toHaveCSS(
+      "padding-top",
+      `${String(STATUS_BAR_PX)}px`,
+    );
+    await expect(bottomBar(page)).toHaveCSS(
+      "padding-bottom",
+      `${String(GESTURE_BAR_PX + ANDROID_BOTTOM_BAR_BLOCK_PX)}px`,
+    );
+    for (const bar of [topBar(page).locator("> div"), bottomBar(page)]) {
+      await expect(bar).toHaveCSS("border-top-left-radius", SQUARE);
+      await expect(bar).toHaveCSS("border-top-width", NO_BORDER);
+      await expect(bar).toHaveCSS("box-shadow", NO_SHADOW);
+      await expect(bar).toHaveCSS("background-color", container);
+    }
   });
 
   test("opens Android's More as a sheet of 56 dp rows under the book, its series and page", async ({
@@ -826,6 +880,18 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
 
     await expectControlsHidden(page);
+  });
+
+  test("keeps a tablet's bars floating inside the screen's edges with rounded corners", async ({
+    page,
+  }) => {
+    await page.setViewportSize(TABLET);
+    await openBook(page);
+
+    for (const bar of [topBar(page).locator("> div"), bottomBar(page)]) {
+      expect((await boxOf(bar)).x).toBeGreaterThan(0);
+      await expect(bar).not.toHaveCSS("border-top-left-radius", SQUARE);
+    }
   });
 
   test("keeps one glass bar and More's sheet on a tablet", async ({ page }) => {

@@ -25,8 +25,9 @@
   import ComingSoon from "#lib/reader/ComingSoon.svelte";
 
   import {
-    READER_BARS,
+    EDGE_TO_EDGE_BARS,
     READER_CAPSULE,
+    READER_GLASS,
     READER_ICON_SIZE,
     readerBackLook,
     readerButton,
@@ -94,9 +95,16 @@
   class={floats
     ? "relative isolate flex items-center gap-sm before:pointer-events-none before:absolute before:-inset-x-reader-bar-inline before:-inset-bs-reader-bar-top before:-inset-be-reader-scrim-fade before:z-behind before:reader-top-scrim before:backdrop-blur-ios"
     : cn(
-        READER_BARS,
-        "flex items-center gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
-        isOnPhone && "gap-sm",
+        "flex items-center",
+        chrome.spans
+          ? [
+              EDGE_TO_EDGE_BARS,
+              "box-content gap-sm px-xs pbs-safe-top min-block-native-top-bar",
+            ]
+          : [
+              READER_GLASS,
+              "gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
+            ],
       )}
 >
   <Tooltip

@@ -356,6 +356,7 @@ export const TOKEN_THEME = {
     "native-notice-tall-block",
     "native-notice-top",
     "native-progress-gap",
+    "native-reader-bar-end",
     "native-row",
     "native-row-block",
     "native-row-end",

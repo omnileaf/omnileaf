@@ -1062,7 +1062,10 @@
   {:else}
     <header
       class={[
-        "absolute inset-x-reader-bar-inline inset-bs-reader-bar-top transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
+        "absolute transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
+        chrome.spans
+          ? "inset-x-none inset-bs-none"
+          : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
@@ -1125,7 +1128,10 @@
     {/if}
     <div
       class={[
-        "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
+        "absolute transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
+        chrome.spans
+          ? "inset-x-none inset-be-none"
+          : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
         isPanelOpen && "expanded:inset-e-reader-settings-room",
         chrome.floats && "pointer-events-none",
         !controls.isShown && "pointer-events-none opacity-0",

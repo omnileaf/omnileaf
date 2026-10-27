@@ -14,8 +14,9 @@
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   import {
-    READER_BARS,
+    EDGE_TO_EDGE_BARS,
     READER_CAPSULE,
+    READER_GLASS,
     READER_ICON_SIZE,
     readerButton,
   } from "./reader-bar.ts";
@@ -95,8 +96,13 @@
         isShown && "*:pointer-events-auto",
       )
     : cn(
-        READER_BARS,
-        "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+        "flex flex-col gap-sm",
+        chrome.spans
+          ? [EDGE_TO_EDGE_BARS, "px-lg pbs-sm pbe-native-reader-bar-end"]
+          : [
+              READER_GLASS,
+              "p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+            ],
       )}
   {@attach tracksMouse}
 >

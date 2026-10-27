@@ -58,6 +58,13 @@ function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
 
+function drawnEdgeOf(bar: Locator): Promise<string> {
+  return bar.evaluate((element) => {
+    const { borderTopWidth, borderTopColor } = getComputedStyle(element);
+    return borderTopWidth === "0px" ? "rgba(0, 0, 0, 0)" : borderTopColor;
+  });
+}
+
 function isHitToItsEdges(target: Locator): Promise<boolean> {
   return target.evaluate((element) => {
     const box = element.getBoundingClientRect();
@@ -301,7 +308,7 @@ test.describe("on Android", () => {
 
     const bar = page.locator("main header > div");
 
-    await expect(bar).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    expect(await drawnEdgeOf(bar)).toBe("rgba(0, 0, 0, 0)");
     await expect(bar).toHaveCSS(
       "background-color",
       await tokenColour(

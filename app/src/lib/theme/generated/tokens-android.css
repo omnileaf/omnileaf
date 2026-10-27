@@ -83,6 +83,7 @@
   --native-tracking-bar-title: 0;
   --native-spacing-top-bar: 64px;
   --native-spacing-top-bar-lift: var(--spacing-title-gap);
+  --native-spacing-reader-bar-end: calc(var(--spacing-safe-bottom) + 8px);
   --native-shadow-bar-button-lift: none;
   --native-spacing-tab-bar: 64px;
   --native-spacing-tab-bar-inset: 0px;
