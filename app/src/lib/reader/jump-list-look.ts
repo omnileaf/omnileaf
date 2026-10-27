@@ -64,16 +64,17 @@ const PHONE_LOOKS: Partial<Record<Platform, JumpListPhoneLook>> = {
   ios: {
     ...PHONE_LOOK,
     list: cn(PHONE_LOOK.list, "mx-lg border", GROUP_PLATE),
-    currentTitle: "text-native-on-tab-pill",
+    currentTitle: "text-native-on-jump-current",
     sort: "secondary",
     crowdedShow: "menu",
     crowdedButton: "secondary",
   },
   android: {
     ...PHONE_LOOK,
-    current: "bg-native-tab-pill",
-    currentTitle: "text-native-on-tab-pill",
-    currentDetail: "text-native-on-tab-pill",
+    current:
+      "bg-native-jump-current [--native-color-progress-rest:var(--native-color-jump-current-progress-rest)]",
+    currentTitle: "text-native-on-jump-current",
+    currentDetail: "text-native-on-jump-current",
     sort: "plain",
     crowdedShow: "own-row",
     crowdedButton: "outline",

@@ -222,6 +222,9 @@
   --native-color-on-bar-button: #2f6f4f;
   --native-color-tab-bar: rgba(255, 255, 255, 0.7);
   --native-color-tab-pill: rgba(0, 0, 0, 0.075);
+  --native-color-jump-current: transparent;
+  --native-color-on-jump-current: #2f6f4f;
+  --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: #000000;
   --native-color-on-tab-current: #2f6f4f;
   --native-color-on-tab-pill: #2f6f4f;
@@ -301,6 +304,9 @@
   --native-color-on-bar-button: #7fcb9d;
   --native-color-tab-bar: rgba(153, 153, 153, 0.17);
   --native-color-tab-pill: rgba(255, 255, 255, 0.14);
+  --native-color-jump-current: transparent;
+  --native-color-on-jump-current: #7fcb9d;
+  --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: #ffffff;
   --native-color-on-tab-current: #7fcb9d;
   --native-color-on-tab-pill: #7fcb9d;
@@ -352,6 +358,7 @@
   --native-color-top-bar-scrolled: rgba(255, 255, 255, 0.94);
   --native-color-on-bar-button: #245a40;
   --native-color-tab-bar: rgba(255, 255, 255, 0.65);
+  --native-color-on-jump-current: #245a40;
   --native-color-on-tab-current: #245a40;
   --native-color-on-tab-pill: #245a40;
   --native-color-cover-badge: rgba(255, 255, 255, 0.92);
@@ -388,6 +395,7 @@
   --native-color-top-bar-scrolled: rgba(0, 0, 0, 0.88);
   --native-color-on-bar-button: #a8e0bf;
   --native-color-tab-bar: rgba(153, 153, 153, 0.13);
+  --native-color-on-jump-current: #a8e0bf;
   --native-color-on-tab-current: #a8e0bf;
   --native-color-on-tab-pill: #a8e0bf;
   --native-color-cover-badge: rgba(0, 0, 0, 0.85);

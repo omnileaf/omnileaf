@@ -225,6 +225,9 @@
   --native-color-on-bar-button: #191d1a;
   --native-color-tab-bar: #e9f0e8;
   --native-color-tab-pill: #d0e8d7;
+  --native-color-jump-current: #d0e8d7;
+  --native-color-on-jump-current: #415749;
+  --native-color-jump-current-progress-rest: #f7faf5;
   --native-color-on-tab: #58615a;
   --native-color-on-tab-current: #326a4d;
   --native-color-on-tab-pill: #415749;
@@ -299,6 +302,9 @@
   --native-color-on-bar-button: #e0e3df;
   --native-color-tab-bar: #141b17;
   --native-color-tab-pill: #2b4033;
+  --native-color-jump-current: #2b4033;
+  --native-color-on-jump-current: #adc5b4;
+  --native-color-jump-current-progress-rest: #0b0f0c;
   --native-color-on-tab: #a4aea5;
   --native-color-on-tab-current: #a4d1b4;
   --native-color-on-tab-pill: #adc5b4;
@@ -359,6 +365,8 @@
   --native-color-on-top-bar: #1d2620;
   --native-color-on-bar-button: #1d2620;
   --native-color-tab-pill: #647a6b;
+  --native-color-jump-current: #647a6b;
+  --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #3c453e;
   --native-color-on-tab-current: #114c32;
   --native-color-on-tab-pill: #ffffff;
@@ -411,6 +419,8 @@
   --native-color-on-top-bar: #ffffff;
   --native-color-on-bar-button: #ffffff;
   --native-color-tab-pill: #647a6b;
+  --native-color-jump-current: #647a6b;
+  --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #b1bbb3;
   --native-color-on-tab-current: #a4d1b4;
   --native-color-on-tab-pill: #ffffff;
@@ -463,6 +473,8 @@
   --native-color-on-top-bar: #000000;
   --native-color-on-bar-button: #000000;
   --native-color-tab-pill: #42574a;
+  --native-color-jump-current: #42574a;
+  --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #1d2620;
   --native-color-on-tab-current: #002a18;
   --native-color-on-tab-pill: #ffffff;
@@ -515,6 +527,8 @@
   --native-color-on-top-bar: #ffffff;
   --native-color-on-bar-button: #ffffff;
   --native-color-tab-pill: #92a999;
+  --native-color-jump-current: #92a999;
+  --native-color-on-jump-current: #000000;
   --native-color-on-tab: #dee8df;
   --native-color-on-tab-current: #c2f0d2;
   --native-color-on-tab-pill: #000000;

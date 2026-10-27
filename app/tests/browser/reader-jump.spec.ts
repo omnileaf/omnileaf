@@ -460,6 +460,7 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
   const ANDROID_SHEET_START_PX = 16;
   const ANDROID_CALLOUT = { size: "14px", leading: "20px" };
   const CLEAR = "rgba(0, 0, 0, 0)";
+  const REPAINTED = "rgb(255, 0, 0)";
   const PSEUDO_SHOW = "Šĥöŵ";
   const PSEUDO_SORT = "Šöŕţ";
   const PSEUDO_IN_ORDER = "Íñ öŕðéŕ";
@@ -593,13 +594,71 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
       "background-color",
       platform === "ios"
         ? CLEAR
-        : await tokenColour(page, "--native-color-tab-pill", READER_THEME),
+        : await tokenColour(page, "--native-color-jump-current", READER_THEME),
     );
     await expect(current.getByText(BOOK_TITLE, { exact: true })).toHaveCSS(
       "color",
-      await tokenColour(page, "--native-color-on-tab-pill", READER_THEME),
+      await tokenColour(page, "--native-color-on-jump-current", READER_THEME),
     );
     await expect(read.locator(".lucide-check")).toHaveCount(1);
+  });
+
+  test("keeps the phone's current book in its own colours when the tab pill changes", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const sheet = await openJumpList(page);
+    const current = sheet.getByRole("link", { name: new RegExp(BOOK_TITLE) });
+    const title = current.getByText(BOOK_TITLE, { exact: true });
+    const ground = await current.evaluate(
+      (row) => getComputedStyle(row).backgroundColor,
+    );
+    const ink = await title.evaluate((text) => getComputedStyle(text).color);
+
+    await page.addStyleTag({
+      content: `* { --native-color-tab-pill: ${REPAINTED} !important; --native-color-on-tab-pill: ${REPAINTED} !important; }`,
+    });
+    await settle(sheet);
+
+    await expect(title).toHaveCSS("color", ink);
+    if (platform === "android") {
+      await expect(current).toHaveCSS("background-color", ground);
+    }
+  });
+
+  test("keeps the unread part of the Android phone's current book's progress apart from its row, as the board draws it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const sheet = await openJumpList(page);
+    const current = sheet.getByRole("link", { name: new RegExp(BOOK_TITLE) });
+    const unread = current.getByRole("progressbar").locator("> :last-child");
+
+    const row = await current.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    const rest = await unread.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+
+    expect(rest).not.toBe(row);
+    expect(rest).toBe(
+      await tokenColour(
+        page,
+        "--native-color-jump-current-progress-rest",
+        READER_THEME,
+      ),
+    );
   });
 
   test("gives a book whose file is missing no pressed look", async ({
