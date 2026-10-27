@@ -24,6 +24,12 @@ export const PROBLEM_TEXT = {
   centredColumn: "text-center",
 } as const satisfies Record<ProblemLayout, string>;
 
+export const PROBLEM_CAPTION = {
+  row: "",
+  startColumn: "text-center",
+  centredColumn: "text-center",
+} as const satisfies Record<ProblemLayout, string>;
+
 export function problemLayout(
   platform: Platform,
   width: WidthClass,

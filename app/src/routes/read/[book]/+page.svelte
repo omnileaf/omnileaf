@@ -86,6 +86,9 @@
     place={shown.place}
     file={shown.file}
     platform={data.appInfo.platform}
+    hideFilesLike={commands.hideFilesLike}
+    showFileType={commands.showFileType}
+    {notices}
   />
 {:else}
   <BookProblem

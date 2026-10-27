@@ -18,6 +18,8 @@ import {
 } from "./reader-book.ts";
 
 const FILE_NAME = `${BOOK_TITLE}.cbr`;
+const typesHiddenLike: string[] = [];
+const typesShownAgain: string[] = [];
 
 const UNSUPPORTED: FakeBackend = {
   ...DEFAULT_BACKEND,
@@ -34,9 +36,22 @@ const UNSUPPORTED: FakeBackend = {
     seriesTitle: BOOK_SERIES_TITLE,
   }),
   bookFile: () => ({ name: FILE_NAME, fileType: "cbr" }),
+  hideFilesLike: (book) => {
+    typesHiddenLike.push(book);
+    return "cbr";
+  },
+  showFileType: (fileType) => {
+    typesShownAgain.push(fileType);
+    return null;
+  },
 };
 
 test.use({ backend: UNSUPPORTED });
+
+test.beforeEach(() => {
+  typesHiddenLike.length = 0;
+  typesShownAgain.length = 0;
+});
 
 function heading(page: Page) {
   return page.getByRole("heading", {
@@ -92,6 +107,49 @@ test("says showing the file is still to come", async ({ page }) => {
   ).toBeDisabled();
 });
 
+test("hides files like this one, offering to undo it", async ({ page }) => {
+  await openUnsupportedFile(page);
+  const hide = page.getByRole("button", { name: "Hide files like this" });
+
+  await hide.click();
+
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "CBR files hidden" }),
+  ).toContainText("They leave your library at the next rescan.");
+  await expect(hide).toHaveAttribute("aria-disabled", "true");
+  expect(typesHiddenLike).toEqual([BOOK_ID]);
+  await expect(
+    page.getByText("Hiding keeps CBR files out of your library from now on."),
+  ).toBeVisible();
+});
+
+test("shows the type again on Undo", async ({ page }) => {
+  await openUnsupportedFile(page);
+  const hide = page.getByRole("button", { name: "Hide files like this" });
+  await hide.click();
+
+  await page.getByRole("button", { name: "Undo" }).click();
+
+  await expect(hide).not.toHaveAttribute("aria-disabled", "true");
+  expect(typesShownAgain).toEqual(["cbr"]);
+});
+
+test("sets Hide and Show side by side on desktops", async ({ page }) => {
+  test.skip(
+    viewportOf(page).width < EXPANDED_MIN_WIDTH,
+    "phones and tablets stack them",
+  );
+  await openUnsupportedFile(page);
+
+  const hide = await boxOf(
+    page.getByRole("button", { name: "Hide files like this" }),
+  );
+  const show = await boxOf(page.getByRole("button", { name: /coming soon$/ }));
+
+  expect(show.x).toBeGreaterThan(hide.x + hide.width);
+  expect(show.y).toBeCloseTo(hide.y, 0);
+});
+
 test("names the series and the file's book in a breadcrumb on desktops", async ({
   page,
 }) => {
@@ -123,6 +181,25 @@ test.describe(
 
       await expect(heading(page)).toHaveCSS("text-align", expected);
       expect(title.y).toBeGreaterThanOrEqual(badge.y + badge.height);
+    });
+
+    test("stacks Hide over Show on Android, each at its own width", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform !== "android", "Android's buttons only");
+      await openUnsupportedFile(page);
+
+      const hide = await boxOf(
+        page.getByRole("button", { name: "Hide files like this" }),
+      );
+      const show = await boxOf(
+        page.getByRole("button", { name: /coming soon$/ }),
+      );
+
+      expect(show.y).toBeGreaterThanOrEqual(hide.y + hide.height);
+      expect(hide.x + hide.width / 2).toBeCloseTo(show.x + show.width / 2, 0);
+      expect(hide.width).not.toBeCloseTo(show.width, 0);
     });
   },
 );
