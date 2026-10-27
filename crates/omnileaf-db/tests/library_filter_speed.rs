@@ -34,6 +34,11 @@ const BOOK_TITLES: [&str; 10] = [
 ];
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const EVERY_TENTH_STARTED: u32 = 10;
+const EVERY_HUNDREDTH_FORGOTTEN: u32 = 100;
+const FORGOTTEN_REMAINDER: u32 = 1;
+const READ_LONG_AGO_MS: i64 = 1_000;
+const READ_LATELY_MS: i64 = 2_000;
+const SESSION_PAGE_COUNT: u32 = 24;
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -46,7 +51,7 @@ const SORTS: [SeriesSort; 4] = [
 ];
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-const FILTERS: [SeriesFilter; 7] = [
+const FILTERS: [SeriesFilter; 8] = [
     SeriesFilter::NONE,
     SeriesFilter {
         unread: Inclusion::Only,
@@ -70,6 +75,10 @@ const FILTERS: [SeriesFilter; 7] = [
     },
     SeriesFilter {
         finished: Inclusion::Hide,
+        ..SeriesFilter::NONE
+    },
+    SeriesFilter {
+        last_read_before_ms: Some(READ_LATELY_MS),
         ..SeriesFilter::NONE
     },
 ];
@@ -155,6 +164,26 @@ async fn add_generated_library(database: &Database) {
                 (
                     EVERY_HUNDREDTH_FINISHED,
                     EVERY_TENTH_STARTED,
+                    BOOK_TITLES[0],
+                ),
+            )?;
+            transaction.execute(
+                "INSERT INTO reading_session (
+                    book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count
+                )
+                SELECT book.id, ended_at_ms, ended_at_ms, 0, 0, ?1
+                FROM (
+                    SELECT book.id, CASE WHEN series.added_at_ms % ?2 = ?3 THEN ?4 ELSE ?5 END
+                        AS ended_at_ms
+                    FROM book JOIN series ON series.local_id = book.series_local_id
+                    WHERE book.title = ?6
+                ) AS book",
+                (
+                    SESSION_PAGE_COUNT,
+                    EVERY_HUNDREDTH_FORGOTTEN,
+                    FORGOTTEN_REMAINDER,
+                    READ_LONG_AGO_MS,
+                    READ_LATELY_MS,
                     BOOK_TITLES[0],
                 ),
             )?;
