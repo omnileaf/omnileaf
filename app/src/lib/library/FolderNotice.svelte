@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
   import { onDestroy, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import {
     Alert,
@@ -25,6 +26,7 @@
     readonly usesStandIns: boolean;
     readonly onShow?: (() => void) | undefined;
     readonly onDismissed: () => void;
+    readonly class?: ClassValue;
   }
 
   interface EmptyFolderNotice {
@@ -34,7 +36,14 @@
     readonly body?: string;
   }
 
-  let { adding, notices, usesStandIns, onShow, onDismissed }: Props = $props();
+  let {
+    adding,
+    notices,
+    usesStandIns,
+    onShow,
+    onDismissed,
+    class: className,
+  }: Props = $props();
 
   onDestroy(() => {
     adding.withdrawFailure();
@@ -114,7 +123,7 @@
   }
 </script>
 
-<div role="status" class="empty:absolute">
+<div role="status" class={["empty:absolute", className]}>
   {#if notice !== undefined}
     <Alert tone={notice.tone} icon={notice.icon}>
       <AlertTitle>{notice.title}</AlertTitle>

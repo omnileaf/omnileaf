@@ -856,14 +856,13 @@
         </Button>
       </EmptyState>
     {:else}
-      <div class="mbs-sm">
-        <FolderNotice
-          {adding}
-          {notices}
-          usesStandIns={screenshotMode.isOn}
-          onDismissed={returnFocusFromNotice}
-        />
-      </div>
+      <FolderNotice
+        class="mbs-sm"
+        {adding}
+        {notices}
+        usesStandIns={screenshotMode.isOn}
+        onDismissed={returnFocusFromNotice}
+      />
       {#if listsNothing && chosenListing !== undefined}
         <NoMatches
           filter={chosenListing.filter}
