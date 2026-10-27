@@ -14,12 +14,14 @@
   let {
     folders,
     platform,
+    change,
     rowAction,
     class: className,
     children,
   }: {
     folders: FolderList;
     platform: Platform;
+    change?: Snippet;
     rowAction?: Snippet<[LibraryFolder]>;
     class?: ClassValue;
     children?: Snippet;
@@ -52,6 +54,7 @@
           {folderLocation(home, platform)}
         </code>
       </div>
+      {@render change?.()}
       {@render rowAction?.(home)}
     </div>
   {:else}

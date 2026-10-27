@@ -6,8 +6,10 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import {
+  type ChosenHomeFolder,
   commands,
   type FileChanges,
+  type HomeChoice,
   type Platform,
   type LibraryFolder,
   type RescanOutcome,
@@ -19,6 +21,7 @@ import Toasts from "#lib/notices/Toasts.svelte";
 import { clearToasts } from "../../../tests/components/clear-toasts";
 
 import type { AddFolder } from "./add-folder";
+import type { HomeCommands } from "./home-folder-change.svelte";
 import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 import type { RescanFolder } from "./rescan-folder";
 import type { RemoveFolderBooks } from "./rescans.svelte";
@@ -66,6 +69,50 @@ const NO_CHANGES: FileChanges = {
   unreadableBooks: 0,
   unsupportedBooks: 0,
   unreadableFolders: 0,
+};
+
+const CHOSEN_HOME = "/media/Sample Library";
+const FOUND_SERIES = 212;
+const FOUND_BOOKS = 38;
+
+class HomeCommandsAsked {
+  uses = 0;
+  moves = 0;
+  failsToAct = false;
+  readonly #chosen: (ChosenHomeFolder | null)[];
+
+  constructor(...choices: (HomeChoice | null)[]) {
+    this.#chosen = choices.map((choice) =>
+      choice === null ? null : { location: CHOSEN_HOME, choice },
+    );
+  }
+
+  readonly commands: HomeCommands = {
+    choose: () =>
+      Promise.resolve({ status: "ok", data: this.#chosen.shift() ?? null }),
+    use: () => {
+      this.uses += 1;
+      return Promise.resolve(this.#acted());
+    },
+    move: () => {
+      this.moves += 1;
+      return Promise.resolve(this.#acted());
+    },
+  };
+
+  #acted(): Awaited<ReturnType<HomeCommands["move"]>> {
+    return this.failsToAct
+      ? {
+          status: "error",
+          error: { code: "internal", message: "the folder went away" },
+        }
+      : { status: "ok", data: null };
+  }
+}
+
+const FOUND_CHOICE: HomeChoice = {
+  kind: "found",
+  library: { series: FOUND_SERIES, books: FOUND_BOOKS, lastBackupAtMs: null },
 };
 
 function rescanning(outcome: RescanOutcome): RescanFolder {
@@ -147,6 +194,7 @@ async function renderSettings({
   rescanFolder = NOTHING_CHANGED,
   countFolderBooks = COUNTED,
   removeFolderBooks = BOOKS_REMOVED,
+  homeCommands = new HomeCommandsAsked().commands,
   platform = "linux",
 }: {
   addFolder?: AddFolder;
@@ -154,6 +202,7 @@ async function renderSettings({
   rescanFolder?: RescanFolder;
   countFolderBooks?: CountFolderBooks;
   removeFolderBooks?: RemoveFolderBooks;
+  homeCommands?: HomeCommands;
   platform?: Platform;
 } = {}) {
   const notices = new Notices();
@@ -164,6 +213,7 @@ async function renderSettings({
     addFolder,
     rescanFolder,
     removeFolderBooks,
+    homeCommands,
     notices,
     usesStandIns: false,
     platform,
@@ -284,6 +334,7 @@ test("says when the folders couldn't be loaded", async () => {
     addFolder: NOTHING_PICKED,
     rescanFolder: NOTHING_CHANGED,
     removeFolderBooks: BOOKS_REMOVED,
+    homeCommands: new HomeCommandsAsked().commands,
     notices: new Notices(),
     usesStandIns: false,
     platform: "linux",
@@ -1240,4 +1291,186 @@ test("shows a folder as available once a rescan reaches it again", async () => {
   await expect
     .element(folders.getByRole("listitem"))
     .not.toHaveTextContent("Not available");
+});
+
+for (const [platform, label] of [
+  ["linux", "Change"],
+  ["windows", "Change"],
+  ["macos", "Change…"],
+] as const) {
+  test(`offers Change on the home folder on ${platform}, before Rescan`, async () => {
+    serveFolders([HOME, COMICS]);
+
+    const { home } = await renderSettings({ platform });
+
+    await expect
+      .element(home.getByRole("button", { name: label, exact: true }))
+      .toBeVisible();
+    expect(
+      home
+        .getByRole("button")
+        .elements()
+        .map(
+          (button) =>
+            button.getAttribute("aria-label") ?? button.textContent.trim(),
+        ),
+    ).toEqual([label, "Rescan Omnileaf"]);
+  });
+}
+
+for (const platform of ["android", "ios"] as const) {
+  test(`offers no Change on the home folder on ${platform}`, async () => {
+    serveFolders([HOME, COMICS]);
+
+    const { home } = await renderSettings({ platform });
+
+    await expect
+      .element(home.getByRole("button", { name: "Rescan Omnileaf" }))
+      .toBeVisible();
+    expect(
+      home.getByRole("button", { name: /^Change/ }).elements(),
+    ).toHaveLength(0);
+  });
+}
+
+test("says on a desktop that Change moves what the home folder keeps", async () => {
+  serveFolders([HOME, COMICS]);
+
+  const { home } = await renderSettings();
+
+  await expect
+    .element(
+      home.getByText(
+        "Progress, settings and backups live here. Change moves them.",
+      ),
+    )
+    .toBeVisible();
+});
+
+test("moves the library into an empty folder chosen with Change", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked({ kind: "empty" });
+  const { home } = await renderSettings({ homeCommands: asked.commands });
+
+  await home.getByRole("button", { name: "Change", exact: true }).click();
+
+  await expect.poll(() => asked.moves).toBe(1);
+});
+
+test("leaves everything as it was when the folder chooser is cancelled", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked(null);
+  const { home, dialog } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+  const change = home.getByRole("button", { name: "Change", exact: true });
+
+  await change.click();
+
+  await expect.element(change).not.toHaveAttribute("aria-disabled");
+  await expect.element(dialog).not.toBeInTheDocument();
+  expect([asked.moves, asked.uses]).toEqual([0, 0]);
+});
+
+test("shows the library found in the chosen folder before using it", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked(FOUND_CHOICE);
+  const { home, dialog } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+
+  await home.getByRole("button", { name: "Change", exact: true }).click();
+
+  await expect
+    .element(dialog.getByRole("heading", { name: "A library is already here" }))
+    .toBeVisible();
+  await expect.element(dialog.getByText(CHOSEN_HOME)).toBeVisible();
+  await expect
+    .element(
+      dialog.getByText(
+        `${String(FOUND_SERIES)} series · ${String(FOUND_BOOKS)} books`,
+      ),
+    )
+    .toBeVisible();
+  expect(asked.uses).toBe(0);
+});
+
+test("uses the found library once Use this library is pressed", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked(FOUND_CHOICE);
+  const { home, dialog } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+  await home.getByRole("button", { name: "Change", exact: true }).click();
+
+  await dialog.getByRole("button", { name: "Use this library" }).click();
+
+  await expect.poll(() => asked.uses).toBe(1);
+});
+
+test("goes back to Change when the found library is turned down", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked(FOUND_CHOICE);
+  const { home, dialog } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+  const change = home.getByRole("button", { name: "Change", exact: true });
+  await change.click();
+
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  await expect.element(dialog).not.toBeInTheDocument();
+  await expect.element(change).toHaveFocus();
+  expect(asked.uses).toBe(0);
+});
+
+for (const [choice, title] of [
+  [{ kind: "overlapsHome" }, "Couldn't move your library there"],
+  [{ kind: "foundFromANewerVersion" }, "That library is from a newer Omnileaf"],
+] as const) {
+  test(`warns "${title}" and moves nothing`, async () => {
+    serveFolders([HOME, COMICS]);
+    const asked = new HomeCommandsAsked(choice);
+    const { home, toasts } = await renderSettings({
+      homeCommands: asked.commands,
+    });
+
+    await home.getByRole("button", { name: "Change", exact: true }).click();
+
+    await expect.element(toasts.getByText(title)).toBeVisible();
+    expect(asked.moves).toBe(0);
+  });
+}
+
+test("warns and lets Change work again when the move fails", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked({ kind: "empty" });
+  asked.failsToAct = true;
+  const { home, toasts } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+  const change = home.getByRole("button", { name: "Change", exact: true });
+
+  await change.click();
+
+  await expect
+    .element(toasts.getByText("Couldn't use that folder"))
+    .toBeVisible();
+  await expect.element(change).not.toHaveAttribute("aria-disabled");
+});
+
+test("warns when the found library can't be used", async () => {
+  serveFolders([HOME, COMICS]);
+  const asked = new HomeCommandsAsked(FOUND_CHOICE);
+  asked.failsToAct = true;
+  const { home, dialog, toasts } = await renderSettings({
+    homeCommands: asked.commands,
+  });
+  await home.getByRole("button", { name: "Change", exact: true }).click();
+
+  await dialog.getByRole("button", { name: "Use this library" }).click();
+
+  await expect
+    .element(toasts.getByText("Couldn't use that folder"))
+    .toBeVisible();
 });

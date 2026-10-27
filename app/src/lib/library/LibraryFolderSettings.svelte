@@ -2,8 +2,10 @@
   import { Trash } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
+  import ChangeHomeButton from "#lib/first-launch/ChangeHomeButton.svelte";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
+  import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
@@ -12,6 +14,10 @@
   import { FolderAdding } from "./folder-adding.svelte";
   import { folderTitle } from "./folder-title";
   import HomeFolder from "./HomeFolder.svelte";
+  import {
+    type HomeCommands,
+    HomeFolderChange,
+  } from "./home-folder-change.svelte";
   import {
     type CountFolderBooks,
     LibraryFolders,
@@ -24,6 +30,7 @@
   import type { RescanFolder } from "./rescan-folder";
   import { type RemoveFolderBooks, Rescans } from "./rescans.svelte";
   import RescanStatus from "./RescanStatus.svelte";
+  import UseFoundHomeDialog from "./UseFoundHomeDialog.svelte";
 
   let {
     listFolders,
@@ -32,6 +39,7 @@
     addFolder,
     rescanFolder,
     removeFolderBooks,
+    homeCommands,
     notices,
     usesStandIns,
     platform,
@@ -43,6 +51,7 @@
     addFolder: AddFolder;
     rescanFolder: RescanFolder;
     removeFolderBooks: RemoveFolderBooks;
+    homeCommands: HomeCommands;
     notices: Notices;
     usesStandIns: boolean;
     platform: Platform;
@@ -66,9 +75,36 @@
     (id) => removeFolderBooks(id),
   );
 
+  const homeChange = new HomeFolderChange(
+    {
+      choose: () => homeCommands.choose(),
+      use: () => homeCommands.use(),
+      move: () => homeCommands.move(),
+    },
+    () => notices,
+  );
+  let changeHomeButton: HTMLButtonElement | null = $state(null);
+
   onMount(() => {
     void folders.load();
   });
+
+  function homeHint(): string {
+    if (platform === "ios") {
+      return m.library_settings_home_folder_hint_ios({
+        place: folderLocation({ kind: "home", location: "" }, platform),
+      });
+    }
+    return isPointer(platform)
+      ? m.library_settings_home_folder_hint_desktop()
+      : m.library_settings_home_folder_hint();
+  }
+
+  async function turnDownFoundHome(): Promise<void> {
+    homeChange.clearFound();
+    await tick();
+    changeHomeButton?.focus();
+  }
 
   let linkedFolders: { focusRow: (folder: LibraryFolder) => void } | undefined =
     $state();
@@ -149,13 +185,21 @@
   class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
 >
   <HomeFolder folders={folders.list} {platform} rowAction={rescanButton}>
+    {#snippet change()}
+      {#if isPointer(platform)}
+        <ChangeHomeButton
+          bind:ref={changeHomeButton}
+          {platform}
+          isBusy={homeChange.isBusy}
+          onclick={() => {
+            void homeChange.choose();
+          }}
+        />
+      {/if}
+    {/snippet}
     <RescanStatus status={rescans.status} kind="home" />
     <p class="mbs-sm px-xs text-caption text-muted">
-      {platform === "ios"
-        ? m.library_settings_home_folder_hint_ios({
-            place: folderLocation({ kind: "home", location: "" }, platform),
-          })
-        : m.library_settings_home_folder_hint()}
+      {homeHint()}
     </p>
   </HomeFolder>
 
@@ -196,6 +240,17 @@
     {/snippet}
   </LinkedFolders>
 </div>
+
+<UseFoundHomeDialog
+  found={homeChange.found}
+  isBusy={homeChange.isBusy}
+  onUse={() => {
+    void homeChange.use();
+  }}
+  onCancel={() => {
+    void turnDownFoundHome();
+  }}
+/>
 
 <RemoveBooksDialog
   folder={askingToRemoveBooks}

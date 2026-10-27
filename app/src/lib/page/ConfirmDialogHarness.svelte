@@ -3,7 +3,10 @@
 
   import ConfirmDialog from "./ConfirmDialog.svelte";
 
-  let { phoneLook = "sheet" }: { phoneLook?: "sheet" | "dialog" } = $props();
+  let {
+    phoneLook = "sheet",
+    tone = "danger",
+  }: { phoneLook?: "sheet" | "dialog"; tone?: "danger" | "accent" } = $props();
 </script>
 
 <ConfirmDialog
@@ -15,6 +18,7 @@
   onConfirm={() => {}}
   onCancel={() => {}}
   {phoneLook}
+  {tone}
 >
   <p>This removes 1.2 GB. Your library and progress stay.</p>
 </ConfirmDialog>

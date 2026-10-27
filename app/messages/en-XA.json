@@ -606,6 +606,43 @@
   "home_moved_body": "⟦Íţ'š íñ {location} ñöŵ.··········⟧",
   "home_move_failed_title": "⟦Çöûļðñ'ţ ɱöṽé ýöûŕ ļíƀŕáŕý···········⟧",
   "home_move_failed_body": "⟦Íţ šţáýš íñ {location}. Ñöţĥíñĝ íñ íţ çĥáñĝéð.···················⟧",
+  "home_use_found_title": "⟦Á ļíƀŕáŕý íš áļŕéáðý ĥéŕé··········⟧",
+  "home_use_found_detail": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķ····················⟧",
+        "booksPlural=other": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķš····················⟧"
+      }
+    }
+  ],
+  "home_use_found_detail_backed_up": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "input date",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķ · Ļášţ ƀáçķûþ {date}····························⟧",
+        "booksPlural=other": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķš · Ļášţ ƀáçķûþ {date}····························⟧"
+      }
+    }
+  ],
+  "home_use_found_body": "⟦Öɱñíļéáƒ ŕéšţáŕţš ŵíţĥ íţ. Ýöûŕ çûŕŕéñţ ļíƀŕáŕý šţáýš ŵĥéŕé íţ íš.···························⟧",
+  "home_use_found_confirm": "⟦Ûšé ţĥíš ļíƀŕáŕý·······⟧",
+  "home_use_found_cancel": "⟦Çáñçéļ···⟧",
   "navigation_label": "⟦Ṁáíñ··⟧",
   "sidebar_hide": "⟦Ĥíðé ţĥé šíðéƀáŕ·······⟧",
   "sidebar_show": "⟦Šĥöŵ ţĥé šíðéƀáŕ·······⟧",
@@ -826,6 +863,7 @@
   "library_settings_folders": "⟦Ƒöļðéŕš···⟧",
   "library_settings_home_folder": "⟦Ĥöɱé ƒöļðéŕ·····⟧",
   "library_settings_home_folder_hint": "⟦Ýöûŕ ļíƀŕáŕý, ŕéáðíñĝ þŕöĝŕéšš áñð ƀáçķûþš áŕé ķéþţ ĥéŕé.·······················⟧",
+  "library_settings_home_folder_hint_desktop": "⟦Þŕöĝŕéšš, šéţţíñĝš áñð ƀáçķûþš ļíṽé ĥéŕé. Çĥáñĝé ɱöṽéš ţĥéɱ.························⟧",
   "library_settings_home_folder_hint_ios": "⟦Ţĥé ļíƀŕáŕý šţáýš íñšíðé ţĥé áþþ. Ɓáçķûþš áñð ƀööķš ýöû áðð áŕé íñ Ƒíļéš › {place}.··································⟧",
   "library_folders_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ƒöļðéŕš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_remove_folder": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
