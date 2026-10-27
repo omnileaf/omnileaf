@@ -64,6 +64,10 @@ const PHONE_CARD_TITLE_TYPE = {
   ios: { size: "22px", tracking: "-0.26px", weight: "700" },
   android: { size: "22px", tracking: "normal", weight: "400" },
 } satisfies Record<PhonePlatform, PhoneType>;
+const PHONE_BOOK_TYPE = {
+  ios: { size: "20px", tracking: "-0.45px", weight: "600" },
+  android: { size: "22px", tracking: "normal", weight: "400" },
+} satisfies Record<PhonePlatform, PhoneType>;
 const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } satisfies Record<
   PhonePlatform,
   number
@@ -433,6 +437,24 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     await expectType(
       page.getByRole("heading", { level: 2, name: "Up next" }),
       PHONE_LABEL_TYPE[platform],
+    );
+  });
+
+  test("sets the next book's title in the phone's own type", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await turnPastTheEnd(page);
+
+    await expectType(
+      upNextCard(page).getByText(NEXT_BOOK.title, { exact: true }),
+      PHONE_BOOK_TYPE[platform],
     );
   });
 
