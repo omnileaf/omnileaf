@@ -350,6 +350,19 @@ mod tests {
         }
 
         #[test]
+        fn keys_every_placed_book_with_a_place_of_one_width_before_its_title(
+            left in numbering(),
+            right in numbering(),
+            title in TITLE,
+        ) {
+            let width = |numbering| reading_order_key(Some(numbering), &title).len();
+
+            let widths = (width(&left), width(&right));
+
+            prop_assert_eq!(widths.0, widths.1, "{:?} and {:?}", left, right);
+        }
+
+        #[test]
         fn keys_a_book_not_placed_yet_by_its_title_alone(title in TITLE) {
             let key = reading_order_key(None, &title);
 
