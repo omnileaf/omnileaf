@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
+import type {
+  ChosenHomeFolder,
+  FoundLibrary,
+  Platform,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -15,6 +19,8 @@ import {
 } from "./fixtures.ts";
 
 const HOME_LOCATION = "/data/Omnileaf";
+const CHOSEN_LOCATION = "/media/Sample Library";
+const HOME_HEADING = "Where your library lives";
 const FOUND_HEADING = "A library is already here";
 const USE_LIBRARY = "Use this library";
 const START_NEW_LIBRARY = "Start a new library instead";
@@ -28,10 +34,48 @@ const FOUND_FACTS = [
   ["Last backup", "October 12, 2026"],
 ];
 
-function foundOn(platform: Platform): FakeBackend {
+const FOUND: FoundLibrary = {
+  series: 212,
+  books: 38,
+  lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
+};
+
+class HomeCommandsAsked {
+  uses = 0;
+  chosen: ChosenHomeFolder[] = [];
+  answering: Promise<void> = Promise.resolve();
+
+  reset(): void {
+    this.uses = 0;
+    this.chosen = [];
+    this.answering = Promise.resolve();
+  }
+
+  holdAnswers(): () => void {
+    let release = () => {};
+    this.answering = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
+  }
+}
+
+const asked = new HomeCommandsAsked();
+
+function homeOn(platform: Platform): FakeBackend {
   return {
     ...onPlatform(platform).backend,
     firstLaunchFinished: () => false,
+    chooseHomeFolder: async () => {
+      const chosen = asked.chosen.shift() ?? null;
+      await asked.answering;
+      return chosen;
+    },
+    useFoundLibrary: async () => {
+      asked.uses += 1;
+      await asked.answering;
+      return null;
+    },
     libraryFolders: () => ({
       folders: [
         {
@@ -44,13 +88,21 @@ function foundOn(platform: Platform): FakeBackend {
       ],
       next: null,
     }),
-    foundLibrary: () => ({
-      series: 212,
-      books: 38,
-      lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
-    }),
   };
 }
+
+function foundOn(platform: Platform): FakeBackend {
+  return { ...homeOn(platform), foundLibrary: () => FOUND };
+}
+
+function foundThroughChange(platform: Platform): FakeBackend {
+  return { ...homeOn(platform), foundLibrary: () => null };
+}
+
+const CHOSEN_LIBRARY: ChosenHomeFolder = {
+  location: CHOSEN_LOCATION,
+  choice: { kind: "found", library: FOUND },
+};
 
 async function goToTheHomeFolder(page: Page): Promise<void> {
   await page.goto("/first-launch");
@@ -208,6 +260,152 @@ test.describe("a library already in the home folder on a desktop", () => {
     expect(back.x + back.width).toBeLessThan(start.x);
     expect(start.x + start.width).toBeLessThan(use.x);
   });
+});
+
+test.describe("using a library already in the home folder on a desktop", () => {
+  testOnlyInItsWebview("linux");
+  test.use({ backend: foundOn("linux") });
+
+  test.beforeEach(() => {
+    asked.reset();
+  });
+
+  test("goes on with the library the home folder already holds", async ({
+    page,
+  }) => {
+    await goToTheHomeFolder(page);
+
+    await button(page, USE_LIBRARY).click();
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Already have comics or books?",
+      }),
+    ).toBeVisible();
+    expect(asked.uses).toBe(0);
+  });
+
+  test("chooses another folder with Change, showing its path", async ({
+    page,
+  }) => {
+    asked.chosen = [CHOSEN_LIBRARY];
+    await goToTheHomeFolder(page);
+
+    await homeCard(page)
+      .getByRole("button", { name: "Change", exact: true })
+      .click();
+
+    await expect(homeCard(page).locator("code")).toHaveText(CHOSEN_LOCATION);
+  });
+});
+
+test.describe("a library found in a folder chosen with Change", () => {
+  testOnlyInItsWebview("linux");
+  test.use({ backend: foundThroughChange("linux") });
+
+  test.beforeEach(() => {
+    asked.reset();
+    asked.chosen = [CHOSEN_LIBRARY];
+  });
+
+  async function chooseTheFoundLibrary(page: Page): Promise<void> {
+    await page.goto("/first-launch");
+    await page.getByRole("button", { name: "Get started" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: HOME_HEADING }),
+    ).toBeVisible();
+    await homeCard(page)
+      .getByRole("button", { name: "Change", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
+    ).toBeVisible();
+  }
+
+  test("says what the chosen folder's library holds, under its path", async ({
+    page,
+  }) => {
+    await chooseTheFoundLibrary(page);
+
+    await expect(homeCard(page).locator("code")).toHaveText(CHOSEN_LOCATION);
+    expect(await factsOf(homeCard(page))).toEqual(FOUND_FACTS);
+  });
+
+  test("uses the chosen folder's library with Use this library, once", async ({
+    page,
+  }) => {
+    await chooseTheFoundLibrary(page);
+
+    await button(page, USE_LIBRARY).click();
+
+    await expect.poll(() => asked.uses).toBe(1);
+  });
+
+  test("stays on the library while using it, focus kept on Use this library", async ({
+    page,
+  }) => {
+    await chooseTheFoundLibrary(page);
+    const release = asked.holdAnswers();
+
+    await button(page, USE_LIBRARY).click();
+    await expect.poll(() => asked.uses).toBe(1);
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
+    ).toBeVisible();
+    await expect(button(page, USE_LIBRARY)).toBeFocused();
+    await expect(button(page, USE_LIBRARY)).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    release();
+  });
+
+  test("stays on the library while another folder is chosen, focus kept on Change", async ({
+    page,
+  }) => {
+    await chooseTheFoundLibrary(page);
+    const release = asked.holdAnswers();
+    const change = homeCard(page).getByRole("button", {
+      name: "Change",
+      exact: true,
+    });
+
+    await change.click();
+    await expect(change).toHaveAttribute("aria-disabled", "true");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
+    ).toBeVisible();
+    await expect(change).toBeFocused();
+    release();
+  });
+
+  test("goes back to the home folder it has when starting a new library instead", async ({
+    page,
+  }) => {
+    await chooseTheFoundLibrary(page);
+
+    await button(page, START_NEW_LIBRARY).click();
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: HOME_HEADING }),
+    ).toBeVisible();
+    await expect(homeCard(page).locator("code")).toHaveText(HOME_LOCATION);
+    expect(asked.uses).toBe(0);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await chooseTheFoundLibrary(page);
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
 
 test.describe("a library already in the home folder on an android phone", () => {
