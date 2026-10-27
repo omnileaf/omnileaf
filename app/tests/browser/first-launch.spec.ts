@@ -10,6 +10,7 @@ import type {
 } from "../../src/lib/ipc/bindings.ts";
 import {
   CommandFailure,
+  commandsAsked,
   emitFakeEvent,
   type FakeBackend,
 } from "./fake-backend.ts";
@@ -84,6 +85,7 @@ const device = new Device();
 
 const CHOSEN_HOME = "/media/Sample Library";
 const DESKTOP_CHANGE_HEIGHT = 38;
+const TOAST_GONE_MS = 7_000;
 const DESKTOP_HOME_LEAD =
   "Omnileaf keeps its own data in one home folder. You can move it later.";
 const DESKTOP_HOME_NOTE =
@@ -710,6 +712,42 @@ test.describe("changing the home folder on a desktop", () => {
         `It stays in ${HOME_FOLDER.location}. Nothing in it changed.`,
       ),
     ).toBeVisible();
+  });
+
+  test("opens on the home folder after a move that relaunched at the start, saying it moved", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+
+    await page.goto("/");
+
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+    await expect(
+      page.getByText("Your library moved", { exact: true }),
+    ).toBeVisible();
+  });
+
+  test("says the library moved only once, not again in the library it finishes on", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+    const moved = page.getByText("Your library moved", { exact: true });
+    await page.clock.install();
+    await page.goto("/");
+    await expect(moved).toBeVisible();
+    await page.clock.runFor(TOAST_GONE_MS);
+    await expect(moved).toHaveCount(0);
+
+    for (const step of STEPS.slice(1)) {
+      await expect(heading(page, step.heading)).toBeVisible();
+      await page.getByRole("button", { name: step.leaveWith }).click();
+    }
+
+    await expect(heading(page, "Library")).toBeVisible();
+    await expect
+      .poll(async () => (await commandsAsked(page)).unanswered)
+      .toBe(0);
+    await expect(moved).toHaveCount(0);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

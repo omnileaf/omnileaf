@@ -6,9 +6,14 @@
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import AppKeyboardShortcuts from "#lib/keyboard/AppKeyboardShortcuts.svelte";
-  import { commands } from "#lib/ipc/bindings.ts";
+  import { commands, type HomeArrival } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import {
+    homeArrivalNotice,
+    takeHomeArrival,
+  } from "#lib/library/home-arrival.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
@@ -104,7 +109,28 @@
     void fixProblem(problem).then(() => needsAttention.gather());
   }
 
+  async function showHomeArrival(arrival: HomeArrival): Promise<void> {
+    const folders = new LibraryFolders(
+      commands.libraryFolders,
+      commands.removeLibraryFolder,
+      commands.libraryFolderBookCount,
+    );
+    await folders.load();
+    const notice = homeArrivalNotice(
+      arrival,
+      folders.list,
+      data.appInfo.platform,
+    );
+    if (notice !== undefined) {
+      notices.show(notice);
+    }
+  }
+
   onMount(() => {
+    const arrival = takeHomeArrival(data.homeArrival);
+    if (arrival !== null) {
+      void showHomeArrival(arrival);
+    }
     void storage.check();
     void needsAttention.gather();
     return listenForLibraryChanges(() => {

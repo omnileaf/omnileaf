@@ -25,6 +25,7 @@
   import {
     type AdultTreatment,
     commands,
+    type HomeArrival,
     type LibraryFolder,
     type LibrarySeries,
   } from "#lib/ipc/bindings.ts";
@@ -32,8 +33,10 @@
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
-  import { folderLocation } from "#lib/library/folder-location.ts";
-  import { arrivalNotice } from "#lib/library/home-arrival.ts";
+  import {
+    homeArrivalNotice,
+    takeHomeArrival,
+  } from "#lib/library/home-arrival.ts";
   import { HomeFolderChange } from "#lib/library/home-folder-change.svelte.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
@@ -48,6 +51,7 @@
   const theme = getThemeSetting();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
+  const homeArrival = arrivalToTell();
   let isLeaving = $state(false);
   let resumingAt: FirstLaunchStep | undefined = $state(stepToResumeAt());
   const step: FirstLaunchStep = $derived(
@@ -95,9 +99,13 @@
     void folders.load().then(showHomeArrival);
   });
 
+  function arrivalToTell(): HomeArrival | null {
+    return takeHomeArrival(data.homeArrival);
+  }
+
   function stepToResumeAt(): FirstLaunchStep | undefined {
     const isFreshLaunch = page.state.firstLaunchStep === undefined;
-    return isFreshLaunch && data.homeArrival === "moved" ? "home" : undefined;
+    return isFreshLaunch && homeArrival === "moved" ? "home" : undefined;
   }
 
   async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
@@ -114,13 +122,10 @@
   }
 
   function showHomeArrival(): void {
-    const home = folders.list.kind === "loaded" ? folders.list.home : undefined;
-    if (home === undefined) {
-      return;
-    }
-    const notice = arrivalNotice(
-      data.homeArrival,
-      folderLocation(home, data.appInfo.platform),
+    const notice = homeArrivalNotice(
+      homeArrival,
+      folders.list,
+      data.appInfo.platform,
     );
     if (notice !== undefined) {
       notices.show(notice);
