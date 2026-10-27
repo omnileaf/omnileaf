@@ -7,14 +7,14 @@ use crate::{book_numbering::number_book, library_layout::is_comic};
 
 const SPECIALS_FOLDER: &str = "Specials";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct Placement {
     pub(crate) series: String,
     pub(crate) title: String,
     pub(crate) numbering: Numbering,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum Shelf {
     Series,
     Volume(Number),
