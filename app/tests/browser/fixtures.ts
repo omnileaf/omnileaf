@@ -175,6 +175,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   foundLibrary: () => null,
   chooseHomeFolder: () => null,
   useFoundLibrary: () => null,
+  moveHomeFolder: () => null,
   firstLaunchFinished: () => true,
   finishFirstLaunch: () => null,
   setAppLanguage: () => null,

@@ -116,6 +116,7 @@ export const commands = {
 } | null>("found_library"),
 	chooseHomeFolder: () => typedError<{ kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
 	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
+	moveHomeFolder: () => typedError<null, IpcError>(__TAURI_INVOKE("move_home_folder")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
