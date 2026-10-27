@@ -331,7 +331,7 @@
           <CardHeader class="px-lg expanded:px-xl">
             <CardTitle
               class={isOnPhone
-                ? "text-native-end-card-title/native-end-card-title font-native-end-card-title tracking-native-end-card-title"
+                ? "text-native-end-card-title/native-end-card-title font-native-end-card-title tracking-native-end-card-title wrap-anywhere"
                 : "text-body expanded:text-title"}
               >{m.reader_series_finished()}</CardTitle
             >
