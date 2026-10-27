@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ffi::OsStr, path::Path};
 
-use omnileaf_db::catalog::Numbering;
-use omnileaf_formats::{read_book_name, read_series_name, read_volume_folder_name};
+use omnileaf_db::catalog::{Numbering, SeriesNaming, Sourced, ValueSource};
+use omnileaf_formats::{SeriesName, read_book_name, read_series_name, read_volume_folder_name};
 
 use crate::{
     book_numbering::{Shelf, number_book},
@@ -9,41 +9,94 @@ use crate::{
 };
 
 const SPECIALS_FOLDER: &str = "Specials";
+const LOCATION_SEPARATOR: &str = "/";
 
 #[derive(Debug)]
 pub(crate) struct Placement {
-    pub(crate) series: String,
+    pub(crate) series: PlacedSeries,
     pub(crate) title: String,
     pub(crate) numbering: Numbering,
 }
 
+#[derive(Debug)]
+pub(crate) struct PlacedSeries {
+    pub(crate) location: String,
+    pub(crate) naming: SeriesNaming,
+}
+
 pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
     let Some(name) = location.file_name() else {
-        return Placement::one_shot(linked_folder);
+        return Placement::one_shot(linked_folder, location);
     };
     let name = book_name(name);
-    let mut folders = location.iter().rev().skip(1).map(OsStr::to_string_lossy);
-    let Some(folder) = folders.next() else {
-        return Placement::one_shot(&name);
+    let Some((book_folder, folder)) = location
+        .parent()
+        .and_then(|book_folder| Some((book_folder, book_folder.file_name()?)))
+    else {
+        return Placement::one_shot(&name, location);
     };
-    let (series, shelf) = shelve(&folder, folders.next().as_deref());
-    let book = read_book_name(&name, Some(&series));
+    let above = book_folder
+        .parent()
+        .and_then(Path::file_name)
+        .map(OsStr::to_string_lossy);
+    let (series, shelf) = shelve(&folder.to_string_lossy(), above.as_deref());
+    let series_folder = match shelf {
+        Shelf::Volume(_) | Shelf::Specials => book_folder.parent().unwrap_or(book_folder),
+        Shelf::Series | Shelf::OneShot => book_folder,
+    };
+    let book = read_book_name(&name, Some(&series.title));
     Placement {
         numbering: number_book(&book, shelf),
         title: book.title,
-        series,
+        series: PlacedSeries::folder(series_folder, series),
     }
 }
 
 impl Placement {
-    fn one_shot(name: &str) -> Self {
+    fn one_shot(name: &str, location: &Path) -> Self {
         let book = read_book_name(name, None);
         Self {
             numbering: number_book(&book, Shelf::OneShot),
-            series: book.title.clone(),
+            series: PlacedSeries {
+                location: location_text(location),
+                naming: SeriesNaming {
+                    title: Sourced {
+                        value: book.title.clone(),
+                        source: ValueSource::FileName,
+                    },
+                    year: None,
+                },
+            },
             title: book.title,
         }
     }
+}
+
+impl PlacedSeries {
+    fn folder(location: &Path, name: SeriesName) -> Self {
+        Self {
+            location: location_text(location),
+            naming: SeriesNaming {
+                title: from_folder_name(name.title),
+                year: name.year.map(from_folder_name),
+            },
+        }
+    }
+}
+
+const fn from_folder_name<T>(value: T) -> Sourced<T> {
+    Sourced {
+        value,
+        source: ValueSource::FolderName,
+    }
+}
+
+fn location_text(location: &Path) -> String {
+    location
+        .iter()
+        .map(OsStr::to_string_lossy)
+        .collect::<Vec<_>>()
+        .join(LOCATION_SEPARATOR)
 }
 
 fn book_name(name: &OsStr) -> Cow<'_, str> {
@@ -52,17 +105,17 @@ fn book_name(name: &OsStr) -> Cow<'_, str> {
     stem.unwrap_or(name.as_os_str()).to_string_lossy()
 }
 
-fn shelve(folder: &str, above: Option<&str>) -> (String, Shelf) {
+fn shelve(folder: &str, above: Option<&str>) -> (SeriesName, Shelf) {
     if let Some(above) = above {
-        let series_above = read_series_name(above).title;
+        let series_above = read_series_name(above);
         if is_specials_folder(folder) {
             return (series_above, Shelf::Specials);
         }
-        if let Some(volume) = read_volume_folder_name(folder, &series_above) {
+        if let Some(volume) = read_volume_folder_name(folder, &series_above.title) {
             return (series_above, Shelf::Volume(volume.first()));
         }
     }
-    (read_series_name(folder).title, Shelf::Series)
+    (read_series_name(folder), Shelf::Series)
 }
 
 fn is_specials_folder(folder: &str) -> bool {
