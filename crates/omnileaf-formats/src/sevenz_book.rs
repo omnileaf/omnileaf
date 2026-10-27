@@ -1,8 +1,10 @@
 use std::{
+    collections::{BTreeMap, HashMap},
     fs::File,
     io::{self, Read},
-    ops::Range,
+    ops::{ControlFlow, Range},
     path::{Path, PathBuf},
+    ptr,
 };
 
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
@@ -134,20 +136,44 @@ impl SevenZipBook {
 
     /// Reads one page, stopping past the size limit in case the archive understates it.
     pub(crate) fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {
-        let (Some(&file), Some(page)) = (self.entries.get(index), self.pages.get(index)) else {
+        let Some(&file) = self.entries.get(index) else {
             return Err(FormatError::NoSuchPage {
                 path: self.path.clone(),
                 index,
             });
         };
-        let name = page.name.clone();
         let limit = self.limits.max_page_bytes;
         self.read_entry(file, |contents| read_within(contents, limit))?
-            .ok_or_else(|| FormatError::PageTooLarge {
-                path: self.path.clone(),
-                name,
-                limit,
-            })
+            .ok_or_else(|| self.page_too_large(index))
+    }
+
+    /// A solid block decodes only from its start, so each block's pages are read in one pass in the order it stores them.
+    pub(crate) fn read_every_page(
+        &mut self,
+        mut read: impl FnMut(usize, Vec<u8>) -> ControlFlow<()>,
+    ) -> Result<(), FormatError> {
+        let mut blocks: BTreeMap<usize, HashMap<*const ArchiveEntry, usize>> = BTreeMap::new();
+        for (page, &file) in self.entries.iter().enumerate() {
+            match (self.block_of(file), self.archive.files.get(file)) {
+                (Some(block), Some(entry)) => {
+                    blocks
+                        .entry(block)
+                        .or_default()
+                        .insert(ptr::from_ref(entry), page);
+                }
+                _ => {
+                    if read(page, Vec::new()).is_break() {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        for (&block, pages) in &blocks {
+            if self.read_block_pages(block, pages, &mut read)?.is_break() {
+                return Ok(());
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn read_page_start(
@@ -171,14 +197,8 @@ impl SevenZipBook {
         file: usize,
         read: impl FnOnce(&mut dyn Read) -> io::Result<T>,
     ) -> Result<T, FormatError> {
-        let block = self
-            .archive
-            .stream_map
-            .file_block_index
-            .get(file)
-            .copied()
-            .flatten();
-        let (Some(block), Some(wanted)) = (block, self.archive.files.get(file)) else {
+        let (Some(block), Some(wanted)) = (self.block_of(file), self.archive.files.get(file))
+        else {
             return read(&mut io::empty()).map_err(|source| corrupt(&self.path, source.into()));
         };
         let mut read = Some(read);
@@ -204,6 +224,64 @@ impl SevenZipBook {
             .ok_or(sevenz_rust2::Error::FileNotFound)
             .and_then(|read| read.map_err(sevenz_rust2::Error::from))
             .map_err(|source| corrupt(&self.path, source))
+    }
+
+    fn read_block_pages(
+        &mut self,
+        block: usize,
+        pages: &HashMap<*const ArchiveEntry, usize>,
+        read: &mut impl FnMut(usize, Vec<u8>) -> ControlFlow<()>,
+    ) -> Result<ControlFlow<()>, FormatError> {
+        let limit = self.limits.max_page_bytes;
+        let mut unread = pages.len();
+        let mut outcome = Ok(ControlFlow::Continue(()));
+        let password = Password::empty();
+        BlockDecoder::new(
+            SINGLE_THREAD,
+            block,
+            &self.archive,
+            &password,
+            &mut self.source,
+        )
+        .for_each_entries(&mut |entry, contents| {
+            let Some(&page) = pages.get(&ptr::from_ref(entry)) else {
+                io::copy(contents, &mut io::sink())?;
+                return Ok(true);
+            };
+            let Some(bytes) = read_within(contents, limit)? else {
+                outcome = Err(page);
+                return Ok(false);
+            };
+            unread = unread.saturating_sub(1);
+            if read(page, bytes).is_break() {
+                outcome = Ok(ControlFlow::Break(()));
+                return Ok(false);
+            }
+            Ok(unread > 0)
+        })
+        .map_err(|source| corrupt(&self.path, source))?;
+        outcome.map_err(|page| self.page_too_large(page))
+    }
+
+    fn block_of(&self, file: usize) -> Option<usize> {
+        self.archive
+            .stream_map
+            .file_block_index
+            .get(file)
+            .copied()
+            .flatten()
+    }
+
+    fn page_too_large(&self, index: usize) -> FormatError {
+        FormatError::PageTooLarge {
+            path: self.path.clone(),
+            name: self
+                .pages
+                .get(index)
+                .map(|page| page.name.clone())
+                .unwrap_or_default(),
+            limit: self.limits.max_page_bytes,
+        }
     }
 }
 
