@@ -1073,6 +1073,8 @@
   --color-field: var(--input);
   --color-card: var(--card);
   --color-chip: var(--muted);
+  --color-tab-idle: var(--tab-idle-ink);
+  --color-tab-chosen-edge: var(--tab-chosen-edge);
   --color-on-chip: var(--secondary-foreground);
   --color-well: color-mix(in oklab, var(--muted) 50%, transparent);
   --color-raised: var(--raised);
