@@ -9,38 +9,59 @@ pub(crate) enum Shelf {
 }
 
 pub(crate) fn number_book(book: &BookName, shelf: Shelf) -> Numbering {
-    let folder_volume = match shelf {
-        Shelf::Specials => {
-            let number = book.chapter.or(book.volume).or(book.number);
-            return Numbering::Special {
-                number: number.map(range_in_file_name),
-            };
-        }
-        Shelf::Volume(volume) => Some(Sourced {
-            value: stored_number(volume),
-            source: ValueSource::FolderName,
+    match shelf {
+        Shelf::Series => number_by_marker(book).unwrap_or_else(|| match book.number {
+            Some(number) => Numbering::Chapter {
+                number: Some(range_in_file_name(number)),
+                volume: None,
+            },
+            None => Numbering::Special { number: None },
         }),
-        Shelf::Series => None,
-    };
-    if let Some(chapter) = book.chapter {
-        let volume_in_name = book.volume.map(|volume| Sourced {
-            value: stored_number(volume.first()),
-            source: ValueSource::FileName,
-        });
-        return Numbering::Chapter {
-            number: Some(range_in_file_name(chapter)),
-            volume: volume_in_name.or(folder_volume),
-        };
+        Shelf::Volume(folder_volume) => match (book.chapter, book.volume) {
+            (None, Some(volume)) => Numbering::Volume {
+                numbers: range_in_file_name(volume),
+            },
+            (chapter, _) => Numbering::Chapter {
+                number: chapter.or(book.number).map(range_in_file_name),
+                volume: Some(
+                    volume_in_name(book).unwrap_or_else(|| volume_in_folder_name(folder_volume)),
+                ),
+            },
+        },
+        Shelf::Specials => Numbering::Special {
+            number: book
+                .chapter
+                .or(book.volume)
+                .or(book.number)
+                .map(range_in_file_name),
+        },
     }
-    match (book.volume, book.number, folder_volume) {
-        (Some(volume), _, _) => Numbering::Volume {
+}
+
+fn number_by_marker(book: &BookName) -> Option<Numbering> {
+    match (book.chapter, book.volume) {
+        (Some(chapter), _) => Some(Numbering::Chapter {
+            number: Some(range_in_file_name(chapter)),
+            volume: volume_in_name(book),
+        }),
+        (None, Some(volume)) => Some(Numbering::Volume {
             numbers: range_in_file_name(volume),
-        },
-        (None, None, None) => Numbering::Special { number: None },
-        (None, number, volume) => Numbering::Chapter {
-            number: number.map(range_in_file_name),
-            volume,
-        },
+        }),
+        (None, None) => None,
+    }
+}
+
+fn volume_in_name(book: &BookName) -> Option<Sourced<BookNumber>> {
+    book.volume.map(|volume| Sourced {
+        value: stored_number(volume.first()),
+        source: ValueSource::FileName,
+    })
+}
+
+fn volume_in_folder_name(volume: formats::Number) -> Sourced<BookNumber> {
+    Sourced {
+        value: stored_number(volume),
+        source: ValueSource::FolderName,
     }
 }
 
