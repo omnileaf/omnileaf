@@ -510,6 +510,22 @@ async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
     );
 }
 
+#[tokio::test]
+async fn counts_a_new_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
+    let folder = Rescanned::new("rescan-cbz-holding-rar").await;
+    fs::write(folder.path("Sample Series 01/v03.cbz"), RAR_SIGNATURE).unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            unreadable_books: 1,
+            ..FileChanges::default()
+        })
+    );
+}
+
 fn skipped_cbr_in_series_01(name: &str) -> SkippedType {
     SkippedType {
         file_type: FileType::try_from("cbr".to_owned()).unwrap(),

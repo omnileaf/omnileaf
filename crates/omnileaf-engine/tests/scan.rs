@@ -347,16 +347,36 @@ async fn lists_a_plain_rar_file_among_the_files_it_skips() {
 }
 
 #[tokio::test]
-async fn lists_no_file_of_a_type_it_reads_that_holds_an_archive_it_cannot() {
+async fn counts_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
     let comics = ScratchFolder::new("scan-skipped-cbz");
     comics.write("Sample Series 01/v01.cbz", RAR_SIGNATURE);
+    comics.write("Sample Series 01/v02.cb7", RAR_SIGNATURE);
 
     let (_, scan, _) = Scanned::folder("scan-skipped-cbz", comics.path()).await;
 
     assert_eq!(
-        (scan.unsupported_books, scan.skipped_types),
-        (1, Vec::new())
+        (
+            scan.unreadable_books,
+            scan.unsupported_books,
+            scan.skipped_types
+        ),
+        (2, 0, Vec::new())
     );
+}
+
+#[tokio::test]
+async fn counts_as_unsupported_exactly_the_files_it_lists_as_skipped() {
+    let comics = ScratchFolder::new("scan-skipped-all-listed");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    for name in ["v02.cbr", "v03.rar", "v04.cbz", "v05.cb7"] {
+        comics.write(&format!("Sample Series 01/{name}"), RAR_SIGNATURE);
+    }
+    comics.write("Sample Series 01/v06.cbr", b"");
+
+    let (_, scan, _) = Scanned::folder("scan-skipped-all-listed", comics.path()).await;
+
+    let listed: u32 = scan.skipped_types.iter().map(|skipped| skipped.files).sum();
+    assert_eq!(scan.unsupported_books, listed);
 }
 
 #[tokio::test]
