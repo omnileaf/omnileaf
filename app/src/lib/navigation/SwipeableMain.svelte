@@ -17,11 +17,17 @@
 
   import { getBackGoesUp } from "./back-goes-up";
   import { shownBackLink } from "./back-link";
-  import { backSwipeEdge, isGoingBack, type TextDirection } from "./back-swipe";
+  import {
+    backSwipeEdge,
+    isGoingBack,
+    SETTLING_MOTION,
+    type TextDirection,
+  } from "./back-swipe";
   import { isBackTakenByScreen } from "./back-within-screen";
   import { BackSwipeScreens } from "./back-swipe-screens.svelte";
   import { focusArrival } from "./page-heading";
-  import { PreviousScreens, type ScreenCopy } from "./previous-screens";
+  import { getPreviousScreens, type ScreenCopy } from "./previous-screens";
+  import ScreenBehindSwipe from "./ScreenBehindSwipe.svelte";
 
   interface SwipeStart {
     readonly area: DOMRect;
@@ -30,8 +36,6 @@
   }
 
   const SWITCH = '[role="switch"]';
-  const SETTLING =
-    "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";
 
   let {
     isIos,
@@ -42,7 +46,7 @@
   const language = getLanguageSetting();
   const backGoesUp = getBackGoesUp();
   const width = new WindowWidth();
-  const previousScreens = new PreviousScreens();
+  const previousScreens = getPreviousScreens();
   const screens = new BackSwipeScreens(
     goBack,
     () => prefersReducedMotion.current,
@@ -54,7 +58,6 @@
   const screenShown = $derived(
     `${page.url.pathname} ${language.resolved} ${width.current}`,
   );
-  const previousScreen = $derived(swipeStart?.previousScreen);
   const swiping = $derived(
     screens.placement === null || swipeStart === undefined
       ? undefined
@@ -127,16 +130,6 @@
       screen.getAnimations().map((animation) => animation.finished),
     );
     screens.settled();
-  }
-
-  function showPrevious(copy: ScreenCopy) {
-    return (holder: HTMLElement) => {
-      holder.append(copy.content);
-      copy.content.scrollTop = copy.scrollTop;
-      return () => {
-        copy.content.remove();
-      };
-    };
   }
 
   function isOnSwitch(event: Event): boolean {
@@ -214,35 +207,13 @@
 </script>
 
 {#if swiping !== undefined}
-  <div
-    aria-hidden="true"
-    inert
-    data-previous-screen
-    class="fixed overflow-hidden bg-background"
-    style:left="{swiping.area.left}px"
-    style:top="{swiping.area.top}px"
-    style:width="{swiping.area.width}px"
-    style:height="{swiping.area.height}px"
-  >
-    <div
-      class={[
-        "flex flex-col block-full inline-full",
-        screens.isSettling && ["transition-transform", SETTLING],
-      ]}
-      style:transform="translateX({swiping.previous * swiping.towardsBack}%)"
-    >
-      {#if previousScreen !== undefined}
-        <div class="contents" {@attach showPrevious(previousScreen)}></div>
-      {/if}
-    </div>
-    <div
-      class={[
-        "absolute inset-none bg-native-scrim",
-        screens.isSettling && ["transition-opacity", SETTLING],
-      ]}
-      style:opacity={swiping.dimming}
-    ></div>
-  </div>
+  <ScreenBehindSwipe
+    area={swiping.area}
+    copy={swiping.previousScreen}
+    offset={swiping.previous * swiping.towardsBack}
+    dimming={swiping.dimming}
+    isSettling={screens.isSettling}
+  />
 {/if}
 <main
   bind:this={main}
@@ -257,7 +228,7 @@
     "windows:desktop-shell:rounded-ss-windows-layer windows:desktop-shell:border-s windows:desktop-shell:border-bs windows:desktop-shell:border-windows-stroke windows:desktop-shell:bg-background",
     swiping !== undefined &&
       "bg-background shadow-back-swipe rtl:shadow-back-swipe-rtl",
-    screens.isSettling && ["transition-transform", SETTLING],
+    screens.isSettling && ["transition-transform", SETTLING_MOTION],
   ]}
 >
   {@render children()}

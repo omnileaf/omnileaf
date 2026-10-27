@@ -44,3 +44,6 @@ export function isGoingBack(progress: number, velocity: number): boolean {
   }
   return progress > HALFWAY && velocity > -FLICK_SCREEN_WIDTHS_PER_SECOND;
 }
+
+export const SETTLING_MOTION =
+  "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";

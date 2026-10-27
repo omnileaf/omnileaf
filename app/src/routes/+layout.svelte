@@ -41,6 +41,10 @@
   } from "#lib/reader/book-presence.svelte.ts";
   import LibraryProblemScreen from "#lib/problems/LibraryProblemScreen.svelte";
   import {
+    PreviousScreens,
+    setPreviousScreens,
+  } from "#lib/navigation/previous-screens.ts";
+  import {
     screenshotModeForDocument,
     setScreenshotMode,
   } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -115,6 +119,7 @@
   const undo = setUndoSetting(undoSettingForDocument());
   setNotices(new Notices(() => undo.rules));
   const bookPresence = setBookPresence(new BookPresence());
+  setPreviousScreens(new PreviousScreens());
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();

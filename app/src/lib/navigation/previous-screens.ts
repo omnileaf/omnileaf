@@ -1,3 +1,5 @@
+import { createContext } from "svelte";
+
 export interface ScreenCopy {
   readonly content: HTMLElement;
   readonly scrollTop: number;
@@ -36,3 +38,6 @@ function copyOf(screen: HTMLElement): ScreenCopy {
   }
   return { content, scrollTop: screen.scrollTop };
 }
+
+export const [getPreviousScreens, setPreviousScreens] =
+  createContext<PreviousScreens>();
