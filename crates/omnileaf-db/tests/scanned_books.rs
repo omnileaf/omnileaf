@@ -82,21 +82,7 @@ impl Library {
     fn found_in_folder(&self, series_folder: &str, book: &str, page_crc: u32) -> ScannedBook {
         let title = series_folder.rsplit('/').next().unwrap();
         ScannedBook {
-            series: NewSeries::folder(
-                SeriesFolder {
-                    linked_folder: "Sample Library",
-                    location: series_folder,
-                },
-                SeriesNaming {
-                    title: Sourced {
-                        value: title.to_owned(),
-                        source: ValueSource::FolderName,
-                    },
-                    year: None,
-                },
-                ADDED_AT_MS,
-            )
-            .unwrap(),
+            series: series_in_folder(series_folder, ADDED_AT_MS),
             title: book.to_owned(),
             ..self.found(title, format!("{series_folder}/{book}.cbz"), page_crc)
         }
@@ -211,6 +197,24 @@ impl Library {
             .await
             .unwrap()
     }
+}
+
+fn series_in_folder(series_folder: &str, added_at_ms: i64) -> NewSeries {
+    NewSeries::folder(
+        SeriesFolder {
+            linked_folder: "Sample Library",
+            location: series_folder,
+        },
+        SeriesNaming {
+            title: Sourced {
+                value: series_folder.rsplit('/').next().unwrap().to_owned(),
+                source: ValueSource::FolderName,
+            },
+            year: None,
+        },
+        added_at_ms,
+    )
+    .unwrap()
 }
 
 fn fingerprint(page_crc: u32) -> Fingerprint {
@@ -802,4 +806,27 @@ async fn writes_only_the_book_when_a_book_is_scanned_again_under_another_title()
     let changes = library.changes_recording(retitled).await;
 
     assert_eq!(changes, 1);
+}
+
+#[tokio::test]
+async fn keeps_when_a_series_was_added_once_its_books_move_to_their_folder_series() {
+    let library = Library::open("scanned-added-time-kept").await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01.cbz", 1))
+        .await;
+    let read_again = ScannedBook {
+        series: series_in_folder("Sample Series 01", ADDED_AT_MS + 1_000),
+        ..library.found_in_folder("Sample Series 01", "v01", 1)
+    };
+
+    library.record(read_again).await;
+
+    assert_eq!(
+        library
+            .rows("SELECT added_at_ms FROM series ORDER BY local_id", |row| {
+                row.get::<_, i64>(0)
+            })
+            .await,
+        [ADDED_AT_MS, ADDED_AT_MS]
+    );
 }
