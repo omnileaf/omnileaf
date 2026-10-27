@@ -16,12 +16,6 @@ const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
 const SECTION_BITS: u8 = 0b1100;
 const SECTION_SHIFT: u32 = 2;
-const LISTED_SECTIONS: [Option<BookSection>; 4] = [
-    None,
-    Some(BookSection::Volumes),
-    Some(BookSection::Chapters),
-    Some(BookSection::Specials),
-];
 const SESSION_TAG: u8 = 5;
 const LAST_READ_TAG: u8 = 6;
 const LAST_UPDATED_TAG: u8 = 7;
@@ -253,19 +247,29 @@ fn listing_byte(listing: BookListing) -> u8 {
         BooksShown::All => 0,
         BooksShown::Unread => UNREAD_BIT,
     };
-    let section = LISTED_SECTIONS
-        .iter()
-        .zip(0_u8..)
-        .find_map(|(listed, code)| (*listed == listing.section).then_some(code))
-        .unwrap_or_default();
-    direction | shown | section << SECTION_SHIFT
+    direction | shown | section_code(listing.section) << SECTION_SHIFT
+}
+
+fn section_code(section: Option<BookSection>) -> u8 {
+    match section {
+        None => 0,
+        Some(BookSection::Volumes) => 1,
+        Some(BookSection::Chapters) => 2,
+        Some(BookSection::Specials) => 3,
+    }
 }
 
 fn listing_from_byte(byte: u8) -> Option<BookListing> {
     if byte & !(DESCENDING_BIT | UNREAD_BIT | SECTION_BITS) != 0 {
         return None;
     }
-    let section = *LISTED_SECTIONS.get(usize::from((byte & SECTION_BITS) >> SECTION_SHIFT))?;
+    let section = match (byte & SECTION_BITS) >> SECTION_SHIFT {
+        0 => None,
+        1 => Some(BookSection::Volumes),
+        2 => Some(BookSection::Chapters),
+        3 => Some(BookSection::Specials),
+        _ => return None,
+    };
     Some(BookListing {
         shown: if byte & UNREAD_BIT == 0 {
             BooksShown::All
@@ -316,4 +320,53 @@ fn hex_digit(digit: u8) -> Option<u8> {
     char::from(digit)
         .to_digit(HEX_RADIX)
         .and_then(|value| u8::try_from(value).ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    const EVERY_SECTION: [Option<BookSection>; 4] = [
+        None,
+        Some(BookSection::Volumes),
+        Some(BookSection::Chapters),
+        Some(BookSection::Specials),
+    ];
+
+    fn every_listing() -> Vec<BookListing> {
+        EVERY_SECTION
+            .into_iter()
+            .flat_map(|section| {
+                [BooksShown::All, BooksShown::Unread]
+                    .into_iter()
+                    .flat_map(move |shown| {
+                        [SortDirection::Ascending, SortDirection::Descending]
+                            .into_iter()
+                            .map(move |direction| BookListing {
+                                shown,
+                                direction,
+                                section,
+                            })
+                    })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn reads_back_every_book_listing_from_its_own_byte() {
+        for listing in every_listing() {
+            assert_eq!(listing_from_byte(listing_byte(listing)), Some(listing));
+        }
+    }
+
+    #[test]
+    fn gives_every_book_listing_a_byte_of_its_own() {
+        let listings = every_listing();
+
+        let bytes: HashSet<u8> = listings.iter().copied().map(listing_byte).collect();
+
+        assert_eq!(bytes.len(), listings.len());
+    }
 }
