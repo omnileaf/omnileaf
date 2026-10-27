@@ -205,6 +205,9 @@ for (const platform of PLATFORMS) {
             unreadableBooks: 2,
             unsupportedBooks: 1,
             unreadableFolders: 1,
+            skippedTypes: [
+              { fileType: "cbr", files: 1, firstLocations: ["Extras.cbr"] },
+            ],
           })),
         });
 

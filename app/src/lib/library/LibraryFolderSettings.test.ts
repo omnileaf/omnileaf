@@ -674,6 +674,36 @@ test("reports the books and folders a rescan couldn't read or open yet", async (
   ]);
 });
 
+test("names each type of file a rescan skipped", async () => {
+  serveFolders([HOME, COMICS]);
+  const { folders } = await renderSettings({
+    rescanFolder: (id) =>
+      Promise.resolve({
+        status: "ok",
+        data: {
+          id,
+          name: "",
+          outcome: { kind: "rescanned", ...NO_CHANGES, unsupportedBooks: 4 },
+          skippedTypes: [
+            { fileType: "cbr", files: 3, firstLocations: [] },
+            { fileType: "rar", files: 1, firstLocations: [] },
+          ],
+        },
+      }),
+  });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(folders.getByText("1 RAR file can't be opened yet."))
+    .toBeVisible();
+  expect(linesOf(rescanReport(folders))).toEqual([
+    "Sample Comics is up to date.",
+    "3 CBR files can't be opened yet.",
+    "1 RAR file can't be opened yet.",
+  ]);
+});
+
 test("shows how far a rescan has got", async () => {
   serveFolders([HOME, COMICS]);
   const pending = new PendingRescan();

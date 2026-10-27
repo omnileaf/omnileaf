@@ -17,6 +17,7 @@
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import ScanToast from "./ScanToast.svelte";
+  import { unsupportedLines } from "./unsupported-lines";
 
   interface Props {
     readonly adding: FolderAdding;
@@ -48,9 +49,7 @@
       scan.unreadableBooks > 0
         ? m.library_folder_unreadable_books({ count: scan.unreadableBooks })
         : undefined,
-      scan.unsupportedBooks > 0
-        ? m.library_folder_unsupported_books({ count: scan.unsupportedBooks })
-        : undefined,
+      ...unsupportedLines(scan.unsupportedBooks, scan.skippedTypes),
       scan.unreadableFolders > 0
         ? m.library_folder_unreadable_subfolders({
             count: scan.unreadableFolders,

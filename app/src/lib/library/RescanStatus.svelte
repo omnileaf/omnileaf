@@ -25,7 +25,7 @@
       case "failed":
         return [m.library_rescan_failed({ name: folderTitle(shown.folder) })];
       case "finished":
-        return rescanReport(shown.folder, shown.outcome);
+        return rescanReport(shown.folder, shown.outcome, shown.skippedTypes);
     }
   });
 </script>

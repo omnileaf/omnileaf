@@ -556,6 +556,21 @@
       }
     }
   ],
+  "library_skipped_type": [
+    {
+      "declarations": [
+        "input count",
+        "input type",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} {type} ƒíļé çáñ'ţ ƀé öþéñéð ýéţ.····················⟧",
+        "countPlural=other": "⟦{formattedCount} {type} ƒíļéš çáñ'ţ ƀé öþéñéð ýéţ.····················⟧"
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [
