@@ -53,6 +53,10 @@ export class FakeShelf {
       isBookmarked: false,
       isNew: false,
       isFileMissing: false,
+      kind: null,
+      numbers: null,
+      volume: null,
+      section: null,
     }));
   }
 

@@ -4,6 +4,7 @@ mod app_language;
 mod background_lane;
 mod book_details;
 mod book_numbering;
+mod book_numbers;
 mod bookmark_access;
 mod books_removal;
 #[cfg(test)]
@@ -81,6 +82,7 @@ mod windows_share;
 pub use adult_content::{AdultContent, AdultTreatment};
 pub use app_info::{AppInfo, Platform};
 pub use app_language::AppLanguage;
+pub use book_numbers::{BookKind, BookNumber, BookSection, NumberRange};
 pub use bookmark_access::ResolvedBookmark;
 pub use books_removal::BooksRemoval;
 pub use clock::SystemClock;

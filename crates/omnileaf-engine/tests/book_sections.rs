@@ -1,0 +1,128 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "each test scans its own generated folder in a scratch library, so a failed set-up should stop the test"
+)]
+
+#[expect(
+    dead_code,
+    reason = "these tests write plain archives, so the other kinds of book go unused"
+)]
+mod books;
+#[expect(
+    dead_code,
+    reason = "these tests read what the library serves, never the stored rows"
+)]
+mod scanned;
+mod support;
+
+use books::write_book;
+use omnileaf_engine::{BookSection, LibraryListing, SeriesBook, SeriesBookListing, SeriesId};
+use scanned::Scanned;
+use serde_json::{Value, json};
+use support::ScratchFolder;
+
+const SERIES_04: &str = "Sample Series 04";
+const SERVED_FIELDS: [&str; 5] = ["title", "kind", "numbers", "volume", "section"];
+const SERIES_04_BOOKS: &[&str] = &[
+    "Sample Series 04 (2019)/Volume 01/Sample Series 04 c001.cbz",
+    "Sample Series 04 (2019)/Volume 01/Sample Series 04 c002.5.cbz",
+    "Sample Series 04 (2019)/Sample Series 04 v03.cbz",
+    "Sample Series 04 (2019)/Sample Series 04 v05-06.cbz",
+    "Sample Series 04 (2019)/Sample Series 04 v09.5.cbz",
+    "Sample Series 04 (2019)/Sample Series 04 c020-022.cbz",
+    "Sample Series 04 (2019)/Specials/Sample Series 04 Extras.cbz",
+];
+
+struct Sample {
+    scanned: Scanned,
+    series: SeriesId,
+    _comics: ScratchFolder,
+}
+
+impl Sample {
+    async fn scan(name: &str, books: &[&str]) -> Self {
+        let comics = ScratchFolder::new(name);
+        for (book, seed) in books.iter().zip(1..) {
+            write_book(&comics.path().join(book), seed);
+        }
+        let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+        let page = scanned
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        let series = page
+            .series
+            .into_iter()
+            .find(|series| series.title == SERIES_04)
+            .unwrap()
+            .id;
+        Self {
+            scanned,
+            series,
+            _comics: comics,
+        }
+    }
+
+    async fn listed(&self, section: Option<BookSection>) -> Vec<SeriesBook> {
+        let listing = SeriesBookListing {
+            section,
+            ..SeriesBookListing::default()
+        };
+        self.scanned
+            .library
+            .series_books(self.series, listing, None)
+            .await
+            .unwrap()
+            .books
+    }
+}
+
+fn served_numbers(books: &[SeriesBook]) -> Vec<Value> {
+    books
+        .iter()
+        .map(|book| {
+            let served = serde_json::to_value(book).unwrap();
+            Value::Array(
+                SERVED_FIELDS
+                    .map(|field| served.get(field).cloned().unwrap())
+                    .into(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn serves_each_book_with_its_kind_numbers_volume_and_section() {
+    let sample = Sample::scan("served-book-numbers", SERIES_04_BOOKS).await;
+
+    let books = sample.listed(None).await;
+
+    assert_eq!(
+        served_numbers(&books),
+        [
+            json!(["Sample Series 04 c001", "chapter", {"first": 1.0, "last": 1.0}, 1.0, "volumes"]),
+            json!(["Sample Series 04 c002.5", "chapter", {"first": 2.5, "last": 2.5}, 1.0, "volumes"]),
+            json!(["Sample Series 04 v03", "volume", {"first": 3.0, "last": 3.0}, null, "volumes"]),
+            json!(["Sample Series 04 v05-06", "volume", {"first": 5.0, "last": 6.0}, null, "volumes"]),
+            json!(["Sample Series 04 v09.5", "volume", {"first": 9.5, "last": 9.5}, null, "volumes"]),
+            json!(["Sample Series 04 c020-022", "chapter", {"first": 20.0, "last": 22.0}, null, "chapters"]),
+            json!(["Sample Series 04 Extras", "special", null, null, "specials"]),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_only_the_books_of_the_section_asked_for() {
+    let sample = Sample::scan("listed-book-section", SERIES_04_BOOKS).await;
+
+    let chapters = sample.listed(Some(BookSection::Chapters)).await;
+
+    assert_eq!(
+        chapters
+            .iter()
+            .map(|book| (book.title.as_str(), book.position))
+            .collect::<Vec<_>>(),
+        [("Sample Series 04 c020-022", 6)]
+    );
+}

@@ -272,6 +272,48 @@ test("shows a series with its books gone when asked to", async () => {
   ]);
 });
 
+test("numbers each book from its title, as a volume or a chapter", async () => {
+  const { backend } = backendFor();
+  const firstOf = async (series: number) =>
+    (
+      await backend.seriesBooks(
+        sampleSeriesId(series),
+        { shown: "all", direction: "ascending" },
+        null,
+      )
+    ).books[0];
+
+  const books = [await firstOf(4), await firstOf(11)];
+
+  expect(
+    books.map((book) => [
+      book?.kind,
+      book?.numbers,
+      book?.volume,
+      book?.section,
+    ]),
+  ).toEqual([
+    ["volume", { first: 1, last: 1 }, null, "volumes"],
+    ["chapter", { first: 1, last: 1 }, null, "chapters"],
+  ]);
+});
+
+test("lists only the books of the section asked for", async () => {
+  const { backend } = backendFor();
+  const listed = async (section: "volumes" | "chapters") =>
+    (
+      await backend.seriesBooks(
+        sampleSeriesId(4),
+        { shown: "all", direction: "ascending", section },
+        null,
+      )
+    ).books.length;
+
+  const counts = [await listed("volumes"), await listed("chapters")];
+
+  expect(counts).toEqual([8, 0]);
+});
+
 test("relates Sample Series 04 to the series the boards draw beside it", async () => {
   const { backend } = backendFor();
 

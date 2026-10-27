@@ -55,6 +55,10 @@ function seriesBook(position: number): SeriesBook {
     isBookmarked: false,
     isNew: false,
     isFileMissing: false,
+    kind: null,
+    numbers: null,
+    volume: null,
+    section: null,
   };
 }
 

@@ -24,6 +24,7 @@ import {
   slipsAllowed,
 } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
+import { isListedIn, numberingOf } from "./sample-numbers.ts";
 
 import {
   type SampleBook,
@@ -744,6 +745,7 @@ export function sampleBackend(
       isBookmarked: book.isBookmarked,
       isNew: book.isNew,
       isFileMissing: book.file === "missing",
+      ...numberingOf(book.title),
     };
   }
 
@@ -1358,7 +1360,10 @@ export function sampleBackend(
       const series = seriesWith(id);
       const books = booksOf(series)
         .map((_, index) => wireBook(series, index))
-        .filter((book) => isShownBy(chosen.shown, book));
+        .filter(
+          (book) =>
+            isShownBy(chosen.shown, book) && isListedIn(chosen.section, book),
+        );
       const ordered =
         chosen.direction === "ascending" ? books : books.toReversed();
       const page = pageOf(ordered, after);

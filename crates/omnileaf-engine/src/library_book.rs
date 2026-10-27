@@ -4,7 +4,9 @@ use omnileaf_db::catalog::{self, BookSummary, Cursor, Page};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{SortDirection, ipc_brand::branded_string};
+use crate::{
+    BookKind, BookNumber, BookSection, NumberRange, SortDirection, ipc_brand::branded_string,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +26,12 @@ pub struct SeriesBook {
     pub is_new: bool,
     /// Whether the book's file was moved or deleted; never, while the library keeps no book without its file.
     pub is_file_missing: bool,
+    /// Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again.
+    pub kind: Option<BookKind>,
+    pub numbers: Option<NumberRange>,
+    /// The volume a chapter is read inside.
+    pub volume: Option<BookNumber>,
+    pub section: Option<BookSection>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -42,6 +50,10 @@ pub enum BookReading {
 pub struct SeriesBookListing {
     pub shown: BooksShown,
     pub direction: SortDirection,
+    /// Absent to list every book of the series.
+    #[serde(default)]
+    #[specta(optional)]
+    pub section: Option<BookSection>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -63,7 +75,7 @@ impl SeriesBookListing {
         Some(catalog::BookListing {
             shown,
             direction: self.direction.into(),
-            section: None,
+            section: self.section.map(BookSection::in_catalog),
         })
     }
 }
@@ -94,6 +106,7 @@ pub struct BookCursor(pub(crate) Cursor);
 
 impl From<BookSummary> for SeriesBook {
     fn from(book: BookSummary) -> Self {
+        let numbering = book.numbering;
         Self {
             id: BookId(book.id),
             position: book.position,
@@ -104,6 +117,14 @@ impl From<BookSummary> for SeriesBook {
             is_bookmarked: false,
             is_new: false,
             is_file_missing: false,
+            kind: numbering.map(|numbering| numbering.kind().into()),
+            numbers: numbering
+                .and_then(|numbering| numbering.number())
+                .map(|numbers| numbers.value.into()),
+            volume: numbering
+                .and_then(|numbering| numbering.volume())
+                .map(|volume| volume.value.into()),
+            section: numbering.map(|numbering| numbering.section().into()),
         }
     }
 }
