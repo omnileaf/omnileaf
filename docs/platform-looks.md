@@ -71,6 +71,10 @@ When you add a utility name to `tokens.json`, add it to `TOKEN_THEME` in `app/sr
 
 Add a token when the first component that reads it lands, with a `default` that keeps today's look.
 
+### Linux's palette
+
+Linux keeps the shared look on its own shadcn palette, Mist greys with Omnileaf green, set in `app/src/theme.css` as raw `--linux-*` values beside the macOS and Windows desktop values and mapped onto the shadcn variables under `[data-platform="linux"]`.
+
 ## A component's platform look
 
 ### Same structure, different look

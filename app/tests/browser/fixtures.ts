@@ -285,24 +285,39 @@ type BrowserName = PlaywrightWorkerOptions["browserName"];
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
-export function tokenColour(
+export async function tokenColour(
   page: Page,
   token: `--${string}`,
   inTheme?: Theme,
 ): Promise<string> {
+  await page.waitForFunction(
+    () => document.documentElement.dataset.platform !== undefined,
+  );
+  return probedColour(page, `var(${token})`, inTheme);
+}
+
+export async function literalColour(page: Page, css: string): Promise<string> {
+  return probedColour(page, css);
+}
+
+async function probedColour(
+  page: Page,
+  css: string,
+  inTheme?: Theme,
+): Promise<string> {
   return page.evaluate(
-    ([name, theme]) => {
+    ([colour, theme]) => {
       const probe = document.createElement("span");
-      probe.style.color = `var(${name})`;
+      probe.style.color = colour;
       if (theme !== undefined) {
         probe.dataset.theme = theme;
       }
       document.body.append(probe);
-      const colour = getComputedStyle(probe).color;
+      const computed = getComputedStyle(probe).color;
       probe.remove();
-      return colour;
+      return computed;
     },
-    [token, inTheme] as const,
+    [css, inTheme] as const,
   );
 }
 
