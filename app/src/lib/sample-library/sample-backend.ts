@@ -636,15 +636,18 @@ export function sampleBackend(
   }
 
   function seriesWrittenBy(writer: string): SampleSeries[] {
-    return library.filter((series) =>
-      peopleOf(series).some(
-        (creator) => creator.name === writer && writes(creator),
-      ),
+    return library.filter(
+      (series) =>
+        !isOutOfReach(series) &&
+        peopleOf(series).some(
+          (creator) => creator.name === writer && writes(creator),
+        ),
     );
   }
 
   function writerNames(): string[] {
-    const names = library.flatMap((series) =>
+    const inReach = library.filter((series) => !isOutOfReach(series));
+    const names = inReach.flatMap((series) =>
       peopleOf(series)
         .filter(writes)
         .map(({ name }) => name),

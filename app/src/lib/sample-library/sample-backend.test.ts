@@ -611,6 +611,27 @@ test("lists the sample's writers with their series, leaving out those who only d
   });
 });
 
+test("leaves out the writers and series hidden with their missing folder", async () => {
+  const { backend } = backendFor("?missing=folder");
+  await backend.editSeriesDetails(sampleSeriesId(6), {
+    title: null,
+    people: [
+      { name: "Author A", role: "story" },
+      { name: "Author E", role: "story" },
+    ],
+    tags: null,
+    summary: null,
+    isMarkedAdult: false,
+  });
+
+  const page = await backend.libraryWriters(null);
+
+  expect(page.writers).toEqual([
+    { name: "Author A", seriesCount: 4 },
+    { name: "Author B", seriesCount: 1 },
+  ]);
+});
+
 test("lists and counts the series naming a writer, and none for an artist", async () => {
   const { backend } = backendFor();
 
