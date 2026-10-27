@@ -25,7 +25,7 @@ const LOOKS: readonly PlatformLook[] = [
     platform: "linux",
     menu: "--popover",
     menuCorner: "8px",
-    tooltip: "--primary",
+    tooltip: "--foreground",
     switchOn: "--primary",
     secondaryText: "--muted-foreground",
     font: /^ui-sans-serif/,

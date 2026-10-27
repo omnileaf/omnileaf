@@ -98,7 +98,7 @@ test("fills the field faintly in the dark theme, as shadcn does", async () => {
 
   expect(field && getComputedStyle(field).backgroundColor).toBe(
     resolvedColour(
-      "color-mix(in oklch, var(--input) 30%, transparent)",
+      "color-mix(in oklch, oklch(1 0 0 / 15%) 30%, transparent)",
       "backgroundColor",
     ),
   );
