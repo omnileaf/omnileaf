@@ -55,6 +55,8 @@
     standInBook,
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
+  import { sectionListing } from "#lib/series-sections/section-listing.ts";
+  import SeriesSections from "#lib/series-sections/SeriesSections.svelte";
 
   import type { PageProps } from "./$types";
 
@@ -81,6 +83,13 @@
     shown: "all",
     direction: "ascending",
   });
+  const listed = $derived(
+    sectionListing(
+      listing,
+      found?.overview.sections.map(({ section }) => section) ?? [],
+      { platform: data.appInfo.platform, isWide: isWide.current },
+    ),
+  );
   const foundId = $derived(found?.overview.id);
   const overview = $derived(
     found === undefined || !screenshotMode.isOn
@@ -93,7 +102,7 @@
       : (screenshotMode.isOn ? standInLook : realLook)(found.overview).cover,
   );
   const books = $derived(
-    foundId === undefined ? undefined : seriesBookList(foundId, () => listing),
+    foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
   );
 
   let keepsDetailEdits = $state(false);
@@ -367,32 +376,41 @@
           />
         {:else}
           <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
-          {#if books?.list.kind === "failed"}
-            <p class="text-body text-muted">{m.series_books_failed()}</p>
-          {:else if books?.list.kind === "loaded"}
-            {#key foundId}
-              <SeriesBooks
-                books={screenshotMode.isOn
-                  ? books.list.items.map(standInBook)
-                  : books.list.items}
-                bookCount={found.overview.bookCount}
-                readCount={found.overview.readCount}
-                bookmarkCount={found.overview.bookmarkCount}
-                {listing}
-                onListing={(chosen: SeriesBookListing) => {
-                  listing = chosen;
-                  void books.start();
-                }}
-                isComplete={books.list.isComplete}
-                onNearEnd={() => {
-                  void books.loadMore();
-                }}
-                onLoadAll={() => books.loadAll()}
-                onMark={mark}
-                platform={data.appInfo.platform}
-              />
-            {/key}
-          {/if}
+          <SeriesSections
+            sections={found.overview.sections}
+            listing={listed}
+            onListing={(chosen: SeriesBookListing) => {
+              listing = chosen;
+              void books?.start();
+            }}
+          >
+            {#if books?.list.kind === "failed"}
+              <p class="text-body text-muted">{m.series_books_failed()}</p>
+            {:else if books?.list.kind === "loaded"}
+              {#key foundId}
+                <SeriesBooks
+                  books={screenshotMode.isOn
+                    ? books.list.items.map(standInBook)
+                    : books.list.items}
+                  bookCount={found.overview.bookCount}
+                  readCount={found.overview.readCount}
+                  bookmarkCount={found.overview.bookmarkCount}
+                  {listing}
+                  onListing={(chosen: SeriesBookListing) => {
+                    listing = chosen;
+                    void books.start();
+                  }}
+                  isComplete={books.list.isComplete}
+                  onNearEnd={() => {
+                    void books.loadMore();
+                  }}
+                  onLoadAll={() => books.loadAll()}
+                  onMark={mark}
+                  platform={data.appInfo.platform}
+                />
+              {/key}
+            {/if}
+          </SeriesSections>
         {/if}
         {#if adultTreatment !== undefined}
           <RelatedSeries
