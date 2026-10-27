@@ -23,6 +23,7 @@ mod search_text;
 mod series;
 pub(crate) mod series_books;
 mod series_count;
+mod series_file_details;
 mod series_listing;
 mod series_overview;
 mod series_page;
@@ -63,6 +64,7 @@ pub use series_books::{
     BookListing, BookReading, BookSummary, BooksShown, series_books, unread_books, up_next,
 };
 pub use series_count::series_count;
+pub use series_file_details::{SeriesFileDetails, SeriesPerson, series_file_details};
 pub use series_listing::{
     Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
 };

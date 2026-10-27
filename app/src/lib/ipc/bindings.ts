@@ -627,7 +627,6 @@ export type RelatedSeries = {
 	bookCount: number,
 	readCount: number,
 	reason: RelatedReason,
-	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
 	isAdult: boolean,
 };
 
@@ -726,7 +725,6 @@ export type SeriesOverview = {
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
 	upNext: SeriesBook | null,
-	/**  The kind of book, such as manga or a light novel, absent until the library reads the books' details. */
 	format: string | null,
 	creators: SeriesCreator[],
 	summary: string | null,
