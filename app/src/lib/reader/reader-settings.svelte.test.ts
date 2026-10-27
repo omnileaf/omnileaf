@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { DEFAULT_LOOK, ReaderSettings } from "./reader-settings.svelte";
+import {
+  DEFAULT_LOOK,
+  ReaderDefaults,
+  ReaderSettings,
+} from "./reader-settings.svelte";
 
 const SERIES = "0190a3e4-0000-8000-8000-0000000000a1";
 const OTHER_SERIES = "0190a3e4-0000-8000-8000-0000000000a2";
@@ -81,4 +85,49 @@ test("turns pages at once until slide is chosen, and keeps the choice", () => {
   const again = new ReaderSettings(store, OTHER_SERIES);
 
   expect([first, again.look.pageTurn]).toEqual(["instant", "slide"]);
+});
+
+test("leaves the volume keys to the volume until turned on", () => {
+  const settings = new ReaderSettings(memoryStore(), SERIES);
+
+  expect([
+    DEFAULT_LOOK.turnsPagesWithVolumeKeys,
+    settings.look.turnsPagesWithVolumeKeys,
+  ]).toEqual([false, false]);
+});
+
+test("remembers turning pages with the volume keys for every series", () => {
+  const store = memoryStore();
+  store.values.set(
+    "omnileaf.readerSettings.all",
+    JSON.stringify({ turnsPagesWithVolumeKeys: true }),
+  );
+
+  const settings = new ReaderSettings(store, SERIES);
+
+  expect(settings.look.turnsPagesWithVolumeKeys).toBe(true);
+});
+
+test("keeps a series' own volume keys choice over every series'", () => {
+  const store = memoryStore();
+  const settings = new ReaderSettings(store, SERIES);
+  settings.applyTo("series");
+  settings.change("turnsPagesWithVolumeKeys", true);
+
+  const again = new ReaderSettings(store, SERIES);
+  const other = new ReaderSettings(store, OTHER_SERIES);
+
+  expect([
+    again.look.turnsPagesWithVolumeKeys,
+    other.look.turnsPagesWithVolumeKeys,
+  ]).toEqual([true, false]);
+});
+
+test("changes the volume keys for every series from Settings › Reader", () => {
+  const store = memoryStore();
+  new ReaderDefaults(store).change("turnsPagesWithVolumeKeys", true);
+
+  const settings = new ReaderSettings(store, OTHER_SERIES);
+
+  expect(settings.look.turnsPagesWithVolumeKeys).toBe(true);
 });
