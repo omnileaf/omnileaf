@@ -326,6 +326,27 @@ async fn lists_a_file_it_skips_for_a_type_the_app_does_not_read() {
 }
 
 #[tokio::test]
+async fn lists_a_plain_rar_file_among_the_files_it_skips() {
+    let comics = ScratchFolder::new("scan-skipped-rar");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    comics.write("Sample Series 01/v02.rar", RAR_SIGNATURE);
+
+    let (_, scan, _) = Scanned::folder("scan-skipped-rar", comics.path()).await;
+
+    assert_eq!(
+        (scan.unsupported_books, scan.skipped_types),
+        (
+            1,
+            vec![SkippedType {
+                file_type: FileType::try_from("rar".to_owned()).unwrap(),
+                files: 1,
+                first_locations: vec![location_in_series("v02.rar")],
+            }]
+        )
+    );
+}
+
+#[tokio::test]
 async fn lists_no_file_of_a_type_it_reads_that_holds_an_archive_it_cannot() {
     let comics = ScratchFolder::new("scan-skipped-cbz");
     comics.write("Sample Series 01/v01.cbz", RAR_SIGNATURE);

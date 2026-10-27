@@ -261,6 +261,16 @@ async fn hides_a_file_type_a_scan_skipped_so_rescans_skip_its_files_no_more() {
 }
 
 #[tokio::test]
+async fn hides_plain_rar_files_as_a_type_the_app_does_not_read() {
+    let hiding = Hiding::new("hide-type-rar").await;
+    let rar = FileType::try_from("rar".to_owned()).unwrap();
+
+    let hidden = hiding.library().hide_file_type(rar).await;
+
+    assert!(hidden.is_ok(), "{hidden:?}");
+}
+
+#[tokio::test]
 async fn refuses_to_hide_a_file_type_the_app_reads() {
     let hiding = Hiding::new("hide-type-read").await;
     let read = FileType::try_from("cbz".to_owned()).unwrap();
