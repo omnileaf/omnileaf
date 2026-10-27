@@ -78,6 +78,7 @@ const SERIES_04_FOLDER: &str = "Sample Author/Sample Series 04 (2019)";
 const SERIES_04_ARCHIVES: &[&str] = &[
     "Volume 01/Sample Series 04 c001.cbz",
     "Volume 01/Sample Series 04 c002.5 [GroupName].cbz",
+    "Volume 01/Sample Series 04 v02 c005.cbz",
     "Sample Series 04 Vol. 07/Sample Series 04 c030.cbz",
     "Sample Series 04 v03 c017.cbz",
     "Sample Series 04 v04-06.cbz",
@@ -320,7 +321,7 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
         scanned.series(),
         owned(&[
             ("Sample One-Shot", 1),
-            ("Sample Series 04", 12),
+            ("Sample Series 04", 13),
             ("Sample Series 05 Vol 2", 1)
         ])
     );
@@ -370,6 +371,7 @@ async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
             "Sample Series 04 c001",
             "Sample Series 04 c002.5",
             "003",
+            "Sample Series 04 v02 c005",
             "Extra Pages",
             "Sample Series 04 v03 c017",
             "Sample Series 04 v04-06",
@@ -411,6 +413,10 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
             (
                 "Sample Series 04 c030",
                 "chapter 30000 30000 file_name 7000 folder_name"
+            ),
+            (
+                "Sample Series 04 v02 c005",
+                "chapter 5000 5000 file_name 2000 file_name"
             ),
             (
                 "Sample Series 04 v03 c017",
