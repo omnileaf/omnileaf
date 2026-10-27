@@ -87,6 +87,8 @@ const FILE_LOCATION: &str = ":file_location";
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const FILL_NAME_LANGUAGE: &str =
+    "UPDATE book SET name_language = ?2 WHERE id = ?1 AND name_language IS NULL";
 const RECORD_PAGE_COUNT: &str =
     "UPDATE book SET page_count = ?2 WHERE id = ?1 AND page_count IS NOT ?2";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
@@ -103,6 +105,7 @@ pub(crate) struct BookFiler<'t> {
     add: Statement<'t>,
     move_to_series: Statement<'t>,
     series_exists: Statement<'t>,
+    fill_name_language: Statement<'t>,
     page_count: Statement<'t>,
 }
 
@@ -146,6 +149,7 @@ impl<'t> BookFiler<'t> {
             add: transaction.prepare(add)?,
             move_to_series: transaction.prepare(move_to_series)?,
             series_exists: transaction.prepare(SERIES_EXISTS)?,
+            fill_name_language: transaction.prepare(FILL_NAME_LANGUAGE)?,
             page_count: transaction.prepare(RECORD_PAGE_COUNT)?,
         })
     }
@@ -168,6 +172,10 @@ impl<'t> BookFiler<'t> {
                 .query_row([book.series.as_bytes()], |row| row.get(0))?;
         if !is_filed {
             return Err(Error::UnknownSeries { id: book.series });
+        }
+        if let Some(name_language) = &book.name_language {
+            self.fill_name_language
+                .execute((book.id().as_bytes(), name_language))?;
         }
         Ok(())
     }
