@@ -80,6 +80,7 @@ const SERIES_04_ARCHIVES: &[&str] = &[
     "Volume 01/Sample Series 04 c002.5 [GroupName].cbz",
     "Volume 01/Sample Series 04 v02 c005.cbz",
     "Sample Series 04 Vol. 07/Sample Series 04 c030.cbz",
+    "Volume 08 [GroupName]/Sample Series 04 c040.cbz",
     "Sample Series 04 v03 c017.cbz",
     "Sample Series 04 v04-06.cbz",
     "Sample Series 04 c020-022.cbz",
@@ -102,12 +103,9 @@ fn series_laid_out_in_folders(name: &str) -> ScratchFolder {
     for (book, seed) in SERIES_04_IMAGE_FOLDERS.iter().zip(20..) {
         write_page(&series.join(book), seed);
     }
-    write_book(
-        &comics
-            .path()
-            .join("Sample Author/Sample Series 05 Vol 2/c001.cbz"),
-        30,
-    );
+    let series_05 = comics.path().join("Sample Author/Sample Series 05 Vol 2");
+    write_book(&series_05.join("c001.cbz"), 30);
+    write_book(&series_05.join("specials/Sample Bonus.cbz"), 33);
     write_book(&comics.path().join("Sample One-Shot [GroupName].cbz"), 31);
     write_book(&comics.path().join("Sample Series 06 003.cbz"), 32);
     comics
@@ -323,8 +321,8 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
         scanned.series(),
         owned(&[
             ("Sample One-Shot", 1),
-            ("Sample Series 04", 14),
-            ("Sample Series 05 Vol 2", 1),
+            ("Sample Series 04", 15),
+            ("Sample Series 05 Vol 2", 2),
             ("Sample Series 06 003", 1)
         ])
     );
@@ -379,6 +377,7 @@ async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
             "Sample Series 04 v03 c017",
             "Sample Series 04 v04-06",
             "Sample Series 04 c030",
+            "Sample Series 04 c040",
             "Sample Series 04 015",
             "Sample Series 04 c020-022",
             "Sample Series 04 Omake 02",
@@ -400,6 +399,7 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
         owned_pairs(&[
             ("003", "chapter 3000 3000 file_name 2000 folder_name"),
             ("Extra Pages", "chapter 2000 folder_name"),
+            ("Sample Bonus", "special"),
             ("Sample One-Shot", "special"),
             ("Sample Series 04 015", "chapter 15000 15000 file_name"),
             ("Sample Series 04 Art Book", "special"),
@@ -417,6 +417,10 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
             (
                 "Sample Series 04 c030",
                 "chapter 30000 30000 file_name 7000 folder_name"
+            ),
+            (
+                "Sample Series 04 c040",
+                "chapter 40000 40000 file_name 8000 folder_name"
             ),
             ("Sample Series 04 v01 c002", "special 2000 2000 file_name"),
             (
