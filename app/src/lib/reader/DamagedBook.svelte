@@ -12,19 +12,18 @@
     AlertDescription,
     AlertTitle,
   } from "#lib/components/ui/alert/index.ts";
-  import { EmptyMedia } from "#lib/components/ui/empty/index.ts";
   import type { BookDamage, OpenedBook, Platform } from "#lib/ipc/bindings.ts";
   import { actionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import ProblemHeading from "./ProblemHeading.svelte";
+  import { PROBLEM_TEXT, problemLayout } from "./problem-heading.ts";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
 
-  const HEADING_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
 
   let {
@@ -43,7 +42,7 @@
   const readable = $derived(book.pages.length);
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
-  const isOnPhone = $derived(isPhone(platform, width.current));
+  const layout = $derived(problemLayout(platform, width.current));
   const actions = $derived(
     actionGroupLook(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -67,23 +66,10 @@
     class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl"
   >
     <section class="flex flex-col gap-lg inline-full max-inline-damaged-book">
-      <div
-        class={[
-          "flex items-center gap-md",
-          isOnPhone && "flex-col text-center",
-        ]}
-      >
-        <EmptyMedia class="shrink-0">
-          <FileExclamationPoint size={HEADING_ICON_SIZE} aria-hidden="true" />
-        </EmptyMedia>
-        <h1
-          tabindex="-1"
-          class="text-group-title font-semibold tracking-tight text-pretty expanded:text-body"
-        >
-          {m.reader_damaged_title({ title: book.title })}
-        </h1>
-      </div>
-      <p class={["text-body expanded:text-small", isOnPhone && "text-center"]}>
+      <ProblemHeading icon={FileExclamationPoint} {platform}>
+        {m.reader_damaged_title({ title: book.title })}
+      </ProblemHeading>
+      <p class={["text-body expanded:text-small", PROBLEM_TEXT[layout]]}>
         {m.reader_damaged_count({
           readable,
           promised: damage.promisedPages,
