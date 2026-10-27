@@ -1336,6 +1336,7 @@ mod tests {
             "'chapter', NULL, NULL, NULL, -1000, 'folder_name'",
             "'chapter', NULL, NULL, NULL, 1000, NULL",
             "'chapter', NULL, NULL, NULL, NULL, 'folder_name'",
+            "'chapter', NULL, NULL, NULL, 1000, 'guessed'",
             "'volume', 1000, 1000, 'file_name', 1000, 'folder_name'",
             "'special', NULL, NULL, NULL, 1000, 'folder_name'",
         ];
