@@ -1,7 +1,14 @@
 <script lang="ts">
-  import { ChevronLeft, FolderSearch, Library } from "@lucide/svelte";
+  import {
+    ChevronLeft,
+    CircleAlert,
+    FolderSearch,
+    Library,
+    RefreshCw,
+  } from "@lucide/svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { buttonClasses } from "#lib/components/ui/button/looks.ts";
@@ -29,6 +36,7 @@
   import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { CREATOR_SERIES } from "#lib/series/creator-series.ts";
   import { roleName } from "#lib/series/creator-role.ts";
   import { SERIES_CHIP } from "#lib/series/series-chip.ts";
   import { SERIES_CONTROL } from "#lib/series/series-control.ts";
@@ -39,8 +47,8 @@
   const BACK_ICON_SIZE = 20;
   const ICON_SIZE = 16;
   const TODAYS_ACTIONS: ActionGroupLook = {
-    group: "contents",
-    main: "",
+    group: "flex flex-wrap justify-center gap-sm",
+    main: SERIES_CONTROL,
     other: SERIES_CONTROL,
   };
 
@@ -57,6 +65,22 @@
   );
   const hasToolbar = $derived(DESKTOPS.includes(platform) && isWide.current);
   const look = $derived(screenshotMode.isOn ? standInLook : realLook);
+  const hasFailed = $derived(data.series.kind === "failed");
+  const emptyScreen = $derived(
+    hasFailed
+      ? {
+          icon: CircleAlert,
+          role: "alert" as const,
+          title: m.creator_failed({ name: data.name }),
+          body: m.library_unchanged(),
+        }
+      : {
+          icon: FolderSearch,
+          title: m.creator_empty({ name: data.name }),
+          body: m.creator_empty_body(),
+        },
+  );
+  const found = $derived(data.series.kind === "read" ? data.series.series : []);
   const back = $derived(
     data.from === undefined
       ? {
@@ -156,18 +180,18 @@
         {data.name}
       </h1>
     {/if}
-    {#if data.series.length > 0}
+    {#if found.length > 0}
       <p class="text-small text-muted">
-        {m.creator_series_count({ count: data.series.length })}
+        {m.creator_series_count({ count: found.length })}
       </p>
     {/if}
   </div>
-  {#if data.series.length > 0}
+  {#if found.length > 0}
     <ul
       aria-label={m.creator_series_list({ name: data.name })}
       class="grid grid-cols-3 gap-x-md gap-y-cover-row expanded:grid-cols-6 expanded:gap-x-xl expanded:gap-y-cover-row-wide"
     >
-      {#each data.series as series (series.id)}
+      {#each found as series (series.id)}
         {@const shown = look(series)}
         <li class="min-inline-none">
           <a
@@ -197,13 +221,21 @@
       {/each}
     </ul>
   {:else}
-    <EmptyState
-      icon={FolderSearch}
-      title={m.creator_empty({ name: data.name })}
-      body={m.creator_empty_body()}
-    >
-      <div class={actions.group}>
-        <a href={resolve("/(app)")} class={cn(actions.other, "mbs-lg")}>
+    <EmptyState {...emptyScreen}>
+      <div class={cn(actions.group, "mbs-lg")}>
+        {#if hasFailed}
+          <button
+            type="button"
+            class={actions.main}
+            onclick={() => {
+              void invalidate(CREATOR_SERIES);
+            }}
+          >
+            <RefreshCw size={ICON_SIZE} aria-hidden="true" />
+            {m.library_try_again()}
+          </button>
+        {/if}
+        <a href={resolve("/(app)")} class={actions.other}>
           <Library size={ICON_SIZE} aria-hidden="true" />
           {m.series_back_label()}
         </a>

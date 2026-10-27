@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -50,6 +50,44 @@ function backendWith(found: typeof THEIR_SERIES | readonly []): FakeBackend {
     creatorSeries: (creator) =>
       creator === CREATOR ? found.map((series) => ({ ...series })) : [],
   };
+}
+
+const CATALOG_UNREADABLE = "the catalog could not be read";
+
+let creatorReads = 0;
+
+function backendFailingFirst(): FakeBackend {
+  const found = backendWith(THEIR_SERIES);
+  return {
+    ...found,
+    creatorSeries: (creator) => {
+      creatorReads += 1;
+      if (creatorReads === 1) {
+        throw new CommandFailure({
+          code: "internal",
+          message: CATALOG_UNREADABLE,
+        });
+      }
+      return found.creatorSeries(creator);
+    },
+  };
+}
+
+function failure(page: Page): Locator {
+  return page.getByRole("alert").filter({
+    has: page.getByRole("heading", {
+      level: 2,
+      name: `Couldn't read the series by ${CREATOR}`,
+    }),
+  });
+}
+
+function tryAgain(page: Page): Locator {
+  return failure(page).getByRole("button", { name: "Try again" });
+}
+
+function backToLibrary(page: Page): Locator {
+  return failure(page).getByRole("link", { name: "Back to the library" });
 }
 
 function isWide(page: Page): boolean {
@@ -213,7 +251,7 @@ test.describe("a creator with a long name and a series with an unbroken title", 
 });
 
 const PHONE_COVER_CORNER = { ios: "6px", android: "4px" } as const;
-const PHONE_SECOND_BUTTON_HEIGHT = { ios: 50, android: 40 } as const;
+const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } as const;
 const TABLET = { width: 820, height: 1180 };
 
 function backToSeries(page: Page): Locator {
@@ -295,10 +333,138 @@ test.describe(
           .last(),
       );
 
-      expect(button.height).toBeCloseTo(
-        PHONE_SECOND_BUTTON_HEIGHT[platform],
+      expect(button.height).toBeCloseTo(PHONE_BUTTON_HEIGHT[platform], 0);
+    });
+  },
+);
+
+test.describe("a creator whose series can't be read", () => {
+  test.use({ backend: backendFailingFirst() });
+
+  test.beforeEach(() => {
+    creatorReads = 0;
+  });
+
+  test("says their series couldn't be read and that nothing changed", async ({
+    page,
+  }) => {
+    await openCreatorFromSeries(page);
+
+    await expect(failure(page)).toContainText(
+      "Nothing in your library has changed.",
+    );
+  });
+
+  test("leaves the crash prompt closed, since the failure screen explains it", async ({
+    page,
+  }) => {
+    await openCreatorFromSeries(page);
+    await expect(failure(page)).toBeVisible();
+
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  });
+
+  test("reads their series again on Try again", async ({ page }) => {
+    await openCreatorFromSeries(page);
+
+    await tryAgain(page).click();
+
+    await expect(
+      page
+        .getByRole("list", { name: `Series by ${CREATOR}` })
+        .getByRole("listitem"),
+    ).toHaveCount(THEIR_SERIES.length);
+    await expect(failure(page)).toHaveCount(0);
+  });
+
+  test("leads back to the library", async ({ page }) => {
+    await openCreatorFromSeries(page);
+
+    await backToLibrary(page).click();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("has no accessibility violations", async ({ page }) => {
+    await openCreatorFromSeries(page);
+    await expect(failure(page)).toBeVisible();
+
+    const violations = await accessibilityViolations(page);
+
+    expect(violations).toEqual([]);
+  });
+});
+
+test.describe(
+  "a creator whose series can't be read, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: backendFailingFirst() });
+
+    test.beforeEach(() => {
+      creatorReads = 0;
+    });
+
+    test("centres Try again over Back to the library as iOS capsules of one width", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios") {
+        test.skip();
+        return;
+      }
+
+      await openCreatorFromSeries(page);
+      const again = await boxOf(tryAgain(page));
+      const back = await boxOf(backToLibrary(page));
+
+      expect(back.y).toBeGreaterThan(again.y + again.height);
+      expect(back.width).toBeCloseTo(again.width, 0);
+      expect(again.x + again.width / 2).toBeCloseTo(
+        viewportOf(page).width / 2,
         0,
       );
+      expect(again.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.ios, 0);
+      const corner = await tryAgain(page).evaluate((button) =>
+        parseFloat(getComputedStyle(button).borderTopLeftRadius),
+      );
+      expect(corner).toBeGreaterThanOrEqual(again.height / 2);
+    });
+
+    test("stacks Try again over Back to the library at each one's own width on Android", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+
+      await openCreatorFromSeries(page);
+      const again = await boxOf(tryAgain(page));
+      const back = await boxOf(backToLibrary(page));
+
+      expect(back.y).toBeGreaterThan(again.y + again.height);
+      expect(back.width).not.toBeCloseTo(again.width, 0);
+      expect(again.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.android, 0);
+      expect(back.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.android, 0);
+    });
+
+    test("keeps today's buttons on an iPad", async ({ page, platform }) => {
+      if (platform !== "ios") {
+        test.skip();
+        return;
+      }
+      await page.setViewportSize(TABLET);
+
+      await openCreatorFromSeries(page);
+      const again = await boxOf(tryAgain(page));
+      const corner = await tryAgain(page).evaluate((button) =>
+        parseFloat(getComputedStyle(button).borderTopLeftRadius),
+      );
+
+      expect(again.height).not.toBeCloseTo(PHONE_BUTTON_HEIGHT.ios, 0);
+      expect(corner).toBeLessThan(again.height / 2);
     });
   },
 );

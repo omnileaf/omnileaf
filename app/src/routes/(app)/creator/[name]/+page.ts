@@ -1,18 +1,17 @@
-import { error } from "@sveltejs/kit";
-
-import { commands, type CreatorSeries } from "#lib/ipc/bindings.ts";
+import { commands } from "#lib/ipc/bindings.ts";
+import {
+  CREATOR_SERIES,
+  type CreatorSeriesRead,
+} from "#lib/series/creator-series.ts";
 import { seriesIdIn } from "#lib/series/series-id.ts";
 
 import type { PageLoad } from "./$types";
 
-const LIBRARY_UNREADABLE = 500;
-
-async function seriesBy(creator: string): Promise<CreatorSeries[]> {
+async function seriesBy(creator: string): Promise<CreatorSeriesRead> {
   const read = await commands.creatorSeries(creator);
-  if (read.status === "error") {
-    error(LIBRARY_UNREADABLE, read.error.message);
-  }
-  return read.data;
+  return read.status === "ok"
+    ? { kind: "read", series: read.data }
+    : { kind: "failed" };
 }
 
 async function titleOf(from: string | null): Promise<string | undefined> {
@@ -24,7 +23,8 @@ async function titleOf(from: string | null): Promise<string | undefined> {
   return read.status === "ok" ? read.data.title : undefined;
 }
 
-export const load: PageLoad = async ({ params, url }) => {
+export const load: PageLoad = async ({ params, url, depends }) => {
+  depends(CREATOR_SERIES);
   const from = url.searchParams.get("from");
   const [series, fromTitle] = await Promise.all([
     seriesBy(params.name),
