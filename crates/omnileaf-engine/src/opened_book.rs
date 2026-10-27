@@ -1,10 +1,12 @@
+use std::path::Path;
+
 use omnileaf_db::catalog;
 use omnileaf_formats::Damage;
 use omnileaf_imaging::PageFormat;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{BookId, BookReading, CoverPath, PagePath, PageThumbnailPath, SeriesId};
+use crate::{BookId, BookReading, CoverPath, FileType, PagePath, PageThumbnailPath, SeriesId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -77,6 +79,23 @@ pub struct BookPlace {
     pub title: String,
     pub series: SeriesId,
     pub series_title: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BookFile {
+    pub name: String,
+    pub file_type: Option<FileType>,
+}
+
+impl BookFile {
+    pub(crate) fn of(location: &Path) -> Option<Self> {
+        let name = location.file_name()?.to_string_lossy().into_owned();
+        Some(Self {
+            name,
+            file_type: FileType::of(location),
+        })
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]

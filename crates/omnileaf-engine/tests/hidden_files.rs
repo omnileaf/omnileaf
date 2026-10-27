@@ -16,7 +16,7 @@ use std::{fs, path::PathBuf};
 
 use books::write_book;
 use omnileaf_engine::{
-    BookId, FileChanges, FileType, FolderScan, Library, LibraryError, LibraryListing,
+    BookFile, BookId, FileChanges, FileType, FolderScan, Library, LibraryError, LibraryListing,
     RescanOutcome, SeriesBookListing,
 };
 use scanned::Scanned;
@@ -307,4 +307,56 @@ async fn refuses_to_hide_files_like_a_book_the_library_does_not_hold() {
         matches!(hidden, Err(LibraryError::BookNotFound { id }) if id == missing),
         "{hidden:?}"
     );
+}
+
+#[tokio::test]
+async fn lists_the_file_types_hidden_in_order() {
+    let hiding = Hiding::new("hidden-types-listed").await;
+    let rar = FileType::try_from("rar".to_owned()).unwrap();
+    hiding.library().hide_file_type(rar).await.unwrap();
+    hiding.hide_like("v02").await;
+
+    let hidden = hiding.library().hidden_types().await.unwrap();
+
+    assert_eq!(
+        hidden.iter().map(FileType::to_string).collect::<Vec<_>>(),
+        ["cbr", "rar"]
+    );
+}
+
+#[tokio::test]
+async fn lists_a_file_type_no_more_once_it_is_shown_again() {
+    let hiding = Hiding::new("hidden-types-shown").await;
+    let hidden = hiding.hide_like("v02").await;
+    hiding.library().show_file_type(hidden).await.unwrap();
+
+    let listed = hiding.library().hidden_types().await.unwrap();
+
+    assert_eq!(listed, []);
+}
+
+#[tokio::test]
+async fn names_a_book_s_file_and_its_type() {
+    let hiding = Hiding::new("book-file-named").await;
+    let book = hiding.book("v02").await;
+
+    let file = hiding.library().book_file_name(book).await.unwrap();
+
+    assert_eq!(
+        file,
+        Some(BookFile {
+            name: "v02.cbr".to_owned(),
+            file_type: FileType::try_from("cbr".to_owned()).ok(),
+        })
+    );
+}
+
+#[tokio::test]
+async fn names_no_file_for_a_book_the_library_does_not_hold() {
+    let hiding = Hiding::new("book-file-missing").await;
+    let missing = BookId::try_from("0190a3e4-0000-8000-8000-00000000ffff".to_owned()).unwrap();
+
+    let file = hiding.library().book_file_name(missing).await.unwrap();
+
+    assert_eq!(file, None);
 }
