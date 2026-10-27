@@ -94,7 +94,7 @@ pub enum Error {
     #[error("continue a list from a cursor another list gave out")]
     CursorForAnotherList,
     #[error(
-        "continue a list in title order from a cursor whose series went before the titles were keyed again"
+        "continue a list in title order from a cursor whose series or writer went before the titles and names were keyed again"
     )]
     StaleCursor,
     #[error("stamp a synced write with this device's clock")]
