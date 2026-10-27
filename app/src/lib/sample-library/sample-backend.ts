@@ -38,6 +38,7 @@ import {
 
 type LibraryState = (typeof LIBRARY_STATES)[number];
 type SeriesState = "ready" | "loading" | "failed" | "empty";
+type SkippedKind = (typeof SKIPPED_KINDS)[number];
 
 export interface SampleScenario {
   readonly platform: Platform;
@@ -49,6 +50,7 @@ export interface SampleScenario {
   readonly launch: LaunchKind;
   readonly home: HomeKind;
   readonly space: SpaceKind;
+  readonly skipped: SkippedKind;
 }
 
 export interface SampleEvents {
@@ -65,8 +67,32 @@ const LIBRARY_STATES = [
 ] as const;
 const THOUSANDS_OF_SERIES = 12_480;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
-const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
+const SIXTH_VOLUME_FILES = [
+  "present",
+  "missing",
+  "damaged",
+  "unsupported",
+] as const;
 const READ_FILE_TYPE = "cbz";
+const UNSUPPORTED_FILE_TYPE = "cbr";
+const FILE_TYPES_NOT_READ_YET: readonly string[] = ["cbr", "rar"];
+const SKIPPED_KINDS = ["none", "types"] as const;
+const SKIPPED_TYPES = [
+  {
+    fileType: "cbr",
+    files: 3,
+    firstLocations: [
+      "Sample Series 04/Extras.cbr",
+      "Sample Series 04/Volume 7.cbr",
+      "Sample Series 07/Volume 1.cbr",
+    ],
+  },
+  { fileType: "rar", files: 1, firstLocations: ["Sample Series 09/Art.rar"] },
+] as const;
+const SKIPPED_FILES = SKIPPED_TYPES.reduce(
+  (files, skipped) => files + skipped.files,
+  0,
+);
 const MISSING_KINDS = [
   "none",
   "folder",
@@ -192,6 +218,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     launch: oneOf(LAUNCH_KINDS, search.get("launch"), "returning"),
     home: oneOf(HOME_KINDS, search.get("home"), "empty"),
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
+    skipped: oneOf(SKIPPED_KINDS, search.get("skipped"), "none"),
   };
 }
 
@@ -425,6 +452,7 @@ export function sampleBackend(
   let hasFinishedFirstLaunch = scenario.launch === "returning";
   const bookmarks = new Map<string, Set<number>>();
   const readingBeforeMarked = new Map<string, SampleReading>();
+  const hiddenTypes = new Set<string>();
 
   const categoriesCreated: { readonly id: string; readonly name: string }[] =
     [];
@@ -646,6 +674,27 @@ export function sampleBackend(
     return null;
   }
 
+  function fileTypeOf(id: string): string {
+    const { series, index } = bookWith(id);
+    return series.books[index]?.file === "unsupported"
+      ? UNSUPPORTED_FILE_TYPE
+      : READ_FILE_TYPE;
+  }
+
+  function hide(fileType: string): void {
+    if (!FILE_TYPES_NOT_READ_YET.includes(fileType)) {
+      throw failure("fileTypeRead", `this version reads ${fileType} files`);
+    }
+    hiddenTypes.add(fileType);
+  }
+
+  function skippedTypes() {
+    return SKIPPED_TYPES.map((skipped) => ({
+      ...skipped,
+      firstLocations: [...skipped.firstLocations],
+    }));
+  }
+
   function setReading(id: string, reading: SampleReading): void {
     const { series, index } = bookWith(id);
     const books = series.books.map((book, at) =>
@@ -836,7 +885,18 @@ export function sampleBackend(
       isDevelopmentBuild: true,
     }),
     libraryProblem: () => null,
-    addLibraryFolder: () => null,
+    addLibraryFolder: () =>
+      scenario.skipped === "types"
+        ? {
+            name: LIBRARY_FOLDER_NAME,
+            series: 0,
+            books: 0,
+            unreadableBooks: 0,
+            unsupportedBooks: SKIPPED_FILES,
+            unreadableFolders: 0,
+            skippedTypes: skippedTypes(),
+          }
+        : null,
     linkLibraryFolder: () => {
       throw failure(
         "folderUnreadable",
@@ -1299,6 +1359,12 @@ export function sampleBackend(
       if (book === undefined || book.file === "missing") {
         throw failure("bookUnreadable", "the book's file is missing");
       }
+      if (book.file === "unsupported") {
+        throw failure(
+          "bookTypeUnsupported",
+          "the book's file is of a type this version can't read yet",
+        );
+      }
       const number = index + 1;
       const isDamaged = book.file === "damaged";
       const readablePages = isDamaged
@@ -1337,22 +1403,26 @@ export function sampleBackend(
     bookPlace: placeOf,
     bookFile: (id) => {
       const place = placeOf(id);
-      return place === null
-        ? null
-        : {
-            name: `${place.title}.${READ_FILE_TYPE}`,
-            fileType: READ_FILE_TYPE,
-          };
+      if (place === null) {
+        return null;
+      }
+      const fileType = fileTypeOf(id);
+      return { name: `${place.title}.${fileType}`, fileType };
     },
-    hideFilesLike: () => {
-      throw failure(
-        "fileTypeRead",
-        "the sample library reads every file in it",
-      );
+    hideFilesLike: (id) => {
+      const fileType = fileTypeOf(id);
+      hide(fileType);
+      return fileType;
     },
-    hideFileType: () => null,
-    showFileType: () => null,
-    hiddenFileTypes: () => [],
+    hideFileType: (fileType) => {
+      hide(fileType);
+      return null;
+    },
+    showFileType: (fileType) => {
+      hiddenTypes.delete(fileType);
+      return null;
+    },
+    hiddenFileTypes: () => [...hiddenTypes].toSorted(),
     bookmarkPages: (id, pages, isBookmarked) => {
       const kept = bookmarks.get(id) ?? new Set<number>();
       for (const page of pages) {
@@ -1474,9 +1544,10 @@ export function sampleBackend(
         moved: 0,
         removed: 0,
         unreadableBooks: 0,
-        unsupportedBooks: 0,
+        unsupportedBooks: scenario.skipped === "types" ? SKIPPED_FILES : 0,
         unreadableFolders: 0,
       },
+      ...(scenario.skipped === "types" ? { skippedTypes: skippedTypes() } : {}),
     }),
     rescanLibraryFolders: () => [],
     removeBooksOfEmptiedFolder: () => ({ kind: "kept" }),

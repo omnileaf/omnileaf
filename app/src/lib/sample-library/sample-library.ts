@@ -6,7 +6,7 @@ import type {
 
 export type SampleArt = 1 | 2 | 3 | 4 | 5;
 
-export type SampleFile = "present" | "missing" | "damaged";
+export type SampleFile = "present" | "missing" | "damaged" | "unsupported";
 
 export type SampleReading =
   | { readonly state: "notStarted" }
