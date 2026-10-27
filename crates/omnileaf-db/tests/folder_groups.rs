@@ -11,14 +11,17 @@ use omnileaf_db::{
     Database,
     catalog::{
         BookDetails, BookFile, Cursor, FolderGroup, FolderGroupSummary, NewRoot, NewSeries,
-        PageRequest, PageSize, RootId, RootKind, RootLocator, ScannedBook, SeriesFolder,
-        SeriesNaming, Sourced, ValueSource, add_root, folder_groups, record_scanned_books,
+        PageRequest, PageSize, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter,
+        SeriesFolder, SeriesListing, SeriesNaming, SeriesOrder, SeriesSort, Sourced, ValueSource,
+        add_root, folder_group_series_count, folder_group_series_page, folder_groups,
+        record_scanned_books,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
 use support::{ScratchFolder, library_config};
 
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
+const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
 const SERIES_FOLDERS: [&str; 7] = [
     "Author B Two/Sample Series 07",
     "Author B/Sample Series 02",
@@ -78,6 +81,26 @@ impl Library {
             .await
             .unwrap();
         (page.items, page.next)
+    }
+
+    async fn series_in(&self, location: &str) -> (Vec<String>, u32) {
+        let group = FolderGroup {
+            root: self.root,
+            location: PathBuf::from(location),
+        };
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        self.database
+            .read(move |connection| {
+                let page = folder_group_series_page(connection, &group, &A_TO_Z, &request)?;
+                let count = folder_group_series_count(connection, &group, &SeriesFilter::NONE)?;
+                let titles = page.items.into_iter().map(|series| series.title).collect();
+                Ok((titles, count))
+            })
+            .await
+            .unwrap()
     }
 
     fn group(&self, location: &str, series_count: u32) -> FolderGroupSummary {
@@ -174,6 +197,33 @@ async fn pages_through_the_folder_groups_with_a_cursor() {
     }
 
     assert_eq!(paged, every_group);
+}
+
+#[tokio::test]
+async fn lists_and_counts_the_series_in_a_folder_group_and_in_the_linked_folder_s_own() {
+    let library = Library::with_series_in("folder-group-series", &SERIES_FOLDERS).await;
+
+    let in_author_b = library.series_in("Author B").await;
+    let in_own_group = library.series_in("").await;
+    let in_unknown_group = library.series_in("Author C").await;
+
+    assert_eq!(
+        (in_author_b, in_own_group, in_unknown_group),
+        (
+            (
+                vec!["Sample Series 02".to_owned(), "Sample Series 03".to_owned()],
+                2
+            ),
+            (
+                vec![
+                    "Sample Series 04".to_owned(),
+                    "Sample Series 05.cbz".to_owned()
+                ],
+                2
+            ),
+            (Vec::new(), 0),
+        )
+    );
 }
 
 #[test]
