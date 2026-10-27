@@ -33,7 +33,7 @@
   role="group"
   aria-label={m.reader_stats_label({ title })}
   class={isOnPhone
-    ? "grid grid-cols-stats justify-between gap-x-lg gap-y-sm p-lg"
+    ? "grid grid-cols-stats justify-between gap-x-lg p-lg"
     : "grid grid-cols-3 gap-sm p-lg expanded:px-xl"}
 >
   {#each stats as { value, label } (label)}
