@@ -515,44 +515,6 @@ test.describe("with more categories than fit", () => {
     });
   });
 
-  test.describe("added while the library is open", () => {
-    let keptCategories: readonly LibraryCategory[] = CATEGORIES;
-
-    test.use({
-      backend: {
-        ...backendWith(MANY_CATEGORIES),
-        libraryCategories: () => [...keptCategories],
-      },
-    });
-
-    test.beforeEach(({ page }) => {
-      test.skip(
-        viewportOf(page).width < MEDIUM_MIN_WIDTH,
-        "phones scroll their tabs",
-      );
-      keptCategories = CATEGORIES;
-    });
-
-    test("tucks the new tabs that don't fit into More", async ({ page }) => {
-      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
-      await openLibrary(page);
-      const last = MANY_CATEGORIES.at(-1)?.name ?? "";
-
-      keptCategories = MANY_CATEGORIES;
-      await emitFakeEvent(page, "library-changed");
-      await expect(
-        tabs(page).getByRole("tab", { name: last, includeHidden: true }),
-      ).toBeAttached();
-      await page.getByRole("button", { name: "More" }).click();
-
-      await expect(
-        page.getByRole("menu").getByRole("menuitemradio", { name: last }),
-      ).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect.poll(() => cutTabs(page)).toEqual([]);
-    });
-  });
-
   test("opens Library tabs from Edit categories under More", async ({
     page,
     isMobile,
@@ -941,5 +903,40 @@ test.describe("more categories than fit, before the strip is first measured", ()
     ).toHaveAttribute("aria-selected", "true");
     expect(await isWholeInStrip(page, "Sea stories")).toBe(true);
     expect(await cutTabs(page)).toEqual([]);
+  });
+
+  test.describe("added while the library is open", () => {
+    let keptCategories: readonly LibraryCategory[] = CATEGORIES;
+
+    test.use({
+      backend: {
+        ...backendWith(MANY_CATEGORIES),
+        libraryCategories: () => [...keptCategories],
+      },
+    });
+
+    test.beforeEach(() => {
+      keptCategories = CATEGORIES;
+    });
+
+    test("tucks the new tabs that don't fit into More at once", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await openLibrary(page);
+      const last = MANY_CATEGORIES.at(-1)?.name ?? "";
+
+      keptCategories = MANY_CATEGORIES;
+      await emitFakeEvent(page, "library-changed");
+      await expect(
+        tabs(page).getByRole("tab", { name: last, includeHidden: true }),
+      ).toBeAttached();
+
+      expect(await cutTabs(page)).toEqual([]);
+      await page.getByRole("button", { name: "More" }).click();
+      await expect(
+        page.getByRole("menu").getByRole("menuitemradio", { name: last }),
+      ).toBeVisible();
+    });
   });
 });
