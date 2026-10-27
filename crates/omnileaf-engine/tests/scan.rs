@@ -74,6 +74,40 @@ fn sample_library(name: &str) -> ScratchFolder {
     folder
 }
 
+const SERIES_04_FOLDER: &str = "Sample Author/Sample Series 04 (2019)";
+const SERIES_04_ARCHIVES: &[&str] = &[
+    "Volume 01/Sample Series 04 c001.cbz",
+    "Volume 01/Sample Series 04 c002.5 [GroupName].cbz",
+    "Sample Series 04 Vol. 07/Sample Series 04 c030.cbz",
+    "Sample Series 04 v03 c017.cbz",
+    "Sample Series 04 v04-06.cbz",
+    "Sample Series 04 c020-022.cbz",
+    "Sample Series 04 015.cbz",
+    "Sample Series 04 Art Book.cbz",
+    "Specials/Sample Series 04 Extras.cbz",
+    "Specials/Sample Series 04 Omake 02.cbz",
+];
+const SERIES_04_IMAGE_FOLDERS: &[&str] = &["v02/003", "v02/Extra Pages"];
+
+fn series_laid_out_in_folders(name: &str) -> ScratchFolder {
+    let comics = ScratchFolder::new(name);
+    let series = comics.path().join(SERIES_04_FOLDER);
+    for (book, seed) in SERIES_04_ARCHIVES.iter().zip(1..) {
+        write_book(&series.join(book), seed);
+    }
+    for (book, seed) in SERIES_04_IMAGE_FOLDERS.iter().zip(20..) {
+        write_page(&series.join(book), seed);
+    }
+    write_book(
+        &comics
+            .path()
+            .join("Sample Author/Sample Series 05 Vol 2/c001.cbz"),
+        30,
+    );
+    write_book(&comics.path().join("Sample One-Shot [GroupName].cbz"), 31);
+    comics
+}
+
 fn series_sources(scanned: &Scanned) -> Vec<Value> {
     scanned
         .connection()
@@ -272,6 +306,22 @@ async fn names_each_series_and_book_without_their_tags_or_the_series_year() {
         ["Sample Series 04 v01"]
     );
     assert_eq!(scanned.books_in("Sample One-Shot"), ["Sample One-Shot"]);
+}
+
+#[tokio::test]
+async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_them() {
+    let comics = series_laid_out_in_folders("scan-series-folders");
+
+    let (scanned, _, _) = Scanned::folder("scan-series-folders", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[
+            ("Sample One-Shot", 1),
+            ("Sample Series 04", 12),
+            ("Sample Series 05 Vol 2", 1)
+        ])
+    );
 }
 
 #[tokio::test]
