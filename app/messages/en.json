@@ -551,8 +551,8 @@
       ],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{formattedCount} book is a CBR file, which this version can't open yet.",
-        "countPlural=other": "{formattedCount} books are CBR files, which this version can't open yet."
+        "countPlural=one": "{formattedCount} file is a RAR archive, which this version can't open yet.",
+        "countPlural=other": "{formattedCount} files are RAR archives, which this version can't open yet."
       }
     }
   ],

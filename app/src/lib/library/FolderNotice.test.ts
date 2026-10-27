@@ -192,7 +192,7 @@ test("mentions the books and folders inside it that couldn't be read", async () 
     .toBeVisible();
 });
 
-test("says which books are in a format this version can't open yet", async () => {
+test("says how many files are RAR archives, which this version can't open yet", async () => {
   const { button } = await renderWith(
     answering(scanned({ unreadableBooks: 1, unsupportedBooks: 16 })),
   );
@@ -202,7 +202,23 @@ test("says which books are in a format this version can't open yet", async () =>
   await expect
     .element(
       toastSaying("Added 7 books").getByText(
-        "Couldn't read 1 book in it. 16 books are CBR files, which this version can't open yet.",
+        "Couldn't read 1 book in it. 16 files are RAR archives, which this version can't open yet.",
+      ),
+    )
+    .toBeVisible();
+});
+
+test("says so when one file is a RAR archive", async () => {
+  const { button } = await renderWith(
+    answering(scanned({ unsupportedBooks: 1 })),
+  );
+
+  await button.click();
+
+  await expect
+    .element(
+      toastSaying("Added 7 books").getByText(
+        "1 file is a RAR archive, which this version can't open yet.",
       ),
     )
     .toBeVisible();
