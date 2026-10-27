@@ -1,8 +1,9 @@
 use std::{borrow::Cow, ffi::OsStr, path::Path};
 
-use omnileaf_formats::{read_book_name, read_series_name};
+use omnileaf_db::catalog::Numbering;
+use omnileaf_formats::{BookName, Number, read_book_name, read_series_name};
 
-use crate::library_layout::is_comic;
+use crate::{book_numbering::number_book, library_layout::is_comic};
 
 const SPECIALS_FOLDER: &str = "Specials";
 
@@ -10,6 +11,14 @@ const SPECIALS_FOLDER: &str = "Specials";
 pub(crate) struct Placement {
     pub(crate) series: String,
     pub(crate) title: String,
+    pub(crate) numbering: Numbering,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Shelf {
+    Series,
+    Volume(Number),
+    Specials,
 }
 
 pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
@@ -21,19 +30,25 @@ pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
     let Some(folder) = folders.next() else {
         return Placement::one_shot(&name);
     };
-    let series = series_title(&folder, folders.next().as_deref());
+    let (series, shelf) = shelve(&folder, folders.next().as_deref());
+    let book = read_book_name(&name, Some(&series));
     Placement {
-        title: read_book_name(&name, Some(&series)).title,
+        numbering: number_book(&book, shelf),
+        title: book.title,
         series,
     }
 }
 
 impl Placement {
     fn one_shot(name: &str) -> Self {
-        let title = read_book_name(name, None).title;
+        let book = BookName {
+            number: None,
+            ..read_book_name(name, None)
+        };
         Self {
-            series: title.clone(),
-            title,
+            numbering: number_book(&book, Shelf::Series),
+            series: book.title.clone(),
+            title: book.title,
         }
     }
 }
@@ -44,24 +59,30 @@ fn book_name(name: &OsStr) -> Cow<'_, str> {
     stem.unwrap_or(name.as_os_str()).to_string_lossy()
 }
 
-fn series_title(folder: &str, above: Option<&str>) -> String {
+fn shelve(folder: &str, above: Option<&str>) -> (String, Shelf) {
     if let Some(above) = above {
         let series_above = read_series_name(above).title;
-        if is_specials_folder(folder) || is_volume_folder(folder, &series_above) {
-            return series_above;
+        if is_specials_folder(folder) {
+            return (series_above, Shelf::Specials);
+        }
+        if let Some(volume) = volume_of_folder(folder, &series_above) {
+            return (series_above, Shelf::Volume(volume));
         }
     }
-    read_series_name(folder).title
+    (read_series_name(folder).title, Shelf::Series)
 }
 
 fn is_specials_folder(folder: &str) -> bool {
     folder.trim().eq_ignore_ascii_case(SPECIALS_FOLDER)
 }
 
-fn is_volume_folder(folder: &str, series_title: &str) -> bool {
+fn volume_of_folder(folder: &str, series_title: &str) -> Option<Number> {
     let title = read_book_name(folder, None).title;
     let marker = after_series_title(&title, series_title);
-    read_book_name(marker, None).volume.is_some() && words(marker).all(is_volume_marker_word)
+    let volume = read_book_name(marker, None).volume?;
+    words(marker)
+        .all(is_volume_marker_word)
+        .then_some(volume.first())
 }
 
 fn after_series_title<'a>(title: &'a str, series_title: &str) -> &'a str {

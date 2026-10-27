@@ -88,6 +88,8 @@ const SERIES_04_ARCHIVES: &[&str] = &[
     "Specials/Sample Series 04 Omake 02.cbz",
 ];
 const SERIES_04_IMAGE_FOLDERS: &[&str] = &["v02/003", "v02/Extra Pages"];
+const STORED_NUMBERING: &str = "SELECT title, concat_ws(' ', kind, first_number, last_number,
+    number_source, volume_number, volume_source) FROM book ORDER BY title";
 
 fn series_laid_out_in_folders(name: &str) -> ScratchFolder {
     let comics = ScratchFolder::new(name);
@@ -320,6 +322,70 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
             ("Sample One-Shot", 1),
             ("Sample Series 04", 12),
             ("Sample Series 05 Vol 2", 1)
+        ])
+    );
+}
+
+#[tokio::test]
+async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
+    let comics = series_laid_out_in_folders("scan-reading-order");
+
+    let (scanned, _, _) = Scanned::folder("scan-reading-order", comics.path()).await;
+
+    assert_eq!(
+        scanned.books_in("Sample Series 04"),
+        [
+            "Sample Series 04 c001",
+            "Sample Series 04 c002.5",
+            "003",
+            "Extra Pages",
+            "Sample Series 04 v03 c017",
+            "Sample Series 04 v04-06",
+            "Sample Series 04 c030",
+            "Sample Series 04 015",
+            "Sample Series 04 c020-022",
+            "Sample Series 04 Omake 02",
+            "Sample Series 04 Art Book",
+            "Sample Series 04 Extras",
+        ]
+    );
+}
+
+#[tokio::test]
+async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were_read() {
+    let comics = series_laid_out_in_folders("scan-numbering");
+
+    let (scanned, _, _) = Scanned::folder("scan-numbering", comics.path()).await;
+
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[
+            ("003", "chapter 3000 3000 file_name 2000 folder_name"),
+            ("Extra Pages", "chapter 2000 folder_name"),
+            ("Sample One-Shot", "special"),
+            ("Sample Series 04 015", "chapter 15000 15000 file_name"),
+            ("Sample Series 04 Art Book", "special"),
+            ("Sample Series 04 Extras", "special"),
+            ("Sample Series 04 Omake 02", "special 2000 2000 file_name"),
+            (
+                "Sample Series 04 c001",
+                "chapter 1000 1000 file_name 1000 folder_name"
+            ),
+            (
+                "Sample Series 04 c002.5",
+                "chapter 2500 2500 file_name 1000 folder_name"
+            ),
+            ("Sample Series 04 c020-022", "chapter 20000 22000 file_name"),
+            (
+                "Sample Series 04 c030",
+                "chapter 30000 30000 file_name 7000 folder_name"
+            ),
+            (
+                "Sample Series 04 v03 c017",
+                "chapter 17000 17000 file_name 3000 file_name"
+            ),
+            ("Sample Series 04 v04-06", "volume 4000 6000 file_name"),
+            ("c001", "chapter 1000 1000 file_name"),
         ])
     );
 }

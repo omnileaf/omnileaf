@@ -3,6 +3,7 @@ mod app_info;
 mod app_language;
 mod background_lane;
 mod book_details;
+mod book_numbering;
 mod bookmark_access;
 mod books_removal;
 #[cfg(test)]

@@ -235,7 +235,11 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
-    let Placement { series, title } = place_book(&location, &folder_name(&target.folder));
+    let Placement {
+        series,
+        title,
+        numbering,
+    } = place_book(&location, &folder_name(&target.folder));
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
         .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
@@ -255,7 +259,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             size_bytes: stamp.size_bytes,
             modified_at_ms: stamp.modified_at_ms,
         },
-        numbering: None,
+        numbering: Some(numbering),
     })
 }
 
