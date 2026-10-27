@@ -73,6 +73,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0037_key_sync_registers_by_profile"),
     migration!("0038_create_hidden_file_types"),
     migration!("0039_keep_when_each_series_was_last_read_in_every_order"),
+    migration!("0040_count_the_books_each_series_holds_more_than_one_file_of"),
 ];
 
 pub(crate) fn pending(
@@ -240,6 +241,7 @@ mod tests {
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
 
     const BOOK_GAINED_LAST: &str = "SELECT max(added_at_ms) FROM book WHERE series_local_id = ?1";
+    const FILES_OF_BOOK: &str = "SELECT count(*) FROM book_file WHERE book_id = ?1";
     const PAGES_LEFT_OF_BOOK_ADDED: &str = "UPDATE series SET
             pages_left = series.pages_left + book_left.pages_left,
             uncounted_books = series.uncounted_books + book_left.is_uncounted
@@ -1034,6 +1036,46 @@ mod tests {
     }
 
     #[test]
+    fn counts_the_books_each_series_kept_from_before_holds_more_than_one_file_of() {
+        let scratch = ScratchLibrary::new("duplicated-books-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..39]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+                 VALUES ('linked', 'path', x'2f6d65646961', 0);
+                 INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), zeroblob(16), 'sample series 01', 'Sample Series 01', x'', 0);",
+            )
+            .unwrap();
+        for number in [1, 2] {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', x'', 0)",
+                    [book(number).as_bytes()],
+                )
+                .unwrap();
+        }
+        for (number, location) in [(1, "a.cbz"), (1, "b.cbz"), (2, "c.cbz")] {
+            connection
+                .execute(
+                    "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                     VALUES (?1, 1, ?2, 1, 0)",
+                    (book(number).as_bytes(), location.as_bytes()),
+                )
+                .unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let duplicated_books: u32 = connection
+            .query_row("SELECT duplicated_books FROM series", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(duplicated_books, 1);
+    }
+
+    #[test]
     fn moves_a_book_s_pages_left_onto_its_series_through_their_keys() {
         let scratch = ScratchLibrary::new("pages-left-of-book-plan");
 
@@ -1046,6 +1088,18 @@ mod tests {
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
                 "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
             ]
+        );
+    }
+
+    #[test]
+    fn counts_the_files_of_a_book_from_an_index_when_one_comes_or_goes() {
+        let scratch = ScratchLibrary::new("files-of-book-plan");
+
+        let plan = scratch.query_plan(FILES_OF_BOOK);
+
+        assert_eq!(
+            plan,
+            ["SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"]
         );
     }
 

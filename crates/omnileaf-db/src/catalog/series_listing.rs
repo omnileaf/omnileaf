@@ -38,6 +38,7 @@ pub struct SeriesFilter {
     /// Has every book marked read.
     pub finished: Inclusion,
     pub last_read_before_ms: Option<i64>,
+    pub duplicates: Inclusion,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -81,6 +82,7 @@ impl SeriesFilter {
         started: Inclusion::Any,
         finished: Inclusion::Any,
         last_read_before_ms: None,
+        duplicates: Inclusion::Any,
     };
 }
 
@@ -90,6 +92,14 @@ impl Inclusion {
             Self::Any => true,
             Self::Only => holds,
             Self::Hide => !holds,
+        }
+    }
+
+    const fn required(self) -> Option<bool> {
+        match self {
+            Self::Any => None,
+            Self::Only => Some(true),
+            Self::Hide => Some(false),
         }
     }
 }
@@ -167,7 +177,8 @@ const fn admitted(filter: SeriesFilter, stage: ReadingStage) -> Option<i64> {
 macro_rules! smart_conditions {
     () => {
         " AND (:last_read_before_ms IS NULL
-            OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))"
+            OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
+        AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)"
     };
 }
 
@@ -176,6 +187,7 @@ pub(crate) use smart_conditions;
 pub(crate) struct FilterParams {
     stages: StageParams,
     last_read_before_ms: Option<i64>,
+    holds_duplicates: Option<bool>,
 }
 
 impl FilterParams {
@@ -183,16 +195,18 @@ impl FilterParams {
         Self {
             stages: StageParams::of(filter),
             last_read_before_ms: filter.last_read_before_ms,
+            holds_duplicates: filter.duplicates.required(),
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 4] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 5] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
             in_progress,
             finished,
             (":last_read_before_ms", &self.last_read_before_ms),
+            (":holds_duplicates", &self.holds_duplicates),
         ]
     }
 }

@@ -189,6 +189,7 @@ impl LibraryFilter {
                 .smart
                 .contains(&SmartFilter::Forgotten)
                 .then(|| now_ms.saturating_sub(UNOPENED_UNTIL_FORGOTTEN_MS)),
+            duplicates: StoredInclusion::Any,
         }
     }
 }
