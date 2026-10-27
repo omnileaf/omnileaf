@@ -34,6 +34,7 @@ mod series_search;
 mod series_titles;
 mod staged_rows;
 pub(crate) mod stored_id;
+mod writer_series;
 mod writers;
 
 pub(crate) use book::series_of_book;
@@ -78,4 +79,5 @@ pub use series_overview::{SeriesOverview, series_overview};
 pub use series_page::{SeriesSummary, series_page};
 pub use series_search::{SeriesSearch, search_count, search_page};
 pub use series_titles::{SeriesTitle, series_titles};
+pub use writer_series::{writer_series_count, writer_series_page};
 pub use writers::{WriterSummary, writers};
