@@ -333,11 +333,19 @@ jobs:
         id: shards
         env:
           IS_APP_CHANGED: ${{ needs.changes.outputs.app != 'false' }}
+          IS_SITE_CHANGED: ${{ needs.changes.outputs.site != 'false' }}
           REST_SHARDS: 36
           SCREENS_SHARDS: 12
         run: |
-          if [ "$IS_APP_CHANGED" = true ]; then rest=$REST_SHARDS screens=$SCREENS_SHARDS; else rest=1 screens=0; fi
-          echo "shards=$(jq -nc --argjson rest "$rest" --argjson screens "$screens" '[range(1; $rest + 1) | {group: "rest", shard: ., of: $rest}] + [range(1; $screens + 1) | {group: "screens", shard: ., of: $screens}]')" >> "$GITHUB_OUTPUT"
+          shards=$(jq -nc \
+            --argjson isAppChanged "$IS_APP_CHANGED" \
+            --argjson isSiteChanged "$IS_SITE_CHANGED" \
+            --argjson rest "$REST_SHARDS" \
+            --argjson screens "$SCREENS_SHARDS" \
+            'def shards($group; $of): [range(1; $of + 1) | {group: $group, shard: ., of: $of}];
+            (if $isAppChanged then shards("rest"; $rest) + shards("screens"; $screens) + shards("speed"; 1) else [] end)
+            + (if $isSiteChanged then shards("site"; 1) else [] end)')
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
 
       - name: Install interface dependencies
         if: needs.changes.outputs.app != 'false'
@@ -402,7 +410,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fetch the app's build
-        if: needs.changes.outputs.app != 'false'
+        if: matrix.group != 'site'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: browser-test-build
@@ -451,14 +459,14 @@ jobs:
           key: ${{ steps.browser-packages.outputs.key }}
 
       - name: Pick this shard's tests by how long they take
-        if: needs.changes.outputs.app != 'false'
+        if: matrix.group == 'rest' || matrix.group == 'screens'
         working-directory: app
         env:
           SHARD: ${{ matrix.shard }}/${{ matrix.of }}
         run: node tests/write-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.txt"
 
       - name: Check that the test list runs exactly this shard's tests
-        if: needs.changes.outputs.app != 'false'
+        if: matrix.group == 'rest' || matrix.group == 'screens'
         working-directory: app
         env:
           SHARD: ${{ matrix.shard }}/${{ matrix.of }}
@@ -467,17 +475,16 @@ jobs:
           node tests/check-shard-test-list.ts "browser-test-lists/$PLAYWRIGHT_GROUP.json" "$SHARD" "$RUNNER_TEMP/shard-tests.json"
 
       - name: Run the app's browser tests
-        id: app-browser-tests
-        if: needs.changes.outputs.app != 'false'
+        if: matrix.group == 'rest' || matrix.group == 'screens'
         run: pnpm --dir app test:e2e --test-list "$RUNNER_TEMP/shard-tests.txt"
 
-      - name: Run the website's browser tests
-        if: ${{ !cancelled() && matrix.group == 'rest' && matrix.shard == matrix.of && needs.changes.outputs.site != 'false' && (success() || steps.app-browser-tests.outcome == 'failure') }}
-        run: pnpm --dir site test:e2e
-
       - name: Time the interface on its own
-        if: matrix.group == 'rest' && matrix.shard == 1 && needs.changes.outputs.app != 'false'
+        if: matrix.group == 'speed'
         run: env -u PLAYWRIGHT_GROUP pnpm --dir app test:e2e --project speed --no-deps
+
+      - name: Run the website's browser tests
+        if: matrix.group == 'site'
+        run: pnpm --dir site test:e2e
 
       - name: Keep the traces of failed tests
         if: failure()
