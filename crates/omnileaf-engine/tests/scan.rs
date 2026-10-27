@@ -363,6 +363,20 @@ async fn makes_a_folder_of_images_added_on_its_own_a_series_named_after_it() {
 }
 
 #[tokio::test]
+async fn files_a_folder_of_images_added_on_its_own_with_no_number_as_an_unnumbered_chapter() {
+    let comics = ScratchFolder::new("scan-linked-unnumbered-images");
+    let linked = comics.path().join("Sample One-Shot [GroupName]");
+    write_page(&linked, 1);
+
+    let (scanned, _, _) = Scanned::folder("scan-linked-unnumbered-images", &linked).await;
+
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[("Sample One-Shot", "chapter")])
+    );
+}
+
+#[tokio::test]
 async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
     let comics = series_laid_out_in_folders("scan-reading-order");
 
@@ -404,7 +418,7 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
             ("003", "chapter 3000 3000 file_name 2000 folder_name"),
             ("Extra Pages", "chapter 2000 folder_name"),
             ("Sample Bonus", "special"),
-            ("Sample One-Shot", "special"),
+            ("Sample One-Shot", "chapter"),
             ("Sample Series 04 015", "chapter 15000 15000 file_name"),
             ("Sample Series 04 Art Book", "special"),
             ("Sample Series 04 Extras", "special"),
@@ -441,7 +455,7 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
                 "chapter 17000 17000 file_name 3000 file_name"
             ),
             ("Sample Series 04 v04-06", "volume 4000 6000 file_name"),
-            ("Sample Series 06 003", "special"),
+            ("Sample Series 06 003", "chapter"),
             ("c001", "chapter 1000 1000 file_name"),
         ])
     );

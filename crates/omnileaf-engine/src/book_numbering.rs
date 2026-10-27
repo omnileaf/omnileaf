@@ -11,7 +11,10 @@ pub(crate) enum Shelf {
 
 pub(crate) fn number_book(book: &BookName, shelf: Shelf) -> Numbering {
     match shelf {
-        Shelf::OneShot => number_by_marker(book).unwrap_or(Numbering::Special { number: None }),
+        Shelf::OneShot => number_by_marker(book).unwrap_or(Numbering::Chapter {
+            number: None,
+            volume: None,
+        }),
         Shelf::Series => number_by_marker(book).unwrap_or_else(|| match book.number {
             Some(number) => Numbering::Chapter {
                 number: Some(range_in_file_name(number)),
