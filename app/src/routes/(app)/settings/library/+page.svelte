@@ -64,6 +64,11 @@
     addFolder={addFolderWithProgress}
     rescanFolder={rescanFolderWithProgress}
     removeFolderBooks={commands.removeBooksOfEmptiedFolder}
+    homeCommands={{
+      choose: commands.chooseHomeFolder,
+      use: commands.useFoundLibrary,
+      move: commands.moveHomeFolder,
+    }}
     {notices}
     usesStandIns={screenshotMode.isOn}
     platform={data.appInfo.platform}

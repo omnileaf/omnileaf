@@ -15,6 +15,18 @@
   import HeaderBadge from "./HeaderBadge.svelte";
   import { currentPlatform } from "./platform";
 
+  type ConfirmTone = "danger" | "accent";
+
+  const BADGE_LOOKS = {
+    danger: "header-danger",
+    accent: "header-accent",
+  } as const satisfies Record<ConfirmTone, string>;
+  const CONFIRM_FILLS = {
+    danger: "",
+    accent:
+      "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
+  } as const satisfies Record<ConfirmTone, string>;
+
   const DIALOG =
     "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
 
@@ -27,6 +39,8 @@
     onConfirm,
     onCancel,
     phoneLook = "sheet",
+    tone = "danger",
+    isBusy = false,
     children,
   }: {
     isOpen: boolean;
@@ -37,6 +51,8 @@
     onConfirm: () => void;
     onCancel: () => void;
     phoneLook?: "sheet" | "dialog";
+    tone?: ConfirmTone;
+    isBusy?: boolean;
     children: Snippet;
   } = $props();
 
@@ -44,6 +60,12 @@
   const alert = $derived(
     isAlert ? alertLook(currentPlatform()) : TODAYS_ALERT_LOOK,
   );
+
+  function confirm(): void {
+    if (!isBusy) {
+      onConfirm();
+    }
+  }
 </script>
 
 <AlertDialog.Root
@@ -66,7 +88,7 @@
     onDismiss={onCancel}
   >
     <div class="flex items-center gap-md">
-      <HeaderBadge {icon} look="header-danger" class={alert.badge} />
+      <HeaderBadge {icon} look={BADGE_LOOKS[tone]} class={alert.badge} />
       <DialogTitle
         class={cn(
           "text-dialog-title font-bold max-medium:text-sheet-title",
@@ -106,8 +128,9 @@
         <Button
           type="button"
           look="confirm-danger"
-          class={alert.confirm}
-          onclick={onConfirm}
+          class={cn(CONFIRM_FILLS[tone], alert.confirm)}
+          aria-disabled={isBusy || undefined}
+          onclick={confirm}
         >
           {confirmLabel}
         </Button>

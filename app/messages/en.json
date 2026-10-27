@@ -606,6 +606,43 @@
   "home_moved_body": "It's in {location} now.",
   "home_move_failed_title": "Couldn't move your library",
   "home_move_failed_body": "It stays in {location}. Nothing in it changed.",
+  "home_use_found_title": "A library is already here",
+  "home_use_found_detail": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{formattedSeries} series · {formattedBooks} book",
+        "booksPlural=other": "{formattedSeries} series · {formattedBooks} books"
+      }
+    }
+  ],
+  "home_use_found_detail_backed_up": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "input date",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{formattedSeries} series · {formattedBooks} book · Last backup {date}",
+        "booksPlural=other": "{formattedSeries} series · {formattedBooks} books · Last backup {date}"
+      }
+    }
+  ],
+  "home_use_found_body": "Omnileaf restarts with it. Your current library stays where it is.",
+  "home_use_found_confirm": "Use this library",
+  "home_use_found_cancel": "Cancel",
   "navigation_label": "Main",
   "sidebar_hide": "Hide the sidebar",
   "sidebar_show": "Show the sidebar",
@@ -826,6 +863,7 @@
   "library_settings_folders": "Folders",
   "library_settings_home_folder": "Home folder",
   "library_settings_home_folder_hint": "Your library, reading progress and backups are kept here.",
+  "library_settings_home_folder_hint_desktop": "Progress, settings and backups live here. Change moves them.",
   "library_settings_home_folder_hint_ios": "The library stays inside the app. Backups and books you add are in Files › {place}.",
   "library_folders_failed": "Couldn't load your folders. Try again later.",
   "library_remove_folder": "Remove folder",

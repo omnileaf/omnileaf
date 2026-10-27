@@ -239,3 +239,29 @@ test.describe("on iOS", () => {
     );
   });
 });
+
+test.describe("in a narrow window", () => {
+  test.use({ viewport: { width: 360, height: 740 } });
+
+  test("puts Change and Rescan on a line of their own under the home folder", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library");
+    const home = page.getByRole("region", { name: "Home folder" });
+    const path = await home.getByText("/data/Omnileaf").boundingBox();
+    const change = await home
+      .getByRole("button", { name: "Change" })
+      .boundingBox();
+    const rescan = await home
+      .getByRole("button", { name: /^Rescan / })
+      .boundingBox();
+
+    expect(path).not.toBeNull();
+    expect(change).not.toBeNull();
+    expect(rescan).not.toBeNull();
+    if (path !== null && change !== null && rescan !== null) {
+      expect(change.y).toBeGreaterThanOrEqual(path.y + path.height);
+      expect(rescan.y).toBeGreaterThanOrEqual(path.y + path.height);
+    }
+  });
+});

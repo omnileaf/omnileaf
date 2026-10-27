@@ -4,10 +4,12 @@
   import { m } from "#lib/paraglide/messages.js";
 
   let {
+    ref = $bindable(null),
     platform,
     isBusy,
     onclick,
   }: {
+    ref?: HTMLButtonElement | null;
     platform: Platform;
     isBusy: boolean;
     onclick: () => void;
@@ -21,6 +23,7 @@
 </script>
 
 <Button
+  bind:ref
   type="button"
   look="card-outline"
   aria-disabled={isBusy || undefined}
