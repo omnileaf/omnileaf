@@ -4,6 +4,7 @@
 )]
 
 mod books;
+mod details;
 mod scanned;
 mod support;
 
@@ -14,9 +15,11 @@ use std::{
 };
 
 use books::{write_book, write_book_with, write_page};
+use details::stored_details;
 use omnileaf_db::{
     Config, Database,
     catalog::{BookListing, SeriesListing, SeriesOrder, SeriesSort, series_books, series_page},
+    rusqlite::{Connection, types::Value},
     store::{ReadingState, Store, reading_state},
 };
 use omnileaf_engine::{
@@ -31,6 +34,7 @@ const SERIES_02: &str = "Sample Series 02";
 const SERIES_03: &str = "Sample Series 03";
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const DATABASE_FILE: &str = "library.sqlite";
+const COMIC_INFO: &str = "<ComicInfo><Summary>A sample summary.</Summary></ComicInfo>";
 
 struct Rescanned {
     scanned: Scanned,
@@ -105,6 +109,16 @@ impl Rescanned {
             .and_then(|state: ReadingState| state.position_page)
     }
 
+    fn writer(&self) -> Connection {
+        Connection::open(self.scanned.home.path().join(DATABASE_FILE)).unwrap()
+    }
+
+    fn data_version(connection: &Connection) -> i64 {
+        connection
+            .pragma_query_value(None, "data_version", |row| row.get(0))
+            .unwrap()
+    }
+
     async fn folder(&self) -> LibraryFolder {
         folder_listed(&self.scanned.library, &self.scanned)
             .await
@@ -165,6 +179,42 @@ async fn finds_nothing_changed_when_no_file_did() {
                 total: 0
             }
         ]
+    );
+}
+
+#[tokio::test]
+async fn writes_nothing_when_no_file_changed() {
+    let folder = Rescanned::new("rescan-writes-nothing").await;
+    let watching = folder.scanned.connection();
+    let before = Rescanned::data_version(&watching);
+
+    folder.rescan().await;
+
+    assert_eq!(Rescanned::data_version(&watching), before);
+}
+
+#[tokio::test]
+async fn reads_the_details_of_unchanged_books_kept_before_details_were() {
+    let comics = ScratchFolder::new("rescan-details-kept-before");
+    write_book_with(
+        &comics.path().join(SERIES_01).join("v01.cbz"),
+        1,
+        Some(COMIC_INFO),
+    );
+    let (scanned, _, _) = Scanned::folder("rescan-details-kept-before", comics.path()).await;
+    let folder = Rescanned { scanned, comics };
+    folder
+        .writer()
+        .execute("DELETE FROM book_details", [])
+        .unwrap();
+
+    let changes = folder.changes().await;
+
+    assert_eq!(changes, rescanned(FileChanges::default()));
+    let details = stored_details(&folder.scanned.connection());
+    assert_eq!(
+        details.iter().map(|row| row[4].clone()).collect::<Vec<_>>(),
+        [Value::Text("A sample summary.".to_owned())]
     );
 }
 

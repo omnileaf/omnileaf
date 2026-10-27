@@ -16,7 +16,7 @@ mod zip_book;
 
 pub use book::{Book, Damage, Page, open_book, open_book_in, open_book_with, salvage_book_in};
 pub use comic_info::{
-    ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,
+    AgeRating, ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,
 };
 pub use entries::{is_ignored, is_page_image};
 pub use error::{FormatError, UnsupportedArchive};

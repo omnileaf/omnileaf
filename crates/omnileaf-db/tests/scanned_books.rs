@@ -10,10 +10,12 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        BookFile, BookListing, NewBook, NewRoot, NewSeries, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, ScannedBook, add_book, add_root, record_moved_books,
-        record_page_count, record_scanned_books, series_books,
+        AgeRating, BookDetails, BookFile, BookListing, BookPerson, NewBook, NewRoot, NewSeries,
+        PageRequest, PageSize, PersonRole, ReadingDirection, RootId, RootKind, RootLocator,
+        ScannedBook, add_book, add_root, record_moved_books, record_page_count,
+        record_scanned_books, series_books,
     },
+    rusqlite::{Row, types::Value},
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId, SourceId};
 use support::{ScratchFolder, library_config};
@@ -65,6 +67,7 @@ impl Library {
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
             page_count: PAGE_COUNT,
+            details: BookDetails::default(),
             file: BookFile {
                 root: self.root,
                 location: location.into(),
@@ -127,10 +130,51 @@ impl Library {
         page.items.into_iter().map(|book| book.page_count).collect()
     }
 
+    async fn details(&self) -> Vec<Vec<Value>> {
+        self.rows(
+            "SELECT series, number, title, volume, summary, publisher, format, language,
+                reading_direction, age_rating, year
+            FROM book_details ORDER BY book_id",
+            |row| {
+                (0..row.as_ref().column_count())
+                    .map(|column| row.get(column))
+                    .collect()
+            },
+        )
+        .await
+    }
+
+    async fn people(&self) -> Vec<(String, String)> {
+        self.rows(
+            "SELECT role, name FROM book_person ORDER BY role, name",
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .await
+    }
+
+    async fn tags(&self) -> Vec<(String, String)> {
+        self.rows(
+            "SELECT kind, name FROM book_tag ORDER BY kind, name",
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .await
+    }
+
+    async fn changes_recording(&self, scanned: ScannedBook) -> u64 {
+        self.database
+            .write(move |transaction| {
+                let before = transaction.total_changes();
+                record_scanned_books(transaction, &[scanned])?;
+                Ok(transaction.total_changes() - before)
+            })
+            .await
+            .unwrap()
+    }
+
     async fn rows<T: Send + 'static>(
         &self,
         sql: &'static str,
-        read: fn(&omnileaf_db::rusqlite::Row<'_>) -> omnileaf_db::rusqlite::Result<T>,
+        read: fn(&Row<'_>) -> omnileaf_db::rusqlite::Result<T>,
     ) -> Vec<T> {
         self.database
             .read(move |connection| {
@@ -162,6 +206,45 @@ fn stored_location(location: &str) -> Vec<u8> {
 #[cfg(windows)]
 fn stored_location(location: &str) -> Vec<u8> {
     location.encode_utf16().flat_map(u16::to_le_bytes).collect()
+}
+
+fn sample_details() -> BookDetails {
+    BookDetails {
+        series: Some("Sample Series 01".to_owned()),
+        number: Some("1".to_owned()),
+        title: Some("Sample Story".to_owned()),
+        volume: Some(1),
+        summary: Some("A sample summary.".to_owned()),
+        people: vec![
+            person(PersonRole::Writer, "Sample Author"),
+            person(PersonRole::Penciller, "Sample Artist"),
+        ],
+        publisher: Some("Sample Publisher".to_owned()),
+        format: Some("Digital".to_owned()),
+        genres: vec!["Mystery".to_owned()],
+        tags: vec!["harbour".to_owned()],
+        language: Some("en".to_owned()),
+        reading_direction: Some(ReadingDirection::RightToLeft),
+        age_rating: Some(AgeRating::Teen),
+        year: Some(2019),
+    }
+}
+
+fn person(role: PersonRole, name: &str) -> BookPerson {
+    BookPerson {
+        role,
+        name: name.to_owned(),
+    }
+}
+
+fn text(value: &str) -> Value {
+    Value::Text(value.to_owned())
+}
+
+fn pairs(rows: &[(&str, &str)]) -> Vec<(String, String)> {
+    rows.iter()
+        .map(|(code, name)| ((*code).to_owned(), (*name).to_owned()))
+        .collect()
 }
 
 fn book_id(page_crc: u32) -> Vec<u8> {
@@ -453,4 +536,103 @@ async fn knows_no_page_count_for_a_book_added_without_one_until_it_is_recorded()
         .page_counts(SeriesId::local("Sample Series 01").unwrap())
         .await;
     assert_eq!((before, after), (vec![None], vec![Some(PAGE_COUNT)]));
+}
+
+#[tokio::test]
+async fn keeps_the_details_a_scan_read_from_a_book() {
+    let library = Library::open("scanned-details").await;
+    let found = ScannedBook {
+        details: sample_details(),
+        ..library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1)
+    };
+
+    library.record(found).await;
+
+    assert_eq!(
+        library.details().await,
+        [vec![
+            text("Sample Series 01"),
+            text("1"),
+            text("Sample Story"),
+            Value::Integer(1),
+            text("A sample summary."),
+            text("Sample Publisher"),
+            text("Digital"),
+            text("en"),
+            text("right_to_left"),
+            text("teen"),
+            Value::Integer(2019),
+        ]]
+    );
+    assert_eq!(
+        library.people().await,
+        pairs(&[("penciller", "Sample Artist"), ("writer", "Sample Author")])
+    );
+    assert_eq!(
+        library.tags().await,
+        pairs(&[("genre", "Mystery"), ("tag", "harbour")])
+    );
+}
+
+#[tokio::test]
+async fn marks_a_book_whose_files_give_no_details_as_read_for_them() {
+    let library = Library::open("scanned-no-details").await;
+
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1))
+        .await;
+
+    assert_eq!(library.details().await, [vec![Value::Null; 11]]);
+}
+
+#[tokio::test]
+async fn keeps_the_details_a_book_gives_when_scanned_again() {
+    let library = Library::open("scanned-details-again").await;
+    let location = "Sample Series 01/Volume 01.cbz";
+    library
+        .record(ScannedBook {
+            details: sample_details(),
+            ..library.found("Sample Series 01", location, 1)
+        })
+        .await;
+    let edited = BookDetails {
+        summary: None,
+        people: vec![
+            person(PersonRole::Writer, "Sample Author"),
+            person(PersonRole::Inker, "Second Artist"),
+        ],
+        tags: vec!["storms".to_owned()],
+        ..sample_details()
+    };
+
+    library
+        .record(ScannedBook {
+            details: edited,
+            ..library.found("Sample Series 01", location, 1)
+        })
+        .await;
+
+    assert_eq!(library.details().await[0][4], Value::Null);
+    assert_eq!(
+        library.people().await,
+        pairs(&[("inker", "Second Artist"), ("writer", "Sample Author")])
+    );
+    assert_eq!(
+        library.tags().await,
+        pairs(&[("genre", "Mystery"), ("tag", "storms")])
+    );
+}
+
+#[tokio::test]
+async fn writes_nothing_when_a_book_is_scanned_again_with_the_same_details() {
+    let library = Library::open("scanned-details-unchanged").await;
+    let found = ScannedBook {
+        details: sample_details(),
+        ..library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1)
+    };
+    library.record(found.clone()).await;
+
+    let changes = library.changes_recording(found).await;
+
+    assert_eq!(changes, 0);
 }

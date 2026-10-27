@@ -11,17 +11,18 @@ use std::{
 
 use omnileaf_db::{
     Config, Database,
-    adult_content::{adult_content, set_adult_content},
+    adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
-        add_root, book_to_read, bookmarked_roots, cover_file, folder_series_count,
-        folder_series_page, hidden_series_count, home_root, library_root, library_roots,
-        mark_root_available, mark_root_unavailable, missing_roots, page_dimensions,
-        place_in_series, record_page_count, relocate_roots, remember_root_share, remove_book_files,
+        add_root, book_to_read, bookmarked_roots, cover_file,
+        filter_choices as stored_filter_choices, folder_series_count, folder_series_page,
+        hidden_series_count, home_root, library_root, library_roots, mark_root_available,
+        mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
+        record_page_count, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
-        root_shares, series_books, series_count, series_overview, series_page, series_titles,
-        show_root_while_missing, store_page_dimensions, unread_books, up_next,
+        root_shares, series_books, series_count, series_file_details, series_overview, series_page,
+        series_titles, show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -327,9 +328,14 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| series_page(connection, &listing, &request))
+            .read(move |connection| {
+                Ok((
+                    series_page(connection, &listing, &request)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
             .await?;
-        Ok(SeriesPage::from(page))
+        Ok(SeriesPage::new(page.0, page.1))
     }
 
     pub async fn folder_series(
@@ -346,9 +352,14 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| folder_series_page(connection, folder.0, &listing, &request))
+            .read(move |connection| {
+                Ok((
+                    folder_series_page(connection, folder.0, &listing, &request)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
             .await?;
-        Ok(SeriesPage::from(page))
+        Ok(SeriesPage::new(page.0, page.1))
     }
 
     pub async fn folder_series_count(
@@ -380,10 +391,11 @@ impl Library {
         Ok(Vec::new())
     }
 
-    pub fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
+    pub async fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
+        let stored = self.store.database().read(stored_filter_choices).await?;
         Ok(LibraryFilterChoices {
             smart: SMART_FILTERS_KEPT.to_vec(),
-            ..LibraryFilterChoices::default()
+            ..LibraryFilterChoices::from(stored)
         })
     }
 
@@ -433,9 +445,14 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| search.page(connection, &request))
+            .read(move |connection| {
+                Ok((
+                    search.page(connection, &request)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
             .await?;
-        Ok(SeriesPage::from(page))
+        Ok(SeriesPage::new(page.0, page.1))
     }
 
     pub async fn spelling_suggestion(
@@ -469,15 +486,18 @@ impl Library {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((overview, up_next(connection, series)?)))
+                Ok(Some((
+                    overview,
+                    up_next(connection, series)?,
+                    series_file_details(connection, series)?,
+                )))
             })
             .await?;
-        let (overview, up_next) = found.ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesOverview::new(
-            overview,
-            up_next,
-            self.seconds_per_page().await?,
-        ))
+        let (overview, up_next, details) = found.ok_or(LibraryError::SeriesNotFound { id })?;
+        Ok(
+            SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
+                .described_by(details),
+        )
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
@@ -488,19 +508,35 @@ impl Library {
 
     pub async fn series_details(&self, id: SeriesId) -> Result<SeriesDetails, LibraryError> {
         let series = id.0;
-        let overview = self
+        let (overview, details) = self
             .store
             .database()
-            .read(move |connection| series_overview(connection, series))
+            .read(move |connection| {
+                let Some(overview) = series_overview(connection, series)? else {
+                    return Ok(None);
+                };
+                Ok(Some((overview, series_file_details(connection, series)?)))
+            })
             .await?
             .ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesDetails::from_files(overview.title))
+        Ok(SeriesDetails::from_files(
+            overview.title,
+            details,
+            overview.is_rated_adult,
+        ))
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.
-    pub fn creator_series(&self, creator: &str) -> Vec<CreatorSeries> {
-        let _ = (&self.store, creator);
-        Vec::new()
+    pub async fn creator_series(
+        &self,
+        creator: String,
+    ) -> Result<Vec<CreatorSeries>, LibraryError> {
+        let found = self
+            .store
+            .database()
+            .read(move |connection| person_series(connection, &creator))
+            .await?;
+        Ok(found.into_iter().map(CreatorSeries::from).collect())
     }
 
     /// Lists a series' books as `listing` asks, giving a series missing from the library no books.
@@ -868,8 +904,7 @@ impl Library {
     }
 
     pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
-        let stored = self.store.database().read(adult_content).await?;
-        Ok(stored.map(AdultContent::from).unwrap_or_default())
+        Ok(self.store.database().read(AdultContent::stored).await?)
     }
 
     #[tracing::instrument(skip_all)]

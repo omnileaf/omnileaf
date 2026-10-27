@@ -1,9 +1,10 @@
 use std::{
     collections::VecDeque,
-    sync::{Arc, Mutex, MutexGuard, PoisonError},
+    sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock},
 };
 
 use omnileaf_formats::{Book, Damage, FormatError, Limits, salvage_book_in};
+use omnileaf_imaging::BookSideBorders;
 use omnileaf_sync_proto::BookId;
 
 use crate::{PageCrop, PagePath, file_in_storage::FileInStorage};
@@ -23,12 +24,29 @@ pub(crate) struct OpenBook {
     pub(crate) page_count: usize,
     pub(crate) damage: Option<Damage>,
     book: Arc<Mutex<Book>>,
+    side_borders: Arc<Mutex<Option<BookSideBorders>>>,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PageAt {
     pub(crate) path: PagePath,
     pub(crate) index: usize,
+}
+
+#[derive(Default)]
+pub(crate) struct LastOpened(RwLock<Option<BookFileAt>>);
+
+impl LastOpened {
+    pub(crate) fn record(&self, file: BookFileAt) {
+        *self.0.write().unwrap_or_else(PoisonError::into_inner) = Some(file);
+    }
+
+    pub(crate) fn is_other_than(&self, file: BookFileAt) -> bool {
+        self.0
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_some_and(|last| last != file)
+    }
 }
 
 /// The books opened last, most recent first.
@@ -53,6 +71,22 @@ impl OpenBook {
 
     pub(crate) fn lock(&self) -> MutexGuard<'_, Book> {
         self.book.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    pub(crate) fn side_borders_once<E>(
+        &self,
+        measure: impl FnOnce() -> Result<BookSideBorders, E>,
+    ) -> Result<BookSideBorders, E> {
+        let mut settled = self
+            .side_borders
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some(book) = *settled {
+            return Ok(book);
+        }
+        let book = measure()?;
+        *settled = Some(book);
+        Ok(book)
     }
 }
 
@@ -80,6 +114,7 @@ impl OpenBooks {
             page_count: book.pages().len(),
             damage: book.damage(),
             book: Arc::new(Mutex::new(book)),
+            side_borders: Arc::default(),
         };
         let mut kept = self.opened();
         kept.retain(|book| book.file != file);

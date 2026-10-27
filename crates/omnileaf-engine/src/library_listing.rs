@@ -1,6 +1,6 @@
 use omnileaf_db::catalog::{
-    Inclusion as StoredInclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort,
-    SortDirection as StoredDirection,
+    FilterChoices, Inclusion as StoredInclusion, SeriesFilter, SeriesListing, SeriesOrder,
+    SeriesSort, SortDirection as StoredDirection,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -176,6 +176,16 @@ impl From<SeriesListing> for LibraryListing {
                 },
             },
             filter: listing.filter.into(),
+        }
+    }
+}
+
+impl From<FilterChoices> for LibraryFilterChoices {
+    fn from(stored: FilterChoices) -> Self {
+        Self {
+            languages: stored.languages,
+            tags: stored.tags,
+            ..Self::default()
         }
     }
 }

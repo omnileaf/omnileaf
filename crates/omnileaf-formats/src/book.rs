@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{ops::ControlFlow, path::Path, sync::Arc};
 
 use omnileaf_sync_proto::Fingerprint;
 
@@ -68,6 +68,21 @@ impl Book {
             Self::Folder(book) => book.read_page(index),
             Self::Salvaged(book) => book.read_page(index),
         }
+    }
+
+    pub fn read_every_page(
+        &mut self,
+        mut read: impl FnMut(usize, Vec<u8>) -> ControlFlow<()>,
+    ) -> Result<(), FormatError> {
+        if let Self::SevenZip(book) = self {
+            return book.read_every_page(read);
+        }
+        for index in 0..self.pages().len() {
+            if read(index, self.read_page(index)?).is_break() {
+                break;
+            }
+        }
+        Ok(())
     }
 
     pub fn read_page_start(&mut self, index: usize, length: u64) -> Result<Vec<u8>, FormatError> {

@@ -496,6 +496,7 @@ mod tests {
                 "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)",
                 "CORRELATED SCALAR SUBQUERY 2",
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
             ]
         );

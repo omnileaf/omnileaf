@@ -5,7 +5,7 @@ use std::{path::PathBuf, time::Instant};
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, NewRoot, NewSeries, RootKind, RootLocator, ScannedBook, add_root,
+        BookDetails, BookFile, NewRoot, NewSeries, RootKind, RootLocator, ScannedBook, add_root,
         record_scanned_books, remove_root,
     },
 };
@@ -42,6 +42,7 @@ async fn records_and_removes_a_series_of_5_000_books_within_3_s() {
             title: format!("Chapter {number}"),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root,
                 location: format!("Long/Chapter {number}.cbz").into(),

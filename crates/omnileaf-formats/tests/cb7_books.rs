@@ -5,7 +5,7 @@
 
 mod support;
 
-use std::path::Path;
+use std::{ops::ControlFlow, path::Path};
 
 use omnileaf_formats::{
     FormatError, Limits, fingerprint_book, open_book, open_book_with, parse_comic_info,
@@ -29,6 +29,19 @@ fn page_names(path: &Path) -> Vec<String> {
         .iter()
         .map(|page| page.name.clone())
         .collect()
+}
+
+fn every_page_read(path: &Path) -> Vec<(usize, Vec<u8>)> {
+    let mut read = Vec::new();
+    open_book(path)
+        .unwrap()
+        .read_every_page(|index, page| {
+            read.push((index, page));
+            ControlFlow::Continue(())
+        })
+        .unwrap();
+    read.sort();
+    read
 }
 
 fn three_pages() -> Vec<ArchiveEntry> {
@@ -64,6 +77,53 @@ fn reads_every_page_of_a_cb7_back_exactly_in_any_order() {
             .collect();
 
         assert_eq!(pages, [page(2), page(0), page(1)], "{packing:?}");
+    }
+}
+
+#[test]
+fn reads_every_page_of_a_cb7_with_its_place_in_reading_order() {
+    let scratch = ScratchFolder::new("cb7-every-page");
+    for packing in PACKINGS {
+        let path = scratch.write("book.cb7", &cb7(&three_pages(), packing).unwrap());
+
+        let read = every_page_read(&path);
+
+        assert_eq!(
+            read,
+            [(0, page(0)), (1, page(1)), (2, page(2))],
+            "{packing:?}"
+        );
+    }
+}
+
+#[test]
+fn reads_an_empty_cb7_page_as_no_bytes_among_the_others() {
+    let scratch = ScratchFolder::new("cb7-every-page-empty");
+    let entries = [entry("2.png", Vec::new()), entry("1.png", page(0))];
+    for packing in PACKINGS {
+        let path = scratch.write("book.cb7", &cb7(&entries, packing).unwrap());
+
+        let read = every_page_read(&path);
+
+        assert_eq!(read, [(0, page(0)), (1, Vec::new())], "{packing:?}");
+    }
+}
+
+#[test]
+fn stops_reading_the_pages_of_a_cb7_once_told_to() {
+    let scratch = ScratchFolder::new("cb7-every-page-stop");
+    for packing in PACKINGS {
+        let path = scratch.write("book.cb7", &cb7(&three_pages(), packing).unwrap());
+        let mut book = open_book(&path).unwrap();
+        let mut read = 0;
+
+        book.read_every_page(|_, _| {
+            read += 1;
+            ControlFlow::Break(())
+        })
+        .unwrap();
+
+        assert_eq!(read, 1, "{packing:?}");
     }
 }
 

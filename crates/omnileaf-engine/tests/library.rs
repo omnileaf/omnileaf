@@ -888,10 +888,10 @@ async fn keeps_no_categories_until_the_library_keeps_them() {
 }
 
 #[tokio::test]
-async fn offers_only_the_smart_filters_until_the_library_reads_its_series_details() {
+async fn offers_only_the_smart_filters_in_a_library_without_series() {
     let home = ScratchFolder::new("library-filter-choices");
 
-    let choices = open(home.path()).await.filter_choices().unwrap();
+    let choices = open(home.path()).await.filter_choices().await.unwrap();
 
     assert_eq!(
         choices,

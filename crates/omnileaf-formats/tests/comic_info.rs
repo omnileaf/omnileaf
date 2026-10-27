@@ -1,7 +1,7 @@
 mod support;
 
 use omnileaf_formats::{
-    ComicInfoError, FormatError, PageKind, ReadingDirection, open_book, parse_comic_info,
+    AgeRating, ComicInfoError, FormatError, PageKind, ReadingDirection, open_book, parse_comic_info,
 };
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
@@ -22,6 +22,8 @@ const FULL: &str = r#"<?xml version="1.0" encoding="utf-8"?>
   <Manga>YesAndRightToLeft</Manga>
   <PageCount>3</PageCount>
   <AgeRating>Everyone</AgeRating>
+  <Year>2019</Year>
+  <Format>Digital</Format>
   <Pages>
     <Page Image="0" Type="FrontCover" ImageWidth="400" ImageHeight="600" />
     <Page Image="1" DoublePage="True" />
@@ -49,10 +51,9 @@ fn reads_the_details_of_a_full_comic_info() {
     assert_eq!(info.language.as_deref(), Some("en"));
     assert_eq!(info.reading_direction, Some(ReadingDirection::RightToLeft));
     assert_eq!(info.page_count, Some(3));
-    assert_eq!(
-        info.other.get("AgeRating").map(String::as_str),
-        Some("Everyone")
-    );
+    assert_eq!(info.age_rating, Some(AgeRating::Everyone));
+    assert_eq!(info.year, Some(2019));
+    assert_eq!(info.format.as_deref(), Some("Digital"));
 }
 
 #[test]
@@ -83,6 +84,42 @@ fn reads_the_reading_direction_from_the_manga_field() {
 
         assert_eq!(info.reading_direction, direction, "{value}");
     }
+}
+
+#[test]
+fn reads_each_age_rating_the_comic_info_schema_names() {
+    for (value, rating) in [
+        ("Early Childhood", Some(AgeRating::EarlyChildhood)),
+        ("Everyone", Some(AgeRating::Everyone)),
+        ("Everyone 10+", Some(AgeRating::Everyone10)),
+        ("G", Some(AgeRating::G)),
+        ("Kids to Adults", Some(AgeRating::KidsToAdults)),
+        ("PG", Some(AgeRating::Pg)),
+        ("Teen", Some(AgeRating::Teen)),
+        ("MA15+", Some(AgeRating::Ma15)),
+        ("Mature 17+", Some(AgeRating::Mature17)),
+        ("M", Some(AgeRating::M)),
+        ("Adults Only 18+", Some(AgeRating::AdultsOnly18)),
+        ("R18+", Some(AgeRating::R18)),
+        ("X18+", Some(AgeRating::X18)),
+        ("adults only 18+", Some(AgeRating::AdultsOnly18)),
+        ("Unknown", None),
+        ("Rating Pending", None),
+        ("Sample Rating", None),
+    ] {
+        let xml = format!("<ComicInfo><AgeRating>{value}</AgeRating></ComicInfo>");
+
+        let info = parse_comic_info(xml.as_bytes()).unwrap();
+
+        assert_eq!(info.age_rating, rating, "{value}");
+    }
+}
+
+#[test]
+fn leaves_out_a_year_the_schema_marks_unknown() {
+    let info = parse_comic_info(b"<ComicInfo><Year>-1</Year></ComicInfo>").unwrap();
+
+    assert_eq!(info.year, None);
 }
 
 #[test]

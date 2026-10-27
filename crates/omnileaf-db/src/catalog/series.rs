@@ -11,6 +11,8 @@ const ADD_SERIES_UNLESS_PRESENT: &str =
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT DO NOTHING";
 
+pub(crate) struct SeriesAdder<'t>(Statement<'t>);
+
 #[derive(Clone, Debug)]
 pub struct NewSeries {
     id: SeriesId,
@@ -43,16 +45,18 @@ pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(
     insert(&mut transaction.prepare(ADD_SERIES)?, series, &collation)
 }
 
-pub(crate) fn add_series_unless_present(
-    transaction: &Transaction<'_>,
-    series: &NewSeries,
-    collation: &TitleCollation,
-) -> Result<(), Error> {
-    insert(
-        &mut transaction.prepare(ADD_SERIES_UNLESS_PRESENT)?,
-        series,
-        collation,
-    )
+impl<'t> SeriesAdder<'t> {
+    pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
+        Ok(Self(transaction.prepare(ADD_SERIES_UNLESS_PRESENT)?))
+    }
+
+    pub(crate) fn add_unless_present(
+        &mut self,
+        series: &NewSeries,
+        collation: &TitleCollation,
+    ) -> Result<(), Error> {
+        insert(&mut self.0, series, collation)
+    }
 }
 
 fn insert(
