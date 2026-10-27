@@ -42,7 +42,10 @@ const BADGE_INSET = {
   desktop: 8,
 } as const satisfies Record<ScreenSize, number>;
 
-const UNREAD_BADGE_SIZE = 24;
+const UNREAD_BADGES = {
+  android: { height: 24, minWidth: 24, padding: ["0px", "6px", "0px", "6px"] },
+  linux: { height: 22, minWidth: 0, padding: ["2px", "8px", "2px", "8px"] },
+} as const;
 
 const FIRST_TITLE = "Sample Series 0001";
 const SECOND_TITLE = "Sample Series 0002";
@@ -177,7 +180,9 @@ test.describe("unread count", () => {
         },
       });
 
-      test("draws a cover's unread count as a 24px badge in 12px medium type", async ({
+      const expected = UNREAD_BADGES[platform];
+
+      test(`draws a cover's unread count as a ${String(expected.height)}px badge in 12px medium type`, async ({
         page,
       }) => {
         await openWith(page, {});
@@ -199,12 +204,12 @@ test.describe("unread count", () => {
         });
 
         expect({ height: box.height, ...look }).toEqual({
-          height: UNREAD_BADGE_SIZE,
+          height: expected.height,
           fontSize: "12px",
           fontWeight: "500",
-          padding: ["0px", "6px", "0px", "6px"],
+          padding: expected.padding,
         });
-        expect(box.width).toBeGreaterThanOrEqual(UNREAD_BADGE_SIZE);
+        expect(box.width).toBeGreaterThanOrEqual(expected.minWidth);
       });
     });
   }

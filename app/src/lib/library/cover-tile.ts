@@ -11,8 +11,12 @@ export interface CoverTileLook {
   readonly markOff: string;
 }
 
-const BADGE_GEOMETRY =
-  "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center px-badge-inline text-caption min-block-xl min-inline-xl medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
+const BADGE_PLACEMENT =
+  "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center text-caption medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
+
+const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inline-xl`;
+
+const LINUX_BADGE = `${BADGE_PLACEMENT} border border-transparent px-sm py-2xs`;
 
 const TODAYS_LOOK: CoverTileLook = {
   cover: "",
@@ -57,7 +61,7 @@ const COVER_TILE_LOOKS = {
     downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
     downloadedIcon: "max-medium:hidden",
   },
-  linux: TODAYS_LOOK,
+  linux: { ...TODAYS_LOOK, unread: LINUX_BADGE },
   macos: TODAYS_LOOK,
   windows: TODAYS_LOOK,
 } satisfies Record<Platform, CoverTileLook>;
