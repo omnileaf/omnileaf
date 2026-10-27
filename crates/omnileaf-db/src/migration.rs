@@ -256,7 +256,7 @@ mod tests {
         },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
-        title_key::TitleCollation,
+        title_key::{TitleCollation, TitleStamp, stored_stamp},
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -1632,6 +1632,26 @@ mod tests {
         assert_eq!(
             kept,
             [Value::Integer(0), Value::Null, Value::Null, Value::Null]
+        );
+    }
+
+    #[test]
+    fn rekeys_every_title_once_writer_names_gain_keys() {
+        let scratch = ScratchLibrary::new("writer-keys-stamp-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..47]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "UPDATE title_key_stamp SET stamp = ?1",
+                [TitleStamp::of(&Language::ROOT).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..48]).unwrap());
+
+        assert_ne!(
+            stored_stamp(&connection).unwrap(),
+            TitleStamp::of(&Language::ROOT)
         );
     }
 
