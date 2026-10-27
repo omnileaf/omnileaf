@@ -124,6 +124,8 @@ mod tests {
             added_at_ms: 0,
             cover: None,
             continues_from: None,
+            language: None,
+            is_rated_adult: false,
         });
 
         assert_eq!(
