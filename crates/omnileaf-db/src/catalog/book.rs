@@ -48,7 +48,7 @@ const ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE: &str = add_or_refile_book!(
     " WHERE (
         NOT EXISTS (
             SELECT 1 FROM book_file
-            WHERE book_id = excluded.id AND (root_id, location) IS NOT (?15, ?16)
+            WHERE book_id = excluded.id AND (root_id, location) IS NOT (:file_root, :file_location)
         )
         OR EXISTS (
             SELECT 1 FROM series AS kept
@@ -64,6 +64,8 @@ const ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE: &str = add_or_refile_book!(
         excluded.volume_number, excluded.volume_source
     )"
 );
+const FILE_ROOT: &str = ":file_root";
+const FILE_LOCATION: &str = ":file_location";
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
@@ -127,12 +129,7 @@ impl<'t> BookFiler<'t> {
     pub(crate) fn file(&mut self, book: &NewBook, file: &BookFile) -> Result<(), Error> {
         let is_filed = match self.filing {
             Filing::FollowingItsOnlyFile => {
-                let file_key = [
-                    Value::from(file.root.0),
-                    Value::from(native_path::to_bytes(&file.location)),
-                ];
-                let columns = book_columns(book).into_iter().chain(file_key);
-                self.add.execute(params_from_iter(columns))? > 0
+                insert_from_its_file(&mut self.add, book, file)? > 0
                     || self
                         .series_exists
                         .query_row([book.series.as_bytes()], |row| row.get(0))?
@@ -188,6 +185,19 @@ pub(crate) fn series_of_book(
 
 fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error> {
     Ok(statement.execute(params_from_iter(book_columns(book)))?)
+}
+
+fn insert_from_its_file(
+    statement: &mut Statement<'_>,
+    book: &NewBook,
+    file: &BookFile,
+) -> Result<usize, Error> {
+    for (index, column) in book_columns(book).into_iter().enumerate() {
+        statement.raw_bind_parameter(index + 1, column)?;
+    }
+    statement.raw_bind_parameter(FILE_ROOT, file.root.0)?;
+    statement.raw_bind_parameter(FILE_LOCATION, native_path::to_bytes(&file.location))?;
+    Ok(statement.raw_execute()?)
 }
 
 fn book_columns(book: &NewBook) -> [Value; 14] {
