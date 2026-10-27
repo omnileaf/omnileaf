@@ -456,7 +456,6 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
           width: sweptWidth,
           height: wrappedHeight - Math.round(rowStep / 2),
         });
-        await nextFrames(page);
       }
 
       expect(rowStep).toBeGreaterThan(0);

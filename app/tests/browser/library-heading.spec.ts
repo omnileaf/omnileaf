@@ -771,12 +771,6 @@ for (const platform of ["ios", "linux"] as const) {
 
       for (const width of [...RESIZE_SWEEP, ...RESIZE_SWEEP.toReversed()]) {
         await page.setViewportSize({ width, height: HEIGHT });
-        await page.evaluate(
-          () =>
-            new Promise((settled) =>
-              requestAnimationFrame(() => requestAnimationFrame(settled)),
-            ),
-        );
       }
 
       const heard = await page.evaluate(

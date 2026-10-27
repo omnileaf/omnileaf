@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { AxeBuilder } from "@axe-core/playwright";
 import {
   type BrowserContext,
@@ -326,6 +328,36 @@ export function targetOf(
 
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
+const FRAME_LIMIT_MS = 5000;
+
+function drewTwoFramesBefore(timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve(false);
+    }, timeoutMs);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+  });
+}
+
+async function drewTwoFramesWithin(
+  page: Page,
+  pageTimeoutMs: number,
+): Promise<boolean> {
+  const stopWaiting = new AbortController();
+  try {
+    return await Promise.race([
+      page.evaluate(drewTwoFramesBefore, pageTimeoutMs),
+      delay(FRAME_LIMIT_MS, false, { signal: stopWaiting.signal }),
+    ]);
+  } finally {
+    stopWaiting.abort();
+  }
+}
 
 /** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
 export async function framesPassed(page: Page): Promise<void> {
@@ -342,6 +374,19 @@ export async function framesPassed(page: Page): Promise<void> {
     });
     await Promise.race([nextFrame, timer]);
   }, FRAME_WAIT_MS);
+}
+
+/** Headless WebKit can draw no frame after a resize until something asks for one, so the page would never hear its media queries change. */
+function drawAfterEachResize(page: Page): void {
+  const resize = page.setViewportSize.bind(page);
+  page.setViewportSize = async (size) => {
+    await resize(size);
+    if (!(await drewTwoFramesWithin(page, FRAME_LIMIT_MS))) {
+      throw new Error(
+        `the page drew no frame within ${String(FRAME_LIMIT_MS)} ms of resizing to ${String(size.width)}x${String(size.height)}`,
+      );
+    }
+  };
 }
 
 /** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
@@ -533,6 +578,7 @@ export async function openFakeApp(
   backend: FakeBackend,
 ): Promise<Page> {
   const page = await context.newPage();
+  drawAfterEachResize(page);
   await markReaderGuideSeen(page);
   await installFakeBackend(page, backend);
   return page;
@@ -547,6 +593,7 @@ export const test = base.extend<{
   hasSeenReaderGuide: [true, { option: true }],
   platform: [undefined, { option: true }],
   page: async ({ page, backend, hasSeenReaderGuide, platform }, use) => {
+    drawAfterEachResize(page);
     if (hasSeenReaderGuide) {
       await markReaderGuideSeen(page);
     }
