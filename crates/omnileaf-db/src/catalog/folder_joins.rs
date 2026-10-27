@@ -5,7 +5,11 @@ use rusqlite::{Statement, Transaction};
 
 use crate::{
     Error,
-    catalog::{NewSeries, RootId, native_path, series::SeriesAdder, stored_id::stored_id},
+    catalog::{
+        NamedSeries, NewSeries, RootId, native_path,
+        series::{SeriesAdder, SeriesKey},
+        stored_id::stored_id,
+    },
     title_key::TitleCollation,
 };
 
@@ -34,7 +38,7 @@ pub(crate) struct FolderJoins<'t> {
 pub(crate) struct FoundIn<'a> {
     pub(crate) root: RootId,
     pub(crate) series: &'a NewSeries,
-    pub(crate) named_series: Option<&'a NewSeries>,
+    pub(crate) named_series: Option<&'a NamedSeries>,
 }
 
 impl<'t> FolderJoins<'t> {
@@ -54,8 +58,9 @@ impl<'t> FolderJoins<'t> {
         collation: &TitleCollation,
     ) -> Result<SeriesId, Error> {
         let own = found.series.id();
-        let Some(location) = found.series.location() else {
-            return Ok(own);
+        let (location, year) = match &found.series.key {
+            SeriesKey::Folder { location, year, .. } => (location, year.map(|year| year.value)),
+            SeriesKey::Local | SeriesKey::Named => return Ok(own),
         };
         let group = location.parent().unwrap_or_else(|| Path::new(""));
         let location = native_path::to_bytes(location);
@@ -64,14 +69,14 @@ impl<'t> FolderJoins<'t> {
             &location,
             own.as_bytes(),
             native_path::to_bytes(group),
-            found.series.year(),
+            year,
         ))?;
         let filed_in = self
             .series_of_folder
             .query_row((found.root.0, &location), |row| stored_id(row, "id"))?;
         Ok(match found.named_series {
             Some(named) if filed_in == own => {
-                series.add_or_rename(named, collation)?;
+                series.add_or_rename(named.as_series(), collation)?;
                 self.join.execute((named.id().as_bytes(), own.as_bytes()))?;
                 self.move_books
                     .execute((named.id().as_bytes(), own.as_bytes()))?;

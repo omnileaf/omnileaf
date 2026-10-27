@@ -252,7 +252,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     } = place_book(&location, &linked_folder, FileNumbers::of(&details));
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
-        named_series: series_named_in_files(&series.naming, &details, target.added_at_ms)?,
+        named_series: series_named_in_files(&details, target.added_at_ms)?,
         series: NewSeries::folder(
             SeriesFolder {
                 linked_folder: &linked_folder,

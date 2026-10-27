@@ -10,10 +10,10 @@ use std::path::{Path, PathBuf};
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookListing, BookNumber, BookPerson, NewBook, NewRoot,
-        NewSeries, NumberRange, Numbering, PageRequest, PageSize, PersonRole, ReadingDirection,
-        RootId, RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming, Sourced,
-        ValueSource, add_book, add_root, record_moved_books, record_page_count,
+        AgeRating, BookDetails, BookFile, BookListing, BookNumber, BookPerson, NamedSeries,
+        NewBook, NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, PersonRole,
+        ReadingDirection, RootId, RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming,
+        Sourced, ValueSource, add_book, add_root, record_moved_books, record_page_count,
         record_scanned_books, series_books,
     },
     rusqlite::{Row, types::Value},
@@ -925,15 +925,8 @@ async fn files_the_books_of_every_folder_whose_books_name_one_series_in_that_ser
     );
 }
 
-fn series_named(title: &str) -> NewSeries {
-    let naming = SeriesNaming {
-        title: Sourced {
-            value: title.to_owned(),
-            source: ValueSource::Files,
-        },
-        year: None,
-    };
-    NewSeries::named("comics", naming, ADDED_AT_MS).unwrap()
+fn series_named(title: &str) -> NamedSeries {
+    NamedSeries::new("comics", title, ADDED_AT_MS).unwrap()
 }
 
 #[tokio::test]

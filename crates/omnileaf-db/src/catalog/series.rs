@@ -65,11 +65,23 @@ pub struct NewSeries {
     source: SourceId,
     natural_key: String,
     title: String,
-    title_source: Option<ValueSource>,
-    year: Option<Sourced<u16>>,
     added_at_ms: i64,
-    location: Option<PathBuf>,
+    pub(crate) key: SeriesKey,
 }
+
+#[derive(Clone, Debug)]
+pub(crate) enum SeriesKey {
+    Local,
+    Folder {
+        location: PathBuf,
+        title_source: ValueSource,
+        year: Option<Sourced<u16>>,
+    },
+    Named,
+}
+
+#[derive(Clone, Debug)]
+pub struct NamedSeries(NewSeries);
 
 #[derive(Clone, Copy, Debug)]
 pub struct SeriesFolder<'a> {
@@ -90,10 +102,8 @@ impl NewSeries {
             source: SourceId::local(),
             natural_key: norm(folder_name),
             title: folder_name.to_owned(),
-            title_source: None,
-            year: None,
             added_at_ms,
-            location: None,
+            key: SeriesKey::Local,
         })
     }
 
@@ -108,31 +118,12 @@ impl NewSeries {
             source: SourceId::local(),
             natural_key: folder_key(folder.linked_folder, &location),
             title: naming.title.value,
-            title_source: Some(naming.title.source),
-            year: naming.year,
             added_at_ms,
-            location: Some(folder.location.to_path_buf()),
-        })
-    }
-
-    pub fn named(
-        format_family: &str,
-        naming: SeriesNaming,
-        added_at_ms: i64,
-    ) -> Result<Self, KeyError> {
-        Ok(Self {
-            id: SeriesId::named(format_family, &naming.title.value)?,
-            source: SourceId::local(),
-            natural_key: format!(
-                "{}{NAMED_KEY_SEPARATOR}{}",
-                norm(format_family),
-                norm(&naming.title.value)
-            ),
-            title: naming.title.value,
-            title_source: Some(naming.title.source),
-            year: naming.year,
-            added_at_ms,
-            location: None,
+            key: SeriesKey::Folder {
+                location: folder.location.to_path_buf(),
+                title_source: naming.title.source,
+                year: naming.year,
+            },
         })
     }
 
@@ -141,12 +132,45 @@ impl NewSeries {
         self.id
     }
 
-    pub(crate) fn location(&self) -> Option<&Path> {
-        self.location.as_deref()
+    const fn title_source(&self) -> Option<ValueSource> {
+        match self.key {
+            SeriesKey::Local => None,
+            SeriesKey::Folder { title_source, .. } => Some(title_source),
+            SeriesKey::Named => Some(ValueSource::Files),
+        }
     }
 
-    pub(crate) fn year(&self) -> Option<u16> {
-        self.year.map(|year| year.value)
+    const fn year(&self) -> Option<Sourced<u16>> {
+        match self.key {
+            SeriesKey::Folder { year, .. } => year,
+            SeriesKey::Local | SeriesKey::Named => None,
+        }
+    }
+}
+
+impl NamedSeries {
+    pub fn new(format_family: &str, title: &str, added_at_ms: i64) -> Result<Self, KeyError> {
+        Ok(Self(NewSeries {
+            id: SeriesId::named(format_family, title)?,
+            source: SourceId::local(),
+            natural_key: format!(
+                "{}{NAMED_KEY_SEPARATOR}{}",
+                norm(format_family),
+                norm(title)
+            ),
+            title: title.to_owned(),
+            added_at_ms,
+            key: SeriesKey::Named,
+        }))
+    }
+
+    #[must_use]
+    pub const fn id(&self) -> SeriesId {
+        self.0.id
+    }
+
+    pub(crate) const fn as_series(&self) -> &NewSeries {
+        &self.0
     }
 }
 
@@ -184,9 +208,9 @@ fn insert(
         &series.title,
         collation.key(&series.title),
         series.added_at_ms,
-        series.title_source.map(ValueSource::as_stored),
-        series.year.map(|year| year.value),
-        series.year.map(|year| year.source.as_stored()),
+        series.title_source().map(ValueSource::as_stored),
+        series.year().map(|year| year.value),
+        series.year().map(|year| year.source.as_stored()),
     ))?;
     Ok(())
 }
