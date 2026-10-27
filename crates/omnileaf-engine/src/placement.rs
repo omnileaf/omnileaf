@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ffi::OsStr, path::Path};
 
 use omnileaf_db::catalog::Numbering;
-use omnileaf_formats::{BookName, Number, read_book_name, read_series_name};
+use omnileaf_formats::{BookName, read_book_name, read_series_name, read_volume_folder_name};
 
 use crate::{
     book_numbering::{Shelf, number_book},
@@ -61,8 +61,8 @@ fn shelve(folder: &str, above: Option<&str>) -> (String, Shelf) {
         if is_specials_folder(folder) {
             return (series_above, Shelf::Specials);
         }
-        if let Some(volume) = volume_of_folder(folder, &series_above) {
-            return (series_above, Shelf::Volume(volume));
+        if let Some(volume) = read_volume_folder_name(folder, &series_above) {
+            return (series_above, Shelf::Volume(volume.first()));
         }
     }
     (read_series_name(folder).title, Shelf::Series)
@@ -70,34 +70,4 @@ fn shelve(folder: &str, above: Option<&str>) -> (String, Shelf) {
 
 fn is_specials_folder(folder: &str) -> bool {
     folder.trim().eq_ignore_ascii_case(SPECIALS_FOLDER)
-}
-
-fn volume_of_folder(folder: &str, series_title: &str) -> Option<Number> {
-    let title = read_book_name(folder, None).title;
-    let marker = after_series_title(&title, series_title);
-    let volume = read_book_name(marker, None).volume?;
-    words(marker)
-        .all(is_volume_marker_word)
-        .then_some(volume.first())
-}
-
-fn after_series_title<'a>(title: &'a str, series_title: &str) -> &'a str {
-    match title.split_at_checked(series_title.len()) {
-        Some((head, rest))
-            if head.to_lowercase() == series_title.to_lowercase()
-                && !rest.starts_with(char::is_alphanumeric) =>
-        {
-            rest
-        }
-        _ => title,
-    }
-}
-
-fn words(text: &str) -> impl Iterator<Item = &str> {
-    text.split(|character: char| !character.is_alphabetic())
-        .filter(|word| !word.is_empty())
-}
-
-fn is_volume_marker_word(word: &str) -> bool {
-    read_book_name(&format!("{word}1"), None).volume.is_some()
 }
