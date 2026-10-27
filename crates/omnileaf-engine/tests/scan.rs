@@ -339,6 +339,24 @@ async fn lists_no_file_of_a_type_it_reads_that_holds_an_archive_it_cannot() {
 }
 
 #[tokio::test]
+async fn counts_a_damaged_file_of_a_type_it_does_not_read_as_unreadable_without_listing_it() {
+    let comics = ScratchFolder::new("scan-skipped-damaged");
+    write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
+    comics.write("Sample Series 01/v02.cbr", b"");
+
+    let (_, scan, _) = Scanned::folder("scan-skipped-damaged", comics.path()).await;
+
+    assert_eq!(
+        (
+            scan.unreadable_books,
+            scan.unsupported_books,
+            scan.skipped_types
+        ),
+        (1, 0, Vec::new())
+    );
+}
+
+#[tokio::test]
 async fn lists_only_the_first_files_of_a_type_it_skips_with_how_many_it_skipped() {
     let comics = ScratchFolder::new("scan-skipped-many");
     let names: Vec<String> = (1..=25).map(|volume| format!("v{volume:02}.cbr")).collect();
