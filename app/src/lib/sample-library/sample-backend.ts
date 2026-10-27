@@ -298,6 +298,10 @@ function pageOf<Item>(
   };
 }
 
+function writes({ role }: SampleCreator): boolean {
+  return role === "story" || role === "storyAndArt";
+}
+
 function isRead(book: SampleBook): boolean {
   return book.reading.state === "read";
 }
@@ -628,6 +632,25 @@ export function sampleBackend(
   function seriesBy(creator: string): SampleSeries[] {
     return library.filter((series) =>
       peopleOf(series).some(({ name }) => name === creator),
+    );
+  }
+
+  function seriesWrittenBy(writer: string): SampleSeries[] {
+    return library.filter((series) =>
+      peopleOf(series).some(
+        (creator) => creator.name === writer && writes(creator),
+      ),
+    );
+  }
+
+  function writerNames(): string[] {
+    const names = library.flatMap((series) =>
+      peopleOf(series)
+        .filter(writes)
+        .map(({ name }) => name),
+    );
+    return [...new Set(names)].toSorted((one, other) =>
+      one.localeCompare(other),
     );
   }
 
@@ -1212,6 +1235,32 @@ export function sampleBackend(
       return folder === LIBRARY_FOLDER_ID
         ? library.filter((series) => passes(series, filter, facts)).length
         : 0;
+    },
+    libraryWriters: async (after) => {
+      await libraryReady();
+      const page = pageOf(writerNames(), after);
+      return {
+        writers: page.items.map((name) => ({
+          name,
+          seriesCount: seriesWrittenBy(name).length,
+        })),
+        next: page.next,
+      };
+    },
+    writerSeries: async (writer, after, chosen) => {
+      await libraryReady();
+      const written = new Set(seriesWrittenBy(writer));
+      const page = pageOf(
+        sorted(chosen).filter((series) => written.has(series)),
+        after,
+      );
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    writerSeriesCount: async (writer, filter) => {
+      await libraryReady();
+      return seriesWrittenBy(writer).filter((series) =>
+        passes(series, filter, facts),
+      ).length;
     },
     librarySearch: async (after, search) => {
       await libraryReady();
