@@ -20,10 +20,7 @@ const USE_LIBRARY = "Use this library";
 const START_NEW_LIBRARY = "Start a new library instead";
 const STACKED_BUTTON_GAP = 6;
 const DESKTOP_CHANGE_HEIGHT = 38;
-const CHANGE_CONTROL_NAMES = {
-  android: "Home folder",
-  linux: "Change",
-} as const satisfies Partial<Record<Platform, string>>;
+const ANDROID_CHANGE_ROW = "Home folder";
 const DESKTOP_HOME_HEADER_HEIGHT = 62;
 const FOUND_FACTS = [
   ["Series", "212"],
@@ -140,33 +137,6 @@ for (const platform of ["android", "linux"] as const) {
       ).toBeVisible();
     });
 
-    test("keeps Use this library in reach, saying it's coming soon", async ({
-      page,
-    }) => {
-      await goToTheHomeFolder(page);
-      const use = button(page, USE_LIBRARY);
-
-      await expectComingSoon(page, use, USE_LIBRARY);
-      await use.click({ force: true });
-
-      await expect(
-        page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
-      ).toBeVisible();
-    });
-
-    test("says changing the home folder is coming soon", async ({ page }) => {
-      await goToTheHomeFolder(page);
-
-      await expectComingSoon(
-        page,
-        homeCard(page).getByRole("button", {
-          name: CHANGE_CONTROL_NAMES[platform],
-          exact: true,
-        }),
-        "Change",
-      );
-    });
-
     for (const colorScheme of ["light", "dark"] as const) {
       test(`has no accessibility violations in the ${colorScheme} theme`, async ({
         page,
@@ -255,7 +225,7 @@ test.describe("a library already in the home folder on an android phone", () => 
 
     const change = await boxOf(
       homeCard(page).getByRole("button", {
-        name: CHANGE_CONTROL_NAMES.android,
+        name: ANDROID_CHANGE_ROW,
         exact: true,
       }),
     );
@@ -274,8 +244,35 @@ test.describe("a library already in the home folder on an android phone", () => 
 
     const row = homeCard(page).getByRole("button");
 
-    await expect(row).toHaveAccessibleName(CHANGE_CONTROL_NAMES.android);
+    await expect(row).toHaveAccessibleName(ANDROID_CHANGE_ROW);
     await expect(row).toHaveAccessibleDescription(HOME_LOCATION);
+  });
+
+  test("keeps Use this library in reach, saying it's coming soon", async ({
+    page,
+  }) => {
+    await goToTheHomeFolder(page);
+    const use = button(page, USE_LIBRARY);
+
+    await expectComingSoon(page, use, USE_LIBRARY);
+    await use.click({ force: true });
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
+    ).toBeVisible();
+  });
+
+  test("says changing the home folder is coming soon", async ({ page }) => {
+    await goToTheHomeFolder(page);
+
+    await expectComingSoon(
+      page,
+      homeCard(page).getByRole("button", {
+        name: ANDROID_CHANGE_ROW,
+        exact: true,
+      }),
+      "Change",
+    );
   });
 
   test("stacks Use this library 6px over Start a new library instead", async ({
