@@ -526,13 +526,14 @@ function runningAnimations(page: Page): Promise<string[]> {
 
 const PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM = "meta-viewport";
 
-/** Waits out animations that end first, and a part bits-ui still holds in its starting style before its fade begins, since axe reads colours mid-fade as they are. */
+/** Waits out animations that end first, a part bits-ui still holds in its starting style before its fade begins, and the frame WebKit needs to draw a finished fade's end, since axe reads colours mid-fade as they are. */
 export async function accessibilityViolations(page: Page): Promise<Violations> {
   await expect
     .poll(() => runningAnimations(page), {
       message: "animations still running before the axe check",
     })
     .toEqual([]);
+  await framesPassed(page);
   const results = await new AxeBuilder({ page })
     .disableRules([PAGE_ZOOM_RULE_LEFT_TO_THE_SYSTEM])
     .analyze();
