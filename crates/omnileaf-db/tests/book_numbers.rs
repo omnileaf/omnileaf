@@ -124,8 +124,30 @@ fn volume(thousandths: u32, source: ValueSource) -> Sourced<BookNumber> {
     }
 }
 
-fn stored(title: &str, columns: [Value; 6]) -> StoredNumbers {
-    (title.to_owned(), columns.into())
+fn placed(
+    kind: &str,
+    numbers: Option<(i64, i64, &str)>,
+    volume: Option<(i64, &str)>,
+) -> Vec<Value> {
+    let (first, last, number_source) = numbers.map_or(
+        (Value::Null, Value::Null, Value::Null),
+        |(first, last, source)| (Value::Integer(first), Value::Integer(last), text(source)),
+    );
+    let (volume, volume_source) = volume.map_or((Value::Null, Value::Null), |(volume, source)| {
+        (Value::Integer(volume), text(source))
+    });
+    vec![
+        text(kind),
+        first,
+        last,
+        number_source,
+        volume,
+        volume_source,
+    ]
+}
+
+fn stored(title: &str, columns: Vec<Value>) -> StoredNumbers {
+    (title.to_owned(), columns)
 }
 
 fn text(value: &str) -> Value {
@@ -150,6 +172,13 @@ async fn keeps_the_kind_numbers_volume_and_their_sources_for_each_book_a_scan_pl
             }),
         ),
         library.found(
+            "Afterword",
+            Some(Numbering::Chapter {
+                number: None,
+                volume: None,
+            }),
+        ),
+        library.found(
             "Extras",
             Some(Numbering::Special {
                 number: Some(numbers(1000, 1000, ValueSource::Files)),
@@ -163,84 +192,23 @@ async fn keeps_the_kind_numbers_volume_and_their_sources_for_each_book_a_scan_pl
     assert_eq!(
         library.numbers().await,
         [
+            stored("Afterword", placed("chapter", None, None)),
             stored(
                 "Extras",
-                [
-                    text("special"),
-                    Value::Integer(1000),
-                    Value::Integer(1000),
-                    text("files"),
-                    Value::Null,
-                    Value::Null,
-                ],
+                placed("special", Some((1000, 1000, "files")), None)
             ),
-            stored("Not placed", [const { Value::Null }; 6]),
+            stored("Not placed", vec![Value::Null; 6]),
             stored(
                 "v01-03",
-                [
-                    text("volume"),
-                    Value::Integer(1000),
-                    Value::Integer(3000),
-                    text("file_name"),
-                    Value::Null,
-                    Value::Null,
-                ],
+                placed("volume", Some((1000, 3000, "file_name")), None)
             ),
             stored(
                 "v03 c012.5",
-                [
-                    text("chapter"),
-                    Value::Integer(12_500),
-                    Value::Integer(12_500),
-                    text("file_name"),
-                    Value::Integer(3000),
-                    text("folder_name"),
-                ],
-            ),
-        ]
-    );
-}
-
-#[tokio::test]
-async fn keeps_no_numbers_for_a_chapter_or_special_its_names_give_none() {
-    let library = Library::open("placed-unnumbered").await;
-    let found = vec![
-        library.found(
-            "Afterword",
-            Some(Numbering::Chapter {
-                number: None,
-                volume: None,
-            }),
-        ),
-        library.found("Sketches", Some(Numbering::Special { number: None })),
-    ];
-
-    library.record(found).await;
-
-    assert_eq!(
-        library.numbers().await,
-        [
-            stored(
-                "Afterword",
-                [
-                    text("chapter"),
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                ],
-            ),
-            stored(
-                "Sketches",
-                [
-                    text("special"),
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                    Value::Null,
-                ],
+                placed(
+                    "chapter",
+                    Some((12_500, 12_500, "file_name")),
+                    Some((3000, "folder_name")),
+                ),
             ),
         ]
     );
@@ -271,14 +239,11 @@ async fn refiles_a_moved_book_under_the_numbers_its_new_place_gives() {
         library.numbers().await,
         [stored(
             "c012",
-            [
-                text("chapter"),
-                Value::Integer(12_000),
-                Value::Integer(12_000),
-                text("file_name"),
-                Value::Integer(3000),
-                text("folder_name"),
-            ],
+            placed(
+                "chapter",
+                Some((12_000, 12_000, "file_name")),
+                Some((3000, "folder_name")),
+            ),
         )]
     );
 }
