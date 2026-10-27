@@ -22,6 +22,7 @@ use crate::{
     clock::unix_ms,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
+    placement::{Placement, place_book},
     skipped_types::{SkippedFile, SkippedType},
     unread_books::UnreadBooks,
 };
@@ -234,6 +235,7 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
+    let Placement { series, title } = place_book(&location, &folder_name(&target.folder));
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
         .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
@@ -241,9 +243,9 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     let details = read_details(&mut book, &found.path);
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
-        series: NewSeries::local(&found.series, target.added_at_ms)?,
+        series: NewSeries::local(&series, target.added_at_ms)?,
         fingerprint,
-        title: found.title.clone(),
+        title,
         added_at_ms: target.added_at_ms,
         page_count,
         details,
@@ -301,8 +303,6 @@ mod tests {
         };
         let found = FoundBook {
             path: PathBuf::from("/media/Elsewhere/v01.cbz"),
-            series: "Sample Series 01".to_owned(),
-            title: "v01".to_owned(),
         };
 
         let read = read_found_book(&found, &target);

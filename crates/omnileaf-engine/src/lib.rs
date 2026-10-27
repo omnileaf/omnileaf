@@ -50,6 +50,7 @@ mod page_path;
 mod page_sizes;
 mod page_thumbnail_path;
 mod pages;
+mod placement;
 mod problem_report;
 mod project_link;
 mod reading_progress;
