@@ -328,7 +328,7 @@ export function targetOf(
 
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
-const FRAME_LIMIT_MS = 5000;
+const FRAME_LIMIT_MS = 15_000;
 
 function drewTwoFramesBefore(timeoutMs: number): Promise<boolean> {
   return new Promise((resolve) => {

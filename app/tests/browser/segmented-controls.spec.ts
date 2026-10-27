@@ -413,7 +413,12 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
 
     test("raises no error while the displays wrap and unwrap beside a classic scrollbar", async ({
       page,
+      browserName,
     }) => {
+      test.slow(
+        browserName === "webkit",
+        "drawing twelve widths at the largest text takes WebKit a while",
+      );
       await addStyle(page, CLASSIC_SCROLLBARS);
       const errors = await listenForErrors(page);
       await page.goto("/");
