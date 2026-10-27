@@ -223,7 +223,8 @@ pub fn series_books(
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => return Err(Error::CursorForAnotherList),
     }
     if let Some((start, end)) = &section_keys {

@@ -191,7 +191,8 @@ pub(crate) fn time_left_rows(
             | Position::Session { .. }
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -216,7 +217,8 @@ pub(crate) fn unread_count_rows(
             | Position::Session { .. }
             | Position::LastUpdated { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -241,7 +243,8 @@ pub(crate) fn last_updated_rows(
             | Position::Session { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -269,7 +272,8 @@ pub(crate) fn last_read_rows(
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
@@ -294,7 +298,8 @@ pub(crate) fn date_added_rows(
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => Err(Error::CursorForAnotherList),
     }
 }
