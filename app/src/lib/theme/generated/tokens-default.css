@@ -221,4 +221,24 @@
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;
   --native-spacing-continue-cover: 0px;
+  --native-text-end-title: var(--text-title);
+  --native-leading-end-title: var(--text-title--line-height);
+  --native-tracking-end-title: 0;
+  --native-weight-end-title: var(--font-weight-semibold);
+  --native-text-end-stat: var(--text-title);
+  --native-leading-end-stat: var(--text-title--line-height);
+  --native-tracking-end-stat: 0;
+  --native-weight-end-stat: var(--font-weight-semibold);
+  --native-text-end-book: var(--text-group-title);
+  --native-leading-end-book: var(--text-group-title--line-height);
+  --native-tracking-end-book: 0;
+  --native-weight-end-book: var(--font-weight-semibold);
+  --native-text-end-card-title: var(--text-title);
+  --native-leading-end-card-title: var(--text-title--line-height);
+  --native-tracking-end-card-title: 0;
+  --native-weight-end-card-title: var(--font-weight-semibold);
+  --native-text-end-stat-label: var(--text-caption);
+  --native-leading-end-stat-label: var(--text-caption--line-height);
+  --native-tracking-end-stat-label: 0;
+  --native-weight-end-stat-label: var(--font-weight-regular);
 }

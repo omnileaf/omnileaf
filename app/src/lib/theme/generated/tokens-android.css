@@ -153,6 +153,26 @@
   --native-spacing-notice-inline: 16px;
   --native-spacing-notice-top: 0px;
   --native-spacing-continue-cover: 64px;
+  --native-text-end-title: calc(1.75rem * var(--text-scale));
+  --native-leading-end-title: calc(36 / 28);
+  --native-tracking-end-title: 0px;
+  --native-weight-end-title: 400;
+  --native-text-end-stat: calc(1.5rem * var(--text-scale));
+  --native-leading-end-stat: calc(32 / 24);
+  --native-tracking-end-stat: 0px;
+  --native-weight-end-stat: 400;
+  --native-text-end-book: calc(1.375rem * var(--text-scale));
+  --native-leading-end-book: calc(28 / 22);
+  --native-tracking-end-book: 0px;
+  --native-weight-end-book: 400;
+  --native-text-end-card-title: calc(1.375rem * var(--text-scale));
+  --native-leading-end-card-title: calc(28 / 22);
+  --native-tracking-end-card-title: 0px;
+  --native-weight-end-card-title: 400;
+  --native-text-end-stat-label: calc(0.75rem * var(--text-scale));
+  --native-leading-end-stat-label: calc(16 / 12);
+  --native-tracking-end-stat-label: 0.5px;
+  --native-weight-end-stat-label: 500;
 }
 
 :root[data-platform="android"],

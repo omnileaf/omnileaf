@@ -551,15 +551,20 @@ test.describe("on an Android phone", () => {
       });
     });
 
-    test("draws Up next's Read and Back to the series as pills", async ({
+    test("draws Up next's Read and Back to the series as Android's 40px pills", async ({
       page,
     }) => {
       await openUpNext(page);
       const buttons = upNextButtons(page);
 
       const pills = await measureEach(buttons, isPill);
+      const heights = await measureEach(
+        buttons,
+        async (button) => (await boxOf(button)).height,
+      );
 
       expect(pills).toEqual(eachOf(buttons, true));
+      expect(heights).toEqual(eachOf(buttons, ANDROID_BUTTON_HEIGHT));
     });
   });
 });
@@ -592,5 +597,24 @@ test.describe("on an iPhone", () => {
     const corner = await cornerOf(button);
 
     expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+  });
+  test.describe("in the reader", () => {
+    test.use({ backend: readerOn("ios") });
+
+    test("draws Up next's Read and Back to the series as 50px capsules", async ({
+      page,
+    }) => {
+      await openUpNext(page);
+      const buttons = upNextButtons(page);
+
+      const pills = await measureEach(buttons, isPill);
+      const heights = await measureEach(
+        buttons,
+        async (button) => (await boxOf(button)).height,
+      );
+
+      expect(pills).toEqual(eachOf(buttons, true));
+      expect(heights).toEqual(eachOf(buttons, IOS_BUTTON_HEIGHT));
+    });
   });
 });
