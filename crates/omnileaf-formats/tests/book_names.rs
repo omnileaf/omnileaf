@@ -291,6 +291,41 @@ fn reads_a_chapter_inside_a_volume() {
 }
 
 #[test]
+fn reads_a_chapter_written_straight_after_its_volume() {
+    let names = [
+        "Sample Series 04 v01c002",
+        "Sample Series 04 Vol01Ch001",
+        "Sample Series 04 v01-03c002",
+    ];
+
+    let markers = names.map(|name| {
+        let book = read_book_name(name, None);
+        (book.volume, book.chapter)
+    });
+
+    assert_eq!(
+        markers,
+        [
+            (single("1"), single("2")),
+            (single("1"), single("1")),
+            (range("1", "3"), single("2"))
+        ]
+    );
+}
+
+#[test]
+fn reads_no_marker_from_markers_written_together_that_run_into_a_letter() {
+    let names = ["Sample Series 04 v2c3x", "Sample Series 04 v2ch"];
+
+    let markers = names.map(|name| {
+        let book = read_book_name(name, None);
+        (book.volume, book.chapter)
+    });
+
+    assert_eq!(markers, [(None, None); 2]);
+}
+
+#[test]
 fn counts_only_the_first_marker_of_each_kind() {
     let book = read_book_name("Sample Series 04 c017 v03 v04 c018", None);
 

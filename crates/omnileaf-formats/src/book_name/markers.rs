@@ -50,11 +50,14 @@ impl MarkerWord {
     }
 
     fn number_after(&self, text: &str, at: usize) -> Option<Found<Number>> {
+        marker_number(text, self.number_start(text, at)?)
+    }
+
+    fn number_start(&self, text: &str, at: usize) -> Option<usize> {
         let word_end = at + self.word.len();
-        if !text.get(at..word_end)?.eq_ignore_ascii_case(self.word) {
-            return None;
-        }
-        marker_number(text, self.gap.number_start(text, word_end))
+        text.get(at..word_end)?
+            .eq_ignore_ascii_case(self.word)
+            .then(|| self.gap.number_start(text, word_end))
     }
 }
 
@@ -126,10 +129,25 @@ impl GapBeforeNumber {
 }
 
 fn marker_number(text: &str, at: usize) -> Option<Found<Number>> {
-    Number::read(text, at).filter(|number| {
-        !text
-            .as_bytes()
-            .get(number.end)
-            .is_some_and(u8::is_ascii_alphabetic)
-    })
+    Number::read(text, at).filter(|number| runs_into_no_letter(text, number.end))
+}
+
+fn runs_into_no_letter(text: &str, mut at: usize) -> bool {
+    while starts_with_letter(text, at) {
+        match number_of_marker_at(text, at) {
+            Some(number) => at = number.end,
+            None => return false,
+        }
+    }
+    true
+}
+
+fn number_of_marker_at(text: &str, at: usize) -> Option<Found<Number>> {
+    MARKER_WORDS
+        .iter()
+        .find_map(|marker| Number::read(text, marker.number_start(text, at)?))
+}
+
+fn starts_with_letter(text: &str, at: usize) -> bool {
+    text.as_bytes().get(at).is_some_and(u8::is_ascii_alphabetic)
 }
