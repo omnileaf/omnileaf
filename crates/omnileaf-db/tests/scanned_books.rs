@@ -5,7 +5,7 @@
 
 mod support;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     Database, Error,
@@ -82,7 +82,7 @@ impl Library {
     fn found_in_folder(&self, series_folder: &str, book: &str, page_crc: u32) -> ScannedBook {
         let title = series_folder.rsplit('/').next().unwrap();
         ScannedBook {
-            series: series_in_folder(series_folder, ADDED_AT_MS),
+            series: series_in_folder("Sample Library", series_folder, ADDED_AT_MS),
             title: book.to_owned(),
             ..self.found(title, format!("{series_folder}/{book}.cbz"), page_crc)
         }
@@ -199,11 +199,11 @@ impl Library {
     }
 }
 
-fn series_in_folder(series_folder: &str, added_at_ms: i64) -> NewSeries {
+fn series_in_folder(linked_folder: &str, series_folder: &str, added_at_ms: i64) -> NewSeries {
     NewSeries::folder(
         SeriesFolder {
-            linked_folder: "Sample Library",
-            location: series_folder,
+            linked_folder,
+            location: Path::new(series_folder),
         },
         SeriesNaming {
             title: Sourced {
@@ -674,7 +674,7 @@ async fn keeps_the_title_and_year_of_a_folder_series_and_where_each_came_from() 
         series: NewSeries::folder(
             SeriesFolder {
                 linked_folder: "Sample Library",
-                location: "Sample Series 04 (2019)",
+                location: Path::new("Sample Series 04 (2019)"),
             },
             SeriesNaming {
                 title: Sourced {
@@ -815,7 +815,7 @@ async fn keeps_when_a_series_was_added_once_its_books_move_to_their_folder_serie
         .record(library.found("Sample Series 01", "Sample Series 01/v01.cbz", 1))
         .await;
     let read_again = ScannedBook {
-        series: series_in_folder("Sample Series 01", ADDED_AT_MS + 1_000),
+        series: series_in_folder("Sample Library", "Sample Series 01", ADDED_AT_MS + 1_000),
         ..library.found_in_folder("Sample Series 01", "v01", 1)
     };
 
@@ -828,5 +828,33 @@ async fn keeps_when_a_series_was_added_once_its_books_move_to_their_folder_serie
             })
             .await,
         [ADDED_AT_MS, ADDED_AT_MS]
+    );
+}
+
+#[tokio::test]
+async fn keeps_series_in_folders_whose_names_normalise_to_the_same_path_apart() {
+    let library = Library::open("scanned-fullwidth-solidus").await;
+    let named = ScannedBook {
+        series: series_in_folder(
+            "Sample Library\u{ff0f}Author A",
+            "Sample Series 02",
+            ADDED_AT_MS,
+        ),
+        ..library.found_in_folder("Sample Series 02", "v01", 1)
+    };
+    library.record(named).await;
+    let nested = ScannedBook {
+        series: series_in_folder("Sample Library", "Author A/Sample Series 02", ADDED_AT_MS),
+        ..library.found_in_folder("Author A/Sample Series 02", "v01", 2)
+    };
+
+    library.record(nested).await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 02".to_owned(), 1),
+            ("Sample Series 02".to_owned(), 1)
+        ]
     );
 }

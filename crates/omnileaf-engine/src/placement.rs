@@ -1,4 +1,8 @@
-use std::{borrow::Cow, ffi::OsStr, path::Path};
+use std::{
+    borrow::Cow,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_db::catalog::{Numbering, SeriesNaming, Sourced, ValueSource};
 use omnileaf_formats::{SeriesName, read_book_name, read_series_name, read_volume_folder_name};
@@ -9,7 +13,6 @@ use crate::{
 };
 
 const SPECIALS_FOLDER: &str = "Specials";
-const LOCATION_SEPARATOR: &str = "/";
 
 #[derive(Debug)]
 pub(crate) struct Placement {
@@ -20,7 +23,7 @@ pub(crate) struct Placement {
 
 #[derive(Debug)]
 pub(crate) struct PlacedSeries {
-    pub(crate) location: String,
+    pub(crate) location: PathBuf,
     pub(crate) naming: SeriesNaming,
 }
 
@@ -58,7 +61,7 @@ impl Placement {
         Self {
             numbering: number_book(&book, Shelf::OneShot),
             series: PlacedSeries {
-                location: location_text(location),
+                location: location.to_path_buf(),
                 naming: SeriesNaming {
                     title: Sourced {
                         value: book.title.clone(),
@@ -75,7 +78,7 @@ impl Placement {
 impl PlacedSeries {
     fn folder(location: &Path, name: SeriesName) -> Self {
         Self {
-            location: location_text(location),
+            location: location.to_path_buf(),
             naming: SeriesNaming {
                 title: from_folder_name(name.title),
                 year: name.year.map(from_folder_name),
@@ -89,14 +92,6 @@ const fn from_folder_name<T>(value: T) -> Sourced<T> {
         value,
         source: ValueSource::FolderName,
     }
-}
-
-fn location_text(location: &Path) -> String {
-    location
-        .iter()
-        .map(OsStr::to_string_lossy)
-        .collect::<Vec<_>>()
-        .join(LOCATION_SEPARATOR)
 }
 
 fn book_name(name: &OsStr) -> Cow<'_, str> {

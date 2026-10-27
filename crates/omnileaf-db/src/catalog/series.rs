@@ -1,3 +1,5 @@
+use std::{ffi::OsStr, path::Path};
+
 use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
 use rusqlite::{Statement, Transaction};
 
@@ -22,7 +24,8 @@ macro_rules! insert_series {
 
 const ADD_SERIES: &str = insert_series!("");
 const ADD_SERIES_UNLESS_PRESENT: &str = insert_series!(" ON CONFLICT DO NOTHING");
-const FOLDER_KEY_SEPARATOR: char = '/';
+const FOLDER_KEY_SEPARATOR: &str = "/";
+const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
 pub(crate) struct SeriesAdder<'t>(Statement<'t>);
 
@@ -40,7 +43,7 @@ pub struct NewSeries {
 #[derive(Clone, Copy, Debug)]
 pub struct SeriesFolder<'a> {
     pub linked_folder: &'a str,
-    pub location: &'a str,
+    pub location: &'a Path,
 }
 
 #[derive(Clone, Debug)]
@@ -67,14 +70,11 @@ impl NewSeries {
         naming: SeriesNaming,
         added_at_ms: i64,
     ) -> Result<Self, KeyError> {
+        let location: Vec<_> = folder.location.iter().map(OsStr::to_string_lossy).collect();
         Ok(Self {
-            id: SeriesId::folder(folder.linked_folder, &[folder.location])?,
+            id: SeriesId::folder(folder.linked_folder, &location)?,
             source: SourceId::local(),
-            natural_key: format!(
-                "{}{FOLDER_KEY_SEPARATOR}{}",
-                norm(folder.linked_folder),
-                norm(folder.location)
-            ),
+            natural_key: folder_key(folder.linked_folder, &location),
             title: naming.title.value,
             title_source: Some(naming.title.source),
             year: naming.year,
@@ -125,4 +125,20 @@ fn insert(
         series.year.map(|year| year.source.as_stored()),
     ))?;
     Ok(())
+}
+
+fn folder_key<P: AsRef<str>>(linked_folder: &str, location: &[P]) -> String {
+    let location: Vec<_> = location
+        .iter()
+        .map(|folder| folder_key_part(folder.as_ref()))
+        .collect();
+    format!(
+        "{}{FOLDER_KEY_SEPARATOR}{}",
+        folder_key_part(linked_folder),
+        location.join(FOLDER_KEY_SEPARATOR)
+    )
+}
+
+fn folder_key_part(folder: &str) -> String {
+    norm(folder).replace(FOLDER_KEY_SEPARATOR, SEPARATOR_WITHIN_A_FOLDER_NAME)
 }
