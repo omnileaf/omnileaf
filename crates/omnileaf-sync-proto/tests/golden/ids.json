@@ -33,6 +33,36 @@
       "id": "2f0bdeb5-fa5b-8206-b414-59cfbaf34755"
     },
     {
+      "key": "series.folder.v1",
+      "inputs": ["Sample Library", "Author A/Sample Series 02"],
+      "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": ["Sample Library", "Author B/Sample Series 02"],
+      "id": "f0034aba-e41c-82b4-961a-d34e01f382c2"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": [" SAMPLE  library", "author a/SAMPLE   Series 02 "],
+      "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": ["Second Library", "Sample Series 02"],
+      "id": "98d65bc7-0b96-81a5-8789-8317b3a16105"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": ["Sample Library", "Sample One-Shot.cbz"],
+      "id": "aee8b2bf-b8a2-82c2-a1d7-7336cc596f16"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": ["Sample Library", ""],
+      "id": "ea41b7ec-17a1-8322-a801-404bb466e8c0"
+    },
+    {
       "key": "category.v1",
       "input": "Sample Shelf",
       "id": "5841dbf8-d874-8252-9f51-22a8343420aa"

@@ -41,6 +41,7 @@ fn norm_matches_the_golden_vectors() {
 struct IdVector {
     key: String,
     input: Option<String>,
+    inputs: Option<Vec<String>>,
     id: String,
 }
 
@@ -49,15 +50,30 @@ fn ids_match_the_golden_vectors() {
     let vectors: Vec<IdVector> = golden(include_str!("golden/ids.json"));
 
     for vector in vectors {
-        let id = match (vector.key.as_str(), vector.input.as_deref()) {
-            ("series.local.v1", Some(input)) => SeriesId::local(input).unwrap().to_string(),
-            ("category.v1", Some(input)) => CategoryId::from_name(input).unwrap().to_string(),
-            ("source.local.v1", None) => SourceId::local().to_string(),
-            ("profile.default.v1", None) => ProfileId::default_profile().to_string(),
-            ("profile.shared.v1", None) => ProfileId::shared().to_string(),
-            (key, input) => panic!("no derivation for key {key} from {input:?}"),
+        let id = match (
+            vector.key.as_str(),
+            vector.input.as_deref(),
+            vector.inputs.as_deref(),
+        ) {
+            ("series.local.v1", Some(input), None) => SeriesId::local(input).unwrap().to_string(),
+            ("series.folder.v1", None, Some([linked_folder, location])) => {
+                SeriesId::folder(linked_folder, location)
+                    .unwrap()
+                    .to_string()
+            }
+            ("category.v1", Some(input), None) => CategoryId::from_name(input).unwrap().to_string(),
+            ("source.local.v1", None, None) => SourceId::local().to_string(),
+            ("profile.default.v1", None, None) => ProfileId::default_profile().to_string(),
+            ("profile.shared.v1", None, None) => ProfileId::shared().to_string(),
+            (key, input, inputs) => {
+                panic!("no derivation for key {key} from {input:?} or {inputs:?}")
+            }
         };
-        assert_eq!(id, vector.id, "{} {:?}", vector.key, vector.input);
+        assert_eq!(
+            id, vector.id,
+            "{} {:?} {:?}",
+            vector.key, vector.input, vector.inputs
+        );
     }
 }
 
