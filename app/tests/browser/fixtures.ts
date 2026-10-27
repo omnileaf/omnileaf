@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { AxeBuilder } from "@axe-core/playwright";
 import {
   type BrowserContext,
@@ -13,6 +15,7 @@ import {
   type AppInfo,
   DEFAULT_LIBRARY_VIEW,
   type Platform,
+  type Theme,
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
 import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
@@ -278,25 +281,24 @@ type BrowserName = PlaywrightWorkerOptions["browserName"];
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
-/** The colour a theme token resolves to, as the browser writes computed colours, so a test follows whichever theme the app ships; naming a theme reads that theme's value of a role such as `--background`. */
 export function tokenColour(
   page: Page,
-  token: string,
-  theme?: "light" | "dark",
+  token: `--${string}`,
+  inTheme?: Theme,
 ): Promise<string> {
   return page.evaluate(
-    ([name, themed]) => {
+    ([name, theme]) => {
       const probe = document.createElement("span");
       probe.style.color = `var(${name})`;
-      if (themed !== undefined) {
-        probe.dataset.theme = themed;
+      if (theme !== undefined) {
+        probe.dataset.theme = theme;
       }
       document.body.append(probe);
       const colour = getComputedStyle(probe).color;
       probe.remove();
       return colour;
     },
-    [token, theme] as const,
+    [token, inTheme] as const,
   );
 }
 
@@ -326,27 +328,66 @@ export function targetOf(
 
 const SETTLE_GRACE_MS = 2000;
 const FRAME_WAIT_MS = 50;
+const FRAME_LIMIT_MS = 15_000;
 
-/** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
-export async function framesPassed(page: Page): Promise<void> {
-  await page.evaluate(async (frameWaitMs) => {
-    const nextFrame = new Promise<void>((resolve) => {
+function drewTwoFramesBefore(timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve(false);
+    }, timeoutMs);
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          resolve();
-        });
+        clearTimeout(timer);
+        resolve(true);
       });
     });
-    const timer = new Promise<void>((resolve) => {
-      setTimeout(resolve, frameWaitMs);
-    });
-    await Promise.race([nextFrame, timer]);
-  }, FRAME_WAIT_MS);
+  });
+}
+
+async function drewTwoFramesWithin(
+  page: Page,
+  pageTimeoutMs: number,
+): Promise<boolean> {
+  const stopWaiting = new AbortController();
+  try {
+    return await Promise.race([
+      page.evaluate(drewTwoFramesBefore, pageTimeoutMs),
+      delay(FRAME_LIMIT_MS, false, { signal: stopWaiting.signal }),
+    ]);
+  } finally {
+    stopWaiting.abort();
+  }
+}
+
+export async function framesPassed(page: Page): Promise<void> {
+  if (!(await drewTwoFramesWithin(page, FRAME_LIMIT_MS))) {
+    throw new Error(
+      `the page drew no frame within ${String(FRAME_LIMIT_MS)} ms`,
+    );
+  }
+}
+
+/** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
+export async function framesOrAMomentPassed(page: Page): Promise<void> {
+  await drewTwoFramesWithin(page, FRAME_WAIT_MS);
+}
+
+/** Headless WebKit can draw no frame after a resize until something asks for one, so the page would never hear its media queries change. */
+function drawAfterEachResize(page: Page): void {
+  const resize = page.setViewportSize.bind(page);
+  page.setViewportSize = async (size) => {
+    await resize(size);
+    if (!(await drewTwoFramesWithin(page, FRAME_LIMIT_MS))) {
+      throw new Error(
+        `the page drew no frame within ${String(FRAME_LIMIT_MS)} ms of resizing to ${String(size.width)}x${String(size.height)}`,
+      );
+    }
+  };
 }
 
 /** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
 async function animationsWithin(locator: Locator): Promise<string[]> {
-  await framesPassed(locator.page());
+  await framesOrAMomentPassed(locator.page());
   return locator.evaluate((element) => [
     ...element.getAnimations({ subtree: true }).map((animation) => {
       const target =
@@ -384,33 +425,38 @@ export async function settle(locator: Locator): Promise<void> {
   }
 }
 
+type RoleOrTag = string;
+type TransitionedProperty = string;
+type TransitionNote = `${RoleOrTag} ${TransitionedProperty}`;
+
 function noteTransitions(): void {
   document.addEventListener("transitionrun", (event) => {
     if (event.target instanceof Element) {
       const root = document.documentElement;
-      const name =
+      const roleOrTag: RoleOrTag =
         event.target.getAttribute("role") ?? event.target.tagName.toLowerCase();
-      root.dataset.transitions = `${root.dataset.transitions ?? ""}${name} ${event.propertyName},`;
+      const note: TransitionNote = `${roleOrTag} ${event.propertyName}`;
+      root.dataset.transitions = `${root.dataset.transitions ?? ""}${note},`;
     }
   });
 }
 
-/** Notes every transition that starts from now on, on this page and the ones loaded after it, as the role or tag of its element and what it moves, such as "dialog translate". */
 export async function watchTransitions(
   page: Page,
-): Promise<() => Promise<string[]>> {
+): Promise<() => Promise<TransitionNote[]>> {
   await page.addInitScript(noteTransitions);
   await page.evaluate(noteTransitions);
   return () =>
     page.evaluate(() =>
       (document.documentElement.dataset.transitions ?? "")
         .split(",")
-        .filter((transition) => transition !== ""),
+        .filter((note): note is TransitionNote => note.includes(" ")),
     );
 }
 
-/** Names what each transition running on the element moves, such as translate or opacity. */
-export function transitionsOf(locator: Locator): Promise<string[]> {
+export function transitionsOf(
+  locator: Locator,
+): Promise<TransitionedProperty[]> {
   return locator.evaluate((element) =>
     element
       .getAnimations()
@@ -528,6 +574,7 @@ export async function openFakeApp(
   backend: FakeBackend,
 ): Promise<Page> {
   const page = await context.newPage();
+  drawAfterEachResize(page);
   await markReaderGuideSeen(page);
   await installFakeBackend(page, backend);
   return page;
@@ -542,6 +589,7 @@ export const test = base.extend<{
   hasSeenReaderGuide: [true, { option: true }],
   platform: [undefined, { option: true }],
   page: async ({ page, backend, hasSeenReaderGuide, platform }, use) => {
+    drawAfterEachResize(page);
     if (hasSeenReaderGuide) {
       await markReaderGuideSeen(page);
     }

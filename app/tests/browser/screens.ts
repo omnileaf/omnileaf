@@ -30,7 +30,7 @@ import {
 import {
   expect,
   fakeAppInfo,
-  framesPassed,
+  framesOrAMomentPassed,
   MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
@@ -247,7 +247,7 @@ async function keepTwoReports(page: Page): Promise<void> {
 
 async function isBackendQuiet(page: Page): Promise<boolean> {
   const before = await commandsAsked(page);
-  await framesPassed(page);
+  await framesOrAMomentPassed(page);
   const after = await commandsAsked(page);
   return (
     before.unanswered === 0 &&
