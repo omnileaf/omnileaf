@@ -248,6 +248,33 @@ async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
 }
 
 #[tokio::test]
+async fn names_each_series_and_book_without_their_tags_or_the_series_year() {
+    let comics = ScratchFolder::new("scan-tags");
+    write_book(
+        &comics
+            .path()
+            .join("Sample Series 04 (2019) [GroupName]/Sample Series 04 v01 [EN] (Digital).cbz"),
+        1,
+    );
+    write_page(
+        &comics.path().join("[GroupName] Sample One-Shot (Digital)"),
+        2,
+    );
+
+    let (scanned, _, _) = Scanned::folder("scan-tags", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Sample One-Shot", 1), ("Sample Series 04", 1)])
+    );
+    assert_eq!(
+        scanned.books_in("Sample Series 04"),
+        ["Sample Series 04 v01"]
+    );
+    assert_eq!(scanned.books_in("Sample One-Shot"), ["Sample One-Shot"]);
+}
+
+#[tokio::test]
 async fn leaves_out_macos_resource_folders_and_hidden_files() {
     let comics = ScratchFolder::new("scan-clutter");
     for (path, seed) in [
