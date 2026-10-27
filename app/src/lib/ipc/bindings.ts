@@ -40,6 +40,9 @@ export const commands = {
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	folderSeries: (folder: string & { readonly __brand: "FolderId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_series", { folder, after, listing })),
 	folderSeriesCount: (folder: string & { readonly __brand: "FolderId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("folder_series_count", { folder, filter })),
+	folderGroups: (after: string & { readonly __brand: "FolderGroupCursor" } | null) => typedError<FolderGroupPage, IpcError>(__TAURI_INVOKE("folder_groups", { after })),
+	folderGroupSeries: (group: string & { readonly __brand: "FolderGroupId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_group_series", { group, after, listing })),
+	folderGroupSeriesCount: (group: string & { readonly __brand: "FolderGroupId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("folder_group_series_count", { group, filter })),
 	libraryWriters: (after: string & { readonly __brand: "WriterCursor" } | null) => typedError<WriterPage, IpcError>(__TAURI_INVOKE("library_writers", { after })),
 	writerSeries: (writer: string, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writer_series", { writer, after, listing })),
 	writerSeriesCount: (writer: string, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writer_series_count", { writer, filter })),
@@ -328,6 +331,11 @@ export type FileChanges = {
 
 export type FileType = string;
 
+export type FolderGroupPage = {
+	groups: LibraryFolderGroup[],
+	next: string & { readonly __brand: "FolderGroupCursor" } | null,
+};
+
 export type FolderKind = "home" | "linked";
 
 export type FolderPage = {
@@ -482,6 +490,14 @@ export type LibraryFolder = {
 	name: string,
 	location: string,
 	isAvailable: boolean,
+};
+
+export type LibraryFolderGroup = {
+	id: string & { readonly __brand: "FolderGroupId" },
+	folder: string & { readonly __brand: "FolderId" },
+	folderName: string,
+	path: string[],
+	seriesCount: number,
 };
 
 export type LibraryGrouping = "none" | "category" | "folder" | "creator";
