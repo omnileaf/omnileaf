@@ -1,4 +1,7 @@
-use omnileaf_db::adult_content::{AdultTreatment as StoredTreatment, StoredAdultContent};
+use omnileaf_db::{
+    adult_content::{AdultTreatment as StoredTreatment, StoredAdultContent, adult_content},
+    rusqlite::Connection,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -26,6 +29,18 @@ impl Default for AdultContent {
             treatment: AdultTreatment::Show,
             counts_age_ratings: true,
         }
+    }
+}
+
+impl AdultContent {
+    pub(crate) fn stored(connection: &Connection) -> Result<Self, omnileaf_db::Error> {
+        Ok(adult_content(connection)?
+            .map(Self::from)
+            .unwrap_or_default())
+    }
+
+    pub(crate) const fn counts_as_adult(self, is_rated_adult: bool) -> bool {
+        self.counts_age_ratings && is_rated_adult
     }
 }
 
