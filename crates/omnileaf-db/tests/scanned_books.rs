@@ -388,12 +388,12 @@ async fn adds_books_from_folders_whose_names_normalise_alike_to_one_series() {
 #[tokio::test]
 async fn files_a_book_found_again_in_another_series_where_it_was_first_found() {
     let library = Library::open("scanned-elsewhere").await;
-    let first = library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1);
+    let first = library.found_in_folder("Sample Series 01", "Volume 01", 1);
     let first_series = first.series.id();
     library.record(first).await;
 
     let filed_in = library
-        .record(library.found("Sample Series 02", "Sample Series 02/Volume 01.cbz", 1))
+        .record(library.found_in_folder("Sample Series 02", "Volume 01", 1))
         .await;
 
     assert_eq!(filed_in, first_series);
@@ -762,5 +762,28 @@ async fn refiles_a_book_whose_only_file_is_scanned_again_in_another_series() {
             .rows("SELECT kind FROM book", |row| row.get::<_, String>(0))
             .await,
         ["volume"]
+    );
+}
+
+#[tokio::test]
+async fn refiles_a_book_held_in_two_files_out_of_a_series_kept_by_its_name() {
+    let library = Library::open("scanned-two-files-out-of-name-series").await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01.cbz", 1))
+        .await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01 copy.cbz", 1))
+        .await;
+
+    library
+        .record(library.found_in_folder("Sample Series 01", "v01", 1))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 0),
+            ("Sample Series 01".to_owned(), 1)
+        ]
     );
 }

@@ -45,9 +45,15 @@ macro_rules! add_or_refile_book {
 const ADD_BOOK: &str = insert_book!("");
 const ADD_OR_REFILE_BOOK: &str = add_or_refile_book!("");
 const ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE: &str = add_or_refile_book!(
-    " WHERE NOT EXISTS (
-        SELECT 1 FROM book_file
-        WHERE book_id = excluded.id AND (root_id, location) IS NOT (?15, ?16)
+    " WHERE (
+        NOT EXISTS (
+            SELECT 1 FROM book_file
+            WHERE book_id = excluded.id AND (root_id, location) IS NOT (?15, ?16)
+        )
+        OR EXISTS (
+            SELECT 1 FROM series AS kept
+            WHERE kept.local_id = book.series_local_id AND kept.title_source IS NULL
+        )
     )
     AND (
         series_local_id, title, reading_order_key, kind, first_number, last_number,
@@ -265,6 +271,8 @@ mod tests {
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "CORRELATED SCALAR SUBQUERY 2",
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 3",
+                "SEARCH kept USING INTEGER PRIMARY KEY (rowid=?)",
                 "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
             ]
