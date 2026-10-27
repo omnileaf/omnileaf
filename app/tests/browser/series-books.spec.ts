@@ -21,6 +21,8 @@ const TWO_LINE_ROW = 72;
 const BOOK_PAGES = 192;
 const CHAPTER_TITLE = "Chapter 148.5";
 const VOLUME_TITLE = "Volume 2";
+const LONG_BOOK_TITLE =
+  "The Lighthouse Keeper's Apprentice Spends Every Winter Writing Letters";
 
 type PhonePlatform = Extract<Platform, "ios" | "android">;
 
@@ -133,10 +135,7 @@ function longMixedShelf(): FakeShelf {
   });
   const long = new FakeShelf(readings, {}, BOOK_PAGES);
   for (let index = 4; index < LONG_SERIES; index += 5) {
-    long.retitle(
-      index,
-      "The Lighthouse Keeper's Apprentice Spends Every Winter Writing Letters",
-    );
+    long.retitle(index, LONG_BOOK_TITLE);
     long.bookmark(index);
   }
   return long;
@@ -170,6 +169,21 @@ async function unevenRows(page: Page): Promise<string[]> {
       )
       .map(({ at, box }) => `${String(at)}: ${String(box.height)}`);
   }, ROW_SLACK_PX);
+}
+
+async function linesOf(text: Locator): Promise<number> {
+  return text.evaluate((element) => {
+    const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
+    return Math.round(element.getBoundingClientRect().height / lineHeight);
+  });
+}
+
+async function isCut(text: Locator): Promise<boolean> {
+  return text.evaluate(
+    (element) =>
+      element.scrollWidth > element.clientWidth ||
+      element.scrollHeight > element.clientHeight,
+  );
 }
 
 function isOnPhone(platform: Platform | undefined): platform is PhonePlatform {
@@ -235,6 +249,52 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       await revealRows(page);
 
       await expectEvenRowsWhileScrolling(page);
+    });
+  }
+
+  for (const look of [
+    {
+      name: "one line at the default text",
+      scale: undefined,
+      viewport: undefined,
+      lines: 1,
+    },
+    {
+      name: "two lines at the largest text",
+      scale: LARGEST_TEXT_SCALE,
+      viewport: undefined,
+      lines: 2,
+    },
+    {
+      name: "today's one line on a tablet at the largest text",
+      scale: LARGEST_TEXT_SCALE,
+      viewport: TABLET,
+      lines: 1,
+    },
+  ]) {
+    test(`gives every book's title ${look.name}`, async ({
+      page,
+      platform,
+    }) => {
+      if (!isOnPhone(platform)) {
+        test.skip();
+        return;
+      }
+      shelf.retitle(1, LONG_BOOK_TITLE);
+      if (look.viewport !== undefined) {
+        await page.setViewportSize(look.viewport);
+      }
+      if (look.scale !== undefined) {
+        await setTextScale(page, look.scale);
+      }
+
+      await openSeries(page);
+      const long = bookRows(page).nth(1).getByText(LONG_BOOK_TITLE);
+      const short = bookRows(page).nth(2).getByText(shelf.titleOf(2));
+
+      await expect.poll(() => linesOf(long)).toBe(look.lines);
+      await expect.poll(() => linesOf(short)).toBe(look.lines);
+      expect(await isCut(long)).toBe(true);
     });
   }
 

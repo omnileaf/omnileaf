@@ -91,6 +91,7 @@
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
   let search = $state("");
+  let isShownCrowded = $state(false);
   const shownBooks = $derived(booksMatching(books, search, getLocale()));
   const ids = $derived(shownBooks.map((book) => book.id));
 
@@ -337,6 +338,9 @@
         void onLoadAll();
       }
     }}
+    onShownCrowded={(isCrowded: boolean) => {
+      isShownCrowded = isCrowded;
+    }}
   />
   {#if isComplete && shownBooks.length === 0}
     <Card
@@ -413,6 +417,7 @@
       phone={phonePlatform}
       books={shownBooks}
       {seriesTitle}
+      hasTwoLineTitles={isShownCrowded}
       {isComplete}
       {onNearEnd}
       {selection}

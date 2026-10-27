@@ -74,12 +74,14 @@
     onChoose,
     search,
     onSearch,
+    onShownCrowded,
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
     onChoose: (listing: SeriesBookListing) => void;
     search: string;
     onSearch: (search: string) => void;
+    onShownCrowded: (isCrowded: boolean) => void;
   } = $props();
 
   const phone = $derived(
@@ -170,6 +172,9 @@
         segmentClass="min-inline-native-target"
         onChoose={chooseShown}
         crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
+        onFit={(fitsOneRow: boolean) => {
+          onShownCrowded(!fitsOneRow);
+        }}
       />
     </div>
     <Button

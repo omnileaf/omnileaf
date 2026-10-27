@@ -61,6 +61,7 @@
     phone: phonePlatform,
     books,
     seriesTitle,
+    hasTwoLineTitles,
     isComplete,
     onNearEnd,
     selection,
@@ -71,6 +72,7 @@
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
     seriesTitle: string;
+    hasTwoLineTitles: boolean;
     isComplete: boolean;
     onNearEnd: () => void;
     selection: Selection<BookId>;
@@ -257,7 +259,10 @@
                   <span class="flex items-center gap-icon-gap min-inline-none">
                     <ItemTitle
                       class={[
-                        "truncate min-inline-none",
+                        "min-inline-none",
+                        hasTwoLineTitles
+                          ? "line-clamp-2 wrap-break-word min-block-two-lines"
+                          : "truncate",
                         book.reading.state === "read" && "text-muted",
                       ]}
                     >
