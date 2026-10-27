@@ -1,6 +1,15 @@
+import type { Page } from "@playwright/test";
+
 import english from "../../messages/en.json" with { type: "json" };
+import type {
+  ChosenHomeFolder,
+  HomeArrival,
+  HomeChoice,
+  Platform,
+} from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   expect,
   IPAD_USER_AGENT,
   IPHONE_USER_AGENT,
@@ -135,5 +144,236 @@ for (const platform of ["android", "linux"] as const) {
 
       await expect(page.getByText(HOME.location)).toBeVisible();
     });
+  });
+}
+
+const DESKTOP_HOME: WireFolder = {
+  id: "1",
+  kind: "home",
+  name: "Omnileaf",
+  location: "/data/Omnileaf",
+  isAvailable: true,
+};
+const CHOSEN_HOME = "/media/Sample Library";
+const FOUND_CHOICE: HomeChoice = {
+  kind: "found",
+  library: {
+    series: 212,
+    books: 38,
+    lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
+  },
+};
+
+class HomeChanges {
+  chosen: (ChosenHomeFolder | null)[] = [];
+  moves = 0;
+  uses = 0;
+  arrival: HomeArrival | null = null;
+  answering: Promise<void> = Promise.resolve();
+
+  reset(): void {
+    this.chosen = [];
+    this.moves = 0;
+    this.uses = 0;
+    this.arrival = null;
+    this.answering = Promise.resolve();
+  }
+
+  holdAnswers(): () => void {
+    let release = () => {};
+    this.answering = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
+  }
+
+  choose(choice: HomeChoice): void {
+    this.chosen.push({ location: CHOSEN_HOME, choice });
+  }
+}
+
+const homeChanges = new HomeChanges();
+
+function changingHomeOn(platform: Platform): FakeBackend {
+  return {
+    ...onPlatform(platform).backend,
+    libraryFolders: () => ({ folders: [DESKTOP_HOME], next: null }),
+    homeArrival: () => homeChanges.arrival,
+    chooseHomeFolder: () => homeChanges.chosen.shift() ?? null,
+    moveHomeFolder: () => {
+      homeChanges.moves += 1;
+      return null;
+    },
+    useFoundLibrary: async () => {
+      homeChanges.uses += 1;
+      await homeChanges.answering;
+      return null;
+    },
+  };
+}
+
+function homeSection(page: Page) {
+  return page.getByRole("region", { name: "Home folder" });
+}
+
+for (const [platform, change] of [
+  ["linux", "Change"],
+  ["windows", "Change"],
+  ["macos", "Change…"],
+] as const) {
+  test.describe(`changing the home folder in Settings › Library on ${platform}`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({ backend: changingHomeOn(platform) });
+
+    test.beforeEach(() => {
+      homeChanges.reset();
+    });
+
+    function changeIn(page: Page) {
+      return homeSection(page).getByRole("button", {
+        name: change,
+        exact: true,
+      });
+    }
+
+    test("sets Change before Rescan on the home folder", async ({ page }) => {
+      await page.goto("/settings/library");
+      await expect(changeIn(page)).toBeVisible();
+
+      const names = await homeSection(page)
+        .getByRole("button")
+        .evaluateAll((buttons) =>
+          buttons.map(
+            (button) =>
+              button.getAttribute("aria-label") ?? button.textContent.trim(),
+          ),
+        );
+
+      expect(names).toEqual([change, "Rescan Omnileaf"]);
+    });
+
+    test("moves the library into an empty folder chosen with Change", async ({
+      page,
+    }) => {
+      homeChanges.choose({ kind: "empty" });
+      await page.goto("/settings/library");
+
+      await changeIn(page).click();
+
+      await expect.poll(() => homeChanges.moves).toBe(1);
+    });
+
+    test("shows the library found in the chosen folder, and uses it once asked", async ({
+      page,
+    }) => {
+      homeChanges.choose(FOUND_CHOICE);
+      await page.goto("/settings/library");
+      await changeIn(page).click();
+      const dialog = page.getByRole("alertdialog", {
+        name: "A library is already here",
+      });
+      await expect(
+        dialog.getByText(CHOSEN_HOME, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByText(
+          "212 series · 38 books · Last backup October 12, 2026",
+        ),
+      ).toBeVisible();
+
+      await dialog.getByRole("button", { name: "Use this library" }).click();
+
+      await expect.poll(() => homeChanges.uses).toBe(1);
+    });
+
+    test("keeps the found library up while using it, focus kept on Use this library", async ({
+      page,
+    }) => {
+      homeChanges.choose(FOUND_CHOICE);
+      await page.goto("/settings/library");
+      await changeIn(page).click();
+      const dialog = page.getByRole("alertdialog", {
+        name: "A library is already here",
+      });
+      const use = dialog.getByRole("button", { name: "Use this library" });
+      const release = homeChanges.holdAnswers();
+
+      await use.focus();
+      await page.keyboard.press("Enter");
+      await expect.poll(() => homeChanges.uses).toBe(1);
+
+      await expect(dialog).toBeVisible();
+      await expect(use).toBeFocused();
+      await expect(use).toHaveAttribute("aria-disabled", "true");
+      release();
+    });
+
+    test("goes back to Change when the found library is turned down", async ({
+      page,
+    }) => {
+      homeChanges.choose(FOUND_CHOICE);
+      await page.goto("/settings/library");
+      await changeIn(page).click();
+      const dialog = page.getByRole("alertdialog");
+
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+
+      await expect(dialog).toHaveCount(0);
+      await expect(changeIn(page)).toBeFocused();
+      expect(homeChanges.uses).toBe(0);
+    });
+
+    test("warns that a folder inside the home folder won't do", async ({
+      page,
+    }) => {
+      homeChanges.choose({ kind: "overlapsHome" });
+      await page.goto("/settings/library");
+
+      await changeIn(page).click();
+
+      await expect(
+        page.getByText("Couldn't move your library there", { exact: true }),
+      ).toBeVisible();
+      expect(homeChanges.moves).toBe(0);
+    });
+
+    test("says the library moved, after the relaunch", async ({ page }) => {
+      homeChanges.arrival = "moved";
+
+      await page.goto("/settings/library");
+
+      await expect(
+        page.getByText("Your library moved", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(`It's in ${DESKTOP_HOME.location} now.`),
+      ).toBeVisible();
+    });
+
+    test("warns the library couldn't move, after the relaunch", async ({
+      page,
+    }) => {
+      homeChanges.arrival = "moveFailed";
+
+      await page.goto("/");
+
+      await expect(
+        page.getByText("Couldn't move your library", { exact: true }),
+      ).toBeVisible();
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`has no accessibility violations with the found library shown, in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        homeChanges.choose(FOUND_CHOICE);
+        await page.emulateMedia({ colorScheme });
+        await page.goto("/settings/library");
+        await changeIn(page).click();
+        await expect(page.getByRole("alertdialog")).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
   });
 }
