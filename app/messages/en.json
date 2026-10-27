@@ -1987,6 +1987,8 @@
   "reader_warmth": "Warmth",
   "reader_keep_screen_on": "Keep the screen on",
   "reader_crop_borders": "Crop white borders",
+  "reader_volume_keys": "Turn pages with the volume keys",
+  "reader_volume_keys_help": "Only in the reader; everywhere else they change the volume.",
   "reader_more": "More",
   "reader_mark_read": "Mark read",
   "reader_start_over": "Start over",

@@ -3,11 +3,15 @@ import type { Locator, Page } from "@playwright/test";
 import type { PageTurn, Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend, FakeChannel } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   expect,
+  EXPANDED_MIN_WIDTH,
   framesPassed,
   onPlatform,
+  settle,
   test,
   testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -37,6 +41,10 @@ const STARTED_ON_14: WireOpening = {
 const STRIP_PAGE = { width: 800, height: 2400 };
 const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
+const VOLUME_KEYS_ROW = "Turn pages with the volume keys";
+const VOLUME_KEYS_HELP =
+  "Only in the reader; everywhere else they change the volume.";
+const COLOR_SCHEMES = ["light", "dark"] as const;
 
 const calls: VolumeKeyCall[] = [];
 const channels: FakeChannel<PageTurn>[] = [];
@@ -102,10 +110,31 @@ function strip(page: Page): Locator {
   return page.locator("[data-strip]");
 }
 
-async function openSettings(page: Page): Promise<void> {
+function settingsPanel(page: Page): Locator {
+  return viewportOf(page).width >= EXPANDED_MIN_WIDTH
+    ? page.getByRole("complementary", { name: "Reading settings" })
+    : page.getByRole("dialog", { name: "Reading settings" });
+}
+
+async function openSettings(page: Page): Promise<Locator> {
   await page
     .getByRole("button", { name: "Reading settings", exact: true })
     .click();
+  const panel = settingsPanel(page);
+  await expect(panel).toBeVisible();
+  await settle(panel);
+  return panel;
+}
+
+function volumeKeysRow(within: Locator | Page): Locator {
+  return within.getByRole("switch", { name: VOLUME_KEYS_ROW });
+}
+
+async function openReaderSettingsPage(page: Page): Promise<Locator> {
+  await page.goto("/settings/reading");
+  const tapZones = page.getByRole("region", { name: "Tap zones" });
+  await expect(tapZones).toBeVisible();
+  return tapZones;
 }
 
 testOnlyInItsWebview("android");
@@ -184,6 +213,49 @@ test.describe("on Android", () => {
 
     expect(calls).toEqual(["capture", "release", "capture"]);
   });
+
+  test("lets the keys go when the setting is turned off in reading settings", async ({
+    page,
+  }) => {
+    await openBookWith(page, TURNS_PAGES);
+    await expect.poll(() => calls).toEqual(["capture"]);
+    const panel = await openSettings(page);
+
+    await volumeKeysRow(panel).click();
+
+    await expect.poll(() => calls).toEqual(["capture", "release"]);
+  });
+
+  test("shows the volume keys row last in Screen with its help", async ({
+    page,
+  }) => {
+    await openBookWith(page, {});
+    const panel = await openSettings(page);
+
+    const rows = panel
+      .getByRole("region", { name: "Screen" })
+      .getByRole("switch");
+
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(1)).toHaveAccessibleName(/^Crop white borders/);
+    await expect(rows.nth(2)).toHaveAccessibleName(VOLUME_KEYS_ROW);
+    await expect(rows.nth(2)).toHaveAccessibleDescription(VOLUME_KEYS_HELP);
+    await expect(rows.nth(2)).not.toBeChecked();
+  });
+
+  for (const colorScheme of COLOR_SCHEMES) {
+    test(`Reading settings with the volume keys row have no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openBookWith(page, {});
+      await openSettings(page);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });
 
 test.describe("on Android with a right-to-left book", () => {
@@ -218,6 +290,20 @@ test.describe("on Android with a long strip", () => {
       .poll(() => strip(page).evaluate((element) => element.scrollTop))
       .toBeGreaterThan(before);
   });
+
+  test("shows no volume keys row in the long strip's settings", async ({
+    page,
+  }) => {
+    await openBookWith(page, TURNS_PAGES);
+    await expect(strip(page)).toBeVisible();
+
+    const panel = await openSettings(page);
+
+    await expect(
+      panel.getByRole("switch", { name: "Keep the screen on" }),
+    ).toBeVisible();
+    await expect(volumeKeysRow(panel)).toHaveCount(0);
+  });
 });
 
 test.describe("on a computer", () => {
@@ -231,4 +317,83 @@ test.describe("on a computer", () => {
 
     expect(calls).toEqual([]);
   });
+
+  test("shows no volume keys row in reading settings", async ({ page }) => {
+    await openBookWith(page, {});
+
+    const panel = await openSettings(page);
+
+    await expect(
+      panel.getByRole("switch", { name: "Keep the screen on" }),
+    ).toBeVisible();
+    await expect(volumeKeysRow(panel)).toHaveCount(0);
+  });
+
+  test("shows no volume keys row in Settings › Reader", async ({ page }) => {
+    const tapZones = await openReaderSettingsPage(page);
+
+    await expect(
+      tapZones.getByRole("switch", { name: "Keep the screen on" }),
+    ).toBeVisible();
+    await expect(volumeKeysRow(page)).toHaveCount(0);
+  });
+});
+
+test.describe("on an iPhone", () => {
+  test.use({ backend: volumeKeysBackend("ios") });
+
+  test("shows no volume keys row in reading settings", async ({ page }) => {
+    await openBookWith(page, {});
+
+    const panel = await openSettings(page);
+
+    await expect(
+      panel.getByRole("switch", { name: "Keep the screen on" }),
+    ).toBeVisible();
+    await expect(volumeKeysRow(panel)).toHaveCount(0);
+  });
+
+  test("shows no volume keys row in Settings › Reader", async ({ page }) => {
+    const tapZones = await openReaderSettingsPage(page);
+
+    await expect(
+      tapZones.getByRole("switch", { name: "Keep the screen on" }),
+    ).toBeVisible();
+    await expect(volumeKeysRow(page)).toHaveCount(0);
+  });
+});
+
+test.describe("Settings › Reader on Android", () => {
+  test.use({ backend: volumeKeysBackend("android") });
+
+  test("changes the volume keys default from Settings › Reader", async ({
+    page,
+  }) => {
+    const tapZones = await openReaderSettingsPage(page);
+    const rows = tapZones.getByRole("switch");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toHaveAccessibleName(VOLUME_KEYS_ROW);
+    await expect(rows.nth(0)).toHaveAccessibleDescription(VOLUME_KEYS_HELP);
+    await expect(rows.nth(1)).toHaveAccessibleName("Keep the screen on");
+
+    await rows.nth(0).click();
+
+    await expect(rows.nth(0)).toBeChecked();
+    await expect
+      .poll(() => page.evaluate((key) => localStorage.getItem(key), LOOK_KEY))
+      .toContain('"turnsPagesWithVolumeKeys":true');
+  });
+
+  for (const colorScheme of COLOR_SCHEMES) {
+    test(`Settings › Reader with the volume keys row has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openReaderSettingsPage(page);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });
