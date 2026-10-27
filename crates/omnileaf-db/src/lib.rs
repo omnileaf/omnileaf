@@ -20,6 +20,7 @@ pub mod library_listing;
 pub mod library_tabs;
 pub mod library_view;
 mod migration;
+mod reading_order;
 pub mod reading_speed;
 #[cfg(test)]
 mod scratch;
