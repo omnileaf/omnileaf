@@ -54,6 +54,7 @@ impl Shelf {
             added_at_ms,
             page_count: None,
             numbering: None,
+            name_language: None,
         };
         self.database
             .write(move |transaction| add_book(transaction, &book))

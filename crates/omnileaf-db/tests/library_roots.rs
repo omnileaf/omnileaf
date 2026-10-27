@@ -179,6 +179,7 @@ impl Library {
             added_at_ms: ADDED_AT_MS,
             page_count: None,
             numbering: None,
+            name_language: None,
         };
         let id = book.id();
         let roots: Vec<i64> = roots.iter().map(|root| row_key(*root)).collect();

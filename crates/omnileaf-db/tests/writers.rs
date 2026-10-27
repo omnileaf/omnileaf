@@ -183,6 +183,7 @@ fn scanned_book(root: RootId, crc: u32, series: &str, writers: &[&str]) -> Scann
             ..BookDetails::default()
         },
         numbering: None,
+        name_language: None,
         file: BookFile {
             root,
             location: PathBuf::from(format!("{series}/Volume {crc:02}.cbz")),

@@ -87,6 +87,7 @@ async fn refuses_a_book_for_a_series_missing_from_the_catalog() {
         added_at_ms: ADDED_AT_MS,
         page_count: None,
         numbering: None,
+        name_language: None,
     };
 
     let outcome = database

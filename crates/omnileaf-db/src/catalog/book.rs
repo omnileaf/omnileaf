@@ -15,9 +15,9 @@ macro_rules! insert_book {
             "INSERT INTO book (
                 id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
                 page_count, kind, first_number, last_number, number_source, volume_number,
-                volume_source
+                volume_source, name_language
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15
             FROM series WHERE id = ?2",
             $on_conflict
         )
@@ -50,16 +50,17 @@ macro_rules! add_or_relabel_book {
                 last_number = excluded.last_number,
                 number_source = excluded.number_source,
                 volume_number = excluded.volume_number,
-                volume_source = excluded.volume_source
+                volume_source = excluded.volume_source,
+                name_language = excluded.name_language
             WHERE ",
             $refilable,
             " AND (
                 title, reading_order_key, kind, first_number, last_number, number_source,
-                volume_number, volume_source
+                volume_number, volume_source, name_language
             ) IS NOT (
                 excluded.title, excluded.reading_order_key, excluded.kind, excluded.first_number,
                 excluded.last_number, excluded.number_source, excluded.volume_number,
-                excluded.volume_source
+                excluded.volume_source, excluded.name_language
             )"
         ))
     };
@@ -113,6 +114,7 @@ pub struct NewBook {
     pub added_at_ms: i64,
     pub page_count: Option<u32>,
     pub numbering: Option<Numbering>,
+    pub name_language: Option<String>,
 }
 
 impl NewBook {
@@ -230,7 +232,7 @@ fn run(
     Ok(statement.raw_execute()?)
 }
 
-fn book_columns(book: &NewBook) -> [Value; 14] {
+fn book_columns(book: &NewBook) -> [Value; 15] {
     let numbering = book.numbering.as_ref();
     let number = numbering.and_then(Numbering::number);
     let volume = numbering.and_then(Numbering::volume);
@@ -249,6 +251,7 @@ fn book_columns(book: &NewBook) -> [Value; 14] {
         stored_text(number.map(|number| number.source.as_stored())),
         Value::from(volume.map(|volume| volume.value.thousandths())),
         stored_text(volume.map(|volume| volume.source.as_stored())),
+        stored_text(book.name_language.as_deref()),
     ]
 }
 
@@ -285,6 +288,7 @@ mod tests {
             added_at_ms: 0,
             page_count: None,
             numbering: None,
+            name_language: None,
         };
         let file = BookFile {
             root: RootId(1),

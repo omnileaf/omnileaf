@@ -69,6 +69,7 @@ impl Shelf {
                 modified_at_ms: ADDED_AT_MS,
             },
             numbering: None,
+            name_language: None,
         };
         self.database
             .write(move |transaction| record_scanned_books(transaction, &[scanned]))

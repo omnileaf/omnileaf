@@ -85,6 +85,7 @@ impl Library {
                 modified_at_ms: MODIFIED_AT_MS,
             },
             numbering: None,
+            name_language: None,
         };
         self.store
             .database()
