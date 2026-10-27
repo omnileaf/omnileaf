@@ -223,6 +223,7 @@ fn scanned(root: RootId, number: u32) -> ScannedBook {
         added_at_ms: i64::from(number),
         page_count: PAGE_COUNT,
         details: BookDetails::default(),
+        numbering: None,
         file: BookFile {
             root,
             location: PathBuf::from(format!("{name}/Volume 01.cbz")),

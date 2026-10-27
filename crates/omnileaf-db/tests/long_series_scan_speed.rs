@@ -49,6 +49,7 @@ async fn records_and_removes_a_series_of_5_000_books_within_3_s() {
                 size_bytes: 100,
                 modified_at_ms: ADDED_AT_MS,
             },
+            numbering: None,
         })
         .collect();
     let started = Instant::now();

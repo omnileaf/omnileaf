@@ -1,7 +1,11 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
 use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
 
-use crate::{Error, book_order::book_order_key, catalog::stored_id::stored_id};
+use crate::{
+    Error,
+    book_order::book_order_key,
+    catalog::{Numbering, stored_id::stored_id},
+};
 
 macro_rules! insert_book {
     ($on_conflict:literal) => {
@@ -52,6 +56,7 @@ pub struct NewBook {
     pub title: String,
     pub added_at_ms: i64,
     pub page_count: Option<u32>,
+    pub numbering: Option<Numbering>,
 }
 
 impl NewBook {
@@ -179,6 +184,7 @@ mod tests {
             title: "Volume 01".to_owned(),
             added_at_ms: 0,
             page_count: None,
+            numbering: None,
         };
 
         let outcome = BookFiler::new(&transaction, Filing::WhereFirstFound)

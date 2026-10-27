@@ -112,6 +112,7 @@ impl History {
                 size_bytes: 100,
                 modified_at_ms: ADDED_AT_MS,
             },
+            numbering: None,
         };
         self.store
             .database()

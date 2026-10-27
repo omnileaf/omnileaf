@@ -53,6 +53,7 @@ impl Shelf {
             title: NEW_VOLUME.to_owned(),
             added_at_ms,
             page_count: None,
+            numbering: None,
         };
         self.database
             .write(move |transaction| add_book(transaction, &book))
