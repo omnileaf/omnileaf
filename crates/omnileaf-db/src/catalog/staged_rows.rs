@@ -26,6 +26,15 @@ pub(crate) struct TitlePlace {
     pub(crate) id: SeriesId,
 }
 
+macro_rules! summary_columns {
+    () => {
+        "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
+            series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
+            cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
+            series.unread_count, series.language, series.adult_rated_books > 0 AS is_rated_adult, "
+    };
+}
+
 /// The listed series at the stage bound as `$stage` that meet `$condition`, which hold at least one book.
 macro_rules! series_at_stage {
     (
@@ -34,10 +43,7 @@ macro_rules! series_at_stage {
         condition: $condition:expr $(,)?
     ) => {
         concat!(
-            "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
-                series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
-                cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                series.unread_count, series.language, series.adult_rated_books > 0 AS is_rated_adult, ",
+            $crate::catalog::staged_rows::summary_columns!(),
             $continues_from,
             " AS continues_from
             FROM series ",
@@ -119,6 +125,7 @@ macro_rules! listing {
 
 pub(crate) use listing;
 pub(crate) use series_at_stage;
+pub(crate) use summary_columns;
 
 pub(crate) struct Read<'c> {
     pub(crate) connection: &'c Connection,
