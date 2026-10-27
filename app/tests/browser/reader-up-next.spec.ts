@@ -630,6 +630,29 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     expect(await sidewaysOverflow(page)).toEqual([]);
   });
 
+  test("tints the Read button while it is pressed", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await turnPastTheEnd(page);
+    const read = page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` });
+    const { x, y, width, height } = await boxOf(read);
+    await page.mouse.move(x + width / 2, y + height / 2);
+    const unpressed = await read.evaluate(
+      (link) => getComputedStyle(link).backgroundImage,
+    );
+
+    await page.mouse.down();
+
+    await expect(read).not.toHaveCSS("background-image", unpressed);
+    await expect(read).toHaveCSS("background-image", /linear-gradient/);
+  });
+
   test("wraps the stats between words at the largest text", async ({
     page,
     platform,
