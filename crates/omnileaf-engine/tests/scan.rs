@@ -327,6 +327,38 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
 }
 
 #[tokio::test]
+async fn makes_a_specials_or_volume_folder_in_the_folder_added_a_series_of_its_own() {
+    let comics = ScratchFolder::new("scan-top-specials");
+    write_book(
+        &comics.path().join("Specials/Sample Series 04 Extras.cbz"),
+        1,
+    );
+    write_book(&comics.path().join("Volume 01/c001.cbz"), 2);
+
+    let (scanned, _, _) = Scanned::folder("scan-top-specials", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Specials", 1), ("Volume 01", 1)])
+    );
+}
+
+#[tokio::test]
+async fn makes_a_folder_of_images_added_on_its_own_a_series_named_after_it() {
+    let comics = ScratchFolder::new("scan-linked-images");
+    let linked = comics.path().join("Sample One-Shot v01 [GroupName]");
+    write_page(&linked, 1);
+
+    let (scanned, _, _) = Scanned::folder("scan-linked-images", &linked).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample One-Shot v01", 1)]));
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[("Sample One-Shot v01", "volume 1000 1000 file_name")])
+    );
+}
+
+#[tokio::test]
 async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
     let comics = series_laid_out_in_folders("scan-reading-order");
 
