@@ -8,9 +8,7 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{
-        BookDetails, BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books,
-    },
+    catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
 };
 use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -20,6 +18,7 @@ use tokio::{sync::watch, task::spawn_blocking};
 
 use crate::{
     LibraryError,
+    book_details::read_details,
     clock::unix_ms,
     file_type::HiddenFileTypes,
     library_layout::{FoundBook, Layout, find_books, folder_name},
@@ -230,15 +229,15 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         .map_err(|source| UnreadableBook::opening(&found.path, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
     let page_count = saturating_u32(book.pages().len());
-    let details = target.storage.details(&found.path)?;
-    let stamp = FileStamp::of(details, || Ok(book))?;
+    let details = read_details(&mut book, &found.path);
+    let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
         series: NewSeries::local(&found.series, target.added_at_ms)?,
         fingerprint,
         title: found.title.clone(),
         added_at_ms: target.added_at_ms,
         page_count,
-        details: BookDetails::default(),
+        details,
         file: BookFile {
             root: target.root,
             location,
