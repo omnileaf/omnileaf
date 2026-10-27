@@ -180,6 +180,7 @@ impl From<&LibraryFilter> for SeriesFilter {
             unread: filter.unread.into(),
             started: filter.started.into(),
             finished: filter.finished.into(),
+            ..SeriesFilter::NONE
         }
     }
 }

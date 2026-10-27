@@ -19,6 +19,7 @@ const UNREAD_NEWEST_FIRST: SeriesListing = SeriesListing {
         unread: Inclusion::Only,
         started: Inclusion::Any,
         finished: Inclusion::Hide,
+        ..SeriesFilter::NONE
     },
 };
 
@@ -102,6 +103,7 @@ fn any_listing() -> impl Strategy<Value = SeriesListing> {
                     unread,
                     started,
                     finished,
+                    ..SeriesFilter::NONE
                 },
             },
         )

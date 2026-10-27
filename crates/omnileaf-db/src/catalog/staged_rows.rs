@@ -6,7 +6,7 @@ use crate::{
     catalog::{
         cover::stored_cover,
         cursor::Position,
-        series_listing::{SeriesFilter, StageParams},
+        series_listing::{FilterParams, SeriesFilter},
         series_page::SeriesSummary,
         stored_id::{stored_id, stored_optional_id},
     },
@@ -44,6 +44,7 @@ macro_rules! series_at_stage {
             $crate::catalog::cover::join_series_cover!(),
             " WHERE series.reading_stage = ",
             $stage,
+            $crate::catalog::series_listing::smart_conditions!(),
             $condition
         )
     };
@@ -224,7 +225,7 @@ impl<P> Listing<P> {
         sql: &str,
         after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let filter = StageParams::of(read.filter);
+        let filter = FilterParams::of(read.filter);
         let mut params = filter.named().to_vec();
         params.push((":limit", &read.limit));
         params.extend_from_slice(read.bound);
