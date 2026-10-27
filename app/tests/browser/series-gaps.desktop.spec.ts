@@ -145,6 +145,84 @@ test.describe("a series missing two volumes", () => {
   });
 });
 
+test.describe("finding and sorting a series' volumes", () => {
+  const shelf = new SectionShelf(
+    [...volumes(1, 4, 7, 17), ...chapters(99)],
+    [
+      { first: 2, last: 3 },
+      { first: 5, last: 6 },
+      { first: 8, last: 16 },
+    ],
+  );
+  test.use({ backend: shelf.backend() });
+
+  test("finds a volume by its number and drops the gaps", async ({ page }) => {
+    await openSeries(page);
+    const covers = page.getByRole("list", { name: "Volumes" });
+
+    await page.getByRole("searchbox", { name: "Find a book" }).fill("7");
+
+    await expect(covers.getByRole("link")).toHaveText([
+      /Volume 7\s*Unread$/,
+      /Volume 17\s*Unread$/,
+    ]);
+    await expect(page.getByRole("img", { name: GAP_NAME })).toHaveCount(0);
+  });
+
+  test("says when no volume matches", async ({ page }) => {
+    await openSeries(page);
+
+    await page.getByRole("searchbox", { name: "Find a book" }).fill("Volume 9");
+
+    await expect(
+      page.getByText("No book in this series matches “Volume 9”."),
+    ).toBeVisible();
+  });
+
+  test("puts the last volume first with the gap after the later one", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await page.getByRole("button", { name: "Sort: In order" }).click();
+    await page.getByRole("menuitemradio", { name: "Last first" }).click();
+
+    const items = page
+      .getByRole("list", { name: "Volumes" })
+      .getByRole("listitem");
+    await expect(items).toHaveText([
+      /Volume 17/,
+      /Volumes 8–16/,
+      /Volume 7/,
+      /Volumes 5–6/,
+      /Volume 4/,
+      /Volumes 2–3/,
+      /Volume 1/,
+    ]);
+  });
+});
+
+test.describe("a series counted into double figures", () => {
+  const shelf = new SectionShelf([
+    ...volumes(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+    ...chapters(97, 98, 99, 100, 101, 102),
+    SUMMER_SHORT,
+    { kind: "special", title: "Art book" },
+  ]);
+  test.use({ backend: shelf.backend() });
+
+  test("keeps Find a book and Sort on the tabs' row", async ({ page }) => {
+    await openSeries(page);
+
+    const tabs = await kinds(page).boundingBox();
+    const search = await page
+      .getByRole("searchbox", { name: "Find a book" })
+      .boundingBox();
+
+    expect(search?.y).toBeLessThan((tabs?.y ?? 0) + (tabs?.height ?? 0));
+  });
+});
+
 test.describe("a series of volumes only", () => {
   const shelf = new SectionShelf(volumes(1, 2, 4), [{ first: 3, last: 3 }]);
   test.use({ backend: shelf.backend() });
@@ -156,5 +234,64 @@ test.describe("a series of volumes only", () => {
       page.getByRole("img", { name: "Volume 3 is not in the folder" }),
     ).toBeVisible();
     await expect(kinds(page)).toHaveCount(0);
+  });
+});
+
+test.describe("moving from one series to another like it", () => {
+  const OTHER_SERIES = {
+    id: "0190a3e4-0000-8000-8000-0000000000b2",
+    title: "Sample Series 12",
+  };
+  const shelf = new SectionShelf(volumes(1, 2, 3));
+  const backend = shelf.backend();
+  test.use({
+    backend: {
+      ...backend,
+      seriesOverview: async (id) => {
+        const overview = await backend.seriesOverview(SERIES_ID);
+        return id === OTHER_SERIES.id
+          ? { ...overview, ...OTHER_SERIES }
+          : {
+              ...overview,
+              related: [
+                {
+                  ...OTHER_SERIES,
+                  cover: null,
+                  bookCount: 3,
+                  readCount: 0,
+                  reason: { kind: "sameWriter" },
+                  isAdult: false,
+                },
+              ],
+            };
+      },
+      seriesBooks: (_id, listing, after) =>
+        backend.seriesBooks(SERIES_ID, listing, after),
+    },
+  });
+
+  test("opens the next series without the last one's search", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+    await expect(
+      page.getByRole("list", { name: "Volumes" }).getByRole("link"),
+    ).toHaveCount(1);
+
+    await page
+      .getByRole("region", { name: "Also in your library" })
+      .getByRole("link", { name: new RegExp(OTHER_SERIES.title) })
+      .click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: OTHER_SERIES.title }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole("searchbox", { name: "Find a book" }),
+    ).toHaveValue("");
+    await expect(
+      page.getByRole("list", { name: "Volumes" }).getByRole("link"),
+    ).toHaveCount(3);
   });
 });

@@ -14,6 +14,7 @@
     SeriesBook,
     SeriesBookListing,
     SeriesSection,
+    SortDirection,
   } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -29,6 +30,7 @@
   } from "./section-listing";
   import { tabWords } from "./section-names";
   import type { ListedBooks } from "./listed-books";
+  import SectionListingChoices from "./SectionListingChoices.svelte";
   import SectionPanel from "./SectionPanel.svelte";
 
   let {
@@ -60,6 +62,7 @@
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
+  let search = $state("");
   let staleList = $state<ListState<SeriesBook>>();
   let readFor: string | undefined;
 
@@ -83,12 +86,26 @@
       }
     });
   });
+  const choices = $derived({
+    direction: listing.direction,
+    onDirection: (direction: SortDirection) => {
+      onListing({ direction });
+    },
+    search,
+    onSearch: (typed: string) => {
+      search = typed;
+      if (books?.list.kind === "loaded" && !books.list.isComplete) {
+        void books.loadAll();
+      }
+    },
+  });
   const panel = $derived({
     section,
     noted: tabs.length > 0 || view === "covers" ? section : undefined,
     view,
     series: { sections: kinds, missingVolumes, lastVolume },
     direction: listing.direction,
+    search,
     books: books?.list === staleList ? undefined : books,
     usesStandIns,
     children,
@@ -104,6 +121,7 @@
     value={section}
     onValueChange={(chosen: string) => {
       if (isTab(chosen)) {
+        search = "";
         const chosenView = sectionView(
           { ...listing, section: chosen },
           kinds,
@@ -114,25 +132,33 @@
     }}
     class="flex flex-col gap-lg"
   >
-    <TabsList
-      aria-label={m.series_sections()}
-      class="flex-wrap max-inline-full"
-    >
-      {#each tabs as tab (tab.section)}
-        {@const words = tabWords(tab)}
-        <TabsTrigger
-          value={tab.section}
-          data-label={words.text}
-          aria-label={words.label}
-        >
-          {words.text}
-        </TabsTrigger>
-      {/each}
-    </TabsList>
+    <div class="flex flex-wrap items-center gap-sm">
+      <TabsList
+        aria-label={m.series_sections()}
+        class="flex-wrap max-inline-full"
+      >
+        {#each tabs as tab (tab.section)}
+          {@const words = tabWords(tab)}
+          <TabsTrigger
+            value={tab.section}
+            data-label={words.text}
+            aria-label={words.label}
+          >
+            {words.text}
+          </TabsTrigger>
+        {/each}
+      </TabsList>
+      {#if view === "covers"}
+        <SectionListingChoices {...choices} />
+      {/if}
+    </div>
     <TabsContent value={section} class="flex flex-col gap-lg">
       <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
 {:else}
+  {#if view === "covers"}
+    <SectionListingChoices {...choices} />
+  {/if}
   <SectionPanel {...panel} />
 {/if}

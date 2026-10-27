@@ -379,22 +379,22 @@
           />
         {:else}
           <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
-          <SeriesSections
-            sections={found.overview.sections}
-            missingVolumes={found.overview.missingVolumes}
-            lastVolume={found.overview.lastVolume}
-            listing={listed}
-            onListing={(change: ListingChange) => {
-              listing = { ...listing, ...change };
-              void books?.start();
-            }}
-            {books}
-            usesStandIns={screenshotMode.isOn}
-          >
-            {#if books?.list.kind === "failed"}
-              <p class="text-body text-muted">{m.series_books_failed()}</p>
-            {:else if books?.list.kind === "loaded"}
-              {#key foundId}
+          {#key foundId}
+            <SeriesSections
+              sections={found.overview.sections}
+              missingVolumes={found.overview.missingVolumes}
+              lastVolume={found.overview.lastVolume}
+              listing={listed}
+              onListing={(change: ListingChange) => {
+                listing = { ...listing, ...change };
+                void books?.start();
+              }}
+              {books}
+              usesStandIns={screenshotMode.isOn}
+            >
+              {#if books?.list.kind === "failed"}
+                <p class="text-body text-muted">{m.series_books_failed()}</p>
+              {:else if books?.list.kind === "loaded"}
                 <SeriesBooks
                   books={screenshotMode.isOn
                     ? books.list.items.map(standInBook)
@@ -415,9 +415,9 @@
                   onMark={mark}
                   platform={data.appInfo.platform}
                 />
-              {/key}
-            {/if}
-          </SeriesSections>
+              {/if}
+            </SeriesSections>
+          {/key}
         {/if}
         {#if adultTreatment !== undefined}
           <RelatedSeries
