@@ -11,6 +11,7 @@ import ChangeHomeButton from "./ChangeHomeButton.svelte";
 
 interface ChangeLook {
   readonly platform: Platform;
+  readonly label: string;
   readonly corner: string;
   readonly height: number;
   readonly shadow: string;
@@ -25,6 +26,7 @@ const SHADOW_XS = "rgba(0, 0, 0, 0.05) 0px 1px 2px 0px";
 const LOOKS: readonly ChangeLook[] = [
   {
     platform: "linux",
+    label: "Change",
     corner: "8px",
     height: 38,
     shadow: SHADOW_XS,
@@ -34,6 +36,7 @@ const LOOKS: readonly ChangeLook[] = [
   },
   {
     platform: "macos",
+    label: "Change…",
     corner: "6px",
     height: 28,
     shadow: SHADOW_XS,
@@ -43,6 +46,7 @@ const LOOKS: readonly ChangeLook[] = [
   },
   {
     platform: "windows",
+    label: "Change",
     corner: "4px",
     height: 32,
     shadow: "none",
@@ -62,9 +66,13 @@ for (const look of LOOKS) {
     await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
     document.documentElement.dataset.platform = look.platform;
     document.documentElement.dataset.theme = "light";
-    await render(ChangeHomeButton);
+    await render(ChangeHomeButton, {
+      platform: look.platform,
+      isBusy: false,
+      onclick: () => {},
+    });
 
-    const change = page.getByRole("button", { name: "Change" }).element();
+    const change = page.getByRole("button", { name: look.label }).element();
     const style = getComputedStyle(change);
 
     expect(change.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
@@ -80,3 +88,47 @@ for (const look of LOOKS) {
     );
   });
 }
+
+test("chooses another folder when Change is pressed", async () => {
+  let presses = 0;
+  await render(ChangeHomeButton, {
+    platform: "linux",
+    isBusy: false,
+    onclick: () => {
+      presses += 1;
+    },
+  });
+
+  await page.getByRole("button", { name: "Change" }).click();
+
+  expect(presses).toBe(1);
+});
+
+test("ends Change in an ellipsis on macOS, since it opens another window", async () => {
+  await render(ChangeHomeButton, {
+    platform: "macos",
+    isBusy: false,
+    onclick: () => {},
+  });
+
+  const change = page.getByRole("button", { name: "Change…" });
+
+  await expect.element(change).toBeInTheDocument();
+});
+
+test("holds Change back while the home folder is changing", async () => {
+  let presses = 0;
+  await render(ChangeHomeButton, {
+    platform: "windows",
+    isBusy: true,
+    onclick: () => {
+      presses += 1;
+    },
+  });
+  const change = page.getByRole("button", { name: "Change" });
+
+  await change.click({ force: true });
+
+  await expect.element(change).toHaveAttribute("aria-disabled", "true");
+  expect(presses).toBe(0);
+});
