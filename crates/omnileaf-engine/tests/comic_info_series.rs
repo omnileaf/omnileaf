@@ -15,20 +15,78 @@ mod books;
 mod scanned;
 mod support;
 
+use std::{
+    fs,
+    time::{Duration, SystemTime},
+};
+
 use books::write_book_with;
 use omnileaf_db::rusqlite::types::Value;
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
 
 const NO_SERIES: &str = "<ComicInfo><Writer>Sample Author</Writer></ComicInfo>";
+const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
+
+struct ScannedComics {
+    scanned: Scanned,
+    comics: ScratchFolder,
+}
+
+impl ScannedComics {
+    async fn new(name: &str, books: &[(&str, &str)]) -> Self {
+        let comics = ScratchFolder::new(name);
+        for ((book, comic_info), seed) in books.iter().zip(1..) {
+            write_book_with(&comics.path().join(book), seed, Some(comic_info));
+        }
+        let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+        Self { scanned, comics }
+    }
+
+    fn rewrite(&self, book: &str, seed: u64, comic_info: &str) {
+        let path = self.comics.path().join(book);
+        write_book_with(&path, seed, Some(comic_info));
+        fs::File::options()
+            .write(true)
+            .open(path)
+            .unwrap()
+            .set_modified(SystemTime::UNIX_EPOCH + CHANGED_AT)
+            .unwrap();
+    }
+
+    fn remove(&self, book: &str) {
+        fs::remove_file(self.comics.path().join(book)).unwrap();
+    }
+
+    async fn rescan(&self) {
+        self.scanned
+            .library
+            .rescan_folder(self.scanned.id, |_| {})
+            .await
+            .unwrap();
+    }
+}
 
 async fn scanned(name: &str, books: &[(&str, &str)]) -> Scanned {
-    let comics = ScratchFolder::new(name);
-    for ((book, comic_info), seed) in books.iter().zip(1..) {
-        write_book_with(&comics.path().join(book), seed, Some(comic_info));
-    }
-    let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+    ScannedComics::new(name, books).await.scanned
+}
+
+fn series_years(scanned: &Scanned) -> Vec<Vec<Value>> {
     scanned
+        .connection()
+        .prepare(
+            "SELECT year, year_source FROM series
+            WHERE local_id IN (SELECT series_local_id FROM book) ORDER BY year",
+        )
+        .unwrap()
+        .query_map([], |row| (0..2).map(|column| row.get(column)).collect())
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
+fn year(year: &str) -> String {
+    format!("<ComicInfo><Year>{year}</Year></ComicInfo>")
 }
 
 fn named_series(scanned: &Scanned) -> Vec<Vec<Value>> {
@@ -161,5 +219,89 @@ async fn dates_a_joined_series_by_the_earliest_year_of_the_books_in_its_folders(
             Value::Integer(2018),
             text("files")
         ]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_again_when_the_year_in_its_files_changes() {
+    let comics = ScannedComics::new(
+        "comic-info-year-edited",
+        &[("Sample Series 04/v01.cbz", &year("2010"))],
+    )
+    .await;
+    comics.rewrite("Sample Series 04/v01.cbz", 1, &year("2020"));
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2020), text("files")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_again_once_its_earliest_book_is_removed() {
+    let comics = ScannedComics::new(
+        "comic-info-year-removed",
+        &[
+            ("Sample Series 04 (2005)/v01.cbz", &year("2010")),
+            ("Sample Series 04 (2005)/v02.cbz", &year("2020")),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 04 (2005)/v01.cbz");
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2020), text("files")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_by_its_folder_once_no_book_left_in_it_has_a_year() {
+    let comics = ScannedComics::new(
+        "comic-info-year-cleared",
+        &[("Sample Series 04 (2005)/v01.cbz", &year("2010"))],
+    )
+    .await;
+    comics.rewrite("Sample Series 04 (2005)/v01.cbz", 1, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2005), text("folder_name")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_only_by_the_books_filed_in_it() {
+    let comics = ScratchFolder::new("comic-info-year-of-held-books");
+    write_book_with(
+        &comics.path().join("Author A/Sample Series 02/v01.cbz"),
+        1,
+        Some(&year("2010")),
+    );
+    write_book_with(
+        &comics.path().join("Author B/Sample Series 02/v01.cbz"),
+        1,
+        Some(&year("2010")),
+    );
+    write_book_with(
+        &comics.path().join("Author B/Sample Series 02/v02.cbz"),
+        2,
+        Some(&year("2020")),
+    );
+
+    let (scanned, _, _) = Scanned::folder("comic-info-year-of-held-books", comics.path()).await;
+
+    assert_eq!(
+        series_years(&scanned),
+        [
+            vec![Value::Integer(2010), text("files")],
+            vec![Value::Integer(2020), text("files")]
+        ]
     );
 }

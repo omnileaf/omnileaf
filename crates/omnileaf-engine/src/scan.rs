@@ -26,7 +26,7 @@ use crate::{
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     placement::{Placement, place_book},
-    series_naming::{series_named_in_files, trust_files},
+    series_naming::series_named_in_files,
     skipped_types::{SkippedFile, SkippedType},
     unread_books::UnreadBooks,
 };
@@ -251,15 +251,14 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         numbering,
     } = place_book(&location, &linked_folder, FileNumbers::of(&details));
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
-    let naming = trust_files(series.naming, &details);
     Ok(ScannedBook {
-        named_series: series_named_in_files(&naming, &details, target.added_at_ms)?,
+        named_series: series_named_in_files(&series.naming, &details, target.added_at_ms)?,
         series: NewSeries::folder(
             SeriesFolder {
                 linked_folder: &linked_folder,
                 location: &series.location,
             },
-            naming,
+            series.naming,
             target.added_at_ms,
         )?,
         fingerprint,

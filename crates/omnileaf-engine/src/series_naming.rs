@@ -1,21 +1,7 @@
-use std::ops::RangeInclusive;
-
 use omnileaf_db::catalog::{BookDetails, NewSeries, SeriesNaming, Sourced, ValueSource};
 use omnileaf_sync_proto::KeyError;
 
-const STORED_SERIES_YEARS: RangeInclusive<u16> = 1000..=2999;
 const COMICS: &str = "comics";
-
-pub(crate) fn trust_files(naming: SeriesNaming, details: &BookDetails) -> SeriesNaming {
-    let year_in_files = details
-        .year
-        .filter(|year| STORED_SERIES_YEARS.contains(year))
-        .map(from_files);
-    SeriesNaming {
-        year: year_in_files.or(naming.year),
-        ..naming
-    }
-}
 
 pub(crate) fn series_named_in_files(
     naming: &SeriesNaming,
