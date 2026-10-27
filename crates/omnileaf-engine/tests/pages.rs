@@ -907,6 +907,33 @@ async fn serves_a_long_strip_whole_when_a_page_of_it_cannot_be_measured() {
 }
 
 #[tokio::test]
+async fn keeps_a_long_strip_whole_after_a_restart_when_a_page_cannot_be_measured() {
+    let page = scan_with_margin(SCAN_MARGIN);
+    let reader = Reader::with_pages(
+        "strip-unmeasured-kept",
+        &[page.clone(), gif_header(400, 600)],
+    )
+    .await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::SideBorders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &[page.clone(), page.clone()],
+    );
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert_eq!(first, served("image/jpeg", page.clone()));
+    assert_eq!(again, served("image/jpeg", page));
+}
+
+#[tokio::test]
 async fn keeps_the_side_borders_of_a_long_strip_on_disk_for_after_a_restart() {
     let reader = Reader::with_pages(
         "strip-borders-kept",

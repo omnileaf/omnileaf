@@ -66,11 +66,7 @@ fn kept_or_measured(
     }
     match measured(opened, decodes) {
         Ok(book) => {
-            if let Some((cache, key)) = cache
-                && let Err(error) = cache.put(key, &book.to_bytes())
-            {
-                tracing::warn!(error = %describe_error(&error), "keep a book's side borders for next time");
-            }
+            keep(cache, book);
             Some(book)
         }
         Err(
@@ -79,13 +75,27 @@ fn kept_or_measured(
                 ..
             },
         ) => {
-            tracing::debug!(error = %describe_error(&error), "serve whole the long strip of a book with a page whose borders can't be found");
+            tracing::debug!(error = %describe_error(&error), "serve whole for good the long strip of a book with a page whose borders can't be found");
+            keep(cache, BookSideBorders::NONE);
             None
         }
-        Err(error) => {
-            tracing::warn!(error = %describe_error(&error), "measure the side borders of a book's pages, so its long strip is served whole");
+        Err(error @ MeasureError::Measure { .. }) => {
+            tracing::warn!(error = %describe_error(&error), "measure the side borders of a book's pages, so its long strip is served whole for good");
+            keep(cache, BookSideBorders::NONE);
             None
         }
+        Err(error @ MeasureError::Read(_)) => {
+            tracing::warn!(error = %describe_error(&error), "read a book's pages to measure their side borders, so its long strip is served whole while the book stays open");
+            None
+        }
+    }
+}
+
+fn keep(cache: Option<(&DiskCache, &CacheKey)>, book: BookSideBorders) {
+    if let Some((cache, key)) = cache
+        && let Err(error) = cache.put(key, &book.to_bytes())
+    {
+        tracing::warn!(error = %describe_error(&error), "keep a book's side borders for next time");
     }
 }
 
@@ -134,10 +144,8 @@ fn measure_read_pages(
 ) -> Result<Vec<PageSideBorders>, MeasureError> {
     let mut measured = Vec::new();
     while !has_failed.load(Ordering::Relaxed) {
-        let Ok(ReadPage { index, bytes }) = pages
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .recv()
+        let Ok(ReadPage { index, bytes }) =
+            pages.lock().unwrap_or_else(PoisonError::into_inner).recv()
         else {
             break;
         };

@@ -205,7 +205,7 @@ impl Share {
 }
 
 impl BookSideBorders {
-    const NONE: Self = Self {
+    pub const NONE: Self = Self {
         left: Share::NONE,
         right: Share::NONE,
     };
