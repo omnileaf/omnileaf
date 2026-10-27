@@ -79,6 +79,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0043_name_the_language_and_age_rating_of_each_series"),
     migration!("0044_index_the_series_holding_a_book_stored_twice"),
     migration!("0045_rename_the_book_title_sort_key_to_reading_order_key"),
+    migration!("0046_keep_the_kind_and_numbers_of_each_book"),
 ];
 
 pub(crate) fn pending(
@@ -612,6 +613,50 @@ mod tests {
             }])
             .unwrap(),
         )
+    }
+
+    struct PlacedBooks {
+        connection: Connection,
+        _scratch: ScratchLibrary,
+    }
+
+    impl PlacedBooks {
+        fn open(name: &str) -> Self {
+            let scratch = ScratchLibrary::new(name);
+            drop(Database::open(&scratch.config).unwrap());
+            let connection = Connection::open(&scratch.config.path).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                     VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                    [SourceId::local().as_bytes()],
+                )
+                .unwrap();
+            Self {
+                connection,
+                _scratch: scratch,
+            }
+        }
+
+        fn place(&self, number: u32, values: &str) -> rusqlite::Result<usize> {
+            self.connection.execute(
+                &format!(
+                    "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms,
+                        kind, first_number, last_number, number_source, volume_number,
+                        volume_source)
+                    VALUES (?1, 1, 'Volume 01', x'', 0, {values})"
+                ),
+                [book(number).as_bytes()],
+            )
+        }
+
+        fn refuses_by_check(&self, number: u32, values: &str) -> bool {
+            matches!(
+                self.place(number, values),
+                Err(rusqlite::Error::SqliteFailure(failure, _))
+                    if failure.extended_code == rusqlite::ffi::SQLITE_CONSTRAINT_CHECK
+            )
+        }
     }
 
     #[test]
@@ -1216,6 +1261,92 @@ mod tests {
             .query_row("SELECT reading_order_key FROM book", [], |row| row.get(0))
             .unwrap();
         assert_eq!(key, [1, 2]);
+    }
+
+    #[test]
+    fn leaves_each_book_kept_from_before_unplaced_until_it_is_read_again() {
+        let scratch = ScratchLibrary::new("book-numbers-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..45]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'0102', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let placed: Vec<Value> = connection
+            .query_row(
+                "SELECT kind, first_number, last_number, number_source, volume_number,
+                    volume_source
+                FROM book",
+                [],
+                |row| (0..6).map(|column| row.get(column)).collect(),
+            )
+            .unwrap();
+        assert_eq!(placed, vec![Value::Null; 6]);
+    }
+
+    #[test]
+    fn accepts_each_book_whose_kind_numbers_and_sources_agree() {
+        let library = PlacedBooks::open("book-numbers-agree");
+        let agreeing = [
+            "NULL, NULL, NULL, NULL, NULL, NULL",
+            "'volume', 1000, 3000, 'file_name', NULL, NULL",
+            "'chapter', 12500, 12500, 'file_name', 3000, 'folder_name'",
+            "'chapter', NULL, NULL, NULL, 3000, 'folder_name'",
+            "'chapter', NULL, NULL, NULL, NULL, NULL",
+            "'special', 0, 0, 'files', NULL, NULL",
+            "'special', NULL, NULL, NULL, NULL, NULL",
+        ];
+
+        let refused: Vec<&str> = (1..)
+            .zip(agreeing)
+            .filter(|&(number, values)| library.place(number, values).is_err())
+            .map(|(_, values)| values)
+            .collect();
+
+        assert_eq!(refused, Vec::<&str>::new());
+    }
+
+    #[test]
+    fn refuses_each_book_whose_kind_numbers_and_sources_disagree() {
+        let library = PlacedBooks::open("book-numbers-disagree");
+        let disagreeing = [
+            "'omnibus', NULL, NULL, NULL, NULL, NULL",
+            "'volume', NULL, NULL, NULL, NULL, NULL",
+            "NULL, 1000, 1000, 'file_name', NULL, NULL",
+            "'chapter', -1000, -1000, 'file_name', NULL, NULL",
+            "'chapter', 1000, NULL, 'file_name', NULL, NULL",
+            "'chapter', NULL, 1000, 'file_name', NULL, NULL",
+            "'chapter', 2000, 1000, 'file_name', NULL, NULL",
+            "'chapter', 1000, 1000, NULL, NULL, NULL",
+            "'chapter', NULL, NULL, 'file_name', NULL, NULL",
+            "'chapter', 1000, 1000, 'guessed', NULL, NULL",
+            "'chapter', NULL, NULL, NULL, -1000, 'folder_name'",
+            "'chapter', NULL, NULL, NULL, 1000, NULL",
+            "'chapter', NULL, NULL, NULL, NULL, 'folder_name'",
+            "'volume', 1000, 1000, 'file_name', 1000, 'folder_name'",
+            "'special', NULL, NULL, NULL, 1000, 'folder_name'",
+        ];
+
+        let accepted: Vec<&str> = (1..)
+            .zip(disagreeing)
+            .filter(|&(number, values)| !library.refuses_by_check(number, values))
+            .map(|(_, values)| values)
+            .collect();
+
+        assert_eq!(accepted, Vec::<&str>::new());
     }
 
     #[test]
