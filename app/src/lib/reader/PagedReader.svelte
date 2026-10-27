@@ -35,6 +35,8 @@
     type CroppedPages,
     croppedPages,
     pageCrop,
+    type SpreadPlace,
+    type StripPlace,
     suitsMode,
   } from "#lib/reader/cropped-pages.ts";
   import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
@@ -192,9 +194,18 @@
       : !isStrip,
   );
 
+  let startAt: StripPlace | SpreadPlace | undefined = $state.raw();
+
+  function show(next: CroppedPages): void {
+    if (next.crop !== cropped?.crop) {
+      startAt = (isStripShown ? strip : paged)?.place();
+    }
+    cropped = next;
+  }
+
   function showWholePages(pages: CroppedPages["pages"]): void {
     if (cropped?.crop !== "whole" || cropped.pages !== pages) {
-      cropped = { pages, crop: "whole" };
+      show({ pages, crop: "whole" });
     }
   }
 
@@ -210,7 +221,7 @@
     let isAsked = true;
     void croppedPages(pages, asked).then((answer) => {
       if (isAsked) {
-        cropped = answer;
+        show(answer);
       }
     });
     return () => {
@@ -231,8 +242,10 @@
         scrollByScreen: (step: number) => boolean;
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
+        place: () => StripPlace | undefined;
       }
     | undefined = $state();
+  let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let isTouchPausing = false;
   const canUseMyPace = $derived(
@@ -1043,15 +1056,18 @@
           <StripStack
             bind:this={strip}
             pages={cropped.pages}
+            crop={cropped.crop}
             shown={turner.shown}
             isBlank={screenshotMode.isOn &&
               screenshotMode.options.blankReaderPages}
             marks={bookmarks === null ? [] : [...bookmarks]}
             overlay={stripZones}
+            startAt={startAt?.kind === "strip" ? startAt : undefined}
             onShown={(index: number) => {
               turner.goTo(index);
             }}
             onShownReady={() => {
+              startAt = undefined;
               if (!hasOpened) {
                 hasOpened = true;
                 controls.bookOpened();
@@ -1060,7 +1076,9 @@
           />
         {:else}
           <PageStack
+            bind:this={paged}
             pages={cropped.pages}
+            crop={cropped.crop}
             shown={turner.shown}
             {spread}
             fit={look.fit}
@@ -1072,10 +1090,12 @@
               screenshotMode.options.blankReaderPages}
             {slide}
             {isSettling}
+            startAt={startAt?.kind === "spread" ? startAt : undefined}
             onNextPage={() => {
               act("next");
             }}
             onShownReady={() => {
+              startAt = undefined;
               if (!hasOpened) {
                 hasOpened = true;
                 controls.bookOpened();

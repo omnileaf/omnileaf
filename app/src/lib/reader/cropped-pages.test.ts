@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import type { BookPage } from "#lib/ipc/bindings.ts";
 
-import { croppedPages, pageCrop, suitsMode } from "./cropped-pages";
+import { croppedPages, pageCrop, sizeOfPage, suitsMode } from "./cropped-pages";
 
 function pageOf(index: number): BookPage {
   return {
@@ -42,6 +42,25 @@ test("fits whole pages to either mode and each crop to its own mode only", () =>
   expect(suitsMode("borders", true)).toBe(false);
   expect(suitsMode("sideBorders", true)).toBe(true);
   expect(suitsMode("sideBorders", false)).toBe(false);
+});
+
+test("sizes a page by its loaded image over the size the core gave", () => {
+  const loaded = { width: 800, height: 1400 };
+
+  expect(sizeOfPage(pageOf(0), loaded)).toEqual(loaded);
+});
+
+test("keeps the core's size until the page's image has loaded", () => {
+  expect(sizeOfPage(pageOf(0), undefined)).toEqual(pageOf(0).size);
+});
+
+test("keeps the core's size over a loaded image with no width or height", () => {
+  expect(sizeOfPage(pageOf(0), { width: 0, height: 1400 })).toEqual(
+    pageOf(0).size,
+  );
+  expect(sizeOfPage(pageOf(0), { width: 800, height: -1 })).toEqual(
+    pageOf(0).size,
+  );
 });
 
 test("swaps each page's path for the cropped one the core names", async () => {

@@ -1,8 +1,23 @@
 import { type BookPage, commands, type PageCrop } from "#lib/ipc/bindings.ts";
 
+import type { Size } from "./page-fit";
+
 export interface CroppedPages {
   readonly pages: readonly BookPage[];
   readonly crop: PageCrop;
+}
+
+export interface StripPlace {
+  readonly kind: "strip";
+  readonly page: number;
+  readonly shareOfPage: number;
+}
+
+export interface SpreadPlace {
+  readonly kind: "spread";
+  readonly page: number;
+  readonly shareDown: number;
+  readonly shareAcross: number;
 }
 
 type Crop = Exclude<PageCrop, "whole">;
@@ -21,6 +36,15 @@ export function pageCrop(cropsBorders: boolean, isStrip: boolean): PageCrop {
 
 export function suitsMode(crop: PageCrop, isStrip: boolean): boolean {
   return crop === "whole" || crop === pageCrop(true, isStrip);
+}
+
+export function sizeOfPage(
+  page: BookPage,
+  loaded: Size | undefined,
+): Size | null {
+  return loaded !== undefined && loaded.width > 0 && loaded.height > 0
+    ? loaded
+    : page.size;
 }
 
 export function croppedPages(

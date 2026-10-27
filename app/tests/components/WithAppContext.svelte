@@ -2,6 +2,11 @@
   import { type Component, untrack } from "svelte";
 
   import {
+    AnimationsSetting,
+    setAnimationsSetting,
+  } from "#lib/appearance/animations.svelte.ts";
+
+  import {
     setSidebarSetting,
     SidebarSetting,
   } from "#lib/navigation/sidebar.svelte.ts";
@@ -35,6 +40,7 @@
     ),
   );
   setSidebarSetting(new SidebarSetting(undefined));
+  setAnimationsSetting(new AnimationsSetting(undefined));
 
   const Page = $derived(page);
 </script>
