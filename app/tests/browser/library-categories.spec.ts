@@ -887,23 +887,33 @@ test.describe("more categories than fit, before the strip is first measured", ()
     expect(await cutTabs(page)).toEqual([]);
   });
 
-  test("draws the tab it opens on whole, with no tab cut off, on screens wide enough for More", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
-    await page.goto("/settings/library/tabs");
-    await page
-      .getByRole("combobox", { name: "The library opens on" })
-      .selectOption({ label: "Sea stories" });
+  for (const opening of ["Sea stories", "Borrowed from friends"]) {
+    test(`draws ${opening} whole when the library opens on it, leaving it out of More, with no tab cut off`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await page.goto("/settings/library/tabs");
+      await page
+        .getByRole("combobox", { name: "The library opens on" })
+        .selectOption({ label: opening });
 
-    await page.goto("/");
+      await page.goto("/");
 
-    await expect(
-      tabs(page).getByRole("tab", { name: "Sea stories" }),
-    ).toHaveAttribute("aria-selected", "true");
-    expect(await isWholeInStrip(page, "Sea stories")).toBe(true);
-    expect(await cutTabs(page)).toEqual([]);
-  });
+      await expect(
+        tabs(page).getByRole("tab", { name: opening }),
+      ).toHaveAttribute("aria-selected", "true");
+      expect(await isWholeInStrip(page, opening)).toBe(true);
+      expect(await cutTabs(page)).toEqual([]);
+      await page.getByRole("button", { name: "More" }).click();
+      const menu = page.getByRole("menu");
+      await expect(
+        menu.getByRole("menuitem", { name: "Edit categories" }),
+      ).toBeVisible();
+      await expect(
+        menu.getByRole("menuitemradio", { name: opening }),
+      ).toHaveCount(0);
+    });
+  }
 
   test.describe("added while the library is open", () => {
     let keptCategories: readonly LibraryCategory[] = CATEGORIES;

@@ -149,13 +149,14 @@
     return box.left + box.width / 2 - (shown.left + shown.width / 2);
   }
 
+  /** Browsers snap a scroll offset to whole pixels, so the step rounds outward to leave no fraction of the tab past the edge. */
   function stepIntoView(within: HTMLElement, tab: HTMLElement): number {
     const shown = within.getBoundingClientRect();
     const box = tab.getBoundingClientRect();
     if (box.left < shown.left) {
-      return box.left - shown.left;
+      return Math.floor(box.left - shown.left);
     }
-    return Math.max(0, box.right - shown.right);
+    return Math.max(0, Math.ceil(box.right - shown.right));
   }
 
   function moveWithArrows(event: KeyboardEvent): void {
