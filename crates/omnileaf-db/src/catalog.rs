@@ -52,7 +52,9 @@ pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
 pub use library_roots::{
     BookmarkedRoot, bookmarked_roots, library_root, library_roots, missing_roots,
 };
-pub use numbering::{BookKind, BookNumber, NumberRange, Numbering, Sourced, ValueSource};
+pub use numbering::{
+    BookKind, BookNumber, BookSection, NumberRange, Numbering, Sourced, ValueSource,
+};
 pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
 pub use person_series::{PersonSeries, person_series};

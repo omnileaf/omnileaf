@@ -4,7 +4,7 @@ use omnileaf_sync_proto::{BookId, SeriesId};
 
 use crate::{
     Error,
-    catalog::{BookListing, BooksShown, SortDirection},
+    catalog::{BookListing, BookSection, BooksShown, SortDirection},
     title_key::TitleStamp,
 };
 
@@ -14,6 +14,14 @@ const BOOK_TAG: u8 = 3;
 const ROOT_TAG: u8 = 4;
 const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
+const SECTION_BITS: u8 = 0b1100;
+const SECTION_SHIFT: u32 = 2;
+const LISTED_SECTIONS: [Option<BookSection>; 4] = [
+    None,
+    Some(BookSection::Volumes),
+    Some(BookSection::Chapters),
+    Some(BookSection::Specials),
+];
 const SESSION_TAG: u8 = 5;
 const LAST_READ_TAG: u8 = 6;
 const LAST_UPDATED_TAG: u8 = 7;
@@ -245,13 +253,19 @@ fn listing_byte(listing: BookListing) -> u8 {
         BooksShown::All => 0,
         BooksShown::Unread => UNREAD_BIT,
     };
-    direction | shown
+    let section = LISTED_SECTIONS
+        .iter()
+        .zip(0_u8..)
+        .find_map(|(listed, code)| (*listed == listing.section).then_some(code))
+        .unwrap_or_default();
+    direction | shown | section << SECTION_SHIFT
 }
 
 fn listing_from_byte(byte: u8) -> Option<BookListing> {
-    if byte & !(DESCENDING_BIT | UNREAD_BIT) != 0 {
+    if byte & !(DESCENDING_BIT | UNREAD_BIT | SECTION_BITS) != 0 {
         return None;
     }
+    let section = *LISTED_SECTIONS.get(usize::from((byte & SECTION_BITS) >> SECTION_SHIFT))?;
     Some(BookListing {
         shown: if byte & UNREAD_BIT == 0 {
             BooksShown::All
@@ -263,6 +277,7 @@ fn listing_from_byte(byte: u8) -> Option<BookListing> {
         } else {
             SortDirection::Descending
         },
+        section,
     })
 }
 

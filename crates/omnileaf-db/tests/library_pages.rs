@@ -361,6 +361,7 @@ async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
     let unread = |direction| BookListing {
         shown: BooksShown::Unread,
         direction,
+        ..BookListing::IN_ORDER
     };
 
     let pages = [
@@ -408,6 +409,7 @@ async fn numbers_each_book_by_its_place_in_the_series_whichever_books_are_listed
     let unread_last_first = BookListing {
         shown: BooksShown::Unread,
         direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
     };
 
     let page = library

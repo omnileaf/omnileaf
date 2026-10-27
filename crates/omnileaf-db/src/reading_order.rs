@@ -1,6 +1,6 @@
 use crate::{
     book_order::book_order_key,
-    catalog::{BookNumber, NumberRange, Numbering},
+    catalog::{BookNumber, BookSection, NumberRange, Numbering},
 };
 
 const NUMBERED: u8 = 0;
@@ -30,6 +30,20 @@ enum Place {
 enum VolumeEntry {
     VolumeBook,
     Chapter { number: Option<NumberRange> },
+}
+
+/// The keys a section's books sort from, inclusive, and up to, exclusive, which no book not placed yet falls between.
+pub(crate) fn section_keys(section: BookSection) -> (Vec<u8>, Vec<u8>) {
+    let first = section_byte(section);
+    (vec![first], vec![first.saturating_add(1)])
+}
+
+const fn section_byte(section: BookSection) -> u8 {
+    match section {
+        BookSection::Volumes => 0,
+        BookSection::Chapters => 1,
+        BookSection::Specials => 2,
+    }
 }
 
 pub(crate) fn reading_order_key(numbering: Option<&Numbering>, title: &str) -> Vec<u8> {
@@ -71,16 +85,16 @@ impl Place {
         }
     }
 
-    const fn section(&self) -> u8 {
+    const fn section(&self) -> BookSection {
         match self {
-            Self::Volumes { .. } => 0,
-            Self::Chapters { .. } => 1,
-            Self::Specials { .. } => 2,
+            Self::Volumes { .. } => BookSection::Volumes,
+            Self::Chapters { .. } => BookSection::Chapters,
+            Self::Specials { .. } => BookSection::Specials,
         }
     }
 
     fn push_onto(&self, key: &mut Vec<u8>) {
-        key.push(self.section());
+        key.push(section_byte(self.section()));
         match *self {
             Self::Volumes { volume, entry } => {
                 push_number(key, volume.first());
@@ -393,6 +407,28 @@ mod tests {
             let widths = (width(&left), width(&right));
 
             prop_assert_eq!(widths.0, widths.1, "{:?} and {:?}", left, right);
+        }
+
+        #[test]
+        fn keys_every_placed_book_within_the_keys_of_its_section_alone(
+            numbering in numbering(),
+            title in TITLE,
+        ) {
+            let key = reading_order_key(Some(&numbering), &title);
+
+            let holding: Vec<BookSection> = [
+                BookSection::Volumes,
+                BookSection::Chapters,
+                BookSection::Specials,
+            ]
+            .into_iter()
+            .filter(|section| {
+                let (start, end) = section_keys(*section);
+                start <= key && key < end
+            })
+            .collect();
+
+            prop_assert_eq!(holding, [numbering.section()], "{:?}", numbering);
         }
 
         #[test]

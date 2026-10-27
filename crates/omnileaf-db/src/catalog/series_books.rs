@@ -4,12 +4,14 @@ use rusqlite::{Connection, Row, ToSql, named_params};
 use crate::{
     Error,
     catalog::{
-        SortDirection,
+        BookSection, Numbering, SortDirection,
         cursor::Position,
+        numbering::stored_numbering,
         page::{Page, PageRequest},
         staged_rows::snapshot,
         stored_id::stored_id,
     },
+    reading_order::section_keys,
 };
 
 macro_rules! books_in_series {
@@ -74,16 +76,30 @@ pub(crate) use first_book_in_series;
 pub(crate) use holds_a_started_book_not_read;
 pub(crate) use not_read;
 
+macro_rules! in_section {
+    () => {
+        "book.reading_order_key >= :section_start AND book.reading_order_key < :section_end"
+    };
+}
+
+macro_rules! after_cursor {
+    ($comparison:literal) => {
+        concat!(
+            "(book.reading_order_key, book.id) ",
+            $comparison,
+            " (:after_key, :after_id)"
+        )
+    };
+}
+
 const FIRST_IN_SERIES: &str = books_in_series!("ASC");
-const NEXT_IN_SERIES: &str = books_in_series!(
-    "ASC",
-    "(book.reading_order_key, book.id) > (:after_key, :after_id)"
-);
+const NEXT_IN_SERIES: &str = books_in_series!("ASC", after_cursor!(">"));
 const LAST_IN_SERIES: &str = books_in_series!("DESC");
-const PREVIOUS_IN_SERIES: &str = books_in_series!(
-    "DESC",
-    "(book.reading_order_key, book.id) < (:after_key, :after_id)"
-);
+const PREVIOUS_IN_SERIES: &str = books_in_series!("DESC", after_cursor!("<"));
+const FIRST_IN_SECTION: &str = books_in_series!("ASC", in_section!());
+const NEXT_IN_SECTION: &str = books_in_series!("ASC", after_cursor!(">"), in_section!());
+const LAST_IN_SECTION: &str = books_in_series!("DESC", in_section!());
+const PREVIOUS_IN_SECTION: &str = books_in_series!("DESC", after_cursor!("<"), in_section!());
 const UP_NEXT: &str = concat!(
     "SELECT book.id, book.reading_order_key,
         book_state.is_read, book_state.is_started, book_state.position_page
@@ -93,7 +109,9 @@ const UP_NEXT: &str = concat!(
     book_up_next!(),
     " FROM series WHERE series.id = :series)"
 );
-const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count FROM book WHERE id = ?1";
+const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count,
+        kind, first_number, last_number, number_source, volume_number, volume_source
+    FROM book WHERE id = ?1";
 const UNREAD_IN_SERIES: &str = concat!(
     "SELECT book.id FROM book
     LEFT JOIN book_state ON book_state.book_id = book.id
@@ -114,12 +132,16 @@ pub struct BookSummary {
     pub reading: BookReading,
     /// Absent for a book found before the library kept page counts, until it is scanned again or opened.
     pub page_count: Option<u32>,
+    /// Absent for a book found before the library read numbers from names, until it is scanned again.
+    pub numbering: Option<Numbering>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BookListing {
     pub shown: BooksShown,
     pub direction: SortDirection,
+    /// Absent to list every book, those not placed in a section included.
+    pub section: Option<BookSection>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -132,14 +154,19 @@ impl BookListing {
     pub const IN_ORDER: Self = Self {
         shown: BooksShown::All,
         direction: SortDirection::Ascending,
+        section: None,
     };
 
     const fn query(self, is_continued: bool) -> &'static str {
-        match (self.direction, is_continued) {
-            (SortDirection::Ascending, false) => FIRST_IN_SERIES,
-            (SortDirection::Ascending, true) => NEXT_IN_SERIES,
-            (SortDirection::Descending, false) => LAST_IN_SERIES,
-            (SortDirection::Descending, true) => PREVIOUS_IN_SERIES,
+        match (self.direction, is_continued, self.section.is_some()) {
+            (SortDirection::Ascending, false, false) => FIRST_IN_SERIES,
+            (SortDirection::Ascending, true, false) => NEXT_IN_SERIES,
+            (SortDirection::Descending, false, false) => LAST_IN_SERIES,
+            (SortDirection::Descending, true, false) => PREVIOUS_IN_SERIES,
+            (SortDirection::Ascending, false, true) => FIRST_IN_SECTION,
+            (SortDirection::Ascending, true, true) => NEXT_IN_SECTION,
+            (SortDirection::Descending, false, true) => LAST_IN_SECTION,
+            (SortDirection::Descending, true, true) => PREVIOUS_IN_SECTION,
         }
     }
 
@@ -171,30 +198,21 @@ pub fn series_books(
 ) -> Result<Page<BookSummary>, Error> {
     let _snapshot = snapshot(connection)?;
     let series_id = series.as_bytes();
-    let rows = match request.after.as_ref().map(|cursor| &cursor.0) {
-        None => walk(
-            connection,
-            series,
-            listing,
-            request,
-            named_params! { ":series": series_id },
-        ),
+    let section_keys = listing.section.map(section_keys);
+    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":series", &series_id)];
+    match request.after.as_ref().map(|cursor| &cursor.0) {
+        None => {}
         Some(Position::Book {
             series: listed,
             listing: given,
             sort_key,
             id,
-        }) if *listed == series && *given == listing => walk(
-            connection,
-            series,
-            listing,
-            request,
-            named_params! {
-                ":series": series_id,
-                ":after_key": sort_key,
-                ":after_id": id.as_bytes(),
-            },
-        ),
+        }) if *listed == series && *given == listing => {
+            params.extend([
+                (":after_key", sort_key as &dyn ToSql),
+                (":after_id", id.as_bytes()),
+            ]);
+        }
         Some(
             Position::Book { .. }
             | Position::Title { .. }
@@ -206,8 +224,15 @@ pub fn series_books(
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
             | Position::Writer { .. },
-        ) => Err(Error::CursorForAnotherList),
-    }?;
+        ) => return Err(Error::CursorForAnotherList),
+    }
+    if let Some((start, end)) = &section_keys {
+        params.extend([
+            (":section_start", start as &dyn ToSql),
+            (":section_end", end),
+        ]);
+    }
+    let rows = walk(connection, series, listing, request, &params)?;
     Ok(Page::of(rows, request.size))
 }
 
@@ -298,10 +323,19 @@ pub fn unread_books(connection: &Connection, series: SeriesId) -> Result<Vec<Boo
 }
 
 fn fill_details(connection: &Connection, book: &mut BookSummary) -> Result<(), Error> {
-    (book.title, book.added_at_ms, book.page_count) =
-        connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
-            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-        })?;
+    (
+        book.title,
+        book.added_at_ms,
+        book.page_count,
+        book.numbering,
+    ) = connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
+        Ok((
+            row.get("title")?,
+            row.get("added_at_ms")?,
+            row.get("page_count")?,
+            stored_numbering(row)?,
+        ))
+    })?;
     Ok(())
 }
 
@@ -320,6 +354,7 @@ fn stored_book(
         added_at_ms: 0,
         reading,
         page_count: None,
+        numbering: None,
     };
     let position = Position::Book {
         series,
@@ -390,8 +425,11 @@ mod tests {
         let listings = [BooksShown::All, BooksShown::Unread]
             .into_iter()
             .flat_map(|shown| {
-                [SortDirection::Ascending, SortDirection::Descending]
-                    .map(|direction| BookListing { shown, direction })
+                [SortDirection::Ascending, SortDirection::Descending].map(|direction| BookListing {
+                    shown,
+                    direction,
+                    section: None,
+                })
             });
 
         let plans: Vec<Vec<String>> = listings
@@ -411,6 +449,30 @@ mod tests {
                 "{plan:?}"
             );
         }
+    }
+
+    #[test]
+    fn lists_one_section_of_a_series_books_as_a_range_of_the_covering_index_without_sorting() {
+        let scratch = ScratchLibrary::new("section-books-plans");
+
+        let plans: Vec<String> = [
+            FIRST_IN_SECTION,
+            NEXT_IN_SECTION,
+            LAST_IN_SECTION,
+            PREVIOUS_IN_SECTION,
+        ]
+        .map(|query| scratch.query_plan(query).remove(0))
+        .into();
+
+        assert_eq!(
+            plans,
+            [
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)>(?,?) AND reading_order_key<?)",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND (reading_order_key,id)<(?,?))",
+            ]
+        );
     }
 
     #[test]
