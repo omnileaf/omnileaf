@@ -22,7 +22,8 @@ macro_rules! sessions_newest_first {
                 book.title AS book_title, series.id AS series_id, series.title AS series_title,
                 (SELECT count(*) FROM book AS earlier
                     WHERE earlier.series_local_id = book.series_local_id
-                        AND (earlier.title_sort_key, earlier.id) < (book.title_sort_key, book.id))
+                        AND (earlier.reading_order_key, earlier.id)
+                            < (book.reading_order_key, book.id))
                     + 1 AS position,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
                 book_state.is_read, book_state.is_started, book_state.position_page ",
@@ -467,7 +468,7 @@ mod tests {
         "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
         "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
         "CORRELATED SCALAR SUBQUERY 1",
-        "SEARCH earlier USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))",
+        "SEARCH earlier USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)<(?,?))",
     ];
 
     fn plan_of(walk: &[&str], sort: &[&str]) -> Vec<String> {

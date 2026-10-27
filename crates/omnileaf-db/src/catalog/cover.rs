@@ -28,7 +28,7 @@ macro_rules! join_series_cover {
             FROM book
             WHERE book.series_local_id = series.local_id
                 AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
-            ORDER BY book.title_sort_key, book.id
+            ORDER BY book.reading_order_key, book.id
             LIMIT 1
         )"
     };

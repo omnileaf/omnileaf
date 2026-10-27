@@ -7,7 +7,7 @@ macro_rules! insert_book {
     ($on_conflict:literal) => {
         concat!(
             "INSERT INTO book (
-                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind,
+                id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
                 page_count
             )
             SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
@@ -22,7 +22,7 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
     " ON CONFLICT (id) DO UPDATE SET
         series_local_id = excluded.series_local_id,
         title = excluded.title,
-        title_sort_key = excluded.title_sort_key"
+        reading_order_key = excluded.reading_order_key"
 );
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";

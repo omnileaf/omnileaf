@@ -15,13 +15,13 @@ use crate::{
 macro_rules! books_in_series {
     ($direction:literal $(, $condition:expr)*) => {
         concat!(
-            "SELECT book.id, book.title_sort_key,
+            "SELECT book.id, book.reading_order_key,
                 book_state.is_read, book_state.is_started, book_state.position_page
             FROM book
             LEFT JOIN book_state ON book_state.book_id = book.id
             WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = :series)",
             $(" AND ", $condition,)*
-            " ORDER BY book.title_sort_key ", $direction, ", book.id ", $direction
+            " ORDER BY book.reading_order_key ", $direction, ", book.id ", $direction
         )
     };
 }
@@ -45,7 +45,7 @@ macro_rules! first_book_in_series {
             LEFT JOIN book_state ON book_state.book_id = book.id
             WHERE book.series_local_id = series.local_id",
             $(" AND ", $condition,)+
-            " ORDER BY book.title_sort_key, book.id LIMIT 1"
+            " ORDER BY book.reading_order_key, book.id LIMIT 1"
         )
     };
 }
@@ -77,15 +77,15 @@ pub(crate) use not_read;
 const FIRST_IN_SERIES: &str = books_in_series!("ASC");
 const NEXT_IN_SERIES: &str = books_in_series!(
     "ASC",
-    "(book.title_sort_key, book.id) > (:after_key, :after_id)"
+    "(book.reading_order_key, book.id) > (:after_key, :after_id)"
 );
 const LAST_IN_SERIES: &str = books_in_series!("DESC");
 const PREVIOUS_IN_SERIES: &str = books_in_series!(
     "DESC",
-    "(book.title_sort_key, book.id) < (:after_key, :after_id)"
+    "(book.reading_order_key, book.id) < (:after_key, :after_id)"
 );
 const UP_NEXT: &str = concat!(
-    "SELECT book.id, book.title_sort_key,
+    "SELECT book.id, book.reading_order_key,
         book_state.is_read, book_state.is_started, book_state.position_page
     FROM book
     LEFT JOIN book_state ON book_state.book_id = book.id
@@ -102,7 +102,7 @@ const UNREAD_IN_SERIES: &str = concat!(
 );
 const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
     WHERE series_local_id = (SELECT local_id FROM series WHERE id = :series)
-        AND (title_sort_key, id) < (:key, :id)";
+        AND (reading_order_key, id) < (:key, :id)";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookSummary {
@@ -323,7 +323,7 @@ fn stored_book(
     let position = Position::Book {
         series,
         listing,
-        sort_key: row.get("title_sort_key")?,
+        sort_key: row.get("reading_order_key")?,
         id,
     };
     Ok((book, position))
@@ -375,7 +375,7 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)>(?,?))",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)>(?,?))",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "SEARCH book_state USING PRIMARY KEY (book_id=?) LEFT-JOIN",
@@ -421,7 +421,7 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))",
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)<(?,?))",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
             ]

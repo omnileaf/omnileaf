@@ -78,6 +78,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0042_keep_the_people_and_tags_of_each_book"),
     migration!("0043_name_the_language_and_age_rating_of_each_series"),
     migration!("0044_index_the_series_holding_a_book_stored_twice"),
+    migration!("0045_rename_the_book_title_sort_key_to_reading_order_key"),
 ];
 
 pub(crate) fn pending(
@@ -1187,6 +1188,34 @@ mod tests {
             )
             .unwrap();
         assert_eq!(named, ("ja".to_owned(), 1));
+    }
+
+    #[test]
+    fn keeps_the_order_key_of_each_book_kept_from_before_as_its_reading_order_key() {
+        let scratch = ScratchLibrary::new("reading-order-key-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..44]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'0102', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let key: Vec<u8> = connection
+            .query_row("SELECT reading_order_key FROM book", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(key, [1, 2]);
     }
 
     #[test]
