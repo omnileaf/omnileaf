@@ -656,6 +656,7 @@ export const TOKEN_THEME = {
     "tooltip-inline",
     "touch-button",
     "touch-target",
+    "two-lines",
     "up-next",
     "up-next-check",
     "up-next-cover",
