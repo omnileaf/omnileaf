@@ -16,6 +16,7 @@ import {
 } from "../../src/lib/sample-library/sample-backend.ts";
 import {
   LONG_TITLE,
+  sampleBookId,
   sampleLibrary,
   sampleSeriesId,
 } from "../../src/lib/sample-library/sample-library.ts";
@@ -106,13 +107,23 @@ const PLACEHOLDER = /\{\w+\}/;
 
 const QUIET_POLL_MS = 10;
 
-function sampleLibraryOn(platform: Platform): FakeBackend {
+function sampleLibraryOn(
+  platform: Platform,
+  asked: Readonly<Record<string, string>> = {},
+): FakeBackend {
   return {
-    ...sampleBackend(scenarioFrom(new URLSearchParams({ platform })), {
-      emit: () => undefined,
-    }),
+    ...sampleBackend(
+      scenarioFrom(new URLSearchParams({ ...asked, platform })),
+      { emit: () => undefined },
+    ),
     appInfo: () => fakeAppInfo(platform),
   };
+}
+
+function sampleLibraryAsking(
+  asked: Readonly<Record<string, string>>,
+): (platform: Platform) => FakeBackend {
+  return (platform) => sampleLibraryOn(platform, asked);
 }
 
 function emptyLibraryOn(platform: Platform): FakeBackend {
@@ -440,6 +451,14 @@ export const SCREENS: readonly Screen[] = [
     longTitledBookOn,
     LONG_BOOK_TITLE,
   ),
+  {
+    ...sampleScreen(
+      "a file Omnileaf can't open",
+      `/read/${sampleBookId(4, 6)}`,
+      [heading(english.reader_unsupported_title)],
+    ),
+    backend: sampleLibraryAsking({ volume6: "unsupported" }),
+  },
   sampleScreen("settings", "/settings", [
     heading(oneOf(english.settings_title, english.general_title)),
   ]),
