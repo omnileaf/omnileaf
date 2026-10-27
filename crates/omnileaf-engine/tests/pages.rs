@@ -712,6 +712,53 @@ async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
 }
 
 #[tokio::test]
+async fn refuses_a_damaged_file_of_a_type_it_cannot_read_as_unreadable() {
+    let comics = ScratchFolder::new("damaged-unsupported-type-comics");
+    let series = comics.path().join(FOLDER).join(SERIES);
+    fs::create_dir_all(&series).unwrap();
+    let file = series.join(format!("{BOOK}.cbr"));
+    let archive = cbz(&page_entries(&portrait_pages(SEED)), Compression::Deflated).unwrap();
+    fs::write(&file, archive).unwrap();
+    let reader = Reader::over("damaged-unsupported-type", comics).await;
+    let book = reader.book().await;
+    fs::write(&file, b"").unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::Unreadable { .. })),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_an_archive_put_in_place_of_a_folder_book_with_a_dot_in_its_name_as_unreadable() {
+    let comics = ScratchFolder::new("unsupported-dotted-folder-comics");
+    let folder_book = comics.path().join(FOLDER).join(SERIES).join("Chapter 1.5");
+    fs::create_dir_all(&folder_book).unwrap();
+    for entry in page_entries(&portrait_pages(SEED)) {
+        fs::write(folder_book.join(entry.name), entry.bytes).unwrap();
+    }
+    let reader = Reader::over("unsupported-dotted-folder", comics).await;
+    let book = reader.book().await;
+    fs::remove_dir_all(&folder_book).unwrap();
+    fs::write(&folder_book, RAR_SIGNATURE).unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::Unreadable { .. })),
+        "{opened:?}"
+    );
+}
+
+#[tokio::test]
 async fn refuses_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
     let reader = Reader::with_book("unsupported-inside-cbz").await;
     let book = reader.book().await;

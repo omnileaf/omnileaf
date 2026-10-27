@@ -1,10 +1,11 @@
 use std::{collections::BTreeSet, fmt, path::Path};
 
+use omnileaf_formats::FormatError;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
 const READ_BOOK_TYPES: [&str; 2] = ["cbz", "cb7"];
-const BOOK_TYPES_NOT_READ_YET: [&str; 1] = ["cbr"];
+const BOOK_TYPES_NOT_READ_YET: [&str; 2] = ["cbr", "rar"];
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type)]
 #[serde(try_from = "String", into = "String")]
@@ -36,6 +37,11 @@ impl FileType {
 
     pub(crate) fn can_be_hidden(&self) -> bool {
         self.is_book() && !self.is_read()
+    }
+
+    pub(crate) fn is_unsupported_given(&self, failure: &FormatError) -> bool {
+        let is_archive_not_read_yet = matches!(failure, FormatError::ArchiveNotSupportedYet { .. });
+        is_archive_not_read_yet && self.can_be_hidden()
     }
 
     pub(crate) fn as_str(&self) -> &str {
@@ -106,19 +112,19 @@ mod tests {
     }
 
     #[test]
-    fn reads_cbz_and_cb7_files_but_not_cbr_ones_yet() {
-        let read = ["v01.cbz", "v01.cb7", "v01.cbr"]
+    fn reads_cbz_and_cb7_files_but_not_cbr_or_rar_ones_yet() {
+        let read = ["v01.cbz", "v01.cb7", "v01.cbr", "v01.rar"]
             .map(|name| type_of(name).is_some_and(|found| found.is_read()));
 
-        assert_eq!(read, [true, true, false]);
+        assert_eq!(read, [true, true, false, false]);
     }
 
     #[test]
     fn hides_only_the_book_types_it_does_not_read() {
-        let hideable = ["v01.cbz", "v01.cb7", "v01.cbr", "notes.txt"]
+        let hideable = ["v01.cbz", "v01.cb7", "v01.cbr", "v01.rar", "notes.txt"]
             .map(|name| type_of(name).is_some_and(|found| found.can_be_hidden()));
 
-        assert_eq!(hideable, [false, false, true, false]);
+        assert_eq!(hideable, [false, false, true, true, false]);
     }
 
     #[test]
@@ -150,10 +156,17 @@ mod tests {
     }
 
     #[test]
-    fn finds_books_in_cbz_cb7_and_cbr_files_only() {
-        let books = ["v01.cbz", "v01.cb7", "v01.cbr", "notes.txt", "v01.zip"]
-            .map(|name| type_of(name).is_some_and(|found| found.is_book()));
+    fn finds_books_in_cbz_cb7_cbr_and_rar_files_only() {
+        let books = [
+            "v01.cbz",
+            "v01.cb7",
+            "v01.cbr",
+            "v01.rar",
+            "notes.txt",
+            "v01.zip",
+        ]
+        .map(|name| type_of(name).is_some_and(|found| found.is_book()));
 
-        assert_eq!(books, [true, true, true, false, false]);
+        assert_eq!(books, [true, true, true, true, false, false]);
     }
 }

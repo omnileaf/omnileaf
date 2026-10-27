@@ -67,7 +67,9 @@ mod scan;
 mod series_details;
 mod series_overview;
 mod side_borders;
+mod skipped_types;
 mod storage_use;
+mod unread_books;
 mod utc_offset;
 mod version_details;
 mod windows_share;
@@ -150,6 +152,7 @@ pub use series_details::{
 pub use series_overview::{
     CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
 };
+pub use skipped_types::SkippedType;
 pub use storage_use::{CacheSizes, LOW_SPACE_BYTES, StorageUse, VolumeSpace, database_bytes};
 pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};
 pub use version_details::{BuildProfile, VersionDetails};
