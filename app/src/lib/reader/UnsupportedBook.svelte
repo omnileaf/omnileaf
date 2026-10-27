@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileX, FolderOpen } from "@lucide/svelte";
+  import { EyeOff, FileX, FolderOpen } from "@lucide/svelte";
   import { untrack } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
@@ -10,7 +10,14 @@
     CardHeader,
     CardTitle,
   } from "#lib/components/ui/card/index.ts";
-  import type { BookFile, BookPlace, Platform } from "#lib/ipc/bindings.ts";
+  import type {
+    BookFile,
+    BookPlace,
+    commands,
+    FileType,
+    Platform,
+  } from "#lib/ipc/bindings.ts";
+  import type { Notices } from "#lib/notices/notices.ts";
   import { actionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
@@ -19,22 +26,36 @@
   import BookBackNav from "./BookBackNav.svelte";
   import { fileKindsOpened, fileTypeLabel } from "./file-types.ts";
   import ProblemHeading from "./ProblemHeading.svelte";
-  import { PROBLEM_TEXT, problemLayout } from "./problem-heading.ts";
+  import {
+    PROBLEM_CAPTION,
+    PROBLEM_TEXT,
+    problemLayout,
+  } from "./problem-heading.ts";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
 
   const BUTTON_ICON_SIZE = 16;
   const WRAPPING_ACTION = "max-inline-full whitespace-normal text-center";
 
+  type Hiding = "offered" | "asking" | "hidden";
+
   let {
     place,
     file,
     platform,
+    hideFilesLike,
+    showFileType,
+    notices,
   }: {
     place: BookPlace | null;
     file: BookFile | null;
     platform: Platform;
+    hideFilesLike: typeof commands.hideFilesLike;
+    showFileType: typeof commands.showFileType;
+    notices: Notices;
   } = $props();
+
+  let hiding: Hiding = $state("offered");
 
   const settings = untrack(() => readerSettings(place?.series ?? ""));
   const showFile = $derived(showFileLabel(platform));
@@ -53,6 +74,45 @@
           type: fileTypeLabel(file.fileType),
         }),
   );
+  const caption = $derived(
+    file === null || file.fileType === null
+      ? m.reader_hide_caption_unnamed()
+      : m.reader_hide_caption({ type: fileTypeLabel(file.fileType) }),
+  );
+
+  async function hide(book: BookPlace["id"]): Promise<void> {
+    if (hiding !== "offered") {
+      return;
+    }
+    hiding = "asking";
+    const hidden = await hideFilesLike(book);
+    if (hidden.status === "error") {
+      reportError(hidden.error);
+      hiding = "offered";
+      return;
+    }
+    hiding = "hidden";
+    offerToShow(hidden.data);
+  }
+
+  function offerToShow(fileType: FileType): void {
+    notices.offerUndo({
+      title: m.file_type_hidden({ type: fileTypeLabel(fileType) }),
+      body: m.file_type_hidden_note(),
+      undo: () => {
+        void showAgain(fileType);
+      },
+    });
+  }
+
+  async function showAgain(fileType: FileType): Promise<void> {
+    const shown = await showFileType(fileType);
+    if (shown.status === "error") {
+      reportError(shown.error);
+      return;
+    }
+    hiding = "offered";
+  }
 </script>
 
 <main
@@ -92,11 +152,27 @@
         </CardContent>
       </Card>
       <div class={group}>
+        {#if place !== null}
+          <button
+            type="button"
+            aria-disabled={hiding === "offered" ? undefined : "true"}
+            class={[other, "aria-disabled:opacity-60"]}
+            onclick={() => hide(place.id)}
+          >
+            <EyeOff size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            {m.reader_hide_files_like()}
+          </button>
+        {/if}
         <button type="button" disabled class={other}>
           <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
           {m.reader_coming_soon({ feature: showFile })}
         </button>
       </div>
+      {#if place !== null}
+        <p class={["text-small text-muted", PROBLEM_CAPTION[layout]]}>
+          {caption}
+        </p>
+      {/if}
     </section>
   </div>
 </main>
