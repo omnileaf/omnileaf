@@ -587,12 +587,11 @@ async fn series_books(
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri hands command arguments over by value"
-)]
-fn creator_series(library: State<'_, Library>, creator: String) -> Vec<CreatorSeries> {
-    library.creator_series(&creator)
+async fn creator_series(
+    library: State<'_, Library>,
+    creator: String,
+) -> Result<Vec<CreatorSeries>, IpcError> {
+    Ok(library.creator_series(creator).await?)
 }
 
 #[tauri::command]

@@ -12,8 +12,8 @@ mod support;
 
 use books::write_book_with;
 use omnileaf_engine::{
-    AdultContent, CreatorRole, Library, LibraryListing, LibrarySeries, SeriesCreator, SeriesId,
-    SeriesPerson,
+    AdultContent, CreatorRole, CreatorSeries, Library, LibraryListing, LibrarySeries,
+    SeriesCreator, SeriesId, SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -255,5 +255,33 @@ async fn gives_the_details_a_series_files_name_with_nothing_edited() {
             person("Sample Author", Some(CreatorRole::StoryAndArt)),
             person("Sample Letterer", None),
         ]
+    );
+}
+
+#[tokio::test]
+async fn lists_the_series_a_creator_is_named_in_with_what_they_did_on_each() {
+    let scanned = scanned_with_two_volumes("details-creator-series").await;
+    let listed = scanned.listed().await;
+
+    let found = scanned
+        .library
+        .creator_series("Sample Author".to_owned())
+        .await
+        .unwrap();
+
+    let roles: Vec<(&str, Option<CreatorRole>)> = found
+        .iter()
+        .map(|series: &CreatorSeries| (series.title.as_str(), series.role))
+        .collect();
+    assert_eq!(
+        roles,
+        [
+            (SERIES_01, Some(CreatorRole::StoryAndArt)),
+            (SERIES_02, Some(CreatorRole::Story))
+        ]
+    );
+    assert_eq!(
+        found.iter().map(|series| series.id).collect::<Vec<_>>(),
+        listed.iter().map(|series| series.id).collect::<Vec<_>>()
     );
 }

@@ -18,11 +18,11 @@ use omnileaf_db::{
         add_root, book_to_read, bookmarked_roots, cover_file,
         filter_choices as stored_filter_choices, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
-        mark_root_unavailable, missing_roots, page_dimensions, place_in_series, record_page_count,
-        relocate_roots, remember_root_share, remove_book_files, remove_books_without_files,
-        remove_root, root_book_count, root_files, root_share, root_shares, series_books,
-        series_count, series_file_details, series_overview, series_page, series_titles,
-        show_root_while_missing, store_page_dimensions, unread_books, up_next,
+        mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
+        record_page_count, relocate_roots, remember_root_share, remove_book_files,
+        remove_books_without_files, remove_root, root_book_count, root_files, root_share,
+        root_shares, series_books, series_count, series_file_details, series_overview, series_page,
+        series_titles, show_root_while_missing, store_page_dimensions, unread_books, up_next,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -527,9 +527,16 @@ impl Library {
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.
-    pub fn creator_series(&self, creator: &str) -> Vec<CreatorSeries> {
-        let _ = (&self.store, creator);
-        Vec::new()
+    pub async fn creator_series(
+        &self,
+        creator: String,
+    ) -> Result<Vec<CreatorSeries>, LibraryError> {
+        let found = self
+            .store
+            .database()
+            .read(move |connection| person_series(connection, &creator))
+            .await?;
+        Ok(found.into_iter().map(CreatorSeries::from).collect())
     }
 
     /// Lists a series' books as `listing` asks, giving a series missing from the library no books.
