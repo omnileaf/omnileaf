@@ -1492,6 +1492,141 @@
   "series_no_unread": "⟦Éṽéŕý ƀööķ íñ ţĥíš šéŕíéš íš ŕéáð.··············⟧",
   "series_no_bookmarked": "⟦Ñö ƀööķ íñ ţĥíš šéŕíéš ĥáš á ƀööķɱáŕķ.················⟧",
   "series_show_all_books": "⟦Šĥöŵ áļļ ƀööķš······⟧",
+  "series_sections": "⟦Ķíñðš öƒ ƀööķ······⟧",
+  "series_section_volumes": "⟦Ṽöļûɱéš···⟧",
+  "series_section_chapters": "⟦Çĥáþţéŕš····⟧",
+  "series_section_specials": "⟦Šþéçíáļš····⟧",
+  "series_section_tab": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "⟦{name} {formattedCount}··········⟧"
+      }
+    }
+  ],
+  "series_section_tab_label": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{name}, {formattedCount} ƀööķ············⟧",
+        "countPlural=other": "⟦{name}, {formattedCount} ƀööķš············⟧"
+      }
+    }
+  ],
+  "series_volume": [
+    {
+      "declarations": [
+        "input number",
+        "local formattedNumber = number: number"
+      ],
+      "match": {
+        "*": "⟦Ṽöļûɱé {formattedNumber}··········⟧"
+      }
+    }
+  ],
+  "series_volumes_range": [
+    {
+      "declarations": [
+        "input first",
+        "input last",
+        "local formattedFirst = first: number",
+        "local formattedLast = last: number"
+      ],
+      "match": {
+        "*": "⟦Ṽöļûɱéš {formattedFirst}–{formattedLast}················⟧"
+      }
+    }
+  ],
+  "series_chapter": [
+    {
+      "declarations": [
+        "input number",
+        "local formattedNumber = number: number"
+      ],
+      "match": {
+        "*": "⟦Çĥáþţéŕ {formattedNumber}··········⟧"
+      }
+    }
+  ],
+  "series_chapters_range": [
+    {
+      "declarations": [
+        "input first",
+        "input last",
+        "local formattedFirst = first: number",
+        "local formattedLast = last: number"
+      ],
+      "match": {
+        "*": "⟦Çĥáþţéŕš {formattedFirst}–{formattedLast}·················⟧"
+      }
+    }
+  ],
+  "series_in_volume": [
+    {
+      "declarations": [
+        "input number",
+        "local formattedNumber = number: number"
+      ],
+      "match": {
+        "*": "⟦Íñ Ṽöļûɱé {formattedNumber}···········⟧"
+      }
+    }
+  ],
+  "series_gap_meta": "⟦Ñöţ íñ ţĥé ƒöļðéŕ·······⟧",
+  "series_gap_label": [
+    {
+      "declarations": [
+        "input count",
+        "input volumes",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ṽöļûɱé {volumes} íš ñöţ íñ ţĥé ƒöļðéŕ···············⟧",
+        "countPlural=other": "⟦Ṽöļûɱéš {volumes} áŕé ñöţ íñ ţĥé ƒöļðéŕ················⟧"
+      }
+    }
+  ],
+  "series_gap_note": [
+    {
+      "declarations": [
+        "input count",
+        "input gaps",
+        "input volumes",
+        "local countPlural = count: plural",
+        "local gapsPlural = gaps: plural"
+      ],
+      "selectors": ["countPlural", "gapsPlural"],
+      "match": {
+        "countPlural=one, gapsPlural=*": "⟦Ṽöļûɱé {volumes} íšñ’ţ íñ ţĥé ƒöļðéŕ. Ţĥé ĝáþ ķééþš ţĥé öţĥéŕš íñ þļáçé.·····························⟧",
+        "countPlural=other, gapsPlural=one": "⟦Ṽöļûɱéš {volumes} áŕéñ’ţ íñ ţĥé ƒöļðéŕ. Ţĥé ĝáþ ķééþš ţĥé öţĥéŕš íñ þļáçé.······························⟧",
+        "countPlural=other, gapsPlural=other": "⟦Ṽöļûɱéš {volumes} áŕéñ’ţ íñ ţĥé ƒöļðéŕ. Ţĥé ĝáþš ķééþ ţĥé öţĥéŕš íñ þļáçé.······························⟧"
+      }
+    }
+  ],
+  "series_chapters_note": "⟦Ţĥé çĥáþţéŕš áƒţéŕ ţĥé ļášţ ṽöļûɱé. Á çĥáþţéŕ ţĥáţ’š áļŕéáðý íñšíðé á ṽöļûɱé íš ŕéáð ţĥéŕé.·····································⟧",
+  "series_chapters_note_after": [
+    {
+      "declarations": [
+        "input number",
+        "local formattedNumber = number: number"
+      ],
+      "match": {
+        "*": "⟦Ţĥé çĥáþţéŕš áƒţéŕ Ṽöļûɱé {formattedNumber}. Á çĥáþţéŕ ţĥáţ’š áļŕéáðý íñšíðé á ṽöļûɱé íš ŕéáð ţĥéŕé.········································⟧"
+      }
+    }
+  ],
+  "series_specials_note": "⟦Éẋţŕáš ƒŕöɱ ţĥé šéŕíéš’ Šþéçíáļš ƒöļðéŕ, ķéþţ áþáŕţ ƒŕöɱ ţĥé ñûɱƀéŕéð ƀööķš.·······························⟧",
   "series_clear_search": "⟦Çļéáŕ ţĥé šéáŕçĥ·······⟧",
   "series_loading": "⟦Ļöáðíñĝ ţĥé šéŕíéš········⟧",
   "series_no_books": "⟦Ñö ƀööķš íñ ţĥíš šéŕíéš··········⟧",
