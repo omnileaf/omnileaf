@@ -54,6 +54,11 @@ export const commands = {
 	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
 	hideFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("hide_file_type", { fileType })),
 	showFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("show_file_type", { fileType })),
+	hiddenFileTypes: () => typedError<FileType[], IpcError>(__TAURI_INVOKE("hidden_file_types")),
+	bookFile: (book: string & { readonly __brand: "BookId" }) => typedError<{
+	name: string,
+	fileType: FileType | null,
+} | null, IpcError>(__TAURI_INVOKE("book_file", { book })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
@@ -199,6 +204,11 @@ export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "re
 export type BookDamage = {
 	promisedPages: number,
 	cause: DamageCause,
+};
+
+export type BookFile = {
+	name: string,
+	fileType: FileType | null,
 };
 
 export type BookPage = {

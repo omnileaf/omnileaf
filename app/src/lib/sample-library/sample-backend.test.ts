@@ -134,6 +134,30 @@ test("can't open a book whose file is missing", async () => {
   await expect(opening).rejects.toBeInstanceOf(CommandFailure);
 });
 
+test("names a book's file after its title", async () => {
+  const { backend } = backendFor();
+
+  const file = await backend.bookFile(sampleBookId(4, 3));
+
+  expect(file).toEqual({ name: "Volume 3.cbz", fileType: "cbz" });
+});
+
+test("names no file for a book the library doesn't hold", async () => {
+  const { backend } = backendFor();
+
+  const file = await backend.bookFile(sampleBookId(4, 99));
+
+  expect(file).toBeNull();
+});
+
+test("hides no file types to begin with", async () => {
+  const { backend } = backendFor();
+
+  const hidden = await backend.hiddenFileTypes();
+
+  expect(hidden).toEqual([]);
+});
+
 test("answers on the platform asked for", async () => {
   const { backend } = backendFor("platform=ios");
 

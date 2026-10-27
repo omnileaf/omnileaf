@@ -66,6 +66,7 @@ const LIBRARY_STATES = [
 const THOUSANDS_OF_SERIES = 12_480;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = ["present", "missing", "damaged"] as const;
+const READ_FILE_TYPE = "cbz";
 const MISSING_KINDS = [
   "none",
   "folder",
@@ -625,6 +626,24 @@ export function sampleBackend(
       }
     }
     throw failure("bookNotFound", "that book isn't in the library");
+  }
+
+  function placeOf(id: string) {
+    for (const series of library) {
+      const index = series.books.findIndex(
+        (_, at) => sampleBookId(series.number, at + 1) === id,
+      );
+      const book = series.books[index];
+      if (book !== undefined) {
+        return {
+          id,
+          title: book.title,
+          series: sampleSeriesId(series.number),
+          seriesTitle: titleOf(series),
+        };
+      }
+    }
+    return null;
   }
 
   function setReading(id: string, reading: SampleReading): void {
@@ -1315,22 +1334,15 @@ export function sampleBackend(
         secondsPerPage: Math.round(SAMPLE_SECONDS_PER_PAGE),
       };
     },
-    bookPlace: (id) => {
-      for (const series of library) {
-        const index = series.books.findIndex(
-          (_, at) => sampleBookId(series.number, at + 1) === id,
-        );
-        const book = series.books[index];
-        if (book !== undefined) {
-          return {
-            id,
-            title: book.title,
-            series: sampleSeriesId(series.number),
-            seriesTitle: titleOf(series),
+    bookPlace: placeOf,
+    bookFile: (id) => {
+      const place = placeOf(id);
+      return place === null
+        ? null
+        : {
+            name: `${place.title}.${READ_FILE_TYPE}`,
+            fileType: READ_FILE_TYPE,
           };
-        }
-      }
-      return null;
     },
     hideFilesLike: () => {
       throw failure(
@@ -1340,6 +1352,7 @@ export function sampleBackend(
     },
     hideFileType: () => null,
     showFileType: () => null,
+    hiddenFileTypes: () => [],
     bookmarkPages: (id, pages, isBookmarked) => {
       const kept = bookmarks.get(id) ?? new Set<number>();
       for (const page of pages) {
