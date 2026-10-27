@@ -41,59 +41,22 @@ macro_rules! title_is_better {
     };
 }
 
-macro_rules! year_is_better {
-    ($offered:literal, $kept:literal) => {
-        concat!(
-            "(",
-            trust!(concat!($offered, ".year_source")),
-            ", -",
-            $offered,
-            ".year) > (",
-            trust!(concat!($kept, ".year_source")),
-            ", -",
-            $kept,
-            ".year)"
-        )
-    };
-}
-
 const ADD_SERIES: &str = insert_series!("");
 const ADD_OR_RENAME_SERIES: &str = insert_series!(concat!(
     " ON CONFLICT (id) DO UPDATE SET
-        title = iif(",
-    title_is_better!(),
-    ", excluded.title, series.title),
-        title_key = iif(",
-    title_is_better!(),
-    ", excluded.title_key, series.title_key),
-        title_source = iif(",
-    title_is_better!(),
-    ", excluded.title_source, series.title_source),
-        year = iif(",
-    year_is_better!("excluded", "series"),
-    ", excluded.year, series.year),
-        year_source = iif(",
-    year_is_better!("excluded", "series"),
-    ", excluded.year_source, series.year_source)
+        title = excluded.title,
+        title_key = excluded.title_key,
+        title_source = excluded.title_source
     WHERE ",
     title_is_better!(),
-    " OR ",
-    year_is_better!("excluded", "series"),
     " ON CONFLICT DO NOTHING"
 ));
-const OFFER_YEAR: &str = concat!(
-    "UPDATE series SET year = offered.year, year_source = offered.year_source
-    FROM series AS offered
-    WHERE series.id = ?1 AND offered.id = ?2 AND ",
-    year_is_better!("offered", "series")
-);
 const FOLDER_KEY_SEPARATOR: &str = "/";
 const NAMED_KEY_SEPARATOR: &str = "\n";
 const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
 pub(crate) struct SeriesAdder<'t> {
     add: Statement<'t>,
-    offer_year: Statement<'t>,
 }
 
 #[derive(Clone, Debug)]
@@ -181,6 +144,10 @@ impl NewSeries {
     pub(crate) fn location(&self) -> Option<&Path> {
         self.location.as_deref()
     }
+
+    pub(crate) fn year(&self) -> Option<u16> {
+        self.year.map(|year| year.value)
+    }
 }
 
 #[tracing::instrument(skip_all, fields(series = %series.id))]
@@ -193,7 +160,6 @@ impl<'t> SeriesAdder<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
         Ok(Self {
             add: transaction.prepare(ADD_OR_RENAME_SERIES)?,
-            offer_year: transaction.prepare(OFFER_YEAR)?,
         })
     }
 
@@ -203,12 +169,6 @@ impl<'t> SeriesAdder<'t> {
         collation: &TitleCollation,
     ) -> Result<(), Error> {
         insert(&mut self.add, series, collation)
-    }
-
-    pub(crate) fn offer_year_of(&mut self, offered: SeriesId, to: SeriesId) -> Result<(), Error> {
-        self.offer_year
-            .execute((to.as_bytes(), offered.as_bytes()))?;
-        Ok(())
     }
 }
 
@@ -245,4 +205,38 @@ fn folder_key<P: AsRef<str>>(linked_folder: &str, location: &[P]) -> String {
 
 fn folder_key_part(folder: &str) -> String {
     norm(folder).replace(FOLDER_KEY_SEPARATOR, SEPARATOR_WITHIN_A_FOLDER_NAME)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::scratch::ScratchLibrary;
+
+    #[test]
+    fn dates_a_series_through_the_indexes_of_its_books_and_folders() {
+        let scratch = ScratchLibrary::new("date-series-plan");
+
+        let plan = scratch
+            .query_plan("SELECT year, year_source FROM series_year WHERE series_local_id = ?1");
+
+        let books_in_series = [
+            "CORRELATED SCALAR SUBQUERY 4",
+            "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+            "SEARCH book_details USING PRIMARY KEY (book_id=?)",
+        ];
+        let folders_of_series = [
+            "CORRELATED SCALAR SUBQUERY 5",
+            "SEARCH series_folder USING INDEX series_folder_by_series (series_local_id=?)",
+        ];
+        assert_eq!(
+            plan,
+            [
+                ["SEARCH series USING INTEGER PRIMARY KEY (rowid=?)"].as_slice(),
+                &books_in_series,
+                &folders_of_series,
+                &books_in_series,
+                &folders_of_series,
+            ]
+            .concat()
+        );
+    }
 }

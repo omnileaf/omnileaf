@@ -10,8 +10,8 @@ use crate::{
 };
 
 const ADD_FOLDER: &str =
-    "INSERT INTO series_folder (root_id, location, series_local_id, group_location)
-     SELECT ?1, ?2, local_id, ?4 FROM series WHERE id = ?3
+    "INSERT INTO series_folder (root_id, location, series_local_id, group_location, year)
+     SELECT ?1, ?2, local_id, ?4, ?5 FROM series WHERE id = ?3
      ON CONFLICT DO NOTHING";
 const SERIES_OF_FOLDER: &str = "SELECT series.id
      FROM series_folder JOIN series ON series.local_id = series_folder.series_local_id
@@ -64,11 +64,12 @@ impl<'t> FolderJoins<'t> {
             &location,
             own.as_bytes(),
             native_path::to_bytes(group),
+            found.series.year(),
         ))?;
         let filed_in = self
             .series_of_folder
             .query_row((found.root.0, &location), |row| stored_id(row, "id"))?;
-        let filed_in = match found.named_series {
+        Ok(match found.named_series {
             Some(named) if filed_in == own => {
                 series.add_or_rename(named, collation)?;
                 self.join.execute((named.id().as_bytes(), own.as_bytes()))?;
@@ -77,11 +78,7 @@ impl<'t> FolderJoins<'t> {
                 named.id()
             }
             Some(_) | None => filed_in,
-        };
-        if filed_in != own {
-            series.offer_year_of(own, filed_in)?;
-        }
-        Ok(filed_in)
+        })
     }
 }
 
