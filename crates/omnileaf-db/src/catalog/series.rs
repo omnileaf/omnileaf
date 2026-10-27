@@ -10,7 +10,7 @@ use crate::{
 };
 
 macro_rules! insert_series {
-    ($on_conflict:literal) => {
+    ($on_conflict:expr) => {
         concat!(
             "INSERT INTO series (
                 id, source_id, natural_key, title, title_key, added_at_ms, title_source, year,
@@ -22,8 +22,62 @@ macro_rules! insert_series {
     };
 }
 
+macro_rules! trust {
+    ($source:expr) => {
+        concat!("((", $source, " IS 'files') + (", $source, " IS NOT NULL))")
+    };
+}
+
+macro_rules! title_is_better {
+    () => {
+        concat!(
+            trust!("excluded.title_source"),
+            " > ",
+            trust!("series.title_source")
+        )
+    };
+}
+
+macro_rules! year_is_better {
+    ($offered:literal, $kept:literal) => {
+        concat!(
+            "(",
+            trust!(concat!($offered, ".year_source")),
+            ", -",
+            $offered,
+            ".year) > (",
+            trust!(concat!($kept, ".year_source")),
+            ", -",
+            $kept,
+            ".year)"
+        )
+    };
+}
+
 const ADD_SERIES: &str = insert_series!("");
-const ADD_SERIES_UNLESS_PRESENT: &str = insert_series!(" ON CONFLICT DO NOTHING");
+const ADD_OR_RENAME_SERIES: &str = insert_series!(concat!(
+    " ON CONFLICT (id) DO UPDATE SET
+        title = iif(",
+    title_is_better!(),
+    ", excluded.title, series.title),
+        title_key = iif(",
+    title_is_better!(),
+    ", excluded.title_key, series.title_key),
+        title_source = iif(",
+    title_is_better!(),
+    ", excluded.title_source, series.title_source),
+        year = iif(",
+    year_is_better!("excluded", "series"),
+    ", excluded.year, series.year),
+        year_source = iif(",
+    year_is_better!("excluded", "series"),
+    ", excluded.year_source, series.year_source)
+    WHERE ",
+    title_is_better!(),
+    " OR ",
+    year_is_better!("excluded", "series"),
+    " ON CONFLICT DO NOTHING"
+));
 const FOLDER_KEY_SEPARATOR: &str = "/";
 const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
@@ -96,10 +150,10 @@ pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(
 
 impl<'t> SeriesAdder<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
-        Ok(Self(transaction.prepare(ADD_SERIES_UNLESS_PRESENT)?))
+        Ok(Self(transaction.prepare(ADD_OR_RENAME_SERIES)?))
     }
 
-    pub(crate) fn add_unless_present(
+    pub(crate) fn add_or_rename(
         &mut self,
         series: &NewSeries,
         collation: &TitleCollation,

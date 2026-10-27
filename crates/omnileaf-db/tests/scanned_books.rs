@@ -858,3 +858,37 @@ async fn keeps_series_in_folders_whose_names_normalise_to_the_same_path_apart() 
         ]
     );
 }
+
+#[tokio::test]
+async fn renames_a_series_only_when_a_title_from_a_more_trusted_source_arrives() {
+    let library = Library::open("scanned-series-title-trust").await;
+    library
+        .record(library.found_in_folder("Sample Series 02", "v01", 1))
+        .await;
+    let named_in_files = SeriesNaming {
+        title: Sourced {
+            value: "Sample Series 07".to_owned(),
+            source: ValueSource::Files,
+        },
+        year: None,
+    };
+    let renamed = ScannedBook {
+        series: NewSeries::folder(
+            SeriesFolder {
+                linked_folder: "Sample Library",
+                location: Path::new("Sample Series 02"),
+            },
+            named_in_files,
+            ADDED_AT_MS,
+        )
+        .unwrap(),
+        ..library.found_in_folder("Sample Series 02", "v02", 2)
+    };
+    library.record(renamed).await;
+
+    library
+        .record(library.found_in_folder("Sample Series 02", "v03", 3))
+        .await;
+
+    assert_eq!(library.series().await, [("Sample Series 07".to_owned(), 3)]);
+}
