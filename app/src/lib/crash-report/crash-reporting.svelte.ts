@@ -55,6 +55,7 @@ const SEND_OUTCOMES = {
   bookNotFound: "notSent",
   bookUnreadable: "notSent",
   bookTypeUnsupported: "notSent",
+  fileTypeRead: "notSent",
   bookmarksNotKept: "notSent",
   labelsNotKept: "notSent",
   detailsNotKept: "notSent",

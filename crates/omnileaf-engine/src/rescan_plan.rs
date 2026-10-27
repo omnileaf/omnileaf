@@ -14,7 +14,12 @@ use crate::{
 
 pub(crate) struct ToRead {
     pub(crate) found: FoundBook,
-    pub(crate) replacing: Option<BookId>,
+    pub(crate) replacing: Option<KnownFile>,
+}
+
+pub(crate) struct KnownFile {
+    book: BookId,
+    location: PathBuf,
 }
 
 pub(crate) struct Plan {
@@ -32,7 +37,7 @@ pub(crate) struct Replacement {
 
 pub(crate) struct ReadBook {
     pub(crate) book: Result<ScannedBook, UnreadableBook>,
-    pub(crate) replacing: Option<BookId>,
+    pub(crate) replacing: Option<KnownFile>,
 }
 
 #[derive(Default)]
@@ -86,6 +91,10 @@ impl Plan {
         for ReadBook { book, replacing } in read {
             let book = match book {
                 Ok(book) => book,
+                Err(unread) if unread.is_hidden() => {
+                    self.leave_out(replacing);
+                    continue;
+                }
                 Err(unread) if unread.is_unsupported_archive() => {
                     self.changes.unsupported_books =
                         self.changes.unsupported_books.saturating_add(1);
@@ -100,9 +109,9 @@ impl Plan {
             match replacing {
                 Some(previous) => {
                     self.changes.updated = self.changes.updated.saturating_add(1);
-                    if previous != id {
+                    if previous.book != id {
                         self.replaced.push(Replacement {
-                            old: previous,
+                            old: previous.book,
                             new: id,
                         });
                     }
@@ -148,13 +157,22 @@ impl Plan {
             Ok(stamp) if known.as_ref().map(FileStamp::from) == Some(stamp) => None,
             Ok(_) => Some(ToRead {
                 found,
-                replacing: known.map(|file| file.book),
+                replacing: known.map(|file| KnownFile {
+                    book: file.book,
+                    location,
+                }),
             }),
             Err(error) => {
                 warn_unreadable(&found, &error);
                 self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
                 None
             }
+        }
+    }
+
+    fn leave_out(&mut self, hidden: Option<KnownFile>) {
+        if let Some(known) = hidden {
+            self.note_gone(known.location, known.book);
         }
     }
 
