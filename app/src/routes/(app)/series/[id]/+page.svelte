@@ -55,7 +55,10 @@
     standInBook,
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
-  import { sectionListing } from "#lib/series-sections/section-listing.ts";
+  import {
+    type ListingChange,
+    sectionListing,
+  } from "#lib/series-sections/section-listing.ts";
   import SeriesSections from "#lib/series-sections/SeriesSections.svelte";
 
   import type { PageProps } from "./$types";
@@ -378,11 +381,15 @@
           <ContinueCard {overview} {cover} {coverUrl} isWide={isWide.current} />
           <SeriesSections
             sections={found.overview.sections}
+            missingVolumes={found.overview.missingVolumes}
+            lastVolume={found.overview.lastVolume}
             listing={listed}
-            onListing={(chosen: SeriesBookListing) => {
-              listing = chosen;
+            onListing={(change: ListingChange) => {
+              listing = { ...listing, ...change };
               void books?.start();
             }}
+            {books}
+            usesStandIns={screenshotMode.isOn}
           >
             {#if books?.list.kind === "failed"}
               <p class="text-body text-muted">{m.series_books_failed()}</p>

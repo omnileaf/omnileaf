@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 
+import { emitFakeEvent } from "./fake-backend.ts";
 import { EXPANDED_MIN_WIDTH, expect, test, viewportOf } from "./fixtures.ts";
 import {
   chapters,
@@ -11,6 +12,13 @@ import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const SUMMER_SHORT: ShelvedBook = { kind: "special", title: "Summer Short" };
 const EVERY_KIND = [...volumes(1, 2), ...chapters(13, 14), SUMMER_SHORT];
+const READ_CHAPTER: ShelvedBook = {
+  kind: "chapter",
+  numbers: { first: 12, last: 12 },
+  reading: { state: "read" },
+};
+const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
+const LIBRARY_CHANGED = "library-changed";
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
@@ -25,6 +33,14 @@ async function openSeries(page: Page): Promise<void> {
 
 function kinds(page: Page) {
   return page.getByRole("tablist", { name: "Kinds of book" });
+}
+
+function covers(page: Page, section: string) {
+  return page.getByRole("list", { name: section }).getByRole("link");
+}
+
+function bookRows(page: Page) {
+  return page.getByRole("table", { name: "Books" }).getByRole("link");
 }
 
 test.describe("a series with volumes, chapters and specials", () => {
@@ -121,5 +137,107 @@ test.describe("a series of chapters only", () => {
 
     await expect(page.getByText("chapter 03")).toBeVisible();
     await expect(kinds(page)).toHaveCount(0);
+  });
+});
+
+test.describe("a series whose chapters come in late", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  const backend = shelf.backend();
+  let releaseChapters: () => void = () => undefined;
+  test.use({
+    backend: {
+      ...backend,
+      seriesBooks: async (id, listing, after) => {
+        if (listing.section === "chapters") {
+          await new Promise<void>((resolve) => {
+            releaseChapters = resolve;
+          });
+        }
+        return backend.seriesBooks(id, listing, after);
+      },
+    },
+  });
+
+  test("shows no volume under Chapters while the chapters load", async ({
+    page,
+  }) => {
+    test.skip(!isWide(page), "narrower windows keep one list");
+    await openSeries(page);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+
+    await kinds(page).getByRole("tab", { name: "Chapters" }).click();
+
+    await expect(page.getByRole("table", { name: "Books" })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Volumes" })).toHaveCount(0);
+    releaseChapters();
+    await expect(bookRows(page)).toHaveText([/chapter 13/, /chapter 14/]);
+  });
+});
+
+test.describe("a series read across the wide breakpoint", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({ backend: shelf.backend() });
+
+  test("lists the books each width shows", async ({ page }) => {
+    test.skip(!isWide(page), "only a wide window shows tabs");
+    const { width, height } = viewportOf(page);
+    await openSeries(page);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+
+    await page.setViewportSize({ width: NARROW_WIDTH, height });
+
+    await expect(
+      page.getByRole("list", { name: "Books" }).getByRole("link"),
+    ).toContainText([/volume 01/, /volume 02/, /chapter 13/]);
+
+    await page.setViewportSize({ width, height });
+
+    await expect(covers(page, "Volumes")).toHaveText([/Volume 1/, /Volume 2/]);
+  });
+});
+
+test.describe("a series whose specials a rescan takes away", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({ backend: shelf.backend() });
+
+  test("goes back to the volumes once Specials is gone", async ({ page }) => {
+    test.skip(!isWide(page), "narrower windows keep one list");
+    await openSeries(page);
+    await kinds(page).getByRole("tab", { name: "Specials" }).click();
+    await expect(covers(page, "Specials")).toHaveCount(1);
+
+    shelf.drop("specials");
+    await emitFakeEvent(page, LIBRARY_CHANGED);
+
+    await expect(kinds(page).getByRole("tab")).toHaveCount(2);
+    await expect(covers(page, "Volumes")).toHaveText([/Volume 1/, /Volume 2/]);
+  });
+});
+
+test.describe("a series with a read chapter", () => {
+  const shelf = new SectionShelf([
+    ...volumes(1),
+    READ_CHAPTER,
+    ...chapters(13),
+  ]);
+  test.use({ backend: shelf.backend() });
+
+  test("keeps the chapters' Unread filter across a visit to Volumes", async ({
+    page,
+  }) => {
+    test.skip(!isWide(page), "narrower windows keep one list");
+    await openSeries(page);
+    await kinds(page).getByRole("tab", { name: "Chapters" }).click();
+    await page
+      .getByRole("group", { name: "Show" })
+      .getByRole("radio", { name: "Unread", exact: true })
+      .click();
+    await expect(bookRows(page)).toHaveText([/chapter 13/]);
+
+    await kinds(page).getByRole("tab", { name: "Volumes" }).click();
+    await expect(covers(page, "Volumes")).toHaveCount(1);
+    await kinds(page).getByRole("tab", { name: "Chapters" }).click();
+
+    await expect(bookRows(page)).toHaveText([/chapter 13/]);
   });
 });

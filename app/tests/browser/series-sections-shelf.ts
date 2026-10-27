@@ -58,7 +58,7 @@ export function chapters(...numbers: readonly number[]): ShelvedBook[] {
 }
 
 export class SectionShelf {
-  readonly #books: WireBook[];
+  #books: WireBook[];
   readonly #missing: readonly WireRange[];
   readonly listings: { readonly section: string | null | undefined }[] = [];
 
@@ -83,6 +83,10 @@ export class SectionShelf {
       volume: book.volume ?? null,
       section: sectionOf(book),
     }));
+  }
+
+  drop(section: NonNullable<WireBook["section"]>): void {
+    this.#books = this.#books.filter((book) => book.section !== section);
   }
 
   #sections(): WireSection[] {

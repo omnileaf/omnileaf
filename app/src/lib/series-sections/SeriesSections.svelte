@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import {
@@ -10,25 +10,44 @@
   } from "#lib/components/ui/tabs/index.ts";
   import type {
     BookSection,
+    NumberRange,
+    SeriesBook,
     SeriesBookListing,
     SeriesSection,
   } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
+  import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { sectionTabs, shownSection } from "./section-listing";
+  import {
+    type ListingChange,
+    type SectionView,
+    sectionTabs,
+    sectionView,
+    shownSection,
+  } from "./section-listing";
   import { tabWords } from "./section-names";
+  import type { ListedBooks } from "./listed-books";
+  import SectionPanel from "./SectionPanel.svelte";
 
   let {
     sections,
+    missingVolumes,
+    lastVolume,
     listing,
     onListing,
+    books,
+    usesStandIns,
     children,
   }: {
     sections: readonly SeriesSection[];
+    missingVolumes: readonly NumberRange[];
+    lastVolume: number | null;
     listing: SeriesBookListing;
-    onListing: (listing: SeriesBookListing) => void;
+    onListing: (change: ListingChange) => void;
+    books: ListedBooks | undefined;
+    usesStandIns: boolean;
     children: Snippet;
   } = $props();
 
@@ -40,6 +59,40 @@
   });
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
+  const view = $derived(sectionView(listing, kinds, screen));
+  let staleList = $state<ListState<SeriesBook>>();
+  let readFor: string | undefined;
+
+  function readKey(shown: BookSection | undefined, shownView: SectionView) {
+    return `${shown ?? "every"}:${shownView}`;
+  }
+
+  function readAfresh(change: ListingChange, key: string): void {
+    staleList = books?.list;
+    readFor = key;
+    onListing(change);
+  }
+
+  $effect(() => {
+    const key = readKey(section, view);
+    untrack(() => {
+      if (readFor === undefined) {
+        readFor = key;
+      } else if (key !== readFor) {
+        readAfresh({}, key);
+      }
+    });
+  });
+  const panel = $derived({
+    section,
+    noted: tabs.length > 0 || view === "covers" ? section : undefined,
+    view,
+    series: { sections: kinds, missingVolumes, lastVolume },
+    direction: listing.direction,
+    books: books?.list === staleList ? undefined : books,
+    usesStandIns,
+    children,
+  });
 
   function isTab(value: string): value is BookSection {
     return tabs.some((tab) => tab.section === value);
@@ -51,7 +104,12 @@
     value={section}
     onValueChange={(chosen: string) => {
       if (isTab(chosen)) {
-        onListing({ ...listing, section: chosen });
+        const chosenView = sectionView(
+          { ...listing, section: chosen },
+          kinds,
+          screen,
+        );
+        readAfresh({ section: chosen }, readKey(chosen, chosenView));
       }
     }}
     class="flex flex-col gap-lg"
@@ -72,9 +130,9 @@
       {/each}
     </TabsList>
     <TabsContent value={section} class="flex flex-col gap-lg">
-      {@render children()}
+      <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
 {:else}
-  {@render children()}
+  <SectionPanel {...panel} />
 {/if}
