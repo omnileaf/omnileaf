@@ -1,9 +1,13 @@
 import type { Page } from "@playwright/test";
 
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import {
   accessibilityViolations,
   expect,
+  LARGEST_TEXT_SCALE,
   onPlatform,
+  setTextScale,
+  sidewaysOverflow,
   test,
   testOnlyInItsWebview,
 } from "./fixtures.ts";
@@ -154,6 +158,28 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test("keeps the title and a refusal inside the dialog at the largest text in a long language", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("omnileaf.language", "en-XA");
+  });
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await page.goto("/settings/privacy/screenshot-mode");
+  await page
+    .getByRole("button", { name: pseudo.screenshot_mode_shortcut_change_label })
+    .click();
+  const shortcutDialog = page.getByRole("dialog", {
+    name: pseudo.screenshot_mode_shortcut_dialog_title,
+  });
+  await expect(shortcutDialog.getByRole("textbox")).toBeFocused();
+
+  await page.keyboard.press("J");
+  await expect(shortcutDialog.getByRole("alert")).toBeVisible();
+
+  expect(await sidewaysOverflow(page, "[role=dialog]")).toEqual([]);
+});
 
 test.describe("on macOS", () => {
   testOnlyInItsWebview("macos");

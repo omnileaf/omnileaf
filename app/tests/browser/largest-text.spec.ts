@@ -26,6 +26,11 @@ import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const PAGES = [
   ...APP_PAGES,
+  "/settings/library/adult-content",
+  "/settings/library/tabs",
+  "/settings/library/tags",
+  "/settings/advanced/animations",
+  "/settings/storage",
   "/settings/privacy",
   "/settings/privacy/screenshot-mode",
 ] as const;
@@ -180,12 +185,23 @@ for (const platform of PLATFORMS) {
     }
 
     for (const path of PAGES) {
-      test(`fits ${path} without spilling`, async ({ page }) => {
-        await page.goto(path);
-        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      for (const language of LANGUAGES) {
+        test(`fits ${path} without spilling in ${language}`, async ({
+          page,
+        }) => {
+          test.skip(
+            language !== "en" && path.startsWith("/read/"),
+            "the reader's problem buttons keep a long language's label on one line",
+          );
+          await page.addInitScript((chosen) => {
+            window.localStorage.setItem("omnileaf.language", chosen);
+          }, language);
+          await page.goto(path);
+          await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-        await expectNothingSpills(page);
-      });
+          await expectNothingSpills(page);
+        });
+      }
 
       test(`fits ${path} without spilling in an iPad's landscape window`, async ({
         page,

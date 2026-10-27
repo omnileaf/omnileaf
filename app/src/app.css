@@ -1691,6 +1691,7 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-ui);
+    overflow-wrap: break-word;
   }
 
   :where([tabindex="-1"]):focus {

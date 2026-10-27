@@ -119,7 +119,7 @@
           isDisabled && "text-muted",
         ]}
       >
-        <span class="flex flex-1 flex-col gap-2xs">
+        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
           <span id="{id}-{feature}" class={look.label}>{label}</span>
           {#if description !== undefined}
             <span id="{id}-{feature}-description" class={look.description}

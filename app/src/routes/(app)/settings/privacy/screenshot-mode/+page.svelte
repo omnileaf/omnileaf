@@ -128,7 +128,7 @@
         >
           <Keyboard size={ROW_ICON_SIZE} />
         </span>
-        <span class="flex flex-1 flex-col gap-2xs">
+        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
           <span class="font-semibold desktop:text-callout">
             {m.screenshot_mode_shortcut()}
           </span>
@@ -159,7 +159,7 @@
         >
           <AppWindow size={ROW_ICON_SIZE} />
         </span>
-        <span class="flex flex-1 flex-col gap-2xs">
+        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
           <span class="font-semibold desktop:text-callout">{trayName}</span>
           <span class="text-detail text-muted">
             {m.screenshot_mode_tray_help()}
@@ -174,7 +174,7 @@
         >
           <Smartphone size={ROW_ICON_SIZE} />
         </span>
-        <span class="flex flex-1 flex-col gap-2xs">
+        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
           <span class="font-semibold">{m.screenshot_mode_long_press()}</span>
           <span class="text-detail text-muted">
             {m.screenshot_mode_long_press_help()}
