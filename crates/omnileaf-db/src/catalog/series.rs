@@ -68,7 +68,7 @@ impl NewSeries {
         added_at_ms: i64,
     ) -> Result<Self, KeyError> {
         Ok(Self {
-            id: SeriesId::folder(folder.linked_folder, folder.location)?,
+            id: SeriesId::folder(folder.linked_folder, &[folder.location])?,
             source: SourceId::local(),
             natural_key: format!(
                 "{}{FOLDER_KEY_SEPARATOR}{}",

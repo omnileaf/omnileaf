@@ -117,36 +117,49 @@ proptest! {
 
 #[test]
 fn keeps_same_name_series_folders_in_two_places_apart() {
-    let first = SeriesId::folder("Sample Library", "Author A/Sample Series 02").unwrap();
+    let first = SeriesId::folder("Sample Library", &["Author A", "Sample Series 02"]).unwrap();
 
-    let second = SeriesId::folder("Sample Library", "Author B/Sample Series 02").unwrap();
+    let second = SeriesId::folder("Sample Library", &["Author B", "Sample Series 02"]).unwrap();
 
     assert_ne!(first, second);
 }
 
 #[test]
 fn keeps_the_same_series_folder_in_two_linked_folders_apart() {
-    let first = SeriesId::folder("Sample Library", "Sample Series 02").unwrap();
+    let first = SeriesId::folder("Sample Library", &["Sample Series 02"]).unwrap();
 
-    let second = SeriesId::folder("Second Library", "Sample Series 02").unwrap();
+    let second = SeriesId::folder("Second Library", &["Sample Series 02"]).unwrap();
 
     assert_ne!(first, second);
 }
 
 #[test]
 fn gives_series_folders_whose_names_normalise_alike_the_same_series_id() {
-    let id = SeriesId::folder("Sample Library", "Sample Author/Sample Series 02").unwrap();
+    let id = SeriesId::folder("Sample Library", &["Sample Author", "Sample Series 02"]).unwrap();
 
-    let alike = SeriesId::folder(" SAMPLE  library", "sample   author/SAMPLE Series 02 ").unwrap();
+    let alike = SeriesId::folder(
+        " SAMPLE  library",
+        &["sample   author", "SAMPLE Series 02 "],
+    )
+    .unwrap();
 
     assert_eq!(alike, id);
 }
 
 #[test]
 fn keeps_a_series_folder_apart_from_the_series_named_like_it() {
-    let folder = SeriesId::folder("", "Sample Series 02").unwrap();
+    let folder = SeriesId::folder("", &["Sample Series 02"]).unwrap();
 
     let named = SeriesId::local("Sample Series 02").unwrap();
 
     assert_ne!(folder, named);
+}
+
+#[test]
+fn keeps_a_folder_named_with_a_fullwidth_solidus_apart_from_the_folders_it_reads_like() {
+    let named = SeriesId::folder("Sample Library", &["Author A\u{ff0f}Sample Series 02"]).unwrap();
+
+    let nested = SeriesId::folder("Sample Library", &["Author A", "Sample Series 02"]).unwrap();
+
+    assert_ne!(named, nested);
 }
