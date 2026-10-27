@@ -19,6 +19,7 @@
   import { shownBackLink } from "./back-link";
   import {
     backSwipeEdge,
+    directionOf,
     isGoingBack,
     SETTLING_MOTION,
     type TextDirection,
@@ -67,10 +68,6 @@
           towardsBack: swipeStart.direction === "rtl" ? -100 : 100,
         },
   );
-
-  function directionOf(screen: HTMLElement): TextDirection {
-    return getComputedStyle(screen).direction === "rtl" ? "rtl" : "ltr";
-  }
 
   function goBack(): boolean {
     const link = main === undefined ? undefined : shownBackLink(main);
@@ -125,13 +122,6 @@
       : swipe;
   }
 
-  async function settleOnceMoved(screen: HTMLElement): Promise<void> {
-    await Promise.allSettled(
-      screen.getAnimations().map((animation) => animation.finished),
-    );
-    screens.settled();
-  }
-
   function isOnSwitch(event: Event): boolean {
     return (
       event.target instanceof Element && event.target.closest(SWITCH) !== null
@@ -181,7 +171,7 @@
 
   $effect(() => {
     if (screens.isSettling && main !== undefined) {
-      void settleOnceMoved(main);
+      void screens.settleOnceMoved(main);
     }
   });
 

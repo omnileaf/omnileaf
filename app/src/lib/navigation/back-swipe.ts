@@ -25,6 +25,10 @@ export function backSwipeEdge(
   return hasBackLink ? BACK_EDGES[direction] : null;
 }
 
+export function directionOf(screen: Element): TextDirection {
+  return getComputedStyle(screen).direction === "rtl" ? "rtl" : "ltr";
+}
+
 export function placeScreens(
   progress: number,
   isMotionReduced: boolean,

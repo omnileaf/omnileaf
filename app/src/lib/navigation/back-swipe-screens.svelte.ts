@@ -45,6 +45,13 @@ export class BackSwipeScreens {
     this.arrived();
   }
 
+  async settleOnceMoved(screen: Element): Promise<void> {
+    await Promise.allSettled(
+      screen.getAnimations().map((animation) => animation.finished),
+    );
+    this.settled();
+  }
+
   arrived(): void {
     this.isSettling = false;
     this.#isLeaving = false;
