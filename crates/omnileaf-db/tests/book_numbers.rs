@@ -13,7 +13,7 @@ use omnileaf_db::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, NewRoot,
         NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind, RootLocator,
         ScannedBook, SortDirection, Sourced, ValueSource, add_root, record_moved_books,
-        record_scanned_books, series_books,
+        record_scanned_books, series_books, series_numberings,
     },
     rusqlite::types::Value,
 };
@@ -442,4 +442,21 @@ async fn pages_through_a_section_either_way_round_without_running_into_the_next(
             .map(|books| books.into_iter().map(|book| book.title).collect::<Vec<_>>()),
         [["c010", "c011", "c012"], ["c012", "c011", "c010"]]
     );
+}
+
+#[tokio::test]
+async fn reads_the_numbering_of_every_placed_book_of_a_series_in_reading_order() {
+    let library = Library::open("series-numberings").await;
+    let found = every_section(&library);
+    let expected: Vec<Numbering> = found.iter().filter_map(|book| book.numbering).collect();
+    library.record(found).await;
+    let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+
+    let numberings = library
+        .database
+        .read(move |connection| series_numberings(connection, series))
+        .await
+        .unwrap();
+
+    assert_eq!(numberings, expected);
 }

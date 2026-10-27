@@ -78,7 +78,7 @@ pub use series_file_details::{SeriesFileDetails, SeriesPerson, series_file_detai
 pub use series_listing::{
     Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
 };
-pub use series_overview::{SeriesOverview, series_overview};
+pub use series_overview::{SeriesOverview, series_numberings, series_overview};
 pub use series_page::{SeriesSummary, series_page};
 pub use series_search::{SeriesSearch, search_count, search_page};
 pub use series_titles::{SeriesTitle, series_titles};
