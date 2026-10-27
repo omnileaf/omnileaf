@@ -214,6 +214,17 @@ test("times each test by adding up its attempts, leaving out a test that never r
   });
 });
 
+test("refuses to time a run that stopped before its tests ran", () => {
+  const report = {
+    suites: [],
+    errors: [{ message: "Error: http://localhost:4173 is already used" }],
+  };
+
+  expect(() => testDurations(report)).toThrow(
+    "http://localhost:4173 is already used",
+  );
+});
+
 test("rejects a report that is not a Playwright JSON report", () => {
   expect(() => listedTests({ tests: [] })).toThrow("suites");
 });

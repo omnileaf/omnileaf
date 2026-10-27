@@ -53,6 +53,12 @@ export function listedTests(report: unknown): ListedTest[] {
 }
 
 export function testDurations(report: unknown): Timings {
+  const [runError] = isRecord(report) ? listOf(report.errors) : [];
+  if (runError !== undefined) {
+    throw new Error(
+      `Cannot time a run that stopped on an error: ${errorMessage(runError)}`,
+    );
+  }
   const timings: Record<string, Record<string, number>> = {};
   for (const { test, durationMs } of testRuns(report)) {
     if (durationMs === undefined) {
@@ -64,6 +70,12 @@ export function testDurations(report: unknown): Timings {
     };
   }
   return timings;
+}
+
+function errorMessage(error: unknown): string {
+  return isRecord(error) && typeof error.message === "string"
+    ? error.message
+    : JSON.stringify(error);
 }
 
 function testRuns(report: unknown): TestRun[] {
