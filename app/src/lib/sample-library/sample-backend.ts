@@ -24,7 +24,12 @@ import {
   slipsAllowed,
 } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
-import { isListedIn, numberingOf } from "./sample-numbers.ts";
+import {
+  isListedIn,
+  missingVolumes,
+  numberingOf,
+  sectionsOf,
+} from "./sample-numbers.ts";
 
 import {
   type SampleBook,
@@ -67,6 +72,7 @@ const LIBRARY_STATES = [
   "thousands",
 ] as const;
 const THOUSANDS_OF_SERIES = 12_480;
+const SAMPLE_FIRST_YEAR = 2004;
 const SERIES_STATES = ["ready", "loading", "failed", "empty"] as const;
 const SIXTH_VOLUME_FILES = [
   "present",
@@ -1322,9 +1328,13 @@ export function sampleBackend(
     seriesOverview: async (id) => {
       await seriesReady();
       const series = seriesWith(id);
+      const numberings = booksOf(series).map((book) => numberingOf(book.title));
       return {
         id,
         title: titleOf(series),
+        year: SAMPLE_FIRST_YEAR + series.number,
+        sections: sectionsOf(numberings),
+        missingVolumes: missingVolumes(numberings),
         bookCount: booksOf(series).length,
         readCount: booksOf(series).filter(isRead).length,
         bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)

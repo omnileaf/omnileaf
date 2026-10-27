@@ -314,6 +314,21 @@ test("lists only the books of the section asked for", async () => {
   expect(counts).toEqual([8, 0]);
 });
 
+test("sums up each series by its year, the sections it holds and the volumes it misses", async () => {
+  const { backend } = backendFor();
+  const summed = async (series: number) => {
+    const overview = await backend.seriesOverview(sampleSeriesId(series));
+    return [overview.year, overview.sections, overview.missingVolumes];
+  };
+
+  const overviews = [await summed(4), await summed(11)];
+
+  expect(overviews).toEqual([
+    [2008, ["volumes"], []],
+    [2015, ["chapters"], []],
+  ]);
+});
+
 test("relates Sample Series 04 to the series the boards draw beside it", async () => {
   const { backend } = backendFor();
 

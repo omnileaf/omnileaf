@@ -101,6 +101,9 @@ const SEARCHING_BACKEND: FakeBackend = {
       tags: [],
       related: [],
       secondsLeft: null,
+      year: null,
+      sections: [],
+      missingVolumes: [],
     };
   },
 };

@@ -771,6 +771,7 @@ export type SeriesNeighbour = {
 export type SeriesOverview = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
+	year: number | null,
 	bookCount: number,
 	readCount: number,
 	bookmarkCount: number,
@@ -786,6 +787,9 @@ export type SeriesOverview = {
 	related: RelatedSeries[],
 	/**  About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count. */
 	secondsLeft: number | null,
+	/**  The sections holding at least one book, in reading order. */
+	sections: BookSection[],
+	missingVolumes: NumberRange[],
 };
 
 export type SeriesPage = {

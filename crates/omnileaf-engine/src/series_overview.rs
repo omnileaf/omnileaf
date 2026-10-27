@@ -1,9 +1,12 @@
-use omnileaf_db::catalog::{self, BookSummary, PersonRole, PersonSeries, SeriesFileDetails};
+use omnileaf_db::catalog::{
+    self, BookSummary, Numbering, PersonRole, PersonSeries, SeriesFileDetails,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::{
-    CoverPath, SeriesBook, SeriesId, library_folder::root_folder, library_layout::folder_name,
+    BookSection, CoverPath, NumberRange, SeriesBook, SeriesId, library_folder::root_folder,
+    library_layout::folder_name, missing_volumes::missing_volumes,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -11,6 +14,7 @@ use crate::{
 pub struct SeriesOverview {
     pub id: SeriesId,
     pub title: String,
+    pub year: Option<u16>,
     pub book_count: u32,
     pub read_count: u32,
     pub bookmark_count: u32,
@@ -26,6 +30,9 @@ pub struct SeriesOverview {
     pub related: Vec<RelatedSeries>,
     /// About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count.
     pub seconds_left: Option<u32>,
+    /// The sections holding at least one book, in reading order.
+    pub sections: Vec<BookSection>,
+    pub missing_volumes: Vec<NumberRange>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -106,6 +113,7 @@ impl SeriesOverview {
         Self {
             id: SeriesId(overview.id),
             title: overview.title,
+            year: overview.year,
             book_count: overview.book_count,
             read_count: overview.read_count,
             bookmark_count: 0,
@@ -120,6 +128,22 @@ impl SeriesOverview {
             tags: Vec::new(),
             related: Vec::new(),
             seconds_left,
+            sections: Vec::new(),
+            missing_volumes: Vec::new(),
+        }
+    }
+
+    pub(crate) fn numbered_by(self, placed: &[Numbering]) -> Self {
+        let mut sections: Vec<BookSection> = placed
+            .iter()
+            .map(|numbering| numbering.section().into())
+            .collect();
+        sections.sort_unstable();
+        sections.dedup();
+        Self {
+            sections,
+            missing_volumes: missing_volumes(placed),
+            ..self
         }
     }
 }

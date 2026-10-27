@@ -44,6 +44,7 @@ mod linux_share;
 mod log_stand_ins;
 mod macos_share;
 mod missing_folder;
+mod missing_volumes;
 mod moved_home;
 mod network_share;
 mod open_books;

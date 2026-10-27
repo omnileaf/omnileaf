@@ -126,3 +126,25 @@ async fn lists_only_the_books_of_the_section_asked_for() {
         [("Sample Series 04 c020-022", 6)]
     );
 }
+
+#[tokio::test]
+async fn sums_up_a_series_by_its_year_sections_and_the_whole_volumes_it_misses() {
+    let sample = Sample::scan("overview-book-sections", SERIES_04_BOOKS).await;
+
+    let overview = sample
+        .scanned
+        .library
+        .series_overview(sample.series)
+        .await
+        .unwrap();
+
+    let served = serde_json::to_value(overview).unwrap();
+    assert_eq!(
+        ["year", "sections", "missingVolumes"].map(|field| served.get(field).cloned().unwrap()),
+        [
+            json!(2019),
+            json!(["volumes", "chapters", "specials"]),
+            json!([{"first": 2.0, "last": 2.0}, {"first": 4.0, "last": 4.0}]),
+        ]
+    );
+}

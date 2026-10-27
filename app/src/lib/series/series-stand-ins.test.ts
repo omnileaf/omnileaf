@@ -83,6 +83,9 @@ function overview(): SeriesOverview {
     tags: ["Sea"],
     related: [],
     secondsLeft: null,
+    year: null,
+    sections: [],
+    missingVolumes: [],
   };
 }
 

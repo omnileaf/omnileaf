@@ -21,9 +21,10 @@ use omnileaf_db::{
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
         record_page_count, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
-        root_shares, series_books, series_count, series_file_details, series_overview, series_page,
-        series_titles, show_root_while_missing, store_page_dimensions, unread_books, up_next,
-        writer_series_count, writer_series_page, writers,
+        root_shares, series_books, series_count, series_file_details, series_numberings,
+        series_overview, series_page, series_titles, show_root_while_missing,
+        store_page_dimensions, unread_books, up_next, writer_series_count, writer_series_page,
+        writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -547,13 +548,16 @@ impl Library {
                     overview,
                     up_next(connection, series)?,
                     series_file_details(connection, series)?,
+                    series_numberings(connection, series)?,
                 )))
             })
             .await?;
-        let (overview, up_next, details) = found.ok_or(LibraryError::SeriesNotFound { id })?;
+        let (overview, up_next, details, placed) =
+            found.ok_or(LibraryError::SeriesNotFound { id })?;
         Ok(
             SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
-                .described_by(details),
+                .described_by(details)
+                .numbered_by(&placed),
         )
     }
 

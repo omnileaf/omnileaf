@@ -114,6 +114,9 @@ export class FakeShelf {
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
           ...this.#details,
+          year: null,
+          sections: [],
+          missingVolumes: [],
         };
       },
       seriesBooks: async (id, listing, after) => {
