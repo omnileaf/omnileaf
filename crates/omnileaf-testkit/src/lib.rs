@@ -24,8 +24,8 @@ pub use library::{
     SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, SeriesLayout, SeriesSpec, write_sample_library,
 };
 pub use page::{
-    DrawnScan, PageShape, full_chroma_scan_jpeg, incompressible_bytes, page_jpeg, page_png,
-    page_webp, subsampled_scan_jpeg,
+    DrawnScan, PageShape, full_chroma_scan_jpeg, incompressible_bytes, margined_scan_jpeg,
+    page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
 };
 pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};

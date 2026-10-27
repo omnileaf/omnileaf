@@ -16,14 +16,14 @@ use std::{
 
 use omnileaf_engine::{
     BookDamage, BookId, BookPlace, BookReading, DamageCause, Library, LibraryListing,
-    OpenBookError, OpenedBook, PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource,
-    ResourceRouter, SeriesBookListing, SeriesId,
+    OpenBookError, OpenedBook, PageCrop, PageDimensions, PagePath, ProbedFormat, ReadMark,
+    ReadingDirection, Resource, ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
-    INK_OVER_PAPER_JXL, PageShape, cbz, cut_inside_entry, page_jpeg, page_png, strip_jpeg,
-    webp_header_only,
+    ArchiveEntry, Compression, DrawnScan, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH,
+    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_JXL, PageShape, cbz, cut_inside_entry, page_jpeg, page_png,
+    strip_jpeg, webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -43,6 +43,15 @@ const SPREAD: PageDimensions = PageDimensions {
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
 const PAGES_LEFT_WHOLE: u32 = 3;
 const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const SCAN: DrawnScan = DrawnScan {
+    width: 400,
+    height: 600,
+    seed: 3,
+    grain: 12,
+};
+const SCAN_MARGIN: u32 = 40;
+const PAPER: [u8; 3] = [255; 3];
+const INK: [u8; 3] = [40; 3];
 /// A byte JPEG lets any marker begin with, which a decoder skips but the size reader here doesn't.
 const FILL_BYTE: u8 = 0xFF;
 
@@ -184,11 +193,32 @@ impl Reader {
     }
 
     async fn page(&self, opened: &OpenedBook, index: usize) -> Resource {
-        let path = opened.pages.get(index).unwrap().path;
+        self.serve(opened.pages.get(index).unwrap().path).await
+    }
+
+    async fn serve(&self, path: PagePath) -> Resource {
         self.router
             .respond(&self.library, &format!("/{path}"))
             .await
     }
+}
+
+fn scan_with_margin(margin: u32) -> Vec<u8> {
+    let (width, height) = (u32::from(SCAN.width), u32::from(SCAN.height));
+    SCAN.to_jpeg(|column, row| {
+        let is_margin =
+            column < margin || row < margin || column >= width - margin || row >= height - margin;
+        if is_margin { PAPER } else { INK }
+    })
+    .unwrap()
+}
+
+fn served_size(resource: &Resource) -> Size {
+    let body = match resource {
+        Resource::Immutable { body, .. } => Some(body),
+        Resource::NotFound | Resource::Failed => None,
+    };
+    page_size(body.unwrap()).unwrap()
 }
 
 fn portrait_pages(seed: u64) -> Vec<Vec<u8>> {
@@ -738,6 +768,66 @@ async fn finds_no_page_past_the_end_of_a_book_or_of_a_revision_since_replaced() 
         resources,
         [Resource::NotFound, Resource::NotFound, Resource::NotFound]
     );
+}
+
+#[tokio::test]
+async fn serves_a_page_with_its_white_borders_cropped() {
+    let reader = Reader::with_pages("cropped", &[scan_with_margin(SCAN_MARGIN)]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let page = &opened.pages[0];
+
+    let cropped = served_size(&reader.serve(page.path.cropped(PageCrop::Borders)).await);
+    let sides_cropped = served_size(&reader.serve(page.path.cropped(PageCrop::SideBorders)).await);
+
+    let inked = Size {
+        width: u32::from(SCAN.width) - 2 * SCAN_MARGIN,
+        height: u32::from(SCAN.height) - 2 * SCAN_MARGIN,
+    };
+    assert!(cropped.width < inked.width + SCAN_MARGIN, "{cropped:?}");
+    assert!(cropped.height < inked.height + SCAN_MARGIN, "{cropped:?}");
+    assert!(
+        sides_cropped.width < inked.width + SCAN_MARGIN,
+        "{sides_cropped:?}"
+    );
+    assert_eq!(sides_cropped.height, u32::from(SCAN.height));
+}
+
+#[tokio::test]
+async fn serves_a_page_whole_at_its_cropped_path_when_it_has_no_white_border() {
+    let page = scan_with_margin(0);
+    let reader = Reader::with_pages("uncropped", std::slice::from_ref(&page)).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::Borders))
+        .await;
+
+    assert_eq!(resource, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn serves_a_crop_kept_on_disk_after_a_restart_without_cropping_again() {
+    let reader = Reader::with_pages("crop-kept", &[scan_with_margin(SCAN_MARGIN)]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::Borders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &[scan_with_margin(0)],
+    );
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert!(
+        served_size(&first).width < u32::from(SCAN.width),
+        "{first:?}"
+    );
+    assert_eq!(again, first);
 }
 
 #[tokio::test]

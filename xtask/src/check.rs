@@ -281,6 +281,24 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "cropped page speed",
+        group: Group::Rust,
+        program: "cargo",
+        args: &[
+            "nextest",
+            "run",
+            "--package",
+            "omnileaf-engine",
+            "--test",
+            "cropped_page_speed",
+            "--release",
+            "--run-ignored",
+            "only",
+            "--no-capture",
+            "--locked",
+        ],
+    },
+    Step {
         name: "webassembly",
         group: Group::Portable,
         program: "cargo",
@@ -679,6 +697,7 @@ mod tests {
                 "scan speed",
                 "cover speed",
                 "page speed",
+                "cropped page speed",
             ]
         );
     }

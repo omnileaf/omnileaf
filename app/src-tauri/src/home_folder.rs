@@ -6,12 +6,14 @@ use std::{
 use omnileaf_engine::HomeFolderSetting;
 use tauri::{AppHandle, Manager};
 
+use crate::ipc_error::IpcError;
+
 #[derive(Default)]
 pub(crate) struct ChosenHome(Mutex<Option<PathBuf>>);
 
 #[derive(Debug, thiserror::Error)]
-#[error("use the library in the folder chosen as the home folder, before a folder was chosen")]
-pub(crate) struct NothingChosen;
+#[error("act on the folder chosen as the home folder before any folder was chosen")]
+struct NothingChosen;
 
 impl ChosenHome {
     pub(crate) fn remember(&self, folder: PathBuf) {
@@ -29,6 +31,12 @@ impl ChosenHome {
 pub(crate) fn setting(app: &AppHandle) -> Option<HomeFolderSetting> {
     app.try_state::<HomeFolderSetting>()
         .map(|setting| setting.inner().clone())
+}
+
+pub(crate) fn chosen(app: &AppHandle) -> Result<(HomeFolderSetting, PathBuf), IpcError> {
+    setting(app)
+        .zip(app.state::<ChosenHome>().folder())
+        .ok_or_else(|| IpcError::internal(&NothingChosen))
 }
 
 #[cfg(test)]

@@ -21,6 +21,7 @@ mod folder_watch;
 mod found_library;
 mod history;
 mod home_folder_setting;
+mod home_move;
 mod ipc_brand;
 mod lane;
 mod library;
@@ -124,7 +125,7 @@ pub use opened_book::{
     BookDamage, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions, ProbedFormat,
     ReadingDirection, SeriesNeighbour,
 };
-pub use page_path::{MalformedPagePath, PagePath};
+pub use page_path::{MalformedPagePath, PageCrop, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
 pub use problem_report::{ProblemReport, ProblemReportPreview};

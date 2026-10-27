@@ -7,15 +7,17 @@ use std::{
     sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock},
 };
 
-use omnileaf_cache::{CacheError, CacheKey, DiskCache, MemoryCache};
+use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
-use omnileaf_imaging::{ImagingError, PageFormat, page_size, shrink_page, transcode};
+use omnileaf_imaging::{
+    CroppedSides, ImagingError, PageFormat, crop_white_borders, page_size, shrink_page, transcode,
+};
 use tokio::sync::oneshot;
 
 use crate::{
-    BookDamage, BookId, BookPage, Library, LibraryError, OpenedBook, PagePath, PageThumbnailPath,
-    ProbedFormat, ReadingDirection, SeriesId,
+    BookDamage, BookId, BookPage, Library, LibraryError, OpenedBook, PageCrop, PagePath,
+    PageThumbnailPath, ProbedFormat, ReadingDirection, SeriesId,
     decode_permits::DecodePermits,
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -248,7 +250,11 @@ impl Pages {
             None
         });
         let start = start_page(found.reading, opened.page_count);
-        self.read_ahead(&opened, start_index(found.reading, opened.page_count));
+        self.read_ahead(
+            &opened,
+            start_index(found.reading, opened.page_count),
+            PageCrop::Whole,
+        );
         Ok(OpenedBook {
             damage,
             ..opened_book(to_open, &sizes, start, direction, seconds_per_page)
@@ -305,9 +311,10 @@ impl Pages {
                 _ => return Ok(None),
             },
         };
-        let Some(page) = opened.page(path.index) else {
+        let Some(PageAt { index, .. }) = opened.page(path.index) else {
             return Ok(None);
         };
+        let page = PageAt { path, index };
         let served = if let Some(served) = kept {
             served
         } else {
@@ -317,19 +324,23 @@ impl Pages {
                 .read_page(page.path, move || shared.serve(&reading, page))
                 .await??
         };
-        self.read_ahead(&opened, page.index.saturating_add(1));
+        self.read_ahead(&opened, page.index.saturating_add(1), path.crop);
         if let Some((file, sizes)) = self.shared.size_fills.take_finished(opened.file) {
             store_sizes(library, file, path.rev, sizes).await;
         }
         Ok(Some(served))
     }
 
-    fn read_ahead(&self, opened: &OpenBook, first: usize) {
+    fn read_ahead(&self, opened: &OpenBook, first: usize, crop: PageCrop) {
         let memory = self.shared.memory();
         let jobs = (first..opened.page_count)
             .take(PAGES_READ_AHEAD)
             .filter_map(|index| {
-                let page = opened.page(u32::try_from(index).ok()?)?;
+                let PageAt { path, index } = opened.page(u32::try_from(index).ok()?)?;
+                let page = PageAt {
+                    path: path.cropped(crop),
+                    index,
+                };
                 (!memory.contains(&page.path) && !self.shared.in_flight.contains(&page.path))
                     .then_some(page)
             })
@@ -361,7 +372,11 @@ impl Shared {
             return Ok(page);
         }
         let bytes = opened.lock().read_page(index)?;
-        let page = Arc::new(self.prepared(path, bytes)?);
+        let whole = self.prepared(path.cropped(PageCrop::Whole), bytes)?;
+        let page = Arc::new(match path.crop.sides() {
+            Some(sides) => self.cropped(path, whole, sides),
+            None => whole,
+        });
         let weight = u64::try_from(page.bytes.len()).unwrap_or(u64::MAX);
         self.memory().insert(path, Arc::clone(&page), weight);
         Ok(page)
@@ -376,7 +391,7 @@ impl Shared {
                 bytes,
             });
         }
-        let key: CacheKey = format!("{}-{}-{}", path.book, path.rev, path.index).parse()?;
+        let key = path.cache_key()?;
         let cache = self.transcodes();
         if let Some(cached) = cache.and_then(|cache| cache.get(&key))
             && let Some(format) = PageFormat::sniff(&cached)
@@ -401,6 +416,49 @@ impl Shared {
             content_type: transcoded.format.content_type(),
             bytes: transcoded.bytes,
         })
+    }
+
+    fn cropped(&self, path: PagePath, whole: ServedPage, sides: CroppedSides) -> ServedPage {
+        let key = match path.cache_key() {
+            Ok(key) => key,
+            Err(error) => {
+                tracing::warn!(%path, error = %describe_error(&error), "name a cropped page in the cache, so it's served whole");
+                return whole;
+            }
+        };
+        let cache = self.transcodes();
+        if let Some(kept) = cache.and_then(|cache| cache.get(&key))
+            && let Some(format) = PageFormat::sniff(&kept)
+        {
+            return ServedPage {
+                content_type: format.content_type(),
+                bytes: kept,
+            };
+        }
+        let cropped = {
+            let _decoding = self.decodes.hold();
+            crop_white_borders(&whole.bytes, sides)
+        };
+        match cropped {
+            Ok(Some(cropped)) => {
+                if let Some(Err(error)) = cache.map(|cache| cache.put(&key, &cropped.bytes)) {
+                    tracing::warn!(%path, error = %describe_error(&error), "keep a cropped page for next time");
+                }
+                ServedPage {
+                    content_type: cropped.format.content_type(),
+                    bytes: cropped.bytes,
+                }
+            }
+            Ok(None) => whole,
+            Err(ImagingError::Unsupported) => {
+                tracing::debug!(%path, "serve whole a page in a format whose borders can't be found");
+                whole
+            }
+            Err(error) => {
+                tracing::warn!(%path, error = %describe_error(&error), "crop a page's white borders, so it's served whole");
+                whole
+            }
+        }
     }
 
     fn needs_transcoding(&self, format: PageFormat) -> bool {
@@ -509,6 +567,7 @@ fn opened_book(
                 book: found.id,
                 rev: found.rev,
                 index,
+                crop: PageCrop::Whole,
             };
             BookPage {
                 path,
