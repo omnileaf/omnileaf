@@ -1,4 +1,4 @@
-use omnileaf_formats::{Number, NumberRange, read_book_name};
+use omnileaf_formats::{Number, NumberRange, SeriesName, read_book_name, read_series_name};
 use proptest::prelude::*;
 
 fn title_of(name: &str) -> String {
@@ -123,6 +123,53 @@ fn reads_no_language_from_tags_that_are_not_language_codes() {
     .map(language_of);
 
     assert_eq!(languages, [None, None, None, None, None, None, None]);
+}
+
+#[test]
+fn reads_a_year_in_brackets_on_a_series_folder_as_its_year() {
+    let series = read_series_name("Sample Series 04 (2019)");
+
+    assert_eq!(
+        series,
+        SeriesName {
+            title: "Sample Series 04".to_owned(),
+            year: Some(2019),
+        }
+    );
+}
+
+#[test]
+fn takes_the_year_from_the_first_tag_that_is_a_year() {
+    let series = read_series_name("Sample Series 04 [GroupName] [1987] (2019)");
+
+    assert_eq!(series.year, Some(1987));
+}
+
+#[test]
+fn reads_a_year_only_from_1900_to_2099_written_with_four_digits() {
+    let years = [
+        "Sample Series 04 (1900)",
+        "Sample Series 04 (2099)",
+        "Sample Series 04 (1899)",
+        "Sample Series 04 (2100)",
+        "Sample Series 04 (02019)",
+        "Sample Series 04 ( 2019 )",
+        "Sample Series 04 (2019a)",
+        "Sample Series 04 2019",
+    ]
+    .map(|name| read_series_name(name).year);
+
+    assert_eq!(
+        years,
+        [Some(1900), Some(2099), None, None, None, None, None, None]
+    );
+}
+
+#[test]
+fn reads_a_series_title_like_a_book_title() {
+    let series = read_series_name("[GroupName]_Sample__Series 04 (Digital)");
+
+    assert_eq!(series.title, "Sample Series 04");
 }
 
 fn tag() -> impl Strategy<Value = String> {
