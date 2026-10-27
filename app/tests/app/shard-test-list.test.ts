@@ -1,0 +1,437 @@
+import { expect, test } from "vitest";
+
+import {
+  type ListedTest,
+  listedTests,
+  shardTestList,
+  shardTests,
+  testDurations,
+  testListMismatch,
+  testPath,
+  type Timings,
+} from "../shard-test-list.ts";
+
+const REPORT = {
+  suites: [
+    {
+      title: "about.spec.ts",
+      file: "about.spec.ts",
+      specs: [
+        {
+          title: "shows the version",
+          file: "about.spec.ts",
+          tests: [
+            { projectName: "chromium-phone", results: [{ duration: 1200 }] },
+            { projectName: "webkit-phone", results: [] },
+          ],
+        },
+      ],
+      suites: [
+        {
+          title: "",
+          file: "about.spec.ts",
+          specs: [],
+          suites: [
+            {
+              title: "with a clipboard",
+              file: "about.spec.ts",
+              specs: [
+                {
+                  title: "copies the details",
+                  file: "about.spec.ts",
+                  tests: [
+                    {
+                      projectName: "chromium-phone",
+                      results: [{ duration: 300 }, { duration: 400 }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "screens.spec.ts",
+      file: "screens.spec.ts",
+      specs: [],
+      suites: [
+        {
+          title: "in the dark theme",
+          file: "screens.spec.ts",
+          specs: [
+            {
+              title: "holds still",
+              file: "screen-checks.ts",
+              tests: [{ projectName: "webkit-phone", results: [] }],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+function listed(project: string, ...titles: string[]): ListedTest {
+  return { project, file: "a.spec.ts", declaredIn: "a.spec.ts", titles };
+}
+
+function declaredInHelper(
+  file: string,
+  project: string,
+  ...titles: string[]
+): ListedTest {
+  return { project, file, declaredIn: "checks.ts", titles };
+}
+
+const HARD_TO_LIST_TESTS: readonly ListedTest[] = [
+  listed("chromium-phone", "opens Settings › Library"),
+  listed("chromium-phone", "Settings", "opens"),
+  listed("chromium-phone", "Settings", "has 2 > 1 items"),
+  listed("chromium-phone", "Settings", " padded"),
+  listed("chromium-phone", "Settings"),
+  listed("chromium-phone", "menu", "opens"),
+  listed("chromium-phone", "menu", "opens", "twice"),
+  listed("chromium-phone", "menu", "closes"),
+  listed("webkit-phone", "menu", "opens"),
+  listed("webkit-phone", "menu", "closes"),
+  listed("webkit-phone", "notes", "shows the note"),
+  listed("webkit-phone", "notes", "shows the note\nacross lines"),
+  declaredInHelper("light.spec.ts", "webkit-phone", "holds still"),
+  declaredInHelper("light.spec.ts", "webkit-phone", "fits", "at 360px"),
+  declaredInHelper("dark.spec.ts", "webkit-phone", "fits", "at 390px"),
+  declaredInHelper("dark.spec.ts", "webkit-phone", "holds still"),
+  declaredInHelper("dark.spec.ts", "chromium-phone", "holds still"),
+  ...Array.from({ length: 40 }, (_, index) =>
+    listed("webkit-tablet", `test ${String(index)}`),
+  ),
+];
+
+function shardsOf(
+  tests: readonly ListedTest[],
+  timings: Timings,
+  total: number,
+): string[][] {
+  return Array.from({ length: total }, (_, index) =>
+    shardTestList(tests, timings, { current: index + 1, total }),
+  );
+}
+
+interface TestListLine {
+  readonly project: string;
+  readonly file: string | undefined;
+  readonly titles: readonly string[];
+}
+
+/** Mirrors how Playwright 1.64 reads a `--test-list` file: it splits the file on `\n`, trims each line and skips blank lines and `#` comments. */
+function testListLines(lines: readonly string[]): string[] {
+  return lines
+    .join("\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("#"));
+}
+
+/** Mirrors how Playwright 1.64 reads a `--test-list` line: it splits on `›` when the line has one, else on `>`, and trims each part. */
+function parsed(line: string): TestListLine {
+  const delimiter = line.includes("›") ? "›" : ">";
+  const [project = "", file, ...titles] = line
+    .split(delimiter)
+    .map((token) => token.trim());
+  return { project, file, titles };
+}
+
+/** Mirrors how Playwright 1.64 runs a `--test-list`: it loads only the spec files the lines name, then runs a test when a line names its project and the file declaring it, and starts its title path. */
+function runs(lines: readonly string[], listedTest: ListedTest): boolean {
+  const parsedLines = testListLines(lines).map(parsed);
+  return (
+    parsedLines.some(({ file }) => file === listedTest.file) &&
+    parsedLines.some(
+      ({ project, file, titles }) =>
+        project === `[${listedTest.project}]` &&
+        file === listedTest.declaredIn &&
+        titles.length <= listedTest.titles.length &&
+        titles.every((title, index) => listedTest.titles[index] === title),
+    )
+  );
+}
+
+function shardsRunning(
+  shards: readonly (readonly string[])[],
+  listedTest: ListedTest,
+): number[] {
+  return shards.flatMap((lines, index) =>
+    runs(lines, listedTest) ? [index] : [],
+  );
+}
+
+test("names a test by its spec file and titles", () => {
+  expect(testPath(listed("webkit-phone", "settings", "opens"))).toBe(
+    "a.spec.ts › settings › opens",
+  );
+});
+
+test("lists every test in a report once per project, with the file declaring it, leaving out untitled describes", () => {
+  const tests = listedTests(REPORT);
+
+  expect(tests).toEqual([
+    {
+      project: "chromium-phone",
+      file: "about.spec.ts",
+      declaredIn: "about.spec.ts",
+      titles: ["shows the version"],
+    },
+    {
+      project: "webkit-phone",
+      file: "about.spec.ts",
+      declaredIn: "about.spec.ts",
+      titles: ["shows the version"],
+    },
+    {
+      project: "chromium-phone",
+      file: "about.spec.ts",
+      declaredIn: "about.spec.ts",
+      titles: ["with a clipboard", "copies the details"],
+    },
+    {
+      project: "webkit-phone",
+      file: "screens.spec.ts",
+      declaredIn: "screen-checks.ts",
+      titles: ["in the dark theme", "holds still"],
+    },
+  ]);
+});
+
+test("times each test by adding up its attempts, leaving out a test that never ran", () => {
+  const timings = testDurations(REPORT);
+
+  expect(timings).toEqual({
+    "about.spec.ts › shows the version": { "chromium-phone": 1200 },
+    "about.spec.ts › with a clipboard › copies the details": {
+      "chromium-phone": 700,
+    },
+  });
+});
+
+test("leaves a failed test out of the timings and keeps a flaky one at all its attempts", () => {
+  const report = {
+    suites: [
+      {
+        file: "about.spec.ts",
+        specs: [
+          {
+            title: "times out",
+            file: "about.spec.ts",
+            tests: [
+              {
+                projectName: "webkit-phone",
+                status: "unexpected",
+                results: [{ duration: 30000 }],
+              },
+            ],
+          },
+          {
+            title: "passes on retry",
+            file: "about.spec.ts",
+            tests: [
+              {
+                projectName: "webkit-phone",
+                status: "flaky",
+                results: [{ duration: 900 }, { duration: 400 }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const timings = testDurations(report);
+
+  expect(timings).toEqual({
+    "about.spec.ts › passes on retry": { "webkit-phone": 1300 },
+  });
+});
+
+test("refuses to time a run that stopped before its tests ran", () => {
+  const report = {
+    suites: [],
+    errors: [{ message: "Error: http://localhost:4173 is already used" }],
+  };
+
+  expect(() => testDurations(report)).toThrow(
+    "http://localhost:4173 is already used",
+  );
+});
+
+test("rejects a report that is not a Playwright JSON report", () => {
+  expect(() => listedTests({ tests: [] })).toThrow("suites");
+});
+
+test("gives the longest tests their own shards first", () => {
+  const tests = ["a", "b", "c", "d"].map((title) => listed("p", title));
+  const timings = {
+    "a.spec.ts › a": { p: 10 },
+    "a.spec.ts › b": { p: 5 },
+    "a.spec.ts › c": { p: 4 },
+    "a.spec.ts › d": { p: 1 },
+  };
+
+  const shards = shardsOf(tests, timings, 2);
+
+  expect(shards).toEqual([
+    ["[p] › a.spec.ts › a"],
+    ["[p] › a.spec.ts › b", "[p] › a.spec.ts › c", "[p] › a.spec.ts › d"],
+  ]);
+});
+
+test("times a test missing from the timings at the median", () => {
+  const tests = ["a", "b", "c", "new"].map((title) => listed("p", title));
+  const timings = {
+    "a.spec.ts › a": { p: 10 },
+    "a.spec.ts › b": { p: 3 },
+    "a.spec.ts › c": { p: 2 },
+    "a.spec.ts › gone": { p: 1 },
+  };
+
+  const shards = shardsOf(tests, timings, 2);
+
+  expect(shards).toEqual([
+    ["[p] › a.spec.ts › a"],
+    ["[p] › a.spec.ts › b", "[p] › a.spec.ts › new", "[p] › a.spec.ts › c"],
+  ]);
+});
+
+test("puts the same tests in the same shards whatever order they are listed in", () => {
+  const tests = ["a", "b", "c", "d", "e"].map((title) => listed("p", title));
+
+  const shards = shardsOf(tests, {}, 3);
+  const reversed = shardsOf(tests.toReversed(), {}, 3);
+
+  expect(reversed).toEqual(shards);
+});
+
+test("lists every test in exactly one shard, even when a title cannot be written in a test list", () => {
+  const tests = HARD_TO_LIST_TESTS;
+
+  const shards = shardsOf(tests, {}, 7);
+
+  for (const listedTest of tests) {
+    expect(
+      shardsRunning(shards, listedTest),
+      `${listedTest.project} ${testPath(listedTest)}`,
+    ).toHaveLength(1);
+  }
+});
+
+test("gives each shard exactly the tests its test list runs", () => {
+  const total = 7;
+
+  const shards = Array.from({ length: total }, (_, index) => {
+    const shard = { current: index + 1, total };
+    return {
+      lines: shardTestList(HARD_TO_LIST_TESTS, {}, shard),
+      assigned: shardTests(HARD_TO_LIST_TESTS, {}, shard),
+    };
+  });
+
+  for (const { lines, assigned } of shards) {
+    expect(new Set(assigned)).toEqual(
+      new Set(
+        HARD_TO_LIST_TESTS.filter((listedTest) => runs(lines, listedTest)),
+      ),
+    );
+  }
+});
+
+test("loads the spec file of a test declared in a helper without running any other test", () => {
+  const tests = [
+    declaredInHelper("light.spec.ts", "p", "holds still"),
+    listed("p", "a"),
+  ];
+
+  const shards = shardsOf(tests, {}, 2);
+
+  expect(shards).toContainEqual([
+    "[p] › checks.ts › holds still",
+    "[load only] › light.spec.ts",
+  ]);
+});
+
+test("rejects a project that a line loading a file would run", () => {
+  expect(() =>
+    shardTestList([listed("load only", "a")], {}, { current: 1, total: 1 }),
+  ).toThrow("load only");
+});
+
+test.each([
+  "opens Settings › Library",
+  "shows the note\nacross lines",
+  "shows the note\racross lines",
+])("keeps a test titled %j with the rest of its describe", (title) => {
+  const tests = [
+    listed("p", "Settings", title),
+    listed("p", "Settings", "opens"),
+    listed("p", "other"),
+  ];
+
+  const shards = shardsOf(tests, {}, 2);
+
+  expect(shards).toContainEqual(["[p] › a.spec.ts › Settings"]);
+});
+
+test("names a test titled with > on its own line", () => {
+  const tests = [
+    listed("p", "Settings", "has 2 > 1 items"),
+    listed("p", "Settings", "opens"),
+    listed("p", "other"),
+  ];
+
+  const shards = shardsOf(tests, {}, 2);
+
+  expect(shards.flat()).toContain(
+    "[p] › a.spec.ts › Settings › has 2 > 1 items",
+  );
+});
+
+test("rejects more shards than there are tests to share out", () => {
+  expect(() =>
+    shardTestList([listed("p", "a")], {}, { current: 1, total: 2 }),
+  ).toThrow("2 shards");
+});
+
+test("finds no mismatch when Playwright lists exactly the tests a shard was given", () => {
+  const assigned = [listed("p", "a"), listed("q", "a"), listed("p", "b", "c")];
+
+  const mismatch = testListMismatch(
+    assigned,
+    assigned.toReversed().map((listedTest) => ({ ...listedTest })),
+  );
+
+  expect(mismatch).toEqual({ missing: [], extra: [] });
+});
+
+test("names the tests Playwright leaves out of a shard and the ones it adds", () => {
+  const mismatch = testListMismatch(
+    [listed("p", "a"), listed("p", "b")],
+    [listed("p", "b"), listed("q", "a")],
+  );
+
+  expect(mismatch).toEqual({
+    missing: [listed("p", "a")],
+    extra: [listed("q", "a")],
+  });
+});
+
+test("tells apart tests whose titles join into the same path", () => {
+  const mismatch = testListMismatch(
+    [listed("p", "a › b")],
+    [listed("p", "a", "b")],
+  );
+
+  expect(mismatch).toEqual({
+    missing: [listed("p", "a › b")],
+    extra: [listed("p", "a", "b")],
+  });
+});

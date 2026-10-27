@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "test": "vitest run --project components --project harness",
     "test:e2e": "playwright test",
+    "test:e2e:timings": "node tests/write-browser-timings.ts",
     "test:app": "tauri build --debug --no-bundle --features e2e && vitest run --project app",
     "test:android": "vitest run --project android",
     "test:android:slow": "vitest run --project android-slow",
