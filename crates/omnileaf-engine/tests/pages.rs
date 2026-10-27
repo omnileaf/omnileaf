@@ -32,6 +32,7 @@ const PAGES: u32 = 5;
 const FOLDER: &str = "Sample Library";
 const SERIES: &str = "Sample Series 01";
 const BOOK: &str = "Sample Series 01 v01";
+const NEXT_BOOK: &str = "Sample Series 01 v02";
 const PORTRAIT: PageDimensions = PageDimensions {
     width: 400,
     height: 600,
@@ -190,13 +191,17 @@ impl Reader {
             .unwrap();
     }
 
-    async fn book(&self) -> BookId {
+    async fn books(&self) -> Vec<BookId> {
         let books = self
             .library
             .series_books(self.series().await, SeriesBookListing::default(), None)
             .await
             .unwrap();
-        books.books.first().unwrap().id
+        books.books.iter().map(|book| book.id).collect()
+    }
+
+    async fn book(&self) -> BookId {
+        *self.books().await.first().unwrap()
     }
 
     async fn open(&self, undecodable: Vec<ProbedFormat>) -> OpenedBook {
@@ -967,6 +972,30 @@ async fn serves_a_long_strip_whole_after_a_restart_when_measuring_it_again_fails
         "{first:?}"
     );
     assert_eq!(again, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn drops_a_side_cropped_page_of_a_book_the_reader_left_before_measuring_it() {
+    let [pages, next_pages] =
+        [SCAN_MARGIN, WIDER_SCAN_MARGIN].map(|margin| vec![scan_with_margin(margin); STRIP_PAGES]);
+    let reader = Reader::with_books("strip-left", &[(BOOK, pages), (NEXT_BOOK, next_pages)]).await;
+    let [left, next] = <[BookId; 2]>::try_from(reader.books().await).unwrap();
+    let opened = reader
+        .router
+        .open_book(&reader.library, left, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+    reader
+        .router
+        .open_book(&reader.library, next, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let resource = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::SideBorders))
+        .await;
+
+    assert_eq!(resource, Resource::NotFound);
 }
 
 #[tokio::test]
