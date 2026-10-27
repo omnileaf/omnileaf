@@ -42,7 +42,7 @@ pub enum Numbering {
 }
 
 impl BookKind {
-    pub(crate) const fn name(self) -> &'static str {
+    pub(crate) const fn as_stored(self) -> &'static str {
         match self {
             Self::Volume => "volume",
             Self::Chapter => "chapter",
@@ -89,7 +89,7 @@ impl NumberRange {
 }
 
 impl ValueSource {
-    pub(crate) const fn name(self) -> &'static str {
+    pub(crate) const fn as_stored(self) -> &'static str {
         match self {
             Self::FolderName => "folder_name",
             Self::FileName => "file_name",

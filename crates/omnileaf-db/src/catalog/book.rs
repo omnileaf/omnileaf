@@ -164,12 +164,12 @@ fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error>
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),
         book.page_count,
-        numbering.map(|numbering| numbering.kind().name()),
+        numbering.map(|numbering| numbering.kind().as_stored()),
         number.map(|number| number.value.first().thousandths()),
         number.map(|number| number.value.last().thousandths()),
-        number.map(|number| number.source.name()),
+        number.map(|number| number.source.as_stored()),
         volume.map(|volume| volume.value.thousandths()),
-        volume.map(|volume| volume.source.name()),
+        volume.map(|volume| volume.source.as_stored()),
     ))?)
 }
 
