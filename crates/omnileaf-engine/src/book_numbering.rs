@@ -1,7 +1,12 @@
 use omnileaf_db::catalog::{BookNumber, NumberRange, Numbering, Sourced, ValueSource};
 use omnileaf_formats::{self as formats, BookName};
 
-use crate::placement::Shelf;
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum Shelf {
+    Series,
+    Volume(formats::Number),
+    Specials,
+}
 
 pub(crate) fn number_book(book: &BookName, shelf: Shelf) -> Numbering {
     let folder_volume = match shelf {

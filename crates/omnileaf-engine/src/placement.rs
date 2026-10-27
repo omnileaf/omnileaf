@@ -3,7 +3,10 @@ use std::{borrow::Cow, ffi::OsStr, path::Path};
 use omnileaf_db::catalog::Numbering;
 use omnileaf_formats::{BookName, Number, read_book_name, read_series_name};
 
-use crate::{book_numbering::number_book, library_layout::is_comic};
+use crate::{
+    book_numbering::{Shelf, number_book},
+    library_layout::is_comic,
+};
 
 const SPECIALS_FOLDER: &str = "Specials";
 
@@ -12,13 +15,6 @@ pub(crate) struct Placement {
     pub(crate) series: String,
     pub(crate) title: String,
     pub(crate) numbering: Numbering,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum Shelf {
-    Series,
-    Volume(Number),
-    Specials,
 }
 
 pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
