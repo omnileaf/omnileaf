@@ -1,21 +1,35 @@
-const BACK_WITHIN_SCREEN = "omnileaf:back-within-screen";
+import type { BackSwipe } from "#lib/ipc/bindings.ts";
 
-/** Asks the screen shown whether it takes a back gesture itself, as picking books ends on back rather than leaving; true when it did. */
-export function isBackTakenByScreen(): boolean {
-  return !window.dispatchEvent(
-    new Event(BACK_WITHIN_SCREEN, { cancelable: true }),
-  );
+import { isGoingBack } from "./back-swipe";
+
+interface OpenLayer {
+  readonly close: () => void;
 }
 
-/** Takes each back gesture asked of the screen while `takes` returns true, which should also do what back does on the screen. */
-export function takeBackWithinScreen(takes: () => boolean): () => void {
-  const listener = (event: Event): void => {
-    if (takes()) {
-      event.preventDefault();
-    }
-  };
-  window.addEventListener(BACK_WITHIN_SCREEN, listener);
+let openLayers: readonly OpenLayer[] = [];
+
+export function isBackTakenByScreen(): boolean {
+  const top = openLayers.at(-1);
+  top?.close();
+  return top !== undefined;
+}
+
+export function willScreenTakeBack(): boolean {
+  return openLayers.length > 0;
+}
+
+export function takeBackWithinScreen(close: () => void): () => void {
+  const layer: OpenLayer = { close };
+  openLayers = [...openLayers, layer];
   return () => {
-    window.removeEventListener(BACK_WITHIN_SCREEN, listener);
+    openLayers = openLayers.filter((open) => open !== layer);
   };
+}
+
+export function unlessTakenByScreen(swipe: BackSwipe): BackSwipe {
+  return swipe.kind === "released" &&
+    isGoingBack(swipe.progress ?? 0, swipe.velocity ?? 0) &&
+    isBackTakenByScreen()
+    ? { kind: "cancelled" }
+    : swipe;
 }

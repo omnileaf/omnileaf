@@ -175,15 +175,14 @@
     }
   }
 
-  $effect(() =>
-    takeBackWithinScreen(() => {
-      if (!isPicking) {
-        return false;
-      }
+  $effect(() => {
+    if (!isPicking) {
+      return;
+    }
+    return takeBackWithinScreen(() => {
       void end();
-      return true;
-    }),
-  );
+    });
+  });
 
   beforeNavigate((navigation) => {
     if (navigation.type === "popstate" && navigation.delta < 0 && isPicking) {

@@ -8,6 +8,7 @@
   } from "#lib/components/ui/drawer/index.ts";
   import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { cn } from "#lib/components/cn.ts";
+  import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import LightSliders from "./LightSliders.svelte";
@@ -41,6 +42,13 @@
   function close(): void {
     open(false);
   }
+
+  $effect(() => {
+    if (!isOpen) {
+      return;
+    }
+    return takeBackWithinScreen(close);
+  });
 </script>
 
 <button

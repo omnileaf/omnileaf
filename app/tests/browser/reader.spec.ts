@@ -30,6 +30,7 @@ import {
   PAGE_HEIGHT,
   PAGE_WIDTH,
   pageIndexOf,
+  pinchTo,
   PREVIOUS_BOOK,
   readerBackend,
   readerBook,
@@ -1866,20 +1867,6 @@ test.describe("with a pointer", () => {
 });
 
 test.describe("pinched in", () => {
-  async function pinchTo(page: Page, scale: number): Promise<void> {
-    await page.evaluate((pinched) => {
-      const viewport = window.visualViewport;
-      if (viewport === null) {
-        throw new Error("the browser has no visual viewport");
-      }
-      Object.defineProperty(viewport, "scale", {
-        configurable: true,
-        get: () => pinched,
-      });
-      viewport.dispatchEvent(new Event("resize"));
-    }, scale);
-  }
-
   function surfaceTouchAction(page: Page): Promise<string> {
     return zone(page, "Next page")
       .locator("..")

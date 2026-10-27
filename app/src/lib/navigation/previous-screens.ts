@@ -7,6 +7,7 @@ export interface ScreenCopy {
 
 export class PreviousScreens {
   readonly #copies = new Map<string, ScreenCopy>();
+  #landingOn: string | undefined;
 
   keep(pathname: string, screen: HTMLElement): void {
     this.#copies.set(pathname, copyOf(screen));
@@ -14,6 +15,20 @@ export class PreviousScreens {
 
   of(pathname: string): ScreenCopy | undefined {
     return this.#copies.get(pathname);
+  }
+
+  landOn(pathname: string): void {
+    this.#landingOn = pathname;
+  }
+
+  cancelLanding(): void {
+    this.#landingOn = undefined;
+  }
+
+  landedOn(pathname: string): ScreenCopy | undefined {
+    const isLanding = this.#landingOn === pathname;
+    this.#landingOn = undefined;
+    return isLanding ? this.of(pathname) : undefined;
   }
 
   forgetAllButAbove(pathname: string): void {

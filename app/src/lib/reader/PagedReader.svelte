@@ -18,7 +18,12 @@
     commands,
     type OpenedBook,
     type Platform,
+    type SwipeEdge,
   } from "#lib/ipc/bindings.ts";
+  import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
+  import ReaderBackSwipe, {
+    type ReaderBackSwipeState,
+  } from "#lib/navigation/ReaderBackSwipe.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -280,6 +285,19 @@
   const zoneLayout = $derived(tapZonesFor(look.tapZones, leftTurn, rightTurn));
   let heading: HTMLHeadingElement | undefined = $state();
   let viewportScale = $state(RESTING_SCALE);
+  const isPagePanning = $derived(isZoomedIn(viewportScale) || zoom > 1);
+  const backSwipe: ReaderBackSwipeState = $derived.by(() => {
+    if (platform !== "ios" || !chrome.isPhoneSized) {
+      return "off";
+    }
+    return isPagePanning ? "heldForPanning" : "ready";
+  });
+  const nextPageDragEdge: SwipeEdge | null = $derived.by(() => {
+    if (isStrip) {
+      return null;
+    }
+    return reading.direction === "rightToLeft" ? "left" : "right";
+  });
 
   const spreads = $derived(
     spreadsOf(
@@ -334,6 +352,11 @@
       isJumpOpen = false;
     }
     isSettingsOpen = isOpen;
+    holdControls(isOpen);
+  }
+
+  function openShortcuts(isOpen: boolean): void {
+    areShortcutsOpen = isOpen;
     holdControls(isOpen);
   }
 
@@ -459,22 +482,35 @@
         openJump(!isJumpOpen);
         return;
       case "shortcuts":
-        areShortcutsOpen = !areShortcutsOpen;
-        holdControls(areShortcutsOpen);
+        openShortcuts(!areShortcutsOpen);
         return;
       case "leave":
-        if (isJumpOpen) {
-          openJump(false);
-          return;
+        if (!closeOpenPanel()) {
+          void leaveFullScreenOrBook();
         }
-        if (isSettingsOpen) {
-          openSettings(false);
-          return;
-        }
-        void leaveFullScreenOrBook();
         return;
     }
   }
+
+  function closeOpenPanel(): boolean {
+    if (isJumpOpen) {
+      openJump(false);
+    } else if (isSettingsOpen) {
+      openSettings(false);
+    } else if (areShortcutsOpen) {
+      openShortcuts(false);
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  $effect(() => {
+    if (!isPanelOpen && !areShortcutsOpen) {
+      return;
+    }
+    return takeBackWithinScreen(closeOpenPanel);
+  });
 
   function turnBy(step: number): void {
     if (isStrip && !turner.isPastEnd) {
@@ -1031,293 +1067,306 @@
   </div>
 {/snippet}
 
-<main
-  {@attach zoomsOnWheel}
-  data-theme={look.controls === "dark" ? "dark" : undefined}
-  class={[
-    "fixed inset-none overflow-hidden text-on-reader",
-    BACKGROUNDS[look.background],
-  ]}
-  onpointermove={(event) => {
-    if (hasPointerMoved(event) && isAtRevealEdge(event)) {
-      controls.show();
-    }
-  }}
+<ReaderBackSwipe
+  swipeState={backSwipe}
+  takenEdge={nextPageDragEdge}
+  backPath={seriesHref}
+  onBack={() => goto(seriesHref)}
 >
-  <div
+  <main
+    {@attach zoomsOnWheel}
+    data-theme={look.controls === "dark" ? "dark" : undefined}
     class={[
-      "absolute inset-none",
-      isPanelOpen && "expanded:inset-e-reader-settings-room",
+      "fixed inset-none overflow-hidden text-on-reader",
+      BACKGROUNDS[look.background],
     ]}
+    onpointermove={(event) => {
+      if (hasPointerMoved(event) && isAtRevealEdge(event)) {
+        controls.show();
+      }
+    }}
   >
-    {#if cropped !== undefined}
-      {#key cropped.crop}
-        {#if isStripShown}
-          <StripStack
-            bind:this={strip}
-            pages={cropped.pages}
-            crop={cropped.crop}
-            shown={turner.shown}
-            isBlank={screenshotMode.isOn &&
-              screenshotMode.options.blankReaderPages}
-            marks={bookmarks === null ? [] : [...bookmarks]}
-            overlay={stripZones}
-            startAt={startAt?.kind === "strip" ? startAt : undefined}
-            onShown={(index: number) => {
-              turner.goTo(index);
-            }}
-            onShownReady={() => {
-              startAt = undefined;
-              if (!hasOpened) {
-                hasOpened = true;
-                controls.bookOpened();
-              }
-            }}
-          />
-        {:else}
-          <PageStack
-            bind:this={paged}
-            pages={cropped.pages}
-            crop={cropped.crop}
-            shown={turner.shown}
-            {spread}
-            fit={look.fit}
-            {zoom}
-            isReversed={reading.direction === "rightToLeft"}
-            overlay={turnZones}
-            bookTitle={named.title}
-            isBlank={screenshotMode.isOn &&
-              screenshotMode.options.blankReaderPages}
-            {slide}
-            {isSettling}
-            startAt={startAt?.kind === "spread" ? startAt : undefined}
-            onNextPage={() => {
-              act("next");
-            }}
-            onShownReady={() => {
-              startAt = undefined;
-              if (!hasOpened) {
-                hasOpened = true;
-                controls.bookOpened();
-              }
-            }}
-          />
-        {/if}
-      {/key}
-    {/if}
-    {#if look.light.isOn}
-      <div
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-none bg-reader-black"
-        style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
-      ></div>
-      <div
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
-        style:opacity={(look.light.warmth / 100) * WARMEST}
-      ></div>
-    {/if}
-  </div>
-  <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
-  {#if turner.isPastEnd}
-    <UpNext
-      book={book.id}
-      title={named.title}
-      seriesTitle={named.seriesTitle}
-      {seriesHref}
-      next={named.next}
-      {nextHref}
-      direction={reading.direction}
-    />
-  {:else}
-    <header
+    <div
       class={[
-        "absolute transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
-        chrome.spans
-          ? "inset-x-none inset-bs-none"
-          : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
-        !controls.isShown && "pointer-events-none opacity-0",
+        "absolute inset-none",
+        isPanelOpen && "expanded:inset-e-reader-settings-room",
       ]}
-      {...controlEvents}
     >
-      <ReaderTopBar
-        {seriesHref}
-        {platform}
+      {#if cropped !== undefined}
+        {#key cropped.crop}
+          {#if isStripShown}
+            <StripStack
+              bind:this={strip}
+              pages={cropped.pages}
+              crop={cropped.crop}
+              shown={turner.shown}
+              isBlank={screenshotMode.isOn &&
+                screenshotMode.options.blankReaderPages}
+              marks={bookmarks === null ? [] : [...bookmarks]}
+              overlay={stripZones}
+              startAt={startAt?.kind === "strip" ? startAt : undefined}
+              onShown={(index: number) => {
+                turner.goTo(index);
+              }}
+              onShownReady={() => {
+                startAt = undefined;
+                if (!hasOpened) {
+                  hasOpened = true;
+                  controls.bookOpened();
+                }
+              }}
+            />
+          {:else}
+            <PageStack
+              bind:this={paged}
+              pages={cropped.pages}
+              crop={cropped.crop}
+              shown={turner.shown}
+              {spread}
+              fit={look.fit}
+              {zoom}
+              isReversed={reading.direction === "rightToLeft"}
+              overlay={turnZones}
+              bookTitle={named.title}
+              isBlank={screenshotMode.isOn &&
+                screenshotMode.options.blankReaderPages}
+              {slide}
+              {isSettling}
+              startAt={startAt?.kind === "spread" ? startAt : undefined}
+              onNextPage={() => {
+                act("next");
+              }}
+              onShownReady={() => {
+                startAt = undefined;
+                if (!hasOpened) {
+                  hasOpened = true;
+                  controls.bookOpened();
+                }
+              }}
+            />
+          {/if}
+        {/key}
+      {/if}
+      {#if look.light.isOn}
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-none bg-reader-black"
+          style:opacity={((100 - look.light.brightness) / 100) * DIMMEST}
+        ></div>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-none bg-reader-warmth mix-blend-multiply"
+          style:opacity={(look.light.warmth / 100) * WARMEST}
+        ></div>
+      {/if}
+    </div>
+    <h1 bind:this={heading} tabindex="-1" class="sr-only">{named.title}</h1>
+    {#if turner.isPastEnd}
+      <UpNext
+        book={book.id}
+        title={named.title}
         seriesTitle={named.seriesTitle}
-        bookTitle={named.title}
-        {pageNumber}
-        {pageCount}
-        quickSettings={isStrip ? undefined : quickSettings}
-        {more}
-        {isSettingsOpen}
-        {areShortcutsOpen}
-        bookmark={bookmarks === null
-          ? null
-          : {
-              label:
-                spread.length > 1
-                  ? m.reader_bookmark_pages()
-                  : m.reader_bookmark(),
-              isPressed: isBookmarked,
-            }}
-        {isJumpOpen}
-        onJump={() => {
-          act("jump");
-        }}
-        onBookmark={() => {
-          void toggleBookmark();
-        }}
-        onShortcuts={() => {
-          act("shortcuts");
-        }}
-        onSettings={() => {
-          openSettings(!isSettingsOpen);
-        }}
-        onFullScreen={() => {
-          act("fullScreen");
-        }}
+        {seriesHref}
+        next={named.next}
+        {nextHref}
+        direction={reading.direction}
       />
-    </header>
-    {#if autoScroll !== "off" && !controls.isShown}
-      <div
-        class="absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-auto-bar"
+    {:else}
+      <header
+        class={[
+          "absolute transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
+          chrome.spans
+            ? "inset-x-none inset-bs-none"
+            : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
+          !controls.isShown && "pointer-events-none opacity-0",
+        ]}
+        {...controlEvents}
       >
-        <AutoScrollBar
-          speed={scrollSpeed}
-          isPaused={autoScroll === "paused"}
-          isTouch={!isPointer(platform)}
-          onToggle={toggleAutoScroll}
-          onSlower={() => {
-            settings.change("pagesPerMinute", slowerSpeed(look.pagesPerMinute));
+        <ReaderTopBar
+          {seriesHref}
+          {platform}
+          seriesTitle={named.seriesTitle}
+          bookTitle={named.title}
+          {pageNumber}
+          {pageCount}
+          quickSettings={isStrip ? undefined : quickSettings}
+          {more}
+          {isSettingsOpen}
+          {areShortcutsOpen}
+          bookmark={bookmarks === null
+            ? null
+            : {
+                label:
+                  spread.length > 1
+                    ? m.reader_bookmark_pages()
+                    : m.reader_bookmark(),
+                isPressed: isBookmarked,
+              }}
+          {isJumpOpen}
+          onJump={() => {
+            act("jump");
           }}
-          onFaster={() => {
-            settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
+          onBookmark={() => {
+            void toggleBookmark();
+          }}
+          onShortcuts={() => {
+            act("shortcuts");
+          }}
+          onSettings={() => {
+            openSettings(!isSettingsOpen);
+          }}
+          onFullScreen={() => {
+            act("fullScreen");
+          }}
+        />
+      </header>
+      {#if autoScroll !== "off" && !controls.isShown}
+        <div
+          class="absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-auto-bar"
+        >
+          <AutoScrollBar
+            speed={scrollSpeed}
+            isPaused={autoScroll === "paused"}
+            isTouch={!isPointer(platform)}
+            onToggle={toggleAutoScroll}
+            onSlower={() => {
+              settings.change(
+                "pagesPerMinute",
+                slowerSpeed(look.pagesPerMinute),
+              );
+            }}
+            onFaster={() => {
+              settings.change(
+                "pagesPerMinute",
+                fasterSpeed(look.pagesPerMinute),
+              );
+            }}
+          />
+        </div>
+      {/if}
+      <div
+        class={[
+          "absolute transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
+          chrome.spans
+            ? "inset-x-none inset-be-none"
+            : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
+          isPanelOpen && "expanded:inset-e-reader-settings-room",
+          chrome.floats && "pointer-events-none",
+          !controls.isShown && "pointer-events-none opacity-0",
+        ]}
+        {...controlEvents}
+        {@attach makesToastRoom}
+      >
+        <ReaderPanel
+          pages={book.pages}
+          shown={turner.shown}
+          {spread}
+          previous={named.previous}
+          next={named.next}
+          direction={reading.direction}
+          quickSettings={isStrip ? undefined : quickSettings}
+          isBlank={screenshotMode.isOn &&
+            screenshotMode.options.blankReaderPages}
+          showsPreviews={smartFeatures.showsPagePreviews}
+          isShown={controls.isShown}
+          onPlay={isStrip ? startAutoScroll : undefined}
+          secondsLeft={book.secondsPerPage === null ||
+          !smartFeatures.showsTimeLeft
+            ? undefined
+            : (pageCount - turner.shown) * book.secondsPerPage}
+          onSeek={(index: number) => {
+            turner.goTo(index);
           }}
         />
       </div>
+      {#if !controls.isShown && autoScroll === "off"}
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+        >
+          <span
+            class={cn(
+              "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
+              chrome.floats
+                ? [READER_CAPSULE, "px-md"]
+                : "bg-reader-glass text-reader-muted",
+            )}>{spreadPosition(spread, pageCount)}</span
+          >
+        </div>
+      {/if}
     {/if}
-    <div
-      class={[
-        "absolute transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
-        chrome.spans
-          ? "inset-x-none inset-be-none"
-          : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
-        isPanelOpen && "expanded:inset-e-reader-settings-room",
-        chrome.floats && "pointer-events-none",
-        !controls.isShown && "pointer-events-none opacity-0",
-      ]}
-      {...controlEvents}
-      {@attach makesToastRoom}
-    >
-      <ReaderPanel
-        pages={book.pages}
-        shown={turner.shown}
-        {spread}
-        previous={named.previous}
-        next={named.next}
-        direction={reading.direction}
-        quickSettings={isStrip ? undefined : quickSettings}
-        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        showsPreviews={smartFeatures.showsPagePreviews}
-        isShown={controls.isShown}
-        onPlay={isStrip ? startAutoScroll : undefined}
-        secondsLeft={book.secondsPerPage === null ||
-        !smartFeatures.showsTimeLeft
-          ? undefined
-          : (pageCount - turner.shown) * book.secondsPerPage}
-        onSeek={(index: number) => {
-          turner.goTo(index);
-        }}
-      />
-    </div>
-    {#if !controls.isShown && autoScroll === "off"}
+    {#if isPagePanning}
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
+        class="pointer-events-none absolute inset-x-none inset-bs-reader-zoom-badge flex justify-center"
       >
         <span
-          class={cn(
-            "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
-            chrome.floats
-              ? [READER_CAPSULE, "px-md"]
-              : "bg-reader-glass text-reader-muted",
-          )}>{spreadPosition(spread, pageCount)}</span
+          class="rounded-shadcn-control bg-chip px-md py-2xs text-caption font-medium text-foreground tabular-nums"
         >
+          {isPointer(platform)
+            ? m.reader_zoom_key_to_fit({
+                percent: percent.format(zoom),
+                key: usesCommandKey(platform)
+                  ? m.reader_key_command_mac({ key: "0" })
+                  : m.reader_key_command({ key: "0" }),
+              })
+            : m.reader_zoom_tap_to_fit({
+                percent: percent.format(Math.max(zoom, viewportScale)),
+              })}
+        </span>
       </div>
     {/if}
-  {/if}
-  {#if zoom > 1 || isZoomedIn(viewportScale)}
-    <div
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-x-none inset-bs-reader-zoom-badge flex justify-center"
-    >
-      <span
-        class="rounded-shadcn-control bg-chip px-md py-2xs text-caption font-medium text-foreground tabular-nums"
-      >
-        {isPointer(platform)
-          ? m.reader_zoom_key_to_fit({
-              percent: percent.format(zoom),
-              key: usesCommandKey(platform)
-                ? m.reader_key_command_mac({ key: "0" })
-                : m.reader_key_command({ key: "0" }),
-            })
-          : m.reader_zoom_tap_to_fit({
-              percent: percent.format(Math.max(zoom, viewportScale)),
-            })}
-      </span>
-    </div>
-  {/if}
-  <JumpToBook
-    isOpen={isJumpOpen}
-    {book}
-    seriesTitle={named.seriesTitle}
-    currentPage={turner.shown + 1}
-    onClose={() => {
-      openJump(false);
-    }}
-  />
-  <KeyboardShortcuts
-    isOpen={areShortcutsOpen}
-    {platform}
-    onClose={() => {
-      areShortcutsOpen = false;
-      holdControls(false);
-    }}
-  />
-  {#if reading.isStripDetected && !isStripFoundSeen && !turner.isPastEnd}
-    <StripFoundCard
-      onChange={() => {
-        seeStripFound();
-        openSettings(true);
-        void tick().then(() => {
-          document
-            .querySelector<HTMLSelectElement>("select[data-reading-mode]")
-            ?.focus();
-        });
-      }}
-      onDone={seeStripFound}
-    />
-  {:else if !isGuideSeen && !turner.isPastEnd}
-    <ReaderGuide
-      {isStrip}
-      direction={reading.direction}
-      zones={look.tapZones}
-      isTouch={!isPointer(platform)}
-      onDone={() => {
-        seenOnce(guideKey).see();
-        guidesSeenNow.add(guideKey);
+    <JumpToBook
+      isOpen={isJumpOpen}
+      {book}
+      seriesTitle={named.seriesTitle}
+      currentPage={turner.shown + 1}
+      onClose={() => {
+        openJump(false);
       }}
     />
-  {/if}
-  <ReadingSettings
-    isOpen={isSettingsOpen}
-    {settings}
-    {reading}
-    seriesTitle={named.seriesTitle}
-    {canUseMyPace}
-    onClose={() => {
-      openSettings(false);
-    }}
-  />
-  <p role="status" class="sr-only">{announced}</p>
-</main>
+    <KeyboardShortcuts
+      isOpen={areShortcutsOpen}
+      {platform}
+      onClose={() => {
+        openShortcuts(false);
+      }}
+    />
+    {#if reading.isStripDetected && !isStripFoundSeen && !turner.isPastEnd}
+      <StripFoundCard
+        onChange={() => {
+          seeStripFound();
+          openSettings(true);
+          void tick().then(() => {
+            document
+              .querySelector<HTMLSelectElement>("select[data-reading-mode]")
+              ?.focus();
+          });
+        }}
+        onDone={seeStripFound}
+      />
+    {:else if !isGuideSeen && !turner.isPastEnd}
+      <ReaderGuide
+        {isStrip}
+        direction={reading.direction}
+        zones={look.tapZones}
+        isTouch={!isPointer(platform)}
+        onDone={() => {
+          seenOnce(guideKey).see();
+          guidesSeenNow.add(guideKey);
+        }}
+      />
+    {/if}
+    <ReadingSettings
+      isOpen={isSettingsOpen}
+      {settings}
+      {reading}
+      seriesTitle={named.seriesTitle}
+      {canUseMyPace}
+      onClose={() => {
+        openSettings(false);
+      }}
+    />
+    <p role="status" class="sr-only">{announced}</p>
+  </main>
+</ReaderBackSwipe>

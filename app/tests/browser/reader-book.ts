@@ -148,3 +148,17 @@ export const readerBackend = (
   ...base,
   openBook: () => readerBook(opening),
 });
+
+export async function pinchTo(page: Page, scale: number): Promise<void> {
+  await page.evaluate((pinched) => {
+    const viewport = window.visualViewport;
+    if (viewport === null) {
+      throw new Error("the browser has no visual viewport");
+    }
+    Object.defineProperty(viewport, "scale", {
+      configurable: true,
+      get: () => pinched,
+    });
+    viewport.dispatchEvent(new Event("resize"));
+  }, scale);
+}
