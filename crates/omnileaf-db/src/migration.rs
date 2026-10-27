@@ -74,6 +74,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0038_create_hidden_file_types"),
     migration!("0039_keep_when_each_series_was_last_read_in_every_order"),
     migration!("0040_count_the_books_each_series_holds_more_than_one_file_of"),
+    migration!("0041_keep_the_details_of_each_book"),
 ];
 
 pub(crate) fn pending(

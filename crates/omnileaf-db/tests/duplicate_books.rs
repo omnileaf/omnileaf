@@ -10,10 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, Inclusion, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, add_root,
-        record_moved_books, record_scanned_books, remove_book_files, remove_root, series_count,
-        series_page,
+        BookDetails, BookFile, Inclusion, NewRoot, NewSeries, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort,
+        add_root, record_moved_books, record_scanned_books, remove_book_files, remove_root,
+        series_count, series_page,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
@@ -141,6 +141,7 @@ fn scanned(root: RootId, copy: &BookCopy) -> ScannedBook {
         title: format!("Volume {:02}", copy.content),
         added_at_ms: MODIFIED_AT_MS,
         page_count: 1,
+        details: BookDetails::default(),
         file: BookFile {
             root,
             location: PathBuf::from(copy.location),

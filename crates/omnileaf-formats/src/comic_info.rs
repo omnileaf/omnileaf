@@ -9,11 +9,43 @@ use quick_xml::{
 const ROOT: &str = "ComicInfo";
 const PAGES: &str = "Pages";
 const PAGE: &str = "Page";
+const AGE_RATINGS: [(&str, AgeRating); 13] = [
+    ("Early Childhood", AgeRating::EarlyChildhood),
+    ("Everyone", AgeRating::Everyone),
+    ("Everyone 10+", AgeRating::Everyone10),
+    ("G", AgeRating::G),
+    ("Kids to Adults", AgeRating::KidsToAdults),
+    ("PG", AgeRating::Pg),
+    ("Teen", AgeRating::Teen),
+    ("MA15+", AgeRating::Ma15),
+    ("Mature 17+", AgeRating::Mature17),
+    ("M", AgeRating::M),
+    ("Adults Only 18+", AgeRating::AdultsOnly18),
+    ("R18+", AgeRating::R18),
+    ("X18+", AgeRating::X18),
+];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReadingDirection {
     LeftToRight,
     RightToLeft,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AgeRating {
+    EarlyChildhood,
+    Everyone,
+    Everyone10,
+    G,
+    KidsToAdults,
+    Pg,
+    Teen,
+    Ma15,
+    Mature17,
+    M,
+    AdultsOnly18,
+    R18,
+    X18,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,10 +87,13 @@ pub struct ComicInfo {
     pub cover_artists: Vec<String>,
     pub editors: Vec<String>,
     pub publisher: Option<String>,
+    pub format: Option<String>,
     pub genres: Vec<String>,
     pub tags: Vec<String>,
     pub language: Option<String>,
     pub reading_direction: Option<ReadingDirection>,
+    pub age_rating: Option<AgeRating>,
+    pub year: Option<u16>,
     pub page_count: Option<u32>,
     pub pages: Vec<PageInfo>,
     pub other: BTreeMap<String, String>,
@@ -169,10 +204,13 @@ fn set_field(info: &mut ComicInfo, field: &str, value: &str) {
         "CoverArtist" => info.cover_artists = list(value),
         "Editor" => info.editors = list(value),
         "Publisher" => info.publisher = text(),
+        "Format" => info.format = text(),
         "Genre" => info.genres = list(value),
         "Tags" => info.tags = list(value),
         "LanguageISO" => info.language = text(),
         "Manga" => info.reading_direction = reading_direction(value),
+        "AgeRating" => info.age_rating = age_rating(value),
+        "Year" => info.year = value.parse().ok(),
         "PageCount" => info.page_count = value.parse().ok(),
         PAGES => {}
         other => {
@@ -196,6 +234,13 @@ fn reading_direction(manga: &str) -> Option<ReadingDirection> {
         "No" => Some(ReadingDirection::LeftToRight),
         _ => None,
     }
+}
+
+fn age_rating(value: &str) -> Option<AgeRating> {
+    AGE_RATINGS
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case(value))
+        .map(|&(_, rating)| rating)
 }
 
 fn page_info(element: &BytesStart<'_>) -> Result<PageInfo, ComicInfoError> {

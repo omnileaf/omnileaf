@@ -224,6 +224,7 @@ mod tests {
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SCALAR SUBQUERY 1",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
             ]
         );

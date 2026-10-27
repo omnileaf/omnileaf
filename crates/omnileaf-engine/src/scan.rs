@@ -8,7 +8,9 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
+    catalog::{
+        BookDetails, BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books,
+    },
 };
 use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -236,6 +238,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         title: found.title.clone(),
         added_at_ms: target.added_at_ms,
         page_count,
+        details: BookDetails::default(),
         file: BookFile {
             root: target.root,
             location,
