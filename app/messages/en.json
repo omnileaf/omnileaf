@@ -556,6 +556,21 @@
       }
     }
   ],
+  "library_skipped_type": [
+    {
+      "declarations": [
+        "input count",
+        "input type",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} {type} file can't be opened yet.",
+        "countPlural=other": "{formattedCount} {type} files can't be opened yet."
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [

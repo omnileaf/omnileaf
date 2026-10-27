@@ -7,6 +7,7 @@ import type {
   FolderScan,
   IpcErrorCode,
   ScanProgress,
+  SkippedType,
 } from "#lib/ipc/bindings.ts";
 import { NOTICE_WINDOW_MS, Notices } from "#lib/notices/notices.ts";
 import Toasts from "#lib/notices/Toasts.svelte";
@@ -222,6 +223,48 @@ test("says so when one file is a RAR archive", async () => {
       ),
     )
     .toBeVisible();
+});
+
+const SKIPPED_TYPES: SkippedType[] = [
+  { fileType: "cbr", files: 3, firstLocations: [] },
+  { fileType: "rar", files: 1, firstLocations: [] },
+];
+
+test("names each type of file the scan skipped", async () => {
+  const { button } = await renderWith(
+    answering(scanned({ unsupportedBooks: 4, skippedTypes: SKIPPED_TYPES })),
+  );
+
+  await button.click();
+
+  await expect
+    .element(
+      toastSaying("Added 7 books").getByText(
+        "3 CBR files can't be opened yet. 1 RAR file can't be opened yet.",
+      ),
+    )
+    .toBeVisible();
+});
+
+test("names the types of file it skipped in a folder it found no books in", async () => {
+  const { button, status } = await renderWith(
+    answering(
+      scanned({
+        books: 0,
+        series: 0,
+        unsupportedBooks: 4,
+        skippedTypes: SKIPPED_TYPES,
+      }),
+    ),
+  );
+
+  await button.click();
+
+  await expect
+    .element(status)
+    .toHaveTextContent(
+      "Found no books in Sample Library. 3 CBR files can't be opened yet. 1 RAR file can't be opened yet.",
+    );
 });
 
 test("shows nothing when the picker is cancelled", async () => {
