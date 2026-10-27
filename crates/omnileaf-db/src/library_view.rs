@@ -8,7 +8,7 @@ const STORED_VIEW: &str = "SELECT display,
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width, shows_category_tabs, group_by
+        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers
     FROM library_view
     WHERE id = ?1";
 
@@ -17,9 +17,9 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         phone_covers_per_row, tablet_covers_per_row, desktop_covers_per_row,
         shows_item_counts, shows_unread_count, shows_downloaded, shows_language,
         shows_reading_progress, shows_continue_button, shows_continue_row,
-        fits_covers_to_width, shows_category_tabs, group_by
+        fits_covers_to_width, shows_category_tabs, group_by, stacks_series_covers
     )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
     ON CONFLICT (id) DO UPDATE SET
         display = excluded.display,
         phone_covers_per_row = excluded.phone_covers_per_row,
@@ -34,7 +34,8 @@ const SET_VIEW: &str = "INSERT INTO library_view (
         shows_continue_row = excluded.shows_continue_row,
         fits_covers_to_width = excluded.fits_covers_to_width,
         shows_category_tabs = excluded.shows_category_tabs,
-        group_by = excluded.group_by";
+        group_by = excluded.group_by,
+        stacks_series_covers = excluded.stacks_series_covers";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibraryDisplay {
@@ -65,6 +66,7 @@ pub struct StoredLibraryView {
     pub tablet_covers_per_row: u8,
     pub desktop_covers_per_row: u8,
     pub fits_covers_to_width: bool,
+    pub stacks_series_covers: bool,
     pub shows_item_counts: bool,
     pub shows_continue_row: bool,
     pub on_covers: OnCovers,
@@ -111,6 +113,7 @@ pub fn set_library_view(
         view.fits_covers_to_width,
         view.shows_category_tabs,
         view.group_by.as_stored(),
+        view.stacks_series_covers,
     ))?;
     Ok(())
 }
@@ -127,6 +130,7 @@ struct ViewRow {
     tablet_covers_per_row: u8,
     desktop_covers_per_row: u8,
     fits_covers_to_width: bool,
+    stacks_series_covers: bool,
     shows_item_counts: bool,
     shows_continue_row: bool,
     on_covers: OnCovers,
@@ -144,6 +148,7 @@ impl ViewRow {
             shows_item_counts: row.get(4)?,
             shows_continue_row: row.get(10)?,
             fits_covers_to_width: row.get(11)?,
+            stacks_series_covers: row.get(14)?,
             on_covers: OnCovers {
                 shows_unread_count: row.get(5)?,
                 shows_downloaded: row.get(6)?,
@@ -167,6 +172,7 @@ impl TryFrom<ViewRow> for StoredLibraryView {
             tablet_covers_per_row: row.tablet_covers_per_row,
             desktop_covers_per_row: row.desktop_covers_per_row,
             fits_covers_to_width: row.fits_covers_to_width,
+            stacks_series_covers: row.stacks_series_covers,
             shows_item_counts: row.shows_item_counts,
             shows_continue_row: row.shows_continue_row,
             on_covers: row.on_covers,

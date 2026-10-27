@@ -16,6 +16,8 @@ pub struct LibraryView {
     pub covers_per_row: CoversPerRow,
     /// Draws as many covers a row as the width allows, rather than `covers_per_row`.
     pub fits_covers_to_width: bool,
+    /// Draws a series of more than one book as a stack of covers.
+    pub stacks_series_covers: bool,
     pub group_by: LibraryGrouping,
     /// Shows the library's categories as tabs above it, once it has two or more.
     pub shows_category_tabs: bool,
@@ -152,6 +154,7 @@ impl Default for LibraryView {
                 desktop: CoversPerRowCount(6),
             },
             fits_covers_to_width: true,
+            stacks_series_covers: true,
             group_by: LibraryGrouping::None,
             shows_category_tabs: true,
             shows_item_counts: true,
@@ -204,6 +207,7 @@ impl From<LibraryView> for StoredLibraryView {
             tablet_covers_per_row: view.covers_per_row.tablet.get(),
             desktop_covers_per_row: view.covers_per_row.desktop.get(),
             fits_covers_to_width: view.fits_covers_to_width,
+            stacks_series_covers: view.stacks_series_covers,
             group_by: match view.group_by {
                 LibraryGrouping::None => StoredGrouping::None,
                 LibraryGrouping::Category => StoredGrouping::Category,
@@ -235,6 +239,7 @@ impl TryFrom<StoredLibraryView> for LibraryView {
                 desktop: stored.desktop_covers_per_row.try_into()?,
             },
             fits_covers_to_width: stored.fits_covers_to_width,
+            stacks_series_covers: stored.stacks_series_covers,
             group_by: match stored.group_by {
                 StoredGrouping::None => LibraryGrouping::None,
                 StoredGrouping::Category => LibraryGrouping::Category,
@@ -302,6 +307,25 @@ mod tests {
     }
 
     #[test]
+    fn stacks_a_new_library_s_series_covers() {
+        let view = LibraryView::default();
+
+        assert!(view.stacks_series_covers);
+    }
+
+    #[test]
+    fn stores_unstacked_series_covers_and_reads_them_back() {
+        let view = LibraryView {
+            stacks_series_covers: false,
+            ..LibraryView::default()
+        };
+
+        let read = LibraryView::try_from(StoredLibraryView::from(view));
+
+        assert_eq!(read, Ok(view));
+    }
+
+    #[test]
     fn leaves_a_new_library_without_the_continue_reading_row() {
         let view = LibraryView::default();
 
@@ -320,6 +344,7 @@ mod tests {
                 "display": "grid",
                 "coversPerRow": { "phone": 3, "tablet": 5, "desktop": 6 },
                 "fitsCoversToWidth": true,
+                "stacksSeriesCovers": true,
                 "groupBy": "none",
                 "showsCategoryTabs": true,
                 "showsItemCounts": true,
@@ -420,6 +445,7 @@ mod tests {
                 desktop: DesktopCoversPerRow::try_from(12).unwrap(),
             },
             fits_covers_to_width: false,
+            stacks_series_covers: false,
             group_by: LibraryGrouping::Folder,
             shows_category_tabs: false,
             shows_item_counts: true,
