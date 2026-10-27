@@ -52,6 +52,7 @@ impl Shelf {
     async fn shelve(&self, root: RootId, series: &str, number: u32) {
         let scanned = ScannedBook {
             series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: Fingerprint::pmf1([ImageEntry {
                 crc32: number,
                 size: 1,

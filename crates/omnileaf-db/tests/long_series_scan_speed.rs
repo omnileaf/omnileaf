@@ -34,6 +34,7 @@ async fn records_and_removes_a_series_of_5_000_books_within_3_s() {
     let books: Vec<ScannedBook> = (1..=BOOKS)
         .map(|number| ScannedBook {
             series: NewSeries::local("Long Series", ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: Fingerprint::pmf1([ImageEntry {
                 crc32: number,
                 size: 1,

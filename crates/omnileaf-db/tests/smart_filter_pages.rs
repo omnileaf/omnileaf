@@ -218,6 +218,7 @@ fn scanned(root: RootId, number: u32) -> ScannedBook {
     let name = series_name(number);
     ScannedBook {
         series: NewSeries::local(&name, i64::from(number)).unwrap(),
+        named_series: None,
         fingerprint: Fingerprint::pmf1([page]).unwrap(),
         title: "Volume 01".to_owned(),
         added_at_ms: i64::from(number),

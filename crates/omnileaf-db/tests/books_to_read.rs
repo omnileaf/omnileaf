@@ -68,6 +68,7 @@ impl Library {
     async fn record(&self, number: u32, location: PathBuf, size_bytes: u64) {
         let scanned = ScannedBook {
             series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: Fingerprint::pmf1([ImageEntry {
                 crc32: number,
                 size: 1,

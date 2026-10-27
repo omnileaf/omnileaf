@@ -53,6 +53,7 @@ impl Library {
     fn found(&self, title: &str, numbering: Option<Numbering>) -> ScannedBook {
         ScannedBook {
             series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: fingerprint_of(title),
             title: title.to_owned(),
             added_at_ms: ADDED_AT_MS,

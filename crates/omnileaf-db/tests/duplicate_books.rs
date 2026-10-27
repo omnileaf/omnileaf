@@ -137,6 +137,7 @@ fn scanned(root: RootId, copy: &BookCopy) -> ScannedBook {
     };
     ScannedBook {
         series: NewSeries::local(copy.series, MODIFIED_AT_MS).unwrap(),
+        named_series: None,
         fingerprint: Fingerprint::pmf1([page]).unwrap(),
         title: format!("Volume {:02}", copy.content),
         added_at_ms: MODIFIED_AT_MS,

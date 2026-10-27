@@ -163,6 +163,7 @@ impl Library {
 fn scanned_book(root: RootId, crc: u32, series: &str, writers: &[&str]) -> ScannedBook {
     ScannedBook {
         series: NewSeries::local(series, 0).unwrap(),
+        named_series: None,
         fingerprint: Fingerprint::pmf1([ImageEntry {
             crc32: crc,
             size: 100,

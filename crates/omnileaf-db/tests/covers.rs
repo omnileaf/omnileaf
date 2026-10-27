@@ -57,6 +57,7 @@ impl Library {
     async fn record(&self, title: &str, page_crc: u32, size_bytes: u64) {
         let scanned = ScannedBook {
             series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: fingerprint(page_crc),
             title: title.to_owned(),
             added_at_ms: ADDED_AT_MS,

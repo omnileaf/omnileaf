@@ -380,6 +380,7 @@ async fn files_each_book_of_a_library_kept_by_series_name_by_its_folder_once_rea
             .unwrap();
     }
     writer.execute("DELETE FROM book_details", []).unwrap();
+    writer.execute("DELETE FROM series_folder", []).unwrap();
 
     folder.changes().await;
 

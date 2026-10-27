@@ -260,6 +260,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             trust_files(series.naming, &details),
             target.added_at_ms,
         )?,
+        named_series: None,
         fingerprint,
         title,
         added_at_ms: target.added_at_ms,

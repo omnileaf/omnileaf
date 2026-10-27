@@ -52,6 +52,7 @@ impl Library {
     fn book(&self, series: &str, volume: u32, details: BookDetails) -> ScannedBook {
         ScannedBook {
             series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: Fingerprint::pmf1([ImageEntry {
                 crc32: volume,
                 size: 1,

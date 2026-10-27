@@ -9,6 +9,7 @@ use crate::{
         BookDetails, NewBook, NewSeries, Numbering, RootId,
         book::{BookFiler, Filing},
         book_details::DetailsRecorder,
+        folder_joins::{FolderJoins, FoundIn},
         native_path,
         series::SeriesAdder,
         stored_id::stored_id,
@@ -35,6 +36,7 @@ const SERIES_OF_BOOK: &str = "SELECT series.id
 #[derive(Clone, Debug)]
 pub struct ScannedBook {
     pub series: NewSeries,
+    pub named_series: Option<NewSeries>,
     pub fingerprint: Fingerprint,
     pub title: String,
     pub added_at_ms: i64,
@@ -71,6 +73,7 @@ pub fn record_moved_books(
 struct Recorder<'t> {
     collation: TitleCollation,
     series: SeriesAdder<'t>,
+    folders: FolderJoins<'t>,
     books: BookFiler<'t>,
     details: DetailsRecorder<'t>,
     file: Statement<'t>,
@@ -91,6 +94,7 @@ impl<'t> Recorder<'t> {
         Ok(Self {
             collation: TitleCollation::stored(transaction)?,
             series: SeriesAdder::new(transaction)?,
+            folders: FolderJoins::new(transaction)?,
             books: BookFiler::new(transaction, filing)?,
             details: DetailsRecorder::new(transaction)?,
             file: transaction.prepare(RECORD_FILE)?,
@@ -101,9 +105,17 @@ impl<'t> Recorder<'t> {
     fn record(&mut self, scanned: &ScannedBook) -> Result<SeriesId, Error> {
         self.series
             .add_or_rename(&scanned.series, &self.collation)?;
+        let found_in = FoundIn {
+            root: scanned.file.root,
+            series: &scanned.series,
+            named_series: scanned.named_series.as_ref(),
+        };
+        let series =
+            self.folders
+                .series_to_file_in(&found_in, &mut self.series, &self.collation)?;
         let book = NewBook {
             fingerprint: scanned.fingerprint,
-            series: scanned.series.id(),
+            series,
             title: scanned.title.clone(),
             added_at_ms: scanned.added_at_ms,
             page_count: Some(scanned.page_count),
