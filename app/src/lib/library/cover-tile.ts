@@ -2,6 +2,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 
 export interface CoverTileLook {
   readonly cover: string;
+  readonly unread: string;
   readonly badge: string;
   readonly downloaded: string;
   readonly downloadedIcon: string;
@@ -10,8 +11,12 @@ export interface CoverTileLook {
   readonly markOff: string;
 }
 
+const BADGE_GEOMETRY =
+  "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center px-badge-inline text-caption min-block-xl min-inline-xl medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
+
 const TODAYS_LOOK: CoverTileLook = {
   cover: "",
+  unread: BADGE_GEOMETRY,
   badge: "",
   downloaded: "",
   downloadedIcon: "",
@@ -35,15 +40,19 @@ const NATIVE_TILE = {
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
 
+const IOS_BADGE = `${NATIVE_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:backdrop-blur-ios max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+
 const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
-    badge: `${NATIVE_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:backdrop-blur-ios max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`,
+    unread: `${BADGE_GEOMETRY} ${IOS_BADGE}`,
+    badge: IOS_BADGE,
     downloaded: `${NATIVE_BADGE} ${NATIVE_DOWNLOADED} max-medium:backdrop-blur-ios`,
     downloadedIcon: "",
   },
   android: {
     ...NATIVE_TILE,
+    unread: `${BADGE_GEOMETRY} ${NATIVE_BADGE}`,
     badge: NATIVE_BADGE,
     downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
     downloadedIcon: "max-medium:hidden",
