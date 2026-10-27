@@ -32,6 +32,7 @@ mod library_book;
 mod library_category;
 mod library_changes;
 mod library_folder;
+mod library_folder_group;
 mod library_labels;
 mod library_layout;
 mod library_listing;
@@ -116,6 +117,9 @@ pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
 pub use library_folder::{
     FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder, home_location,
+};
+pub use library_folder_group::{
+    FolderGroupCursor, FolderGroupId, FolderGroupPage, LibraryFolderGroup,
 };
 pub use library_labels::{CategoryHeld, LabelChanges, LibraryTag, SeriesLabels, TagHeld};
 pub use library_listing::{
