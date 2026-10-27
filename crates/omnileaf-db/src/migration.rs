@@ -75,6 +75,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0039_keep_when_each_series_was_last_read_in_every_order"),
     migration!("0040_count_the_books_each_series_holds_more_than_one_file_of"),
     migration!("0041_keep_the_details_of_each_book"),
+    migration!("0042_keep_the_people_and_tags_of_each_book"),
 ];
 
 pub(crate) fn pending(
@@ -1108,6 +1109,44 @@ mod tests {
             )
             .unwrap();
         assert_eq!(counted, (2, 0));
+    }
+
+    #[test]
+    fn reads_every_book_s_details_again_once_their_people_and_tags_are_kept() {
+        let scratch = ScratchLibrary::new("book-people-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..41]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, title_sort_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id, summary) VALUES (?1, 'A sample summary.')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let counted: (u32, u32) = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book), (SELECT count(*) FROM book_details)",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(counted, (1, 0));
     }
 
     #[test]

@@ -10,9 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookListing, NewBook, NewRoot, NewSeries, PageRequest,
-        PageSize, ReadingDirection, RootId, RootKind, RootLocator, ScannedBook, add_book, add_root,
-        record_moved_books, record_page_count, record_scanned_books, series_books,
+        AgeRating, BookDetails, BookFile, BookListing, BookPerson, NewBook, NewRoot, NewSeries,
+        PageRequest, PageSize, PersonRole, ReadingDirection, RootId, RootKind, RootLocator,
+        ScannedBook, add_book, add_root, record_moved_books, record_page_count,
+        record_scanned_books, series_books,
     },
     rusqlite::{Row, types::Value},
 };
@@ -143,6 +144,22 @@ impl Library {
         .await
     }
 
+    async fn people(&self) -> Vec<(String, String)> {
+        self.rows(
+            "SELECT role, name FROM book_person ORDER BY role, name",
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .await
+    }
+
+    async fn tags(&self) -> Vec<(String, String)> {
+        self.rows(
+            "SELECT kind, name FROM book_tag ORDER BY kind, name",
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .await
+    }
+
     async fn changes_recording(&self, scanned: ScannedBook) -> u64 {
         self.database
             .write(move |transaction| {
@@ -198,8 +215,14 @@ fn sample_details() -> BookDetails {
         title: Some("Sample Story".to_owned()),
         volume: Some(1),
         summary: Some("A sample summary.".to_owned()),
+        people: vec![
+            person(PersonRole::Writer, "Sample Author"),
+            person(PersonRole::Penciller, "Sample Artist"),
+        ],
         publisher: Some("Sample Publisher".to_owned()),
         format: Some("Digital".to_owned()),
+        genres: vec!["Mystery".to_owned()],
+        tags: vec!["harbour".to_owned()],
         language: Some("en".to_owned()),
         reading_direction: Some(ReadingDirection::RightToLeft),
         age_rating: Some(AgeRating::Teen),
@@ -207,8 +230,21 @@ fn sample_details() -> BookDetails {
     }
 }
 
+fn person(role: PersonRole, name: &str) -> BookPerson {
+    BookPerson {
+        role,
+        name: name.to_owned(),
+    }
+}
+
 fn text(value: &str) -> Value {
     Value::Text(value.to_owned())
+}
+
+fn pairs(rows: &[(&str, &str)]) -> Vec<(String, String)> {
+    rows.iter()
+        .map(|(code, name)| ((*code).to_owned(), (*name).to_owned()))
+        .collect()
 }
 
 fn book_id(page_crc: u32) -> Vec<u8> {
@@ -528,6 +564,14 @@ async fn keeps_the_details_a_scan_read_from_a_book() {
             Value::Integer(2019),
         ]]
     );
+    assert_eq!(
+        library.people().await,
+        pairs(&[("penciller", "Sample Artist"), ("writer", "Sample Author")])
+    );
+    assert_eq!(
+        library.tags().await,
+        pairs(&[("genre", "Mystery"), ("tag", "harbour")])
+    );
 }
 
 #[tokio::test]
@@ -553,7 +597,11 @@ async fn keeps_the_details_a_book_gives_when_scanned_again() {
         .await;
     let edited = BookDetails {
         summary: None,
-        year: Some(2020),
+        people: vec![
+            person(PersonRole::Writer, "Sample Author"),
+            person(PersonRole::Inker, "Second Artist"),
+        ],
+        tags: vec!["storms".to_owned()],
         ..sample_details()
     };
 
@@ -564,10 +612,14 @@ async fn keeps_the_details_a_book_gives_when_scanned_again() {
         })
         .await;
 
-    let details = library.details().await;
+    assert_eq!(library.details().await[0][4], Value::Null);
     assert_eq!(
-        (&details[0][4], &details[0][10]),
-        (&Value::Null, &Value::Integer(2020))
+        library.people().await,
+        pairs(&[("inker", "Second Artist"), ("writer", "Sample Author")])
+    );
+    assert_eq!(
+        library.tags().await,
+        pairs(&[("genre", "Mystery"), ("tag", "storms")])
     );
 }
 
