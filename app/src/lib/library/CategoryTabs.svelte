@@ -70,46 +70,67 @@
     if (root === null) {
       return;
     }
+    measureTabs(root);
+    const buttons = tabs.flatMap(({ id }) => buttonOf(root, id) ?? []);
     const watching = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const id = (entry.target as HTMLElement).dataset.tab;
-          if (id === undefined) {
-            continue;
-          }
-          if (entry.intersectionRatio < 1) {
-            hidden.add(id);
-          } else {
-            hidden.delete(id);
-          }
+          markHidden(entry.target, entry.intersectionRatio < 1);
         }
       },
       { root, threshold: 1 },
     );
-    for (const tab of root.querySelectorAll("[data-tab]")) {
-      watching.observe(tab);
+    for (const button of buttons) {
+      watching.observe(button);
     }
     return () => {
       watching.disconnect();
     };
   });
 
+  function buttonOf(root: HTMLElement, id: string): HTMLElement | null {
+    return root.querySelector<HTMLElement>(`[data-tab="${CSS.escape(id)}"]`);
+  }
+
+  function measureTabs(root: HTMLElement): void {
+    const shown = root.getBoundingClientRect();
+    hidden.clear();
+    for (const button of root.querySelectorAll("[data-tab]")) {
+      const box = button.getBoundingClientRect();
+      markHidden(button, box.left < shown.left || box.right > shown.right);
+    }
+  }
+
+  function markHidden(tab: Element, isHidden: boolean): void {
+    const id = (tab as HTMLElement).dataset.tab;
+    if (id === undefined) {
+      return;
+    }
+    if (isHidden) {
+      hidden.add(id);
+    } else {
+      hidden.delete(id);
+    }
+  }
+
   let followedTab: string | undefined;
 
   $effect(() => {
-    const tab = strip?.querySelector<HTMLElement>(
-      `[data-tab="${CSS.escape(chosen)}"]`,
-    );
-    if (strip == null || tab == null) {
+    const tab = strip === null ? null : buttonOf(strip, chosen);
+    if (strip === null || tab === null) {
       return;
     }
-    const isChange = followedTab !== undefined && followedTab !== chosen;
+    const isFirst = followedTab === undefined;
+    const isChange = !isFirst && followedTab !== chosen;
     followedTab = chosen;
     if (onPhone) {
       strip.scrollBy({
         left: stepToCentre(strip, tab),
         behavior: isChange && movesSmoothly() ? "smooth" : "auto",
       });
+    } else if (isFirst) {
+      strip.scrollBy({ left: stepIntoView(strip, tab) });
+      measureTabs(strip);
     } else if (isChange) {
       tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
@@ -128,6 +149,16 @@
     return box.left + box.width / 2 - (shown.left + shown.width / 2);
   }
 
+  /** Browsers snap a scroll offset to whole pixels, so the step rounds outward to leave no fraction of the tab past the edge. */
+  function stepIntoView(within: HTMLElement, tab: HTMLElement): number {
+    const shown = within.getBoundingClientRect();
+    const box = tab.getBoundingClientRect();
+    if (box.left < shown.left) {
+      return Math.floor(box.left - shown.left);
+    }
+    return Math.max(0, Math.ceil(box.right - shown.right));
+  }
+
   function moveWithArrows(event: KeyboardEvent): void {
     const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
     if (step === undefined) {
@@ -142,9 +173,9 @@
     if (next !== undefined) {
       onChoose(next.id);
       flushSync();
-      strip
-        ?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(next.id)}"]`)
-        ?.focus({ preventScroll: true });
+      if (strip !== null) {
+        buttonOf(strip, next.id)?.focus({ preventScroll: true });
+      }
     }
   }
 

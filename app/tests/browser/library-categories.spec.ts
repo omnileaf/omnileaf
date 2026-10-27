@@ -5,7 +5,7 @@ import {
   type LibraryCategory,
   type LibraryView,
 } from "../../src/lib/ipc/bindings.ts";
-import type { FakeBackend } from "./fake-backend.ts";
+import { emitFakeEvent, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -854,3 +854,99 @@ async function isWholeInStrip(page: Page, name: string): Promise<boolean> {
     tab.x + tab.width <= strip.x + strip.width + EDGE_TOLERANCE
   );
 }
+
+test.describe("more categories than fit, before the strip is first measured", () => {
+  test.use({ backend: backendWith(MANY_CATEGORIES) });
+
+  test.beforeEach(async ({ page }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "phones scroll their tabs",
+    );
+    await page.addInitScript(() => {
+      window.IntersectionObserver = class {
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+        takeRecords(): IntersectionObserverEntry[] {
+          return [];
+        }
+        readonly root = null;
+        readonly rootMargin = "";
+        readonly thresholds = [];
+      } as unknown as typeof IntersectionObserver;
+    });
+  });
+
+  test("draws no tab cut off at the strip's edge on screens wide enough for More", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+    await openLibrary(page);
+
+    expect(await cutTabs(page)).toEqual([]);
+  });
+
+  for (const opening of ["Sea stories", "Borrowed from friends"]) {
+    test(`draws ${opening} whole when the library opens on it, leaving it out of More, with no tab cut off`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await page.goto("/settings/library/tabs");
+      await page
+        .getByRole("combobox", { name: "The library opens on" })
+        .selectOption({ label: opening });
+
+      await page.goto("/");
+
+      await expect(
+        tabs(page).getByRole("tab", { name: opening }),
+      ).toHaveAttribute("aria-selected", "true");
+      expect(await isWholeInStrip(page, opening)).toBe(true);
+      expect(await cutTabs(page)).toEqual([]);
+      await page.getByRole("button", { name: "More" }).click();
+      const menu = page.getByRole("menu");
+      await expect(
+        menu.getByRole("menuitem", { name: "Edit categories" }),
+      ).toBeVisible();
+      await expect(
+        menu.getByRole("menuitemradio", { name: opening }),
+      ).toHaveCount(0);
+    });
+  }
+
+  test.describe("added while the library is open", () => {
+    let keptCategories: readonly LibraryCategory[] = CATEGORIES;
+
+    test.use({
+      backend: {
+        ...backendWith(MANY_CATEGORIES),
+        libraryCategories: () => [...keptCategories],
+      },
+    });
+
+    test.beforeEach(() => {
+      keptCategories = CATEGORIES;
+    });
+
+    test("tucks the new tabs that don't fit into More at once", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: NARROW_DESKTOP, height: 800 });
+      await openLibrary(page);
+      const last = MANY_CATEGORIES.at(-1)?.name ?? "";
+
+      keptCategories = MANY_CATEGORIES;
+      await emitFakeEvent(page, "library-changed");
+      await expect(
+        tabs(page).getByRole("tab", { name: last, includeHidden: true }),
+      ).toBeAttached();
+
+      expect(await cutTabs(page)).toEqual([]);
+      await page.getByRole("button", { name: "More" }).click();
+      await expect(
+        page.getByRole("menu").getByRole("menuitemradio", { name: last }),
+      ).toBeVisible();
+    });
+  });
+});
