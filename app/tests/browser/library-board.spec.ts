@@ -18,6 +18,7 @@ const CAPTION_SIZE = "14px";
 const CAPTION_WEIGHT = "500";
 const CAPTION_LINES = 2;
 const BADGE_HEIGHT = 22;
+const GRID_UNDER_TOOLBAR = 24;
 const GAPS = {
   phone: { column: 12, row: 20 },
   desktop: { column: 24, row: 28 },
@@ -154,4 +155,19 @@ test("spaces the covers as the boards do", async ({ page }) => {
 
   expect(Math.round(second.x - (first.x + first.width))).toBe(gaps.column);
   expect(rowGap).toBe(gaps.row);
+});
+
+test("starts the grid 24px under the toolbar when there are no categories or notices", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width < LARGE_MIN_WIDTH,
+    "the desktop toolbar shows on large windows",
+  );
+  await page.goto("/");
+
+  const toolbar = await boxOf(page.locator("[data-page-toolbar]"));
+  const firstCover = await boxOf(cell(page, "Sample Series 01"));
+
+  expect(firstCover.y - (toolbar.y + toolbar.height)).toBe(GRID_UNDER_TOOLBAR);
 });
