@@ -378,14 +378,20 @@
   );
   let holdsNoSeries = $state(false);
   const isEmpty = $derived(listsNothing && (!isListFiltered || holdsNoSeries));
+  const libraryView = $derived(
+    view.reading.kind === "read" ? view.reading.value : undefined,
+  );
   const loaded = $derived(
-    library.list.kind === "loaded" && view.reading.kind === "read"
-      ? { series: library.list, view: view.reading.value }
+    library.list.kind === "loaded" && libraryView !== undefined
+      ? { series: library.list, view: libraryView }
       : undefined,
   );
   const hasBooks = $derived(
     loaded !== undefined &&
       (loaded.series.items.length > 0 || (isListFiltered && !holdsNoSeries)),
+  );
+  const showsLibraryTools = $derived(
+    library.list.kind !== "failed" && !isEmpty,
   );
   const showsItemCounts = $derived(
     hasBooks && loaded?.view.showsItemCounts === true,
@@ -716,7 +722,7 @@
       : undefined}
   >
     {#snippet actions()}
-      {#if hasBooks && loaded !== undefined && chosenListing !== undefined}
+      {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
         <LibrarySearchEntry platform={data.appInfo.platform} />
         <FilterAndSort
           bind:isOpen={isFilterOpen}
@@ -734,7 +740,7 @@
           returnFocusTo={moreTrigger}
         />
         <ViewOptions
-          view={loaded.view}
+          view={libraryView}
           {coversDrawn}
           {mostThatFit}
           hasCategories={showsCategoryTabs(categories)}
