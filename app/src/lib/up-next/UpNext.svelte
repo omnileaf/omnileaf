@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ArrowLeft,
+    BookImage,
     ChevronLeft,
     CircleCheck,
     Library,
@@ -25,6 +26,8 @@
     CardHeader,
     CardTitle,
   } from "#lib/components/ui/card/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
@@ -35,17 +38,26 @@
     type SeriesNeighbour,
   } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import {
+    type ActionGroupLook,
+    actionGroupLook,
+  } from "#lib/page/action-group.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookId } from "#lib/reader/opened-book.ts";
   import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
+  import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import ReadingStats from "./ReadingStats.svelte";
   import { getSkipUpNextSetting } from "./skip-up-next.svelte.ts";
 
   const CHECK_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
+  const NO_COVER_ICON_SIZE = 24;
   const READING_NAMES = {
     notStarted: m.reader_unread,
     started: m.reader_started,
@@ -60,6 +72,14 @@
     "flex items-center justify-center gap-sm rounded-shadcn-button bg-accent px-lg text-center text-body font-medium text-on-accent transition-control min-inline-none min-block-touch-target hover:bg-accent-hover active:bg-accent-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control";
   const SECONDARY =
     "flex items-center justify-center gap-sm rounded-shadcn-button border border-border bg-card px-lg text-center text-body font-medium transition-control min-inline-none min-block-touch-target hover:bg-hover active:bg-pressed expanded:text-small expanded:min-block-pointer-button ios:rounded-ios-button ios:min-block-ios-control ios:border-transparent ios:bg-ios-fill";
+  const CARD_ACTIONS = {
+    group: "flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl",
+    main: cn(PRIMARY, "inline-full expanded:flex-1"),
+    other: cn(SECONDARY, "inline-full expanded:flex-1"),
+  } satisfies ActionGroupLook;
+  const PHONE_CARD_ACTION_GROUP =
+    "flex flex-col px-lg ios:gap-md android:gap-lg";
+  const ACROSS_THE_CARD = "inline-full text-center";
 
   let {
     book,
@@ -80,6 +100,16 @@
   } = $props();
 
   const skipUpNext = getSkipUpNextSetting();
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isOnPhone = $derived(isPhone(platform, width.current));
+  const centresHead = $derived(isOnPhone && platform === "ios");
+  const actions = $derived(
+    acrossTheCard(actionGroupLook(platform, width.current, CARD_ACTIONS)),
+  );
+  const actionLabel = $derived(
+    isOnPhone ? "min-inline-none wrap-anywhere" : "truncate",
+  );
   const smartFeatures = getSmartFeatures();
   const id = $props.id();
   let heading: HTMLHeadingElement | undefined = $state();
@@ -98,6 +128,16 @@
       ? undefined
       : readingTime(summary.readSeconds),
   );
+
+  function acrossTheCard(look: ActionGroupLook): ActionGroupLook {
+    return isOnPhone
+      ? {
+          group: PHONE_CARD_ACTION_GROUP,
+          main: cn(look.main, ACROSS_THE_CARD),
+          other: cn(look.other, ACROSS_THE_CARD),
+        }
+      : look;
+  }
 
   function nextDetails(next: SeriesNeighbour): string {
     return next.pageCount === null
@@ -149,35 +189,58 @@
       </BreadcrumbItem>
     </Breadcrumb>
   </nav>
-  <div
-    class="flex flex-1 items-center justify-center overflow-y-auto px-lg py-xl"
-  >
+  <div class="flex flex-1 flex-col overflow-y-auto px-lg py-xl">
     <section
       aria-labelledby="{id}-heading"
-      class="pointer-events-auto flex flex-col gap-lg inline-full max-inline-up-next"
+      class="pointer-events-auto m-auto flex flex-col gap-lg inline-full max-inline-up-next"
     >
-      <div class="flex items-start gap-md">
-        <span
-          aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
+      <div
+        class={isOnPhone
+          ? ["flex flex-col gap-sm", centresHead && "items-center text-center"]
+          : "flex items-start gap-md"}
+      >
+        {#if centresHead}
+          <Icon
+            name="circle-check"
+            class="text-native-on-button-plain block-up-next-check inline-up-next-check"
+          />
+        {:else if !isOnPhone}
+          <span
+            aria-hidden="true"
+            class="flex shrink-0 items-center justify-center rounded-full bg-chip block-up-next-check inline-up-next-check"
+          >
+            <CircleCheck size={CHECK_SIZE} />
+          </span>
+        {/if}
+        <div
+          class={[
+            "flex flex-col gap-2xs min-inline-none",
+            isOnPhone && "self-stretch",
+          ]}
         >
-          <CircleCheck size={CHECK_SIZE} />
-        </span>
-        <div class="flex flex-col gap-2xs min-inline-none">
           <h2
             id="{id}-heading"
             bind:this={heading}
             tabindex="-1"
-            class="text-title font-semibold text-pretty"
+            class={isOnPhone
+              ? "text-native-end-title/native-end-title font-native-end-title tracking-native-end-title text-balance wrap-break-word"
+              : "text-title font-semibold text-pretty"}
           >
             {m.reader_finished({ title })}
           </h2>
-          <p class="text-small text-muted expanded:hidden">
+          <p
+            class={[
+              isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
+              "wrap-break-word text-muted expanded:hidden",
+            ]}
+          >
             {time === undefined
               ? m.reader_marked_read_in({ series: seriesTitle })
               : m.reader_marked_read_in_after({ series: seriesTitle, time })}
           </p>
-          <p class="hidden text-small text-muted expanded:block">
+          <p
+            class="hidden text-small wrap-break-word text-muted expanded:block"
+          >
             {time === undefined
               ? m.reader_marked_read()
               : m.reader_marked_read_after({ time })}
@@ -185,18 +248,27 @@
         </div>
       </div>
       {#if stats !== undefined}
-        <ReadingStats {title} {...stats} />
+        <ReadingStats {title} {...stats} {isOnPhone} />
       {/if}
       <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
         {#if next !== null && nextHref !== undefined}
           <CardHeader class="px-lg expanded:px-xl">
-            <CardTitle class="text-body expanded:text-title"
+            <CardTitle
+              class={isOnPhone
+                ? "text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label text-muted"
+                : "text-body expanded:text-title"}
               >{m.reader_up_next()}</CardTitle
             >
           </CardHeader>
           <CardContent class="flex items-center gap-md px-lg expanded:px-xl">
             <span
-              class="aspect-cover shrink-0 overflow-hidden rounded-cover bg-chip inline-up-next-cover expanded:inline-up-next-cover-wide"
+              data-up-next-cover
+              class={[
+                "aspect-cover shrink-0 overflow-hidden bg-chip inline-up-next-cover expanded:inline-up-next-cover-wide",
+                isOnPhone
+                  ? "flex items-center justify-center rounded-native-cover text-muted"
+                  : "rounded-cover",
+              ]}
             >
               {#if next.cover !== null}
                 <img
@@ -204,30 +276,35 @@
                   alt=""
                   class="object-cover block-full inline-full"
                 />
+              {:else if isOnPhone}
+                <BookImage size={NO_COVER_ICON_SIZE} aria-hidden="true" />
               {/if}
             </span>
             <span class="flex flex-col gap-2xs min-inline-none">
               <span
-                class="line-clamp-2 text-group-title font-semibold expanded:text-body"
-                >{next.title}</span
+                class={[
+                  "line-clamp-2",
+                  isOnPhone
+                    ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book wrap-break-word"
+                    : "text-group-title font-semibold expanded:text-body",
+                ]}>{next.title}</span
               >
-              <span class="text-small text-muted">{nextDetails(next)}</span>
+              <span
+                class={[
+                  isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
+                  "text-muted",
+                ]}>{nextDetails(next)}</span
+              >
             </span>
           </CardContent>
-          <CardFooter
-            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
-          >
-            <a
-              href={nextHref}
-              data-sveltekit-replacestate
-              class={cn(PRIMARY, "inline-full expanded:flex-1")}
-            >
+          <CardFooter class={actions.group}>
+            <a href={nextHref} data-sveltekit-replacestate class={actions.main}>
               <Play
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class="truncate"
+              <span class={actionLabel}
                 >{m.reader_read_next({ title: next.title })}</span
               >
               <Kbd
@@ -236,16 +313,13 @@
                 >{nextKey}</Kbd
               >
             </a>
-            <a
-              href={seriesHref}
-              class={cn(SECONDARY, "inline-full expanded:flex-1")}
-            >
+            <a href={seriesHref} class={actions.other}>
               <ArrowLeft
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class="truncate">{m.reader_back_to_the_series()}</span>
+              <span class={actionLabel}>{m.reader_back_to_the_series()}</span>
               <Kbd
                 aria-hidden="true"
                 class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
@@ -255,42 +329,54 @@
           </CardFooter>
         {:else}
           <CardHeader class="px-lg expanded:px-xl">
-            <CardTitle class="text-body expanded:text-title"
+            <CardTitle
+              class={isOnPhone
+                ? "text-native-end-card-title/native-end-card-title font-native-end-card-title tracking-native-end-card-title wrap-anywhere"
+                : "text-body expanded:text-title"}
               >{m.reader_series_finished()}</CardTitle
             >
-            <CardDescription class="text-small"
+            <CardDescription
+              class={isOnPhone ? ROW_SUBTITLE_TYPE : "text-small"}
               >{m.reader_series_finished_body()}</CardDescription
             >
           </CardHeader>
-          <CardFooter
-            class="flex flex-col gap-sm px-lg expanded:flex-row expanded:px-xl"
-          >
-            <a
-              href={seriesHref}
-              class={cn(PRIMARY, "inline-full expanded:flex-1")}
-            >
+          <CardFooter class={actions.group}>
+            <a href={seriesHref} class={actions.main}>
               <ArrowLeft
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class="truncate">{m.reader_back_to_the_series()}</span>
+              <span class={actionLabel}>{m.reader_back_to_the_series()}</span>
             </a>
-            <a
-              href={resolve("/(app)")}
-              class={cn(SECONDARY, "inline-full expanded:flex-1")}
-            >
+            <a href={resolve("/(app)")} class={actions.other}>
               <Library
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
-              <span class="truncate">{m.reader_back_label()}</span>
+              <span class={actionLabel}>{m.reader_back_label()}</span>
             </a>
           </CardFooter>
         {/if}
       </Card>
-      {#if next !== null}
+      {#if next !== null && isOnPhone}
+        <div
+          class={[
+            "overflow-hidden rounded-card border border-border bg-card",
+            GROUP_PLATE,
+          ]}
+        >
+          <SettingSwitch
+            label={m.reader_skip_this_screen()}
+            description={m.reader_skip_this_screen_help()}
+            isOn={skipUpNext.isOn}
+            onToggle={() => {
+              skipUpNext.turn(!skipUpNext.isOn);
+            }}
+          />
+        </div>
+      {:else if next !== null}
         <Switch
           bind:checked={
             () => skipUpNext.isOn,

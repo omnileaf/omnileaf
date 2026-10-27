@@ -9,11 +9,13 @@
     readSeconds,
     pageCount,
     secondsPerPage,
+    isOnPhone,
   }: {
     title: string;
     readSeconds: number;
     pageCount: number;
     secondsPerPage: number;
+    isOnPhone: boolean;
   } = $props();
 
   const pages = $derived(new Intl.NumberFormat(getLocale()).format(pageCount));
@@ -30,14 +32,32 @@
 <Card
   role="group"
   aria-label={m.reader_stats_label({ title })}
-  class="grid grid-cols-3 gap-sm p-lg expanded:px-xl"
+  class={isOnPhone
+    ? "grid grid-cols-stats justify-between gap-x-lg p-lg"
+    : "grid grid-cols-3 gap-sm p-lg expanded:px-xl"}
 >
   {#each stats as { value, label } (label)}
     <div class="flex flex-col min-inline-none">
-      <p class="text-title font-semibold wrap-break-word tabular-nums">
+      <p
+        class={[
+          isOnPhone
+            ? "text-native-end-stat/native-end-stat font-native-end-stat tracking-native-end-stat"
+            : "text-title font-semibold",
+          "wrap-break-word tabular-nums",
+        ]}
+      >
         {value}
       </p>
-      <p class="text-caption text-muted">{label}</p>
+      <p
+        class={[
+          isOnPhone
+            ? "text-native-end-stat-label/native-end-stat-label font-native-end-stat-label tracking-native-end-stat-label"
+            : "text-caption",
+          "wrap-break-word text-muted",
+        ]}
+      >
+        {label}
+      </p>
     </div>
   {/each}
 </Card>

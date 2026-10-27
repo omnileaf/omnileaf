@@ -141,9 +141,9 @@ test.each<[ButtonLook, string]>([
   const classes = buttonClasses(look, "android").split(" ");
 
   expect(classes).toContain(
-    `enabled:hover:tint-native-button-${variant}-hover`,
+    `not-disabled:hover:tint-native-button-${variant}-hover`,
   );
   expect(classes).toContain(
-    `enabled:active:tint-native-button-${variant}-pressed`,
+    `not-disabled:active:tint-native-button-${variant}-pressed`,
   );
 });

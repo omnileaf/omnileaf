@@ -224,6 +224,26 @@
   --spacing-native-notice-inline: var(--native-spacing-notice-inline);
   --spacing-native-notice-top: var(--native-spacing-notice-top);
   --spacing-native-continue-cover: var(--native-spacing-continue-cover);
+  --text-native-end-title: var(--native-text-end-title);
+  --leading-native-end-title: var(--native-leading-end-title);
+  --tracking-native-end-title: var(--native-tracking-end-title);
+  --font-weight-native-end-title: var(--native-weight-end-title);
+  --text-native-end-stat: var(--native-text-end-stat);
+  --leading-native-end-stat: var(--native-leading-end-stat);
+  --tracking-native-end-stat: var(--native-tracking-end-stat);
+  --font-weight-native-end-stat: var(--native-weight-end-stat);
+  --text-native-end-book: var(--native-text-end-book);
+  --leading-native-end-book: var(--native-leading-end-book);
+  --tracking-native-end-book: var(--native-tracking-end-book);
+  --font-weight-native-end-book: var(--native-weight-end-book);
+  --text-native-end-card-title: var(--native-text-end-card-title);
+  --leading-native-end-card-title: var(--native-leading-end-card-title);
+  --tracking-native-end-card-title: var(--native-tracking-end-card-title);
+  --font-weight-native-end-card-title: var(--native-weight-end-card-title);
+  --text-native-end-stat-label: var(--native-text-end-stat-label);
+  --leading-native-end-stat-label: var(--native-leading-end-stat-label);
+  --tracking-native-end-stat-label: var(--native-tracking-end-stat-label);
+  --font-weight-native-end-stat-label: var(--native-weight-end-stat-label);
 }
 
 @media (prefers-reduced-motion: reduce) {
