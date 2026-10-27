@@ -61,6 +61,7 @@ export const NOTHING_READ_THIS_WEEK = {
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
   libraryProblem: () => null,
+  homeArrival: () => null,
   addLibraryFolder: () => null,
   linkLibraryFolder: () => {
     throw new CommandFailure({

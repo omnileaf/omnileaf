@@ -18,14 +18,15 @@ import type { LayoutLoad } from "./$types";
 export const ssr = false;
 
 export const load: LayoutLoad = async ({ url, untrack }) => {
-  const [appInfo, libraryProblem] = await Promise.all([
+  const [appInfo, libraryProblem, homeArrival] = await Promise.all([
     commands.appInfo(),
     commands.libraryProblem(),
+    commands.homeArrival(),
   ]);
   followCorePlatform(appInfo.platform);
   followSystemTextSize(appInfo.platform);
   if (libraryProblem !== null) {
-    return { appInfo, libraryProblem, isFirstLaunch: false };
+    return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }
   const isFirstLaunch = needsFirstLaunch(await commands.firstLaunchFinished());
   if (
@@ -40,5 +41,5 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
       redirect(307, opening);
     }
   }
-  return { appInfo, libraryProblem, isFirstLaunch };
+  return { appInfo, libraryProblem, homeArrival, isFirstLaunch };
 };

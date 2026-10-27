@@ -44,7 +44,8 @@ use std::{
 #[cfg(desktop)]
 use omnileaf_engine::HomeFolderSetting;
 use omnileaf_engine::{
-    Core, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock, describe_error,
+    Core, HomeArrival, Library, LibraryFolders, RecentLog, ResourceRouter, SystemClock,
+    describe_error,
 };
 use tauri::{App, Manager};
 use tracing_subscriber::{
@@ -90,11 +91,20 @@ pub fn run() {
         .setup(move |app| {
             crash_reporting::install(app.handle());
             commands.mount_events(app);
-            let problem = open_library(app, &config?).err().map(|error| {
-                tracing::error!(error = %describe_error(error.as_ref()), "open the library");
-                LibraryProblem::of(error.as_ref())
-            });
-            app.manage(LibraryAtLaunch { problem });
+            let launch = match open_library(app, &config?) {
+                Ok(home_arrival) => LibraryAtLaunch {
+                    problem: None,
+                    home_arrival,
+                },
+                Err(error) => {
+                    tracing::error!(error = %describe_error(error.as_ref()), "open the library");
+                    LibraryAtLaunch {
+                        problem: Some(LibraryProblem::of(error.as_ref())),
+                        home_arrival: None,
+                    }
+                }
+            };
+            app.manage(launch);
             Ok(())
         });
     #[cfg(desktop)]
@@ -131,9 +141,9 @@ pub fn run() {
         .run(|app, event| put_away::save_when_put_away(app, &event));
 }
 
-fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>> {
+fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {
     let data_dir = config.data_dir.as_deref();
-    let folders = library_folders(app, data_dir)?;
+    let (folders, home_arrival) = library_folders(app, data_dir)?;
     app.manage(StoragePlaces {
         database_folder: folders.database.clone(),
     });
@@ -162,26 +172,32 @@ fn open_library(app: &App, config: &RuntimeConfig) -> Result<(), Box<dyn Error>>
             tracing::error!(error = %describe_error(error.as_ref()), "start the covers and pages, which won't show");
         }
     }
-    Ok(())
+    Ok(home_arrival)
 }
 
 #[cfg(desktop)]
-fn library_folders(app: &App, data_dir: Option<&Path>) -> Result<LibraryFolders, Box<dyn Error>> {
+fn library_folders(
+    app: &App,
+    data_dir: Option<&Path>,
+) -> Result<(LibraryFolders, Option<HomeArrival>), Box<dyn Error>> {
     let data_folder = match data_dir {
         Some(data_dir) => data_dir.to_path_buf(),
         None => app.path().app_data_dir()?,
     };
     let setting = HomeFolderSetting::in_folder(data_folder);
     app.manage(setting.clone());
-    let home = tauri::async_runtime::block_on(setting.home())?;
-    Ok(LibraryFolders::from(home))
+    let launch = tauri::async_runtime::block_on(setting.home_at_launch())?;
+    Ok((LibraryFolders::from(launch.home), launch.arrival))
 }
 
 /// On iOS the Files app shows the documents folder as On My iPhone › Omnileaf, so the database stays out of it.
 #[cfg(mobile)]
-fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryFolders> {
+fn library_folders(
+    app: &App,
+    data_dir: Option<&Path>,
+) -> tauri::Result<(LibraryFolders, Option<HomeArrival>)> {
     if let Some(data_dir) = data_dir {
-        return Ok(LibraryFolders::from(data_dir.to_path_buf()));
+        return Ok((LibraryFolders::from(data_dir.to_path_buf()), None));
     }
     let database = app.path().app_data_dir()?;
     let home = if cfg!(target_os = "ios") {
@@ -189,7 +205,7 @@ fn library_folders(app: &App, data_dir: Option<&Path>) -> tauri::Result<LibraryF
     } else {
         database.clone()
     };
-    Ok(LibraryFolders { database, home })
+    Ok((LibraryFolders { database, home }, None))
 }
 
 fn open_resources(app: &App, data_dir: Option<&Path>) -> Result<ResourceRouter, Box<dyn Error>> {

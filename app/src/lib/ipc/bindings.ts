@@ -7,6 +7,7 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
 	libraryProblem: () => __TAURI_INVOKE<"writtenByANewerVersion" | "couldNotOpen" | null>("library_problem"),
+	homeArrival: () => __TAURI_INVOKE<"moved" | "moveFailed" | null>("home_arrival"),
 	addLibraryFolder: (onProgress: Channel<ScanProgress>) => typedError<{
 	name: string,
 	series: number,
@@ -125,7 +126,10 @@ export const commands = {
 	/**  Crosses as a plain number, which holds every such date exactly. */
 	lastBackupAtMs: number | null,
 } | null>("found_library"),
-	chooseHomeFolder: () => typedError<{ kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
+	chooseHomeFolder: () => typedError<{
+	location: string,
+	choice: HomeChoice,
+} | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
 	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
 	moveHomeFolder: () => typedError<null, IpcError>(__TAURI_INVOKE("move_home_folder")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
@@ -245,6 +249,11 @@ export type BooksShown = "all" | "unread" | "bookmarked";
 export type CategoryHeld = {
 	category: LibraryCategory,
 	holding: number,
+};
+
+export type ChosenHomeFolder = {
+	location: string,
+	choice: HomeChoice,
 };
 
 export type CoversPerRow = {
@@ -384,6 +393,8 @@ export type HistorySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 };
+
+export type HomeArrival = "moved" | "moveFailed";
 
 export type HomeChoice = { kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" };
 
