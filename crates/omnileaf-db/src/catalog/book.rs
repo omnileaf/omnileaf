@@ -12,9 +12,11 @@ macro_rules! insert_book {
         concat!(
             "INSERT INTO book (
                 id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
-                page_count
+                page_count, kind, first_number, last_number, number_source, volume_number,
+                volume_source
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+            FROM series WHERE id = ?2",
             $on_conflict
         )
     };
@@ -26,7 +28,13 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
     " ON CONFLICT (id) DO UPDATE SET
         series_local_id = excluded.series_local_id,
         title = excluded.title,
-        reading_order_key = excluded.reading_order_key"
+        reading_order_key = excluded.reading_order_key,
+        kind = excluded.kind,
+        first_number = excluded.first_number,
+        last_number = excluded.last_number,
+        number_source = excluded.number_source,
+        volume_number = excluded.volume_number,
+        volume_source = excluded.volume_source"
 );
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
@@ -144,6 +152,9 @@ pub(crate) fn series_of_book(
 }
 
 fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error> {
+    let numbering = book.numbering.as_ref();
+    let number = numbering.and_then(Numbering::number);
+    let volume = numbering.and_then(Numbering::volume);
     Ok(statement.execute((
         book.id().as_bytes(),
         book.series.as_bytes(),
@@ -153,6 +164,12 @@ fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error>
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),
         book.page_count,
+        numbering.map(|numbering| numbering.kind().name()),
+        number.map(|number| number.value.first().thousandths()),
+        number.map(|number| number.value.last().thousandths()),
+        number.map(|number| number.source.name()),
+        volume.map(|volume| volume.value.thousandths()),
+        volume.map(|volume| volume.source.name()),
     ))?)
 }
 

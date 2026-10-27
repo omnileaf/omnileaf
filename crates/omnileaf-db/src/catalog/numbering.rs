@@ -41,6 +41,16 @@ pub enum Numbering {
     },
 }
 
+impl BookKind {
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::Volume => "volume",
+            Self::Chapter => "chapter",
+            Self::Special => "special",
+        }
+    }
+}
+
 impl BookNumber {
     #[must_use]
     pub const fn from_thousandths(thousandths: u32) -> Self {
@@ -75,6 +85,40 @@ impl NumberRange {
     #[must_use]
     pub const fn last(self) -> BookNumber {
         self.last
+    }
+}
+
+impl ValueSource {
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::FolderName => "folder_name",
+            Self::FileName => "file_name",
+            Self::Files => "files",
+        }
+    }
+}
+
+impl Numbering {
+    pub(crate) const fn kind(&self) -> BookKind {
+        match self {
+            Self::Volume { .. } => BookKind::Volume,
+            Self::Chapter { .. } => BookKind::Chapter,
+            Self::Special { .. } => BookKind::Special,
+        }
+    }
+
+    pub(crate) const fn number(&self) -> Option<Sourced<NumberRange>> {
+        match *self {
+            Self::Volume { numbers } => Some(numbers),
+            Self::Chapter { number, .. } | Self::Special { number } => number,
+        }
+    }
+
+    pub(crate) const fn volume(&self) -> Option<Sourced<BookNumber>> {
+        match *self {
+            Self::Chapter { volume, .. } => volume,
+            Self::Volume { .. } | Self::Special { .. } => None,
+        }
     }
 }
 
