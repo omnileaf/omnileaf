@@ -87,6 +87,7 @@ const SERIES_04_ARCHIVES: &[&str] = &[
     "Sample Series 04 Art Book.cbz",
     "Specials/Sample Series 04 Extras.cbz",
     "Specials/Sample Series 04 Omake 02.cbz",
+    "Specials/Sample Series 04 v01 c002.cbz",
 ];
 const SERIES_04_IMAGE_FOLDERS: &[&str] = &["v02/003", "v02/Extra Pages"];
 const STORED_NUMBERING: &str = "SELECT title, concat_ws(' ', kind, first_number, last_number,
@@ -321,7 +322,7 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
         scanned.series(),
         owned(&[
             ("Sample One-Shot", 1),
-            ("Sample Series 04", 13),
+            ("Sample Series 04", 14),
             ("Sample Series 05 Vol 2", 1)
         ])
     );
@@ -379,6 +380,7 @@ async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
             "Sample Series 04 015",
             "Sample Series 04 c020-022",
             "Sample Series 04 Omake 02",
+            "Sample Series 04 v01 c002",
             "Sample Series 04 Art Book",
             "Sample Series 04 Extras",
         ]
@@ -414,6 +416,7 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
                 "Sample Series 04 c030",
                 "chapter 30000 30000 file_name 7000 folder_name"
             ),
+            ("Sample Series 04 v01 c002", "special 2000 2000 file_name"),
             (
                 "Sample Series 04 v02 c005",
                 "chapter 5000 5000 file_name 2000 file_name"
