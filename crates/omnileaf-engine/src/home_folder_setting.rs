@@ -32,6 +32,19 @@ pub enum HomeChoice {
     Empty,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum HomeArrival {
+    Moved,
+    MoveFailed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HomeAtLaunch {
+    pub home: PathBuf,
+    pub arrival: Option<HomeArrival>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Placement {
     Current,
@@ -99,8 +112,12 @@ impl HomeFolderSetting {
         Self { data_folder }
     }
 
-    #[tracing::instrument(skip_all)]
     pub async fn home(&self) -> Result<PathBuf, HomeFolderError> {
+        Ok(self.home_at_launch().await?.home)
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn home_at_launch(&self) -> Result<HomeAtLaunch, HomeFolderError> {
         let setting = self.clone();
         spawn_blocking(move || setting.checked_home()).await?
     }
@@ -171,27 +188,30 @@ impl HomeFolderSetting {
         .await?
     }
 
-    fn checked_home(&self) -> Result<PathBuf, HomeFolderError> {
+    fn checked_home(&self) -> Result<HomeAtLaunch, HomeFolderError> {
         match self.stored_home()? {
-            None => Ok(self.data_folder.clone()),
-            Some(StoredHome::At { home }) => home_with_library(home),
+            None => Ok(HomeAtLaunch::settled(self.data_folder.clone())),
+            Some(StoredHome::At { home }) => home_with_library(home).map(HomeAtLaunch::settled),
             Some(StoredHome::Moving { from, to }) => self.settle_move(from, to),
-            Some(StoredHome::Moved { from, to }) => self.leave_behind(&from, to),
+            Some(StoredHome::Moved { from, to }) => {
+                self.leave_behind(&from, to).map(HomeAtLaunch::settled)
+            }
         }
     }
 
-    fn settle_move(&self, from: PathBuf, to: PathBuf) -> Result<PathBuf, HomeFolderError> {
+    fn settle_move(&self, from: PathBuf, to: PathBuf) -> Result<HomeAtLaunch, HomeFolderError> {
         if let Err(error) = finish_move(&from, &to) {
             tracing::error!(error = %describe_error(&error), "move the library into the new home folder, so it stays where it was");
             let home = home_with_library(from)?;
             self.store(&StoredHome::At { home: home.clone() })?;
-            return Ok(home);
+            return Ok(HomeAtLaunch::arrived(home, HomeArrival::MoveFailed));
         }
         self.store(&StoredHome::Moved {
             from: from.clone(),
             to: to.clone(),
         })?;
-        self.leave_behind(&from, to)
+        let home = self.leave_behind(&from, to)?;
+        Ok(HomeAtLaunch::arrived(home, HomeArrival::Moved))
     }
 
     fn leave_behind(&self, old_home: &Path, home: PathBuf) -> Result<PathBuf, HomeFolderError> {
@@ -241,6 +261,22 @@ impl HomeFolderSetting {
                 path: saved,
                 source,
             })
+    }
+}
+
+impl HomeAtLaunch {
+    fn settled(home: PathBuf) -> Self {
+        Self {
+            home,
+            arrival: None,
+        }
+    }
+
+    fn arrived(home: PathBuf, arrival: HomeArrival) -> Self {
+        Self {
+            home,
+            arrival: Some(arrival),
+        }
     }
 }
 

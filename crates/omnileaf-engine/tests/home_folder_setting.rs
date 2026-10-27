@@ -9,8 +9,8 @@ use std::{fs, path::Path};
 
 use omnileaf_db::rusqlite::Connection;
 use omnileaf_engine::{
-    FolderKind, FoundLibrary, HomeChoice, HomeFolderError, HomeFolderSetting, Library,
-    LibraryListing,
+    FolderKind, FoundLibrary, HomeAtLaunch, HomeChoice, HomeFolderError, HomeFolderSetting,
+    Library, LibraryListing, home_location,
 };
 use omnileaf_testkit::write_sample_library;
 use support::{FixedClock, ScratchFolder};
@@ -55,6 +55,57 @@ async fn keeps_the_home_in_the_data_folder_until_another_is_chosen() {
     let home = setting.home().await.unwrap();
 
     assert_eq!(home, data.path());
+}
+
+#[tokio::test]
+async fn says_nothing_moved_at_a_launch_with_no_home_chosen() {
+    let data = ScratchFolder::new("setting-arrival-default");
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: data.path().to_path_buf(),
+            arrival: None,
+        }
+    );
+}
+
+#[tokio::test]
+async fn says_nothing_moved_at_a_launch_in_a_library_chosen_to_use() {
+    let data = ScratchFolder::new("setting-arrival-use-data");
+    let other = ScratchFolder::new("setting-arrival-use-other");
+    let setting = new_library_in(data.path()).await;
+    library_read_in(other.path()).await;
+    setting.use_library_in(other.path()).await.unwrap();
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: other.path().to_path_buf(),
+            arrival: None,
+        }
+    );
+}
+
+#[tokio::test]
+async fn names_a_home_the_way_the_library_names_its_home_folder() {
+    let data = ScratchFolder::new("setting-location");
+    let library = open(data.path()).await;
+
+    let folders = library.folders(None).await.unwrap().folders;
+
+    assert_eq!(
+        folders
+            .iter()
+            .map(|folder| folder.location.clone())
+            .collect::<Vec<_>>(),
+        [home_location(data.path())]
+    );
 }
 
 #[tokio::test]

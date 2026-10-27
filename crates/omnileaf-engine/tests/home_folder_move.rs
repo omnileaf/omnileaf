@@ -18,7 +18,8 @@ use omnileaf_db::{
     store::{Store, reading_state},
 };
 use omnileaf_engine::{
-    FolderKind, HomeChoice, HomeFolderError, HomeFolderSetting, Library, found_library_in,
+    FolderKind, HomeArrival, HomeAtLaunch, HomeChoice, HomeFolderError, HomeFolderSetting, Library,
+    found_library_in,
 };
 use omnileaf_sync_proto::BookId;
 use omnileaf_testkit::write_sample_library;
@@ -262,6 +263,86 @@ async fn moves_the_library_and_its_progress_into_an_empty_folder() {
 }
 
 #[tokio::test]
+async fn says_the_library_moved_on_the_launch_that_moves_it() {
+    let data = ScratchFolder::new("move-arrival-data");
+    let other = ScratchFolder::new("move-arrival-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: other.path().to_path_buf(),
+            arrival: Some(HomeArrival::Moved),
+        }
+    );
+}
+
+#[tokio::test]
+async fn says_nothing_moved_on_the_launch_after_a_move() {
+    let data = ScratchFolder::new("move-arrival-after-data");
+    let other = ScratchFolder::new("move-arrival-after-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    setting.home_at_launch().await.unwrap();
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: other.path().to_path_buf(),
+            arrival: None,
+        }
+    );
+}
+
+#[tokio::test]
+async fn says_the_move_failed_on_the_launch_that_stays_in_the_old_home() {
+    let data = ScratchFolder::new("move-arrival-failed-data");
+    let other = ScratchFolder::new("move-arrival-failed-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    library_read_in(other.path()).await;
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: data.path().to_path_buf(),
+            arrival: Some(HomeArrival::MoveFailed),
+        }
+    );
+}
+
+#[tokio::test]
+async fn says_nothing_moved_on_the_launch_after_a_failed_move() {
+    let data = ScratchFolder::new("move-arrival-failed-after-data");
+    let other = ScratchFolder::new("move-arrival-failed-after-other");
+    library_read_in(data.path()).await;
+    let setting = HomeFolderSetting::in_folder(data.path().to_path_buf());
+    setting.move_to(other.path()).await.unwrap();
+    library_read_in(other.path()).await;
+    setting.home_at_launch().await.unwrap();
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: data.path().to_path_buf(),
+            arrival: None,
+        }
+    );
+}
+
+#[tokio::test]
 async fn keeps_reading_the_books_left_in_the_old_home() {
     let data = ScratchFolder::new("move-linked-data");
     let other = ScratchFolder::new("move-linked-other");
@@ -379,6 +460,27 @@ async fn sets_the_old_library_aside_on_the_next_launch_when_it_could_not_at_firs
 
     assert_eq!(home, other.path());
     assert!(!old.path().join(DATABASE_FILE).exists());
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn says_nothing_moved_when_setting_the_old_library_aside_is_tried_again() {
+    let data = ScratchFolder::new("move-arrival-retried-data");
+    let old = ScratchFolder::new("move-arrival-retried-old");
+    let other = ScratchFolder::new("move-arrival-retried-other");
+    let setting = move_cut_short_out_of_a_locked_home(data.path(), old.path(), other.path()).await;
+    setting.home_at_launch().await.unwrap();
+    unlock(old.path());
+
+    let launch = setting.home_at_launch().await.unwrap();
+
+    assert_eq!(
+        launch,
+        HomeAtLaunch {
+            home: other.path().to_path_buf(),
+            arrival: None,
+        }
+    );
 }
 
 #[cfg(unix)]
