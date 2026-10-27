@@ -2,14 +2,16 @@ use rusqlite::Connection;
 
 use crate::{
     Error,
-    catalog::series_listing::{SeriesFilter, StageParams},
+    catalog::series_listing::{FilterParams, SeriesFilter, smart_conditions},
 };
 
-const SERIES_WITH_BOOKS: &str =
-    "SELECT count(*) FROM series WHERE reading_stage IN (:unstarted, :in_progress, :finished)";
+const SERIES_WITH_BOOKS: &str = concat!(
+    "SELECT count(*) FROM series WHERE reading_stage IN (:unstarted, :in_progress, :finished)",
+    smart_conditions!()
+);
 
 pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u32, Error> {
-    let params = StageParams::of(*filter);
+    let params = FilterParams::of(*filter);
     Ok(connection
         .prepare(SERIES_WITH_BOOKS)?
         .query_row(params.named().as_slice(), |row| row.get(0))?)

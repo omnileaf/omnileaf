@@ -4,12 +4,14 @@
 )]
 
 mod books;
+mod details;
 mod scanned;
 mod support;
 
 use std::fs;
 
 use books::{write_book, write_book_with, write_page};
+use details::stored_details;
 use omnileaf_db::rusqlite::types::Value;
 use omnileaf_engine::{FileChanges, FolderScan, LibraryError, RescanOutcome, ScanProgress};
 use omnileaf_sync_proto::SourceId;
@@ -19,6 +21,47 @@ use omnileaf_testkit::{
 };
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
+
+const FULL_COMIC_INFO: &str = "<ComicInfo>
+    <Series>Sample Series 01</Series>
+    <Number>1</Number>
+    <Title>Sample Story</Title>
+    <Volume>2</Volume>
+    <Summary>A sample summary.</Summary>
+    <Writer>Sample Author</Writer>
+    <Penciller>Sample Artist, Second Artist</Penciller>
+    <Inker>Sample Artist</Inker>
+    <Colorist>Sample Colourist</Colorist>
+    <Letterer>Sample Letterer</Letterer>
+    <CoverArtist>Sample Cover Artist</CoverArtist>
+    <Editor>Sample Editor</Editor>
+    <Publisher>Sample Publisher</Publisher>
+    <Genre>Mystery, Adventure</Genre>
+    <Tags>harbour</Tags>
+    <Format>Digital</Format>
+    <LanguageISO>en</LanguageISO>
+    <Manga>YesAndRightToLeft</Manga>
+    <AgeRating>Adults Only 18+</AgeRating>
+    <Year>2019</Year>
+</ComicInfo>";
+
+fn stored_names(scanned: &Scanned, sql: &str) -> Vec<(String, String)> {
+    scanned
+        .connection()
+        .prepare(sql)
+        .unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
+fn owned_pairs(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+    pairs
+        .iter()
+        .map(|(code, name)| ((*code).to_owned(), (*name).to_owned()))
+        .collect()
+}
 
 fn sample_library(name: &str) -> ScratchFolder {
     let folder = ScratchFolder::new(name);
@@ -283,6 +326,94 @@ async fn titles_and_orders_books_by_file_name_whatever_their_comic_info_titles()
     let (scanned, _, _) = Scanned::folder("scan-titles", comics.path()).await;
 
     assert_eq!(scanned.books_in("Sample Series 01"), ["v01", "v02"]);
+}
+
+#[tokio::test]
+async fn keeps_the_details_each_book_s_comic_info_gives() {
+    let comics = ScratchFolder::new("scan-details");
+    write_book_with(
+        &comics.path().join("Sample Series 01/v01.cbz"),
+        1,
+        Some(FULL_COMIC_INFO),
+    );
+
+    let (scanned, _, _) = Scanned::folder("scan-details", comics.path()).await;
+
+    let text = |value: &str| Value::Text(value.to_owned());
+    assert_eq!(
+        stored_details(&scanned.connection()),
+        [vec![
+            text("Sample Series 01"),
+            text("1"),
+            text("Sample Story"),
+            Value::Integer(2),
+            text("A sample summary."),
+            text("Sample Publisher"),
+            text("Digital"),
+            text("en"),
+            text("right_to_left"),
+            text("adults_only_18"),
+            Value::Integer(2019),
+        ]]
+    );
+}
+
+#[tokio::test]
+async fn keeps_the_people_and_tags_each_book_s_comic_info_names() {
+    let comics = ScratchFolder::new("scan-people-and-tags");
+    write_book_with(
+        &comics.path().join("Sample Series 01/v01.cbz"),
+        1,
+        Some(FULL_COMIC_INFO),
+    );
+
+    let (scanned, _, _) = Scanned::folder("scan-people-and-tags", comics.path()).await;
+
+    assert_eq!(
+        stored_names(
+            &scanned,
+            "SELECT role, name FROM book_person ORDER BY role, name"
+        ),
+        owned_pairs(&[
+            ("colourist", "Sample Colourist"),
+            ("cover_artist", "Sample Cover Artist"),
+            ("editor", "Sample Editor"),
+            ("inker", "Sample Artist"),
+            ("letterer", "Sample Letterer"),
+            ("penciller", "Sample Artist"),
+            ("penciller", "Second Artist"),
+            ("writer", "Sample Author"),
+        ])
+    );
+    assert_eq!(
+        stored_names(
+            &scanned,
+            "SELECT kind, name FROM book_tag ORDER BY kind, name"
+        ),
+        owned_pairs(&[
+            ("genre", "Adventure"),
+            ("genre", "Mystery"),
+            ("tag", "harbour")
+        ])
+    );
+}
+
+#[tokio::test]
+async fn scans_a_book_whose_comic_info_cannot_be_read_with_no_details() {
+    let comics = ScratchFolder::new("scan-broken-details");
+    write_book_with(
+        &comics.path().join("Sample Series 01/v01.cbz"),
+        1,
+        Some("<ComicInfo><Series>Sample Series 01</Title></ComicInfo>"),
+    );
+
+    let (scanned, scan, _) = Scanned::folder("scan-broken-details", comics.path()).await;
+
+    assert_eq!((scan.books, scan.unreadable_books), (1, 0));
+    assert_eq!(
+        stored_details(&scanned.connection()),
+        [vec![Value::Null; 11]]
+    );
 }
 
 #[tokio::test]

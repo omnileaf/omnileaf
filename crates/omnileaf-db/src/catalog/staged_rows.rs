@@ -6,7 +6,7 @@ use crate::{
     catalog::{
         cover::stored_cover,
         cursor::Position,
-        series_listing::{SeriesFilter, StageParams},
+        series_listing::{FilterParams, SeriesFilter},
         series_page::SeriesSummary,
         stored_id::{stored_id, stored_optional_id},
     },
@@ -37,13 +37,14 @@ macro_rules! series_at_stage {
             "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
                 series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
                 cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-                series.unread_count, ",
+                series.unread_count, series.language, series.adult_rated_books > 0 AS is_rated_adult, ",
             $continues_from,
             " AS continues_from
             FROM series ",
             $crate::catalog::cover::join_series_cover!(),
             " WHERE series.reading_stage = ",
             $stage,
+            $crate::catalog::series_listing::smart_conditions!(),
             $condition
         )
     };
@@ -224,7 +225,7 @@ impl<P> Listing<P> {
         sql: &str,
         after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let filter = StageParams::of(read.filter);
+        let filter = FilterParams::of(read.filter);
         let mut params = filter.named().to_vec();
         params.push((":limit", &read.limit));
         params.extend_from_slice(read.bound);
@@ -246,6 +247,8 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         added_at_ms: row.get("added_at_ms")?,
         cover: stored_cover(row)?,
         continues_from: stored_optional_id(row, "continues_from")?,
+        language: row.get("language")?,
+        is_rated_adult: row.get("is_rated_adult")?,
     })
 }
 

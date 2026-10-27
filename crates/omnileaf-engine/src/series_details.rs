@@ -1,3 +1,4 @@
+use omnileaf_db::catalog::SeriesFileDetails;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -64,26 +65,37 @@ pub struct DetailEdits {
 }
 
 impl SeriesDetails {
-    pub(crate) fn from_files(title: String) -> Self {
+    pub(crate) fn from_files(
+        title: String,
+        details: SeriesFileDetails,
+        is_rated_adult: bool,
+    ) -> Self {
         Self {
             title: EditedTitle {
                 from_file: title,
                 edited: None,
             },
             people: EditedPeople {
-                from_file: Vec::new(),
+                from_file: details
+                    .people
+                    .into_iter()
+                    .map(|person| SeriesPerson {
+                        role: CreatorRole::of(&person.roles),
+                        name: person.name,
+                    })
+                    .collect(),
                 edited: None,
             },
             tags: EditedTags {
-                from_file: Vec::new(),
+                from_file: details.tags,
                 edited: None,
             },
             summary: EditedSummary {
-                from_file: None,
+                from_file: details.summary,
                 edited: None,
             },
             is_marked_adult: false,
-            is_rated_adult: false,
+            is_rated_adult,
         }
     }
 }

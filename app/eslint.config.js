@@ -12,6 +12,7 @@ export default defineConfig(
       "build/",
       "src/lib/paraglide/",
       "src/lib/ipc/bindings.ts",
+      "src-tauri/gen/",
     ],
   },
   js.configs.recommended,

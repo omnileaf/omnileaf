@@ -264,7 +264,7 @@ async fn lists_only_the_series_meeting_every_condition_of_the_filter() {
         .filtered(SeriesFilter {
             unread: Inclusion::Only,
             started: Inclusion::Only,
-            finished: Inclusion::Any,
+            ..SeriesFilter::NONE
         })
         .await;
 

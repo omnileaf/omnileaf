@@ -1,4 +1,4 @@
-use omnileaf_db::catalog::{self, BookSummary};
+use omnileaf_db::catalog::{self, BookSummary, PersonRole, PersonSeries, SeriesFileDetails};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -18,7 +18,6 @@ pub struct SeriesOverview {
     pub folder: Option<String>,
     /// The book reading goes on from, absent once every book is read.
     pub up_next: Option<SeriesBook>,
-    /// The kind of book, such as manga or a light novel, absent until the library reads the books' details.
     pub format: Option<String>,
     pub creators: Vec<SeriesCreator>,
     pub summary: Option<String>,
@@ -38,7 +37,6 @@ pub struct RelatedSeries {
     pub book_count: u32,
     pub read_count: u32,
     pub reason: RelatedReason,
-    /// Counts as 18+, which a library that reads no age ratings and keeps no marks never does.
     pub is_adult: bool,
 }
 
@@ -78,6 +76,24 @@ pub enum CreatorRole {
 }
 
 impl SeriesOverview {
+    pub(crate) fn described_by(self, details: SeriesFileDetails) -> Self {
+        Self {
+            format: details.format,
+            creators: details
+                .people
+                .into_iter()
+                .map(|person| SeriesCreator {
+                    role: CreatorRole::of(&person.roles),
+                    name: person.name,
+                    series_count: person.series_count,
+                })
+                .collect(),
+            summary: details.summary,
+            tags: details.tags,
+            ..self
+        }
+    }
+
     pub(crate) fn new(
         overview: catalog::SeriesOverview,
         up_next: Option<BookSummary>,
@@ -108,6 +124,40 @@ impl SeriesOverview {
     }
 }
 
+impl From<PersonSeries> for CreatorSeries {
+    fn from(series: PersonSeries) -> Self {
+        Self {
+            id: SeriesId(series.id),
+            title: series.title,
+            cover: series.cover.map(CoverPath),
+            role: CreatorRole::of(&series.roles),
+        }
+    }
+}
+
+impl CreatorRole {
+    pub(crate) fn of(roles: &[PersonRole]) -> Option<Self> {
+        let tells_the_story = roles.contains(&PersonRole::Writer);
+        let draws = roles.iter().copied().any(draws);
+        match (tells_the_story, draws) {
+            (true, true) => Some(Self::StoryAndArt),
+            (true, false) => Some(Self::Story),
+            (false, true) => Some(Self::Art),
+            (false, false) => None,
+        }
+    }
+}
+
+const fn draws(role: PersonRole) -> bool {
+    match role {
+        PersonRole::Penciller
+        | PersonRole::Inker
+        | PersonRole::Colourist
+        | PersonRole::CoverArtist => true,
+        PersonRole::Writer | PersonRole::Letterer | PersonRole::Editor => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,6 +175,7 @@ mod tests {
                 cover: None,
                 folder: None,
                 pages_left,
+                is_rated_adult: false,
             },
             None,
             seconds_per_page,

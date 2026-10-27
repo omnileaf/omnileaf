@@ -10,8 +10,8 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, Cursor, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        ScannedBook, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, add_root,
+        BookDetails, BookFile, Cursor, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, add_root,
         folder_series_count, folder_series_page, record_scanned_books,
     },
 };
@@ -61,6 +61,7 @@ impl Library {
             title: format!("Volume {crc:02}"),
             added_at_ms,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root,
                 location: PathBuf::from(format!("{series}/Volume {crc:02}.cbz")),

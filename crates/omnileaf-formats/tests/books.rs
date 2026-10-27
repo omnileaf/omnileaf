@@ -5,7 +5,7 @@
 
 mod support;
 
-use std::path::Path;
+use std::{ops::ControlFlow, path::Path};
 
 use omnileaf_formats::{FormatError, Limits, UnsupportedArchive, open_book, open_book_with};
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
@@ -25,6 +25,19 @@ fn page_names(path: &Path) -> Vec<String> {
         .iter()
         .map(|page| page.name.clone())
         .collect()
+}
+
+fn every_page_read(path: &Path) -> Vec<(usize, Vec<u8>)> {
+    let mut read = Vec::new();
+    open_book(path)
+        .unwrap()
+        .read_every_page(|index, page| {
+            read.push((index, page));
+            ControlFlow::Continue(())
+        })
+        .unwrap();
+    read.sort();
+    read
 }
 
 #[test]
@@ -82,6 +95,42 @@ fn reads_every_page_back_exactly_from_stored_and_deflated_archives() {
             assert_eq!(&book.read_page(index).unwrap(), expected);
         }
     }
+}
+
+#[test]
+fn reads_every_page_of_an_archive_and_a_folder_with_its_place_in_reading_order() {
+    let scratch = ScratchFolder::new("every-page");
+    let entries = [
+        entry("10.png", page(2)),
+        entry("2.png", page(1)),
+        entry("1.png", page(0)),
+    ];
+    let archive = scratch.write("book.cbz", &cbz(&entries, Compression::Deflated).unwrap());
+    for page in &entries {
+        scratch.write(&format!("Chapter/{}", page.name), &page.bytes);
+    }
+
+    let read = [archive, scratch.path().join("Chapter")].map(|path| every_page_read(&path));
+
+    let in_order = vec![(0, page(0)), (1, page(1)), (2, page(2))];
+    assert_eq!(read, [in_order.clone(), in_order]);
+}
+
+#[test]
+fn stops_reading_the_pages_of_an_archive_once_told_to() {
+    let scratch = ScratchFolder::new("every-page-stop");
+    let entries = [entry("1.png", page(0)), entry("2.png", page(1))];
+    let path = scratch.write("book.cbz", &cbz(&entries, Compression::Stored).unwrap());
+    let mut book = open_book(&path).unwrap();
+    let mut read = 0;
+
+    book.read_every_page(|_, _| {
+        read += 1;
+        ControlFlow::Break(())
+    })
+    .unwrap();
+
+    assert_eq!(read, 1);
 }
 
 #[test]

@@ -19,6 +19,8 @@ export const commands = {
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
+	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
+	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
@@ -40,7 +42,7 @@ export const commands = {
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
-	creatorSeries: (creator: string) => __TAURI_INVOKE<CreatorSeries[]>("creator_series", { creator }),
+	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
 	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
 	id: string & { readonly __brand: "BookId" },
@@ -470,12 +472,10 @@ export type LibrarySeries = {
 	bookCount: number,
 	unreadCount: number,
 	cover: string & { readonly __brand: "CoverPath" } | null,
-	/**  The language the books' details name, absent until the library reads them. */
 	language: string | null,
 	/**  Holds chapters downloaded from a source, which a local library never does. */
 	hasDownloads: boolean,
 	continuesFrom: string & { readonly __brand: "BookId" } | null,
-	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
 	isAdult: boolean,
 };
 
@@ -567,6 +567,8 @@ export type PageDimensions = {
 	height: number,
 };
 
+export type PageTurn = "previous" | "next";
+
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
 /**  A format the webview may be unable to show, which it tries before asking for pages, limited to the formats pages can be transcoded from. */
@@ -625,7 +627,6 @@ export type RelatedSeries = {
 	bookCount: number,
 	readCount: number,
 	reason: RelatedReason,
-	/**  Counts as 18+, which a library that reads no age ratings and keeps no marks never does. */
 	isAdult: boolean,
 };
 
@@ -724,7 +725,6 @@ export type SeriesOverview = {
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */
 	upNext: SeriesBook | null,
-	/**  The kind of book, such as manga or a light novel, absent until the library reads the books' details. */
 	format: string | null,
 	creators: SeriesCreator[],
 	summary: string | null,

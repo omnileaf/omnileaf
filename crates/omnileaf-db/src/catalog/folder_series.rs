@@ -6,7 +6,9 @@ use crate::{
         RootId,
         cursor::Position,
         page::{Page, PageRequest},
-        series_listing::{SeriesFilter, SeriesListing, SeriesOrder, StageParams},
+        series_listing::{
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, smart_conditions,
+        },
         series_page::{
             Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
             last_read_rows, last_updated_place, last_updated_rows, time_left_place, time_left_rows,
@@ -73,7 +75,8 @@ const SERIES_IN_FOLDER: &str = concat!(
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND local_id IN (",
     series_in_folder!(),
-    ")"
+    ")",
+    smart_conditions!()
 );
 
 #[tracing::instrument(skip_all, fields(%root, ?listing, size = ?request.size))]
@@ -113,8 +116,8 @@ pub fn folder_series_count(
     root: RootId,
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
-    let stages = StageParams::of(*filter);
-    let mut params = stages.named().to_vec();
+    let filter = FilterParams::of(*filter);
+    let mut params = filter.named().to_vec();
     params.push((":root", &root.0));
     Ok(connection
         .prepare(SERIES_IN_FOLDER)?

@@ -175,10 +175,14 @@ async fn lists_no_book_as_bookmarked_while_the_library_keeps_no_bookmarks() {
 }
 
 #[tokio::test]
-async fn finds_no_series_by_a_creator_until_the_library_reads_creators() {
+async fn finds_no_series_by_a_creator_no_book_names() {
     let sample = SampleLibrary::open("creator-series").await;
 
-    let found = sample.library.creator_series("Author A");
+    let found = sample
+        .library
+        .creator_series("Author A".to_owned())
+        .await
+        .unwrap();
 
     assert_eq!(found, Vec::new());
 }

@@ -2,6 +2,7 @@ mod adult_content;
 mod app_info;
 mod app_language;
 mod background_lane;
+mod book_details;
 mod bookmark_access;
 mod books_removal;
 #[cfg(test)]
@@ -65,6 +66,7 @@ mod saved_report;
 mod scan;
 mod series_details;
 mod series_overview;
+mod side_borders;
 mod storage_use;
 mod utc_offset;
 mod version_details;

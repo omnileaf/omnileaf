@@ -11,7 +11,8 @@ use omnileaf_cache::{CacheError, DiskCache, MemoryCache};
 use omnileaf_db::catalog::{BookFileId, BookReading as StoredReading};
 use omnileaf_formats::{Book, FormatError};
 use omnileaf_imaging::{
-    CroppedSides, ImagingError, PageFormat, crop_white_borders, page_size, shrink_page, transcode,
+    BookSideBorders, ImagingError, PageFormat, Transcoded, crop_side_borders, crop_white_borders,
+    page_size, shrink_page, transcode,
 };
 use tokio::sync::oneshot;
 
@@ -24,9 +25,10 @@ use crate::{
     file_type::FileType,
     lane::{Job, LaneStopped},
     library::BookToOpen,
-    open_books::{BookFileAt, OpenBook, OpenBooks, PageAt},
+    open_books::{BookFileAt, LastOpened, OpenBook, OpenBooks, PageAt},
     page_lane::{AskedPageError, PageLane},
     page_sizes::{PageSizes, SizeFill, SizeFills, fill_sizes, opening_window, probe_window},
+    side_borders::{BookLeft, Measuring, book_side_borders},
 };
 
 /// Changes whenever pages are transcoded differently, so no transcode made the old way is served again.
@@ -57,6 +59,7 @@ struct Shared {
     memory: Mutex<MemoryCache<PagePath, ServedPage>>,
     in_flight: PagesInFlight,
     books: OpenBooks,
+    last_opened: LastOpened,
     size_fills: SizeFills,
     undecodable: RwLock<HashSet<ProbedFormat>>,
     transcode_folder: PathBuf,
@@ -105,6 +108,8 @@ pub(crate) enum PageError {
     Lane(#[from] LaneStopped),
     #[error("read the page on the page lane")]
     Asked(#[from] AskedPageError),
+    #[error("crop a page by its book's side borders")]
+    Left(#[from] BookLeft),
 }
 
 impl OpenBookError {
@@ -125,7 +130,10 @@ impl OpenBookError {
 
 impl PageError {
     pub(crate) fn is_superseded(&self) -> bool {
-        matches!(self, Self::Asked(AskedPageError::Superseded))
+        matches!(
+            self,
+            Self::Asked(AskedPageError::Superseded) | Self::Left(_)
+        )
     }
 }
 
@@ -137,6 +145,7 @@ impl Pages {
                 memory: Mutex::new(MemoryCache::new(MEMORY_BUDGET_BYTES)),
                 in_flight: PagesInFlight::default(),
                 books: OpenBooks::default(),
+                last_opened: LastOpened::default(),
                 size_fills: SizeFills::default(),
                 undecodable: RwLock::default(),
                 transcode_folder,
@@ -191,6 +200,7 @@ impl Pages {
             rev: found.rev,
         };
         self.lane.supersede_other_books(file);
+        self.shared.last_opened.record(file);
         let filled = match self.shared.size_fills.take(file) {
             Some(pending) => pending.sizes.await.ok(),
             None => None,
@@ -373,13 +383,47 @@ impl Shared {
         }
         let bytes = opened.lock().read_page(index)?;
         let whole = self.prepared(path.cropped(PageCrop::Whole), bytes)?;
-        let page = Arc::new(match path.crop.sides() {
-            Some(sides) => self.cropped(path, whole, sides),
-            None => whole,
-        });
+        let page = Arc::new(self.cropped_as_asked(opened, path, whole)?);
         let weight = u64::try_from(page.bytes.len()).unwrap_or(u64::MAX);
         self.memory().insert(path, Arc::clone(&page), weight);
         Ok(page)
+    }
+
+    fn cropped_as_asked(
+        &self,
+        opened: &OpenBook,
+        path: PagePath,
+        whole: ServedPage,
+    ) -> Result<ServedPage, BookLeft> {
+        Ok(match path.crop {
+            PageCrop::Whole => whole,
+            PageCrop::Borders => self.cropped(path, whole, |page| {
+                let _decoding = self.decodes.hold();
+                crop_white_borders(page)
+            }),
+            PageCrop::SideBorders => {
+                let book = self.side_borders_of(opened)?;
+                if book.crops_nothing() {
+                    return Ok(whole);
+                }
+                self.cropped(path, whole, |page| {
+                    let _decoding = self.decodes.hold();
+                    crop_side_borders(page, book)
+                })
+            }
+        })
+    }
+
+    fn side_borders_of(&self, opened: &OpenBook) -> Result<BookSideBorders, BookLeft> {
+        let is_left = || self.last_opened.is_other_than(opened.file);
+        book_side_borders(
+            opened,
+            &Measuring {
+                decodes: &self.decodes,
+                kept: self.transcodes(),
+                is_left: &is_left,
+            },
+        )
     }
 
     fn prepared(&self, path: PagePath, bytes: Vec<u8>) -> Result<ServedPage, PageError> {
@@ -418,7 +462,12 @@ impl Shared {
         })
     }
 
-    fn cropped(&self, path: PagePath, whole: ServedPage, sides: CroppedSides) -> ServedPage {
+    fn cropped(
+        &self,
+        path: PagePath,
+        whole: ServedPage,
+        crop: impl FnOnce(&[u8]) -> Result<Option<Transcoded>, ImagingError>,
+    ) -> ServedPage {
         let key = match path.cache_key() {
             Ok(key) => key,
             Err(error) => {
@@ -435,11 +484,7 @@ impl Shared {
                 bytes: kept,
             };
         }
-        let cropped = {
-            let _decoding = self.decodes.hold();
-            crop_white_borders(&whole.bytes, sides)
-        };
-        match cropped {
+        match crop(&whole.bytes) {
             Ok(Some(cropped)) => {
                 if let Some(Err(error)) = cache.map(|cache| cache.put(&key, &cropped.bytes)) {
                     tracing::warn!(%path, error = %describe_error(&error), "keep a cropped page for next time");

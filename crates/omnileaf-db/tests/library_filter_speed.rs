@@ -17,6 +17,7 @@ use omnileaf_db::{
     },
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
+use rusqlite::Transaction;
 use speed::add_generated_series;
 use support::{ScratchFolder, library_config};
 
@@ -34,6 +35,14 @@ const BOOK_TITLES: [&str; 10] = [
 ];
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const EVERY_TENTH_STARTED: u32 = 10;
+const EVERY_HUNDREDTH_FORGOTTEN: u32 = 100;
+const FORGOTTEN_REMAINDER: u32 = 1;
+const READ_LONG_AGO_MS: i64 = 1_000;
+const READ_LATELY_MS: i64 = 2_000;
+const SESSION_PAGE_COUNT: u32 = 24;
+const EVERY_HUNDREDTH_COPIED: u32 = 100;
+const COPIED_REMAINDER: u32 = 2;
+const COPIES_FOLDER: &[u8] = b"/media/Copies";
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -46,7 +55,7 @@ const SORTS: [SeriesSort; 4] = [
 ];
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-const FILTERS: [SeriesFilter; 7] = [
+const FILTERS: [SeriesFilter; 9] = [
     SeriesFilter::NONE,
     SeriesFilter {
         unread: Inclusion::Only,
@@ -70,6 +79,14 @@ const FILTERS: [SeriesFilter; 7] = [
     },
     SeriesFilter {
         finished: Inclusion::Hide,
+        ..SeriesFilter::NONE
+    },
+    SeriesFilter {
+        last_read_before_ms: Some(READ_LATELY_MS),
+        ..SeriesFilter::NONE
+    },
+    SeriesFilter {
+        duplicates: Inclusion::Only,
         ..SeriesFilter::NONE
     },
 ];
@@ -158,10 +175,50 @@ async fn add_generated_library(database: &Database) {
                     BOOK_TITLES[0],
                 ),
             )?;
+            transaction.execute(
+                "INSERT INTO reading_session (
+                    book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count
+                )
+                SELECT book.id, ended_at_ms, ended_at_ms, 0, 0, ?1
+                FROM (
+                    SELECT book.id, CASE WHEN series.added_at_ms % ?2 = ?3 THEN ?4 ELSE ?5 END
+                        AS ended_at_ms
+                    FROM book JOIN series ON series.local_id = book.series_local_id
+                    WHERE book.title = ?6
+                ) AS book",
+                (
+                    SESSION_PAGE_COUNT,
+                    EVERY_HUNDREDTH_FORGOTTEN,
+                    FORGOTTEN_REMAINDER,
+                    READ_LONG_AGO_MS,
+                    READ_LATELY_MS,
+                    BOOK_TITLES[0],
+                ),
+            )?;
+            store_every_hundredth_first_book_twice(transaction)?;
             Ok(())
         })
         .await
         .unwrap();
+}
+
+fn store_every_hundredth_first_book_twice(transaction: &Transaction<'_>) -> rusqlite::Result<()> {
+    transaction.execute(
+        "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+        VALUES ('linked', 'path', ?1, 0)",
+        [COPIES_FOLDER],
+    )?;
+    transaction.execute(
+        "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+        SELECT book.id, library_root.id, CAST(series.title || copy.name AS BLOB), 1, 0
+        FROM book
+        JOIN series ON series.local_id = book.series_local_id
+        CROSS JOIN library_root
+        CROSS JOIN (SELECT '/a.cbz' AS name UNION ALL SELECT '/b.cbz') AS copy
+        WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3",
+        (EVERY_HUNDREDTH_COPIED, COPIED_REMAINDER, BOOK_TITLES[0]),
+    )?;
+    Ok(())
 }
 
 async fn read_page(

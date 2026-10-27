@@ -34,6 +34,7 @@ mod tray;
 #[cfg(target_os = "android")]
 mod tree_storage;
 mod version_details;
+mod volume_keys;
 
 use std::{
     error::Error,
@@ -111,7 +112,8 @@ pub fn run() {
         .plugin(power_mode::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
-        .plugin(icon_actions::plugin());
+        .plugin(icon_actions::plugin())
+        .plugin(volume_keys::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())

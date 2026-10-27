@@ -15,7 +15,8 @@ use omnileaf_engine::{
     DesktopCoversPerRow, FolderId, FolderKind, Inclusion, Library, LibraryDisplay, LibraryError,
     LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryGrouping, LibraryListing,
     LibrarySort, LibrarySortBy, LibraryTab, LibraryTabId, LibraryView, OnCovers, PhoneCoversPerRow,
-    ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels, SortDirection, TabletCoversPerRow,
+    ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels, SmartFilter, SortDirection,
+    TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -887,12 +888,18 @@ async fn keeps_no_categories_until_the_library_keeps_them() {
 }
 
 #[tokio::test]
-async fn offers_nothing_to_filter_by_until_the_library_reads_its_series_details() {
+async fn offers_only_the_smart_filters_in_a_library_without_series() {
     let home = ScratchFolder::new("library-filter-choices");
 
-    let choices = open(home.path()).await.filter_choices().unwrap();
+    let choices = open(home.path()).await.filter_choices().await.unwrap();
 
-    assert_eq!(choices, LibraryFilterChoices::default());
+    assert_eq!(
+        choices,
+        LibraryFilterChoices {
+            smart: vec![SmartFilter::Forgotten, SmartFilter::Duplicates],
+            ..LibraryFilterChoices::default()
+        }
+    );
 }
 
 #[tokio::test]

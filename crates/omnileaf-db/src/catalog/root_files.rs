@@ -8,8 +8,10 @@ use crate::{
     catalog::{RootId, native_path, stored_id::stored_id},
 };
 
-const FILES_IN_ROOT: &str = "SELECT book_id, location, size_bytes, modified_at_ms
+const FILES_IN_ROOT: &str = "SELECT book_file.book_id, location, size_bytes, modified_at_ms,
+        book_details.book_id IS NOT NULL AS has_details
     FROM book_file
+    LEFT JOIN book_details ON book_details.book_id = book_file.book_id
     WHERE root_id = ?1";
 const BOOKS_IN_ROOT: &str = "SELECT count(DISTINCT book_id) FROM book_file WHERE root_id = ?1";
 const REMOVE_FILE: &str = "DELETE FROM book_file
@@ -23,6 +25,7 @@ pub struct StoredFile {
     pub location: PathBuf,
     pub size_bytes: u64,
     pub modified_at_ms: i64,
+    pub has_details: bool,
 }
 
 #[tracing::instrument(skip_all, fields(%root))]
@@ -65,6 +68,7 @@ fn stored_file(row: &Row<'_>) -> rusqlite::Result<StoredFile> {
         location,
         size_bytes: row.get("size_bytes")?,
         modified_at_ms: row.get("modified_at_ms")?,
+        has_details: row.get("has_details")?,
     })
 }
 
@@ -74,14 +78,17 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
-    fn lists_a_root_s_files_through_its_location_index() {
+    fn lists_a_root_s_files_and_their_books_details_through_their_keys() {
         let scratch = ScratchLibrary::new("root-files-plan");
 
         let plan = scratch.query_plan(FILES_IN_ROOT);
 
         assert_eq!(
             plan,
-            ["SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)"]
+            [
+                "SEARCH book_file USING INDEX sqlite_autoindex_book_file_1 (root_id=?)",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?) LEFT-JOIN"
+            ]
         );
     }
 

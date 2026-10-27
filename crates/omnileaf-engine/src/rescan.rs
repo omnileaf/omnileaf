@@ -113,7 +113,7 @@ async fn read_batch(target: &Target, batch: Vec<ToRead>) -> Result<Vec<ReadBook>
             .into_iter()
             .map(|to_read| ReadBook {
                 book: read_book(&to_read.found, &reading),
-                replacing: to_read.replacing,
+                known: to_read.known,
             })
             .collect()
     })

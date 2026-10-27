@@ -14,7 +14,13 @@ use crate::{
 
 pub(crate) struct ToRead {
     pub(crate) found: FoundBook,
-    pub(crate) replacing: Option<KnownFile>,
+    pub(crate) known: Known,
+}
+
+pub(crate) enum Known {
+    NotYet,
+    Changed(KnownFile),
+    DetailsUnread(KnownFile),
 }
 
 pub(crate) struct KnownFile {
@@ -37,7 +43,7 @@ pub(crate) struct Replacement {
 
 pub(crate) struct ReadBook {
     pub(crate) book: Result<ScannedBook, UnreadableBook>,
-    pub(crate) replacing: Option<KnownFile>,
+    pub(crate) known: Known,
 }
 
 #[derive(Default)]
@@ -88,11 +94,11 @@ impl Plan {
 
     pub(crate) fn sort(&mut self, read: Vec<ReadBook>) -> Recording {
         let mut recording = Recording::default();
-        for ReadBook { book, replacing } in read {
+        for ReadBook { book, known } in read {
             let book = match book {
                 Ok(book) => book,
                 Err(unread) if unread.is_hidden() => {
-                    self.leave_out(replacing);
+                    self.leave_out(known);
                     continue;
                 }
                 Err(unread) if unread.is_unsupported_archive() => {
@@ -106,8 +112,9 @@ impl Plan {
                 }
             };
             let id = BookId::local(&book.fingerprint);
-            match replacing {
-                Some(previous) => {
+            match known {
+                Known::DetailsUnread(kept) if kept.book == id => recording.unmoved.push(book),
+                Known::Changed(previous) | Known::DetailsUnread(previous) => {
                     self.changes.updated = self.changes.updated.saturating_add(1);
                     if previous.book != id {
                         self.replaced.push(Replacement {
@@ -117,11 +124,11 @@ impl Plan {
                     }
                     recording.unmoved.push(book);
                 }
-                None if self.take_gone(id) => {
+                Known::NotYet if self.take_gone(id) => {
                     self.changes.moved = self.changes.moved.saturating_add(1);
                     recording.moved.push(book);
                 }
-                None => {
+                Known::NotYet => {
                     self.changes.added = self.changes.added.saturating_add(1);
                     recording.unmoved.push(book);
                 }
@@ -154,14 +161,7 @@ impl Plan {
         };
         let known = stored.remove(&location);
         match FileStamp::read(&target.storage, &found.path) {
-            Ok(stamp) if known.as_ref().map(FileStamp::from) == Some(stamp) => None,
-            Ok(_) => Some(ToRead {
-                found,
-                replacing: known.map(|file| KnownFile {
-                    book: file.book,
-                    location,
-                }),
-            }),
+            Ok(stamp) => Known::of(known, location, stamp).map(|known| ToRead { found, known }),
             Err(error) => {
                 warn_unreadable(&found, &error);
                 self.changes.unreadable_books = self.changes.unreadable_books.saturating_add(1);
@@ -170,9 +170,9 @@ impl Plan {
         }
     }
 
-    fn leave_out(&mut self, hidden: Option<KnownFile>) {
-        if let Some(known) = hidden {
-            self.note_gone(known.location, known.book);
+    fn leave_out(&mut self, hidden: Known) {
+        if let Known::Changed(file) | Known::DetailsUnread(file) = hidden {
+            self.note_gone(file.location, file.book);
         }
     }
 
@@ -193,6 +193,22 @@ impl Plan {
             files.insert(left);
         }
         true
+    }
+}
+
+impl Known {
+    fn of(stored: Option<StoredFile>, location: PathBuf, stamp: FileStamp) -> Option<Self> {
+        let Some(file) = stored else {
+            return Some(Self::NotYet);
+        };
+        let known = KnownFile {
+            book: file.book,
+            location,
+        };
+        if FileStamp::from(&file) != stamp {
+            return Some(Self::Changed(known));
+        }
+        (!file.has_details).then_some(Self::DetailsUnread(known))
     }
 }
 

@@ -13,8 +13,9 @@ use std::{
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook, StoredFile,
-        add_root, record_scanned_books, remove_book_files, remove_books_without_files, root_files,
+        BookDetails, BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook,
+        StoredFile, add_root, record_scanned_books, remove_book_files, remove_books_without_files,
+        root_files,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
@@ -60,6 +61,7 @@ impl Library {
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root,
                 location: PathBuf::from(location),
@@ -99,6 +101,13 @@ impl Library {
             .unwrap()
     }
 
+    async fn forget_details(&self) {
+        self.database
+            .write(|transaction| Ok(transaction.execute("DELETE FROM book_details", [])?))
+            .await
+            .unwrap();
+    }
+
     async fn book_ids(&self) -> BTreeSet<BookId> {
         self.database
             .read(|connection| {
@@ -128,6 +137,7 @@ fn stored(book: BookId, location: &str, size_bytes: u64) -> StoredFile {
         location: Path::new(location).to_path_buf(),
         size_bytes,
         modified_at_ms: MODIFIED_AT_MS,
+        has_details: true,
     }
 }
 
@@ -227,4 +237,24 @@ async fn lists_no_files_for_a_root_without_books() {
     let files = library.files(comics).await;
 
     assert!(files.is_empty());
+}
+
+#[tokio::test]
+async fn tells_which_files_hold_a_book_whose_details_were_never_read() {
+    let library = Library::open("root-files-unread-details");
+    let comics = library.add_root(COMICS).await;
+    let book = library
+        .record(comics, "Sample Series 01/Volume 01.cbz", 1)
+        .await;
+    library.forget_details().await;
+
+    let files = library.files(comics).await;
+
+    assert_eq!(
+        files,
+        [StoredFile {
+            has_details: false,
+            ..stored(book, "Sample Series 01/Volume 01.cbz", 100)
+        }]
+    );
 }

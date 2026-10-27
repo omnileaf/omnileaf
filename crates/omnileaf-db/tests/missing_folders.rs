@@ -10,10 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookFile, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root, hidden_series_count,
-        library_root, mark_root_available, mark_root_unavailable, record_scanned_books,
-        series_count, series_page, show_root_while_missing,
+        BookDetails, BookFile, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root,
+        hidden_series_count, library_root, mark_root_available, mark_root_unavailable,
+        record_scanned_books, series_count, series_page, show_root_while_missing,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
@@ -60,6 +60,7 @@ impl Shelf {
             title: format!("Volume {number:02}"),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root,
                 location: format!("{series}/Volume {number:02}.cbz").into(),
