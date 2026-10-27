@@ -5,7 +5,8 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-pub(crate) const SMART_FILTERS_KEPT: &[SmartFilter] = &[SmartFilter::Forgotten];
+pub(crate) const SMART_FILTERS_KEPT: &[SmartFilter] =
+    &[SmartFilter::Forgotten, SmartFilter::Duplicates];
 
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 const UNOPENED_UNTIL_FORGOTTEN_MS: i64 = 90 * DAY_MS;
@@ -189,7 +190,11 @@ impl LibraryFilter {
                 .smart
                 .contains(&SmartFilter::Forgotten)
                 .then(|| now_ms.saturating_sub(UNOPENED_UNTIL_FORGOTTEN_MS)),
-            duplicates: StoredInclusion::Any,
+            duplicates: if self.smart.contains(&SmartFilter::Duplicates) {
+                StoredInclusion::Only
+            } else {
+                StoredInclusion::Any
+            },
         }
     }
 }
@@ -315,6 +320,18 @@ mod tests {
         let stored = filter.at(NOW_MS);
 
         assert_eq!(stored.last_read_before_ms, Some(NOW_MS - NINETY_DAYS_MS));
+    }
+
+    #[test]
+    fn asks_for_only_the_series_holding_a_book_stored_twice_once_duplicates_is_on() {
+        let filter = LibraryFilter {
+            smart: vec![SmartFilter::Duplicates],
+            ..LibraryListing::default().filter
+        };
+
+        let stored = filter.at(NOW_MS);
+
+        assert_eq!(stored.duplicates, StoredInclusion::Only);
     }
 
     #[test]

@@ -896,7 +896,7 @@ async fn offers_only_the_smart_filters_until_the_library_reads_its_series_detail
     assert_eq!(
         choices,
         LibraryFilterChoices {
-            smart: vec![SmartFilter::Forgotten],
+            smart: vec![SmartFilter::Forgotten, SmartFilter::Duplicates],
             ..LibraryFilterChoices::default()
         }
     );

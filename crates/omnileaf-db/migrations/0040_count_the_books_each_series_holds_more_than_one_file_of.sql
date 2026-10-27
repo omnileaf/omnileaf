@@ -48,3 +48,39 @@ BEGIN
     UPDATE series SET duplicated_books = duplicated_books + 1
     WHERE local_id = new.series_local_id;
 END;
+
+DROP INDEX series_by_stage_and_title;
+
+CREATE INDEX series_by_stage_and_title
+    ON series (reading_stage, title_key, id, last_read_at_ms, duplicated_books)
+    WHERE reading_stage IS NOT NULL;
+
+DROP INDEX series_by_stage_and_added;
+
+CREATE INDEX series_by_stage_and_added
+    ON series (reading_stage, added_at_ms, id, last_read_at_ms, duplicated_books)
+    WHERE reading_stage IS NOT NULL;
+
+DROP INDEX series_by_stage_and_last_read;
+
+CREATE INDEX series_by_stage_and_last_read
+    ON series (reading_stage, last_read_at_ms, id, duplicated_books)
+    WHERE reading_stage IS NOT NULL;
+
+DROP INDEX series_by_stage_and_updated;
+
+CREATE INDEX series_by_stage_and_updated
+    ON series (reading_stage, updated_at_ms, id, last_read_at_ms, duplicated_books)
+    WHERE reading_stage IS NOT NULL;
+
+DROP INDEX series_by_stage_and_unread;
+
+CREATE INDEX series_by_stage_and_unread
+    ON series (reading_stage, unread_count, id, last_read_at_ms, duplicated_books)
+    WHERE reading_stage IS NOT NULL;
+
+DROP INDEX series_by_stage_and_time_left;
+
+CREATE INDEX series_by_stage_and_time_left
+    ON series (reading_stage, time_left_key, id, last_read_at_ms, duplicated_books)
+    WHERE reading_stage IS NOT NULL;

@@ -28,6 +28,8 @@ use support::ScratchFolder;
 const FOLDER: &str = "Sample Library";
 const READ: &str = "Sample Series 01";
 const UNREAD: &str = "Sample Series 02";
+const READ_SEED: u64 = 1;
+const UNREAD_SEED: u64 = 2;
 const DAY: Duration = Duration::from_hours(24);
 
 struct Shelf {
@@ -42,7 +44,7 @@ struct Shelf {
 impl Shelf {
     async fn with_two_series(name: &str) -> Self {
         let comics = ScratchFolder::new(&format!("{name}-comics"));
-        for (series, seed) in [(READ, 1), (UNREAD, 2)] {
+        for (series, seed) in [(READ, READ_SEED), (UNREAD, UNREAD_SEED)] {
             let folder = comics.path().join(FOLDER).join(series);
             write_book(&folder.join(format!("{series} v01.cbz")), seed);
         }
@@ -100,9 +102,9 @@ impl Shelf {
         self.library.close_book(opened.id).await.unwrap();
     }
 
-    async fn forgotten(&self) -> (Vec<String>, u32) {
+    async fn listed(&self, smart: SmartFilter) -> (Vec<String>, u32) {
         let mut listing = LibraryListing::default();
-        listing.filter.smart = vec![SmartFilter::Forgotten];
+        listing.filter.smart = vec![smart];
         let page = self.library.series(listing.clone(), None).await.unwrap();
         let count = self.library.series_count(listing.filter).await.unwrap();
         let titles = page.series.into_iter().map(|series| series.title).collect();
@@ -117,7 +119,10 @@ async fn lists_and_counts_a_series_as_forgotten_once_three_months_pass_since_it_
 
     shelf.clock.advance(91 * DAY);
 
-    assert_eq!(shelf.forgotten().await, (vec![READ.to_owned()], 1));
+    assert_eq!(
+        shelf.listed(SmartFilter::Forgotten).await,
+        (vec![READ.to_owned()], 1)
+    );
 }
 
 #[tokio::test]
@@ -127,5 +132,26 @@ async fn keeps_a_series_read_within_three_months_out_of_forgotten() {
 
     shelf.clock.advance(89 * DAY);
 
-    assert_eq!(shelf.forgotten().await, (Vec::new(), 0));
+    assert_eq!(shelf.listed(SmartFilter::Forgotten).await, (Vec::new(), 0));
+}
+
+#[tokio::test]
+async fn lists_and_counts_a_series_whose_book_has_a_renamed_copy_in_another_folder() {
+    let shelf = Shelf::with_two_series("duplicates-in-another-folder").await;
+    let backup = ScratchFolder::new("duplicates-in-another-folder-backup");
+    write_book(
+        &backup.path().join(READ).join("Renamed copy.cbz"),
+        READ_SEED,
+    );
+
+    shelf
+        .library
+        .add_folder(backup.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(
+        shelf.listed(SmartFilter::Duplicates).await,
+        (vec![READ.to_owned()], 1)
+    );
 }
