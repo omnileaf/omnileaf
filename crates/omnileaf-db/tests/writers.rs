@@ -13,7 +13,7 @@ use omnileaf_db::{
         BookDetails, BookFile, BookPerson, Cursor, NewRoot, NewSeries, Page, PageRequest, PageSize,
         PersonRole, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing,
         SeriesOrder, SeriesSort, WriterSummary, add_root, record_scanned_books, remove_book_files,
-        remove_books_without_files, writer_series_count, writer_series_page, writers,
+        remove_books_without_files, series_page, writer_series_count, writer_series_page, writers,
     },
     store::{Clock, Store},
 };
@@ -22,6 +22,14 @@ use support::{ScratchFolder, library_config};
 
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
 const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
+const EVERY_ORDER: [SeriesOrder; 6] = [
+    SeriesOrder::Title,
+    SeriesOrder::DateAdded,
+    SeriesOrder::LastRead,
+    SeriesOrder::LastUpdated,
+    SeriesOrder::UnreadCount,
+    SeriesOrder::TimeLeft,
+];
 
 struct StoppedClock;
 
@@ -82,6 +90,35 @@ impl Library {
         self.store
             .database()
             .read(move |connection| writers(connection, &request))
+            .await
+    }
+
+    async fn first_series_cursor_of(&self, writer: &'static str) -> Option<Cursor> {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(1).unwrap(),
+        };
+        self.store
+            .database()
+            .read(move |connection| writer_series_page(connection, writer, &A_TO_Z, &request))
+            .await
+            .unwrap()
+            .next
+    }
+
+    async fn try_library_page(
+        &self,
+        order: SeriesOrder,
+        after: Option<Cursor>,
+    ) -> Result<(), Error> {
+        let listing = SeriesListing::unfiltered(SeriesSort::ascending(order));
+        let request = PageRequest {
+            after,
+            size: PageSize::try_from(1).unwrap(),
+        };
+        self.store
+            .database()
+            .read(move |connection| series_page(connection, &listing, &request).map(drop))
             .await
     }
 
@@ -270,6 +307,47 @@ async fn refuses_an_open_cursor_whose_writer_went_before_the_names_were_keyed_ag
     let outcome = library.try_page(next, 1).await;
 
     assert!(matches!(outcome, Err(Error::StaleCursor)), "{outcome:?}");
+}
+
+#[tokio::test]
+async fn refuses_a_cursor_another_list_gave_out() {
+    let library = Library::with_books(
+        "writers-other-cursor",
+        &[
+            ("Sample Series 01", &["Sample Author A"]),
+            ("Sample Series 02", &["Sample Author A"]),
+        ],
+    )
+    .await;
+    let series_cursor = library.first_series_cursor_of("Sample Author A").await;
+
+    let outcome = library.try_page(series_cursor, 1).await;
+
+    assert!(
+        matches!(outcome, Err(Error::CursorForAnotherList)),
+        "{outcome:?}"
+    );
+}
+
+#[tokio::test]
+async fn gives_out_a_cursor_no_series_listing_takes() {
+    let library = Library::with_books(
+        "writers-cursor-elsewhere",
+        &[("Sample Series 01", &["Sample Author A", "Sample Author B"])],
+    )
+    .await;
+    let (_, writers_cursor) = library.page(None, 1).await;
+
+    for order in EVERY_ORDER {
+        let outcome = library
+            .try_library_page(order, writers_cursor.clone())
+            .await;
+
+        assert!(
+            matches!(outcome, Err(Error::CursorForAnotherList)),
+            "{order:?}: {outcome:?}"
+        );
+    }
 }
 
 #[tokio::test]
