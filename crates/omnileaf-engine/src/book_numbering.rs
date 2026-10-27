@@ -3,6 +3,7 @@ use omnileaf_formats::{self as formats, BookName};
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Shelf {
+    OneShot,
     Series,
     Volume(formats::Number),
     Specials,
@@ -10,6 +11,7 @@ pub(crate) enum Shelf {
 
 pub(crate) fn number_book(book: &BookName, shelf: Shelf) -> Numbering {
     match shelf {
+        Shelf::OneShot => number_by_marker(book).unwrap_or(Numbering::Special { number: None }),
         Shelf::Series => number_by_marker(book).unwrap_or_else(|| match book.number {
             Some(number) => Numbering::Chapter {
                 number: Some(range_in_file_name(number)),

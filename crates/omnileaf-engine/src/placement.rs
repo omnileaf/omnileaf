@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ffi::OsStr, path::Path};
 
 use omnileaf_db::catalog::Numbering;
-use omnileaf_formats::{BookName, read_book_name, read_series_name, read_volume_folder_name};
+use omnileaf_formats::{read_book_name, read_series_name, read_volume_folder_name};
 
 use crate::{
     book_numbering::{Shelf, number_book},
@@ -37,12 +37,9 @@ pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
 
 impl Placement {
     fn one_shot(name: &str) -> Self {
-        let book = BookName {
-            number: None,
-            ..read_book_name(name, None)
-        };
+        let book = read_book_name(name, None);
         Self {
-            numbering: number_book(&book, Shelf::Series),
+            numbering: number_book(&book, Shelf::OneShot),
             series: book.title.clone(),
             title: book.title,
         }
