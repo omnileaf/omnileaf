@@ -31,6 +31,12 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
+  import {
+    type CroppedPages,
+    croppedPages,
+    pageCrop,
+    suitsMode,
+  } from "#lib/reader/cropped-pages.ts";
   import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
   import {
     autoScrollSpeed,
@@ -173,6 +179,44 @@
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
+  const crop = $derived(pageCrop(look.cropsBorders, isStrip));
+  let cropped: CroppedPages | undefined = $state.raw(
+    untrack(() =>
+      crop === "whole" ? { pages: book.pages, crop: "whole" } : undefined,
+    ),
+  );
+
+  const isStripShown = $derived(
+    cropped === undefined || suitsMode(cropped.crop, isStrip)
+      ? isStrip
+      : !isStrip,
+  );
+
+  function showWholePages(pages: CroppedPages["pages"]): void {
+    if (cropped?.crop !== "whole" || cropped.pages !== pages) {
+      cropped = { pages, crop: "whole" };
+    }
+  }
+
+  $effect(() => {
+    const asked = crop;
+    const { pages } = book;
+    if (asked === "whole") {
+      untrack(() => {
+        showWholePages(pages);
+      });
+      return;
+    }
+    let isAsked = true;
+    void croppedPages(pages, asked).then((answer) => {
+      if (isAsked) {
+        cropped = answer;
+      }
+    });
+    return () => {
+      isAsked = false;
+    };
+  });
   const stripFound = untrack(() =>
     seenOnce(`omnileaf.stripFound.${book.series}`),
   );
@@ -993,47 +1037,53 @@
       isPanelOpen && "expanded:inset-e-reader-settings-room",
     ]}
   >
-    {#if isStrip}
-      <StripStack
-        bind:this={strip}
-        pages={book.pages}
-        shown={turner.shown}
-        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        marks={bookmarks === null ? [] : [...bookmarks]}
-        overlay={stripZones}
-        onShown={(index: number) => {
-          turner.goTo(index);
-        }}
-        onShownReady={() => {
-          if (!hasOpened) {
-            hasOpened = true;
-            controls.bookOpened();
-          }
-        }}
-      />
-    {:else}
-      <PageStack
-        pages={book.pages}
-        shown={turner.shown}
-        {spread}
-        fit={look.fit}
-        {zoom}
-        isReversed={reading.direction === "rightToLeft"}
-        overlay={turnZones}
-        bookTitle={named.title}
-        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        {slide}
-        {isSettling}
-        onNextPage={() => {
-          act("next");
-        }}
-        onShownReady={() => {
-          if (!hasOpened) {
-            hasOpened = true;
-            controls.bookOpened();
-          }
-        }}
-      />
+    {#if cropped !== undefined}
+      {#key cropped.crop}
+        {#if isStripShown}
+          <StripStack
+            bind:this={strip}
+            pages={cropped.pages}
+            shown={turner.shown}
+            isBlank={screenshotMode.isOn &&
+              screenshotMode.options.blankReaderPages}
+            marks={bookmarks === null ? [] : [...bookmarks]}
+            overlay={stripZones}
+            onShown={(index: number) => {
+              turner.goTo(index);
+            }}
+            onShownReady={() => {
+              if (!hasOpened) {
+                hasOpened = true;
+                controls.bookOpened();
+              }
+            }}
+          />
+        {:else}
+          <PageStack
+            pages={cropped.pages}
+            shown={turner.shown}
+            {spread}
+            fit={look.fit}
+            {zoom}
+            isReversed={reading.direction === "rightToLeft"}
+            overlay={turnZones}
+            bookTitle={named.title}
+            isBlank={screenshotMode.isOn &&
+              screenshotMode.options.blankReaderPages}
+            {slide}
+            {isSettling}
+            onNextPage={() => {
+              act("next");
+            }}
+            onShownReady={() => {
+              if (!hasOpened) {
+                hasOpened = true;
+                controls.bookOpened();
+              }
+            }}
+          />
+        {/if}
+      {/key}
     {/if}
     {#if look.light.isOn}
       <div
