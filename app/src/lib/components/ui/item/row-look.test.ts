@@ -179,3 +179,9 @@ test("lines a row's text up at its start when the row is a button", async () => 
     0,
   );
 });
+
+test("lets a row's text shrink below its longest word", async () => {
+  await renderRows("linux");
+
+  expect(slot(element("One line"), "item-content").minInlineSize).toBe("0px");
+});

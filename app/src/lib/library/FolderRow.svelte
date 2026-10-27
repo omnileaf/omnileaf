@@ -54,7 +54,7 @@
       <Folder size={ICON_SIZE} aria-hidden="true" />
     {/if}
   </ItemMedia>
-  <ItemContent class="min-inline-none">
+  <ItemContent>
     <ItemTitle class="truncate text-body font-medium"
       >{folderTitle(folder)}</ItemTitle
     >
