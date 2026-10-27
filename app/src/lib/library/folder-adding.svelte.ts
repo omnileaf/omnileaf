@@ -62,6 +62,7 @@ const FAILURES = {
   bookNotFound: ADDING_FAILED,
   bookUnreadable: ADDING_FAILED,
   bookTypeUnsupported: ADDING_FAILED,
+  fileTypeRead: ADDING_FAILED,
   bookmarksNotKept: ADDING_FAILED,
   labelsNotKept: ADDING_FAILED,
   detailsNotKept: ADDING_FAILED,

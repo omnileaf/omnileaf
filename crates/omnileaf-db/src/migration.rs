@@ -71,6 +71,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0035_track_how_many_pages_each_series_has_left"),
     migration!("0036_remember_the_share_of_each_library_root"),
     migration!("0037_key_sync_registers_by_profile"),
+    migration!("0038_create_hidden_file_types"),
 ];
 
 pub(crate) fn pending(

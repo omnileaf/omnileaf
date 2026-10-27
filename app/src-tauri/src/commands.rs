@@ -5,9 +5,9 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FolderCursor, FolderId, FolderPage,
-    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
-    HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
+    CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType, FolderCursor, FolderId,
+    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
+    HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
     LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
     LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, ProbedFormat,
     ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
@@ -78,6 +78,8 @@ macro_rules! app_commands {
             creator_series,
             bookmark_pages,
             book_place,
+            hide_files_like,
+            show_file_type,
             mark_books,
             mark_series_read,
             open_book,
@@ -594,6 +596,18 @@ async fn book_place(
     book: BookId,
 ) -> Result<Option<BookPlace>, IpcError> {
     Ok(library.book_place(book).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn hide_files_like(library: State<'_, Library>, book: BookId) -> Result<FileType, IpcError> {
+    Ok(library.hide_files_like(book).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_file_type(library: State<'_, Library>, file_type: FileType) -> Result<(), IpcError> {
+    Ok(library.show_file_type(file_type).await?)
 }
 
 #[tauri::command]

@@ -22,10 +22,10 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = ["s
 fast_image_resize = { version = "6.1.0", default-features = false, features = ["std"] }
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
 gtk = "0.18.2"
-icu_casemap = "=2.3.0"
-icu_collator = "=2.3.1"
-icu_locale_core = { version = "=2.3.0", features = ["alloc"] }
-icu_provider = { version = "=2.3.1", default-features = false }
+icu_casemap = "=2.4.0"
+icu_collator = "=2.4.0"
+icu_locale_core = { version = "=2.4.0", features = ["alloc"] }
+icu_provider = { version = "=2.4.0", default-features = false }
 image-webp = "0.2.4"
 imagesize = { version = "0.15.0", default-features = false, features = ["bmp", "gif", "heif", "jpeg", "jxl", "png", "webp"] }
 jpeg-decoder = { version = "0.3.2", default-features = false, features = ["rayon"] }
@@ -66,7 +66,7 @@ thiserror = "2.0.21"
 tokio = { version = "1.53.1", default-features = false }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
-unicode-normalization = "0.1.25"
+unicode-normalization = "0.1.26"
 uuid = { version = "1.26.1", default-features = false, features = ["v8"] }
 webkit2gtk = { version = "2.0.2", features = ["v2_34"] }
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_NetworkManagement_WNet", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_Power"] }

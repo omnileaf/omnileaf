@@ -40,6 +40,7 @@ pub(crate) enum IpcErrorCode {
     BookNotFound,
     BookUnreadable,
     BookTypeUnsupported,
+    FileTypeRead,
     BookmarksNotKept,
     LabelsNotKept,
     DetailsNotKept,
@@ -178,6 +179,13 @@ impl From<LibraryError> for IpcError {
                 IpcErrorCode::SeriesNotFound,
                 "that series isn't in the library",
             ),
+            LibraryError::BookNotFound { .. } => {
+                (IpcErrorCode::BookNotFound, "that book isn't in the library")
+            }
+            LibraryError::FileTypeRead { .. } => (
+                IpcErrorCode::FileTypeRead,
+                "the library reads files of that type, so it keeps them",
+            ),
             LibraryError::SearchTooLong { .. } => (
                 IpcErrorCode::SearchTooLong,
                 "the search is longer than a search reads",
@@ -314,6 +322,21 @@ mod tests {
         assert_eq!(
             codes,
             [IpcErrorCode::FolderUnreadable, IpcErrorCode::Internal]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_why_files_like_a_book_stay_in_the_library() {
+        let id = BookId::try_from("0190a3e4-0000-8000-8000-000000000002".to_owned()).unwrap();
+
+        let codes = [
+            code_for(LibraryError::BookNotFound { id }),
+            code_for(LibraryError::FileTypeRead { id }),
+        ];
+
+        assert_eq!(
+            codes,
+            [IpcErrorCode::BookNotFound, IpcErrorCode::FileTypeRead]
         );
     }
 

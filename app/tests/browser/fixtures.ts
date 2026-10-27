@@ -84,6 +84,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   markSeriesRead: () => [],
   bookmarkPages: () => null,
   bookPlace: () => null,
+  hideFilesLike: () => "cbr",
+  showFileType: () => null,
   libraryCategories: () => [],
   seriesLabels: () => ({
     keepsLabels: false,
