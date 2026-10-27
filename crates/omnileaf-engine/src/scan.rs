@@ -48,6 +48,8 @@ pub struct FolderScan {
 pub(crate) enum UnreadableBook {
     #[error("open the book")]
     Format(#[from] FormatError),
+    #[error("open the book, a file of a type the library hides")]
+    HiddenType(#[source] FormatError),
     #[error("read when the book last changed")]
     Metadata(#[from] io::Error),
     #[error("name the book's series")]
@@ -57,6 +59,19 @@ pub(crate) enum UnreadableBook {
 }
 
 impl UnreadableBook {
+    fn opening(path: &Path, hidden: &HiddenFileTypes, source: FormatError) -> Self {
+        let is_archive_not_read_yet = matches!(source, FormatError::ArchiveNotSupportedYet { .. });
+        if is_archive_not_read_yet && hidden.hides(path) {
+            Self::HiddenType(source)
+        } else {
+            Self::Format(source)
+        }
+    }
+
+    pub(crate) fn is_hidden(&self) -> bool {
+        matches!(self, Self::HiddenType(_))
+    }
+
     pub(crate) fn is_unsupported_archive(&self) -> bool {
         matches!(
             self,
@@ -131,7 +146,6 @@ pub(crate) async fn scan(
     layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<FolderScan, LibraryError> {
-    let layout = layout.leaving_out(&target.hidden);
     let total = saturating_u32(layout.books.len());
     let mut tally = Tally::default();
     on_progress(ScanProgress::Reading { scanned: 0, total });
@@ -175,6 +189,7 @@ impl Tally {
                     self.books = self.books.saturating_add(1);
                     found.push(book);
                 }
+                Err(unread) if unread.is_hidden() => {}
                 Err(unread) if unread.is_unsupported_archive() => {
                     self.unsupported_books = self.unsupported_books.saturating_add(1);
                 }
@@ -191,7 +206,9 @@ pub(crate) fn saturating_u32(items: usize) -> u32 {
 
 pub(crate) fn read_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let read = read_found_book(found, target);
-    if let Err(error) = &read {
+    if let Err(error) = &read
+        && !error.is_hidden()
+    {
         warn_unreadable(found, error);
     }
     read
@@ -207,7 +224,8 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
-    let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())?;
+    let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
+        .map_err(|source| UnreadableBook::opening(&found.path, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
     let page_count = saturating_u32(book.pages().len());
     let details = target.storage.details(&found.path)?;

@@ -6,7 +6,7 @@ use std::{
 
 use omnileaf_formats::{self as formats, Entry, Storage, is_ignored, is_page_image};
 
-use crate::file_type::{FileType, HiddenFileTypes};
+use crate::file_type::FileType;
 
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
@@ -64,11 +64,6 @@ pub(crate) fn find_books(
 }
 
 impl Layout {
-    pub(crate) fn leaving_out(mut self, hidden: &HiddenFileTypes) -> Self {
-        self.books.retain(|book| !hidden.hides(&book.path));
-        self
-    }
-
     pub(crate) fn is_empty(&self) -> bool {
         self.books.is_empty() && self.unreadable_folders.is_empty()
     }
