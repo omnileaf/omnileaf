@@ -81,6 +81,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0045_rename_the_book_title_sort_key_to_reading_order_key"),
     migration!("0046_keep_the_kind_and_numbers_of_each_book"),
     migration!("0047_group_the_library_by_creator"),
+    migration!("0048_key_the_name_of_each_person_a_book_names"),
 ];
 
 pub(crate) fn pending(
@@ -238,14 +239,16 @@ mod tests {
 
     use super::*;
     use crate::{
-        Database, Language, connection,
+        Database, Language,
+        catalog::{PageRequest, PageSize, writers},
+        connection,
         first_launch::first_launch_finished,
         library_view::{
             LibraryDisplay, LibraryGrouping, OnCovers, StoredLibraryView, library_view,
         },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
-        title_key::TitleCollation,
+        title_key::{TitleCollation, TitleStamp},
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -1396,6 +1399,60 @@ mod tests {
                 },
             }
         );
+    }
+
+    #[test]
+    fn lists_the_writers_kept_from_before_their_names_were_keyed_in_title_order() {
+        let scratch = ScratchLibrary::new("writer-keys-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..47]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "UPDATE title_key_stamp SET stamp = ?1",
+                [TitleStamp::of(&Language::ROOT).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id) VALUES (?1)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_person (book_id, role, name)
+                 VALUES (?1, 'writer', 'Sample Author 10'), (?1, 'writer', 'Sample Author 9')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let listed: Vec<String> = writers(&connection, &request)
+            .unwrap()
+            .items
+            .into_iter()
+            .map(|writer| writer.name)
+            .collect();
+        assert_eq!(listed, ["Sample Author 9", "Sample Author 10"]);
     }
 
     #[test]

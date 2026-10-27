@@ -60,7 +60,8 @@ pub fn library_roots(
             | Position::Session { .. }
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
-            | Position::TimeLeft { .. },
+            | Position::TimeLeft { .. }
+            | Position::Writer { .. },
         ) => {
             return Err(Error::CursorForAnotherList);
         }

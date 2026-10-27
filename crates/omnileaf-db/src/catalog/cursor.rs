@@ -19,6 +19,7 @@ const LAST_READ_TAG: u8 = 6;
 const LAST_UPDATED_TAG: u8 = 7;
 const UNREAD_COUNT_TAG: u8 = 8;
 const TIME_LEFT_TAG: u8 = 9;
+const WRITER_TAG: u8 = 10;
 const ID_LENGTH: usize = 16;
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
@@ -66,6 +67,9 @@ pub(crate) enum Position {
     TimeLeft {
         time_left_key: i64,
         id: SeriesId,
+    },
+    Writer {
+        name: String,
     },
 }
 
@@ -126,6 +130,7 @@ impl Position {
                 id.as_bytes(),
             ]
             .concat(),
+            Self::Writer { name } => [&[WRITER_TAG][..], name.as_bytes()].concat(),
         }
     }
 
@@ -197,6 +202,9 @@ impl Position {
                     id: SeriesId::try_from(id).ok()?,
                 })
             }
+            WRITER_TAG => Some(Self::Writer {
+                name: String::from_utf8(rest.to_vec()).ok()?,
+            }),
             _ => None,
         }
     }
