@@ -2,9 +2,13 @@ import type { Page } from "@playwright/test";
 
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   test,
+  testOnlyInItsWebview,
+  viewportOf,
 } from "./fixtures.ts";
 import {
   BOOK_ID,
@@ -105,21 +109,65 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
+function badge(page: Page) {
+  return page.locator('main [data-slot="empty-media"]');
+}
+
+function count(page: Page) {
+  return page.getByText(
+    `${String(PAGE_COUNT)} of its ${String(PROMISED_PAGES)} pages can be read.`,
+  );
+}
+
 test.describe("a damaged book, on a phone", { tag: "@native" }, () => {
-  test("centres its badge, title and count, as the phone's problem screens do", async ({
+  test("starts its badge, title and count on Android and centres them on iOS, as each phone's problem screens do", async ({
     page,
     platform,
   }) => {
+    test.skip(platform === undefined, "the native phone projects only");
     await openDamagedBook(page);
     await expect(heading(page)).toBeFocused();
 
-    const expected =
-      platform === "ios" || platform === "android" ? "center" : "start";
-    const count = page.getByText(
-      `${String(PAGE_COUNT)} of its ${String(PROMISED_PAGES)} pages can be read.`,
-    );
+    const expected = platform === "ios" ? "center" : "start";
+    const shownBadge = await boxOf(badge(page));
+    const title = await boxOf(heading(page));
 
     await expect(heading(page)).toHaveCSS("text-align", expected);
-    await expect(count).toHaveCSS("text-align", expected);
+    await expect(count(page)).toHaveCSS("text-align", expected);
+    expect(title.y).toBeGreaterThanOrEqual(shownBadge.y + shownBadge.height);
+    const badgeEdge =
+      expected === "start" ? shownBadge.x : shownBadge.x + shownBadge.width / 2;
+    const titleEdge =
+      expected === "start" ? title.x : title.x + title.width / 2;
+    expect(badgeEdge).toBeCloseTo(titleEdge, 0);
   });
 });
+
+for (const platform of ["android", "ios"] as const) {
+  test.describe(`a damaged book, on ${platform} wider than a phone`, () => {
+    testOnlyInItsWebview(platform);
+    test.use({ platform });
+
+    test("keeps its badge beside a title and count read from the start", async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "wider than a phone only",
+      );
+      await openDamagedBook(page);
+      await expect(heading(page)).toBeFocused();
+
+      const shownBadge = await boxOf(badge(page));
+      const title = await boxOf(heading(page));
+
+      await expect(heading(page)).toHaveCSS("text-align", "start");
+      await expect(count(page)).toHaveCSS("text-align", "start");
+      expect(title.x).toBeGreaterThanOrEqual(shownBadge.x + shownBadge.width);
+      expect(title.y + title.height / 2).toBeCloseTo(
+        shownBadge.y + shownBadge.height / 2,
+        0,
+      );
+    });
+  });
+}
