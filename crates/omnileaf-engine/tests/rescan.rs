@@ -26,7 +26,7 @@ use omnileaf_engine::{
     FileChanges, FileType, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
     SkippedType,
 };
-use omnileaf_sync_proto::BookId;
+use omnileaf_sync_proto::{BookId, SeriesId, norm};
 use scanned::{Scanned, owned, whole_page};
 use support::{FixedClock, ScratchFolder};
 
@@ -337,6 +337,66 @@ async fn files_a_book_moved_to_another_series_folder_in_that_series() {
         owned(&[(SERIES_01, 1), (SERIES_02, 2)])
     );
     assert!(folder.book_ids_in(SERIES_02).contains(&moved));
+}
+
+#[tokio::test]
+async fn files_the_books_of_a_renamed_series_folder_in_the_renamed_series() {
+    let folder = Rescanned::new("rescan-renamed-series-folder").await;
+    fs::rename(
+        folder.path(SERIES_02),
+        folder.path("Sample Series 02 Renamed"),
+    )
+    .unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            moved: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(
+        folder.scanned.series(),
+        owned(&[(SERIES_01, 2), ("Sample Series 02 Renamed", 1)])
+    );
+}
+
+#[tokio::test]
+async fn files_each_book_of_a_library_kept_by_series_name_by_its_folder_once_read_again() {
+    let folder = Rescanned::new("rescan-series-kept-by-name").await;
+    let writer = folder.writer();
+    for title in [SERIES_01, SERIES_02] {
+        writer
+            .execute(
+                "UPDATE series SET id = ?1, natural_key = ?2, title_source = NULL WHERE title = ?3",
+                (
+                    SeriesId::local(title).unwrap().as_bytes(),
+                    norm(title),
+                    title,
+                ),
+            )
+            .unwrap();
+    }
+    writer.execute("DELETE FROM book_details", []).unwrap();
+
+    folder.changes().await;
+
+    let kept: Vec<(bool, u32)> = folder
+        .scanned
+        .connection()
+        .prepare("SELECT instr(natural_key, '/') > 0, book_count FROM series ORDER BY local_id")
+        .unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(kept, [(false, 0), (false, 0), (true, 2), (true, 1)]);
+    assert_eq!(
+        folder.scanned.series(),
+        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+    );
 }
 
 #[tokio::test]
