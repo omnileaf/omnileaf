@@ -11,6 +11,7 @@
   import BookProblem from "#lib/reader/BookProblem.svelte";
   import DamagedBook from "#lib/reader/DamagedBook.svelte";
   import PagedReader from "#lib/reader/PagedReader.svelte";
+  import UnsupportedBook from "#lib/reader/UnsupportedBook.svelte";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
   import type { PageProps } from "./$types";
@@ -80,6 +81,12 @@
       hasJumped={page.state.readerJumped === true}
     />
   {/key}
+{:else if shown.kind === "unsupported"}
+  <UnsupportedBook
+    place={shown.place}
+    file={shown.file}
+    platform={data.appInfo.platform}
+  />
 {:else}
   <BookProblem
     kind={shown.kind}
