@@ -17,6 +17,7 @@ const LONG_TITLE =
 const CAPTION_SIZE = "14px";
 const CAPTION_WEIGHT = "500";
 const CAPTION_LINES = 2;
+const BADGE_HEIGHT = 22;
 const GAPS = {
   phone: { column: 12, row: 20 },
   desktop: { column: 24, row: 28 },
@@ -114,7 +115,9 @@ test("shows how far a started series is read under its cover", async ({
   await expect(finished).toHaveCount(0);
 });
 
-test("counts a series' unread books on a primary badge", async ({ page }) => {
+test("counts a series' unread books on a 22px primary badge", async ({
+  page,
+}) => {
   await page.goto("/");
   const badge = cell(page, "Sample Series 04").getByRole("img", {
     name: "6 unread",
@@ -128,6 +131,7 @@ test("counts a series' unread books on a primary badge", async ({ page }) => {
     "color",
     await tokenColour(page, "--primary-foreground"),
   );
+  expect((await boxOf(badge)).height).toBe(BADGE_HEIGHT);
 });
 
 test("spaces the covers as the boards do", async ({ page }) => {
