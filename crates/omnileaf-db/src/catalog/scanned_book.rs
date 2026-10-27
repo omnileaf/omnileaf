@@ -1,15 +1,15 @@
 use std::path::PathBuf;
 
 use omnileaf_sync_proto::{Fingerprint, SeriesId};
-use rusqlite::Transaction;
+use rusqlite::{Statement, Transaction};
 
 use crate::{
     Error,
     catalog::{
         NewBook, NewSeries, RootId,
-        book::{add_book_unless_present, add_or_refile_book, record_page_count},
+        book::{BookFiler, Filing},
         native_path,
-        series::add_series_unless_present,
+        series::SeriesAdder,
         stored_id::stored_id,
     },
     title_key::TitleCollation,
@@ -41,12 +41,6 @@ pub struct ScannedBook {
     pub file: BookFile,
 }
 
-#[derive(Clone, Copy)]
-enum Filing {
-    WhereFirstFound,
-    WhereFoundNow,
-}
-
 #[derive(Clone, Debug)]
 pub struct BookFile {
     pub root: RootId,
@@ -71,48 +65,59 @@ pub fn record_moved_books(
     record(transaction, moved, Filing::WhereFoundNow)
 }
 
+struct Recorder<'t> {
+    collation: TitleCollation,
+    series: SeriesAdder<'t>,
+    books: BookFiler<'t>,
+    file: Statement<'t>,
+    series_of_book: Statement<'t>,
+}
+
 fn record(
     transaction: &Transaction<'_>,
     scanned: &[ScannedBook],
     filing: Filing,
 ) -> Result<Vec<SeriesId>, Error> {
-    let collation = TitleCollation::stored(transaction)?;
-    scanned
-        .iter()
-        .map(|book| record_scanned_book(transaction, book, &collation, filing))
-        .collect()
+    let mut recorder = Recorder::new(transaction, filing)?;
+    scanned.iter().map(|book| recorder.record(book)).collect()
 }
 
-fn record_scanned_book(
-    transaction: &Transaction<'_>,
-    scanned: &ScannedBook,
-    collation: &TitleCollation,
-    filing: Filing,
-) -> Result<SeriesId, Error> {
-    add_series_unless_present(transaction, &scanned.series, collation)?;
-    let book = NewBook {
-        fingerprint: scanned.fingerprint,
-        series: scanned.series.id(),
-        title: scanned.title.clone(),
-        added_at_ms: scanned.added_at_ms,
-        page_count: Some(scanned.page_count),
-    };
-    match filing {
-        Filing::WhereFirstFound => add_book_unless_present(transaction, &book)?,
-        Filing::WhereFoundNow => add_or_refile_book(transaction, &book)?,
+impl<'t> Recorder<'t> {
+    fn new(transaction: &'t Transaction<'_>, filing: Filing) -> Result<Self, Error> {
+        Ok(Self {
+            collation: TitleCollation::stored(transaction)?,
+            series: SeriesAdder::new(transaction)?,
+            books: BookFiler::new(transaction, filing)?,
+            file: transaction.prepare(RECORD_FILE)?,
+            series_of_book: transaction.prepare(SERIES_OF_BOOK)?,
+        })
     }
-    record_page_count(transaction, book.id(), scanned.page_count)?;
-    let file = &scanned.file;
-    transaction.prepare(RECORD_FILE)?.execute((
-        book.id().as_bytes(),
-        file.root.0,
-        native_path::to_bytes(&file.location),
-        i64::try_from(file.size_bytes).unwrap_or(i64::MAX),
-        file.modified_at_ms,
-    ))?;
-    Ok(transaction
-        .prepare(SERIES_OF_BOOK)?
-        .query_row([book.id().as_bytes()], |row| stored_id(row, "id"))?)
+
+    fn record(&mut self, scanned: &ScannedBook) -> Result<SeriesId, Error> {
+        self.series
+            .add_unless_present(&scanned.series, &self.collation)?;
+        let book = NewBook {
+            fingerprint: scanned.fingerprint,
+            series: scanned.series.id(),
+            title: scanned.title.clone(),
+            added_at_ms: scanned.added_at_ms,
+            page_count: Some(scanned.page_count),
+        };
+        self.books.file(&book)?;
+        self.books
+            .record_page_count(book.id(), scanned.page_count)?;
+        let file = &scanned.file;
+        self.file.execute((
+            book.id().as_bytes(),
+            file.root.0,
+            native_path::to_bytes(&file.location),
+            i64::try_from(file.size_bytes).unwrap_or(i64::MAX),
+            file.modified_at_ms,
+        ))?;
+        Ok(self
+            .series_of_book
+            .query_row([book.id().as_bytes()], |row| stored_id(row, "id"))?)
+    }
 }
 
 #[cfg(test)]
