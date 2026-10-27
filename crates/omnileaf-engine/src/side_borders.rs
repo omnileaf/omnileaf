@@ -1,6 +1,11 @@
 use std::{
+    ops::ControlFlow,
     panic,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        Arc, Mutex, PoisonError,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver, SyncSender},
+    },
     thread,
 };
 
@@ -16,14 +21,15 @@ use crate::{
 
 const SIDE_BORDERS: &str = "side-borders";
 
+struct ReadPage {
+    index: usize,
+    bytes: Vec<u8>,
+}
+
 #[derive(Debug, thiserror::Error)]
 enum MeasureError {
-    #[error("read page {index}")]
-    Read {
-        index: usize,
-        #[source]
-        source: FormatError,
-    },
+    #[error("read the book's pages")]
+    Read(#[source] FormatError),
     #[error("measure the side borders of page {index}")]
     Measure {
         index: usize,
@@ -84,56 +90,67 @@ fn kept_or_measured(
 }
 
 fn measured(opened: &OpenBook, decodes: &DecodePermits) -> Result<BookSideBorders, MeasureError> {
-    let next = AtomicUsize::new(0);
-    let measure_the_rest = || measure_pages_from(&next, opened, decodes);
-    let measured = thread::scope(|scope| {
+    let (sent, pages) = mpsc::sync_channel(DECODES_AT_ONCE);
+    let pages = Arc::new(Mutex::new(pages));
+    let has_failed = AtomicBool::new(false);
+    let has_failed = &has_failed;
+    thread::scope(|scope| {
         let measurers: Vec<_> = (0..DECODES_AT_ONCE.min(opened.page_count))
-            .map(|_| scope.spawn(measure_the_rest))
+            .map(|_| {
+                let pages = Arc::clone(&pages);
+                scope.spawn(move || measure_read_pages(&pages, decodes, has_failed))
+            })
             .collect();
-        measurers
+        drop(pages);
+        let read = read_every_page(opened, &sent);
+        drop(sent);
+        let measured = measurers
             .into_iter()
             .map(|measurer| {
                 measurer
                     .join()
                     .unwrap_or_else(|stop| panic::resume_unwind(stop))
             })
-            .collect::<Result<Vec<_>, _>>()
-    })?;
-    Ok(BookSideBorders::of_pages(measured.into_iter().flatten()))
+            .collect::<Result<Vec<_>, _>>()?;
+        read?;
+        Ok(BookSideBorders::of_pages(measured.into_iter().flatten()))
+    })
 }
 
-fn measure_pages_from(
-    next: &AtomicUsize,
-    opened: &OpenBook,
+fn read_every_page(opened: &OpenBook, sent: &SyncSender<ReadPage>) -> Result<(), MeasureError> {
+    opened
+        .lock()
+        .read_every_page(|index, bytes| match sent.send(ReadPage { index, bytes }) {
+            Ok(()) => ControlFlow::Continue(()),
+            Err(_) => ControlFlow::Break(()),
+        })
+        .map_err(MeasureError::Read)
+}
+
+fn measure_read_pages(
+    pages: &Mutex<Receiver<ReadPage>>,
     decodes: &DecodePermits,
+    has_failed: &AtomicBool,
 ) -> Result<Vec<PageSideBorders>, MeasureError> {
     let mut measured = Vec::new();
-    loop {
-        let index = next.fetch_add(1, Ordering::Relaxed);
-        if index >= opened.page_count {
-            return Ok(measured);
-        }
-        match measure_page(opened, decodes, index) {
+    while !has_failed.load(Ordering::Relaxed) {
+        let Ok(ReadPage { index, bytes }) = pages
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .recv()
+        else {
+            break;
+        };
+        let _decoding = decodes.hold();
+        match measure_side_borders(&bytes) {
             Ok(page) => measured.push(page),
-            Err(error) => {
-                next.store(opened.page_count, Ordering::Relaxed);
-                return Err(error);
+            Err(source) => {
+                has_failed.store(true, Ordering::Relaxed);
+                return Err(MeasureError::Measure { index, source });
             }
         }
     }
-}
-
-fn measure_page(
-    opened: &OpenBook,
-    decodes: &DecodePermits,
-    index: usize,
-) -> Result<PageSideBorders, MeasureError> {
-    let page = opened
-        .lock()
-        .read_page(index)
-        .map_err(|source| MeasureError::Read { index, source })?;
-    let _decoding = decodes.hold();
-    measure_side_borders(&page).map_err(|source| MeasureError::Measure { index, source })
+    Ok(measured)
 }
 
 fn side_borders_key(file: BookFileAt) -> Result<CacheKey, CacheError> {

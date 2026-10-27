@@ -22,8 +22,8 @@ use omnileaf_engine::{
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
     ArchiveEntry, Compression, DrawnScan, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH,
-    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_JXL, PageShape, cbz, cut_inside_entry, page_jpeg, page_png,
-    strip_jpeg, webp_header_only,
+    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_JXL, Packing, PageShape, cb7, cbz, cut_inside_entry,
+    page_jpeg, page_png, strip_jpeg, webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -93,6 +93,18 @@ impl Reader {
                 compression,
             );
         }
+        Self::over(name, comics).await
+    }
+
+    async fn with_solid_cb7(name: &str, pages: &[Vec<u8>]) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        let series = comics.path().join(FOLDER).join(SERIES);
+        fs::create_dir_all(&series).unwrap();
+        fs::write(
+            series.join(format!("{BOOK}.cb7")),
+            cb7(&page_entries(pages), Packing::Solid).unwrap(),
+        )
+        .unwrap();
         Self::over(name, comics).await
     }
 
@@ -837,6 +849,22 @@ async fn serves_a_crop_kept_on_disk_after_a_restart_without_cropping_again() {
 async fn serves_every_page_of_a_long_strip_cropped_by_the_same_side_borders() {
     let pages = [SCAN_MARGIN, WIDER_SCAN_MARGIN, SCAN_MARGIN].map(scan_with_margin);
     let reader = Reader::with_pages("strip-cropped", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let mut widths = Vec::new();
+    for page in &opened.pages {
+        let served = reader.serve(page.path.cropped(PageCrop::SideBorders)).await;
+        widths.push(served_size(&served).width);
+    }
+
+    assert!(widths[0] < u32::from(SCAN.width), "{widths:?}");
+    assert!(widths.iter().all(|width| *width == widths[0]), "{widths:?}");
+}
+
+#[tokio::test]
+async fn serves_every_page_of_a_long_strip_in_a_solid_cb7_cropped_by_the_same_side_borders() {
+    let pages = [SCAN_MARGIN, WIDER_SCAN_MARGIN, SCAN_MARGIN].map(scan_with_margin);
+    let reader = Reader::with_solid_cb7("strip-cropped-cb7", &pages).await;
     let opened = reader.open(NOTHING_UNDECODABLE).await;
 
     let mut widths = Vec::new();
