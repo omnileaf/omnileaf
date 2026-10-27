@@ -77,6 +77,8 @@
     main: cn(PRIMARY, "inline-full expanded:flex-1"),
     other: cn(SECONDARY, "inline-full expanded:flex-1"),
   } satisfies ActionGroupLook;
+  const PHONE_CARD_ACTION_GROUP =
+    "flex flex-col px-lg ios:gap-md android:gap-lg";
   const ACROSS_THE_CARD = "inline-full whitespace-normal text-center";
 
   let {
@@ -130,7 +132,7 @@
   function acrossTheCard(look: ActionGroupLook): ActionGroupLook {
     return isOnPhone
       ? {
-          group: CARD_ACTIONS.group,
+          group: PHONE_CARD_ACTION_GROUP,
           main: cn(look.main, ACROSS_THE_CARD),
           other: cn(look.other, ACROSS_THE_CARD),
         }

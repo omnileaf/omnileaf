@@ -68,6 +68,10 @@ const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } satisfies Record<
   PhonePlatform,
   number
 >;
+const PHONE_BUTTON_GAP = { ios: 12, android: 16 } satisfies Record<
+  PhonePlatform,
+  number
+>;
 const PHONE_LABEL_TYPE = {
   ios: { size: "15px", tracking: "-0.23px", weight: "590" },
   android: { size: "14px", tracking: "0.1px", weight: "500" },
@@ -653,6 +657,31 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     await expect(read).toHaveCSS("background-image", /linear-gradient/);
   });
 
+  test("spaces Read and Back to the series as the phone's own card does", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios" && platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await turnPastTheEnd(page);
+    const main = page.getByRole("main");
+
+    const read = await boxOf(
+      main.getByRole("link", { name: `Read ${NEXT_BOOK.title}` }),
+    );
+    const back = await boxOf(
+      main.getByRole("link", { name: "Back to the series" }),
+    );
+
+    expect(back.y - (read.y + read.height)).toBeCloseTo(
+      PHONE_BUTTON_GAP[platform],
+      0,
+    );
+  });
+
   test("wraps the stats between words at the largest text", async ({
     page,
     platform,
@@ -725,7 +754,10 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
       expect(series.height).toBe(PHONE_BUTTON_HEIGHT[platform]);
       expect(library.height).toBe(PHONE_BUTTON_HEIGHT[platform]);
       expect(library.width).toBeCloseTo(series.width, 0);
-      expect(library.y).toBeGreaterThan(series.y + series.height);
+      expect(library.y - (series.y + series.height)).toBeCloseTo(
+        PHONE_BUTTON_GAP[platform],
+        0,
+      );
     });
 
     test("sets the card's title in the phone's own type", async ({
