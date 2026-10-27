@@ -21,7 +21,7 @@
   }: {
     folders: FolderList;
     platform: Platform;
-    change?: Snippet;
+    change?: Snippet | undefined;
     rowAction?: Snippet<[LibraryFolder]>;
     class?: ClassValue;
     children?: Snippet;
@@ -36,26 +36,38 @@
     {@const home = folders.home}
     <div
       class={[
-        "flex items-center gap-md rounded-card border border-border bg-card px-lg py-md",
+        "flex flex-wrap items-center gap-md rounded-card border border-border bg-card px-lg py-md",
         CARD_PLATE,
       ]}
     >
-      <span
-        aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile ios:rounded-settings-chip-ios ios:border-transparent ios:bg-ios-chip-grey ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
+      <div
+        class={[
+          "flex flex-1 items-center gap-md min-inline-none",
+          change !== undefined && "max-medium:basis-full",
+        ]}
       >
-        <HardDrive size={ICON_SIZE} />
-      </span>
-      <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-        <h2 id={headingId} class="text-body font-medium desktop:font-semibold">
-          {m.library_settings_home_folder()}
-        </h2>
-        <code class="font-mono text-detail wrap-anywhere text-muted">
-          {folderLocation(home, platform)}
-        </code>
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile ios:rounded-settings-chip-ios ios:border-transparent ios:bg-ios-chip-grey ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
+        >
+          <HardDrive size={ICON_SIZE} />
+        </span>
+        <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+          <h2
+            id={headingId}
+            class="text-body font-medium desktop:font-semibold"
+          >
+            {m.library_settings_home_folder()}
+          </h2>
+          <code class="font-mono text-detail wrap-anywhere text-muted">
+            {folderLocation(home, platform)}
+          </code>
+        </div>
       </div>
-      {@render change?.()}
-      {@render rowAction?.(home)}
+      <div class="ms-auto flex shrink-0 items-center gap-md">
+        {@render change?.()}
+        {@render rowAction?.(home)}
+      </div>
     </div>
   {:else}
     <h2 id={headingId} class="px-xs text-caption font-semibold text-muted">

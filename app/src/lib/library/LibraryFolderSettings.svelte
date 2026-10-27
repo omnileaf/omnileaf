@@ -171,6 +171,17 @@
   }
 </script>
 
+{#snippet changeHome()}
+  <ChangeHomeButton
+    bind:ref={changeHomeButton}
+    {platform}
+    isBusy={homeChange.isBusy}
+    onclick={() => {
+      void homeChange.choose();
+    }}
+  />
+{/snippet}
+
 {#snippet rescanButton(folder: LibraryFolder)}
   <RescanButton
     {folder}
@@ -184,19 +195,12 @@
 <div
   class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
 >
-  <HomeFolder folders={folders.list} {platform} rowAction={rescanButton}>
-    {#snippet change()}
-      {#if isPointer(platform)}
-        <ChangeHomeButton
-          bind:ref={changeHomeButton}
-          {platform}
-          isBusy={homeChange.isBusy}
-          onclick={() => {
-            void homeChange.choose();
-          }}
-        />
-      {/if}
-    {/snippet}
+  <HomeFolder
+    folders={folders.list}
+    {platform}
+    change={isPointer(platform) ? changeHome : undefined}
+    rowAction={rescanButton}
+  >
     <RescanStatus status={rescans.status} kind="home" />
     <p class="mbs-sm px-xs text-caption text-muted">
       {homeHint()}
