@@ -23,6 +23,7 @@ use omnileaf_db::{
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
         root_shares, series_books, series_count, series_file_details, series_overview, series_page,
         series_titles, show_root_while_missing, store_page_dimensions, unread_books, up_next,
+        writer_series_count, writer_series_page, writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -50,10 +51,10 @@ use crate::{
     FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
     HistoryPage, HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter,
     LibraryFilterChoices, LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
-    LibraryView, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek,
-    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
-    UnreachableShare, UtcOffset,
+    LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary,
+    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
+    SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress,
+    ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -80,6 +81,7 @@ use crate::{
 pub(crate) const DATABASE_FILE: &str = "library.sqlite";
 pub(crate) const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
+const WRITERS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const BOOKS_PER_PAGE: u16 = 100;
 const SESSIONS_PER_PAGE: u16 = 50;
@@ -374,6 +376,59 @@ impl Library {
             .store
             .database()
             .read(move |connection| folder_series_count(connection, folder.0, &filter))
+            .await?)
+    }
+
+    pub async fn writers(&self, after: Option<WriterCursor>) -> Result<WriterPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(WRITERS_PER_PAGE)?,
+        };
+        let page = self
+            .store
+            .database()
+            .read(move |connection| writers(connection, &request))
+            .await?;
+        Ok(WriterPage {
+            writers: page.items.into_iter().map(LibraryWriter::from).collect(),
+            next: page.next.map(WriterCursor),
+        })
+    }
+
+    pub async fn writer_series(
+        &self,
+        writer: String,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let listing = listing.at(self.now_ms());
+        let page = self
+            .store
+            .database()
+            .read(move |connection| {
+                Ok((
+                    writer_series_page(connection, &writer, &listing, &request)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
+            .await?;
+        Ok(SeriesPage::new(page.0, page.1))
+    }
+
+    pub async fn writer_series_count(
+        &self,
+        writer: String,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let filter = filter.at(self.now_ms());
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| writer_series_count(connection, &writer, &filter))
             .await?)
     }
 
