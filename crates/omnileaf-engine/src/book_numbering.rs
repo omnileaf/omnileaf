@@ -17,16 +17,15 @@ pub(crate) fn number_book(book: &BookName, shelf: Shelf) -> Numbering {
             },
             None => Numbering::Special { number: None },
         }),
-        Shelf::Volume(folder_volume) => match (book.chapter, book.volume) {
-            (None, Some(volume)) => Numbering::Volume {
-                numbers: range_in_file_name(volume),
-            },
-            (chapter, _) => Numbering::Chapter {
-                number: chapter.or(book.number).map(range_in_file_name),
-                volume: Some(
-                    volume_in_name(book).unwrap_or_else(|| volume_in_folder_name(folder_volume)),
-                ),
-            },
+        Shelf::Volume(folder_volume) => Numbering::Chapter {
+            number: book
+                .chapter
+                .or(book.number_after_volume)
+                .or(book.number)
+                .map(range_in_file_name),
+            volume: Some(
+                volume_in_name(book).unwrap_or_else(|| volume_in_folder_name(folder_volume)),
+            ),
         },
         Shelf::Specials => Numbering::Special {
             number: book
