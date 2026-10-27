@@ -8,8 +8,8 @@ export interface ScreenPlacement {
   readonly dimming: number;
 }
 
-const PREVIOUS_SCREEN_OFFSET = 0.3;
-const PREVIOUS_SCREEN_DIMMING = 0.12;
+const PREVIOUS_SCREEN_OFFSET = 0.2;
+const PREVIOUS_SCREEN_DIMMING = 0.25;
 const HALFWAY = 0.5;
 const FLICK_SCREEN_WIDTHS_PER_SECOND = 0.75;
 

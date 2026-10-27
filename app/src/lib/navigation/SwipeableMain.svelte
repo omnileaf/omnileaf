@@ -237,7 +237,7 @@
     </div>
     <div
       class={[
-        "absolute inset-none bg-back-swipe-dim",
+        "absolute inset-none bg-native-scrim",
         screens.isSettling && ["transition-opacity", SETTLING],
       ]}
       style:opacity={swiping.dimming}

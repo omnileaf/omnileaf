@@ -1064,7 +1064,6 @@
   --color-on-tooltip-key: var(--tooltip-key-ink);
   --color-on-key: var(--key-ink);
   --color-background: var(--background);
-  --color-back-swipe-dim: oklch(0 0 0);
   --color-foreground: var(--foreground);
   --color-muted: var(--secondary-text);
   --color-sidebar-ink: var(--sidebar-foreground);

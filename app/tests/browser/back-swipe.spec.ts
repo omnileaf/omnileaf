@@ -10,6 +10,7 @@ import {
   fakeAppInfo,
   settle,
   test,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 
@@ -138,10 +139,14 @@ test("moves the screen with the finger and brings the previous one in from behin
     .toBeCloseTo(start.width * 0.5, 0);
   await expect(previousScreen(page)).toContainText(PARENT_TITLE);
   expect((await boxOf(previousScreen(page))).x - start.x).toBeCloseTo(
-    -start.width * 0.15,
+    -start.width * 0.1,
     0,
   );
-  await expect(dimming(page)).toHaveCSS("opacity", "0.06");
+  await expect(dimming(page)).toHaveCSS("opacity", "0.125");
+  await expect(dimming(page)).toHaveCSS(
+    "background-color",
+    await tokenColour(page, "--native-color-scrim"),
+  );
 });
 
 test("moves both screens the other way in right-to-left layouts", async ({
@@ -156,7 +161,7 @@ test("moves both screens the other way in right-to-left layouts", async ({
     .poll(async () => (await boxOf(page.getByRole("main"))).x - start.x)
     .toBeCloseTo(-start.width * 0.5, 0);
   expect((await boxOf(previousScreen(page))).x - start.x).toBeCloseTo(
-    start.width * 0.15,
+    start.width * 0.1,
     0,
   );
 });
