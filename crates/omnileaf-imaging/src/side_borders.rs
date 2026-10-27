@@ -270,7 +270,8 @@ impl BookSideBorders {
         book.keeps_enough().then_some(book)
     }
 
-    fn crops_nothing(self) -> bool {
+    #[must_use]
+    pub fn crops_nothing(self) -> bool {
         self.left.pixels == 0 && self.right.pixels == 0
     }
 

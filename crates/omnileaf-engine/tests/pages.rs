@@ -280,6 +280,17 @@ fn extension_of(bytes: &[u8]) -> &'static str {
     }
 }
 
+/// A ZIP entry's CRC covers its data, so a byte flipped in a stored page fails the page's read without changing the archive's listing.
+fn damage_last_page(book: &Path, page: &[u8]) {
+    let mut archive = fs::read(book).unwrap();
+    let start = archive
+        .windows(page.len())
+        .rposition(|bytes| bytes == page)
+        .unwrap();
+    *archive.get_mut(start + page.len() / 2).unwrap() ^= u8::MAX;
+    fs::write(book, archive).unwrap();
+}
+
 fn gif_header(width: u16, height: u16) -> Vec<u8> {
     [
         &b"GIF89a"[..],
@@ -930,6 +941,31 @@ async fn keeps_a_long_strip_whole_after_a_restart_when_a_page_cannot_be_measured
     let again = fresh.respond(&reader.library, &path).await;
 
     assert_eq!(first, served("image/jpeg", page.clone()));
+    assert_eq!(again, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn serves_a_long_strip_whole_after_a_restart_when_measuring_it_again_fails() {
+    let page = scan_with_margin(SCAN_MARGIN);
+    let reader =
+        Reader::with_stored_pages("strip-measured-again", &vec![page.clone(); STRIP_PAGES]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::SideBorders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    reader.router.make_room(1).await;
+    damage_last_page(&reader.book_path(), &page);
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert!(
+        served_size(&first).width < u32::from(SCAN.width),
+        "{first:?}"
+    );
     assert_eq!(again, served("image/jpeg", page));
 }
 

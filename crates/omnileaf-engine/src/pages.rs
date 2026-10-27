@@ -388,13 +388,16 @@ impl Shared {
                 let _decoding = self.decodes.hold();
                 crop_white_borders(page)
             }),
-            PageCrop::SideBorders => self.cropped(path, whole, |page| {
-                let Some(book) = book_side_borders(opened, &self.decodes, self.transcodes()) else {
-                    return Ok(None);
-                };
-                let _decoding = self.decodes.hold();
-                crop_side_borders(page, book)
-            }),
+            PageCrop::SideBorders => {
+                let book = book_side_borders(opened, &self.decodes, self.transcodes());
+                if book.crops_nothing() {
+                    return whole;
+                }
+                self.cropped(path, whole, |page| {
+                    let _decoding = self.decodes.hold();
+                    crop_side_borders(page, book)
+                })
+            }
         }
     }
 

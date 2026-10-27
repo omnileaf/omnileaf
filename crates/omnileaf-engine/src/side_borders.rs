@@ -42,7 +42,7 @@ pub(crate) fn book_side_borders(
     opened: &OpenBook,
     decodes: &DecodePermits,
     kept: Option<&DiskCache>,
-) -> Option<BookSideBorders> {
+) -> BookSideBorders {
     opened.side_borders_once(|| kept_or_measured(opened, decodes, kept))
 }
 
@@ -51,7 +51,7 @@ fn kept_or_measured(
     opened: &OpenBook,
     decodes: &DecodePermits,
     kept: Option<&DiskCache>,
-) -> Option<BookSideBorders> {
+) -> BookSideBorders {
     let key = side_borders_key(opened.file)
         .inspect_err(|error| {
             tracing::warn!(error = %describe_error(error), "name a book's side borders in the cache");
@@ -62,12 +62,12 @@ fn kept_or_measured(
         .and_then(|(cache, key)| cache.get(key))
         .and_then(|bytes| BookSideBorders::from_bytes(&bytes))
     {
-        return Some(stored);
+        return stored;
     }
     match measured(opened, decodes) {
         Ok(book) => {
             keep(cache, book);
-            Some(book)
+            book
         }
         Err(
             error @ MeasureError::Measure {
@@ -77,16 +77,16 @@ fn kept_or_measured(
         ) => {
             tracing::debug!(error = %describe_error(&error), "serve whole for good the long strip of a book with a page whose borders can't be found");
             keep(cache, BookSideBorders::NONE);
-            None
+            BookSideBorders::NONE
         }
         Err(error @ MeasureError::Measure { .. }) => {
             tracing::warn!(error = %describe_error(&error), "measure the side borders of a book's pages, so its long strip is served whole for good");
             keep(cache, BookSideBorders::NONE);
-            None
+            BookSideBorders::NONE
         }
         Err(error @ MeasureError::Read(_)) => {
             tracing::warn!(error = %describe_error(&error), "read a book's pages to measure their side borders, so its long strip is served whole while the book stays open");
-            None
+            BookSideBorders::NONE
         }
     }
 }

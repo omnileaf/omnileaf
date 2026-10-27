@@ -24,7 +24,7 @@ pub(crate) struct OpenBook {
     pub(crate) page_count: usize,
     pub(crate) damage: Option<Damage>,
     book: Arc<Mutex<Book>>,
-    side_borders: Arc<OnceLock<Option<BookSideBorders>>>,
+    side_borders: Arc<OnceLock<BookSideBorders>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -59,8 +59,8 @@ impl OpenBook {
 
     pub(crate) fn side_borders_once(
         &self,
-        measure: impl FnOnce() -> Option<BookSideBorders>,
-    ) -> Option<BookSideBorders> {
+        measure: impl FnOnce() -> BookSideBorders,
+    ) -> BookSideBorders {
         *self.side_borders.get_or_init(measure)
     }
 }
