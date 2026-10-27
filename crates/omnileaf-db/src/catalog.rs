@@ -6,6 +6,7 @@ pub(crate) mod cover;
 pub(crate) mod cursor;
 mod filter_choices;
 mod folder_series;
+pub(crate) mod gathering;
 mod hidden_series;
 mod home_root;
 mod library_roots;

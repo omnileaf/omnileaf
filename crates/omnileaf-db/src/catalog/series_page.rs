@@ -6,6 +6,7 @@ use crate::{
     catalog::{
         Cover,
         cursor::Position,
+        gathering::{Gathering, Gatherings, gatherings},
         page::{Page, PageRequest},
         series_listing::{SeriesListing, SeriesOrder, SortDirection},
         staged_rows::{Listing, Read, TitlePlace, title_place, title_rows},
@@ -55,32 +56,32 @@ macro_rules! directions {
 
 pub(crate) use directions;
 
-const BY_TITLE: Directions<TitlePlace> = directions! {
+const BY_TITLE: Gatherings<TitlePlace> = gatherings! {
     key: "title_key",
     sort_position: title_place,
 };
 
-const BY_DATE_ADDED: Directions<Position> = directions! {
+const BY_DATE_ADDED: Gatherings<Position> = gatherings! {
     key: "added_at_ms",
     sort_position: added_place,
 };
 
-const BY_LAST_READ: Directions<Position> = directions! {
+const BY_LAST_READ: Gatherings<Position> = gatherings! {
     key: "last_read_at_ms",
     sort_position: last_read_place,
 };
 
-const BY_LAST_UPDATED: Directions<Position> = directions! {
+const BY_LAST_UPDATED: Gatherings<Position> = gatherings! {
     key: "updated_at_ms",
     sort_position: last_updated_place,
 };
 
-const BY_UNREAD_COUNT: Directions<Position> = directions! {
+const BY_UNREAD_COUNT: Gatherings<Position> = gatherings! {
     key: "unread_count",
     sort_position: unread_count_place,
 };
 
-const BY_TIME_LEFT: Directions<Position> = directions! {
+const BY_TIME_LEFT: Gatherings<Position> = gatherings! {
     key: "time_left_key",
     sort_position: time_left_place,
 };
@@ -147,18 +148,25 @@ pub fn series_page(
         bound: &[],
     };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
+    let gathering = Gathering::of(connection, listing.filter)?;
     let direction = listing.sort.direction;
     let rows = match listing.sort.order {
-        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
-        SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
-        SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
+        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(gathering, direction), after),
+        SeriesOrder::DateAdded => {
+            date_added_rows(&read, BY_DATE_ADDED.toward(gathering, direction), after)
+        }
+        SeriesOrder::LastRead => {
+            last_read_rows(&read, BY_LAST_READ.toward(gathering, direction), after)
+        }
         SeriesOrder::LastUpdated => {
-            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
+            last_updated_rows(&read, BY_LAST_UPDATED.toward(gathering, direction), after)
         }
         SeriesOrder::UnreadCount => {
-            unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
+            unread_count_rows(&read, BY_UNREAD_COUNT.toward(gathering, direction), after)
         }
-        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
+        SeriesOrder::TimeLeft => {
+            time_left_rows(&read, BY_TIME_LEFT.toward(gathering, direction), after)
+        }
     }?;
     Ok(Page::of(rows, request.size))
 }
@@ -298,7 +306,58 @@ impl<P> Directions<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{catalog::staged_rows::plans::merging_each_stage, scratch::ScratchLibrary};
+    use crate::{
+        catalog::staged_rows::plans::{
+            continuing_from_the_book_up_next, merging_each_stage, with_covers,
+        },
+        scratch::ScratchLibrary,
+    };
+
+    const COVER_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (6, 4);
+    const BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (2, 3);
+
+    fn every_page_query_of<P>(directions: &Directions<P>) -> [&'static str; 4] {
+        [
+            directions.ascending.first_page_query,
+            directions.ascending.next_page_query,
+            directions.descending.first_page_query,
+            directions.descending.next_page_query,
+        ]
+    }
+
+    fn few_gathered_in_every_order(
+        pick: fn(&Gatherings<Position>) -> &Directions<Position>,
+    ) -> Vec<&'static str> {
+        [
+            BY_DATE_ADDED,
+            BY_LAST_READ,
+            BY_LAST_UPDATED,
+            BY_UNREAD_COUNT,
+            BY_TIME_LEFT,
+        ]
+        .iter()
+        .flat_map(|gatherings| every_page_query_of(pick(gatherings)))
+        .collect()
+    }
+
+    fn sorting_only_the_page(gathered: &str) -> Vec<String> {
+        let rows_of_the_page = with_covers(
+            vec![
+                "SCAN page".to_owned(),
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned(),
+            ],
+            COVER_SUBQUERIES_OF_THE_PAGE,
+        );
+        ["MATERIALIZE page", gathered, "USE TEMP B-TREE FOR ORDER BY"]
+            .map(ToOwned::to_owned)
+            .into_iter()
+            .chain(continuing_from_the_book_up_next(
+                rows_of_the_page,
+                BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE,
+            ))
+            .chain(["USE TEMP B-TREE FOR ORDER BY".to_owned()])
+            .collect()
+    }
 
     fn plans_of<P>(
         scratch: &ScratchLibrary,
@@ -315,7 +374,11 @@ mod tests {
     fn starts_each_stage_at_either_end_of_its_stretch_of_the_title_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-title-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TITLE);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_TITLE.each_stage_in_order,
+        );
 
         let from_the_head = merging_each_stage(
             "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=?)",
@@ -327,7 +390,11 @@ mod tests {
     fn starts_each_stage_at_either_end_of_its_stretch_of_the_date_added_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-date-added-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_DATE_ADDED);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_DATE_ADDED.each_stage_in_order,
+        );
 
         let from_the_head = merging_each_stage(
             "SEARCH series USING INDEX series_by_stage_and_added (reading_stage=?)",
@@ -339,7 +406,11 @@ mod tests {
     fn starts_each_stage_at_either_end_of_its_stretch_of_the_last_read_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-last-read-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_LAST_READ);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_LAST_READ.each_stage_in_order,
+        );
 
         let from_the_head = merging_each_stage(
             "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=?)",
@@ -351,7 +422,11 @@ mod tests {
     fn seeks_each_stage_of_the_last_read_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("last-read-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_LAST_READ);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_LAST_READ.each_stage_in_order,
+        );
 
         assert_eq!(
             plans,
@@ -373,7 +448,7 @@ mod tests {
         let plans = plans_of(
             &scratch,
             |listing| listing.first_page_query,
-            &BY_LAST_UPDATED,
+            &BY_LAST_UPDATED.each_stage_in_order,
         );
 
         let from_the_head = merging_each_stage(
@@ -390,7 +465,7 @@ mod tests {
         let plans = plans_of(
             &scratch,
             |listing| listing.next_page_query,
-            &BY_LAST_UPDATED,
+            &BY_LAST_UPDATED.each_stage_in_order,
         );
 
         assert_eq!(
@@ -413,7 +488,7 @@ mod tests {
         let plans = plans_of(
             &scratch,
             |listing| listing.first_page_query,
-            &BY_UNREAD_COUNT,
+            &BY_UNREAD_COUNT.each_stage_in_order,
         );
 
         let from_the_head = merging_each_stage(
@@ -430,7 +505,7 @@ mod tests {
         let plans = plans_of(
             &scratch,
             |listing| listing.next_page_query,
-            &BY_UNREAD_COUNT,
+            &BY_UNREAD_COUNT.each_stage_in_order,
         );
 
         assert_eq!(
@@ -450,7 +525,11 @@ mod tests {
     fn starts_each_stage_at_either_end_of_its_stretch_of_the_time_left_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-time-left-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.first_page_query, &BY_TIME_LEFT);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.first_page_query,
+            &BY_TIME_LEFT.each_stage_in_order,
+        );
 
         let from_the_head = merging_each_stage(
             "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)",
@@ -462,7 +541,11 @@ mod tests {
     fn seeks_each_stage_of_the_time_left_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("time-left-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TIME_LEFT);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_TIME_LEFT.each_stage_in_order,
+        );
 
         assert_eq!(
             plans,
@@ -481,7 +564,11 @@ mod tests {
     fn seeks_each_stage_of_the_title_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("title-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_TITLE);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_TITLE.each_stage_in_order,
+        );
 
         assert_eq!(
             plans,
@@ -500,7 +587,11 @@ mod tests {
     fn seeks_each_stage_of_the_date_added_index_either_way_on_both_sort_columns_without_sorting() {
         let scratch = ScratchLibrary::new("date-added-plan");
 
-        let plans = plans_of(&scratch, |listing| listing.next_page_query, &BY_DATE_ADDED);
+        let plans = plans_of(
+            &scratch,
+            |listing| listing.next_page_query,
+            &BY_DATE_ADDED.each_stage_in_order,
+        );
 
         assert_eq!(
             plans,
@@ -513,5 +604,48 @@ mod tests {
                 ),
             ]
         );
+    }
+
+    #[test]
+    fn gathers_the_few_forgotten_series_by_when_each_was_last_read_then_sorts_only_their_keys() {
+        let scratch = ScratchLibrary::new("few-forgotten-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_forgotten)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_forgotten
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_only_the_page(
+            "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=? AND last_read_at_ms>? AND last_read_at_ms<?)",
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_series_holding_a_book_stored_twice_by_their_own_index_then_sorts_only_their_keys()
+     {
+        let scratch = ScratchLibrary::new("few-duplicated-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_duplicated)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_duplicated
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_only_the_page(
+            "SEARCH series USING INDEX series_with_duplicates_by_stage (reading_stage=?)",
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
     }
 }

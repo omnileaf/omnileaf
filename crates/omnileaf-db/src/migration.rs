@@ -77,6 +77,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0041_keep_the_details_of_each_book"),
     migration!("0042_keep_the_people_and_tags_of_each_book"),
     migration!("0043_name_the_language_and_age_rating_of_each_series"),
+    migration!("0044_index_the_series_holding_a_book_stored_twice"),
 ];
 
 pub(crate) fn pending(
