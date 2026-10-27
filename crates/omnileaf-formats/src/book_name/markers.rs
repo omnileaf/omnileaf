@@ -76,8 +76,8 @@ const MARKER_WORDS: [MarkerWord; 10] = [
 
 #[derive(Debug, Default)]
 pub(super) struct Markers {
-    pub(super) volume: Option<NumberRange>,
-    pub(super) chapter: Option<NumberRange>,
+    pub(super) volume: Option<Found<NumberRange>>,
+    pub(super) chapter: Option<Found<NumberRange>>,
 }
 
 impl Markers {
@@ -87,7 +87,7 @@ impl Markers {
         while at < text.len() && !markers.has_both() {
             match marker_at(text, at) {
                 Some((kind, found)) => {
-                    markers.slot(kind).get_or_insert(found.value);
+                    markers.slot(kind).get_or_insert(found);
                     at = found.end;
                 }
                 None => at += 1,
@@ -100,7 +100,7 @@ impl Markers {
         self.volume.is_some() && self.chapter.is_some()
     }
 
-    const fn slot(&mut self, kind: MarkerKind) -> &mut Option<NumberRange> {
+    const fn slot(&mut self, kind: MarkerKind) -> &mut Option<Found<NumberRange>> {
         match kind {
             MarkerKind::Volume => &mut self.volume,
             MarkerKind::Chapter => &mut self.chapter,

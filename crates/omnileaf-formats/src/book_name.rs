@@ -61,8 +61,8 @@ impl Numbers {
         let Markers { volume, chapter } = Markers::read(title);
         let has_marker = volume.is_some() || chapter.is_some();
         Self {
-            volume,
-            chapter,
+            volume: volume.map(|volume| volume.value),
+            chapter: chapter.map(|chapter| chapter.value),
             number: if has_marker {
                 None
             } else {
