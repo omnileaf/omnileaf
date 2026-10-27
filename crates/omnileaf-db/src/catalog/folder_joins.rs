@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    collections::BTreeSet,
+    path::{MAIN_SEPARATOR_STR, Path, PathBuf},
+};
 
 use omnileaf_sync_proto::SeriesId;
 use rusqlite::{Statement, Transaction};
@@ -27,6 +30,13 @@ const JOIN_FOLDERS: &str = "UPDATE series_folder SET series_local_id = joined.lo
 const MOVE_SERIES_BOOKS: &str = "UPDATE book SET series_local_id = joined.local_id
      FROM series AS joined, series AS left_behind
      WHERE joined.id = ?1 AND left_behind.id = ?2 AND book.series_local_id = left_behind.local_id";
+
+const FORGET_EMPTIED_FOLDER: &str = "DELETE FROM series_folder
+     WHERE root_id = ?1 AND location = ?2
+         AND NOT EXISTS (SELECT 1 FROM book_file WHERE root_id = ?1 AND location = ?2)
+         AND NOT EXISTS (
+             SELECT 1 FROM book_file WHERE root_id = ?1 AND location >= ?3 AND location < ?4
+         )";
 
 pub(crate) struct FolderJoins<'t> {
     add: Statement<'t>,
@@ -87,6 +97,35 @@ impl<'t> FolderJoins<'t> {
     }
 }
 
+pub(crate) fn forget_emptied_folders(
+    transaction: &Transaction<'_>,
+    root: RootId,
+    removed: &[PathBuf],
+) -> Result<(), Error> {
+    let folders: BTreeSet<&Path> = removed.iter().flat_map(|file| file.ancestors()).collect();
+    let mut forget = transaction.prepare(FORGET_EMPTIED_FOLDER)?;
+    for folder in folders {
+        let (first_inside, past_inside) = locations_inside(folder);
+        forget.execute((
+            root.0,
+            native_path::to_bytes(folder),
+            first_inside,
+            past_inside,
+        ))?;
+    }
+    Ok(())
+}
+
+fn locations_inside(folder: &Path) -> (Vec<u8>, Vec<u8>) {
+    let mut first_inside = native_path::to_bytes(folder);
+    first_inside.extend(native_path::to_bytes(Path::new(MAIN_SEPARATOR_STR)));
+    let mut past_inside = first_inside.clone();
+    if let Some(last) = past_inside.last_mut() {
+        *last = last.saturating_add(1);
+    }
+    (first_inside, past_inside)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +140,24 @@ mod tests {
         assert_eq!(
             plan,
             ["SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"]
+        );
+    }
+
+    #[test]
+    fn forgets_an_emptied_folder_through_the_file_location_index() {
+        let scratch = ScratchLibrary::new("forget-series-folder-plan");
+
+        let plan = scratch.query_plan(FORGET_EMPTIED_FOLDER);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH series_folder USING INDEX sqlite_autoindex_series_folder_1 (root_id=? AND location=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH book_file USING COVERING INDEX sqlite_autoindex_book_file_1 (root_id=? AND location=?)",
+                "SCALAR SUBQUERY 2",
+                "SEARCH book_file USING COVERING INDEX sqlite_autoindex_book_file_1 (root_id=? AND location>? AND location<?)",
+            ]
         );
     }
 

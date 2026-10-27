@@ -305,3 +305,50 @@ async fn dates_a_series_only_by_the_books_filed_in_it() {
         ]
     );
 }
+
+#[tokio::test]
+async fn files_new_books_in_an_emptied_joined_folder_in_its_own_series() {
+    let comics = ScannedComics::new(
+        "comic-info-emptied-join",
+        &[
+            (
+                "Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            ("Sample Series 03/v01.cbz", NO_SERIES),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 02/v01.cbz");
+    comics.rescan().await;
+    comics.rewrite("Sample Series 02/v02.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(
+        comics.scanned.series(),
+        owned(&[("Sample Series 02", 1), ("Sample Series 03", 1)])
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_joined_folder_joined_while_a_volume_folder_in_it_holds_books() {
+    let comics = ScannedComics::new(
+        "comic-info-join-kept-by-volume",
+        &[
+            (
+                "Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            ("Sample Series 02/Volume 02/c010.cbz", NO_SERIES),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 02/v01.cbz");
+    comics.rescan().await;
+    comics.rewrite("Sample Series 02/v03.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
+}

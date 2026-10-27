@@ -5,7 +5,7 @@ use rusqlite::{Connection, OptionalExtension, Row, Transaction};
 
 use crate::{
     Error,
-    catalog::{RootId, native_path, stored_id::stored_id},
+    catalog::{RootId, folder_joins::forget_emptied_folders, native_path, stored_id::stored_id},
 };
 
 const FILES_IN_ROOT: &str = "SELECT book_file.book_id, location, size_bytes, modified_at_ms,
@@ -58,6 +58,7 @@ pub fn remove_book_files(
             .optional()?;
         held.extend(removed);
     }
+    forget_emptied_folders(transaction, root, locations)?;
     Ok(held)
 }
 
