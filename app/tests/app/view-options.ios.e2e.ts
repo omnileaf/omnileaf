@@ -2,16 +2,10 @@ import { expect, test } from "vitest";
 
 import { useAppSession } from "./app-session.ts";
 import { isRecord } from "./json.ts";
-import { xpath } from "./webdriver.ts";
+import { ELEMENT_TIMEOUT_MS, xpath } from "./webdriver.ts";
 
-const LIBRARY_MORE_BUTTON = xpath(
-  "//button[@aria-label='More for the library']",
-);
-const LIBRARY_MORE_CENTRE = `const { x, y, width, height } = document.querySelector("button[aria-label='More for the library']").getBoundingClientRect();
-return { x: x + width / 2, y: y + height / 2 };`;
-const VIEW_OPTIONS_ITEM = xpath(
-  "//*[@role='menuitem'][normalize-space()='View options']",
-);
+const LIBRARY_MORE = `document.querySelector("button[aria-label='More for the library']")`;
+const VIEW_OPTIONS_ITEM = `[...document.querySelectorAll("[role=menuitem]")].find((item) => item.textContent.trim() === "View options")`;
 const OPEN_SHEET = xpath(
   "//*[@aria-modal='true'][@data-state='open']//h2[normalize-space()='View options']",
 );
@@ -29,13 +23,27 @@ const CAN_SHOW_FEWER = `return !document.querySelector("[aria-modal=true][data-s
 
 const appSession = useAppSession();
 
-/** Taps More with a finger on the screen, since the menu opens only on a touch pointerup and a WebDriver click in the web view sends none. */
-async function openLibraryMore(): Promise<void> {
-  await appSession().waitFor(LIBRARY_MORE_BUTTON);
-  const centre = await appSession().run(LIBRARY_MORE_CENTRE);
-  if (!isRecord(centre)) {
-    throw new Error("expected the centre of More as a point");
-  }
+function tappableCentreOf(element: string): string {
+  return `const element = ${element};
+if (!element) {
+  return null;
+}
+const { x, y, width, height } = element.getBoundingClientRect();
+const centre = { x: x + width / 2, y: y + height / 2 };
+return element.contains(document.elementFromPoint(centre.x, centre.y)) ? centre : null;`;
+}
+
+/** Taps with a finger on the screen, since More opens its menu only on a touch pointerup that a WebDriver click never sends, and Appium's XCUITest driver polls for alerts throughout any click in the web view that runs past 2.1 s. */
+async function tapWithFinger(element: string, name: string): Promise<void> {
+  const script = tappableCentreOf(element);
+  const centre = await appSession().pollOnPage(
+    async () => {
+      const found = await appSession().run(script);
+      return isRecord(found) ? found : undefined;
+    },
+    ELEMENT_TIMEOUT_MS,
+    name,
+  );
   await appSession().runMobileCommand("tap", centre);
 }
 
@@ -54,8 +62,8 @@ async function stepCoversPerRow(label: string): Promise<void> {
 }
 
 test("opens View options at the height it keeps once something in it changes", async () => {
-  await openLibraryMore();
-  await (await appSession().waitFor(VIEW_OPTIONS_ITEM)).click();
+  await tapWithFinger(LIBRARY_MORE, "More for the library");
+  await tapWithFinger(VIEW_OPTIONS_ITEM, "View options in More");
   await appSession().waitFor(OPEN_SHEET);
   await (await appSession().waitFor(CHOOSE_COVERS)).click();
   await appSession().waitUntil(

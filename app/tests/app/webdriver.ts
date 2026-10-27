@@ -9,7 +9,7 @@ const SHOWN_BUTTON =
 const WEBVIEW_CONTEXT = "WEBVIEW";
 /** A loaded iOS simulator can take longer than one request's timeout to stop or start an app. */
 const RELAUNCH_TIMEOUT_MS = 60_000;
-const ELEMENT_TIMEOUT_MS = 10_000;
+export const ELEMENT_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 const SCRIPT_TIMEOUT_MS = 2_000;
 const SESSION_START_TIMEOUT_MS = 300_000;
@@ -348,7 +348,7 @@ export class Session {
     await send(this.endpoint, "DELETE");
   }
 
-  private async pollOnPage<T>(
+  async pollOnPage<T>(
     attempt: () => Promise<T | undefined>,
     timeoutMs: number,
     what: string,
