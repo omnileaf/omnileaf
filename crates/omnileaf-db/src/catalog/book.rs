@@ -24,11 +24,25 @@ macro_rules! insert_book {
     };
 }
 
-macro_rules! add_or_refile_book {
-    ($guard:literal) => {
+macro_rules! in_its_only_file {
+    () => {
+        "(
+            NOT EXISTS (
+                SELECT 1 FROM book_file
+                WHERE book_id = ?1 AND (root_id, location) IS NOT (:file_root, :file_location)
+            )
+            OR EXISTS (
+                SELECT 1 FROM series AS kept
+                WHERE kept.local_id = book.series_local_id AND kept.title_source IS NULL
+            )
+        )"
+    };
+}
+
+macro_rules! add_or_relabel_book {
+    ($refilable:expr) => {
         insert_book!(concat!(
             " ON CONFLICT (id) DO UPDATE SET
-                series_local_id = excluded.series_local_id,
                 title = excluded.title,
                 reading_order_key = excluded.reading_order_key,
                 kind = excluded.kind,
@@ -36,34 +50,37 @@ macro_rules! add_or_refile_book {
                 last_number = excluded.last_number,
                 number_source = excluded.number_source,
                 volume_number = excluded.volume_number,
-                volume_source = excluded.volume_source",
-            $guard
+                volume_source = excluded.volume_source
+            WHERE ",
+            $refilable,
+            " AND (
+                title, reading_order_key, kind, first_number, last_number, number_source,
+                volume_number, volume_source
+            ) IS NOT (
+                excluded.title, excluded.reading_order_key, excluded.kind, excluded.first_number,
+                excluded.last_number, excluded.number_source, excluded.volume_number,
+                excluded.volume_source
+            )"
         ))
     };
 }
 
+macro_rules! move_book {
+    ($refilable:expr) => {
+        concat!(
+            "UPDATE book SET series_local_id = series.local_id FROM series
+            WHERE book.id = ?1 AND series.id = ?2 AND book.series_local_id IS NOT series.local_id
+                AND ",
+            $refilable
+        )
+    };
+}
+
 const ADD_BOOK: &str = insert_book!("");
-const ADD_OR_REFILE_BOOK: &str = add_or_refile_book!("");
-const ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE: &str = add_or_refile_book!(
-    " WHERE (
-        NOT EXISTS (
-            SELECT 1 FROM book_file
-            WHERE book_id = excluded.id AND (root_id, location) IS NOT (:file_root, :file_location)
-        )
-        OR EXISTS (
-            SELECT 1 FROM series AS kept
-            WHERE kept.local_id = book.series_local_id AND kept.title_source IS NULL
-        )
-    )
-    AND (
-        series_local_id, title, reading_order_key, kind, first_number, last_number,
-        number_source, volume_number, volume_source
-    ) IS NOT (
-        excluded.series_local_id, excluded.title, excluded.reading_order_key, excluded.kind,
-        excluded.first_number, excluded.last_number, excluded.number_source,
-        excluded.volume_number, excluded.volume_source
-    )"
-);
+const ADD_OR_RELABEL_BOOK: &str = add_or_relabel_book!("TRUE");
+const ADD_OR_RELABEL_BOOK_IN_ITS_ONLY_FILE: &str = add_or_relabel_book!(in_its_only_file!());
+const MOVE_BOOK: &str = move_book!("TRUE");
+const MOVE_BOOK_IN_ITS_ONLY_FILE: &str = move_book!(in_its_only_file!());
 const FILE_ROOT: &str = ":file_root";
 const FILE_LOCATION: &str = ":file_location";
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
@@ -83,6 +100,7 @@ pub(crate) enum Filing {
 pub(crate) struct BookFiler<'t> {
     filing: Filing,
     add: Statement<'t>,
+    move_to_series: Statement<'t>,
     series_exists: Statement<'t>,
     page_count: Statement<'t>,
 }
@@ -114,28 +132,38 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
 
 impl<'t> BookFiler<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>, filing: Filing) -> Result<Self, Error> {
-        let add = match filing {
-            Filing::FollowingItsOnlyFile => ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE,
-            Filing::WhereFoundNow => ADD_OR_REFILE_BOOK,
+        let (add, move_to_series) = match filing {
+            Filing::FollowingItsOnlyFile => (
+                ADD_OR_RELABEL_BOOK_IN_ITS_ONLY_FILE,
+                MOVE_BOOK_IN_ITS_ONLY_FILE,
+            ),
+            Filing::WhereFoundNow => (ADD_OR_RELABEL_BOOK, MOVE_BOOK),
         };
         Ok(Self {
             filing,
             add: transaction.prepare(add)?,
+            move_to_series: transaction.prepare(move_to_series)?,
             series_exists: transaction.prepare(SERIES_EXISTS)?,
             page_count: transaction.prepare(RECORD_PAGE_COUNT)?,
         })
     }
 
     pub(crate) fn file(&mut self, book: &NewBook, file: &BookFile) -> Result<(), Error> {
-        let is_filed = match self.filing {
-            Filing::FollowingItsOnlyFile => {
-                insert_from_its_file(&mut self.add, book, file)? > 0
-                    || self
-                        .series_exists
-                        .query_row([book.series.as_bytes()], |row| row.get(0))?
-            }
-            Filing::WhereFoundNow => insert(&mut self.add, book)? > 0,
+        let file = match self.filing {
+            Filing::FollowingItsOnlyFile => Some(file),
+            Filing::WhereFoundNow => None,
         };
+        let is_added = run(&mut self.add, book_columns(book), file)? > 0;
+        let book_key = [
+            Value::from(book.id().as_bytes().to_vec()),
+            Value::from(book.series.as_bytes().to_vec()),
+        ];
+        let is_moved = run(&mut self.move_to_series, book_key, file)? > 0;
+        let is_filed = is_added
+            || is_moved
+            || self
+                .series_exists
+                .query_row([book.series.as_bytes()], |row| row.get(0))?;
         if !is_filed {
             return Err(Error::UnknownSeries { id: book.series });
         }
@@ -187,16 +215,18 @@ fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error>
     Ok(statement.execute(params_from_iter(book_columns(book)))?)
 }
 
-fn insert_from_its_file(
+fn run(
     statement: &mut Statement<'_>,
-    book: &NewBook,
-    file: &BookFile,
+    columns: impl IntoIterator<Item = Value>,
+    file: Option<&BookFile>,
 ) -> Result<usize, Error> {
-    for (index, column) in book_columns(book).into_iter().enumerate() {
+    for (index, column) in columns.into_iter().enumerate() {
         statement.raw_bind_parameter(index + 1, column)?;
     }
-    statement.raw_bind_parameter(FILE_ROOT, file.root.0)?;
-    statement.raw_bind_parameter(FILE_LOCATION, native_path::to_bytes(&file.location))?;
+    if let Some(file) = file {
+        statement.raw_bind_parameter(FILE_ROOT, file.root.0)?;
+        statement.raw_bind_parameter(FILE_LOCATION, native_path::to_bytes(&file.location))?;
+    }
     Ok(statement.raw_execute()?)
 }
 
@@ -273,18 +303,37 @@ mod tests {
     fn checks_a_book_for_other_files_through_their_book_index() {
         let scratch = ScratchLibrary::new("refile-in-only-file-plan");
 
-        let plan = scratch.query_plan(ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE);
+        let plan = scratch.query_plan(ADD_OR_RELABEL_BOOK_IN_ITS_ONLY_FILE);
 
         assert_eq!(
             plan,
             [
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-                "CORRELATED SCALAR SUBQUERY 2",
+                "SCALAR SUBQUERY 2",
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
                 "CORRELATED SCALAR SUBQUERY 3",
                 "SEARCH kept USING INTEGER PRIMARY KEY (rowid=?)",
                 "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
+            ]
+        );
+    }
+
+    #[test]
+    fn moves_a_book_in_its_only_file_through_its_key_and_its_series_key() {
+        let scratch = ScratchLibrary::new("move-in-only-file-plan");
+
+        let plan = scratch.query_plan(MOVE_BOOK_IN_ITS_ONLY_FILE);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH kept USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"
             ]
         );
     }

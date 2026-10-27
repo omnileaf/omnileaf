@@ -787,3 +787,19 @@ async fn refiles_a_book_held_in_two_files_out_of_a_series_kept_by_its_name() {
         ]
     );
 }
+
+#[tokio::test]
+async fn writes_only_the_book_when_a_book_is_scanned_again_under_another_title() {
+    let library = Library::open("scanned-retitled").await;
+    library
+        .record(library.found_in_folder("Sample Series 01", "v01", 1))
+        .await;
+    let retitled = ScannedBook {
+        title: "Volume 01".to_owned(),
+        ..library.found_in_folder("Sample Series 01", "v01", 1)
+    };
+
+    let changes = library.changes_recording(retitled).await;
+
+    assert_eq!(changes, 1);
+}
