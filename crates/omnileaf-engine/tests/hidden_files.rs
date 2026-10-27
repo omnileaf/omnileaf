@@ -12,7 +12,7 @@ mod books;
 mod scanned;
 mod support;
 
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use books::write_book;
 use omnileaf_engine::{
@@ -27,7 +27,7 @@ const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 
 struct Hiding {
     scanned: Scanned,
-    _comics: ScratchFolder,
+    comics: ScratchFolder,
 }
 
 impl Hiding {
@@ -36,10 +36,15 @@ impl Hiding {
         write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
         write_book(&comics.path().join(SERIES).join("v02.cbr"), 2);
         let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
-        Self {
-            scanned,
-            _comics: comics,
-        }
+        Self { scanned, comics }
+    }
+
+    fn file(&self, name: &str) -> PathBuf {
+        self.comics.path().join(SERIES).join(name)
+    }
+
+    fn write_rar(&self, name: &str) {
+        fs::write(self.file(name), RAR_SIGNATURE).unwrap();
     }
 
     fn library(&self) -> &Library {
@@ -105,6 +110,44 @@ async fn leaves_files_of_a_hidden_type_out_of_the_library_once_it_rescans() {
         })
     );
     assert_eq!(hiding.scanned.books_in(SERIES), ["v01"]);
+}
+
+#[tokio::test]
+async fn removes_a_book_whose_file_of_a_hidden_type_no_longer_opens_once_it_rescans() {
+    let hiding = Hiding::new("hide-turned-rar").await;
+    hiding.hide_like("v02").await;
+    hiding.write_rar("v02.cbr");
+
+    let outcome = hiding.rescan().await;
+
+    assert_eq!(
+        outcome,
+        RescanOutcome::Rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(hiding.scanned.books_in(SERIES), ["v01"]);
+}
+
+#[tokio::test]
+async fn rescans_a_folder_left_with_only_hidden_files_rather_than_finding_it_empty() {
+    let hiding = Hiding::new("hide-only-hidden-left").await;
+    hiding.hide_like("v02").await;
+    hiding.write_rar("v03.cbr");
+    for name in ["v01.cbz", "v02.cbr"] {
+        fs::remove_file(hiding.file(name)).unwrap();
+    }
+
+    let outcome = hiding.rescan().await;
+
+    assert_eq!(
+        outcome,
+        RescanOutcome::Rescanned(FileChanges {
+            removed: 2,
+            ..FileChanges::default()
+        })
+    );
 }
 
 #[tokio::test]
