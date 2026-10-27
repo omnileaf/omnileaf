@@ -164,6 +164,7 @@ mod tests {
     use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 
     use super::*;
+    use crate::PageCrop;
 
     const ONE_WORKER: NonZeroUsize = NonZeroUsize::MIN;
     const WAIT: Duration = Duration::from_secs(10);
@@ -195,6 +196,7 @@ mod tests {
             book,
             rev: 1,
             index,
+            crop: PageCrop::Whole,
         }
     }
 

@@ -64,6 +64,8 @@ pub enum Error {
     UnsupportedLibraryGrouping { name: String },
     #[error("read adult content as {name:?}, which this build can't treat it as")]
     UnsupportedAdultTreatment { name: String },
+    #[error("read a person's role as {name:?}, which this build doesn't know")]
+    UnsupportedPersonRole { name: String },
     #[error("read {uri:?} as an Android folder's address, which isn't a document tree")]
     MalformedTreeUri { uri: String },
     #[error("read {name:?} as an Android folder's name, which isn't one folder name")]

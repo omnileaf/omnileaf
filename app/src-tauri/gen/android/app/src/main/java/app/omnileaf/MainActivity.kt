@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import android.webkit.WebView
 import androidx.annotation.ColorInt
 
@@ -15,6 +16,7 @@ class MainActivity : TauriActivity() {
   private val startingBackground: Int by lazy { getColor(startingTheme.pageBackground()) }
   private var webView: WebView? = null
   private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
+  internal val volumeKeys = VolumeKeyCapture()
 
   /** Tauri's own back handler stays with the first activity, so once Android recreates the activity back would close the app from any page. */
   override val handleBackNavigation = true
@@ -38,6 +40,9 @@ class MainActivity : TauriActivity() {
     super.onConfigurationChanged(newConfig)
     turnScreen(newConfig)
   }
+
+  override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+    volumeKeys.handle(event.toKeyPress()) || super.dispatchKeyEvent(event)
 
   override fun onWebViewCreate(webView: WebView) {
     SystemInsets(webView).attach()

@@ -3,11 +3,12 @@
     reason = "the budgets and sample counts here are fixed, so a failed set-up should stop the test"
 )]
 
-use std::{cell::RefCell, num::NonZeroUsize, time::Duration};
+use std::{cell::RefCell, num::NonZeroUsize, thread, time::Duration};
 
 use omnileaf_testkit::{Pass, Sampling, SpeedTrial, Statistic, TimingBudget, TrialOutcome};
 
 const BUDGET: Duration = Duration::from_millis(30);
+const STALL: Duration = Duration::from_millis(50);
 
 fn millis(values: impl IntoIterator<Item = u64>) -> Vec<Duration> {
     values.into_iter().map(Duration::from_millis).collect()
@@ -152,6 +153,71 @@ async fn drops_each_pass_before_setting_up_the_next() {
             "drop 3"
         ]
     );
+}
+
+struct LoggedSample<'log> {
+    log: &'log RefCell<Vec<&'static str>>,
+}
+
+impl Drop for LoggedSample<'_> {
+    fn drop(&mut self) {
+        self.log.borrow_mut().push("drop sample");
+    }
+}
+
+#[tokio::test]
+async fn sets_up_each_isolated_sample_before_it_and_drops_it_after() {
+    let log = RefCell::new(Vec::new());
+
+    repeated(2, Statistic::Median)
+        .run_isolated(
+            async |_| (),
+            async |()| {
+                log.borrow_mut().push("set up sample");
+                LoggedSample { log: &log }
+            },
+            async |(), _| log.borrow_mut().push("sample"),
+        )
+        .await;
+
+    assert_eq!(
+        log.into_inner(),
+        ["set up sample", "sample", "drop sample"].repeat(4 * 2)
+    );
+}
+
+#[tokio::test]
+async fn times_an_isolated_sample_without_its_set_up() {
+    let trial = once();
+
+    let outcome = trial
+        .run_isolated(
+            async |_| (),
+            async |()| thread::sleep(STALL),
+            async |(), ()| {},
+        )
+        .await;
+
+    assert!(outcome.fastest() < STALL, "{outcome}");
+}
+
+struct SlowToDrop;
+
+impl Drop for SlowToDrop {
+    fn drop(&mut self) {
+        thread::sleep(STALL);
+    }
+}
+
+#[tokio::test]
+async fn times_an_isolated_sample_without_its_drop() {
+    let trial = once();
+
+    let outcome = trial
+        .run_isolated(async |_| (), async |()| SlowToDrop, async |(), _| {})
+        .await;
+
+    assert!(outcome.fastest() < STALL, "{outcome}");
 }
 
 #[tokio::test]

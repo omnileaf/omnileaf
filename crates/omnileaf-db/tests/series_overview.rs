@@ -12,9 +12,9 @@ use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
-        AndroidTree, AppleBookmark, BookFile, BookReading, NewRoot, NewSeries, RootId, RootKind,
-        RootLocator, ScannedBook, SeriesOverview, TreeUri, add_root, record_scanned_books,
-        series_overview, up_next,
+        AndroidTree, AppleBookmark, BookDetails, BookFile, BookReading, NewRoot, NewSeries, RootId,
+        RootKind, RootLocator, ScannedBook, SeriesOverview, TreeUri, add_root,
+        record_scanned_books, series_overview, up_next,
     },
 };
 use omnileaf_sync_proto::SeriesId;
@@ -74,6 +74,7 @@ impl Library {
                 title: title.to_owned(),
                 added_at_ms: ADDED_AT_MS,
                 page_count: 1,
+                details: BookDetails::default(),
                 file: BookFile {
                     root,
                     location: PathBuf::from(SERIES).join(format!("{title}.cbz")),
@@ -180,6 +181,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             cover: None,
             folder: None,
             pages_left: None,
+            is_rated_adult: false,
         }
     );
 }

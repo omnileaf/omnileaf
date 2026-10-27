@@ -5,7 +5,7 @@ use crate::{
     catalog::{
         page::{Page, PageRequest},
         search_text::{Lookup, SearchText},
-        series_listing::{SeriesFilter, StageParams},
+        series_listing::{FilterParams, SeriesFilter, smart_conditions},
         series_page::SeriesSummary,
         staged_rows::{Listing, Read, TitlePlace, listing, title_place, title_rows},
     },
@@ -30,13 +30,19 @@ const CONTAINING: Listing<TitlePlace> = listing! {
     sort_position: title_place,
 };
 
-const MATCHED_COUNT: &str = "SELECT count(*) FROM series
+const MATCHED_COUNT: &str = concat!(
+    "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)";
+        AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)",
+    smart_conditions!()
+);
 
-const CONTAINING_COUNT: &str = "SELECT count(*) FROM series
+const CONTAINING_COUNT: &str = concat!(
+    "SELECT count(*) FROM series
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND instr(fold_case(title), :characters) > 0";
+        AND instr(fold_case(title), :characters) > 0",
+    smart_conditions!()
+);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesSearch {
@@ -66,8 +72,8 @@ pub fn search_page(
 #[tracing::instrument(skip_all, fields(filter = ?search.filter))]
 pub fn search_count(connection: &Connection, search: &SeriesSearch) -> Result<u32, Error> {
     let lookup = &search.text.0;
-    let stages = StageParams::of(search.filter);
-    let mut params = stages.named().to_vec();
+    let filter = FilterParams::of(search.filter);
+    let mut params = filter.named().to_vec();
     params.extend_from_slice(&lookup.bound());
     Ok(connection
         .prepare(lookup.count())?

@@ -16,14 +16,14 @@ use std::{
 
 use omnileaf_engine::{
     BookDamage, BookId, BookPlace, BookReading, DamageCause, Library, LibraryListing,
-    OpenBookError, OpenedBook, PageDimensions, ProbedFormat, ReadMark, ReadingDirection, Resource,
-    ResourceRouter, SeriesBookListing, SeriesId,
+    OpenBookError, OpenedBook, PageCrop, PageDimensions, PagePath, ProbedFormat, ReadMark,
+    ReadingDirection, Resource, ResourceRouter, SeriesBookListing, SeriesId,
 };
 use omnileaf_imaging::{Size, page_size};
 use omnileaf_testkit::{
-    ArchiveEntry, Compression, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH, INK_OVER_CLEAR_JXL,
-    INK_OVER_PAPER_JXL, PageShape, cbz, cut_inside_entry, page_jpeg, page_png, strip_jpeg,
-    webp_header_only,
+    ArchiveEntry, Compression, DrawnScan, ENCODED_PAGE_HEIGHT, ENCODED_PAGE_WIDTH,
+    INK_OVER_CLEAR_JXL, INK_OVER_PAPER_JXL, Packing, PageShape, cb7, cbz, cut_inside_entry,
+    page_jpeg, page_png, strip_jpeg, webp_header_only,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -32,6 +32,7 @@ const PAGES: u32 = 5;
 const FOLDER: &str = "Sample Library";
 const SERIES: &str = "Sample Series 01";
 const BOOK: &str = "Sample Series 01 v01";
+const NEXT_BOOK: &str = "Sample Series 01 v02";
 const PORTRAIT: PageDimensions = PageDimensions {
     width: 400,
     height: 600,
@@ -43,6 +44,18 @@ const SPREAD: PageDimensions = PageDimensions {
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
 const PAGES_LEFT_WHOLE: u32 = 3;
 const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const SCAN: DrawnScan = DrawnScan {
+    width: 400,
+    height: 600,
+    seed: 3,
+    grain: 12,
+};
+const SCAN_MARGIN: u32 = 40;
+const PAPER: [u8; 3] = [255; 3];
+const INK: [u8; 3] = [40; 3];
+const WIDER_SCAN_MARGIN: u32 = 64;
+const STRIP_PAGES: usize = 8;
+const PAGE_NEVER_READ_AHEAD: usize = 7;
 /// A byte JPEG lets any marker begin with, which a decoder skips but the size reader here doesn't.
 const FILL_BYTE: u8 = 0xFF;
 
@@ -81,6 +94,18 @@ impl Reader {
                 compression,
             );
         }
+        Self::over(name, comics).await
+    }
+
+    async fn with_solid_cb7(name: &str, pages: &[Vec<u8>]) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        let series = comics.path().join(FOLDER).join(SERIES);
+        fs::create_dir_all(&series).unwrap();
+        fs::write(
+            series.join(format!("{BOOK}.cb7")),
+            cb7(&page_entries(pages), Packing::Solid).unwrap(),
+        )
+        .unwrap();
         Self::over(name, comics).await
     }
 
@@ -166,13 +191,17 @@ impl Reader {
             .unwrap();
     }
 
-    async fn book(&self) -> BookId {
+    async fn books(&self) -> Vec<BookId> {
         let books = self
             .library
             .series_books(self.series().await, SeriesBookListing::default(), None)
             .await
             .unwrap();
-        books.books.first().unwrap().id
+        books.books.iter().map(|book| book.id).collect()
+    }
+
+    async fn book(&self) -> BookId {
+        *self.books().await.first().unwrap()
     }
 
     async fn open(&self, undecodable: Vec<ProbedFormat>) -> OpenedBook {
@@ -184,11 +213,32 @@ impl Reader {
     }
 
     async fn page(&self, opened: &OpenedBook, index: usize) -> Resource {
-        let path = opened.pages.get(index).unwrap().path;
+        self.serve(opened.pages.get(index).unwrap().path).await
+    }
+
+    async fn serve(&self, path: PagePath) -> Resource {
         self.router
             .respond(&self.library, &format!("/{path}"))
             .await
     }
+}
+
+fn scan_with_margin(margin: u32) -> Vec<u8> {
+    let (width, height) = (u32::from(SCAN.width), u32::from(SCAN.height));
+    SCAN.to_jpeg(|column, row| {
+        let is_margin =
+            column < margin || row < margin || column >= width - margin || row >= height - margin;
+        if is_margin { PAPER } else { INK }
+    })
+    .unwrap()
+}
+
+fn served_size(resource: &Resource) -> Size {
+    let body = match resource {
+        Resource::Immutable { body, .. } => Some(body),
+        Resource::NotFound | Resource::Failed => None,
+    };
+    page_size(body.unwrap()).unwrap()
 }
 
 fn portrait_pages(seed: u64) -> Vec<Vec<u8>> {
@@ -233,6 +283,17 @@ fn extension_of(bytes: &[u8]) -> &'static str {
     } else {
         ".png"
     }
+}
+
+/// A ZIP entry's CRC covers its data, so a byte flipped in a stored page fails the page's read without changing the archive's listing.
+fn damage_last_page(book: &Path, page: &[u8]) {
+    let mut archive = fs::read(book).unwrap();
+    let start = archive
+        .windows(page.len())
+        .rposition(|bytes| bytes == page)
+        .unwrap();
+    *archive.get_mut(start + page.len() / 2).unwrap() ^= u8::MAX;
+    fs::write(book, archive).unwrap();
 }
 
 fn gif_header(width: u16, height: u16) -> Vec<u8> {
@@ -738,6 +799,236 @@ async fn finds_no_page_past_the_end_of_a_book_or_of_a_revision_since_replaced() 
         resources,
         [Resource::NotFound, Resource::NotFound, Resource::NotFound]
     );
+}
+
+#[tokio::test]
+async fn serves_a_page_with_its_white_borders_cropped() {
+    let reader = Reader::with_pages("cropped", &[scan_with_margin(SCAN_MARGIN)]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let page = &opened.pages[0];
+
+    let cropped = served_size(&reader.serve(page.path.cropped(PageCrop::Borders)).await);
+    let sides_cropped = served_size(&reader.serve(page.path.cropped(PageCrop::SideBorders)).await);
+
+    let inked = Size {
+        width: u32::from(SCAN.width) - 2 * SCAN_MARGIN,
+        height: u32::from(SCAN.height) - 2 * SCAN_MARGIN,
+    };
+    assert!(cropped.width < inked.width + SCAN_MARGIN, "{cropped:?}");
+    assert!(cropped.height < inked.height + SCAN_MARGIN, "{cropped:?}");
+    assert!(
+        sides_cropped.width < inked.width + SCAN_MARGIN,
+        "{sides_cropped:?}"
+    );
+    assert_eq!(sides_cropped.height, u32::from(SCAN.height));
+}
+
+#[tokio::test]
+async fn serves_a_page_whole_at_its_cropped_path_when_it_has_no_white_border() {
+    let page = scan_with_margin(0);
+    let reader = Reader::with_pages("uncropped", std::slice::from_ref(&page)).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::Borders))
+        .await;
+
+    assert_eq!(resource, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn serves_a_crop_kept_on_disk_after_a_restart_without_cropping_again() {
+    let reader = Reader::with_pages("crop-kept", &[scan_with_margin(SCAN_MARGIN)]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::Borders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &[scan_with_margin(0)],
+    );
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert!(
+        served_size(&first).width < u32::from(SCAN.width),
+        "{first:?}"
+    );
+    assert_eq!(again, first);
+}
+
+#[tokio::test]
+async fn serves_every_page_of_a_long_strip_cropped_by_the_same_side_borders() {
+    let pages = [SCAN_MARGIN, WIDER_SCAN_MARGIN, SCAN_MARGIN].map(scan_with_margin);
+    let reader = Reader::with_pages("strip-cropped", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let mut widths = Vec::new();
+    for page in &opened.pages {
+        let served = reader.serve(page.path.cropped(PageCrop::SideBorders)).await;
+        widths.push(served_size(&served).width);
+    }
+
+    assert!(widths[0] < u32::from(SCAN.width), "{widths:?}");
+    assert!(widths.iter().all(|width| *width == widths[0]), "{widths:?}");
+}
+
+#[tokio::test]
+async fn serves_every_page_of_a_long_strip_in_a_solid_cb7_cropped_by_the_same_side_borders() {
+    let pages = [SCAN_MARGIN, WIDER_SCAN_MARGIN, SCAN_MARGIN].map(scan_with_margin);
+    let reader = Reader::with_solid_cb7("strip-cropped-cb7", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let mut widths = Vec::new();
+    for page in &opened.pages {
+        let served = reader.serve(page.path.cropped(PageCrop::SideBorders)).await;
+        widths.push(served_size(&served).width);
+    }
+
+    assert!(widths[0] < u32::from(SCAN.width), "{widths:?}");
+    assert!(widths.iter().all(|width| *width == widths[0]), "{widths:?}");
+}
+
+#[tokio::test]
+async fn serves_each_page_of_the_paged_reader_cropped_by_its_own_borders() {
+    let pages = [SCAN_MARGIN, WIDER_SCAN_MARGIN].map(scan_with_margin);
+    let reader = Reader::with_pages("paged-cropped", &pages).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let mut widths = Vec::new();
+    for page in &opened.pages {
+        let served = reader.serve(page.path.cropped(PageCrop::Borders)).await;
+        widths.push(served_size(&served).width);
+    }
+
+    assert!(widths[1] < widths[0], "{widths:?}");
+}
+
+#[tokio::test]
+async fn serves_a_long_strip_whole_when_a_page_of_it_cannot_be_measured() {
+    let page = scan_with_margin(SCAN_MARGIN);
+    let reader =
+        Reader::with_pages("strip-unmeasured", &[page.clone(), gif_header(400, 600)]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    let resource = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::SideBorders))
+        .await;
+
+    assert_eq!(resource, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn keeps_a_long_strip_whole_after_a_restart_when_a_page_cannot_be_measured() {
+    let page = scan_with_margin(SCAN_MARGIN);
+    let reader = Reader::with_pages(
+        "strip-unmeasured-kept",
+        &[page.clone(), gif_header(400, 600)],
+    )
+    .await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::SideBorders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &[page.clone(), page.clone()],
+    );
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert_eq!(first, served("image/jpeg", page.clone()));
+    assert_eq!(again, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn serves_a_long_strip_whole_after_a_restart_when_measuring_it_again_fails() {
+    let page = scan_with_margin(SCAN_MARGIN);
+    let reader =
+        Reader::with_stored_pages("strip-measured-again", &vec![page.clone(); STRIP_PAGES]).await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let path = format!("/{}", opened.pages[0].path.cropped(PageCrop::SideBorders));
+    let first = reader.router.respond(&reader.library, &path).await;
+    reader.router.make_room(1).await;
+    damage_last_page(&reader.book_path(), &page);
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let again = fresh.respond(&reader.library, &path).await;
+
+    assert!(
+        served_size(&first).width < u32::from(SCAN.width),
+        "{first:?}"
+    );
+    assert_eq!(again, served("image/jpeg", page));
+}
+
+#[tokio::test]
+async fn drops_a_side_cropped_page_of_a_book_the_reader_left_before_measuring_it() {
+    let [pages, next_pages] =
+        [SCAN_MARGIN, WIDER_SCAN_MARGIN].map(|margin| vec![scan_with_margin(margin); STRIP_PAGES]);
+    let reader = Reader::with_books("strip-left", &[(BOOK, pages), (NEXT_BOOK, next_pages)]).await;
+    let [left, next] = <[BookId; 2]>::try_from(reader.books().await).unwrap();
+    let opened = reader
+        .router
+        .open_book(&reader.library, left, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+    reader
+        .router
+        .open_book(&reader.library, next, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+
+    let resource = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::SideBorders))
+        .await;
+
+    assert_eq!(resource, Resource::NotFound);
+}
+
+#[tokio::test]
+async fn keeps_the_side_borders_of_a_long_strip_on_disk_for_after_a_restart() {
+    let reader = Reader::with_pages(
+        "strip-borders-kept",
+        &vec![scan_with_margin(SCAN_MARGIN); STRIP_PAGES],
+    )
+    .await;
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+    let first = reader
+        .serve(opened.pages[0].path.cropped(PageCrop::SideBorders))
+        .await;
+    write_book(
+        &reader.comics.path().join(FOLDER).join(SERIES),
+        &vec![scan_with_margin(3 * SCAN_MARGIN); STRIP_PAGES],
+    );
+    let fresh = reader.fresh_router();
+    fresh
+        .open_book(&reader.library, opened.id, NOTHING_UNDECODABLE)
+        .await
+        .unwrap();
+    let later = opened.pages[PAGE_NEVER_READ_AHEAD]
+        .path
+        .cropped(PageCrop::SideBorders);
+
+    let again = fresh.respond(&reader.library, &format!("/{later}")).await;
+
+    assert!(
+        served_size(&first).width < u32::from(SCAN.width),
+        "{first:?}"
+    );
+    assert_eq!(served_size(&again).width, served_size(&first).width);
 }
 
 #[tokio::test]

@@ -9,7 +9,7 @@ use omnileaf_engine::{
     FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
     HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
     LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
-    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, ProbedFormat,
+    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
     ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
     ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
@@ -29,7 +29,7 @@ use crate::{
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
-    home_folder::{self, ChosenHome, NothingChosen},
+    home_folder::{self, ChosenHome},
     icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
@@ -42,6 +42,7 @@ use crate::{
     system_settings, system_sign_in,
     tray::{TrayItemChosen, TrayMenu},
     version_details,
+    volume_keys::{self, PageTurn},
 };
 
 macro_rules! app_commands {
@@ -54,6 +55,8 @@ macro_rules! app_commands {
             match_system_bars,
             watch_back_swipes,
             allow_back_swipe,
+            capture_volume_keys,
+            release_volume_keys,
             library_folders,
             library_series,
             library_series_count,
@@ -83,6 +86,7 @@ macro_rules! app_commands {
             mark_books,
             mark_series_read,
             open_book,
+            cropped_page_paths,
             reading_restored,
             page_shown,
             close_book,
@@ -122,6 +126,7 @@ macro_rules! app_commands {
             found_library,
             choose_home_folder,
             use_found_library,
+            move_home_folder,
             first_launch_finished,
             finish_first_launch,
             set_app_language,
@@ -369,6 +374,18 @@ async fn allow_back_swipe(app: AppHandle, edge: Option<SwipeEdge>) -> Result<(),
 
 #[tauri::command]
 #[specta::specta]
+async fn capture_volume_keys(app: AppHandle, on_turn: Channel<PageTurn>) -> Result<(), IpcError> {
+    volume_keys::capture(&app, on_turn).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn release_volume_keys(app: AppHandle) -> Result<(), IpcError> {
+    volume_keys::release(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn library_folders(
     library: State<'_, Library>,
     after: Option<FolderCursor>,
@@ -484,7 +501,7 @@ fn remove_library_tag(tag: String) -> Result<Vec<SeriesId>, IpcError> {
 async fn library_filter_choices(
     library: State<'_, Library>,
 ) -> Result<LibraryFilterChoices, IpcError> {
-    Ok(library.filter_choices()?)
+    Ok(library.filter_choices().await?)
 }
 
 #[tauri::command]
@@ -570,12 +587,11 @@ async fn series_books(
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri hands command arguments over by value"
-)]
-fn creator_series(library: State<'_, Library>, creator: String) -> Vec<CreatorSeries> {
-    library.creator_series(&creator)
+async fn creator_series(
+    library: State<'_, Library>,
+    creator: String,
+) -> Result<Vec<CreatorSeries>, IpcError> {
+    Ok(library.creator_series(creator).await?)
 }
 
 #[tauri::command]
@@ -638,6 +654,12 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+fn cropped_page_paths(paths: Vec<PagePath>, crop: PageCrop) -> Vec<PagePath> {
+    paths.into_iter().map(|path| path.cropped(crop)).collect()
 }
 
 #[tauri::command]
@@ -890,13 +912,17 @@ async fn choose_home_folder(
 #[tauri::command]
 #[specta::specta]
 async fn use_found_library(app: AppHandle) -> Result<(), IpcError> {
-    let (Some(setting), Some(chosen)) = (
-        home_folder::setting(&app),
-        app.state::<ChosenHome>().folder(),
-    ) else {
-        return Err(IpcError::internal(&NothingChosen));
-    };
+    let (setting, chosen) = home_folder::chosen(&app)?;
     setting.use_library_in(&chosen).await?;
+    app.request_restart();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn move_home_folder(app: AppHandle) -> Result<(), IpcError> {
+    let (setting, chosen) = home_folder::chosen(&app)?;
+    setting.move_to(&chosen).await?;
     app.request_restart();
     Ok(())
 }

@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
-use rusqlite::{Connection, OptionalExtension, Transaction};
+use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
 
 use crate::{Error, book_order::book_order_key, catalog::stored_id::stored_id};
 
@@ -32,6 +32,19 @@ const RECORD_PAGE_COUNT: &str =
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
     WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM book_file WHERE book_id = ?1)";
 
+#[derive(Clone, Copy)]
+pub(crate) enum Filing {
+    WhereFirstFound,
+    WhereFoundNow,
+}
+
+pub(crate) struct BookFiler<'t> {
+    filing: Filing,
+    add: Statement<'t>,
+    series_exists: Statement<'t>,
+    page_count: Statement<'t>,
+}
+
 #[derive(Clone, Debug)]
 pub struct NewBook {
     pub fingerprint: Fingerprint,
@@ -50,31 +63,44 @@ impl NewBook {
 
 #[tracing::instrument(skip_all, fields(book = %book.id(), series = %book.series))]
 pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Error> {
-    if insert(transaction, book, ADD_BOOK)? == 0 {
+    if insert(&mut transaction.prepare(ADD_BOOK)?, book)? == 0 {
         return Err(Error::UnknownSeries { id: book.series });
     }
     Ok(())
 }
 
-pub(crate) fn add_book_unless_present(
-    transaction: &Transaction<'_>,
-    book: &NewBook,
-) -> Result<(), Error> {
-    let is_added = insert(transaction, book, ADD_BOOK_UNLESS_PRESENT)? > 0;
-    if !is_added && !series_exists(transaction, book.series)? {
-        return Err(Error::UnknownSeries { id: book.series });
+impl<'t> BookFiler<'t> {
+    pub(crate) fn new(transaction: &'t Transaction<'_>, filing: Filing) -> Result<Self, Error> {
+        let add = match filing {
+            Filing::WhereFirstFound => ADD_BOOK_UNLESS_PRESENT,
+            Filing::WhereFoundNow => ADD_OR_REFILE_BOOK,
+        };
+        Ok(Self {
+            filing,
+            add: transaction.prepare(add)?,
+            series_exists: transaction.prepare(SERIES_EXISTS)?,
+            page_count: transaction.prepare(RECORD_PAGE_COUNT)?,
+        })
     }
-    Ok(())
-}
 
-pub(crate) fn add_or_refile_book(
-    transaction: &Transaction<'_>,
-    book: &NewBook,
-) -> Result<(), Error> {
-    if insert(transaction, book, ADD_OR_REFILE_BOOK)? == 0 {
-        return Err(Error::UnknownSeries { id: book.series });
+    pub(crate) fn file(&mut self, book: &NewBook) -> Result<(), Error> {
+        let is_filed = insert(&mut self.add, book)? > 0
+            || match self.filing {
+                Filing::WhereFirstFound => self
+                    .series_exists
+                    .query_row([book.series.as_bytes()], |row| row.get(0))?,
+                Filing::WhereFoundNow => false,
+            };
+        if !is_filed {
+            return Err(Error::UnknownSeries { id: book.series });
+        }
+        Ok(())
     }
-    Ok(())
+
+    pub(crate) fn record_page_count(&mut self, book: BookId, page_count: u32) -> Result<(), Error> {
+        self.page_count.execute((book.as_bytes(), page_count))?;
+        Ok(())
+    }
 }
 
 #[tracing::instrument(skip_all, fields(%book, page_count))]
@@ -112,14 +138,8 @@ pub(crate) fn series_of_book(
         .optional()?)
 }
 
-fn series_exists(transaction: &Transaction<'_>, series: SeriesId) -> Result<bool, Error> {
-    Ok(transaction
-        .prepare(SERIES_EXISTS)?
-        .query_row([series.as_bytes()], |row| row.get(0))?)
-}
-
-fn insert(transaction: &Transaction<'_>, book: &NewBook, sql: &str) -> Result<usize, Error> {
-    Ok(transaction.prepare(sql)?.execute((
+fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error> {
+    Ok(statement.execute((
         book.id().as_bytes(),
         book.series.as_bytes(),
         &book.title,
@@ -161,7 +181,8 @@ mod tests {
             page_count: None,
         };
 
-        let outcome = add_book_unless_present(&transaction, &book);
+        let outcome = BookFiler::new(&transaction, Filing::WhereFirstFound)
+            .and_then(|mut filer| filer.file(&book));
 
         assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == book.series));
     }
@@ -203,6 +224,7 @@ mod tests {
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SCALAR SUBQUERY 1",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
             ]
         );

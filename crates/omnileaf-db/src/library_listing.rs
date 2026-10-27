@@ -92,6 +92,7 @@ impl TryFrom<ListingRow> for SeriesListing {
                 unread: stored(&INCLUSIONS, inclusion_name, row.unread)?,
                 started: stored(&INCLUSIONS, inclusion_name, row.started)?,
                 finished: stored(&INCLUSIONS, inclusion_name, row.finished)?,
+                ..SeriesFilter::NONE
             },
         })
     }

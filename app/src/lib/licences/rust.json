@@ -1348,7 +1348,7 @@
     },
     {
       "name": "ico",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "licence": "MIT",
       "texts": [
         87
@@ -1356,7 +1356,7 @@
     },
     {
       "name": "icu_casemap",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1364,7 +1364,7 @@
     },
     {
       "name": "icu_casemap_data",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1372,7 +1372,7 @@
     },
     {
       "name": "icu_collator",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1380,7 +1380,7 @@
     },
     {
       "name": "icu_collator_data",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1388,7 +1388,7 @@
     },
     {
       "name": "icu_collections",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1396,7 +1396,7 @@
     },
     {
       "name": "icu_locale_core",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1404,7 +1404,7 @@
     },
     {
       "name": "icu_locale_fallback",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1412,7 +1412,7 @@
     },
     {
       "name": "icu_locale_fallback_data",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1420,7 +1420,7 @@
     },
     {
       "name": "icu_normalizer",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1428,7 +1428,7 @@
     },
     {
       "name": "icu_normalizer_data",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1436,7 +1436,7 @@
     },
     {
       "name": "icu_properties",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1444,7 +1444,7 @@
     },
     {
       "name": "icu_properties_data",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -1452,7 +1452,7 @@
     },
     {
       "name": "icu_provider",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -2358,14 +2358,6 @@
     },
     {
       "name": "png",
-      "version": "0.17.16",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        27
-      ]
-    },
-    {
-      "name": "png",
       "version": "0.18.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -3016,7 +3008,7 @@
     },
     {
       "name": "tauri",
-      "version": "2.12.2",
+      "version": "2.12.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         41
@@ -3024,7 +3016,7 @@
     },
     {
       "name": "tauri-codegen",
-      "version": "2.7.1",
+      "version": "2.7.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         41
@@ -3032,7 +3024,7 @@
     },
     {
       "name": "tauri-macros",
-      "version": "2.7.1",
+      "version": "2.7.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         41
@@ -3200,7 +3192,7 @@
     },
     {
       "name": "tinystr",
-      "version": "0.8.4",
+      "version": "0.8.5",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -3216,7 +3208,7 @@
     },
     {
       "name": "tokio",
-      "version": "1.53.3",
+      "version": "1.54.1",
       "licence": "MIT",
       "texts": [
         98
@@ -3401,7 +3393,7 @@
     },
     {
       "name": "typed-path",
-      "version": "0.12.3",
+      "version": "0.13.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         41
@@ -3442,10 +3434,11 @@
     },
     {
       "name": "unicode-normalization",
-      "version": "0.1.25",
-      "licence": "MIT OR Apache-2.0",
+      "version": "0.1.26",
+      "licence": "(MIT OR Apache-2.0) AND Unicode-3.0",
       "texts": [
-        27
+        27,
+        124
       ]
     },
     {
@@ -3747,14 +3740,6 @@
     },
     {
       "name": "windows-sys",
-      "version": "0.59.0",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows-sys",
       "version": "0.60.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -3772,14 +3757,6 @@
     {
       "name": "windows-targets",
       "version": "0.42.2",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows-targets",
-      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         6
@@ -3811,14 +3788,6 @@
     },
     {
       "name": "windows_x86_64_gnu",
-      "version": "0.52.6",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows_x86_64_gnu",
       "version": "0.53.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
@@ -3828,14 +3797,6 @@
     {
       "name": "windows_x86_64_msvc",
       "version": "0.42.2",
-      "licence": "MIT OR Apache-2.0",
-      "texts": [
-        6
-      ]
-    },
-    {
-      "name": "windows_x86_64_msvc",
-      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         6
@@ -3931,7 +3892,7 @@
     },
     {
       "name": "yoke",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -4019,7 +3980,7 @@
     },
     {
       "name": "zerovec",
-      "version": "0.11.8",
+      "version": "0.11.9",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -4027,7 +3988,7 @@
     },
     {
       "name": "zerovec-derive",
-      "version": "0.11.6",
+      "version": "0.11.7",
       "licence": "Unicode-3.0",
       "texts": [
         125
@@ -4035,7 +3996,7 @@
     },
     {
       "name": "zip",
-      "version": "9.0.4",
+      "version": "9.1.1",
       "licence": "MIT",
       "texts": [
         105

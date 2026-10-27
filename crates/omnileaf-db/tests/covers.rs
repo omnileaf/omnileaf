@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use omnileaf_db::{
     Database,
     catalog::{
-        AndroidTree, BookFile, Cover, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, TreeUri, add_root,
-        cover_file, record_scanned_books, remove_book_files, series_page,
+        AndroidTree, BookDetails, BookFile, Cover, NewRoot, NewSeries, PageRequest, PageSize,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort,
+        TreeUri, add_root, cover_file, record_scanned_books, remove_book_files, series_page,
     },
 };
 use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
@@ -61,6 +61,7 @@ impl Library {
             title: title.to_owned(),
             added_at_ms: ADDED_AT_MS,
             page_count: 1,
+            details: BookDetails::default(),
             file: BookFile {
                 root: self.root,
                 location: location_of(title),

@@ -2,6 +2,7 @@ mod adult_content;
 mod app_info;
 mod app_language;
 mod background_lane;
+mod book_details;
 mod bookmark_access;
 mod books_removal;
 #[cfg(test)]
@@ -21,6 +22,7 @@ mod folder_watch;
 mod found_library;
 mod history;
 mod home_folder_setting;
+mod home_move;
 mod ipc_brand;
 mod lane;
 mod library;
@@ -64,6 +66,7 @@ mod saved_report;
 mod scan;
 mod series_details;
 mod series_overview;
+mod side_borders;
 mod storage_use;
 mod utc_offset;
 mod version_details;
@@ -124,7 +127,7 @@ pub use opened_book::{
     BookDamage, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions, ProbedFormat,
     ReadingDirection, SeriesNeighbour,
 };
-pub use page_path::{MalformedPagePath, PagePath};
+pub use page_path::{MalformedPagePath, PageCrop, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;
 pub use problem_report::{ProblemReport, ProblemReportPreview};

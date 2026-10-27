@@ -90,8 +90,24 @@ pub struct SpeedTrial {
 impl SpeedTrial {
     pub async fn run<P>(
         &self,
-        mut set_up_pass: impl AsyncFnMut(Pass) -> P,
+        set_up_pass: impl AsyncFnMut(Pass) -> P,
         mut sample: impl AsyncFnMut(&mut P),
+    ) -> TrialOutcome {
+        self.run_isolated(
+            set_up_pass,
+            async |_| (),
+            async |state, ()| {
+                sample(state).await;
+            },
+        )
+        .await
+    }
+
+    pub async fn run_isolated<P, S>(
+        &self,
+        mut set_up_pass: impl AsyncFnMut(Pass) -> P,
+        mut set_up_sample: impl AsyncFnMut(&mut P) -> S,
+        mut sample: impl AsyncFnMut(&mut P, &mut S),
     ) -> TrialOutcome {
         let passes = [Pass::WarmUp]
             .into_iter()
@@ -101,9 +117,11 @@ impl SpeedTrial {
             let mut state = set_up_pass(pass).await;
             let mut timings = Vec::with_capacity(self.sampling.samples());
             for _ in 0..self.sampling.samples() {
+                let mut isolated = set_up_sample(&mut state).await;
                 let started = Instant::now();
-                sample(&mut state).await;
+                sample(&mut state, &mut isolated).await;
                 timings.push(started.elapsed());
+                drop(isolated);
             }
             drop(state);
             if pass != Pass::WarmUp {
