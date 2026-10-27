@@ -79,7 +79,7 @@
   } satisfies ActionGroupLook;
   const PHONE_CARD_ACTION_GROUP =
     "flex flex-col px-lg ios:gap-md android:gap-lg";
-  const ACROSS_THE_CARD = "inline-full whitespace-normal text-center";
+  const ACROSS_THE_CARD = "inline-full text-center";
 
   let {
     book,
