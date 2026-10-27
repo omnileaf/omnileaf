@@ -8,7 +8,7 @@ use omnileaf_db::catalog::{Numbering, SeriesNaming, Sourced, ValueSource};
 use omnileaf_formats::{SeriesName, read_book_name, read_series_name, read_volume_folder_name};
 
 use crate::{
-    book_numbering::{Shelf, number_book},
+    book_numbering::{FileNumbers, Shelf, number_book},
     library_layout::is_comic,
 };
 
@@ -27,16 +27,16 @@ pub(crate) struct PlacedSeries {
     pub(crate) naming: SeriesNaming,
 }
 
-pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
+pub(crate) fn place_book(location: &Path, linked_folder: &str, files: FileNumbers) -> Placement {
     let Some(name) = location.file_name() else {
-        return Placement::one_shot(linked_folder, location);
+        return Placement::one_shot(linked_folder, location, files);
     };
     let name = book_name(name);
     let Some((book_folder, folder)) = location
         .parent()
         .and_then(|book_folder| Some((book_folder, book_folder.file_name()?)))
     else {
-        return Placement::one_shot(&name, location);
+        return Placement::one_shot(&name, location, files);
     };
     let above = book_folder
         .parent()
@@ -49,17 +49,17 @@ pub(crate) fn place_book(location: &Path, linked_folder: &str) -> Placement {
     };
     let book = read_book_name(&name, Some(&series.title));
     Placement {
-        numbering: number_book(&book, shelf),
+        numbering: number_book(&book, shelf, files),
         title: book.title,
         series: PlacedSeries::folder(series_folder, series),
     }
 }
 
 impl Placement {
-    fn one_shot(name: &str, location: &Path) -> Self {
+    fn one_shot(name: &str, location: &Path, files: FileNumbers) -> Self {
         let book = read_book_name(name, None);
         Self {
-            numbering: number_book(&book, Shelf::OneShot),
+            numbering: number_book(&book, Shelf::OneShot, files),
             series: PlacedSeries {
                 location: location.to_path_buf(),
                 naming: SeriesNaming {
