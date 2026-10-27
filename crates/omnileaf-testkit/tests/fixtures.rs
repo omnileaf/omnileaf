@@ -13,7 +13,7 @@ use std::{
 use omnileaf_testkit::{
     ArchiveEntry, Compression, DrawnScan, GENERATED_LIBRARY_NAME, GeneratedLibrary, Packing,
     PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, ScratchFolder, cb7, cbz, full_chroma_scan_jpeg,
-    incompressible_bytes, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
+    incompressible_bytes, margined_scan_jpeg, page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
     write_generated_library, write_sample_library,
 };
 use sevenz_rust2::{ArchiveReader, Password};
@@ -28,8 +28,10 @@ const SOF0_COMPONENT_LENGTH: usize = 3;
 const TWICE_EACH_WAY: u8 = 0x22;
 const ONCE_EACH_WAY: u8 = 0x11;
 const SCAN_GRAIN: u8 = 12;
+const SUBSAMPLED_SCAN_GRAIN: u8 = 20;
 const JPEG_ERROR: u8 = 8;
 const PAPER: [u8; 3] = [236, 234, 230];
+const WHITE: [u8; 3] = [255; 3];
 const INK: [u8; 3] = [40, 38, 36];
 
 fn dimensions(png: &[u8]) -> (u32, u32) {
@@ -208,6 +210,38 @@ fn weighs_a_subsampled_scan_about_a_megabyte() {
     let megabytes = scan.len() / 1_000_000;
 
     assert_eq!(megabytes, 1, "the scan weighs {} bytes", scan.len());
+}
+
+#[test]
+fn draws_a_margined_scan_as_the_subsampled_scan_inside_a_white_margin() {
+    let (_, subsampled) = jpeg_pixels(&subsampled_scan_jpeg(SEED).unwrap());
+
+    let (size, margined) = jpeg_pixels(&margined_scan_jpeg(SEED).unwrap());
+
+    assert_eq!(size, (1800, 2700));
+    let pixel_at = |pixels: &[u8], (column, row): (usize, usize)| -> [u8; 3] {
+        let at = (row * size.0 + column) * 3;
+        pixels[at..at + 3].try_into().unwrap()
+    };
+    let is_within = |found: [u8; 3], drawn: [u8; 3], tolerance: u8| {
+        found
+            .iter()
+            .zip(drawn)
+            .all(|(found, drawn)| found.abs_diff(drawn) <= tolerance)
+    };
+    for corner in [(8, 8), (1791, 8), (8, 2691), (1791, 2691)] {
+        let paper = pixel_at(&margined, corner);
+        assert!(
+            is_within(paper, WHITE, SUBSAMPLED_SCAN_GRAIN + JPEG_ERROR),
+            "{corner:?}: {paper:?}"
+        );
+    }
+    let centre = (900, 1350);
+    let ground = pixel_at(&margined, centre);
+    assert!(
+        is_within(ground, pixel_at(&subsampled, centre), JPEG_ERROR),
+        "{ground:?}"
+    );
 }
 
 #[test]

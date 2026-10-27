@@ -130,6 +130,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
       message: "that book isn't in the library",
     });
   },
+  croppedPagePaths: (paths) => paths,
   readingRestored: () => null,
   pageShown: () => null,
   closeBook: () => null,

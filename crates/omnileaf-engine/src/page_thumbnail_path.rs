@@ -3,7 +3,7 @@ use std::{fmt, str::FromStr};
 use serde::Serialize;
 use specta::{Type, Types, datatype::DataType};
 
-use crate::{PagePath, cover_path::THUMBNAIL_VERSION, ipc_brand::branded_string};
+use crate::{PageCrop, PagePath, cover_path::THUMBNAIL_VERSION, ipc_brand::branded_string};
 
 const PAGE_THUMBNAIL_ROUTE: &str = "page-thumb";
 
@@ -20,7 +20,9 @@ pub struct MalformedPageThumbnailPath {
 
 impl fmt::Display for PageThumbnailPath {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let PagePath { book, rev, index } = self.0;
+        let PagePath {
+            book, rev, index, ..
+        } = self.0;
         write!(
             formatter,
             "{PAGE_THUMBNAIL_ROUTE}/{THUMBNAIL_VERSION}/{book}/{rev}/{index}"
@@ -44,6 +46,7 @@ impl FromStr for PageThumbnailPath {
             book: book.parse().map_err(|_| malformed())?,
             rev: rev.parse().map_err(|_| malformed())?,
             index: index.parse().map_err(|_| malformed())?,
+            crop: PageCrop::Whole,
         }))
     }
 }
@@ -76,6 +79,7 @@ mod tests {
             book: book(crc32),
             rev,
             index,
+            crop: PageCrop::Whole,
         })
     }
 

@@ -1349,6 +1349,7 @@ export function sampleBackend(
       bookmarks.set(id, kept);
       return null;
     },
+    croppedPagePaths: (paths) => paths,
     readingRestored: () => null,
     pageShown: (id, page) => {
       const { series, index } = bookWith(id);

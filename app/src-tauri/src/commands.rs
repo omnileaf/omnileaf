@@ -9,7 +9,7 @@ use omnileaf_engine::{
     FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
     HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
     LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
-    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, ProbedFormat,
+    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
     ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
     ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
@@ -83,6 +83,7 @@ macro_rules! app_commands {
             mark_books,
             mark_series_read,
             open_book,
+            cropped_page_paths,
             reading_restored,
             page_shown,
             close_book,
@@ -639,6 +640,12 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+fn cropped_page_paths(paths: Vec<PagePath>, crop: PageCrop) -> Vec<PagePath> {
+    paths.into_iter().map(|path| path.cropped(crop)).collect()
 }
 
 #[tauri::command]

@@ -6,7 +6,7 @@ use std::{
 use omnileaf_formats::{Book, Damage, FormatError, Limits, salvage_book_in};
 use omnileaf_sync_proto::BookId;
 
-use crate::{PagePath, file_in_storage::FileInStorage};
+use crate::{PageCrop, PagePath, file_in_storage::FileInStorage};
 
 /// How many books stay open at once, enough to go back and forth between a few without reading their archives' directories again.
 const KEPT_OPEN: usize = 4;
@@ -45,6 +45,7 @@ impl OpenBook {
                 book: self.file.book,
                 rev: self.file.rev,
                 index,
+                crop: PageCrop::Whole,
             },
             index: at,
         })
