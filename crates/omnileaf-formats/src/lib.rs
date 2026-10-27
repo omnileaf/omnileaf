@@ -1,5 +1,6 @@
 mod block_reader;
 mod book;
+mod book_name;
 mod comic_info;
 mod container;
 mod entries;
@@ -15,6 +16,7 @@ mod storage;
 mod zip_book;
 
 pub use book::{Book, Damage, Page, open_book, open_book_in, open_book_with, salvage_book_in};
+pub use book_name::{Number, NumberRange};
 pub use comic_info::{
     AgeRating, ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,
 };
