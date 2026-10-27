@@ -116,6 +116,7 @@ const LAYOUT_DATA = {
     isDevelopmentBuild: false,
   },
   libraryProblem: null,
+  homeArrival: null,
   isFirstLaunch: false,
 } as const;
 

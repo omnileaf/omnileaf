@@ -885,6 +885,7 @@ export function sampleBackend(
       isDevelopmentBuild: true,
     }),
     libraryProblem: () => null,
+    homeArrival: () => null,
     addLibraryFolder: () =>
       scenario.skipped === "types"
         ? {

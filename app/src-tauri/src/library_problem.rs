@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use omnileaf_engine::LibraryError;
+use omnileaf_engine::{HomeArrival, LibraryError};
 use serde::Serialize;
 use specta::Type;
 
@@ -26,6 +26,7 @@ impl LibraryProblem {
 
 pub(crate) struct LibraryAtLaunch {
     pub(crate) problem: Option<LibraryProblem>,
+    pub(crate) home_arrival: Option<HomeArrival>,
 }
 
 #[cfg(test)]
