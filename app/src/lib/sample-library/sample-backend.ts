@@ -1330,6 +1330,13 @@ export function sampleBackend(
       }
       return null;
     },
+    hideFilesLike: () => {
+      throw failure(
+        "fileTypeRead",
+        "the sample library reads every file in it",
+      );
+    },
+    showFileType: () => null,
     bookmarkPages: (id, pages, isBookmarked) => {
       const kept = bookmarks.get(id) ?? new Set<number>();
       for (const page of pages) {

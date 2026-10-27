@@ -48,6 +48,8 @@ export const commands = {
 	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
 } | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
+	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
+	showFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("show_file_type", { fileType })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
@@ -291,6 +293,8 @@ export type FileChanges = {
 	unreadableFolders: number,
 };
 
+export type FileType = string;
+
 export type FolderKind = "home" | "linked";
 
 export type FolderPage = {
@@ -386,7 +390,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],

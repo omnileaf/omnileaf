@@ -17,6 +17,7 @@ const SHOWN_ON_FAILURE = {
   bookNotFound: MISSING,
   bookUnreadable: UNREADABLE,
   bookTypeUnsupported: UNREADABLE,
+  fileTypeRead: FAILED,
   folderPickerUnavailable: FAILED,
   folderChooserMissing: FAILED,
   folderUnreadable: FAILED,
