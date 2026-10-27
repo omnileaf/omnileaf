@@ -513,6 +513,46 @@ fn reads_no_bare_number_from_a_tag() {
     assert_eq!(number, None);
 }
 
+fn number_after_volume_of(name: &str) -> Option<NumberRange> {
+    read_book_name(name, SERIES_TITLE).number_after_volume
+}
+
+#[test]
+fn reads_the_first_standalone_number_after_the_volume_marker() {
+    let numbers = [
+        "Sample Series 04 v01 003",
+        "Sample Series 04 Vol. 1 Sample Story 003",
+        "Sample Series 04 v01-02 003 004",
+        "Sample Series 04 v01 [GroupName] 003",
+        "Sample Series 04 v01 v02 003",
+    ]
+    .map(number_after_volume_of);
+
+    assert_eq!(numbers, [single("3"); 5]);
+}
+
+#[test]
+fn reads_a_range_after_the_volume_marker() {
+    let number = number_after_volume_of("Sample Series 04 v01 003-005");
+
+    assert_eq!(number, range("3", "5"));
+}
+
+#[test]
+fn reads_no_number_after_the_volume_marker_from_before_it_a_tag_or_a_word() {
+    let numbers = [
+        "Sample Series 04 v01",
+        "Sample Series 04 003 v01",
+        "Sample Series 04 v01 [003]",
+        "Sample Series 04 v01 3rd",
+        "Sample Series 04 003",
+        "Sample Series 04 c003 004",
+    ]
+    .map(number_after_volume_of);
+
+    assert_eq!(numbers, [None; 6]);
+}
+
 fn volume_folder_of(name: &str) -> Option<NumberRange> {
     read_volume_folder_name(name, "Sample Series 04")
 }

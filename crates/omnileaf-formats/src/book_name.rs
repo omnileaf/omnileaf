@@ -8,7 +8,7 @@ mod scan;
 mod tags;
 mod title;
 
-use bare_number::{end_of_series_title, read_bare_number};
+use bare_number::{end_of_series_title, read_bare_number, read_bare_number_from};
 pub use language::LanguageTag;
 use markers::{Markers, read_only_volume_markers};
 pub use number::{Number, NumberRange};
@@ -24,6 +24,7 @@ pub struct BookName {
     pub volume: Option<NumberRange>,
     pub chapter: Option<NumberRange>,
     pub number: Option<NumberRange>,
+    pub number_after_volume: Option<NumberRange>,
     pub language: Option<LanguageTag>,
 }
 
@@ -45,6 +46,7 @@ pub fn read_book_name(name: &str, series_title: Option<&str>) -> BookName {
         volume: numbers.volume,
         chapter: numbers.chapter,
         number: numbers.number,
+        number_after_volume: numbers.number_after_volume,
         language: tags(name).find_map(LanguageTag::parse),
     }
 }
@@ -54,6 +56,7 @@ struct Numbers {
     volume: Option<NumberRange>,
     chapter: Option<NumberRange>,
     number: Option<NumberRange>,
+    number_after_volume: Option<NumberRange>,
 }
 
 impl Numbers {
@@ -68,6 +71,7 @@ impl Numbers {
             } else {
                 read_bare_number(title, series_title)
             },
+            number_after_volume: volume.and_then(|volume| read_bare_number_from(title, volume.end)),
         }
     }
 }
