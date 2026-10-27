@@ -210,6 +210,18 @@ async fn counts_a_damaged_file_of_a_hidden_type_as_unreadable() {
 }
 
 #[tokio::test]
+async fn lists_no_file_of_a_hidden_type_among_those_a_scan_skips() {
+    let hiding = Hiding::new("hide-skipped").await;
+    hiding.hide_like("v02").await;
+    let later = ScratchFolder::new("hide-skipped-later");
+    later.write("Sample Series 02/v01.cbr", RAR_SIGNATURE);
+
+    let scan = hiding.add_later(&later).await;
+
+    assert_eq!(scan.skipped_types, []);
+}
+
+#[tokio::test]
 async fn counts_unreadable_files_of_a_type_shown_again() {
     let hiding = Hiding::new("hide-undone").await;
     hiding.write_rar("v03.cbr");
@@ -224,6 +236,50 @@ async fn counts_unreadable_files_of_a_type_shown_again() {
             unsupported_books: 1,
             ..FileChanges::default()
         })
+    );
+}
+
+#[tokio::test]
+async fn hides_a_file_type_a_scan_skipped_so_rescans_skip_its_files_no_more() {
+    let comics = ScratchFolder::new("hide-skipped-type");
+    write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
+    comics.write(&format!("{SERIES}/v02.cbr"), RAR_SIGNATURE);
+    let (scanned, scan, _) = Scanned::folder("hide-skipped-type", comics.path()).await;
+    let skipped = scan.skipped_types.first().unwrap().file_type.clone();
+
+    scanned.library.hide_file_type(skipped).await.unwrap();
+    let rescan = scanned
+        .library
+        .rescan_folder(scanned.id, |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (rescan.outcome, rescan.skipped_types),
+        (RescanOutcome::Rescanned(FileChanges::default()), Vec::new())
+    );
+}
+
+#[tokio::test]
+async fn hides_plain_rar_files_as_a_type_the_app_does_not_read() {
+    let hiding = Hiding::new("hide-type-rar").await;
+    let rar = FileType::try_from("rar".to_owned()).unwrap();
+
+    let hidden = hiding.library().hide_file_type(rar).await;
+
+    assert!(hidden.is_ok(), "{hidden:?}");
+}
+
+#[tokio::test]
+async fn refuses_to_hide_a_file_type_the_app_reads() {
+    let hiding = Hiding::new("hide-type-read").await;
+    let read = FileType::try_from("cbz".to_owned()).unwrap();
+
+    let hidden = hiding.library().hide_file_type(read.clone()).await;
+
+    assert!(
+        matches!(&hidden, Err(LibraryError::ReadTypeKept { file_type }) if *file_type == read),
+        "{hidden:?}"
     );
 }
 

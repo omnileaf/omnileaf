@@ -23,7 +23,8 @@ use omnileaf_db::{
     store::{ReadingState, Store, reading_state},
 };
 use omnileaf_engine::{
-    FileChanges, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
+    FileChanges, FileType, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
+    SkippedType,
 };
 use omnileaf_sync_proto::BookId;
 use scanned::{Scanned, owned, whole_page};
@@ -35,6 +36,7 @@ const SERIES_03: &str = "Sample Series 03";
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const DATABASE_FILE: &str = "library.sqlite";
 const COMIC_INFO: &str = "<ComicInfo><Summary>A sample summary.</Summary></ComicInfo>";
+const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 
 struct Rescanned {
     scanned: Scanned,
@@ -506,6 +508,54 @@ async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
             ..FileChanges::default()
         })
     );
+}
+
+#[tokio::test]
+async fn counts_a_new_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
+    let folder = Rescanned::new("rescan-cbz-holding-rar").await;
+    fs::write(folder.path("Sample Series 01/v03.cbz"), RAR_SIGNATURE).unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            unreadable_books: 1,
+            ..FileChanges::default()
+        })
+    );
+}
+
+fn skipped_cbr_in_series_01(name: &str) -> SkippedType {
+    SkippedType {
+        file_type: FileType::try_from("cbr".to_owned()).unwrap(),
+        files: 1,
+        first_locations: vec![Path::new(SERIES_01).join(name).display().to_string()],
+    }
+}
+
+#[tokio::test]
+async fn lists_a_new_file_it_skips_for_a_type_the_app_does_not_read() {
+    let folder = Rescanned::new("rescan-skipped").await;
+    fs::write(folder.path("Sample Series 01/v03.cbr"), RAR_SIGNATURE).unwrap();
+
+    let (rescan, _) = folder.rescan().await;
+
+    assert_eq!(rescan.skipped_types, [skipped_cbr_in_series_01("v03.cbr")]);
+}
+
+#[tokio::test]
+async fn lists_a_file_it_skips_for_its_type_again_on_every_rescan() {
+    let comics = ScratchFolder::new("rescan-skipped-again");
+    write_book(&comics.path().join(SERIES_01).join("v01.cbz"), 1);
+    comics.write(&format!("{SERIES_01}/v02.cbr"), RAR_SIGNATURE);
+    let (scanned, _, _) = Scanned::folder("rescan-skipped-again", comics.path()).await;
+    let library = &scanned.library;
+    library.rescan_folder(scanned.id, |_| {}).await.unwrap();
+
+    let again = library.rescan_folder(scanned.id, |_| {}).await.unwrap();
+
+    assert_eq!(again.skipped_types, [skipped_cbr_in_series_01("v02.cbr")]);
 }
 
 #[tokio::test]

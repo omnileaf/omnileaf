@@ -6,6 +6,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   test,
 } from "./fixtures.ts";
 import {
@@ -127,12 +128,7 @@ test.describe("with a library of many series", () => {
       seriesList(page).getByText("Sample Series 0001"),
     ).toBeVisible();
 
-    await page.evaluate(
-      () =>
-        new Promise((painted) => {
-          requestAnimationFrame(() => requestAnimationFrame(painted));
-        }),
-    );
+    await framesPassed(page);
 
     expect(pagesAsked).toBe(PAGES_A_SCREEN_NEEDS);
   });

@@ -15,6 +15,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  framesPassed,
   MEDIUM_MIN_WIDTH,
   onPlatform,
   sidewaysOverflow,
@@ -170,16 +171,16 @@ function shown(page: Page, name: string): Locator {
     .getByRole("radio", { name, exact: true });
 }
 
-function edgesMissedWithin(
+async function edgesMissedWithin(
   segment: Locator,
   target: number,
 ): Promise<string[]> {
+  await segment.evaluate((element) => {
+    element.scrollIntoView({ block: "center" });
+  });
+  await framesPassed(segment.page());
   return segment.evaluate(
-    async (element, reach) => {
-      element.scrollIntoView({ block: "center" });
-      await new Promise((settled) =>
-        requestAnimationFrame(() => requestAnimationFrame(settled)),
-      );
+    (element, reach) => {
       const box = element.getBoundingClientRect();
       const centreX = box.left + box.width / 2;
       const centreY = box.top + box.height / 2;
@@ -1482,19 +1483,20 @@ test.describe("on Android", () => {
     await pickBooks(page, 4);
     const barTop = (await boxOf(selectedBooks(page))).y;
 
-    const touched = await shown(page, "All").evaluate(async (segment, top) => {
+    const all = shown(page, "All");
+    await all.evaluate((segment, top) => {
       segment.closest("main")?.scrollBy({
         top: segment.getBoundingClientRect().top - top - 1,
       });
-      await new Promise((settled) =>
-        requestAnimationFrame(() => requestAnimationFrame(settled)),
-      );
+    }, barTop);
+    await framesPassed(page);
+    const touched = await all.evaluate((segment) => {
       const box = segment.getBoundingClientRect();
       return document
         .elementFromPoint(box.left + box.width / 2, box.top + 1)
         ?.closest("[role=group]")
         ?.getAttribute("aria-label");
-    }, barTop);
+    });
 
     expect(touched).toBe("Selected books");
   });

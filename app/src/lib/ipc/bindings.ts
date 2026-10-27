@@ -14,6 +14,7 @@ export const commands = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+	skippedTypes?: SkippedType[],
 } | null, IpcError>(__TAURI_INVOKE("add_library_folder", { onProgress })),
 	linkLibraryFolder: (folder: string, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("link_library_folder", { folder, onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
@@ -51,6 +52,7 @@ export const commands = {
 	seriesTitle: string,
 } | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
+	hideFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("hide_file_type", { fileType })),
 	showFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("show_file_type", { fileType })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
@@ -103,6 +105,7 @@ export const commands = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
 	outcome: RescanOutcome,
+	skippedTypes?: SkippedType[],
 } | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
 	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
 	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
@@ -312,6 +315,7 @@ export type FolderRescan = {
 	id: string & { readonly __brand: "FolderId" },
 	name: string,
 	outcome: RescanOutcome,
+	skippedTypes?: SkippedType[],
 };
 
 export type FolderScan = {
@@ -321,6 +325,7 @@ export type FolderScan = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+	skippedTypes?: SkippedType[],
 };
 
 export type FoundLibrary = {
@@ -746,6 +751,12 @@ export type SeriesPerson = {
 };
 
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";
+
+export type SkippedType = {
+	fileType: FileType,
+	files: number,
+	firstLocations: string[],
+};
 
 export type SmartFilter = 
 /**  Under 30 minutes left, at the reader's own reading speed. */

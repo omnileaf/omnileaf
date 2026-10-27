@@ -12,7 +12,7 @@ use specta::Type;
 use tokio::task::spawn_blocking;
 
 use crate::{
-    FolderId, LibraryError, ScanProgress,
+    FolderId, LibraryError, ScanProgress, SkippedType,
     library_layout::Layout,
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
     scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
@@ -24,6 +24,8 @@ pub struct FolderRescan {
     pub id: FolderId,
     pub name: String,
     pub outcome: RescanOutcome,
+    #[specta(optional)]
+    pub skipped_types: Vec<SkippedType>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -46,27 +48,47 @@ pub struct FileChanges {
     pub unreadable_folders: u32,
 }
 
+pub(crate) struct Rescan {
+    pub(crate) outcome: RescanOutcome,
+    pub(crate) skipped_types: Vec<SkippedType>,
+}
+
+impl From<RescanOutcome> for Rescan {
+    fn from(outcome: RescanOutcome) -> Self {
+        Self {
+            outcome,
+            skipped_types: Vec::new(),
+        }
+    }
+}
+
 pub(crate) async fn rescan(
     store: &Store,
     target: Target,
     layout: Layout,
     on_progress: impl FnMut(ScanProgress) + Send,
-) -> Result<RescanOutcome, LibraryError> {
+) -> Result<Rescan, LibraryError> {
     let database = store.database();
     let root = target.root;
     let stored = database
         .read(move |connection| root_files(connection, root))
         .await?;
     if looks_unplugged(target.kind, &layout, &stored) {
-        return Ok(RescanOutcome::FoundEmpty);
+        return Ok(RescanOutcome::FoundEmpty.into());
     }
     let planning = target.clone();
     let (mut plan, to_read) = spawn_blocking(move || Plan::new(&planning, layout, stored)).await?;
     record_changed(database, &target, &mut plan, to_read, on_progress).await?;
-    let (changes, forgetting) = plan.finish();
-    carry_reading_states(store, forgetting.replaced.clone()).await?;
-    let removed = forget(database, root, forgetting).await?;
-    Ok(RescanOutcome::Rescanned(FileChanges { removed, ..changes }))
+    let finished = plan.finish();
+    carry_reading_states(store, finished.forgetting.replaced.clone()).await?;
+    let removed = forget(database, root, finished.forgetting).await?;
+    Ok(Rescan {
+        outcome: RescanOutcome::Rescanned(FileChanges {
+            removed,
+            ..finished.changes
+        }),
+        skipped_types: finished.skipped_types,
+    })
 }
 
 /// An unmounted drive or share leaves an empty mount point, which the home folder holding the open library can never be.

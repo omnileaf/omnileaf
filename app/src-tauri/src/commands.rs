@@ -82,6 +82,7 @@ macro_rules! app_commands {
             bookmark_pages,
             book_place,
             hide_files_like,
+            hide_file_type,
             show_file_type,
             mark_books,
             mark_series_read,
@@ -618,6 +619,12 @@ async fn book_place(
 #[specta::specta]
 async fn hide_files_like(library: State<'_, Library>, book: BookId) -> Result<FileType, IpcError> {
     Ok(library.hide_files_like(book).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn hide_file_type(library: State<'_, Library>, file_type: FileType) -> Result<(), IpcError> {
+    Ok(library.hide_file_type(file_type).await?)
 }
 
 #[tauri::command]
