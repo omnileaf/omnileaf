@@ -19,6 +19,8 @@ export const commands = {
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
+	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
+	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
 	librarySeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_series", { after, listing })),
 	librarySeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("library_series_count", { filter })),
@@ -566,6 +568,8 @@ export type PageDimensions = {
 	width: number,
 	height: number,
 };
+
+export type PageTurn = "previous" | "next";
 
 export type Platform = "android" | "ios" | "macos" | "windows" | "linux";
 
