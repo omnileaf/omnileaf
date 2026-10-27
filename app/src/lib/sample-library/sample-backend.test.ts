@@ -1113,7 +1113,7 @@ test("gives a series' details as its files say, with nothing edited", async () =
   const details = await backend.seriesDetails(sampleSeriesId(4));
 
   expect(details).toEqual({
-    title: { fromFile: "Sample Series 04", edited: null },
+    title: { fromFile: "Sample Series 04", source: "folderName", edited: null },
     people: {
       fromFile: [{ name: "Author A", role: "storyAndArt" }],
       edited: null,
@@ -1127,6 +1127,8 @@ test("gives a series' details as its files say, with nothing edited", async () =
         "A lighthouse keeper’s apprentice spends a winter at the harbour gate, writing letters to a sister across the northern sea.",
       edited: null,
     },
+    year: { fromFile: 2008, source: "files" },
+    language: { fromFile: "ja", source: "fileName" },
     isMarkedAdult: false,
     isRatedAdult: false,
   });
@@ -1161,7 +1163,11 @@ test("shows the edited details over the files' everywhere the series appears", a
     tags: ["Seinen"],
     summary: "Letters across the sea.",
     listed: ["The Harbour Gate", true],
-    edited: { fromFile: "Sample Series 04", edited: "The Harbour Gate" },
+    edited: {
+      fromFile: "Sample Series 04",
+      source: "folderName",
+      edited: "The Harbour Gate",
+    },
   });
 });
 

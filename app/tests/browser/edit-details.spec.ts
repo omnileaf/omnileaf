@@ -18,7 +18,7 @@ type WireEdits = Parameters<FakeBackend["editSeriesDetails"]>[1];
 const FILE_TITLE = SERIES_TITLE;
 const TYPED_TITLE = "The Harbour Gate";
 const FROM_FILES = {
-  title: { fromFile: FILE_TITLE, edited: null },
+  title: { fromFile: FILE_TITLE, source: "folderName", edited: null },
   people: {
     fromFile: [
       { name: "Author A", role: "story" },
@@ -32,6 +32,8 @@ const FROM_FILES = {
       "A lighthouse keeper’s apprentice spends every winter writing letters to a sister across the northern sea.",
     edited: null,
   },
+  year: null,
+  language: null,
   isMarkedAdult: false,
   isRatedAdult: false,
 } satisfies SeriesDetails;
@@ -221,7 +223,7 @@ test("says the details are saved, and Undo puts back what they were", async ({
 test("puts the title back to the file's, with Undo", async ({ page }) => {
   details = {
     ...FROM_FILES,
-    title: { fromFile: FILE_TITLE, edited: TYPED_TITLE },
+    title: { fromFile: FILE_TITLE, source: "folderName", edited: TYPED_TITLE },
   };
   const shown = await openEditor(page);
   const title = shown.getByRole("textbox", { name: "Title" });
@@ -240,7 +242,7 @@ test("lets an emptied title fall back to the file's, greyed in the field", async
 }) => {
   details = {
     ...FROM_FILES,
-    title: { fromFile: FILE_TITLE, edited: TYPED_TITLE },
+    title: { fromFile: FILE_TITLE, source: "folderName", edited: TYPED_TITLE },
   };
   const shown = await openEditor(page);
   const title = shown.getByRole("textbox", { name: "Title" });

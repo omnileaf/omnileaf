@@ -78,6 +78,7 @@ mod skipped_types;
 mod storage_use;
 mod unread_books;
 mod utc_offset;
+mod value_source;
 mod version_details;
 mod windows_share;
 
@@ -164,6 +165,7 @@ pub use saved_report::{SavedPlace, SavedProblemReport, folder_shown};
 pub use scan::{FolderScan, ScanProgress};
 pub use series_details::{
     DetailEdits, EditedPeople, EditedSummary, EditedTags, EditedTitle, SeriesDetails, SeriesPerson,
+    SourcedLanguage, SourcedYear,
 };
 pub use series_overview::{
     CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
@@ -171,6 +173,7 @@ pub use series_overview::{
 pub use skipped_types::SkippedType;
 pub use storage_use::{CacheSizes, LOW_SPACE_BYTES, StorageUse, VolumeSpace, database_bytes};
 pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};
+pub use value_source::ValueSource;
 pub use version_details::{BuildProfile, VersionDetails};
 pub use windows_share::unreachable_windows_share;
 
