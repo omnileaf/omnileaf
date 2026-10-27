@@ -3,7 +3,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { afterEach, beforeAll, beforeEach, expect, inject, test } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, test } from "vitest";
 
 import {
   FINISHED_SCAN_REPORT,
@@ -11,6 +11,7 @@ import {
   openLibraryPage,
   useAppSession,
 } from "./app-session.ts";
+import { capability } from "./ios-app-data.ts";
 import { SAMPLE_LIBRARY, writeSampleLibrary } from "./sample-library.ts";
 import { type Session, xpath } from "./webdriver.ts";
 
@@ -55,14 +56,6 @@ const SCAN_REPORT = `Added ${String(SAMPLE_LIBRARY.books)} books from ${SAMPLE_L
 const run = promisify(execFile);
 
 const appSession = useAppSession();
-
-function capability(name: string): string {
-  const value = inject("appUnderTest").capabilities[name];
-  if (typeof value !== "string") {
-    throw new Error(`the iOS session has no ${name}`);
-  }
-  return value;
-}
 
 /** Finds where the Simulator keeps On My iPhone, which the Files app only lists as a group container. */
 async function onMyDeviceFolder(): Promise<string> {
