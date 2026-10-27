@@ -21,7 +21,7 @@ use std::{
 };
 
 use books::write_book_with;
-use omnileaf_db::rusqlite::types::Value;
+use omnileaf_db::rusqlite::{Connection, types::Value};
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
 
@@ -56,6 +56,10 @@ impl ScannedComics {
 
     fn remove(&self, book: &str) {
         fs::remove_file(self.comics.path().join(book)).unwrap();
+    }
+
+    fn writer(&self) -> Connection {
+        Connection::open(self.scanned.home.path().join("library.sqlite")).unwrap()
     }
 
     async fn rescan(&self) {
@@ -350,5 +354,62 @@ async fn keeps_a_joined_folder_joined_while_a_volume_folder_in_it_holds_books() 
 
     comics.rescan().await;
 
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn files_a_new_book_without_a_series_in_the_series_its_folder_joined() {
+    let comics = ScannedComics::new(
+        "comic-info-join-kept",
+        &[(
+            "Sample Series 02/v01.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+        )],
+    )
+    .await;
+    comics.rewrite("Sample Series 02/v03.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn joins_the_folders_of_a_library_kept_from_before_folders_were_joined_on_its_next_rescan() {
+    let comics = ScannedComics::new(
+        "comic-info-join-upgrade",
+        &[
+            (
+                "Author A/Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            (
+                "Author B/Sample Series 02/v02.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+        ],
+    )
+    .await;
+    comics
+        .writer()
+        .execute_batch(
+            "DELETE FROM series_folder;
+            DELETE FROM book_details;
+            UPDATE book SET series_local_id = (
+                SELECT local_id FROM series WHERE natural_key LIKE '%/author a/sample series 02'
+            ) WHERE title = 'v01';
+            UPDATE book SET series_local_id = (
+                SELECT local_id FROM series WHERE natural_key LIKE '%/author b/sample series 02'
+            ) WHERE title = 'v02';",
+        )
+        .unwrap();
+    let kept = comics.scanned.series();
+
+    comics.rescan().await;
+
+    assert_eq!(
+        kept,
+        owned(&[("Sample Series 02", 1), ("Sample Series 02", 1)])
+    );
     assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
 }
