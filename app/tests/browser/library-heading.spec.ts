@@ -73,7 +73,6 @@ function headingOf(page: Page): Locator {
     .filter({ has: page.getByRole("heading", { level: 1 }) });
 }
 
-/** The heading, or on iOS phones the title bar above it, whichever holds the heading's buttons. */
 const PHONE_CONTROLS = 4;
 const IPHONE_CONTROLS = 2;
 const DESKTOP_CONTROLS = 3;
@@ -88,7 +87,7 @@ function controlsShownOn(testInfo: TestInfo, platform: Platform): number {
     : phoneControlsOn(platform);
 }
 
-function buttonsOf(page: Page): Locator {
+function buttonHolderOf(page: Page): Locator {
   return page
     .getByRole("main")
     .locator("header:has(h1), [data-title-bar]")
@@ -139,8 +138,7 @@ interface HeadingParts {
   readonly controls: readonly (readonly [string, Box])[];
 }
 
-/** Measures the heading's parts in one round trip, then lets two frames pass before answering, so a refit due when it measured, which waits a frame, has run before the next measure. */
-async function measureHeading(
+async function measureHeadingThenLetItRefit(
   page: Page,
   messages: typeof english,
 ): Promise<HeadingParts> {
@@ -149,7 +147,7 @@ async function measureHeading(
     .getByRole("heading", { level: 1 })
     .or(countOf(page))
     .or(heading.getByText(messages.screenshot_mode_title, { exact: true }))
-    .or(controlsOf(buttonsOf(page)));
+    .or(controlsOf(buttonHolderOf(page)));
   const measured = await parts.evaluateAll(async (elements) => {
     const found = elements.map((element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
@@ -185,7 +183,6 @@ async function measureHeading(
   };
 }
 
-/** Measures the heading once it has settled: its fonts loaded, and no refit left to run between two measures. */
 async function settledHeading(
   page: Page,
   messages: typeof english = english,
@@ -194,11 +191,11 @@ async function settledHeading(
   await expect(
     headingOf(page).getByRole("heading", { level: 1 }),
   ).toBeVisible();
-  let measured = await measureHeading(page, messages);
+  let measured = await measureHeadingThenLetItRefit(page, messages);
   await expect
     .poll(
       async () => {
-        const again = await measureHeading(page, messages);
+        const again = await measureHeadingThenLetItRefit(page, messages);
         const isSettled = isDeepStrictEqual(again, measured);
         measured = again;
         return isSettled;
@@ -276,7 +273,7 @@ for (const platform of PLATFORMS) {
               { language, screenshotMode },
             );
             await page.goto("/");
-            await expect(controlsOf(buttonsOf(page))).toHaveCount(
+            await expect(controlsOf(buttonHolderOf(page))).toHaveCount(
               library === "empty" ? 0 : controlsShownOn(testInfo, platform),
             );
             if (library === "filled") {
@@ -344,7 +341,7 @@ for (const platform of PLATFORMS) {
               "phone widths only",
             );
             await openAt(page, width, screenshotMode);
-            await expect(controlsOf(buttonsOf(page))).toHaveCount(
+            await expect(controlsOf(buttonHolderOf(page))).toHaveCount(
               library === "empty" ? 0 : phoneControlsOn(platform),
             );
 
@@ -546,7 +543,7 @@ for (const platform of PLATFORMS) {
     }, testInfo) => {
       test.skip(!testInfo.project.name.endsWith("phone"), "phone widths only");
       await page.goto("/");
-      const heading = buttonsOf(page);
+      const heading = buttonHolderOf(page);
       const folded = await foldsIntoMore(page);
       const named = [
         ...(folded
@@ -601,7 +598,7 @@ for (const platform of PLATFORMS) {
         await page.goto("/");
         await expect(countOf(page)).toBeVisible();
 
-        const heading = buttonsOf(page);
+        const heading = buttonHolderOf(page);
 
         if (await foldsIntoMore(page)) {
           await heading
