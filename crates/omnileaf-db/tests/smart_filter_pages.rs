@@ -10,17 +10,18 @@
 mod store_support;
 mod support;
 
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
 
 use omnileaf_db::{
+    Error,
     catalog::{
         BookDetails, BookFile, Cursor, Inclusion, NewRoot, NewSeries, PageRequest, PageSize,
         RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, add_root, record_scanned_books, series_page,
+        SeriesSort, SeriesSummary, add_root, record_scanned_books, series_page,
     },
-    store::{Continuity, SessionPlace, Store},
+    store::{Continuity, SessionPlace, Store, Writer},
 };
-use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store};
 use support::ScratchFolder;
 
@@ -31,7 +32,12 @@ const PAGE_COUNT: u32 = 24;
 const UTC: i16 = 0;
 const SHORT_SHELF: u32 = 12;
 const LONG_SHELF: u32 = 600;
+const MIXED_SHELF: u32 = 60;
 const EVERY_SIXTH: u32 = 6;
+const EVERY_THIRD_READ_LONG_AGO: u32 = 3;
+const EVERY_NINTH_FINISHED: u32 = 9;
+const EVERY_FIFTH_READ_LATELY: u32 = 5;
+const EVERY_FOURTH_COPIED: u32 = 4;
 const PAGE_OF_TWO: u16 = 2;
 const PAGE_OF_THREE: u16 = 3;
 const PAGE_OF_TWO_HUNDRED: u16 = 200;
@@ -43,6 +49,14 @@ const DUPLICATED: SeriesFilter = SeriesFilter {
     duplicates: Inclusion::Only,
     ..SeriesFilter::NONE
 };
+const ORDERS: [SeriesOrder; 6] = [
+    SeriesOrder::Title,
+    SeriesOrder::DateAdded,
+    SeriesOrder::LastRead,
+    SeriesOrder::LastUpdated,
+    SeriesOrder::UnreadCount,
+    SeriesOrder::TimeLeft,
+];
 
 struct Shelf {
     store: Store,
@@ -91,25 +105,77 @@ impl Shelf {
 
     async fn read(&self, numbers: impl Iterator<Item = u32>, minutes_later: u64) {
         self.clock.set(NOW_UNIX_MS + minutes_later * MINUTE_MS);
-        let places: Vec<SessionPlace> = numbers
-            .map(|number| SessionPlace {
-                book: book(number),
+        self.write_each_book(numbers, |writer, book| {
+            let place = SessionPlace {
+                book,
                 page: 1,
                 page_count: PAGE_COUNT,
                 utc_offset_minutes: UTC,
-            })
-            .collect();
+            };
+            writer.record_reading(&place, Continuity::AfterBreak)
+        })
+        .await;
+    }
+
+    async fn start(&self, numbers: impl Iterator<Item = u32>) {
+        self.write_each_book(numbers, |writer, book| writer.set_position(book, 1))
+            .await;
+    }
+
+    async fn finish(&self, numbers: impl Iterator<Item = u32>) {
+        self.write_each_book(numbers, |writer, book| writer.set_read(book, true))
+            .await;
+    }
+
+    async fn write_each_book(
+        &self,
+        numbers: impl Iterator<Item = u32>,
+        write: impl Fn(&mut Writer<'_>, BookId) -> Result<(), Error> + Send + 'static,
+    ) {
+        let books: Vec<BookId> = numbers.map(book).collect();
         self.store
-            .write(move |writer| {
-                places
-                    .iter()
-                    .try_for_each(|place| writer.record_reading(place, Continuity::AfterBreak))
-            })
+            .write(move |writer| books.into_iter().try_for_each(|book| write(writer, book)))
             .await
             .unwrap();
     }
 
     async fn pages(&self, listing: SeriesListing, size: u16) -> Vec<Vec<String>> {
+        self.summary_pages(listing, size)
+            .await
+            .into_iter()
+            .map(|page| page.into_iter().map(|series| series.title).collect())
+            .collect()
+    }
+
+    async fn listed_series(&self, listing: SeriesListing, size: u16) -> Vec<SeriesSummary> {
+        self.summary_pages(listing, size)
+            .await
+            .into_iter()
+            .flatten()
+            .collect()
+    }
+
+    async fn listed_by_each_stage_in_order(
+        &self,
+        listing: SeriesListing,
+        matching: &BTreeSet<String>,
+    ) -> Vec<SeriesSummary> {
+        let without_smart_conditions = SeriesListing {
+            filter: SeriesFilter {
+                last_read_before_ms: None,
+                duplicates: Inclusion::Any,
+                ..listing.filter
+            },
+            ..listing
+        };
+        let mut series = self
+            .listed_series(without_smart_conditions, PAGE_OF_TWO_HUNDRED)
+            .await;
+        series.retain(|series| matching.contains(&series.title));
+        series
+    }
+
+    async fn summary_pages(&self, listing: SeriesListing, size: u16) -> Vec<Vec<SeriesSummary>> {
         let mut pages = Vec::new();
         let mut after: Option<Cursor> = None;
         loop {
@@ -123,7 +189,7 @@ impl Shelf {
                 .read(move |connection| series_page(connection, &listing, &request))
                 .await
                 .unwrap();
-            pages.push(page.items.into_iter().map(|series| series.title).collect());
+            pages.push(page.items);
             let Some(next) = page.next else {
                 return pages;
             };
@@ -173,16 +239,22 @@ fn pages_of(numbers: &[u32], size: usize) -> Vec<Vec<String>> {
         .collect()
 }
 
-fn every_sixth(count: u32) -> Vec<u32> {
-    (0..count)
-        .filter(|number| number.is_multiple_of(EVERY_SIXTH))
-        .collect()
+fn multiples_of(step: u32, count: u32) -> impl Iterator<Item = u32> {
+    (0..count).filter(move |number| number.is_multiple_of(step))
 }
 
-fn all_but_every_sixth(count: u32) -> Vec<u32> {
-    (0..count)
-        .filter(|number| !number.is_multiple_of(EVERY_SIXTH))
-        .collect()
+fn titles_of(numbers: impl Iterator<Item = u32>) -> BTreeSet<String> {
+    numbers.map(series_name).collect()
+}
+
+fn every_sort() -> impl Iterator<Item = SeriesSort> {
+    ORDERS
+        .into_iter()
+        .flat_map(|order| [SeriesSort::ascending(order), SeriesSort::descending(order)])
+}
+
+fn all_but_multiples_of(step: u32, count: u32) -> impl Iterator<Item = u32> {
+    (0..count).filter(move |number| !number.is_multiple_of(step))
 }
 
 #[tokio::test]
@@ -203,10 +275,10 @@ async fn pages_the_few_forgotten_series_from_z_to_a() {
 #[tokio::test]
 async fn pages_hundreds_of_forgotten_series_from_a_to_z() {
     let shelf = Shelf::holding("many-forgotten-pages", LONG_SHELF).await;
-    let forgotten = all_but_every_sixth(LONG_SHELF);
+    let forgotten: Vec<u32> = all_but_multiples_of(EVERY_SIXTH, LONG_SHELF).collect();
     shelf.read(forgotten.iter().copied(), 0).await;
     shelf
-        .read(every_sixth(LONG_SHELF).into_iter(), READ_LATELY_MINUTES)
+        .read(multiples_of(EVERY_SIXTH, LONG_SHELF), READ_LATELY_MINUTES)
         .await;
     let listing = SeriesListing {
         sort: SeriesSort::ascending(SeriesOrder::Title),
@@ -235,7 +307,7 @@ async fn pages_the_few_series_holding_a_book_stored_twice_by_latest_added() {
 #[tokio::test]
 async fn pages_hundreds_of_series_holding_a_book_stored_twice_by_earliest_added() {
     let shelf = Shelf::holding("many-duplicated-pages", LONG_SHELF).await;
-    let duplicated = all_but_every_sixth(LONG_SHELF);
+    let duplicated: Vec<u32> = all_but_multiples_of(EVERY_SIXTH, LONG_SHELF).collect();
     shelf.copy_into_backup(duplicated.iter().copied()).await;
     let listing = SeriesListing {
         sort: SeriesSort::ascending(SeriesOrder::DateAdded),
@@ -245,4 +317,67 @@ async fn pages_hundreds_of_series_holding_a_book_stored_twice_by_earliest_added(
     let pages = shelf.pages(listing, PAGE_OF_TWO_HUNDRED).await;
 
     assert_eq!(pages, pages_of(&duplicated, PAGE_OF_TWO_HUNDRED.into()));
+}
+
+#[tokio::test]
+async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_order_does_in_every_sort()
+ {
+    let shelf = Shelf::holding("few-matches-like-each-stage", MIXED_SHELF).await;
+    shelf
+        .read(multiples_of(EVERY_THIRD_READ_LONG_AGO, MIXED_SHELF), 0)
+        .await;
+    shelf.start(multiples_of(EVERY_SIXTH, MIXED_SHELF)).await;
+    shelf
+        .finish(multiples_of(EVERY_NINTH_FINISHED, MIXED_SHELF))
+        .await;
+    shelf
+        .read(
+            multiples_of(EVERY_FIFTH_READ_LATELY, MIXED_SHELF),
+            READ_LATELY_MINUTES,
+        )
+        .await;
+    shelf
+        .copy_into_backup(multiples_of(EVERY_FOURTH_COPIED, MIXED_SHELF))
+        .await;
+    let forgotten = titles_of(
+        multiples_of(EVERY_THIRD_READ_LONG_AGO, MIXED_SHELF)
+            .filter(|number| !number.is_multiple_of(EVERY_FIFTH_READ_LATELY)),
+    );
+    let duplicated = titles_of(multiples_of(EVERY_FOURTH_COPIED, MIXED_SHELF));
+    let forgotten_and_duplicated: BTreeSet<String> =
+        forgotten.intersection(&duplicated).cloned().collect();
+    let few_matches = [
+        (FORGOTTEN, &forgotten),
+        (
+            SeriesFilter {
+                finished: Inclusion::Hide,
+                ..FORGOTTEN
+            },
+            &forgotten,
+        ),
+        (DUPLICATED, &duplicated),
+        (
+            SeriesFilter {
+                started: Inclusion::Only,
+                ..DUPLICATED
+            },
+            &duplicated,
+        ),
+        (
+            SeriesFilter {
+                duplicates: Inclusion::Only,
+                ..FORGOTTEN
+            },
+            &forgotten_and_duplicated,
+        ),
+    ];
+
+    for sort in every_sort() {
+        for (filter, matching) in few_matches {
+            let listing = SeriesListing { sort, filter };
+            let listed = shelf.listed_series(listing, PAGE_OF_TWO).await;
+            let walked = shelf.listed_by_each_stage_in_order(listing, matching).await;
+            assert_eq!(listed, walked, "{listing:?}");
+        }
+    }
 }
