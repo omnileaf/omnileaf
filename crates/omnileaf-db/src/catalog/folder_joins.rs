@@ -16,9 +16,10 @@ const ADD_FOLDER: &str =
 const SERIES_OF_FOLDER: &str = "SELECT series.id
      FROM series_folder JOIN series ON series.local_id = series_folder.series_local_id
      WHERE series_folder.root_id = ?1 AND series_folder.location = ?2";
-const JOIN_FOLDER: &str = "UPDATE series_folder
-     SET series_local_id = (SELECT local_id FROM series WHERE id = ?3)
-     WHERE root_id = ?1 AND location = ?2";
+const JOIN_FOLDERS: &str = "UPDATE series_folder SET series_local_id = joined.local_id
+     FROM series AS joined, series AS left_behind
+     WHERE joined.id = ?1 AND left_behind.id = ?2
+         AND series_folder.series_local_id = left_behind.local_id";
 const MOVE_SERIES_BOOKS: &str = "UPDATE book SET series_local_id = joined.local_id
      FROM series AS joined, series AS left_behind
      WHERE joined.id = ?1 AND left_behind.id = ?2 AND book.series_local_id = left_behind.local_id";
@@ -41,7 +42,7 @@ impl<'t> FolderJoins<'t> {
         Ok(Self {
             add: transaction.prepare(ADD_FOLDER)?,
             series_of_folder: transaction.prepare(SERIES_OF_FOLDER)?,
-            join: transaction.prepare(JOIN_FOLDER)?,
+            join: transaction.prepare(JOIN_FOLDERS)?,
             move_books: transaction.prepare(MOVE_SERIES_BOOKS)?,
         })
     }
@@ -70,8 +71,7 @@ impl<'t> FolderJoins<'t> {
         let filed_in = match found.named_series {
             Some(named) if filed_in == own => {
                 series.add_or_rename(named, collation)?;
-                self.join
-                    .execute((found.root.0, &location, named.id().as_bytes()))?;
+                self.join.execute((named.id().as_bytes(), own.as_bytes()))?;
                 self.move_books
                     .execute((named.id().as_bytes(), own.as_bytes()))?;
                 named.id()
@@ -101,6 +101,22 @@ mod tests {
             [
                 "SEARCH series_folder USING INDEX sqlite_autoindex_series_folder_1 (root_id=? AND location=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn joins_the_folders_of_a_series_through_their_series_index() {
+        let scratch = ScratchLibrary::new("join-series-folders-plan");
+
+        let plan = scratch.query_plan(JOIN_FOLDERS);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH joined USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "SEARCH left_behind USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "SEARCH series_folder USING COVERING INDEX series_folder_by_series (series_local_id=?)",
             ]
         );
     }

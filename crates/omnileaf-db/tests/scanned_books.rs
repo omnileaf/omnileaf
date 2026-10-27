@@ -935,3 +935,29 @@ fn series_named(title: &str) -> NewSeries {
     };
     NewSeries::named("comics", naming, ADDED_AT_MS).unwrap()
 }
+
+#[tokio::test]
+async fn files_the_books_of_folders_whose_names_normalise_alike_in_the_series_one_of_them_joins() {
+    let library = Library::open("scanned-joined-folders-alike").await;
+    library
+        .record(library.found_in_folder("SAMPLE SERIES 02", "v02", 2))
+        .await;
+    library
+        .record(ScannedBook {
+            named_series: Some(series_named("Sample Series 07")),
+            ..library.found_in_folder("Sample Series 02", "v01", 1)
+        })
+        .await;
+
+    library
+        .record(library.found_in_folder("SAMPLE SERIES 02", "v03", 3))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("SAMPLE SERIES 02".to_owned(), 0),
+            ("Sample Series 07".to_owned(), 3)
+        ]
+    );
+}

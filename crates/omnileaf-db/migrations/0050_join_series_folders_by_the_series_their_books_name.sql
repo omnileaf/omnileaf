@@ -6,6 +6,8 @@ CREATE TABLE series_folder (
     PRIMARY KEY (root_id, location)
 ) STRICT;
 
+CREATE INDEX series_folder_by_series ON series_folder (series_local_id);
+
 DELETE FROM book_person;
 DELETE FROM book_tag;
 DELETE FROM book_details;
