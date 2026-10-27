@@ -68,6 +68,21 @@
       "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
     },
     {
+      "key": "series.named.v1",
+      "inputs": ["comics", "Sample Series 07"],
+      "id": "986885e8-ca27-869a-9bfa-a144c6e54aeb"
+    },
+    {
+      "key": "series.named.v1",
+      "inputs": ["comics", "  SAMPLE   series 07 "],
+      "id": "986885e8-ca27-869a-9bfa-a144c6e54aeb"
+    },
+    {
+      "key": "series.named.v1",
+      "inputs": ["books", "Sample Series 07"],
+      "id": "c3a2d541-2493-82f6-9161-6c244bd08546"
+    },
+    {
       "key": "category.v1",
       "input": "Sample Shelf",
       "id": "5841dbf8-d874-8252-9f51-22a8343420aa"

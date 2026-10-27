@@ -61,6 +61,11 @@ fn ids_match_the_golden_vectors() {
                     .unwrap()
                     .to_string()
             }
+            ("series.named.v1", None, Some([format_family, series_name])) => {
+                SeriesId::named(format_family, series_name)
+                    .unwrap()
+                    .to_string()
+            }
             ("category.v1", Some(input), None) => CategoryId::from_name(input).unwrap().to_string(),
             ("source.local.v1", None, None) => SourceId::local().to_string(),
             ("profile.default.v1", None, None) => ProfileId::default_profile().to_string(),

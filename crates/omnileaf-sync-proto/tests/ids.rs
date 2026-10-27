@@ -163,3 +163,33 @@ fn keeps_a_folder_named_with_a_fullwidth_solidus_apart_from_the_folders_it_reads
 
     assert_ne!(named, nested);
 }
+
+#[test]
+fn gives_series_named_alike_in_one_format_family_the_same_series_id() {
+    let id = SeriesId::named("comics", "Sample Series 07").unwrap();
+
+    let alike = SeriesId::named("comics", "  SAMPLE   series 07 ").unwrap();
+
+    assert_eq!(alike, id);
+}
+
+#[test]
+fn keeps_series_named_alike_in_two_format_families_apart() {
+    let comics = SeriesId::named("comics", "Sample Series 07").unwrap();
+
+    let books = SeriesId::named("books", "Sample Series 07").unwrap();
+
+    assert_ne!(comics, books);
+}
+
+#[test]
+fn keeps_a_named_series_apart_from_the_folder_and_the_series_named_like_it() {
+    let named = SeriesId::named("comics", "Sample Series 07").unwrap();
+
+    let others = [
+        SeriesId::local("Sample Series 07").unwrap(),
+        SeriesId::folder("comics", &["Sample Series 07"]).unwrap(),
+    ];
+
+    assert!(!others.contains(&named));
+}
