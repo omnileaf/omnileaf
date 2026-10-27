@@ -5,7 +5,7 @@ use super::{
 
 const DOT: u8 = b'.';
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 enum MarkerKind {
     Volume,
     Chapter,
@@ -39,6 +39,22 @@ impl MarkerWord {
             word,
             gap,
         }
+    }
+
+    fn read(&self, text: &str, at: usize) -> Option<Found<NumberRange>> {
+        let first = self.number_after(text, at)?;
+        Some(NumberRange::read_after(text, first, |last| {
+            self.number_after(text, last)
+                .or_else(|| marker_number(text, last))
+        }))
+    }
+
+    fn number_after(&self, text: &str, at: usize) -> Option<Found<Number>> {
+        let word_end = at + self.word.len();
+        if !text.get(at..word_end)?.eq_ignore_ascii_case(self.word) {
+            return None;
+        }
+        marker_number(text, self.gap.number_start(text, word_end))
     }
 }
 
@@ -96,24 +112,6 @@ fn marker_at(text: &str, at: usize) -> Option<(MarkerKind, Found<NumberRange>)> 
     MARKER_WORDS
         .iter()
         .find_map(|marker| Some((marker.kind, marker.read(text, at)?)))
-}
-
-impl MarkerWord {
-    fn read(&self, text: &str, at: usize) -> Option<Found<NumberRange>> {
-        let first = self.number_after(text, at)?;
-        Some(NumberRange::read_after(text, first, |last| {
-            self.number_after(text, last)
-                .or_else(|| marker_number(text, last))
-        }))
-    }
-
-    fn number_after(&self, text: &str, at: usize) -> Option<Found<Number>> {
-        let word_end = at + self.word.len();
-        if !text.get(at..word_end)?.eq_ignore_ascii_case(self.word) {
-            return None;
-        }
-        marker_number(text, self.gap.number_start(text, word_end))
-    }
 }
 
 impl GapBeforeNumber {
