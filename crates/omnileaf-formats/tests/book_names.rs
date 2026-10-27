@@ -352,6 +352,16 @@ fn reads_a_decimal_volume() {
 }
 
 #[test]
+fn reads_a_number_as_thousandths() {
+    let chapter = chapter_of("Sample Series 04 c012.5");
+
+    assert_eq!(
+        chapter.map(|chapter| chapter.first().thousandths()),
+        Some(12_500)
+    );
+}
+
+#[test]
 fn sorts_a_decimal_chapter_between_its_neighbours() {
     let chapters = ["c012", "c012.5", "c013"].map(|name| chapter_of(name).unwrap().first());
 
