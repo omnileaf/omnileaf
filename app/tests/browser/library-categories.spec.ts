@@ -897,6 +897,10 @@ test.describe("more categories than fit, before the strip is first measured", ()
   test.use({ backend: backendWith(MANY_CATEGORIES) });
 
   test.beforeEach(async ({ page }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "phones scroll their tabs",
+    );
     await page.addInitScript(() => {
       window.IntersectionObserver = class {
         observe(): void {}
