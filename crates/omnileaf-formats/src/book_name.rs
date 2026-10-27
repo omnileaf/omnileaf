@@ -8,9 +8,9 @@ mod scan;
 mod tags;
 mod title;
 
-use bare_number::read_bare_number;
+use bare_number::{end_of_series_title, read_bare_number};
 pub use language::LanguageTag;
-use markers::Markers;
+use markers::{Markers, read_only_volume_markers};
 pub use number::{Number, NumberRange};
 use tags::tags;
 use title::{Title, read_title};
@@ -70,6 +70,17 @@ impl Numbers {
             },
         }
     }
+}
+
+#[must_use]
+pub fn read_volume_folder_name(name: &str, series_title: &str) -> Option<NumberRange> {
+    let Title::Text(title) = read_title(name) else {
+        return None;
+    };
+    end_of_series_title(&title, series_title)
+        .and_then(|end| title.get(end..))
+        .and_then(read_only_volume_markers)
+        .or_else(|| read_only_volume_markers(&title))
 }
 
 #[must_use]

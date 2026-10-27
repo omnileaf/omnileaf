@@ -18,6 +18,7 @@ mod zip_book;
 pub use book::{Book, Damage, Page, open_book, open_book_in, open_book_with, salvage_book_in};
 pub use book_name::{
     BookName, LanguageTag, Number, NumberRange, SeriesName, read_book_name, read_series_name,
+    read_volume_folder_name,
 };
 pub use comic_info::{
     AgeRating, ComicInfo, ComicInfoError, PageInfo, PageKind, ReadingDirection, parse_comic_info,

@@ -14,7 +14,7 @@ pub(super) fn read_bare_number(title: &str, series_title: Option<&str>) -> Optio
     })
 }
 
-fn end_of_series_title(title: &str, series_title: &str) -> Option<usize> {
+pub(super) fn end_of_series_title(title: &str, series_title: &str) -> Option<usize> {
     let mut title_chars = title.char_indices();
     let mut end = 0;
     for series_char in squeezed(series_title.chars()) {

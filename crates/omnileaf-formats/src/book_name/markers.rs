@@ -108,6 +108,23 @@ impl Markers {
     }
 }
 
+pub(super) fn read_only_volume_markers(text: &str) -> Option<NumberRange> {
+    let mut first_volume = None;
+    let mut at = 0;
+    while let Some(character) = text.get(at..).and_then(|rest| rest.chars().next()) {
+        if !character.is_alphanumeric() {
+            at += character.len_utf8();
+            continue;
+        }
+        let Some((MarkerKind::Volume, found)) = marker_at(text, at) else {
+            return None;
+        };
+        first_volume.get_or_insert(found.value);
+        at = found.end;
+    }
+    first_volume
+}
+
 fn marker_at(text: &str, at: usize) -> Option<(MarkerKind, Found<NumberRange>)> {
     if byte_before(text, at).is_some_and(|byte| byte.is_ascii_alphabetic()) {
         return None;
