@@ -4,7 +4,7 @@ import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { expect, onPlatform, settle, test } from "./fixtures.ts";
+import { expect, framesPassed, onPlatform, settle, test } from "./fixtures.ts";
 import { goToStep } from "./first-launch-steps.ts";
 import {
   foldsIntoMore,
@@ -151,19 +151,6 @@ async function scaleText(page: Page, scale: number): Promise<void> {
   await addStyle(page, `:root { --text-scale: ${String(scale)} !important; }`);
 }
 
-function nextFrames(page: Page): Promise<void> {
-  return page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve();
-          });
-        });
-      }),
-  );
-}
-
 function segmentsOf(group: Locator): Promise<Segment[]> {
   return group.evaluate((track, overshoot) => {
     track.scrollIntoView({ block: "center" });
@@ -261,7 +248,7 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 await page.setViewportSize({ width, height: HEIGHT });
                 const group = await control.open(page, messages);
                 await expect(group).toBeVisible();
-                await nextFrames(page);
+                await framesPassed(page);
 
                 const segments = await segmentsOf(group);
                 const rows = rowsOf(segments);
@@ -270,7 +257,7 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                   .getByRole("radio", { checked: false })
                   .first()
                   .click();
-                await nextFrames(page);
+                await framesPassed(page);
                 const afterChoosing = await segmentsOf(group);
 
                 expect(segments.flatMap((segment) => segment.cutOff)).toEqual(
@@ -447,7 +434,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       });
 
       await pressViewOptions(page);
-      await nextFrames(page);
+      await framesPassed(page);
       for (const sweptWidth of [
         ...SWEEP_WIDTHS,
         ...[...SWEEP_WIDTHS].reverse(),

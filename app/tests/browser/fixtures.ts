@@ -359,21 +359,17 @@ async function drewTwoFramesWithin(
   }
 }
 
-/** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
 export async function framesPassed(page: Page): Promise<void> {
-  await page.evaluate(async (frameWaitMs) => {
-    const nextFrame = new Promise<void>((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          resolve();
-        });
-      });
-    });
-    const timer = new Promise<void>((resolve) => {
-      setTimeout(resolve, frameWaitMs);
-    });
-    await Promise.race([nextFrame, timer]);
-  }, FRAME_WAIT_MS);
+  if (!(await drewTwoFramesWithin(page, FRAME_LIMIT_MS))) {
+    throw new Error(
+      `the page drew no frame within ${String(FRAME_LIMIT_MS)} ms`,
+    );
+  }
+}
+
+/** Waits two frames, or a moment when none come, since headless WebKit can stop drawing frames while nothing asks for one. */
+export async function framesOrAMomentPassed(page: Page): Promise<void> {
+  await drewTwoFramesWithin(page, FRAME_WAIT_MS);
 }
 
 /** Headless WebKit can draw no frame after a resize until something asks for one, so the page would never hear its media queries change. */
@@ -391,7 +387,7 @@ function drawAfterEachResize(page: Page): void {
 
 /** Lists a part bits-ui still holds in its starting style as well, since no animation reports it until the frame its transition begins. */
 async function animationsWithin(locator: Locator): Promise<string[]> {
-  await framesPassed(locator.page());
+  await framesOrAMomentPassed(locator.page());
   return locator.evaluate((element) => [
     ...element.getAnimations({ subtree: true }).map((animation) => {
       const target =

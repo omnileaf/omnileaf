@@ -13,6 +13,7 @@ import {
 import {
   boxOf,
   expect,
+  framesPassed,
   onPlatform,
   settle,
   sidewaysOverflow,
@@ -148,8 +149,8 @@ async function measureHeadingThenLetItRefit(
     .or(countOf(page))
     .or(heading.getByText(messages.screenshot_mode_title, { exact: true }))
     .or(controlsOf(buttonHolderOf(page)));
-  const measured = await parts.evaluateAll(async (elements) => {
-    const found = elements.map((element) => {
+  const measured = await parts.evaluateAll((elements) =>
+    elements.map((element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
       const kind = element.matches("h1")
         ? "title"
@@ -161,12 +162,9 @@ async function measureHeadingThenLetItRefit(
       const name =
         element.getAttribute("aria-label") ?? element.textContent.trim();
       return { kind, name, box: { x, y, width, height } };
-    });
-    await new Promise((settled) =>
-      requestAnimationFrame(() => requestAnimationFrame(settled)),
-    );
-    return found;
-  });
+    }),
+  );
+  await framesPassed(page);
   const boxOfKind = (kind: string): Box | undefined =>
     measured.find((part) => part.kind === kind)?.box;
   const title = boxOfKind("title");
