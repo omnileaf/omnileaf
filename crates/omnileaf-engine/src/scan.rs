@@ -249,6 +249,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
         series,
         title,
         numbering,
+        language,
     } = place_book(&location, &linked_folder, FileNumbers::of(&details));
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
@@ -273,7 +274,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             modified_at_ms: stamp.modified_at_ms,
         },
         numbering: Some(numbering),
-        name_language: None,
+        name_language: language,
     })
 }
 
