@@ -91,6 +91,18 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
+    fn adds_a_folder_finding_its_series_by_id() {
+        let scratch = ScratchLibrary::new("add-series-folder-plan");
+
+        let plan = scratch.query_plan(ADD_FOLDER);
+
+        assert_eq!(
+            plan,
+            ["SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"]
+        );
+    }
+
+    #[test]
     fn finds_the_series_of_a_folder_by_their_keys() {
         let scratch = ScratchLibrary::new("series-of-folder-plan");
 
