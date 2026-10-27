@@ -29,14 +29,19 @@ const UNFINISHED_COPY: &str = "library.sqlite.partial";
 const WRITE_AHEAD_LOG: &str = "library.sqlite-wal";
 const WRITE_AHEAD_LOG_INDEX: &str = "library.sqlite-shm";
 const SET_ASIDE_DATABASE: &str = "library-moved.sqlite";
+#[cfg(unix)]
 const SET_ASIDE_WRITE_AHEAD_LOG: &str = "library-moved.sqlite-wal";
+#[cfg(unix)]
 const SET_ASIDE_WRITE_AHEAD_LOG_INDEX: &str = "library-moved.sqlite-shm";
 const SECOND_SET_ASIDE_DATABASE: &str = "library-moved-2.sqlite";
+#[cfg(unix)]
 const SIDECAR_SET_ASIDES: [(&str, &str); 2] = [
     (WRITE_AHEAD_LOG, SET_ASIDE_WRITE_AHEAD_LOG),
     (WRITE_AHEAD_LOG_INDEX, SET_ASIDE_WRITE_AHEAD_LOG_INDEX),
 ];
+#[cfg(unix)]
 const DATABASE_SET_ASIDE: (&str, &str) = (DATABASE_FILE, SET_ASIDE_DATABASE);
+#[cfg(unix)]
 const SET_ASIDE_ONCE: [&str; 5] = [
     SET_ASIDE_DATABASE,
     SET_ASIDE_WRITE_AHEAD_LOG,
@@ -183,12 +188,14 @@ async fn move_cut_short_out_of_a_locked_home(
     setting
 }
 
+#[cfg(unix)]
 fn rename_by_hand(folder: &Path, renames: &[(&str, &str)]) {
     for (name, new_name) in renames {
         fs::rename(folder.join(name), folder.join(new_name)).unwrap();
     }
 }
 
+#[cfg(unix)]
 fn which_exist<const N: usize>(folder: &Path, names: [&str; N]) -> [bool; N] {
     names.map(|name| folder.join(name).exists())
 }
