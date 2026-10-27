@@ -8,8 +8,8 @@ use std::ops::Range;
 
 use jpeg_decoder::PixelFormat;
 use omnileaf_imaging::{
-    BookSideBorders, CroppedSides, ImagingError, PageFormat, Size, crop_side_borders,
-    crop_white_borders, measure_side_borders, page_size,
+    BookSideBorders, ImagingError, PageFormat, Size, crop_side_borders, crop_white_borders,
+    measure_side_borders, page_size,
 };
 use omnileaf_testkit::DrawnScan;
 use png::{BitDepth, ColorType, Encoder};
@@ -171,8 +171,8 @@ fn inked(jpeg: &[u8]) -> Inked {
     }
 }
 
-fn cropped(page: &[u8], sides: CroppedSides) -> Inked {
-    let cropped = crop_white_borders(page, sides).unwrap().unwrap();
+fn cropped(page: &[u8]) -> Inked {
+    let cropped = crop_white_borders(page).unwrap().unwrap();
     assert_eq!(cropped.format, PageFormat::Jpeg);
     inked(&cropped.bytes)
 }
@@ -230,7 +230,7 @@ fn png_of(size: Size, draw: impl Fn(u32, u32) -> [u8; 3]) -> Vec<u8> {
 fn crops_a_white_margin_from_every_side_of_a_scan_up_to_its_ink() {
     let page = framed(MARGINS, WHITE);
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     assert_eq!(cropped.ink, MARGINS.content(scan_size()));
     let Margins {
@@ -251,7 +251,7 @@ fn crops_a_white_margin_from_every_side_of_a_scan_up_to_its_ink() {
 fn crops_a_margin_scanned_grey_rather_than_white() {
     let page = framed(MARGINS, SCANNER_GREY);
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     assert_eq!(cropped.ink, MARGINS.content(scan_size()));
     assert!(
@@ -276,7 +276,7 @@ fn crops_a_margin_under_heavy_scanner_grain() {
         })
         .unwrap();
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     assert_eq!(cropped.ink, MARGINS.content(scan_size()));
     assert!(is_close_around_ink(cropped.paper_around.top), "{cropped:?}");
@@ -292,9 +292,7 @@ fn crops_a_grey_page_into_a_grey_jpeg() {
         }
     });
 
-    let cropped = crop_white_borders(&page, CroppedSides::All)
-        .unwrap()
-        .unwrap();
+    let cropped = crop_white_borders(&page).unwrap().unwrap();
 
     assert_eq!(pixel_format(&cropped.bytes), PixelFormat::L8);
 }
@@ -311,34 +309,11 @@ fn halves_the_chroma_of_a_colour_page_it_crops_each_way() {
         })
         .unwrap();
 
-    let cropped = crop_white_borders(&page, CroppedSides::All)
-        .unwrap()
-        .unwrap();
+    let cropped = crop_white_borders(&page).unwrap().unwrap();
 
     assert_eq!(
         sampling_factors(&cropped.bytes),
         [TWICE_EACH_WAY, ONCE_EACH_WAY, ONCE_EACH_WAY]
-    );
-}
-
-#[test]
-fn crops_only_the_left_and_right_of_a_page_of_a_long_strip() {
-    let page = framed(MARGINS, WHITE);
-
-    let cropped = cropped(&page, CroppedSides::LeftAndRight);
-
-    assert_eq!(cropped.page.height, scan_size().height);
-    assert_eq!(
-        (cropped.paper_around.top, cropped.paper_around.bottom),
-        (MARGINS.top, MARGINS.bottom)
-    );
-    assert!(
-        is_close_around_ink(cropped.paper_around.left),
-        "{cropped:?}"
-    );
-    assert!(
-        is_close_around_ink(cropped.paper_around.right),
-        "{cropped:?}"
     );
 }
 
@@ -356,7 +331,7 @@ fn stops_at_a_hairline_drawn_in_the_margin() {
         })
         .unwrap();
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     assert_eq!(
         cropped.ink.height,
@@ -380,7 +355,7 @@ fn stops_at_a_light_tone_beside_the_margin() {
         })
         .unwrap();
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     let content = MARGINS.content(scan_size());
     assert!(
@@ -405,7 +380,7 @@ fn keeps_every_side_a_shadow_falls_across() {
         })
         .unwrap();
 
-    let cropped = cropped(&page, CroppedSides::All);
+    let cropped = cropped(&page);
 
     assert_eq!(cropped.page.height, scan_size().height);
     assert_eq!(
@@ -435,11 +410,7 @@ fn leaves_alone_a_page_without_a_near_white_border_worth_cropping() {
 
     let cropped: Vec<&str> = pages
         .iter()
-        .filter(|(_, page)| {
-            crop_white_borders(page, CroppedSides::All)
-                .unwrap()
-                .is_some()
-        })
+        .filter(|(_, page)| crop_white_borders(page).unwrap().is_some())
         .map(|(border, _)| *border)
         .collect();
 
@@ -450,10 +421,31 @@ fn leaves_alone_a_page_without_a_near_white_border_worth_cropping() {
 fn refuses_to_crop_a_page_in_a_format_it_cannot_decode() {
     let gif = b"GIF89a\x10\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00";
 
-    let cropped = crop_white_borders(gif, CroppedSides::All);
+    let cropped = crop_white_borders(gif);
 
     assert!(
         matches!(cropped, Err(ImagingError::Unsupported)),
+        "{cropped:?}"
+    );
+}
+
+#[test]
+fn crops_only_the_left_and_right_of_the_pages_of_a_long_strip() {
+    let page = framed(MARGINS, WHITE);
+
+    let cropped = side_cropped_inked(&[page]).remove(0);
+
+    assert_eq!(cropped.page.height, scan_size().height);
+    assert_eq!(
+        (cropped.paper_around.top, cropped.paper_around.bottom),
+        (MARGINS.top, MARGINS.bottom)
+    );
+    assert!(
+        cropped.paper_around.left <= MOST_PAPER_LEFT_BESIDE_A_BOOK_CROP,
+        "{cropped:?}"
+    );
+    assert!(
+        cropped.paper_around.right <= MOST_PAPER_LEFT_BESIDE_A_BOOK_CROP,
         "{cropped:?}"
     );
 }
@@ -677,7 +669,7 @@ proptest! {
             if margins.surround(page_size, (column, row)) { [paper; 3] } else { INK }
         });
 
-        let cropped = crop_white_borders(&page, CroppedSides::All).unwrap();
+        let cropped = crop_white_borders(&page).unwrap();
 
         let content = margins.content(page_size);
         if let Some(cropped) = cropped {

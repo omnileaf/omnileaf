@@ -205,7 +205,7 @@ impl Share {
 }
 
 impl BookSideBorders {
-    const NONE: Self = Self {
+    pub const NONE: Self = Self {
         left: Share::NONE,
         right: Share::NONE,
     };
@@ -270,7 +270,8 @@ impl BookSideBorders {
         book.keeps_enough().then_some(book)
     }
 
-    fn crops_nothing(self) -> bool {
+    #[must_use]
+    pub fn crops_nothing(self) -> bool {
         self.left.pixels == 0 && self.right.pixels == 0
     }
 

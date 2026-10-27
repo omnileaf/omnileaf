@@ -16,35 +16,22 @@ pub(crate) const LEAST_KEPT_SHARE: usize = 2;
 
 pub(crate) type Rgb = [u8; 3];
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CroppedSides {
-    All,
-    LeftAndRight,
-}
-
-pub fn crop_white_borders(
-    page: &[u8],
-    sides: CroppedSides,
-) -> Result<Option<Transcoded>, ImagingError> {
+pub fn crop_white_borders(page: &[u8]) -> Result<Option<Transcoded>, ImagingError> {
     let source = Source::probe(page)?;
     let decoded = source.decode(source.size)?;
     let Some(page) = Grid::of(&decoded) else {
         return Ok(None);
     };
-    match kept_region(&page, sides).and_then(|kept| page.cropped_to(&kept)) {
+    match kept_region(&page).and_then(|kept| page.cropped_to(&kept)) {
         Some(cropped) => encode_with_chroma(&cropped, Chroma::HalvedEachWay).map(Some),
         None => Ok(None),
     }
 }
 
-fn kept_region(page: &Grid<'_, Rgb>, sides: CroppedSides) -> Option<Region> {
+fn kept_region(page: &Grid<'_, Rgb>) -> Option<Region> {
     let cells = page.cells(CELL_EDGE);
     let cells = cells.grid();
-    let rows = match sides {
-        CroppedSides::All => (cells.top_border(), cells.bottom_border()),
-        CroppedSides::LeftAndRight => (0, 0),
-    };
-    let rows = kept_span(page.height, rows)?;
+    let rows = kept_span(page.height, (cells.top_border(), cells.bottom_border()))?;
     let columns = kept_span(page.width, (cells.left_border(), cells.right_border()))?;
     let is_whole = rows == (0..page.height) && columns == (0..page.width);
     (!is_whole).then_some(Region { rows, columns })

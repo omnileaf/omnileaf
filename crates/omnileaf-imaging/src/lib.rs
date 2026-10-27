@@ -19,4 +19,4 @@ pub use side_borders::{BookSideBorders, PageSideBorders, crop_side_borders, meas
 pub use size::Size;
 pub use thumbnail::{THUMBNAIL_WIDTH, Thumbnail, thumbnail};
 pub use transcode::{Transcoded, transcode};
-pub use white_borders::{CroppedSides, crop_white_borders};
+pub use white_borders::crop_white_borders;
