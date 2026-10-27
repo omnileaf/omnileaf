@@ -13,6 +13,7 @@ import {
   type AppInfo,
   DEFAULT_LIBRARY_VIEW,
   type Platform,
+  type Theme,
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
 import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
@@ -278,25 +279,24 @@ type BrowserName = PlaywrightWorkerOptions["browserName"];
 
 type Box = NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>;
 
-/** The colour a theme token resolves to, as the browser writes computed colours, so a test follows whichever theme the app ships; naming a theme reads that theme's value of a role such as `--background`. */
 export function tokenColour(
   page: Page,
-  token: string,
-  theme?: "light" | "dark",
+  token: `--${string}`,
+  inTheme?: Theme,
 ): Promise<string> {
   return page.evaluate(
-    ([name, themed]) => {
+    ([name, theme]) => {
       const probe = document.createElement("span");
       probe.style.color = `var(${name})`;
-      if (themed !== undefined) {
-        probe.dataset.theme = themed;
+      if (theme !== undefined) {
+        probe.dataset.theme = theme;
       }
       document.body.append(probe);
       const colour = getComputedStyle(probe).color;
       probe.remove();
       return colour;
     },
-    [token, theme] as const,
+    [token, inTheme] as const,
   );
 }
 
@@ -384,33 +384,38 @@ export async function settle(locator: Locator): Promise<void> {
   }
 }
 
+type RoleOrTag = string;
+type TransitionedProperty = string;
+type TransitionNote = `${RoleOrTag} ${TransitionedProperty}`;
+
 function noteTransitions(): void {
   document.addEventListener("transitionrun", (event) => {
     if (event.target instanceof Element) {
       const root = document.documentElement;
-      const name =
+      const roleOrTag: RoleOrTag =
         event.target.getAttribute("role") ?? event.target.tagName.toLowerCase();
-      root.dataset.transitions = `${root.dataset.transitions ?? ""}${name} ${event.propertyName},`;
+      const note: TransitionNote = `${roleOrTag} ${event.propertyName}`;
+      root.dataset.transitions = `${root.dataset.transitions ?? ""}${note},`;
     }
   });
 }
 
-/** Notes every transition that starts from now on, on this page and the ones loaded after it, as the role or tag of its element and what it moves, such as "dialog translate". */
 export async function watchTransitions(
   page: Page,
-): Promise<() => Promise<string[]>> {
+): Promise<() => Promise<TransitionNote[]>> {
   await page.addInitScript(noteTransitions);
   await page.evaluate(noteTransitions);
   return () =>
     page.evaluate(() =>
       (document.documentElement.dataset.transitions ?? "")
         .split(",")
-        .filter((transition) => transition !== ""),
+        .filter((note): note is TransitionNote => note.includes(" ")),
     );
 }
 
-/** Names what each transition running on the element moves, such as translate or opacity. */
-export function transitionsOf(locator: Locator): Promise<string[]> {
+export function transitionsOf(
+  locator: Locator,
+): Promise<TransitionedProperty[]> {
   return locator.evaluate((element) =>
     element
       .getAnimations()
