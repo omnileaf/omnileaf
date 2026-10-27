@@ -109,6 +109,7 @@ fn series_laid_out_in_folders(name: &str) -> ScratchFolder {
         30,
     );
     write_book(&comics.path().join("Sample One-Shot [GroupName].cbz"), 31);
+    write_book(&comics.path().join("Sample Series 06 003.cbz"), 32);
     comics
 }
 
@@ -323,7 +324,8 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
         owned(&[
             ("Sample One-Shot", 1),
             ("Sample Series 04", 14),
-            ("Sample Series 05 Vol 2", 1)
+            ("Sample Series 05 Vol 2", 1),
+            ("Sample Series 06 003", 1)
         ])
     );
 }
@@ -426,6 +428,7 @@ async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were
                 "chapter 17000 17000 file_name 3000 file_name"
             ),
             ("Sample Series 04 v04-06", "volume 4000 6000 file_name"),
+            ("Sample Series 06 003", "special"),
             ("c001", "chapter 1000 1000 file_name"),
         ])
     );
