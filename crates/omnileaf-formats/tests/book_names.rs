@@ -310,6 +310,13 @@ fn reads_a_decimal_number() {
 }
 
 #[test]
+fn reads_a_decimal_volume() {
+    let volumes = ["Sample Series 04 v01.5", "Sample Series 04 Vol. 2.25"].map(volume_of);
+
+    assert_eq!(volumes, [single("1.5"), single("2.25")]);
+}
+
+#[test]
 fn sorts_a_decimal_chapter_between_its_neighbours() {
     let chapters = ["c012", "c012.5", "c013"].map(|name| chapter_of(name).unwrap().first());
 
