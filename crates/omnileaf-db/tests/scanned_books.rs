@@ -10,10 +10,11 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookListing, BookPerson, NewBook, NewRoot, NewSeries,
-        PageRequest, PageSize, PersonRole, ReadingDirection, RootId, RootKind, RootLocator,
-        ScannedBook, SeriesFolder, SeriesNaming, Sourced, ValueSource, add_book, add_root,
-        record_moved_books, record_page_count, record_scanned_books, series_books,
+        AgeRating, BookDetails, BookFile, BookListing, BookNumber, BookPerson, NewBook, NewRoot,
+        NewSeries, NumberRange, Numbering, PageRequest, PageSize, PersonRole, ReadingDirection,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming, Sourced,
+        ValueSource, add_book, add_root, record_moved_books, record_page_count,
+        record_scanned_books, series_books,
     },
     rusqlite::{Row, types::Value},
 };
@@ -723,5 +724,43 @@ async fn keeps_same_name_folders_in_two_places_as_two_series() {
             ("Sample Series 02".to_owned(), 1),
             ("Sample Series 02".to_owned(), 1)
         ]
+    );
+}
+
+#[tokio::test]
+async fn refiles_a_book_whose_only_file_is_scanned_again_in_another_series() {
+    let library = Library::open("scanned-only-file-refiled").await;
+    let first = library.found_in_folder("Sample Series 01", "v01", 1);
+    let location = first.file.location.clone();
+    library.record(first).await;
+    let again = ScannedBook {
+        file: BookFile {
+            location,
+            ..library.found_in_folder("Sample Series 02", "v01", 1).file
+        },
+        numbering: Some(Numbering::Volume {
+            numbers: Sourced {
+                value: NumberRange::single(BookNumber::from_thousandths(1000)),
+                source: ValueSource::FileName,
+            },
+        }),
+        ..library.found_in_folder("Sample Series 02", "Sample Series 02 v01", 1)
+    };
+
+    library.record(again).await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 0),
+            ("Sample Series 02".to_owned(), 1)
+        ]
+    );
+    assert_eq!(library.books().await, ["Sample Series 02 v01"]);
+    assert_eq!(
+        library
+            .rows("SELECT kind FROM book", |row| row.get::<_, String>(0))
+            .await,
+        ["volume"]
     );
 }
