@@ -68,6 +68,7 @@ mod resource_router;
 mod saved_report;
 mod scan;
 mod series_details;
+mod series_naming;
 mod series_overview;
 mod side_borders;
 mod skipped_types;

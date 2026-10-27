@@ -26,6 +26,7 @@ use crate::{
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     placement::{Placement, place_book},
+    series_naming::trust_files,
     skipped_types::{SkippedFile, SkippedType},
     unread_books::UnreadBooks,
 };
@@ -256,7 +257,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
                 linked_folder: &linked_folder,
                 location: &series.location,
             },
-            series.naming,
+            trust_files(series.naming, &details),
             target.added_at_ms,
         )?,
         fingerprint,
