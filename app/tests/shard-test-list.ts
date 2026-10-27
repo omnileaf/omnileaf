@@ -43,6 +43,7 @@ const TITLE_SEPARATOR = " › ";
 const TEST_LIST_SEPARATORS = /[\n\r›]/u;
 const DURATION_WITHOUT_TIMINGS_MS = 1;
 const LOAD_ONLY_PROJECT = "load only";
+const FAILED = "unexpected";
 
 export function testPath(test: ListedTest): string {
   return [test.file, ...test.titles].join(TITLE_SEPARATOR);
@@ -128,7 +129,8 @@ function specRuns(spec: unknown, { file, describes }: Scope): TestRun[] {
               declaredIn,
               titles: [...describes, title],
             },
-            durationMs: totalDurationMs(run.results),
+            durationMs:
+              run.status === FAILED ? undefined : totalDurationMs(run.results),
           },
         ]
       : [],

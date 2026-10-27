@@ -214,6 +214,46 @@ test("times each test by adding up its attempts, leaving out a test that never r
   });
 });
 
+test("leaves a failed test out of the timings and keeps a flaky one at all its attempts", () => {
+  const report = {
+    suites: [
+      {
+        file: "about.spec.ts",
+        specs: [
+          {
+            title: "times out",
+            file: "about.spec.ts",
+            tests: [
+              {
+                projectName: "webkit-phone",
+                status: "unexpected",
+                results: [{ duration: 30000 }],
+              },
+            ],
+          },
+          {
+            title: "passes on retry",
+            file: "about.spec.ts",
+            tests: [
+              {
+                projectName: "webkit-phone",
+                status: "flaky",
+                results: [{ duration: 900 }, { duration: 400 }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const timings = testDurations(report);
+
+  expect(timings).toEqual({
+    "about.spec.ts › passes on retry": { "webkit-phone": 1300 },
+  });
+});
+
 test("refuses to time a run that stopped before its tests ran", () => {
   const report = {
     suites: [],
