@@ -739,27 +739,46 @@ jobs:
   prune-caches:
     name: prune caches
     needs: [rust, rust-windows, rust-macos, portable, coverage, fixtures, fixtures-macos, interface, browser, android, ios, app, app-macos]
-    if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       actions: write
+      pull-requests: read
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
+      CACHE_BUDGET_GB: 18
     steps:
-      - name: Keep the newest cache of each kind saved from main
+      - name: Keep main's and each open pull request's newest caches within the budget
+        shell: bash
         run: |
+          budget=$((CACHE_BUDGET_GB * 1024 * 1024 * 1024))
+          open=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&per_page=100" --jq '.[].number' | jq -s -c .)
           gh api --paginate "repos/$GH_REPO/actions/caches?per_page=100" --jq '.actions_caches[]' \
-            | jq -s -r '
-                [.[] | .family = (.key | sub("-[0-9a-f]{8,}$"; ""))]
-                | (map(select(.ref != "refs/heads/main")) | map(.id))
-                  + (map(select(.ref == "refs/heads/main"))
-                     | group_by(.family)
-                     | map(sort_by(.created_at) | reverse | .[1:] | map(.id))
-                     | add // [])
-                | .[]' \
+            | jq -s -r --argjson open "$open" --argjson budget "$budget" '
+                [.[] | .family = (.key | sub("(-[0-9a-f]{8,}|-[0-9]{4}-W[0-9]{2})$"; ""))
+                     | .pr = ((.ref | capture("^refs/pull/(?<n>[0-9]+)/merge$") | .n | tonumber) // null)]
+                | (map(select(.ref == "refs/heads/main")) | group_by(.family) | map(max_by(.created_at))) as $main
+                | (map(select(.pr != null and (.pr | IN($open[])))) | group_by([.ref, .family]) | map(max_by(.created_at))) as $prs
+                | (reduce ($prs | sort_by(.last_accessed_at))[] as $cache
+                    ({total: ($main + $prs | map(.size_in_bytes) | add // 0), evicted: []};
+                     if .total > $budget then .total -= $cache.size_in_bytes | .evicted += [$cache.id] else . end)
+                  ) as $fitted
+                | ($main + $prs | map(.id) - $fitted.evicted) as $kept
+                | .[] | select(.id | IN($kept[]) | not) | .id' \
             | while read -r id; do
-                gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" --silent && echo "Deleted cache $id"
+                if failure=$(gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" --silent 2>&1); then
+                  echo "Deleted cache $id"
+                elif grep -q "HTTP 404" <<< "$failure"; then
+                  echo "Cache $id was already gone"
+                else
+                  echo "$failure" >&2
+                  exit 1
+                fi
               done
-          gh api "repos/$GH_REPO/actions/cache/usage" --jq '"Caches now hold \(.active_caches_size_in_bytes / 1048576 | floor) MB"'
+          used=$(gh api "repos/$GH_REPO/actions/cache/usage" --jq .active_caches_size_in_bytes)
+          echo "Caches now hold $((used / 1048576)) MB"
+          if [ "$used" -gt "$budget" ]; then
+            echo "::warning::Main's newest caches alone hold $((used / 1048576)) MB, over the ${CACHE_BUDGET_GB} GB budget"
+          fi
