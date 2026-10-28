@@ -4,6 +4,7 @@
   import type { IpcError } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import CreatorHeadingLink from "./CreatorHeadingLink.svelte";
   import { librarySeriesList, type ListSeries } from "./library-series.svelte";
   import SeriesCovers from "./SeriesCovers.svelte";
 
@@ -12,12 +13,16 @@
 
   let {
     name,
+    creator,
+    pointer,
     listSeries,
     countSeries,
     listed,
     covers,
   }: {
     name: string;
+    creator?: string | undefined;
+    pointer?: string | undefined;
     listSeries: ListSeries;
     countSeries: () => Promise<CountResult>;
     listed: unknown;
@@ -47,10 +52,20 @@
 {#if list.list.kind === "loaded" && list.list.items.length > 0}
   <section aria-labelledby={headingId} class="flex flex-col gap-md">
     <div class="flex items-baseline gap-sm">
-      <h2 id={headingId} class="text-lead font-bold">{name}</h2>
+      <h2 id={headingId} class="text-lead font-bold">
+        {#if creator === undefined}
+          {name}
+        {:else}
+          <CreatorHeadingLink name={creator} />
+        {/if}
+      </h2>
       {#if count !== undefined}
         <p class="text-detail text-muted">
           {m.library_series_count({ count })}
+          {#if pointer !== undefined}
+            <span aria-hidden="true">·</span>
+            {pointer}
+          {/if}
         </p>
       {/if}
     </div>
