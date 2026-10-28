@@ -527,6 +527,8 @@
 [data-platform="windows"] [data-theme] {
   --platform-font: var(--font-windows);
   --background: var(--windows-layer-solid);
+  --primary: var(--native-color-button-primary);
+  --primary-foreground: var(--native-color-on-button-primary);
   --sidebar: var(--windows-mica);
   --sidebar-border: transparent;
   --secondary-text: var(--windows-secondary-text);

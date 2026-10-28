@@ -114,26 +114,16 @@ test("fills linux's dark controls as shadcn does", () => {
   });
 });
 
-test("leaves macos and windows on the neutral palette", () => {
+test("leaves macos and windows on the neutral greys", () => {
   const neutrals = (["macos", "windows"] as const).map((platform) => [
-    colourOn(platform, "light", "--primary"),
     colourOn(platform, "light", "--foreground"),
     colourOn(platform, "dark", "--input"),
     colourOn(platform, "light", "--tooltip-key-ink"),
   ]);
 
   expect(neutrals).toEqual([
-    [
-      "oklch(0.205 0 0)",
-      "oklch(0.145 0 0)",
-      "oklch(1 0 0 / 0.15)",
-      "oklch(0.5 0.005 286)",
-    ],
-    [
-      "oklch(0.205 0 0)",
-      "oklch(0.145 0 0)",
-      "oklch(1 0 0 / 0.15)",
-      "oklch(0.48 0 0)",
-    ],
+    ["oklch(0.145 0 0)", "oklch(1 0 0 / 0.15)", "oklch(0.5 0.005 286)"],
+    ["oklch(0.145 0 0)", "oklch(1 0 0 / 0.15)", "oklch(0.48 0 0)"],
   ]);
+  expect(colourOn("macos", "light", "--primary")).toBe("oklch(0.205 0 0)");
 });
