@@ -135,7 +135,7 @@ test.describe("a series of chapters only", () => {
   test("shows no tabs and keeps the books list", async ({ page }) => {
     await openSeries(page);
 
-    await expect(page.getByText("chapter 03")).toBeVisible();
+    await expect(page.getByText("chapter 01")).toBeVisible();
     await expect(kinds(page)).toHaveCount(0);
   });
 });
