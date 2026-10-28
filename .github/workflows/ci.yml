@@ -216,7 +216,7 @@ jobs:
   fixtures:
     name: fixtures (${{ matrix.platform }})
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
@@ -703,7 +703,7 @@ jobs:
   app:
     name: app (${{ matrix.platform }})
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.base_ref == 'main') }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     strategy:
