@@ -8,10 +8,25 @@ import { mergeTimings, testDurations } from "./shard-test-list.ts";
 
 const TIMINGS = new URL("browser-timings.json", import.meta.url);
 const NARROWING_VARIABLES = ["PLAYWRIGHT_GROUP", "PLAYWRIGHT_SHARD"];
+const NARROWING_OPTIONS = [
+  "--project",
+  "--grep",
+  "-g",
+  "--grep-invert",
+  "--last-failed",
+  "--only-changed",
+  "--shard",
+  "--test-list",
+];
 const playwrightArguments = process.argv.slice(2);
 const isNarrowed =
-  playwrightArguments.length > 0 ||
-  NARROWING_VARIABLES.some((name) => process.env[name] !== undefined);
+  playwrightArguments.some(
+    (argument) =>
+      !argument.startsWith("-") ||
+      NARROWING_OPTIONS.some(
+        (option) => argument === option || argument.startsWith(`${option}=`),
+      ),
+  ) || NARROWING_VARIABLES.some((name) => Boolean(process.env[name]));
 const report = join(
   mkdtempSync(join(tmpdir(), "omnileaf-timings-")),
   "report.json",
