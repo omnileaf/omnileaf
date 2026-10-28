@@ -1433,6 +1433,14 @@
   grid-template-columns: auto minmax(0, 1fr);
 }
 
+@utility grid-cols-setup-choice {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+@utility grid-cols-setup-choice-narrow {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
 @utility grid-cols-setup-facts {
   grid-template-columns: var(--spacing-setup-term) minmax(0, 1fr);
 }

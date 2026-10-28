@@ -1,15 +1,17 @@
 <script lang="ts">
-  import { SlidersHorizontal } from "@lucide/svelte";
+  import { Sun, SlidersHorizontal } from "@lucide/svelte";
 
   import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
   import type { AdultTreatment } from "#lib/ipc/bindings.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import CoversChoice from "./CoversChoice.svelte";
   import StepButton from "./StepButton.svelte";
   import type { DeviceKind } from "./device";
+  import { usesSetupPages } from "./setup-pages.ts";
   import StepBadge from "./StepBadge.svelte";
   import StepFrame from "./StepFrame.svelte";
   import StepHeader from "./StepHeader.svelte";
@@ -37,6 +39,7 @@
   } satisfies Record<DeviceKind, WordingByWidth>;
 
   const appearanceHelp = $derived(APPEARANCE_HELP[device]);
+  const isSetupPage = usesSetupPages(currentPlatform());
 </script>
 
 {#snippet appearanceHelpText()}
@@ -53,12 +56,15 @@
       {m.first_launch_choices_body()}
     {/snippet}
   </StepHeader>
-  <ThemeChoice
-    title={m.first_launch_choices_appearance()}
-    placement="first-launch"
-    hint={appearanceHelpText}
-  />
-  <CoversChoice chosen={adultTreatment} onChoose={onChooseAdult} />
+  <div class={isSetupPage ? "flex flex-col gap-xs" : "contents"}>
+    <ThemeChoice
+      title={m.first_launch_choices_appearance()}
+      placement={isSetupPage ? "setup-row" : "first-launch"}
+      icon={Sun}
+      hint={appearanceHelpText}
+    />
+    <CoversChoice chosen={adultTreatment} onChoose={onChooseAdult} />
+  </div>
   {#snippet actions()}
     <StepButton kind="primary" onclick={onNext}>
       {m.first_launch_continue()}
