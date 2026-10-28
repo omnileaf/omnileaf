@@ -1,7 +1,8 @@
 use std::error::Error;
 
 use omnileaf_engine::{
-    CrashReportError, HomeFolderError, LibraryError, OpenBookError, OpenFileError, describe_error,
+    CrashReportError, DropError, HomeFolderError, LibraryError, OpenBookError, OpenFileError,
+    describe_error,
 };
 use serde::Serialize;
 use specta::Type;
@@ -226,6 +227,23 @@ impl From<CrashReportError> for IpcError {
         Self {
             code: IpcErrorCode::CrashReportUnavailable,
             message: "the crash report could not be read or removed",
+        }
+    }
+}
+
+impl From<DropError> for IpcError {
+    fn from(error: DropError) -> Self {
+        match error {
+            DropError::NothingToUse => {
+                tracing::warn!(error = %describe_error(&error), "a drop held nothing to use");
+                Self {
+                    code: IpcErrorCode::BookTypeUnsupported,
+                    message: "nothing dropped is a comic file or a folder",
+                }
+            }
+            DropError::Open(error) => error.into(),
+            DropError::Library(error) => error.into(),
+            DropError::Copy { .. } => Self::internal(&error),
         }
     }
 }

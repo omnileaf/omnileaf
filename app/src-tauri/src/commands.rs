@@ -6,16 +6,16 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
     BookSessions, BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits,
-    FileToRead, FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage,
-    FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark,
-    HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library,
-    LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
-    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
-    ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse, UtcOffset,
-    WriterCursor, WriterPage,
+    DropMode, DropOutcome, DropSummary, FileToRead, FileType, FolderCursor, FolderGroupCursor,
+    FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary,
+    HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError,
+    LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
+    OpenedBook, PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
+    ReadingSummary, ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
+    SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse,
+    UtcOffset, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -104,6 +104,8 @@ macro_rules! app_commands {
             mark_series_read,
             open_book,
             file_to_open,
+            inspect_drop,
+            drop_files,
             cropped_page_paths,
             reading_restored,
             page_shown,
@@ -815,6 +817,30 @@ async fn file_to_open(
         return Ok(None);
     };
     Ok(Some(library.open_file(path).await?))
+}
+
+/// Says what dragging these paths over the window would hold, from the paths alone.
+#[tauri::command]
+#[specta::specta]
+async fn inspect_drop(
+    library: State<'_, Library>,
+    paths: Vec<String>,
+) -> Result<DropSummary, IpcError> {
+    Ok(library
+        .inspect_drop(paths.into_iter().map(PathBuf::from).collect())
+        .await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn drop_files(
+    library: State<'_, Library>,
+    paths: Vec<String>,
+    mode: DropMode,
+) -> Result<DropOutcome, IpcError> {
+    Ok(library
+        .drop_files(paths.into_iter().map(PathBuf::from).collect(), mode)
+        .await?)
 }
 
 #[tauri::command]
