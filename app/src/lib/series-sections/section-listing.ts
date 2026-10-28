@@ -6,6 +6,10 @@ import type {
 
 export type SectionView = "covers" | "books";
 
+export type ListingChange = Partial<
+  Pick<SeriesBookListing, "section" | "direction">
+>;
+
 export interface SectionScreen {
   readonly platform: Platform;
   readonly isWide: boolean;

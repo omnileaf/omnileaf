@@ -9,8 +9,8 @@ import {
   NEXT_PAGE,
   openSampleBook,
   openSampleSeries,
+  sampleBookEntry,
   sampleBookLink,
-  sampleBookRow,
   showTheBooks,
   shownPageCount,
 } from "./sample-book.ts";
@@ -74,7 +74,7 @@ test("shows on the series page the page reached once back from the book through 
   await showTheBooks(appSession());
   const row = await appSession().waitFor(
     xpath(
-      `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
+      `${sampleBookEntry(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
     ),
   );
   const upNext = await appSession().waitFor(
@@ -114,7 +114,7 @@ test("shows on the series page the page reached in a book started before once it
   await showTheBooks(appSession());
   const row = await appSession().waitFor(
     xpath(
-      `${sampleBookRow(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
+      `${sampleBookEntry(1)}[contains(normalize-space(), 'Page ${String(reached)}')]`,
     ),
   );
   const upNext = await appSession().waitFor(
