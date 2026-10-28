@@ -314,18 +314,44 @@ test("lists only the books of the section asked for", async () => {
   expect(counts).toEqual([8, 0]);
 });
 
-test("sums up each series by its year, the sections it holds and the volumes it misses", async () => {
+test("sums up each series by its year, the books in each section, the volumes it misses and its last volume", async () => {
   const { backend } = backendFor();
   const summed = async (series: number) => {
     const overview = await backend.seriesOverview(sampleSeriesId(series));
-    return [overview.year, overview.sections, overview.missingVolumes];
+    return [
+      overview.year,
+      overview.sections,
+      overview.missingVolumes,
+      overview.lastVolume,
+    ];
   };
 
   const overviews = [await summed(4), await summed(11)];
 
   expect(overviews).toEqual([
-    [2008, ["volumes"], []],
-    [2015, ["chapters"], []],
+    [2008, [{ section: "volumes", bookCount: 8 }], [], 8],
+    [2015, [{ section: "chapters", bookCount: 154 }], [], null],
+  ]);
+});
+
+test("lists each series book with its own cover, and none for a book whose file is missing", async () => {
+  const { backend } = backendFor();
+
+  const { books } = await backend.seriesBooks(
+    sampleSeriesId(4),
+    { shown: "all", direction: "ascending" },
+    null,
+  );
+
+  expect(books.map((book) => book.cover)).toEqual([
+    "covers/4-2-1",
+    "covers/4-2-2",
+    "covers/4-2-3",
+    "covers/4-2-4",
+    "covers/4-2-5",
+    null,
+    "covers/4-2-7",
+    "covers/4-2-8",
   ]);
 });
 

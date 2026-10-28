@@ -27,6 +27,7 @@ import {
 import { isShownBy } from "#lib/series/books-shown.ts";
 import {
   isListedIn,
+  lastVolume,
   missingVolumes,
   numberingOf,
   sectionsOf,
@@ -466,6 +467,14 @@ function bookCoverOf(series: SampleSeries, number: number): string {
   return `covers/${String(series.number)}-${String(series.art)}-${String(number)}`;
 }
 
+function foundCoverOf(
+  series: SampleSeries,
+  book: SampleBook,
+  index: number,
+): string | null {
+  return book.file === "missing" ? null : bookCoverOf(series, index + 1);
+}
+
 /** Answers every command from the sample library, keeping what the reader marks or reads until the page reloads. */
 export function sampleBackend(
   scenario: SampleScenario,
@@ -774,6 +783,7 @@ export function sampleBackend(
       id: sampleBookId(series.number, index + 1),
       position: index + 1,
       title: book.title,
+      cover: foundCoverOf(series, book, index),
       addedAtMs: addedAt(series) - (series.books.length - index) * DAY_MS,
       reading: wireReading(book.reading),
       pageCount: book.pageCount,
@@ -791,8 +801,7 @@ export function sampleBackend(
       : {
           id: sampleBookId(series.number, index + 1),
           title: book.title,
-          cover:
-            book.file === "missing" ? null : bookCoverOf(series, index + 1),
+          cover: foundCoverOf(series, book, index),
           reading: wireReading(book.reading),
           pageCount: book.pageCount,
         };
@@ -1397,6 +1406,7 @@ export function sampleBackend(
         year: yearOf(series),
         sections: sectionsOf(numberings),
         missingVolumes: missingVolumes(numberings),
+        lastVolume: lastVolume(numberings),
         bookCount: booksOf(series).length,
         readCount: booksOf(series).filter(isRead).length,
         bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)

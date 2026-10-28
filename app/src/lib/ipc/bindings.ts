@@ -717,6 +717,8 @@ export type SeriesBook = {
 	/**  Counting from 1 in the series' order, whichever of its books a list holds. */
 	position: number,
 	title: string,
+	/**  The book's own cover, absent while it has no file. */
+	cover: string & { readonly __brand: "CoverPath" } | null,
 	/**  When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly. */
 	addedAtMs: number,
 	reading: BookReading,
@@ -808,8 +810,10 @@ export type SeriesOverview = {
 	/**  About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count. */
 	secondsLeft: number | null,
 	/**  The sections holding at least one book, in reading order. */
-	sections: BookSection[],
+	sections: SeriesSection[],
 	missingVolumes: NumberRange[],
+	/**  Absent when the series holds no volume and no chapter filed inside one. */
+	lastVolume: number | null,
 };
 
 export type SeriesPage = {
@@ -820,6 +824,11 @@ export type SeriesPage = {
 export type SeriesPerson = {
 	name: string,
 	role: CreatorRole | null,
+};
+
+export type SeriesSection = {
+	section: BookSection,
+	bookCount: number,
 };
 
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";

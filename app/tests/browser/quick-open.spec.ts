@@ -104,6 +104,7 @@ const SEARCHING_BACKEND: FakeBackend = {
       year: null,
       sections: [],
       missingVolumes: [],
+      lastVolume: null,
     };
   },
 };
