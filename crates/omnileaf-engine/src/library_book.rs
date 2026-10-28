@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
 use crate::{
-    BookKind, BookNumber, BookSection, NumberRange, SortDirection, ipc_brand::branded_string,
+    BookKind, BookNumber, BookSection, CoverPath, NumberRange, SortDirection,
+    ipc_brand::branded_string,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -15,6 +16,8 @@ pub struct SeriesBook {
     /// Counting from 1 in the series' order, whichever of its books a list holds.
     pub position: u32,
     pub title: String,
+    /// The book's own cover, absent while it has no file.
+    pub cover: Option<CoverPath>,
     /// When the library first found the book, in milliseconds since the Unix epoch; it crosses as a plain number, which holds every such date exactly.
     #[specta(type = i32)]
     pub added_at_ms: i64,
@@ -111,6 +114,7 @@ impl From<BookSummary> for SeriesBook {
             id: BookId(book.id),
             position: book.position,
             title: book.title,
+            cover: book.cover.map(CoverPath),
             added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
             page_count: book.page_count,
@@ -219,6 +223,7 @@ mod tests {
             id: sample_book_id(1).0,
             position: 1,
             title: "Volume 1".to_owned(),
+            cover: None,
             added_at_ms: 0,
             reading: catalog::BookReading::NotStarted,
             page_count: Some(PAGE_COUNT),

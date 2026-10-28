@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::{
-    BookSection, CoverPath, NumberRange, SeriesBook, SeriesId, library_folder::root_folder,
-    library_layout::folder_name, missing_volumes::missing_volumes,
+    BookNumber, BookSection, CoverPath, NumberRange, SeriesBook, SeriesId,
+    library_folder::root_folder,
+    library_layout::folder_name,
+    missing_volumes::{last_volume, missing_volumes},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -31,8 +33,17 @@ pub struct SeriesOverview {
     /// About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count.
     pub seconds_left: Option<u32>,
     /// The sections holding at least one book, in reading order.
-    pub sections: Vec<BookSection>,
+    pub sections: Vec<SeriesSection>,
     pub missing_volumes: Vec<NumberRange>,
+    /// Absent when the series holds no volume and no chapter filed inside one.
+    pub last_volume: Option<BookNumber>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SeriesSection {
+    pub section: BookSection,
+    pub book_count: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -130,22 +141,39 @@ impl SeriesOverview {
             seconds_left,
             sections: Vec::new(),
             missing_volumes: Vec::new(),
+            last_volume: None,
         }
     }
 
     pub(crate) fn numbered_by(self, placed: &[Numbering]) -> Self {
-        let mut sections: Vec<BookSection> = placed
-            .iter()
-            .map(|numbering| numbering.section().into())
-            .collect();
-        sections.sort_unstable();
-        sections.dedup();
         Self {
-            sections,
+            sections: counted_sections(placed),
             missing_volumes: missing_volumes(placed),
+            last_volume: last_volume(placed),
             ..self
         }
     }
+}
+
+fn counted_sections(placed: &[Numbering]) -> Vec<SeriesSection> {
+    let mut sections: Vec<BookSection> = placed
+        .iter()
+        .map(|numbering| numbering.section().into())
+        .collect();
+    sections.sort_unstable();
+    let mut counted: Vec<SeriesSection> = Vec::new();
+    for section in sections {
+        match counted.last_mut() {
+            Some(last) if last.section == section => {
+                last.book_count = last.book_count.saturating_add(1);
+            }
+            _ => counted.push(SeriesSection {
+                section,
+                book_count: 1,
+            }),
+        }
+    }
+    counted
 }
 
 impl From<PersonSeries> for CreatorSeries {
@@ -211,6 +239,72 @@ mod tests {
 
     fn sample_overview() -> SeriesOverview {
         overview_with(Some(PAGES_LEFT), None)
+    }
+
+    fn chapter() -> Numbering {
+        Numbering::Chapter {
+            number: None,
+            volume: None,
+        }
+    }
+
+    fn special() -> Numbering {
+        Numbering::Special { number: None }
+    }
+
+    fn volume() -> Numbering {
+        Numbering::Volume {
+            numbers: catalog::Sourced {
+                value: catalog::NumberRange::new(
+                    catalog::BookNumber::from_thousandths(1000),
+                    catalog::BookNumber::from_thousandths(1000),
+                )
+                .unwrap(),
+                source: catalog::ValueSource::FileName,
+            },
+        }
+    }
+
+    #[test]
+    fn counts_the_books_in_each_section_holding_one_in_reading_order() {
+        let placed = [
+            special(),
+            chapter(),
+            volume(),
+            chapter(),
+            special(),
+            chapter(),
+        ];
+
+        let overview = sample_overview().numbered_by(&placed);
+
+        assert_eq!(
+            overview.sections,
+            [
+                SeriesSection {
+                    section: BookSection::Volumes,
+                    book_count: 1,
+                },
+                SeriesSection {
+                    section: BookSection::Chapters,
+                    book_count: 3,
+                },
+                SeriesSection {
+                    section: BookSection::Specials,
+                    book_count: 2,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn lists_no_section_for_a_series_with_no_placed_book() {
+        let overview = sample_overview().numbered_by(&[]);
+
+        assert_eq!(
+            (overview.sections, overview.last_volume),
+            (Vec::new(), None)
+        );
     }
 
     #[test]

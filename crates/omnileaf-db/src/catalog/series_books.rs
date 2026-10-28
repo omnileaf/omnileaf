@@ -1,10 +1,11 @@
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::{Connection, Row, ToSql, named_params};
+use rusqlite::{Connection, Row, Statement, ToSql, named_params};
 
 use crate::{
     Error,
     catalog::{
-        BookSection, Numbering, SortDirection,
+        BookSection, Cover, Numbering, SortDirection,
+        cover::stored_cover,
         cursor::Position,
         numbering::stored_numbering,
         page::{Page, PageRequest},
@@ -109,9 +110,14 @@ const UP_NEXT: &str = concat!(
     book_up_next!(),
     " FROM series WHERE series.id = :series)"
 );
-const BOOK_DETAILS: &str = "SELECT title, added_at_ms, page_count,
-        kind, first_number, last_number, number_source, volume_number, volume_source
-    FROM book WHERE id = ?1";
+const BOOK_DETAILS: &str = "SELECT book.title, book.added_at_ms, book.page_count,
+        book.kind, book.first_number, book.last_number, book.number_source,
+        book.volume_number, book.volume_source,
+        cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
+    FROM book
+    LEFT JOIN book_file AS cover
+        ON cover.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = book.id)
+    WHERE book.id = ?1";
 const UNREAD_IN_SERIES: &str = concat!(
     "SELECT book.id FROM book
     LEFT JOIN book_state ON book_state.book_id = book.id
@@ -128,6 +134,8 @@ pub struct BookSummary {
     /// Counting from 1 in the series' order, whichever of its books a list holds.
     pub position: u32,
     pub title: String,
+    /// The book's own cover, absent while it has no file.
+    pub cover: Option<Cover>,
     pub added_at_ms: i64,
     pub reading: BookReading,
     /// Absent for a book found before the library kept page counts, until it is scanned again or opened.
@@ -277,8 +285,9 @@ fn walk(
             held.push((book, cursor));
         }
     }
+    let mut details = connection.prepare(BOOK_DETAILS)?;
     for (book, _) in &mut held {
-        fill_details(connection, book)?;
+        fill_details(&mut details, book)?;
     }
     Ok(held)
 }
@@ -311,7 +320,7 @@ pub fn up_next(connection: &Connection, series: SeriesId) -> Result<Option<BookS
     };
     let (mut book, cursor) = stored_book(series, BookListing::IN_ORDER, stored_reading(row)?, row)?;
     book.position = books_before(connection, &cursor)? + 1;
-    fill_details(connection, &mut book)?;
+    fill_details(&mut connection.prepare(BOOK_DETAILS)?, &mut book)?;
     Ok(Some(book))
 }
 
@@ -323,15 +332,17 @@ pub fn unread_books(connection: &Connection, series: SeriesId) -> Result<Vec<Boo
     Ok(books)
 }
 
-fn fill_details(connection: &Connection, book: &mut BookSummary) -> Result<(), Error> {
+fn fill_details(details: &mut Statement<'_>, book: &mut BookSummary) -> Result<(), Error> {
     (
         book.title,
+        book.cover,
         book.added_at_ms,
         book.page_count,
         book.numbering,
-    ) = connection.query_row(BOOK_DETAILS, [book.id.as_bytes()], |row| {
+    ) = details.query_row([book.id.as_bytes()], |row| {
         Ok((
             row.get("title")?,
+            stored_cover(row)?,
             row.get("added_at_ms")?,
             row.get("page_count")?,
             stored_numbering(row)?,
@@ -352,6 +363,7 @@ fn stored_book(
         id,
         position: 0,
         title: String::new(),
+        cover: None,
         added_at_ms: 0,
         reading,
         page_count: None,
@@ -472,6 +484,23 @@ mod tests {
                 "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)>(?,?) AND reading_order_key<?)",
                 "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND reading_order_key<?)",
                 "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND reading_order_key>? AND (reading_order_key,id)<(?,?))",
+            ]
+        );
+    }
+
+    #[test]
+    fn reads_a_book_s_details_and_cover_by_their_keys() {
+        let scratch = ScratchLibrary::new("book-details-plan");
+
+        let plan = scratch.query_plan(BOOK_DETAILS);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
+                "CORRELATED SCALAR SUBQUERY 1",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
             ]
         );
     }

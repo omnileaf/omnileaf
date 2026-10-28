@@ -169,6 +169,7 @@ pub use series_details::{
 };
 pub use series_overview::{
     CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
+    SeriesSection,
 };
 pub use skipped_types::SkippedType;
 pub use storage_use::{CacheSizes, LOW_SPACE_BYTES, StorageUse, VolumeSpace, database_bytes};

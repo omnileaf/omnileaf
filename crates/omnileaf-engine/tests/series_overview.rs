@@ -130,6 +130,30 @@ async fn lists_a_series_books_in_order_with_when_each_was_added() {
 }
 
 #[tokio::test]
+async fn lists_each_series_book_and_the_book_up_next_with_its_own_cover() {
+    let sample = SampleLibrary::open("series-book-covers").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+
+    let books = sample.books(series).await;
+    let overview = sample.library.series_overview(series).await.unwrap();
+
+    let is_own_cover = |book: &SeriesBook| {
+        book.cover.is_some_and(|cover| {
+            cover
+                .to_string()
+                .starts_with(&format!("thumb/v1/{}/", book.id))
+        })
+    };
+    assert_eq!(
+        (
+            books.iter().map(is_own_cover).collect::<Vec<_>>(),
+            overview.up_next.as_ref().map(is_own_cover),
+        ),
+        (vec![true, true, true], Some(true))
+    );
+}
+
+#[tokio::test]
 async fn lists_only_a_series_books_not_read_the_other_way_round_numbered_by_place() {
     let sample = SampleLibrary::open("unread-books-reversed").await;
     let series = sample.series_named(FIRST_SERIES).await;

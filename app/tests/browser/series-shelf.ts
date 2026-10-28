@@ -57,6 +57,7 @@ export class FakeShelf {
       numbers: null,
       volume: null,
       section: null,
+      cover: null,
     }));
   }
 
@@ -117,6 +118,7 @@ export class FakeShelf {
           year: null,
           sections: [],
           missingVolumes: [],
+          lastVolume: null,
         };
       },
       seriesBooks: async (id, listing, after) => {

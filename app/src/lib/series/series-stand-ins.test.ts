@@ -59,6 +59,7 @@ function seriesBook(position: number): SeriesBook {
     numbers: null,
     volume: null,
     section: null,
+    cover: null,
   };
 }
 
@@ -86,6 +87,7 @@ function overview(): SeriesOverview {
     year: null,
     sections: [],
     missingVolumes: [],
+    lastVolume: null,
   };
 }
 

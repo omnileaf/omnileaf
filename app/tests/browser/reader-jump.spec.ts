@@ -49,6 +49,7 @@ function bookAt(index: number, change: Partial<WireBook> = {}): WireBook {
     numbers: null,
     volume: null,
     section: null,
+    cover: null,
     ...change,
   };
 }

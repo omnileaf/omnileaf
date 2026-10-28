@@ -1,4 +1,9 @@
-import type { BookKind, BookSection, NumberRange } from "#lib/ipc/bindings.ts";
+import type {
+  BookKind,
+  BookSection,
+  NumberRange,
+  SeriesSection,
+} from "#lib/ipc/bindings.ts";
 
 export interface SampleNumbering {
   readonly kind: BookKind | null;
@@ -46,9 +51,11 @@ export function isListedIn(
   return section === undefined || section === null || section === book.section;
 }
 
-export function sectionsOf(books: readonly SampleNumbering[]): BookSection[] {
-  const held = new Set(books.map((book) => book.section));
-  return SECTIONS_IN_ORDER.filter((section) => held.has(section));
+export function sectionsOf(books: readonly SampleNumbering[]): SeriesSection[] {
+  return SECTIONS_IN_ORDER.map((section) => ({
+    section,
+    bookCount: books.filter((book) => book.section === section).length,
+  })).filter(({ bookCount }) => bookCount > 0);
 }
 
 export function missingVolumes(
@@ -75,4 +82,11 @@ export function missingVolumes(
     }
   }
   return missing;
+}
+
+export function lastVolume(books: readonly SampleNumbering[]): number | null {
+  const volumes = books.flatMap((book) =>
+    book.kind === "volume" && book.numbers !== null ? [book.numbers.last] : [],
+  );
+  return volumes.length === 0 ? null : Math.max(...volumes);
 }
