@@ -14,8 +14,8 @@ use omnileaf_db::{
     adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
-        PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
-        add_root, book_to_read, bookmarked_roots, cover_file,
+        PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
+        RootKind, RootLocator, add_root, book_to_read, bookmarked_roots, cover_file,
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
@@ -611,6 +611,11 @@ impl Library {
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
         self.save_reading_before_reading().await;
         let series = id.0;
+        let adult = self.adult_content().await?;
+        let related_wanted = RelatedSeriesWanted {
+            limit: RELATED_SERIES_SHOWN,
+            leaves_out_adult: adult.hides_rated_adult(),
+        };
         let found = self
             .store
             .database()
@@ -623,7 +628,7 @@ impl Library {
                     up_next(connection, series)?,
                     series_file_details(connection, series)?,
                     series_numberings(connection, series)?,
-                    related_series(connection, series, RELATED_SERIES_SHOWN)?,
+                    related_series(connection, series, related_wanted)?,
                 )))
             })
             .await?;
@@ -633,7 +638,7 @@ impl Library {
             SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
                 .described_by(details)
                 .numbered_by(&placed)
-                .related_to(related, self.adult_content().await?),
+                .related_to(related, adult),
         )
     }
 

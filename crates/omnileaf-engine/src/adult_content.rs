@@ -42,6 +42,10 @@ impl AdultContent {
     pub(crate) const fn counts_as_adult(self, is_rated_adult: bool) -> bool {
         self.counts_age_ratings && is_rated_adult
     }
+
+    pub(crate) const fn hides_rated_adult(self) -> bool {
+        self.counts_age_ratings && matches!(self.treatment, AdultTreatment::Hide)
+    }
 }
 
 impl From<StoredAdultContent> for AdultContent {

@@ -27,6 +27,7 @@ macro_rules! series_sharing_people {
             JOIN series ON series.local_id = other.series_local_id
             WHERE other.series_local_id IS NOT (SELECT local_id FROM this)
                 AND series.reading_stage IS NOT NULL
+                AND NOT (:leaves_out_adult AND series.adult_rated_books > 0)
             LIMIT :limit"
         )
     };
@@ -38,7 +39,8 @@ const SERIES_SHARING_AN_ARTIST: &str =
 const TAGS_OF_SERIES: &str = "SELECT DISTINCT book_tag.name FROM book
     JOIN book_tag ON book_tag.book_id = book.id
     WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)";
-const TAG_SPREAD: &str = "SELECT count(*) FROM (SELECT 1 FROM book_tag WHERE name = ?1 LIMIT ?2)";
+const TAG_SPREAD: &str =
+    "SELECT count(*) FROM (SELECT DISTINCT book_id FROM book_tag WHERE name = ?1 LIMIT ?2)";
 const SERIES_SHARING_A_TAG: &str = "SELECT DISTINCT other.series_local_id AS local_id
     FROM book_tag
     JOIN book AS other ON other.id = book_tag.book_id
@@ -46,6 +48,7 @@ const SERIES_SHARING_A_TAG: &str = "SELECT DISTINCT other.series_local_id AS loc
     WHERE book_tag.name = :tag
         AND other.series_local_id IS NOT (SELECT local_id FROM series WHERE id = :series)
         AND series.reading_stage IS NOT NULL
+        AND NOT (:leaves_out_adult AND series.adult_rated_books > 0)
     LIMIT :limit";
 const RELATED_SERIES: &str = concat!(
     "SELECT series.id AS id, series.title, series.title_key, series.book_count,
@@ -74,6 +77,13 @@ pub enum RelatedReason {
     SharedTag(String),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RelatedSeriesWanted {
+    pub limit: usize,
+    /// Leaves out the series whose files rate a book 18+.
+    pub leaves_out_adult: bool,
+}
+
 struct Candidate {
     local_id: i64,
     reason: RelatedReason,
@@ -84,9 +94,13 @@ struct Candidate {
 pub fn related_series(
     connection: &Connection,
     series: SeriesId,
-    limit: usize,
+    wanted: RelatedSeriesWanted,
 ) -> Result<Vec<RelatedSeries>, Error> {
     let _snapshot = snapshot(connection)?;
+    let RelatedSeriesWanted {
+        limit,
+        leaves_out_adult,
+    } = wanted;
     let mut chosen: Vec<Candidate> = Vec::new();
     for (query, reason) in [
         (SERIES_SHARING_A_WRITER, RelatedReason::SameWriter),
@@ -95,10 +109,16 @@ pub fn related_series(
         let found = sharing(
             connection,
             query,
-            &[(":series", &series.as_bytes())],
+            &[
+                (":series", &series.as_bytes()),
+                (":leaves_out_adult", &leaves_out_adult),
+            ],
             chosen.len() + limit,
         )?;
         choose(&mut chosen, found, &reason, limit);
+    }
+    if chosen.len() >= limit {
+        return read_chosen(connection, chosen);
     }
     for tag in tags_rarest_first(connection, series)? {
         if chosen.len() >= limit {
@@ -107,7 +127,11 @@ pub fn related_series(
         let found = sharing(
             connection,
             SERIES_SHARING_A_TAG,
-            &[(":series", &series.as_bytes()), (":tag", &tag)],
+            &[
+                (":series", &series.as_bytes()),
+                (":tag", &tag),
+                (":leaves_out_adult", &leaves_out_adult),
+            ],
             chosen.len() + limit,
         )?;
         choose(&mut chosen, found, &RelatedReason::SharedTag(tag), limit);

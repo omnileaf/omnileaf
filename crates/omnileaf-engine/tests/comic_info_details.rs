@@ -12,8 +12,8 @@ mod support;
 
 use books::write_book_with;
 use omnileaf_engine::{
-    AdultContent, CreatorRole, CreatorSeries, Library, LibraryListing, LibrarySeries,
-    RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
+    AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Library, LibraryListing,
+    LibrarySeries, RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -423,4 +423,35 @@ async fn marks_a_related_series_its_files_rate_18_plus_as_adult() {
         .map(|related| (related.title.as_str(), related.is_adult))
         .collect();
     assert_eq!(adult, [("Sample Series 02", true)]);
+}
+
+#[tokio::test]
+async fn leaves_18_plus_series_out_of_the_related_series_while_they_are_hidden() {
+    let scanned = Scanned::with(
+        "related-adult-hidden",
+        &[
+            ("Sample Series 01", EVERYONE_IN_ENGLISH),
+            ("Sample Series 02", ADULT_IN_JAPANESE),
+            ("Sample Series 03", TAGGED_STORMS),
+        ],
+    )
+    .await;
+    scanned
+        .library
+        .set_adult_content(AdultContent {
+            treatment: AdultTreatment::Hide,
+            ..AdultContent::default()
+        })
+        .await
+        .unwrap();
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    let titles: Vec<&str> = overview
+        .related
+        .iter()
+        .map(|related| related.title.as_str())
+        .collect();
+    assert_eq!(titles, ["Sample Series 03"]);
 }
