@@ -179,7 +179,7 @@
   async function moveAmongCovers(event: KeyboardEvent): Promise<void> {
     const link =
       event.target instanceof HTMLElement
-        ? event.target.closest("[data-series-link]")
+        ? event.target.closest("[data-pickable-link]")
         : null;
     const item = link?.closest("[aria-posinset]");
     const list = item?.parentElement;
@@ -205,7 +205,7 @@
       return;
     }
     const shown = await reveal?.(next);
-    shown?.querySelector<HTMLElement>("[data-series-link]")?.focus();
+    shown?.querySelector<HTMLElement>("[data-pickable-link]")?.focus();
   }
 
   function onCoverKeys(event: KeyboardEvent): void {
