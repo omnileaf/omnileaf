@@ -57,12 +57,12 @@ impl<'t> Writer<'t> {
 
     #[tracing::instrument(skip_all, fields(%book, page))]
     pub fn set_position(&mut self, book: BookId, page: u32) -> Result<(), Error> {
-        self.set(LatestKey::BookPosition(book), Value::Unsigned(page.into()))
+        self.set(LatestKey::BookPosition(book), &Value::Unsigned(page.into()))
     }
 
     #[tracing::instrument(skip_all, fields(%book, is_read))]
     pub fn set_read(&mut self, book: BookId, is_read: bool) -> Result<(), Error> {
-        self.set(LatestKey::BookRead(book), Value::Bool(is_read))
+        self.set(LatestKey::BookRead(book), &Value::Bool(is_read))
     }
 
     #[tracing::instrument(skip_all, fields(%book, page, is_bookmarked))]
@@ -74,22 +74,22 @@ impl<'t> Writer<'t> {
     ) -> Result<(), Error> {
         let bookmark = BookmarkId::of(book, page);
         let (high, low) = book_halves(book);
-        self.write_bookmark(BookmarkKey::BookHigh(bookmark), Value::Unsigned(high))?;
-        self.write_bookmark(BookmarkKey::BookLow(bookmark), Value::Unsigned(low))?;
-        self.write_bookmark(BookmarkKey::Page(bookmark), Value::Unsigned(page.into()))?;
-        self.write_bookmark(BookmarkKey::Deleted(bookmark), Value::Bool(!is_bookmarked))
+        self.write_bookmark(BookmarkKey::BookHigh(bookmark), &Value::Unsigned(high))?;
+        self.write_bookmark(BookmarkKey::BookLow(bookmark), &Value::Unsigned(low))?;
+        self.write_bookmark(BookmarkKey::Page(bookmark), &Value::Unsigned(page.into()))?;
+        self.write_bookmark(BookmarkKey::Deleted(bookmark), &Value::Bool(!is_bookmarked))
     }
 
     #[tracing::instrument(skip_all, fields(?key))]
     pub fn clear(&mut self, key: LatestKey) -> Result<(), Error> {
-        self.set(key, Value::Null)
+        self.set(key, &Value::Null)
     }
 
     #[tracing::instrument(skip_all, fields(%book, page))]
     pub fn raise_furthest(&mut self, book: BookId, page: u32) -> Result<(), Error> {
         let furthest = MaximumKey::BookFurthest(book);
         let class = MergeClass::Maximum { rank: page };
-        self.write(furthest.into(), class, Value::Unsigned(page.into()))
+        self.write(furthest.into(), class, &Value::Unsigned(page.into()))
     }
 
     #[tracing::instrument(skip_all, fields(%from, %to))]
@@ -148,15 +148,15 @@ impl<'t> Writer<'t> {
         i64::try_from(self.now_unix_ms).unwrap_or(i64::MAX)
     }
 
-    fn write_bookmark(&mut self, key: BookmarkKey, value: Value) -> Result<(), Error> {
+    fn write_bookmark(&mut self, key: BookmarkKey, value: &Value) -> Result<(), Error> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
-    fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
+    fn set(&mut self, key: LatestKey, value: &Value) -> Result<(), Error> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
 
-    fn write(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
+    fn write(&mut self, key: Key, class: MergeClass, value: &Value) -> Result<(), Error> {
         self.guarded(|writer| writer.merge(key, class, value))
     }
 
@@ -173,7 +173,7 @@ impl<'t> Writer<'t> {
         written
     }
 
-    fn merge(&mut self, key: Key, class: MergeClass, value: Value) -> Result<(), Error> {
+    fn merge(&mut self, key: Key, class: MergeClass, value: &Value) -> Result<(), Error> {
         let register = Register {
             class,
             stamp: self.local.stamp(self.now_unix_ms)?,

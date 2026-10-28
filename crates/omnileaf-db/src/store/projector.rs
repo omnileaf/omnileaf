@@ -76,7 +76,7 @@ enum Projection {
 }
 
 impl Projection {
-    fn of(key: Key, value: Value) -> Option<Self> {
+    fn of(key: Key, value: &Value) -> Option<Self> {
         Some(match key {
             Key::Latest(LatestKey::BookPosition(book)) => Self::Position {
                 book,
@@ -173,7 +173,7 @@ fn project_bookmark(connection: &Connection, id: BookmarkId) -> Result<usize, Er
             "deleted" => BookmarkKey::Deleted(id),
             _ => continue,
         };
-        if let Some(part) = Projection::of(key.into(), value) {
+        if let Some(part) = Projection::of(key.into(), &value) {
             part.fill_bookmark(&mut row);
         }
     }
@@ -187,9 +187,11 @@ fn project_bookmark(connection: &Connection, id: BookmarkId) -> Result<usize, Er
     }
 }
 
-pub(crate) fn project(connection: &Connection, key: Key, value: Value) -> Result<(), Error> {
-    let projection =
-        Projection::of(key, value).ok_or(Error::UnexpectedValue { key, found: value })?;
+pub(crate) fn project(connection: &Connection, key: Key, value: &Value) -> Result<(), Error> {
+    let projection = Projection::of(key, value).ok_or_else(|| Error::UnexpectedValue {
+        key,
+        found: value.clone(),
+    })?;
     projection.apply(connection)?;
     Ok(())
 }
@@ -273,7 +275,7 @@ fn projectable(entity: &str, id: &[u8], field: &str, cbor: &[u8]) -> Option<(Key
             return None;
         }
     };
-    let Some(projection) = Projection::of(key, value) else {
+    let Some(projection) = Projection::of(key, &value) else {
         tracing::warn!(
             ?key,
             ?value,
@@ -286,26 +288,26 @@ fn projectable(entity: &str, id: &[u8], field: &str, cbor: &[u8]) -> Option<(Key
 
 struct OtherKind;
 
-fn page(value: Value) -> Result<Option<u32>, OtherKind> {
+fn page(value: &Value) -> Result<Option<u32>, OtherKind> {
     match value {
         Value::Null => Ok(None),
-        Value::Unsigned(page) => u32::try_from(page).map(Some).map_err(|_| OtherKind),
-        Value::Bool(_) => Err(OtherKind),
+        Value::Unsigned(page) => u32::try_from(*page).map(Some).map_err(|_| OtherKind),
+        Value::Bool(_) | Value::Text(_) => Err(OtherKind),
     }
 }
 
-fn unsigned(value: Value) -> Result<Option<u64>, OtherKind> {
+fn unsigned(value: &Value) -> Result<Option<u64>, OtherKind> {
     match value {
         Value::Null => Ok(None),
-        Value::Unsigned(number) => Ok(Some(number)),
-        Value::Bool(_) => Err(OtherKind),
+        Value::Unsigned(number) => Ok(Some(*number)),
+        Value::Bool(_) | Value::Text(_) => Err(OtherKind),
     }
 }
 
-fn flag(value: Value) -> Result<Option<bool>, OtherKind> {
+fn flag(value: &Value) -> Result<Option<bool>, OtherKind> {
     match value {
         Value::Null => Ok(None),
-        Value::Bool(flag) => Ok(Some(flag)),
-        Value::Unsigned(_) => Err(OtherKind),
+        Value::Bool(flag) => Ok(Some(*flag)),
+        Value::Unsigned(_) | Value::Text(_) => Err(OtherKind),
     }
 }

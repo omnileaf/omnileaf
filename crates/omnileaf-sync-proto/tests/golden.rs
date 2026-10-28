@@ -228,6 +228,7 @@ enum ValueInput {
     Null,
     Bool(bool),
     Unsigned(u64),
+    Text(String),
 }
 
 impl From<ValueInput> for Value {
@@ -236,6 +237,7 @@ impl From<ValueInput> for Value {
             ValueInput::Null => Self::Null,
             ValueInput::Bool(flag) => Self::Bool(flag),
             ValueInput::Unsigned(number) => Self::Unsigned(number),
+            ValueInput::Text(text) => Self::Text(text),
         }
     }
 }
