@@ -161,10 +161,11 @@
   async function bookmarkSelected(
     picked: SeriesBook["id"][],
   ): Promise<{ newlyBookmarked: number; failed: boolean }> {
+    if (foundId === undefined) {
+      return { newlyBookmarked: 0, failed: true };
+    }
     if (books?.list.kind !== "loaded") {
-      reportError(
-        new Error(`read the books of series ${foundId} to bookmark`),
-      );
+      reportError(new Error(`read the books of series ${foundId} to bookmark`));
       notices.show({
         tone: "warning",
         icon: BookmarkX,
