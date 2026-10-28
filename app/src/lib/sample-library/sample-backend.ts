@@ -13,6 +13,7 @@ import {
   type SeriesFormat,
   type SignInOutcome,
   type SmartFilter,
+  type SourcedLanguage,
 } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
@@ -342,6 +343,15 @@ function formatOf(series: SampleSeries): SeriesFormat {
 
 function languageOf(series: SampleSeries): string | null {
   return SAMPLE_LANGUAGES[series.number % SAMPLE_LANGUAGES.length] ?? null;
+}
+
+function languageNamed(series: SampleSeries): SourcedLanguage | null {
+  const language = languageOf(series);
+  return language === null ? null : { fromFile: language, source: "fileName" };
+}
+
+function yearOf(series: SampleSeries): number {
+  return SAMPLE_FIRST_YEAR + series.number;
 }
 
 interface SeriesFacts {
@@ -1115,7 +1125,11 @@ export function sampleBackend(
       const series = seriesWith(id);
       const edits = detailEdits.get(series.number);
       return {
-        title: { fromFile: series.title, edited: edits?.title ?? null },
+        title: {
+          fromFile: series.title,
+          source: "folderName",
+          edited: edits?.title ?? null,
+        },
         people: {
           fromFile: [...series.creators],
           edited: edits?.people ?? null,
@@ -1125,6 +1139,8 @@ export function sampleBackend(
           fromFile: series.summary ?? null,
           edited: edits?.summary ?? null,
         },
+        year: { fromFile: yearOf(series), source: "files" },
+        language: languageNamed(series),
         isMarkedAdult: edits?.isMarkedAdult ?? false,
         isRatedAdult: ADULT_SERIES.has(series.number),
       };
@@ -1378,7 +1394,7 @@ export function sampleBackend(
       return {
         id,
         title: titleOf(series),
-        year: SAMPLE_FIRST_YEAR + series.number,
+        year: yearOf(series),
         sections: sectionsOf(numberings),
         missingVolumes: missingVolumes(numberings),
         bookCount: booksOf(series).length,

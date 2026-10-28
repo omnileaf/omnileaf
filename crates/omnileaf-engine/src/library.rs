@@ -653,11 +653,7 @@ impl Library {
             })
             .await?
             .ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesDetails::from_files(
-            overview.title,
-            details,
-            overview.is_rated_adult,
-        ))
+        Ok(SeriesDetails::from_files(overview, details))
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.

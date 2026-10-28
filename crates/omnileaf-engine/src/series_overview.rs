@@ -113,7 +113,7 @@ impl SeriesOverview {
         Self {
             id: SeriesId(overview.id),
             title: overview.title,
-            year: overview.year,
+            year: overview.year.map(|year| year.value),
             book_count: overview.book_count,
             read_count: overview.read_count,
             bookmark_count: 0,
@@ -194,7 +194,9 @@ mod tests {
             catalog::SeriesOverview {
                 id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
                 title: "Sample Series 04".to_owned(),
+                title_source: None,
                 year: None,
+                language: None,
                 book_count: 8,
                 read_count: 2,
                 cover: None,

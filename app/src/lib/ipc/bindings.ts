@@ -316,6 +316,8 @@ export type EditedTags = {
 
 export type EditedTitle = {
 	fromFile: string,
+	/**  Absent for a series keyed by name alone, which its next rescan files by folder. */
+	source: ValueSource | null,
 	edited: string | null,
 };
 
@@ -759,6 +761,8 @@ export type SeriesDetails = {
 	people: EditedPeople,
 	tags: EditedTags,
 	summary: EditedSummary,
+	year: SourcedYear | null,
+	language: SourcedLanguage | null,
 	/**  Marked 18+ by hand, for a series whose files carry no age rating. */
 	isMarkedAdult: boolean,
 	/**  The files rate the series 18+, so the mark has nothing to add. */
@@ -839,6 +843,16 @@ export type SmartFilter =
 /**  Ascending lists titles from A to Z, series added, updated or read longest ago first with those never read before them, the fewest unread books first, and the fewest pages left first with those whose pages aren't all counted last. */
 export type SortDirection = "ascending" | "descending";
 
+export type SourcedLanguage = {
+	fromFile: string,
+	source: ValueSource,
+};
+
+export type SourcedYear = {
+	fromFile: number,
+	source: ValueSource,
+};
+
 /**  What a search that found nothing was likely meant to be. */
 export type SpellingSuggestion = {
 	text: string,
@@ -885,6 +899,8 @@ export type TrayShortcut = {
 	letter: string,
 	shift: boolean,
 };
+
+export type ValueSource = "folderName" | "fileName" | "files";
 
 export type WriterPage = {
 	writers: LibraryWriter[],

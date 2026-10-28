@@ -11,7 +11,11 @@ import {
 } from "./detail-edits.ts";
 
 const FROM_FILES: SeriesDetails = {
-  title: { fromFile: "Sample Series 04 (2019 edition)", edited: null },
+  title: {
+    fromFile: "Sample Series 04 (2019 edition)",
+    source: "folderName",
+    edited: null,
+  },
   people: {
     fromFile: [
       { name: "Author A", role: "story" },
@@ -21,6 +25,8 @@ const FROM_FILES: SeriesDetails = {
   },
   tags: { fromFile: ["Seinen", "Sea"], edited: null },
   summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
   isMarkedAdult: false,
   isRatedAdult: false,
 };
