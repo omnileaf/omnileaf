@@ -6,6 +6,7 @@ use crate::{
     catalog::{
         cover::stored_cover,
         cursor::Position,
+        gathering::stages_holding_matches,
         series_listing::{FilterParams, SeriesFilter},
         series_page::SeriesSummary,
         stored_id::{stored_id, stored_optional_id},
@@ -234,7 +235,9 @@ impl<P> Listing<P> {
         sql: &str,
         after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
-        let filter = FilterParams::of(read.filter);
+        let _snapshot = snapshot(read.connection)?;
+        let stages = stages_holding_matches(read.connection, read.filter)?;
+        let filter = FilterParams::with_stages(read.filter, stages);
         let mut params = filter.named().to_vec();
         params.push((":limit", &read.limit));
         params.extend_from_slice(read.bound);

@@ -142,6 +142,7 @@ impl SeriesFilter {
 }
 
 /// Bound as `:unstarted`, `:in_progress` and `:finished`: each stage's stored value, or null for a stage the filter hides, which matches no series.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct StageParams {
     unstarted: Option<i64>,
     in_progress: Option<i64>,
@@ -155,6 +156,27 @@ impl StageParams {
             in_progress: admitted(filter, ReadingStage::InProgress),
             finished: admitted(filter, ReadingStage::Finished),
         }
+    }
+
+    /// Keeps each stage only while `holds_a_match` finds a series at its stored value.
+    pub(crate) fn keeping<E>(
+        self,
+        mut holds_a_match: impl FnMut(i64) -> Result<bool, E>,
+    ) -> Result<Self, E> {
+        let mut kept = [self.unstarted, self.in_progress, self.finished];
+        for stage in &mut kept {
+            if let Some(stored) = *stage
+                && !holds_a_match(stored)?
+            {
+                *stage = None;
+            }
+        }
+        let [unstarted, in_progress, finished] = kept;
+        Ok(Self {
+            unstarted,
+            in_progress,
+            finished,
+        })
     }
 
     pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 3] {
@@ -192,8 +214,12 @@ pub(crate) struct FilterParams {
 
 impl FilterParams {
     pub(crate) const fn of(filter: SeriesFilter) -> Self {
+        Self::with_stages(filter, StageParams::of(filter))
+    }
+
+    pub(crate) const fn with_stages(filter: SeriesFilter, stages: StageParams) -> Self {
         Self {
-            stages: StageParams::of(filter),
+            stages,
             last_read_before_ms: filter.last_read_before_ms,
             holds_duplicates: filter.duplicates.required(),
         }
