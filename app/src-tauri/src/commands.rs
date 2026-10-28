@@ -489,13 +489,12 @@ async fn series_details(
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "the library keeps no edits to series details yet, so they have nowhere to go"
-)]
-fn edit_series_details(series: SeriesId, edits: DetailEdits) -> Result<(), IpcError> {
-    Err(IpcError::details_not_kept())
+async fn edit_series_details(
+    library: State<'_, Library>,
+    series: SeriesId,
+    edits: DetailEdits,
+) -> Result<(), IpcError> {
+    Ok(library.edit_series_details(series, edits).await?)
 }
 
 #[tauri::command]

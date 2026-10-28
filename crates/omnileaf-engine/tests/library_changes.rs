@@ -15,8 +15,9 @@ use std::{fs, io, path::Path};
 
 use books::write_book;
 use omnileaf_engine::{
-    AppleBookmark, LIBRARY_CHANGES_GATHERED_FOR, LabelChanges, Library, LibraryChanged,
-    LibraryChanges, LibraryListing, ResolvedBookmark, RootLocator, SeriesBookListing,
+    AppleBookmark, DetailEdits, LIBRARY_CHANGES_GATHERED_FOR, LabelChanges, Library,
+    LibraryChanged, LibraryChanges, LibraryListing, ResolvedBookmark, RootLocator,
+    SeriesBookListing,
 };
 use support::{FixedClock, ScratchFolder};
 use tokio::time::{Instant, timeout};
@@ -85,6 +86,43 @@ async fn tells_of_a_page_bookmarked() {
     caught_up(&mut changes).await;
 
     library.bookmark_pages(book, vec![0], true).await.unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_series_whose_details_were_edited() {
+    let home = ScratchFolder::new("changes-edited-home");
+    let comics = ScratchFolder::new("changes-edited-comics");
+    write_books(comics.path(), 1);
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .remove(0)
+        .id;
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library
+        .edit_series_details(
+            series,
+            DetailEdits {
+                title: None,
+                people: None,
+                tags: Some(vec!["lanterns".to_owned()]),
+                summary: None,
+                is_marked_adult: false,
+            },
+        )
+        .await
+        .unwrap();
 
     assert!(tells_of_a_change(&mut changes).await);
 }
