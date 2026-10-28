@@ -2504,5 +2504,20 @@
         "countPlural=other": "⟦Çöþíéð {formattedCount} ƒíļéš íñţö ýöûŕ ĥöɱé ƒöļðéŕ·····················⟧"
       }
     }
+  ],
+  "drop_copy_into_home": "⟦Çöþý íñţö ýöûŕ ĥöɱé ƒöļðéŕ···········⟧",
+  "drop_some_refused": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƒíļé çáñ'ţ ƀé ŕéáð ĥéŕé················⟧",
+        "countPlural=other": "⟦{formattedCount} ƒíļéš çáñ'ţ ƀé ŕéáð ĥéŕé·················⟧"
+      }
+    }
   ]
 }

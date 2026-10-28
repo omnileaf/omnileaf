@@ -22,7 +22,7 @@ afterEach(() => {
   document.documentElement.removeAttribute("data-platform");
 });
 
-const OFFERING: DropState = {
+const OFFERING: Extract<DropState, { kind: "offering" }> = {
   kind: "offering",
   summary: { first: "One.cbz", more: 2, totalKilobytes: 45_000, refused: [] },
   over: null,
@@ -171,4 +171,56 @@ test("announces the offer and the refusal as status messages", async () => {
   await expect
     .element(page.getByRole("status", { name: "Drop files" }))
     .toBeVisible();
+});
+
+test("offers copying into the home folder as a third target", async () => {
+  await render(FileDropOverlay, { state: OFFERING, shownName });
+
+  await expect
+    .element(page.getByText("Copy into your home folder"))
+    .toBeVisible();
+  const copying = boxOf('[data-drop-target="copy"]');
+  expect(
+    dropTargetAt(copying.x + copying.width / 2, copying.y + copying.height / 2),
+  ).toBe("copy");
+});
+
+test("marks the copying target under the pointer", async () => {
+  await render(FileDropOverlay, {
+    state: { ...OFFERING, over: "copy" },
+    shownName,
+  });
+
+  const over = [...document.querySelectorAll<HTMLElement>("[data-over=true]")];
+
+  expect(over.map((target) => target.dataset["dropTarget"])).toEqual(["copy"]);
+});
+
+test("counts the files that cannot be read beneath the targets in a mixed drop", async () => {
+  await render(FileDropOverlay, {
+    state: {
+      ...OFFERING,
+      summary: {
+        ...OFFERING.summary,
+        refused: [{ name: "notes.pdf", reason: "notAComic" }],
+      },
+    },
+    shownName,
+  });
+
+  await expect
+    .element(page.getByText("1 file can't be read here"))
+    .toBeVisible();
+  await expect
+    .element(page.getByText("notes.pdf isn't a comic or book Omnileaf reads."))
+    .toBeVisible();
+  await expect.element(page.getByText("Read now")).toBeVisible();
+});
+
+test("says nothing of unreadable files when all can be read", async () => {
+  await render(FileDropOverlay, { state: OFFERING, shownName });
+
+  await expect
+    .element(page.getByText(/can't be read here/u))
+    .not.toBeInTheDocument();
 });

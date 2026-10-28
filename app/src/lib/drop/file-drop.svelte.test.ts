@@ -268,3 +268,23 @@ test("keeps the offer when the same files are entered again", async () => {
   expect(ports.inspections).toBe(1);
   expect(drop.state).toMatchObject({ kind: "offering" });
 });
+
+test("copies the files when dropped on the copying target, with Alt or not", async () => {
+  const ports = new Ports();
+  const drop = await entered(ports);
+
+  ports.target = "copy";
+  await drop.handle({ kind: "drop", paths: PATHS, at: AT });
+
+  expect(ports.dropped).toEqual([{ paths: PATHS, mode: "copy" }]);
+});
+
+test("follows the copying target under the pointer", async () => {
+  const ports = new Ports();
+  const drop = await entered(ports);
+
+  ports.target = "copy";
+  await drop.handle({ kind: "over", at: AT });
+
+  expect(drop.state).toMatchObject({ kind: "offering", over: "copy" });
+});

@@ -37,3 +37,9 @@ test("ignores an element named for something that is not a target", () => {
 
   expect(dropTargetAt(10, 10)).toBeNull();
 });
+
+test("finds the copying target", () => {
+  targetBox("copy", 0);
+
+  expect(dropTargetAt(10, 10)).toBe("copy");
+});

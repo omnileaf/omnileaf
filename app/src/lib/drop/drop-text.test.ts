@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { DropSummary } from "#lib/ipc/bindings.ts";
 
-import { dropWhat, refusalLines } from "./drop-text.ts";
+import { dropWhat, refusalLines, skippedLines } from "./drop-text.ts";
 
 const asShown = (name: string): string => name;
 
@@ -69,4 +69,36 @@ test("shows the refused files under the names given for them", () => {
   );
 
   expect(lines).toEqual(["Folder 07 isn't a comic or book Omnileaf reads."]);
+});
+
+test("counts the files that cannot be read among a mixed drop and says why", () => {
+  const lines = skippedLines(
+    [
+      { name: "notes.pdf", reason: "notAComic" },
+      { name: "Volume 6.cbr", reason: "typeNotReadYet" },
+    ],
+    asShown,
+  );
+
+  expect(lines).toEqual([
+    "2 files can't be read here",
+    "notes.pdf isn't a comic or book Omnileaf reads.",
+    "Volume 6.cbr is a comic type this version can't read yet.",
+  ]);
+});
+
+test("counts one file that cannot be read in the singular", () => {
+  const lines = skippedLines(
+    [{ name: "a.pdf", reason: "notAComic" }],
+    () => "Folder 07",
+  );
+
+  expect(lines).toEqual([
+    "1 file can't be read here",
+    "Folder 07 isn't a comic or book Omnileaf reads.",
+  ]);
+});
+
+test("says nothing when every file can be read", () => {
+  expect(skippedLines([], asShown)).toEqual([]);
 });

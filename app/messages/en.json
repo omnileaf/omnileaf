@@ -2504,5 +2504,20 @@
         "countPlural=other": "Copied {formattedCount} files into your home folder"
       }
     }
+  ],
+  "drop_copy_into_home": "Copy into your home folder",
+  "drop_some_refused": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} file can't be read here",
+        "countPlural=other": "{formattedCount} files can't be read here"
+      }
+    }
   ]
 }

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { BookOpen, CircleAlert, FolderPlus } from "@lucide/svelte";
+  import { BookOpen, CircleAlert, Copy, FolderPlus } from "@lucide/svelte";
 
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { dropWhat, refusalLines } from "./drop-text.ts";
+  import { dropWhat, refusalLines, skippedLines } from "./drop-text.ts";
   import type { DropState } from "./file-drop.svelte.ts";
 
   const KEY_MARK = "\u0000";
@@ -56,9 +56,20 @@
         </p>
       </Card>
     </div>
+    <Card
+      data-drop-target="copy"
+      data-over={state.over === "copy"}
+      class="flex items-center gap-sm border-2 border-dashed px-lg py-md text-center text-detail windows:border windows:border-windows-stroke-strong drop-over:border-solid drop-over:border-accent drop-over:bg-accent-soft windows:drop-over:border-2"
+    >
+      <Copy aria-hidden="true" />
+      <p class="font-semibold">{m.drop_copy_into_home()}</p>
+    </Card>
     <p class="text-muted">
       {hint[0]}<Kbd>{m.drop_key_alt()}</Kbd>{hint[1]}
     </p>
+    {#each skippedLines(state.summary.refused, shownName) as line (line)}
+      <p class="text-detail text-muted">{line}</p>
+    {/each}
   </div>
 {:else if state.kind === "refused"}
   <div
