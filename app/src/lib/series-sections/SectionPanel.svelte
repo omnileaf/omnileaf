@@ -13,7 +13,7 @@
 
   import { bookWords } from "./book-number-words";
   import type { ListedBooks } from "./listed-books";
-  import SectionCovers from "./SectionCovers.svelte";
+  import PickedCovers from "./PickedCovers.svelte";
   import type { SectionView } from "./section-listing";
   import { SECTION_NAMES } from "./section-names";
   import type { NotedSeries } from "./section-note";
@@ -78,13 +78,15 @@
   {#if isSearching && books.list.isComplete && tiles.length === 0}
     <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
   {/if}
-  <SectionCovers
-    {tiles}
-    label={SECTION_NAMES[section]()}
-    isComplete={books.list.isComplete}
-    onNearEnd={() => {
-      void books.loadMore();
-    }}
-    {usesStandIns}
-  />
+  {#key section}
+    <PickedCovers
+      {tiles}
+      label={SECTION_NAMES[section]()}
+      isComplete={books.list.isComplete}
+      onNearEnd={() => {
+        void books.loadMore();
+      }}
+      {usesStandIns}
+    />
+  {/key}
 {/if}

@@ -20,5 +20,6 @@
     isComplete
     onNearEnd={() => undefined}
     {usesStandIns}
+    selection={undefined}
   />
 </div>
