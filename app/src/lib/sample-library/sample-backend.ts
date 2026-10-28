@@ -681,6 +681,12 @@ export function sampleBackend(
     );
   }
 
+  function seriesNamingNoWriter(): SampleSeries[] {
+    return library.filter(
+      (series) => !isOutOfReach(series) && !peopleOf(series).some(writes),
+    );
+  }
+
   function seriesInGroup(group: string): SampleSeries[] {
     const isInWriterGroup = (series: SampleSeries): boolean =>
       WRITER_GROUP_SERIES.has(series.number);
@@ -1369,6 +1375,21 @@ export function sampleBackend(
           ? library.filter((series) => passes(series, filter, facts)).length
           : 0,
       );
+    },
+    writerlessSeries: async (after, chosen) => {
+      await libraryReady();
+      const unnamed = new Set(seriesNamingNoWriter());
+      const page = pageOf(
+        sorted(chosen).filter((series) => unnamed.has(series)),
+        after,
+      );
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    writerlessSeriesCount: async (filter) => {
+      await libraryReady();
+      return seriesNamingNoWriter().filter((series) =>
+        passes(series, filter, facts),
+      ).length;
     },
     librarySearch: async (after, search) => {
       await libraryReady();

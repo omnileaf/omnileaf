@@ -51,6 +51,8 @@ export const commands = {
 	writerSeriesCounts: (writers: string[], filter: LibraryFilter) => typedError<number[], IpcError>(__TAURI_INVOKE("writer_series_counts", { writers, filter })),
 	/**  Counts the series of many folders at once, in the order given. */
 	folderSeriesCounts: (folders: (string & { readonly __brand: "FolderId" })[], filter: LibraryFilter) => typedError<number[], IpcError>(__TAURI_INVOKE("folder_series_counts", { folders, filter })),
+	writerlessSeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writerless_series", { after, listing })),
+	writerlessSeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writerless_series_count", { filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
