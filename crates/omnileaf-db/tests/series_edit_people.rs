@@ -14,7 +14,8 @@ mod support;
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     catalog::{
-        PageRequest, PageSize, PersonRole, WriterSummary, person_series, series_people, writers,
+        PageRequest, PageSize, PersonRole, SeriesFilter, WriterSummary, person_series,
+        series_people, writerless_series_count, writers,
     },
     store::{EditedPerson, SeriesEdits, Store},
 };
@@ -202,6 +203,36 @@ async fn groups_the_series_by_the_edited_writer_and_no_longer_by_the_files() {
         ["Sample Series 01"]
     );
     assert_eq!(series_of(&store, "File Writer").await, ["Sample Series 02"]);
+}
+
+async fn writerless_count(store: &Store) -> u32 {
+    store
+        .database()
+        .read(|connection| writerless_series_count(connection, &SeriesFilter::NONE))
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn counts_a_series_as_naming_a_writer_by_its_edited_people() {
+    let (store, _folder) = library("edit-people-writerless").await;
+    file_person(&store, "Sample Series 01", "writer", "File Writer").await;
+
+    edit_people(
+        &store,
+        2,
+        Some(vec![person("Edited Writer", &[PersonRole::Writer])]),
+    )
+    .await;
+    let once_named = writerless_count(&store).await;
+    edit_people(
+        &store,
+        1,
+        Some(vec![person("Edited Penciller", &[PersonRole::Penciller])]),
+    )
+    .await;
+
+    assert_eq!([once_named, writerless_count(&store).await], [0, 1]);
 }
 
 #[tokio::test]

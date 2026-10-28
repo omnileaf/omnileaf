@@ -19,9 +19,7 @@ use crate::{
 
 macro_rules! series_naming_a_writer {
     () => {
-        "SELECT DISTINCT book.series_local_id FROM book_person
-            JOIN book ON book.id = book_person.book_id
-            WHERE book_person.role = 'writer'"
+        "SELECT series_local_id FROM series_person WHERE role = 'writer'"
     };
 }
 
