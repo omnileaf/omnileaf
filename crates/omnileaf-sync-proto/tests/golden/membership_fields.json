@@ -1,0 +1,14 @@
+{
+  "vectors": [
+    {
+      "kind": "category",
+      "id": "5841dbf8-d874-8252-9f51-22a8343420aa",
+      "field": "cat.5841dbf8d87482529f5122a8343420aa"
+    },
+    {
+      "kind": "tag",
+      "id": "70a1dbdf-cdd6-87b1-b866-6d6eb94a6bcc",
+      "field": "tag.70a1dbdfcdd687b1b8666d6eb94a6bcc"
+    }
+  ]
+}

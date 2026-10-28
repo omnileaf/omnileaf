@@ -1,4 +1,6 @@
-use omnileaf_sync_proto::{BookId, BookmarkId, CategoryId, IdError, SeriesId, SourceId, norm};
+use omnileaf_sync_proto::{
+    BookId, BookmarkId, CategoryId, Hlc, IdError, NodeId, SeriesId, SourceId, TagId, norm,
+};
 use proptest::prelude::*;
 use uuid::Uuid;
 
@@ -26,6 +28,43 @@ fn keeps_series_and_categories_with_the_same_name_apart() {
     let category = CategoryId::from_name("Sample Shelf").unwrap();
 
     assert_ne!(series.as_bytes(), category.as_bytes());
+}
+
+#[test]
+fn keeps_tags_and_categories_with_the_same_name_apart() {
+    let category = CategoryId::from_name("Sample Shelf").unwrap();
+
+    let tag = TagId::from_name("Sample Shelf").unwrap();
+
+    assert_ne!(category.as_bytes(), tag.as_bytes());
+}
+
+#[test]
+fn mints_a_tag_id_apart_from_the_one_its_name_derives_and_from_those_of_other_stamps() {
+    let node = NodeId::from([0xa0; 16]);
+
+    let minted = TagId::minted("Sample Tag", node, Hlc::from(5)).unwrap();
+    let later = TagId::minted("Sample Tag", node, Hlc::from(6)).unwrap();
+
+    assert_ne!(minted, TagId::from_name("Sample Tag").unwrap());
+    assert_ne!(minted, later);
+    assert_eq!(
+        minted,
+        TagId::minted("  SAMPLE tag", node, Hlc::from(5)).unwrap()
+    );
+    assert_eq!(minted.to_string(), "1e5d257b-280f-8994-8b50-6051d9f0a679");
+}
+
+#[test]
+fn reads_no_membership_field_that_is_not_a_lowercase_hex_id() {
+    let tag = TagId::from_name("Sample Tag").unwrap();
+    let field = tag.membership_field();
+
+    assert_eq!(TagId::from_membership_field(&field), Some(tag));
+    assert_eq!(TagId::from_membership_field(&field.to_uppercase()), None);
+    assert_eq!(TagId::from_membership_field("tag.zz"), None);
+    assert_eq!(TagId::from_membership_field("cat.0123"), None);
+    assert_eq!(CategoryId::from_membership_field(&field), None);
 }
 
 #[test]
@@ -129,6 +168,9 @@ proptest! {
 
         prop_assert_eq!(id.to_string().parse::<CategoryId>().unwrap(), id);
         prop_assert_eq!(CategoryId::try_from(id.as_bytes().as_slice()).unwrap(), id);
+        let tag = TagId::from_name(&name).unwrap();
+        prop_assert_eq!(tag.to_string().parse::<TagId>().unwrap(), tag);
+        prop_assert_eq!(TagId::try_from(tag.as_bytes().as_slice()).unwrap(), tag);
     }
 }
 

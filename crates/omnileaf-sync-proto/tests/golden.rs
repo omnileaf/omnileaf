@@ -9,7 +9,7 @@ use std::fmt::Write;
 
 use omnileaf_sync_proto::{
     BookId, BookmarkId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, ProfileId, SeriesId,
-    SourceId, Value, norm,
+    SourceId, TagId, Value, norm,
 };
 use serde::Deserialize;
 
@@ -70,6 +70,7 @@ fn ids_match_the_golden_vectors() {
                 BookmarkId::of(book.parse().unwrap(), page.parse().unwrap()).to_string()
             }
             ("category.v1", Some(input), None) => CategoryId::from_name(input).unwrap().to_string(),
+            ("tag.v1", Some(input), None) => TagId::from_name(input).unwrap().to_string(),
             ("source.local.v1", None, None) => SourceId::local().to_string(),
             ("profile.default.v1", None, None) => ProfileId::default_profile().to_string(),
             ("profile.shared.v1", None, None) => ProfileId::shared().to_string(),
@@ -270,4 +271,38 @@ fn unhex(text: &str) -> Vec<u8> {
         .chunks(2)
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect()
+}
+
+#[derive(Deserialize)]
+struct MembershipField {
+    kind: String,
+    id: String,
+    field: String,
+}
+
+#[test]
+fn membership_fields_match_the_golden_vectors() {
+    let vectors: Vec<MembershipField> = golden(include_str!("golden/membership_fields.json"));
+
+    for vector in vectors {
+        let (field, read_back) = match vector.kind.as_str() {
+            "category" => {
+                let id: CategoryId = vector.id.parse().unwrap();
+                (
+                    id.membership_field(),
+                    CategoryId::from_membership_field(&vector.field).map(|id| id.to_string()),
+                )
+            }
+            "tag" => {
+                let id: TagId = vector.id.parse().unwrap();
+                (
+                    id.membership_field(),
+                    TagId::from_membership_field(&vector.field).map(|id| id.to_string()),
+                )
+            }
+            kind => panic!("no membership field for {kind}"),
+        };
+        assert_eq!(field, vector.field, "{} {}", vector.kind, vector.id);
+        assert_eq!(read_back, Some(vector.id), "{}", vector.field);
+    }
 }
