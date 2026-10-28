@@ -95,7 +95,7 @@ test("lists the naming rules in plain words", async ({ page }) => {
   );
 });
 
-test("keeps the example inside a narrow window at the largest text", async ({
+test("keeps the guide inside a small phone at the largest text", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 800 });

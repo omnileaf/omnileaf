@@ -33,7 +33,7 @@
   title={m.folder_guide_title()}
   parent={{ route: "/(app)/settings/library", title: m.library_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-pane-gap">
+<div class="mbs-pane-gap flex flex-col gap-pane-gap wrap-break-word">
   <p class="text-footnote text-muted">{m.folder_guide_intro()}</p>
   <section aria-labelledby={exampleId} class="flex flex-col gap-sm">
     <h2 id={exampleId} class="text-body font-medium">
