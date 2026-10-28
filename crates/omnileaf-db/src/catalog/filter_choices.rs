@@ -11,7 +11,7 @@ const HOLDS_MANGA: &str = "SELECT EXISTS (
 const HOLDS_COMICS: &str = "SELECT EXISTS (
     SELECT 1 FROM series WHERE manga_books = 0 AND reading_stage IS NOT NULL
 )";
-const TAGS: &str = "SELECT DISTINCT name FROM book_tag ORDER BY name COLLATE NOCASE, name";
+const TAGS: &str = "SELECT DISTINCT name FROM series_tag ORDER BY name COLLATE NOCASE, name";
 const HOLDS_RATED_ADULT: &str = "SELECT EXISTS (
     SELECT 1 FROM series
     WHERE adult_rated_books - marked_adult > 0 AND reading_stage IS NOT NULL

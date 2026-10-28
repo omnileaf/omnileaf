@@ -6,7 +6,7 @@ use crate::{
     catalog::{Cover, cover::stored_cover, staged_rows::snapshot, stored_id::stored_id},
 };
 
-/// How many books may carry a tag before it counts as no rarer than any other.
+/// How many series may carry a tag before it counts as no rarer than any other.
 const TAG_SPREAD_CAP: i64 = 500;
 
 macro_rules! series_sharing_people {
@@ -37,17 +37,14 @@ macro_rules! series_sharing_people {
 const SERIES_SHARING_A_WRITER: &str = series_sharing_people!("('writer')");
 const SERIES_SHARING_AN_ARTIST: &str =
     series_sharing_people!("('penciller', 'inker', 'colourist', 'cover_artist')");
-const TAGS_OF_SERIES: &str = "SELECT DISTINCT book_tag.name FROM book
-    JOIN book_tag ON book_tag.book_id = book.id
-    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)";
-const TAG_SPREAD: &str =
-    "SELECT count(*) FROM (SELECT DISTINCT book_id FROM book_tag WHERE name = ?1 LIMIT ?2)";
-const SERIES_SHARING_A_TAG: &str = "SELECT DISTINCT other.series_local_id AS local_id
-    FROM book_tag
-    JOIN book AS other ON other.id = book_tag.book_id
-    JOIN series ON series.local_id = other.series_local_id
-    WHERE book_tag.name = :tag
-        AND other.series_local_id IS NOT (SELECT local_id FROM series WHERE id = :series)
+const TAGS_OF_SERIES: &str = "SELECT name FROM series_tag
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = ?1)";
+const TAG_SPREAD: &str = "SELECT count(*) FROM (SELECT 1 FROM series_tag WHERE name = ?1 LIMIT ?2)";
+const SERIES_SHARING_A_TAG: &str = "SELECT series_tag.series_local_id AS local_id
+    FROM series_tag
+    JOIN series ON series.local_id = series_tag.series_local_id
+    WHERE series_tag.name = :tag
+        AND series_tag.series_local_id IS NOT (SELECT local_id FROM series WHERE id = :series)
         AND series.reading_stage IS NOT NULL
         AND NOT (:leaves_out_adult AND ((series.adult_rated_books > 0 AND :counts_age_ratings)
             OR series.marked_adult = 1))
@@ -284,18 +281,16 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH book_tag USING COVERING INDEX book_tag_by_name (name=?)",
-                "SEARCH other USING PRIMARY KEY (id=?)",
+                "SEARCH series_tag USING COVERING INDEX series_tag_by_name (name=?)",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
-                "USE TEMP B-TREE FOR DISTINCT",
             ]
         );
     }
 
     #[test]
-    fn counts_how_many_books_carry_a_tag_through_the_tag_index_up_to_a_cap() {
+    fn counts_how_many_series_carry_a_tag_through_the_tag_index_up_to_a_cap() {
         let scratch = ScratchLibrary::new("tag-spread-plan");
 
         let plan = scratch.query_plan(TAG_SPREAD);
@@ -304,14 +299,14 @@ mod tests {
             plan,
             [
                 "CO-ROUTINE (subquery-1)",
-                "SEARCH book_tag USING COVERING INDEX book_tag_by_name (name=?)",
+                "SEARCH series_tag USING COVERING INDEX series_tag_by_name (name=?)",
                 "SCAN (subquery-1)",
             ]
         );
     }
 
     #[test]
-    fn reads_a_series_tags_through_its_books() {
+    fn reads_a_series_tags_through_its_tag_rows() {
         let scratch = ScratchLibrary::new("tags-of-series-plan");
 
         let plan = scratch.query_plan(TAGS_OF_SERIES);
@@ -319,11 +314,9 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SEARCH series_tag USING PRIMARY KEY (series_local_id=?)",
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-                "SEARCH book_tag USING PRIMARY KEY (book_id=?)",
-                "USE TEMP B-TREE FOR DISTINCT",
             ]
         );
     }
