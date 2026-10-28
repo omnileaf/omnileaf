@@ -27,6 +27,7 @@ specta-typescript.workspace = true
 tauri.workspace = true
 tauri-plugin-clipboard-manager.workspace = true
 tauri-plugin-opener.workspace = true
+tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 tauri-specta.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time"] }
@@ -66,9 +67,6 @@ omnileaf-windows-probes.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 rustix.workspace = true
-
-[target.'cfg(not(windows))'.dependencies]
-tauri-plugin-wdio-webdriver = { workspace = true, optional = true }
 
 [dev-dependencies]
 omnileaf-db.workspace = true

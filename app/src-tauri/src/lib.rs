@@ -134,7 +134,7 @@ pub fn run() {
     let app = app
         .manage(e2e::PickedFolder::from_environment())
         .manage(e2e::CrashReportFolder::from_environment());
-    #[cfg(all(feature = "e2e", not(windows)))]
+    #[cfg(feature = "e2e")]
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.build(tauri::generate_context!())
         .expect("start the Tauri runtime")
