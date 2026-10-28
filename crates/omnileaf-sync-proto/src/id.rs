@@ -9,6 +9,7 @@ const DERIVED_VERSION: usize = 8;
 const LOCAL_BOOK_KEY: KeyName = KeyName::new("book.local.v1");
 const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
 const FOLDER_SERIES_KEY: KeyName = KeyName::new("series.folder.v1");
+const NAMED_SERIES_KEY: KeyName = KeyName::new("series.named.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
 const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
 const DEFAULT_PROFILE_KEY: KeyName = KeyName::new("profile.default.v1");
@@ -105,6 +106,13 @@ impl SeriesId {
             NaturalKey::new(FOLDER_SERIES_KEY).part(norm(linked_folder_name).as_bytes())?,
             |key, folder| key.part(norm(folder.as_ref()).as_bytes()),
         )?;
+        Ok(Self(key.id()))
+    }
+
+    pub fn named(format_family: &str, series_name: &str) -> Result<Self, KeyError> {
+        let key = NaturalKey::new(NAMED_SERIES_KEY)
+            .part(norm(format_family).as_bytes())?
+            .part(norm(series_name).as_bytes())?;
         Ok(Self(key.id()))
     }
 }

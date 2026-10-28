@@ -21,6 +21,7 @@ use tokio::{sync::watch, task::spawn_blocking};
 use crate::{
     LibraryError,
     book_details::read_details,
+    book_numbering::FileNumbers,
     clock::unix_ms,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
@@ -238,16 +239,16 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
     let linked_folder = folder_name(&target.folder);
-    let Placement {
-        series,
-        title,
-        numbering,
-    } = place_book(&location, &linked_folder);
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
         .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
     let page_count = saturating_u32(book.pages().len());
     let details = read_details(&mut book, &found.path);
+    let Placement {
+        series,
+        title,
+        numbering,
+    } = place_book(&location, &linked_folder, FileNumbers::of(&details));
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
         series: NewSeries::folder(
