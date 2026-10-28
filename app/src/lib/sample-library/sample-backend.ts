@@ -571,7 +571,13 @@ export function sampleBackend(
   const isAdult = (series: SampleSeries): boolean =>
     (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
     detailEdits.get(series.number)?.isMarkedAdult === true;
-  const hidesAdult = (): boolean => adultContent.treatment === "hide";
+  let screenshotMode = false;
+  const hidesAdult = (): boolean =>
+    screenshotMode || adultContent.treatment === "hide";
+  const isHiddenByScreenshotMode = (series: SampleSeries): boolean =>
+    screenshotMode && isAdult(series);
+  const shownLibrary = (): SampleSeries[] =>
+    library.filter((series) => !isHiddenByScreenshotMode(series));
   const storage = {
     cachedPagesBytes: SAMPLE_STORAGE.cachedPagesBytes,
     coversBytes: SAMPLE_STORAGE.coversBytes,
@@ -666,13 +672,13 @@ export function sampleBackend(
   }
 
   function seriesBy(creator: string): SampleSeries[] {
-    return library.filter((series) =>
+    return shownLibrary().filter((series) =>
       peopleOf(series).some(({ name }) => name === creator),
     );
   }
 
   function seriesWrittenBy(writer: string): SampleSeries[] {
-    return library.filter(
+    return shownLibrary().filter(
       (series) =>
         !isOutOfReach(series) &&
         peopleOf(series).some(
@@ -684,7 +690,7 @@ export function sampleBackend(
   function seriesInGroup(group: string): SampleSeries[] {
     const isInWriterGroup = (series: SampleSeries): boolean =>
       WRITER_GROUP_SERIES.has(series.number);
-    return library.filter(
+    return shownLibrary().filter(
       (series) =>
         !isOutOfReach(series) &&
         ((group === LIBRARY_GROUP_ID && !isInWriterGroup(series)) ||
@@ -693,7 +699,7 @@ export function sampleBackend(
   }
 
   function writerNames(): string[] {
-    const inReach = library.filter((series) => !isOutOfReach(series));
+    const inReach = shownLibrary().filter((series) => !isOutOfReach(series));
     const names = inReach.flatMap((series) =>
       peopleOf(series)
         .filter(writes)
@@ -827,7 +833,7 @@ export function sampleBackend(
   }
 
   function historyEntries() {
-    return library.flatMap((series) =>
+    return shownLibrary().flatMap((series) =>
       series.books.flatMap((book, index) =>
         book.reading.state === "started"
           ? [
@@ -901,7 +907,7 @@ export function sampleBackend(
     const started = new Set(historyEntries().map(({ series }) => series));
     return [
       ...historyEntries(),
-      ...library
+      ...shownLibrary()
         .filter((series) => !started.has(sampleSeriesId(series.number)))
         .flatMap(lastFinished),
     ]
@@ -1260,7 +1266,7 @@ export function sampleBackend(
           ),
         ],
         tags: [...new Set(library.flatMap(tagsOf))],
-        ratesAdult: library.length > 0,
+        ratesAdult: !screenshotMode && library.length > 0,
         keepsBookmarks: library.length > 0,
         smart: library.some((series) =>
           SERIES_WITH_DOWNLOADS.has(series.number),
@@ -1386,7 +1392,7 @@ export function sampleBackend(
         return null;
       }
       const allowed = slipsAllowed(Array.from(typed).length);
-      const titles = library.flatMap((series) => [
+      const titles = shownLibrary().flatMap((series) => [
         { title: titleOf(series), chapterOf: null },
         ...series.books.map((book) => ({
           title: book.title,
@@ -1449,18 +1455,23 @@ export function sampleBackend(
           detailEdits.get(series.number)?.summary ?? series.summary ?? null,
         tags: [...tagsOf(series)],
         secondsLeft: secondsLeftIn(series),
-        related: series.related.map(({ number, reason }) => {
-          const other = seriesWith(sampleSeriesId(number));
-          return {
-            id: sampleSeriesId(number),
-            title: titleOf(other),
-            cover: coverOf(other),
-            bookCount: other.books.length,
-            readCount: other.books.filter(isRead).length,
-            reason,
-            isAdult: isAdult(other),
-          };
-        }),
+        related: series.related
+          .filter(
+            ({ number }) =>
+              !isHiddenByScreenshotMode(seriesWith(sampleSeriesId(number))),
+          )
+          .map(({ number, reason }) => {
+            const other = seriesWith(sampleSeriesId(number));
+            return {
+              id: sampleSeriesId(number),
+              title: titleOf(other),
+              cover: coverOf(other),
+              bookCount: other.books.length,
+              readCount: other.books.filter(isRead).length,
+              reason,
+              isAdult: isAdult(other),
+            };
+          }),
       };
     },
     seriesBooks: async (id, chosen, after) => {
@@ -1717,7 +1728,11 @@ export function sampleBackend(
     readingSummary: (id) => {
       const { series, index } = bookWith(id);
       const book = series.books[index];
-      if (book === undefined || book.reading.state === "notStarted") {
+      if (
+        book === undefined ||
+        book.reading.state === "notStarted" ||
+        isHiddenByScreenshotMode(series)
+      ) {
         return null;
       }
       return {
@@ -1728,14 +1743,17 @@ export function sampleBackend(
         secondsPerPage: Math.ceil(SAMPLE_SUMMARY_SECONDS_PER_PAGE),
       };
     },
-    bookSessions: () => ({
-      sessions: 1,
-      readSeconds: SESSION_SECONDS,
-      firstDay: Math.floor(NEWEST_ADDED_MS / DAY_MS),
-      lastDay: Math.floor(NEWEST_ADDED_MS / DAY_MS),
-    }),
+    bookSessions: (id) =>
+      isHiddenByScreenshotMode(bookWith(id).series)
+        ? null
+        : {
+            sessions: 1,
+            readSeconds: SESSION_SECONDS,
+            firstDay: Math.floor(NEWEST_ADDED_MS / DAY_MS),
+            lastDay: Math.floor(NEWEST_ADDED_MS / DAY_MS),
+          },
     historySeries: () =>
-      library
+      shownLibrary()
         .filter((series) => series.books.some(isStarted))
         .map((series) => ({
           id: sampleSeriesId(series.number),
@@ -1795,6 +1813,11 @@ export function sampleBackend(
     setScheduledRescans: () => undefined,
     setBookOpen: () => undefined,
     setLearnsReadingSpeed: () => undefined,
+    setScreenshotMode: (on) => {
+      screenshotMode = on;
+      return undefined;
+    },
+    getScreenshotMode: () => screenshotMode,
     copyVersionDetails: () => null,
     openProjectLink: () => null,
     problemReport: () => ({
