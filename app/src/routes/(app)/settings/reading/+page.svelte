@@ -12,6 +12,8 @@
     type TapZones,
   } from "#lib/reader/reader-settings.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { currentPlatform } from "#lib/page/platform.ts";
+  import { hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import type { SwipeSide } from "#lib/series/swipe.ts";
   import {
     getSwipeActionsSetting,
@@ -107,6 +109,20 @@
         defaults.change("tapZones", zones);
       }}
     />
+    {#if hasVolumeKeys(currentPlatform())}
+      <SettingSwitch
+        label={m.reader_volume_keys()}
+        description={m.reader_volume_keys_help()}
+        isOn={defaults.look.turnsPagesWithVolumeKeys}
+        onToggle={() => {
+          defaults.change(
+            "turnsPagesWithVolumeKeys",
+            !defaults.look.turnsPagesWithVolumeKeys,
+          );
+        }}
+        class="-mx-list-row inline-auto"
+      />
+    {/if}
     <SettingSwitch
       label={m.reader_keep_screen_on()}
       description={m.reading_keep_screen_on_help()}

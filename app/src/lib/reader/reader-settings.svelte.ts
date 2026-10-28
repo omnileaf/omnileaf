@@ -28,6 +28,7 @@ export interface ReaderLook {
   readonly light: ReaderLight;
   readonly keepsScreenOn: boolean;
   readonly cropsBorders: boolean;
+  readonly turnsPagesWithVolumeKeys: boolean;
   readonly tapZones: TapZones;
   readonly pageTurn: PageTurnStyle;
   readonly tapToScroll: TapToScroll;
@@ -64,6 +65,7 @@ export const DEFAULT_LOOK: ReaderLook = {
   light: { isOn: false, brightness: 80, warmth: 20 },
   keepsScreenOn: true,
   cropsBorders: false,
+  turnsPagesWithVolumeKeys: false,
   tapZones: "edges",
   pageTurn: "instant",
   tapToScroll: "topAndBottom",
@@ -134,6 +136,7 @@ function lookIn(text: string | null): Partial<ReaderLook> {
     light: lightIn(stored.light),
     keepsScreenOn: flag(stored.keepsScreenOn),
     cropsBorders: flag(stored.cropsBorders),
+    turnsPagesWithVolumeKeys: flag(stored.turnsPagesWithVolumeKeys),
     tapZones: oneOf(TAP_ZONES, stored.tapZones),
     pageTurn: oneOf(PAGE_TURN_STYLES, stored.pageTurn),
     tapToScroll: oneOf(TAP_TO_SCROLL, stored.tapToScroll),

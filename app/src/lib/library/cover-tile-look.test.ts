@@ -17,6 +17,8 @@ import { followCorePlatform } from "#lib/page/platform.ts";
 import { Selection } from "#lib/page/selection.svelte.ts";
 import type { SeriesId } from "#lib/series/series-id.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import CoverBadges from "./CoverBadges.svelte";
 import type { CoverPath } from "./cover-url";
 import { NEW_LIBRARY_LISTING } from "./library-listing";
@@ -25,6 +27,7 @@ import SeriesCovers from "./SeriesCovers.svelte";
 
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 820, height: 1180 };
+const DESKTOP = { width: 1280, height: 800 };
 const ON_COVERS: OnCovers = {
   ...DEFAULT_LIBRARY_VIEW.onCovers,
   showsUnreadCount: true,
@@ -266,17 +269,49 @@ test("tints Android's check box and badges for the dark theme", async () => {
   ]);
 });
 
-test("keeps linux's tile as it was", async () => {
+test("keeps linux's cover and marks as they were", async () => {
   const look = await lookOn("linux", "light");
 
   expect([
     look.cover.corner,
-    look.badge.height,
     look.downloaded.size,
     look.mark.size,
     look.mark.corner,
     look.emptyMark.ring,
-  ]).toEqual(["6px", 24, 22, 22, "6px", "none"]);
+  ]).toEqual(["6px", 22, 22, "6px", "none"]);
+});
+
+test("draws linux's unread count as a 22px badge with 8px sides and 8px corners on the primary", async () => {
+  await page.viewport(DESKTOP.width, DESKTOP.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("linux");
+  const series = await oneSeries();
+
+  await render(CoverBadges, { series, onCovers: ON_COVERS });
+  const unread = page.getByRole("img", { name: "3 unread" }).element();
+  const style = styleOf(unread);
+
+  expect([
+    unread.getBoundingClientRect().height,
+    style.paddingBlockStart,
+    style.paddingInlineStart,
+    style.borderTopWidth,
+    style.borderTopLeftRadius,
+    style.backgroundColor,
+    style.fontSize,
+    style.lineHeight,
+    style.fontWeight,
+  ]).toEqual([
+    22,
+    "2px",
+    "8px",
+    "1px",
+    "8px",
+    resolvedColour("--primary", "backgroundColor"),
+    "12px",
+    "16px",
+    "500",
+  ]);
 });
 
 test("keeps a tablet's tile as it was on iOS and Android", async () => {

@@ -6,6 +6,7 @@
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { folderTitle } from "./folder-title";
   import FolderWell from "./FolderWell.svelte";
 
   const NOTE_ICON_SIZE = 16;
@@ -40,7 +41,7 @@
 >
   {#if shown.current !== undefined}
     <FolderWell
-      folder={shown.current}
+      title={folderTitle(shown.current)}
       detail={books === undefined
         ? shown.current.location
         : m.library_remove_folder_detail({

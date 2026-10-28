@@ -134,6 +134,109 @@ test("can't open a book whose file is missing", async () => {
   await expect(opening).rejects.toBeInstanceOf(CommandFailure);
 });
 
+test("names a book's file after its title", async () => {
+  const { backend } = backendFor();
+
+  const file = await backend.bookFile(sampleBookId(4, 3));
+
+  expect(file).toEqual({ name: "Volume 3.cbz", fileType: "cbz" });
+});
+
+test("names no file for a book the library doesn't hold", async () => {
+  const { backend } = backendFor();
+
+  const file = await backend.bookFile(sampleBookId(4, 99));
+
+  expect(file).toBeNull();
+});
+
+test("hides no file types to begin with", async () => {
+  const { backend } = backendFor();
+
+  const hidden = await backend.hiddenFileTypes();
+
+  expect(hidden).toEqual([]);
+});
+
+test("can't open Volume 6 when its file is of a type this version doesn't read", async () => {
+  const { backend } = backendFor("volume6=unsupported");
+
+  const opening = (async () => backend.openBook(sampleBookId(4, 6), []))();
+
+  await expect(opening).rejects.toMatchObject({
+    error: { code: "bookTypeUnsupported" },
+  });
+});
+
+test("names Volume 6's file as a CBR file when this version can't read it", async () => {
+  const { backend } = backendFor("volume6=unsupported");
+
+  const file = await backend.bookFile(sampleBookId(4, 6));
+
+  expect(file).toEqual({ name: "Volume 6.cbr", fileType: "cbr" });
+});
+
+test("hides files like Volume 6's until their type is shown again", async () => {
+  const { backend } = backendFor("volume6=unsupported");
+
+  const hidden = await backend.hideFilesLike(sampleBookId(4, 6));
+  const listed = await backend.hiddenFileTypes();
+  await backend.showFileType("cbr");
+
+  expect(hidden).toBe("cbr");
+  expect(listed).toEqual(["cbr"]);
+  expect(await backend.hiddenFileTypes()).toEqual([]);
+});
+
+test("lists the file types hidden in order", async () => {
+  const { backend } = backendFor("volume6=unsupported");
+
+  await backend.hideFileType("rar");
+  await backend.hideFilesLike(sampleBookId(4, 6));
+
+  expect(await backend.hiddenFileTypes()).toEqual(["cbr", "rar"]);
+});
+
+test("refuses to hide a file type this version reads", async () => {
+  const { backend } = backendFor();
+
+  const hiding = (async () => backend.hideFileType("cbz"))();
+
+  await expect(hiding).rejects.toMatchObject({
+    error: { code: "fileTypeRead" },
+  });
+});
+
+test("names the file types a rescan skipped when asked to", async () => {
+  const { backend } = backendFor("skipped=types");
+
+  const rescan = await backend.rescanLibraryFolder("folder", {
+    send: () => Promise.resolve(),
+  });
+
+  expect(
+    rescan.skippedTypes?.map(({ fileType, files }) => [fileType, files]),
+  ).toEqual([
+    ["cbr", 3],
+    ["rar", 1],
+  ]);
+  expect(rescan.outcome).toMatchObject({ unsupportedBooks: 4 });
+});
+
+test("adds a folder holding only files of types it skips when asked to", async () => {
+  const { backend } = backendFor("skipped=types");
+
+  const scan = await backend.addLibraryFolder({
+    send: () => Promise.resolve(),
+  });
+
+  expect(scan).toMatchObject({ books: 0, unsupportedBooks: 4 });
+  expect(scan?.skippedTypes?.map(({ fileType }) => fileType)).toEqual([
+    "cbr",
+    "rar",
+  ]);
+});
+
 test("answers on the platform asked for", async () => {
   const { backend } = backendFor("platform=ios");
 

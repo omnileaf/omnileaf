@@ -25,6 +25,7 @@
   import {
     type AdultTreatment,
     commands,
+    type HomeArrival,
     type LibraryFolder,
     type LibrarySeries,
   } from "#lib/ipc/bindings.ts";
@@ -32,6 +33,11 @@
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
+  import {
+    homeArrivalNotice,
+    takeHomeArrival,
+  } from "#lib/library/home-arrival.ts";
+  import { HomeFolderChange } from "#lib/library/home-folder-change.svelte.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -45,9 +51,13 @@
   const theme = getThemeSetting();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
+  const homeArrival = arrivalToTell();
   let isLeaving = $state(false);
+  let resumingAt: FirstLaunchStep | undefined = $state(stepToResumeAt());
   const step: FirstLaunchStep = $derived(
-    isLeaving ? "ready" : (page.state.firstLaunchStep ?? "welcome"),
+    isLeaving
+      ? "ready"
+      : (resumingAt ?? page.state.firstLaunchStep ?? "welcome"),
   );
 
   const folders = new LibraryFolders(
@@ -68,13 +78,75 @@
     () => pickerQuestion.ask(),
   );
 
+  const homeChange = new HomeFolderChange(
+    {
+      choose: commands.chooseHomeFolder,
+      use: commands.useFoundLibrary,
+      move: commands.moveHomeFolder,
+    },
+    () => notices,
+  );
+  const foundLibrary = $derived(homeChange.found?.library ?? data.foundLibrary);
+
   let adultTreatment: AdultTreatment = $state("blur");
   let card: HTMLElement | undefined = $state();
   let shownStep: FirstLaunchStep | undefined;
 
   onMount(() => {
-    void folders.load();
+    if (resumingAt !== undefined) {
+      void resumeAt(resumingAt);
+    }
+    void folders.load().then(showHomeArrival);
   });
+
+  function arrivalToTell(): HomeArrival | null {
+    return takeHomeArrival(data.homeArrival);
+  }
+
+  function stepToResumeAt(): FirstLaunchStep | undefined {
+    const isFreshLaunch = page.state.firstLaunchStep === undefined;
+    return isFreshLaunch && homeArrival === "moved" ? "home" : undefined;
+  }
+
+  async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
+    await goto(resolve(FIRST_LAUNCH_ROUTE), {
+      shallow: true,
+      replace: true,
+      state: { firstLaunchStep: "welcome" },
+    });
+    await goto(resolve(FIRST_LAUNCH_ROUTE), {
+      shallow: true,
+      state: { firstLaunchStep: resumed },
+    });
+    resumingAt = undefined;
+  }
+
+  function showHomeArrival(): void {
+    const notice = homeArrivalNotice(
+      homeArrival,
+      folders.list,
+      data.appInfo.platform,
+    );
+    if (notice !== undefined) {
+      notices.show(notice);
+    }
+  }
+
+  function useLibrary(): void {
+    if (homeChange.found === undefined) {
+      void next();
+      return;
+    }
+    void homeChange.use();
+  }
+
+  function startNewLibrary(): void {
+    if (homeChange.found === undefined) {
+      void next();
+      return;
+    }
+    homeChange.clearFound();
+  }
 
   $effect(() => {
     if (shownStep !== undefined && shownStep !== step) {
@@ -178,20 +250,30 @@
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />
-      {:else if step === "home" && data.foundLibrary !== null}
+      {:else if step === "home" && foundLibrary !== null}
         <FoundLibraryStep
           platform={data.appInfo.platform}
           folders={folders.list}
-          found={data.foundLibrary}
+          found={foundLibrary}
+          chosenLocation={homeChange.found?.location}
+          isBusy={homeChange.isBusy}
           onBack={back}
-          onStartNew={next}
+          onStartNew={startNewLibrary}
+          onUse={useLibrary}
+          onChange={() => {
+            void homeChange.choose();
+          }}
         />
       {:else if step === "home"}
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
+          isChanging={homeChange.isBusy}
           onBack={back}
           onNext={next}
+          onChange={() => {
+            void homeChange.choose();
+          }}
         />
       {:else if step === "link"}
         <LinkStep

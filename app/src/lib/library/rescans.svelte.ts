@@ -4,6 +4,7 @@ import type {
   commands,
   LibraryFolder,
   RescanOutcome,
+  SkippedType,
 } from "#lib/ipc/bindings.ts";
 
 import type { RescanFolder } from "./rescan-folder";
@@ -18,6 +19,7 @@ export type RescanStatus =
       readonly kind: "finished";
       readonly folder: LibraryFolder;
       readonly outcome: RescanOutcome;
+      readonly skippedTypes: readonly SkippedType[];
     }
   | { readonly kind: "failed"; readonly folder: LibraryFolder }
   | { readonly kind: "removingBooks"; readonly folder: LibraryFolder };
@@ -69,8 +71,8 @@ export class Rescans {
       this.status = { kind: "failed", folder };
       return;
     }
-    const { outcome } = result.data;
-    this.status = { kind: "finished", folder, outcome };
+    const { outcome, skippedTypes = [] } = result.data;
+    this.status = { kind: "finished", folder, outcome, skippedTypes };
     if (outcome.kind === "foundEmpty") {
       this.#emptied.set(folder.id, "foundEmpty");
     } else {

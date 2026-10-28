@@ -26,6 +26,7 @@
   import SkipUpNextSwitch from "./SkipUpNextSwitch.svelte";
   import { getSmartFeatures } from "./smart-features.svelte.ts";
   import SmartFeaturesSection from "./SmartFeaturesSection.svelte";
+  import VolumeKeysSwitch from "./VolumeKeysSwitch.svelte";
 
   let {
     settings,
@@ -327,6 +328,7 @@
       <div class="flex flex-col divide-y divide-border">
         <KeepScreenOnSwitch {settings} />
         <CropBordersSwitch {settings} />
+        <VolumeKeysSwitch {settings} />
       </div>
     </section>
     <section

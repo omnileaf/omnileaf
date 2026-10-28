@@ -1,14 +1,35 @@
 <script lang="ts">
-  import { BUTTON_LOOKS } from "#lib/components/ui/button/looks.ts";
-  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import type { Platform } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  let {
+    ref = $bindable(null),
+    platform,
+    isBusy,
+    onclick,
+  }: {
+    ref?: HTMLButtonElement | null;
+    platform: Platform;
+    isBusy: boolean;
+    onclick: () => void;
+  } = $props();
+
+  function change(): void {
+    if (!isBusy) {
+      onclick();
+    }
+  }
 </script>
 
-<Tooltip
-  label={m.reader_coming_soon({ feature: m.first_launch_home_change() })}
+<Button
+  bind:ref
   type="button"
-  aria-disabled="true"
-  class={BUTTON_LOOKS["card-outline"]}
+  look="card-outline"
+  aria-disabled={isBusy || undefined}
+  onclick={change}
 >
-  {m.first_launch_home_change()}
-</Tooltip>
+  {platform === "macos"
+    ? m.first_launch_home_change_macos()
+    : m.first_launch_home_change()}
+</Button>

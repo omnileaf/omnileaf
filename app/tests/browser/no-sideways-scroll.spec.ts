@@ -12,7 +12,13 @@ import {
 } from "./fixtures.ts";
 import { goToStep } from "./first-launch-steps.ts";
 import { LONG_FOLDER_NAME, longFoldersOn } from "./long-folders.ts";
-import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
+import {
+  BOOK_ID,
+  BOOK_SERIES_ID,
+  BOOK_SERIES_TITLE,
+  readerBackend,
+  servePages,
+} from "./reader-book.ts";
 
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const PLATFORMS = ["ios", "android", "linux"] as const;
@@ -27,6 +33,28 @@ function withoutFolderChooser(): FakeBackend {
         message: "no desktop portal or zenity can show a folder chooser",
       });
     },
+  };
+}
+
+function withFileItCantOpen(platform: (typeof PLATFORMS)[number]): FakeBackend {
+  return {
+    ...onPlatform(platform).backend,
+    openBook: () => {
+      throw new CommandFailure({
+        code: "bookTypeUnsupported",
+        message: "the book's file is of a type this version can't read yet",
+      });
+    },
+    bookPlace: () => ({
+      id: BOOK_ID,
+      title: LONG_FOLDER_NAME,
+      series: BOOK_SERIES_ID,
+      seriesTitle: BOOK_SERIES_TITLE,
+    }),
+    bookFile: () => ({
+      name: "Comics_and_manga_gathered_over_many_years_from_every_shelf.cbr",
+      fileType: "cbr",
+    }),
   };
 }
 
@@ -54,6 +82,26 @@ for (const platform of PLATFORMS) {
           await servePages(page);
           await page.goto(`/read/${BOOK_ID}`);
           await expect(page.getByRole("slider")).toBeVisible();
+
+          const overflowing = await sidewaysOverflow(page);
+
+          expect(overflowing).toEqual([]);
+        });
+      });
+
+      test.describe("with a file it can't open", () => {
+        test.use({ backend: withFileItCantOpen(platform) });
+
+        test("fits the screen naming the file to the screen", async ({
+          page,
+        }) => {
+          await page.goto(`/read/${BOOK_ID}`);
+          await expect(
+            page.getByRole("heading", {
+              level: 1,
+              name: messages.reader_unsupported_title,
+            }),
+          ).toBeVisible();
 
           const overflowing = await sidewaysOverflow(page);
 
@@ -157,6 +205,9 @@ for (const platform of PLATFORMS) {
             unreadableBooks: 2,
             unsupportedBooks: 1,
             unreadableFolders: 1,
+            skippedTypes: [
+              { fileType: "cbr", files: 1, firstLocations: ["Extras.cbr"] },
+            ],
           })),
         });
 

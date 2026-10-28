@@ -18,7 +18,7 @@ pub struct NotAFileType {
 }
 
 #[derive(Clone, Debug, Default)]
-pub(crate) struct HiddenFileTypes(BTreeSet<String>);
+pub(crate) struct HiddenFileTypes(BTreeSet<FileType>);
 
 impl FileType {
     #[must_use]
@@ -73,12 +73,12 @@ impl From<FileType> for String {
 
 impl HiddenFileTypes {
     pub(crate) fn hides(&self, path: &Path) -> bool {
-        FileType::of(path).is_some_and(|found| self.0.contains(found.as_str()))
+        FileType::of(path).is_some_and(|found| self.0.contains(&found))
     }
 }
 
-impl FromIterator<String> for HiddenFileTypes {
-    fn from_iter<Types: IntoIterator<Item = String>>(types: Types) -> Self {
+impl FromIterator<FileType> for HiddenFileTypes {
+    fn from_iter<Types: IntoIterator<Item = FileType>>(types: Types) -> Self {
         Self(types.into_iter().collect())
     }
 }
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn hides_the_files_of_the_types_it_holds() {
-        let hidden = HiddenFileTypes::from_iter(["cbr".to_owned()]);
+        let hidden = HiddenFileTypes::from_iter([FileType("cbr".to_owned())]);
 
         let hides = ["Sample Series 01/v01.CBR", "v01.cbz", "Chapter 1"]
             .map(|name| hidden.hides(Path::new(name)));

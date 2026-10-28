@@ -1,9 +1,16 @@
 import type { Locator, Page } from "@playwright/test";
 import { TauriEvent } from "@tauri-apps/api/event";
 
-import type { AdultContent, Platform } from "../../src/lib/ipc/bindings.ts";
+import type {
+  AdultContent,
+  ChosenHomeFolder,
+  HomeArrival,
+  HomeChoice,
+  Platform,
+} from "../../src/lib/ipc/bindings.ts";
 import {
   CommandFailure,
+  commandsAsked,
   emitFakeEvent,
   type FakeBackend,
 } from "./fake-backend.ts";
@@ -76,6 +83,34 @@ class Device {
 
 const device = new Device();
 
+const CHOSEN_HOME = "/media/Sample Library";
+const DESKTOP_CHANGE_HEIGHT = 38;
+const TOAST_GONE_MS = 7_000;
+const DESKTOP_HOME_LEAD =
+  "Omnileaf keeps its own data in one home folder. You can move it later.";
+const DESKTOP_HOME_NOTE =
+  "Change picks another folder; Documents is the usual place.";
+
+class HomeFolderChanges {
+  chosen: (ChosenHomeFolder | null)[] = [];
+  moves = 0;
+  arrival: HomeArrival | null = null;
+
+  reset(): void {
+    this.chosen = [];
+    this.moves = 0;
+    this.arrival = null;
+  }
+
+  choose(choice: HomeChoice | null): void {
+    this.chosen.push(
+      choice === null ? null : { location: CHOSEN_HOME, choice },
+    );
+  }
+}
+
+const homeChanges = new HomeFolderChanges();
+
 const FIRST_LAUNCH_BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   firstLaunchFinished: () => device.finishes > 0,
@@ -134,6 +169,7 @@ test.use({ backend: FIRST_LAUNCH_BACKEND });
 
 test.beforeEach(() => {
   device.reset();
+  homeChanges.reset();
 });
 
 function heading(page: Page, name: string) {
@@ -536,6 +572,217 @@ for (const platform of ["android", "linux"] as const) {
     });
   });
 }
+
+function changingHomeOn(platform: Platform): FakeBackend {
+  return {
+    ...FIRST_LAUNCH_BACKEND,
+    appInfo: onPlatform(platform).backend.appInfo,
+    homeArrival: () => homeChanges.arrival,
+    chooseHomeFolder: () => homeChanges.chosen.shift() ?? null,
+    moveHomeFolder: () => {
+      homeChanges.moves += 1;
+      return null;
+    },
+  };
+}
+
+function changeIn(page: Page): Locator {
+  return page
+    .getByRole("region", { name: "Home folder" })
+    .getByRole("button", { name: "Change", exact: true });
+}
+
+test.describe("changing the home folder on a desktop", () => {
+  testOnlyInItsWebview("linux");
+  test.use({ backend: changingHomeOn("linux") });
+
+  test("puts Change at the end of the home folder's header, at the outlined button's height", async ({
+    page,
+  }) => {
+    await goTo(page, HOME_HEADING);
+    const card = await boxOf(page.getByRole("region", { name: "Home folder" }));
+
+    const change = await boxOf(changeIn(page));
+
+    expect(change.x + change.width).toBeLessThan(card.x + card.width);
+    expect(change.height).toBe(DESKTOP_CHANGE_HEIGHT);
+  });
+
+  test("says the home folder can move later, and how to move it", async ({
+    page,
+  }) => {
+    await goTo(page, HOME_HEADING);
+
+    await expect(page.getByText(DESKTOP_HOME_LEAD)).toBeVisible();
+    await expect(page.getByText(DESKTOP_HOME_NOTE)).toBeVisible();
+  });
+
+  test("moves the library into an empty folder chosen with Change", async ({
+    page,
+  }) => {
+    homeChanges.choose({ kind: "empty" });
+    await goTo(page, HOME_HEADING);
+
+    await changeIn(page).click();
+
+    await expect.poll(() => homeChanges.moves).toBe(1);
+  });
+
+  test("warns that a folder inside the home folder won't do, staying on the step", async ({
+    page,
+  }) => {
+    homeChanges.choose({ kind: "overlapsHome" });
+    await goTo(page, HOME_HEADING);
+
+    await changeIn(page).click();
+
+    await expect(
+      page.getByText("Couldn't move your library there", { exact: true }),
+    ).toBeVisible();
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+    expect(homeChanges.moves).toBe(0);
+  });
+
+  test("warns that a library from a newer Omnileaf can't be used", async ({
+    page,
+  }) => {
+    homeChanges.choose({ kind: "foundFromANewerVersion" });
+    await goTo(page, HOME_HEADING);
+
+    await changeIn(page).click();
+
+    await expect(
+      page.getByText("That library is from a newer Omnileaf", { exact: true }),
+    ).toBeVisible();
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+  });
+
+  test("stays put when the folder chooser is cancelled", async ({ page }) => {
+    homeChanges.choose(null);
+    await goTo(page, HOME_HEADING);
+
+    await changeIn(page).click();
+
+    await expect(changeIn(page)).not.toHaveAttribute("aria-disabled");
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+    expect(homeChanges.moves).toBe(0);
+  });
+
+  test("opens on the home folder after a move, saying where the library went", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+
+    await page.goto("/first-launch");
+
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+    await expect(
+      page.getByText("Your library moved", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(`It's in ${HOME_FOLDER.location} now.`),
+    ).toBeVisible();
+  });
+
+  test("goes back to the welcome from the home folder it opened on after a move", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+    await page.goto("/first-launch");
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+
+    await expect(heading(page, "Welcome to Omnileaf")).toBeVisible();
+  });
+
+  test("opens on the welcome after a failed move, saying the library stayed", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moveFailed";
+
+    await page.goto("/first-launch");
+
+    await expect(heading(page, "Welcome to Omnileaf")).toBeVisible();
+    await expect(
+      page.getByText("Couldn't move your library", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        `It stays in ${HOME_FOLDER.location}. Nothing in it changed.`,
+      ),
+    ).toBeVisible();
+  });
+
+  test("opens on the home folder after a move that relaunched at the start, saying it moved", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+
+    await page.goto("/");
+
+    await expect(heading(page, HOME_HEADING)).toBeVisible();
+    await expect(
+      page.getByText("Your library moved", { exact: true }),
+    ).toBeVisible();
+  });
+
+  test("says the library moved only once, not again in the library it finishes on", async ({
+    page,
+  }) => {
+    homeChanges.arrival = "moved";
+    const moved = page.getByText("Your library moved", { exact: true });
+    await page.clock.install();
+    await page.goto("/");
+    await expect(moved).toBeVisible();
+    await page.clock.runFor(TOAST_GONE_MS);
+    await expect(moved).toHaveCount(0);
+
+    for (const step of STEPS.slice(1)) {
+      await expect(heading(page, step.heading)).toBeVisible();
+      await page.getByRole("button", { name: step.leaveWith }).click();
+    }
+
+    await expect(heading(page, "Library")).toBeVisible();
+    await expect
+      .poll(async () => (await commandsAsked(page)).unanswered)
+      .toBe(0);
+    await expect(moved).toHaveCount(0);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations with a warning up, in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      homeChanges.choose({ kind: "overlapsHome" });
+      await page.emulateMedia({ colorScheme });
+      await goTo(page, HOME_HEADING);
+      await changeIn(page).click();
+      await expect(
+        page.getByText("Couldn't move your library there", { exact: true }),
+      ).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
+});
+
+test.describe("the home folder on android, which can't move yet", () => {
+  testOnlyInItsWebview("android");
+  test.use({ backend: changingHomeOn("android") });
+
+  test("offers no Change and says nothing about moving it", async ({
+    page,
+  }) => {
+    await goTo(page, HOME_HEADING, "android");
+
+    await expect(
+      page.getByRole("region", { name: "Home folder" }).getByRole("button"),
+    ).toHaveCount(0);
+    await expect(page.getByText(DESKTOP_HOME_LEAD)).toHaveCount(0);
+    await expect(page.getByText(DESKTOP_HOME_NOTE)).toHaveCount(0);
+  });
+});
 
 const HOME_FACTS = [
   ["Keeps", "Progress, categories and backups"],

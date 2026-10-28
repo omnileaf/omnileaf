@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -115,6 +115,40 @@ for (const look of LOOKS) {
     expect(style.boxShadow).toContain(shadowOf(look.shadow));
   });
 }
+
+test("draws a choice that destroys nothing in the accent, badge and action alike", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "linux";
+  document.documentElement.dataset.theme = "light";
+  await render(ConfirmDialogHarness, { tone: "accent" });
+
+  const dialog = page.getByRole("alertdialog", { name: "Delete downloads?" });
+  await expect.element(dialog).toBeVisible();
+  const badge = dialog.element().querySelector("[aria-hidden='true']");
+  const confirm = dialog.getByRole("button", { name: "Delete" }).element();
+
+  expect(badge === null ? "" : getComputedStyle(badge).color).toBe(
+    resolvedColour("--primary", "color"),
+  );
+  expect(getComputedStyle(confirm).backgroundColor).toBe(
+    resolvedColour("--primary", "backgroundColor"),
+  );
+});
+
+test("hovers the accent action in the accent's hover, not the danger's", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "linux";
+  document.documentElement.dataset.theme = "light";
+  await render(ConfirmDialogHarness, { tone: "accent" });
+  const confirm = page.getByRole("button", { name: "Delete" });
+  await expect.element(confirm).toBeVisible();
+
+  await userEvent.hover(confirm);
+
+  await expect
+    .poll(() => getComputedStyle(confirm.element()).backgroundColor)
+    .toBe(resolvedColour("--color-accent-hover", "backgroundColor"));
+});
 
 test("sets the Windows buttons on a band under a stroke", async () => {
   await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);

@@ -96,7 +96,9 @@ pub use history::{
     BookSessions, HistoryCursor, HistoryEntry, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
     LocalDay, ReadTo, ReadingDay, ReadingSummary, ReadingWeek,
 };
-pub use home_folder_setting::{HomeChoice, HomeFolderError, HomeFolderSetting};
+pub use home_folder_setting::{
+    HomeArrival, HomeAtLaunch, HomeChoice, HomeFolderError, HomeFolderSetting,
+};
 pub use lane::LaneStopped;
 pub use library::{Library, LibraryError, LibraryFolders, OpenTree};
 pub use library_book::{
@@ -105,7 +107,9 @@ pub use library_book::{
 };
 pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
-pub use library_folder::{FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder};
+pub use library_folder::{
+    FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder, home_location,
+};
 pub use library_labels::{CategoryHeld, LabelChanges, LibraryTag, SeriesLabels, TagHeld};
 pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
@@ -126,8 +130,8 @@ pub use network_share::{NetworkShare, ShareAddress, ShareLookup, ShareSignIn, Un
 pub use omnileaf_db::catalog::{AndroidTree, AppleBookmark, RootLocator, TreeUri};
 pub use omnileaf_db::store::{Changed, Clock};
 pub use opened_book::{
-    BookDamage, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions, ProbedFormat,
-    ReadingDirection, SeriesNeighbour,
+    BookDamage, BookFile, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions,
+    ProbedFormat, ReadingDirection, SeriesNeighbour,
 };
 pub use page_path::{MalformedPagePath, PageCrop, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};

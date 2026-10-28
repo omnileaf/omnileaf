@@ -21,15 +21,33 @@
     platform,
     folders,
     found,
+    chosenLocation,
+    isBusy,
     onBack,
     onStartNew,
+    onUse,
+    onChange,
   }: {
     platform: Platform;
     folders: FolderList;
     found: FoundLibrary;
+    chosenLocation: string | undefined;
+    isBusy: boolean;
     onBack: () => void;
     onStartNew: () => void;
+    onUse: () => void;
+    onChange: () => void;
   } = $props();
+
+  const canChange = $derived(isPointer(platform));
+  const location = $derived.by(() => {
+    if (chosenLocation !== undefined) {
+      return chosenLocation;
+    }
+    return folders.kind === "loaded" && folders.home !== undefined
+      ? folderLocation(folders.home, platform)
+      : undefined;
+  });
 
   const facts: readonly HomeFact[] = $derived.by(() => {
     const numbers = new Intl.NumberFormat(getLocale());
@@ -67,26 +85,31 @@
       {m.first_launch_found_body()}
     {/snippet}
   </StepHeader>
-  {#if folders.kind === "loaded" && folders.home !== undefined}
-    <HomeCard
-      title={m.library_settings_home_folder()}
-      location={folderLocation(folders.home, platform)}
-      {facts}
-    >
+  {#if location !== undefined}
+    <HomeCard title={m.library_settings_home_folder()} {location} {facts}>
       {#snippet change(titleId, pathId)}
-        {#if isPointer(platform)}
-          <ChangeHomeButton />
+        {#if canChange}
+          <ChangeHomeButton {platform} {isBusy} onclick={onChange} />
         {:else if platform !== "ios"}
           <ChangeHomeRow {titleId} {pathId} />
         {/if}
       {/snippet}
     </HomeCard>
   {/if}
-  {#if folders.kind === "failed"}
+  {#if location === undefined && folders.kind === "failed"}
     <p class="px-xs">{m.library_folders_failed()}</p>
   {/if}
   {#snippet actions()}
-    <ComingSoonStepButton kind="primary" label={m.first_launch_use_library()} />
+    {#if canChange}
+      <StepButton kind="primary" {isBusy} onclick={onUse}>
+        {m.first_launch_use_library()}
+      </StepButton>
+    {:else}
+      <ComingSoonStepButton
+        kind="primary"
+        label={m.first_launch_use_library()}
+      />
+    {/if}
     <StepButton kind="quiet" onclick={onStartNew}>
       {m.first_launch_start_new_library()}
     </StepButton>

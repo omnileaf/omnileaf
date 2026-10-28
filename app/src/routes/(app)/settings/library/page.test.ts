@@ -43,6 +43,7 @@ test("offers to add a folder", async () => {
           isDevelopmentBuild: false,
         },
         libraryProblem: null,
+        homeArrival: null,
         isFirstLaunch: false,
       },
     },

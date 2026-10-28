@@ -78,6 +78,7 @@
   import { pagesLookLikeStrip } from "#lib/reader/strip-pages.ts";
   import { Swipe } from "#lib/reader/swipe.ts";
   import { utcOffsetMinutes } from "#lib/reader/utc-offset.ts";
+  import { followVolumeKeys, hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
   import UpNext from "#lib/up-next/UpNext.svelte";
 
@@ -770,6 +771,14 @@
     }
     return undefined;
   });
+
+  const turnsPagesWithVolumeKeys = $derived(
+    look.turnsPagesWithVolumeKeys && hasVolumeKeys(platform),
+  );
+
+  $effect(() =>
+    turnsPagesWithVolumeKeys ? followVolumeKeys(act, reportError) : undefined,
+  );
 
   onMount(() => {
     if (!isGuideSeen) {

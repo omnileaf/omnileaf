@@ -1,4 +1,8 @@
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use omnileaf_db::catalog::{AndroidTree, Cursor, LibraryRoot, RootId, RootKind, RootLocator};
 use serde::{Deserialize, Serialize};
@@ -54,6 +58,11 @@ impl From<LibraryRoot> for LibraryFolder {
             is_available: root.unavailable_since_ms.is_none(),
         }
     }
+}
+
+#[must_use]
+pub fn home_location(home: &Path) -> String {
+    folder_location(&RootLocator::Path(home.to_path_buf()))
 }
 
 pub(crate) fn folder_location(locator: &RootLocator) -> String {

@@ -15,7 +15,7 @@ runs:
       env:
         PACKAGES: ${{ inputs.packages }}
       run: |
-        digest=$(printf '%s %s %s' "$ImageOS" "$ImageVersion" "$PACKAGES" | sha256sum | cut -c1-16)
+        digest=$(printf '%s %s' "$ImageOS" "$PACKAGES" | sha256sum | cut -c1-16)
         echo "prefix=apt-packages-$digest" >> "$GITHUB_OUTPUT"
         echo "key=apt-packages-$digest-$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 

@@ -102,6 +102,12 @@ function controlsOf(heading: Locator): Locator {
     .or(heading.getByRole("searchbox"));
 }
 
+function searchEntryIn(scope: Locator): Locator {
+  return scope
+    .getByRole("searchbox", { name: english.search_library_field })
+    .or(scope.getByRole("link", { name: english.search_open }));
+}
+
 function countOf(page: Page): Locator {
   return headingOf(page).locator("p", { hasText: SERIES_COUNT_SHOWN }).first();
 }
@@ -674,6 +680,49 @@ for (const platform of PLATFORMS) {
         await expect(
           page.getByRole("button", { name: english.library_add_folder }),
         ).toHaveCount(0);
+        const main = page.getByRole("main");
+        await expect(searchEntryIn(main)).toHaveCount(0);
+        await expect(
+          main.getByRole("button", { name: english.library_filter_and_sort }),
+        ).toHaveCount(0);
+        await expect(
+          main.getByRole("button", { name: english.library_more }),
+        ).toHaveCount(0);
+      });
+    });
+
+    test.describe("while the series load", () => {
+      test.use({
+        backend: {
+          ...backendFor(platform, "filled"),
+          librarySeries: () => new Promise(() => {}),
+        },
+      });
+
+      test("keeps search, filter and view in the toolbar and hides the count", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        const holder = buttonHolderOf(page);
+
+        await expect(
+          searchEntryIn(holder).filter({ visible: true }),
+        ).toBeVisible();
+        if (await foldsIntoMore(page)) {
+          await expect(
+            holder.getByRole("button", { name: english.library_more }),
+          ).toBeVisible();
+        } else {
+          await expect(
+            holder.getByRole("button", {
+              name: english.library_filter_and_sort,
+            }),
+          ).toBeVisible();
+          await expect(
+            holder.getByRole("button", { name: english.library_view_options }),
+          ).toBeVisible();
+        }
+        await expect(countOf(page)).toHaveCount(0);
       });
     });
   });

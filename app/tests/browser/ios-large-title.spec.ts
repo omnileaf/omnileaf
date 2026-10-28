@@ -51,23 +51,36 @@ test("keeps the title beside its buttons on a wide iPad", async ({ page }) => {
   await expect(page.locator("[data-title-bar]")).toHaveCount(0);
 });
 
-test("raises no error when the window narrows from an iPad's width to an iPhone's and back", async ({
-  page,
-}) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
-  await page.goto("/");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Library" }),
-  ).toBeVisible();
+/** Headless WebKit takes seconds to draw each row of blurred iOS unread badges, long enough to miss the frame a resize waits for on CI. */
+const FEW_SERIES = 6;
 
-  await page.setViewportSize({ width: 390, height: 900 });
-  await expect(page.locator("[data-title-bar]")).toBeVisible();
-  await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
-  await expect(page.locator("[data-title-bar]")).toHaveCount(0);
+test.describe("with a few series", () => {
+  test.use({
+    backend: {
+      ...onPlatform("ios").backend,
+      librarySeries: pagedSeries(() => sampleSeries(FEW_SERIES)),
+      librarySeriesCount: () => FEW_SERIES,
+    },
+  });
 
-  expect(errors).toEqual([]);
+  test("raises no error when the window narrows from an iPad's width to an iPhone's and back", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 900 });
+    await expect(page.locator("[data-title-bar]")).toBeVisible();
+    await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+    await expect(page.locator("[data-title-bar]")).toHaveCount(0);
+
+    expect(errors).toEqual([]);
+  });
 });
 
 test("keeps the folded title clear of Search and More, two glass circles 12 apart", async ({

@@ -7,6 +7,7 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
 	libraryProblem: () => __TAURI_INVOKE<"writtenByANewerVersion" | "couldNotOpen" | null>("library_problem"),
+	homeArrival: () => __TAURI_INVOKE<"moved" | "moveFailed" | null>("home_arrival"),
 	addLibraryFolder: (onProgress: Channel<ScanProgress>) => typedError<{
 	name: string,
 	series: number,
@@ -54,6 +55,11 @@ export const commands = {
 	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
 	hideFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("hide_file_type", { fileType })),
 	showFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("show_file_type", { fileType })),
+	hiddenFileTypes: () => typedError<FileType[], IpcError>(__TAURI_INVOKE("hidden_file_types")),
+	bookFile: (book: string & { readonly __brand: "BookId" }) => typedError<{
+	name: string,
+	fileType: FileType | null,
+} | null, IpcError>(__TAURI_INVOKE("book_file", { book })),
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
@@ -120,7 +126,10 @@ export const commands = {
 	/**  Crosses as a plain number, which holds every such date exactly. */
 	lastBackupAtMs: number | null,
 } | null>("found_library"),
-	chooseHomeFolder: () => typedError<{ kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
+	chooseHomeFolder: () => typedError<{
+	location: string,
+	choice: HomeChoice,
+} | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
 	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
 	moveHomeFolder: () => typedError<null, IpcError>(__TAURI_INVOKE("move_home_folder")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
@@ -201,6 +210,11 @@ export type BookDamage = {
 	cause: DamageCause,
 };
 
+export type BookFile = {
+	name: string,
+	fileType: FileType | null,
+};
+
 export type BookPage = {
 	path: string & { readonly __brand: "PagePath" },
 	thumbnail: string & { readonly __brand: "PageThumbnailPath" },
@@ -235,6 +249,11 @@ export type BooksShown = "all" | "unread" | "bookmarked";
 export type CategoryHeld = {
 	category: LibraryCategory,
 	holding: number,
+};
+
+export type ChosenHomeFolder = {
+	location: string,
+	choice: HomeChoice,
 };
 
 export type CoversPerRow = {
@@ -374,6 +393,8 @@ export type HistorySeries = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
 };
+
+export type HomeArrival = "moved" | "moveFailed";
 
 export type HomeChoice = { kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" };
 

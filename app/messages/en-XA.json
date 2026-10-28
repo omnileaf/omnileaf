@@ -556,6 +556,21 @@
       }
     }
   ],
+  "library_skipped_type": [
+    {
+      "declarations": [
+        "input count",
+        "input type",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} {type} ƒíļé çáñ'ţ ƀé öþéñéð ýéţ.····················⟧",
+        "countPlural=other": "⟦{formattedCount} {type} ƒíļéš çáñ'ţ ƀé öþéñéð ýéţ.····················⟧"
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [
@@ -580,6 +595,54 @@
   "library_add_folder_failed_title": "⟦Çöûļðñ'ţ áðð ţĥé ƒöļðéŕ··········⟧",
   "library_add_folder_failed_body": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ íñšíðé Öɱñíļéáƒ. Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.···························⟧",
   "library_add_folder_try_again": "⟦Ţŕý áĝáíñ····⟧",
+  "home_choice_overlaps_title": "⟦Çöûļðñ'ţ ɱöṽé ýöûŕ ļíƀŕáŕý ţĥéŕé·············⟧",
+  "home_choice_overlaps_body": "⟦Ţĥáţ ƒöļðéŕ íš íñšíðé ýöûŕ ĥöɱé ƒöļðéŕ öŕ ĥöļðš íţ. Çĥööšé öñé áþáŕţ ƒŕöɱ íţ. Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.···········································⟧",
+  "home_choice_newer_title": "⟦Ţĥáţ ļíƀŕáŕý íš ƒŕöɱ á ñéŵéŕ Öɱñíļéáƒ···············⟧",
+  "home_choice_newer_body": "⟦Ûþðáţé Öɱñíļéáƒ ţö ûšé íţ, öŕ çĥööšé áñöţĥéŕ ƒöļðéŕ. Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.·································⟧",
+  "home_change_failed_title": "⟦Çöûļðñ'ţ ûšé ţĥáţ ƒöļðéŕ··········⟧",
+  "home_change_failed_body": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ íñšíðé Öɱñíļéáƒ. Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.···························⟧",
+  "home_change_try_again": "⟦Ţŕý áĝáíñ····⟧",
+  "home_moved_title": "⟦Ýöûŕ ļíƀŕáŕý ɱöṽéð········⟧",
+  "home_moved_body": "⟦Íţ'š íñ {location} ñöŵ.··········⟧",
+  "home_move_failed_title": "⟦Çöûļðñ'ţ ɱöṽé ýöûŕ ļíƀŕáŕý···········⟧",
+  "home_move_failed_body": "⟦Íţ šţáýš íñ {location}. Ñöţĥíñĝ íñ íţ çĥáñĝéð.···················⟧",
+  "home_use_found_title": "⟦Á ļíƀŕáŕý íš áļŕéáðý ĥéŕé··········⟧",
+  "home_use_found_detail": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķ····················⟧",
+        "booksPlural=other": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķš····················⟧"
+      }
+    }
+  ],
+  "home_use_found_detail_backed_up": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "input date",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķ · Ļášţ ƀáçķûþ {date}····························⟧",
+        "booksPlural=other": "⟦{formattedSeries} šéŕíéš · {formattedBooks} ƀööķš · Ļášţ ƀáçķûþ {date}····························⟧"
+      }
+    }
+  ],
+  "home_use_found_body": "⟦Öɱñíļéáƒ ŕéšţáŕţš ŵíţĥ íţ. Ýöûŕ çûŕŕéñţ ļíƀŕáŕý šţáýš ŵĥéŕé íţ íš.···························⟧",
+  "home_use_found_confirm": "⟦Ûšé ţĥíš ļíƀŕáŕý·······⟧",
+  "home_use_found_cancel": "⟦Çáñçéļ···⟧",
   "navigation_label": "⟦Ṁáíñ··⟧",
   "sidebar_hide": "⟦Ĥíðé ţĥé šíðéƀáŕ·······⟧",
   "sidebar_show": "⟦Šĥöŵ ţĥé šíðéƀáŕ·······⟧",
@@ -800,6 +863,7 @@
   "library_settings_folders": "⟦Ƒöļðéŕš···⟧",
   "library_settings_home_folder": "⟦Ĥöɱé ƒöļðéŕ·····⟧",
   "library_settings_home_folder_hint": "⟦Ýöûŕ ļíƀŕáŕý, ŕéáðíñĝ þŕöĝŕéšš áñð ƀáçķûþš áŕé ķéþţ ĥéŕé.·······················⟧",
+  "library_settings_home_folder_hint_desktop": "⟦Þŕöĝŕéšš, šéţţíñĝš áñð ƀáçķûþš ļíṽé ĥéŕé. Çĥáñĝé ɱöṽéš ţĥéɱ.························⟧",
   "library_settings_home_folder_hint_ios": "⟦Ţĥé ļíƀŕáŕý šţáýš íñšíðé ţĥé áþþ. Ɓáçķûþš áñð ƀööķš ýöû áðð áŕé íñ Ƒíļéš › {place}.··································⟧",
   "library_folders_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ƒöļðéŕš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_remove_folder": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
@@ -993,6 +1057,8 @@
   "first_launch_promise_private_detail_desktop": "⟦Ñö áççöûñţ. Ýöûŕ ƀööķš áñð ĥíšţöŕý šţáý ĥéŕé ûñļéšš ýöû šýñç.·························⟧",
   "first_launch_home_title": "⟦Ŵĥéŕé ýöûŕ ļíƀŕáŕý ļíṽéš··········⟧",
   "first_launch_home_body": "⟦Öɱñíļéáƒ ķééþš íţš öŵñ ðáţá íñ öñé ĥöɱé ƒöļðéŕ.···················⟧",
+  "first_launch_home_body_desktop": "⟦Öɱñíļéáƒ ķééþš íţš öŵñ ðáţá íñ öñé ĥöɱé ƒöļðéŕ. Ýöû çáñ ɱöṽé íţ ļáţéŕ.····························⟧",
+  "first_launch_home_note_desktop": "⟦Çĥáñĝé þíçķš áñöţĥéŕ ƒöļðéŕ; Ðöçûɱéñţš íš ţĥé ûšûáļ þļáçé.························⟧",
   "first_launch_home_title_ios": "⟦Ýöûŕ ƀáçķûþš áñð ƀööķš áŕé íñ Ƒíļéš··············⟧",
   "first_launch_home_body_ios": "⟦Öɱñíļéáƒ ķééþš íţš öŵñ ƒöļðéŕ íñ ţĥé Ƒíļéš áþþ, šö ýöûŕ ƀáçķûþš áñð ƀööķš áŕé éášý ţö çöþý öŕ ɱöṽé.········································⟧",
   "first_launch_home_in_files": "⟦Íñ Ƒíļéš····⟧",
@@ -1006,6 +1072,7 @@
   "first_launch_home_your_comics": "⟦Ýöûŕ çöɱíçš·····⟧",
   "first_launch_home_your_comics_detail": "⟦Šţáý ŵĥéŕé ţĥéý áŕé········⟧",
   "first_launch_home_change": "⟦Çĥáñĝé···⟧",
+  "first_launch_home_change_macos": "⟦Çĥáñĝé…···⟧",
   "first_launch_found_title": "⟦Á ļíƀŕáŕý íš áļŕéáðý ĥéŕé··········⟧",
   "first_launch_found_body": "⟦Ûšé íţ ţö ƀŕíñĝ ƀáçķ ýöûŕ þŕöĝŕéšš, çáţéĝöŕíéš áñð šéţţíñĝš, áš ţĥéý ŵéŕé.······························⟧",
   "first_launch_found_series": "⟦Šéŕíéš···⟧",
@@ -1987,6 +2054,8 @@
   "reader_warmth": "⟦Ŵáŕɱţĥ···⟧",
   "reader_keep_screen_on": "⟦Ķééþ ţĥé šçŕééñ öñ········⟧",
   "reader_crop_borders": "⟦Çŕöþ ŵĥíţé ƀöŕðéŕš········⟧",
+  "reader_volume_keys": "⟦Ţûŕñ þáĝéš ŵíţĥ ţĥé ṽöļûɱé ķéýš·············⟧",
+  "reader_volume_keys_help": "⟦Öñļý íñ ţĥé ŕéáðéŕ; éṽéŕýŵĥéŕé éļšé ţĥéý çĥáñĝé ţĥé ṽöļûɱé.························⟧",
   "reader_more": "⟦Ṁöŕé··⟧",
   "reader_mark_read": "⟦Ṁáŕķ ŕéáð····⟧",
   "reader_start_over": "⟦Šţáŕţ öṽéŕ····⟧",
@@ -2113,6 +2182,17 @@
   "reader_not_found_body": "⟦Íţ ɱáý ĥáṽé ƀééñ ŕéɱöṽéð, öŕ ţĥé ƒöļðéŕ ĥöļðíñĝ íţ ţáķéñ öûţ öƒ ţĥé ļíƀŕáŕý.·······························⟧",
   "reader_unreadable": "⟦Ţĥíš ƀööķ çöûļðñ'ţ ƀé öþéñéð············⟧",
   "reader_unreadable_body": "⟦Íţš ƒíļé ɱáý ĥáṽé ɱöṽéð, öŕ ƀé ðáɱáĝéð.················⟧",
+  "reader_unsupported_title": "⟦Öɱñíļéáƒ çáñ'ţ öþéñ ţĥíš ƒíļé············⟧",
+  "reader_unsupported_body": "⟦{file} íš á {type} ƒíļé, ŵĥíçĥ ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ýéţ. Ţĥé ƒíļé šţáýš ŵĥéŕé íţ íš.···································⟧",
+  "reader_unsupported_body_unnamed": "⟦Ţĥíš ṽéŕšíöñ çáñ'ţ öþéñ ƒíļéš ļíķé ţĥíš öñé ýéţ. Ţĥé ƒíļé šţáýš ŵĥéŕé íţ íš.·······························⟧",
+  "reader_opens_title": "⟦Ƒíļéš Öɱñíļéáƒ öþéñš········⟧",
+  "reader_opens_folders": "⟦Ƒöļðéŕš öƒ íɱáĝéš·······⟧",
+  "reader_not_yet": "⟦Ñöţ ýéţ: ÇƁŔ áñð ŔÁŔ ƒíļéš.···········⟧",
+  "reader_hide_files_like": "⟦Ĥíðé ƒíļéš ļíķé ţĥíš········⟧",
+  "reader_hide_caption": "⟦Ĥíðíñĝ ķééþš {type} ƒíļéš öûţ öƒ ýöûŕ ļíƀŕáŕý ƒŕöɱ ñöŵ öñ.························⟧",
+  "reader_hide_caption_unnamed": "⟦Ĥíðíñĝ ķééþš ƒíļéš ļíķé ţĥíš öñé öûţ öƒ ýöûŕ ļíƀŕáŕý ƒŕöɱ ñöŵ öñ.··························⟧",
+  "file_type_hidden": "⟦{type} ƒíļéš ĥíððéñ········⟧",
+  "file_type_hidden_note": "⟦Ţĥéý ļéáṽé ýöûŕ ļíƀŕáŕý áţ ţĥé ñéẋţ ŕéšçáñ.··················⟧",
   "reader_failed_title": "⟦Šöɱéţĥíñĝ ŵéñţ ŵŕöñĝ········⟧",
   "reader_failed": "⟦Çöûļðñ'ţ öþéñ ţĥíš ƀööķ. Ţŕý áĝáíñ ļáţéŕ.·················⟧",
   "attention_title": "⟦Ñééðš áţţéñţíöñ······⟧",

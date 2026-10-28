@@ -69,6 +69,33 @@
   --windows-flyout: oklch(0.985 0 0 / 96%);
   --windows-close: oklch(0.55 0.2 27);
   --windows-secondary-text: oklch(0.48 0 0);
+  --linux-background: oklch(1 0 0);
+  --linux-foreground: oklch(0.148 0.004 228.8);
+  --linux-card: oklch(1 0 0);
+  --linux-card-foreground: oklch(0.148 0.004 228.8);
+  --linux-popover: oklch(1 0 0);
+  --linux-popover-foreground: oklch(0.148 0.004 228.8);
+  --linux-primary: oklch(0.49 0.084 159.2);
+  --linux-primary-foreground: oklch(1 0 0);
+  --linux-secondary: oklch(0.963 0.002 197.1);
+  --linux-secondary-foreground: oklch(0.218 0.008 223.9);
+  --linux-muted: oklch(0.963 0.002 197.1);
+  --linux-muted-foreground: oklch(0.485 0.021 213.5);
+  --linux-accent: oklch(0.963 0.002 197.1);
+  --linux-accent-foreground: oklch(0.218 0.008 223.9);
+  --linux-border: oklch(0.925 0.005 214.3);
+  --linux-input: oklch(0.64 0.014 214.4);
+  --linux-ring: oklch(0.49 0.084 159.2);
+  --linux-sidebar: oklch(0.987 0.002 197.1);
+  --linux-sidebar-foreground: oklch(0.148 0.004 228.8);
+  --linux-sidebar-primary: oklch(0.49 0.084 159.2);
+  --linux-sidebar-primary-foreground: oklch(1 0 0);
+  --linux-sidebar-accent: oklch(0.963 0.002 197.1);
+  --linux-sidebar-accent-foreground: oklch(0.218 0.008 223.9);
+  --linux-sidebar-border: oklch(0.925 0.005 214.3);
+  --linux-sidebar-ring: oklch(0.49 0.084 159.2);
+  --linux-control-fill: transparent;
+  --linux-button-outline-fill: var(--background);
 
   --raised: var(--background);
   --destructive-fill: var(--destructive);
@@ -161,6 +188,37 @@
   --windows-subtle: oklch(1 0 0 / 6%);
   --windows-flyout: oklch(0.17 0 0 / 96%);
   --windows-secondary-text: oklch(0.78 0 0);
+  --linux-background: oklch(0.148 0.004 228.8);
+  --linux-foreground: oklch(0.987 0.002 197.1);
+  --linux-card: oklch(0.218 0.008 223.9);
+  --linux-card-foreground: oklch(0.987 0.002 197.1);
+  --linux-popover: oklch(0.218 0.008 223.9);
+  --linux-popover-foreground: oklch(0.987 0.002 197.1);
+  --linux-primary: oklch(0.78 0.101 156.6);
+  --linux-primary-foreground: oklch(0.238 0.036 157.2);
+  --linux-secondary: oklch(0.275 0.011 216.9);
+  --linux-secondary-foreground: oklch(0.987 0.002 197.1);
+  --linux-muted: oklch(0.275 0.011 216.9);
+  --linux-muted-foreground: oklch(0.723 0.014 214.4);
+  --linux-accent: oklch(0.275 0.011 216.9);
+  --linux-accent-foreground: oklch(0.987 0.002 197.1);
+  --linux-border: oklch(1 0 0 / 10%);
+  --linux-input: oklch(0.52 0.014 214.4);
+  --linux-ring: oklch(0.78 0.101 156.6);
+  --linux-sidebar: oklch(0.218 0.008 223.9);
+  --linux-sidebar-foreground: oklch(0.987 0.002 197.1);
+  --linux-sidebar-primary: oklch(0.78 0.101 156.6);
+  --linux-sidebar-primary-foreground: oklch(0.238 0.036 157.2);
+  --linux-sidebar-accent: oklch(0.275 0.011 216.9);
+  --linux-sidebar-accent-foreground: oklch(0.987 0.002 197.1);
+  --linux-sidebar-border: oklch(1 0 0 / 10%);
+  --linux-sidebar-ring: oklch(0.78 0.101 156.6);
+  --linux-control-fill: color-mix(
+    in oklch,
+    oklch(1 0 0 / 15%) 30%,
+    transparent
+  );
+  --linux-button-outline-fill: var(--linux-control-fill);
 
   --raised: color-mix(in oklab, var(--foreground) 6%, var(--muted));
   --destructive-fill: color-mix(
@@ -504,4 +562,41 @@
   --input-group-fill: var(--windows-control);
   --input-group-edge: var(--windows-stroke);
   --input-group-radius: var(--radius-windows-control);
+}
+
+[data-platform="linux"],
+[data-platform="linux"] [data-theme] {
+  --background: var(--linux-background);
+  --foreground: var(--linux-foreground);
+  --card: var(--linux-card);
+  --card-foreground: var(--linux-card-foreground);
+  --popover: var(--linux-popover);
+  --popover-foreground: var(--linux-popover-foreground);
+  --primary: var(--linux-primary);
+  --primary-foreground: var(--linux-primary-foreground);
+  --secondary: var(--linux-secondary);
+  --secondary-foreground: var(--linux-secondary-foreground);
+  --muted: var(--linux-muted);
+  --muted-foreground: var(--linux-muted-foreground);
+  --accent: var(--linux-accent);
+  --accent-foreground: var(--linux-accent-foreground);
+  --border: var(--linux-border);
+  --input: var(--linux-input);
+  --ring: var(--linux-ring);
+  --sidebar: var(--linux-sidebar);
+  --sidebar-foreground: var(--linux-sidebar-foreground);
+  --sidebar-primary: var(--linux-sidebar-primary);
+  --sidebar-primary-foreground: var(--linux-sidebar-primary-foreground);
+  --sidebar-accent: var(--linux-sidebar-accent);
+  --sidebar-accent-foreground: var(--linux-sidebar-accent-foreground);
+  --sidebar-border: var(--linux-sidebar-border);
+  --sidebar-ring: var(--linux-sidebar-ring);
+  --input-fill: var(--linux-control-fill);
+  --select-fill: var(--linux-control-fill);
+  --checkbox-off: var(--linux-control-fill);
+  --button-outline-fill: var(--linux-button-outline-fill);
+  --switch-off: var(--input);
+  --tooltip-surface: var(--foreground);
+  --tooltip-foreground: var(--background);
+  --tooltip-key-ink: var(--background);
 }

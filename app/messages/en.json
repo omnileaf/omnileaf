@@ -556,6 +556,21 @@
       }
     }
   ],
+  "library_skipped_type": [
+    {
+      "declarations": [
+        "input count",
+        "input type",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} {type} file can't be opened yet.",
+        "countPlural=other": "{formattedCount} {type} files can't be opened yet."
+      }
+    }
+  ],
   "library_folder_unreadable_subfolders": [
     {
       "declarations": [
@@ -580,6 +595,54 @@
   "library_add_folder_failed_title": "Couldn't add the folder",
   "library_add_folder_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
   "library_add_folder_try_again": "Try again",
+  "home_choice_overlaps_title": "Couldn't move your library there",
+  "home_choice_overlaps_body": "That folder is inside your home folder or holds it. Choose one apart from it. Your library hasn't changed.",
+  "home_choice_newer_title": "That library is from a newer Omnileaf",
+  "home_choice_newer_body": "Update Omnileaf to use it, or choose another folder. Your library hasn't changed.",
+  "home_change_failed_title": "Couldn't use that folder",
+  "home_change_failed_body": "Something went wrong inside Omnileaf. Your library hasn't changed.",
+  "home_change_try_again": "Try again",
+  "home_moved_title": "Your library moved",
+  "home_moved_body": "It's in {location} now.",
+  "home_move_failed_title": "Couldn't move your library",
+  "home_move_failed_body": "It stays in {location}. Nothing in it changed.",
+  "home_use_found_title": "A library is already here",
+  "home_use_found_detail": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{formattedSeries} series · {formattedBooks} book",
+        "booksPlural=other": "{formattedSeries} series · {formattedBooks} books"
+      }
+    }
+  ],
+  "home_use_found_detail_backed_up": [
+    {
+      "declarations": [
+        "input series",
+        "input books",
+        "input date",
+        "local booksPlural = books: plural",
+        "local formattedSeries = series: number",
+        "local formattedBooks = books: number"
+      ],
+      "selectors": ["booksPlural"],
+      "match": {
+        "booksPlural=one": "{formattedSeries} series · {formattedBooks} book · Last backup {date}",
+        "booksPlural=other": "{formattedSeries} series · {formattedBooks} books · Last backup {date}"
+      }
+    }
+  ],
+  "home_use_found_body": "Omnileaf restarts with it. Your current library stays where it is.",
+  "home_use_found_confirm": "Use this library",
+  "home_use_found_cancel": "Cancel",
   "navigation_label": "Main",
   "sidebar_hide": "Hide the sidebar",
   "sidebar_show": "Show the sidebar",
@@ -800,6 +863,7 @@
   "library_settings_folders": "Folders",
   "library_settings_home_folder": "Home folder",
   "library_settings_home_folder_hint": "Your library, reading progress and backups are kept here.",
+  "library_settings_home_folder_hint_desktop": "Progress, settings and backups live here. Change moves them.",
   "library_settings_home_folder_hint_ios": "The library stays inside the app. Backups and books you add are in Files › {place}.",
   "library_folders_failed": "Couldn't load your folders. Try again later.",
   "library_remove_folder": "Remove folder",
@@ -993,6 +1057,8 @@
   "first_launch_promise_private_detail_desktop": "No account. Your books and history stay here unless you sync.",
   "first_launch_home_title": "Where your library lives",
   "first_launch_home_body": "Omnileaf keeps its own data in one home folder.",
+  "first_launch_home_body_desktop": "Omnileaf keeps its own data in one home folder. You can move it later.",
+  "first_launch_home_note_desktop": "Change picks another folder; Documents is the usual place.",
   "first_launch_home_title_ios": "Your backups and books are in Files",
   "first_launch_home_body_ios": "Omnileaf keeps its own folder in the Files app, so your backups and books are easy to copy or move.",
   "first_launch_home_in_files": "In Files",
@@ -1006,6 +1072,7 @@
   "first_launch_home_your_comics": "Your comics",
   "first_launch_home_your_comics_detail": "Stay where they are",
   "first_launch_home_change": "Change",
+  "first_launch_home_change_macos": "Change…",
   "first_launch_found_title": "A library is already here",
   "first_launch_found_body": "Use it to bring back your progress, categories and settings, as they were.",
   "first_launch_found_series": "Series",
@@ -1987,6 +2054,8 @@
   "reader_warmth": "Warmth",
   "reader_keep_screen_on": "Keep the screen on",
   "reader_crop_borders": "Crop white borders",
+  "reader_volume_keys": "Turn pages with the volume keys",
+  "reader_volume_keys_help": "Only in the reader; everywhere else they change the volume.",
   "reader_more": "More",
   "reader_mark_read": "Mark read",
   "reader_start_over": "Start over",
@@ -2113,6 +2182,17 @@
   "reader_not_found_body": "It may have been removed, or the folder holding it taken out of the library.",
   "reader_unreadable": "This book couldn't be opened",
   "reader_unreadable_body": "Its file may have moved, or be damaged.",
+  "reader_unsupported_title": "Omnileaf can't open this file",
+  "reader_unsupported_body": "{file} is a {type} file, which this version can't open yet. The file stays where it is.",
+  "reader_unsupported_body_unnamed": "This version can't open files like this one yet. The file stays where it is.",
+  "reader_opens_title": "Files Omnileaf opens",
+  "reader_opens_folders": "Folders of images",
+  "reader_not_yet": "Not yet: CBR and RAR files.",
+  "reader_hide_files_like": "Hide files like this",
+  "reader_hide_caption": "Hiding keeps {type} files out of your library from now on.",
+  "reader_hide_caption_unnamed": "Hiding keeps files like this one out of your library from now on.",
+  "file_type_hidden": "{type} files hidden",
+  "file_type_hidden_note": "They leave your library at the next rescan.",
   "reader_failed_title": "Something went wrong",
   "reader_failed": "Couldn't open this book. Try again later.",
   "attention_title": "Needs attention",

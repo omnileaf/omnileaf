@@ -13,12 +13,27 @@ export type FolderOutcome =
   | ScanStep
   | { readonly kind: "scanned"; readonly scan: FolderScan };
 
-interface Failure {
+export interface FailureCopy {
   readonly icon: LucideIcon;
   readonly title: () => string;
   readonly body: () => string;
+}
+
+interface Failure extends FailureCopy {
   readonly retry: (() => string) | undefined;
 }
+
+export const FOLDER_UNREADABLE: FailureCopy = {
+  icon: Lock,
+  title: m.library_folder_unreadable_title,
+  body: m.library_folder_unreadable_body,
+};
+
+export const FOLDER_CHOOSER_MISSING: FailureCopy = {
+  icon: FolderX,
+  title: m.library_folder_chooser_missing_title,
+  body: m.library_folder_chooser_missing_body,
+};
 
 const ADDING_FAILED: Failure = {
   icon: TriangleAlert,
@@ -29,9 +44,7 @@ const ADDING_FAILED: Failure = {
 
 const FAILURES = {
   folderUnreadable: {
-    icon: Lock,
-    title: m.library_folder_unreadable_title,
-    body: m.library_folder_unreadable_body,
+    ...FOLDER_UNREADABLE,
     retry: m.library_choose_another_folder,
   },
   folderPickerUnavailable: {
@@ -41,9 +54,7 @@ const FAILURES = {
     retry: undefined,
   },
   folderChooserMissing: {
-    icon: FolderX,
-    title: m.library_folder_chooser_missing_title,
-    body: m.library_folder_chooser_missing_body,
+    ...FOLDER_CHOOSER_MISSING,
     retry: m.library_add_folder_try_again,
   },
   folderNotFound: ADDING_FAILED,

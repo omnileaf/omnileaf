@@ -4,16 +4,16 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AdultContent, AppInfo, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
-    HistoryPage, HistorySeries, HomeChoice, InterfaceError, LabelChanges, Library, LibraryCategory,
-    LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
-    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
-    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
-    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
+    AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions,
+    BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType,
+    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
+    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges,
+    Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
+    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
+    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
+    ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -29,7 +29,7 @@ use crate::{
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
-    home_folder::{self, ChosenHome},
+    home_folder::{self, ChosenHome, ChosenHomeFolder},
     icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
@@ -50,6 +50,7 @@ macro_rules! app_commands {
         collect_commands![
             app_info,
             library_problem,
+            home_arrival,
             add_library_folder,
             link_library_folder,
             match_system_bars,
@@ -84,6 +85,8 @@ macro_rules! app_commands {
             hide_files_like,
             hide_file_type,
             show_file_type,
+            hidden_file_types,
+            book_file,
             mark_books,
             mark_series_read,
             open_book,
@@ -202,6 +205,16 @@ fn app_info(core: State<'_, Core>) -> AppInfo {
 )]
 fn library_problem(launch: State<'_, LibraryAtLaunch>) -> Option<LibraryProblem> {
     launch.problem
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn home_arrival(launch: State<'_, LibraryAtLaunch>) -> Option<HomeArrival> {
+    launch.home_arrival
 }
 
 #[tauri::command]
@@ -635,6 +648,21 @@ async fn show_file_type(library: State<'_, Library>, file_type: FileType) -> Res
 
 #[tauri::command]
 #[specta::specta]
+async fn hidden_file_types(library: State<'_, Library>) -> Result<Vec<FileType>, IpcError> {
+    Ok(library.hidden_types().await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn book_file(
+    library: State<'_, Library>,
+    book: BookId,
+) -> Result<Option<BookFile>, IpcError> {
+    Ok(library.book_file_name(book).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn mark_books(
     library: State<'_, Library>,
     books: Vec<BookId>,
@@ -903,7 +931,7 @@ fn found_library(library: State<'_, Library>) -> Option<FoundLibrary> {
 async fn choose_home_folder(
     window: Window,
     app: AppHandle,
-) -> Result<Option<HomeChoice>, IpcError> {
+) -> Result<Option<ChosenHomeFolder>, IpcError> {
     let Some(setting) = home_folder::setting(&app) else {
         return Ok(None);
     };
@@ -912,8 +940,9 @@ async fn choose_home_folder(
         return Ok(None);
     };
     let choice = setting.choose(&folder).await?;
+    let chosen = ChosenHomeFolder::new(&folder, choice);
     app.state::<ChosenHome>().remember(folder);
-    Ok(Some(choice))
+    Ok(Some(chosen))
 }
 
 #[tauri::command]

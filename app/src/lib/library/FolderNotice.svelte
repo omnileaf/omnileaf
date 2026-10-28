@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleAlert, CircleCheckBig } from "@lucide/svelte";
   import { onDestroy, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import {
     Alert,
@@ -17,6 +18,7 @@
 
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import ScanToast from "./ScanToast.svelte";
+  import { unsupportedLines } from "./unsupported-lines";
 
   interface Props {
     readonly adding: FolderAdding;
@@ -24,6 +26,7 @@
     readonly usesStandIns: boolean;
     readonly onShow?: (() => void) | undefined;
     readonly onDismissed: () => void;
+    readonly class?: ClassValue;
   }
 
   interface EmptyFolderNotice {
@@ -33,7 +36,14 @@
     readonly body?: string;
   }
 
-  let { adding, notices, usesStandIns, onShow, onDismissed }: Props = $props();
+  let {
+    adding,
+    notices,
+    usesStandIns,
+    onShow,
+    onDismissed,
+    class: className,
+  }: Props = $props();
 
   onDestroy(() => {
     adding.withdrawFailure();
@@ -48,9 +58,7 @@
       scan.unreadableBooks > 0
         ? m.library_folder_unreadable_books({ count: scan.unreadableBooks })
         : undefined,
-      scan.unsupportedBooks > 0
-        ? m.library_folder_unsupported_books({ count: scan.unsupportedBooks })
-        : undefined,
+      ...unsupportedLines(scan.unsupportedBooks, scan.skippedTypes),
       scan.unreadableFolders > 0
         ? m.library_folder_unreadable_subfolders({
             count: scan.unreadableFolders,
@@ -115,7 +123,7 @@
   }
 </script>
 
-<div role="status" class="empty:absolute">
+<div role="status" class={["empty:absolute", className]}>
   {#if notice !== undefined}
     <Alert tone={notice.tone} icon={notice.icon}>
       <AlertTitle>{notice.title}</AlertTitle>

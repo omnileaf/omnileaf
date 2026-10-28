@@ -45,7 +45,7 @@ use tokio::{
 };
 
 use crate::{
-    AdultContent, AppLanguage, BookCursor, BookId, BookPlace, BookSessions, BooksRemoval,
+    AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions, BooksRemoval,
     CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor, FolderId,
     FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
     HistoryPage, HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter,
@@ -911,9 +911,14 @@ impl Library {
             .await?)
     }
 
-    async fn hidden_file_types(&self) -> Result<HiddenFileTypes, LibraryError> {
+    /// In the order of their names.
+    pub async fn hidden_types(&self) -> Result<Vec<FileType>, LibraryError> {
         let stored = self.store.database().read(hidden_file_types).await?;
-        Ok(stored.into_iter().collect())
+        Ok(stored.into_iter().filter_map(listed_file_type).collect())
+    }
+
+    async fn hidden_file_types(&self) -> Result<HiddenFileTypes, LibraryError> {
+        Ok(self.hidden_types().await?.into_iter().collect())
     }
 
     pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
@@ -979,6 +984,13 @@ impl Library {
                 Some(root_folder(&book.root).join(book.location))
             }
         }))
+    }
+
+    pub async fn book_file_name(&self, book: BookId) -> Result<Option<BookFile>, LibraryError> {
+        Ok(self
+            .book_to_read(book)
+            .await?
+            .and_then(|found| BookFile::of(&found.location)))
     }
 
     /// None for a book missing from the library.
@@ -1709,6 +1721,12 @@ async fn storage_within_limit(conditions: &impl RescanConditions, folder: &Path)
             tracing::warn!(folder = %folder.display(), "find where a folder is stored in time");
             Storage::Local
         })
+}
+
+fn listed_file_type(stored: String) -> Option<FileType> {
+    FileType::try_from(stored)
+        .inspect_err(|error| tracing::warn!(%error, "list a hidden file type"))
+        .ok()
 }
 
 fn canonical_locator(locator: RootLocator) -> RootLocator {
