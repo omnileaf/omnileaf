@@ -31,7 +31,7 @@
     "below-list":
       "gap-sm rounded-full border border-accent px-lg text-accent inline-full min-block-touch-button touch:font-bold ios:rounded-ios-button desktop:rounded-control desktop:text-label desktop:min-block-pointer-button",
     "drop-area":
-      "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed",
+      "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed windows:rounded-shadcn-button windows:border-button-outline-edge windows:bg-button-outline windows:font-medium windows:border-be-windows-stroke-strong windows:min-block-shadcn-button",
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 16;

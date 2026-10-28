@@ -183,17 +183,23 @@
       <ul
         class={[
           "divide-y divide-border ios:divide-y-0",
-          !isInCard && "rounded-card border border-border bg-card",
+          !isInCard &&
+            "rounded-card border border-border bg-card windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
         ]}
       >
         {#each shownFolders as folder (folder.id)}
           <li
             bind:this={rows[folder.id]}
             tabindex="-1"
-            class="relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-s-ios-folder-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
+            class={[
+              "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-s-ios-folder-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
+              !isInCard &&
+                "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card windows:focus-visible:rounded-windows-control",
+            ]}
           >
             <FolderRow
               {folder}
+              isOwnCard={!isInCard}
               isFoundEmpty={isFoundEmpty?.(folder) ?? false}
               detail={rowDetail}
             >
@@ -217,8 +223,13 @@
           </li>
         {/each}
         {#if beingAdded !== undefined}
-          <li>
-            <FolderRow folder={beingAdded}>
+          <li
+            class={[
+              !isInCard &&
+                "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card",
+            ]}
+          >
+            <FolderRow folder={beingAdded} isOwnCard={!isInCard}>
               {#snippet location()}
                 {folderLocation(beingAdded, platform)}
               {/snippet}

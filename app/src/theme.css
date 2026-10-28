@@ -66,6 +66,7 @@
   --windows-stroke: oklch(0 0 0 / 7%);
   --windows-stroke-strong: oklch(0 0 0 / 22%);
   --windows-subtle: oklch(0 0 0 / 4%);
+  --windows-success: #0f7b0f;
   --windows-flyout: oklch(0.985 0 0 / 96%);
   --windows-close: oklch(0.55 0.2 27);
   --windows-secondary-text: oklch(0.48 0 0);
@@ -188,6 +189,7 @@
   --windows-stroke: oklch(1 0 0 / 8%);
   --windows-stroke-strong: oklch(1 0 0 / 14%);
   --windows-subtle: oklch(1 0 0 / 6%);
+  --windows-success: #6ccb5f;
   --windows-flyout: oklch(0.17 0 0 / 96%);
   --windows-secondary-text: oklch(0.78 0 0);
   --linux-background: oklch(0.148 0.004 228.8);

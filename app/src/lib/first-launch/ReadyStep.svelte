@@ -20,6 +20,7 @@
   import LinkedFolders from "#lib/library/LinkedFolders.svelte";
   import type { Notices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
 
   import { type CountIn, FolderSummaries } from "./folder-summaries.svelte";
@@ -27,6 +28,7 @@
   import ReadyShelf from "./ReadyShelf.svelte";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
+  import { usesSetupPages } from "./setup-pages.ts";
   import StepHeader from "./StepHeader.svelte";
 
   const FIXES = {
@@ -65,6 +67,9 @@
     onFinish: () => Promise<FinishOutcome>;
   } = $props();
 
+  const countingLook = usesSetupPages(currentPlatform())
+    ? "words"
+    : "words-and-bar";
   const screenshotMode = getScreenshotMode();
   const summaries = new FolderSummaries(
     (folder) => countSeriesIn(folder),
@@ -143,7 +148,10 @@
 <StepFrame step="ready">
   <StepHeader>
     {#snippet badge()}
-      <ReadyMark isEmpty={shown === "empty"} />
+      <ReadyMark
+        isEmpty={shown === "empty"}
+        isUnreadable={shown === "unreadable"}
+      />
     {/snippet}
     {title()}
     {#snippet lead()}
@@ -166,7 +174,7 @@
       {notices}
       usesStandIns={screenshotMode.isOn}
       addPlacement="none"
-      countingLook="words-and-bar"
+      {countingLook}
     >
       {#snippet rowDetail(folder: LibraryFolder)}
         {summaryOf(folder)}
