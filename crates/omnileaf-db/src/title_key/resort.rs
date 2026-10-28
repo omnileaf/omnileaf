@@ -66,7 +66,13 @@ fn rekey_every_title(connection: &Connection, collation: &TitleCollation) -> Res
         WHERE local_id = ?1 AND (title_key, file_title_key) IS NOT (?2, ?3)",
     )?;
     for (local_id, title, file_title) in &titles {
-        rekey.execute((local_id, collation.key(title), collation.key(file_title)))?;
+        let title_key = collation.key(title);
+        let file_title_key = if file_title == title {
+            title_key.clone()
+        } else {
+            collation.key(file_title)
+        };
+        rekey.execute((local_id, title_key, file_title_key))?;
     }
     Ok(titles.len())
 }
