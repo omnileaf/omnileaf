@@ -1,7 +1,7 @@
 #[path = "build/icu_versions.rs"]
 mod icu_versions;
 
-use std::{fs, path::Path};
+use std::{env, fs, path::Path};
 
 const WORKSPACE_LOCKFILE: &str = "../../Cargo.lock";
 
@@ -10,7 +10,8 @@ const WORKSPACE_LOCKFILE: &str = "../../Cargo.lock";
     reason = "a build script reports failure by panicking"
 )]
 fn main() {
-    let lockfile = Path::new(env!("CARGO_MANIFEST_DIR")).join(WORKSPACE_LOCKFILE);
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR");
+    let lockfile = Path::new(&manifest_dir).join(WORKSPACE_LOCKFILE);
     println!("cargo:rerun-if-changed={}", lockfile.display());
     let lock = fs::read_to_string(&lockfile).expect("read the workspace's Cargo.lock");
     println!(
