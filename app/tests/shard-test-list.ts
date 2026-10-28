@@ -73,6 +73,14 @@ export function testDurations(report: unknown): Timings {
   return timings;
 }
 
+export function mergeTimings(kept: Timings, measured: Timings): Timings {
+  const merged: Record<string, Readonly<Record<string, number>>> = { ...kept };
+  for (const [path, byProject] of Object.entries(measured)) {
+    merged[path] = { ...kept[path], ...byProject };
+  }
+  return merged;
+}
+
 function errorMessage(error: unknown): string {
   return isRecord(error) && typeof error.message === "string"
     ? error.message
