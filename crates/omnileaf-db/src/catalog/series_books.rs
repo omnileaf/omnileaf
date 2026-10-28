@@ -4,7 +4,7 @@ use rusqlite::{Connection, Row, Statement, ToSql, named_params};
 use crate::{
     Error,
     catalog::{
-        BookSection, Cover, Numbering, SortDirection,
+        BookNumber, BookSection, Cover, Numbering, SortDirection,
         cover::stored_cover,
         cursor::Position,
         numbering::stored_numbering,
@@ -12,7 +12,7 @@ use crate::{
         staged_rows::snapshot,
         stored_id::stored_id,
     },
-    reading_order::section_keys,
+    reading_order::{section_keys, volume_keys},
 };
 
 macro_rules! books_in_series {
@@ -190,6 +190,8 @@ pub struct BookListing {
     pub direction: SortDirection,
     /// Absent to list every book, those not placed in a section included.
     pub section: Option<BookSection>,
+    /// The volume whose chapters alone are listed, which takes the place of `section`.
+    pub volume: Option<BookNumber>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -204,6 +206,7 @@ impl BookListing {
         shown: BooksShown::All,
         direction: SortDirection::Ascending,
         section: None,
+        volume: None,
     };
 
     const fn query(self, is_continued: bool) -> &'static str {
@@ -211,7 +214,7 @@ impl BookListing {
             self.shown,
             self.direction,
             is_continued,
-            self.section.is_some(),
+            self.section.is_some() || self.volume.is_some(),
         ) {
             (BooksShown::All, SortDirection::Ascending, false, false) => FIRST_IN_SERIES,
             (BooksShown::All, SortDirection::Ascending, true, false) => NEXT_IN_SERIES,
@@ -284,7 +287,10 @@ pub fn series_books(
 ) -> Result<Page<BookSummary>, Error> {
     let _snapshot = snapshot(connection)?;
     let series_id = series.as_bytes();
-    let section_keys = listing.section.map(section_keys);
+    let section_keys = listing
+        .volume
+        .map(volume_keys)
+        .or_else(|| listing.section.map(section_keys));
     let mut params: Vec<(&str, &dyn ToSql)> = vec![(":series", &series_id)];
     match request.after.as_ref().map(|cursor| &cursor.0) {
         None => {}
@@ -584,6 +590,7 @@ mod tests {
                     shown: BooksShown::Unread,
                     direction,
                     section,
+                    volume: None,
                 })
             });
 

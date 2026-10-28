@@ -4,7 +4,7 @@ use omnileaf_sync_proto::{BookId, SeriesId};
 
 use crate::{
     Error,
-    catalog::{BookListing, BookSection, BooksShown, SortDirection},
+    catalog::{BookListing, BookNumber, BookSection, BooksShown, SortDirection},
     title_key::TitleStamp,
 };
 
@@ -15,6 +15,8 @@ const ROOT_TAG: u8 = 4;
 const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
 const BOOKMARKED_BIT: u8 = 0b1_0000;
+const VOLUME_BIT: u8 = 0b10_0000;
+const VOLUME_LENGTH: usize = size_of::<u32>();
 const SECTION_BITS: u8 = 0b1100;
 const SECTION_SHIFT: u32 = 2;
 const SESSION_TAG: u8 = 5;
@@ -102,7 +104,8 @@ impl Position {
                 sort_key,
                 id,
             } => [
-                &[BOOK_TAG, listing_byte(*listing)][..],
+                &[BOOK_TAG][..],
+                &listing_bytes(*listing),
                 series.as_bytes(),
                 id.as_bytes(),
                 sort_key,
@@ -180,12 +183,12 @@ impl Position {
                 })
             }
             BOOK_TAG => {
-                let (&listing, rest) = rest.split_first()?;
+                let (listing, rest) = listing_from_bytes(rest)?;
                 let (series, rest) = rest.split_first_chunk::<ID_LENGTH>()?;
                 let (id, sort_key) = rest.split_first_chunk::<ID_LENGTH>()?;
                 Some(Self::Book {
                     series: SeriesId::try_from(series.as_slice()).ok()?,
-                    listing: listing_from_byte(listing)?,
+                    listing,
                     sort_key: sort_key.to_vec(),
                     id: BookId::try_from(id.as_slice()).ok()?,
                 })
@@ -255,6 +258,28 @@ fn saturating_u32(length: usize) -> u32 {
     u32::try_from(length).unwrap_or(u32::MAX)
 }
 
+fn listing_bytes(listing: BookListing) -> Vec<u8> {
+    let volume = listing.volume.map_or_else(Vec::new, |volume| {
+        volume.thousandths().to_be_bytes().to_vec()
+    });
+    [&[listing_byte(listing)][..], &volume].concat()
+}
+
+fn listing_from_bytes(bytes: &[u8]) -> Option<(BookListing, &[u8])> {
+    let (&byte, rest) = bytes.split_first()?;
+    let (volume, rest) = if byte & VOLUME_BIT == 0 {
+        (None, rest)
+    } else {
+        let (volume, rest) = rest.split_first_chunk::<VOLUME_LENGTH>()?;
+        (
+            Some(BookNumber::from_thousandths(u32::from_be_bytes(*volume))),
+            rest,
+        )
+    };
+    let listing = listing_from_byte(byte & !VOLUME_BIT)?;
+    Some((BookListing { volume, ..listing }, rest))
+}
+
 fn listing_byte(listing: BookListing) -> u8 {
     let direction = match listing.direction {
         SortDirection::Ascending => 0,
@@ -265,7 +290,12 @@ fn listing_byte(listing: BookListing) -> u8 {
         BooksShown::Unread => UNREAD_BIT,
         BooksShown::Bookmarked => BOOKMARKED_BIT,
     };
-    direction | shown | section_code(listing.section) << SECTION_SHIFT
+    let volume = if listing.volume.is_some() {
+        VOLUME_BIT
+    } else {
+        0
+    };
+    direction | shown | volume | section_code(listing.section) << SECTION_SHIFT
 }
 
 fn section_code(section: Option<BookSection>) -> u8 {
@@ -301,6 +331,7 @@ fn listing_from_byte(byte: u8) -> Option<BookListing> {
             SortDirection::Descending
         },
         section,
+        volume: None,
     })
 }
 
@@ -370,6 +401,7 @@ mod tests {
                                 shown,
                                 direction,
                                 section,
+                                volume: None,
                             })
                     })
             })
@@ -381,6 +413,19 @@ mod tests {
         for listing in every_listing() {
             assert_eq!(listing_from_byte(listing_byte(listing)), Some(listing));
         }
+    }
+
+    #[test]
+    fn reads_back_the_volume_a_book_listing_is_narrowed_to_and_the_bytes_after_it() {
+        let listing = BookListing {
+            volume: Some(BookNumber::from_thousandths(12_500)),
+            ..BookListing::IN_ORDER
+        };
+        let bytes = [listing_bytes(listing), vec![7, 8]].concat();
+
+        let read = listing_from_bytes(&bytes);
+
+        assert_eq!(read, Some((listing, &[7, 8][..])));
     }
 
     #[test]

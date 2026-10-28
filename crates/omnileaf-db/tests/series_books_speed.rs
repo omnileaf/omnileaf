@@ -31,21 +31,25 @@ const LISTINGS: [BookListing; 4] = [
         shown: BooksShown::All,
         direction: SortDirection::Ascending,
         section: None,
+        volume: None,
     },
     BookListing {
         shown: BooksShown::All,
         direction: SortDirection::Descending,
         section: None,
+        volume: None,
     },
     BookListing {
         shown: BooksShown::Unread,
         direction: SortDirection::Ascending,
         section: None,
+        volume: None,
     },
     BookListing {
         shown: BooksShown::Unread,
         direction: SortDirection::Descending,
         section: None,
+        volume: None,
     },
 ];
 

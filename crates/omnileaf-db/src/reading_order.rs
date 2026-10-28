@@ -38,6 +38,16 @@ pub(crate) fn section_keys(section: BookSection) -> (Vec<u8>, Vec<u8>) {
     (vec![first], vec![first.saturating_add(1)])
 }
 
+/// The keys the chapters filed in a volume sort between, which its own book and the other volumes fall outside.
+pub(crate) fn volume_keys(volume: BookNumber) -> (Vec<u8>, Vec<u8>) {
+    let mut start = vec![section_byte(BookSection::Volumes)];
+    push_number(&mut start, volume);
+    let mut end = start.clone();
+    start.push(VolumeEntry::Chapter { number: None }.position());
+    end.push(VolumeEntry::Chapter { number: None }.position() + 1);
+    (start, end)
+}
+
 const fn section_byte(section: BookSection) -> u8 {
     match section {
         BookSection::Volumes => 0,

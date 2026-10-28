@@ -13,7 +13,7 @@ use omnileaf_db::{
         BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, NewRoot,
         NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind, RootLocator,
         ScannedBook, SortDirection, Sourced, ValueSource, add_root, record_moved_books,
-        record_scanned_books, series_books, series_numberings,
+        record_scanned_books, series_books, series_numberings, series_volume,
     },
     rusqlite::types::Value,
 };
@@ -441,6 +441,178 @@ async fn pages_through_a_section_either_way_round_without_running_into_the_next(
         [first_first, last_first]
             .map(|books| books.into_iter().map(|book| book.title).collect::<Vec<_>>()),
         [["c010", "c011", "c012"], ["c012", "c011", "c010"]]
+    );
+}
+
+fn chapter_in_volume(
+    library: &Library,
+    title: &str,
+    chapter: u32,
+    volume_thousandths: u32,
+) -> ScannedBook {
+    let mut book = library.found(
+        title,
+        Some(Numbering::Chapter {
+            number: Some(numbers(chapter, chapter, ValueSource::FileName)),
+            volume: Some(volume(volume_thousandths, ValueSource::FolderName)),
+        }),
+    );
+    book.file.location = PathBuf::from(format!(
+        "{SERIES}/Volume {}/{title}.cbz",
+        volume_thousandths / 1000
+    ));
+    book
+}
+
+fn books_of_two_volumes(library: &Library) -> Vec<ScannedBook> {
+    vec![
+        library.found(
+            "Volume 2",
+            Some(Numbering::Volume {
+                numbers: numbers(2000, 2000, ValueSource::FolderName),
+            }),
+        ),
+        chapter_in_volume(library, "v02 c005", 5000, 2000),
+        chapter_in_volume(library, "v02 c006", 6000, 2000),
+        chapter_in_volume(library, "v02 c007", 7000, 2000),
+        chapter_in_volume(library, "v02.5 c008", 8000, 2500),
+        chapter_in_volume(library, "v03 c009", 9000, 3000),
+        library.found(
+            "c020",
+            Some(Numbering::Chapter {
+                number: Some(numbers(20_000, 20_000, ValueSource::FileName)),
+                volume: None,
+            }),
+        ),
+    ]
+}
+
+fn in_volume(thousandths: u32) -> BookListing {
+    BookListing {
+        volume: Some(BookNumber::from_thousandths(thousandths)),
+        ..BookListing::IN_ORDER
+    }
+}
+
+#[tokio::test]
+async fn lists_only_the_chapters_filed_in_a_volume_counting_places_across_the_series() {
+    let library = Library::open("volume-listing").await;
+    library.record(books_of_two_volumes(&library)).await;
+
+    let listed = [2000, 2500, 3000, 4000].map(|volume| library.listed(in_volume(volume), 10));
+    let mut found = Vec::new();
+    for listing in listed {
+        found.push(titles_and_positions(listing.await));
+    }
+
+    assert_eq!(
+        found,
+        [
+            vec![
+                ("v02 c005".to_owned(), 2),
+                ("v02 c006".to_owned(), 3),
+                ("v02 c007".to_owned(), 4),
+            ],
+            vec![("v02.5 c008".to_owned(), 5)],
+            vec![("v03 c009".to_owned(), 6)],
+            Vec::new(),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn pages_through_a_volume_either_way_round_without_running_into_the_next() {
+    let library = Library::open("volume-paging").await;
+    library.record(books_of_two_volumes(&library)).await;
+    let last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..in_volume(2000)
+    };
+
+    let forwards = library.listed(in_volume(2000), 1).await;
+    let backwards = library.listed(last_first, 1).await;
+
+    assert_eq!(
+        (
+            titles_and_positions(forwards),
+            titles_and_positions(backwards)
+        ),
+        (
+            vec![
+                ("v02 c005".to_owned(), 2),
+                ("v02 c006".to_owned(), 3),
+                ("v02 c007".to_owned(), 4),
+            ],
+            vec![
+                ("v02 c007".to_owned(), 4),
+                ("v02 c006".to_owned(), 3),
+                ("v02 c005".to_owned(), 2),
+            ],
+        )
+    );
+}
+
+#[tokio::test]
+async fn sums_up_a_volume_by_its_chapters_read_cover_and_folder() {
+    let library = Library::open("volume-overview").await;
+    library.record(books_of_two_volumes(&library)).await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read)
+                SELECT id, 1 FROM book WHERE title IN ('v02 c005', 'v03 c009')",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+
+    let overviews = library
+        .database
+        .read(move |connection| {
+            [2000, 3000, 4000]
+                .into_iter()
+                .map(|volume| {
+                    series_volume(connection, series, BookNumber::from_thousandths(volume))
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .await
+        .unwrap();
+
+    let summed: Vec<_> = overviews
+        .into_iter()
+        .map(|found| {
+            found.map(|found| {
+                (
+                    found.book_count,
+                    found.read_count,
+                    found.cover.is_some(),
+                    found.cover_location,
+                )
+            })
+        })
+        .collect();
+    assert_eq!(
+        summed,
+        [
+            Some((
+                3,
+                1,
+                true,
+                Some(PathBuf::from("Sample Series 01/Volume 2/v02 c005.cbz"))
+            )),
+            Some((
+                1,
+                1,
+                true,
+                Some(PathBuf::from("Sample Series 01/Volume 3/v03 c009.cbz"))
+            )),
+            None,
+        ]
     );
 }
 
