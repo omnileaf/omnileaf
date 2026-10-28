@@ -1,7 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { Platform } from "../../src/lib/ipc/bindings.ts";
-
 import {
   accessibilityViolations,
   boxOf,
@@ -15,6 +13,11 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import {
+  expectPhone,
+  isPhonePlatform,
+  type PhonePlatform,
+} from "./phone-platform.ts";
 import {
   BOOK_ID,
   BOOK_SERIES_ID,
@@ -39,8 +42,6 @@ const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
 const FINISHED = `${BOOK_TITLE} finished`;
 const TABLET = { width: 820, height: 1180 };
-
-type PhonePlatform = Extract<Platform, "ios" | "android">;
 
 interface PhoneType {
   readonly size: string;
@@ -353,6 +354,8 @@ test.describe("on a phone", () => {
 });
 
 test.describe("up next as the phone draws it", { tag: "@native" }, () => {
+  test.skip(({ platform }) => !isPhonePlatform(platform), "phones only");
+
   function check(page: Page): Locator {
     return page.getByRole("main").locator("[data-icon=circle-check]");
   }
@@ -406,10 +409,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -426,10 +426,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -444,10 +441,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -462,10 +456,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -498,10 +489,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
       page,
       platform,
     }) => {
-      if (platform !== "ios" && platform !== "android") {
-        test.skip();
-        return;
-      }
+      expectPhone(platform);
       await page.goto(`/read/${BOOK_ID}`);
       await expect(
         page.getByRole("heading", { level: 1, name: NO_SPACES }),
@@ -518,10 +506,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
   });
 
   test("keeps today's title on a tablet", async ({ page, platform }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await page.setViewportSize(TABLET);
     await openBook(page);
 
@@ -535,10 +520,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
     await turnPastTheEnd(page);
 
@@ -564,10 +546,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
     await turnPastTheEnd(page);
 
@@ -590,10 +569,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await page.setViewportSize(TABLET);
     await openBook(page);
     await turnPastTheEnd(page);
@@ -616,10 +592,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
 
     await turnPastTheEnd(page);
@@ -633,10 +606,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await page.addInitScript(() => {
       window.localStorage.setItem("omnileaf.language", "en-XA");
     });
@@ -660,10 +630,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
     await turnPastTheEnd(page);
     const read = page.getByRole("link", { name: `Read ${NEXT_BOOK.title}` });
@@ -683,10 +650,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
     await turnPastTheEnd(page);
     const main = page.getByRole("main");
@@ -708,10 +672,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await setTextScale(page, LARGEST_TEXT_SCALE);
     await openBook(page);
     await turnPastTheEnd(page);
@@ -726,10 +687,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
   });
 
   test("has no accessibility violations", async ({ page, platform }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
     await openBook(page);
     await turnPastTheEnd(page);
 
@@ -758,10 +716,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
       page,
       platform,
     }) => {
-      if (platform !== "ios" && platform !== "android") {
-        test.skip();
-        return;
-      }
+      expectPhone(platform);
       await openBook(page);
       await turnPastTheEnd(page);
       const main = page.getByRole("main");
@@ -786,10 +741,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
       page,
       platform,
     }) => {
-      if (platform !== "ios" && platform !== "android") {
-        test.skip();
-        return;
-      }
+      expectPhone(platform);
       await openBook(page);
 
       await turnPastTheEnd(page);
@@ -801,10 +753,7 @@ test.describe("up next as the phone draws it", { tag: "@native" }, () => {
       page,
       platform,
     }) => {
-      if (platform !== "ios" && platform !== "android") {
-        test.skip();
-        return;
-      }
+      expectPhone(platform);
       await page.addInitScript(() => {
         window.localStorage.setItem("omnileaf.language", "en-XA");
       });
