@@ -1,20 +1,22 @@
 use omnileaf_sync_proto::CategoryId;
-use rusqlite::{Connection, ToSql};
+use rusqlite::{Connection, ToSql, named_params};
 
 use crate::{
     Error,
     catalog::{
         cursor::Position,
+        gathering::sorted_directions,
         page::{Page, PageRequest},
         series_listing::{
-            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, counted_conditions,
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, SortDirection,
+            counted_conditions,
         },
         series_page::{
             Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
             last_read_rows, last_updated_place, last_updated_rows, time_left_place, time_left_rows,
             unread_count_place, unread_count_rows,
         },
-        staged_rows::{Read, TitlePlace, title_place, title_rows},
+        staged_rows::{Listing, Read, TitlePlace, title_place, title_rows},
     },
 };
 
@@ -68,12 +70,73 @@ const BY_TIME_LEFT: Directions<Position> = directions! {
     sort_position: time_left_place,
 };
 
+const FEW_IN_CATEGORY: i64 = 1_500;
+
+const CATEGORY_IS_FEW: &str = "SELECT count(*) < :few FROM (
+    SELECT 1 FROM series_category WHERE category_id = :category LIMIT :few)";
+
+macro_rules! members_of_category {
+    () => {
+        " FROM series_category CROSS JOIN series ON series.id = series_category.series_id
+            WHERE series_category.category_id = :category
+                AND series.reading_stage IN (:unstarted, :in_progress, :finished)"
+    };
+}
+
+const BY_TITLE_SORTED: Directions<TitlePlace> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "title_key",
+    sort_position: title_place,
+};
+
+const BY_DATE_ADDED_SORTED: Directions<Position> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "added_at_ms",
+    sort_position: added_place,
+};
+
+const BY_LAST_READ_SORTED: Directions<Position> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "last_read_at_ms",
+    sort_position: last_read_place,
+};
+
+const BY_LAST_UPDATED_SORTED: Directions<Position> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "updated_at_ms",
+    sort_position: last_updated_place,
+};
+
+const BY_UNREAD_COUNT_SORTED: Directions<Position> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "unread_count",
+    sort_position: unread_count_place,
+};
+
+const BY_TIME_LEFT_SORTED: Directions<Position> = sorted_directions! {
+    candidates: members_of_category!(),
+    key: "time_left_key",
+    sort_position: time_left_place,
+};
+
+fn listing_toward<'a, P>(
+    few: bool,
+    (in_stages, sorted): (&'a Directions<P>, &'a Directions<P>),
+    direction: SortDirection,
+) -> &'a Listing<P> {
+    if few { sorted } else { in_stages }.toward(direction)
+}
+
+fn category_is_few(connection: &Connection, category: &[u8; 16]) -> Result<bool, Error> {
+    Ok(connection.prepare(CATEGORY_IS_FEW)?.query_row(
+        named_params! { ":few": FEW_IN_CATEGORY, ":category": category },
+        |row| row.get(0),
+    )?)
+}
+
 const SERIES_IN_CATEGORY: &str = concat!(
-    "SELECT count(*) FROM series
-    WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND local_id IN (",
-    series_in_category!(),
-    ")",
+    "SELECT count(*)",
+    members_of_category!(),
     counted_conditions!()
 );
 
@@ -92,19 +155,40 @@ pub fn category_series_page(
         limit: request.size.rows_to_fetch(),
         bound: &bound,
     };
+    let few = category_is_few(connection, category_bytes)?;
     let after = request.after.as_ref().map(|cursor| &cursor.0);
     let direction = listing.sort.direction;
     let rows = match listing.sort.order {
-        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
-        SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
-        SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
-        SeriesOrder::LastUpdated => {
-            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
-        }
-        SeriesOrder::UnreadCount => {
-            unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
-        }
-        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
+        SeriesOrder::Title => title_rows(
+            &read,
+            listing_toward(few, (&BY_TITLE, &BY_TITLE_SORTED), direction),
+            after,
+        ),
+        SeriesOrder::DateAdded => date_added_rows(
+            &read,
+            listing_toward(few, (&BY_DATE_ADDED, &BY_DATE_ADDED_SORTED), direction),
+            after,
+        ),
+        SeriesOrder::LastRead => last_read_rows(
+            &read,
+            listing_toward(few, (&BY_LAST_READ, &BY_LAST_READ_SORTED), direction),
+            after,
+        ),
+        SeriesOrder::LastUpdated => last_updated_rows(
+            &read,
+            listing_toward(few, (&BY_LAST_UPDATED, &BY_LAST_UPDATED_SORTED), direction),
+            after,
+        ),
+        SeriesOrder::UnreadCount => unread_count_rows(
+            &read,
+            listing_toward(few, (&BY_UNREAD_COUNT, &BY_UNREAD_COUNT_SORTED), direction),
+            after,
+        ),
+        SeriesOrder::TimeLeft => time_left_rows(
+            &read,
+            listing_toward(few, (&BY_TIME_LEFT, &BY_TIME_LEFT_SORTED), direction),
+            after,
+        ),
     }?;
     Ok(Page::of(rows, request.size))
 }
@@ -161,6 +245,35 @@ mod tests {
             assert!(plan.iter().any(|step| step == IN_CATEGORY), "{plan:?}");
             assert!(
                 !plan.iter().any(|step| step.contains("ORDER BY")),
+                "{plan:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn sorts_a_few_members_of_the_category_whichever_page_it_reads() {
+        let scratch = ScratchLibrary::new("category-series-sorted-plan");
+
+        let plans = [
+            BY_TITLE_SORTED.ascending.first_page_query,
+            BY_TITLE_SORTED.ascending.next_page_query,
+            BY_TITLE_SORTED.descending.next_page_query,
+            BY_DATE_ADDED_SORTED.ascending.next_page_query,
+            BY_LAST_READ_SORTED.descending.next_page_query,
+            BY_LAST_UPDATED_SORTED.ascending.next_page_query,
+            BY_UNREAD_COUNT_SORTED.descending.next_page_query,
+            BY_TIME_LEFT_SORTED.ascending.next_page_query,
+        ]
+        .map(|query| scratch.query_plan(query));
+
+        for plan in plans {
+            assert_eq!(
+                plan.get(1).map(String::as_str),
+                Some(IN_CATEGORY),
+                "{plan:?}"
+            );
+            assert!(
+                !plan.iter().any(|step| step.contains("series_by_stage")),
                 "{plan:?}"
             );
         }
