@@ -47,11 +47,13 @@ struct BookmarkRow {
 }
 
 impl BookmarkRow {
-    fn place(&self) -> Option<(BookId, u32)> {
+    fn place(&self, id: BookmarkId) -> Option<(BookId, u32)> {
         let mut bytes = [0; 16];
         bytes[..8].copy_from_slice(&self.book_high?.to_be_bytes());
         bytes[8..].copy_from_slice(&self.book_low?.to_be_bytes());
-        Some((BookId::try_from(bytes.as_slice()).ok()?, self.page?))
+        let book = BookId::try_from(bytes.as_slice()).ok()?;
+        let page = self.page?;
+        (BookmarkId::of(book, page) == id).then_some((book, page))
     }
 
     fn is_bookmarked(&self) -> bool {
@@ -129,16 +131,16 @@ impl Projection {
         }
     }
 
-    fn apply(&self, connection: &Connection) -> rusqlite::Result<usize> {
+    fn apply(&self, connection: &Connection) -> Result<usize, Error> {
         match *self {
             Self::Position { book, page } => {
-                connection.execute(PROJECT_POSITION, (book.as_bytes(), page))
+                Ok(connection.execute(PROJECT_POSITION, (book.as_bytes(), page))?)
             }
             Self::Furthest { book, page } => {
-                connection.execute(PROJECT_FURTHEST, (book.as_bytes(), page))
+                Ok(connection.execute(PROJECT_FURTHEST, (book.as_bytes(), page))?)
             }
             Self::Read { book, is_read } => {
-                connection.execute(PROJECT_READ, (book.as_bytes(), is_read))
+                Ok(connection.execute(PROJECT_READ, (book.as_bytes(), is_read))?)
             }
             Self::Bookmark {
                 id,
@@ -149,8 +151,8 @@ impl Projection {
     }
 }
 
-fn project_bookmark(connection: &Connection, id: BookmarkId) -> rusqlite::Result<usize> {
-    let profile = current_profile(connection).map_err(|_| rusqlite::Error::QueryReturnedNoRows)?;
+fn project_bookmark(connection: &Connection, id: BookmarkId) -> Result<usize, Error> {
+    let profile = current_profile(connection)?;
     let mut statement = connection.prepare(BOOKMARK_REGISTERS)?;
     let mut registers = statement.query((
         id.as_bytes(),
@@ -175,13 +177,13 @@ fn project_bookmark(connection: &Connection, id: BookmarkId) -> rusqlite::Result
             part.fill_bookmark(&mut row);
         }
     }
-    let Some((book, page)) = row.place() else {
+    let Some((book, page)) = row.place(id) else {
         return Ok(0);
     };
     if row.is_bookmarked() {
-        connection.execute(PROJECT_BOOKMARK, (book.as_bytes(), page))
+        Ok(connection.execute(PROJECT_BOOKMARK, (book.as_bytes(), page))?)
     } else {
-        connection.execute(REMOVE_BOOKMARK, (book.as_bytes(), page))
+        Ok(connection.execute(REMOVE_BOOKMARK, (book.as_bytes(), page))?)
     }
 }
 
@@ -210,8 +212,8 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
         projected.insert(key);
     }
     let mut bookmark = connection.prepare(PROJECT_BOOKMARK)?;
-    for row in bookmarks.values().filter(|row| row.is_bookmarked()) {
-        if let Some((book, page)) = row.place() {
+    for (id, row) in bookmarks.iter().filter(|(_, row)| row.is_bookmarked()) {
+        if let Some((book, page)) = row.place(*id) {
             bookmark.execute((book.as_bytes(), page))?;
         }
     }
