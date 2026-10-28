@@ -388,6 +388,73 @@ async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
     );
 }
 
+#[tokio::test]
+async fn pages_only_the_bookmarked_books_of_a_series_with_their_place_in_the_series() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &[
+            "Volume 01",
+            "Volume 02",
+            "Volume 03",
+            "Volume 04",
+            "Volume 05",
+        ],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute_batch(
+                "INSERT INTO book_bookmark (book_id, page)
+                    SELECT id, 2 FROM book WHERE title IN ('Volume 02', 'Volume 04', 'Volume 05');
+                 INSERT INTO book_bookmark (book_id, page)
+                    SELECT id, 9 FROM book WHERE title = 'Volume 04'",
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    let series = series_id("Sample Series 01");
+    let bookmarked = |direction| BookListing {
+        shown: BooksShown::Bookmarked,
+        direction,
+        ..BookListing::IN_ORDER
+    };
+    let positions = |direction| {
+        move |connection: &Connection, request: &PageRequest| {
+            let page = series_books(connection, series, bookmarked(direction), request)?;
+            Ok(Page {
+                items: page
+                    .items
+                    .into_iter()
+                    .map(|book| format!("{} {} {}", book.title, book.position, book.is_bookmarked))
+                    .collect(),
+                next: page.next,
+            })
+        }
+    };
+
+    let pages = [
+        library.walk(positions(SortDirection::Ascending), 2).await,
+        library.walk(positions(SortDirection::Descending), 2).await,
+    ];
+
+    let book = |title: &str, position| format!("{title} {position} true");
+    assert_eq!(
+        pages,
+        [
+            vec![
+                vec![book("Volume 02", 2), book("Volume 04", 4)],
+                vec![book("Volume 05", 5)]
+            ],
+            vec![
+                vec![book("Volume 05", 5), book("Volume 04", 4)],
+                vec![book("Volume 02", 2)]
+            ],
+        ]
+    );
+}
+
 async fn unread_titles(library: &Library) -> Vec<Vec<String>> {
     let unread = BookListing {
         shown: BooksShown::Unread,

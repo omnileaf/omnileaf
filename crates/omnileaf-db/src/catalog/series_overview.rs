@@ -15,6 +15,9 @@ const OVERVIEW_OF_SERIES: &str = concat!(
         series.id AS id, series.title, series.title_source, series.year, series.year_source,
         series.language, series.language_source, series.book_count, series.read_count,
         series.pages_left, series.uncounted_books, series.adult_rated_books > 0 AS is_rated_adult,
+        (SELECT count(DISTINCT book.id) FROM book
+            JOIN book_bookmark ON book_bookmark.book_id = book.id
+            WHERE book.series_local_id = series.local_id) AS bookmark_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
     crate::catalog::cover::join_series_cover!(),
@@ -44,6 +47,8 @@ pub struct SeriesOverview {
     /// Absent while a book not marked read has no page count.
     pub pages_left: Option<u32>,
     pub is_rated_adult: bool,
+    /// The books with a bookmarked page.
+    pub bookmark_count: u32,
 }
 
 /// None for a series missing from the catalog or holding no books, which the library doesn't show.
@@ -89,6 +94,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         folder,
         pages_left: counted_pages_left(row)?,
         is_rated_adult: row.get("is_rated_adult")?,
+        bookmark_count: row.get("bookmark_count")?,
     })
 }
 

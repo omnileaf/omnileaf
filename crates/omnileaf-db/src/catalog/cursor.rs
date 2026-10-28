@@ -14,6 +14,7 @@ const BOOK_TAG: u8 = 3;
 const ROOT_TAG: u8 = 4;
 const DESCENDING_BIT: u8 = 0b01;
 const UNREAD_BIT: u8 = 0b10;
+const BOOKMARKED_BIT: u8 = 0b1_0000;
 const SECTION_BITS: u8 = 0b1100;
 const SECTION_SHIFT: u32 = 2;
 const SESSION_TAG: u8 = 5;
@@ -262,6 +263,7 @@ fn listing_byte(listing: BookListing) -> u8 {
     let shown = match listing.shown {
         BooksShown::All => 0,
         BooksShown::Unread => UNREAD_BIT,
+        BooksShown::Bookmarked => BOOKMARKED_BIT,
     };
     direction | shown | section_code(listing.section) << SECTION_SHIFT
 }
@@ -276,7 +278,7 @@ fn section_code(section: Option<BookSection>) -> u8 {
 }
 
 fn listing_from_byte(byte: u8) -> Option<BookListing> {
-    if byte & !(DESCENDING_BIT | UNREAD_BIT | SECTION_BITS) != 0 {
+    if byte & !(DESCENDING_BIT | UNREAD_BIT | BOOKMARKED_BIT | SECTION_BITS) != 0 {
         return None;
     }
     let section = match (byte & SECTION_BITS) >> SECTION_SHIFT {
@@ -287,10 +289,11 @@ fn listing_from_byte(byte: u8) -> Option<BookListing> {
         _ => return None,
     };
     Some(BookListing {
-        shown: if byte & UNREAD_BIT == 0 {
-            BooksShown::All
-        } else {
-            BooksShown::Unread
+        shown: match (byte & UNREAD_BIT != 0, byte & BOOKMARKED_BIT != 0) {
+            (false, false) => BooksShown::All,
+            (true, false) => BooksShown::Unread,
+            (false, true) => BooksShown::Bookmarked,
+            (true, true) => return None,
         },
         direction: if byte & DESCENDING_BIT == 0 {
             SortDirection::Ascending
@@ -358,7 +361,7 @@ mod tests {
         EVERY_SECTION
             .into_iter()
             .flat_map(|section| {
-                [BooksShown::All, BooksShown::Unread]
+                [BooksShown::All, BooksShown::Unread, BooksShown::Bookmarked]
                     .into_iter()
                     .flat_map(move |shown| {
                         [SortDirection::Ascending, SortDirection::Descending]

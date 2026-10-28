@@ -83,6 +83,12 @@ macro_rules! unread {
     };
 }
 
+macro_rules! bookmarked {
+    () => {
+        "EXISTS (SELECT 1 FROM book_bookmark WHERE book_bookmark.book_id = book.id)"
+    };
+}
+
 macro_rules! in_section {
     () => {
         "book.reading_order_key >= :section_start AND book.reading_order_key < :section_end"
@@ -117,6 +123,17 @@ const NEXT_UNREAD_IN_SECTION: &str =
 const LAST_UNREAD_IN_SECTION: &str = books_in_series!("DESC", unread!(), in_section!());
 const PREVIOUS_UNREAD_IN_SECTION: &str =
     books_in_series!("DESC", unread!(), after_cursor!("<"), in_section!());
+const FIRST_BOOKMARKED_IN_SERIES: &str = books_in_series!("ASC", bookmarked!());
+const NEXT_BOOKMARKED_IN_SERIES: &str = books_in_series!("ASC", bookmarked!(), after_cursor!(">"));
+const LAST_BOOKMARKED_IN_SERIES: &str = books_in_series!("DESC", bookmarked!());
+const PREVIOUS_BOOKMARKED_IN_SERIES: &str =
+    books_in_series!("DESC", bookmarked!(), after_cursor!("<"));
+const FIRST_BOOKMARKED_IN_SECTION: &str = books_in_series!("ASC", bookmarked!(), in_section!());
+const NEXT_BOOKMARKED_IN_SECTION: &str =
+    books_in_series!("ASC", bookmarked!(), after_cursor!(">"), in_section!());
+const LAST_BOOKMARKED_IN_SECTION: &str = books_in_series!("DESC", bookmarked!(), in_section!());
+const PREVIOUS_BOOKMARKED_IN_SECTION: &str =
+    books_in_series!("DESC", bookmarked!(), after_cursor!("<"), in_section!());
 const UP_NEXT: &str = concat!(
     "SELECT book.id, book.reading_order_key,
         book_state.is_read, book_state.is_started, book_state.position_page
@@ -129,7 +146,8 @@ const UP_NEXT: &str = concat!(
 const BOOK_DETAILS: &str = "SELECT book.title, book.added_at_ms, book.page_count,
         book.kind, book.first_number, book.last_number, book.number_source,
         book.volume_number, book.volume_source,
-        cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
+        cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
+        EXISTS (SELECT 1 FROM book_bookmark WHERE book_bookmark.book_id = book.id) AS is_bookmarked
     FROM book
     LEFT JOIN book_file AS cover
         ON cover.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = book.id)
@@ -163,6 +181,7 @@ pub struct BookSummary {
     pub page_count: Option<u32>,
     /// Absent for a book found before the library read numbers from names, until it is scanned again.
     pub numbering: Option<Numbering>,
+    pub is_bookmarked: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -177,6 +196,7 @@ pub struct BookListing {
 pub enum BooksShown {
     All,
     Unread,
+    Bookmarked,
 }
 
 impl BookListing {
@@ -212,6 +232,30 @@ impl BookListing {
             (BooksShown::Unread, SortDirection::Descending, false, true) => LAST_UNREAD_IN_SECTION,
             (BooksShown::Unread, SortDirection::Descending, true, true) => {
                 PREVIOUS_UNREAD_IN_SECTION
+            }
+            (BooksShown::Bookmarked, SortDirection::Ascending, false, false) => {
+                FIRST_BOOKMARKED_IN_SERIES
+            }
+            (BooksShown::Bookmarked, SortDirection::Ascending, true, false) => {
+                NEXT_BOOKMARKED_IN_SERIES
+            }
+            (BooksShown::Bookmarked, SortDirection::Descending, false, false) => {
+                LAST_BOOKMARKED_IN_SERIES
+            }
+            (BooksShown::Bookmarked, SortDirection::Descending, true, false) => {
+                PREVIOUS_BOOKMARKED_IN_SERIES
+            }
+            (BooksShown::Bookmarked, SortDirection::Ascending, false, true) => {
+                FIRST_BOOKMARKED_IN_SECTION
+            }
+            (BooksShown::Bookmarked, SortDirection::Ascending, true, true) => {
+                NEXT_BOOKMARKED_IN_SECTION
+            }
+            (BooksShown::Bookmarked, SortDirection::Descending, false, true) => {
+                LAST_BOOKMARKED_IN_SECTION
+            }
+            (BooksShown::Bookmarked, SortDirection::Descending, true, true) => {
+                PREVIOUS_BOOKMARKED_IN_SECTION
             }
         }
     }
@@ -303,12 +347,16 @@ fn walk(
             (Some((previous, _)), BooksShown::All, SortDirection::Descending) => {
                 previous.position - 1
             }
-            (Some((previous, previous_cursor)), BooksShown::Unread, SortDirection::Ascending) => {
-                previous.position + books_between(connection, previous_cursor, &cursor)?
-            }
-            (Some((previous, previous_cursor)), BooksShown::Unread, SortDirection::Descending) => {
-                previous.position - books_between(connection, &cursor, previous_cursor)?
-            }
+            (
+                Some((previous, previous_cursor)),
+                BooksShown::Unread | BooksShown::Bookmarked,
+                SortDirection::Ascending,
+            ) => previous.position + books_between(connection, previous_cursor, &cursor)?,
+            (
+                Some((previous, previous_cursor)),
+                BooksShown::Unread | BooksShown::Bookmarked,
+                SortDirection::Descending,
+            ) => previous.position - books_between(connection, &cursor, previous_cursor)?,
         };
         held.push((book, cursor));
     }
@@ -401,6 +449,7 @@ fn fill_details(details: &mut Statement<'_>, book: &mut BookSummary) -> Result<(
         book.added_at_ms,
         book.page_count,
         book.numbering,
+        book.is_bookmarked,
     ) = details.query_row([book.id.as_bytes()], |row| {
         Ok((
             row.get("title")?,
@@ -408,6 +457,7 @@ fn fill_details(details: &mut Statement<'_>, book: &mut BookSummary) -> Result<(
             row.get("added_at_ms")?,
             row.get("page_count")?,
             stored_numbering(row)?,
+            row.get("is_bookmarked")?,
         ))
     })?;
     Ok(())
@@ -430,6 +480,7 @@ fn stored_book(
         reading,
         page_count: None,
         numbering: None,
+        is_bookmarked: false,
     };
     let position = Position::Book {
         series,
