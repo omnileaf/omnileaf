@@ -26,7 +26,7 @@ use omnileaf_db::{
         root_shares, series_books, series_count, series_file_details, series_numberings,
         series_overview, series_page, series_people, series_titles, series_volume,
         show_root_while_missing, store_page_dimensions, unread_books, up_next, writer_series_count,
-        writer_series_page, writers,
+        writer_series_page, writerless_series_count, writerless_series_page, writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -561,6 +561,46 @@ impl Library {
                     .iter()
                     .map(|folder| folder_series_count(connection, folder.0, &filter))
                     .collect()
+            })
+            .await?)
+    }
+
+    pub async fn writerless_series(
+        &self,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let now_ms = self.now_ms();
+        let page = self
+            .store
+            .database()
+            .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
+                Ok((
+                    writerless_series_page(connection, &listing, &request)?,
+                    adult,
+                ))
+            })
+            .await?;
+        Ok(SeriesPage::new(page.0, page.1))
+    }
+
+    pub async fn writerless_series_count(
+        &self,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                writerless_series_count(connection, &filter)
             })
             .await?)
     }
