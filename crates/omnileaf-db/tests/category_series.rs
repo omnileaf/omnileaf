@@ -366,3 +366,55 @@ async fn suggests_the_most_common_tags_of_the_files_that_the_series_do_not_carry
 
     assert_eq!(held.suggested_tags, owned(&["harbour", "storms"]));
 }
+
+const FEW_IN_CATEGORY: usize = 1_500;
+
+async fn pages_of_a_category_of(members: usize) -> Vec<String> {
+    let folder = ScratchFolder::new("category-series-boundary");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    let titles: Vec<String> = (0..members)
+        .map(|number| format!("Sample Series {number:05}"))
+        .collect();
+    let seeds: Vec<SeriesSeed<'_>> = titles
+        .iter()
+        .map(|title| SeriesSeed::named(title))
+        .collect();
+    seed_library(store.database(), &seeds).await;
+    let ids: Vec<SeriesId> = titles.iter().map(|title| series(title)).collect();
+    let shelf = store
+        .write(move |writer| {
+            let category = writer.create_category("Sample Shelf")?;
+            writer.set_category_members(category, &ids, true)?;
+            Ok(category)
+        })
+        .await
+        .unwrap();
+    let mut read = Vec::new();
+    let mut after = None;
+    loop {
+        let request = PageRequest {
+            after: after.take(),
+            size: PageSize::try_from(200).unwrap(),
+        };
+        let page = store
+            .database()
+            .read(move |connection| category_series_page(connection, shelf, &A_TO_Z, &request))
+            .await
+            .unwrap();
+        read.extend(page.items.into_iter().map(|series| series.title));
+        let Some(next) = page.next else { break };
+        after = Some(next);
+    }
+    assert_eq!(read, titles);
+    read
+}
+
+#[tokio::test]
+async fn pages_a_category_one_short_of_the_few_in_order() {
+    pages_of_a_category_of(FEW_IN_CATEGORY - 1).await;
+}
+
+#[tokio::test]
+async fn pages_a_category_of_exactly_the_few_in_order() {
+    pages_of_a_category_of(FEW_IN_CATEGORY).await;
+}
