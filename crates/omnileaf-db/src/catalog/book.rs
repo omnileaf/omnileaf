@@ -15,9 +15,9 @@ macro_rules! insert_book {
             "INSERT INTO book (
                 id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
                 page_count, kind, first_number, last_number, number_source, volume_number,
-                volume_source
+                volume_source, name_language
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15
             FROM series WHERE id = ?2",
             $on_conflict
         )
@@ -50,16 +50,17 @@ macro_rules! add_or_relabel_book {
                 last_number = excluded.last_number,
                 number_source = excluded.number_source,
                 volume_number = excluded.volume_number,
-                volume_source = excluded.volume_source
+                volume_source = excluded.volume_source,
+                name_language = excluded.name_language
             WHERE ",
             $refilable,
             " AND (
                 title, reading_order_key, kind, first_number, last_number, number_source,
-                volume_number, volume_source
+                volume_number, volume_source, name_language
             ) IS NOT (
                 excluded.title, excluded.reading_order_key, excluded.kind, excluded.first_number,
                 excluded.last_number, excluded.number_source, excluded.volume_number,
-                excluded.volume_source
+                excluded.volume_source, excluded.name_language
             )"
         ))
     };
@@ -86,6 +87,8 @@ const FILE_LOCATION: &str = ":file_location";
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
+const FILL_NAME_LANGUAGE: &str =
+    "UPDATE book SET name_language = ?2 WHERE id = ?1 AND name_language IS NULL";
 const RECORD_PAGE_COUNT: &str =
     "UPDATE book SET page_count = ?2 WHERE id = ?1 AND page_count IS NOT ?2";
 const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
@@ -102,6 +105,7 @@ pub(crate) struct BookFiler<'t> {
     add: Statement<'t>,
     move_to_series: Statement<'t>,
     series_exists: Statement<'t>,
+    fill_name_language: Statement<'t>,
     page_count: Statement<'t>,
 }
 
@@ -113,6 +117,7 @@ pub struct NewBook {
     pub added_at_ms: i64,
     pub page_count: Option<u32>,
     pub numbering: Option<Numbering>,
+    pub name_language: Option<String>,
 }
 
 impl NewBook {
@@ -144,6 +149,7 @@ impl<'t> BookFiler<'t> {
             add: transaction.prepare(add)?,
             move_to_series: transaction.prepare(move_to_series)?,
             series_exists: transaction.prepare(SERIES_EXISTS)?,
+            fill_name_language: transaction.prepare(FILL_NAME_LANGUAGE)?,
             page_count: transaction.prepare(RECORD_PAGE_COUNT)?,
         })
     }
@@ -166,6 +172,10 @@ impl<'t> BookFiler<'t> {
                 .query_row([book.series.as_bytes()], |row| row.get(0))?;
         if !is_filed {
             return Err(Error::UnknownSeries { id: book.series });
+        }
+        if let Some(name_language) = &book.name_language {
+            self.fill_name_language
+                .execute((book.id().as_bytes(), name_language))?;
         }
         Ok(())
     }
@@ -230,7 +240,7 @@ fn run(
     Ok(statement.raw_execute()?)
 }
 
-fn book_columns(book: &NewBook) -> [Value; 14] {
+fn book_columns(book: &NewBook) -> [Value; 15] {
     let numbering = book.numbering.as_ref();
     let number = numbering.and_then(Numbering::number);
     let volume = numbering.and_then(Numbering::volume);
@@ -249,6 +259,7 @@ fn book_columns(book: &NewBook) -> [Value; 14] {
         stored_text(number.map(|number| number.source.as_stored())),
         Value::from(volume.map(|volume| volume.value.thousandths())),
         stored_text(volume.map(|volume| volume.source.as_stored())),
+        stored_text(book.name_language.as_deref()),
     ]
 }
 
@@ -285,6 +296,7 @@ mod tests {
             added_at_ms: 0,
             page_count: None,
             numbering: None,
+            name_language: None,
         };
         let file = BookFile {
             root: RootId(1),

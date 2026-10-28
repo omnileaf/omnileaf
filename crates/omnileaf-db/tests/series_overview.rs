@@ -83,6 +83,7 @@ impl Library {
                     modified_at_ms: ADDED_AT_MS,
                 },
                 numbering: None,
+                name_language: None,
             })
             .collect();
         library

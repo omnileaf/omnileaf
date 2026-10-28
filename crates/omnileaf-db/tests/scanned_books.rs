@@ -77,6 +77,7 @@ impl Library {
                 modified_at_ms: MODIFIED_AT_MS,
             },
             numbering: None,
+            name_language: None,
         }
     }
 
@@ -543,6 +544,7 @@ async fn knows_no_page_count_for_a_book_added_without_one_until_it_is_recorded()
         added_at_ms: ADDED_AT_MS,
         page_count: None,
         numbering: None,
+        name_language: None,
     };
     let id = book.id();
     library

@@ -5,7 +5,9 @@ use std::{
 };
 
 use omnileaf_db::catalog::{Numbering, SeriesNaming, Sourced, ValueSource};
-use omnileaf_formats::{SeriesName, read_book_name, read_series_name, read_volume_folder_name};
+use omnileaf_formats::{
+    BookName, SeriesName, read_book_name, read_series_name, read_volume_folder_name,
+};
 
 use crate::{
     book_numbering::{FileNumbers, Shelf, number_book},
@@ -19,6 +21,7 @@ pub(crate) struct Placement {
     pub(crate) series: PlacedSeries,
     pub(crate) title: String,
     pub(crate) numbering: Numbering,
+    pub(crate) language: Option<String>,
 }
 
 #[derive(Debug)]
@@ -50,6 +53,7 @@ pub(crate) fn place_book(location: &Path, linked_folder: &str, files: FileNumber
     let book = read_book_name(&name, Some(&series.title));
     Placement {
         numbering: number_book(&book, shelf, files),
+        language: tagged_language(&book),
         title: book.title,
         series: PlacedSeries::folder(series_folder, series),
     }
@@ -60,6 +64,7 @@ impl Placement {
         let book = read_book_name(name, None);
         Self {
             numbering: number_book(&book, Shelf::OneShot, files),
+            language: tagged_language(&book),
             series: PlacedSeries {
                 location: location.to_path_buf(),
                 naming: SeriesNaming {
@@ -85,6 +90,10 @@ impl PlacedSeries {
             },
         }
     }
+}
+
+fn tagged_language(book: &BookName) -> Option<String> {
+    book.language.map(|tag| tag.to_string())
 }
 
 const fn from_folder_name<T>(value: T) -> Sourced<T> {

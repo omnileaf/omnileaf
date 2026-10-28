@@ -263,4 +263,25 @@ mod tests {
             .concat()
         );
     }
+
+    #[test]
+    fn names_a_series_through_the_reading_order_index_of_its_books() {
+        let scratch = ScratchLibrary::new("name-series-plan");
+
+        let plan = scratch.query_plan(
+            "SELECT language, language_source FROM series_language WHERE series_local_id = ?1",
+        );
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH book USING PRIMARY KEY (id=?) LEFT-JOIN",
+                "CORRELATED SCALAR SUBQUERY 3",
+                "SEARCH named USING INDEX book_by_series (series_local_id=?)",
+                "SEARCH named_details USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?) LEFT-JOIN",
+            ]
+        );
+    }
 }

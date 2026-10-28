@@ -84,6 +84,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0048_key_the_name_of_each_person_a_book_names"),
     migration!("0049_key_each_series_by_its_folder"),
     migration!("0050_join_series_folders_by_the_series_their_books_name"),
+    migration!("0051_name_each_series_in_the_language_tagged_in_its_book_names"),
 ];
 
 pub(crate) fn pending(
@@ -1404,6 +1405,55 @@ mod tests {
     }
 
     #[test]
+    fn reads_again_every_book_whose_details_name_people_and_tags_whatever_schema_it_left() {
+        let left_at = [48, 49, 50];
+
+        let upgraded: Vec<(usize, i64)> = left_at
+            .iter()
+            .map(|&version| (version, people_and_tags_after_upgrading_from(version)))
+            .collect();
+
+        assert_eq!(upgraded, [(48, 0), (49, 0), (50, 0)]);
+    }
+
+    fn people_and_tags_after_upgrading_from(version: usize) -> i64 {
+        let scratch = ScratchLibrary::new(&format!("people-and-tags-upgrade-{version}"));
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..version]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        for statement in [
+            "INSERT INTO book_details (book_id) VALUES (?1)",
+            "INSERT INTO book_person (book_id, role, name) VALUES (?1, 'writer', 'Sample Author')",
+            "INSERT INTO book_tag (book_id, kind, name) VALUES (?1, 'genre', 'Mystery')",
+        ] {
+            connection.execute(statement, [book(1).as_bytes()]).unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book_person) + (SELECT count(*) FROM book_tag)",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    #[test]
     fn reads_every_book_again_to_file_it_by_its_folder_and_leaves_old_series_unnamed() {
         let scratch = ScratchLibrary::new("series-folder-upgrade");
         drop(Database::open_with(&scratch.config, &MIGRATIONS[..48]).unwrap());
@@ -1489,6 +1539,49 @@ mod tests {
             )
             .unwrap();
         assert_eq!(kept, (1, 0, 0));
+    }
+
+    #[test]
+    fn reads_every_book_again_to_name_its_series_in_the_language_tagged_in_its_name() {
+        let scratch = ScratchLibrary::new("series-tagged-language-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..50]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id, language) VALUES (?1, 'ja')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let kept: Vec<Value> = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book_details),
+                    (SELECT name_language FROM book), language, language_source
+                FROM series",
+                [],
+                |row| (0..4).map(|column| row.get(column)).collect(),
+            )
+            .unwrap();
+        assert_eq!(
+            kept,
+            [Value::Integer(0), Value::Null, Value::Null, Value::Null]
+        );
     }
 
     #[test]

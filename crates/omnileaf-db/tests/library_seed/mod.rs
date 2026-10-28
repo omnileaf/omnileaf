@@ -66,6 +66,7 @@ fn new_series(seed: &SeriesSeed<'_>) -> (NewSeries, Vec<NewBook>) {
             added_at_ms: seed.added_at_ms,
             page_count: None,
             numbering: None,
+            name_language: None,
         })
         .collect();
     (series, books)

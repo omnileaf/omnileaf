@@ -66,6 +66,7 @@ impl Library {
                 modified_at_ms: ADDED_AT_MS,
             },
             numbering,
+            name_language: None,
         }
     }
 

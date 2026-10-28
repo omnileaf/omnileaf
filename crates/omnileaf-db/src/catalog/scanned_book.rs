@@ -44,6 +44,7 @@ pub struct ScannedBook {
     pub details: BookDetails,
     pub file: BookFile,
     pub numbering: Option<Numbering>,
+    pub name_language: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -120,6 +121,7 @@ impl<'t> Recorder<'t> {
             added_at_ms: scanned.added_at_ms,
             page_count: Some(scanned.page_count),
             numbering: scanned.numbering,
+            name_language: scanned.name_language.clone(),
         };
         self.books.file(&book, &scanned.file)?;
         self.books

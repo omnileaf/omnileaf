@@ -5,15 +5,15 @@
 
 mod support;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     Database,
     catalog::{
         AgeRating, BookDetails, BookFile, NewRoot, NewSeries, PageRequest, PageSize, RootId,
-        RootKind, RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root,
-        record_moved_books, record_scanned_books, remove_book_files, remove_books_without_files,
-        series_page,
+        RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesListing, SeriesNaming, SeriesOrder,
+        SeriesSort, Sourced, ValueSource, add_root, record_moved_books, record_scanned_books,
+        remove_book_files, remove_books_without_files, series_page,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
@@ -22,6 +22,7 @@ use support::{ScratchFolder, library_config};
 const ADDED_AT_MS: i64 = 1_790_000_000_000;
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
+const TAGGED_LANGUAGE: &str = "en";
 
 struct Library {
     database: Database,
@@ -69,6 +70,42 @@ impl Library {
                 modified_at_ms: ADDED_AT_MS,
             },
             numbering: None,
+            name_language: None,
+        }
+    }
+
+    fn tagged_book(&self, series: &str, volume: u32, details: BookDetails) -> ScannedBook {
+        ScannedBook {
+            name_language: Some(TAGGED_LANGUAGE.to_owned()),
+            ..self.book(series, volume, details)
+        }
+    }
+
+    fn copy_in_series_folder(&self, location: &str, name_language: Option<&str>) -> ScannedBook {
+        let series = NewSeries::folder(
+            SeriesFolder {
+                linked_folder: "Sample Library",
+                location: Path::new(SERIES_01),
+            },
+            SeriesNaming {
+                title: Sourced {
+                    value: SERIES_01.to_owned(),
+                    source: ValueSource::FolderName,
+                },
+                year: None,
+            },
+            ADDED_AT_MS,
+        )
+        .unwrap();
+        let book = self.book(SERIES_01, 1, BookDetails::default());
+        ScannedBook {
+            series,
+            name_language: name_language.map(str::to_owned),
+            file: BookFile {
+                location: PathBuf::from(location),
+                ..book.file
+            },
+            ..book
         }
     }
 
@@ -105,6 +142,20 @@ impl Library {
             .unwrap();
     }
 
+    async fn languages(&self) -> Vec<(String, Option<String>, Option<String>)> {
+        self.database
+            .read(|connection| {
+                let mut languages = connection.prepare(
+                    "SELECT title, language, language_source FROM series ORDER BY title",
+                )?;
+                let rows =
+                    languages.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+                Ok(rows.collect::<Result<_, _>>()?)
+            })
+            .await
+            .unwrap()
+    }
+
     async fn listed(&self) -> Vec<(String, Option<String>, bool)> {
         let request = PageRequest {
             after: None,
@@ -127,6 +178,18 @@ fn in_language(language: &str) -> BookDetails {
         language: Some(language.to_owned()),
         ..BookDetails::default()
     }
+}
+
+fn named(
+    title: &str,
+    language: Option<&str>,
+    source: Option<&str>,
+) -> (String, Option<String>, Option<String>) {
+    (
+        title.to_owned(),
+        language.map(str::to_owned),
+        source.map(str::to_owned),
+    )
 }
 
 fn rated(rating: AgeRating) -> BookDetails {
@@ -275,4 +338,118 @@ async fn forgets_a_series_language_and_rating_when_its_books_details_are_forgott
     library.forget_details().await;
 
     assert_eq!(library.listed().await, [listed(SERIES_01, None, false)]);
+}
+
+#[tokio::test]
+async fn names_a_series_in_the_language_tagged_in_a_book_name_when_its_details_give_none() {
+    let library = Library::open("series-tagged-language").await;
+
+    library
+        .record(vec![
+            library.book(SERIES_01, 1, BookDetails::default()),
+            library.tagged_book(SERIES_01, 2, BookDetails::default()),
+        ])
+        .await;
+
+    assert_eq!(
+        library.languages().await,
+        [named(SERIES_01, Some(TAGGED_LANGUAGE), Some("file_name"))]
+    );
+}
+
+#[tokio::test]
+async fn names_a_series_in_the_language_of_a_book_s_details_over_the_one_tagged_in_its_name() {
+    let library = Library::open("series-details-language-over-tag").await;
+
+    library
+        .record(vec![library.tagged_book(SERIES_01, 1, in_language("ja"))])
+        .await;
+
+    assert_eq!(
+        library.languages().await,
+        [named(SERIES_01, Some("ja"), Some("files"))]
+    );
+}
+
+#[tokio::test]
+async fn names_a_series_in_the_tagged_language_again_once_its_books_details_are_forgotten() {
+    let library = Library::open("series-tag-after-details-forgotten").await;
+    library
+        .record(vec![library.tagged_book(SERIES_01, 1, in_language("ja"))])
+        .await;
+
+    library.forget_details().await;
+
+    assert_eq!(
+        library.languages().await,
+        [named(SERIES_01, Some(TAGGED_LANGUAGE), Some("file_name"))]
+    );
+}
+
+#[tokio::test]
+async fn forgets_a_tagged_language_once_the_book_is_scanned_without_the_tag() {
+    let library = Library::open("series-tag-dropped").await;
+    library
+        .record(vec![library.tagged_book(
+            SERIES_01,
+            1,
+            BookDetails::default(),
+        )])
+        .await;
+
+    library
+        .record(vec![library.book(SERIES_01, 1, BookDetails::default())])
+        .await;
+
+    assert_eq!(library.languages().await, [named(SERIES_01, None, None)]);
+}
+
+#[tokio::test]
+async fn moves_a_tagged_language_to_the_series_its_book_moves_to() {
+    let library = Library::open("series-tag-moved").await;
+    library
+        .record(vec![
+            library.tagged_book(SERIES_01, 1, BookDetails::default()),
+            library.book(SERIES_01, 2, BookDetails::default()),
+        ])
+        .await;
+
+    library
+        .record_moved(vec![library.tagged_book(
+            SERIES_02,
+            1,
+            BookDetails::default(),
+        )])
+        .await;
+
+    assert_eq!(
+        library.languages().await,
+        [
+            named(SERIES_01, None, None),
+            named(SERIES_02, Some(TAGGED_LANGUAGE), Some("file_name"))
+        ]
+    );
+}
+
+#[tokio::test]
+async fn names_a_series_in_the_language_tagged_in_the_name_of_a_book_held_in_two_files() {
+    let library = Library::open("series-tag-of-book-in-two-files").await;
+    library
+        .record(vec![
+            library.copy_in_series_folder("Sample Series 01/Volume 01.cbz", None),
+            library.copy_in_series_folder("Sample Series 01/Volume 01 copy.cbz", None),
+        ])
+        .await;
+
+    library
+        .record(vec![library.copy_in_series_folder(
+            "Sample Series 01/Volume 01.cbz",
+            Some(TAGGED_LANGUAGE),
+        )])
+        .await;
+
+    assert_eq!(
+        library.languages().await,
+        [named(SERIES_01, Some(TAGGED_LANGUAGE), Some("file_name"))]
+    );
 }

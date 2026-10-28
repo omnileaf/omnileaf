@@ -150,6 +150,7 @@ fn scanned(root: RootId, copy: &BookCopy) -> ScannedBook {
             modified_at_ms: MODIFIED_AT_MS,
         },
         numbering: None,
+        name_language: None,
     }
 }
 
