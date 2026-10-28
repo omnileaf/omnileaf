@@ -53,6 +53,15 @@ test("names the token and the platform when a value is missing", () => {
   );
 });
 
+test("lets macOS skip a token other platforms cover, since macOS is not measured everywhere", () => {
+  const withMacos = { ...ACCENT, value: { ...ACCENT.value, macos: "#2f6f4f" } };
+
+  const source = parse(withMacos, FADE);
+
+  expect(source.platforms).toEqual(["android", "ios", "macos"]);
+  expect(source.tokens[1]?.platforms.has("macos")).toBe(false);
+});
+
 test("names a platform drawn in one theme only", () => {
   const lightOnly = {
     ...ACCENT,
@@ -99,6 +108,28 @@ test("reads a contrast or transparency value for a platform in each theme", () =
     themed: true,
     light: "#2f7d4f",
     dark: "#5cbf86",
+  });
+});
+
+test("reads a contrast value for macOS in each theme, alongside iOS", () => {
+  const sharper = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "macos-light": "#2f6f4f",
+      "macos-dark": "#2e7d55",
+      "macos-light-contrast-more": "#1f5a3c",
+      "macos-dark-contrast-more": "#2e7d55",
+    },
+  };
+
+  const [token] = parse(sharper).tokens;
+
+  expect(token?.modes).toContainEqual({
+    platform: "macos",
+    mode: "contrast-more",
+    light: "#1f5a3c",
+    dark: "#2e7d55",
   });
 });
 
@@ -150,7 +181,7 @@ test("names a contrast setting drawn on a platform that does not have it", () =>
   };
 
   expect(() => parse(borrowed)).toThrow(
-    'Token "accent" sets contrast-more on android, but only ios has contrast-more.',
+    'Token "accent" sets contrast-more on android, but only ios and macos have contrast-more.',
   );
 });
 
