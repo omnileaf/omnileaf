@@ -15,8 +15,8 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
-        RootKind, RootLocator, add_root, book_to_read, bookmarked_roots, cover_file,
-        filter_choices as stored_filter_choices, folder_group_series_count,
+        RootKind, RootLocator, add_root, book_bookmarks, book_to_read, bookmarked_roots,
+        cover_file, filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
@@ -712,12 +712,7 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(BOOKS_PER_PAGE)?,
         };
-        let Some(listing) = listing.in_catalog() else {
-            return Ok(SeriesBookPage {
-                books: Vec::new(),
-                next: None,
-            });
-        };
+        let listing = listing.in_catalog();
         let page = self
             .store
             .database()
@@ -905,6 +900,32 @@ impl Library {
                     .iter()
                     .try_for_each(|book| writer.set_read(book.0, is_read))
             })
+            .await?)
+    }
+
+    /// Bookmarks the pages of the book, or takes the bookmarks off them, in one write.
+    #[tracing::instrument(skip_all, fields(%book, pages = pages.len(), is_bookmarked))]
+    pub async fn bookmark_pages(
+        &self,
+        book: BookId,
+        pages: Vec<u32>,
+        is_bookmarked: bool,
+    ) -> Result<(), LibraryError> {
+        Ok(self
+            .store
+            .write(move |writer| {
+                pages
+                    .iter()
+                    .try_for_each(|&page| writer.set_bookmark(book.0, page, is_bookmarked))
+            })
+            .await?)
+    }
+
+    pub(crate) async fn bookmarked_pages(&self, book: BookId) -> Result<Vec<u32>, LibraryError> {
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| book_bookmarks(connection, book.0))
             .await?)
     }
 

@@ -41,6 +41,10 @@ pub(crate) enum IpcErrorCode {
     BookUnreadable,
     BookTypeUnsupported,
     FileTypeRead,
+    #[expect(
+        dead_code,
+        reason = "the interface keeps its notice for this code until it stops showing it"
+    )]
     BookmarksNotKept,
     LabelsNotKept,
     DetailsNotKept,
@@ -116,13 +120,6 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DevelopmentBuildOnly,
             message: "only development builds can crash on purpose",
-        }
-    }
-
-    pub(crate) fn bookmarks_not_kept() -> Self {
-        Self {
-            code: IpcErrorCode::BookmarksNotKept,
-            message: "the library keeps no bookmarks yet",
         }
     }
 
@@ -350,14 +347,6 @@ mod tests {
         let code = code_for(LibraryError::ReadTypeKept { file_type });
 
         assert_eq!(code, IpcErrorCode::FileTypeRead);
-    }
-
-    #[test]
-    fn tells_the_interface_the_library_keeps_no_bookmarks_yet() {
-        assert_eq!(
-            IpcError::bookmarks_not_kept().code,
-            IpcErrorCode::BookmarksNotKept
-        );
     }
 
     #[test]

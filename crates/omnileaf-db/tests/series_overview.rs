@@ -232,8 +232,31 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             folder: None,
             pages_left: None,
             is_rated_adult: false,
+            bookmark_count: 0,
         }
     );
+}
+
+#[tokio::test]
+async fn counts_a_book_with_several_bookmarks_once_in_the_overview_of_its_series() {
+    let library = Library::with(&[holding(SERIES, FIVE_VOLUMES)]).await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute_batch(
+                "INSERT INTO book_bookmark (book_id, page)
+                    SELECT id, 1 FROM book WHERE title IN ('Volume 01', 'Volume 02');
+                 INSERT INTO book_bookmark (book_id, page)
+                    SELECT id, 4 FROM book WHERE title = 'Volume 01'",
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    let overview = library.overview(SERIES).await.unwrap();
+
+    assert_eq!(overview.bookmark_count, 2);
 }
 
 #[tokio::test]

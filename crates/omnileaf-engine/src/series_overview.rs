@@ -145,7 +145,7 @@ impl SeriesOverview {
             year: overview.year.map(|year| year.value),
             book_count: overview.book_count,
             read_count: overview.read_count,
-            bookmark_count: 0,
+            bookmark_count: overview.bookmark_count,
             cover: overview.cover.map(CoverPath),
             folder: overview
                 .folder
@@ -248,6 +248,7 @@ mod tests {
 
     const PAGES_LEFT: u32 = 900;
     const SECONDS_PER_PAGE: u32 = 12;
+    const BOOKMARKED_BOOKS: u32 = 3;
 
     fn overview_with(pages_left: Option<u32>, seconds_per_page: Option<u32>) -> SeriesOverview {
         SeriesOverview::new(
@@ -263,6 +264,7 @@ mod tests {
                 folder: None,
                 pages_left,
                 is_rated_adult: false,
+                bookmark_count: BOOKMARKED_BOOKS,
             },
             None,
             seconds_per_page,
@@ -381,8 +383,8 @@ mod tests {
     }
 
     #[test]
-    fn counts_no_bookmarks_while_the_library_keeps_none() {
-        assert_eq!(sample_overview().bookmark_count, 0);
+    fn crosses_how_many_books_hold_a_bookmark() {
+        assert_eq!(sample_overview().bookmark_count, BOOKMARKED_BOOKS);
     }
 
     #[test]

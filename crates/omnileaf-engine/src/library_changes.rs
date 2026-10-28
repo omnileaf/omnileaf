@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use omnileaf_db::store::Changed;
+use omnileaf_db::store::{Changed, Key};
 use tokio::sync::broadcast::{
     self,
     error::{RecvError, TryRecvError},
@@ -71,9 +71,12 @@ fn heard_synced(changed: &Result<Changed, RecvError>) -> Heard {
             },
         )
         | Err(RecvError::Lagged(_)) => Heard::Change,
-        Ok(Changed::Registers {
-            recounted: false, ..
-        }) => Heard::Unrelated,
+        Ok(Changed::Registers { keys, .. })
+            if keys.iter().any(|key| matches!(key, Key::Bookmark(_))) =>
+        {
+            Heard::Change
+        }
+        Ok(Changed::Registers { .. }) => Heard::Unrelated,
         Err(RecvError::Closed) => Heard::Closed,
     }
 }
