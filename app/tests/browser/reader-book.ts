@@ -79,6 +79,7 @@ export function readerBook({ reading, startPage }: WireOpening): WireBook {
     bookmarkedPages: null,
     damage: null,
     secondsPerPage: null,
+    isInLibrary: true,
   };
 }
 

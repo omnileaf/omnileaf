@@ -73,6 +73,7 @@ use crate::{
     missing_folder::problem_of,
     moved_home::move_home,
     network_share::unreachable_share_of,
+    opened_file::OpenedFiles,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::{Rescan, rescan},
     rescan_conditions::{RescanConditions, Storage},
@@ -120,15 +121,16 @@ impl From<PathBuf> for LibraryFolders {
 pub type OpenTree = Arc<dyn Fn(&AndroidTree) -> Arc<dyn omnileaf_formats::Storage> + Send + Sync>;
 
 pub struct Library {
-    store: Arc<Store>,
+    pub(crate) store: Arc<Store>,
     reading: ReadingProgress,
     catalog_change_lock: Mutex<()>,
     schedule: sync::Mutex<RescanSchedule>,
     schedule_gate: watch::Sender<ScheduleGate>,
     learns_reading_speed: AtomicBool,
     catalog_writes: broadcast::Sender<CatalogWritten>,
-    local_storage: Arc<dyn omnileaf_formats::Storage>,
+    pub(crate) local_storage: Arc<dyn omnileaf_formats::Storage>,
     open_tree: Option<OpenTree>,
+    pub(crate) opened_files: OpenedFiles,
 }
 
 struct RootFiles {
@@ -236,6 +238,7 @@ impl Library {
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
             open_tree: None,
+            opened_files: OpenedFiles::default(),
         };
         library.set_home(home).await?;
         Ok(library)
@@ -1222,10 +1225,20 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<BookToRead>, LibraryError> {
+        if let Some(found) = self.stored_book_to_read(book.0).await? {
+            return Ok(Some(found));
+        }
+        Ok(self.opened_file_to_read(book.0).await)
+    }
+
+    pub(crate) async fn stored_book_to_read(
+        &self,
+        book: omnileaf_sync_proto::BookId,
+    ) -> Result<Option<BookToRead>, LibraryError> {
         Ok(self
             .store
             .database()
-            .read(move |connection| book_to_read(connection, book.0))
+            .read(move |connection| book_to_read(connection, book))
             .await?)
     }
 
@@ -1291,6 +1304,20 @@ impl Library {
                 Ok(place_in_series(connection, book.0)?.map(|place| BookToOpen { found, place }))
             })
             .await?;
+        let to_open = match to_open {
+            Some(to_open) => Some(to_open),
+            None => self
+                .opened_file_to_read(book.0)
+                .await
+                .map(|found| BookToOpen {
+                    found,
+                    place: PlaceInSeries {
+                        position: 1,
+                        previous: None,
+                        next: None,
+                    },
+                }),
+        };
         Ok(to_open.map(|mut to_open| {
             if let Some(unsaved) = unsaved {
                 to_open.found.reading = unsaved.stored();
@@ -1330,6 +1357,9 @@ impl Library {
         rev: u32,
         pages: Vec<Option<PageDimensions>>,
     ) -> Result<(), LibraryError> {
+        if file == BookFileId::UNSTORED {
+            return Ok(());
+        }
         Ok(self
             .store
             .database()

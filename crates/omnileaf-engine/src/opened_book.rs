@@ -31,6 +31,8 @@ pub struct OpenedBook {
     pub damage: Option<BookDamage>,
     /// About how long a page takes to read, absent until the library has timed enough reading.
     pub seconds_per_page: Option<u32>,
+    /// False for a file opened from outside the library, which has no series page to go back to.
+    pub is_in_library: bool,
 }
 
 /// What's wrong with a book that opens with fewer pages than its file promises, the pages past the last one in `pages` being the ones lost.

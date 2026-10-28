@@ -50,6 +50,7 @@ mod moved_home;
 mod network_share;
 mod open_books;
 mod opened_book;
+mod opened_file;
 mod page_lane;
 mod page_path;
 mod page_sizes;
@@ -147,6 +148,7 @@ pub use opened_book::{
     BookDamage, BookFile, BookPage, BookPlace, DamageCause, OpenedBook, PageDimensions,
     ProbedFormat, ReadingDirection, SeriesNeighbour,
 };
+pub use opened_file::{FileToRead, OpenFileError};
 pub use page_path::{MalformedPagePath, PageCrop, PagePath};
 pub use page_thumbnail_path::{MalformedPageThumbnailPath, PageThumbnailPath};
 pub use pages::OpenBookError;

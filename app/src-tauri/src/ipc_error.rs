@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use omnileaf_engine::{
-    CrashReportError, HomeFolderError, LibraryError, OpenBookError, describe_error,
+    CrashReportError, HomeFolderError, LibraryError, OpenBookError, OpenFileError, describe_error,
 };
 use serde::Serialize;
 use specta::Type;
@@ -227,6 +227,24 @@ impl From<CrashReportError> for IpcError {
             code: IpcErrorCode::CrashReportUnavailable,
             message: "the crash report could not be read or removed",
         }
+    }
+}
+
+impl From<OpenFileError> for IpcError {
+    fn from(error: OpenFileError) -> Self {
+        let (code, message) = match error {
+            OpenFileError::Unreadable { .. } => (
+                IpcErrorCode::BookUnreadable,
+                "the file could not be read as a book",
+            ),
+            OpenFileError::UnsupportedType { .. } => (
+                IpcErrorCode::BookTypeUnsupported,
+                "the file is of a type this app can't read",
+            ),
+            OpenFileError::Library(error) => return error.into(),
+        };
+        tracing::warn!(error = %describe_error(&error), "opening a file refused");
+        Self { code, message }
     }
 }
 

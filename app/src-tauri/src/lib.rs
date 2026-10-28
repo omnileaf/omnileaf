@@ -3,6 +3,7 @@ mod commands;
 mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
+mod files_to_open;
 #[cfg(target_os = "ios")]
 mod folder_access;
 #[cfg(any(target_os = "linux", test))]
@@ -75,11 +76,21 @@ pub fn run() {
         .init();
     let config = RuntimeConfig::from_environment();
     let commands = commands::builder();
-    let app = tauri::Builder::default()
+    let app = tauri::Builder::default();
+    #[cfg(all(desktop, not(feature = "e2e")))]
+    let app = app.plugin(files_to_open::single_instance());
+    #[cfg(all(desktop, feature = "e2e"))]
+    let app = if e2e::wants_single_instance() {
+        app.plugin(files_to_open::single_instance())
+    } else {
+        app
+    };
+    let app = app
         .manage(Core::new())
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
         .manage(home_folder::ChosenHome::default())
+        .manage(files_to_open::FilesToOpen::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
@@ -105,6 +116,7 @@ pub fn run() {
                 }
             };
             app.manage(launch);
+            files_to_open::request(app.handle(), std::env::args().skip(1));
             Ok(())
         });
     #[cfg(desktop)]
@@ -138,7 +150,11 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.build(tauri::generate_context!())
         .expect("start the Tauri runtime")
-        .run(|app, event| put_away::save_when_put_away(app, &event));
+        .run(|app, event| {
+            put_away::save_when_put_away(app, &event);
+            #[cfg(target_os = "macos")]
+            files_to_open::request_when_opened(app, &event);
+        });
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {

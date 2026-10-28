@@ -248,6 +248,7 @@ impl Pages {
         }
         let damage = BookDamage::of(opened.damage, found.page_count, opened.page_count);
         if damage.is_none()
+            && found.file != BookFileId::UNSTORED
             && let Err(error) = library.record_page_count(id, opened.page_count).await
         {
             tracing::warn!(error = %describe_error(&error), "keep how many pages the book holds");
@@ -641,6 +642,7 @@ fn opened_book(
         bookmarked_pages: None,
         damage: None,
         seconds_per_page,
+        is_in_library: found.file != BookFileId::UNSTORED,
     }
 }
 
