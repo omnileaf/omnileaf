@@ -21,10 +21,9 @@ macro_rules! matching_series {
             JOIN series_tag ON series_tag.name = search_name.name
             WHERE search_name_fts MATCH :phrases
         UNION ALL
-        SELECT book.series_local_id FROM search_name_fts
+        SELECT series_person.series_local_id FROM search_name_fts
             JOIN search_name ON search_name.id = search_name_fts.rowid AND search_name.kind = 'person'
-            JOIN book_person ON book_person.name = search_name.name
-            JOIN book ON book.id = book_person.book_id
+            JOIN series_person ON series_person.name = search_name.name
             WHERE search_name_fts MATCH :phrases"
     };
 }
@@ -135,7 +134,7 @@ mod tests {
     const FIRST_TITLES: &str =
         "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=?)";
     const TITLES_AFTER: &str = "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)>(?,?))";
-    const MATCHING_TITLES_TAGS_AND_PEOPLE: [&str; 12] = [
+    const MATCHING_TITLES_TAGS_AND_PEOPLE: [&str; 11] = [
         "COMPOUND QUERY",
         "LEFT-MOST SUBQUERY",
         "SCAN series_fts VIRTUAL TABLE INDEX 0:M1",
@@ -146,13 +145,12 @@ mod tests {
         "UNION ALL",
         "SCAN search_name_fts VIRTUAL TABLE INDEX 0:M1",
         "SEARCH search_name USING INTEGER PRIMARY KEY (rowid=?)",
-        "SEARCH book_person USING COVERING INDEX book_person_by_name (name=?)",
-        "SEARCH book USING PRIMARY KEY (id=?)",
+        "SEARCH series_person USING COVERING INDEX series_person_by_name (name=?)",
     ];
 
     /// A count reads the list straight from the union, whose three parts each build a bloom filter.
     fn matching_titles_tags_and_people_for_a_count() -> Vec<String> {
-        let bloom_filter_after = [2, 6, 11];
+        let bloom_filter_after = [2, 6, 10];
         MATCHING_TITLES_TAGS_AND_PEOPLE
             .iter()
             .enumerate()

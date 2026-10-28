@@ -185,3 +185,124 @@ BEGIN
     INSERT OR IGNORE INTO series_tag (series_local_id, name, book_count)
     SELECT new.local_id, name, 1 FROM series_edit_tag WHERE series_id = new.id;
 END;
+
+ALTER TABLE series ADD COLUMN edits_people INTEGER NOT NULL DEFAULT 0 CHECK (edits_people IN (0, 1));
+
+CREATE TABLE series_person (
+    series_local_id INTEGER NOT NULL REFERENCES series (local_id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (
+        role IN (
+            '', 'writer', 'penciller', 'inker', 'colourist', 'letterer', 'cover_artist', 'editor'
+        )
+    ),
+    name TEXT NOT NULL,
+    name_key BLOB NOT NULL,
+    book_count INTEGER NOT NULL CHECK (book_count > 0),
+    PRIMARY KEY (series_local_id, role, name)
+) STRICT, WITHOUT ROWID;
+
+CREATE INDEX series_person_by_name ON series_person (name, series_local_id);
+
+CREATE INDEX series_person_by_writer ON series_person (name_key, name, series_local_id)
+WHERE role = 'writer';
+
+INSERT INTO series_person (series_local_id, role, name, name_key, book_count)
+SELECT book.series_local_id, book_person.role, book_person.name, min(book_person.name_key),
+    count(*)
+FROM book_person JOIN book ON book.id = book_person.book_id
+GROUP BY book.series_local_id, book_person.role, book_person.name;
+
+DROP TRIGGER book_person_searchable_after_insert;
+DROP TRIGGER book_person_unsearchable_after_delete;
+
+CREATE TRIGGER series_person_searchable_after_insert AFTER INSERT ON series_person BEGIN
+    INSERT OR IGNORE INTO search_name (kind, name) VALUES ('person', new.name);
+END;
+
+CREATE TRIGGER series_person_unsearchable_after_delete AFTER DELETE ON series_person
+WHEN NOT EXISTS (SELECT 1 FROM series_person WHERE name = old.name)
+BEGIN
+    DELETE FROM search_name WHERE kind = 'person' AND name = old.name;
+END;
+
+CREATE TRIGGER book_person_counted_after_insert AFTER INSERT ON book_person BEGIN
+    INSERT INTO series_person (series_local_id, role, name, name_key, book_count)
+    SELECT book.series_local_id, new.role, new.name, new.name_key, 1 FROM book
+    WHERE book.id = new.book_id
+        AND (SELECT edits_people FROM series WHERE local_id = book.series_local_id) = 0
+    ON CONFLICT (series_local_id, role, name) DO UPDATE SET book_count = book_count + 1;
+END;
+
+CREATE TRIGGER book_person_counted_out_after_delete AFTER DELETE ON book_person BEGIN
+    DELETE FROM series_person
+    WHERE book_count = 1 AND role = old.role AND name = old.name
+        AND series_local_id = (SELECT series_local_id FROM book WHERE id = old.book_id)
+        AND (SELECT edits_people FROM series WHERE local_id = series_person.series_local_id) = 0;
+    UPDATE series_person SET book_count = book_count - 1
+    WHERE book_count > 1 AND role = old.role AND name = old.name
+        AND series_local_id = (SELECT series_local_id FROM book WHERE id = old.book_id)
+        AND (SELECT edits_people FROM series WHERE local_id = series_person.series_local_id) = 0;
+END;
+
+CREATE TRIGGER book_people_counted_out_before_delete BEFORE DELETE ON book
+WHEN (SELECT edits_people FROM series WHERE local_id = old.series_local_id) = 0
+BEGIN
+    DELETE FROM series_person
+    WHERE series_local_id = old.series_local_id AND book_count = 1
+        AND (role, name) IN (SELECT role, name FROM book_person WHERE book_id = old.id);
+    UPDATE series_person SET book_count = book_count - 1
+    WHERE series_local_id = old.series_local_id AND book_count > 1
+        AND (role, name) IN (SELECT role, name FROM book_person WHERE book_id = old.id);
+END;
+
+CREATE TRIGGER book_people_counted_again_after_move AFTER UPDATE OF series_local_id ON book BEGIN
+    DELETE FROM series_person
+    WHERE series_local_id = old.series_local_id AND book_count = 1
+        AND (role, name) IN (SELECT role, name FROM book_person WHERE book_id = old.id)
+        AND (SELECT edits_people FROM series WHERE local_id = old.series_local_id) = 0;
+    UPDATE series_person SET book_count = book_count - 1
+    WHERE series_local_id = old.series_local_id AND book_count > 1
+        AND (role, name) IN (SELECT role, name FROM book_person WHERE book_id = old.id)
+        AND (SELECT edits_people FROM series WHERE local_id = old.series_local_id) = 0;
+    INSERT INTO series_person (series_local_id, role, name, name_key, book_count)
+    SELECT new.series_local_id, role, name, name_key, 1 FROM book_person
+    WHERE book_id = new.id
+        AND (SELECT edits_people FROM series WHERE local_id = new.series_local_id) = 0
+    ON CONFLICT (series_local_id, role, name) DO UPDATE SET book_count = book_count + 1;
+END;
+
+CREATE TRIGGER series_edit_credits_series_after_insert AFTER INSERT ON series_edit
+WHEN new.has_people = 1
+BEGIN
+    UPDATE series SET edits_people = 1 WHERE id = new.series_id;
+    DELETE FROM series_person
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = new.series_id);
+    INSERT OR IGNORE INTO series_person (series_local_id, role, name, name_key, book_count)
+    SELECT series.local_id, series_edit_person.role, series_edit_person.name,
+        series_edit_person.name_key, 1
+    FROM series_edit_person JOIN series ON series.id = series_edit_person.series_id
+    WHERE series_edit_person.series_id = new.series_id;
+END;
+
+CREATE TRIGGER series_edit_uncredits_series_after_delete AFTER DELETE ON series_edit
+WHEN old.has_people = 1
+BEGIN
+    UPDATE series SET edits_people = 0 WHERE id = old.series_id;
+    DELETE FROM series_person
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = old.series_id);
+    INSERT INTO series_person (series_local_id, role, name, name_key, book_count)
+    SELECT book.series_local_id, book_person.role, book_person.name, min(book_person.name_key),
+        count(*)
+    FROM book_person JOIN book ON book.id = book_person.book_id
+    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = old.series_id)
+    GROUP BY book.series_local_id, book_person.role, book_person.name;
+END;
+
+CREATE TRIGGER series_takes_its_edited_people_after_insert AFTER INSERT ON series
+WHEN EXISTS (SELECT 1 FROM series_edit WHERE series_id = new.id AND has_people = 1)
+BEGIN
+    UPDATE series SET edits_people = 1 WHERE local_id = new.local_id;
+    INSERT OR IGNORE INTO series_person (series_local_id, role, name, name_key, book_count)
+    SELECT new.local_id, role, name, name_key, 1 FROM series_edit_person
+    WHERE series_id = new.id;
+END;

@@ -17,6 +17,10 @@ pub use session::{Continuity, SessionPlace};
 use tokio::sync::broadcast;
 pub use writer::Writer;
 
+pub(crate) fn reproject_series_edits(connection: &rusqlite::Connection) -> Result<(), Error> {
+    projector::reproject_series_edits(connection)
+}
+
 use crate::{
     Database, Error, Language,
     title_key::{Resorted, sort_titles_for},

@@ -19,9 +19,8 @@ use crate::{
 
 macro_rules! series_naming_writer {
     () => {
-        "SELECT DISTINCT book.series_local_id FROM book_person
-            JOIN book ON book.id = book_person.book_id
-            WHERE book_person.name = :writer AND book_person.role = 'writer'"
+        "SELECT series_local_id FROM series_person
+            WHERE name = :writer AND role = 'writer'"
     };
 }
 
@@ -127,7 +126,7 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     const PEOPLE_BY_NAME: &str =
-        "SEARCH book_person USING COVERING INDEX book_person_by_name (name=?)";
+        "SEARCH series_person USING COVERING INDEX series_person_by_name (name=?)";
 
     #[test]
     fn gathers_the_writer_s_series_once_by_their_name_and_reads_each_stage_in_order() {

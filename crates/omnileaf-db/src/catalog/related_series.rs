@@ -14,18 +14,15 @@ macro_rules! series_sharing_people {
         concat!(
             "WITH this AS (SELECT local_id FROM series WHERE id = :series),
             named AS (
-                SELECT DISTINCT book_person.name FROM book
-                JOIN book_person ON book_person.book_id = book.id
-                WHERE book.series_local_id = (SELECT local_id FROM this)
-                    AND book_person.role IN ",
+                SELECT DISTINCT name FROM series_person
+                WHERE series_local_id = (SELECT local_id FROM this) AND role IN ",
             $roles,
             ")
-            SELECT DISTINCT other.series_local_id AS local_id FROM named
-            JOIN book_person AS theirs ON theirs.name = named.name AND theirs.role IN ",
+            SELECT DISTINCT theirs.series_local_id AS local_id FROM named
+            JOIN series_person AS theirs ON theirs.name = named.name AND theirs.role IN ",
             $roles,
-            " JOIN book AS other ON other.id = theirs.book_id
-            JOIN series ON series.local_id = other.series_local_id
-            WHERE other.series_local_id IS NOT (SELECT local_id FROM this)
+            " JOIN series ON series.local_id = theirs.series_local_id
+            WHERE theirs.series_local_id IS NOT (SELECT local_id FROM this)
                 AND series.reading_stage IS NOT NULL
                 AND NOT (:leaves_out_adult AND ((series.adult_rated_books > 0 AND :counts_age_ratings)
                     OR series.marked_adult = 1))
@@ -256,14 +253,11 @@ mod tests {
             plan,
             [
                 "CO-ROUTINE named",
-                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SEARCH series_person USING PRIMARY KEY (series_local_id=? AND role=?)",
                 "SCALAR SUBQUERY 2",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-                "SEARCH book_person USING PRIMARY KEY (book_id=? AND role=?)",
-                "USE TEMP B-TREE FOR DISTINCT",
                 "SCAN named",
-                "SEARCH theirs USING COVERING INDEX book_person_by_name (name=?)",
-                "SEARCH other USING PRIMARY KEY (id=?)",
+                "SEARCH theirs USING COVERING INDEX series_person_by_name (name=?)",
                 "SCALAR SUBQUERY 4",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",

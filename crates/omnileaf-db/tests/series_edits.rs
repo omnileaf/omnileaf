@@ -3,6 +3,7 @@
     reason = "each test builds its own scratch library, so a failed set-up should stop the test"
 )]
 
+mod library_seed;
 #[expect(
     dead_code,
     reason = "these tests take only the store's clock, never its reading helpers"
@@ -10,11 +11,12 @@
 mod store_support;
 mod support;
 
+use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     catalog::PersonRole,
     store::{EditedPerson, SeriesEdits, Store, series_edits},
 };
-use omnileaf_sync_proto::{ProfileId, SeriesId};
+use omnileaf_sync_proto::{ProfileId, SeriesId, Value};
 use proptest::{collection::vec, prelude::*, sample::select};
 use store_support::{FakeClock, NOW_UNIX_MS, open_store};
 use support::ScratchFolder;
@@ -279,6 +281,102 @@ fn any_edits() -> impl Strategy<Value = SeriesEdits> {
         })
 }
 
+type Shown = (
+    Vec<(String, i64)>,
+    Vec<(String, String)>,
+    Vec<(String, String, String)>,
+);
+
+async fn seed_files(store: &Store) {
+    let series: Vec<SeriesSeed<'_>> = ["Sample Series 1", "Sample Series 2"]
+        .iter()
+        .map(|&name| SeriesSeed {
+            book_titles: &["Volume 01"],
+            ..SeriesSeed::named(name)
+        })
+        .collect();
+    seed_library(store.database(), &series).await;
+    store
+        .database()
+        .write(|transaction| {
+            transaction.execute("INSERT INTO book_details (book_id) SELECT id FROM book", [])?;
+            transaction.execute(
+                "INSERT INTO book_tag (book_id, kind, name) SELECT id, 'tag', 'x' FROM book",
+                [],
+            )?;
+            transaction.execute(
+                "INSERT INTO book_person (book_id, role, name, name_key)
+                SELECT id, 'writer', 'Ann', CAST('Ann' AS BLOB) FROM book",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+async fn shown(store: &Store) -> Shown {
+    store
+        .database()
+        .read(|connection| {
+            let series = connection
+                .prepare("SELECT title, adult_rated_books FROM series ORDER BY id")?
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+                .collect::<Result<_, _>>()?;
+            let tags = connection
+                .prepare(
+                    "SELECT series.title, series_tag.name FROM series_tag
+                    JOIN series ON series.local_id = series_tag.series_local_id
+                    ORDER BY 1, 2",
+                )?
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+                .collect::<Result<_, _>>()?;
+            let people = connection
+                .prepare(
+                    "SELECT series.title, series_person.role, series_person.name
+                    FROM series_person
+                    JOIN series ON series.local_id = series_person.series_local_id
+                    ORDER BY 1, 2, 3",
+                )?
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+                .collect::<Result<_, _>>()?;
+            Ok((series, tags, people))
+        })
+        .await
+        .unwrap()
+}
+
+async fn inject_unreadable_registers(store: &Store) {
+    let id = series(3);
+    let unreadable = [
+        ("meta.title", Value::Bool(true)),
+        ("meta.adult", Value::Text("yes".to_owned())),
+        ("meta.people", Value::Unsigned(1)),
+        ("meta.tags", Value::Bool(false)),
+        ("meta.summary", Value::Unsigned(2)),
+    ];
+    store
+        .database()
+        .write(move |transaction| {
+            for (field, value) in unreadable {
+                transaction.execute(
+                    "INSERT INTO sync_register
+                    (profile, entity, id, field, class, hlc, node, seq, rank, value)
+                    VALUES (?1, 'series', ?2, ?3, 'lww', 1, zeroblob(16), 1, NULL, ?4)",
+                    (
+                        ProfileId::shared().as_bytes(),
+                        id.as_bytes(),
+                        field,
+                        value.to_cbor(),
+                    ),
+                )?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(24))]
 
@@ -290,15 +388,24 @@ proptest! {
         runtime.block_on(async {
             let folder = ScratchFolder::new("series-edits-rebuild-equals-incremental");
             let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+            seed_files(&store).await;
             for (number, edits) in writes {
                 edit(&store, series(number), edits).await;
             }
-            let incremental = [kept(&store, series(1)).await, kept(&store, series(2)).await];
+            let incremental = (
+                [kept(&store, series(1)).await, kept(&store, series(2)).await],
+                shown(&store).await,
+            );
 
+            inject_unreadable_registers(&store).await;
             store.rebuild_projections().await.unwrap();
 
-            let rebuilt = [kept(&store, series(1)).await, kept(&store, series(2)).await];
+            let rebuilt = (
+                [kept(&store, series(1)).await, kept(&store, series(2)).await],
+                shown(&store).await,
+            );
             prop_assert_eq!(incremental, rebuilt);
+            prop_assert_eq!(kept(&store, series(3)).await, SeriesEdits::default());
             Ok(())
         })?;
     }

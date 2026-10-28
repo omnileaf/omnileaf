@@ -3,15 +3,18 @@ use rusqlite::Connection;
 use crate::{
     Error,
     catalog::folder_groups::rekey_every_folder_group,
+    store::reproject_series_edits,
     title_key::{
         Language, TitleCollation,
         stamp::{TitleStamp, save_stamp, stored_language, stored_stamp},
     },
 };
 
-const PERSON_NAMES: &str = "SELECT DISTINCT name FROM book_person";
+const PERSON_NAMES: &str = "SELECT name FROM book_person UNION SELECT name FROM series_person";
 const REKEY_PERSON_NAME: &str =
     "UPDATE book_person SET name_key = ?2 WHERE name = ?1 AND name_key IS NOT ?2";
+const REKEY_SERIES_PERSON_NAME: &str =
+    "UPDATE series_person SET name_key = ?2 WHERE name = ?1 AND name_key IS NOT ?2";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Resorted {
@@ -33,6 +36,7 @@ pub(crate) fn sort_titles_for(
     let names = rekey_every_person_name(connection, &collation)?;
     let folder_groups = rekey_every_folder_group(connection, &collation)?;
     save_stamp(connection, language, stamp)?;
+    reproject_series_edits(connection)?;
     tracing::info!(
         titles,
         names,
@@ -76,8 +80,11 @@ fn rekey_every_person_name(
         .query_map([], |row| row.get::<_, String>(0))?
         .collect::<Result<Vec<_>, _>>()?;
     let mut rekey = connection.prepare(REKEY_PERSON_NAME)?;
+    let mut rekey_credited = connection.prepare(REKEY_SERIES_PERSON_NAME)?;
     for name in &names {
-        rekey.execute((name, collation.key(name)))?;
+        let key = collation.key(name);
+        rekey.execute((name, &key))?;
+        rekey_credited.execute((name, &key))?;
     }
     Ok(names.len())
 }
@@ -95,7 +102,13 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SCAN book_person USING COVERING INDEX book_person_by_name"]
+            [
+                "MERGE (UNION)",
+                "LEFT",
+                "SCAN book_person USING COVERING INDEX book_person_by_name",
+                "RIGHT",
+                "SCAN series_person USING COVERING INDEX series_person_by_name",
+            ]
         );
     }
 
