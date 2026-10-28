@@ -289,10 +289,7 @@ macro_rules! conditions {
             " AND (:last_read_before_ms IS NULL
             OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
         AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)
-        AND (:formats IS NULL OR instr(
-            :formats,
-            char(31) || CASE WHEN series.manga_books > 0 THEN 'manga' ELSE 'comic' END || char(31)
-        ) > 0)
+        AND (:holds_manga IS NULL OR (series.manga_books > 0) = :holds_manga)
         AND (:languages IS NULL OR (instr(series.language, char(31)) = 0
             AND instr(:languages, char(31) || series.language || char(31)) > 0))
         AND (:tag_list IS NULL OR ",
@@ -330,28 +327,29 @@ pub(crate) use conditions;
 pub(crate) use counted_conditions;
 pub(crate) use smart_conditions;
 
-impl SeriesFormat {
-    const fn stored(self) -> &'static str {
-        match self {
-            Self::Comic => "comic",
-            Self::Manga => "manga",
-            Self::Book => "book",
-        }
-    }
-}
+const HOLDS_NO_SERIES: i64 = 2;
 
-fn format_names(formats: &[SeriesFormat]) -> Vec<String> {
-    formats
-        .iter()
-        .map(|format| format.stored().to_owned())
-        .collect()
+/// Whether the series wanted hold manga (1) or none (0), absent when any series is wanted, and a value no series matches when only formats the library can't hold yet are.
+fn manga_required(formats: &[SeriesFormat]) -> Option<i64> {
+    if formats.is_empty() {
+        return None;
+    }
+    match (
+        formats.contains(&SeriesFormat::Comic),
+        formats.contains(&SeriesFormat::Manga),
+    ) {
+        (true, true) => None,
+        (true, false) => Some(0),
+        (false, true) => Some(1),
+        (false, false) => Some(HOLDS_NO_SERIES),
+    }
 }
 
 pub(crate) struct FilterParams {
     stages: StageParams,
     last_read_before_ms: Option<i64>,
     holds_duplicates: Option<bool>,
-    formats: Option<String>,
+    holds_manga: Option<i64>,
     languages: Option<String>,
     tag_list: Option<String>,
     holds_bookmarks: Option<bool>,
@@ -369,7 +367,7 @@ impl FilterParams {
             stages,
             last_read_before_ms: filter.last_read_before_ms,
             holds_duplicates: filter.duplicates.required(),
-            formats: delimited_list(&format_names(&filter.formats)),
+            holds_manga: manga_required(&filter.formats),
             languages: delimited_list(&filter.languages),
             tag_list: json_list(&filter.tags),
             holds_bookmarks: filter.bookmarked.required(),
@@ -386,7 +384,7 @@ impl FilterParams {
             finished,
             (":last_read_before_ms", &self.last_read_before_ms),
             (":holds_duplicates", &self.holds_duplicates),
-            (":formats", &self.formats),
+            (":holds_manga", &self.holds_manga),
             (":languages", &self.languages),
             (":tag_list", &self.tag_list),
             (":holds_bookmarks", &self.holds_bookmarks),
