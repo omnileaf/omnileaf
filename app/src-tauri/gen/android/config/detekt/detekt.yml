@@ -1,0 +1,9 @@
+config:
+  validation: true
+  warningsAsErrors: true
+
+style:
+  MaxLineLength:
+    maxLineLength: 140
+  ReturnCount:
+    excludeGuardClauses: true
