@@ -14,13 +14,13 @@ use omnileaf_db::{
     adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
-        PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
-        add_root, book_to_read, bookmarked_roots, cover_file,
+        PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
+        RootKind, RootLocator, add_root, book_to_read, bookmarked_roots, cover_file,
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
-        record_page_count, relocate_roots, remember_root_share, remove_book_files,
+        record_page_count, related_series, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
         root_shares, series_books, series_count, series_file_details, series_numberings,
         series_overview, series_page, series_titles, show_root_while_missing,
@@ -88,6 +88,7 @@ const WRITERS_PER_PAGE: u16 = 50;
 const FOLDER_GROUPS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const BOOKS_PER_PAGE: u16 = 100;
+const RELATED_SERIES_SHOWN: usize = 12;
 const SESSIONS_PER_PAGE: u16 = 50;
 const CATALOG_WRITE_BACKLOG: usize = 16;
 const SCHEDULE_CHECK_EVERY: Duration = Duration::from_mins(1);
@@ -610,6 +611,11 @@ impl Library {
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
         self.save_reading_before_reading().await;
         let series = id.0;
+        let adult = self.adult_content().await?;
+        let related_wanted = RelatedSeriesWanted {
+            limit: RELATED_SERIES_SHOWN,
+            leaves_out_adult: adult.hides_rated_adult(),
+        };
         let found = self
             .store
             .database()
@@ -622,15 +628,17 @@ impl Library {
                     up_next(connection, series)?,
                     series_file_details(connection, series)?,
                     series_numberings(connection, series)?,
+                    related_series(connection, series, related_wanted)?,
                 )))
             })
             .await?;
-        let (overview, up_next, details, placed) =
+        let (overview, up_next, details, placed, related) =
             found.ok_or(LibraryError::SeriesNotFound { id })?;
         Ok(
             SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
                 .described_by(details)
-                .numbered_by(&placed),
+                .numbered_by(&placed)
+                .related_to(related, adult),
         )
     }
 

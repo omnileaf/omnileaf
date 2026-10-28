@@ -12,8 +12,8 @@ mod support;
 
 use books::write_book_with;
 use omnileaf_engine::{
-    AdultContent, CreatorRole, CreatorSeries, Library, LibraryListing, LibrarySeries,
-    SeriesCreator, SeriesId, SeriesPerson,
+    AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Library, LibraryListing,
+    LibrarySeries, RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -284,4 +284,174 @@ async fn lists_the_series_a_creator_is_named_in_with_what_they_did_on_each() {
         found.iter().map(|series| series.id).collect::<Vec<_>>(),
         listed.iter().map(|series| series.id).collect::<Vec<_>>()
     );
+}
+
+const STORMS_BY_AUTHOR_AND_ARTIST: &str = "<ComicInfo>
+    <Writer>Sample Author</Writer>
+    <Penciller>Sample Artist</Penciller>
+    <Tags>harbour, storms</Tags>
+</ComicInfo>";
+const DRAWN_BY_THE_SAME_ARTIST: &str =
+    "<ComicInfo><Writer>Another Author</Writer><Inker>Sample Artist</Inker></ComicInfo>";
+const TAGGED_STORMS: &str = "<ComicInfo><Tags>storms</Tags></ComicInfo>";
+const BY_THE_SAME_AUTHOR_TAGGED_STORMS: &str =
+    "<ComicInfo><Writer>Sample Author</Writer><Tags>storms</Tags></ComicInfo>";
+const SHARING_NOTHING: &str =
+    "<ComicInfo><Writer>Another Author</Writer><Tags>trains</Tags></ComicInfo>";
+
+fn reasons(related: &[omnileaf_engine::RelatedSeries]) -> Vec<(&str, &RelatedReason)> {
+    related
+        .iter()
+        .map(|series| (series.title.as_str(), &series.reason))
+        .collect()
+}
+
+#[tokio::test]
+async fn lists_the_series_sharing_a_writer_an_artist_or_a_tag_each_once_by_its_closest_tie() {
+    let scanned = Scanned::with(
+        "related-reasons",
+        &[
+            ("Sample Series 01", STORMS_BY_AUTHOR_AND_ARTIST),
+            ("Sample Series 02", TAGGED_STORMS),
+            ("Sample Series 03", DRAWN_BY_THE_SAME_ARTIST),
+            ("Sample Series 04", BY_THE_SAME_AUTHOR_TAGGED_STORMS),
+            ("Sample Series 05", BY_THE_SAME_AUTHOR),
+            ("Sample Series 06", SHARING_NOTHING),
+        ],
+    )
+    .await;
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    assert_eq!(
+        reasons(&overview.related),
+        [
+            ("Sample Series 04", &RelatedReason::SameWriter),
+            ("Sample Series 05", &RelatedReason::SameWriter),
+            ("Sample Series 03", &RelatedReason::SameArtist),
+            (
+                "Sample Series 02",
+                &RelatedReason::SharedTag {
+                    tag: "storms".to_owned()
+                }
+            ),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn names_the_rarest_tag_a_related_series_shares() {
+    let action_and_cooking = "<ComicInfo><Tags>action, cooking</Tags></ComicInfo>";
+    let action = "<ComicInfo><Tags>action</Tags></ComicInfo>";
+    let scanned = Scanned::with(
+        "related-rarest-tag",
+        &[
+            ("Sample Series 01", action_and_cooking),
+            ("Sample Series 02", action_and_cooking),
+            ("Sample Series 03", action),
+            ("Sample Series 04", action),
+        ],
+    )
+    .await;
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    assert_eq!(
+        reasons(&overview.related)[0],
+        (
+            "Sample Series 02",
+            &RelatedReason::SharedTag {
+                tag: "cooking".to_owned()
+            }
+        )
+    );
+}
+
+#[tokio::test]
+async fn lists_no_related_series_when_none_shares_a_creator_or_a_tag() {
+    let scanned = Scanned::with(
+        "related-none",
+        &[
+            ("Sample Series 01", STORMS_BY_AUTHOR_AND_ARTIST),
+            ("Sample Series 02", SHARING_NOTHING),
+        ],
+    )
+    .await;
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    assert_eq!(overview.related, []);
+}
+
+#[tokio::test]
+async fn lists_at_most_twelve_related_series() {
+    let books: Vec<(String, &str)> = (1..=14)
+        .map(|number| (format!("Sample Series {number:02}"), BY_THE_SAME_AUTHOR))
+        .collect();
+    let named: Vec<(&str, &str)> = books
+        .iter()
+        .map(|(series, info)| (series.as_str(), *info))
+        .collect();
+    let scanned = Scanned::with("related-twelve", &named).await;
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    assert_eq!(overview.related.len(), 12);
+}
+
+#[tokio::test]
+async fn marks_a_related_series_its_files_rate_18_plus_as_adult() {
+    let scanned = Scanned::with(
+        "related-adult",
+        &[
+            ("Sample Series 01", EVERYONE_IN_ENGLISH),
+            ("Sample Series 02", ADULT_IN_JAPANESE),
+        ],
+    )
+    .await;
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    let adult: Vec<(&str, bool)> = overview
+        .related
+        .iter()
+        .map(|related| (related.title.as_str(), related.is_adult))
+        .collect();
+    assert_eq!(adult, [("Sample Series 02", true)]);
+}
+
+#[tokio::test]
+async fn leaves_18_plus_series_out_of_the_related_series_while_they_are_hidden() {
+    let scanned = Scanned::with(
+        "related-adult-hidden",
+        &[
+            ("Sample Series 01", EVERYONE_IN_ENGLISH),
+            ("Sample Series 02", ADULT_IN_JAPANESE),
+            ("Sample Series 03", TAGGED_STORMS),
+        ],
+    )
+    .await;
+    scanned
+        .library
+        .set_adult_content(AdultContent {
+            treatment: AdultTreatment::Hide,
+            ..AdultContent::default()
+        })
+        .await
+        .unwrap();
+    let series = scanned.series_named("Sample Series 01").await;
+
+    let overview = scanned.library.series_overview(series).await.unwrap();
+
+    let titles: Vec<&str> = overview
+        .related
+        .iter()
+        .map(|related| related.title.as_str())
+        .collect();
+    assert_eq!(titles, ["Sample Series 03"]);
 }
