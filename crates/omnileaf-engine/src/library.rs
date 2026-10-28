@@ -16,7 +16,8 @@ use omnileaf_db::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
         RootKind, RootLocator, add_root, book_bookmarks, book_to_read, bookmarked_roots,
-        cover_file, filter_choices as stored_filter_choices, folder_group_series_count,
+        category_series_count, category_series_page, cover_file,
+        filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
@@ -52,12 +53,12 @@ use crate::{
     BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor,
     FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan,
     FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
-    LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek,
-    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
-    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress,
-    ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns,
+    MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
+    SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup, UnreachableShare,
+    UtcOffset, WriterCursor, WriterPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -571,14 +572,6 @@ impl Library {
             .await?)
     }
 
-    pub fn categories(&self) -> Result<Vec<LibraryCategory>, LibraryError> {
-        Ok(Vec::new())
-    }
-
-    pub fn tags(&self) -> Result<Vec<LibraryTag>, LibraryError> {
-        Ok(Vec::new())
-    }
-
     pub async fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
         let (stored, adult) = self
             .store
@@ -593,28 +586,55 @@ impl Library {
         Ok(LibraryFilterChoices::new(stored, adult))
     }
 
-    pub fn series_labels(&self, _series: Vec<SeriesId>) -> Result<SeriesLabels, LibraryError> {
-        Ok(SeriesLabels::default())
-    }
-
-    pub fn category_series(
+    pub async fn category_series(
         &self,
-        _category: CategoryId,
-        _listing: LibraryListing,
-        _after: Option<SeriesCursor>,
+        category: CategoryId,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
-        Ok(SeriesPage {
-            series: Vec::new(),
-            next: None,
-        })
+        let Some(category) = category.stored() else {
+            return Ok(SeriesPage {
+                series: Vec::new(),
+                next: None,
+            });
+        };
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let now_ms = self.now_ms();
+        let page = self
+            .store
+            .database()
+            .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
+                Ok((
+                    category_series_page(connection, category, &listing, &request)?,
+                    adult,
+                ))
+            })
+            .await?;
+        Ok(SeriesPage::new(page.0, page.1))
     }
 
-    pub fn category_series_count(
+    pub async fn category_series_count(
         &self,
-        _category: CategoryId,
-        _filter: LibraryFilter,
+        category: CategoryId,
+        filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
-        Ok(0)
+        let Some(category) = category.stored() else {
+            return Ok(0);
+        };
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                category_series_count(connection, category, &filter)
+            })
+            .await?)
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {

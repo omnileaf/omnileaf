@@ -446,7 +446,7 @@ async fn library_series_count(
 #[tauri::command]
 #[specta::specta]
 async fn library_categories(library: State<'_, Library>) -> Result<Vec<LibraryCategory>, IpcError> {
-    Ok(library.categories()?)
+    Ok(library.categories().await?)
 }
 
 #[tauri::command]
@@ -455,18 +455,17 @@ async fn series_labels(
     library: State<'_, Library>,
     series: Vec<SeriesId>,
 ) -> Result<SeriesLabels, IpcError> {
-    Ok(library.series_labels(series)?)
+    Ok(library.series_labels(series).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "the library keeps no categories or tags yet, so the changes have nowhere to go"
-)]
-fn label_series(series: Vec<SeriesId>, changes: LabelChanges) -> Result<(), IpcError> {
-    Err(IpcError::labels_not_kept())
+async fn label_series(
+    library: State<'_, Library>,
+    series: Vec<SeriesId>,
+    changes: LabelChanges,
+) -> Result<(), IpcError> {
+    Ok(library.label_series(series, changes).await?)
 }
 
 #[tauri::command]
@@ -502,29 +501,26 @@ fn edit_series_details(series: SeriesId, edits: DetailEdits) -> Result<(), IpcEr
 #[tauri::command]
 #[specta::specta]
 async fn library_tags(library: State<'_, Library>) -> Result<Vec<LibraryTag>, IpcError> {
-    Ok(library.tags()?)
+    Ok(library.tags().await?)
 }
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "the library keeps no tags yet, so there's none to rename"
-)]
-fn rename_library_tag(tag: String, to: String) -> Result<(), IpcError> {
-    Err(IpcError::labels_not_kept())
+async fn rename_library_tag(
+    library: State<'_, Library>,
+    tag: String,
+    to: String,
+) -> Result<(), IpcError> {
+    Ok(library.rename_library_tag(tag, to).await?)
 }
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "the library keeps no tags yet, so there's none to remove"
-)]
-fn remove_library_tag(tag: String) -> Result<Vec<SeriesId>, IpcError> {
-    Err(IpcError::labels_not_kept())
+async fn remove_library_tag(
+    library: State<'_, Library>,
+    tag: String,
+) -> Result<Vec<SeriesId>, IpcError> {
+    Ok(library.remove_library_tag(tag).await?)
 }
 
 #[tauri::command]
@@ -543,7 +539,7 @@ async fn category_series(
     after: Option<SeriesCursor>,
     listing: LibraryListing,
 ) -> Result<SeriesPage, IpcError> {
-    Ok(library.category_series(category, listing, after)?)
+    Ok(library.category_series(category, listing, after).await?)
 }
 
 #[tauri::command]
@@ -553,7 +549,7 @@ async fn category_series_count(
     category: CategoryId,
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
-    Ok(library.category_series_count(category, filter)?)
+    Ok(library.category_series_count(category, filter).await?)
 }
 
 #[tauri::command]

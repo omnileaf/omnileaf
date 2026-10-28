@@ -15,8 +15,7 @@ use omnileaf_engine::{
     DesktopCoversPerRow, FolderId, FolderKind, Inclusion, Library, LibraryDisplay, LibraryError,
     LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryGrouping, LibraryListing,
     LibrarySort, LibrarySortBy, LibraryTab, LibraryTabId, LibraryView, OnCovers, PhoneCoversPerRow,
-    ResolvedBookmark, RootLocator, ScanProgress, SeriesLabels, SmartFilter, SortDirection,
-    TabletCoversPerRow,
+    ResolvedBookmark, RootLocator, ScanProgress, SmartFilter, SortDirection, TabletCoversPerRow,
 };
 use omnileaf_testkit::{SAMPLE_LIBRARY_NAME, write_sample_library};
 use support::{FixedClock, ScratchFolder};
@@ -884,24 +883,6 @@ async fn remembers_the_choice_for_adult_content_when_the_library_reopens() {
 }
 
 #[tokio::test]
-async fn keeps_no_tags_until_the_library_keeps_them() {
-    let home = ScratchFolder::new("library-tags-none");
-
-    let tags = open(home.path()).await.tags().unwrap();
-
-    assert_eq!(tags, Vec::new());
-}
-
-#[tokio::test]
-async fn keeps_no_categories_until_the_library_keeps_them() {
-    let home = ScratchFolder::new("library-categories-none");
-
-    let categories = open(home.path()).await.categories().unwrap();
-
-    assert_eq!(categories, Vec::new());
-}
-
-#[tokio::test]
 async fn offers_only_the_smart_filters_in_a_library_without_series() {
     let home = ScratchFolder::new("library-filter-choices");
 
@@ -913,34 +894,6 @@ async fn offers_only_the_smart_filters_in_a_library_without_series() {
             smart: vec![SmartFilter::Forgotten, SmartFilter::Duplicates],
             ..LibraryFilterChoices::default()
         }
-    );
-}
-
-#[tokio::test]
-async fn labels_no_series_until_the_library_keeps_categories_and_tags() {
-    let home = ScratchFolder::new("library-series-labels");
-
-    let labels = open(home.path()).await.series_labels(Vec::new()).unwrap();
-
-    assert_eq!(labels, SeriesLabels::default());
-}
-
-#[tokio::test]
-async fn finds_no_series_in_a_category_the_library_does_not_keep() {
-    let home = ScratchFolder::new("library-category-series");
-    let library = open(home.path()).await;
-    let category = CategoryId::from("Manga".to_owned());
-
-    let page = library
-        .category_series(category.clone(), LibraryListing::default(), None)
-        .unwrap();
-    let count = library
-        .category_series_count(category, LibraryListing::default().filter)
-        .unwrap();
-
-    assert_eq!(
-        (page.series.len(), page.next.is_none(), count),
-        (0, true, 0)
     );
 }
 
