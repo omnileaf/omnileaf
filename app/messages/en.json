@@ -2436,5 +2436,73 @@
   "attention_free_up_space": "Free up space",
   "low_space_notice_phone": "{size} left on this phone. Omnileaf clears the oldest cached pages and covers first.",
   "low_space_notice_tablet": "{size} left on this tablet. Omnileaf clears the oldest cached pages and covers first.",
-  "low_space_notice_computer": "{size} left on this computer. Omnileaf clears the oldest cached pages and covers first."
+  "low_space_notice_computer": "{size} left on this computer. Omnileaf clears the oldest cached pages and covers first.",
+  "drop_label": "Drop files",
+  "drop_read_now": "Read now",
+  "drop_read_now_detail": "Opens {name} without adding anything.",
+  "drop_add": "Add to your library",
+  "drop_add_detail": "Links their folder; the files stay where they are.",
+  "drop_copy_detail": "Copies them into your home folder instead.",
+  "drop_alt_hint": "Hold {key} to copy them into your home folder instead.",
+  "drop_key_alt": "Alt",
+  "drop_first_and_more": [
+    {
+      "declarations": [
+        "input name",
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{name} and {formattedCount} more",
+        "countPlural=other": "{name} and {formattedCount} more"
+      }
+    }
+  ],
+  "drop_with_size": "{what} · {size}",
+  "drop_nothing_added": "Nothing added",
+  "drop_not_comic": [
+    {
+      "declarations": [
+        "input names",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{names} isn't a comic or book Omnileaf reads.",
+        "countPlural=other": "{names} aren't comics or books Omnileaf reads."
+      }
+    }
+  ],
+  "drop_type_not_read": [
+    {
+      "declarations": [
+        "input names",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{names} is a comic type this version can't read yet.",
+        "countPlural=other": "{names} are comic types this version can't read yet."
+      }
+    }
+  ],
+  "drop_what_it_reads": "It reads CBZ, CB7 and folders of images.",
+  "drop_copied": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Copied {formattedCount} file into your home folder",
+        "countPlural=other": "Copied {formattedCount} files into your home folder"
+      }
+    }
+  ]
 }
