@@ -8,6 +8,7 @@ const ENTITY_ID_CONTEXT: &str = "omnileaf.app 2026-09 entity-id v1";
 const DERIVED_VERSION: usize = 8;
 const LOCAL_BOOK_KEY: KeyName = KeyName::new("book.local.v1");
 const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
+const FOLDER_SERIES_KEY: KeyName = KeyName::new("series.folder.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
 const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
 const DEFAULT_PROFILE_KEY: KeyName = KeyName::new("profile.default.v1");
@@ -93,6 +94,13 @@ impl BookId {
 impl SeriesId {
     pub fn local(folder_name: &str) -> Result<Self, KeyError> {
         let key = NaturalKey::new(LOCAL_SERIES_KEY).part(norm(folder_name).as_bytes())?;
+        Ok(Self(key.id()))
+    }
+
+    pub fn folder(linked_folder_name: &str, series_location: &str) -> Result<Self, KeyError> {
+        let key = NaturalKey::new(FOLDER_SERIES_KEY)
+            .part(norm(linked_folder_name).as_bytes())?
+            .part(norm(series_location).as_bytes())?;
         Ok(Self(key.id()))
     }
 }

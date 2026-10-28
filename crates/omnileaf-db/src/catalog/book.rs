@@ -1,14 +1,16 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
-use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
+use rusqlite::{
+    Connection, OptionalExtension, Statement, Transaction, params_from_iter, types::Value,
+};
 
 use crate::{
     Error,
-    catalog::{Numbering, stored_id::stored_id},
+    catalog::{BookFile, Numbering, native_path, stored_id::stored_id},
     reading_order::reading_order_key,
 };
 
 macro_rules! insert_book {
-    ($on_conflict:literal) => {
+    ($on_conflict:expr) => {
         concat!(
             "INSERT INTO book (
                 id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
@@ -22,19 +24,39 @@ macro_rules! insert_book {
     };
 }
 
+macro_rules! add_or_refile_book {
+    ($guard:literal) => {
+        insert_book!(concat!(
+            " ON CONFLICT (id) DO UPDATE SET
+                series_local_id = excluded.series_local_id,
+                title = excluded.title,
+                reading_order_key = excluded.reading_order_key,
+                kind = excluded.kind,
+                first_number = excluded.first_number,
+                last_number = excluded.last_number,
+                number_source = excluded.number_source,
+                volume_number = excluded.volume_number,
+                volume_source = excluded.volume_source",
+            $guard
+        ))
+    };
+}
+
 const ADD_BOOK: &str = insert_book!("");
-const ADD_BOOK_UNLESS_PRESENT: &str = insert_book!(" ON CONFLICT (id) DO NOTHING");
-const ADD_OR_REFILE_BOOK: &str = insert_book!(
-    " ON CONFLICT (id) DO UPDATE SET
-        series_local_id = excluded.series_local_id,
-        title = excluded.title,
-        reading_order_key = excluded.reading_order_key,
-        kind = excluded.kind,
-        first_number = excluded.first_number,
-        last_number = excluded.last_number,
-        number_source = excluded.number_source,
-        volume_number = excluded.volume_number,
-        volume_source = excluded.volume_source"
+const ADD_OR_REFILE_BOOK: &str = add_or_refile_book!("");
+const ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE: &str = add_or_refile_book!(
+    " WHERE NOT EXISTS (
+        SELECT 1 FROM book_file
+        WHERE book_id = excluded.id AND (root_id, location) IS NOT (?15, ?16)
+    )
+    AND (
+        series_local_id, title, reading_order_key, kind, first_number, last_number,
+        number_source, volume_number, volume_source
+    ) IS NOT (
+        excluded.series_local_id, excluded.title, excluded.reading_order_key, excluded.kind,
+        excluded.first_number, excluded.last_number, excluded.number_source,
+        excluded.volume_number, excluded.volume_source
+    )"
 );
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
@@ -46,7 +68,7 @@ const REMOVE_BOOK_WITHOUT_FILES: &str = "DELETE FROM book
 
 #[derive(Clone, Copy)]
 pub(crate) enum Filing {
-    WhereFirstFound,
+    FollowingItsOnlyFile,
     WhereFoundNow,
 }
 
@@ -85,7 +107,7 @@ pub fn add_book(transaction: &Transaction<'_>, book: &NewBook) -> Result<(), Err
 impl<'t> BookFiler<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>, filing: Filing) -> Result<Self, Error> {
         let add = match filing {
-            Filing::WhereFirstFound => ADD_BOOK_UNLESS_PRESENT,
+            Filing::FollowingItsOnlyFile => ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE,
             Filing::WhereFoundNow => ADD_OR_REFILE_BOOK,
         };
         Ok(Self {
@@ -96,14 +118,21 @@ impl<'t> BookFiler<'t> {
         })
     }
 
-    pub(crate) fn file(&mut self, book: &NewBook) -> Result<(), Error> {
-        let is_filed = insert(&mut self.add, book)? > 0
-            || match self.filing {
-                Filing::WhereFirstFound => self
-                    .series_exists
-                    .query_row([book.series.as_bytes()], |row| row.get(0))?,
-                Filing::WhereFoundNow => false,
-            };
+    pub(crate) fn file(&mut self, book: &NewBook, file: &BookFile) -> Result<(), Error> {
+        let is_filed = match self.filing {
+            Filing::FollowingItsOnlyFile => {
+                let file_key = [
+                    Value::from(file.root.0),
+                    Value::from(native_path::to_bytes(&file.location)),
+                ];
+                let columns = book_columns(book).into_iter().chain(file_key);
+                self.add.execute(params_from_iter(columns))? > 0
+                    || self
+                        .series_exists
+                        .query_row([book.series.as_bytes()], |row| row.get(0))?
+            }
+            Filing::WhereFoundNow => insert(&mut self.add, book)? > 0,
+        };
         if !is_filed {
             return Err(Error::UnknownSeries { id: book.series });
         }
@@ -152,25 +181,33 @@ pub(crate) fn series_of_book(
 }
 
 fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error> {
+    Ok(statement.execute(params_from_iter(book_columns(book)))?)
+}
+
+fn book_columns(book: &NewBook) -> [Value; 14] {
     let numbering = book.numbering.as_ref();
     let number = numbering.and_then(Numbering::number);
     let volume = numbering.and_then(Numbering::volume);
-    Ok(statement.execute((
-        book.id().as_bytes(),
-        book.series.as_bytes(),
-        &book.title,
-        reading_order_key(numbering, &book.title),
-        book.added_at_ms,
-        book.fingerprint.as_bytes(),
-        kind_name(book.fingerprint.kind()),
-        book.page_count,
-        numbering.map(|numbering| numbering.kind().as_stored()),
-        number.map(|number| number.value.first().thousandths()),
-        number.map(|number| number.value.last().thousandths()),
-        number.map(|number| number.source.as_stored()),
-        volume.map(|volume| volume.value.thousandths()),
-        volume.map(|volume| volume.source.as_stored()),
-    ))?)
+    [
+        Value::from(book.id().as_bytes().to_vec()),
+        Value::from(book.series.as_bytes().to_vec()),
+        Value::from(book.title.clone()),
+        Value::from(reading_order_key(numbering, &book.title)),
+        Value::from(book.added_at_ms),
+        Value::from(book.fingerprint.as_bytes().to_vec()),
+        stored_text(Some(kind_name(book.fingerprint.kind()))),
+        Value::from(book.page_count),
+        stored_text(numbering.map(|numbering| numbering.kind().as_stored())),
+        Value::from(number.map(|number| number.value.first().thousandths())),
+        Value::from(number.map(|number| number.value.last().thousandths())),
+        stored_text(number.map(|number| number.source.as_stored())),
+        Value::from(volume.map(|volume| volume.value.thousandths())),
+        stored_text(volume.map(|volume| volume.source.as_stored())),
+    ]
+}
+
+fn stored_text(text: Option<&str>) -> Value {
+    Value::from(text.map(str::to_owned))
 }
 
 const fn kind_name(kind: FingerprintKind) -> &'static str {
@@ -187,7 +224,7 @@ mod tests {
     use rusqlite::Connection;
 
     use super::*;
-    use crate::{Database, scratch::ScratchLibrary};
+    use crate::{Database, catalog::RootId, scratch::ScratchLibrary};
 
     #[test]
     fn refuses_a_book_whose_series_is_missing_from_the_catalog() {
@@ -203,11 +240,35 @@ mod tests {
             page_count: None,
             numbering: None,
         };
+        let file = BookFile {
+            root: RootId(1),
+            location: "Sample Series 01/Volume 01.cbz".into(),
+            size_bytes: 1,
+            modified_at_ms: 0,
+        };
 
-        let outcome = BookFiler::new(&transaction, Filing::WhereFirstFound)
-            .and_then(|mut filer| filer.file(&book));
+        let outcome = BookFiler::new(&transaction, Filing::FollowingItsOnlyFile)
+            .and_then(|mut filer| filer.file(&book, &file));
 
         assert!(matches!(outcome, Err(Error::UnknownSeries { id }) if id == book.series));
+    }
+
+    #[test]
+    fn checks_a_book_for_other_files_through_their_book_index() {
+        let scratch = ScratchLibrary::new("refile-in-only-file-plan");
+
+        let plan = scratch.query_plan(ADD_OR_REFILE_BOOK_IN_ITS_ONLY_FILE);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH book_details USING PRIMARY KEY (book_id=?)",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
+            ]
+        );
     }
 
     #[test]

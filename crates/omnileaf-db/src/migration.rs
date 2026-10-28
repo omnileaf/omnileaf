@@ -82,6 +82,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0046_keep_the_kind_and_numbers_of_each_book"),
     migration!("0047_group_the_library_by_creator"),
     migration!("0048_key_the_name_of_each_person_a_book_names"),
+    migration!("0049_key_each_series_by_its_folder"),
 ];
 
 pub(crate) fn pending(
@@ -248,7 +249,7 @@ mod tests {
         },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
-        title_key::{TitleCollation, TitleStamp},
+        title_key::{TitleCollation, TitleStamp, keep_titles_sorted},
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -1230,7 +1231,7 @@ mod tests {
             )
             .unwrap();
 
-        drop(Database::open(&scratch.config).unwrap());
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..43]).unwrap());
 
         let named: (String, u32) = connection
             .query_row(
@@ -1402,6 +1403,55 @@ mod tests {
     }
 
     #[test]
+    fn reads_every_book_again_to_file_it_by_its_folder_and_leaves_old_series_unnamed() {
+        let scratch = ScratchLibrary::new("series-folder-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..48]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id, summary) VALUES (?1, 'A sample summary.')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let kept: Vec<Value> = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book), (SELECT count(*) FROM book_details),
+                    year, year_source, title_source
+                FROM series",
+                [],
+                |row| (0..5).map(|column| row.get(column)).collect(),
+            )
+            .unwrap();
+        assert_eq!(
+            kept,
+            [
+                Value::Integer(1),
+                Value::Integer(0),
+                Value::Null,
+                Value::Null,
+                Value::Null
+            ]
+        );
+    }
+
+    #[test]
     fn lists_the_writers_kept_from_before_their_names_were_keyed_in_title_order() {
         let scratch = ScratchLibrary::new("writer-keys-upgrade");
         drop(Database::open_with(&scratch.config, &MIGRATIONS[..47]).unwrap());
@@ -1440,7 +1490,8 @@ mod tests {
             )
             .unwrap();
 
-        drop(Database::open(&scratch.config).unwrap());
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..48]).unwrap());
+        keep_titles_sorted(&connection).unwrap();
 
         let request = PageRequest {
             after: None,

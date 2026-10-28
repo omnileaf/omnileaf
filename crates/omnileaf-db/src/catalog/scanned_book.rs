@@ -57,7 +57,7 @@ pub fn record_scanned_books(
     transaction: &Transaction<'_>,
     scanned: &[ScannedBook],
 ) -> Result<Vec<SeriesId>, Error> {
-    record(transaction, scanned, Filing::WhereFirstFound)
+    record(transaction, scanned, Filing::FollowingItsOnlyFile)
 }
 
 #[tracing::instrument(skip_all, fields(books = moved.len()))]
@@ -109,7 +109,7 @@ impl<'t> Recorder<'t> {
             page_count: Some(scanned.page_count),
             numbering: scanned.numbering,
         };
-        self.books.file(&book)?;
+        self.books.file(&book, &scanned.file)?;
         self.books
             .record_page_count(book.id(), scanned.page_count)?;
         self.details

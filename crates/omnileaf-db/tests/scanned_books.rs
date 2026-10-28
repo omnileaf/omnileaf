@@ -10,9 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookListing, BookPerson, NewBook, NewRoot, NewSeries,
-        PageRequest, PageSize, PersonRole, ReadingDirection, RootId, RootKind, RootLocator,
-        ScannedBook, add_book, add_root, record_moved_books, record_page_count,
+        AgeRating, BookDetails, BookFile, BookListing, BookNumber, BookPerson, NewBook, NewRoot,
+        NewSeries, NumberRange, Numbering, PageRequest, PageSize, PersonRole, ReadingDirection,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesFolder, SeriesNaming, Sourced,
+        ValueSource, add_book, add_root, record_moved_books, record_page_count,
         record_scanned_books, series_books,
     },
     rusqlite::{Row, types::Value},
@@ -75,6 +76,29 @@ impl Library {
                 modified_at_ms: MODIFIED_AT_MS,
             },
             numbering: None,
+        }
+    }
+
+    fn found_in_folder(&self, series_folder: &str, book: &str, page_crc: u32) -> ScannedBook {
+        let title = series_folder.rsplit('/').next().unwrap();
+        ScannedBook {
+            series: NewSeries::folder(
+                SeriesFolder {
+                    linked_folder: "Sample Library",
+                    location: series_folder,
+                },
+                SeriesNaming {
+                    title: Sourced {
+                        value: title.to_owned(),
+                        source: ValueSource::FolderName,
+                    },
+                    year: None,
+                },
+                ADDED_AT_MS,
+            )
+            .unwrap(),
+            title: book.to_owned(),
+            ..self.found(title, format!("{series_folder}/{book}.cbz"), page_crc)
         }
     }
 
@@ -637,4 +661,106 @@ async fn writes_nothing_when_a_book_is_scanned_again_with_the_same_details() {
     let changes = library.changes_recording(found).await;
 
     assert_eq!(changes, 0);
+}
+
+#[tokio::test]
+async fn keeps_the_title_and_year_of_a_folder_series_and_where_each_came_from() {
+    let library = Library::open("scanned-folder-naming").await;
+    let found = ScannedBook {
+        series: NewSeries::folder(
+            SeriesFolder {
+                linked_folder: "Sample Library",
+                location: "Sample Series 04 (2019)",
+            },
+            SeriesNaming {
+                title: Sourced {
+                    value: "Sample Series 04".to_owned(),
+                    source: ValueSource::FolderName,
+                },
+                year: Some(Sourced {
+                    value: 2019,
+                    source: ValueSource::FolderName,
+                }),
+            },
+            ADDED_AT_MS,
+        )
+        .unwrap(),
+        ..library.found("Sample Series 04", "Sample Series 04 (2019)/v01.cbz", 1)
+    };
+
+    library.record(found).await;
+
+    let named: Vec<Vec<Value>> = library
+        .rows(
+            "SELECT title, year, year_source, title_source FROM series",
+            |row| (0..4).map(|column| row.get(column)).collect(),
+        )
+        .await;
+    assert_eq!(
+        named,
+        [vec![
+            text("Sample Series 04"),
+            Value::Integer(2019),
+            text("folder_name"),
+            text("folder_name"),
+        ]]
+    );
+}
+
+#[tokio::test]
+async fn keeps_same_name_folders_in_two_places_as_two_series() {
+    let library = Library::open("scanned-same-name-folders").await;
+    library
+        .record(library.found_in_folder("Author A/Sample Series 02", "v01", 1))
+        .await;
+
+    library
+        .record(library.found_in_folder("Author B/Sample Series 02", "v01", 2))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 02".to_owned(), 1),
+            ("Sample Series 02".to_owned(), 1)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn refiles_a_book_whose_only_file_is_scanned_again_in_another_series() {
+    let library = Library::open("scanned-only-file-refiled").await;
+    let first = library.found_in_folder("Sample Series 01", "v01", 1);
+    let location = first.file.location.clone();
+    library.record(first).await;
+    let again = ScannedBook {
+        file: BookFile {
+            location,
+            ..library.found_in_folder("Sample Series 02", "v01", 1).file
+        },
+        numbering: Some(Numbering::Volume {
+            numbers: Sourced {
+                value: NumberRange::single(BookNumber::from_thousandths(1000)),
+                source: ValueSource::FileName,
+            },
+        }),
+        ..library.found_in_folder("Sample Series 02", "Sample Series 02 v01", 1)
+    };
+
+    library.record(again).await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 0),
+            ("Sample Series 02".to_owned(), 1)
+        ]
+    );
+    assert_eq!(library.books().await, ["Sample Series 02 v01"]);
+    assert_eq!(
+        library
+            .rows("SELECT kind FROM book", |row| row.get::<_, String>(0))
+            .await,
+        ["volume"]
+    );
 }
