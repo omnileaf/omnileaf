@@ -19,27 +19,27 @@ const OUTLINED =
 
 export const BUTTON_LOOKS = {
   text: `font-medium text-foreground android:text-accent ios:font-semibold ${FOCUS_RING}`,
-  quiet: `font-semibold text-accent transition-control enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
-  primary: `bg-accent text-on-accent transition-control enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed ${FOCUS_RING}`,
+  quiet: `font-semibold text-accent transition-control not-disabled:hover:bg-hover not-disabled:active:bg-pressed ${FOCUS_RING}`,
+  primary: `bg-accent text-on-accent transition-control not-disabled:hover:bg-accent-hover not-disabled:active:bg-accent-pressed ${FOCUS_RING}`,
   filled: `bg-accent text-on-accent ${FOCUS_RING}`,
   outline: `rounded-control border border-border bg-card font-semibold ${FOCUS_RING}`,
-  tinted: `transition-control enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
+  tinted: `transition-control not-disabled:hover:tint-hover not-disabled:active:tint-pressed ${FOCUS_RING}`,
   icon: `flex items-center justify-center rounded-full ${FOCUS_RING}`,
   "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-shadcn-button large:border large:border-button-outline-edge large:bg-button-outline large:text-small large:font-medium large:block-shadcn-control windows:large:border-be-windows-stroke-strong linux:large:shadow-raised macos:large:shadow-raised ${FOCUS_RING}`,
   chip: `rounded-full border border-border bg-card font-semibold hover:bg-hover ${FOCUS_RING}`,
-  "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
+  "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control not-disabled:hover:bg-hover not-disabled:active:bg-pressed ${FOCUS_RING}`,
   row: "flex items-center text-start transition-control hover:bg-hover active:bg-pressed",
   inverse: `rounded-full bg-accent font-medium text-on-accent transition-control hover:opacity-85 active:opacity-70 android:medium:font-semibold ${FOCUS_RING}`,
   dismiss: `isolate flex items-center justify-center rounded-full opacity-70 transition-control before:absolute before:z-behind before:rounded-full before:transition-control hover:opacity-100 hover:before:bg-hover active:opacity-100 active:before:bg-pressed ${FOCUS_RING}`,
-  "row-action": `isolate flex items-center justify-center rounded-full text-foreground transition-control before:absolute before:z-behind before:rounded-full before:transition-control enabled:hover:before:bg-hover enabled:active:before:bg-pressed disabled:opacity-60 ${FOCUS_RING}`,
+  "row-action": `isolate flex items-center justify-center rounded-full text-foreground transition-control before:absolute before:z-behind before:rounded-full before:transition-control not-disabled:hover:before:bg-hover not-disabled:active:before:bg-pressed disabled:opacity-60 ${FOCUS_RING}`,
   "about-copy": `flex shrink-0 items-center justify-center rounded-full text-muted transition-control block-touch-target inline-touch-target hover:bg-hover hover:text-foreground active:bg-pressed desktop:rounded-control desktop:block-pointer-button desktop:inline-pointer-button ${FOCUS_RING}`,
   "confirm-cancel": `${CONFIRM} bg-chip hover:tint-hover active:tint-pressed medium:border medium:border-button-outline-edge medium:bg-button-outline windows:medium:border-be-windows-stroke-strong ${FOCUS_RING}`,
   "confirm-danger": `${CONFIRM} bg-danger-fill text-on-danger hover:bg-danger-hover active:bg-danger-pressed ${FOCUS_RING}`,
   "crash-phone-primary": `rounded-full bg-accent text-callout font-bold text-on-accent min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
   "crash-phone-secondary": `rounded-full border border-quiet-edge text-callout font-bold min-block-crash-screen-button ios:rounded-crash-screen-button ${FOCUS_RING}`,
-  "dialog-secondary": `${DIALOG_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
-  "dialog-primary": `${DIALOG_BUTTON} bg-accent text-on-accent enabled:hover:bg-accent-hover enabled:active:bg-accent-pressed ${FOCUS_RING}`,
-  "card-outline": `${SHADCN_BUTTON} ${OUTLINED} enabled:hover:tint-hover enabled:active:tint-pressed ${FOCUS_RING}`,
+  "dialog-secondary": `${DIALOG_BUTTON} ${OUTLINED} not-disabled:hover:tint-hover not-disabled:active:tint-pressed ${FOCUS_RING}`,
+  "dialog-primary": `${DIALOG_BUTTON} bg-accent text-on-accent not-disabled:hover:bg-accent-hover not-disabled:active:bg-accent-pressed ${FOCUS_RING}`,
+  "card-outline": `${SHADCN_BUTTON} ${OUTLINED} not-disabled:hover:tint-hover not-disabled:active:tint-pressed ${FOCUS_RING}`,
   "crash-dialog-copy": `rounded-shadcn-button px-md text-label font-semibold text-accent min-block-shadcn-button touch:min-block-touch-target ${FOCUS_RING}`,
 } satisfies Record<string, string>;
 
@@ -92,9 +92,9 @@ const DESKTOP_VARIANTS = {
   primary: BUTTON_LOOKS["dialog-primary"],
   secondary: BUTTON_LOOKS["dialog-secondary"],
   outline: BUTTON_LOOKS["dialog-secondary"],
-  plain: `${DIALOG_BUTTON} text-accent enabled:hover:bg-hover enabled:active:bg-pressed ${FOCUS_RING}`,
+  plain: `${DIALOG_BUTTON} text-accent not-disabled:hover:bg-hover not-disabled:active:bg-pressed ${FOCUS_RING}`,
   link: BUTTON_LOOKS.quiet,
-  destructive: `${DIALOG_BUTTON} bg-danger-fill text-on-danger enabled:hover:bg-danger-hover enabled:active:bg-danger-pressed ${FOCUS_RING}`,
+  destructive: `${DIALOG_BUTTON} bg-danger-fill text-on-danger not-disabled:hover:bg-danger-hover not-disabled:active:bg-danger-pressed ${FOCUS_RING}`,
 } satisfies Record<ButtonVariant, string>;
 
 const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
