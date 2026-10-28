@@ -49,7 +49,7 @@ pub struct SeriesFilter {
     pub tags: Vec<String>,
     /// Holds a book with a bookmarked page.
     pub bookmarked: Inclusion,
-    /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds.
+    /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds, or is marked 18+ by hand, which always counts.
     pub adult: Inclusion,
     pub counts_age_ratings: bool,
 }
@@ -297,7 +297,8 @@ macro_rules! conditions {
             ")
         AND (:holds_bookmarks IS NULL OR (series.bookmarked_books > 0) = :holds_bookmarks)
         AND (:holds_adult IS NULL
-            OR (series.adult_rated_books > 0 AND :counts_age_ratings) = :holds_adult)"
+            OR (series.adult_rated_books > 0
+                AND (:counts_age_ratings OR series.marked_adult = 1)) = :holds_adult)"
         )
     };
 }

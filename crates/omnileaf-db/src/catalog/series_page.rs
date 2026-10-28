@@ -133,6 +133,7 @@ pub struct SeriesSummary {
     pub continues_from: Option<BookId>,
     pub language: Option<String>,
     pub is_rated_adult: bool,
+    pub is_marked_adult: bool,
 }
 
 /// A title cursor from before the titles were keyed again carries on after its series' new place, or fails with [`Error::StaleCursor`] when that series has gone.

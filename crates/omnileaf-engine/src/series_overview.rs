@@ -71,7 +71,7 @@ impl RelatedSeries {
                 catalog::RelatedReason::SameArtist => RelatedReason::SameArtist,
                 catalog::RelatedReason::SharedTag(tag) => RelatedReason::SharedTag { tag },
             },
-            is_adult: adult.counts_as_adult(series.is_rated_adult),
+            is_adult: adult.counts_as_adult(series.is_rated_adult, series.is_marked_adult),
         }
     }
 }
@@ -255,6 +255,7 @@ mod tests {
             catalog::SeriesOverview {
                 id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
                 title: "Sample Series 04".to_owned(),
+                file_title: "Sample Series 04".to_owned(),
                 title_source: None,
                 year: None,
                 language: None,
@@ -264,6 +265,7 @@ mod tests {
                 folder: None,
                 pages_left,
                 is_rated_adult: false,
+                is_marked_adult: false,
                 bookmark_count: BOOKMARKED_BOOKS,
             },
             None,

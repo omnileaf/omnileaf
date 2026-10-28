@@ -53,7 +53,8 @@ const CLEAR_LABELS: [&str; 4] = [
 const SERIES_EDIT_REGISTERS: &str = "SELECT field, value FROM sync_register
     WHERE entity = 'series' AND id = ?1 AND profile = ?2 AND field LIKE 'meta.%'";
 const PROJECT_SERIES_EDIT: &str = "INSERT INTO series_edit
-    (series_id, title, summary, is_adult, has_people, has_tags) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+    (series_id, title, title_key, summary, is_adult, has_people, has_tags)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)";
 const PROJECT_EDITED_PERSON: &str = "INSERT INTO series_edit_person
     (series_id, position, role, name, name_key) VALUES (?1, ?2, ?3, ?4, ?5)";
 const PROJECT_EDITED_TAG: &str =
@@ -542,6 +543,11 @@ fn project_series_edit(connection: &Connection, series: SeriesId) -> Result<(), 
         connection.execute(remove, [id])?;
     }
     let edits = series_edits_of(connection, series)?;
+    let title_key = edits
+        .title
+        .as_deref()
+        .map(|title| TitleCollation::stored(connection).map(|collation| collation.key(title)))
+        .transpose()?;
     if edits.is_empty() {
         return Ok(());
     }
@@ -551,6 +557,7 @@ fn project_series_edit(connection: &Connection, series: SeriesId) -> Result<(), 
         (
             id,
             &edits.title,
+            title_key,
             &edits.summary,
             edits.is_adult,
             edits.people.is_some(),
