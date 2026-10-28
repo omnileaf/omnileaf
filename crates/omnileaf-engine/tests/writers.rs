@@ -164,6 +164,34 @@ async fn lists_a_series_with_two_writers_under_both() {
 }
 
 #[tokio::test]
+async fn counts_the_series_of_many_writers_at_once_in_the_order_asked() {
+    let shelf = Shelf::with(
+        "writers-counted-together",
+        &[
+            (SERIES_01, &written_by(AUTHOR_A)),
+            (SERIES_02, &written_by("Sample Author A, Sample Author B")),
+        ],
+    )
+    .await;
+
+    let counts = shelf
+        .library
+        .writer_series_counts(
+            vec![
+                AUTHOR_B.to_owned(),
+                "Nobody".to_owned(),
+                AUTHOR_A.to_owned(),
+                AUTHOR_B.to_owned(),
+            ],
+            LibraryListing::default().filter,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(counts, [1, 0, 2, 1]);
+}
+
+#[tokio::test]
 async fn leaves_out_the_writers_of_series_hidden_with_their_missing_folder() {
     let shelf = Shelf::with("writers-hidden", &[(SERIES_01, &written_by(AUTHOR_A))]).await;
     fs::rename(&shelf.comics, shelf.comics.with_file_name("Comics, moved")).unwrap();

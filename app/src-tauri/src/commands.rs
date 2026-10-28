@@ -83,6 +83,8 @@ macro_rules! app_commands {
             library_writers,
             writer_series,
             writer_series_count,
+            writer_series_counts,
+            folder_series_counts,
             library_search,
             library_search_count,
             series_overview,
@@ -570,6 +572,17 @@ async fn folder_series_count(
     Ok(library.folder_series_count(folder, filter).await?)
 }
 
+/// Counts the series of many folders at once, in the order given.
+#[tauri::command]
+#[specta::specta]
+async fn folder_series_counts(
+    library: State<'_, Library>,
+    folders: Vec<FolderId>,
+    filter: LibraryFilter,
+) -> Result<Vec<u32>, IpcError> {
+    Ok(library.folder_series_counts(folders, filter).await?)
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn folder_groups(
@@ -618,6 +631,17 @@ async fn writer_series(
     listing: LibraryListing,
 ) -> Result<SeriesPage, IpcError> {
     Ok(library.writer_series(writer, listing, after).await?)
+}
+
+/// Counts the series of many writers at once, in the order given.
+#[tauri::command]
+#[specta::specta]
+async fn writer_series_counts(
+    library: State<'_, Library>,
+    writers: Vec<String>,
+    filter: LibraryFilter,
+) -> Result<Vec<u32>, IpcError> {
+    Ok(library.writer_series_counts(writers, filter).await?)
 }
 
 #[tauri::command]

@@ -191,9 +191,22 @@ async fn lists_and_counts_the_series_held_in_one_folder() {
         .await
         .unwrap();
 
+    let counted_together = library
+        .folder_series_counts(
+            vec![home_folder, linked, home_folder],
+            LibraryListing::default().filter,
+        )
+        .await
+        .unwrap();
+
     assert_eq!(
-        (in_linked.series.len(), in_home.series.len(), counted),
-        (3, 0, 3)
+        (
+            in_linked.series.len(),
+            in_home.series.len(),
+            counted,
+            counted_together
+        ),
+        (3, 0, 3, vec![0, 3, 0])
     );
 }
 
