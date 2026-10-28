@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { accessibilityViolations, expect, test } from "./fixtures.ts";
+import { accessibilityViolations, boxOf, expect, test } from "./fixtures.ts";
 import {
   chapters,
   SectionShelf,
@@ -314,5 +314,62 @@ test.describe("going back while picking", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
     ).toBeVisible();
+  });
+});
+
+test.describe("dragging a box over the covers", () => {
+  const INTO_THE_ROW_PX = 10;
+  const shelf = new SectionShelf(volumes(1, 4, 5), [{ first: 2, last: 3 }]);
+  test.use({ backend: shelf.backend() });
+
+  function itemOf(page: Page, index: number) {
+    return volumeCovers(page).getByRole("listitem").nth(index);
+  }
+
+  async function dragFromBeforeTheGapToVolumeFour(page: Page): Promise<void> {
+    const first = await boxOf(itemOf(page, 0));
+    const gap = await boxOf(itemOf(page, 1));
+    const volumeFour = await boxOf(itemOf(page, 2));
+    await page.mouse.move(
+      (first.x + first.width + gap.x) / 2,
+      gap.y + INTO_THE_ROW_PX,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      volumeFour.x + volumeFour.width / 2,
+      volumeFour.y + volumeFour.height / 2,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+  }
+
+  test("picks the covers a box dragged on empty space touches, never the gap", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await dragFromBeforeTheGapToVolumeFour(page);
+
+    await expect(pickBox(page, "Volume 4")).toBeChecked();
+    await expect(pickBox(page, "Volume 1")).not.toBeChecked();
+    await expect(
+      volumeCovers(page).getByRole("img", {
+        name: "Volumes 2 and 3 are not in the folder",
+      }),
+    ).toBeVisible();
+  });
+
+  test("keeps the covers picked before when the drag starts with Ctrl held", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await ctrlClick(page, "Volume 1");
+
+    await page.keyboard.down("ControlOrMeta");
+    await dragFromBeforeTheGapToVolumeFour(page);
+    await page.keyboard.up("ControlOrMeta");
+
+    await expect(pickBox(page, "Volume 1")).toBeChecked();
+    await expect(pickBox(page, "Volume 4")).toBeChecked();
   });
 });
