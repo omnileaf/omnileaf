@@ -234,6 +234,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
 
 const PAGE_SIZE = 50;
 const SAMPLE_SECONDS_PER_PAGE = 8.5;
+const SAMPLE_BOOK_KILOBYTES = 24_000;
 const SAMPLE_SUMMARY_SECONDS_PER_PAGE = 22.5;
 const PAGE_WIDTH = 1000;
 const PAGE_HEIGHT = 1500;
@@ -1499,6 +1500,33 @@ export function sampleBackend(
           peopleOf(series).find(({ name }) => name === creator)?.role ?? null,
       })),
     fileToOpen: () => null,
+    inspectDrop: (paths) => {
+      const names = paths.map((path) => path.split(/[\\/]/u).at(-1) ?? path);
+      const usable = names.filter(
+        (name) => /\.(?:cbz|cb7)$/iu.test(name) || !name.includes("."),
+      );
+      return {
+        first: usable[0] ?? null,
+        more: Math.max(usable.length - 1, 0),
+        totalKilobytes:
+          names.filter((name) => /\.(?:cbz|cb7)$/iu.test(name)).length *
+          SAMPLE_BOOK_KILOBYTES,
+        refused: names
+          .filter((name) => !usable.includes(name))
+          .map((name) => ({
+            name,
+            reason: /\.(?:cbr|cbt)$/iu.test(name)
+              ? ("typeNotReadYet" as const)
+              : ("notAComic" as const),
+          })),
+      };
+    },
+    dropFiles: (_paths, mode) =>
+      mode === "readNow"
+        ? { kind: "reading", book: sampleBookId(1, 1), isInLibrary: false }
+        : mode === "add"
+          ? { kind: "added", folders: [] }
+          : { kind: "copied", files: 1 },
     markBooks: (books, mark) => {
       for (const id of books) {
         setReading(

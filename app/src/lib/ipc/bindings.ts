@@ -87,6 +87,9 @@ export const commands = {
 	book: string & { readonly __brand: "BookId" },
 	isInLibrary: boolean,
 } | null, IpcError>(__TAURI_INVOKE("file_to_open")),
+	/**  Says what dragging these paths over the window would hold, from the paths alone. */
+	inspectDrop: (paths: string[]) => typedError<DropSummary, IpcError>(__TAURI_INVOKE("inspect_drop", { paths })),
+	dropFiles: (paths: string[], mode: DropMode) => typedError<DropOutcome, IpcError>(__TAURI_INVOKE("drop_files", { paths, mode })),
 	croppedPagePaths: (paths: (string & { readonly __brand: "PagePath" })[], crop: PageCrop) => __TAURI_INVOKE<(string & { readonly __brand: "PagePath" })[]>("cropped_page_paths", { paths, crop }),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
 	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
@@ -316,6 +319,27 @@ export type DetailEdits = {
 	tags: string[] | null,
 	summary: string | null,
 	isMarkedAdult: boolean,
+};
+
+export type DropMode = 
+/**  Opens the first file or folder without adding it. */
+"readNow" | 
+/**  Links the folder of each file, or the dropped folder, and leaves the files where they are. */
+"add" | 
+/**  Copies the files and folders into the home folder. */
+"copy";
+
+export type DropOutcome = { kind: "reading"; book: string & { readonly __brand: "BookId" }; isInLibrary: boolean } | { kind: "added"; folders: FolderScan[] } | { kind: "copied"; files: number };
+
+/**  What a drop would hold, read from the dragged paths alone. */
+export type DropSummary = {
+	/**  The name of the first file or folder the library can use. */
+	first: string | null,
+	/**  How many more files and folders the library can use. */
+	more: number,
+	/**  The size of the comic files among those, folders counting for nothing. */
+	totalKilobytes: number,
+	refused: RefusedDrop[],
 };
 
 export type EditedPeople = {
@@ -708,6 +732,13 @@ export type ReadingWeek = {
 	/**  Books a session this week reached the last page of. */
 	booksFinished: number,
 	daysInARow: number,
+};
+
+export type RefusalReason = "notAComic" | "typeNotReadYet";
+
+export type RefusedDrop = {
+	name: string,
+	reason: RefusalReason,
 };
 
 export type RelatedReason = { kind: "sameWriter" } | { kind: "sameArtist" } | { kind: "sharedTag"; tag: string };

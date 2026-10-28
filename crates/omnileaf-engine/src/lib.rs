@@ -15,6 +15,7 @@ mod cover_thumbnails;
 mod crash_report;
 mod decode_permits;
 mod device_class;
+mod dropped_files;
 mod error_chain;
 mod external_storage;
 mod file_in_storage;
@@ -96,6 +97,9 @@ pub use crash_report::{
     CrashOrigin, CrashReport, CrashReportError, CrashReportFile, CrashReportId, CrashReportOffers,
     CrashedApp, InterfaceError, PanicDetails, SourceLocation, UnsavedCrashReport, contain_panic,
     is_panic_contained,
+};
+pub use dropped_files::{
+    DropError, DropMode, DropOutcome, DropSummary, RefusalReason, RefusedDrop,
 };
 pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
