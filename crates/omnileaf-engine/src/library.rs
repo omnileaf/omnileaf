@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, btree_map},
     fs, io, mem,
     path::{Path, PathBuf},
     sync::{
@@ -16,7 +16,8 @@ use omnileaf_db::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RootId, RootKind, RootLocator,
         add_root, book_to_read, bookmarked_roots, cover_file,
-        filter_choices as stored_filter_choices, folder_series_count, folder_series_page,
+        filter_choices as stored_filter_choices, folder_group_series_count,
+        folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
         mark_root_unavailable, missing_roots, page_dimensions, person_series, place_in_series,
         record_page_count, relocate_roots, remember_root_share, remove_book_files,
@@ -48,14 +49,15 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor, FolderId,
-    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
-    HistoryPage, HistorySeries, LibraryCategory, LibraryChanges, LibraryFilter,
-    LibraryFilterChoices, LibraryFolder, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
-    LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary,
-    ReadingWeek, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage,
-    SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress,
-    ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor, FolderGroupCursor,
+    FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary,
+    HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
+    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup,
+    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LibraryWriter, LocalDay,
+    LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
+    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -83,6 +85,7 @@ pub(crate) const DATABASE_FILE: &str = "library.sqlite";
 pub(crate) const BACKUP_FOLDER: &str = "backups";
 const FOLDERS_PER_PAGE: u16 = 50;
 const WRITERS_PER_PAGE: u16 = 50;
+const FOLDER_GROUPS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
 const BOOKS_PER_PAGE: u16 = 100;
 const SESSIONS_PER_PAGE: u16 = 50;
@@ -377,6 +380,76 @@ impl Library {
             .store
             .database()
             .read(move |connection| folder_series_count(connection, folder.0, &filter))
+            .await?)
+    }
+
+    pub async fn folder_groups(
+        &self,
+        after: Option<FolderGroupCursor>,
+    ) -> Result<FolderGroupPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(FOLDER_GROUPS_PER_PAGE)?,
+        };
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let page = folder_groups(connection, &request)?;
+                let mut folder_names = BTreeMap::new();
+                let mut groups = Vec::with_capacity(page.items.len());
+                for summary in page.items {
+                    let folder_name = match folder_names.entry(summary.group.root) {
+                        btree_map::Entry::Occupied(entry) => entry.into_mut(),
+                        btree_map::Entry::Vacant(entry) => {
+                            let locator = library_root(connection, summary.group.root)?.locator;
+                            entry.insert(folder_name(&root_folder(&locator)))
+                        }
+                    };
+                    groups.push(LibraryFolderGroup::new(summary, folder_name.clone()));
+                }
+                Ok(FolderGroupPage {
+                    groups,
+                    next: page.next.map(FolderGroupCursor),
+                })
+            })
+            .await?)
+    }
+
+    pub async fn folder_group_series(
+        &self,
+        group: FolderGroupId,
+        listing: LibraryListing,
+        after: Option<SeriesCursor>,
+    ) -> Result<SeriesPage, LibraryError> {
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(SERIES_PER_PAGE)?,
+        };
+        let listing = listing.at(self.now_ms());
+        let page = self
+            .store
+            .database()
+            .read(move |connection| {
+                Ok((
+                    folder_group_series_page(connection, &group.0, &listing, &request)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
+            .await?;
+        Ok(SeriesPage::new(page.0, page.1))
+    }
+
+    pub async fn folder_group_series_count(
+        &self,
+        group: FolderGroupId,
+        filter: LibraryFilter,
+    ) -> Result<u32, LibraryError> {
+        let filter = filter.at(self.now_ms());
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| folder_group_series_count(connection, &group.0, &filter))
             .await?)
     }
 

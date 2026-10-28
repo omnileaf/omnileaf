@@ -654,6 +654,53 @@ test("lists every series in the sample's folder, and none in another", async () 
   expect([page.series.length, count, elsewhere.series]).toEqual([20, 20, []]);
 });
 
+test("groups the sample's series in its folder, but for a writer's folder holding two", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.folderGroups(null);
+  const total = await backend.folderSeriesCount(
+    page.groups[0]?.folder ?? "",
+    NEWEST_FIRST.filter,
+  );
+
+  expect(
+    page.groups.map(({ folderName, path, seriesCount }) => ({
+      folderName,
+      path,
+      seriesCount,
+    })),
+  ).toEqual([
+    { folderName: "Sample Comics", path: [], seriesCount: total - 2 },
+    { folderName: "Sample Comics", path: ["Author A"], seriesCount: 2 },
+  ]);
+});
+
+test("lists and counts the series in the writer's folder, and none in another group", async () => {
+  const { backend } = backendFor();
+  const { groups } = await backend.folderGroups(null);
+  const writerGroup = groups.find(({ path }) => path.length > 0)?.id;
+  if (writerGroup === undefined) {
+    throw new Error("the sample library groups no series in a writer's folder");
+  }
+
+  const page = await backend.folderGroupSeries(writerGroup, null, NEWEST_FIRST);
+  const count = await backend.folderGroupSeriesCount(
+    writerGroup,
+    NEWEST_FIRST.filter,
+  );
+  const elsewhere = await backend.folderGroupSeries(
+    "another-group",
+    null,
+    NEWEST_FIRST,
+  );
+
+  expect([
+    page.series.map(({ title }) => title),
+    count,
+    elsewhere.series,
+  ]).toEqual([["Sample Series 01", "Sample Series 04"], 2, []]);
+});
+
 test("lists the sample's writers with their series, leaving out those who only draw", async () => {
   const { backend } = backendFor();
 

@@ -6,15 +6,15 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions,
     BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType,
-    FolderCursor, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
-    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges,
-    Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
-    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
-    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
-    ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor,
-    WriterPage,
+    FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory,
+    LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
+    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
+    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
+    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
+    SeriesPage, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -76,6 +76,9 @@ macro_rules! app_commands {
             category_series_count,
             folder_series,
             folder_series_count,
+            folder_groups,
+            folder_group_series,
+            folder_group_series_count,
             library_writers,
             writer_series,
             writer_series_count,
@@ -562,6 +565,36 @@ async fn folder_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.folder_series_count(folder, filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn folder_groups(
+    library: State<'_, Library>,
+    after: Option<FolderGroupCursor>,
+) -> Result<FolderGroupPage, IpcError> {
+    Ok(library.folder_groups(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn folder_group_series(
+    library: State<'_, Library>,
+    group: FolderGroupId,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.folder_group_series(group, listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn folder_group_series_count(
+    library: State<'_, Library>,
+    group: FolderGroupId,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.folder_group_series_count(group, filter).await?)
 }
 
 #[tauri::command]

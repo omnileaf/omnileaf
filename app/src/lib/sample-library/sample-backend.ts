@@ -247,6 +247,14 @@ const HOME_FOLDER_LOCATIONS = {
 } as const satisfies Record<Platform, string>;
 const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
+const LIBRARY_GROUP_ID = "5a4d1e00-0000-4000-8003-000000000000";
+const WRITER_GROUP_ID = "5a4d1e00-0000-4000-8003-000000000001";
+const WRITER_GROUP_FOLDER = "Author A";
+const WRITER_GROUP_SERIES = new Set([1, 4]);
+const FOLDER_GROUPS = [
+  { id: LIBRARY_GROUP_ID, path: [] },
+  { id: WRITER_GROUP_ID, path: [WRITER_GROUP_FOLDER] },
+] as const;
 const NEWEST_ADDED_MS = Date.UTC(2026, 9, 14, 9);
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
@@ -649,6 +657,17 @@ export function sampleBackend(
         peopleOf(series).some(
           (creator) => creator.name === writer && writes(creator),
         ),
+    );
+  }
+
+  function seriesInGroup(group: string): SampleSeries[] {
+    const isInWriterGroup = (series: SampleSeries): boolean =>
+      WRITER_GROUP_SERIES.has(series.number);
+    return library.filter(
+      (series) =>
+        !isOutOfReach(series) &&
+        ((group === LIBRARY_GROUP_ID && !isInWriterGroup(series)) ||
+          (group === WRITER_GROUP_ID && isInWriterGroup(series))),
     );
   }
 
@@ -1246,6 +1265,33 @@ export function sampleBackend(
       return folder === LIBRARY_FOLDER_ID
         ? library.filter((series) => passes(series, filter, facts)).length
         : 0;
+    },
+    folderGroups: async (after) => {
+      await libraryReady();
+      const groups = FOLDER_GROUPS.map(({ id, path }) => ({
+        id,
+        folder: LIBRARY_FOLDER_ID,
+        folderName: LIBRARY_FOLDER_NAME,
+        path: [...path],
+        seriesCount: seriesInGroup(id).length,
+      })).filter(({ seriesCount }) => seriesCount > 0);
+      const page = pageOf(groups, after);
+      return { groups: page.items, next: page.next };
+    },
+    folderGroupSeries: async (group, after, chosen) => {
+      await libraryReady();
+      const inGroup = new Set(seriesInGroup(group));
+      const page = pageOf(
+        sorted(chosen).filter((series) => inGroup.has(series)),
+        after,
+      );
+      return { series: page.items.map(wireSeries), next: page.next };
+    },
+    folderGroupSeriesCount: async (group, filter) => {
+      await libraryReady();
+      return seriesInGroup(group).filter((series) =>
+        passes(series, filter, facts),
+      ).length;
     },
     libraryWriters: async (after) => {
       await libraryReady();
