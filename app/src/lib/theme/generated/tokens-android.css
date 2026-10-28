@@ -174,6 +174,8 @@
   --native-leading-end-stat-label: calc(16 / 12);
   --native-tracking-end-stat-label: 0.5px;
   --native-weight-end-stat-label: 500;
+  --native-color-accent-hover: #00000000;
+  --native-color-accent-pressed: #00000000;
 }
 
 :root[data-platform="android"],
