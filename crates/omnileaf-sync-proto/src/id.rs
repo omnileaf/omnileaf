@@ -11,6 +11,7 @@ const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
 const FOLDER_SERIES_KEY: KeyName = KeyName::new("series.folder.v1");
 const NAMED_SERIES_KEY: KeyName = KeyName::new("series.named.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
+const BOOKMARK_KEY: KeyName = KeyName::new("bookmark.v1");
 const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
 const DEFAULT_PROFILE_KEY: KeyName = KeyName::new("profile.default.v1");
 const SHARED_PROFILE_KEY: KeyName = KeyName::new("profile.shared.v1");
@@ -78,6 +79,7 @@ macro_rules! entity_id {
 entity_id!(BookId);
 entity_id!(SeriesId);
 entity_id!(CategoryId);
+entity_id!(BookmarkId);
 entity_id!(SourceId);
 entity_id!(ProfileId);
 
@@ -114,6 +116,18 @@ impl SeriesId {
             .part(norm(format_family).as_bytes())?
             .part(norm(series_name).as_bytes())?;
         Ok(Self(key.id()))
+    }
+}
+
+impl BookmarkId {
+    #[must_use]
+    pub fn of(book: BookId, page: u32) -> Self {
+        Self(
+            NaturalKey::new(BOOKMARK_KEY)
+                .fixed_part(book.as_bytes())
+                .fixed_part(&page.to_le_bytes())
+                .id(),
+        )
     }
 }
 

@@ -1,4 +1,4 @@
-use omnileaf_sync_proto::{CategoryId, IdError, SeriesId, SourceId, norm};
+use omnileaf_sync_proto::{BookId, BookmarkId, CategoryId, IdError, SeriesId, SourceId, norm};
 use proptest::prelude::*;
 use uuid::Uuid;
 
@@ -26,6 +26,23 @@ fn keeps_series_and_categories_with_the_same_name_apart() {
     let category = CategoryId::from_name("Sample Shelf").unwrap();
 
     assert_ne!(series.as_bytes(), category.as_bytes());
+}
+
+#[test]
+fn gives_a_page_of_a_book_the_same_bookmark_id_everywhere_and_each_page_its_own() {
+    let book: BookId = "a9874d5a-1607-8103-9c82-2ffaf786c06c".parse().unwrap();
+    let other_book: BookId = "d1f9e7c0-2a4b-8c3d-9e5f-0a1b2c3d4e5f".parse().unwrap();
+
+    let ids = [
+        BookmarkId::of(book, 3),
+        BookmarkId::of(book, 3),
+        BookmarkId::of(book, 4),
+        BookmarkId::of(other_book, 3),
+    ];
+
+    assert_eq!(ids[0], ids[1]);
+    assert_ne!(ids[0], ids[2]);
+    assert_ne!(ids[0], ids[3]);
 }
 
 #[test]

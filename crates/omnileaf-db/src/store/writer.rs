@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use omnileaf_sync_proto::{BookId, MergeClass, Register, SeriesId, Value};
+use omnileaf_sync_proto::{BookId, BookmarkId, MergeClass, Register, SeriesId, Value};
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     catalog::series_of_book,
     store::{
         Changed,
-        key::{Key, LatestKey, MaximumKey},
+        key::{BookmarkKey, Key, LatestKey, MaximumKey},
         local::LocalReplica,
         projector,
         reading_state::reading_state,
@@ -63,6 +63,21 @@ impl<'t> Writer<'t> {
     #[tracing::instrument(skip_all, fields(%book, is_read))]
     pub fn set_read(&mut self, book: BookId, is_read: bool) -> Result<(), Error> {
         self.set(LatestKey::BookRead(book), Value::Bool(is_read))
+    }
+
+    #[tracing::instrument(skip_all, fields(%book, page, is_bookmarked))]
+    pub fn set_bookmark(
+        &mut self,
+        book: BookId,
+        page: u32,
+        is_bookmarked: bool,
+    ) -> Result<(), Error> {
+        let bookmark = BookmarkId::of(book, page);
+        let (high, low) = book_halves(book);
+        self.write_bookmark(BookmarkKey::BookHigh(bookmark), Value::Unsigned(high))?;
+        self.write_bookmark(BookmarkKey::BookLow(bookmark), Value::Unsigned(low))?;
+        self.write_bookmark(BookmarkKey::Page(bookmark), Value::Unsigned(page.into()))?;
+        self.write_bookmark(BookmarkKey::Deleted(bookmark), Value::Bool(!is_bookmarked))
     }
 
     #[tracing::instrument(skip_all, fields(?key))]
@@ -133,6 +148,10 @@ impl<'t> Writer<'t> {
         i64::try_from(self.now_unix_ms).unwrap_or(i64::MAX)
     }
 
+    fn write_bookmark(&mut self, key: BookmarkKey, value: Value) -> Result<(), Error> {
+        self.write(key.into(), MergeClass::LastWriterWins, value)
+    }
+
     fn set(&mut self, key: LatestKey, value: Value) -> Result<(), Error> {
         self.write(key.into(), MergeClass::LastWriterWins, value)
     }
@@ -161,7 +180,9 @@ impl<'t> Writer<'t> {
             value: value.to_cbor(),
         };
         let seq = self.local.next_seq();
-        self.note_stage_before(key.book())?;
+        if let Some(book) = key.book() {
+            self.note_stage_before(book)?;
+        }
         if register::upsert(
             self.connection,
             &key.address(self.local.profile()),
@@ -211,6 +232,16 @@ fn stage_of(connection: &Connection, book: BookId) -> Result<Option<ReadingStage
         .prepare(STAGE_OF_BOOK)?
         .query_row([book.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))
         .optional()?)
+}
+
+fn book_halves(book: BookId) -> (u64, u64) {
+    let bytes = book.as_bytes();
+    let half = |range: std::ops::Range<usize>| {
+        let mut half = [0; 8];
+        half.copy_from_slice(bytes.get(range).unwrap_or(&[0; 8]));
+        u64::from_be_bytes(half)
+    };
+    (half(0..8), half(8..16))
 }
 
 #[cfg(test)]

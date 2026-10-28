@@ -1,13 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use omnileaf_sync_proto::{BookId, ProfileId, Value};
+use omnileaf_sync_proto::{BookId, BookmarkId, ProfileId, Value};
 use rusqlite::Connection;
 
 use crate::{
     Error,
     store::{
         Changed,
-        key::{Key, LatestKey, MaximumKey},
+        key::{BookmarkKey, Key, LatestKey, MaximumKey},
         local::current_profile,
     },
 };
@@ -17,6 +17,12 @@ const REGISTERS_SHOWN_IN_PROFILE: &str = "SELECT entity, id, field, value FROM s
 const PROJECT_BOOK_STATE: &str =
     "INSERT INTO book_state (book_id, position_page, furthest_page, is_read)
     VALUES (?1, ?2, ?3, ?4)";
+
+const BOOKMARK_REGISTERS: &str = "SELECT field, value FROM sync_register
+    WHERE entity = 'bookmark' AND id = ?1 AND profile IN (?2, ?3)";
+const PROJECT_BOOKMARK: &str =
+    "INSERT OR IGNORE INTO book_bookmark (book_id, page) VALUES (?1, ?2)";
+const REMOVE_BOOKMARK: &str = "DELETE FROM book_bookmark WHERE book_id = ?1 AND page = ?2";
 
 const PROJECT_POSITION: &str = "INSERT INTO book_state (book_id, position_page) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET position_page = excluded.position_page";
@@ -32,10 +38,41 @@ struct BookStateRow {
     is_read: Option<bool>,
 }
 
+#[derive(Default)]
+struct BookmarkRow {
+    book_high: Option<u64>,
+    book_low: Option<u64>,
+    page: Option<u32>,
+    deleted: Option<bool>,
+}
+
+impl BookmarkRow {
+    fn place(&self, id: BookmarkId) -> Option<(BookId, u32)> {
+        let mut bytes = [0; 16];
+        bytes[..8].copy_from_slice(&self.book_high?.to_be_bytes());
+        bytes[8..].copy_from_slice(&self.book_low?.to_be_bytes());
+        let book = BookId::try_from(bytes.as_slice()).ok()?;
+        let page = self.page?;
+        (BookmarkId::of(book, page) == id).then_some((book, page))
+    }
+
+    fn is_bookmarked(&self) -> bool {
+        self.deleted == Some(false)
+    }
+}
+
+enum BookmarkPart {
+    BookHigh(Option<u64>),
+    BookLow(Option<u64>),
+    Page(Option<u32>),
+    Deleted(Option<bool>),
+}
+
 enum Projection {
     Position { book: BookId, page: Option<u32> },
     Furthest { book: BookId, page: Option<u32> },
     Read { book: BookId, is_read: Option<bool> },
+    Bookmark { id: BookmarkId, part: BookmarkPart },
 }
 
 impl Projection {
@@ -53,14 +90,24 @@ impl Projection {
                 book,
                 is_read: flag(value).ok()?,
             },
+            Key::Bookmark(key) => Self::Bookmark {
+                id: key.id(),
+                part: match key {
+                    BookmarkKey::BookHigh(_) => BookmarkPart::BookHigh(unsigned(value).ok()?),
+                    BookmarkKey::BookLow(_) => BookmarkPart::BookLow(unsigned(value).ok()?),
+                    BookmarkKey::Page(_) => BookmarkPart::Page(page(value).ok()?),
+                    BookmarkKey::Deleted(_) => BookmarkPart::Deleted(flag(value).ok()?),
+                },
+            },
         })
     }
 
-    const fn book(&self) -> BookId {
+    const fn book(&self) -> Option<BookId> {
         match *self {
             Self::Position { book, .. } | Self::Furthest { book, .. } | Self::Read { book, .. } => {
-                book
+                Some(book)
             }
+            Self::Bookmark { .. } => None,
         }
     }
 
@@ -69,21 +116,74 @@ impl Projection {
             Self::Position { page, .. } => row.position_page = page,
             Self::Furthest { page, .. } => row.furthest_page = page,
             Self::Read { is_read, .. } => row.is_read = is_read,
+            Self::Bookmark { .. } => {}
         }
     }
 
-    fn apply(&self, connection: &Connection) -> rusqlite::Result<usize> {
-        match *self {
-            Self::Position { book, page } => {
-                connection.execute(PROJECT_POSITION, (book.as_bytes(), page))
-            }
-            Self::Furthest { book, page } => {
-                connection.execute(PROJECT_FURTHEST, (book.as_bytes(), page))
-            }
-            Self::Read { book, is_read } => {
-                connection.execute(PROJECT_READ, (book.as_bytes(), is_read))
+    const fn fill_bookmark(&self, row: &mut BookmarkRow) {
+        if let Self::Bookmark { part, .. } = self {
+            match *part {
+                BookmarkPart::BookHigh(high) => row.book_high = high,
+                BookmarkPart::BookLow(low) => row.book_low = low,
+                BookmarkPart::Page(page) => row.page = page,
+                BookmarkPart::Deleted(deleted) => row.deleted = deleted,
             }
         }
+    }
+
+    fn apply(&self, connection: &Connection) -> Result<usize, Error> {
+        match *self {
+            Self::Position { book, page } => {
+                Ok(connection.execute(PROJECT_POSITION, (book.as_bytes(), page))?)
+            }
+            Self::Furthest { book, page } => {
+                Ok(connection.execute(PROJECT_FURTHEST, (book.as_bytes(), page))?)
+            }
+            Self::Read { book, is_read } => {
+                Ok(connection.execute(PROJECT_READ, (book.as_bytes(), is_read))?)
+            }
+            Self::Bookmark {
+                id,
+                part: BookmarkPart::Deleted(_),
+            } => project_bookmark(connection, id),
+            Self::Bookmark { .. } => Ok(0),
+        }
+    }
+}
+
+fn project_bookmark(connection: &Connection, id: BookmarkId) -> Result<usize, Error> {
+    let profile = current_profile(connection)?;
+    let mut statement = connection.prepare(BOOKMARK_REGISTERS)?;
+    let mut registers = statement.query((
+        id.as_bytes(),
+        profile.as_bytes(),
+        ProfileId::shared().as_bytes(),
+    ))?;
+    let mut row = BookmarkRow::default();
+    while let Some(register) = registers.next()? {
+        let field: String = register.get(0)?;
+        let cbor: Vec<u8> = register.get(1)?;
+        let Ok(value) = Value::from_cbor(&cbor) else {
+            continue;
+        };
+        let key = match field.as_str() {
+            "book_hi" => BookmarkKey::BookHigh(id),
+            "book_lo" => BookmarkKey::BookLow(id),
+            "page" => BookmarkKey::Page(id),
+            "deleted" => BookmarkKey::Deleted(id),
+            _ => continue,
+        };
+        if let Some(part) = Projection::of(key.into(), value) {
+            part.fill_bookmark(&mut row);
+        }
+    }
+    let Some((book, page)) = row.place(id) else {
+        return Ok(0);
+    };
+    if row.is_bookmarked() {
+        Ok(connection.execute(PROJECT_BOOKMARK, (book.as_bytes(), page))?)
+    } else {
+        Ok(connection.execute(REMOVE_BOOKMARK, (book.as_bytes(), page))?)
     }
 }
 
@@ -97,11 +197,25 @@ pub(crate) fn project(connection: &Connection, key: Key, value: Value) -> Result
 #[tracing::instrument(skip_all)]
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
+    connection.execute("DELETE FROM book_bookmark", [])?;
     let mut projected = BTreeSet::new();
     let mut rows: BTreeMap<BookId, BookStateRow> = BTreeMap::new();
+    let mut bookmarks: BTreeMap<BookmarkId, BookmarkRow> = BTreeMap::new();
     for (key, projection) in shown_projections(connection)? {
-        projection.fill(rows.entry(projection.book()).or_default());
+        match (projection.book(), key) {
+            (Some(book), _) => projection.fill(rows.entry(book).or_default()),
+            (None, Key::Bookmark(bookmark)) => {
+                projection.fill_bookmark(bookmarks.entry(bookmark.id()).or_default());
+            }
+            (None, _) => {}
+        }
         projected.insert(key);
+    }
+    let mut bookmark = connection.prepare(PROJECT_BOOKMARK)?;
+    for (id, row) in bookmarks.iter().filter(|(_, row)| row.is_bookmarked()) {
+        if let Some((book, page)) = row.place(*id) {
+            bookmark.execute((book.as_bytes(), page))?;
+        }
     }
     let mut insert = connection.prepare(PROJECT_BOOK_STATE)?;
     for (book, row) in rows {
@@ -176,6 +290,14 @@ fn page(value: Value) -> Result<Option<u32>, OtherKind> {
     match value {
         Value::Null => Ok(None),
         Value::Unsigned(page) => u32::try_from(page).map(Some).map_err(|_| OtherKind),
+        Value::Bool(_) => Err(OtherKind),
+    }
+}
+
+fn unsigned(value: Value) -> Result<Option<u64>, OtherKind> {
+    match value {
+        Value::Null => Ok(None),
+        Value::Unsigned(number) => Ok(Some(number)),
         Value::Bool(_) => Err(OtherKind),
     }
 }
