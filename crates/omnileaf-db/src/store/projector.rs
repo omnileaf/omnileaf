@@ -5,6 +5,7 @@ use omnileaf_sync_proto::{
 };
 use rusqlite::Connection;
 
+use crate::catalog::stored_id::stored_id;
 use crate::{
     Error,
     store::{
@@ -595,6 +596,17 @@ fn insert_edited_people_and_tags(
         for (position, tag) in (0_i64..).zip(tags) {
             insert.execute((id, position, tag))?;
         }
+    }
+    Ok(())
+}
+
+pub(crate) fn reproject_series_edits(connection: &Connection) -> Result<(), Error> {
+    let edited = connection
+        .prepare("SELECT series_id FROM series_edit")?
+        .query_map([], |row| stored_id::<SeriesId>(row, "series_id"))?
+        .collect::<Result<Vec<_>, _>>()?;
+    for series in edited {
+        project_series_edit(connection, series)?;
     }
     Ok(())
 }

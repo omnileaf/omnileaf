@@ -91,7 +91,9 @@ pub use series_books::{
     BookListing, BookReading, BookSummary, BooksShown, series_books, unread_books, up_next,
 };
 pub use series_count::series_count;
-pub use series_file_details::{SeriesFileDetails, SeriesPerson, series_file_details};
+pub use series_file_details::{
+    SeriesFileDetails, SeriesPerson, series_file_details, series_people,
+};
 pub use series_listing::{
     Inclusion, SeriesFilter, SeriesFormat, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
 };

@@ -12,19 +12,17 @@ use crate::{
 
 macro_rules! writers_of_listed_series {
     () => {
-        "SELECT book_person.name_key, book_person.name,
-            count(DISTINCT series.local_id) AS series_count
-        FROM book_person
-        JOIN book ON book.id = book_person.book_id
-        JOIN series ON series.local_id = book.series_local_id
-        WHERE book_person.role = 'writer' AND series.reading_stage IS NOT NULL"
+        "SELECT series_person.name_key, series_person.name, count(*) AS series_count
+        FROM series_person
+        JOIN series ON series.local_id = series_person.series_local_id
+        WHERE series_person.role = 'writer' AND series.reading_stage IS NOT NULL"
     };
 }
 
 macro_rules! in_name_order {
     () => {
-        " GROUP BY book_person.name_key, book_person.name
-        ORDER BY book_person.name_key, book_person.name
+        " GROUP BY series_person.name_key, series_person.name
+        ORDER BY series_person.name_key, series_person.name
         LIMIT :limit"
     };
 }
@@ -32,11 +30,11 @@ macro_rules! in_name_order {
 const FIRST_WRITERS: &str = concat!(writers_of_listed_series!(), in_name_order!());
 const WRITERS_AFTER: &str = concat!(
     writers_of_listed_series!(),
-    " AND (book_person.name_key, book_person.name) > (:after_key, :after_name)",
+    " AND (series_person.name_key, series_person.name) > (:after_key, :after_name)",
     in_name_order!()
 );
 const KEY_OF_WRITER: &str =
-    "SELECT name_key FROM book_person WHERE name = ?1 AND role = 'writer' LIMIT 1";
+    "SELECT name_key FROM series_person WHERE name = ?1 AND role = 'writer' LIMIT 1";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WriterSummary {
@@ -152,9 +150,9 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     const WRITERS_IN_KEY_ORDER: &str =
-        "SCAN book_person USING COVERING INDEX book_person_by_writer";
+        "SCAN series_person USING COVERING INDEX series_person_by_writer";
     const WRITERS_AFTER_A_KEY: &str =
-        "SEARCH book_person USING COVERING INDEX book_person_by_writer ((name_key,name)>(?,?))";
+        "SEARCH series_person USING COVERING INDEX series_person_by_writer ((name_key,name)>(?,?))";
 
     #[test]
     fn walks_the_writers_in_key_order_without_sorting() {
@@ -166,12 +164,7 @@ mod tests {
         for (plan, walk) in plans.iter().zip(walked) {
             assert_eq!(
                 plan,
-                &[
-                    walk,
-                    "SEARCH book USING PRIMARY KEY (id=?)",
-                    "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
-                    "USE TEMP B-TREE FOR count(DISTINCT)",
-                ]
+                &[walk, "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",]
             );
         }
     }
@@ -184,7 +177,7 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH book_person USING INDEX book_person_by_name (name=?)"]
+            ["SEARCH series_person USING INDEX series_person_by_name (name=?)"]
         );
     }
 }

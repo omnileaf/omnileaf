@@ -32,10 +32,13 @@ const PEOPLE: &str = "SELECT book_person.name, book_person.role FROM series
     WHERE series.id = ?1
     GROUP BY book_person.name, book_person.role
     ORDER BY book_person.name COLLATE NOCASE, book_person.name, book_person.role";
-const SERIES_NAMING_PERSON: &str = "SELECT count(DISTINCT series.local_id) FROM book_person
-    JOIN book ON book.id = book_person.book_id
-    JOIN series ON series.local_id = book.series_local_id
-    WHERE book_person.name = ?1 AND series.reading_stage IS NOT NULL";
+const PEOPLE_SHOWN: &str = "SELECT series_person.name, series_person.role FROM series
+    JOIN series_person ON series_person.series_local_id = series.local_id
+    WHERE series.id = ?1
+    ORDER BY series_person.name COLLATE NOCASE, series_person.name, series_person.role";
+const SERIES_NAMING_PERSON: &str = "SELECT count(DISTINCT series.local_id) FROM series_person
+    JOIN series ON series.local_id = series_person.series_local_id
+    WHERE series_person.name = ?1 AND series.reading_stage IS NOT NULL";
 const TAGS: &str = "SELECT DISTINCT book_tag.name FROM series
     JOIN book ON book.series_local_id = series.local_id
     JOIN book_tag ON book_tag.book_id = book.id
@@ -78,21 +81,41 @@ pub fn series_file_details(
     })
 }
 
+#[tracing::instrument(skip_all, fields(%series))]
+pub fn series_people(
+    connection: &Connection,
+    series: SeriesId,
+) -> Result<Vec<SeriesPerson>, Error> {
+    people_by(connection, series, PEOPLE_SHOWN)
+}
+
 fn people(connection: &Connection, series: SeriesId) -> Result<Vec<SeriesPerson>, Error> {
+    people_by(connection, series, PEOPLE)
+}
+
+fn people_by(
+    connection: &Connection,
+    series: SeriesId,
+    query: &str,
+) -> Result<Vec<SeriesPerson>, Error> {
     let named: Vec<(String, String)> = connection
-        .prepare(PEOPLE)?
+        .prepare(query)?
         .query_map([series.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))?
         .collect::<Result<_, _>>()?;
     let mut counted = connection.prepare(SERIES_NAMING_PERSON)?;
     let mut people: Vec<SeriesPerson> = Vec::new();
     for (name, role) in named {
-        let role = PersonRole::stored(role)?;
+        let role = if role.is_empty() {
+            None
+        } else {
+            Some(PersonRole::stored(role)?)
+        };
         match people.last_mut() {
-            Some(person) if person.name == name => person.roles.push(role),
+            Some(person) if person.name == name => person.roles.extend(role),
             _ => people.push(SeriesPerson {
                 series_count: counted.query_row([&name], |row| row.get(0))?,
                 name,
-                roles: vec![role],
+                roles: role.into_iter().collect(),
             }),
         }
     }
@@ -152,8 +175,7 @@ mod tests {
             plan,
             [
                 "USE TEMP B-TREE FOR count(DISTINCT)",
-                "SEARCH book_person USING COVERING INDEX book_person_by_name (name=?)",
-                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH series_person USING COVERING INDEX series_person_by_name (name=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
             ]
         );

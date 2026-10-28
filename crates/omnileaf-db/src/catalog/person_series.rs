@@ -8,9 +8,7 @@ use crate::{
 
 const SERIES_NAMING_PERSON: &str = concat!(
     "WITH named AS (
-        SELECT DISTINCT book.series_local_id, book_person.role FROM book_person
-        JOIN book ON book.id = book_person.book_id
-        WHERE book_person.name = ?1
+        SELECT series_local_id, role FROM series_person WHERE name = ?1
     )
     SELECT series.id AS id, series.title, named.role,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
@@ -37,11 +35,15 @@ pub fn person_series(connection: &Connection, person: &str) -> Result<Vec<Person
         .collect::<Result<_, _>>()?;
     let mut found: Vec<PersonSeries> = Vec::new();
     for (series, role) in rows {
-        let role = PersonRole::stored(role)?;
+        let role = if role.is_empty() {
+            None
+        } else {
+            Some(PersonRole::stored(role)?)
+        };
         match found.last_mut() {
-            Some(last) if last.id == series.id => last.roles.push(role),
+            Some(last) if last.id == series.id => last.roles.extend(role),
             _ => found.push(PersonSeries {
-                roles: vec![role],
+                roles: role.into_iter().collect(),
                 ..series
             }),
         }
@@ -71,11 +73,7 @@ mod tests {
         let plan = scratch.query_plan(SERIES_NAMING_PERSON);
 
         let named = [
-            "CO-ROUTINE named",
-            "SEARCH book_person USING COVERING INDEX book_person_by_name (name=?)",
-            "SEARCH book USING PRIMARY KEY (id=?)",
-            "USE TEMP B-TREE FOR DISTINCT",
-            "SCAN named",
+            "SEARCH series_person USING COVERING INDEX series_person_by_name (name=?)",
             "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
         ]
         .map(str::to_owned)
