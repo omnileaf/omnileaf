@@ -5,7 +5,7 @@ pub struct SearchText(pub(crate) Lookup);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Lookup {
-    /// A full-text query for titles holding every phrase, each at least as long as a trigram.
+    /// A full-text query for titles, tags and people holding every phrase, each at least as long as a trigram.
     Phrases(String),
     /// A few characters, their letter case folded, for titles holding them anywhere.
     Characters(String),
