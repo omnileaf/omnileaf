@@ -18,7 +18,8 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
 
-    private var backNavigation: BackNavigation? = null
+    internal var backNavigation: BackNavigation? = null
+        private set
 
     override val handleBackNavigation = false
 
@@ -47,7 +48,7 @@ class MainActivity : TauriActivity() {
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
         this.webView = webView
-        takeBackWhileThePageCanGoBack(webView)
+        backNavigation = BackNavigation(WebViewHistory(webView)).also { onBackPressedDispatcher.addCallback(this, it) }
         webView.setBackgroundColor(startingBackground)
     }
 
@@ -56,10 +57,6 @@ class MainActivity : TauriActivity() {
     ) {
         window.setBackgroundDrawable(color.toDrawable())
         webView?.setBackgroundColor(color)
-    }
-
-    fun followWebHistory() {
-        backNavigation?.follow(webView?.canGoBack() == true)
     }
 
     fun orient(orientation: ScreenOrientation) {
@@ -73,12 +70,6 @@ class MainActivity : TauriActivity() {
      */
     private fun choiceAtLaunch(savedInstanceState: Bundle?): IconAction? =
         if (savedInstanceState == null && !intent.isFromRecents) intent.chosenIconAction() else null
-
-    private fun takeBackWhileThePageCanGoBack(webView: WebView) {
-        val back = BackNavigation(webView::goBack)
-        onBackPressedDispatcher.addCallback(this, back)
-        backNavigation = back
-    }
 
     private fun showTheAppBehindTheNavigationButtons() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

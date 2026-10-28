@@ -16,7 +16,7 @@ class BackNavigationPlugin(
         val shownActivity =
             PluginManager.activity as? MainActivity
                 ?: return invoke.reject("no activity is showing the app")
-        shownActivity.runOnUiThread(shownActivity::followWebHistory)
+        shownActivity.runOnUiThread { shownActivity.backNavigation?.followHistory() }
         invoke.resolve()
     }
 }
