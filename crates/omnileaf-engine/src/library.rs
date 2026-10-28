@@ -404,7 +404,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = folder_groups(connection, &request)?;
+                let page = folder_groups(connection, &request, AdultHiding::default())?;
                 let mut folder_names = BTreeMap::new();
                 let mut groups = Vec::with_capacity(page.items.len());
                 for summary in page.items {
@@ -475,7 +475,7 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| writers(connection, &request))
+            .read(move |connection| writers(connection, &request, AdultHiding::default()))
             .await?;
         Ok(WriterPage {
             writers: page.items.into_iter().map(LibraryWriter::from).collect(),
@@ -805,7 +805,7 @@ impl Library {
         let found = self
             .store
             .database()
-            .read(move |connection| person_series(connection, &creator))
+            .read(move |connection| person_series(connection, &creator, AdultHiding::default()))
             .await?;
         Ok(found.into_iter().map(CreatorSeries::from).collect())
     }

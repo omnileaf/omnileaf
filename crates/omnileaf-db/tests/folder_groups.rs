@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     Database,
+    adult_content::AdultHiding,
     catalog::{
         BookDetails, BookFile, Cursor, FolderGroup, FolderGroupSummary, NewRoot, NewSeries,
         PageRequest, PageSize, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter,
@@ -77,7 +78,7 @@ impl Library {
         };
         let page = self
             .database
-            .read(move |connection| folder_groups(connection, &request))
+            .read(move |connection| folder_groups(connection, &request, AdultHiding::default()))
             .await
             .unwrap();
         (page.items, page.next)

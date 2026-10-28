@@ -1,5 +1,6 @@
 use omnileaf_db::{
     Connection,
+    adult_content::AdultHiding,
     catalog::{
         Page, PageRequest, SearchText, SeriesFilter, SeriesListing, SeriesOrder, SeriesSearch,
         SeriesSort, SeriesSummary, closest_title_words, search_count, search_page, series_count,
@@ -40,9 +41,11 @@ pub(crate) fn spelling_suggestion(
         return Ok(None);
     }
     Ok(
-        closest_title_words(connection, text)?.map(|text| SpellingSuggestion {
-            text,
-            chapter_of: None,
+        closest_title_words(connection, text, AdultHiding::default())?.map(|text| {
+            SpellingSuggestion {
+                text,
+                chapter_of: None,
+            }
         }),
     )
 }

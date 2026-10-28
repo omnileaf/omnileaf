@@ -1709,12 +1709,16 @@ mod tests {
             after: None,
             size: PageSize::try_from(10).unwrap(),
         };
-        let listed: Vec<String> = writers(&connection, &request)
-            .unwrap()
-            .items
-            .into_iter()
-            .map(|writer| writer.name)
-            .collect();
+        let listed: Vec<String> = writers(
+            &connection,
+            &request,
+            crate::adult_content::AdultHiding::default(),
+        )
+        .unwrap()
+        .items
+        .into_iter()
+        .map(|writer| writer.name)
+        .collect();
         assert_eq!(listed, ["Sample Author 9", "Sample Author 10"]);
     }
 

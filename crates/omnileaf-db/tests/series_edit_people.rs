@@ -13,6 +13,7 @@ mod support;
 
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
+    adult_content::AdultHiding,
     catalog::{
         PageRequest, PageSize, PersonRole, WriterSummary, person_series, series_people, writers,
     },
@@ -115,6 +116,7 @@ async fn listed_writers(store: &Store) -> Vec<WriterSummary> {
                     after: None,
                     size: PageSize::try_from(50).unwrap(),
                 },
+                AdultHiding::default(),
             )
         })
         .await
@@ -125,7 +127,7 @@ async fn listed_writers(store: &Store) -> Vec<WriterSummary> {
 async fn series_of(store: &Store, name: &'static str) -> Vec<String> {
     store
         .database()
-        .read(move |connection| person_series(connection, name))
+        .read(move |connection| person_series(connection, name, AdultHiding::default()))
         .await
         .unwrap()
         .into_iter()

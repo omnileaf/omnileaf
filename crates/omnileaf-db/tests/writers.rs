@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 use omnileaf_db::{
     Database, Error,
+    adult_content::AdultHiding,
     catalog::{
         BookDetails, BookFile, BookPerson, Cursor, NewRoot, NewSeries, Page, PageRequest, PageSize,
         PersonRole, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing,
@@ -89,7 +90,7 @@ impl Library {
         };
         self.store
             .database()
-            .read(move |connection| writers(connection, &request))
+            .read(move |connection| writers(connection, &request, AdultHiding::default()))
             .await
     }
 

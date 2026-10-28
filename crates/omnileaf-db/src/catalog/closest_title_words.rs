@@ -1,20 +1,28 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, ToSql};
 
-use crate::{Error, letter_case::fold_case};
+use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 
 const TRIGRAM_CHARS: usize = 3;
 const MOST_CANDIDATES: i64 = 20;
 
 /// The titles sharing the most trigrams with the text, among series holding a book.
-const CANDIDATES: &str = "SELECT series.title FROM series_fts
+const CANDIDATES: &str = concat!(
+    "SELECT series.title FROM series_fts
     JOIN series ON series.local_id = series_fts.rowid
-    WHERE series_fts MATCH ?1 AND series.reading_stage IS NOT NULL
+    WHERE series_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
+    crate::adult_content::in_hidden_adult_series!("series"),
+    "
     ORDER BY series_fts.rank
-    LIMIT ?2";
+    LIMIT :limit"
+);
 
 /// The words of a title nearest the text by a few typing slips, their letter case folded, for a search that found nothing.
 #[tracing::instrument(skip_all)]
-pub fn closest_title_words(connection: &Connection, text: &str) -> Result<Option<String>, Error> {
+pub fn closest_title_words(
+    connection: &Connection,
+    text: &str,
+    hiding: AdultHiding,
+) -> Result<Option<String>, Error> {
     let typed = fold_case(text);
     let Some(query) = trigram_query(&typed) else {
         return Ok(None);
@@ -22,8 +30,17 @@ pub fn closest_title_words(connection: &Connection, text: &str) -> Result<Option
     let typed: Vec<char> = typed.chars().collect();
     let slips_allowed = slips_allowed(typed.len());
     let mut candidates = connection.prepare(CANDIDATES)?;
+    let [leaves_out, counts] = hiding.params();
     let titles = candidates
-        .query_map((query, MOST_CANDIDATES), |row| row.get::<_, String>(0))?
+        .query_map(
+            &[
+                (":query", &query as &dyn ToSql),
+                (":limit", &MOST_CANDIDATES),
+                leaves_out,
+                counts,
+            ][..],
+            |row| row.get::<_, String>(0),
+        )?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(titles
         .iter()
