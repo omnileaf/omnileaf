@@ -125,6 +125,8 @@ export class FileDrop {
         return "readNow";
       case "add":
         return this.#copies ? "copy" : "add";
+      case "copy":
+        return "copy";
       case null:
         return null;
     }

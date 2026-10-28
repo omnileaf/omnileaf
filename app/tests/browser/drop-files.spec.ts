@@ -149,6 +149,18 @@ test.describe("with comic files dragged over the window", () => {
     expect(dropped).toEqual([{ paths: PATHS, mode: "add" }]);
   });
 
+  test("copies the files when dropped on Copy into your home folder, without Alt", async ({
+    page,
+  }) => {
+    await dragOver(page, PATHS, page.getByText("Read now"));
+    const copy = page.locator('[data-drop-target="copy"]');
+    await expect(copy).toContainText("Copy into your home folder");
+
+    await dropOn(page, copy);
+
+    expect(dropped).toEqual([{ paths: PATHS, mode: "copy" }]);
+  });
+
   test("copies the files instead while the page sees Alt held", async ({
     page,
   }) => {
@@ -223,5 +235,26 @@ test.describe("with files the library cannot use dragged over the window", () =>
 
     await expect(page.getByText("Nothing added")).toBeHidden();
     expect(dropped).toEqual([]);
+  });
+});
+
+test.describe("with some files the library cannot use dragged over the window", () => {
+  test.use({
+    backend: backendFor({
+      ...USABLE,
+      refused: [{ name: "notes.pdf", reason: "notAComic" }],
+    }),
+  });
+
+  test("offers the targets and counts the files that cannot be read", async ({
+    page,
+  }) => {
+    await dragOver(page, PATHS, page.getByText("Read now"));
+
+    await expect(page.getByText("1 file can't be read here")).toBeVisible();
+    await expect(
+      page.getByText("notes.pdf isn't a comic or book Omnileaf reads."),
+    ).toBeVisible();
+    await expect(page.getByText("Add to your library")).toBeVisible();
   });
 });

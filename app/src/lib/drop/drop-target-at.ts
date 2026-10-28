@@ -1,8 +1,9 @@
-export type DropTarget = "readNow" | "add";
+export type DropTarget = "readNow" | "add" | "copy";
 
 const DROP_TARGETS: readonly string[] = [
   "readNow",
   "add",
+  "copy",
 ] satisfies DropTarget[];
 
 function isDropTarget(name: string | undefined): name is DropTarget {

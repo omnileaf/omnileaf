@@ -63,3 +63,15 @@ export function refusalLines(
         ];
   });
 }
+
+export function skippedLines(
+  refused: readonly RefusedDrop[],
+  shownName: (name: string) => string,
+): string[] {
+  return refused.length === 0
+    ? []
+    : [
+        m.drop_some_refused({ count: refused.length }),
+        ...refusalLines(refused, shownName),
+      ];
+}
