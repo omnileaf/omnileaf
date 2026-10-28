@@ -126,26 +126,94 @@ test("finds an element the page shows within the time given", async () => {
   expect(await found?.text()).toBe("About Version 1.2.3");
 });
 
+function reloadServer(answers: {
+  reload: () => { status: number; value: unknown };
+  stalePageChecks: number;
+}) {
+  const scripts: string[] = [];
+  return {
+    scripts,
+    start: async () => {
+      const server = await serve((route, response, body) => {
+        if (route === "POST /session") {
+          reply(response, 200, { sessionId: "blank" });
+        } else if (route === "POST /session/blank/execute/sync") {
+          const script = (JSON.parse(body) as { script: string }).script;
+          scripts.push(script);
+          const isMark = script.includes("e2eReloading");
+          const isReload = script.includes("location.reload");
+          if (isReload) {
+            const { status, value } = answers.reload();
+            reply(response, status, value);
+          } else if (isMark) {
+            reply(response, 200, null);
+          } else {
+            const checks = scripts.filter((line) =>
+              line.includes("hasAttribute"),
+            );
+            reply(response, 200, checks.length > answers.stalePageChecks);
+          }
+        } else {
+          reply(response, 404, { error: "no such element", message: "" });
+        }
+      });
+      return Session.start(server, {});
+    },
+  };
+}
+
 test("reloads the page and waits for the fresh one", async () => {
   const OLD_PAGE_CHECKS = 2;
-  let scriptsRun = 0;
-  const server = await serve((route, response) => {
-    if (route === "POST /session") {
-      reply(response, 200, { sessionId: "blank" });
-    } else if (route === "POST /session/blank/execute/sync") {
-      scriptsRun += 1;
-      const isReloadScript = scriptsRun === 1;
-      const isOldPage = scriptsRun <= 1 + OLD_PAGE_CHECKS;
-      reply(response, 200, isReloadScript ? null : !isOldPage);
-    } else {
-      reply(response, 404, { error: "no such element", message: "" });
-    }
+  const harness = reloadServer({
+    reload: () => ({ status: 200, value: null }),
+    stalePageChecks: OLD_PAGE_CHECKS,
   });
-  const session = await Session.start(server, {});
+  const session = await harness.start();
 
   await session.reload();
 
-  expect(scriptsRun).toBe(1 + OLD_PAGE_CHECKS + 1);
+  expect(harness.scripts).toHaveLength(2 + OLD_PAGE_CHECKS + 1);
+});
+
+test("counts a reload as started when the page unloads before the script answers", async () => {
+  const harness = reloadServer({
+    reload: () => ({
+      status: 500,
+      value: { error: "script timeout", message: "Script execution timed out" },
+    }),
+    stalePageChecks: 0,
+  });
+  const session = await harness.start();
+
+  await session.reload();
+
+  expect(harness.scripts).toHaveLength(3);
+});
+
+test("rethrows any other driver error from the reload script", async () => {
+  const harness = reloadServer({
+    reload: () => ({
+      status: 500,
+      value: { error: "javascript error", message: "boom" },
+    }),
+    stalePageChecks: 0,
+  });
+  const session = await harness.start();
+
+  await expect(session.reload()).rejects.toThrow("javascript error");
+});
+
+test("marks the page before it reloads, so a reload that never happened is not taken for a fresh page", async () => {
+  const harness = reloadServer({
+    reload: () => ({ status: 200, value: null }),
+    stalePageChecks: 0,
+  });
+  const session = await harness.start();
+
+  await session.reload();
+
+  expect(harness.scripts[0]).toContain("e2eReloading");
+  expect(harness.scripts[1]).toContain("location.reload");
 });
 
 test("gives up on a script after two seconds, so a page that unloads mid-script can't hold the session", async () => {

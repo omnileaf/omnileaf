@@ -17,8 +17,9 @@ const POLL_INTERVAL_MS = 100;
 const WHITESPACE_RUN = /\s+/g;
 const PAGE_TEXT_SHOWN = 200;
 const RELOADING_MARK = "data-e2e-reloading";
-const RELOAD_SCRIPT =
-  "document.documentElement.dataset.e2eReloading = ''; setTimeout(() => location.reload()); return null;";
+const MARK_RELOADING_SCRIPT =
+  "document.documentElement.dataset.e2eReloading = ''; return null;";
+const RELOAD_SCRIPT = "setTimeout(() => location.reload()); return null;";
 const PAGE_TEXT_SCRIPT = "return document.body ? document.body.innerText : '';";
 const FRESH_PAGE_SCRIPT = `return !document.documentElement.hasAttribute("${RELOADING_MARK}");`;
 
@@ -221,8 +222,19 @@ export class Session {
     );
   }
 
+  /** On Windows the reload can unload the page before WebView2 returns the script's answer, so the driver reports a script timeout for a reload that happened; the mark set beforehand stays on the page until it reloads, so a reload that never happened still fails. */
   async reload(): Promise<void> {
-    await this.run(RELOAD_SCRIPT);
+    await this.run(MARK_RELOADING_SCRIPT);
+    try {
+      await this.run(RELOAD_SCRIPT);
+    } catch (error) {
+      if (
+        !(error instanceof WebDriverError) ||
+        error.code !== "script timeout"
+      ) {
+        throw error;
+      }
+    }
     await pollUntil(
       () => this.isFreshPage(),
       ELEMENT_TIMEOUT_MS,
