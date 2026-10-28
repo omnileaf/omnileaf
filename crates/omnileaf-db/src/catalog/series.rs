@@ -1,4 +1,7 @@
-use std::{ffi::OsStr, path::Path};
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+};
 
 use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
 use rusqlite::{Statement, Transaction};
@@ -78,10 +81,20 @@ const ADD_OR_RENAME_SERIES: &str = insert_series!(concat!(
     year_is_better!("excluded", "series"),
     " ON CONFLICT DO NOTHING"
 ));
+const OFFER_YEAR: &str = concat!(
+    "UPDATE series SET year = offered.year, year_source = offered.year_source
+    FROM series AS offered
+    WHERE series.id = ?1 AND offered.id = ?2 AND ",
+    year_is_better!("offered", "series")
+);
 const FOLDER_KEY_SEPARATOR: &str = "/";
+const NAMED_KEY_SEPARATOR: &str = "\n";
 const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
-pub(crate) struct SeriesAdder<'t>(Statement<'t>);
+pub(crate) struct SeriesAdder<'t> {
+    add: Statement<'t>,
+    offer_year: Statement<'t>,
+}
 
 #[derive(Clone, Debug)]
 pub struct NewSeries {
@@ -92,6 +105,7 @@ pub struct NewSeries {
     title_source: Option<ValueSource>,
     year: Option<Sourced<u16>>,
     added_at_ms: i64,
+    location: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -116,6 +130,7 @@ impl NewSeries {
             title_source: None,
             year: None,
             added_at_ms,
+            location: None,
         })
     }
 
@@ -133,12 +148,38 @@ impl NewSeries {
             title_source: Some(naming.title.source),
             year: naming.year,
             added_at_ms,
+            location: Some(folder.location.to_path_buf()),
+        })
+    }
+
+    pub fn named(
+        format_family: &str,
+        naming: SeriesNaming,
+        added_at_ms: i64,
+    ) -> Result<Self, KeyError> {
+        Ok(Self {
+            id: SeriesId::named(format_family, &naming.title.value)?,
+            source: SourceId::local(),
+            natural_key: format!(
+                "{}{NAMED_KEY_SEPARATOR}{}",
+                norm(format_family),
+                norm(&naming.title.value)
+            ),
+            title: naming.title.value,
+            title_source: Some(naming.title.source),
+            year: naming.year,
+            added_at_ms,
+            location: None,
         })
     }
 
     #[must_use]
     pub const fn id(&self) -> SeriesId {
         self.id
+    }
+
+    pub(crate) fn location(&self) -> Option<&Path> {
+        self.location.as_deref()
     }
 }
 
@@ -150,7 +191,10 @@ pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(
 
 impl<'t> SeriesAdder<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
-        Ok(Self(transaction.prepare(ADD_OR_RENAME_SERIES)?))
+        Ok(Self {
+            add: transaction.prepare(ADD_OR_RENAME_SERIES)?,
+            offer_year: transaction.prepare(OFFER_YEAR)?,
+        })
     }
 
     pub(crate) fn add_or_rename(
@@ -158,7 +202,13 @@ impl<'t> SeriesAdder<'t> {
         series: &NewSeries,
         collation: &TitleCollation,
     ) -> Result<(), Error> {
-        insert(&mut self.0, series, collation)
+        insert(&mut self.add, series, collation)
+    }
+
+    pub(crate) fn offer_year_of(&mut self, offered: SeriesId, to: SeriesId) -> Result<(), Error> {
+        self.offer_year
+            .execute((to.as_bytes(), offered.as_bytes()))?;
+        Ok(())
     }
 }
 

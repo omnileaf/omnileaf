@@ -64,6 +64,7 @@ impl Library {
     fn found(&self, series: &str, location: impl Into<PathBuf>, page_crc: u32) -> ScannedBook {
         ScannedBook {
             series: NewSeries::local(series, ADDED_AT_MS).unwrap(),
+            named_series: None,
             fingerprint: fingerprint(page_crc),
             title: format!("Volume {page_crc:02}"),
             added_at_ms: ADDED_AT_MS,
@@ -891,4 +892,72 @@ async fn renames_a_series_only_when_a_title_from_a_more_trusted_source_arrives()
         .await;
 
     assert_eq!(library.series().await, [("Sample Series 07".to_owned(), 3)]);
+}
+
+#[tokio::test]
+async fn files_the_books_of_every_folder_whose_books_name_one_series_in_that_series() {
+    let library = Library::open("scanned-joined-folders").await;
+    let naming = |folder, book, page_crc| ScannedBook {
+        named_series: Some(series_named("Sample Series 07")),
+        ..library.found_in_folder(folder, book, page_crc)
+    };
+    library
+        .record(library.found_in_folder("Author A/Sample Series 02", "v01", 1))
+        .await;
+    library
+        .record(naming("Author A/Sample Series 02", "v02", 2))
+        .await;
+    library
+        .record(naming("Author B/Sample Series 02", "v03", 3))
+        .await;
+
+    library
+        .record(library.found_in_folder("Author B/Sample Series 02", "v04", 4))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 02".to_owned(), 0),
+            ("Sample Series 07".to_owned(), 4),
+            ("Sample Series 02".to_owned(), 0)
+        ]
+    );
+}
+
+fn series_named(title: &str) -> NewSeries {
+    let naming = SeriesNaming {
+        title: Sourced {
+            value: title.to_owned(),
+            source: ValueSource::Files,
+        },
+        year: None,
+    };
+    NewSeries::named("comics", naming, ADDED_AT_MS).unwrap()
+}
+
+#[tokio::test]
+async fn files_the_books_of_folders_whose_names_normalise_alike_in_the_series_one_of_them_joins() {
+    let library = Library::open("scanned-joined-folders-alike").await;
+    library
+        .record(library.found_in_folder("SAMPLE SERIES 02", "v02", 2))
+        .await;
+    library
+        .record(ScannedBook {
+            named_series: Some(series_named("Sample Series 07")),
+            ..library.found_in_folder("Sample Series 02", "v01", 1)
+        })
+        .await;
+
+    library
+        .record(library.found_in_folder("SAMPLE SERIES 02", "v03", 3))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("SAMPLE SERIES 02".to_owned(), 0),
+            ("Sample Series 07".to_owned(), 3)
+        ]
+    );
 }

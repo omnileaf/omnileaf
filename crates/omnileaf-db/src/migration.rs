@@ -83,6 +83,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0047_group_the_library_by_creator"),
     migration!("0048_key_the_name_of_each_person_a_book_names"),
     migration!("0049_key_each_series_by_its_folder"),
+    migration!("0050_join_series_folders_by_the_series_their_books_name"),
 ];
 
 pub(crate) fn pending(
@@ -1449,6 +1450,45 @@ mod tests {
                 Value::Null
             ]
         );
+    }
+
+    #[test]
+    fn reads_every_book_again_to_join_the_folders_whose_books_name_one_series() {
+        let scratch = ScratchLibrary::new("series-folder-join-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..49]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id, series) VALUES (?1, 'Sample Series 07')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let kept: (i64, i64, i64) = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book), (SELECT count(*) FROM book_details),
+                    (SELECT count(*) FROM series_folder)",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(kept, (1, 0, 0));
     }
 
     #[test]

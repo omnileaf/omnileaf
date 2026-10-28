@@ -76,3 +76,90 @@ async fn dates_a_series_by_the_earliest_comic_info_year_of_its_books_over_its_fo
     );
     assert_eq!(scanned.series(), owned(&[("Sample Series 04", 3)]));
 }
+
+#[tokio::test]
+async fn joins_the_folders_whose_books_name_the_same_series_under_that_name() {
+    let books = [
+        (
+            "Author A/Sample Series 02/v01.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+        ),
+        (
+            "Author B/Sample Series 02/v02.cbz",
+            "<ComicInfo><Series>sample series 07</Series></ComicInfo>",
+        ),
+    ];
+
+    let scanned = scanned("comic-info-joined-folders", &books).await;
+
+    assert_eq!(
+        named_series(&scanned),
+        [vec![
+            text("Sample Series 07"),
+            text("files"),
+            Value::Null,
+            Value::Null
+        ]]
+    );
+    assert_eq!(scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn keeps_a_folder_where_only_some_books_name_a_series_one_series() {
+    let books = [
+        ("Sample Series 02/v01.cbz", NO_SERIES),
+        (
+            "Sample Series 02/v02.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+        ),
+        ("Sample Series 02/v03.cbz", NO_SERIES),
+    ];
+
+    let scanned = scanned("comic-info-mixed-folder", &books).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample Series 07", 3)]));
+}
+
+#[tokio::test]
+async fn keeps_a_folder_in_the_series_its_books_named_first() {
+    let books = [
+        (
+            "Sample Series 02/v01.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+        ),
+        (
+            "Sample Series 02/v02.cbz",
+            "<ComicInfo><Series>Sample Series 08</Series></ComicInfo>",
+        ),
+    ];
+
+    let scanned = scanned("comic-info-first-naming", &books).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn dates_a_joined_series_by_the_earliest_year_of_the_books_in_its_folders() {
+    let books = [
+        (
+            "Sample Series 02 (2015)/v01.cbz",
+            "<ComicInfo><Year>2018</Year></ComicInfo>",
+        ),
+        (
+            "Sample Series 02 (2015)/v02.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series><Year>2020</Year></ComicInfo>",
+        ),
+    ];
+
+    let scanned = scanned("comic-info-joined-year", &books).await;
+
+    assert_eq!(
+        named_series(&scanned),
+        [vec![
+            text("Sample Series 07"),
+            text("files"),
+            Value::Integer(2018),
+            text("files")
+        ]]
+    );
+}

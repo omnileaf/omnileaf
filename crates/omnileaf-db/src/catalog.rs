@@ -5,6 +5,7 @@ mod closest_title_words;
 pub(crate) mod cover;
 pub(crate) mod cursor;
 mod filter_choices;
+mod folder_joins;
 mod folder_series;
 pub(crate) mod gathering;
 mod hidden_series;

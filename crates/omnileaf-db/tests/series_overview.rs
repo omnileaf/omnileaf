@@ -70,6 +70,7 @@ impl Library {
             .iter()
             .map(|&title| ScannedBook {
                 series: NewSeries::local(SERIES, ADDED_AT_MS).unwrap(),
+                named_series: None,
                 fingerprint: fingerprint(SERIES, title),
                 title: title.to_owned(),
                 added_at_ms: ADDED_AT_MS,

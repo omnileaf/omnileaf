@@ -57,6 +57,7 @@ impl Library {
         self.next_crc += 1;
         let scanned = ScannedBook {
             series: NewSeries::local(series, added_at_ms).unwrap(),
+            named_series: None,
             fingerprint: fingerprint(crc),
             title: format!("Volume {crc:02}"),
             added_at_ms,
