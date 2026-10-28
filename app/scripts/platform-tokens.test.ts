@@ -147,6 +147,29 @@ test("draws each contrast and transparency setting after the platform's own valu
   );
 });
 
+test("draws a macOS contrast-more block the same way as iOS's, with no code change needed for the new platform", () => {
+  const accent = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "macos-light": "#2f6f4f",
+      "macos-dark": "#2e7d55",
+      "macos-light-contrast-more": "#1f5a3c",
+      "macos-dark-contrast-more": "#2e7d55",
+    },
+  };
+
+  const macos = render(accent).get("tokens-macos.css") ?? "";
+
+  expect(macos).toContain(
+    `:root[data-platform="macos"][data-contrast="more"],
+:root[data-platform="macos"][data-contrast="more"] [data-theme="light"] {
+  --native-color-accent: #1f5a3c;
+}
+`,
+  );
+});
+
 test("draws medium contrast before high contrast", () => {
   const accent = {
     ...ACCENT,
@@ -241,6 +264,15 @@ test("stops movement under reduced motion on every platform and every themed par
 }
 `,
   );
+});
+
+test("ports real macOS values for a colour, a size and a motion token", () => {
+  const macos = renderPlatformTokens(tokens).get("tokens-macos.css") ?? "";
+
+  expect(macos).toContain("--native-color-switch-on: #2f6f4f;");
+  expect(macos).toContain(':root[data-platform="macos"][data-theme="dark"]');
+  expect(macos).toContain("--native-radius-button: 6px;");
+  expect(macos).toContain("--native-duration-fade: 150ms;");
 });
 
 test("matches the committed files, so a change to the source is regenerated", () => {

@@ -1,6 +1,7 @@
 @import "./tokens-default.css";
 @import "./tokens-android.css";
 @import "./tokens-ios.css";
+@import "./tokens-macos.css";
 
 @theme inline {
   --transition-duration-fade: var(--native-duration-fade);

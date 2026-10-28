@@ -36,12 +36,12 @@ export const MODES = [
 
 export type Mode = (typeof MODES)[number];
 
-const MODE_PLATFORM = {
-  "contrast-medium": "android",
-  "contrast-high": "android",
-  "contrast-more": "ios",
-  "transparency-reduced": "ios",
-} satisfies Record<Mode, Platform>;
+const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
+  "contrast-medium": ["android"],
+  "contrast-high": ["android"],
+  "contrast-more": ["ios", "macos"],
+  "transparency-reduced": ["ios"],
+};
 
 export interface ModeValue {
   readonly platform: Platform;
@@ -144,14 +144,27 @@ function upsert<Key, Entry>(
   return entry;
 }
 
+function listWithAnd(items: readonly string[]): string {
+  return items.reduce((joined, item, index) => {
+    if (index === 0) {
+      return item;
+    }
+    return index === items.length - 1
+      ? `${joined} and ${item}`
+      : `${joined}, ${item}`;
+  }, "");
+}
+
 function toModeValue(
   name: string,
   { platform, mode, plain, light, dark }: ModeValues,
   platforms: ReadonlyMap<Platform, PlatformValue>,
 ): ModeValue {
-  if (platform !== MODE_PLATFORM[mode]) {
+  const allowed = MODE_PLATFORM[mode];
+  if (!allowed.includes(platform)) {
+    const verb = allowed.length > 1 ? "have" : "has";
     throw new Error(
-      `Token "${name}" sets ${mode} on ${platform}, but only ${MODE_PLATFORM[mode]} has ${mode}.`,
+      `Token "${name}" sets ${mode} on ${platform}, but only ${listWithAnd(allowed)} ${verb} ${mode}.`,
     );
   }
   if (plain !== undefined || light === undefined || dark === undefined) {
@@ -236,14 +249,17 @@ function platformsOf(tokens: readonly Token[]): readonly Platform[] {
   ].sort();
 }
 
+const REQUIRED_EVERYWHERE: readonly Platform[] = ["android", "ios"];
+
 function requireEveryPlatform(
   tokens: readonly Token[],
   platforms: readonly Platform[],
 ): void {
+  const required = platforms.filter((platform) =>
+    REQUIRED_EVERYWHERE.includes(platform),
+  );
   for (const token of tokens) {
-    const missing = platforms.find(
-      (platform) => !token.platforms.has(platform),
-    );
+    const missing = required.find((platform) => !token.platforms.has(platform));
     if (missing !== undefined) {
       throw new Error(
         `Token "${token.name}" has no value for ${missing}, which other tokens have.`,
