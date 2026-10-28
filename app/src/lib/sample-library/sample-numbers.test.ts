@@ -45,6 +45,28 @@ test("names no last volume in a series without volumes", () => {
   expect(lastVolume(books)).toBeNull();
 });
 
+test("places a chapter titled with its volume in the volumes section, filed in that volume", () => {
+  expect(numberingOf("Volume 2 · Chapter 5")).toEqual({
+    kind: "chapter",
+    numbers: { first: 5, last: 5 },
+    volume: 2,
+    section: "volumes",
+  });
+});
+
+test("counts the volume a chapter is filed in as present, and as the last volume", () => {
+  const books = [
+    "Volume 1 · Chapter 1",
+    "Volume 3 · Chapter 4",
+    "Chapter 9",
+  ].map(numberingOf);
+
+  expect([missingVolumes(books), lastVolume(books)]).toEqual([
+    [{ first: 2, last: 2 }],
+    3,
+  ]);
+});
+
 test("files a chapter in the volume it is read inside and no other book", () => {
   const chapter = { ...numberingOf("Chapter 2"), volume: 3 };
   const volumeBook = numberingOf("Volume 3");

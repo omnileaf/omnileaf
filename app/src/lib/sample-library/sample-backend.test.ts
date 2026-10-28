@@ -57,8 +57,8 @@ test("pages through every series with a cursor", async () => {
     next = page.next;
   } while (next !== null);
 
-  expect(titles).toHaveLength(20);
-  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(20);
+  expect(titles).toHaveLength(21);
+  expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(21);
 });
 
 test("lists only series with every book read when asked for finished ones", async () => {
@@ -490,7 +490,7 @@ test("leaves out the adult series once 18+ is hidden, and lists only them once i
 
   expect(only).toEqual(["Sample Series 13", "Sample Series 17"]);
   expect(hidden).not.toContain("Sample Series 13");
-  expect(hidden).toHaveLength(18);
+  expect(hidden).toHaveLength(19);
 });
 
 test("lists only the series with a bookmarked page once Bookmarked is the only one", async () => {
@@ -646,7 +646,7 @@ test("leaves adult series out of the list, its count and search once they're hid
   expect(page.series.map((series) => series.title)).not.toContain(
     "Sample Series 13",
   );
-  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(18);
+  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(19);
   expect(found.series.map((series) => series.title)).not.toContain(
     "Sample Series 17",
   );
@@ -677,7 +677,7 @@ test("lists every series in the sample's folder, and none in another", async () 
     NEWEST_FIRST,
   );
 
-  expect([page.series.length, count, elsewhere.series]).toEqual([20, 20, []]);
+  expect([page.series.length, count, elsewhere.series]).toEqual([21, 21, []]);
 });
 
 test("groups the sample's series in its folder, but for a writer's folder holding two", async () => {
@@ -1279,8 +1279,8 @@ test("finds its own series and books already in the home folder when asked, last
   const found = await backend.foundLibrary();
 
   expect(found).toEqual({
-    series: 20,
-    books: 326,
+    series: 21,
+    books: 336,
     lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
   });
 });
@@ -1320,4 +1320,36 @@ test("frees what it clears and stops running low once there's room", async () =>
     freeBytes: 2_510_000_000,
     isLow: false,
   });
+});
+
+const VOLUME_TWO = {
+  shown: "all",
+  direction: "ascending",
+  volume: 2,
+} as const;
+
+test("lists the chapters filed in one volume of the sample series that files chapters in volumes, and sums the volume up", async () => {
+  const { backend } = backendFor();
+  const series = sampleSeriesId(21);
+
+  const second = await backend.seriesBooks(series, VOLUME_TWO, null);
+  const overview = await backend.seriesVolume(series, 2);
+  const absent = await backend.seriesVolume(series, 3);
+
+  expect([
+    second.books.map((book) => book.title),
+    overview?.bookCount,
+    overview?.readCount,
+    absent,
+  ]).toEqual([
+    [
+      "Volume 2 · Chapter 5",
+      "Volume 2 · Chapter 6",
+      "Volume 2 · Chapter 7",
+      "Volume 2 · Chapter 8",
+    ],
+    4,
+    1,
+    null,
+  ]);
 });
