@@ -91,6 +91,7 @@
       }}
       {usesStandIns}
       {onMark}
+      onLoadAll={() => books.loadAll()}
     />
   {/key}
 {/if}
