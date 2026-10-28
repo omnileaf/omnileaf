@@ -23,6 +23,7 @@ const LIST_OF_FOUR: StoredLibraryView = StoredLibraryView {
     tablet_covers_per_row: 7,
     desktop_covers_per_row: 10,
     fits_covers_to_width: false,
+    stacks_series_covers: false,
     shows_item_counts: true,
     shows_continue_row: true,
     on_covers: OnCovers {
@@ -42,6 +43,7 @@ const COMPACT_OF_TWO: StoredLibraryView = StoredLibraryView {
     tablet_covers_per_row: 3,
     desktop_covers_per_row: 4,
     fits_covers_to_width: true,
+    stacks_series_covers: true,
     shows_item_counts: false,
     shows_continue_row: false,
     on_covers: OnCovers {
@@ -113,6 +115,20 @@ async fn remembers_grouping_by_creator() {
     set(&database, by_creator).await.unwrap();
 
     assert_eq!(stored(&database).await, Some(by_creator));
+}
+
+#[tokio::test]
+async fn remembers_unstacked_series_covers() {
+    let folder = ScratchFolder::new("library-view-unstacked");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    let unstacked = StoredLibraryView {
+        stacks_series_covers: false,
+        ..COMPACT_OF_TWO
+    };
+
+    set(&database, unstacked).await.unwrap();
+
+    assert_eq!(stored(&database).await, Some(unstacked));
 }
 
 #[tokio::test]
@@ -191,6 +207,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
         any::<bool>(),
         any::<bool>(),
         any::<bool>(),
+        any::<bool>(),
         any_on_covers(),
     )
         .prop_map(
@@ -202,6 +219,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
                 tablet_covers_per_row,
                 desktop_covers_per_row,
                 fits_covers_to_width,
+                stacks_series_covers,
                 shows_item_counts,
                 shows_continue_row,
                 on_covers,
@@ -214,6 +232,7 @@ fn any_view() -> impl Strategy<Value = StoredLibraryView> {
                     tablet_covers_per_row,
                     desktop_covers_per_row,
                     fits_covers_to_width,
+                    stacks_series_covers,
                     shows_item_counts,
                     shows_continue_row,
                     on_covers,

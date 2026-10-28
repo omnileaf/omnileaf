@@ -181,7 +181,7 @@ export const COVERS_PER_ROW = {"desktop":{"fewest":4,"most":12},"phone":{"fewest
 
 export const DEFAULT_LIBRARY_LISTING = {"filter":{"adult":"any","bookmarked":"any","finished":"any","formats":[],"languages":[],"smart":[],"started":"any","tags":[],"unread":"any"},"sort":{"by":"title","direction":"ascending"}} as const;
 
-export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"groupBy":"none","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsCategoryTabs":true,"showsContinueRow":false,"showsItemCounts":true} as const;
+export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tablet":5},"display":"grid","fitsCoversToWidth":true,"groupBy":"none","onCovers":{"showsContinueButton":false,"showsDownloaded":true,"showsLanguage":false,"showsReadingProgress":true,"showsUnreadCount":true},"showsCategoryTabs":true,"showsContinueRow":false,"showsItemCounts":true,"stacksSeriesCovers":true} as const;
 
 export const SEARCH_MAX_CHARS = 200 as const;
 
@@ -536,6 +536,8 @@ export type LibraryView = {
 	coversPerRow: CoversPerRow,
 	/**  Draws as many covers a row as the width allows, rather than `covers_per_row`. */
 	fitsCoversToWidth: boolean,
+	/**  Draws a series of more than one book as a stack of covers. */
+	stacksSeriesCovers: boolean,
 	groupBy: LibraryGrouping,
 	/**  Shows the library's categories as tabs above it, once it has two or more. */
 	showsCategoryTabs: boolean,

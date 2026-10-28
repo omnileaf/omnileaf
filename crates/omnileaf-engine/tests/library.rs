@@ -817,6 +817,7 @@ async fn remembers_the_view_set_on_this_device_when_the_library_reopens() {
             desktop: DesktopCoversPerRow::try_from(9).unwrap(),
         },
         fits_covers_to_width: false,
+        stacks_series_covers: false,
         group_by: LibraryGrouping::Category,
         shows_category_tabs: false,
         shows_item_counts: true,
