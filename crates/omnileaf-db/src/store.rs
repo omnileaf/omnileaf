@@ -3,14 +3,16 @@ mod local;
 mod projector;
 mod reading_state;
 mod register;
+mod series_edit;
 mod session;
 mod writer;
 
 use std::{collections::BTreeSet, sync::Arc};
 
-pub use key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey};
+pub use key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey, SeriesEditKey};
 use omnileaf_sync_proto::ProfileId;
 pub use reading_state::{ReadingState, reading_state};
+pub use series_edit::{EditedPerson, SeriesEdits, series_edits};
 pub use session::{Continuity, SessionPlace};
 use tokio::sync::broadcast;
 pub use writer::Writer;

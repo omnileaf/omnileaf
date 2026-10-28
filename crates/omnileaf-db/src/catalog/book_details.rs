@@ -214,7 +214,7 @@ impl NamedStatements<'_> {
 }
 
 impl PersonRole {
-    const ALL: [Self; 7] = [
+    pub(crate) const ALL: [Self; 7] = [
         Self::Writer,
         Self::Penciller,
         Self::Inker,
@@ -231,7 +231,7 @@ impl PersonRole {
             .ok_or(Error::UnsupportedPersonRole { name })
     }
 
-    const fn as_stored(self) -> &'static str {
+    pub(crate) const fn as_stored(self) -> &'static str {
         match self {
             Self::Writer => "writer",
             Self::Penciller => "penciller",
