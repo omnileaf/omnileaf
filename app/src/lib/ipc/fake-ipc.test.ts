@@ -10,6 +10,7 @@ import {
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { installFakeIpc, removeFakeIpc } from "./fake-ipc.ts";
 import { seriesIdIn } from "#lib/series/series-id.ts";
+import { listenForWindowDrag, type WindowDrag } from "#lib/drop/window-drag.ts";
 
 const MISSING_SERIES: IpcError = {
   code: "seriesNotFound",
@@ -86,4 +87,23 @@ test("points the app's protocols at the base it was given", async () => {
   const { convertFileSrc } = await import("@tauri-apps/api/core");
 
   expect(convertFileSrc("cover/04", "omni")).toBe("/sample/omni/cover%2F04");
+});
+
+test("carries a drag over the window to whoever listens for it", async () => {
+  const ipc = installFakeIpc(window, backend, "/sample/");
+  const heard: WindowDrag[] = [];
+  const stop = listenForWindowDrag(
+    (drag) => heard.push(drag),
+    (error) => {
+      throw error instanceof Error ? error : new Error(String(error));
+    },
+  );
+  await new Promise((resolve) => {
+    setTimeout(resolve, 20);
+  });
+
+  ipc.emit("tauri://drag-leave", null);
+
+  await expect.poll(() => heard).toEqual([{ kind: "leave" }]);
+  stop();
 });

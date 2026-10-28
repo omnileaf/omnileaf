@@ -76,6 +76,10 @@ Object.defineProperty(window, "__TAURI_EVENT_PLUGIN_INTERNALS__", {
 });
 Object.defineProperty(window, "__TAURI_INTERNALS__", {
   value: {
+    metadata: {
+      currentWindow: { label: "main" },
+      currentWebview: { windowLabel: "main", label: "main" },
+    },
     transformCallback: (callback) => {
       lastCallback += 1;
       callbacks.set(lastCallback, callback);

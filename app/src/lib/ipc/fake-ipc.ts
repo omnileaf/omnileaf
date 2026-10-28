@@ -15,6 +15,7 @@ type Callback = (message: unknown) => void;
 
 const INTERNALS = "__TAURI_INTERNALS__";
 const EVENT_INTERNALS = "__TAURI_EVENT_PLUGIN_INTERNALS__";
+const WINDOW_LABEL = "main";
 const CHANNEL_PREFIX = "__CHANNEL__:";
 const LISTEN = "plugin:event|listen";
 const UNLISTEN = "plugin:event|unlisten";
@@ -114,6 +115,10 @@ export function installFakeIpc(
   Object.defineProperty(target, INTERNALS, {
     configurable: true,
     value: {
+      metadata: {
+        currentWindow: { label: WINDOW_LABEL },
+        currentWebview: { windowLabel: WINDOW_LABEL, label: WINDOW_LABEL },
+      },
       transformCallback: (callback: Callback) => {
         lastCallback += 1;
         callbacks.set(lastCallback, callback);
