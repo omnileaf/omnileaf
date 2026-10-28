@@ -36,6 +36,40 @@ test("speaks of gaps when the missing volumes fall in several places", () => {
   );
 });
 
+const UP_TO_A_DECIMAL: NotedSeries = {
+  sections: ["volumes", "chapters"],
+  missingVolumes: [
+    { first: 2, last: 2 },
+    { first: 4, last: 4 },
+    { first: 7, last: 9 },
+  ],
+  lastVolume: 9.5,
+};
+
+test("names the volumes missing below a decimal last volume", () => {
+  expect(sectionNote("volumes", UP_TO_A_DECIMAL)).toBe(
+    "Volumes 2, 4, and 7–9 aren’t in the folder. The gaps keep the others in place.",
+  );
+});
+
+test("names the volumes missing below a lone decimal volume", () => {
+  const series = {
+    sections: ["volumes"] as const,
+    missingVolumes: [{ first: 1, last: 2 }],
+    lastVolume: 2.5,
+  };
+
+  expect(sectionNote("volumes", series)).toBe(
+    "Volumes 1 and 2 aren’t in the folder. The gap keeps the others in place.",
+  );
+});
+
+test("says the chapters come after a decimal last volume", () => {
+  expect(sectionNote("chapters", UP_TO_A_DECIMAL)).toBe(
+    "The chapters after Volume 9.5. A chapter that’s already inside a volume is read there.",
+  );
+});
+
 test("says nothing over volumes when none is missing", () => {
   expect(
     sectionNote("volumes", { ...WITH_GAPS, missingVolumes: [] }),

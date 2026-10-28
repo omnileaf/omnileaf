@@ -177,6 +177,60 @@ test("ends with the gaps past the last book once every book has come", () => {
   expect(shapeOf(tiles)).toEqual(["v7", "v4", "gap 1-3"]);
 });
 
+test("puts the gap below a decimal last volume between it and the volume before", () => {
+  const books = [volume(6), volume(9.5)];
+
+  const tiles = withGaps(books, {
+    ...IN_ORDER,
+    missing: [{ first: 7, last: 9 }],
+  });
+
+  expect(shapeOf(tiles)).toEqual(["v6", "gap 7-9", "v9.5"]);
+});
+
+test("puts the gap below a decimal last volume after it when the last come first", () => {
+  const books = [volume(9.5), volume(6)];
+
+  const tiles = withGaps(books, {
+    missing: [{ first: 7, last: 9 }],
+    direction: "descending",
+    isComplete: true,
+  });
+
+  expect(shapeOf(tiles)).toEqual(["v9.5", "gap 7-9", "v6"]);
+});
+
+const BELOW_A_LONE_DECIMAL: GapPlacing = {
+  missing: [{ first: 1, last: 2 }],
+  direction: "ascending",
+  isComplete: true,
+};
+
+test("puts the gap before a lone decimal volume", () => {
+  const tiles = withGaps([volume(2.5)], BELOW_A_LONE_DECIMAL);
+
+  expect(shapeOf(tiles)).toEqual(["gap 1-2", "v2.5"]);
+});
+
+test("ends with the gap below a lone decimal volume when the last come first", () => {
+  const tiles = withGaps([volume(2.5)], {
+    ...BELOW_A_LONE_DECIMAL,
+    direction: "descending",
+  });
+
+  expect(shapeOf(tiles)).toEqual(["v2.5", "gap 1-2"]);
+});
+
+test("holds back the gap below a lone decimal volume until every book has come", () => {
+  const tiles = withGaps([volume(2.5)], {
+    ...BELOW_A_LONE_DECIMAL,
+    direction: "descending",
+    isComplete: false,
+  });
+
+  expect(shapeOf(tiles)).toEqual(["v2.5"]);
+});
+
 test("gives books only when nothing is missing", () => {
   const books = [volume(1), volume(2)];
 
