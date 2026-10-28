@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::{
-    BookNumber, BookSection, CoverPath, NumberRange, SeriesBook, SeriesId,
+    AdultContent, BookNumber, BookSection, CoverPath, NumberRange, SeriesBook, SeriesId,
     library_folder::root_folder,
     library_layout::folder_name,
     missing_volumes::{last_volume, missing_volumes},
@@ -56,6 +56,24 @@ pub struct RelatedSeries {
     pub read_count: u32,
     pub reason: RelatedReason,
     pub is_adult: bool,
+}
+
+impl RelatedSeries {
+    fn of(series: catalog::RelatedSeries, adult: AdultContent) -> Self {
+        Self {
+            id: SeriesId(series.id),
+            title: series.title,
+            cover: series.cover.map(CoverPath),
+            book_count: series.book_count,
+            read_count: series.read_count,
+            reason: match series.reason {
+                catalog::RelatedReason::SameWriter => RelatedReason::SameWriter,
+                catalog::RelatedReason::SameArtist => RelatedReason::SameArtist,
+                catalog::RelatedReason::SharedTag(tag) => RelatedReason::SharedTag { tag },
+            },
+            is_adult: adult.counts_as_adult(series.is_rated_adult),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -142,6 +160,20 @@ impl SeriesOverview {
             sections: Vec::new(),
             missing_volumes: Vec::new(),
             last_volume: None,
+        }
+    }
+
+    pub(crate) fn related_to(
+        self,
+        related: Vec<catalog::RelatedSeries>,
+        adult: AdultContent,
+    ) -> Self {
+        Self {
+            related: related
+                .into_iter()
+                .map(|series| RelatedSeries::of(series, adult))
+                .collect(),
+            ..self
         }
     }
 
