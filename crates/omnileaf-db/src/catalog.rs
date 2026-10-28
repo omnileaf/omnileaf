@@ -2,6 +2,7 @@ mod book;
 mod book_bookmarks;
 mod book_details;
 mod book_to_read;
+mod category_series;
 mod closest_title_words;
 pub(crate) mod cover;
 pub(crate) mod cursor;
@@ -13,6 +14,7 @@ mod folder_series;
 pub(crate) mod gathering;
 mod hidden_series;
 mod home_root;
+mod labels;
 mod library_roots;
 pub(crate) mod native_path;
 mod numbering;
@@ -49,6 +51,7 @@ pub use book::{NewBook, add_book, record_page_count, remove_books_without_files}
 pub use book_bookmarks::book_bookmarks;
 pub use book_details::{AgeRating, BookDetails, BookPerson, PersonRole, ReadingDirection};
 pub use book_to_read::{BookToRead, book_to_read};
+pub use category_series::{category_series_count, category_series_page};
 pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;
@@ -58,6 +61,10 @@ pub use folder_groups::{FolderGroup, FolderGroupSummary, folder_groups};
 pub use folder_series::{folder_series_count, folder_series_page};
 pub use hidden_series::hidden_series_count;
 pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
+pub use labels::{
+    CategoryHolding, SeriesLabelHoldings, StoredCategory, StoredTag, TagHolding,
+    library_categories, library_tags, series_labels,
+};
 pub use library_roots::{
     BookmarkedRoot, bookmarked_roots, library_root, library_roots, missing_roots,
 };
