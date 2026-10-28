@@ -1,0 +1,128 @@
+:root[data-platform="windows"],
+:root[data-platform="windows"] [data-theme] {
+  --native-duration-fade: 150ms;
+  --native-radius-button: 4px;
+  --native-spacing-switch-length: 40px;
+  --native-spacing-switch-thickness: 20px;
+  --native-spacing-switch-knob: 12px;
+  --native-spacing-switch-knob-length: 12px;
+  --native-spacing-switch-knob-on: 12px;
+  --native-spacing-switch-knob-on-length: 12px;
+  --native-spacing-switch-inset: 4px;
+  --native-spacing-switch-inset-on: 4px;
+  --native-radius-card: 8px;
+  --native-spacing-hairline: 1px;
+  --native-radius-dialog: 8px;
+  --native-radius-sheet: 8px;
+  --native-radius-menu: 8px;
+}
+
+:root[data-platform="windows"],
+:root[data-platform="windows"] [data-theme="light"] {
+  --native-color-button-primary: #2f6f4f;
+  --native-color-on-button-primary: #ffffff;
+  --native-color-button-secondary: #ffffffb3;
+  --native-color-on-button-secondary: #000000e4;
+  --native-color-switch-on: #2f6f4f;
+  --native-color-switch-on-border: #2f6f4f;
+  --native-color-switch-off: #00000006;
+  --native-color-switch-off-border: #00000072;
+  --native-color-switch-thumb: #ffffff;
+  --native-color-switch-thumb-off: #0000009e;
+  --native-color-segmented-track: #00000006;
+  --native-color-on-segment: #000000e4;
+  --native-color-segment-selected: #ffffffb3;
+  --native-color-on-segment-selected: #000000e4;
+  --native-color-progress-track: #00000072;
+  --native-color-progress-fill: #2f6f4f;
+  --native-color-progress-idle-track: #00000072;
+  --native-color-grouped-ground: #ffffff80;
+  --native-color-group: #ffffffb3;
+  --native-color-card: #ffffffb3;
+  --native-color-row-rule: #0000000f;
+  --native-color-row-pressed: #00000006;
+  --native-color-row-selected: #00000009;
+  --native-color-on-row-selected-muted: #0000009e;
+  --native-color-button-outline: #ffffffb3;
+  --native-color-on-button-outline: #000000e4;
+  --native-color-button-outline-edge: #0000000f;
+  --native-color-on-button-plain: #000000e4;
+  --native-color-button-plain-hover: #00000009;
+  --native-color-button-plain-pressed: #00000006;
+  --native-color-button-destructive: #ffffffb3;
+  --native-color-on-button-destructive: #000000e4;
+  --native-color-on-top-bar: #000000e4;
+  --native-color-top-bar-scrolled-edge: #0000000f;
+  --native-color-sheet: #f3f3f3;
+  --native-color-sheet-group: #ffffffb3;
+  --native-color-scrim: #0000004d;
+  --native-color-dialog: #f3f3f3;
+  --native-color-menu: #fcfcfcd9;
+  --native-color-on-menu: #000000e4;
+  --native-color-menu-chosen: #00000009;
+  --native-color-on-menu-chosen: #000000e4;
+  --native-color-menu-rule: #0000000f;
+  --native-color-notice: #f6f6f680;
+  --native-color-on-notice: #000000e4;
+  --native-color-focus-ring: #000000e4;
+}
+
+:root[data-platform="windows"][data-theme="dark"],
+:root[data-platform="windows"] [data-theme="dark"] {
+  --native-color-button-primary: #7fcb9d;
+  --native-color-on-button-primary: #000000;
+  --native-color-button-secondary: #ffffff0f;
+  --native-color-on-button-secondary: #ffffff;
+  --native-color-switch-on: #7fcb9d;
+  --native-color-switch-on-border: #7fcb9d;
+  --native-color-switch-off: #00000019;
+  --native-color-switch-off-border: #ffffff8b;
+  --native-color-switch-thumb: #000000;
+  --native-color-switch-thumb-off: #ffffffc5;
+  --native-color-segmented-track: #00000019;
+  --native-color-on-segment: #ffffff;
+  --native-color-segment-selected: #ffffff0f;
+  --native-color-on-segment-selected: #ffffff;
+  --native-color-progress-track: #ffffff8b;
+  --native-color-progress-fill: #7fcb9d;
+  --native-color-progress-idle-track: #ffffff8b;
+  --native-color-grouped-ground: #3a3a3a4c;
+  --native-color-group: #ffffff0d;
+  --native-color-card: #ffffff0d;
+  --native-color-row-rule: #ffffff15;
+  --native-color-row-pressed: #ffffff0a;
+  --native-color-row-selected: #ffffff0f;
+  --native-color-on-row-selected-muted: #ffffffc5;
+  --native-color-button-outline: #ffffff0f;
+  --native-color-on-button-outline: #ffffff;
+  --native-color-button-outline-edge: #ffffff12;
+  --native-color-on-button-plain: #ffffff;
+  --native-color-button-plain-hover: #ffffff0f;
+  --native-color-button-plain-pressed: #ffffff0a;
+  --native-color-button-destructive: #ffffff0f;
+  --native-color-on-button-destructive: #ffffff;
+  --native-color-on-top-bar: #ffffff;
+  --native-color-top-bar-scrolled-edge: #ffffff15;
+  --native-color-sheet: #202020;
+  --native-color-sheet-group: #ffffff0d;
+  --native-color-scrim: #0000004d;
+  --native-color-dialog: #202020;
+  --native-color-menu: #2c2c2cf5;
+  --native-color-on-menu: #ffffff;
+  --native-color-menu-chosen: #ffffff0f;
+  --native-color-on-menu-chosen: #ffffff;
+  --native-color-menu-rule: #ffffff15;
+  --native-color-notice: #ffffff08;
+  --native-color-on-notice: #ffffff;
+  --native-color-focus-ring: #ffffff;
+}
+
+:root[data-platform="windows"][data-transparency="reduced"],
+:root[data-platform="windows"][data-transparency="reduced"] [data-theme="light"] {
+  --native-color-menu: #f9f9f9;
+}
+
+:root[data-platform="windows"][data-transparency="reduced"][data-theme="dark"],
+:root[data-platform="windows"][data-transparency="reduced"] [data-theme="dark"] {
+  --native-color-menu: #2c2c2c;
+}

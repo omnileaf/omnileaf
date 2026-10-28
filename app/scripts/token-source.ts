@@ -40,7 +40,7 @@ const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
   "contrast-medium": ["android"],
   "contrast-high": ["android"],
   "contrast-more": ["ios", "macos"],
-  "transparency-reduced": ["ios"],
+  "transparency-reduced": ["ios", "windows"],
 };
 
 export interface ModeValue {

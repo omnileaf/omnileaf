@@ -68,11 +68,11 @@ const LOOKS: readonly SwitchLook[] = [
     platform: "windows",
     track: [40, 20],
     knobOff: 12,
-    knobOn: 14,
-    trackOff: "transparent",
-    trackOn: "--primary",
-    knobOffFill: "--windows-secondary-text",
-    edgeOff: "--windows-secondary-text",
+    knobOn: 12,
+    trackOff: "#00000006",
+    trackOn: "#2f6f4f",
+    knobOffFill: "#0000009e",
+    edgeOff: "#00000072",
   },
 ];
 
@@ -148,6 +148,14 @@ for (const look of LOOKS) {
     );
   });
 }
+
+test("draws the windows switch's on edge in the track colour", async () => {
+  await renderPair("windows");
+
+  const on = getComputedStyle(trackOf("On"));
+
+  expect(on.borderTopColor).toBe(on.backgroundColor);
+});
 
 test("ticks the knob of a switched-on Android switch, and only that one", async () => {
   await renderPair("android");
