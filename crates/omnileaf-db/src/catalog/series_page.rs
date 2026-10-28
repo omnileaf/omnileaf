@@ -154,7 +154,8 @@ pub fn series_page(
             | Gathering::FewForgotten
             | Gathering::FewDuplicated
             | Gathering::FewRatedAdult
-            | Gathering::FewTagged => &[],
+            | Gathering::FewTagged
+            | Gathering::FewManga => &[],
         },
     };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
@@ -761,6 +762,27 @@ mod tests {
                 .collect(),
             (9, 7),
             (5, 6),
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_manga_series_by_their_own_index_then_sorts_only_their_keys() {
+        let scratch = ScratchLibrary::new("few-manga-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_manga)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_manga
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_only_the_page(
+            "SEARCH series USING INDEX series_manga_by_stage (reading_stage=?)",
         );
         assert_eq!(plans, vec![gathered; queries.len()]);
     }

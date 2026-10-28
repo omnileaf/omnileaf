@@ -83,7 +83,7 @@ pub use series_books::{
 pub use series_count::series_count;
 pub use series_file_details::{SeriesFileDetails, SeriesPerson, series_file_details};
 pub use series_listing::{
-    Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
+    Inclusion, SeriesFilter, SeriesFormat, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
 };
 pub use series_overview::{SeriesOverview, series_numberings, series_overview};
 pub use series_page::{SeriesSummary, series_page};

@@ -3,7 +3,7 @@ use rusqlite::{Connection, ToSql, named_params};
 use crate::{
     Error,
     catalog::{
-        series_listing::{Inclusion, SeriesFilter, SortDirection, StageParams},
+        series_listing::{Inclusion, SeriesFilter, SeriesFormat, SortDirection, StageParams},
         series_page::Directions,
         staged_rows::Listing,
         value_list::json_list,
@@ -65,6 +65,15 @@ macro_rules! language_candidates {
     };
 }
 
+macro_rules! manga_candidates {
+    () => {
+        $crate::catalog::gathering::candidates! {
+            index: "series_manga_by_stage",
+            condition: "series.manga_books > 0",
+        }
+    };
+}
+
 macro_rules! tagged_candidates {
     () => {
         concat!(
@@ -120,6 +129,7 @@ const FORGOTTEN_ARE_FEW: &str = are_few!(forgotten_candidates!());
 const DUPLICATED_ARE_FEW: &str = are_few!(duplicated_candidates!());
 const LANGUAGES_ARE_FEW: &str = are_few!(language_candidates!());
 const RATED_ADULT_ARE_FEW: &str = are_few!(rated_adult_candidates!());
+const MANGA_ARE_FEW: &str = are_few!(manga_candidates!());
 /// Counts the entries of the chosen tags' index rather than the series, which can only overcount, so it never takes a crowded tag for a rare one.
 const TAGGED_ARE_FEW: &str = "SELECT count(*) < :few FROM (
     SELECT 1 FROM series_tag WHERE name IN (SELECT value FROM json_each(:tag_list)) LIMIT :few)";
@@ -207,6 +217,11 @@ macro_rules! gatherings {
                 key: $key,
                 sort_position: $position,
             },
+            few_manga: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::manga_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
             few_rated_adult: $crate::catalog::gathering::sorted_directions! {
                 candidates: $crate::catalog::gathering::rated_adult_candidates!(),
                 key: $key,
@@ -223,6 +238,7 @@ pub(crate) use forgotten;
 pub(crate) use forgotten_candidates;
 pub(crate) use gatherings;
 pub(crate) use language_candidates;
+pub(crate) use manga_candidates;
 pub(crate) use rated_adult_candidates;
 pub(crate) use sorted_directions;
 pub(crate) use sorted_page;
@@ -236,6 +252,7 @@ pub(crate) enum Gathering {
     FewInLanguages,
     FewRatedAdult,
     FewTagged,
+    FewManga,
 }
 
 pub(crate) struct Gatherings<P> {
@@ -245,6 +262,7 @@ pub(crate) struct Gatherings<P> {
     pub(crate) few_in_languages: Directions<P>,
     pub(crate) few_rated_adult: Directions<P>,
     pub(crate) few_tagged: Directions<P>,
+    pub(crate) few_manga: Directions<P>,
 }
 
 impl Gathering {
@@ -280,6 +298,12 @@ impl Gathering {
         {
             return Ok(Self::FewTagged);
         }
+        if filter.formats.contains(&SeriesFormat::Manga)
+            && !filter.formats.contains(&SeriesFormat::Comic)
+            && are_few(connection, MANGA_ARE_FEW, &stages, &[])?
+        {
+            return Ok(Self::FewManga);
+        }
         if filter.adult == Inclusion::Only
             && are_few(connection, RATED_ADULT_ARE_FEW, &stages, &[])?
         {
@@ -302,6 +326,7 @@ impl<P> Gatherings<P> {
             Gathering::FewInLanguages => self.few_in_languages.toward(direction),
             Gathering::FewRatedAdult => self.few_rated_adult.toward(direction),
             Gathering::FewTagged => self.few_tagged.toward(direction),
+            Gathering::FewManga => self.few_manga.toward(direction),
         }
     }
 }
@@ -560,6 +585,46 @@ mod tests {
         assert_eq!(gathering, Gathering::EachStageInOrder);
     }
 
+    fn manga_only() -> SeriesFilter {
+        SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga])
+    }
+
+    #[test]
+    fn gathers_the_manga_series_while_they_are_few() {
+        let library = Library::read_and_copied("gathering-few-manga", FEW_SERIES - 1);
+        library
+            .connection
+            .execute("UPDATE series SET manga_books = 1", [])
+            .unwrap();
+
+        let gathering = library.gathering(&manga_only());
+
+        assert_eq!(gathering, Gathering::FewManga);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_once_the_manga_series_are_no_longer_few() {
+        let library = Library::read_and_copied("gathering-many-manga", FEW_SERIES);
+        library
+            .connection
+            .execute("UPDATE series SET manga_books = 1", [])
+            .unwrap();
+
+        let gathering = library.gathering(&manga_only());
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_for_the_comics_whatever_few_series_are_manga() {
+        let library = Library::read_and_copied("gathering-comics", 3);
+
+        let gathering =
+            library.gathering(&SeriesFilter::NONE.with_formats(vec![SeriesFormat::Comic]));
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
     #[test]
     fn gathers_the_series_rated_18_plus_while_they_are_few() {
         let library = Library::read_and_copied("gathering-few-adult", FEW_SERIES - 1);
@@ -615,6 +680,20 @@ mod tests {
                 "SCAN json_each VIRTUAL TABLE INDEX 1:",
                 "SCAN (subquery-2)",
             ]
+        );
+    }
+
+    #[test]
+    fn counts_the_manga_series_through_their_own_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("manga-are-few-plan");
+
+        let plan = scratch.query_plan(MANGA_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            counting_up_to_a_few(
+                "SEARCH series USING INDEX series_manga_by_stage (reading_stage=?)"
+            )
         );
     }
 

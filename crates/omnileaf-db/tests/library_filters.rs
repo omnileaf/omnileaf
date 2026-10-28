@@ -10,8 +10,9 @@ use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database, Error,
     catalog::{
-        Cursor, Inclusion, NewBook, NewSeries, PageRequest, PageSize, SeriesFilter, SeriesListing,
-        SeriesOrder, SeriesSort, add_book, remove_books_without_files, series_count, series_page,
+        Cursor, Inclusion, NewBook, NewSeries, PageRequest, PageSize, SeriesFilter, SeriesFormat,
+        SeriesListing, SeriesOrder, SeriesSort, add_book, remove_books_without_files, series_count,
+        series_page,
     },
     store::{Clock, LatestKey, Store, Writer},
 };
@@ -660,4 +661,59 @@ async fn meets_the_tags_and_the_reading_state_together() {
         .await;
 
     assert_eq!(listed, titles(&[4]));
+}
+
+async fn mark_manga(library: &Library, titles: &'static [&'static str]) {
+    library
+        .store
+        .database()
+        .write(move |transaction| {
+            let mut details = transaction.prepare(
+                "INSERT INTO book_details (book_id, is_manga)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.title = ?1 AND book.title = 'Volume 01'",
+            )?;
+            for title in titles {
+                details.execute([title])?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+fn in_formats(formats: &[SeriesFormat]) -> SeriesFilter {
+    SeriesFilter::NONE.with_formats(formats.to_vec())
+}
+
+#[tokio::test]
+async fn lists_and_counts_the_manga_and_the_comics_apart_and_no_book_yet() {
+    let library = Library::with("formats", &READING_STAGES[..5]).await;
+    mark_manga(&library, &["Sample Series 01", "Sample Series 04"]).await;
+
+    let listed = [
+        library.filtered(in_formats(&[SeriesFormat::Manga])).await,
+        library.filtered(in_formats(&[SeriesFormat::Comic])).await,
+        library
+            .filtered(in_formats(&[SeriesFormat::Comic, SeriesFormat::Manga]))
+            .await,
+        library.filtered(in_formats(&[SeriesFormat::Book])).await,
+    ];
+    let counted = [
+        library.count(in_formats(&[SeriesFormat::Manga])).await,
+        library.count(in_formats(&[SeriesFormat::Comic])).await,
+    ];
+
+    assert_eq!(
+        (listed, counted),
+        (
+            [
+                titles(&[1, 4]),
+                titles(&[2, 3, 5]),
+                titles(&[1, 2, 3, 4, 5]),
+                Vec::new()
+            ],
+            [2, 3]
+        )
+    );
 }

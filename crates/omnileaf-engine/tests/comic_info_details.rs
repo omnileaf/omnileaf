@@ -13,7 +13,8 @@ mod support;
 use books::write_book_with;
 use omnileaf_engine::{
     AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Inclusion, Library, LibraryFilter,
-    LibraryListing, LibrarySeries, RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
+    LibraryListing, LibrarySeries, RelatedReason, SeriesCreator, SeriesFormat, SeriesId,
+    SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -603,4 +604,65 @@ async fn lists_and_counts_the_series_carrying_one_of_the_chosen_tags_or_genres()
             3
         )
     );
+}
+
+const MANGA_FROM_LEFT_TO_RIGHT: &str = "<ComicInfo><Manga>Yes</Manga></ComicInfo>";
+const MANGA_FROM_RIGHT_TO_LEFT: &str = "<ComicInfo><Manga>YesAndRightToLeft</Manga></ComicInfo>";
+const NOT_MANGA: &str = "<ComicInfo><Manga>No</Manga></ComicInfo>";
+
+fn in_formats(formats: &[SeriesFormat]) -> LibraryFilter {
+    LibraryFilter {
+        formats: formats.to_vec(),
+        ..LibraryListing::default().filter
+    }
+}
+
+async fn in_two_formats(name: &str) -> Scanned {
+    Scanned::with(
+        name,
+        &[
+            ("Sample Series 01", MANGA_FROM_LEFT_TO_RIGHT),
+            ("Sample Series 02", NOT_MANGA),
+            ("Sample Series 03", MANGA_FROM_RIGHT_TO_LEFT),
+            ("Sample Series 04", SHARING_NOTHING),
+        ],
+    )
+    .await
+}
+
+#[tokio::test]
+async fn lists_a_series_as_manga_when_a_book_s_manga_field_says_yes_whichever_way_it_reads() {
+    let scanned = in_two_formats("filter-formats").await;
+
+    let listed = [
+        scanned.titles(in_formats(&[SeriesFormat::Manga])).await,
+        scanned.titles(in_formats(&[SeriesFormat::Comic])).await,
+        scanned.titles(in_formats(&[SeriesFormat::Book])).await,
+    ];
+    let counted = scanned
+        .library
+        .series_count(in_formats(&[SeriesFormat::Manga]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (listed, counted),
+        (
+            [
+                vec!["Sample Series 01".to_owned(), "Sample Series 03".to_owned()],
+                vec!["Sample Series 02".to_owned(), "Sample Series 04".to_owned()],
+                Vec::new(),
+            ],
+            2
+        )
+    );
+}
+
+#[tokio::test]
+async fn offers_the_formats_the_library_holds_to_filter_by() {
+    let scanned = in_two_formats("filter-format-choices").await;
+
+    let offered = scanned.library.filter_choices().await.unwrap().formats;
+
+    assert_eq!(offered, [SeriesFormat::Comic, SeriesFormat::Manga]);
 }

@@ -16,8 +16,8 @@ use omnileaf_db::{
     Error,
     catalog::{
         BookDetails, BookFile, Cursor, Inclusion, NewRoot, NewSeries, PageRequest, PageSize,
-        RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, SeriesSummary, add_root, record_scanned_books, series_page,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesFormat, SeriesListing,
+        SeriesOrder, SeriesSort, SeriesSummary, add_root, record_scanned_books, series_page,
     },
     store::{Continuity, SessionPlace, Store, Writer},
 };
@@ -42,6 +42,7 @@ const EVERY_SEVENTH_IN_JAPANESE: u32 = 7;
 const EVERY_EIGHTH_RATED_ADULT: u32 = 8;
 const EVERY_ELEVENTH_TAGGED_STORMS: u32 = 11;
 const EVERY_THIRTEENTH_TAGGED_HARBOUR: u32 = 13;
+const EVERY_SEVENTEENTH_MANGA: u32 = 17;
 const PAGE_OF_TWO: u16 = 2;
 const PAGE_OF_THREE: u16 = 3;
 const PAGE_OF_TWO_HUNDRED: u16 = 200;
@@ -152,6 +153,26 @@ impl Shelf {
             .unwrap();
     }
 
+    async fn mark_manga(&self, numbers: impl Iterator<Item = u32>) {
+        let titles: Vec<String> = numbers.map(series_name).collect();
+        self.store
+            .database()
+            .write(move |transaction| {
+                let mut manga = transaction.prepare(
+                    "INSERT INTO book_details (book_id, is_manga)
+                    SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                    WHERE series.title = ?1
+                    ON CONFLICT (book_id) DO UPDATE SET is_manga = 1",
+                )?;
+                for title in &titles {
+                    manga.execute([title])?;
+                }
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
     async fn copy_into_backup(&self, numbers: impl Iterator<Item = u32>) {
         self.scan(self.backup, numbers).await;
     }
@@ -219,6 +240,7 @@ impl Shelf {
                 duplicates: Inclusion::Any,
                 languages: Vec::new(),
                 tags: Vec::new(),
+                formats: Vec::new(),
                 adult: Inclusion::Any,
                 ..listing.filter
             },
@@ -416,6 +438,9 @@ async fn mixed_shelf() -> Shelf {
         )
         .await;
     shelf
+        .mark_manga(multiples_of(EVERY_SEVENTEENTH_MANGA, MIXED_SHELF))
+        .await;
+    shelf
 }
 
 fn series_of(step: u32) -> BTreeSet<String> {
@@ -457,6 +482,10 @@ fn few_matches() -> Vec<(SeriesFilter, BTreeSet<String>)> {
         (
             in_japanese.with_duplicates(Inclusion::Only),
             also(&japanese, &duplicated),
+        ),
+        (
+            SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga]),
+            series_of(EVERY_SEVENTEENTH_MANGA),
         ),
         (tagged_with(&["storms"]), stormy.clone()),
         (
