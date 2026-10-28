@@ -87,6 +87,30 @@ fn reads_the_reading_direction_from_the_manga_field() {
 }
 
 #[test]
+fn reads_whether_the_book_is_manga_from_the_manga_field() {
+    for (value, is_manga) in [
+        ("YesAndRightToLeft", Some(true)),
+        ("Yes", Some(true)),
+        ("No", Some(false)),
+        ("Unknown", None),
+        ("", None),
+    ] {
+        let xml = format!("<ComicInfo><Manga>{value}</Manga></ComicInfo>");
+
+        let info = parse_comic_info(xml.as_bytes()).unwrap();
+
+        assert_eq!(info.is_manga, is_manga, "{value:?}");
+    }
+}
+
+#[test]
+fn leaves_whether_the_book_is_manga_unknown_without_a_manga_field() {
+    let info = parse_comic_info(b"<ComicInfo><Series>Sample Series</Series></ComicInfo>").unwrap();
+
+    assert_eq!(info.is_manga, None);
+}
+
+#[test]
 fn reads_each_age_rating_the_comic_info_schema_names() {
     for (value, rating) in [
         ("Early Childhood", Some(AgeRating::EarlyChildhood)),
