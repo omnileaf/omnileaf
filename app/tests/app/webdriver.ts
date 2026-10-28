@@ -221,8 +221,18 @@ export class Session {
     );
   }
 
+  /** On Windows the reload can unload the page before WebView2 returns the script's answer, so the driver reports a script timeout for a reload that happened. */
   async reload(): Promise<void> {
-    await this.run(RELOAD_SCRIPT);
+    try {
+      await this.run(RELOAD_SCRIPT);
+    } catch (error) {
+      if (
+        !(error instanceof WebDriverError) ||
+        error.code !== "script timeout"
+      ) {
+        throw error;
+      }
+    }
     await pollUntil(
       () => this.isFreshPage(),
       ELEMENT_TIMEOUT_MS,

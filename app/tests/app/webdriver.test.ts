@@ -148,6 +148,32 @@ test("reloads the page and waits for the fresh one", async () => {
   expect(scriptsRun).toBe(1 + OLD_PAGE_CHECKS + 1);
 });
 
+test("counts a reload as started when the page unloads before the script answers", async () => {
+  let scriptsRun = 0;
+  const server = await serve((route, response) => {
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "blank" });
+    } else if (route === "POST /session/blank/execute/sync") {
+      scriptsRun += 1;
+      if (scriptsRun === 1) {
+        reply(response, 500, {
+          error: "script timeout",
+          message: "Script execution timed out",
+        });
+      } else {
+        reply(response, 200, true);
+      }
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+  const session = await Session.start(server, {});
+
+  await session.reload();
+
+  expect(scriptsRun).toBe(2);
+});
+
 test("gives up on a script after two seconds, so a page that unloads mid-script can't hold the session", async () => {
   const timeoutsSet: unknown[] = [];
   const server = await serve((_route, response) => {
