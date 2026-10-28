@@ -95,8 +95,8 @@
           first.getBoundingClientRect().top,
       };
     }
-    const isOnlyTheLastRowDrawn = shown.start > 0;
-    if (isOnlyTheLastRowDrawn && measure?.columns === columns) {
+    const isPartDrawn = grid.childElementCount < (knownTotal ?? items.length);
+    if (isPartDrawn && measure?.columns === columns) {
       return measure;
     }
     const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);

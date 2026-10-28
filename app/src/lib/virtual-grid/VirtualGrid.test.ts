@@ -142,8 +142,7 @@ test("fills the screen again once its styles lay items as tall as they are wide 
   );
 });
 
-test("keeps the room of every row once only the last, which has no separator, is laid out", async () => {
-  const rows = 10;
+async function renderSeparatedRows(rows: number) {
   const screen = await render(VirtualGrid<Sample>, {
     items: samples(rows),
     key: (sample: Sample) => sample.id,
@@ -161,15 +160,39 @@ test("keeps the room of every row once only the last, which has no separator, is
     throw new Error("the grid has no frame");
   }
   const room = frame.getBoundingClientRect().height;
-  const stride = room / rows;
-  const below = document.createElement("div");
-  below.style.blockSize = `${String(room * 4)}px`;
-  document.body.append(below);
+  return { list, frame, room, stride: room / rows };
+}
+
+function addSpace(place: "before" | "after", height: number): HTMLDivElement {
+  const space = document.createElement("div");
+  space.style.blockSize = `${String(height)}px`;
+  document.body[place === "before" ? "prepend" : "append"](space);
   onTestFinished(() => {
-    below.remove();
+    space.remove();
   });
+  return space;
+}
+
+test("keeps the room of every row once only the last, which has no separator, is laid out", async () => {
+  const rows = 10;
+  const { list, frame, room, stride } = await renderSeparatedRows(rows);
+  addSpace("after", room * 4);
 
   window.scrollTo(0, frame.offsetTop + (rows + 1.5) * stride);
+  await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
+  await settled();
+
+  expect(frame.getBoundingClientRect().height).toBe(room);
+});
+
+test("keeps the room of every row once only the first is laid out below the screen", async () => {
+  const { list, frame, room, stride } = await renderSeparatedRows(3);
+
+  addSpace(
+    "before",
+    window.innerHeight + 1.5 * stride - frame.getBoundingClientRect().top,
+  );
+  window.dispatchEvent(new Event("resize"));
   await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
   await settled();
 
