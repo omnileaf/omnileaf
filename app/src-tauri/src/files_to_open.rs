@@ -72,6 +72,14 @@ pub(crate) fn request_when_opened(app: &AppHandle, event: &tauri::RunEvent) {
 }
 
 #[cfg(desktop)]
+pub(crate) fn single_instance() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri_plugin_single_instance::init(|app, arguments, directory| {
+        request(app, in_directory(&directory, arguments.into_iter().skip(1)));
+        show_main_window(app);
+    })
+}
+
+#[cfg(desktop)]
 pub(crate) fn show_main_window(app: &AppHandle) {
     let Some(window) = app.get_webview_window("main") else {
         return;

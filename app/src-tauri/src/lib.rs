@@ -77,16 +77,14 @@ pub fn run() {
     let config = RuntimeConfig::from_environment();
     let commands = commands::builder();
     let app = tauri::Builder::default();
-    #[cfg(desktop)]
-    let app = app.plugin(tauri_plugin_single_instance::init(
-        |app, arguments, directory| {
-            files_to_open::request(
-                app,
-                files_to_open::in_directory(&directory, arguments.into_iter().skip(1)),
-            );
-            files_to_open::show_main_window(app);
-        },
-    ));
+    #[cfg(all(desktop, not(feature = "e2e")))]
+    let app = app.plugin(files_to_open::single_instance());
+    #[cfg(all(desktop, feature = "e2e"))]
+    let app = if e2e::wants_single_instance() {
+        app.plugin(files_to_open::single_instance())
+    } else {
+        app
+    };
     let app = app
         .manage(Core::new())
         .manage(recent_log)
