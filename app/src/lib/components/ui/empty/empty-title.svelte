@@ -3,6 +3,9 @@
   import type { HTMLAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
+  import { emptyLook } from "./looks.ts";
 
   let {
     ref = $bindable(null),
@@ -10,12 +13,14 @@
     children,
     ...restProps
   }: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
+
+  const look = emptyLook(currentPlatform());
 </script>
 
 <h2
   bind:this={ref}
   data-slot="empty-title"
-  class={cn("mbs-sm text-group-title font-medium tracking-tight", className)}
+  class={cn("mbs-sm font-medium tracking-tight", look.title, className)}
   {...restProps}
 >
   {@render children?.()}
