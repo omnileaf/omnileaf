@@ -48,7 +48,7 @@ impl LibrarySeries {
             language: series.language,
             has_downloads: false,
             continues_from: series.continues_from.map(BookId),
-            is_adult: adult.counts_as_adult(series.is_rated_adult),
+            is_adult: adult.counts_as_adult(series.is_rated_adult, series.is_marked_adult),
         }
     }
 }
@@ -128,6 +128,7 @@ mod tests {
             continues_from: None,
             language: Some("en".to_owned()),
             is_rated_adult: true,
+            is_marked_adult: false,
         };
 
         let series = LibrarySeries::new(summary, AdultContent::default());

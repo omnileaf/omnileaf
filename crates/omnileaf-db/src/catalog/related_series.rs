@@ -27,7 +27,8 @@ macro_rules! series_sharing_people {
             JOIN series ON series.local_id = other.series_local_id
             WHERE other.series_local_id IS NOT (SELECT local_id FROM this)
                 AND series.reading_stage IS NOT NULL
-                AND NOT (:leaves_out_adult AND series.adult_rated_books > 0)
+                AND NOT (:leaves_out_adult AND ((series.adult_rated_books > 0 AND :counts_age_ratings)
+                    OR series.marked_adult = 1))
             LIMIT :limit"
         )
     };
@@ -48,11 +49,13 @@ const SERIES_SHARING_A_TAG: &str = "SELECT DISTINCT other.series_local_id AS loc
     WHERE book_tag.name = :tag
         AND other.series_local_id IS NOT (SELECT local_id FROM series WHERE id = :series)
         AND series.reading_stage IS NOT NULL
-        AND NOT (:leaves_out_adult AND series.adult_rated_books > 0)
+        AND NOT (:leaves_out_adult AND ((series.adult_rated_books > 0 AND :counts_age_ratings)
+            OR series.marked_adult = 1))
     LIMIT :limit";
 const RELATED_SERIES: &str = concat!(
     "SELECT series.id AS id, series.title, series.title_key, series.book_count,
-        series.read_count, series.adult_rated_books > 0 AS is_rated_adult,
+        series.read_count, series.adult_rated_books - series.marked_adult > 0 AS is_rated_adult,
+        series.marked_adult = 1 AS is_marked_adult,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
     crate::catalog::cover::join_series_cover!(),
@@ -67,6 +70,7 @@ pub struct RelatedSeries {
     pub book_count: u32,
     pub read_count: u32,
     pub is_rated_adult: bool,
+    pub is_marked_adult: bool,
     pub reason: RelatedReason,
 }
 
@@ -80,8 +84,9 @@ pub enum RelatedReason {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RelatedSeriesWanted {
     pub limit: usize,
-    /// Leaves out the series whose files rate a book 18+.
+    /// Leaves out the series that count as 18+.
     pub leaves_out_adult: bool,
+    pub counts_age_ratings: bool,
 }
 
 struct Candidate {
@@ -100,6 +105,7 @@ pub fn related_series(
     let RelatedSeriesWanted {
         limit,
         leaves_out_adult,
+        counts_age_ratings,
     } = wanted;
     let mut chosen: Vec<Candidate> = Vec::new();
     for (query, reason) in [
@@ -112,6 +118,7 @@ pub fn related_series(
             &[
                 (":series", &series.as_bytes()),
                 (":leaves_out_adult", &leaves_out_adult),
+                (":counts_age_ratings", &counts_age_ratings),
             ],
             chosen.len() + limit,
         )?;
@@ -131,6 +138,7 @@ pub fn related_series(
                 (":series", &series.as_bytes()),
                 (":tag", &tag),
                 (":leaves_out_adult", &leaves_out_adult),
+                (":counts_age_ratings", &counts_age_ratings),
             ],
             chosen.len() + limit,
         )?;
@@ -230,6 +238,7 @@ fn related(row: &Row<'_>, reason: RelatedReason) -> rusqlite::Result<(Vec<u8>, R
             book_count: row.get("book_count")?,
             read_count: row.get("read_count")?,
             is_rated_adult: row.get("is_rated_adult")?,
+            is_marked_adult: row.get("is_marked_adult")?,
             reason,
         },
     ))

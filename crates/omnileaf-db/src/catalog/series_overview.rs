@@ -12,9 +12,10 @@ use crate::{
 const OVERVIEW_OF_SERIES: &str = concat!(
     "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
         library_root.tree_name, library_root.tree_place,
-        series.id AS id, series.title, series.title_source, series.year, series.year_source,
+        series.id AS id, series.title, series.file_title, series.title_source, series.year, series.year_source,
         series.language, series.language_source, series.book_count, series.read_count,
-        series.pages_left, series.uncounted_books, series.adult_rated_books > 0 AS is_rated_adult,
+        series.pages_left, series.uncounted_books, series.adult_rated_books - series.marked_adult > 0 AS is_rated_adult,
+        series.marked_adult = 1 AS is_marked_adult,
         (SELECT count(*) FROM book WHERE book.series_local_id = series.local_id
             AND EXISTS (SELECT 1 FROM book_bookmark WHERE book_bookmark.book_id = book.id))
             AS bookmark_count,
@@ -35,6 +36,7 @@ const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 pub struct SeriesOverview {
     pub id: SeriesId,
     pub title: String,
+    pub file_title: String,
     /// Absent for a series keyed by name alone, which its next rescan files by folder.
     pub title_source: Option<ValueSource>,
     pub year: Option<Sourced<u16>>,
@@ -47,6 +49,7 @@ pub struct SeriesOverview {
     /// Absent while a book not marked read has no page count.
     pub pages_left: Option<u32>,
     pub is_rated_adult: bool,
+    pub is_marked_adult: bool,
     /// The books with a bookmarked page.
     pub bookmark_count: u32,
 }
@@ -85,6 +88,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
     Ok(SeriesOverview {
         id: stored_id(row, "id")?,
         title: row.get("title")?,
+        file_title: row.get("file_title")?,
         title_source: row.get("title_source")?,
         year: sourced(row, "year", "year_source")?,
         language: sourced(row, "language", "language_source")?,
@@ -94,6 +98,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         folder,
         pages_left: counted_pages_left(row)?,
         is_rated_adult: row.get("is_rated_adult")?,
+        is_marked_adult: row.get("is_marked_adult")?,
         bookmark_count: row.get("bookmark_count")?,
     })
 }

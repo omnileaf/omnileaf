@@ -189,7 +189,7 @@ impl LibraryFilterChoices {
             formats: stored.formats.into_iter().map(SeriesFormat::from).collect(),
             languages: stored.languages,
             tags: stored.tags,
-            rates_adult: adult.counts_as_adult(stored.holds_rated_adult),
+            rates_adult: adult.counts_as_adult(stored.holds_rated_adult, stored.holds_marked_adult),
             keeps_bookmarks,
             smart: SMART_FILTERS_KEPT.to_vec(),
         }

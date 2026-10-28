@@ -701,7 +701,8 @@ impl Library {
         let adult = self.adult_content().await?;
         let related_wanted = RelatedSeriesWanted {
             limit: RELATED_SERIES_SHOWN,
-            leaves_out_adult: adult.hides_rated_adult(),
+            leaves_out_adult: adult.hides_adult(),
+            counts_age_ratings: adult.counts_age_ratings,
         };
         let found = self
             .store

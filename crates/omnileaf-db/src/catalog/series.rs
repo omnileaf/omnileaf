@@ -4,7 +4,7 @@ use std::{
 };
 
 use omnileaf_sync_proto::{KeyError, SeriesId, SourceId, norm};
-use rusqlite::{Statement, Transaction};
+use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
 
 use crate::{
     Error,
@@ -16,10 +16,10 @@ macro_rules! insert_series {
     ($on_conflict:expr) => {
         concat!(
             "INSERT INTO series (
-                id, source_id, natural_key, title, title_key, added_at_ms, title_source, year,
-                year_source
+                id, source_id, natural_key, file_title, file_title_key, added_at_ms, title_source,
+                year, year_source, title, title_key
             )
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             $on_conflict
         )
     };
@@ -44,8 +44,16 @@ macro_rules! title_is_better {
 const ADD_SERIES: &str = insert_series!("");
 const ADD_OR_RENAME_SERIES: &str = insert_series!(concat!(
     " ON CONFLICT (id) DO UPDATE SET
-        title = excluded.title,
-        title_key = excluded.title_key,
+        file_title = excluded.file_title,
+        file_title_key = excluded.file_title_key,
+        title = coalesce(
+            (SELECT edited.title FROM series_edit AS edited WHERE edited.series_id = series.id),
+            excluded.file_title
+        ),
+        title_key = CASE WHEN EXISTS (
+            SELECT 1 FROM series_edit AS edited
+            WHERE edited.series_id = series.id AND edited.title IS NOT NULL
+        ) THEN series.title_key ELSE excluded.file_title_key END,
         title_source = excluded.title_source
     WHERE ",
     title_is_better!(),
@@ -56,6 +64,7 @@ const NAMED_KEY_SEPARATOR: &str = "\n";
 const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
 pub(crate) struct SeriesAdder<'t> {
+    transaction: &'t Transaction<'t>,
     add: Statement<'t>,
 }
 
@@ -177,12 +186,18 @@ impl NamedSeries {
 #[tracing::instrument(skip_all, fields(series = %series.id))]
 pub fn add_series(transaction: &Transaction<'_>, series: &NewSeries) -> Result<(), Error> {
     let collation = TitleCollation::stored(transaction)?;
-    insert(&mut transaction.prepare(ADD_SERIES)?, series, &collation)
+    insert(
+        transaction,
+        &mut transaction.prepare(ADD_SERIES)?,
+        series,
+        &collation,
+    )
 }
 
 impl<'t> SeriesAdder<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
         Ok(Self {
+            transaction,
             add: transaction.prepare(ADD_OR_RENAME_SERIES)?,
         })
     }
@@ -192,15 +207,18 @@ impl<'t> SeriesAdder<'t> {
         series: &NewSeries,
         collation: &TitleCollation,
     ) -> Result<(), Error> {
-        insert(&mut self.add, series, collation)
+        insert(self.transaction, &mut self.add, series, collation)
     }
 }
 
 fn insert(
+    connection: &Connection,
     statement: &mut Statement<'_>,
     series: &NewSeries,
     collation: &TitleCollation,
 ) -> Result<(), Error> {
+    let edited_title = edited_title(connection, series)?;
+    let shown_title = edited_title.as_deref().unwrap_or(&series.title);
     statement.execute((
         series.id.as_bytes(),
         series.source.as_bytes(),
@@ -211,8 +229,18 @@ fn insert(
         series.title_source().map(ValueSource::as_stored),
         series.year().map(|year| year.value),
         series.year().map(|year| year.source.as_stored()),
+        shown_title,
+        collation.key(shown_title),
     ))?;
     Ok(())
+}
+
+fn edited_title(connection: &Connection, series: &NewSeries) -> Result<Option<String>, Error> {
+    Ok(connection
+        .prepare("SELECT title FROM series_edit WHERE series_id = ?1")?
+        .query_row([series.id.as_bytes()], |row| row.get(0))
+        .optional()?
+        .flatten())
 }
 
 fn folder_key<P: AsRef<str>>(linked_folder: &str, location: &[P]) -> String {

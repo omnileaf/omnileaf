@@ -223,6 +223,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
         SeriesOverview {
             id: series_id(SERIES),
             title: SERIES.to_owned(),
+            file_title: SERIES.to_owned(),
             title_source: None,
             year: None,
             language: None,
@@ -232,6 +233,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
             folder: None,
             pages_left: None,
             is_rated_adult: false,
+            is_marked_adult: false,
             bookmark_count: 0,
         }
     );

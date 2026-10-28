@@ -32,7 +32,8 @@ macro_rules! summary_columns {
         "SELECT series.id AS id, series.title, series.title_key, series.book_count, series.added_at_ms,
             series.last_read_at_ms, series.updated_at_ms, series.time_left_key,
             cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-            series.unread_count, series.language, series.adult_rated_books > 0 AS is_rated_adult, "
+            series.unread_count, series.language, series.adult_rated_books - series.marked_adult > 0 AS is_rated_adult,
+            series.marked_adult = 1 AS is_marked_adult, "
     };
 }
 
@@ -261,6 +262,7 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         continues_from: stored_optional_id(row, "continues_from")?,
         language: row.get("language")?,
         is_rated_adult: row.get("is_rated_adult")?,
+        is_marked_adult: row.get("is_marked_adult")?,
     })
 }
 

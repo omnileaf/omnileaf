@@ -48,15 +48,21 @@ pub(crate) fn keep_titles_sorted(connection: &Connection) -> Result<Resorted, Er
 
 fn rekey_every_title(connection: &Connection, collation: &TitleCollation) -> Result<usize, Error> {
     let titles = connection
-        .prepare("SELECT local_id, title FROM series")?
+        .prepare("SELECT local_id, title, file_title FROM series")?
         .query_map([], |row| {
-            Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?
         .collect::<Result<Vec<_>, _>>()?;
-    let mut rekey = connection
-        .prepare("UPDATE series SET title_key = ?2 WHERE local_id = ?1 AND title_key IS NOT ?2")?;
-    for (local_id, title) in &titles {
-        rekey.execute((local_id, collation.key(title)))?;
+    let mut rekey = connection.prepare(
+        "UPDATE series SET title_key = ?2, file_title_key = ?3
+        WHERE local_id = ?1 AND (title_key, file_title_key) IS NOT (?2, ?3)",
+    )?;
+    for (local_id, title, file_title) in &titles {
+        rekey.execute((local_id, collation.key(title), collation.key(file_title)))?;
     }
     Ok(titles.len())
 }
