@@ -443,19 +443,27 @@ async function animationsWithin(locator: Locator): Promise<string[]> {
   ]);
 }
 
-/** Finishes whatever still moves after a grace period, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
+async function finishAnimationsWithin(locator: Locator): Promise<void> {
+  await locator.evaluate((element) => {
+    for (const animation of element.getAnimations({ subtree: true })) {
+      animation.finish();
+    }
+  });
+}
+
+/** Finishes whatever moves after a grace period, including a transition a part held in its starting style begins later, since headless WebKit can stop advancing its animations, and even its frames, while nothing asks for one. */
 export async function settle(locator: Locator): Promise<void> {
   try {
     await expect
       .poll(() => animationsWithin(locator), { timeout: SETTLE_GRACE_MS })
       .toEqual([]);
   } catch {
-    await locator.evaluate((element) => {
-      for (const animation of element.getAnimations({ subtree: true })) {
-        animation.finish();
-      }
-    });
-    await expect.poll(() => animationsWithin(locator)).toEqual([]);
+    await expect
+      .poll(async () => {
+        await finishAnimationsWithin(locator);
+        return animationsWithin(locator);
+      })
+      .toEqual([]);
   }
 }
 
