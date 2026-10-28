@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, EyeOff, List, X } from "@lucide/svelte";
+  import { BookmarkPlus, Eye, EyeOff, List, X } from "@lucide/svelte";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -48,6 +48,7 @@
     onNearEnd,
     onLoadAll,
     onMark,
+    onBookmark,
     platform,
   }: {
     books: readonly SeriesBook[];
@@ -60,6 +61,9 @@
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
+    onBookmark: (
+      books: BookId[],
+    ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
     platform: Platform;
   } = $props();
 
@@ -70,7 +74,8 @@
         readonly mark: ReadMark;
         readonly count: number;
       }
-    | { readonly kind: "failed" }
+    | { readonly kind: "bookmarked"; readonly count: number }
+    | { readonly kind: "failed"; readonly action: "mark" | "bookmark" }
     | { readonly kind: "pickedAll"; readonly count: number };
 
   const selection = new Selection<BookId>();
@@ -133,8 +138,20 @@
     const isMarked = await onMark(picked, read);
     outcome = isMarked
       ? { kind: "marked", mark: read, count: picked.length }
-      : { kind: "failed" };
+      : { kind: "failed", action: "mark" };
     return isMarked;
+  }
+
+  async function bookmarkSelected(picked: BookId[]): Promise<boolean> {
+    const { newlyBookmarked, failed } = await onBookmark(picked);
+    if (failed) {
+      outcome = { kind: "failed", action: "bookmark" };
+      return false;
+    }
+    if (newlyBookmarked > 0) {
+      outcome = { kind: "bookmarked", count: newlyBookmarked };
+    }
+    return true;
   }
 
   async function markSwiped(
@@ -158,6 +175,12 @@
 
   async function mark(read: ReadMark): Promise<void> {
     if (await markBooks(selection.picked, read)) {
+      await end();
+    }
+  }
+
+  async function bookmark(): Promise<void> {
+    if (await bookmarkSelected(selection.picked)) {
       await end();
     }
   }
@@ -200,8 +223,12 @@
         return shown.mark === "read"
           ? m.series_marked_read({ count: shown.count })
           : m.series_marked_unread({ count: shown.count });
+      case "bookmarked":
+        return m.series_bookmarked_books({ count: shown.count });
       case "failed":
-        return m.series_mark_failed();
+        return shown.action === "mark"
+          ? m.series_mark_failed()
+          : m.series_bookmark_failed();
       case "pickedAll":
         return m.series_selected_count({ count: shown.count });
     }
@@ -368,6 +395,9 @@
         onMark={(read: ReadMark) => {
           void mark(read);
         }}
+        onBookmark={() => {
+          void bookmark();
+        }}
         onClear={() => {
           void end();
         }}
@@ -397,13 +427,13 @@
       <Card
         role="group"
         aria-label={m.series_selection_toolbar()}
-        class="sticky inset-be-lg grid grid-cols-2 gap-2xs p-xs shadow-popover ios:max-medium:inset-be-none"
+        class="sticky inset-be-lg grid grid-cols-3 gap-2xs p-xs shadow-popover ios:max-medium:inset-be-none"
       >
         {#each MARKS as { mark: read, icon: Icon, label } (read)}
           <Button
             type="button"
             look="bar-icon"
-            class="flex-col text-caption font-semibold min-block-selection-action"
+            class="flex-col text-caption font-semibold wrap-anywhere min-block-selection-action"
             onclick={() => {
               void mark(read);
             }}
@@ -412,6 +442,17 @@
             {label()}
           </Button>
         {/each}
+        <Button
+          type="button"
+          look="bar-icon"
+          class="flex-col text-caption font-semibold wrap-anywhere min-block-selection-action"
+          onclick={() => {
+            void bookmark();
+          }}
+        >
+          <BookmarkPlus size={ACTION_ICON_SIZE} aria-hidden="true" />
+          {m.series_bookmark()}
+        </Button>
       </Card>
     {/if}
   {/if}

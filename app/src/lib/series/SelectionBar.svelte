@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, EyeOff, X } from "@lucide/svelte";
+  import { BookmarkPlus, Eye, EyeOff, X } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
@@ -17,10 +17,12 @@
   let {
     count,
     onMark,
+    onBookmark,
     onClear,
   }: {
     count: number;
     onMark: (mark: ReadMark) => void;
+    onBookmark?: () => void;
     onClear: () => void;
   } = $props();
 </script>
@@ -55,6 +57,24 @@
       {/snippet}
     </Tooltip>
   {/each}
+  {#if onBookmark !== undefined}
+    <Tooltip
+      label={m.series_bookmark()}
+      type="button"
+      aria-label={m.series_bookmark()}
+      onclick={onBookmark}
+    >
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          look="bar-icon"
+          class="block-pointer-target inline-pointer-target"
+        >
+          <BookmarkPlus size={ICON_SIZE} aria-hidden="true" />
+        </Button>
+      {/snippet}
+    </Tooltip>
+  {/if}
   <span aria-hidden="true" class="mx-xs self-stretch border-s border-border"
   ></span>
   <Tooltip

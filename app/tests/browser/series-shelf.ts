@@ -33,6 +33,11 @@ export const BOOKS_PER_PAGE = 100;
 
 export class FakeShelf {
   readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
+  readonly bookmarked: {
+    readonly book: string;
+    readonly pages: number[];
+    readonly isBookmarked: boolean;
+  }[] = [];
   readonly #books: WireBook[];
   readonly #details: SeriesDetails;
   #laterPages: Promise<void> = Promise.resolve();
@@ -145,6 +150,16 @@ export class FakeShelf {
             book.reading =
               mark === "read" ? { state: "read" } : { state: "notStarted" };
           }
+        }
+        return null;
+      },
+      bookmarkPages: (book, pages, isBookmarked) => {
+        this.bookmarked.push({ book, pages: [...pages], isBookmarked });
+        const bookmarking = this.#books.find(
+          (candidate) => candidate.id === book,
+        );
+        if (bookmarking !== undefined) {
+          bookmarking.isBookmarked = isBookmarked;
         }
         return null;
       },

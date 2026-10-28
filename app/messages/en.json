@@ -1914,6 +1914,23 @@
       }
     }
   ],
+  "series_bookmark": "Bookmark",
+  "series_bookmarked_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Bookmarked {formattedCount} book",
+        "countPlural=other": "Bookmarked {formattedCount} books"
+      }
+    }
+  ],
+  "series_bookmark_failed": "Couldn't keep the bookmark",
+  "series_bookmark_failed_body": "Try again in a moment.",
   "reader_back_label": "Back to the library",
   "reader_back_to_series": "Back to {series}",
   "reader_breadcrumb": "Breadcrumb",
