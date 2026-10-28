@@ -24,10 +24,12 @@
 
   let {
     isOpen,
+    isInLibrary,
     platform,
     onClose,
   }: {
     isOpen: boolean;
+    isInLibrary: boolean;
     platform: Platform;
     onClose: () => void;
   } = $props();
@@ -63,13 +65,17 @@
       { label: m.reader_full_screen(), keys: ["F"] },
       { label: m.reader_leave_full_screen(), keys: [m.reader_key_esc()] },
       {
-        label: m.reader_back_to_the_series(),
+        label: isInLibrary
+          ? m.reader_back_to_the_series()
+          : m.reader_back_label(),
         keys: [
           m.reader_key_esc(),
           isMac ? m.reader_key_back_mac() : m.reader_key_back(),
         ],
       },
-      { label: m.reader_jump_or_close(), keys: ["G"] },
+      ...(isInLibrary
+        ? [{ label: m.reader_jump_or_close(), keys: ["G"] }]
+        : []),
       { label: m.reader_keyboard_shortcuts(), keys: ["?"] },
     ],
   });

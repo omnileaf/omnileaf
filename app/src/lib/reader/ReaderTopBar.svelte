@@ -38,6 +38,7 @@
 
   let {
     seriesHref,
+    isInLibrary,
     platform,
     seriesTitle,
     bookTitle,
@@ -56,6 +57,7 @@
     onFullScreen,
   }: {
     seriesHref: ResolvedPathname;
+    isInLibrary: boolean;
     platform: Platform;
     seriesTitle: string;
     bookTitle: string;
@@ -69,12 +71,16 @@
     bookmark: { readonly label: string; readonly isPressed: boolean } | null;
     onBookmark: () => void;
     isJumpOpen: boolean;
-    onJump: () => void;
+    onJump: (() => void) | undefined;
     onSettings: () => void;
     onFullScreen: () => void;
   } = $props();
 
-  const backLabel = $derived(m.reader_back_to_series({ series: seriesTitle }));
+  const backLabel = $derived(
+    isInLibrary
+      ? m.reader_back_to_series({ series: seriesTitle })
+      : m.reader_back_label(),
+  );
   const JUMP_ICON_SIZE = 12;
 
   const chrome = getReaderChrome();
@@ -131,7 +137,7 @@
         )}
       >
         <ReaderBackArrow {platform} {isOnPhone} />
-        {#if !isOnPhone}
+        {#if !isOnPhone && isInLibrary}
           <span
             class="hidden truncate text-small text-accent max-inline-reader-crumb-book ios:max-expanded:inline"
           >
@@ -141,7 +147,20 @@
       </a>
     {/snippet}
   </Tooltip>
-  {#if floats}
+  {#if !isInLibrary}
+    <div
+      class="flex flex-1 flex-col items-center justify-center text-center min-inline-none"
+    >
+      <span class="truncate text-small font-semibold max-inline-full">
+        {bookTitle}
+      </span>
+      <span
+        class="truncate text-caption font-medium text-muted max-inline-full"
+      >
+        {m.reader_page_of({ page: pageNumber, count: pageCount })}
+      </span>
+    </div>
+  {:else if floats}
     <button
       type="button"
       aria-label={jumpLabel}
@@ -204,51 +223,59 @@
       ></button>
     </div>
   {/if}
-  <Breadcrumb
-    aria-label={m.reader_breadcrumb()}
-    class="hidden flex-1 text-small min-inline-none expanded:block"
-  >
-    <BreadcrumbItem class="min-inline-none">
-      <a
-        href={seriesHref}
-        class="-my-xs block truncate py-xs text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-        >{seriesTitle}</a
-      >
-    </BreadcrumbItem>
-    <BreadcrumbSeparator class="text-muted" />
-    <BreadcrumbItem class="min-inline-none">
-      <BreadcrumbPage class="min-inline-none">
-        <Tooltip
-          label={m.reader_jump_to_book()}
-          keys={["G"]}
-          type="button"
-          aria-label={m.reader_jump_from_book({ title: bookTitle })}
-          aria-expanded={isJumpOpen}
-          aria-keyshortcuts="G"
-          onclick={onJump}
+  {#if !isInLibrary}
+    <div
+      class="hidden flex-1 text-small text-muted min-inline-none expanded:block"
+    >
+      <span class="block truncate py-xs">{bookTitle}</span>
+    </div>
+  {:else}
+    <Breadcrumb
+      aria-label={m.reader_breadcrumb()}
+      class="hidden flex-1 text-small min-inline-none expanded:block"
+    >
+      <BreadcrumbItem class="min-inline-none">
+        <a
+          href={seriesHref}
+          class="-my-xs block truncate py-xs text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
+          >{seriesTitle}</a
         >
-          {#snippet child({ props })}
-            <button
-              {...props}
-              class={cn(
-                "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control max-inline-full min-block-compact-button min-inline-none hover:bg-hover active:bg-pressed",
-                isJumpOpen && "bg-hover",
-              )}
-            >
-              <span class="truncate max-inline-reader-crumb-book"
-                >{bookTitle}</span
+      </BreadcrumbItem>
+      <BreadcrumbSeparator class="text-muted" />
+      <BreadcrumbItem class="min-inline-none">
+        <BreadcrumbPage class="min-inline-none">
+          <Tooltip
+            label={m.reader_jump_to_book()}
+            keys={["G"]}
+            type="button"
+            aria-label={m.reader_jump_from_book({ title: bookTitle })}
+            aria-expanded={isJumpOpen}
+            aria-keyshortcuts="G"
+            onclick={onJump}
+          >
+            {#snippet child({ props })}
+              <button
+                {...props}
+                class={cn(
+                  "flex items-center gap-2xs rounded-shadcn-control px-xs text-foreground transition-control max-inline-full min-block-compact-button min-inline-none hover:bg-hover active:bg-pressed",
+                  isJumpOpen && "bg-hover",
+                )}
               >
-              <ChevronDown
-                size={JUMP_ICON_SIZE}
-                aria-hidden="true"
-                class="shrink-0"
-              />
-            </button>
-          {/snippet}
-        </Tooltip>
-      </BreadcrumbPage>
-    </BreadcrumbItem>
-  </Breadcrumb>
+                <span class="truncate max-inline-reader-crumb-book"
+                  >{bookTitle}</span
+                >
+                <ChevronDown
+                  size={JUMP_ICON_SIZE}
+                  aria-hidden="true"
+                  class="shrink-0"
+                />
+              </button>
+            {/snippet}
+          </Tooltip>
+        </BreadcrumbPage>
+      </BreadcrumbItem>
+    </Breadcrumb>
+  {/if}
   {#if quickSettings !== undefined}
     <div
       role="group"

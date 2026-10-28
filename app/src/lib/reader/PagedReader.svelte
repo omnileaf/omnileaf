@@ -34,6 +34,7 @@
   import { shortcut } from "#lib/shortcut.ts";
 
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
+  import OpenedOutsideLibrary from "#lib/reader/OpenedOutsideLibrary.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
   import {
@@ -58,6 +59,7 @@
     readerShortcuts,
   } from "#lib/reader/reader-keys.ts";
   import { ReaderControls } from "#lib/reader/reader-controls.svelte.ts";
+  import { librarySeriesKey } from "#lib/reader/opened-book.ts";
   import LightQuickSetting from "#lib/reader/LightQuickSetting.svelte";
   import {
     type PageFit,
@@ -165,14 +167,15 @@
   const notices = getNotices();
   const chrome = untrack(() => new ReaderChrome(platform));
   setReaderChrome(chrome);
+  const seriesKey = untrack(() => librarySeriesKey(book));
   const reading = untrack(() =>
     seriesReadingDirection(
-      book.series,
+      seriesKey,
       book.readingDirection,
       smartFeatures.choosesReadingMode ? pagesLookLikeStrip(book.pages) : false,
     ),
   );
-  const settings = untrack(() => readerSettings(book.series));
+  const settings = untrack(() => readerSettings(seriesKey));
   const guidesSeenNow = new SvelteSet<string>();
   const guideKey = $derived(
     reading.mode === "longStrip"
@@ -234,7 +237,7 @@
     };
   });
   const stripFound = untrack(() =>
-    seenOnce(`omnileaf.stripFound.${book.series}`),
+    seenOnce(`omnileaf.stripFound.${seriesKey}`),
   );
   let isStripFoundSeen = $state(stripFound.isSeen);
 
@@ -321,7 +324,9 @@
     m.reader_slider_value({ page: pageNumber, count: pageCount }),
   );
   const seriesHref = $derived(
-    resolve("/(app)/series/[id]", { id: book.series }),
+    book.isInLibrary
+      ? resolve("/(app)/series/[id]", { id: book.series })
+      : resolve("/(app)"),
   );
   const nextHref = $derived(
     book.next === null
@@ -341,6 +346,9 @@
 
   function openJump(isOpen: boolean): void {
     if (isOpen) {
+      if (!book.isInLibrary) {
+        return;
+      }
       openSettings(false);
     }
     isJumpOpen = isOpen;
@@ -718,7 +726,7 @@
   }
 
   function sayDirectionFound(): void {
-    const noticed = seenOnce(`omnileaf.directionFound.${book.series}`);
+    const noticed = seenOnce(`omnileaf.directionFound.${seriesKey}`);
     if (
       chrome.isOnPhone ||
       noticed.isSeen ||
@@ -1086,6 +1094,9 @@
       }
     }}
   >
+    {#if !book.isInLibrary}
+      <OpenedOutsideLibrary {platform} />
+    {/if}
     <div
       class={[
         "absolute inset-none",
@@ -1184,6 +1195,7 @@
       >
         <ReaderTopBar
           {seriesHref}
+          isInLibrary={book.isInLibrary}
           {platform}
           seriesTitle={named.seriesTitle}
           bookTitle={named.title}
@@ -1203,9 +1215,11 @@
                 isPressed: isBookmarked,
               }}
           {isJumpOpen}
-          onJump={() => {
-            act("jump");
-          }}
+          onJump={book.isInLibrary
+            ? () => {
+                act("jump");
+              }
+            : undefined}
           onBookmark={() => {
             void toggleBookmark();
           }}
@@ -1316,17 +1330,20 @@
         </span>
       </div>
     {/if}
-    <JumpToBook
-      isOpen={isJumpOpen}
-      {book}
-      seriesTitle={named.seriesTitle}
-      currentPage={turner.shown + 1}
-      onClose={() => {
-        openJump(false);
-      }}
-    />
+    {#if book.isInLibrary}
+      <JumpToBook
+        isOpen={isJumpOpen}
+        {book}
+        seriesTitle={named.seriesTitle}
+        currentPage={turner.shown + 1}
+        onClose={() => {
+          openJump(false);
+        }}
+      />
+    {/if}
     <KeyboardShortcuts
       isOpen={areShortcutsOpen}
+      isInLibrary={book.isInLibrary}
       {platform}
       onClose={() => {
         openShortcuts(false);
