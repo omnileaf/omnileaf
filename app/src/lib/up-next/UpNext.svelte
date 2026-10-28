@@ -223,7 +223,7 @@
             bind:this={heading}
             tabindex="-1"
             class={isOnPhone
-              ? "text-native-end-title/native-end-title font-native-end-title tracking-native-end-title text-balance"
+              ? "text-native-end-title/native-end-title font-native-end-title tracking-native-end-title text-balance wrap-break-word"
               : "text-title font-semibold text-pretty"}
           >
             {m.reader_finished({ title })}
@@ -231,14 +231,16 @@
           <p
             class={[
               isOnPhone ? ROW_SUBTITLE_TYPE : "text-small",
-              "text-muted expanded:hidden",
+              "wrap-break-word text-muted expanded:hidden",
             ]}
           >
             {time === undefined
               ? m.reader_marked_read_in({ series: seriesTitle })
               : m.reader_marked_read_in_after({ series: seriesTitle, time })}
           </p>
-          <p class="hidden text-small text-muted expanded:block">
+          <p
+            class="hidden text-small wrap-break-word text-muted expanded:block"
+          >
             {time === undefined
               ? m.reader_marked_read()
               : m.reader_marked_read_after({ time })}
@@ -283,7 +285,7 @@
                 class={[
                   "line-clamp-2",
                   isOnPhone
-                    ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book"
+                    ? "text-native-end-book/native-end-book font-native-end-book tracking-native-end-book wrap-break-word"
                     : "text-group-title font-semibold expanded:text-body",
                 ]}>{next.title}</span
               >

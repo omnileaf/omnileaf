@@ -194,7 +194,7 @@
       {:else}
         <h1
           tabindex="-1"
-          class="text-page-title font-bold tracking-tight expanded:text-series-title"
+          class="text-page-title font-bold tracking-tight wrap-break-word expanded:text-series-title"
         >
           {data.name}
         </h1>
@@ -226,7 +226,9 @@
                 <CoverImage cover={shown.cover} {coverUrl} />
               </span>
               <span class="flex flex-col min-inline-none">
-                <span class="line-clamp-2 text-small font-medium">
+                <span
+                  class="line-clamp-2 text-small font-medium wrap-break-word"
+                >
                   {shown.title}
                 </span>
                 {#if series.role !== null}

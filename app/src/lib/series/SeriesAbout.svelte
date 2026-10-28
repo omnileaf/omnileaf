@@ -134,7 +134,7 @@
     >
       <h1
         tabindex="-1"
-        class="line-clamp-3 text-series-title font-bold tracking-tight text-balance expanded:text-pretty"
+        class="line-clamp-3 text-series-title font-bold tracking-tight text-balance wrap-break-word expanded:text-pretty"
       >
         {overview.title}
       </h1>

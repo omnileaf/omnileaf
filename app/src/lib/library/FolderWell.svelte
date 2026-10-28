@@ -16,6 +16,6 @@
     <p class="truncate text-callout font-semibold max-medium:text-body">
       {title}
     </p>
-    <p class="text-footnote text-muted">{detail}</p>
+    <p class="text-footnote wrap-break-word text-muted">{detail}</p>
   </div>
 </div>

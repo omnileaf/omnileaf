@@ -20,7 +20,7 @@
 {#if Icon !== undefined}
   <Icon size={ICON_SIZE} aria-hidden="true" class="shrink-0 {iconClass}" />
 {/if}
-<span class="grid text-center min-inline-none">
+<span class="grid text-center wrap-break-word min-inline-none">
   <span
     aria-hidden="true"
     class="invisible col-start-1 row-start-1 font-semibold"

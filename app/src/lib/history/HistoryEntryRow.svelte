@@ -62,10 +62,12 @@
       class="shrink-0 rounded-history-cover inline-history-cover"
     />
     <span class="flex flex-col gap-2xs min-inline-none">
-      <span class="line-clamp-2 text-small font-semibold">
+      <span class="line-clamp-2 text-small font-semibold wrap-break-word">
         {entry.seriesTitle}
       </span>
-      <span class="line-clamp-2 text-detail text-muted tabular-nums">
+      <span
+        class="line-clamp-2 text-detail wrap-break-word text-muted tabular-nums"
+      >
         {historyLine(entry, group, formats)}
       </span>
       <Progress

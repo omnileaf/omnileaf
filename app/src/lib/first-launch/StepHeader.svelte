@@ -36,13 +36,21 @@
   </div>
   <h1
     tabindex="-1"
-    class={isSetupPage
-      ? "text-welcome-title font-semibold"
-      : ["font-bold tracking-tight", SCALES[scale]]}
+    class={[
+      "wrap-break-word",
+      isSetupPage
+        ? "text-welcome-title font-semibold"
+        : ["font-bold tracking-tight", SCALES[scale]],
+    ]}
   >
     {@render children()}
   </h1>
-  <p class={["text-muted", isSetupPage ? "text-label" : "text-step-body"]}>
+  <p
+    class={[
+      "wrap-break-word text-muted",
+      isSetupPage ? "text-label" : "text-step-body",
+    ]}
+  >
     {@render lead()}
   </p>
 </div>
