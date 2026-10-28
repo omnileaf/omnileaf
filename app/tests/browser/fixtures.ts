@@ -214,6 +214,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   matchSystemBars: () => null,
   watchBackSwipes: () => null,
   allowBackSwipe: () => null,
+  watchSystemContrast: () => null,
   captureVolumeKeys: () => null,
   releaseVolumeKeys: () => null,
   copyVersionDetails: () => null,
