@@ -1,4 +1,7 @@
-use omnileaf_db::catalog::{self, SeriesFileDetails, Sourced};
+use omnileaf_db::{
+    catalog::{self, PersonRole, SeriesFileDetails, SeriesPerson as StoredPerson, Sourced},
+    store::{EditedPerson, SeriesEdits},
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -86,37 +89,96 @@ impl SeriesDetails {
     pub(crate) fn from_files(
         overview: catalog::SeriesOverview,
         details: SeriesFileDetails,
+        edits: SeriesEdits,
     ) -> Self {
         Self {
             title: EditedTitle {
-                from_file: overview.title,
+                from_file: overview.file_title,
                 source: overview.title_source.map(ValueSource::from),
-                edited: None,
+                edited: edits.title,
             },
             people: EditedPeople {
-                from_file: details
+                from_file: details.people.into_iter().map(SeriesPerson::from).collect(),
+                edited: edits
                     .people
-                    .into_iter()
-                    .map(|person| SeriesPerson {
-                        role: CreatorRole::of(&person.roles),
-                        name: person.name,
-                    })
-                    .collect(),
-                edited: None,
+                    .map(|people| people.into_iter().map(SeriesPerson::from).collect()),
             },
             tags: EditedTags {
                 from_file: details.tags,
-                edited: None,
+                edited: edits.tags,
             },
             summary: EditedSummary {
                 from_file: details.summary,
-                edited: None,
+                edited: edits.summary,
             },
             year: overview.year.map(SourcedYear::from),
             language: overview.language.map(SourcedLanguage::from),
-            is_marked_adult: false,
+            is_marked_adult: edits.is_adult,
             is_rated_adult: overview.is_rated_adult,
         }
+    }
+}
+
+impl DetailEdits {
+    pub(crate) fn stored(self) -> SeriesEdits {
+        SeriesEdits {
+            title: self.title,
+            summary: self.summary,
+            people: self.people.map(|people| {
+                people
+                    .into_iter()
+                    .map(|person| EditedPerson {
+                        roles: roles_of(person.role),
+                        name: person.name,
+                    })
+                    .collect()
+            }),
+            tags: self.tags,
+            is_adult: self.is_marked_adult,
+        }
+    }
+}
+
+fn roles_of(role: Option<CreatorRole>) -> Vec<PersonRole> {
+    match role {
+        Some(CreatorRole::Story) => vec![PersonRole::Writer],
+        Some(CreatorRole::Art) => vec![PersonRole::Penciller],
+        Some(CreatorRole::StoryAndArt) => vec![PersonRole::Writer, PersonRole::Penciller],
+        None => Vec::new(),
+    }
+}
+
+impl From<StoredPerson> for SeriesPerson {
+    fn from(person: StoredPerson) -> Self {
+        Self {
+            role: CreatorRole::of(&person.roles),
+            name: person.name,
+        }
+    }
+}
+
+impl From<EditedPerson> for SeriesPerson {
+    fn from(person: EditedPerson) -> Self {
+        Self {
+            role: CreatorRole::of(&person.roles),
+            name: person.name,
+        }
+    }
+}
+
+pub(crate) fn shown_details(
+    files: SeriesFileDetails,
+    people: Vec<StoredPerson>,
+    edits: &SeriesEdits,
+) -> SeriesFileDetails {
+    SeriesFileDetails {
+        summary: match &edits.summary {
+            Some(edited) => Some(edited.clone()).filter(|summary| !summary.is_empty()),
+            None => files.summary,
+        },
+        format: files.format,
+        people,
+        tags: edits.tags.clone().unwrap_or(files.tags),
     }
 }
 

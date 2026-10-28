@@ -52,6 +52,10 @@ pub(crate) enum IpcErrorCode {
         reason = "the interface keeps its notice for this code until it stops showing it"
     )]
     LabelsNotKept,
+    #[expect(
+        dead_code,
+        reason = "the interface keeps its notice for this code until it stops showing it"
+    )]
     DetailsNotKept,
     ReportNotSaved,
     ReportsNotSent,
@@ -125,13 +129,6 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DevelopmentBuildOnly,
             message: "only development builds can crash on purpose",
-        }
-    }
-
-    pub(crate) fn details_not_kept() -> Self {
-        Self {
-            code: IpcErrorCode::DetailsNotKept,
-            message: "the library keeps no edits to series details yet",
         }
     }
 
@@ -380,14 +377,6 @@ mod tests {
         let code = code_for(LibraryError::ReadTypeKept { file_type });
 
         assert_eq!(code, IpcErrorCode::FileTypeRead);
-    }
-
-    #[test]
-    fn tells_the_interface_the_library_keeps_no_edits_to_details_yet() {
-        assert_eq!(
-            IpcError::details_not_kept().code,
-            IpcErrorCode::DetailsNotKept
-        );
     }
 
     #[test]

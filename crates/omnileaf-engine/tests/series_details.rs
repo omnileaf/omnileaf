@@ -39,10 +39,10 @@ async fn first_series(library: &Library) -> SeriesId {
 }
 
 #[tokio::test]
-async fn keeps_no_edits_to_details_yet() {
+async fn keeps_edits_to_details() {
     let (library, _comics, _home) = library_with_the_sample_series("details-kept").await;
 
-    assert!(!library.keeps_detail_edits());
+    assert!(library.keeps_detail_edits());
 }
 
 #[tokio::test]

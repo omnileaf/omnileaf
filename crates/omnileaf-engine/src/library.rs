@@ -24,9 +24,9 @@ use omnileaf_db::{
         record_page_count, related_series, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
         root_shares, series_books, series_count, series_file_details, series_numberings,
-        series_overview, series_page, series_titles, series_volume, show_root_while_missing,
-        store_page_dimensions, unread_books, up_next, writer_series_count, writer_series_page,
-        writers,
+        series_overview, series_page, series_people, series_titles, series_volume,
+        show_root_while_missing, store_page_dimensions, unread_books, up_next, writer_series_count,
+        writer_series_page, writers,
     },
     first_launch::{finish_first_launch, first_launch_finished},
     hidden_file_types::{hidden_file_types, hide_file_type, show_file_type},
@@ -39,7 +39,7 @@ use omnileaf_db::{
     library_tabs::{TabPlace, library_tabs, set_library_tabs},
     library_view::{library_view, set_library_view},
     reading_speed::seconds_per_page,
-    store::{Changed, Clock, Store},
+    store::{Changed, Clock, Store, series_edits},
 };
 use omnileaf_formats::LocalStorage;
 use tokio::{
@@ -50,15 +50,15 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace, BookSessions,
-    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor,
-    FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan,
-    FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns,
-    MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome, ResolvedBookmark,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
-    SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup, UnreachableShare,
-    UtcOffset, WriterCursor, WriterPage,
+    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, DetailEdits, FileType,
+    FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
+    LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
+    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
+    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -80,6 +80,7 @@ use crate::{
     rescan_conditions::{RescanConditions, Storage},
     rescan_schedule::{Check, RescanSchedule},
     scan::{Target, find_books_in, saturating_u32, scan, walk},
+    series_details::shown_details,
 };
 
 pub(crate) const DATABASE_FILE: &str = "library.sqlite";
@@ -714,7 +715,11 @@ impl Library {
                 Ok(Some((
                     overview,
                     up_next(connection, series)?,
-                    series_file_details(connection, series)?,
+                    shown_details(
+                        series_file_details(connection, series)?,
+                        series_people(connection, series)?,
+                        &series_edits(connection, series)?,
+                    ),
                     series_numberings(connection, series)?,
                     related_series(connection, series, related_wanted)?,
                 )))
@@ -745,26 +750,51 @@ impl Library {
         Ok(found.map(|found| SeriesVolume::new(volume, &found)))
     }
 
-    /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
-    pub fn keeps_detail_edits(&self) -> bool {
-        let _ = &self.store;
-        false
+    /// Whether the library keeps edits over the files' details, which the interface offers Edit details by.
+    pub const fn keeps_detail_edits(&self) -> bool {
+        true
+    }
+
+    #[tracing::instrument(skip_all, fields(%id))]
+    pub async fn edit_series_details(
+        &self,
+        id: SeriesId,
+        edits: DetailEdits,
+    ) -> Result<(), LibraryError> {
+        let series = id.0;
+        let is_shown = self
+            .store
+            .database()
+            .read(move |connection| Ok(series_overview(connection, series)?.is_some()))
+            .await?;
+        if !is_shown {
+            return Err(LibraryError::SeriesNotFound { id });
+        }
+        let edits = edits.stored();
+        Ok(self
+            .store
+            .write(move |writer| writer.edit_series(series, edits))
+            .await?)
     }
 
     pub async fn series_details(&self, id: SeriesId) -> Result<SeriesDetails, LibraryError> {
         let series = id.0;
-        let (overview, details) = self
+        let (overview, details, edits) = self
             .store
             .database()
             .read(move |connection| {
                 let Some(overview) = series_overview(connection, series)? else {
                     return Ok(None);
                 };
-                Ok(Some((overview, series_file_details(connection, series)?)))
+                Ok(Some((
+                    overview,
+                    series_file_details(connection, series)?,
+                    series_edits(connection, series)?,
+                )))
             })
             .await?
             .ok_or(LibraryError::SeriesNotFound { id })?;
-        Ok(SeriesDetails::from_files(overview, details))
+        Ok(SeriesDetails::from_files(overview, details, edits))
     }
 
     /// Lists the series in the library that name `creator`, with what they did on each.
