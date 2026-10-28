@@ -63,6 +63,29 @@ test.beforeEach(() => {
   whileSeriesLoads = undefined;
 });
 
+
+async function probe(page: Page, label: string): Promise<void> {
+  const seen = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    const frames = [...document.querySelectorAll(".virtual-rows")];
+    return JSON.stringify({
+      scale: document.documentElement.style.getPropertyValue("--text-scale"),
+      fonts: document.fonts.status,
+      main: main && [main.scrollHeight, main.clientHeight, main.scrollTop],
+      frames: frames.map((frame) => ({
+        prev: frame.closest("[data-previous-screen]") !== null,
+        style: frame.getAttribute("style"),
+        height: frame.getBoundingClientRect().height,
+        rows: [...frame.querySelectorAll("li")].map((row) => {
+          const box = row.getBoundingClientRect();
+          return [box.top, box.height, getComputedStyle(row).borderBlockEndWidth, row.firstElementChild?.getBoundingClientRect().height];
+        }),
+      })),
+    });
+  });
+  console.log(`PROBE ${label} ${seen}`);
+}
+
 function readerScreen(page: Page) {
   return page.getByRole("main");
 }
@@ -314,6 +337,7 @@ test.describe("swiping back from the reader", { tag: "@native" }, () => {
     await page.getByRole("main").evaluate((main) => {
       main.scrollTop = main.scrollHeight;
     });
+    await probe(page, "leave");
     await firstBook.dispatchEvent("click");
     await expect(page).toHaveURL(READER_URL);
 
@@ -324,6 +348,9 @@ test.describe("swiping back from the reader", { tag: "@native" }, () => {
     await swipe({ kind: "released", progress: PAST_HALFWAY, velocity: 0 });
 
     await expect(page).toHaveURL(SERIES_URL);
+    await probe(page, "landed");
+    await page.waitForTimeout(1000);
+    await probe(page, "settled");
     expect(shownWhileSwiping).toBeGreaterThan(0);
     await expect
       .poll(() => page.getByRole("main").evaluate((main) => main.scrollTop))
