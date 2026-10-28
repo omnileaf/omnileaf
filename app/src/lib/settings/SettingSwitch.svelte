@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
@@ -25,8 +26,6 @@
 
   const ROW =
     "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target";
-  const FOCUS =
-    "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent";
 
   const id = $props.id();
   const platform = currentPlatform();
@@ -45,7 +44,7 @@
       aria-describedby={description === undefined
         ? undefined
         : `${id}-description`}
-      class={["native-target shrink-0 rounded-full", FOCUS]}
+      class={["native-target shrink-0 rounded-full", ROW_FOCUS_RING]}
     />
   </div>
 {:else}
@@ -55,7 +54,12 @@
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[ROW, "hover:tint-hover active:tint-pressed", FOCUS, className]}
+    class={[
+      ROW,
+      "hover:tint-hover active:tint-pressed",
+      ROW_FOCUS_RING,
+      className,
+    ]}
   >
     <SettingWords {id} {label} {description} />
   </Switch>

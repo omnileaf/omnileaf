@@ -3,6 +3,7 @@
 
   import { Alert, AlertTitle } from "#lib/components/ui/alert/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -61,7 +62,10 @@
         <Button
           type="button"
           look="row"
-          class="gap-md px-lg py-md inline-full min-block-touch-target focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+          class={[
+            "gap-md px-lg py-md inline-full min-block-touch-target",
+            ROW_FOCUS_RING,
+          ]}
           onclick={() => {
             void sharing.share(way);
           }}

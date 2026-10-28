@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
 
   let {
@@ -20,7 +21,10 @@
   bind:checked={() => isOn, onToggle}
   aria-labelledby="{id}-label"
   aria-describedby={description === undefined ? undefined : `${id}-description`}
-  class="flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+  class={[
+    "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row",
+    ROW_FOCUS_RING,
+  ]}
 >
   <span class="flex flex-1 flex-col gap-2xs">
     <span id="{id}-label" class="text-body font-medium large:text-small">

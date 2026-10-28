@@ -18,7 +18,7 @@
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
-  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
+  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -208,7 +208,8 @@
           onChoose(tab.id);
         }}
         class={[
-          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent expanded:min-block-pointer-button touch:touch-target-across",
+          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs expanded:min-block-pointer-button touch:touch-target-across",
+          ROW_FOCUS_RING,
           isChosen
             ? "font-semibold text-foreground after:bg-foreground"
             : "font-medium text-muted hover:text-foreground",
