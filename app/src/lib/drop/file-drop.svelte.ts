@@ -26,11 +26,22 @@ export interface DropPorts {
   onFailed(error: unknown): void;
 }
 
+function sameFiles(
+  known: readonly string[],
+  paths: readonly string[],
+): boolean {
+  return (
+    known.length === paths.length &&
+    known.every((path, index) => path === paths[index])
+  );
+}
+
 export class FileDrop {
   state: DropState = $state({ kind: "idle" });
 
   readonly #ports: DropPorts;
   #generation = 0;
+  #paths: string[] = [];
   #inspection: Promise<void> = Promise.resolve();
   #summary: DropSummary | null = null;
   #over: DropTarget | null = null;
@@ -61,6 +72,10 @@ export class FileDrop {
   }
 
   #enter(paths: string[], at: Point): Promise<void> {
+    if (this.#summary !== null && sameFiles(this.#paths, paths)) {
+      return this.#inspection;
+    }
+    this.#paths = paths;
     this.#generation += 1;
     const generation = this.#generation;
     this.#reset();
@@ -93,6 +108,7 @@ export class FileDrop {
     const mode = this.#modeFor(target);
     this.#generation += 1;
     this.#reset();
+    this.#copies = false;
     if (mode === null) {
       return;
     }
@@ -117,6 +133,7 @@ export class FileDrop {
   #leave(): void {
     this.#generation += 1;
     this.#reset();
+    this.#copies = false;
   }
 
   #reset(): void {

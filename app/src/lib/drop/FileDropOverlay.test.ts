@@ -16,6 +16,8 @@ function boxOf(selector: string): DOMRect {
   return target.getBoundingClientRect();
 }
 
+const shownName = (name: string): string => name;
+
 afterEach(() => {
   document.documentElement.removeAttribute("data-platform");
 });
@@ -28,7 +30,7 @@ const OFFERING: DropState = {
 };
 
 test("names the first file, how many more there are and their size", async () => {
-  await render(FileDropOverlay, { state: OFFERING });
+  await render(FileDropOverlay, { state: OFFERING, shownName });
 
   await expect
     .element(page.getByText("One.cbz and 2 more · 45 MB"))
@@ -36,7 +38,7 @@ test("names the first file, how many more there are and their size", async () =>
 });
 
 test("offers reading now and adding to the library", async () => {
-  await render(FileDropOverlay, { state: OFFERING });
+  await render(FileDropOverlay, { state: OFFERING, shownName });
 
   await expect.element(page.getByText("Read now")).toBeVisible();
   await expect
@@ -51,7 +53,10 @@ test("offers reading now and adding to the library", async () => {
 });
 
 test("says the files are copied in the adding target while Alt is held", async () => {
-  await render(FileDropOverlay, { state: { ...OFFERING, copies: true } });
+  await render(FileDropOverlay, {
+    state: { ...OFFERING, copies: true },
+    shownName,
+  });
 
   await expect
     .element(page.getByText("Copies them into your home folder instead."))
@@ -64,7 +69,7 @@ test("says the files are copied in the adding target while Alt is held", async (
 });
 
 test("tells the person that holding Alt copies", async () => {
-  await render(FileDropOverlay, { state: OFFERING });
+  await render(FileDropOverlay, { state: OFFERING, shownName });
 
   await expect.element(page.getByText("Alt", { exact: true })).toBeVisible();
   await expect
@@ -73,7 +78,10 @@ test("tells the person that holding Alt copies", async () => {
 });
 
 test("marks the target under the pointer", async () => {
-  await render(FileDropOverlay, { state: { ...OFFERING, over: "readNow" } });
+  await render(FileDropOverlay, {
+    state: { ...OFFERING, over: "readNow" },
+    shownName,
+  });
 
   const over = [...document.querySelectorAll<HTMLElement>("[data-over=true]")];
 
@@ -83,7 +91,7 @@ test("marks the target under the pointer", async () => {
 });
 
 test("lets each target be found at its own place on the page", async () => {
-  await render(FileDropOverlay, { state: OFFERING });
+  await render(FileDropOverlay, { state: OFFERING, shownName });
 
   const reading = boxOf('[data-drop-target="readNow"]');
   const adding = boxOf('[data-drop-target="add"]');
@@ -105,6 +113,7 @@ test("explains why nothing was added instead of offering the targets", async () 
         { name: "Volume 6.cbr", reason: "typeNotReadYet" },
       ],
     },
+    shownName,
   });
 
   await expect.element(page.getByText("Nothing added")).toBeVisible();
@@ -122,7 +131,44 @@ test("explains why nothing was added instead of offering the targets", async () 
 });
 
 test("shows nothing while no drag is over the window", async () => {
-  await render(FileDropOverlay, { state: { kind: "idle" } });
+  await render(FileDropOverlay, { state: { kind: "idle" }, shownName });
 
   expect(document.querySelector("[data-slot=drop-layer]")).toBeNull();
+});
+
+test("shows every name under the name given for it", async () => {
+  await render(FileDropOverlay, {
+    state: OFFERING,
+    shownName: () => "Folder 07",
+  });
+
+  await expect
+    .element(page.getByText("Folder 07 and 2 more · 45 MB"))
+    .toBeVisible();
+  await expect
+    .element(page.getByText("Opens Folder 07 without adding anything."))
+    .toBeVisible();
+});
+
+test("announces the offer and the refusal as status messages", async () => {
+  const { unmount } = await render(FileDropOverlay, {
+    state: OFFERING,
+    shownName,
+  });
+  await expect
+    .element(page.getByRole("status", { name: "Drop files" }))
+    .toBeVisible();
+  await unmount();
+
+  await render(FileDropOverlay, {
+    state: {
+      kind: "refused",
+      refused: [{ name: "a.pdf", reason: "notAComic" }],
+    },
+    shownName,
+  });
+
+  await expect
+    .element(page.getByRole("status", { name: "Drop files" }))
+    .toBeVisible();
 });

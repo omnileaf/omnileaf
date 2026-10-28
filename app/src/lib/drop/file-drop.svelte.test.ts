@@ -28,7 +28,11 @@ class Ports implements DropPorts {
   readonly outcomes: { outcome: DropOutcome; mode: DropMode }[] = [];
   readonly failures: unknown[] = [];
 
-  inspect = (): Promise<DropSummary> => this.summary;
+  inspections = 0;
+  inspect = (): Promise<DropSummary> => {
+    this.inspections += 1;
+    return this.summary;
+  };
   drop = (paths: string[], mode: DropMode): Promise<DropOutcome> => {
     this.dropped.push({ paths, mode });
     return this.outcome;
@@ -230,4 +234,37 @@ test("reports a drop that fails", async () => {
 
   expect(ports.failures).toEqual([failure]);
   expect(ports.outcomes).toEqual([]);
+});
+
+test("does not carry Alt over to the next drag once a drop is done", async () => {
+  const ports = new Ports();
+  const drop = await entered(ports);
+  drop.setAltHeld(true);
+  ports.target = "add";
+  await drop.handle({ kind: "drop", paths: PATHS, at: AT });
+
+  await drop.handle({ kind: "enter", paths: PATHS, at: AT });
+  await drop.handle({ kind: "drop", paths: PATHS, at: AT });
+
+  expect(ports.dropped.map(({ mode }) => mode)).toEqual(["copy", "add"]);
+});
+
+test("does not carry Alt over to the next drag once a drag has left", async () => {
+  const drop = await entered(new Ports());
+  drop.setAltHeld(true);
+  await drop.handle({ kind: "leave" });
+
+  await drop.handle({ kind: "enter", paths: PATHS, at: AT });
+
+  expect(drop.state).toMatchObject({ kind: "offering", copies: false });
+});
+
+test("keeps the offer when the same files are entered again", async () => {
+  const ports = new Ports();
+  const drop = await entered(ports);
+
+  await drop.handle({ kind: "enter", paths: PATHS, at: AT });
+
+  expect(ports.inspections).toBe(1);
+  expect(drop.state).toMatchObject({ kind: "offering" });
 });

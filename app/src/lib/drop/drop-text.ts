@@ -28,8 +28,11 @@ function listed(names: readonly string[]): string {
   }).format(names);
 }
 
-export function dropWhat(summary: DropSummary): string {
-  const name = summary.first ?? "";
+export function dropWhat(
+  summary: DropSummary,
+  shownName: (name: string) => string,
+): string {
+  const name = shownName(summary.first ?? "");
   const what =
     summary.more === 0
       ? name
@@ -42,11 +45,14 @@ export function dropWhat(summary: DropSummary): string {
       });
 }
 
-export function refusalLines(refused: readonly RefusedDrop[]): string[] {
+export function refusalLines(
+  refused: readonly RefusedDrop[],
+  shownName: (name: string) => string,
+): string[] {
   return REFUSAL_REASONS.flatMap((reason) => {
     const names = refused
       .filter((drop) => drop.reason === reason)
-      .map((drop) => drop.name);
+      .map((drop) => shownName(drop.name));
     return names.length === 0
       ? []
       : [

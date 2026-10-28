@@ -149,7 +149,9 @@ test.describe("with comic files dragged over the window", () => {
     expect(dropped).toEqual([{ paths: PATHS, mode: "add" }]);
   });
 
-  test("copies the files instead while Alt is held", async ({ page }) => {
+  test("copies the files instead while the page sees Alt held", async ({
+    page,
+  }) => {
     await dragOver(page, PATHS, page.getByText("Read now"));
     const add = page.locator('[data-drop-target="add"]');
     await expect(add).toBeVisible();
@@ -162,6 +164,21 @@ test.describe("with comic files dragged over the window", () => {
     await page.keyboard.up("Alt");
 
     expect(dropped).toEqual([{ paths: PATHS, mode: "copy" }]);
+  });
+
+  test("takes the drop even while a dialog is open", async ({ page }) => {
+    await servePages(page);
+    await page.keyboard.press("Shift+Slash");
+    await expect(
+      page.getByRole("dialog", { name: "Keyboard shortcuts" }),
+    ).toBeVisible();
+    await dragOver(page, PATHS, page.getByText("Read now"));
+    const readNow = page.locator('[data-drop-target="readNow"]');
+
+    await dropOn(page, readNow);
+
+    await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+    expect(dropped).toEqual([{ paths: PATHS, mode: "readNow" }]);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

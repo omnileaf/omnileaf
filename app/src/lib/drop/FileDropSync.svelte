@@ -47,7 +47,7 @@
         void goto(resolve("/read/[book]", { book: outcome.book }));
       }
       for (const notice of droppedNotices(outcome, (scan) =>
-        screenshotMode.isOn ? folderStandIn(scan.name) : scan.name,
+        shownName(scan.name),
       )) {
         notices.show(notice);
       }
@@ -56,6 +56,10 @@
       reportFileFailure(notices, error, reportError);
     },
   });
+
+  function shownName(name: string): string {
+    return screenshotMode.isOn ? folderStandIn(name) : name;
+  }
 
   function followAlt(event: KeyboardEvent | MouseEvent): void {
     drop.setAltHeld(event.altKey);
@@ -83,4 +87,4 @@
   });
 </script>
 
-<FileDropOverlay state={drop.state} />
+<FileDropOverlay state={drop.state} {shownName} />

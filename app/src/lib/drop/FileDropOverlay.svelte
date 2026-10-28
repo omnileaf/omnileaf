@@ -10,7 +10,10 @@
 
   const KEY_MARK = "\u0000";
 
-  let { state }: { state: DropState } = $props();
+  let {
+    state,
+    shownName,
+  }: { state: DropState; shownName: (name: string) => string } = $props();
 
   const hint = $derived(
     m.drop_alt_hint({ key: KEY_MARK }).split(KEY_MARK) as [string, string],
@@ -20,11 +23,12 @@
 {#if state.kind === "offering"}
   <div
     data-slot="drop-layer"
+    role="status"
     aria-live="polite"
     aria-label={m.drop_label()}
-    class="fixed inset-none z-dialog flex flex-col items-center justify-center gap-lg bg-background/85 p-xl backdrop-blur-menu windows:inset-xs windows:rounded-dialog windows:border-2 windows:border-dashed windows:border-accent windows:bg-accent-soft"
+    class="pointer-events-auto fixed inset-none z-tooltip flex flex-col items-center justify-center gap-lg bg-background/85 p-xl backdrop-blur-menu windows:inset-xs windows:rounded-dialog windows:border-2 windows:border-dashed windows:border-accent windows:bg-accent-soft"
   >
-    <p class="font-semibold">{dropWhat(state.summary)}</p>
+    <p class="font-semibold">{dropWhat(state.summary, shownName)}</p>
     <div class="flex flex-wrap justify-center gap-lg">
       <Card
         data-drop-target="readNow"
@@ -34,7 +38,9 @@
         <BookOpen aria-hidden="true" />
         <p class="font-semibold">{m.drop_read_now()}</p>
         <p class="text-muted">
-          {m.drop_read_now_detail({ name: state.summary.first ?? "" })}
+          {m.drop_read_now_detail({
+            name: shownName(state.summary.first ?? ""),
+          })}
         </p>
       </Card>
       <Card
@@ -58,12 +64,13 @@
   <div
     data-slot="drop-layer"
     role="status"
-    class="fixed inset-none z-dialog flex flex-col items-center justify-center bg-background/85 p-xl backdrop-blur-menu windows:inset-xs windows:rounded-dialog windows:border-2 windows:border-dashed windows:border-danger"
+    aria-label={m.drop_label()}
+    class="pointer-events-auto fixed inset-none z-tooltip flex flex-col items-center justify-center bg-background/85 p-xl backdrop-blur-menu windows:inset-xs windows:rounded-dialog windows:border-2 windows:border-dashed windows:border-danger"
   >
     <Card class="flex flex-col items-center gap-sm p-xl text-center">
       <CircleAlert aria-hidden="true" class="windows:text-danger" />
       <p class="font-semibold">{m.drop_nothing_added()}</p>
-      {#each refusalLines(state.refused) as line (line)}
+      {#each refusalLines(state.refused, shownName) as line (line)}
         <p class="text-muted">{line}</p>
       {/each}
       <p class="text-muted">{m.drop_what_it_reads()}</p>
