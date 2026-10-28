@@ -548,12 +548,37 @@ async fn opens_the_pages_that_work_with_no_damage_named_while_the_library_never_
 }
 
 #[tokio::test]
-async fn leaves_a_books_bookmarks_unkept_while_the_library_keeps_none() {
+async fn opens_a_book_with_the_pages_bookmarked_in_it_in_order() {
+    let reader = Reader::with_book("bookmarked-pages").await;
+    let book = reader.book().await;
+    reader
+        .library
+        .bookmark_pages(book, vec![2, 0], true)
+        .await
+        .unwrap();
+    reader
+        .library
+        .bookmark_pages(book, vec![2], false)
+        .await
+        .unwrap();
+    reader
+        .library
+        .bookmark_pages(book, vec![1], true)
+        .await
+        .unwrap();
+
+    let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+    assert_eq!(opened.bookmarked_pages, Some(vec![0, 1]));
+}
+
+#[tokio::test]
+async fn opens_a_book_with_no_bookmarks_as_one_with_an_empty_list() {
     let reader = Reader::with_book("no-bookmarks").await;
 
     let opened = reader.open(NOTHING_UNDECODABLE).await;
 
-    assert_eq!(opened.bookmarked_pages, None);
+    assert_eq!(opened.bookmarked_pages, Some(Vec::new()));
 }
 
 #[tokio::test]

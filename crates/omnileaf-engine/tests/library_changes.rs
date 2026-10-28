@@ -16,7 +16,7 @@ use std::{fs, io, path::Path};
 use books::write_book;
 use omnileaf_engine::{
     AppleBookmark, LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryChanges,
-    ResolvedBookmark, RootLocator,
+    LibraryListing, ResolvedBookmark, RootLocator, SeriesBookListing,
 };
 use support::{FixedClock, ScratchFolder};
 use tokio::time::{Instant, timeout};
@@ -55,6 +55,38 @@ async fn tells_of_no_change(changes: &mut LibraryChanges) -> bool {
     timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next())
         .await
         .is_err()
+}
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_page_bookmarked() {
+    let home = ScratchFolder::new("changes-bookmarked-home");
+    let comics = ScratchFolder::new("changes-bookmarked-comics");
+    write_books(comics.path(), 1);
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .remove(0)
+        .id;
+    let book = library
+        .series_books(series, SeriesBookListing::default(), None)
+        .await
+        .unwrap()
+        .books
+        .remove(0)
+        .id;
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library.bookmark_pages(book, vec![0], true).await.unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
 }
 
 #[tokio::test(start_paused = true)]

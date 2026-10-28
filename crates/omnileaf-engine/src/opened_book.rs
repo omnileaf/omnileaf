@@ -26,7 +26,7 @@ pub struct OpenedBook {
     pub next: Option<SeriesNeighbour>,
     /// Absent when the book's details don't say which way it reads.
     pub reading_direction: Option<ReadingDirection>,
-    /// Counting from 0; absent while the library keeps no bookmarks.
+    /// Counting from 0; absent when the bookmarks could not be read.
     pub bookmarked_pages: Option<Vec<u32>>,
     pub damage: Option<BookDamage>,
     /// About how long a page takes to read, absent until the library has timed enough reading.

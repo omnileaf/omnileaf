@@ -69,17 +69,17 @@ pub enum BooksShown {
 }
 
 impl SeriesBookListing {
-    pub(crate) fn in_catalog(self) -> Option<catalog::BookListing> {
+    pub(crate) fn in_catalog(self) -> catalog::BookListing {
         let shown = match self.shown {
             BooksShown::All => catalog::BooksShown::All,
             BooksShown::Unread => catalog::BooksShown::Unread,
-            BooksShown::Bookmarked => return None,
+            BooksShown::Bookmarked => catalog::BooksShown::Bookmarked,
         };
-        Some(catalog::BookListing {
+        catalog::BookListing {
             shown,
             direction: self.direction.into(),
             section: self.section.map(BookSection::in_catalog),
-        })
+        }
     }
 }
 
@@ -118,7 +118,7 @@ impl From<BookSummary> for SeriesBook {
             added_at_ms: book.added_at_ms,
             reading: book.reading.into(),
             page_count: book.page_count,
-            is_bookmarked: false,
+            is_bookmarked: book.is_bookmarked,
             is_new: false,
             is_file_missing: false,
             kind: numbering.map(|numbering| numbering.kind().into()),
@@ -228,6 +228,7 @@ mod tests {
             reading: catalog::BookReading::NotStarted,
             page_count: Some(PAGE_COUNT),
             numbering: None,
+            is_bookmarked: false,
         }
     }
 
@@ -239,10 +240,14 @@ mod tests {
     }
 
     #[test]
-    fn leaves_a_books_bookmark_and_newness_unknown_until_the_library_reads_them() {
-        let book = SeriesBook::from(sample_summary());
+    fn crosses_whether_a_book_is_bookmarked_and_leaves_its_newness_unknown_until_the_library_reads_it()
+     {
+        let book = SeriesBook::from(BookSummary {
+            is_bookmarked: true,
+            ..sample_summary()
+        });
 
-        assert_eq!((book.is_bookmarked, book.is_new), (false, false));
+        assert_eq!((book.is_bookmarked, book.is_new), (true, false));
     }
 
     #[test]

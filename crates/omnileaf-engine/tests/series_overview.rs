@@ -182,22 +182,59 @@ async fn lists_only_a_series_books_not_read_the_other_way_round_numbered_by_plac
 }
 
 #[tokio::test]
-async fn lists_no_book_as_bookmarked_while_the_library_keeps_no_bookmarks() {
+async fn lists_the_books_with_a_bookmarked_page_and_counts_them_in_the_overview() {
     let sample = SampleLibrary::open("bookmarked-books").await;
     let series = sample.series_named(FIRST_SERIES).await;
+    let books = sample.books(series).await;
+    sample
+        .library
+        .bookmark_pages(books[2].id, vec![0, 3], true)
+        .await
+        .unwrap();
     let bookmarked = SeriesBookListing {
         shown: BooksShown::Bookmarked,
-        direction: SortDirection::Ascending,
         ..SeriesBookListing::default()
     };
 
-    let page = sample
+    let listed = sample.listed_books(series, bookmarked).await;
+    let overview = sample.library.series_overview(series).await.unwrap();
+
+    assert_eq!(
+        (
+            listed
+                .iter()
+                .map(|book| (book.id, book.is_bookmarked))
+                .collect::<Vec<_>>(),
+            overview.bookmark_count
+        ),
+        (vec![(books[2].id, true)], 1)
+    );
+}
+
+#[tokio::test]
+async fn lists_no_book_as_bookmarked_once_every_bookmark_was_taken_off() {
+    let sample = SampleLibrary::open("bookmarks-taken-off").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    let books = sample.books(series).await;
+    let book = books[0].id;
+    sample
         .library
-        .series_books(series, bookmarked, None)
+        .bookmark_pages(book, vec![1, 2], true)
         .await
         .unwrap();
+    sample
+        .library
+        .bookmark_pages(book, vec![1, 2], false)
+        .await
+        .unwrap();
+    let bookmarked = SeriesBookListing {
+        shown: BooksShown::Bookmarked,
+        ..SeriesBookListing::default()
+    };
 
-    assert_eq!((page.books.len(), page.next), (0, None));
+    let listed = sample.listed_books(series, bookmarked).await;
+
+    assert!(listed.is_empty());
 }
 
 #[tokio::test]
