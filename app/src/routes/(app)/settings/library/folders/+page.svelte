@@ -43,8 +43,12 @@
       <Table aria-labelledby={exampleId} class="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead scope="col">{m.folder_guide_name()}</TableHead>
-            <TableHead scope="col">{m.folder_guide_read_as()}</TableHead>
+            <TableHead scope="col" class="whitespace-normal"
+              >{m.folder_guide_name()}</TableHead
+            >
+            <TableHead scope="col" class="whitespace-normal"
+              >{m.folder_guide_read_as()}</TableHead
+            >
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -1,6 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { accessibilityViolations, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  expect,
+  LARGEST_TEXT_SCALE,
+  setTextScale,
+  settle,
+  sidewaysOverflow,
+  test,
+} from "./fixtures.ts";
 
 const EXAMPLE = [
   ["Comics", "The folder you link"],
@@ -85,6 +93,17 @@ test("lists the naming rules in plain words", async ({ page }) => {
   await expect(rules.last()).toHaveText(
     "Details inside a file (its ComicInfo.xml) come before any name.",
   );
+});
+
+test("keeps the example inside a narrow window at the largest text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await openGuide(page);
+  await settle(page.getByRole("main"));
+
+  expect(await sidewaysOverflow(page)).toEqual([]);
 });
 
 test("has no accessibility violations", async ({ page }) => {
