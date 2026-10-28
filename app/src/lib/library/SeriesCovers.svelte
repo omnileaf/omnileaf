@@ -45,6 +45,7 @@
   import ContinueDisc from "./ContinueDisc.svelte";
   import AdultVeil from "./AdultVeil.svelte";
   import CoverImage from "./CoverImage.svelte";
+  import CoverSheets from "./CoverSheets.svelte";
   import DownloadedMark from "./DownloadedMark.svelte";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { listRowLook } from "./list-row-look.ts";
@@ -103,6 +104,7 @@
   const baseLook = coverLook(DEFAULT_LIBRARY_VIEW.coversPerRow);
   const platform = currentPlatform();
   const tile = coverTileLook(platform);
+  const stack = $derived(view.stacksSeriesCovers ? tile.stack : null);
   const width = new WindowWidth();
   const rowLook = $derived(listRowLook(platform, width.current));
   const coversTrack = $derived(
@@ -330,8 +332,12 @@
           id={one.id}
           title={shown.title}
           order={seriesOrder}
-          class="flex flex-col gap-cover-caption min-inline-none medium:gap-sm"
+          class={[
+            "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
+            stack?.room,
+          ]}
         >
+          <CoverSheets look={stack} bookCount={one.bookCount} />
           <div
             class={[
               "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
@@ -387,7 +393,11 @@
       <ContinueDisc
         book={continues}
         series={shown.title}
-        class={["absolute inset-e-sm inset-bs-cover-end", NARROW_DISC]}
+        class={[
+          "absolute inset-e-sm",
+          stack?.continueAt ?? "inset-bs-cover-end",
+          NARROW_DISC,
+        ]}
       />
     {/if}
   </div>
@@ -406,8 +416,9 @@
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class="block min-inline-none"
+      class={["block min-inline-none", stack?.room]}
     >
+      <CoverSheets look={stack} bookCount={one.bookCount} />
       <div
         class={[
           "@container relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
@@ -466,8 +477,9 @@
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class="block min-inline-none"
+      class={["block min-inline-none", stack?.room]}
     >
+      <CoverSheets look={stack} bookCount={one.bookCount} />
       <div
         title={shown.title}
         class={[

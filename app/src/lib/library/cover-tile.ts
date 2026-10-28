@@ -1,6 +1,14 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+export interface CoverStackLook {
+  readonly room: string;
+  readonly farSheet: string;
+  readonly nearSheet: string;
+  readonly continueAt: string;
+}
+
 export interface CoverTileLook {
+  readonly stack: CoverStackLook | null;
   readonly cover: string;
   readonly unread: string;
   readonly badge: string;
@@ -21,7 +29,18 @@ const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inli
 
 const LINUX_BADGE = `${BADGE_PLACEMENT} border border-transparent px-sm py-2xs`;
 
+const SHEET =
+  "absolute rounded-t-cover border border-b-0 border-cover-edge block-cover-sheet";
+
+const LINUX_STACK: CoverStackLook = {
+  room: "pbs-cover-stack-room",
+  farSheet: `${SHEET} inset-x-cover-sheet-far inset-bs-none bg-cover-sheet-far`,
+  nearSheet: `${SHEET} inset-x-cover-sheet-near inset-bs-cover-sheet-near-top bg-cover-sheet-near`,
+  continueAt: "inset-bs-stacked-cover-end",
+};
+
 const TODAYS_LOOK: CoverTileLook = {
+  stack: null,
   cover: "",
   unread: BADGE_GEOMETRY,
   badge: "",
@@ -36,6 +55,7 @@ const NATIVE_BADGE =
   "max-medium:rounded-native-cover-badge max-medium:bg-native-cover-badge max-medium:text-native-on-cover-badge";
 
 const NATIVE_TILE = {
+  stack: null,
   cover: "max-medium:rounded-native-cover",
   mark: "max-medium:rounded-native-select max-medium:border-(length:--native-spacing-select-edge) max-medium:block-native-select max-medium:inline-native-select",
   markOn:
@@ -64,7 +84,7 @@ const COVER_TILE_LOOKS = {
     downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
     downloadedIcon: "max-medium:hidden",
   },
-  linux: { ...TODAYS_LOOK, unread: LINUX_BADGE },
+  linux: { ...TODAYS_LOOK, stack: LINUX_STACK, unread: LINUX_BADGE },
   macos: TODAYS_LOOK,
   windows: TODAYS_LOOK,
 } satisfies Record<Platform, CoverTileLook>;
