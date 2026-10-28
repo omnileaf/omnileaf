@@ -210,6 +210,7 @@ impl LibraryFilter {
                 StoredInclusion::Any
             },
             languages: self.languages.clone(),
+            tags: self.tags.clone(),
             adult: self.adult.into(),
             counts_age_ratings: adult.counts_age_ratings,
         }

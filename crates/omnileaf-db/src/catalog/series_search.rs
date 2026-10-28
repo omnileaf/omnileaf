@@ -5,7 +5,7 @@ use crate::{
     catalog::{
         page::{Page, PageRequest},
         search_text::{Lookup, SearchText},
-        series_listing::{FilterParams, SeriesFilter, smart_conditions},
+        series_listing::{FilterParams, SeriesFilter, counted_conditions},
         series_page::SeriesSummary,
         staged_rows::{Listing, Read, TitlePlace, listing, title_place, title_rows},
     },
@@ -34,14 +34,14 @@ const MATCHED_COUNT: &str = concat!(
     "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)",
-    smart_conditions!()
+    counted_conditions!()
 );
 
 const CONTAINING_COUNT: &str = concat!(
     "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND instr(fold_case(title), :characters) > 0",
-    smart_conditions!()
+    counted_conditions!()
 );
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -108,7 +108,8 @@ mod tests {
     use super::*;
     use crate::{
         catalog::staged_rows::plans::{
-            continuing_from_the_book_up_next, merging, merging_each_stage, with_covers,
+            continuing_from_the_book_up_next, merging, merging_each_stage, tag_list_steps,
+            tag_probe_steps, with_covers,
         },
         scratch::ScratchLibrary,
     };
@@ -118,10 +119,10 @@ mod tests {
     const TITLES_AFTER: &str = "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)>(?,?))";
     const MATCH_PHRASES: &str = "SCAN series_fts VIRTUAL TABLE INDEX 0:M1";
 
-    /// The numbers SQLite gives each stage's list of matched series, then its two cover subqueries, outer first.
-    const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, (u8, u8)); 3] =
-        [(5, (4, 2)), (12, (11, 9)), (17, (16, 14))];
-    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (7, 8);
+    /// The numbers SQLite gives each stage's list of series carrying a chosen tag, its list of matched series, then its two cover subqueries, outer first.
+    const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, u8, (u8, u8)); 3] =
+        [(6, 7, (4, 2)), (15, 16, (13, 11)), (22, 23, (20, 18))];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (9, 10);
 
     fn matching_each_stage(series_step: &str) -> Vec<String> {
         let [unstarted, in_progress, finished] = matched_stages(series_step);
@@ -133,8 +134,8 @@ mod tests {
     }
 
     fn matched_stages(series_step: &str) -> [Vec<String>; 3] {
-        SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(list, covers)| {
-            let matched_once: &[&str] = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].0 {
+        SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(tags, list, covers)| {
+            let matched_once: &[&str] = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].1 {
                 &["MATERIALIZE matched", MATCH_PHRASES]
             } else {
                 &[]
@@ -143,6 +144,7 @@ mod tests {
                 .into_iter()
                 .chain(matched_once.iter().map(|&step| step.to_owned()))
                 .chain(["SCAN matched", "CREATE BLOOM FILTER"].map(ToOwned::to_owned))
+                .chain(tag_probe_steps(tags))
                 .collect();
             with_covers(steps, covers)
         })
@@ -198,13 +200,19 @@ mod tests {
         assert_eq!(
             plans,
             [
-                vec![
-                    by_stage,
-                    "LIST SUBQUERY 1",
-                    MATCH_PHRASES,
-                    "CREATE BLOOM FILTER"
-                ],
-                vec![by_stage],
+                [
+                    by_stage.to_owned(),
+                    "LIST SUBQUERY 1".to_owned(),
+                    MATCH_PHRASES.to_owned(),
+                    "CREATE BLOOM FILTER".to_owned(),
+                ]
+                .into_iter()
+                .chain(tag_list_steps(2))
+                .collect::<Vec<_>>(),
+                [by_stage.to_owned()]
+                    .into_iter()
+                    .chain(tag_list_steps(1))
+                    .collect::<Vec<_>>(),
             ]
         );
     }

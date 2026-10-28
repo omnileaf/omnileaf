@@ -153,7 +153,8 @@ pub fn series_page(
             Gathering::EachStageInOrder
             | Gathering::FewForgotten
             | Gathering::FewDuplicated
-            | Gathering::FewRatedAdult => &[],
+            | Gathering::FewRatedAdult
+            | Gathering::FewTagged => &[],
         },
     };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
@@ -326,13 +327,14 @@ mod tests {
     use super::*;
     use crate::{
         catalog::staged_rows::plans::{
-            continuing_from_the_book_up_next, merging_each_stage, with_covers,
+            continuing_from_the_book_up_next, merging_each_stage, tag_list_steps, tag_probe_steps,
+            with_covers, with_tag_probe,
         },
         scratch::ScratchLibrary,
     };
 
-    const COVER_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (6, 4);
-    const BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (2, 3);
+    const COVER_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (8, 6);
+    const BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (4, 5);
 
     fn every_page_query_of<P>(directions: &Directions<P>) -> [&'static str; 4] {
         [
@@ -359,19 +361,32 @@ mod tests {
     }
 
     fn sorting_only_the_page(gathered: &str) -> Vec<String> {
+        sorting_the_page_gathered_by(
+            with_tag_probe(vec![gathered.to_owned()], 2),
+            COVER_SUBQUERIES_OF_THE_PAGE,
+            BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE,
+        )
+    }
+
+    fn sorting_the_page_gathered_by(
+        gathered: Vec<String>,
+        covers: (u8, u8),
+        book_up_next: (u8, u8),
+    ) -> Vec<String> {
         let rows_of_the_page = with_covers(
             vec![
                 "SCAN page".to_owned(),
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned(),
             ],
-            COVER_SUBQUERIES_OF_THE_PAGE,
+            covers,
         );
-        ["MATERIALIZE page", gathered, "USE TEMP B-TREE FOR ORDER BY"]
-            .map(ToOwned::to_owned)
+        ["MATERIALIZE page".to_owned()]
             .into_iter()
+            .chain(gathered)
+            .chain(["USE TEMP B-TREE FOR ORDER BY".to_owned()])
             .chain(continuing_from_the_book_up_next(
                 rows_of_the_page,
-                BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE,
+                book_up_next,
             ))
             .chain(["USE TEMP B-TREE FOR ORDER BY".to_owned()])
             .collect()
@@ -663,6 +678,89 @@ mod tests {
 
         let gathered = sorting_only_the_page(
             "SEARCH series USING INDEX series_with_duplicates_by_stage (reading_stage=?)",
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_series_rated_18_plus_by_their_own_index_then_sorts_only_their_keys() {
+        let scratch = ScratchLibrary::new("few-rated-adult-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_rated_adult)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_rated_adult
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_only_the_page(
+            "SEARCH series USING INDEX series_rated_adult_by_stage (reading_stage=?)",
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_series_in_a_chosen_language_by_the_language_index_then_sorts_only_their_keys()
+     {
+        let scratch = ScratchLibrary::new("few-in-languages-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_in_languages)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_in_languages
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_the_page_gathered_by(
+            [
+                "SEARCH series USING INDEX series_by_language (language=? AND reading_stage=?)",
+                "LIST SUBQUERY 1",
+                "SCAN json_each VIRTUAL TABLE INDEX 1:",
+            ]
+            .map(ToOwned::to_owned)
+            .into_iter()
+            .chain(tag_probe_steps(3))
+            .collect(),
+            (9, 7),
+            (5, 6),
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_series_carrying_a_chosen_tag_by_the_tag_index_then_sorts_only_their_keys() {
+        let scratch = ScratchLibrary::new("few-tagged-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_tagged)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_tagged
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let candidates_by_tag = tag_list_steps(1)
+            .into_iter()
+            .filter(|step| step != "CREATE BLOOM FILTER");
+        let gathered = sorting_the_page_gathered_by(
+            ["SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned()]
+                .into_iter()
+                .chain(candidates_by_tag)
+                .chain(tag_probe_steps(3))
+                .collect(),
+            (9, 7),
+            (5, 6),
         );
         assert_eq!(plans, vec![gathered; queries.len()]);
     }

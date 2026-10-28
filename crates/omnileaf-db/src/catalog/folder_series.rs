@@ -7,7 +7,7 @@ use crate::{
         cursor::Position,
         page::{Page, PageRequest},
         series_listing::{
-            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, smart_conditions,
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, counted_conditions,
         },
         series_page::{
             Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
@@ -76,7 +76,7 @@ const SERIES_IN_FOLDER: &str = concat!(
         AND local_id IN (",
     series_in_folder!(),
     ")",
-    smart_conditions!()
+    counted_conditions!()
 );
 
 #[tracing::instrument(skip_all, fields(%root, ?listing, size = ?request.size))]
