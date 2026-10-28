@@ -3,18 +3,27 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
+  import { usesSetupPages } from "./setup-pages.ts";
 
   let {
     series,
     usesStandIns,
   }: { series: readonly LibrarySeries[]; usesStandIns: boolean } = $props();
 
+  const isSetupPage = usesSetupPages(currentPlatform());
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 </script>
 
 <div
   aria-hidden="true"
-  class="flex items-end justify-center gap-sm border-be-3 border-border px-sm block-shelf"
+  class={[
+    "flex items-end",
+    isSetupPage
+      ? "gap-sm"
+      : "justify-center gap-sm border-be-3 border-border px-sm block-shelf",
+  ]}
 >
   {#each series as shown, order (shown.id)}
     <span

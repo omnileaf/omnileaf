@@ -1008,6 +1008,8 @@
   --color-windows-stroke: var(--windows-stroke);
   --color-windows-stroke-strong: var(--windows-stroke-strong);
   --color-windows-mica: var(--windows-mica);
+  --color-windows-subtle: var(--windows-subtle);
+  --color-windows-success: var(--windows-success);
   --color-windows-accent: var(--native-color-button-primary);
   --color-button-outline: var(--button-outline-fill);
   --color-button-outline-edge: var(--button-outline-edge);

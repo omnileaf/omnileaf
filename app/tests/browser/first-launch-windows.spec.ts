@@ -27,6 +27,13 @@ test.describe("the first launch on Windows", () => {
             location: HOME_LOCATION,
             isAvailable: true,
           },
+          {
+            id: "2",
+            kind: "linked",
+            name: "Comics",
+            location: "D:\\Comics",
+            isAvailable: true,
+          },
         ],
         next: null,
       }),
@@ -92,5 +99,46 @@ test.describe("the first launch on Windows", () => {
     expect(change.x).toBeGreaterThan(path.x + path.width);
     expect(keeps.y).toBeGreaterThan(path.y + path.height);
     await expect(card.locator("code")).toHaveCount(0);
+  });
+
+  test("sets each linked folder on a card and the drop area under them with a dashed edge", async ({
+    page,
+  }) => {
+    await page.goto("/first-launch");
+    await page.getByRole("button", { name: "Get started" }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    const row = page.getByRole("listitem").filter({ hasText: "D:\\Comics" });
+    const drop = page.getByRole("group", { name: "Drop folders here" });
+    await expect(row).toBeVisible();
+
+    await expect(row).toHaveCSS("border-top-width", "1px");
+    await expect(row).toHaveCSS("border-top-left-radius", "4px");
+    await expect(drop).toHaveCSS("border-top-style", "dashed");
+    await expect(drop).toHaveCSS("border-top-width", "1px");
+    expect((await boxOf(drop)).y).toBeGreaterThan(
+      (await boxOf(row)).y + (await boxOf(row)).height,
+    );
+    await expect(drop.getByRole("button", { name: "Add a folder" })).toHaveCSS(
+      "border-top-width",
+      "1px",
+    );
+  });
+
+  test("tells the last step with a check in the Windows success colour, left aligned", async ({
+    page,
+  }) => {
+    await page.goto("/first-launch");
+    for (const name of ["Get started", "Continue", "Continue", "Continue"]) {
+      await page.getByRole("button", { name }).click();
+    }
+    const title = page.getByRole("heading", { level: 1 });
+    await expect(title).toBeVisible();
+    const mark = title.locator(
+      "xpath=preceding-sibling::*[1]/descendant-or-self::*[self::span][1]",
+    );
+
+    await expect(mark).toHaveCSS("color", "rgb(15, 123, 15)");
+    await expect(title).toHaveCSS("text-align", "start");
+    expect((await boxOf(mark)).x).toBe((await boxOf(title)).x);
   });
 });

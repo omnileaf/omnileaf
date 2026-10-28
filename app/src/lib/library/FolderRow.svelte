@@ -19,12 +19,14 @@
   let {
     folder,
     isFoundEmpty = false,
+    isOwnCard = false,
     location,
     detail,
     action,
   }: {
     folder: Shown;
     isFoundEmpty?: boolean;
+    isOwnCard?: boolean;
     location?: Snippet;
     detail?: Snippet<[Shown]> | undefined;
     action?: Snippet;
@@ -38,11 +40,12 @@
   });
 </script>
 
-<Item look="folder">
+<Item look="folder" class={[isOwnCard && "windows:py-md windows:pe-lg"]}>
   <ItemMedia
     class={[
       "rounded-control block-icon-tile inline-icon-tile",
       folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
+      isOwnCard && "windows:bg-transparent",
     ]}
   >
     {#if folder.kind === "home"}

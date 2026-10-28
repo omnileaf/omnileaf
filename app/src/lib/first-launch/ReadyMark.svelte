@@ -1,12 +1,39 @@
 <script lang="ts">
-  import { FolderOpen, Leaf } from "@lucide/svelte";
+  import { CircleCheck, FolderOpen, Leaf, TriangleAlert } from "@lucide/svelte";
+
+  import { currentPlatform } from "#lib/page/platform.ts";
+
+  import { usesSetupPages } from "./setup-pages.ts";
 
   const CHECK_STROKE = 2.5;
 
-  let { isEmpty }: { isEmpty: boolean } = $props();
+  let {
+    isEmpty,
+    isUnreadable = false,
+  }: { isEmpty: boolean; isUnreadable?: boolean } = $props();
+
+  const isSetupPage = usesSetupPages(currentPlatform());
 </script>
 
-{#if isEmpty}
+{#if isSetupPage}
+  <span
+    aria-hidden="true"
+    class={[
+      "flex items-center justify-center pbe-xs block-setup-hero-icon inline-setup-hero-icon",
+      isEmpty && "text-muted",
+      isUnreadable && "text-warning",
+      !isEmpty && !isUnreadable && "text-windows-success",
+    ]}
+  >
+    {#if isUnreadable}
+      <TriangleAlert class="block-setup-hero-icon inline-setup-hero-icon" />
+    {:else if isEmpty}
+      <FolderOpen class="block-setup-hero-icon inline-setup-hero-icon" />
+    {:else}
+      <CircleCheck class="block-setup-hero-icon inline-setup-hero-icon" />
+    {/if}
+  </span>
+{:else if isEmpty}
   <span
     aria-hidden="true"
     class="flex items-center justify-center rounded-full bg-chip block-app-icon inline-app-icon"
