@@ -433,7 +433,7 @@
           <Button
             type="button"
             look="bar-icon"
-            class="flex-col text-caption font-semibold min-block-selection-action"
+            class="flex-col text-caption font-semibold wrap-anywhere min-block-selection-action"
             onclick={() => {
               void mark(read);
             }}
@@ -445,7 +445,7 @@
         <Button
           type="button"
           look="bar-icon"
-          class="flex-col text-caption font-semibold min-block-selection-action"
+          class="flex-col text-caption font-semibold wrap-anywhere min-block-selection-action"
           onclick={() => {
             void bookmark();
           }}
