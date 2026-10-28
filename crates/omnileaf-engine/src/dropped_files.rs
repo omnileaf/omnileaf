@@ -305,7 +305,7 @@ fn unused_name(folder: &Path, name: &Path) -> PathBuf {
         .extension()
         .map(|extension| format!(".{}", extension.to_string_lossy()))
         .unwrap_or_default();
-    (2_u32..)
+    (2_u32..=u32::MAX)
         .map(|number| folder.join(format!("{stem} ({number}){extension}")))
         .find(|candidate| !candidate.exists())
         .unwrap_or(first)
