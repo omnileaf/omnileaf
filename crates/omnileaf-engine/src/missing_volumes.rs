@@ -1,4 +1,4 @@
-use omnileaf_db::catalog::Numbering;
+use omnileaf_db::catalog::{self, Numbering};
 
 use crate::{BookNumber, NumberRange};
 
@@ -26,15 +26,27 @@ pub(crate) fn missing_volumes(placed: &[Numbering]) -> Vec<NumberRange> {
     missing
 }
 
-fn whole_volumes(numbering: &Numbering) -> Option<(u32, u32)> {
-    let (first, last) = match *numbering {
-        Numbering::Volume { numbers } => (numbers.value.first(), numbers.value.last()),
+pub(crate) fn last_volume(placed: &[Numbering]) -> Option<BookNumber> {
+    placed
+        .iter()
+        .filter_map(volumes_held)
+        .map(|(_, last)| last.into())
+        .max()
+}
+
+fn volumes_held(numbering: &Numbering) -> Option<(catalog::BookNumber, catalog::BookNumber)> {
+    match *numbering {
+        Numbering::Volume { numbers } => Some((numbers.value.first(), numbers.value.last())),
         Numbering::Chapter {
             volume: Some(volume),
             ..
-        } => (volume.value, volume.value),
-        Numbering::Chapter { volume: None, .. } | Numbering::Special { .. } => return None,
-    };
+        } => Some((volume.value, volume.value)),
+        Numbering::Chapter { volume: None, .. } | Numbering::Special { .. } => None,
+    }
+}
+
+fn whole_volumes(numbering: &Numbering) -> Option<(u32, u32)> {
+    let (first, last) = volumes_held(numbering)?;
     let first = first.thousandths().div_ceil(THOUSANDTHS_PER_VOLUME);
     let last = last.thousandths() / THOUSANDTHS_PER_VOLUME;
     (first <= last).then_some((first, last))
@@ -146,6 +158,52 @@ mod tests {
         assert_eq!(missing_volumes(&placed), missing(&[(2, 4)]));
     }
 
+    #[test]
+    fn names_no_last_volume_in_a_series_without_volumes() {
+        let placed = [
+            Numbering::Special { number: None },
+            Numbering::Chapter {
+                number: Some(numbers(ONE, ONE)),
+                volume: None,
+            },
+        ];
+
+        assert_eq!(last_volume(&placed), None);
+    }
+
+    #[test]
+    fn names_the_highest_volume_last_whatever_order_the_books_come_in() {
+        let placed = [volume(3, 3), volume(9, 9), volume(5, 5)];
+
+        assert_eq!(last_volume(&placed), Some(BookNumber(9 * ONE)));
+    }
+
+    #[test]
+    fn names_the_last_number_of_a_range_volume() {
+        let placed = [volume(1, 1), volume(5, 6)];
+
+        assert_eq!(last_volume(&placed), Some(BookNumber(6 * ONE)));
+    }
+
+    #[test]
+    fn names_a_decimal_top_volume_as_it_is() {
+        let placed = [
+            volume(12, 12),
+            Numbering::Volume {
+                numbers: numbers(12_500, 12_500),
+            },
+        ];
+
+        assert_eq!(last_volume(&placed), Some(BookNumber(12_500)));
+    }
+
+    #[test]
+    fn names_the_volume_a_chapter_is_read_inside_as_the_last_one() {
+        let placed = [volume(1, 1), chapter_in(4 * ONE)];
+
+        assert_eq!(last_volume(&placed), Some(BookNumber(4 * ONE)));
+    }
+
     fn placed_volumes() -> impl Strategy<Value = Vec<(u32, u32)>> {
         proptest::collection::vec((0..40_u32, 0..3_u32), 0..12)
     }
@@ -177,6 +235,28 @@ mod tests {
                 found.windows(2).all(|pair| pair[1].first.0 > pair[0].last.0 + ONE),
                 "{:?}",
                 found
+            );
+        }
+
+        #[test]
+        fn names_the_highest_volume_present_last_with_every_missing_one_before_it(
+            volumes in placed_volumes(),
+        ) {
+            let placed: Vec<Numbering> = volumes
+                .iter()
+                .map(|&(first, length)| volume(first, first + length))
+                .collect();
+            let highest = volumes.iter().map(|&(first, length)| first + length).max();
+
+            let last = last_volume(&placed);
+
+            prop_assert_eq!(last, highest.map(|highest| BookNumber(highest * ONE)));
+            prop_assert!(
+                missing_volumes(&placed)
+                    .iter()
+                    .all(|missing| last.is_some_and(|last| missing.last < last)),
+                "{:?}",
+                last
             );
         }
     }

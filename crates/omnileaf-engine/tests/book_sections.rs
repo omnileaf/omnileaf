@@ -128,7 +128,7 @@ async fn lists_only_the_books_of_the_section_asked_for() {
 }
 
 #[tokio::test]
-async fn sums_up_a_series_by_its_year_sections_and_the_whole_volumes_it_misses() {
+async fn sums_up_a_series_by_its_year_section_counts_missing_volumes_and_last_volume() {
     let sample = Sample::scan("overview-book-sections", SERIES_04_BOOKS).await;
 
     let overview = sample
@@ -140,11 +140,17 @@ async fn sums_up_a_series_by_its_year_sections_and_the_whole_volumes_it_misses()
 
     let served = serde_json::to_value(overview).unwrap();
     assert_eq!(
-        ["year", "sections", "missingVolumes"].map(|field| served.get(field).cloned().unwrap()),
+        ["year", "sections", "missingVolumes", "lastVolume"]
+            .map(|field| served.get(field).cloned().unwrap()),
         [
             json!(2019),
-            json!(["volumes", "chapters", "specials"]),
+            json!([
+                {"section": "volumes", "bookCount": 5},
+                {"section": "chapters", "bookCount": 1},
+                {"section": "specials", "bookCount": 1},
+            ]),
             json!([{"first": 2.0, "last": 2.0}, {"first": 4.0, "last": 4.0}]),
+            json!(9.5),
         ]
     );
 }
