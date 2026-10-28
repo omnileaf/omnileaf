@@ -11,7 +11,7 @@ use std::{
 
 use omnileaf_db::{
     Config, Database,
-    adult_content::{AdultHiding, set_adult_content},
+    adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
@@ -59,6 +59,7 @@ use crate::{
     ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
     SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
     UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    adult_content::{AdultSeen, AdultView},
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -129,6 +130,7 @@ pub struct Library {
     schedule: sync::Mutex<RescanSchedule>,
     schedule_gate: watch::Sender<ScheduleGate>,
     learns_reading_speed: AtomicBool,
+    screenshot_mode: AtomicBool,
     catalog_writes: broadcast::Sender<CatalogWritten>,
     pub(crate) local_storage: Arc<dyn omnileaf_formats::Storage>,
     open_tree: Option<OpenTree>,
@@ -237,6 +239,7 @@ impl Library {
             schedule: sync::Mutex::default(),
             schedule_gate: watch::Sender::new(ScheduleGate::default()),
             learns_reading_speed: AtomicBool::new(true),
+            screenshot_mode: AtomicBool::new(false),
             catalog_writes: broadcast::Sender::new(CATALOG_WRITE_BACKLOG),
             local_storage: Arc::new(LocalStorage),
             open_tree: None,
@@ -333,6 +336,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -342,12 +346,12 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((series_page(connection, &listing, &request)?, adult))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn folder_series(
@@ -356,6 +360,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -365,7 +370,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((
                     folder_series_page(connection, folder.0, &listing, &request)?,
@@ -373,7 +378,7 @@ impl Library {
                 ))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn folder_series_count(
@@ -381,12 +386,13 @@ impl Library {
         folder: FolderId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 folder_series_count(connection, folder.0, &filter)
             })
             .await?)
@@ -396,6 +402,7 @@ impl Library {
         &self,
         after: Option<FolderGroupCursor>,
     ) -> Result<FolderGroupPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(FOLDER_GROUPS_PER_PAGE)?,
@@ -404,7 +411,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = folder_groups(connection, &request, AdultHiding::default())?;
+                let page = folder_groups(connection, &request, adult_seen.hiding(connection)?)?;
                 let mut folder_names = BTreeMap::new();
                 let mut groups = Vec::with_capacity(page.items.len());
                 for summary in page.items {
@@ -431,6 +438,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -440,7 +448,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((
                     folder_group_series_page(connection, &group.0, &listing, &request)?,
@@ -448,7 +456,7 @@ impl Library {
                 ))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn folder_group_series_count(
@@ -456,18 +464,20 @@ impl Library {
         group: FolderGroupId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 folder_group_series_count(connection, &group.0, &filter)
             })
             .await?)
     }
 
     pub async fn writers(&self, after: Option<WriterCursor>) -> Result<WriterPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(WRITERS_PER_PAGE)?,
@@ -475,7 +485,7 @@ impl Library {
         let page = self
             .store
             .database()
-            .read(move |connection| writers(connection, &request, AdultHiding::default()))
+            .read(move |connection| writers(connection, &request, adult_seen.hiding(connection)?))
             .await?;
         Ok(WriterPage {
             writers: page.items.into_iter().map(LibraryWriter::from).collect(),
@@ -489,6 +499,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -498,7 +509,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((
                     writer_series_page(connection, &writer, &listing, &request)?,
@@ -506,7 +517,7 @@ impl Library {
                 ))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn writer_series_count(
@@ -514,12 +525,13 @@ impl Library {
         writer: String,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 writer_series_count(connection, &writer, &filter)
             })
             .await?)
@@ -531,12 +543,13 @@ impl Library {
         writers: Vec<String>,
         filter: LibraryFilter,
     ) -> Result<Vec<u32>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 writers
                     .iter()
                     .map(|writer| writer_series_count(connection, writer, &filter))
@@ -551,12 +564,13 @@ impl Library {
         folders: Vec<FolderId>,
         filter: LibraryFilter,
     ) -> Result<Vec<u32>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 folders
                     .iter()
                     .map(|folder| folder_series_count(connection, folder.0, &filter))
@@ -574,13 +588,15 @@ impl Library {
     }
 
     pub async fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
+        let adult_seen = self.adult_seen();
         let (stored, adult) = self
             .store
             .database()
-            .read(|connection| {
+            .read(move |connection| {
+                let view = adult_seen.view(connection)?;
                 Ok((
-                    stored_filter_choices(connection, AdultHiding::default())?,
-                    AdultContent::stored(connection)?,
+                    stored_filter_choices(connection, view.hiding())?,
+                    view,
                 ))
             })
             .await?;
@@ -593,6 +609,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let Some(category) = category.stored() else {
             return Ok(SeriesPage {
                 series: Vec::new(),
@@ -608,7 +625,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((
                     category_series_page(connection, category, &listing, &request)?,
@@ -616,7 +633,7 @@ impl Library {
                 ))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn category_series_count(
@@ -624,6 +641,7 @@ impl Library {
         category: CategoryId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let Some(category) = category.stored() else {
             return Ok(0);
         };
@@ -632,19 +650,20 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 category_series_count(connection, category, &filter)
             })
             .await?)
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 series_count(connection, &filter)
             })
             .await?)
@@ -655,6 +674,7 @@ impl Library {
         search: LibrarySearch,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -664,32 +684,36 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let search = StoredSearch::parse(&search, now_ms, adult)?;
                 Ok((search.page(connection, &request)?, adult))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn spelling_suggestion(
         &self,
         text: String,
     ) -> Result<Option<SpellingSuggestion>, LibraryError> {
+        let adult_seen = self.adult_seen();
         Ok(self
             .store
             .database()
-            .read(move |connection| spelling_suggestion(connection, &text))
+            .read(move |connection| {
+                spelling_suggestion(connection, &text, adult_seen.hiding(connection)?)
+            })
             .await?)
     }
 
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 StoredSearch::parse(&search, now_ms, adult)?.count(connection)
             })
             .await?)
@@ -699,11 +723,11 @@ impl Library {
     pub async fn series_overview(&self, id: SeriesId) -> Result<SeriesOverview, LibraryError> {
         self.save_reading_before_reading().await;
         let series = id.0;
-        let adult = self.adult_content().await?;
+        let adult = self.adult_view().await?;
         let related_wanted = RelatedSeriesWanted {
             limit: RELATED_SERIES_SHOWN,
-            leaves_out_adult: adult.hides_adult(),
-            counts_age_ratings: adult.counts_age_ratings,
+            leaves_out_adult: adult.leaves_out_adult_series(),
+            counts_age_ratings: adult.setting().counts_age_ratings,
         };
         let found = self
             .store
@@ -731,7 +755,7 @@ impl Library {
             SeriesOverview::new(overview, up_next, self.seconds_per_page().await?)
                 .described_by(details)
                 .numbered_by(&placed)
-                .related_to(related, adult),
+                .related_to(related, adult.setting()),
         )
     }
 
@@ -802,10 +826,13 @@ impl Library {
         &self,
         creator: String,
     ) -> Result<Vec<CreatorSeries>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let found = self
             .store
             .database()
-            .read(move |connection| person_series(connection, &creator, AdultHiding::default()))
+            .read(move |connection| {
+                person_series(connection, &creator, adult_seen.hiding(connection)?)
+            })
             .await?;
         Ok(found.into_iter().map(CreatorSeries::from).collect())
     }
@@ -836,6 +863,7 @@ impl Library {
         after: Option<HistoryCursor>,
         of: HistoryOf,
     ) -> Result<HistoryPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SESSIONS_PER_PAGE)?,
@@ -844,12 +872,19 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = history_page(connection, &of.into(), &request, AdultHiding::default())?;
+                let page = history_page(
+                    connection,
+                    &of.into(),
+                    &request,
+                    adult_seen.hiding(connection)?,
+                )?;
                 let days = page.items.iter().map(|entry| entry.local_day);
                 let read_ms_by_day = match (days.clone().min(), days.max()) {
-                    (Some(first), Some(last)) => {
-                        reading_time_by_day(connection, first..=last, AdultHiding::default())?
-                    }
+                    (Some(first), Some(last)) => reading_time_by_day(
+                        connection,
+                        first..=last,
+                        adult_seen.hiding(connection)?,
+                    )?,
                     _ => BTreeMap::new(),
                 };
                 Ok((page, read_ms_by_day))
@@ -913,13 +948,14 @@ impl Library {
         week_start: LocalDay,
         today: LocalDay,
     ) -> Result<ReadingWeek, LibraryError> {
+        let adult_seen = self.adult_seen();
         let (since, days_in_a_row) = self
             .store
             .database()
             .read(move |connection| {
                 Ok((
-                    reading_since(connection, week_start.0, AdultHiding::default())?,
-                    days_in_a_row(connection, today.0, AdultHiding::default())?,
+                    reading_since(connection, week_start.0, adult_seen.hiding(connection)?)?,
+                    days_in_a_row(connection, today.0, adult_seen.hiding(connection)?)?,
                 ))
             })
             .await?;
@@ -933,20 +969,24 @@ impl Library {
 
     /// Adds up `book`'s reading sessions, giving none for a book never read.
     pub async fn book_sessions(&self, book: BookId) -> Result<Option<BookSessions>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let summed = self
             .store
             .database()
-            .read(move |connection| book_sessions(connection, book.0, AdultHiding::default()))
+            .read(move |connection| {
+                book_sessions(connection, book.0, adult_seen.hiding(connection)?)
+            })
             .await?;
         Ok(summed.map(BookSessions::from))
     }
 
     /// The series in the library with any reading, in title order.
     pub async fn history_series(&self) -> Result<Vec<HistorySeries>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let series = self
             .store
             .database()
-            .read(|connection| series_read(connection, AdultHiding::default()))
+            .read(move |connection| series_read(connection, adult_seen.hiding(connection)?))
             .await?;
         Ok(series
             .into_iter()
@@ -959,11 +999,14 @@ impl Library {
 
     /// Seconds spent reading `book` over all its sessions, once any reading not yet saved is.
     pub async fn book_read_time(&self, book: BookId) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         self.save_reading_before_reading().await;
         let read_ms = self
             .store
             .database()
-            .read(move |connection| book_reading_time(connection, book.0, AdultHiding::default()))
+            .read(move |connection| {
+                book_reading_time(connection, book.0, adult_seen.hiding(connection)?)
+            })
             .await?;
         Ok(whole_seconds(read_ms))
     }
@@ -973,11 +1016,14 @@ impl Library {
         &self,
         book: BookId,
     ) -> Result<Option<ReadingSummary>, LibraryError> {
+        let adult_seen = self.adult_seen();
         self.save_reading_before_reading().await;
         let summed = self
             .store
             .database()
-            .read(move |connection| reading_summary(connection, book.0, AdultHiding::default()))
+            .read(move |connection| {
+                reading_summary(connection, book.0, adult_seen.hiding(connection)?)
+            })
             .await?;
         Ok(summed.map(ReadingSummary::from))
     }
@@ -988,11 +1034,14 @@ impl Library {
         first_day: LocalDay,
         last_day: LocalDay,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let days = first_day.0..=last_day.0;
         let read_ms_by_day = self
             .store
             .database()
-            .read(move |connection| reading_time_by_day(connection, days, AdultHiding::default()))
+            .read(move |connection| {
+                reading_time_by_day(connection, days, adult_seen.hiding(connection)?)
+            })
             .await?;
         let read_ms = read_ms_by_day
             .values()
@@ -1162,7 +1211,7 @@ impl Library {
 
     #[tracing::instrument(skip_all)]
     pub async fn set_listing(&self, listing: LibraryListing) -> Result<(), LibraryError> {
-        let stored = listing.at(self.now_ms(), AdultContent::default());
+        let stored = listing.at(self.now_ms(), AdultView::default());
         Ok(self
             .store
             .database()
@@ -1248,8 +1297,34 @@ impl Library {
         Ok(self.hidden_types().await?.into_iter().collect())
     }
 
+    fn adult_seen(&self) -> AdultSeen {
+        AdultSeen::while_screenshot_mode_is(self.screenshot_mode())
+    }
+
+    pub fn set_screenshot_mode(&self, is_on: bool) {
+        self.screenshot_mode.store(is_on, Ordering::Relaxed);
+    }
+
+    #[must_use]
+    pub fn screenshot_mode(&self) -> bool {
+        self.screenshot_mode.load(Ordering::Relaxed)
+    }
+
+    async fn adult_view(&self) -> Result<AdultView, LibraryError> {
+        let adult_seen = self.adult_seen();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| adult_seen.view(connection))
+            .await?)
+    }
+
     pub async fn adult_content(&self) -> Result<AdultContent, LibraryError> {
-        Ok(self.store.database().read(AdultContent::stored).await?)
+        Ok(self
+            .store
+            .database()
+            .read(AdultSeen::stored_setting)
+            .await?)
     }
 
     #[tracing::instrument(skip_all)]
