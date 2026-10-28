@@ -393,3 +393,39 @@ impl FilterParams {
         ]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn requires_manga_or_none_by_the_formats_the_library_can_hold_among_those_wanted() {
+        use SeriesFormat::{Book, Comic, Manga};
+        let wanted: [&[SeriesFormat]; 8] = [
+            &[],
+            &[Comic],
+            &[Manga],
+            &[Comic, Manga],
+            &[Book],
+            &[Comic, Book],
+            &[Manga, Book],
+            &[Comic, Manga, Book],
+        ];
+
+        let required = wanted.map(manga_required);
+
+        assert_eq!(
+            required,
+            [
+                None,
+                Some(0),
+                Some(1),
+                None,
+                Some(HOLDS_NO_SERIES),
+                Some(0),
+                Some(1),
+                None
+            ]
+        );
+    }
+}
