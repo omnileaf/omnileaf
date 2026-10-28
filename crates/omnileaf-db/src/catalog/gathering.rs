@@ -74,6 +74,15 @@ macro_rules! manga_candidates {
     };
 }
 
+macro_rules! bookmarked_candidates {
+    () => {
+        $crate::catalog::gathering::candidates! {
+            index: "series_bookmarked_by_stage",
+            condition: "series.bookmarked_books > 0",
+        }
+    };
+}
+
 macro_rules! tagged_candidates {
     () => {
         concat!(
@@ -130,6 +139,7 @@ const DUPLICATED_ARE_FEW: &str = are_few!(duplicated_candidates!());
 const LANGUAGES_ARE_FEW: &str = are_few!(language_candidates!());
 const RATED_ADULT_ARE_FEW: &str = are_few!(rated_adult_candidates!());
 const MANGA_ARE_FEW: &str = are_few!(manga_candidates!());
+const BOOKMARKED_ARE_FEW: &str = are_few!(bookmarked_candidates!());
 /// Counts the entries of the chosen tags' index rather than the series, which can only overcount, so it never takes a crowded tag for a rare one.
 const TAGGED_ARE_FEW: &str = "SELECT count(*) < :few FROM (
     SELECT 1 FROM series_tag WHERE name IN (SELECT value FROM json_each(:tag_list)) LIMIT :few)";
@@ -222,6 +232,11 @@ macro_rules! gatherings {
                 key: $key,
                 sort_position: $position,
             },
+            few_bookmarked: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::bookmarked_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
             few_rated_adult: $crate::catalog::gathering::sorted_directions! {
                 candidates: $crate::catalog::gathering::rated_adult_candidates!(),
                 key: $key,
@@ -231,6 +246,7 @@ macro_rules! gatherings {
     };
 }
 
+pub(crate) use bookmarked_candidates;
 pub(crate) use candidates;
 pub(crate) use duplicated;
 pub(crate) use duplicated_candidates;
@@ -253,6 +269,7 @@ pub(crate) enum Gathering {
     FewRatedAdult,
     FewTagged,
     FewManga,
+    FewBookmarked,
 }
 
 pub(crate) struct Gatherings<P> {
@@ -263,6 +280,7 @@ pub(crate) struct Gatherings<P> {
     pub(crate) few_rated_adult: Directions<P>,
     pub(crate) few_tagged: Directions<P>,
     pub(crate) few_manga: Directions<P>,
+    pub(crate) few_bookmarked: Directions<P>,
 }
 
 impl Gathering {
@@ -304,6 +322,11 @@ impl Gathering {
         {
             return Ok(Self::FewManga);
         }
+        if filter.bookmarked == Inclusion::Only
+            && are_few(connection, BOOKMARKED_ARE_FEW, &stages, &[])?
+        {
+            return Ok(Self::FewBookmarked);
+        }
         if filter.adult == Inclusion::Only
             && are_few(connection, RATED_ADULT_ARE_FEW, &stages, &[])?
         {
@@ -327,6 +350,7 @@ impl<P> Gatherings<P> {
             Gathering::FewRatedAdult => self.few_rated_adult.toward(direction),
             Gathering::FewTagged => self.few_tagged.toward(direction),
             Gathering::FewManga => self.few_manga.toward(direction),
+            Gathering::FewBookmarked => self.few_bookmarked.toward(direction),
         }
     }
 }
@@ -585,6 +609,45 @@ mod tests {
         assert_eq!(gathering, Gathering::EachStageInOrder);
     }
 
+    fn bookmarked_only() -> SeriesFilter {
+        SeriesFilter::NONE.with_bookmarked(Inclusion::Only)
+    }
+
+    #[test]
+    fn gathers_the_bookmarked_series_while_they_are_few() {
+        let library = Library::read_and_copied("gathering-few-bookmarked", FEW_SERIES - 1);
+        library
+            .connection
+            .execute("UPDATE series SET bookmarked_books = 1", [])
+            .unwrap();
+
+        let gathering = library.gathering(&bookmarked_only());
+
+        assert_eq!(gathering, Gathering::FewBookmarked);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_once_the_bookmarked_series_are_no_longer_few() {
+        let library = Library::read_and_copied("gathering-many-bookmarked", FEW_SERIES);
+        library
+            .connection
+            .execute("UPDATE series SET bookmarked_books = 1", [])
+            .unwrap();
+
+        let gathering = library.gathering(&bookmarked_only());
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_for_the_series_without_a_bookmark_whatever_few_hold_one() {
+        let library = Library::read_and_copied("gathering-unbookmarked", 3);
+
+        let gathering = library.gathering(&SeriesFilter::NONE.with_bookmarked(Inclusion::Hide));
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
     fn manga_only() -> SeriesFilter {
         SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga])
     }
@@ -693,6 +756,20 @@ mod tests {
             plan,
             counting_up_to_a_few(
                 "SEARCH series USING INDEX series_manga_by_stage (reading_stage=?)"
+            )
+        );
+    }
+
+    #[test]
+    fn counts_the_bookmarked_series_through_their_own_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("bookmarked-are-few-plan");
+
+        let plan = scratch.query_plan(BOOKMARKED_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            counting_up_to_a_few(
+                "SEARCH series USING INDEX series_bookmarked_by_stage (reading_stage=?)"
             )
         );
     }

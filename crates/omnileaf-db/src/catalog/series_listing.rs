@@ -47,6 +47,8 @@ pub struct SeriesFilter {
     pub languages: Vec<String>,
     /// Holds a book carrying one of these tags or genres, or any book when empty.
     pub tags: Vec<String>,
+    /// Holds a book with a bookmarked page.
+    pub bookmarked: Inclusion,
     /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds.
     pub adult: Inclusion,
     pub counts_age_ratings: bool,
@@ -104,6 +106,7 @@ impl SeriesFilter {
         formats: Vec::new(),
         languages: Vec::new(),
         tags: Vec::new(),
+        bookmarked: Inclusion::Any,
         adult: Inclusion::Any,
         counts_age_ratings: true,
     };
@@ -153,6 +156,12 @@ impl SeriesFilter {
     #[must_use]
     pub fn with_tags(mut self, tags: Vec<String>) -> Self {
         self.tags = tags;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_bookmarked(mut self, bookmarked: Inclusion) -> Self {
+        self.bookmarked = bookmarked;
         self
     }
 
@@ -289,6 +298,7 @@ macro_rules! conditions {
         AND (:tag_list IS NULL OR ",
             $tags,
             ")
+        AND (:holds_bookmarks IS NULL OR (series.bookmarked_books > 0) = :holds_bookmarks)
         AND (:holds_adult IS NULL
             OR (series.adult_rated_books > 0 AND :counts_age_ratings) = :holds_adult)"
         )
@@ -344,6 +354,7 @@ pub(crate) struct FilterParams {
     formats: Option<String>,
     languages: Option<String>,
     tag_list: Option<String>,
+    holds_bookmarks: Option<bool>,
     holds_adult: Option<bool>,
     counts_age_ratings: bool,
 }
@@ -361,12 +372,13 @@ impl FilterParams {
             formats: delimited_list(&format_names(&filter.formats)),
             languages: delimited_list(&filter.languages),
             tag_list: json_list(&filter.tags),
+            holds_bookmarks: filter.bookmarked.required(),
             holds_adult: filter.adult.required(),
             counts_age_ratings: filter.counts_age_ratings,
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 10] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 11] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
@@ -377,6 +389,7 @@ impl FilterParams {
             (":formats", &self.formats),
             (":languages", &self.languages),
             (":tag_list", &self.tag_list),
+            (":holds_bookmarks", &self.holds_bookmarks),
             (":holds_adult", &self.holds_adult),
             (":counts_age_ratings", &self.counts_age_ratings),
         ]

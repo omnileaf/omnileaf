@@ -13,8 +13,8 @@ mod support;
 use books::write_book_with;
 use omnileaf_engine::{
     AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Inclusion, Library, LibraryFilter,
-    LibraryListing, LibrarySeries, RelatedReason, SeriesCreator, SeriesFormat, SeriesId,
-    SeriesPerson,
+    LibraryListing, LibrarySeries, RelatedReason, SeriesBookListing, SeriesCreator, SeriesFormat,
+    SeriesId, SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -602,6 +602,75 @@ async fn lists_and_counts_the_series_carrying_one_of_the_chosen_tags_or_genres()
                 Vec::new(),
             ],
             3
+        )
+    );
+}
+
+fn bookmarked(inclusion: Inclusion) -> LibraryFilter {
+    LibraryFilter {
+        bookmarked: inclusion,
+        ..LibraryListing::default().filter
+    }
+}
+
+#[tokio::test]
+async fn lists_and_counts_the_series_holding_a_bookmarked_book_or_those_that_do_not() {
+    let scanned = Scanned::with(
+        "filter-bookmarks",
+        &[
+            (SERIES_01, SHARING_NOTHING),
+            (SERIES_02, SHARING_NOTHING),
+            ("Sample Series 03", SHARING_NOTHING),
+        ],
+    )
+    .await;
+    let series = scanned.series_named(SERIES_02).await;
+    let book = scanned
+        .library
+        .series_books(series, SeriesBookListing::default(), None)
+        .await
+        .unwrap()
+        .books
+        .remove(0)
+        .id;
+    let offered = scanned
+        .library
+        .filter_choices()
+        .await
+        .unwrap()
+        .keeps_bookmarks;
+    scanned
+        .library
+        .bookmark_pages(book, vec![0], true)
+        .await
+        .unwrap();
+
+    let listed = [
+        scanned.titles(bookmarked(Inclusion::Only)).await,
+        scanned.titles(bookmarked(Inclusion::Hide)).await,
+    ];
+    let counted = scanned
+        .library
+        .series_count(bookmarked(Inclusion::Only))
+        .await
+        .unwrap();
+    scanned
+        .library
+        .bookmark_pages(book, vec![0], false)
+        .await
+        .unwrap();
+    let none_left = scanned.titles(bookmarked(Inclusion::Only)).await;
+
+    assert_eq!(
+        (offered, listed, counted, none_left),
+        (
+            true,
+            [
+                vec![SERIES_02.to_owned()],
+                vec![SERIES_01.to_owned(), "Sample Series 03".to_owned()],
+            ],
+            1,
+            Vec::new()
         )
     );
 }

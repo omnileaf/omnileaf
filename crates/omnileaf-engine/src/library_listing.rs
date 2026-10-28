@@ -184,13 +184,14 @@ impl From<SeriesListing> for LibraryListing {
 
 impl LibraryFilterChoices {
     pub(crate) fn new(stored: FilterChoices, adult: AdultContent) -> Self {
+        let keeps_bookmarks = !stored.formats.is_empty();
         Self {
             formats: stored.formats.into_iter().map(SeriesFormat::from).collect(),
             languages: stored.languages,
             tags: stored.tags,
             rates_adult: adult.counts_as_adult(stored.holds_rated_adult),
+            keeps_bookmarks,
             smart: SMART_FILTERS_KEPT.to_vec(),
-            ..Self::default()
         }
     }
 }
@@ -218,6 +219,7 @@ impl LibraryFilter {
                 .collect(),
             languages: self.languages.clone(),
             tags: self.tags.clone(),
+            bookmarked: self.bookmarked.into(),
             adult: self.adult.into(),
             counts_age_ratings: adult.counts_age_ratings,
         }
