@@ -33,7 +33,7 @@ function declarations(css: string): [string, string][] {
 
 test("draws Windows contrast themes only under forced colours", () => {
   expect(forcedColors.trimStart().startsWith(MEDIA)).toBe(true);
-  expect(forcedColors.match(/@media/g)).toHaveLength(1);
+  expect(forcedColors.split(MEDIA)).toHaveLength(2);
 });
 
 test("scopes every forced-colours rule to the windows platform", () => {
@@ -71,9 +71,66 @@ test("uses only system colours, and only for tokens that have a Windows value", 
   }
 });
 
+const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
+  "button-primary": ["on-button-primary"],
+  "accent-hover": [],
+  "accent-pressed": [],
+  "switch-on": ["switch-thumb"],
+  "switch-on-border": [],
+  "segment-selected": ["on-segment-selected"],
+  "progress-fill": [],
+  "row-pressed": [],
+  "row-selected": ["on-row-selected-muted"],
+  "menu-chosen": ["on-menu-chosen"],
+};
+
+test("pairs every Highlight fill with HighlightText for the text on it", () => {
+  const mapped = new Map(declarations(forcedColors));
+  const highlighted = [...mapped]
+    .filter(([, value]) => value === "Highlight")
+    .map(([property]) => property.replace("--native-color-", ""));
+
+  expect(highlighted.toSorted()).toEqual(
+    Object.keys(FOREGROUNDS_ON_HIGHLIGHT).toSorted(),
+  );
+  for (const [fill, texts] of Object.entries(FOREGROUNDS_ON_HIGHLIGHT)) {
+    for (const text of texts) {
+      expect(mapped.get(`--native-color-${text}`), `${text} on ${fill}`).toBe(
+        "HighlightText",
+      );
+    }
+  }
+});
+
+test("turns the text of a picked or pressed row and a highlighted phone menu item to HighlightText", () => {
+  const flat = forcedColors.replace(/\s+/g, " ");
+
+  expect(flat).toMatch(
+    /\[data-slot="item"\]\[data-picked\],[^{}]*\[data-slot="item"\]:active:not\(\[aria-disabled="true"\]\) \{ color: HighlightText; \}/,
+  );
+  expect(flat).toMatch(
+    /@media \(width < 600px\) \{[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \{ color: HighlightText; \}/,
+  );
+});
+
+test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.has("--native-color-button-plain-hover")).toBe(false);
+  expect(mapped.has("--native-color-button-plain-pressed")).toBe(false);
+});
+
 test("is loaded by the app stylesheet after the generated tokens", () => {
-  const generated = appCss.indexOf("./lib/theme/generated/index.css");
-  const forced = appCss.indexOf("./lib/theme/forced-colors-windows.css");
+  const imports = appCss
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((line) => line.trimStart().startsWith("@import"));
+  const generated = imports.findIndex((line) =>
+    line.includes("./lib/theme/generated/index.css"),
+  );
+  const forced = imports.findIndex((line) =>
+    line.includes("./lib/theme/forced-colors-windows.css"),
+  );
 
   expect(generated).toBeGreaterThan(-1);
   expect(forced).toBeGreaterThan(generated);
