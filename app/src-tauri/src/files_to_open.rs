@@ -34,6 +34,7 @@ impl FilesToOpen {
     }
 }
 
+#[cfg(desktop)]
 pub(crate) fn in_directory(
     directory: &str,
     arguments: impl IntoIterator<Item = String>,
