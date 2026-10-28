@@ -1300,6 +1300,7 @@ impl Library {
             title: found.title,
             series: SeriesId(found.series),
             series_title: found.series_title,
+            is_in_library: found.file != BookFileId::UNSTORED,
         }))
     }
 

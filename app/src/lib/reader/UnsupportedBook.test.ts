@@ -34,6 +34,7 @@ function place(): BookPlace {
     title: "Volume 6",
     series: SERIES,
     seriesTitle: "Sample Series 04",
+    isInLibrary: true,
   };
 }
 
