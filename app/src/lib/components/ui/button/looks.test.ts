@@ -4,7 +4,13 @@ import { cn } from "#lib/components/cn.ts";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 
-import { BUTTON_LOOKS, type ButtonLook, buttonClasses } from "./looks.ts";
+import {
+  BUTTON_LOOKS,
+  type ButtonLook,
+  type ButtonVariant,
+  buttonClasses,
+  variantClasses,
+} from "./looks.ts";
 
 function classesOf(look: ButtonLook): string[] {
   return cn(BUTTON_LOOKS[look]).split(" ");
@@ -16,6 +22,32 @@ test("keeps every class of every look through the class merge", () => {
   const merged = looks.map(([look, classes]) => [look, cn(classes)]);
 
   expect(merged).toEqual(looks);
+});
+
+const VARIANTS: readonly ButtonVariant[] = [
+  "primary",
+  "secondary",
+  "outline",
+  "plain",
+  "link",
+  "destructive",
+];
+
+function enabledOnly(classes: string): string[] {
+  return classes.split(" ").filter((name) => name.startsWith("enabled:"));
+}
+
+test("tints every desktop look on hover and press when it is drawn on a link", () => {
+  const looks = Object.keys(BUTTON_LOOKS) as ButtonLook[];
+
+  const gated = [
+    ...looks.flatMap((look) => enabledOnly(buttonClasses(look, "linux"))),
+    ...VARIANTS.flatMap((variant) =>
+      enabledOnly(variantClasses(variant, "regular", false, "linux")),
+    ),
+  ];
+
+  expect(gated).toEqual([]);
 });
 
 test("rings every look but the full-width row with the platform's focus ring", () => {
@@ -40,12 +72,22 @@ test.each<[ButtonLook, string[]]>([
   ],
   [
     "quiet",
-    ["text-accent", "enabled:hover:bg-hover", "enabled:active:bg-pressed"],
+    [
+      "text-accent",
+      "not-disabled:hover:bg-hover",
+      "not-disabled:active:bg-pressed",
+    ],
   ],
-  ["primary", ["bg-accent", "text-on-accent", "enabled:hover:bg-accent-hover"]],
+  [
+    "primary",
+    ["bg-accent", "text-on-accent", "not-disabled:hover:bg-accent-hover"],
+  ],
   ["filled", ["bg-accent", "text-on-accent"]],
   ["outline", ["rounded-control", "border", "border-border", "bg-card"]],
-  ["tinted", ["enabled:hover:tint-hover", "enabled:active:tint-pressed"]],
+  [
+    "tinted",
+    ["not-disabled:hover:tint-hover", "not-disabled:active:tint-pressed"],
+  ],
   ["icon", ["flex", "items-center", "justify-center", "rounded-full"]],
   [
     "header-control",
@@ -58,7 +100,7 @@ test.each<[ButtonLook, string[]]>([
       "rounded-full",
       "text-foreground",
       "before:z-behind",
-      "enabled:hover:before:bg-hover",
+      "not-disabled:hover:before:bg-hover",
     ],
   ],
   ["chip", ["rounded-full", "border-border", "hover:bg-hover"]],
@@ -76,7 +118,7 @@ test.each<[ButtonLook, string[]]>([
   ],
   [
     "bar-icon",
-    ["rounded-control", "text-foreground", "enabled:hover:bg-hover"],
+    ["rounded-control", "text-foreground", "not-disabled:hover:bg-hover"],
   ],
 ])("draws the %s look with its colours and shape", (look, signature) => {
   const classes = classesOf(look);
