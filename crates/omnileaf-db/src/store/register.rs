@@ -30,7 +30,7 @@ pub(crate) fn upsert(
         address.profile.as_bytes(),
         address.entity,
         address.id,
-        address.field,
+        &*address.field,
         class,
         register.stamp.hlc.as_u64(),
         register.stamp.node.as_bytes(),
@@ -56,7 +56,7 @@ mod tests {
             profile: ProfileId::default_profile(),
             entity: "book",
             id: [0x11; 16],
-            field: "max",
+            field: "max".into(),
         }
     }
 
