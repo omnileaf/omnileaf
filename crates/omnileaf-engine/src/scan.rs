@@ -253,6 +253,7 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
             size_bytes: stamp.size_bytes,
             modified_at_ms: stamp.modified_at_ms,
         },
+        numbering: None,
     })
 }
 

@@ -9,9 +9,9 @@ use crate::{
     },
 };
 
-const BOOK_KEY: &str = "SELECT series_local_id, title_sort_key FROM book WHERE id = ?1";
+const BOOK_KEY: &str = "SELECT series_local_id, reading_order_key FROM book WHERE id = ?1";
 const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
-    WHERE series_local_id = :series AND (title_sort_key, id) < (:key, :id)";
+    WHERE series_local_id = :series AND (reading_order_key, id) < (:key, :id)";
 
 macro_rules! neighbour {
     ($beside:literal, $order:literal) => {
@@ -23,7 +23,7 @@ macro_rules! neighbour {
             LEFT JOIN book_file AS cover
                 ON cover.id = (SELECT min(id) FROM book_file WHERE book_file.book_id = book.id)
             LEFT JOIN book_state ON book_state.book_id = book.id
-            WHERE book.series_local_id = :series AND (book.title_sort_key, book.id) ",
+            WHERE book.series_local_id = :series AND (book.reading_order_key, book.id) ",
             $beside,
             " (:key, :id) ORDER BY ",
             $order,
@@ -32,8 +32,8 @@ macro_rules! neighbour {
     };
 }
 
-const PREVIOUS_BOOK: &str = neighbour!("<", "book.title_sort_key DESC, book.id DESC");
-const NEXT_BOOK: &str = neighbour!(">", "book.title_sort_key, book.id");
+const PREVIOUS_BOOK: &str = neighbour!("<", "book.reading_order_key DESC, book.id DESC");
+const NEXT_BOOK: &str = neighbour!(">", "book.reading_order_key, book.id");
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlaceInSeries {
@@ -110,7 +110,7 @@ mod tests {
         let neighbour_plan = |beside: &str| {
             vec![
                 format!(
-                    "SEARCH book USING INDEX book_by_series (series_local_id=? AND (title_sort_key,id){beside}(?,?))"
+                    "SEARCH book USING INDEX book_by_series (series_local_id=? AND (reading_order_key,id){beside}(?,?))"
                 ),
                 "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
                 "CORRELATED SCALAR SUBQUERY 1".to_owned(),
@@ -122,7 +122,7 @@ mod tests {
             plans,
             [
                 vec![
-                    "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (title_sort_key,id)<(?,?))".to_owned()
+                    "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)<(?,?))".to_owned()
                 ],
                 neighbour_plan("<"),
                 neighbour_plan(">"),

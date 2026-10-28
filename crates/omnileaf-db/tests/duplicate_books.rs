@@ -148,6 +148,7 @@ fn scanned(root: RootId, copy: &BookCopy) -> ScannedBook {
             size_bytes: 100,
             modified_at_ms: MODIFIED_AT_MS,
         },
+        numbering: None,
     }
 }
 

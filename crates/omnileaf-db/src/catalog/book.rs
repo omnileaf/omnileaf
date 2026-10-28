@@ -1,16 +1,22 @@
 use omnileaf_sync_proto::{BookId, Fingerprint, FingerprintKind, SeriesId};
 use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
 
-use crate::{Error, book_order::book_order_key, catalog::stored_id::stored_id};
+use crate::{
+    Error,
+    book_order::book_order_key,
+    catalog::{Numbering, stored_id::stored_id},
+};
 
 macro_rules! insert_book {
     ($on_conflict:literal) => {
         concat!(
             "INSERT INTO book (
-                id, series_local_id, title, title_sort_key, added_at_ms, content_fp, fp_kind,
-                page_count
+                id, series_local_id, title, reading_order_key, added_at_ms, content_fp, fp_kind,
+                page_count, kind, first_number, last_number, number_source, volume_number,
+                volume_source
             )
-            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8 FROM series WHERE id = ?2",
+            SELECT ?1, local_id, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+            FROM series WHERE id = ?2",
             $on_conflict
         )
     };
@@ -22,7 +28,13 @@ const ADD_OR_REFILE_BOOK: &str = insert_book!(
     " ON CONFLICT (id) DO UPDATE SET
         series_local_id = excluded.series_local_id,
         title = excluded.title,
-        title_sort_key = excluded.title_sort_key"
+        reading_order_key = excluded.reading_order_key,
+        kind = excluded.kind,
+        first_number = excluded.first_number,
+        last_number = excluded.last_number,
+        number_source = excluded.number_source,
+        volume_number = excluded.volume_number,
+        volume_source = excluded.volume_source"
 );
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
@@ -52,6 +64,7 @@ pub struct NewBook {
     pub title: String,
     pub added_at_ms: i64,
     pub page_count: Option<u32>,
+    pub numbering: Option<Numbering>,
 }
 
 impl NewBook {
@@ -139,6 +152,9 @@ pub(crate) fn series_of_book(
 }
 
 fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error> {
+    let numbering = book.numbering.as_ref();
+    let number = numbering.and_then(Numbering::number);
+    let volume = numbering.and_then(Numbering::volume);
     Ok(statement.execute((
         book.id().as_bytes(),
         book.series.as_bytes(),
@@ -148,6 +164,12 @@ fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error>
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),
         book.page_count,
+        numbering.map(|numbering| numbering.kind().as_stored()),
+        number.map(|number| number.value.first().thousandths()),
+        number.map(|number| number.value.last().thousandths()),
+        number.map(|number| number.source.as_stored()),
+        volume.map(|volume| volume.value.thousandths()),
+        volume.map(|volume| volume.source.as_stored()),
     ))?)
 }
 
@@ -179,6 +201,7 @@ mod tests {
             title: "Volume 01".to_owned(),
             added_at_ms: 0,
             page_count: None,
+            numbering: None,
         };
 
         let outcome = BookFiler::new(&transaction, Filing::WhereFirstFound)

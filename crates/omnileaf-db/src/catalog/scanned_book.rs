@@ -6,7 +6,7 @@ use rusqlite::{Statement, Transaction};
 use crate::{
     Error,
     catalog::{
-        BookDetails, NewBook, NewSeries, RootId,
+        BookDetails, NewBook, NewSeries, Numbering, RootId,
         book::{BookFiler, Filing},
         book_details::DetailsRecorder,
         native_path,
@@ -41,6 +41,7 @@ pub struct ScannedBook {
     pub page_count: u32,
     pub details: BookDetails,
     pub file: BookFile,
+    pub numbering: Option<Numbering>,
 }
 
 #[derive(Clone, Debug)]
@@ -106,6 +107,7 @@ impl<'t> Recorder<'t> {
             title: scanned.title.clone(),
             added_at_ms: scanned.added_at_ms,
             page_count: Some(scanned.page_count),
+            numbering: scanned.numbering,
         };
         self.books.file(&book)?;
         self.books

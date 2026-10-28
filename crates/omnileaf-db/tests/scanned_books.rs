@@ -74,6 +74,7 @@ impl Library {
                 size_bytes: u64::from(page_crc) * 100,
                 modified_at_ms: MODIFIED_AT_MS,
             },
+            numbering: None,
         }
     }
 
@@ -512,6 +513,7 @@ async fn knows_no_page_count_for_a_book_added_without_one_until_it_is_recorded()
         title: "Volume 01".to_owned(),
         added_at_ms: ADDED_AT_MS,
         page_count: None,
+        numbering: None,
     };
     let id = book.id();
     library

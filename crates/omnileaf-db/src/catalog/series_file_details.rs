@@ -13,7 +13,7 @@ macro_rules! first_book_giving {
             WHERE book.series_local_id = series.local_id AND book_details.",
             $column,
             " IS NOT NULL
-            ORDER BY book.title_sort_key, book.id
+            ORDER BY book.reading_order_key, book.id
             LIMIT 1)"
         )
     };

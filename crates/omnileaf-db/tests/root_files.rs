@@ -68,6 +68,7 @@ impl Library {
                 size_bytes: u64::from(page_crc) * 100,
                 modified_at_ms: MODIFIED_AT_MS,
             },
+            numbering: None,
         };
         self.database
             .write(move |transaction| record_scanned_books(transaction, &[scanned]))

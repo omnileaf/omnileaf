@@ -11,6 +11,7 @@ mod hidden_series;
 mod home_root;
 mod library_roots;
 mod native_path;
+mod numbering;
 mod page;
 mod page_dimensions;
 mod person_series;
@@ -48,6 +49,7 @@ pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
 pub use library_roots::{
     BookmarkedRoot, bookmarked_roots, library_root, library_roots, missing_roots,
 };
+pub use numbering::{BookKind, BookNumber, NumberRange, Numbering, Sourced, ValueSource};
 pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
 pub use person_series::{PersonSeries, person_series};

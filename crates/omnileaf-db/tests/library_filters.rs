@@ -311,6 +311,7 @@ async fn counts_a_book_read_before_it_was_found_once_it_is_added() {
         title: "Volume 03".to_owned(),
         added_at_ms: 0,
         page_count: None,
+        numbering: None,
     };
     library
         .write(|writer| {
