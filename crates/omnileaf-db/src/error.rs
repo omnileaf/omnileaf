@@ -78,6 +78,8 @@ pub enum Error {
     MalformedRootId,
     #[error("read a book file id that isn't one the library gave out")]
     MalformedBookFileId,
+    #[error("read a folder group id that isn't one the library gave out")]
+    MalformedFolderGroupId,
     #[error("ask for a page of {requested} items, outside the 1 to {max} a page holds")]
     PageSize { requested: u16, max: u16 },
     #[error("read {tag:?} as a language, which isn't a BCP 47 language tag")]

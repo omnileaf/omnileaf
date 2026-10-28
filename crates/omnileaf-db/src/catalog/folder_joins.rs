@@ -9,16 +9,18 @@ use rusqlite::{Statement, Transaction};
 use crate::{
     Error,
     catalog::{
-        NamedSeries, NewSeries, RootId, native_path,
+        NamedSeries, NewSeries, RootId,
+        folder_groups::group_key,
+        native_path,
         series::{SeriesAdder, SeriesKey},
         stored_id::stored_id,
     },
     title_key::TitleCollation,
 };
 
-const ADD_FOLDER: &str =
-    "INSERT INTO series_folder (root_id, location, series_local_id, group_location, year)
-     SELECT ?1, ?2, local_id, ?4, ?5 FROM series WHERE id = ?3
+const ADD_FOLDER: &str = "INSERT INTO series_folder
+         (root_id, location, series_local_id, group_location, year, group_key)
+     SELECT ?1, ?2, local_id, ?4, ?5, ?6 FROM series WHERE id = ?3
      ON CONFLICT DO NOTHING";
 const SERIES_OF_FOLDER: &str = "SELECT series.id
      FROM series_folder JOIN series ON series.local_id = series_folder.series_local_id
@@ -80,6 +82,7 @@ impl<'t> FolderJoins<'t> {
             own.as_bytes(),
             native_path::to_bytes(group),
             year,
+            group_key(collation, group),
         ))?;
         let filed_in = self
             .series_of_folder

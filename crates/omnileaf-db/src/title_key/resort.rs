@@ -2,6 +2,7 @@ use rusqlite::Connection;
 
 use crate::{
     Error,
+    catalog::folder_groups::rekey_every_folder_group,
     title_key::{
         Language, TitleCollation,
         stamp::{TitleStamp, save_stamp, stored_language, stored_stamp},
@@ -30,11 +31,13 @@ pub(crate) fn sort_titles_for(
     let collation = TitleCollation::new(language)?;
     let titles = rekey_every_title(connection, &collation)?;
     let names = rekey_every_person_name(connection, &collation)?;
+    let folder_groups = rekey_every_folder_group(connection, &collation)?;
     save_stamp(connection, language, stamp)?;
     tracing::info!(
         titles,
         names,
-        "keyed the series titles and people's names again"
+        folder_groups,
+        "keyed the series titles, people's names and folder groups again"
     );
     Ok(Resorted::Rekeyed)
 }

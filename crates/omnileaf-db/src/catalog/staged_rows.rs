@@ -210,7 +210,8 @@ fn place_after(
         | Position::LastUpdated { .. }
         | Position::UnreadCount { .. }
         | Position::TimeLeft { .. }
-        | Position::Writer { .. } => Err(Error::CursorForAnotherList),
+        | Position::Writer { .. }
+        | Position::FolderGroup { .. } => Err(Error::CursorForAnotherList),
     }
 }
 

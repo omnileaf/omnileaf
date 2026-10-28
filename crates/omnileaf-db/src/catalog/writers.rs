@@ -115,7 +115,8 @@ fn place_after(
         | Position::Session { .. }
         | Position::LastUpdated { .. }
         | Position::UnreadCount { .. }
-        | Position::TimeLeft { .. } => Err(Error::CursorForAnotherList),
+        | Position::TimeLeft { .. }
+        | Position::FolderGroup { .. } => Err(Error::CursorForAnotherList),
     }
 }
 

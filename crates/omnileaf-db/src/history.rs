@@ -211,7 +211,8 @@ pub fn history_page(
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::FolderGroup { .. },
         ) => return Err(Error::CursorForAnotherList),
     };
     let matching;

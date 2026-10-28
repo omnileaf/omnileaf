@@ -86,6 +86,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0050_join_series_folders_by_the_series_their_books_name"),
     migration!("0051_name_each_series_in_the_language_tagged_in_its_book_names"),
     migration!("0052_stack_series_covers_in_the_library_view"),
+    migration!("0053_key_the_folders_that_group_series"),
 ];
 
 pub(crate) fn pending(
@@ -235,7 +236,10 @@ fn latest_version(migrations: &[Migration]) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
 
     use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, ProfileId, SourceId};
 
@@ -244,7 +248,7 @@ mod tests {
     use super::*;
     use crate::{
         Database, Language,
-        catalog::{PageRequest, PageSize, writers},
+        catalog::{PageRequest, PageSize, native_path, writers},
         connection,
         first_launch::first_launch_finished,
         library_view::{
@@ -252,7 +256,7 @@ mod tests {
         },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
-        title_key::{TitleCollation, TitleStamp, keep_titles_sorted},
+        title_key::TitleCollation,
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -1632,16 +1636,10 @@ mod tests {
     }
 
     #[test]
-    fn lists_the_writers_kept_from_before_their_names_were_keyed_in_title_order() {
+    fn lists_the_writers_kept_with_names_not_keyed_yet_in_title_order() {
         let scratch = ScratchLibrary::new("writer-keys-upgrade");
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..47]).unwrap());
+        drop(Database::open(&scratch.config).unwrap());
         let connection = Connection::open(&scratch.config.path).unwrap();
-        connection
-            .execute(
-                "UPDATE title_key_stamp SET stamp = ?1",
-                [TitleStamp::of(&Language::ROOT).as_bytes()],
-            )
-            .unwrap();
         connection
             .execute(
                 "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
@@ -1670,8 +1668,11 @@ mod tests {
             )
             .unwrap();
 
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..48]).unwrap());
-        keep_titles_sorted(&connection).unwrap();
+        connection
+            .execute("UPDATE title_key_stamp SET stamp = zeroblob(16)", [])
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
 
         let request = PageRequest {
             after: None,
@@ -1684,6 +1685,55 @@ mod tests {
             .map(|writer| writer.name)
             .collect();
         assert_eq!(listed, ["Sample Author 9", "Sample Author 10"]);
+    }
+
+    #[test]
+    fn keys_the_folder_groups_kept_from_before_in_title_order() {
+        let scratch = ScratchLibrary::new("folder-group-keys-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..52]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_root (id, kind, locator_kind, location, added_at_ms)
+                 VALUES (7, 'linked', 'path', x'2f6d65646961', 0);",
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        let mut add_folder = connection
+            .prepare(
+                "INSERT INTO series_folder (root_id, location, series_local_id, group_location)
+                 VALUES (7, ?1, 1, ?2)",
+            )
+            .unwrap();
+        for (series_folder, group) in [
+            ("Author B/Sample Series 02", "Author B"),
+            ("Sample Series 01", ""),
+            ("author a/Sample Series 03", "author a"),
+        ] {
+            add_folder
+                .execute((
+                    native_path::to_bytes(Path::new(series_folder)),
+                    native_path::to_bytes(Path::new(group)),
+                ))
+                .unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let groups: Vec<PathBuf> = connection
+            .prepare("SELECT group_location FROM series_folder ORDER BY group_key, group_location")
+            .unwrap()
+            .query_map([], |row| native_path::stored_native_path(row, 0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(groups, ["", "author a", "Author B"].map(PathBuf::from));
     }
 
     #[test]

@@ -22,9 +22,11 @@ const LAST_UPDATED_TAG: u8 = 7;
 const UNREAD_COUNT_TAG: u8 = 8;
 const TIME_LEFT_TAG: u8 = 9;
 const WRITER_TAG: u8 = 10;
+const FOLDER_GROUP_TAG: u8 = 11;
 const ID_LENGTH: usize = 16;
 const KEY_LENGTH_PREFIX: usize = size_of::<u32>();
 const MILLIS_LENGTH: usize = size_of::<i64>();
+const ROOT_ID_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -75,6 +77,10 @@ pub(crate) enum Position {
         stamp: TitleStamp,
         name_key: Vec<u8>,
         name: String,
+    },
+    FolderGroup {
+        root: i64,
+        location: Vec<u8>,
     },
 }
 
@@ -147,6 +153,9 @@ impl Position {
                 name.as_bytes(),
             ]
             .concat(),
+            Self::FolderGroup { root, location } => {
+                [&[FOLDER_GROUP_TAG][..], &root.to_be_bytes(), location].concat()
+            }
         }
     }
 
@@ -229,6 +238,13 @@ impl Position {
                     name: String::from_utf8(name.to_vec()).ok()?,
                 })
             }
+            FOLDER_GROUP_TAG => {
+                let (root, location) = rest.split_first_chunk::<ROOT_ID_LENGTH>()?;
+                Some(Self::FolderGroup {
+                    root: i64::from_be_bytes(*root),
+                    location: location.to_vec(),
+                })
+            }
             _ => None,
         }
     }
@@ -287,10 +303,7 @@ fn listing_from_byte(byte: u8) -> Option<BookListing> {
 
 impl fmt::Display for Cursor {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0
-            .to_bytes()
-            .iter()
-            .try_for_each(|byte| write!(formatter, "{byte:02x}"))
+        write_hex(&self.0.to_bytes(), formatter)
     }
 }
 
@@ -305,7 +318,13 @@ impl FromStr for Cursor {
     }
 }
 
-fn hex_bytes(text: &str) -> Option<Vec<u8>> {
+pub(crate) fn write_hex(bytes: &[u8], formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    bytes
+        .iter()
+        .try_for_each(|byte| write!(formatter, "{byte:02x}"))
+}
+
+pub(crate) fn hex_bytes(text: &str) -> Option<Vec<u8>> {
     let (pairs, remainder) = text.as_bytes().as_chunks::<2>();
     if !remainder.is_empty() {
         return None;

@@ -1,0 +1,177 @@
+use rusqlite::{Connection, ToSql};
+
+use crate::{
+    Error,
+    catalog::{
+        FolderGroup,
+        cursor::Position,
+        native_path,
+        page::{Page, PageRequest},
+        series_listing::{
+            FilterParams, SeriesFilter, SeriesListing, SeriesOrder, smart_conditions,
+        },
+        series_page::{
+            Directions, SeriesSummary, added_place, date_added_rows, directions, last_read_place,
+            last_read_rows, last_updated_place, last_updated_rows, time_left_place, time_left_rows,
+            unread_count_place, unread_count_rows,
+        },
+        staged_rows::{Read, TitlePlace, title_place, title_rows},
+    },
+};
+
+macro_rules! series_in_group {
+    () => {
+        "SELECT DISTINCT series_local_id FROM series_folder
+            WHERE root_id = :root AND group_location = :group"
+    };
+}
+
+const BY_TITLE: Directions<TitlePlace> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "title_key",
+    sort_position: title_place,
+};
+
+const BY_DATE_ADDED: Directions<Position> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "added_at_ms",
+    sort_position: added_place,
+};
+
+const BY_LAST_READ: Directions<Position> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "last_read_at_ms",
+    sort_position: last_read_place,
+};
+
+const BY_LAST_UPDATED: Directions<Position> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "updated_at_ms",
+    sort_position: last_updated_place,
+};
+
+const BY_UNREAD_COUNT: Directions<Position> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "unread_count",
+    sort_position: unread_count_place,
+};
+
+const BY_TIME_LEFT: Directions<Position> = directions! {
+    with: concat!("WITH in_group AS MATERIALIZED (", series_in_group!(), ") "),
+    condition: " AND series.local_id IN in_group",
+    key: "time_left_key",
+    sort_position: time_left_place,
+};
+
+const SERIES_IN_GROUP: &str = concat!(
+    "SELECT count(*) FROM series
+    WHERE reading_stage IN (:unstarted, :in_progress, :finished)
+        AND local_id IN (",
+    series_in_group!(),
+    ")",
+    smart_conditions!()
+);
+
+#[tracing::instrument(skip_all, fields(?group, ?listing, size = ?request.size))]
+pub fn folder_group_series_page(
+    connection: &Connection,
+    group: &FolderGroup,
+    listing: &SeriesListing,
+    request: &PageRequest,
+) -> Result<Page<SeriesSummary>, Error> {
+    let location = native_path::to_bytes(&group.location);
+    let bound: [(&'static str, &dyn ToSql); 2] = [(":root", &group.root.0), (":group", &location)];
+    let read = Read {
+        connection,
+        filter: listing.filter,
+        limit: request.size.rows_to_fetch(),
+        bound: &bound,
+    };
+    let after = request.after.as_ref().map(|cursor| &cursor.0);
+    let direction = listing.sort.direction;
+    let rows = match listing.sort.order {
+        SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(direction), after),
+        SeriesOrder::DateAdded => date_added_rows(&read, BY_DATE_ADDED.toward(direction), after),
+        SeriesOrder::LastRead => last_read_rows(&read, BY_LAST_READ.toward(direction), after),
+        SeriesOrder::LastUpdated => {
+            last_updated_rows(&read, BY_LAST_UPDATED.toward(direction), after)
+        }
+        SeriesOrder::UnreadCount => {
+            unread_count_rows(&read, BY_UNREAD_COUNT.toward(direction), after)
+        }
+        SeriesOrder::TimeLeft => time_left_rows(&read, BY_TIME_LEFT.toward(direction), after),
+    }?;
+    Ok(Page::of(rows, request.size))
+}
+
+#[tracing::instrument(skip_all, fields(?group, ?filter))]
+pub fn folder_group_series_count(
+    connection: &Connection,
+    group: &FolderGroup,
+    filter: &SeriesFilter,
+) -> Result<u32, Error> {
+    let location = native_path::to_bytes(&group.location);
+    let filter = FilterParams::of(*filter);
+    let mut params = filter.named().to_vec();
+    params.push((":root", &group.root.0));
+    params.push((":group", &location));
+    Ok(connection
+        .prepare(SERIES_IN_GROUP)?
+        .query_row(params.as_slice(), |row| row.get(0))?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scratch::ScratchLibrary;
+
+    const FOLDERS_IN_GROUP: &str = "SEARCH series_folder USING COVERING INDEX series_folder_in_group (root_id=? AND group_location=?)";
+
+    #[test]
+    fn gathers_the_group_s_series_once_by_its_folder_and_reads_each_stage_in_order() {
+        let scratch = ScratchLibrary::new("folder-group-series-plan");
+
+        let plans = [
+            BY_TITLE.ascending.first_page_query,
+            BY_TITLE.descending.next_page_query,
+            BY_DATE_ADDED.ascending.first_page_query,
+            BY_DATE_ADDED.descending.next_page_query,
+            BY_LAST_READ.ascending.first_page_query,
+            BY_LAST_READ.descending.next_page_query,
+            BY_LAST_UPDATED.ascending.first_page_query,
+            BY_LAST_UPDATED.descending.next_page_query,
+            BY_UNREAD_COUNT.ascending.first_page_query,
+            BY_UNREAD_COUNT.descending.next_page_query,
+            BY_TIME_LEFT.ascending.first_page_query,
+            BY_TIME_LEFT.descending.next_page_query,
+        ]
+        .map(|query| scratch.query_plan(query));
+
+        for plan in plans {
+            let gathered = plan
+                .iter()
+                .filter(|step| *step == "MATERIALIZE in_group")
+                .count();
+            assert_eq!(gathered, 1, "{plan:?}");
+            assert!(plan.iter().any(|step| step == FOLDERS_IN_GROUP), "{plan:?}");
+            assert!(
+                !plan.iter().any(|step| step.contains("ORDER BY")),
+                "{plan:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn counts_the_group_s_series_by_its_folder() {
+        let scratch = ScratchLibrary::new("folder-group-series-count-plan");
+
+        let plan = scratch.query_plan(SERIES_IN_GROUP);
+
+        assert!(plan.iter().any(|step| step == FOLDERS_IN_GROUP), "{plan:?}");
+    }
+}
