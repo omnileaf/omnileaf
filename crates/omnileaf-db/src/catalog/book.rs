@@ -3,8 +3,8 @@ use rusqlite::{Connection, OptionalExtension, Statement, Transaction};
 
 use crate::{
     Error,
-    book_order::book_order_key,
     catalog::{Numbering, stored_id::stored_id},
+    reading_order::reading_order_key,
 };
 
 macro_rules! insert_book {
@@ -159,7 +159,7 @@ fn insert(statement: &mut Statement<'_>, book: &NewBook) -> Result<usize, Error>
         book.id().as_bytes(),
         book.series.as_bytes(),
         &book.title,
-        book_order_key(&book.title),
+        reading_order_key(numbering, &book.title),
         book.added_at_ms,
         book.fingerprint.as_bytes(),
         kind_name(book.fingerprint.kind()),

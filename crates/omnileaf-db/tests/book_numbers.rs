@@ -10,9 +10,9 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookDetails, BookFile, BookNumber, NewRoot, NewSeries, NumberRange, Numbering, RootId,
-        RootKind, RootLocator, ScannedBook, Sourced, ValueSource, add_root, record_moved_books,
-        record_scanned_books,
+        BookDetails, BookFile, BookListing, BookNumber, NewRoot, NewSeries, NumberRange, Numbering,
+        PageRequest, PageSize, RootId, RootKind, RootLocator, ScannedBook, Sourced, ValueSource,
+        add_root, record_moved_books, record_scanned_books, series_books,
     },
     rusqlite::types::Value,
 };
@@ -73,6 +73,22 @@ impl Library {
             .write(move |transaction| record_scanned_books(transaction, &scanned))
             .await
             .unwrap();
+    }
+
+    async fn titles_in_reading_order(&self) -> Vec<String> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let page = self
+            .database
+            .read(move |connection| {
+                series_books(connection, series, BookListing::IN_ORDER, &request)
+            })
+            .await
+            .unwrap();
+        page.items.into_iter().map(|book| book.title).collect()
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -245,5 +261,35 @@ async fn refiles_a_moved_book_under_the_numbers_its_new_place_gives() {
                 Some((3000, "folder_name")),
             ),
         )]
+    );
+}
+
+#[tokio::test]
+async fn lists_the_books_of_a_series_in_reading_order_by_their_numbers() {
+    let library = Library::open("placed-order").await;
+    let chapter = |number| Numbering::Chapter {
+        number: Some(numbers(number, number, ValueSource::FileName)),
+        volume: None,
+    };
+    let found = vec![
+        library.found(
+            "Sample Series 01 Sketches",
+            Some(Numbering::Special { number: None }),
+        ),
+        library.found("c010", Some(chapter(10_000))),
+        library.found("c002", Some(chapter(2000))),
+        library.found(
+            "Volume 1",
+            Some(Numbering::Volume {
+                numbers: numbers(1000, 1000, ValueSource::FolderName),
+            }),
+        ),
+    ];
+
+    library.record(found).await;
+
+    assert_eq!(
+        library.titles_in_reading_order().await,
+        ["Volume 1", "c002", "c010", "Sample Series 01 Sketches"]
     );
 }
