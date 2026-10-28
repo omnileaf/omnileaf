@@ -183,6 +183,8 @@
   --text-bar-title--line-height: calc(1.75 / 1.375);
   --text-group-title: calc(1.125rem * var(--text-scale));
   --text-group-title--line-height: calc(1.5 / 1.125);
+  --text-empty-title: calc(1.125rem * var(--text-scale));
+  --text-empty-title--line-height: calc(1.75 / 1.125);
   --text-panel-title: calc(1.0625rem * var(--text-scale));
   --text-panel-title--line-height: 1.3;
   --text-title: calc(1.25rem * var(--text-scale));
@@ -241,6 +243,7 @@
   --tracking-heading-caps: 0.04em;
 
   --leading-band: 1.2;
+  --leading-relaxed: 1.625;
   --text-app-name: calc(1.5rem * var(--text-scale));
   --text-app-name--line-height: calc(2 / 1.5);
   --text-page-title: calc(1.875rem * var(--text-scale));
@@ -665,6 +668,7 @@
   );
 
   --container-prose: 27.5rem;
+  --container-empty: 24rem;
   --container-section: 45rem;
   --container-narrow: 35rem;
   --container-segmented: 22.5rem;

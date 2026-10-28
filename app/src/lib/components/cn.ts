@@ -22,6 +22,7 @@ export const TOKEN_THEME = {
     "dialog-body",
     "dialog-title",
     "display",
+    "empty-title",
     "footnote",
     "group-title",
     "heading",
@@ -657,6 +658,7 @@ export const TOKEN_THEME = {
     "native-row-title",
     "native-segment",
     "native-tab",
+    "relaxed",
   ],
   "font-weight": [
     "bold",

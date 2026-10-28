@@ -8,7 +8,9 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  LARGE_MIN_WIDTH,
   test,
+  viewportOf,
 } from "./fixtures.ts";
 
 const PHONE_BUTTON_HEIGHT: Readonly<Partial<Record<Platform, number>>> = {
@@ -81,3 +83,24 @@ test.describe(
     });
   },
 );
+
+test.describe("an empty library, on a linux desktop", () => {
+  test("spaces the empty state as shadcn's empty, its description wrapping at 384px", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < LARGE_MIN_WIDTH,
+      "the boards draw the linux desktop on large windows",
+    );
+    await page.goto("/");
+
+    const region = page.getByRole("region", { name: "Your library is empty" });
+    const title = region.getByRole("heading", { level: 2 });
+    const description = region.locator('[data-slot="empty-description"]');
+
+    await expect(title).toHaveCSS("line-height", "28px");
+    await expect(description).toHaveCSS("max-inline-size", "384px");
+    await expect(description).toHaveCSS("line-height", "22.75px");
+    expect((await boxOf(description)).height).toBeCloseTo(2 * 22.75, 0);
+  });
+});
