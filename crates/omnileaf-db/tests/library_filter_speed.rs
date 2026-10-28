@@ -149,6 +149,94 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     assert_eq!(over_budget, Vec::<String>::new());
 }
 
+/// Forgotten and stored-twice series that are too many to sort on their own, all finished, beside thousands of unstarted series that hold none of them.
+const CROWDED_SMART_FILTERS: [SeriesFilter; 2] = [
+    SeriesFilter {
+        last_read_before_ms: Some(READ_LATELY_MS),
+        ..SeriesFilter::NONE
+    },
+    SeriesFilter {
+        duplicates: Inclusion::Only,
+        ..SeriesFilter::NONE
+    },
+];
+const EVERY_TENTH_FINISHED: u32 = 10;
+const EVERY_TWENTIETH: u32 = 20;
+const EVERY_TWENTIETH_REMAINDER: u32 = 0;
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_of_500_smart_matches_among_9_000_unstarted_series_within_2_ms_at_p95() {
+    let trial =
+        trial_of("a page of 100 of 500 finished smart matches beside 9,000 unstarted series");
+    let folder = ScratchFolder::new("crowded-smart-filter-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_library_with_finished_smart_matches(&database).await;
+
+    let mut over_budget = Vec::new();
+    for sort in SORTS {
+        for filter in CROWDED_SMART_FILTERS {
+            let listing = SeriesListing { sort, filter };
+            let outcome = trial
+                .run(
+                    async |_| None,
+                    async |after| *after = read_page(&database, listing, after.take()).await,
+                )
+                .await;
+            eprintln!("{listing:?}: {outcome}");
+            if !outcome.is_within_budget() {
+                over_budget.push(format!("{listing:?}: {outcome}"));
+            }
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+/// Finishes every tenth series, and of those reads every other one long ago and stores its first book twice.
+async fn add_library_with_finished_smart_matches(database: &Database) {
+    add_generated_series(database, &BOOK_TITLES).await;
+    database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = 0",
+                [EVERY_TENTH_FINISHED],
+            )?;
+            transaction.execute(
+                "INSERT INTO reading_session (
+                    book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count
+                )
+                SELECT book.id, ?2, ?2, 0, 0, ?3
+                FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = 0 AND book.title = ?4",
+                (
+                    EVERY_TENTH_FINISHED,
+                    READ_LONG_AGO_MS,
+                    SESSION_PAGE_COUNT,
+                    BOOK_TITLES[0],
+                ),
+            )?;
+            transaction.execute(
+                "UPDATE reading_session SET ended_at_ms = ?1, started_at_ms = ?1
+                WHERE book_id IN (
+                    SELECT book.id FROM book JOIN series ON series.local_id = book.series_local_id
+                    WHERE series.added_at_ms % ?2 != ?3
+                )",
+                (READ_LATELY_MS, EVERY_TWENTIETH, EVERY_TWENTIETH_REMAINDER),
+            )?;
+            store_first_books_twice(transaction, EVERY_TWENTIETH, EVERY_TWENTIETH_REMAINDER)?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
 fn trial_of(measured: &'static str) -> SpeedTrial {
     SpeedTrial {
         measured,
@@ -195,14 +283,18 @@ async fn add_generated_library(database: &Database) {
                     BOOK_TITLES[0],
                 ),
             )?;
-            store_every_hundredth_first_book_twice(transaction)?;
+            store_first_books_twice(transaction, EVERY_HUNDREDTH_COPIED, COPIED_REMAINDER)?;
             Ok(())
         })
         .await
         .unwrap();
 }
 
-fn store_every_hundredth_first_book_twice(transaction: &Transaction<'_>) -> rusqlite::Result<()> {
+fn store_first_books_twice(
+    transaction: &Transaction<'_>,
+    every: u32,
+    remainder: u32,
+) -> rusqlite::Result<()> {
     transaction.execute(
         "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
         VALUES ('linked', 'path', ?1, 0)",
@@ -216,7 +308,7 @@ fn store_every_hundredth_first_book_twice(transaction: &Transaction<'_>) -> rusq
         CROSS JOIN library_root
         CROSS JOIN (SELECT '/a.cbz' AS name UNION ALL SELECT '/b.cbz') AS copy
         WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3",
-        (EVERY_HUNDREDTH_COPIED, COPIED_REMAINDER, BOOK_TITLES[0]),
+        (every, remainder, BOOK_TITLES[0]),
     )?;
     Ok(())
 }
