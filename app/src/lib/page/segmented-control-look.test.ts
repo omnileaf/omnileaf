@@ -18,6 +18,7 @@ const LABELS = {
 
 async function renderThemeChoice(
   chosen: (typeof OPTIONS)[number] = "dark",
+  isSetupRow = false,
 ): Promise<void> {
   document.documentElement.dataset.theme = "light";
   const heading = document.createElement("h2");
@@ -28,6 +29,7 @@ async function renderThemeChoice(
     options: OPTIONS,
     labels: LABELS,
     chosen,
+    isSetupRow,
     labelledBy: "theme-heading",
     onChoose: () => undefined,
   });
@@ -120,6 +122,52 @@ test("rounds both outer ends of Android's connected buttons and keeps 8 inside, 
   expect(first.borderTopLeftRadius).toBe("20px");
   expect(last.borderTopRightRadius).toBe("20px");
   expect(first.borderTopRightRadius).toBe("8px");
+});
+
+test("draws Windows's segmented control as an outlined track of 32px segments with an accent mark under the chosen segment", async () => {
+  followCorePlatform("windows");
+  await renderThemeChoice("dark", true);
+
+  const chosen = segment("Dark");
+  const mark = getComputedStyle(chosen, "::after");
+
+  expect(getComputedStyle(track()).borderTopWidth).toBe("1px");
+  expect(getComputedStyle(track()).borderTopLeftRadius).toBe("4px");
+  expect(chosen.getBoundingClientRect().height).toBeCloseTo(32, 0);
+  expect(getComputedStyle(chosen).fontSize).toBe("14px");
+  expect(mark.width).toBe("16px");
+  expect(mark.height).toBe("3px");
+  expect(mark.backgroundColor).toBe("rgb(47, 111, 79)");
+  expect(getComputedStyle(segment("Light"), "::after").width).toBe("auto");
+  expect(chosen.className).toContain("text-native-on-segment-selected");
+  expect(chosen.className).toContain(
+    "forced-colors:after:bg-native-on-segment-selected",
+  );
+});
+
+test("keeps the same segmented control as Linux's outside the first launch on Windows", async () => {
+  followCorePlatform("windows");
+  await renderThemeChoice();
+
+  expect(segment("Dark").className).toContain("bg-raised");
+  expect(getComputedStyle(track()).borderTopWidth).toBe("0px");
+});
+
+test("centres Windows's accent mark under the chosen segment in right-to-left too", async () => {
+  followCorePlatform("windows");
+  document.documentElement.dir = "rtl";
+  await renderThemeChoice("dark", true);
+
+  const chosen = segment("Dark");
+  const mark = getComputedStyle(chosen, "::after");
+  const centre = chosen.getBoundingClientRect();
+
+  expect(parseFloat(mark.insetInlineStart)).toBeCloseTo(
+    (centre.width - 2) / 2,
+    0,
+  );
+  expect(mark.translate).toBe("50%");
+  document.documentElement.removeAttribute("dir");
 });
 
 test("keeps today's raised segment on Linux", async () => {

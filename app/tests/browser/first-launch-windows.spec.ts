@@ -2,6 +2,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   test,
   testOnlyInItsWebview,
@@ -140,5 +141,40 @@ test.describe("the first launch on Windows", () => {
     await expect(mark).toHaveCSS("color", "rgb(15, 123, 15)");
     await expect(title).toHaveCSS("text-align", "start");
     expect((await boxOf(mark)).x).toBe((await boxOf(title)).x);
+  });
+
+  test("sets each choice on a card with its segmented control at the end of the row", async ({
+    page,
+  }) => {
+    await page.goto("/first-launch");
+    for (const name of ["Get started", "Continue", "Continue"]) {
+      await page.getByRole("button", { name }).click();
+    }
+    const appearance = page.getByRole("region", { name: "Appearance" });
+    const covers = page.getByRole("region", { name: "18+ covers" });
+    await expect(appearance).toBeVisible();
+
+    const card = await boxOf(appearance);
+    const title = await boxOf(
+      appearance.getByRole("heading", { name: "Appearance" }),
+    );
+    const control = await boxOf(
+      appearance.getByRole("radiogroup", { name: "Appearance" }),
+    );
+
+    if (viewportOf(page).width < MEDIUM_MIN_WIDTH) {
+      expect(control.y).toBeGreaterThan(title.y + title.height);
+    } else {
+      expect(control.x).toBeGreaterThan(title.x + title.width);
+    }
+    expect(control.x + control.width).toBeLessThanOrEqual(
+      card.x + card.width - 16,
+    );
+    await expect(appearance).toHaveCSS("border-top-width", "1px");
+    expect((await boxOf(covers)).y).toBeGreaterThan(card.y + card.height);
+    await expect(covers.getByRole("radio", { name: "Blur" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 });

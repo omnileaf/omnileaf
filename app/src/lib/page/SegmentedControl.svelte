@@ -23,6 +23,7 @@
     readonly describedBy?: string | undefined;
     readonly size?: Size;
     readonly isFullWidth?: boolean;
+    readonly isSetupRow?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
@@ -64,6 +65,17 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const WINDOWS_LOOK = {
+    track:
+      "gap-px rounded-windows-control border border-windows-stroke bg-native-segmented-track",
+    segment:
+      "rounded-windows-control border border-transparent min-block-segment-item",
+    face: "px-md text-label",
+    chosen:
+      "border-windows-stroke bg-native-segment-selected text-native-on-segment-selected after:absolute after:inset-be-none after:inset-s-1/2 after:-translate-x-1/2 after:rounded-full after:bg-windows-accent after:block-windows-indicator after:inline-windows-indicator-length forced-colors:after:bg-native-on-segment-selected rtl:after:translate-x-1/2",
+    unchosen: "text-foreground hover:bg-hover",
+  };
+
   let {
     options,
     labels,
@@ -73,16 +85,24 @@
     describedBy,
     size = "regular",
     isFullWidth = false,
+    isSetupRow = false,
     onChoose,
     onFit,
     class: className,
   }: Props = $props();
 
   const look = $derived(LOOKS[size]);
-  const isNative = hasNativeLook(currentPlatform());
-  const face = $derived(
-    isNative && size === "regular" ? NATIVE_LOOK.face : look.face,
+  const platform = currentPlatform();
+  const isNative = hasNativeLook(platform);
+  const isWindows = $derived(
+    platform === "windows" && size === "regular" && isSetupRow,
   );
+  const face = $derived.by(() => {
+    if (isWindows) {
+      return WINDOWS_LOOK.face;
+    }
+    return isNative && size === "regular" ? NATIVE_LOOK.face : look.face;
+  });
 
   let track = $state<HTMLElement | null>(null);
   let ruler: HTMLElement | undefined = $state();
@@ -120,7 +140,11 @@
   class={[
     "relative",
     isOneRow ? "flex" : "grid",
-    isNative ? NATIVE_LOOK.track : ["bg-chip", look.track],
+    isNative
+      ? NATIVE_LOOK.track
+      : isWindows
+        ? WINDOWS_LOOK.track
+        : ["bg-chip", look.track],
     !isFullWidth && look.capped,
     className,
   ]}
@@ -133,7 +157,11 @@
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
-        isNative ? NATIVE_LOOK.segment : look.segment,
+        isNative
+          ? NATIVE_LOOK.segment
+          : isWindows
+            ? WINDOWS_LOOK.segment
+            : look.segment,
         face,
         isOneRow
           ? [look.onRow, "text-nowrap"]
@@ -142,9 +170,13 @@
           ? chosen === option
             ? NATIVE_LOOK.chosen
             : NATIVE_LOOK.unchosen
-          : chosen === option
-            ? "bg-raised font-semibold text-foreground shadow-raised"
-            : "font-medium text-foreground hover:bg-hover",
+          : isWindows
+            ? chosen === option
+              ? WINDOWS_LOOK.chosen
+              : WINDOWS_LOOK.unchosen
+            : chosen === option
+              ? "bg-raised font-semibold text-foreground shadow-raised"
+              : "font-medium text-foreground hover:bg-hover",
       ]}
     >
       <SegmentFace
