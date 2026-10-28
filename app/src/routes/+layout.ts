@@ -11,6 +11,7 @@ import {
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
+import { followSystemContrast } from "#lib/page/system-contrast.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";
 
 import type { LayoutLoad } from "./$types";
@@ -25,6 +26,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   ]);
   followCorePlatform(appInfo.platform);
   followSystemTextSize(appInfo.platform);
+  followSystemContrast(appInfo.platform);
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }
