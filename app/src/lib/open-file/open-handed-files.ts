@@ -1,6 +1,6 @@
 import { resolve } from "$app/paths";
 import type { ResolvedPathname } from "$app/types";
-import { commands, events } from "#lib/ipc/bindings.ts";
+import { commands, events, type FileToRead } from "#lib/ipc/bindings.ts";
 import { listenFor } from "#lib/ipc/listen-for.ts";
 
 export function openHandedFiles(
@@ -8,13 +8,20 @@ export function openHandedFiles(
   onFailed: (error: unknown) => void,
 ): () => void {
   async function openNext(): Promise<void> {
-    const handed = await commands.fileToOpen();
-    if (handed.status === "error") {
-      onFailed(handed.error);
-      return;
+    let latest: FileToRead | null = null;
+    for (;;) {
+      const handed = await commands.fileToOpen();
+      if (handed.status === "error") {
+        onFailed(handed.error);
+        return;
+      }
+      if (handed.data === null) {
+        break;
+      }
+      latest = handed.data;
     }
-    if (handed.data !== null) {
-      open(resolve("/read/[book]", { book: handed.data.book }));
+    if (latest !== null) {
+      open(resolve("/read/[book]", { book: latest.book }));
     }
   }
 

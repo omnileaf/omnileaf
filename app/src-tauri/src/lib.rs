@@ -78,10 +78,15 @@ pub fn run() {
     let commands = commands::builder();
     let app = tauri::Builder::default();
     #[cfg(desktop)]
-    let app = app.plugin(tauri_plugin_single_instance::init(|app, arguments, _| {
-        files_to_open::request(app, arguments.into_iter().skip(1));
-        files_to_open::show_main_window(app);
-    }));
+    let app = app.plugin(tauri_plugin_single_instance::init(
+        |app, arguments, directory| {
+            files_to_open::request(
+                app,
+                files_to_open::in_directory(&directory, arguments.into_iter().skip(1)),
+            );
+            files_to_open::show_main_window(app);
+        },
+    ));
     let app = app
         .manage(Core::new())
         .manage(recent_log)
@@ -147,7 +152,11 @@ pub fn run() {
     let app = app.plugin(tauri_plugin_wdio_webdriver::init());
     app.build(tauri::generate_context!())
         .expect("start the Tauri runtime")
-        .run(|app, event| put_away::save_when_put_away(app, &event));
+        .run(|app, event| {
+            put_away::save_when_put_away(app, &event);
+            #[cfg(target_os = "macos")]
+            files_to_open::request_when_opened(app, &event);
+        });
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {

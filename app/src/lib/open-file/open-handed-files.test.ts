@@ -46,6 +46,19 @@ test("opens the file the app was launched with", async () => {
   stop();
 });
 
+test("opens only the last of several files handed to the app at once", async () => {
+  handing(BOOK, OTHER_BOOK);
+  const opened: string[] = [];
+
+  const stop = openHandedFiles(
+    (page) => opened.push(page),
+    () => undefined,
+  );
+
+  await expect.poll(() => opened).toEqual([`/read/${OTHER_BOOK}`]);
+  stop();
+});
+
 test("opens nothing when no file was handed to the app", async () => {
   handing(null);
   const opened: string[] = [];

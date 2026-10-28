@@ -34,12 +34,40 @@ impl FilesToOpen {
     }
 }
 
+pub(crate) fn in_directory(
+    directory: &str,
+    arguments: impl IntoIterator<Item = String>,
+) -> impl Iterator<Item = String> {
+    let directory = PathBuf::from(directory);
+    arguments.into_iter().map(move |argument| {
+        let path = PathBuf::from(&argument);
+        if path.is_relative() {
+            directory.join(path).display().to_string()
+        } else {
+            argument
+        }
+    })
+}
+
 pub(crate) fn request(app: &AppHandle, arguments: impl IntoIterator<Item = String>) {
     let files = app.state::<FilesToOpen>();
     if files.queue(arguments)
         && let Err(error) = FileOpenRequested.emit(app)
     {
         tracing::warn!(%error, "tell the interface a file was handed to the app");
+    }
+}
+
+/// Finder hands a double-clicked file to a running or starting app as an Apple event rather than as an argument.
+#[cfg(target_os = "macos")]
+pub(crate) fn request_when_opened(app: &AppHandle, event: &tauri::RunEvent) {
+    if let tauri::RunEvent::Opened { urls } = event {
+        request(
+            app,
+            urls.iter()
+                .filter_map(|url| url.to_file_path().ok())
+                .map(|path| path.display().to_string()),
+        );
     }
 }
 
@@ -84,6 +112,24 @@ mod tests {
         let order = [files.next(), files.next(), files.next()];
         fs::remove_dir_all(&folder).unwrap();
         assert_eq!((queued, order), (true, [Some(first), Some(second), None]));
+    }
+
+    #[test]
+    fn finds_the_files_of_a_second_launch_from_the_directory_it_ran_in() {
+        let folder =
+            std::env::temp_dir().join(format!("omnileaf-second-launch-{}", std::process::id()));
+        fs::create_dir_all(&folder).unwrap();
+        fs::write(folder.join("one.cbz"), b"x").unwrap();
+        let files = FilesToOpen::default();
+
+        let queued = files.queue(in_directory(
+            &folder.display().to_string(),
+            ["one.cbz".to_owned(), "missing.cbz".to_owned()],
+        ));
+
+        let next = files.next();
+        fs::remove_dir_all(&folder).unwrap();
+        assert_eq!((queued, next), (true, Some(folder.join("one.cbz"))));
     }
 
     #[test]
