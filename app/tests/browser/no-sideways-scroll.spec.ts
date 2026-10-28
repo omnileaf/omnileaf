@@ -50,6 +50,7 @@ function withFileItCantOpen(platform: (typeof PLATFORMS)[number]): FakeBackend {
       title: LONG_FOLDER_NAME,
       series: BOOK_SERIES_ID,
       seriesTitle: BOOK_SERIES_TITLE,
+      isInLibrary: true,
     }),
     bookFile: () => ({
       name: "Comics_and_manga_gathered_over_many_years_from_every_shelf.cbr",

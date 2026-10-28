@@ -34,6 +34,7 @@ const UNSUPPORTED: FakeBackend = {
     title: BOOK_TITLE,
     series: BOOK_SERIES_ID,
     seriesTitle: BOOK_SERIES_TITLE,
+    isInLibrary: true,
   }),
   bookFile: () => ({ name: FILE_NAME, fileType: "cbr" }),
   hideFilesLike: (book) => {

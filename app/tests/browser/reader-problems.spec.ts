@@ -21,6 +21,7 @@ const PLACE = {
   title: BOOK_TITLE,
   series: BOOK_SERIES_ID,
   seriesTitle: BOOK_SERIES_TITLE,
+  isInLibrary: true,
 };
 
 function failingWith(

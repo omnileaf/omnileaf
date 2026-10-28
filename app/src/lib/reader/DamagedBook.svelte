@@ -60,6 +60,7 @@
       title: book.title,
       series: book.series,
       seriesTitle: book.seriesTitle,
+      isInLibrary: book.isInLibrary,
     }}
   />
   <div
