@@ -62,7 +62,7 @@ const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
 /// A tag on a tenth or a fifth of the library is too common to sort only its series and too rare to stop soon in walking past the rest, so its page is the slowest a tag filter reads.
 const CROWDED_TAG_BUDGET: Duration = Duration::from_millis(4);
-/// A page of series already started reads the up-next book and the cover of each of its rows beside the page's own, which sits within 10% of the 2 ms budget on a shared CI runner.
+/// A page of series already started reads the up-next book and the cover of each of its rows beside the page's own, so it needs more than the base budget.
 const STARTED_PAGE_BUDGET: Duration = Duration::from_millis(3);
 const EVERY_TENTH_TAGGED_CROWDED: u32 = 10;
 const CROWDED_TAG: &str = "lantern";
