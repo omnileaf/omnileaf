@@ -212,6 +212,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   setBookOpen: () => undefined,
   setLearnsReadingSpeed: () => undefined,
   matchSystemBars: () => null,
+  followBackHistory: () => null,
   watchBackSwipes: () => null,
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,

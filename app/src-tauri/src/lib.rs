@@ -1,3 +1,4 @@
+mod back_navigation;
 mod back_swipe;
 mod commands;
 mod crash_reporting;
@@ -136,6 +137,7 @@ pub fn run() {
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
         .plugin(wallpaper_colours::plugin())
+        .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
         .plugin(icon_actions::plugin())

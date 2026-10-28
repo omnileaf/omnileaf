@@ -26,7 +26,7 @@ use tauri_specta::{Builder, Commands, collect_commands, collect_events};
 #[cfg(debug_assertions)]
 use crate::crash_reporting::developer_crashes;
 use crate::{
-    back_swipe,
+    back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     files_to_open::{FileOpenRequested, FilesToOpen},
     folder_picker::pick_folder,
@@ -60,6 +60,7 @@ macro_rules! app_commands {
             link_library_folder,
             add_opened_book_folder,
             match_system_bars,
+            follow_back_history,
             watch_back_swipes,
             allow_back_swipe,
             watch_system_contrast,
@@ -406,6 +407,12 @@ async fn match_system_bars(
     preference: ThemePreference,
 ) -> Result<(), IpcError> {
     system_bars::match_theme(&app, theme, preference).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn follow_back_history(app: AppHandle) -> Result<(), IpcError> {
+    back_navigation::follow_history(&app).await
 }
 
 #[tauri::command]
