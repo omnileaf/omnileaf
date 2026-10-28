@@ -12,23 +12,40 @@ export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
 
-export function sampleBookRow(position: number): string {
-  return `//table[@aria-label='Books']//tr[@aria-rowindex='${String(position + 1)}']`;
+export const SHOWS_VOLUMES_AS_COVERS = process.platform === "linux";
+
+const VOLUME_COVERS = "ul[aria-label='Volumes']";
+const BOOKS_TABLE = "table[aria-label='Books']";
+const SHOWN_BOOKS = SHOWS_VOLUMES_AS_COVERS ? VOLUME_COVERS : BOOKS_TABLE;
+
+export function sampleBookEntry(position: number): string {
+  return SHOWS_VOLUMES_AS_COVERS
+    ? `//ul[@aria-label='Volumes']/li[${String(position)}]//a[@data-book-link]`
+    : `//table[@aria-label='Books']//tr[@aria-rowindex='${String(position + 1)}']`;
+}
+
+export function sampleBookTitle(position: number): string {
+  return SHOWS_VOLUMES_AS_COVERS
+    ? `Volume ${String(position)}`
+    : `Sample Series 01 v0${String(position)}`;
 }
 
 export function sampleBookLink(position: number): Locator {
+  const titled = `[starts-with(normalize-space(), '${sampleBookTitle(position)}')]`;
   return xpath(
-    `${sampleBookRow(position)}//a[starts-with(normalize-space(), 'Sample Series 01 v0${String(position)}')]`,
+    SHOWS_VOLUMES_AS_COVERS
+      ? `${sampleBookEntry(position)}${titled}`
+      : `${sampleBookEntry(position)}//a${titled}`,
   );
 }
 
-const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("table[aria-label='Books']");
+const SCROLL_TO_THE_BOOKS = `const books = document.querySelector(${JSON.stringify(SHOWN_BOOKS)});
 if (books === null) { return false; }
 books.scrollIntoView({ block: "start" });
 return true;`;
 
 export async function showTheBooks(session: Session): Promise<void> {
-  await session.waitUntil(SCROLL_TO_THE_BOOKS, "the books table in view");
+  await session.waitUntil(SCROLL_TO_THE_BOOKS, "the series' books in view");
 }
 
 export async function openSampleSeries(session: Session): Promise<void> {
