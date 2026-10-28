@@ -149,6 +149,14 @@ for (const look of LOOKS) {
   });
 }
 
+test("draws the windows switch's on edge in the track colour", async () => {
+  await renderPair("windows");
+
+  const on = getComputedStyle(trackOf("On"));
+
+  expect(on.borderTopColor).toBe(on.backgroundColor);
+});
+
 test("ticks the knob of a switched-on Android switch, and only that one", async () => {
   await renderPair("android");
 
