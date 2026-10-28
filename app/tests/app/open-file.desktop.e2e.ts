@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -13,6 +13,7 @@ import {
   launchDesktopApp,
 } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
+import { removeFolder } from "./remove-folder.ts";
 import { Session, xpath } from "./webdriver.ts";
 
 const WEBDRIVER_PORT = 4447;
@@ -78,7 +79,7 @@ afterAll(async () => {
   } finally {
     for (const folder of [dataDir, crashReports]) {
       if (folder !== undefined) {
-        await rm(folder, { recursive: true, force: true });
+        await removeFolder(folder);
       }
     }
   }

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,6 +8,7 @@ import { FINISHED_SCAN_REPORT } from "./app-session.ts";
 import { type DesktopApp, launchDesktopApp } from "./desktop-app.ts";
 import { finishFirstLaunchIfShown } from "./first-launch.ts";
 import { pageShownScript } from "./page-shown.ts";
+import { removeFolder } from "./remove-folder.ts";
 import { sampleBookLink, showTheBooks } from "./sample-book.ts";
 import { Session, xpath } from "./webdriver.ts";
 
@@ -85,7 +86,7 @@ afterAll(async () => {
   } finally {
     for (const folder of [dataDir, crashReports]) {
       if (folder !== undefined) {
-        await rm(folder, { recursive: true, force: true });
+        await removeFolder(folder);
       }
     }
   }
