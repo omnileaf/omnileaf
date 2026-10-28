@@ -373,6 +373,7 @@
   --spacing-sheet-buttons: 0.625rem;
   --spacing-sheet-bottom: max(var(--spacing-safe-bottom), 2.125rem);
   --spacing-view-panel: 22.5rem;
+  --spacing-view-panel-wide: 25rem;
   --spacing-panel-inline: 1.125rem;
   --spacing-segment: 2.5rem;
   --spacing-segment-compact: 2rem;
