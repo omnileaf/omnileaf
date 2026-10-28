@@ -14,6 +14,9 @@ val tauriProperties = Properties().apply {
     }
 }
 
+/** Wry generates `RustWebView` and `WryActivity` with deprecated WebView and back-press APIs, so deprecations stay warnings. */
+val keepDeprecationsAsWarnings = "-Xwarning-level=DEPRECATION:warning"
+
 val releaseKeystore: String? = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
@@ -75,6 +78,8 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
+        allWarningsAsErrors = true
+        freeCompilerArgs.add(keepDeprecationsAsWarnings)
     }
 }
 
@@ -83,14 +88,14 @@ rust {
 }
 
 dependencies {
-    implementation("androidx.webkit:webkit:1.14.0")
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.activity:activity-ktx:1.10.1")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.4")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.material)
+    implementation(libs.androidx.lifecycle.process)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
 apply(from = file("tauri.build.gradle.kts"))
