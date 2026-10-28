@@ -57,6 +57,7 @@
   "library_group_category": "Category",
   "library_group_folder": "Folder",
   "library_group_creator": "Creator",
+  "library_group_creator_hint": "Creator puts each series under its writer; a series with two writers shows under both.",
   "library_view": "View",
   "library_view_done": "Done",
   "library_view_display": "Display",
