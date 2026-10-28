@@ -39,6 +39,11 @@ pub(crate) use join_series_cover;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BookFileId(pub(crate) i64);
 
+impl BookFileId {
+    /// Stands for a file the catalog doesn't keep, since its rows count from 1.
+    pub const UNSTORED: Self = Self(0);
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Cover {
     pub book: BookId,
