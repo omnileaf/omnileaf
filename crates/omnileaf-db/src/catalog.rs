@@ -19,6 +19,7 @@ mod page;
 mod page_dimensions;
 mod person_series;
 mod place_in_series;
+mod related_series;
 mod relocated_roots;
 mod root;
 mod root_availability;
@@ -63,6 +64,7 @@ pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
 pub use person_series::{PersonSeries, person_series};
 pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
+pub use related_series::{RelatedReason, RelatedSeries, related_series};
 pub use relocated_roots::relocate_roots;
 pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
