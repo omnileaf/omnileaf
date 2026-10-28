@@ -26,6 +26,7 @@ import {
 } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 import {
+  isFiledInVolume,
   isListedIn,
   lastVolume,
   missingVolumes,
@@ -1444,12 +1445,33 @@ export function sampleBackend(
         .map((_, index) => wireBook(series, index))
         .filter(
           (book) =>
-            isShownBy(chosen.shown, book) && isListedIn(chosen.section, book),
+            isShownBy(chosen.shown, book) &&
+            isListedIn(chosen.section, book) &&
+            isFiledInVolume(chosen.volume, book),
         );
       const ordered =
         chosen.direction === "ascending" ? books : books.toReversed();
       const page = pageOf(ordered, after);
       return { books: page.items, next: page.next };
+    },
+    seriesVolume: async (id, volume) => {
+      await seriesReady();
+      const series = seriesWith(id);
+      const chapters = booksOf(series)
+        .map((_, index) => wireBook(series, index))
+        .filter((book) => isFiledInVolume(volume, book));
+      const [first] = chapters;
+      if (first === undefined) {
+        return null;
+      }
+      return {
+        volume,
+        folder: `Volume ${String(volume).padStart(2, "0")}`,
+        cover: first.cover,
+        bookCount: chapters.length,
+        readCount: chapters.filter((book) => book.reading.state === "read")
+          .length,
+      };
     },
     creatorSeries: (creator) =>
       seriesBy(creator).map((series) => ({

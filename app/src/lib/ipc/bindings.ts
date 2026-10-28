@@ -50,6 +50,14 @@ export const commands = {
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
+	seriesVolume: (id: string & { readonly __brand: "SeriesId" }, volume: number) => typedError<{
+	volume: number,
+	/**  The name of the folder the volume's chapters are filed in, absent when their volume number comes from their file names. */
+	folder: string | null,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	bookCount: number,
+	readCount: number,
+} | null, IpcError>(__TAURI_INVOKE("series_volume", { id, volume })),
 	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
 	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
@@ -742,6 +750,8 @@ export type SeriesBookListing = {
 	direction: SortDirection,
 	/**  Absent to list every book of the series. */
 	section?: BookSection | null,
+	/**  The volume whose chapters alone are listed, which takes the place of `section`. */
+	volume?: number | null,
 };
 
 export type SeriesBookPage = {
@@ -829,6 +839,15 @@ export type SeriesPerson = {
 export type SeriesSection = {
 	section: BookSection,
 	bookCount: number,
+};
+
+export type SeriesVolume = {
+	volume: number,
+	/**  The name of the folder the volume's chapters are filed in, absent when their volume number comes from their file names. */
+	folder: string | null,
+	cover: string & { readonly __brand: "CoverPath" } | null,
+	bookCount: number,
+	readCount: number,
 };
 
 export type SignInOutcome = "signedIn" | "cancelled" | "failed";

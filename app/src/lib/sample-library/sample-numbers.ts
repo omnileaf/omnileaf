@@ -51,6 +51,17 @@ export function isListedIn(
   return section === undefined || section === null || section === book.section;
 }
 
+export function isFiledInVolume(
+  volume: number | null | undefined,
+  book: SampleNumbering,
+): boolean {
+  return (
+    volume === undefined ||
+    volume === null ||
+    (book.kind === "chapter" && book.volume === volume)
+  );
+}
+
 export function sectionsOf(books: readonly SampleNumbering[]): SeriesSection[] {
   return SECTIONS_IN_ORDER.map((section) => ({
     section,

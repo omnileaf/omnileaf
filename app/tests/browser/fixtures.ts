@@ -90,6 +90,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
     });
   },
   seriesBooks: () => ({ books: [], next: null }),
+  seriesVolume: () => null,
   creatorSeries: () => [],
   markBooks: () => null,
   markSeriesRead: () => [],

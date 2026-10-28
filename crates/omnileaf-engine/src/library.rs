@@ -23,7 +23,7 @@ use omnileaf_db::{
         record_page_count, related_series, relocate_roots, remember_root_share, remove_book_files,
         remove_books_without_files, remove_root, root_book_count, root_files, root_share,
         root_shares, series_books, series_count, series_file_details, series_numberings,
-        series_overview, series_page, series_titles, show_root_while_missing,
+        series_overview, series_page, series_titles, series_volume, show_root_while_missing,
         store_page_dimensions, unread_books, up_next, writer_series_count, writer_series_page,
         writers,
     },
@@ -48,16 +48,16 @@ use tokio::{
 };
 
 use crate::{
-    AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions, BooksRemoval,
-    CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor, FolderGroupCursor,
-    FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary,
-    HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, LibraryCategory,
-    LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder, LibraryFolderGroup,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LibraryWriter, LocalDay,
-    LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesLabels, SeriesOverview, SeriesPage, ShareAddress, ShareLookup,
-    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace, BookSessions,
+    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, FileType, FolderCursor,
+    FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan,
+    FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
+    LibraryCategory, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
+    LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView,
+    LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek,
+    RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor,
+    SeriesDetails, SeriesId, SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress,
+    ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
@@ -664,6 +664,21 @@ impl Library {
                 .numbered_by(&placed)
                 .related_to(related, adult),
         )
+    }
+
+    /// The chapters filed in one volume of a series, absent for a series or volume the library doesn't show.
+    pub async fn series_volume(
+        &self,
+        id: SeriesId,
+        volume: BookNumber,
+    ) -> Result<Option<SeriesVolume>, LibraryError> {
+        let series = id.0;
+        let found = self
+            .store
+            .database()
+            .read(move |connection| series_volume(connection, series, volume.in_catalog()))
+            .await?;
+        Ok(found.map(|found| SeriesVolume::new(volume, &found)))
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.
