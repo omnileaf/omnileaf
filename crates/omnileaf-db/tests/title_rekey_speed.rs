@@ -1,3 +1,8 @@
+#![expect(
+    clippy::unwrap_used,
+    reason = "seeding the library is test set-up, so a failure should stop the test"
+)]
+
 mod library_seed;
 mod support;
 
@@ -14,6 +19,12 @@ use support::{ScratchFolder, library_config};
 const SERIES_COUNT: u32 = 10_000;
 const BUDGET: Duration = Duration::from_millis(150);
 const LANGUAGES: [&str; 4] = ["sv", "en", "sv", "en"];
+const A_WRITER_FOR_EACH_SERIES: &str = "
+    INSERT INTO book_details (book_id) SELECT id FROM book;
+    INSERT INTO book_person (book_id, role, name)
+        SELECT book.id, 'writer', series.title || ' Writer'
+        FROM book JOIN series ON series.local_id = book.series_local_id;
+";
 
 struct StoppedClock;
 
@@ -29,9 +40,9 @@ impl Clock for StoppedClock {
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn keys_10_000_titles_again_for_each_language_within_150_ms() {
+async fn keys_10_000_titles_and_writers_names_again_for_each_language_within_150_ms() {
     let trial = SpeedTrial {
-        measured: "re-keying 10,000 titles for a language",
+        measured: "re-keying 10,000 titles and writers' names for a language",
         sampling: Sampling::Repeated {
             samples: NonZeroUsize::new(LANGUAGES.len()).unwrap(),
             statistic: Statistic::Slowest,
@@ -73,4 +84,8 @@ async fn add_generated_series(database: &Database) {
         })
         .collect();
     seed_library(database, &series).await;
+    database
+        .write(|transaction| Ok(transaction.execute_batch(A_WRITER_FOR_EACH_SERIES)?))
+        .await
+        .unwrap();
 }

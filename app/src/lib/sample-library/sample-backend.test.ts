@@ -597,6 +597,58 @@ test("lists every series in the sample's folder, and none in another", async () 
   expect([page.series.length, count, elsewhere.series]).toEqual([20, 20, []]);
 });
 
+test("lists the sample's writers with their series, leaving out those who only draw", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.libraryWriters(null);
+
+  expect(page).toEqual({
+    writers: [
+      { name: "Author A", seriesCount: 5 },
+      { name: "Author B", seriesCount: 1 },
+    ],
+    next: null,
+  });
+});
+
+test("leaves out the writers and series hidden with their missing folder", async () => {
+  const { backend } = backendFor("?missing=folder");
+  await backend.editSeriesDetails(sampleSeriesId(6), {
+    title: null,
+    people: [
+      { name: "Author A", role: "story" },
+      { name: "Author E", role: "story" },
+    ],
+    tags: null,
+    summary: null,
+    isMarkedAdult: false,
+  });
+
+  const page = await backend.libraryWriters(null);
+
+  expect(page.writers).toEqual([
+    { name: "Author A", seriesCount: 4 },
+    { name: "Author B", seriesCount: 1 },
+  ]);
+});
+
+test("lists and counts the series naming a writer, and none for an artist", async () => {
+  const { backend } = backendFor();
+
+  const byB = await backend.writerSeries("Author B", null, NEWEST_FIRST);
+  const countByA = await backend.writerSeriesCount(
+    "Author A",
+    NEWEST_FIRST.filter,
+  );
+  const byC = await backend.writerSeries("Author C", null, NEWEST_FIRST);
+
+  expect([byB.series.map(({ title }) => title), countByA, byC.series]).toEqual([
+    [LONG_TITLE],
+    5,
+    [],
+  ]);
+});
+
 test("lists every tag the sample's series carry, with how many carry each", async () => {
   const { backend } = backendFor();
 

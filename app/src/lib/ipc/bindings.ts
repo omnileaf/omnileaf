@@ -40,6 +40,9 @@ export const commands = {
 	categorySeriesCount: (category: string & { readonly __brand: "CategoryId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("category_series_count", { category, filter })),
 	folderSeries: (folder: string & { readonly __brand: "FolderId" }, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("folder_series", { folder, after, listing })),
 	folderSeriesCount: (folder: string & { readonly __brand: "FolderId" }, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("folder_series_count", { folder, filter })),
+	libraryWriters: (after: string & { readonly __brand: "WriterCursor" } | null) => typedError<WriterPage, IpcError>(__TAURI_INVOKE("library_writers", { after })),
+	writerSeries: (writer: string, after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writer_series", { writer, after, listing })),
+	writerSeriesCount: (writer: string, filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writer_series_count", { writer, filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
@@ -542,6 +545,11 @@ export type LibraryView = {
 	onCovers: OnCovers,
 };
 
+export type LibraryWriter = {
+	name: string,
+	seriesCount: number,
+};
+
 export type MissingFolder = {
 	folder: LibraryFolder,
 	problem: FolderProblem,
@@ -837,6 +845,11 @@ export type TrayMenu = {
 export type TrayShortcut = {
 	letter: string,
 	shift: boolean,
+};
+
+export type WriterPage = {
+	writers: LibraryWriter[],
+	next: string & { readonly __brand: "WriterCursor" } | null,
 };
 
 /* Tauri Specta runtime */

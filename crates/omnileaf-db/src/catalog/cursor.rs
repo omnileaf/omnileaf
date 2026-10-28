@@ -21,6 +21,7 @@ const UNREAD_COUNT_TAG: u8 = 8;
 const TIME_LEFT_TAG: u8 = 9;
 const WRITER_TAG: u8 = 10;
 const ID_LENGTH: usize = 16;
+const KEY_LENGTH_PREFIX: usize = size_of::<u32>();
 const MILLIS_LENGTH: usize = size_of::<i64>();
 const HEX_RADIX: u32 = 16;
 
@@ -69,6 +70,8 @@ pub(crate) enum Position {
         id: SeriesId,
     },
     Writer {
+        stamp: TitleStamp,
+        name_key: Vec<u8>,
         name: String,
     },
 }
@@ -130,7 +133,18 @@ impl Position {
                 id.as_bytes(),
             ]
             .concat(),
-            Self::Writer { name } => [&[WRITER_TAG][..], name.as_bytes()].concat(),
+            Self::Writer {
+                stamp,
+                name_key,
+                name,
+            } => [
+                &[WRITER_TAG][..],
+                stamp.as_bytes(),
+                &saturating_u32(name_key.len()).to_be_bytes(),
+                name_key,
+                name.as_bytes(),
+            ]
+            .concat(),
         }
     }
 
@@ -202,12 +216,24 @@ impl Position {
                     id: SeriesId::try_from(id).ok()?,
                 })
             }
-            WRITER_TAG => Some(Self::Writer {
-                name: String::from_utf8(rest.to_vec()).ok()?,
-            }),
+            WRITER_TAG => {
+                let (stamp, rest) = rest.split_first_chunk::<{ TitleStamp::LENGTH }>()?;
+                let (key_length, rest) = rest.split_first_chunk::<KEY_LENGTH_PREFIX>()?;
+                let key_length = usize::try_from(u32::from_be_bytes(*key_length)).ok()?;
+                let (name_key, name) = rest.split_at_checked(key_length)?;
+                Some(Self::Writer {
+                    stamp: TitleStamp::from(*stamp),
+                    name_key: name_key.to_vec(),
+                    name: String::from_utf8(name.to_vec()).ok()?,
+                })
+            }
             _ => None,
         }
     }
+}
+
+fn saturating_u32(length: usize) -> u32 {
+    u32::try_from(length).unwrap_or(u32::MAX)
 }
 
 fn listing_byte(listing: BookListing) -> u8 {

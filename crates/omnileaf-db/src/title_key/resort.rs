@@ -8,6 +8,10 @@ use crate::{
     },
 };
 
+const PERSON_NAMES: &str = "SELECT DISTINCT name FROM book_person";
+const REKEY_PERSON_NAME: &str =
+    "UPDATE book_person SET name_key = ?2 WHERE name = ?1 AND name_key IS NOT ?2";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Resorted {
     Unchanged,
@@ -59,13 +63,42 @@ fn rekey_every_person_name(
     collation: &TitleCollation,
 ) -> Result<usize, Error> {
     let names = connection
-        .prepare("SELECT DISTINCT name FROM book_person")?
+        .prepare(PERSON_NAMES)?
         .query_map([], |row| row.get::<_, String>(0))?
         .collect::<Result<Vec<_>, _>>()?;
-    let mut rekey = connection
-        .prepare("UPDATE book_person SET name_key = ?2 WHERE name = ?1 AND name_key IS NOT ?2")?;
+    let mut rekey = connection.prepare(REKEY_PERSON_NAME)?;
     for name in &names {
         rekey.execute((name, collation.key(name)))?;
     }
     Ok(names.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scratch::ScratchLibrary;
+
+    #[test]
+    fn reads_each_person_s_name_once_from_the_name_index() {
+        let scratch = ScratchLibrary::new("person-names-plan");
+
+        let plan = scratch.query_plan(PERSON_NAMES);
+
+        assert_eq!(
+            plan,
+            ["SCAN book_person USING COVERING INDEX book_person_by_name"]
+        );
+    }
+
+    #[test]
+    fn keys_a_person_s_rows_again_through_the_name_index() {
+        let scratch = ScratchLibrary::new("rekey-person-name-plan");
+
+        let plan = scratch.query_plan(REKEY_PERSON_NAME);
+
+        assert_eq!(
+            plan,
+            ["SEARCH book_person USING INDEX book_person_by_name (name=?)"]
+        );
+    }
 }

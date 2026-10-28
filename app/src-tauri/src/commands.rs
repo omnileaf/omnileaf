@@ -13,7 +13,8 @@ use omnileaf_engine::{
     PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
     ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
     SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset,
+    SeriesOverview, SeriesPage, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor,
+    WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -75,6 +76,9 @@ macro_rules! app_commands {
             category_series_count,
             folder_series,
             folder_series_count,
+            library_writers,
+            writer_series,
+            writer_series_count,
             library_search,
             library_search_count,
             series_overview,
@@ -558,6 +562,36 @@ async fn folder_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.folder_series_count(folder, filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_writers(
+    library: State<'_, Library>,
+    after: Option<WriterCursor>,
+) -> Result<WriterPage, IpcError> {
+    Ok(library.writers(after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn writer_series(
+    library: State<'_, Library>,
+    writer: String,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.writer_series(writer, listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn writer_series_count(
+    library: State<'_, Library>,
+    writer: String,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.writer_series_count(writer, filter).await?)
 }
 
 #[tauri::command]
