@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./fixtures.ts";
+import { accessibilityViolations, expect, test } from "./fixtures.ts";
 import {
   chapters,
   SectionShelf,
@@ -37,6 +37,10 @@ async function ctrlClick(page: Page, name: string): Promise<void> {
   await volumeCovers(page)
     .getByRole("link", { name })
     .click({ modifiers: ["ControlOrMeta"] });
+}
+
+function toolbar(page: Page) {
+  return page.getByRole("group", { name: "Selected books" });
 }
 
 function kinds(page: Page) {
@@ -80,6 +84,9 @@ test.describe("picking a series' covers", () => {
     await expect(pickBox(page, "Volume 4")).toBeChecked();
     await expect(pickBox(page, "Volume 7")).toBeChecked();
     await expect(pickBox(page, "Volume 1")).not.toBeChecked();
+    await expect(
+      toolbar(page).getByText("3 books", { exact: true }),
+    ).toBeVisible();
     await expect(
       volumeCovers(page).getByRole("img", { name: GAP_NAME }),
     ).toBeVisible();
@@ -162,4 +169,55 @@ test.describe("picking a series' covers", () => {
     ).toBeVisible();
     await expect(volumeCovers(page).getByRole("checkbox")).toHaveCount(0);
   });
+});
+
+test.describe("marking the picked covers", () => {
+  const shelf = new SectionShelf([
+    ...volumes(1),
+    READ_VOLUME_TWO,
+    ...volumes(3),
+  ]);
+  test.use({ backend: shelf.backend() });
+
+  test("marks them read and says so", async ({ page }) => {
+    await openSeries(page);
+    await ctrlClick(page, "Volume 1");
+    await pickBox(page, "Volume 3").click();
+
+    await toolbar(page).getByRole("button", { name: "Mark read" }).click();
+
+    await expect(page.getByRole("status")).toHaveText("Marked 2 books read");
+    for (const name of ["Volume 1", "Volume 3"]) {
+      await expect(volumeCovers(page).getByRole("link", { name })).toHaveText(
+        /Read$/,
+      );
+    }
+  });
+
+  test("marks them unread and says so", async ({ page }) => {
+    await openSeries(page);
+    await ctrlClick(page, "Volume 2");
+
+    await toolbar(page).getByRole("button", { name: "Mark unread" }).click();
+
+    await expect(page.getByRole("status")).toHaveText("Marked 1 book unread");
+    await expect(
+      volumeCovers(page).getByRole("link", { name: "Volume 2" }),
+    ).toHaveText(/Unread$/);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations while picking in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await openSeries(page);
+      await ctrlClick(page, "Volume 1");
+      await expect(toolbar(page)).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });

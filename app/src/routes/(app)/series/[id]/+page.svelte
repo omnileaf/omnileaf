@@ -391,6 +391,7 @@
               }}
               {books}
               usesStandIns={screenshotMode.isOn}
+              onMark={mark}
             >
               {#if books?.list.kind === "failed"}
                 <p class="text-body text-muted">{m.series_books_failed()}</p>

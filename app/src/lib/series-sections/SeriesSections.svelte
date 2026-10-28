@@ -11,6 +11,7 @@
   import type {
     BookSection,
     NumberRange,
+    ReadMark,
     SeriesBook,
     SeriesBookListing,
     SeriesSection,
@@ -41,6 +42,7 @@
     onListing,
     books,
     usesStandIns,
+    onMark,
     children,
   }: {
     sections: readonly SeriesSection[];
@@ -50,6 +52,7 @@
     onListing: (change: ListingChange) => void;
     books: ListedBooks | undefined;
     usesStandIns: boolean;
+    onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     children: Snippet;
   } = $props();
 
@@ -108,6 +111,7 @@
     search,
     books: books?.list === staleList ? undefined : books,
     usesStandIns,
+    onMark,
     children,
   });
 
