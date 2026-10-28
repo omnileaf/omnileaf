@@ -52,7 +52,7 @@ export const commands = {
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
 	seriesVolume: (id: string & { readonly __brand: "SeriesId" }, volume: number) => typedError<{
 	volume: number,
-	/**  The name of the folder holding the volume's chapters, absent when the first one lies directly in the series' folder. */
+	/**  The name of the folder the volume's chapters are filed in, absent when their volume number comes from their file names. */
 	folder: string | null,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	bookCount: number,
@@ -843,7 +843,7 @@ export type SeriesSection = {
 
 export type SeriesVolume = {
 	volume: number,
-	/**  The name of the folder holding the volume's chapters, absent when the first one lies directly in the series' folder. */
+	/**  The name of the folder the volume's chapters are filed in, absent when their volume number comes from their file names. */
 	folder: string | null,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	bookCount: number,

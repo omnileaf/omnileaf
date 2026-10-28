@@ -212,6 +212,25 @@ async fn sums_up_a_volume_by_its_chapters_cover_and_folder() {
 }
 
 #[tokio::test]
+async fn names_no_folder_for_a_volume_whose_chapters_take_it_from_their_file_names() {
+    let sample = Sample::scan(
+        "volume-from-file-names",
+        &["Sample Series 04 (2019)/Sample Series 04 v02 c005.cbz"],
+    )
+    .await;
+
+    let found = sample
+        .scanned
+        .library
+        .series_volume(sample.series, volume(2.0))
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!((found.book_count, found.folder), (1, None));
+}
+
+#[tokio::test]
 async fn finds_no_volume_where_no_chapter_is_filed_in_one() {
     let sample = Sample::scan("volume-absent", SERIES_04_BOOKS).await;
 
