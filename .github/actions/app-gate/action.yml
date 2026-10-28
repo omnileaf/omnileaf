@@ -43,11 +43,6 @@ runs:
       run: xvfb-run --auto-servernum cargo xtask check --only app
 
     - name: Build and test the app
-      if: runner.os == 'macOS'
+      if: runner.os != 'Linux'
       shell: bash
       run: cargo xtask check --only app
-
-    - name: Build the app
-      if: runner.os == 'Windows'
-      shell: bash
-      run: pnpm --dir app tauri build --debug --no-bundle

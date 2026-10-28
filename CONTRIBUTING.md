@@ -124,7 +124,7 @@ Once the rest pass, the `speed` project opens the library of 10,000 series nine 
 
 ### App tests
 
-The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They also set `OMNILEAF_DATA_DIR`, which every build reads once at startup, so the app keeps its library database in a scratch folder instead of the platform's app data folder, and its cover cache in that folder's `cache` folder instead of the platform's cache folder. It must be an absolute path. The tests open a window, so on Linux without a display run them under `xvfb-run`. They don't run on Windows yet, because the WebDriver plugin doesn't build there with the current Tauri release.
+The `app` group builds the app with the `e2e` feature, which adds an embedded WebDriver server and never ships, and drives the real app through it. WebDriver can't reach the system folder picker, so that build answers it with the folder in `OMNILEAF_E2E_PICKED_FOLDER`, which the tests point at a sample library they generate. They also set `OMNILEAF_DATA_DIR`, which every build reads once at startup, so the app keeps its library database in a scratch folder instead of the platform's app data folder, and its cover cache in that folder's `cache` folder instead of the platform's cache folder. It must be an absolute path. The tests open a window, so on Linux without a display run them under `xvfb-run`.
 
 ### Android and iOS
 
