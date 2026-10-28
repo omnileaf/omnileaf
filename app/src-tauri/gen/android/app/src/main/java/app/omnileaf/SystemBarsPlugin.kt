@@ -14,8 +14,11 @@ import app.tauri.plugin.Invoke
 import app.tauri.plugin.Plugin
 import app.tauri.plugin.PluginManager
 
-private val LIGHT_SCRIM = Color.argb(0xe6, 0xff, 0xff, 0xff)
-private val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+@ColorInt
+private const val LIGHT_SCRIM = 0xE6FFFFFF.toInt()
+
+@ColorInt
+private const val DARK_SCRIM = 0x801B1B1B.toInt()
 
 @InvokeArg
 class BarIcons(
