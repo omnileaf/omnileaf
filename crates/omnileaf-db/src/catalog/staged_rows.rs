@@ -235,6 +235,7 @@ impl<P> Listing<P> {
         sql: &str,
         after: &[(&str, &dyn ToSql)],
     ) -> Result<Vec<(SeriesSummary, P)>, Error> {
+        let _snapshot = snapshot(read.connection)?;
         let stages = stages_holding_matches(read.connection, read.filter)?;
         let filter = FilterParams::with_stages(read.filter, stages);
         let mut params = filter.named().to_vec();
