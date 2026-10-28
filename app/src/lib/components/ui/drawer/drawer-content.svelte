@@ -10,7 +10,12 @@
   import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
-  import { type SheetBackdrop, type SheetHeight, sheetLook } from "./sheet.ts";
+  import {
+    type SheetBackdrop,
+    type SheetGround,
+    type SheetHeight,
+    sheetLook,
+  } from "./sheet.ts";
   import { SheetDrag } from "./sheet-drag.svelte.ts";
 
   let {
@@ -20,6 +25,7 @@
     to = "body",
     height = "fit",
     backdrop = "dimmed",
+    ground = "plain",
     children,
     ...restProps
   }: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
@@ -27,6 +33,7 @@
     to?: PortalProps["to"];
     height?: SheetHeight;
     backdrop?: SheetBackdrop;
+    ground?: SheetGround;
     children: Snippet;
   } = $props();
 
@@ -71,10 +78,12 @@
   />
   <DialogPrimitive.Content
     bind:ref
+    data-ground={ground === "grouped" ? "grouped" : undefined}
     {@attach resolveFirstStyle}
     class={cn(
       "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:data-starting-style:translate-y-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       look.surface,
+      look.grounds[ground],
       look.heights[height],
       !drag.isDragging &&
         "motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass",

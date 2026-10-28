@@ -27,6 +27,7 @@ const IOS_TEXT: readonly Pair[] = [
   ["on-button-plain", "grouped-ground"],
   ["on-button-primary", "button-primary"],
   ["on-notice-action", "notice-action"],
+  ["on-jump-current", "sheet-group"],
 ];
 
 const ANDROID_TEXT: readonly Pair[] = [
@@ -34,6 +35,7 @@ const ANDROID_TEXT: readonly Pair[] = [
   ["on-tab", "tab-bar"],
   ["on-tab-current", "tab-bar"],
   ["on-tab-pill", "tab-pill"],
+  ["on-jump-current", "jump-current"],
   ["on-menu", "menu"],
   ["on-menu-chosen", "menu-chosen"],
   ["on-notice", "notice"],

@@ -24,6 +24,7 @@
     readonly size?: Size;
     readonly isFullWidth?: boolean;
     readonly onChoose: (option: Option) => void;
+    readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
   }
 
@@ -73,6 +74,7 @@
     size = "regular",
     isFullWidth = false,
     onChoose,
+    onFit,
     class: className,
   }: Props = $props();
 
@@ -95,6 +97,12 @@
     return followFittingColumns(track, ruler, (fitted) => {
       fittedColumns = fitted;
     });
+  });
+
+  $effect(() => {
+    if (fittedColumns !== undefined) {
+      onFit?.(isOneRow);
+    }
   });
 </script>
 

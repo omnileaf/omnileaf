@@ -6,7 +6,10 @@
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
-  import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
+  import {
+    DrawerContent,
+    SheetHeader,
+  } from "#lib/components/ui/drawer/index.ts";
   import type { OpenedBook, SeriesBook } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -18,6 +21,7 @@
     READER_GLASS,
     READER_ICON_SIZE,
   } from "./reader-bar.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
 
   let {
     isOpen,
@@ -34,6 +38,8 @@
   } = $props();
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
+  const chrome = getReaderChrome();
+  const isOnPhone = $derived(chrome.isOnPhone);
   const titleId = $props.id();
   let books: SeriesBook[] | undefined = $state();
   let isAsked = false;
@@ -101,31 +107,50 @@
       }
     }}
   >
-    <DrawerContent to="main" onDismiss={onClose} class="max-block-reader-sheet">
-      <div class="flex items-center gap-sm px-sheet-inline pbs-sheet-gap">
-        <span
-          class="flex shrink-0 items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
-        >
-          <List size={READER_ICON_SIZE} aria-hidden="true" />
-        </span>
-        <div class="flex flex-1 flex-col min-inline-none">
-          <DialogTitle class="text-body font-semibold">
-            {m.reader_jump_to_book()}
-          </DialogTitle>
-          <p class="truncate text-small text-muted expanded:text-caption">
-            {subtitle}
-          </p>
+    <DrawerContent
+      to="main"
+      onDismiss={onClose}
+      height={isOnPhone ? "large" : "fit"}
+      ground={isOnPhone ? "grouped" : "plain"}
+      class={isOnPhone ? undefined : "max-block-reader-sheet"}
+    >
+      {#if isOnPhone}
+        <SheetHeader
+          title={m.reader_jump_to_book()}
+          {subtitle}
+          doneLabel={m.reader_settings_done()}
+          onDone={onClose}
+        />
+      {:else}
+        <div class="flex items-center gap-sm px-sheet-inline pbs-sheet-gap">
+          <span
+            class="flex shrink-0 items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
+          >
+            <List size={READER_ICON_SIZE} aria-hidden="true" />
+          </span>
+          <div class="flex flex-1 flex-col min-inline-none">
+            <DialogTitle class="text-body font-semibold">
+              {m.reader_jump_to_book()}
+            </DialogTitle>
+            <p class="truncate text-small text-muted expanded:text-caption">
+              {subtitle}
+            </p>
+          </div>
+          <Button
+            type="button"
+            look="bar-icon"
+            class="px-md font-medium min-block-touch-target"
+            onclick={onClose}
+          >
+            {m.reader_settings_done()}
+          </Button>
         </div>
-        <Button
-          type="button"
-          look="bar-icon"
-          class="px-md font-medium min-block-touch-target"
-          onclick={onClose}
-        >
-          {m.reader_settings_done()}
-        </Button>
-      </div>
-      <div class="overflow-y-auto px-sheet-inline pbs-md pbe-sheet-bottom">
+      {/if}
+      <div
+        class={isOnPhone
+          ? "flex-1 overflow-y-auto pbs-md pbe-sheet-bottom"
+          : "overflow-y-auto px-sheet-inline pbs-md pbe-sheet-bottom"}
+      >
         <JumpToBookList {books} current={book.id} {currentPage} {onClose} />
       </div>
     </DrawerContent>

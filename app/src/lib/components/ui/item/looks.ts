@@ -23,6 +23,8 @@ export const ITEM_LOOKS = {
     "flex flex-1 items-center gap-md ps-md pe-xs transition-control min-inline-none min-block-history-row hover:bg-hover active:bg-pressed desktop:large:hidden",
   "reader-sheet-action":
     "flex items-center gap-md rounded-control px-md text-body font-medium min-block-touch-target not-aria-disabled:hover:bg-hover",
+  "reader-jump-row":
+    "flex flex-col gap-2xs border-s-2 border-transparent px-md py-sm transition-control hover:bg-hover active:bg-pressed expanded:rounded-shadcn-control",
   "history-desktop":
     "hidden flex-1 items-center gap-lg min-inline-none min-block-history-row-wide desktop:large:flex",
 } satisfies Record<string, string>;
