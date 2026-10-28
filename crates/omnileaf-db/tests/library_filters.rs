@@ -101,6 +101,7 @@ impl Library {
                 after,
                 size: PageSize::try_from(size).unwrap(),
             };
+            let listing = listing.clone();
             let page = self
                 .store
                 .database()
@@ -137,24 +138,15 @@ fn book(series: &str, title: &str) -> BookId {
 }
 
 const fn unread(inclusion: Inclusion) -> SeriesFilter {
-    SeriesFilter {
-        unread: inclusion,
-        ..SeriesFilter::NONE
-    }
+    SeriesFilter::NONE.with_unread(inclusion)
 }
 
 const fn started(inclusion: Inclusion) -> SeriesFilter {
-    SeriesFilter {
-        started: inclusion,
-        ..SeriesFilter::NONE
-    }
+    SeriesFilter::NONE.with_started(inclusion)
 }
 
 const fn finished(inclusion: Inclusion) -> SeriesFilter {
-    SeriesFilter {
-        finished: inclusion,
-        ..SeriesFilter::NONE
-    }
+    SeriesFilter::NONE.with_finished(inclusion)
 }
 
 fn titles(numbers: &[u8]) -> Vec<String> {
@@ -261,11 +253,11 @@ async fn lists_only_the_series_meeting_every_condition_of_the_filter() {
     let library = Library::at_reading_stages("every-condition").await;
 
     let listed = library
-        .filtered(SeriesFilter {
-            unread: Inclusion::Only,
-            started: Inclusion::Only,
-            ..SeriesFilter::NONE
-        })
+        .filtered(
+            SeriesFilter::NONE
+                .with_unread(Inclusion::Only)
+                .with_started(Inclusion::Only),
+        )
         .await;
 
     assert_eq!(listed, titles(&[2, 3, 6]));
@@ -503,4 +495,92 @@ proptest! {
 
         prop_assert_eq!(listed, expected);
     }
+}
+
+async fn name_the_language_and_rating(
+    library: &Library,
+    details: &'static [(&'static str, Option<&'static str>, bool)],
+) {
+    library
+        .store
+        .database()
+        .write(move |transaction| {
+            let mut statement = transaction.prepare(
+                "UPDATE series SET language = ?2,
+                    language_source = CASE WHEN ?2 IS NULL THEN NULL ELSE 'files' END,
+                    adult_rated_books = ?3
+                WHERE title = ?1",
+            )?;
+            for &(title, language, is_rated_adult) in details {
+                statement.execute((title, language, i64::from(is_rated_adult)))?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+const LANGUAGES_AND_RATINGS: &[(&str, Option<&str>, bool)] = &[
+    ("Sample Series 01", Some("ja"), true),
+    ("Sample Series 02", Some("en"), false),
+    ("Sample Series 03", None, false),
+    ("Sample Series 04", Some("fr"), true),
+];
+
+fn in_languages(languages: &[&str]) -> SeriesFilter {
+    SeriesFilter::NONE.with_languages(languages.iter().map(|&code| code.to_owned()).collect())
+}
+
+#[tokio::test]
+async fn lists_only_the_series_in_one_of_the_chosen_languages() {
+    let library = Library::with("only-languages", &READING_STAGES[..4]).await;
+    name_the_language_and_rating(&library, LANGUAGES_AND_RATINGS).await;
+
+    let listed = library.filtered(in_languages(&["ja", "fr", "de"])).await;
+
+    assert_eq!(listed, titles(&[1, 4]));
+}
+
+#[tokio::test]
+async fn counts_only_the_series_in_one_of_the_chosen_languages() {
+    let library = Library::with("count-languages", &READING_STAGES[..4]).await;
+    name_the_language_and_rating(&library, LANGUAGES_AND_RATINGS).await;
+
+    let counted = library.count(in_languages(&["en"])).await;
+
+    assert_eq!(counted, 1);
+}
+
+#[tokio::test]
+async fn lists_only_or_hides_the_series_rated_18_plus_while_age_ratings_count() {
+    let library = Library::with("adult-counted", &READING_STAGES[..4]).await;
+    name_the_language_and_rating(&library, LANGUAGES_AND_RATINGS).await;
+
+    let listed = [
+        library
+            .filtered(SeriesFilter::NONE.with_adult(Inclusion::Only, true))
+            .await,
+        library
+            .filtered(SeriesFilter::NONE.with_adult(Inclusion::Hide, true))
+            .await,
+    ];
+
+    assert_eq!(listed, [titles(&[1, 4]), titles(&[2, 3])]);
+}
+
+#[tokio::test]
+async fn counts_no_series_as_18_plus_while_age_ratings_do_not_count() {
+    let library = Library::with("adult-not-counted", &READING_STAGES[..4]).await;
+    name_the_language_and_rating(&library, LANGUAGES_AND_RATINGS).await;
+
+    let listed = [
+        library
+            .filtered(SeriesFilter::NONE.with_adult(Inclusion::Only, false))
+            .await,
+        library
+            .filtered(SeriesFilter::NONE.with_adult(Inclusion::Hide, false))
+            .await,
+    ];
+
+    assert_eq!(listed, [titles(&[]), titles(&[1, 2, 3, 4])]);
 }

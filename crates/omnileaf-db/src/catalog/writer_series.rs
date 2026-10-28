@@ -86,7 +86,7 @@ pub fn writer_series_page(
     let bound: [(&'static str, &dyn ToSql); 1] = [(":writer", &writer)];
     let read = Read {
         connection,
-        filter: listing.filter,
+        filter: &listing.filter,
         limit: request.size.rows_to_fetch(),
         bound: &bound,
     };
@@ -113,7 +113,7 @@ pub fn writer_series_count(
     writer: &str,
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
-    let filter = FilterParams::of(*filter);
+    let filter = FilterParams::of(filter);
     let mut params = filter.named().to_vec();
     params.push((":writer", &writer));
     Ok(connection

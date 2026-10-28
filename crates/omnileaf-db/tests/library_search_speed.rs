@@ -41,10 +41,7 @@ const TEXTS: [&str; 9] = [
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
 const FILTERS: [SeriesFilter; 2] = [
     SeriesFilter::NONE,
-    SeriesFilter {
-        finished: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
+    SeriesFilter::NONE.with_finished(Inclusion::Only),
 ];
 
 enum Read {
@@ -77,7 +74,7 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
         for filter in FILTERS {
             let search = SeriesSearch {
                 text: SearchText::parse(text).unwrap().unwrap(),
-                filter,
+                filter: filter.clone(),
             };
             let outcome = trial
                 .run(

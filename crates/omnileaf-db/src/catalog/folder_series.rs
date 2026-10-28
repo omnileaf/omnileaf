@@ -89,7 +89,7 @@ pub fn folder_series_page(
     let bound: [(&'static str, &dyn ToSql); 1] = [(":root", &root.0)];
     let read = Read {
         connection,
-        filter: listing.filter,
+        filter: &listing.filter,
         limit: request.size.rows_to_fetch(),
         bound: &bound,
     };
@@ -116,7 +116,7 @@ pub fn folder_series_count(
     root: RootId,
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
-    let filter = FilterParams::of(*filter);
+    let filter = FilterParams::of(filter);
     let mut params = filter.named().to_vec();
     params.push((":root", &root.0));
     Ok(connection

@@ -12,8 +12,8 @@ mod support;
 
 use books::write_book_with;
 use omnileaf_engine::{
-    AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Library, LibraryListing,
-    LibrarySeries, RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
+    AdultContent, AdultTreatment, CreatorRole, CreatorSeries, Inclusion, Library, LibraryFilter,
+    LibraryListing, LibrarySeries, RelatedReason, SeriesCreator, SeriesId, SeriesPerson,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -454,4 +454,104 @@ async fn leaves_18_plus_series_out_of_the_related_series_while_they_are_hidden()
         .map(|related| related.title.as_str())
         .collect();
     assert_eq!(titles, ["Sample Series 03"]);
+}
+
+fn filtered(filter: LibraryFilter) -> LibraryListing {
+    LibraryListing {
+        filter,
+        ..LibraryListing::default()
+    }
+}
+
+fn in_languages(languages: &[&str]) -> LibraryFilter {
+    LibraryFilter {
+        languages: languages.iter().map(|&code| code.to_owned()).collect(),
+        ..LibraryListing::default().filter
+    }
+}
+
+fn adult(inclusion: Inclusion) -> LibraryFilter {
+    LibraryFilter {
+        adult: inclusion,
+        ..LibraryListing::default().filter
+    }
+}
+
+impl Scanned {
+    async fn titles(&self, filter: LibraryFilter) -> Vec<String> {
+        self.library
+            .series(filtered(filter), None)
+            .await
+            .unwrap()
+            .series
+            .into_iter()
+            .map(|series| series.title)
+            .collect()
+    }
+}
+
+async fn in_two_languages(name: &str) -> Scanned {
+    Scanned::with(
+        name,
+        &[
+            (SERIES_01, ADULT_IN_JAPANESE),
+            (SERIES_02, EVERYONE_IN_ENGLISH),
+        ],
+    )
+    .await
+}
+
+#[tokio::test]
+async fn lists_and_counts_only_the_series_in_the_chosen_languages() {
+    let scanned = in_two_languages("filter-languages").await;
+
+    let listed = scanned.titles(in_languages(&["ja"])).await;
+    let counted = scanned
+        .library
+        .series_count(in_languages(&["en", "fr"]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (listed.as_slice(), counted),
+        ([SERIES_01.to_owned()].as_slice(), 1)
+    );
+}
+
+#[tokio::test]
+async fn lists_only_or_hides_the_series_counted_as_18_plus() {
+    let scanned = in_two_languages("filter-adult").await;
+
+    let listed = [
+        scanned.titles(adult(Inclusion::Only)).await,
+        scanned.titles(adult(Inclusion::Hide)).await,
+    ];
+
+    assert_eq!(listed, [[SERIES_01], [SERIES_02]]);
+}
+
+#[tokio::test]
+async fn counts_no_series_as_18_plus_once_age_ratings_stop_counting() {
+    let scanned = in_two_languages("filter-adult-uncounted").await;
+    scanned
+        .library
+        .set_adult_content(AdultContent {
+            counts_age_ratings: false,
+            ..AdultContent::default()
+        })
+        .await
+        .unwrap();
+
+    let listed = scanned.titles(adult(Inclusion::Only)).await;
+
+    assert_eq!(listed, Vec::<String>::new());
+}
+
+#[tokio::test]
+async fn offers_the_18_plus_filter_once_a_series_counts_as_18_plus() {
+    let scanned = in_two_languages("filter-adult-choice").await;
+
+    let offered = scanned.library.filter_choices().await.unwrap().rates_adult;
+
+    assert!(offered);
 }

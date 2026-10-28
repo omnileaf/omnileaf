@@ -11,6 +11,7 @@ use crate::{
         series_listing::{SeriesListing, SeriesOrder, SortDirection},
         staged_rows::{Listing, Read, TitlePlace, title_place, title_rows},
         stored_id::stored_id,
+        value_list::json_list,
     },
 };
 
@@ -141,14 +142,21 @@ pub fn series_page(
     listing: &SeriesListing,
     request: &PageRequest,
 ) -> Result<Page<SeriesSummary>, Error> {
+    let gathering = Gathering::of(connection, &listing.filter)?;
+    let languages = json_list(&listing.filter.languages);
     let read = Read {
         connection,
-        filter: listing.filter,
+        filter: &listing.filter,
         limit: request.size.rows_to_fetch(),
-        bound: &[],
+        bound: match gathering {
+            Gathering::FewInLanguages => &[(":language_list", &languages)],
+            Gathering::EachStageInOrder
+            | Gathering::FewForgotten
+            | Gathering::FewDuplicated
+            | Gathering::FewRatedAdult => &[],
+        },
     };
     let after = request.after.as_ref().map(|cursor| &cursor.0);
-    let gathering = Gathering::of(connection, listing.filter)?;
     let direction = listing.sort.direction;
     let rows = match listing.sort.order {
         SeriesOrder::Title => title_rows(&read, BY_TITLE.toward(gathering, direction), after),

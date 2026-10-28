@@ -6,6 +6,7 @@ use crate::{
         series_listing::{Inclusion, SeriesFilter, SortDirection, StageParams},
         series_page::Directions,
         staged_rows::Listing,
+        value_list::json_list,
     },
 };
 
@@ -53,6 +54,24 @@ macro_rules! duplicated_candidates {
     };
 }
 
+macro_rules! language_candidates {
+    () => {
+        $crate::catalog::gathering::candidates! {
+            index: "series_by_language",
+            condition: "series.language IN (SELECT value FROM json_each(:language_list))",
+        }
+    };
+}
+
+macro_rules! rated_adult_candidates {
+    () => {
+        $crate::catalog::gathering::candidates! {
+            index: "series_rated_adult_by_stage",
+            condition: "series.adult_rated_books > 0",
+        }
+    };
+}
+
 macro_rules! holds_at_stage {
     (index: $index:literal, condition: $condition:expr $(,)?) => {
         concat!(
@@ -86,6 +105,8 @@ macro_rules! are_few {
 
 const FORGOTTEN_ARE_FEW: &str = are_few!(forgotten_candidates!());
 const DUPLICATED_ARE_FEW: &str = are_few!(duplicated_candidates!());
+const LANGUAGES_ARE_FEW: &str = are_few!(language_candidates!());
+const RATED_ADULT_ARE_FEW: &str = are_few!(rated_adult_candidates!());
 
 /// SQLite works out every result column of a row before sorting it, so only the keys are sorted and the page's other columns read afterwards.
 macro_rules! sorted_page {
@@ -160,6 +181,16 @@ macro_rules! gatherings {
                 key: $key,
                 sort_position: $position,
             },
+            few_in_languages: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::language_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
+            few_rated_adult: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::rated_adult_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
         }
     };
 }
@@ -170,6 +201,8 @@ pub(crate) use duplicated_candidates;
 pub(crate) use forgotten;
 pub(crate) use forgotten_candidates;
 pub(crate) use gatherings;
+pub(crate) use language_candidates;
+pub(crate) use rated_adult_candidates;
 pub(crate) use sorted_directions;
 pub(crate) use sorted_page;
 
@@ -178,16 +211,20 @@ pub(crate) enum Gathering {
     EachStageInOrder,
     FewForgotten,
     FewDuplicated,
+    FewInLanguages,
+    FewRatedAdult,
 }
 
 pub(crate) struct Gatherings<P> {
     pub(crate) each_stage_in_order: Directions<P>,
     pub(crate) few_forgotten: Directions<P>,
     pub(crate) few_duplicated: Directions<P>,
+    pub(crate) few_in_languages: Directions<P>,
+    pub(crate) few_rated_adult: Directions<P>,
 }
 
 impl Gathering {
-    pub(crate) fn of(connection: &Connection, filter: SeriesFilter) -> Result<Self, Error> {
+    pub(crate) fn of(connection: &Connection, filter: &SeriesFilter) -> Result<Self, Error> {
         let stages = StageParams::of(filter);
         if let Some(before) = filter.last_read_before_ms
             && are_few(
@@ -204,6 +241,21 @@ impl Gathering {
         {
             return Ok(Self::FewDuplicated);
         }
+        if let Some(languages) = json_list(&filter.languages)
+            && are_few(
+                connection,
+                LANGUAGES_ARE_FEW,
+                &stages,
+                &[(":language_list", &languages)],
+            )?
+        {
+            return Ok(Self::FewInLanguages);
+        }
+        if filter.adult == Inclusion::Only
+            && are_few(connection, RATED_ADULT_ARE_FEW, &stages, &[])?
+        {
+            return Ok(Self::FewRatedAdult);
+        }
         Ok(Self::EachStageInOrder)
     }
 }
@@ -218,6 +270,8 @@ impl<P> Gatherings<P> {
             Gathering::EachStageInOrder => self.each_stage_in_order.toward(direction),
             Gathering::FewForgotten => self.few_forgotten.toward(direction),
             Gathering::FewDuplicated => self.few_duplicated.toward(direction),
+            Gathering::FewInLanguages => self.few_in_languages.toward(direction),
+            Gathering::FewRatedAdult => self.few_rated_adult.toward(direction),
         }
     }
 }
@@ -225,7 +279,7 @@ impl<P> Gatherings<P> {
 /// The stages the filter lets through, less each one holding no series that meets its smart conditions.
 pub(crate) fn stages_holding_matches(
     connection: &Connection,
-    filter: SeriesFilter,
+    filter: &SeriesFilter,
 ) -> Result<StageParams, Error> {
     if filter.last_read_before_ms.is_none() && filter.duplicates != Inclusion::Only {
         return Ok(StageParams::of(filter));
@@ -272,14 +326,9 @@ mod tests {
     use crate::{Database, letter_case::add_fold_case, scratch::ScratchLibrary};
 
     const READ_AT_MS: i64 = 1;
-    const FORGOTTEN: SeriesFilter = SeriesFilter {
-        last_read_before_ms: Some(READ_AT_MS + 1),
-        ..SeriesFilter::NONE
-    };
-    const DUPLICATED: SeriesFilter = SeriesFilter {
-        duplicates: Inclusion::Only,
-        ..SeriesFilter::NONE
-    };
+    const FORGOTTEN: SeriesFilter =
+        SeriesFilter::NONE.with_last_read_before_ms(Some(READ_AT_MS + 1));
+    const DUPLICATED: SeriesFilter = SeriesFilter::NONE.with_duplicates(Inclusion::Only);
 
     struct Library {
         _scratch: ScratchLibrary,
@@ -310,7 +359,7 @@ mod tests {
             }
         }
 
-        fn gathering(&self, filter: SeriesFilter) -> Gathering {
+        fn gathering(&self, filter: &SeriesFilter) -> Gathering {
             Gathering::of(&self.connection, filter).unwrap()
         }
     }
@@ -323,43 +372,42 @@ mod tests {
         ]
     }
 
-    const ONLY_UNSTARTED: StageParams = StageParams::of(SeriesFilter {
-        started: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    });
+    fn only_unstarted() -> StageParams {
+        StageParams::of(&SeriesFilter::NONE.with_started(Inclusion::Hide))
+    }
 
     #[test]
     fn leaves_out_each_stage_holding_no_forgotten_series() {
         let library = Library::read_and_copied("stages-holding-forgotten", 3);
 
-        let stages = stages_holding_matches(&library.connection, FORGOTTEN).unwrap();
+        let stages = stages_holding_matches(&library.connection, &FORGOTTEN).unwrap();
 
-        assert_eq!(stages, ONLY_UNSTARTED);
+        assert_eq!(stages, only_unstarted());
     }
 
     #[test]
     fn leaves_out_each_stage_holding_no_series_with_a_book_stored_twice() {
         let library = Library::read_and_copied("stages-holding-duplicated", 3);
 
-        let stages = stages_holding_matches(&library.connection, DUPLICATED).unwrap();
+        let stages = stages_holding_matches(&library.connection, &DUPLICATED).unwrap();
 
-        assert_eq!(stages, ONLY_UNSTARTED);
+        assert_eq!(stages, only_unstarted());
     }
 
     #[test]
     fn keeps_every_stage_the_filter_lets_through_without_a_smart_condition() {
         let library = Library::read_and_copied("stages-without-smart-filter", 3);
 
-        let stages = stages_holding_matches(&library.connection, SeriesFilter::NONE).unwrap();
+        let stages = stages_holding_matches(&library.connection, &SeriesFilter::NONE).unwrap();
 
-        assert_eq!(stages, StageParams::of(SeriesFilter::NONE));
+        assert_eq!(stages, StageParams::of(&SeriesFilter::NONE));
     }
 
     #[test]
     fn reads_each_stage_in_order_without_a_smart_filter() {
         let library = Library::read_and_copied("gathering-unfiltered", 0);
 
-        let gathering = library.gathering(SeriesFilter::NONE);
+        let gathering = library.gathering(&SeriesFilter::NONE);
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
     }
@@ -368,7 +416,7 @@ mod tests {
     fn gathers_the_forgotten_series_while_they_are_few() {
         let library = Library::read_and_copied("gathering-few-forgotten", FEW_SERIES - 1);
 
-        let gathering = library.gathering(FORGOTTEN);
+        let gathering = library.gathering(&FORGOTTEN);
 
         assert_eq!(gathering, Gathering::FewForgotten);
     }
@@ -377,7 +425,7 @@ mod tests {
     fn reads_each_stage_in_order_once_the_forgotten_series_are_no_longer_few() {
         let library = Library::read_and_copied("gathering-many-forgotten", FEW_SERIES);
 
-        let gathering = library.gathering(FORGOTTEN);
+        let gathering = library.gathering(&FORGOTTEN);
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
     }
@@ -386,7 +434,7 @@ mod tests {
     fn gathers_the_series_holding_a_book_stored_twice_while_they_are_few() {
         let library = Library::read_and_copied("gathering-few-duplicated", FEW_SERIES - 1);
 
-        let gathering = library.gathering(DUPLICATED);
+        let gathering = library.gathering(&DUPLICATED);
 
         assert_eq!(gathering, Gathering::FewDuplicated);
     }
@@ -395,21 +443,99 @@ mod tests {
     fn reads_each_stage_in_order_once_the_series_holding_a_book_stored_twice_are_no_longer_few() {
         let library = Library::read_and_copied("gathering-many-duplicated", FEW_SERIES);
 
-        let gathering = library.gathering(DUPLICATED);
+        let gathering = library.gathering(&DUPLICATED);
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    impl Library {
+        fn in_language(self, language: &str) -> Self {
+            self.connection
+                .execute(
+                    "UPDATE series SET language = ?1, language_source = 'files'",
+                    [language],
+                )
+                .unwrap();
+            self
+        }
+    }
+
+    fn in_japanese() -> SeriesFilter {
+        SeriesFilter::NONE.with_languages(vec!["ja".to_owned()])
+    }
+
+    #[test]
+    fn gathers_the_series_in_a_chosen_language_while_they_are_few() {
+        let library =
+            Library::read_and_copied("gathering-few-in-language", FEW_SERIES - 1).in_language("ja");
+
+        let gathering = library.gathering(&in_japanese());
+
+        assert_eq!(gathering, Gathering::FewInLanguages);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_once_the_series_in_a_chosen_language_are_no_longer_few() {
+        let library =
+            Library::read_and_copied("gathering-many-in-language", FEW_SERIES).in_language("ja");
+
+        let gathering = library.gathering(&in_japanese());
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn gathers_the_series_rated_18_plus_while_they_are_few() {
+        let library = Library::read_and_copied("gathering-few-adult", FEW_SERIES - 1);
+        library
+            .connection
+            .execute("UPDATE series SET adult_rated_books = 1", [])
+            .unwrap();
+
+        let gathering = library.gathering(&SeriesFilter::NONE.with_adult(Inclusion::Only, true));
+
+        assert_eq!(gathering, Gathering::FewRatedAdult);
     }
 
     #[test]
     fn reads_each_stage_in_order_when_hiding_the_series_holding_a_book_stored_twice() {
         let library = Library::read_and_copied("gathering-hidden-duplicated", 0);
 
-        let gathering = library.gathering(SeriesFilter {
-            duplicates: Inclusion::Hide,
-            ..SeriesFilter::NONE
-        });
+        let gathering = library.gathering(&SeriesFilter::NONE.with_duplicates(Inclusion::Hide));
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn counts_the_series_in_a_chosen_language_through_the_language_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("languages-are-few-plan");
+
+        let plan = scratch.query_plan(LANGUAGES_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            [
+                "CO-ROUTINE (subquery-2)",
+                "SEARCH series USING INDEX series_by_language (language=? AND reading_stage=?)",
+                "LIST SUBQUERY 1",
+                "SCAN json_each VIRTUAL TABLE INDEX 1:",
+                "SCAN (subquery-2)",
+            ]
+        );
+    }
+
+    #[test]
+    fn counts_the_series_rated_18_plus_through_their_own_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("rated-adult-are-few-plan");
+
+        let plan = scratch.query_plan(RATED_ADULT_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            counting_up_to_a_few(
+                "SEARCH series USING INDEX series_rated_adult_by_stage (reading_stage=?)"
+            )
+        );
     }
 
     #[test]

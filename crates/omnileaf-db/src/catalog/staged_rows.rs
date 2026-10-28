@@ -130,7 +130,7 @@ pub(crate) use summary_columns;
 
 pub(crate) struct Read<'c> {
     pub(crate) connection: &'c Connection,
-    pub(crate) filter: SeriesFilter,
+    pub(crate) filter: &'c SeriesFilter,
     pub(crate) limit: i64,
     pub(crate) bound: &'c [(&'static str, &'c dyn ToSql)],
 }

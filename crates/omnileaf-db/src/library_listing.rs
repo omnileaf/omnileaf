@@ -47,7 +47,7 @@ pub fn set_library_listing(
     transaction: &Transaction<'_>,
     listing: &SeriesListing,
 ) -> Result<(), Error> {
-    let filter = listing.filter;
+    let filter = &listing.filter;
     transaction.prepare(SET_LISTING)?.execute((
         THE_LISTING,
         order_name(listing.sort.order),

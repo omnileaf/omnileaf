@@ -5,6 +5,8 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use crate::AdultContent;
+
 pub(crate) const SMART_FILTERS_KEPT: &[SmartFilter] =
     &[SmartFilter::Forgotten, SmartFilter::Duplicates];
 
@@ -131,7 +133,7 @@ impl Default for LibraryListing {
 }
 
 impl LibraryListing {
-    pub(crate) fn at(&self, now_ms: i64) -> SeriesListing {
+    pub(crate) fn at(&self, now_ms: i64, adult: AdultContent) -> SeriesListing {
         SeriesListing {
             sort: SeriesSort {
                 order: match self.sort.by {
@@ -144,7 +146,7 @@ impl LibraryListing {
                 },
                 direction: self.sort.direction.into(),
             },
-            filter: self.filter.at(now_ms),
+            filter: self.filter.at(now_ms, adult),
         }
     }
 }
@@ -180,18 +182,20 @@ impl From<SeriesListing> for LibraryListing {
     }
 }
 
-impl From<FilterChoices> for LibraryFilterChoices {
-    fn from(stored: FilterChoices) -> Self {
+impl LibraryFilterChoices {
+    pub(crate) fn new(stored: FilterChoices, adult: AdultContent) -> Self {
         Self {
             languages: stored.languages,
             tags: stored.tags,
+            rates_adult: adult.counts_as_adult(stored.holds_rated_adult),
+            smart: SMART_FILTERS_KEPT.to_vec(),
             ..Self::default()
         }
     }
 }
 
 impl LibraryFilter {
-    pub(crate) fn at(&self, now_ms: i64) -> SeriesFilter {
+    pub(crate) fn at(&self, now_ms: i64, adult: AdultContent) -> SeriesFilter {
         SeriesFilter {
             unread: self.unread.into(),
             started: self.started.into(),
@@ -205,6 +209,9 @@ impl LibraryFilter {
             } else {
                 StoredInclusion::Any
             },
+            languages: self.languages.clone(),
+            adult: self.adult.into(),
+            counts_age_ratings: adult.counts_age_ratings,
         }
     }
 }
@@ -252,7 +259,7 @@ mod tests {
         let listing = LibraryListing::default();
 
         assert_eq!(
-            listing.at(NOW_MS),
+            listing.at(NOW_MS, AdultContent::default()),
             SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title))
         );
     }
@@ -327,7 +334,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS);
+        let stored = filter.at(NOW_MS, AdultContent::default());
 
         assert_eq!(stored.last_read_before_ms, Some(NOW_MS - NINETY_DAYS_MS));
     }
@@ -339,7 +346,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS);
+        let stored = filter.at(NOW_MS, AdultContent::default());
 
         assert_eq!(stored.duplicates, StoredInclusion::Only);
     }
@@ -364,7 +371,7 @@ mod tests {
             },
         };
 
-        let read = LibraryListing::from(listing.at(NOW_MS));
+        let read = LibraryListing::from(listing.at(NOW_MS, AdultContent::default()));
 
         assert_eq!(read, listing);
     }

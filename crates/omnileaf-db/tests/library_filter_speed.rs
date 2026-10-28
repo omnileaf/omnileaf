@@ -43,6 +43,11 @@ const SESSION_PAGE_COUNT: u32 = 24;
 const EVERY_HUNDREDTH_COPIED: u32 = 100;
 const COPIED_REMAINDER: u32 = 2;
 const COPIES_FOLDER: &[u8] = b"/media/Copies";
+const EVERY_HUNDREDTH_IN_A_RARE_LANGUAGE: u32 = 100;
+const RARE_LANGUAGE_REMAINDER: u32 = 3;
+const RARE_LANGUAGE: &str = "ja";
+const EVERY_HUNDREDTH_RATED_ADULT: u32 = 100;
+const RATED_ADULT_REMAINDER: u32 = 4;
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -55,41 +60,22 @@ const SORTS: [SeriesSort; 4] = [
 ];
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-const FILTERS: [SeriesFilter; 9] = [
-    SeriesFilter::NONE,
-    SeriesFilter {
-        unread: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        unread: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        started: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        started: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        finished: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        finished: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        last_read_before_ms: Some(READ_LATELY_MS),
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        duplicates: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
-];
+fn filters() -> [SeriesFilter; 12] {
+    [
+        SeriesFilter::NONE,
+        SeriesFilter::NONE.with_unread(Inclusion::Only),
+        SeriesFilter::NONE.with_unread(Inclusion::Hide),
+        SeriesFilter::NONE.with_started(Inclusion::Only),
+        SeriesFilter::NONE.with_started(Inclusion::Hide),
+        SeriesFilter::NONE.with_finished(Inclusion::Only),
+        SeriesFilter::NONE.with_finished(Inclusion::Hide),
+        SeriesFilter::NONE.with_last_read_before_ms(Some(READ_LATELY_MS)),
+        SeriesFilter::NONE.with_duplicates(Inclusion::Only),
+        SeriesFilter::NONE.with_languages(vec![RARE_LANGUAGE.to_owned()]),
+        SeriesFilter::NONE.with_adult(Inclusion::Only, true),
+        SeriesFilter::NONE.with_adult(Inclusion::Hide, true),
+    ]
+}
 
 #[tokio::test]
 #[expect(
@@ -105,12 +91,14 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95
 
     let mut over_budget = Vec::new();
     for sort in SORTS {
-        for filter in FILTERS {
+        for filter in filters() {
             let listing = SeriesListing { sort, filter };
             let outcome = trial
                 .run(
                     async |_| None,
-                    async |after| *after = read_page(&database, listing, after.take()).await,
+                    async |after| {
+                        *after = read_page(&database, listing.clone(), after.take()).await;
+                    },
                 )
                 .await;
             eprintln!("{listing:?}: {outcome}");
@@ -136,9 +124,12 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     add_generated_library(&database).await;
 
     let mut over_budget = Vec::new();
-    for filter in FILTERS {
+    for filter in filters() {
         let outcome = trial
-            .run(async |_| (), async |()| count(&database, filter).await)
+            .run(
+                async |_| (),
+                async |()| count(&database, filter.clone()).await,
+            )
             .await;
         eprintln!("{filter:?}: {outcome}");
         if !outcome.is_within_budget() {
@@ -151,14 +142,8 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
 
 /// Forgotten and stored-twice series that are too many to sort on their own, all finished, beside thousands of unstarted series that hold none of them.
 const CROWDED_SMART_FILTERS: [SeriesFilter; 2] = [
-    SeriesFilter {
-        last_read_before_ms: Some(READ_LATELY_MS),
-        ..SeriesFilter::NONE
-    },
-    SeriesFilter {
-        duplicates: Inclusion::Only,
-        ..SeriesFilter::NONE
-    },
+    SeriesFilter::NONE.with_last_read_before_ms(Some(READ_LATELY_MS)),
+    SeriesFilter::NONE.with_duplicates(Inclusion::Only),
 ];
 const EVERY_TENTH_FINISHED: u32 = 10;
 const EVERY_TWENTIETH: u32 = 20;
@@ -184,7 +169,9 @@ async fn reads_each_page_of_500_smart_matches_among_9_000_unstarted_series_withi
             let outcome = trial
                 .run(
                     async |_| None,
-                    async |after| *after = read_page(&database, listing, after.take()).await,
+                    async |after| {
+                        *after = read_page(&database, listing.clone(), after.take()).await;
+                    },
                 )
                 .await;
             eprintln!("{listing:?}: {outcome}");
@@ -284,6 +271,19 @@ async fn add_generated_library(database: &Database) {
                 ),
             )?;
             store_first_books_twice(transaction, EVERY_HUNDREDTH_COPIED, COPIED_REMAINDER)?;
+            transaction.execute(
+                "UPDATE series SET language = ?3, language_source = 'files'
+                WHERE added_at_ms % ?1 = ?2",
+                (
+                    EVERY_HUNDREDTH_IN_A_RARE_LANGUAGE,
+                    RARE_LANGUAGE_REMAINDER,
+                    RARE_LANGUAGE,
+                ),
+            )?;
+            transaction.execute(
+                "UPDATE series SET adult_rated_books = 1 WHERE added_at_ms % ?1 = ?2",
+                (EVERY_HUNDREDTH_RATED_ADULT, RATED_ADULT_REMAINDER),
+            )?;
             Ok(())
         })
         .await

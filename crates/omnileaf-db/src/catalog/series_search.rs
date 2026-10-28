@@ -31,14 +31,14 @@ const CONTAINING: Listing<TitlePlace> = listing! {
 };
 
 const MATCHED_COUNT: &str = concat!(
-    "SELECT count(*) FROM series
+    "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)",
     smart_conditions!()
 );
 
 const CONTAINING_COUNT: &str = concat!(
-    "SELECT count(*) FROM series
+    "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
         AND instr(fold_case(title), :characters) > 0",
     smart_conditions!()
@@ -60,7 +60,7 @@ pub fn search_page(
     let bound = lookup.bound();
     let read = Read {
         connection,
-        filter: search.filter,
+        filter: &search.filter,
         limit: request.size.rows_to_fetch(),
         bound: &bound,
     };
@@ -72,7 +72,7 @@ pub fn search_page(
 #[tracing::instrument(skip_all, fields(filter = ?search.filter))]
 pub fn search_count(connection: &Connection, search: &SeriesSearch) -> Result<u32, Error> {
     let lookup = &search.text.0;
-    let filter = FilterParams::of(search.filter);
+    let filter = FilterParams::of(&search.filter);
     let mut params = filter.named().to_vec();
     params.extend_from_slice(&lookup.bound());
     Ok(connection

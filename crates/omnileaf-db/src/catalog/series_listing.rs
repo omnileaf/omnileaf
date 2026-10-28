@@ -1,6 +1,8 @@
 use rusqlite::ToSql;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+use crate::catalog::value_list::delimited_list;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesListing {
     pub sort: SeriesSort,
     pub filter: SeriesFilter,
@@ -29,7 +31,7 @@ pub enum SortDirection {
     Descending,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesFilter {
     /// Holds a book not marked read.
     pub unread: Inclusion,
@@ -39,6 +41,11 @@ pub struct SeriesFilter {
     pub finished: Inclusion,
     pub last_read_before_ms: Option<i64>,
     pub duplicates: Inclusion,
+    /// Is in one of these languages, or any language when empty.
+    pub languages: Vec<String>,
+    /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds.
+    pub adult: Inclusion,
+    pub counts_age_ratings: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,7 +90,53 @@ impl SeriesFilter {
         finished: Inclusion::Any,
         last_read_before_ms: None,
         duplicates: Inclusion::Any,
+        languages: Vec::new(),
+        adult: Inclusion::Any,
+        counts_age_ratings: true,
     };
+
+    #[must_use]
+    pub const fn with_unread(mut self, unread: Inclusion) -> Self {
+        self.unread = unread;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_started(mut self, started: Inclusion) -> Self {
+        self.started = started;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_finished(mut self, finished: Inclusion) -> Self {
+        self.finished = finished;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_last_read_before_ms(mut self, last_read_before_ms: Option<i64>) -> Self {
+        self.last_read_before_ms = last_read_before_ms;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_duplicates(mut self, duplicates: Inclusion) -> Self {
+        self.duplicates = duplicates;
+        self
+    }
+
+    #[must_use]
+    pub fn with_languages(mut self, languages: Vec<String>) -> Self {
+        self.languages = languages;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_adult(mut self, adult: Inclusion, counts_age_ratings: bool) -> Self {
+        self.adult = adult;
+        self.counts_age_ratings = counts_age_ratings;
+        self
+    }
 }
 
 impl Inclusion {
@@ -134,7 +187,7 @@ impl ReadingStage {
 }
 
 impl SeriesFilter {
-    const fn admits(self, stage: ReadingStage) -> bool {
+    const fn admits(&self, stage: ReadingStage) -> bool {
         self.unread.admits(stage.is_unread())
             && self.started.admits(stage.is_started())
             && self.finished.admits(stage.is_finished())
@@ -150,7 +203,7 @@ pub(crate) struct StageParams {
 }
 
 impl StageParams {
-    pub(crate) const fn of(filter: SeriesFilter) -> Self {
+    pub(crate) const fn of(filter: &SeriesFilter) -> Self {
         Self {
             unstarted: admitted(filter, ReadingStage::Unstarted),
             in_progress: admitted(filter, ReadingStage::InProgress),
@@ -188,7 +241,7 @@ impl StageParams {
     }
 }
 
-const fn admitted(filter: SeriesFilter, stage: ReadingStage) -> Option<i64> {
+const fn admitted(filter: &SeriesFilter, stage: ReadingStage) -> Option<i64> {
     if filter.admits(stage) {
         Some(stage.stored())
     } else {
@@ -200,7 +253,11 @@ macro_rules! smart_conditions {
     () => {
         " AND (:last_read_before_ms IS NULL
             OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
-        AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)"
+        AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)
+        AND (:languages IS NULL OR (instr(series.language, char(31)) = 0
+            AND instr(:languages, char(31) || series.language || char(31)) > 0))
+        AND (:holds_adult IS NULL
+            OR (series.adult_rated_books > 0 AND :counts_age_ratings) = :holds_adult)"
     };
 }
 
@@ -210,22 +267,28 @@ pub(crate) struct FilterParams {
     stages: StageParams,
     last_read_before_ms: Option<i64>,
     holds_duplicates: Option<bool>,
+    languages: Option<String>,
+    holds_adult: Option<bool>,
+    counts_age_ratings: bool,
 }
 
 impl FilterParams {
-    pub(crate) const fn of(filter: SeriesFilter) -> Self {
+    pub(crate) fn of(filter: &SeriesFilter) -> Self {
         Self::with_stages(filter, StageParams::of(filter))
     }
 
-    pub(crate) const fn with_stages(filter: SeriesFilter, stages: StageParams) -> Self {
+    pub(crate) fn with_stages(filter: &SeriesFilter, stages: StageParams) -> Self {
         Self {
             stages,
             last_read_before_ms: filter.last_read_before_ms,
             holds_duplicates: filter.duplicates.required(),
+            languages: delimited_list(&filter.languages),
+            holds_adult: filter.adult.required(),
+            counts_age_ratings: filter.counts_age_ratings,
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 5] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 8] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
@@ -233,6 +296,9 @@ impl FilterParams {
             finished,
             (":last_read_before_ms", &self.last_read_before_ms),
             (":holds_duplicates", &self.holds_duplicates),
+            (":languages", &self.languages),
+            (":holds_adult", &self.holds_adult),
+            (":counts_age_ratings", &self.counts_age_ratings),
         ]
     }
 }

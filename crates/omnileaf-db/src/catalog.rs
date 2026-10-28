@@ -38,6 +38,7 @@ mod series_search;
 mod series_titles;
 mod staged_rows;
 pub(crate) mod stored_id;
+mod value_list;
 mod writer_series;
 mod writers;
 

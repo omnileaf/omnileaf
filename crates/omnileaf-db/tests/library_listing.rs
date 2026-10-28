@@ -15,12 +15,10 @@ use support::{ScratchFolder, library_config};
 
 const UNREAD_NEWEST_FIRST: SeriesListing = SeriesListing {
     sort: SeriesSort::descending(SeriesOrder::DateAdded),
-    filter: SeriesFilter {
-        unread: Inclusion::Only,
-        started: Inclusion::Any,
-        finished: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    },
+    filter: SeriesFilter::NONE
+        .with_unread(Inclusion::Only)
+        .with_started(Inclusion::Any)
+        .with_finished(Inclusion::Hide),
 };
 
 const Z_TO_A: SeriesListing = SeriesListing::unfiltered(SeriesSort::descending(SeriesOrder::Title));
@@ -119,7 +117,7 @@ proptest! {
         let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
 
         let read = runtime.block_on(async {
-            set(&database, listing).await;
+            set(&database, listing.clone()).await;
             stored(&database).await
         });
 

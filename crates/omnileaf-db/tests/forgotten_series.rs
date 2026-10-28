@@ -129,10 +129,9 @@ fn whole_shelf() -> PageRequest {
 }
 
 const fn last_read_before(minutes_later: u64) -> SeriesFilter {
-    SeriesFilter {
-        last_read_before_ms: Some((NOW_UNIX_MS + minutes_later * MINUTE_MS).cast_signed()),
-        ..SeriesFilter::NONE
-    }
+    SeriesFilter::NONE.with_last_read_before_ms(Some(
+        (NOW_UNIX_MS + minutes_later * MINUTE_MS).cast_signed(),
+    ))
 }
 
 #[tokio::test]
