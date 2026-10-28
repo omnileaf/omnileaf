@@ -211,3 +211,63 @@ async fn names_the_place_of_a_file_outside_the_library_as_not_in_it() {
         ("Odd Tale", "Loose Comics", false)
     );
 }
+
+#[tokio::test]
+async fn adds_the_folder_of_a_file_opened_from_outside_the_library() {
+    let opening = Opening::new("add-opened-folder").await;
+    let path = opening.file("Loose Comics", "Odd Tale.cbz", SEED);
+    let to_read = opening.library.open_file(path).await.unwrap();
+
+    let scan = opening
+        .library
+        .add_opened_book_folder(to_read.book, |_| {})
+        .await
+        .unwrap();
+    let reopened = opening
+        .library
+        .open_file(
+            opening
+                .outside
+                .path()
+                .join("Loose Comics")
+                .join("Odd Tale.cbz"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (
+            scan.books,
+            reopened.is_in_library,
+            opening.listed_series().await
+        ),
+        (1, true, 1)
+    );
+}
+
+#[tokio::test]
+async fn refuses_to_add_the_folder_of_a_book_the_library_already_holds() {
+    let opening = Opening::new("add-held-folder").await;
+    let folder = opening.outside.path().join("Held Comics");
+    write_book(&folder.join("Held Tale.cbz"), SEED);
+    opening
+        .library
+        .add_folder(folder.clone(), |_| {})
+        .await
+        .unwrap();
+    let held = opening
+        .library
+        .open_file(folder.join("Held Tale.cbz"))
+        .await
+        .unwrap();
+
+    let added = opening
+        .library
+        .add_opened_book_folder(held.book, |_| {})
+        .await;
+
+    assert!(matches!(
+        added,
+        Err(omnileaf_engine::LibraryError::BookNotFound { .. })
+    ));
+}
