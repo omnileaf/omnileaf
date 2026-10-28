@@ -79,6 +79,7 @@ impl SeriesBookListing {
             shown,
             direction: self.direction.into(),
             section: self.section.map(BookSection::in_catalog),
+            volume: None,
         }
     }
 }
