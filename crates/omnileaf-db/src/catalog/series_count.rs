@@ -6,12 +6,13 @@ use crate::{
 };
 
 const SERIES_WITH_BOOKS: &str = concat!(
-    "SELECT count(*) FROM series WHERE reading_stage IN (:unstarted, :in_progress, :finished)",
+    "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
+    WHERE reading_stage IN (:unstarted, :in_progress, :finished)",
     smart_conditions!()
 );
 
 pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u32, Error> {
-    let params = FilterParams::of(*filter);
+    let params = FilterParams::of(filter);
     Ok(connection
         .prepare(SERIES_WITH_BOOKS)?
         .query_row(params.named().as_slice(), |row| row.get(0))?)

@@ -23,10 +23,7 @@ const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
 const WHOLE_LIBRARY: u16 = 10;
 const COPIED: &str = "Sample Series 01";
 const UNCOPIED: &str = "Sample Series 02";
-const ONLY_DUPLICATES: SeriesFilter = SeriesFilter {
-    duplicates: Inclusion::Only,
-    ..SeriesFilter::NONE
-};
+const ONLY_DUPLICATES: SeriesFilter = SeriesFilter::NONE.with_duplicates(Inclusion::Only);
 const VOLUME_01: BookCopy = book_copy(COPIED, 1, "Sample Series 01/Volume 01.cbz");
 const VOLUME_01_RENAMED: BookCopy = book_copy(COPIED, 1, "Sample Series 01/Renamed copy.cbz");
 const UNCOPIED_VOLUME_01: BookCopy = book_copy(UNCOPIED, 2, "Sample Series 02/Volume 01.cbz");
@@ -179,10 +176,7 @@ async fn counts_only_the_series_holding_a_book_stored_in_two_folders() {
 #[tokio::test]
 async fn hides_the_series_holding_a_book_stored_twice() {
     let library = Library::copied_into_a_second_folder("duplicates-hidden").await;
-    let filter = SeriesFilter {
-        duplicates: Inclusion::Hide,
-        ..SeriesFilter::NONE
-    };
+    let filter = SeriesFilter::NONE.with_duplicates(Inclusion::Hide);
 
     let titles = library.titles(filter).await;
 

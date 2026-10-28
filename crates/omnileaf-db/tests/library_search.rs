@@ -116,10 +116,7 @@ fn search(text: &str, filter: SeriesFilter) -> SeriesSearch {
 }
 
 const fn finished(inclusion: Inclusion) -> SeriesFilter {
-    SeriesFilter {
-        finished: inclusion,
-        ..SeriesFilter::NONE
-    }
+    SeriesFilter::NONE.with_finished(inclusion)
 }
 
 #[tokio::test]

@@ -88,6 +88,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0052_stack_series_covers_in_the_library_view"),
     migration!("0053_key_the_folders_that_group_series"),
     migration!("0054_index_the_unread_books_of_each_series"),
+    migration!("0055_index_series_by_language_and_rating"),
 ];
 
 pub(crate) fn pending(

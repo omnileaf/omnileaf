@@ -88,7 +88,7 @@ pub fn folder_group_series_page(
     let bound: [(&'static str, &dyn ToSql); 2] = [(":root", &group.root.0), (":group", &location)];
     let read = Read {
         connection,
-        filter: listing.filter,
+        filter: &listing.filter,
         limit: request.size.rows_to_fetch(),
         bound: &bound,
     };
@@ -116,7 +116,7 @@ pub fn folder_group_series_count(
     filter: &SeriesFilter,
 ) -> Result<u32, Error> {
     let location = native_path::to_bytes(&group.location);
-    let filter = FilterParams::of(*filter);
+    let filter = FilterParams::of(filter);
     let mut params = filter.named().to_vec();
     params.push((":root", &group.root.0));
     params.push((":group", &location));

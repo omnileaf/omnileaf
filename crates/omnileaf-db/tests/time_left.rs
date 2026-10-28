@@ -99,7 +99,7 @@ impl Shelf {
         let mut pages = Vec::new();
         let mut after = None;
         loop {
-            let page = self.page(listing, after).await;
+            let page = self.page(listing.clone(), after).await;
             pages.push(page.items);
             let Some(next) = page.next else {
                 self.assert_pages_left_match_the_books().await;

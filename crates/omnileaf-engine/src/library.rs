@@ -67,7 +67,6 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_listing::SMART_FILTERS_KEPT,
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -333,15 +332,14 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = listing.at(self.now_ms());
+        let now_ms = self.now_ms();
         let page = self
             .store
             .database()
             .read(move |connection| {
-                Ok((
-                    series_page(connection, &listing, &request)?,
-                    AdultContent::stored(connection)?,
-                ))
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
+                Ok((series_page(connection, &listing, &request)?, adult))
             })
             .await?;
         Ok(SeriesPage::new(page.0, page.1))
@@ -357,14 +355,16 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = listing.at(self.now_ms());
+        let now_ms = self.now_ms();
         let page = self
             .store
             .database()
             .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
                 Ok((
                     folder_series_page(connection, folder.0, &listing, &request)?,
-                    AdultContent::stored(connection)?,
+                    adult,
                 ))
             })
             .await?;
@@ -376,11 +376,14 @@ impl Library {
         folder: FolderId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
-        let filter = filter.at(self.now_ms());
+        let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
-            .read(move |connection| folder_series_count(connection, folder.0, &filter))
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                folder_series_count(connection, folder.0, &filter)
+            })
             .await?)
     }
 
@@ -427,14 +430,16 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = listing.at(self.now_ms());
+        let now_ms = self.now_ms();
         let page = self
             .store
             .database()
             .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
                 Ok((
                     folder_group_series_page(connection, &group.0, &listing, &request)?,
-                    AdultContent::stored(connection)?,
+                    adult,
                 ))
             })
             .await?;
@@ -446,11 +451,14 @@ impl Library {
         group: FolderGroupId,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
-        let filter = filter.at(self.now_ms());
+        let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
-            .read(move |connection| folder_group_series_count(connection, &group.0, &filter))
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                folder_group_series_count(connection, &group.0, &filter)
+            })
             .await?)
     }
 
@@ -480,14 +488,16 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let listing = listing.at(self.now_ms());
+        let now_ms = self.now_ms();
         let page = self
             .store
             .database()
             .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                let listing = listing.at(now_ms, adult);
                 Ok((
                     writer_series_page(connection, &writer, &listing, &request)?,
-                    AdultContent::stored(connection)?,
+                    adult,
                 ))
             })
             .await?;
@@ -499,11 +509,14 @@ impl Library {
         writer: String,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
-        let filter = filter.at(self.now_ms());
+        let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
-            .read(move |connection| writer_series_count(connection, &writer, &filter))
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                writer_series_count(connection, &writer, &filter)
+            })
             .await?)
     }
 
@@ -524,11 +537,17 @@ impl Library {
     }
 
     pub async fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
-        let stored = self.store.database().read(stored_filter_choices).await?;
-        Ok(LibraryFilterChoices {
-            smart: SMART_FILTERS_KEPT.to_vec(),
-            ..LibraryFilterChoices::from(stored)
-        })
+        let (stored, adult) = self
+            .store
+            .database()
+            .read(|connection| {
+                Ok((
+                    stored_filter_choices(connection)?,
+                    AdultContent::stored(connection)?,
+                ))
+            })
+            .await?;
+        Ok(LibraryFilterChoices::new(stored, adult))
     }
 
     pub fn series_labels(&self, _series: Vec<SeriesId>) -> Result<SeriesLabels, LibraryError> {
@@ -556,11 +575,14 @@ impl Library {
     }
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
-        let filter = filter.at(self.now_ms());
+        let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
-            .read(move |connection| series_count(connection, &filter))
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                series_count(connection, &filter)
+            })
             .await?)
     }
 
@@ -573,15 +595,14 @@ impl Library {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
         };
-        let search = StoredSearch::parse(&search, self.now_ms())?;
+        let now_ms = self.now_ms();
         let page = self
             .store
             .database()
             .read(move |connection| {
-                Ok((
-                    search.page(connection, &request)?,
-                    AdultContent::stored(connection)?,
-                ))
+                let adult = AdultContent::stored(connection)?;
+                let search = StoredSearch::parse(&search, now_ms, adult)?;
+                Ok((search.page(connection, &request)?, adult))
             })
             .await?;
         Ok(SeriesPage::new(page.0, page.1))
@@ -599,11 +620,14 @@ impl Library {
     }
 
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
-        let search = StoredSearch::parse(&search, self.now_ms())?;
+        let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
-            .read(move |connection| search.count(connection))
+            .read(move |connection| {
+                let adult = AdultContent::stored(connection)?;
+                StoredSearch::parse(&search, now_ms, adult)?.count(connection)
+            })
             .await?)
     }
 
@@ -971,7 +995,7 @@ impl Library {
 
     #[tracing::instrument(skip_all)]
     pub async fn set_listing(&self, listing: LibraryListing) -> Result<(), LibraryError> {
-        let stored = listing.at(self.now_ms());
+        let stored = listing.at(self.now_ms(), AdultContent::default());
         Ok(self
             .store
             .database()

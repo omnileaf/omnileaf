@@ -38,17 +38,15 @@ const EVERY_THIRD_READ_LONG_AGO: u32 = 3;
 const EVERY_NINTH_FINISHED: u32 = 9;
 const EVERY_FIFTH_READ_LATELY: u32 = 5;
 const EVERY_FOURTH_COPIED: u32 = 4;
+const EVERY_SEVENTH_IN_JAPANESE: u32 = 7;
+const EVERY_EIGHTH_RATED_ADULT: u32 = 8;
 const PAGE_OF_TWO: u16 = 2;
 const PAGE_OF_THREE: u16 = 3;
 const PAGE_OF_TWO_HUNDRED: u16 = 200;
-const FORGOTTEN: SeriesFilter = SeriesFilter {
-    last_read_before_ms: Some((NOW_UNIX_MS + FORGOTTEN_BEFORE_MINUTES * MINUTE_MS).cast_signed()),
-    ..SeriesFilter::NONE
-};
-const DUPLICATED: SeriesFilter = SeriesFilter {
-    duplicates: Inclusion::Only,
-    ..SeriesFilter::NONE
-};
+const FORGOTTEN: SeriesFilter = SeriesFilter::NONE.with_last_read_before_ms(Some(
+    (NOW_UNIX_MS + FORGOTTEN_BEFORE_MINUTES * MINUTE_MS).cast_signed(),
+));
+const DUPLICATED: SeriesFilter = SeriesFilter::NONE.with_duplicates(Inclusion::Only);
 const ORDERS: [SeriesOrder; 6] = [
     SeriesOrder::Title,
     SeriesOrder::DateAdded,
@@ -95,6 +93,33 @@ impl Shelf {
         self.store
             .database()
             .write(move |transaction| record_scanned_books(transaction, &scanned))
+            .await
+            .unwrap();
+    }
+
+    async fn name_language_and_rating(
+        &self,
+        japanese: impl Iterator<Item = u32>,
+        rated_adult: impl Iterator<Item = u32>,
+    ) {
+        let japanese: Vec<String> = japanese.map(series_name).collect();
+        let rated_adult: Vec<String> = rated_adult.map(series_name).collect();
+        self.store
+            .database()
+            .write(move |transaction| {
+                let mut in_japanese = transaction.prepare(
+                    "UPDATE series SET language = 'ja', language_source = 'files' WHERE title = ?1",
+                )?;
+                for title in &japanese {
+                    in_japanese.execute([title])?;
+                }
+                let mut adult = transaction
+                    .prepare("UPDATE series SET adult_rated_books = 1 WHERE title = ?1")?;
+                for title in &rated_adult {
+                    adult.execute([title])?;
+                }
+                Ok(())
+            })
             .await
             .unwrap();
     }
@@ -164,6 +189,8 @@ impl Shelf {
             filter: SeriesFilter {
                 last_read_before_ms: None,
                 duplicates: Inclusion::Any,
+                languages: Vec::new(),
+                adult: Inclusion::Any,
                 ..listing.filter
             },
             ..listing
@@ -183,6 +210,7 @@ impl Shelf {
                 after,
                 size: PageSize::try_from(size).unwrap(),
             };
+            let listing = listing.clone();
             let page = self
                 .store
                 .database()
@@ -349,6 +377,17 @@ async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_or
     let duplicated = titles_of(multiples_of(EVERY_FOURTH_COPIED, MIXED_SHELF));
     let forgotten_and_duplicated: BTreeSet<String> =
         forgotten.intersection(&duplicated).cloned().collect();
+    shelf
+        .name_language_and_rating(
+            multiples_of(EVERY_SEVENTH_IN_JAPANESE, MIXED_SHELF),
+            multiples_of(EVERY_EIGHTH_RATED_ADULT, MIXED_SHELF),
+        )
+        .await;
+    let japanese = titles_of(multiples_of(EVERY_SEVENTH_IN_JAPANESE, MIXED_SHELF));
+    let rated_adult = titles_of(multiples_of(EVERY_EIGHTH_RATED_ADULT, MIXED_SHELF));
+    let japanese_and_duplicated: BTreeSet<String> =
+        japanese.intersection(&duplicated).cloned().collect();
+    let in_japanese = SeriesFilter::NONE.with_languages(vec!["ja".to_owned()]);
     let few_matches = [
         (FORGOTTEN, &forgotten),
         (
@@ -373,13 +412,24 @@ async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_or
             },
             &forgotten_and_duplicated,
         ),
+        (in_japanese.clone(), &japanese),
+        (
+            SeriesFilter::NONE.with_adult(Inclusion::Only, true),
+            &rated_adult,
+        ),
+        (
+            in_japanese.with_duplicates(Inclusion::Only),
+            &japanese_and_duplicated,
+        ),
     ];
 
     for sort in every_sort() {
-        for (filter, matching) in few_matches {
+        for (filter, matching) in few_matches.clone() {
             let listing = SeriesListing { sort, filter };
-            let listed = shelf.listed_series(listing, PAGE_OF_TWO).await;
-            let walked = shelf.listed_by_each_stage_in_order(listing, matching).await;
+            let listed = shelf.listed_series(listing.clone(), PAGE_OF_TWO).await;
+            let walked = shelf
+                .listed_by_each_stage_in_order(listing.clone(), matching)
+                .await;
             assert_eq!(listed, walked, "{listing:?}");
         }
     }

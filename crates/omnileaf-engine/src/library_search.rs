@@ -9,7 +9,7 @@ use omnileaf_db::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::LibraryFilter;
+use crate::{AdultContent, LibraryFilter};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -53,8 +53,12 @@ pub(crate) enum StoredSearch {
 }
 
 impl StoredSearch {
-    pub(crate) fn parse(search: &LibrarySearch, now_ms: i64) -> Result<Self, omnileaf_db::Error> {
-        let filter = search.filter.at(now_ms);
+    pub(crate) fn parse(
+        search: &LibrarySearch,
+        now_ms: i64,
+        adult: AdultContent,
+    ) -> Result<Self, omnileaf_db::Error> {
+        let filter = search.filter.at(now_ms, adult);
         Ok(match SearchText::parse(&search.text)? {
             Some(text) => Self::Text(SeriesSearch { text, filter }),
             None => Self::Filter(filter),
@@ -68,7 +72,7 @@ impl StoredSearch {
     ) -> Result<Page<SeriesSummary>, omnileaf_db::Error> {
         match self {
             Self::Text(search) => search_page(connection, search, request),
-            Self::Filter(filter) => series_page(connection, &by_title(*filter), request),
+            Self::Filter(filter) => series_page(connection, &by_title(filter.clone()), request),
         }
     }
 
