@@ -18,7 +18,10 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
 
-    /** Tauri's own back handler stays with the first activity, so once Android recreates the activity back would close the app from any page. */
+    /**
+     * Tauri's own back handler stays with the first activity,
+     * so once Android recreates the activity back would close the app from any page.
+     */
     override val handleBackNavigation = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,7 +64,10 @@ class MainActivity : TauriActivity() {
         turnScreen(resources.configuration)
     }
 
-    /** Android hands an activity it restores, or reopens from Recents, the intent that first started its task, so only a fresh launch carries a new choice. */
+    /**
+     * Android hands an activity it restores, or reopens from Recents, the intent that first started its task,
+     * so only a fresh launch carries a new choice.
+     */
     private fun choiceAtLaunch(savedInstanceState: Bundle?): IconAction? =
         if (savedInstanceState == null && !intent.isFromRecents) intent.chosenIconAction() else null
 
