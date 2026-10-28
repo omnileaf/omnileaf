@@ -9,6 +9,7 @@
     none: m.library_group_none,
     category: m.library_group_category,
     folder: m.library_group_folder,
+    creator: m.library_group_creator,
   } satisfies Record<LibraryGrouping, () => string>;
 
   let {

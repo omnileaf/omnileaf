@@ -112,7 +112,8 @@ impl<'t> Recorder<'t> {
         self.books.file(&book)?;
         self.books
             .record_page_count(book.id(), scanned.page_count)?;
-        self.details.record(book.id(), &scanned.details)?;
+        self.details
+            .record(book.id(), &scanned.details, &self.collation)?;
         let file = &scanned.file;
         self.file.execute((
             book.id().as_bytes(),

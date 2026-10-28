@@ -102,6 +102,20 @@ async fn remembers_covers_only() {
 }
 
 #[tokio::test]
+async fn remembers_grouping_by_creator() {
+    let folder = ScratchFolder::new("library-view-creator");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    let by_creator = StoredLibraryView {
+        group_by: LibraryGrouping::Creator,
+        ..LIST_OF_FOUR
+    };
+
+    set(&database, by_creator).await.unwrap();
+
+    assert_eq!(stored(&database).await, Some(by_creator));
+}
+
+#[tokio::test]
 async fn keeps_only_the_view_set_last() {
     let folder = ScratchFolder::new("library-view-again");
     let database = Database::open(&library_config(&folder)).unwrap();
@@ -162,6 +176,7 @@ fn any_grouping() -> impl Strategy<Value = LibraryGrouping> {
         Just(LibraryGrouping::None),
         Just(LibraryGrouping::Category),
         Just(LibraryGrouping::Folder),
+        Just(LibraryGrouping::Creator),
     ]
 }
 

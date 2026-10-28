@@ -204,7 +204,8 @@ pub fn series_books(
             | Position::Session { .. }
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
-            | Position::TimeLeft { .. },
+            | Position::TimeLeft { .. }
+            | Position::Writer { .. },
         ) => Err(Error::CursorForAnotherList),
     }?;
     Ok(Page::of(rows, request.size))

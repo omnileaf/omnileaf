@@ -23,9 +23,15 @@ pub(crate) fn sort_titles_for(
     if stored_stamp(connection)? == stamp {
         return Ok(Resorted::Unchanged);
     }
-    let titles = rekey_every_title(connection, &TitleCollation::new(language)?)?;
+    let collation = TitleCollation::new(language)?;
+    let titles = rekey_every_title(connection, &collation)?;
+    let names = rekey_every_person_name(connection, &collation)?;
     save_stamp(connection, language, stamp)?;
-    tracing::info!(titles, "keyed the series titles again");
+    tracing::info!(
+        titles,
+        names,
+        "keyed the series titles and people's names again"
+    );
     Ok(Resorted::Rekeyed)
 }
 
@@ -46,4 +52,20 @@ fn rekey_every_title(connection: &Connection, collation: &TitleCollation) -> Res
         rekey.execute((local_id, collation.key(title)))?;
     }
     Ok(titles.len())
+}
+
+fn rekey_every_person_name(
+    connection: &Connection,
+    collation: &TitleCollation,
+) -> Result<usize, Error> {
+    let names = connection
+        .prepare("SELECT DISTINCT name FROM book_person")?
+        .query_map([], |row| row.get::<_, String>(0))?
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut rekey = connection
+        .prepare("UPDATE book_person SET name_key = ?2 WHERE name = ?1 AND name_key IS NOT ?2")?;
+    for name in &names {
+        rekey.execute((name, collation.key(name)))?;
+    }
+    Ok(names.len())
 }

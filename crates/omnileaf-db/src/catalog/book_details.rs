@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use omnileaf_sync_proto::BookId;
 use rusqlite::{Statement, Transaction};
 
-use crate::Error;
+use crate::{Error, title_key::TitleCollation};
 
 const RECORD_DETAILS: &str = "INSERT INTO book_details (
         book_id, series, number, title, volume, summary, publisher, format, language,
@@ -30,7 +30,7 @@ const RECORD_DETAILS: &str = "INSERT INTO book_details (
 
 const PEOPLE: NamedRows = NamedRows {
     stored: "SELECT role, name FROM book_person WHERE book_id = ?1",
-    add: "INSERT INTO book_person (book_id, role, name) VALUES (?1, ?2, ?3)",
+    add: "INSERT INTO book_person (book_id, role, name, name_key) VALUES (?1, ?2, ?3, ?4)",
     remove: "DELETE FROM book_person WHERE book_id = ?1 AND role = ?2 AND name = ?3",
 };
 
@@ -130,7 +130,12 @@ impl<'t> DetailsRecorder<'t> {
         })
     }
 
-    pub(crate) fn record(&mut self, book: BookId, details: &BookDetails) -> Result<(), Error> {
+    pub(crate) fn record(
+        &mut self,
+        book: BookId,
+        details: &BookDetails,
+        collation: &TitleCollation,
+    ) -> Result<(), Error> {
         self.details.execute((
             book.as_bytes(),
             &details.series,
@@ -145,8 +150,14 @@ impl<'t> DetailsRecorder<'t> {
             details.age_rating.map(AgeRating::as_stored),
             details.year,
         ))?;
-        self.people.keep(book, &details.named_people())?;
-        self.tags.keep(book, &details.named_tags())
+        self.people
+            .keep(book, &details.named_people(), |add, role, name| {
+                add.execute((book.as_bytes(), role, name, collation.key(name)))
+            })?;
+        self.tags
+            .keep(book, &details.named_tags(), |add, kind, name| {
+                add.execute((book.as_bytes(), kind, name))
+            })
     }
 }
 
@@ -179,7 +190,12 @@ impl NamedRows {
 }
 
 impl NamedStatements<'_> {
-    fn keep(&mut self, book: BookId, wanted: &Named) -> Result<(), Error> {
+    fn keep(
+        &mut self,
+        book: BookId,
+        wanted: &Named,
+        add: impl Fn(&mut Statement<'_>, &str, &str) -> rusqlite::Result<usize>,
+    ) -> Result<(), Error> {
         let stored: Named = self
             .stored
             .query_map([book.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -188,7 +204,7 @@ impl NamedStatements<'_> {
             self.remove.execute((book.as_bytes(), code, name))?;
         }
         for (code, name) in wanted.difference(&stored) {
-            self.add.execute((book.as_bytes(), code, name))?;
+            add(&mut self.add, code, name)?;
         }
         Ok(())
     }

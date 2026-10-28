@@ -80,6 +80,8 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0044_index_the_series_holding_a_book_stored_twice"),
     migration!("0045_rename_the_book_title_sort_key_to_reading_order_key"),
     migration!("0046_keep_the_kind_and_numbers_of_each_book"),
+    migration!("0047_group_the_library_by_creator"),
+    migration!("0048_key_the_name_of_each_person_a_book_names"),
 ];
 
 pub(crate) fn pending(
@@ -237,11 +239,16 @@ mod tests {
 
     use super::*;
     use crate::{
-        Database, Language, connection,
+        Database, Language,
+        catalog::{PageRequest, PageSize, writers},
+        connection,
         first_launch::first_launch_finished,
+        library_view::{
+            LibraryDisplay, LibraryGrouping, OnCovers, StoredLibraryView, library_view,
+        },
         scratch::ScratchLibrary,
         store::{Clock, Continuity, SessionPlace, Store},
-        title_key::TitleCollation,
+        title_key::{TitleCollation, TitleStamp},
     };
 
     type Schema = (i64, i64, Vec<(String, String, Option<String>)>);
@@ -1348,6 +1355,104 @@ mod tests {
             .collect();
 
         assert_eq!(accepted, Vec::<&str>::new());
+    }
+
+    #[test]
+    fn keeps_the_view_stored_before_series_could_be_grouped_by_creator() {
+        let scratch = ScratchLibrary::new("library-view-creator-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..46]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO library_view (
+                    id, display, phone_covers_per_row, tablet_covers_per_row,
+                    desktop_covers_per_row, shows_item_counts, shows_unread_count,
+                    shows_downloaded, shows_language, shows_reading_progress,
+                    shows_continue_button, shows_continue_row, fits_covers_to_width,
+                    shows_category_tabs, group_by
+                 )
+                 VALUES (1, 'list', 4, 7, 10, 1, 1, 0, 1, 0, 1, 1, 0, 0, 'folder');",
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let view = library_view(&connection).unwrap().unwrap();
+        assert_eq!(
+            view,
+            StoredLibraryView {
+                display: LibraryDisplay::List,
+                group_by: LibraryGrouping::Folder,
+                shows_category_tabs: false,
+                phone_covers_per_row: 4,
+                tablet_covers_per_row: 7,
+                desktop_covers_per_row: 10,
+                fits_covers_to_width: false,
+                shows_item_counts: true,
+                shows_continue_row: true,
+                on_covers: OnCovers {
+                    shows_unread_count: true,
+                    shows_downloaded: false,
+                    shows_language: true,
+                    shows_reading_progress: false,
+                    shows_continue_button: true,
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn lists_the_writers_kept_from_before_their_names_were_keyed_in_title_order() {
+        let scratch = ScratchLibrary::new("writer-keys-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..47]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "UPDATE title_key_stamp SET stamp = ?1",
+                [TitleStamp::of(&Language::ROOT).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_details (book_id) VALUES (?1)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book_person (book_id, role, name)
+                 VALUES (?1, 'writer', 'Sample Author 10'), (?1, 'writer', 'Sample Author 9')",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        let listed: Vec<String> = writers(&connection, &request)
+            .unwrap()
+            .items
+            .into_iter()
+            .map(|writer| writer.name)
+            .collect();
+        assert_eq!(listed, ["Sample Author 9", "Sample Author 10"]);
     }
 
     #[test]
