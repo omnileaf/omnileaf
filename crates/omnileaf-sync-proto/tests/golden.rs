@@ -56,7 +56,7 @@ fn ids_match_the_golden_vectors() {
             vector.inputs.as_deref(),
         ) {
             ("series.local.v1", Some(input), None) => SeriesId::local(input).unwrap().to_string(),
-            ("series.folder.v1", None, Some([linked_folder, location])) => {
+            ("series.folder.v1", None, Some([linked_folder, location @ ..])) => {
                 SeriesId::folder(linked_folder, location)
                     .unwrap()
                     .to_string()

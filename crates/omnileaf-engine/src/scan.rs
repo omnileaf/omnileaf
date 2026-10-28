@@ -8,7 +8,9 @@ use std::{
 
 use omnileaf_db::{
     Database,
-    catalog::{BookFile, NewSeries, RootId, RootKind, ScannedBook, record_scanned_books},
+    catalog::{
+        BookFile, NewSeries, RootId, RootKind, ScannedBook, SeriesFolder, record_scanned_books,
+    },
 };
 use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -235,11 +237,12 @@ pub(crate) fn warn_unreadable(found: &FoundBook, error: &UnreadableBook) {
 
 fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, UnreadableBook> {
     let location = found.path.strip_prefix(&target.folder)?.to_path_buf();
+    let linked_folder = folder_name(&target.folder);
     let Placement {
         series,
         title,
         numbering,
-    } = place_book(&location, &folder_name(&target.folder));
+    } = place_book(&location, &linked_folder);
     let mut book = open_book_in(Arc::clone(&target.storage), &found.path, &Limits::default())
         .map_err(|source| UnreadableBook::opening(&location, &target.hidden, source))?;
     let fingerprint = book.fingerprint()?;
@@ -247,7 +250,14 @@ fn read_found_book(found: &FoundBook, target: &Target) -> Result<ScannedBook, Un
     let details = read_details(&mut book, &found.path);
     let stamp = FileStamp::of(target.storage.details(&found.path)?, || Ok(book))?;
     Ok(ScannedBook {
-        series: NewSeries::local(&series, target.added_at_ms)?,
+        series: NewSeries::folder(
+            SeriesFolder {
+                linked_folder: &linked_folder,
+                location: &series.location,
+            },
+            series.naming,
+            target.added_at_ms,
+        )?,
         fingerprint,
         title,
         added_at_ms: target.added_at_ms,

@@ -97,10 +97,14 @@ impl SeriesId {
         Ok(Self(key.id()))
     }
 
-    pub fn folder(linked_folder_name: &str, series_location: &str) -> Result<Self, KeyError> {
-        let key = NaturalKey::new(FOLDER_SERIES_KEY)
-            .part(norm(linked_folder_name).as_bytes())?
-            .part(norm(series_location).as_bytes())?;
+    pub fn folder<P: AsRef<str>>(
+        linked_folder_name: &str,
+        series_location: &[P],
+    ) -> Result<Self, KeyError> {
+        let key = series_location.iter().try_fold(
+            NaturalKey::new(FOLDER_SERIES_KEY).part(norm(linked_folder_name).as_bytes())?,
+            |key, folder| key.part(norm(folder.as_ref()).as_bytes()),
+        )?;
         Ok(Self(key.id()))
     }
 }

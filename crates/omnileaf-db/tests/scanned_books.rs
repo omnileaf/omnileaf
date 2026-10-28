@@ -5,7 +5,7 @@
 
 mod support;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use omnileaf_db::{
     Database, Error,
@@ -82,21 +82,7 @@ impl Library {
     fn found_in_folder(&self, series_folder: &str, book: &str, page_crc: u32) -> ScannedBook {
         let title = series_folder.rsplit('/').next().unwrap();
         ScannedBook {
-            series: NewSeries::folder(
-                SeriesFolder {
-                    linked_folder: "Sample Library",
-                    location: series_folder,
-                },
-                SeriesNaming {
-                    title: Sourced {
-                        value: title.to_owned(),
-                        source: ValueSource::FolderName,
-                    },
-                    year: None,
-                },
-                ADDED_AT_MS,
-            )
-            .unwrap(),
+            series: series_in_folder("Sample Library", series_folder, ADDED_AT_MS),
             title: book.to_owned(),
             ..self.found(title, format!("{series_folder}/{book}.cbz"), page_crc)
         }
@@ -211,6 +197,24 @@ impl Library {
             .await
             .unwrap()
     }
+}
+
+fn series_in_folder(linked_folder: &str, series_folder: &str, added_at_ms: i64) -> NewSeries {
+    NewSeries::folder(
+        SeriesFolder {
+            linked_folder,
+            location: Path::new(series_folder),
+        },
+        SeriesNaming {
+            title: Sourced {
+                value: series_folder.rsplit('/').next().unwrap().to_owned(),
+                source: ValueSource::FolderName,
+            },
+            year: None,
+        },
+        added_at_ms,
+    )
+    .unwrap()
 }
 
 fn fingerprint(page_crc: u32) -> Fingerprint {
@@ -388,12 +392,12 @@ async fn adds_books_from_folders_whose_names_normalise_alike_to_one_series() {
 #[tokio::test]
 async fn files_a_book_found_again_in_another_series_where_it_was_first_found() {
     let library = Library::open("scanned-elsewhere").await;
-    let first = library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1);
+    let first = library.found_in_folder("Sample Series 01", "Volume 01", 1);
     let first_series = first.series.id();
     library.record(first).await;
 
     let filed_in = library
-        .record(library.found("Sample Series 02", "Sample Series 02/Volume 01.cbz", 1))
+        .record(library.found_in_folder("Sample Series 02", "Volume 01", 1))
         .await;
 
     assert_eq!(filed_in, first_series);
@@ -670,7 +674,7 @@ async fn keeps_the_title_and_year_of_a_folder_series_and_where_each_came_from() 
         series: NewSeries::folder(
             SeriesFolder {
                 linked_folder: "Sample Library",
-                location: "Sample Series 04 (2019)",
+                location: Path::new("Sample Series 04 (2019)"),
             },
             SeriesNaming {
                 title: Sourced {
@@ -762,5 +766,95 @@ async fn refiles_a_book_whose_only_file_is_scanned_again_in_another_series() {
             .rows("SELECT kind FROM book", |row| row.get::<_, String>(0))
             .await,
         ["volume"]
+    );
+}
+
+#[tokio::test]
+async fn refiles_a_book_held_in_two_files_out_of_a_series_kept_by_its_name() {
+    let library = Library::open("scanned-two-files-out-of-name-series").await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01.cbz", 1))
+        .await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01 copy.cbz", 1))
+        .await;
+
+    library
+        .record(library.found_in_folder("Sample Series 01", "v01", 1))
+        .await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 01".to_owned(), 0),
+            ("Sample Series 01".to_owned(), 1)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn writes_only_the_book_when_a_book_is_scanned_again_under_another_title() {
+    let library = Library::open("scanned-retitled").await;
+    library
+        .record(library.found_in_folder("Sample Series 01", "v01", 1))
+        .await;
+    let retitled = ScannedBook {
+        title: "Volume 01".to_owned(),
+        ..library.found_in_folder("Sample Series 01", "v01", 1)
+    };
+
+    let changes = library.changes_recording(retitled).await;
+
+    assert_eq!(changes, 1);
+}
+
+#[tokio::test]
+async fn keeps_when_a_series_was_added_once_its_books_move_to_their_folder_series() {
+    let library = Library::open("scanned-added-time-kept").await;
+    library
+        .record(library.found("Sample Series 01", "Sample Series 01/v01.cbz", 1))
+        .await;
+    let read_again = ScannedBook {
+        series: series_in_folder("Sample Library", "Sample Series 01", ADDED_AT_MS + 1_000),
+        ..library.found_in_folder("Sample Series 01", "v01", 1)
+    };
+
+    library.record(read_again).await;
+
+    assert_eq!(
+        library
+            .rows("SELECT added_at_ms FROM series ORDER BY local_id", |row| {
+                row.get::<_, i64>(0)
+            })
+            .await,
+        [ADDED_AT_MS, ADDED_AT_MS]
+    );
+}
+
+#[tokio::test]
+async fn keeps_series_in_folders_whose_names_normalise_to_the_same_path_apart() {
+    let library = Library::open("scanned-fullwidth-solidus").await;
+    let named = ScannedBook {
+        series: series_in_folder(
+            "Sample Library\u{ff0f}Author A",
+            "Sample Series 02",
+            ADDED_AT_MS,
+        ),
+        ..library.found_in_folder("Sample Series 02", "v01", 1)
+    };
+    library.record(named).await;
+    let nested = ScannedBook {
+        series: series_in_folder("Sample Library", "Author A/Sample Series 02", ADDED_AT_MS),
+        ..library.found_in_folder("Author A/Sample Series 02", "v01", 2)
+    };
+
+    library.record(nested).await;
+
+    assert_eq!(
+        library.series().await,
+        [
+            ("Sample Series 02".to_owned(), 1),
+            ("Sample Series 02".to_owned(), 1)
+        ]
     );
 }

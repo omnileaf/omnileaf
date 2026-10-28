@@ -331,6 +331,77 @@ async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_th
 }
 
 #[tokio::test]
+async fn keeps_same_name_series_folders_under_two_writers_apart() {
+    let comics = ScratchFolder::new("scan-same-name-folders");
+    write_book(&comics.path().join("Author A/Sample Series 02/v01.cbz"), 1);
+    write_book(&comics.path().join("Author B/Sample Series 02/v01.cbz"), 2);
+
+    let (scanned, scan, _) = Scanned::folder("scan-same-name-folders", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Sample Series 02", 1), ("Sample Series 02", 1)])
+    );
+    assert_eq!(scan.series, 2);
+}
+
+#[tokio::test]
+async fn keeps_the_same_series_folder_in_two_linked_folders_apart() {
+    let first = ScratchFolder::new("scan-first-linked-folder");
+    let second = ScratchFolder::new("scan-second-linked-folder");
+    write_book(&first.path().join("Sample Series 02/v01.cbz"), 1);
+    write_book(&second.path().join("Sample Series 02/v01.cbz"), 2);
+    let (scanned, _, _) = Scanned::folder("scan-two-linked-folders", first.path()).await;
+
+    scanned
+        .library
+        .add_folder(second.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Sample Series 02", 1), ("Sample Series 02", 1)])
+    );
+}
+
+#[tokio::test]
+async fn keeps_the_year_and_title_of_each_series_and_where_each_came_from() {
+    let comics = ScratchFolder::new("scan-series-sources");
+    write_book(&comics.path().join("Sample Series 04 (2019)/v01.cbz"), 1);
+    write_book(&comics.path().join("Sample One-Shot.cbz"), 2);
+
+    let (scanned, _, _) = Scanned::folder("scan-series-sources", comics.path()).await;
+
+    let named: Vec<Vec<Value>> = scanned
+        .connection()
+        .prepare("SELECT title, year, year_source, title_source FROM series ORDER BY title")
+        .unwrap()
+        .query_map([], |row| (0..4).map(|column| row.get(column)).collect())
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let text = |value: &str| Value::Text(value.to_owned());
+    assert_eq!(
+        named,
+        [
+            vec![
+                text("Sample One-Shot"),
+                Value::Null,
+                Value::Null,
+                text("file_name")
+            ],
+            vec![
+                text("Sample Series 04"),
+                Value::Integer(2019),
+                text("folder_name"),
+                text("folder_name")
+            ],
+        ]
+    );
+}
+
+#[tokio::test]
 async fn makes_a_specials_or_volume_folder_in_the_folder_added_a_series_of_its_own() {
     let comics = ScratchFolder::new("scan-top-specials");
     write_book(

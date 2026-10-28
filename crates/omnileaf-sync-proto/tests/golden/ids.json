@@ -34,18 +34,18 @@
     },
     {
       "key": "series.folder.v1",
-      "inputs": ["Sample Library", "Author A/Sample Series 02"],
-      "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
+      "inputs": ["Sample Library", "Author A", "Sample Series 02"],
+      "id": "bf79fa17-f07d-8e0a-be4d-6815d0b3dc2d"
     },
     {
       "key": "series.folder.v1",
-      "inputs": ["Sample Library", "Author B/Sample Series 02"],
-      "id": "f0034aba-e41c-82b4-961a-d34e01f382c2"
+      "inputs": ["Sample Library", "Author B", "Sample Series 02"],
+      "id": "980aa48c-7fc2-8eea-91d4-1eaef3ee82d3"
     },
     {
       "key": "series.folder.v1",
-      "inputs": [" SAMPLE  library", "author a/SAMPLE   Series 02 "],
-      "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
+      "inputs": [" SAMPLE  library", "author a", "SAMPLE   Series 02 "],
+      "id": "bf79fa17-f07d-8e0a-be4d-6815d0b3dc2d"
     },
     {
       "key": "series.folder.v1",
@@ -59,8 +59,13 @@
     },
     {
       "key": "series.folder.v1",
-      "inputs": ["Sample Library", ""],
-      "id": "ea41b7ec-17a1-8322-a801-404bb466e8c0"
+      "inputs": ["Sample Library"],
+      "id": "4c77e451-6e25-80d6-937b-33dfcabb353d"
+    },
+    {
+      "key": "series.folder.v1",
+      "inputs": ["Sample Library", "Author A\uff0fSample Series 02"],
+      "id": "80f8ba3c-d717-863e-a161-5d0c773d56f7"
     },
     {
       "key": "category.v1",
