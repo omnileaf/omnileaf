@@ -14,17 +14,3 @@ export function setSeriesSelection(selection: Selection<SeriesId>): void {
 export function seriesSelection(): Selection<SeriesId> | undefined {
   return getContext<Selection<SeriesId> | undefined>(SERIES_SELECTION);
 }
-
-const RELEASE_MS = 600;
-let held: { readonly series: SeriesId; readonly at: number } | undefined;
-
-export function noteHeld(series: SeriesId): void {
-  held = { series, at: performance.now() };
-}
-
-export function isReleaseOfHold(series: SeriesId, event: MouseEvent): boolean {
-  const isRelease =
-    held?.series === series && event.timeStamp - held.at < RELEASE_MS;
-  held = undefined;
-  return isRelease;
-}

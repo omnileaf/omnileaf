@@ -6,20 +6,23 @@ import { type Box, boxBetween, type Point, touchedBy } from "./drag-box";
 
 const DRAG_START_PX = 4;
 const LEFT_BUTTON = 0;
-const NOT_EMPTY_SPACE =
-  "[data-series-id], a, button, input, select, textarea, [role='menu']";
+const CONTROLS = "a, button, input, select, textarea, [role='menu']";
+
+export interface DragCells<Id> {
+  readonly cells: string;
+  readonly idOf: (cell: HTMLElement) => Id | undefined;
+}
 
 export class DragSelect<Id> {
   box: Box | undefined = $state();
 
   readonly #selection: Selection<Id>;
+  readonly #cells: string;
   readonly #idOf: (cell: HTMLElement) => Id | undefined;
 
-  constructor(
-    selection: Selection<Id>,
-    idOf: (cell: HTMLElement) => Id | undefined,
-  ) {
+  constructor(selection: Selection<Id>, { cells, idOf }: DragCells<Id>) {
     this.#selection = selection;
+    this.#cells = cells;
     this.#idOf = idOf;
   }
 
@@ -36,23 +39,23 @@ export class DragSelect<Id> {
 
     const cellsIn = (): (Box & { id: Id })[] => {
       const frame = area.getBoundingClientRect();
-      return [
-        ...area.querySelectorAll<HTMLElement>("[data-series-id]"),
-      ].flatMap((cell) => {
-        const id = this.#idOf(cell);
-        const { left, top, width, height } = cell.getBoundingClientRect();
-        return id === undefined
-          ? []
-          : [
-              {
-                id,
-                left: left - frame.left,
-                top: top - frame.top,
-                width,
-                height,
-              },
-            ];
-      });
+      return [...area.querySelectorAll<HTMLElement>(this.#cells)].flatMap(
+        (cell) => {
+          const id = this.#idOf(cell);
+          const { left, top, width, height } = cell.getBoundingClientRect();
+          return id === undefined
+            ? []
+            : [
+                {
+                  id,
+                  left: left - frame.left,
+                  top: top - frame.top,
+                  width,
+                  height,
+                },
+              ];
+        },
+      );
     };
 
     const follow = (): void => {
@@ -85,7 +88,7 @@ export class DragSelect<Id> {
           event.button !== LEFT_BUTTON ||
           event.pointerType !== "mouse" ||
           !(event.target instanceof Element) ||
-          event.target.closest(NOT_EMPTY_SPACE) !== null
+          event.target.closest(`${this.#cells}, ${CONTROLS}`) !== null
         ) {
           return;
         }

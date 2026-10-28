@@ -48,6 +48,7 @@
   import DownloadedMark from "./DownloadedMark.svelte";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { listRowLook } from "./list-row-look.ts";
+  import DragBox from "./DragBox.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
@@ -56,7 +57,7 @@
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
-  import { coverTileLook } from "./cover-tile";
+  import { coverTileLook, PICKED_COVER_RING } from "./cover-tile";
   import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -118,10 +119,11 @@
   const dragSelect =
     selection === undefined
       ? undefined
-      : new DragSelect(
-          selection,
-          (cell) => series.find(({ id }) => id === cell.dataset.seriesId)?.id,
-        );
+      : new DragSelect(selection, {
+          cells: "[data-series-id]",
+          idOf: (cell) =>
+            series.find(({ id }) => id === cell.dataset.seriesId)?.id,
+        });
 
   const revealed = new SvelteSet<SeriesId>();
 
@@ -148,7 +150,7 @@
 
   function pickedRing(one: LibrarySeries): ClassValue {
     if (selection?.has(one.id) === true) {
-      return "outline-2 outline-offset-2 outline-foreground";
+      return PICKED_COVER_RING;
     }
     return isMenuOpen && menuSeries?.id === one.id
       ? "outline-2 outline-offset-2 outline-border"
@@ -179,7 +181,7 @@
   async function moveAmongCovers(event: KeyboardEvent): Promise<void> {
     const link =
       event.target instanceof HTMLElement
-        ? event.target.closest("[data-series-link]")
+        ? event.target.closest("[data-pickable-link]")
         : null;
     const item = link?.closest("[aria-posinset]");
     const list = item?.parentElement;
@@ -205,7 +207,7 @@
       return;
     }
     const shown = await reveal?.(next);
-    shown?.querySelector<HTMLElement>("[data-series-link]")?.focus();
+    shown?.querySelector<HTMLElement>("[data-pickable-link]")?.focus();
   }
 
   function onCoverKeys(event: KeyboardEvent): void {
@@ -598,16 +600,7 @@
         }}
       />
       {#if dragSelect?.box !== undefined}
-        {@const box = dragSelect.box}
-        <div
-          data-drag-box
-          aria-hidden="true"
-          class="pointer-events-none absolute z-drag-box rounded-drag-box border border-accent bg-drag-box"
-          style:left="{box.left}px"
-          style:top="{box.top}px"
-          style:width="{box.width}px"
-          style:height="{box.height}px"
-        ></div>
+        <DragBox box={dragSelect.box} />
       {/if}
     </div>
   </ContextMenu.Trigger>
