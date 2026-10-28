@@ -78,6 +78,12 @@ export function withGaps(
   return placing.isComplete ? [...tiles, ...waiting.map(gapTile)] : tiles;
 }
 
+export function bookIdsOf(
+  tiles: readonly SectionTile[],
+): readonly SeriesBook["id"][] {
+  return tiles.flatMap((tile) => (tile.kind === "book" ? [tile.book.id] : []));
+}
+
 export function tileKey(tile: SectionTile): string {
   return tile.kind === "book"
     ? tile.book.id
