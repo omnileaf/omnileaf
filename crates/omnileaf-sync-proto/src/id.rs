@@ -2,7 +2,7 @@ use std::{fmt, str::FromStr};
 
 use uuid::{Uuid, Variant};
 
-use crate::{Fingerprint, norm};
+use crate::{Fingerprint, Hlc, NodeId, norm};
 
 const ENTITY_ID_CONTEXT: &str = "omnileaf.app 2026-09 entity-id v1";
 const DERIVED_VERSION: usize = 8;
@@ -11,6 +11,11 @@ const LOCAL_SERIES_KEY: KeyName = KeyName::new("series.local.v1");
 const FOLDER_SERIES_KEY: KeyName = KeyName::new("series.folder.v1");
 const NAMED_SERIES_KEY: KeyName = KeyName::new("series.named.v1");
 const CATEGORY_KEY: KeyName = KeyName::new("category.v1");
+const TAG_KEY: KeyName = KeyName::new("tag.v1");
+const MINTED_TAG_KEY: KeyName = KeyName::new("tag.minted.v1");
+const CATEGORY_MEMBERSHIP_PREFIX: &str = "cat.";
+const TAG_MEMBERSHIP_PREFIX: &str = "tag.";
+const ID_HEX_LENGTH: usize = 32;
 const BOOKMARK_KEY: KeyName = KeyName::new("bookmark.v1");
 const LOCAL_SOURCE_KEY: KeyName = KeyName::new("source.local.v1");
 const DEFAULT_PROFILE_KEY: KeyName = KeyName::new("profile.default.v1");
@@ -79,6 +84,7 @@ macro_rules! entity_id {
 entity_id!(BookId);
 entity_id!(SeriesId);
 entity_id!(CategoryId);
+entity_id!(TagId);
 entity_id!(BookmarkId);
 entity_id!(SourceId);
 entity_id!(ProfileId);
@@ -135,6 +141,59 @@ impl CategoryId {
     pub fn from_name(name: &str) -> Result<Self, KeyError> {
         let key = NaturalKey::new(CATEGORY_KEY).part(norm(name).as_bytes())?;
         Ok(Self(key.id()))
+    }
+
+    #[must_use]
+    pub fn membership_field(&self) -> String {
+        membership_field(CATEGORY_MEMBERSHIP_PREFIX, self.as_bytes())
+    }
+
+    #[must_use]
+    pub fn from_membership_field(field: &str) -> Option<Self> {
+        let bytes = membership_target(field, CATEGORY_MEMBERSHIP_PREFIX)?;
+        Self::try_from(bytes.as_slice()).ok()
+    }
+}
+
+fn membership_field(prefix: &str, id: &[u8; 16]) -> String {
+    format!("{prefix}{}", uuid::Uuid::from_bytes(*id).simple())
+}
+
+fn membership_target(field: &str, prefix: &str) -> Option<[u8; 16]> {
+    let hex = field.strip_prefix(prefix)?;
+    let is_lowercase_hex = hex
+        .bytes()
+        .all(|digit| matches!(digit, b'0'..=b'9' | b'a'..=b'f'));
+    if hex.len() != ID_HEX_LENGTH || !is_lowercase_hex {
+        return None;
+    }
+    Some(u128::from_str_radix(hex, 16).ok()?.to_be_bytes())
+}
+
+impl TagId {
+    pub fn from_name(name: &str) -> Result<Self, KeyError> {
+        let key = NaturalKey::new(TAG_KEY).part(norm(name).as_bytes())?;
+        Ok(Self(key.id()))
+    }
+
+    /// For a tag whose name's own id is held by a tag renamed since, so no two tags share an id while each id stays one every device derives the same way.
+    pub fn minted(name: &str, node: NodeId, hlc: Hlc) -> Result<Self, KeyError> {
+        let key = NaturalKey::new(MINTED_TAG_KEY)
+            .part(norm(name).as_bytes())?
+            .fixed_part(node.as_bytes())
+            .fixed_part(&hlc.as_u64().to_le_bytes());
+        Ok(Self(key.id()))
+    }
+
+    #[must_use]
+    pub fn membership_field(&self) -> String {
+        membership_field(TAG_MEMBERSHIP_PREFIX, self.as_bytes())
+    }
+
+    #[must_use]
+    pub fn from_membership_field(field: &str) -> Option<Self> {
+        let bytes = membership_target(field, TAG_MEMBERSHIP_PREFIX)?;
+        Self::try_from(bytes.as_slice()).ok()
     }
 }
 

@@ -113,6 +113,46 @@
       "id": "512cf539-088d-8d67-a6ff-5468c20990ba"
     },
     {
+      "key": "tag.v1",
+      "input": "Sample Tag",
+      "id": "70a1dbdf-cdd6-87b1-b866-6d6eb94a6bcc"
+    },
+    {
+      "key": "tag.v1",
+      "input": "  SAMPLE   tag ",
+      "id": "70a1dbdf-cdd6-87b1-b866-6d6eb94a6bcc"
+    },
+    {
+      "key": "tag.v1",
+      "input": "Sample Shelf",
+      "id": "174067cb-fedc-8982-b18f-99184bfa90e5"
+    },
+    {
+      "key": "tag.v1",
+      "input": "\uff33\uff41\uff4d\uff50\uff4c\uff45 \uff34\uff41\uff47",
+      "id": "70a1dbdf-cdd6-87b1-b866-6d6eb94a6bcc"
+    },
+    {
+      "key": "tag.v1",
+      "input": "Sample\u00a0Tag",
+      "id": "70a1dbdf-cdd6-87b1-b866-6d6eb94a6bcc"
+    },
+    {
+      "key": "tag.v1",
+      "input": "Stra\u00dfe",
+      "id": "6f34a48d-2a33-8793-90d5-8e3bc9b8f2bf"
+    },
+    {
+      "key": "tag.v1",
+      "input": "STRASSE",
+      "id": "6f34a48d-2a33-8793-90d5-8e3bc9b8f2bf"
+    },
+    {
+      "key": "tag.v1",
+      "input": "\u30b5\u30f3\u30d7\u30eb \u30bf\u30b0",
+      "id": "57389742-a916-80a6-a8ce-850bef6bd274"
+    },
+    {
       "key": "source.local.v1",
       "id": "2f459482-bb88-8f49-b795-205dedca106b"
     },
