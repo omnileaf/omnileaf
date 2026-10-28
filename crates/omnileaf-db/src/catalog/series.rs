@@ -41,59 +41,22 @@ macro_rules! title_is_better {
     };
 }
 
-macro_rules! year_is_better {
-    ($offered:literal, $kept:literal) => {
-        concat!(
-            "(",
-            trust!(concat!($offered, ".year_source")),
-            ", -",
-            $offered,
-            ".year) > (",
-            trust!(concat!($kept, ".year_source")),
-            ", -",
-            $kept,
-            ".year)"
-        )
-    };
-}
-
 const ADD_SERIES: &str = insert_series!("");
 const ADD_OR_RENAME_SERIES: &str = insert_series!(concat!(
     " ON CONFLICT (id) DO UPDATE SET
-        title = iif(",
-    title_is_better!(),
-    ", excluded.title, series.title),
-        title_key = iif(",
-    title_is_better!(),
-    ", excluded.title_key, series.title_key),
-        title_source = iif(",
-    title_is_better!(),
-    ", excluded.title_source, series.title_source),
-        year = iif(",
-    year_is_better!("excluded", "series"),
-    ", excluded.year, series.year),
-        year_source = iif(",
-    year_is_better!("excluded", "series"),
-    ", excluded.year_source, series.year_source)
+        title = excluded.title,
+        title_key = excluded.title_key,
+        title_source = excluded.title_source
     WHERE ",
     title_is_better!(),
-    " OR ",
-    year_is_better!("excluded", "series"),
     " ON CONFLICT DO NOTHING"
 ));
-const OFFER_YEAR: &str = concat!(
-    "UPDATE series SET year = offered.year, year_source = offered.year_source
-    FROM series AS offered
-    WHERE series.id = ?1 AND offered.id = ?2 AND ",
-    year_is_better!("offered", "series")
-);
 const FOLDER_KEY_SEPARATOR: &str = "/";
 const NAMED_KEY_SEPARATOR: &str = "\n";
 const SEPARATOR_WITHIN_A_FOLDER_NAME: &str = "\u{ff0f}";
 
 pub(crate) struct SeriesAdder<'t> {
     add: Statement<'t>,
-    offer_year: Statement<'t>,
 }
 
 #[derive(Clone, Debug)]
@@ -102,11 +65,23 @@ pub struct NewSeries {
     source: SourceId,
     natural_key: String,
     title: String,
-    title_source: Option<ValueSource>,
-    year: Option<Sourced<u16>>,
     added_at_ms: i64,
-    location: Option<PathBuf>,
+    pub(crate) key: SeriesKey,
 }
+
+#[derive(Clone, Debug)]
+pub(crate) enum SeriesKey {
+    Local,
+    Folder {
+        location: PathBuf,
+        title_source: ValueSource,
+        year: Option<Sourced<u16>>,
+    },
+    Named,
+}
+
+#[derive(Clone, Debug)]
+pub struct NamedSeries(NewSeries);
 
 #[derive(Clone, Copy, Debug)]
 pub struct SeriesFolder<'a> {
@@ -127,10 +102,8 @@ impl NewSeries {
             source: SourceId::local(),
             natural_key: norm(folder_name),
             title: folder_name.to_owned(),
-            title_source: None,
-            year: None,
             added_at_ms,
-            location: None,
+            key: SeriesKey::Local,
         })
     }
 
@@ -145,31 +118,12 @@ impl NewSeries {
             source: SourceId::local(),
             natural_key: folder_key(folder.linked_folder, &location),
             title: naming.title.value,
-            title_source: Some(naming.title.source),
-            year: naming.year,
             added_at_ms,
-            location: Some(folder.location.to_path_buf()),
-        })
-    }
-
-    pub fn named(
-        format_family: &str,
-        naming: SeriesNaming,
-        added_at_ms: i64,
-    ) -> Result<Self, KeyError> {
-        Ok(Self {
-            id: SeriesId::named(format_family, &naming.title.value)?,
-            source: SourceId::local(),
-            natural_key: format!(
-                "{}{NAMED_KEY_SEPARATOR}{}",
-                norm(format_family),
-                norm(&naming.title.value)
-            ),
-            title: naming.title.value,
-            title_source: Some(naming.title.source),
-            year: naming.year,
-            added_at_ms,
-            location: None,
+            key: SeriesKey::Folder {
+                location: folder.location.to_path_buf(),
+                title_source: naming.title.source,
+                year: naming.year,
+            },
         })
     }
 
@@ -178,8 +132,45 @@ impl NewSeries {
         self.id
     }
 
-    pub(crate) fn location(&self) -> Option<&Path> {
-        self.location.as_deref()
+    const fn title_source(&self) -> Option<ValueSource> {
+        match self.key {
+            SeriesKey::Local => None,
+            SeriesKey::Folder { title_source, .. } => Some(title_source),
+            SeriesKey::Named => Some(ValueSource::Files),
+        }
+    }
+
+    const fn year(&self) -> Option<Sourced<u16>> {
+        match self.key {
+            SeriesKey::Folder { year, .. } => year,
+            SeriesKey::Local | SeriesKey::Named => None,
+        }
+    }
+}
+
+impl NamedSeries {
+    pub fn new(format_family: &str, title: &str, added_at_ms: i64) -> Result<Self, KeyError> {
+        Ok(Self(NewSeries {
+            id: SeriesId::named(format_family, title)?,
+            source: SourceId::local(),
+            natural_key: format!(
+                "{}{NAMED_KEY_SEPARATOR}{}",
+                norm(format_family),
+                norm(title)
+            ),
+            title: title.to_owned(),
+            added_at_ms,
+            key: SeriesKey::Named,
+        }))
+    }
+
+    #[must_use]
+    pub const fn id(&self) -> SeriesId {
+        self.0.id
+    }
+
+    pub(crate) const fn as_series(&self) -> &NewSeries {
+        &self.0
     }
 }
 
@@ -193,7 +184,6 @@ impl<'t> SeriesAdder<'t> {
     pub(crate) fn new(transaction: &'t Transaction<'_>) -> Result<Self, Error> {
         Ok(Self {
             add: transaction.prepare(ADD_OR_RENAME_SERIES)?,
-            offer_year: transaction.prepare(OFFER_YEAR)?,
         })
     }
 
@@ -203,12 +193,6 @@ impl<'t> SeriesAdder<'t> {
         collation: &TitleCollation,
     ) -> Result<(), Error> {
         insert(&mut self.add, series, collation)
-    }
-
-    pub(crate) fn offer_year_of(&mut self, offered: SeriesId, to: SeriesId) -> Result<(), Error> {
-        self.offer_year
-            .execute((to.as_bytes(), offered.as_bytes()))?;
-        Ok(())
     }
 }
 
@@ -224,9 +208,9 @@ fn insert(
         &series.title,
         collation.key(&series.title),
         series.added_at_ms,
-        series.title_source.map(ValueSource::as_stored),
-        series.year.map(|year| year.value),
-        series.year.map(|year| year.source.as_stored()),
+        series.title_source().map(ValueSource::as_stored),
+        series.year().map(|year| year.value),
+        series.year().map(|year| year.source.as_stored()),
     ))?;
     Ok(())
 }
@@ -245,4 +229,38 @@ fn folder_key<P: AsRef<str>>(linked_folder: &str, location: &[P]) -> String {
 
 fn folder_key_part(folder: &str) -> String {
     norm(folder).replace(FOLDER_KEY_SEPARATOR, SEPARATOR_WITHIN_A_FOLDER_NAME)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::scratch::ScratchLibrary;
+
+    #[test]
+    fn dates_a_series_through_the_indexes_of_its_books_and_folders() {
+        let scratch = ScratchLibrary::new("date-series-plan");
+
+        let plan = scratch
+            .query_plan("SELECT year, year_source FROM series_year WHERE series_local_id = ?1");
+
+        let books_in_series = [
+            "CORRELATED SCALAR SUBQUERY 4",
+            "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+            "SEARCH book_details USING PRIMARY KEY (book_id=?)",
+        ];
+        let folders_of_series = [
+            "CORRELATED SCALAR SUBQUERY 5",
+            "SEARCH series_folder USING INDEX series_folder_by_series (series_local_id=?)",
+        ];
+        assert_eq!(
+            plan,
+            [
+                ["SEARCH series USING INTEGER PRIMARY KEY (rowid=?)"].as_slice(),
+                &books_in_series,
+                &folders_of_series,
+                &books_in_series,
+                &folders_of_series,
+            ]
+            .concat()
+        );
+    }
 }

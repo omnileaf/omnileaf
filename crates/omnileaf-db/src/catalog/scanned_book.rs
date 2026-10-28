@@ -6,7 +6,7 @@ use rusqlite::{Statement, Transaction};
 use crate::{
     Error,
     catalog::{
-        BookDetails, NewBook, NewSeries, Numbering, RootId,
+        BookDetails, NamedSeries, NewBook, NewSeries, Numbering, RootId,
         book::{BookFiler, Filing},
         book_details::DetailsRecorder,
         folder_joins::{FolderJoins, FoundIn},
@@ -36,7 +36,7 @@ const SERIES_OF_BOOK: &str = "SELECT series.id
 #[derive(Clone, Debug)]
 pub struct ScannedBook {
     pub series: NewSeries,
-    pub named_series: Option<NewSeries>,
+    pub named_series: Option<NamedSeries>,
     pub fingerprint: Fingerprint,
     pub title: String,
     pub added_at_ms: i64,

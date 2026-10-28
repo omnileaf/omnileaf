@@ -15,20 +15,82 @@ mod books;
 mod scanned;
 mod support;
 
+use std::{
+    fs,
+    time::{Duration, SystemTime},
+};
+
 use books::write_book_with;
-use omnileaf_db::rusqlite::types::Value;
+use omnileaf_db::rusqlite::{Connection, types::Value};
 use scanned::{Scanned, owned};
 use support::ScratchFolder;
 
 const NO_SERIES: &str = "<ComicInfo><Writer>Sample Author</Writer></ComicInfo>";
+const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
+
+struct ScannedComics {
+    scanned: Scanned,
+    comics: ScratchFolder,
+}
+
+impl ScannedComics {
+    async fn new(name: &str, books: &[(&str, &str)]) -> Self {
+        let comics = ScratchFolder::new(name);
+        for ((book, comic_info), seed) in books.iter().zip(1..) {
+            write_book_with(&comics.path().join(book), seed, Some(comic_info));
+        }
+        let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+        Self { scanned, comics }
+    }
+
+    fn rewrite(&self, book: &str, seed: u64, comic_info: &str) {
+        let path = self.comics.path().join(book);
+        write_book_with(&path, seed, Some(comic_info));
+        fs::File::options()
+            .write(true)
+            .open(path)
+            .unwrap()
+            .set_modified(SystemTime::UNIX_EPOCH + CHANGED_AT)
+            .unwrap();
+    }
+
+    fn remove(&self, book: &str) {
+        fs::remove_file(self.comics.path().join(book)).unwrap();
+    }
+
+    fn writer(&self) -> Connection {
+        Connection::open(self.scanned.home.path().join("library.sqlite")).unwrap()
+    }
+
+    async fn rescan(&self) {
+        self.scanned
+            .library
+            .rescan_folder(self.scanned.id, |_| {})
+            .await
+            .unwrap();
+    }
+}
 
 async fn scanned(name: &str, books: &[(&str, &str)]) -> Scanned {
-    let comics = ScratchFolder::new(name);
-    for ((book, comic_info), seed) in books.iter().zip(1..) {
-        write_book_with(&comics.path().join(book), seed, Some(comic_info));
-    }
-    let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+    ScannedComics::new(name, books).await.scanned
+}
+
+fn series_years(scanned: &Scanned) -> Vec<Vec<Value>> {
     scanned
+        .connection()
+        .prepare(
+            "SELECT year, year_source FROM series
+            WHERE local_id IN (SELECT series_local_id FROM book) ORDER BY year",
+        )
+        .unwrap()
+        .query_map([], |row| (0..2).map(|column| row.get(column)).collect())
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
+fn year(year: &str) -> String {
+    format!("<ComicInfo><Year>{year}</Year></ComicInfo>")
 }
 
 fn named_series(scanned: &Scanned) -> Vec<Vec<Value>> {
@@ -162,4 +224,192 @@ async fn dates_a_joined_series_by_the_earliest_year_of_the_books_in_its_folders(
             text("files")
         ]]
     );
+}
+
+#[tokio::test]
+async fn dates_a_series_again_when_the_year_in_its_files_changes() {
+    let comics = ScannedComics::new(
+        "comic-info-year-edited",
+        &[("Sample Series 04/v01.cbz", &year("2010"))],
+    )
+    .await;
+    comics.rewrite("Sample Series 04/v01.cbz", 1, &year("2020"));
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2020), text("files")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_again_once_its_earliest_book_is_removed() {
+    let comics = ScannedComics::new(
+        "comic-info-year-removed",
+        &[
+            ("Sample Series 04 (2005)/v01.cbz", &year("2010")),
+            ("Sample Series 04 (2005)/v02.cbz", &year("2020")),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 04 (2005)/v01.cbz");
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2020), text("files")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_by_its_folder_once_no_book_left_in_it_has_a_year() {
+    let comics = ScannedComics::new(
+        "comic-info-year-cleared",
+        &[("Sample Series 04 (2005)/v01.cbz", &year("2010"))],
+    )
+    .await;
+    comics.rewrite("Sample Series 04 (2005)/v01.cbz", 1, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(
+        series_years(&comics.scanned),
+        [vec![Value::Integer(2005), text("folder_name")]]
+    );
+}
+
+#[tokio::test]
+async fn dates_a_series_only_by_the_books_filed_in_it() {
+    let comics = ScratchFolder::new("comic-info-year-of-held-books");
+    write_book_with(
+        &comics.path().join("Author A/Sample Series 02/v01.cbz"),
+        1,
+        Some(&year("2010")),
+    );
+    write_book_with(
+        &comics.path().join("Author B/Sample Series 02/v01.cbz"),
+        1,
+        Some(&year("2010")),
+    );
+    write_book_with(
+        &comics.path().join("Author B/Sample Series 02/v02.cbz"),
+        2,
+        Some(&year("2020")),
+    );
+
+    let (scanned, _, _) = Scanned::folder("comic-info-year-of-held-books", comics.path()).await;
+
+    assert_eq!(
+        series_years(&scanned),
+        [
+            vec![Value::Integer(2010), text("files")],
+            vec![Value::Integer(2020), text("files")]
+        ]
+    );
+}
+
+#[tokio::test]
+async fn files_new_books_in_an_emptied_joined_folder_in_its_own_series() {
+    let comics = ScannedComics::new(
+        "comic-info-emptied-join",
+        &[
+            (
+                "Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            ("Sample Series 03/v01.cbz", NO_SERIES),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 02/v01.cbz");
+    comics.rescan().await;
+    comics.rewrite("Sample Series 02/v02.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(
+        comics.scanned.series(),
+        owned(&[("Sample Series 02", 1), ("Sample Series 03", 1)])
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_joined_folder_joined_while_a_volume_folder_in_it_holds_books() {
+    let comics = ScannedComics::new(
+        "comic-info-join-kept-by-volume",
+        &[
+            (
+                "Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            ("Sample Series 02/Volume 02/c010.cbz", NO_SERIES),
+        ],
+    )
+    .await;
+    comics.remove("Sample Series 02/v01.cbz");
+    comics.rescan().await;
+    comics.rewrite("Sample Series 02/v03.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn files_a_new_book_without_a_series_in_the_series_its_folder_joined() {
+    let comics = ScannedComics::new(
+        "comic-info-join-kept",
+        &[(
+            "Sample Series 02/v01.cbz",
+            "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+        )],
+    )
+    .await;
+    comics.rewrite("Sample Series 02/v03.cbz", 3, NO_SERIES);
+
+    comics.rescan().await;
+
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
+}
+
+#[tokio::test]
+async fn joins_the_folders_of_a_library_kept_from_before_folders_were_joined_on_its_next_rescan() {
+    let comics = ScannedComics::new(
+        "comic-info-join-upgrade",
+        &[
+            (
+                "Author A/Sample Series 02/v01.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+            (
+                "Author B/Sample Series 02/v02.cbz",
+                "<ComicInfo><Series>Sample Series 07</Series></ComicInfo>",
+            ),
+        ],
+    )
+    .await;
+    comics
+        .writer()
+        .execute_batch(
+            "DELETE FROM series_folder;
+            DELETE FROM book_details;
+            UPDATE book SET series_local_id = (
+                SELECT local_id FROM series WHERE natural_key LIKE '%/author a/sample series 02'
+            ) WHERE title = 'v01';
+            UPDATE book SET series_local_id = (
+                SELECT local_id FROM series WHERE natural_key LIKE '%/author b/sample series 02'
+            ) WHERE title = 'v02';",
+        )
+        .unwrap();
+    let kept = comics.scanned.series();
+
+    comics.rescan().await;
+
+    assert_eq!(
+        kept,
+        owned(&[("Sample Series 02", 1), ("Sample Series 02", 1)])
+    );
+    assert_eq!(comics.scanned.series(), owned(&[("Sample Series 07", 2)]));
 }
