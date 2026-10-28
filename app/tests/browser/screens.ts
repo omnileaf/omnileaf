@@ -474,6 +474,9 @@ export const SCREENS: readonly Screen[] = [
   sampleScreen("tag settings", "/settings/library/tags", [
     heading(english.manage_tags_title),
   ]),
+  sampleScreen("folder guide", "/settings/library/folders", [
+    heading(english.folder_guide_title),
+  ]),
   sampleScreen("appearance settings", "/settings/appearance", [
     heading(english.appearance_title),
   ]),
