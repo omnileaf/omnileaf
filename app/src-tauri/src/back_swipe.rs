@@ -26,10 +26,15 @@ fn edge_swipe(app: &AppHandle) -> tauri::State<'_, omnileaf_edge_swipe::EdgeSwip
     app.state()
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(target_os = "android")]
+pub(crate) async fn watch(app: &AppHandle, on_swipe: Channel<BackSwipe>) -> Result<(), IpcError> {
+    crate::back_navigation::watch_gestures(app, on_swipe).await
+}
+
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 #[expect(
     clippy::unused_async,
-    reason = "only iOS waits for its swipe from the edge to be watched"
+    reason = "only iOS and Android wait for their back gestures to be watched"
 )]
 pub(crate) async fn watch(_app: &AppHandle, _on_swipe: Channel<BackSwipe>) -> Result<(), IpcError> {
     Ok(())
