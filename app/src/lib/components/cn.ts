@@ -731,5 +731,4 @@ export const TOKEN_THEME = {
   blur: ["glass", "ios", "menu", "reader", "series-band"],
 } as const;
 
-/** Merges class lists so a later class wins over an earlier one of the same kind, knowing our token names. */
 export const cn = createCn({ extend: { theme: TOKEN_THEME } });

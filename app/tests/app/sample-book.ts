@@ -12,7 +12,6 @@ export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
 
-/** The XPath of a book's row in the series' table, counting from 1 below its heading row. */
 export function sampleBookRow(position: number): string {
   return `//table[@aria-label='Books']//tr[@aria-rowindex='${String(position + 1)}']`;
 }
@@ -28,7 +27,6 @@ if (books === null) { return false; }
 books.scrollIntoView({ block: "start" });
 return true;`;
 
-/** Brings the series' books table into view, since it draws only the rows inside the window and sits under the series' details in a narrow window. */
 export async function showTheBooks(session: Session): Promise<void> {
   await session.waitUntil(SCROLL_TO_THE_BOOKS, "the books table in view");
 }
@@ -48,7 +46,6 @@ export async function openSampleBook(
   await session.waitFor(NEXT_PAGE);
 }
 
-/** Leaves the reader through its series, the one way back it offers, on the way to the library. */
 export async function goBackToTheLibrary(session: Session): Promise<void> {
   await (
     await session.waitFor(

@@ -11,7 +11,6 @@ import { pageShownScript } from "./page-shown.ts";
 import { sampleBookRow, showTheBooks } from "./sample-book.ts";
 import { Session, xpath } from "./webdriver.ts";
 
-/** Clear of the port the shared app's WebDriver server listens on, since both apps run at once. */
 const RELAUNCHED_WEBDRIVER_PORT = 4446;
 const LAUNCH_TIMEOUT_MS = 120_000;
 const RESUME_TIMEOUT_MS = 180_000;
