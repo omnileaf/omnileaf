@@ -53,7 +53,7 @@ const LOOKS: readonly PlatformLook[] = [
     menu: "--macos-menu-material",
     menuCorner: "10px",
     tooltip: "--macos-menu-material",
-    switchOn: "--macos-switch-on",
+    switchOn: "#2f6f4f",
     secondaryText: "--macos-secondary-label",
     font: /^-apple-system/,
   },

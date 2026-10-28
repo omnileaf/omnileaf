@@ -56,12 +56,12 @@ const LOOKS: readonly SwitchLook[] = [
   },
   {
     platform: "macos",
-    track: [38, 22],
-    knobOff: 18,
+    track: [36, 16],
+    knobOff: 21,
     knobOn: 18,
-    trackOff: "--input",
-    trackOn: "--macos-switch-on",
-    knobOffFill: "--ios-switch-thumb",
+    trackOff: "rgba(0, 0, 0, 0.1)",
+    trackOn: "#2f6f4f",
+    knobOffFill: "oklch(1 0 0)",
     edgeOff: "transparent",
   },
   {
