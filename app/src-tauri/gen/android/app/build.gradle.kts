@@ -14,6 +14,9 @@ val tauriProperties = Properties().apply {
     }
 }
 
+/** Wry generates `RustWebView` and `WryActivity` with deprecated WebView and back-press APIs, so deprecations stay warnings. */
+val keepDeprecationsAsWarnings = "-Xwarning-level=DEPRECATION:warning"
+
 val releaseKeystore: String? = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
@@ -75,6 +78,8 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
+        allWarningsAsErrors = true
+        freeCompilerArgs.add(keepDeprecationsAsWarnings)
     }
 }
 
