@@ -74,6 +74,9 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 kotlin {
@@ -92,6 +95,7 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.process)
     testImplementation(libs.junit)

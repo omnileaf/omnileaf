@@ -2,12 +2,12 @@ package app.omnileaf
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.webkit.WebView
 import androidx.annotation.ColorInt
+import androidx.core.graphics.drawable.toDrawable
 
 class MainActivity : TauriActivity() {
     private val startingTheme: StartingTheme by lazy { RememberedTheme(this).theme() }
@@ -55,7 +55,7 @@ class MainActivity : TauriActivity() {
     fun showPageBackground(
         @ColorInt color: Int,
     ) {
-        window.setBackgroundDrawable(ColorDrawable(color))
+        window.setBackgroundDrawable(color.toDrawable())
         webView?.setBackgroundColor(color)
     }
 
