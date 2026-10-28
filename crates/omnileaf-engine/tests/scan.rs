@@ -74,6 +74,45 @@ fn sample_library(name: &str) -> ScratchFolder {
     folder
 }
 
+const SERIES_04_FOLDER: &str = "Sample Author/Sample Series 04 (2019)";
+const SERIES_04_ARCHIVES: &[&str] = &[
+    "Volume 01/Sample Series 04 c001.cbz",
+    "Volume 01/Sample Series 04 c002.5 [GroupName].cbz",
+    "Volume 01/Sample Series 04 v02 c005.cbz",
+    "Volume 01/Sample Series 04 v01 003.cbz",
+    "Volume 01/Sample Series 04 v01.cbz",
+    "Sample Series 04 Vol. 07/Sample Series 04 c030.cbz",
+    "Volume 08 [GroupName]/Sample Series 04 c040.cbz",
+    "Sample Series 04 v03 c017.cbz",
+    "Sample Series 04 v04-06.cbz",
+    "Sample Series 04 c020-022.cbz",
+    "Sample Series 04 015.cbz",
+    "Sample Series 04 Art Book.cbz",
+    "Specials/Sample Series 04 Extras.cbz",
+    "Specials/Sample Series 04 Omake 02.cbz",
+    "Specials/Sample Series 04 v01 c002.cbz",
+];
+const SERIES_04_IMAGE_FOLDERS: &[&str] = &["v02/003", "v02/Extra Pages"];
+const STORED_NUMBERING: &str = "SELECT title, concat_ws(' ', kind, first_number, last_number,
+    number_source, volume_number, volume_source) FROM book ORDER BY title";
+
+fn series_laid_out_in_folders(name: &str) -> ScratchFolder {
+    let comics = ScratchFolder::new(name);
+    let series = comics.path().join(SERIES_04_FOLDER);
+    for (book, seed) in SERIES_04_ARCHIVES.iter().zip(1..) {
+        write_book(&series.join(book), seed);
+    }
+    for (book, seed) in SERIES_04_IMAGE_FOLDERS.iter().zip(20..) {
+        write_page(&series.join(book), seed);
+    }
+    let series_05 = comics.path().join("Sample Author/Sample Series 05 Vol 2");
+    write_book(&series_05.join("c001.cbz"), 30);
+    write_book(&series_05.join("specials/Sample Bonus.cbz"), 33);
+    write_book(&comics.path().join("Sample One-Shot [GroupName].cbz"), 31);
+    write_book(&comics.path().join("Sample Series 06 003.cbz"), 32);
+    comics
+}
+
 fn series_sources(scanned: &Scanned) -> Vec<Value> {
     scanned
         .connection()
@@ -244,6 +283,181 @@ async fn makes_a_book_at_the_top_of_the_folder_its_own_series() {
     assert_eq!(
         scanned.series(),
         owned(&[("Sample Chapter", 1), ("Sample One-Shot", 1)])
+    );
+}
+
+#[tokio::test]
+async fn names_each_series_and_book_without_their_tags_or_the_series_year() {
+    let comics = ScratchFolder::new("scan-tags");
+    write_book(
+        &comics
+            .path()
+            .join("Sample Series 04 (2019) [GroupName]/Sample Series 04 v01 [EN] (Digital).cbz"),
+        1,
+    );
+    write_page(
+        &comics.path().join("[GroupName] Sample One-Shot (Digital)"),
+        2,
+    );
+
+    let (scanned, _, _) = Scanned::folder("scan-tags", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Sample One-Shot", 1), ("Sample Series 04", 1)])
+    );
+    assert_eq!(
+        scanned.books_in("Sample Series 04"),
+        ["Sample Series 04 v01"]
+    );
+    assert_eq!(scanned.books_in("Sample One-Shot"), ["Sample One-Shot"]);
+}
+
+#[tokio::test]
+async fn files_the_books_in_volume_and_specials_folders_in_the_series_holding_them() {
+    let comics = series_laid_out_in_folders("scan-series-folders");
+
+    let (scanned, _, _) = Scanned::folder("scan-series-folders", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[
+            ("Sample One-Shot", 1),
+            ("Sample Series 04", 17),
+            ("Sample Series 05 Vol 2", 2),
+            ("Sample Series 06 003", 1)
+        ])
+    );
+}
+
+#[tokio::test]
+async fn makes_a_specials_or_volume_folder_in_the_folder_added_a_series_of_its_own() {
+    let comics = ScratchFolder::new("scan-top-specials");
+    write_book(
+        &comics.path().join("Specials/Sample Series 04 Extras.cbz"),
+        1,
+    );
+    write_book(&comics.path().join("Volume 01/c001.cbz"), 2);
+
+    let (scanned, _, _) = Scanned::folder("scan-top-specials", comics.path()).await;
+
+    assert_eq!(
+        scanned.series(),
+        owned(&[("Specials", 1), ("Volume 01", 1)])
+    );
+}
+
+#[tokio::test]
+async fn makes_a_folder_of_images_added_on_its_own_a_series_named_after_it() {
+    let comics = ScratchFolder::new("scan-linked-images");
+    let linked = comics.path().join("Sample One-Shot v01 [GroupName]");
+    write_page(&linked, 1);
+
+    let (scanned, _, _) = Scanned::folder("scan-linked-images", &linked).await;
+
+    assert_eq!(scanned.series(), owned(&[("Sample One-Shot v01", 1)]));
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[("Sample One-Shot v01", "volume 1000 1000 file_name")])
+    );
+}
+
+#[tokio::test]
+async fn files_a_folder_of_images_added_on_its_own_with_no_number_as_an_unnumbered_chapter() {
+    let comics = ScratchFolder::new("scan-linked-unnumbered-images");
+    let linked = comics.path().join("Sample One-Shot [GroupName]");
+    write_page(&linked, 1);
+
+    let (scanned, _, _) = Scanned::folder("scan-linked-unnumbered-images", &linked).await;
+
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[("Sample One-Shot", "chapter")])
+    );
+}
+
+#[tokio::test]
+async fn orders_a_series_books_by_the_numbers_their_names_and_folders_give() {
+    let comics = series_laid_out_in_folders("scan-reading-order");
+
+    let (scanned, _, _) = Scanned::folder("scan-reading-order", comics.path()).await;
+
+    assert_eq!(
+        scanned.books_in("Sample Series 04"),
+        [
+            "Sample Series 04 c001",
+            "Sample Series 04 c002.5",
+            "Sample Series 04 v01 003",
+            "Sample Series 04 v01",
+            "003",
+            "Sample Series 04 v02 c005",
+            "Extra Pages",
+            "Sample Series 04 v03 c017",
+            "Sample Series 04 v04-06",
+            "Sample Series 04 c030",
+            "Sample Series 04 c040",
+            "Sample Series 04 015",
+            "Sample Series 04 c020-022",
+            "Sample Series 04 Omake 02",
+            "Sample Series 04 v01 c002",
+            "Sample Series 04 Art Book",
+            "Sample Series 04 Extras",
+        ]
+    );
+}
+
+#[tokio::test]
+async fn stores_the_kind_and_numbers_each_book_is_filed_with_and_where_they_were_read() {
+    let comics = series_laid_out_in_folders("scan-numbering");
+
+    let (scanned, _, _) = Scanned::folder("scan-numbering", comics.path()).await;
+
+    assert_eq!(
+        stored_names(&scanned, STORED_NUMBERING),
+        owned_pairs(&[
+            ("003", "chapter 3000 3000 file_name 2000 folder_name"),
+            ("Extra Pages", "chapter 2000 folder_name"),
+            ("Sample Bonus", "special"),
+            ("Sample One-Shot", "chapter"),
+            ("Sample Series 04 015", "chapter 15000 15000 file_name"),
+            ("Sample Series 04 Art Book", "special"),
+            ("Sample Series 04 Extras", "special"),
+            ("Sample Series 04 Omake 02", "special 2000 2000 file_name"),
+            (
+                "Sample Series 04 c001",
+                "chapter 1000 1000 file_name 1000 folder_name"
+            ),
+            (
+                "Sample Series 04 c002.5",
+                "chapter 2500 2500 file_name 1000 folder_name"
+            ),
+            ("Sample Series 04 c020-022", "chapter 20000 22000 file_name"),
+            (
+                "Sample Series 04 c030",
+                "chapter 30000 30000 file_name 7000 folder_name"
+            ),
+            (
+                "Sample Series 04 c040",
+                "chapter 40000 40000 file_name 8000 folder_name"
+            ),
+            ("Sample Series 04 v01", "chapter 1000 file_name"),
+            (
+                "Sample Series 04 v01 003",
+                "chapter 3000 3000 file_name 1000 file_name"
+            ),
+            ("Sample Series 04 v01 c002", "special 2000 2000 file_name"),
+            (
+                "Sample Series 04 v02 c005",
+                "chapter 5000 5000 file_name 2000 file_name"
+            ),
+            (
+                "Sample Series 04 v03 c017",
+                "chapter 17000 17000 file_name 3000 file_name"
+            ),
+            ("Sample Series 04 v04-06", "volume 4000 6000 file_name"),
+            ("Sample Series 06 003", "chapter"),
+            ("c001", "chapter 1000 1000 file_name"),
+        ])
     );
 }
 

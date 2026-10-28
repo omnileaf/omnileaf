@@ -3,6 +3,7 @@ mod app_info;
 mod app_language;
 mod background_lane;
 mod book_details;
+mod book_numbering;
 mod bookmark_access;
 mod books_removal;
 #[cfg(test)]
@@ -50,6 +51,7 @@ mod page_path;
 mod page_sizes;
 mod page_thumbnail_path;
 mod pages;
+mod placement;
 mod problem_report;
 mod project_link;
 mod reading_progress;

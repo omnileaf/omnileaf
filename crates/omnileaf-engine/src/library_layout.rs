@@ -11,8 +11,6 @@ use crate::file_type::FileType;
 #[derive(Clone, Debug)]
 pub(crate) struct FoundBook {
     pub(crate) path: PathBuf,
-    pub(crate) series: String,
-    pub(crate) title: String,
 }
 
 #[derive(Debug, Default)]
@@ -33,8 +31,7 @@ enum EntryKind {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Place {
     Root,
-    Top,
-    Nested,
+    Inside,
 }
 
 pub(crate) fn find_books(
@@ -48,7 +45,7 @@ pub(crate) fn find_books(
         match storage.entries(&folder) {
             Ok(entries) => {
                 let found_before = layout.books.len();
-                layout.take_in(&folder, place, entries, &mut pending);
+                layout.take_in(&folder, entries, &mut pending);
                 if layout.books.len() > found_before {
                     on_found(layout.books.len());
                 }
@@ -68,13 +65,7 @@ impl Layout {
         self.books.is_empty() && self.unreadable_folders.is_empty()
     }
 
-    fn take_in(
-        &mut self,
-        folder: &Path,
-        place: Place,
-        entries: Vec<Entry>,
-        pending: &mut Vec<(PathBuf, Place)>,
-    ) {
+    fn take_in(&mut self, folder: &Path, entries: Vec<Entry>, pending: &mut Vec<(PathBuf, Place)>) {
         let mut holds_pages = false;
         let mut holds_comics = false;
         for entry in entries {
@@ -82,19 +73,11 @@ impl Layout {
                 continue;
             }
             match EntryKind::of(&entry) {
-                EntryKind::Folder => pending.push((folder.join(&entry.name), place.inner())),
+                EntryKind::Folder => pending.push((folder.join(&entry.name), Place::Inside)),
                 EntryKind::Comic => {
                     holds_comics = true;
-                    let path = folder.join(&entry.name);
-                    let title = file_stem(&path);
-                    let series = match place {
-                        Place::Root => title.clone(),
-                        Place::Top | Place::Nested => folder_name(folder),
-                    };
                     self.books.push(FoundBook {
-                        path,
-                        series,
-                        title,
+                        path: folder.join(&entry.name),
                     });
                 }
                 EntryKind::Page => holds_pages = true,
@@ -104,16 +87,8 @@ impl Layout {
         }
         let is_book_of_images = holds_pages && !holds_comics;
         if is_book_of_images {
-            let series = match place {
-                Place::Root | Place::Top => folder_name(folder),
-                Place::Nested => folder
-                    .parent()
-                    .map_or_else(|| folder_name(folder), folder_name),
-            };
             self.books.push(FoundBook {
                 path: folder.to_path_buf(),
-                series,
-                title: folder_name(folder),
             });
         }
     }
@@ -137,22 +112,6 @@ impl EntryKind {
             formats::EntryKind::File { .. } | formats::EntryKind::Other => Self::Other,
         }
     }
-}
-
-impl Place {
-    const fn inner(self) -> Self {
-        match self {
-            Self::Root => Self::Top,
-            Self::Top | Self::Nested => Self::Nested,
-        }
-    }
-}
-
-fn file_stem(path: &Path) -> String {
-    path.file_stem().map_or_else(
-        || folder_name(path),
-        |stem| stem.to_string_lossy().into_owned(),
-    )
 }
 
 pub(crate) fn folder_name(folder: &Path) -> String {

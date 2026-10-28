@@ -3,7 +3,9 @@
     reason = "the expected numbers are written in the tests, so a bad one should stop the test"
 )]
 
-use omnileaf_formats::{Number, NumberRange, SeriesName, read_book_name, read_series_name};
+use omnileaf_formats::{
+    Number, NumberRange, SeriesName, read_book_name, read_series_name, read_volume_folder_name,
+};
 use proptest::prelude::*;
 
 fn title_of(name: &str) -> String {
@@ -509,6 +511,114 @@ fn reads_no_bare_number_from_a_tag() {
     let number = bare_number_of("Sample Series 04 [003] Extras");
 
     assert_eq!(number, None);
+}
+
+fn number_after_volume_of(name: &str) -> Option<NumberRange> {
+    read_book_name(name, SERIES_TITLE).number_after_volume
+}
+
+#[test]
+fn reads_the_first_standalone_number_after_the_volume_marker() {
+    let numbers = [
+        "Sample Series 04 v01 003",
+        "Sample Series 04 Vol. 1 Sample Story 003",
+        "Sample Series 04 v01-02 003 004",
+        "Sample Series 04 v01 [GroupName] 003",
+        "Sample Series 04 v01 v02 003",
+    ]
+    .map(number_after_volume_of);
+
+    assert_eq!(numbers, [single("3"); 5]);
+}
+
+#[test]
+fn reads_a_range_after_the_volume_marker() {
+    let number = number_after_volume_of("Sample Series 04 v01 003-005");
+
+    assert_eq!(number, range("3", "5"));
+}
+
+#[test]
+fn reads_no_number_after_the_volume_marker_from_before_it_a_tag_or_a_word() {
+    let numbers = [
+        "Sample Series 04 v01",
+        "Sample Series 04 003 v01",
+        "Sample Series 04 v01 [003]",
+        "Sample Series 04 v01 3rd",
+        "Sample Series 04 003",
+        "Sample Series 04 c003 004",
+    ]
+    .map(number_after_volume_of);
+
+    assert_eq!(numbers, [None; 6]);
+}
+
+fn volume_folder_of(name: &str) -> Option<NumberRange> {
+    read_volume_folder_name(name, "Sample Series 04")
+}
+
+#[test]
+fn reads_a_volume_folder_named_only_by_its_volume_marker() {
+    let volumes = ["Volume 03", "v03", "Vol. 3", " vol 003 "].map(volume_folder_of);
+
+    assert_eq!(volumes, [single("3"); 4]);
+}
+
+#[test]
+fn reads_a_volume_folder_whose_name_starts_with_its_series_title() {
+    let volumes = [
+        "Sample Series 04 v03",
+        "sample_series 04 - Vol. 3",
+        "Sample Series 04: Volume 3",
+    ]
+    .map(volume_folder_of);
+
+    assert_eq!(volumes, [single("3"); 3]);
+}
+
+#[test]
+fn reads_a_volume_folder_whatever_its_tags() {
+    let volumes = ["Volume 08 [GroupName]", "[GroupName] v08 (Digital)"].map(volume_folder_of);
+
+    assert_eq!(volumes, [single("8"); 2]);
+}
+
+#[test]
+fn reads_a_volume_folder_covering_a_range_of_volumes() {
+    let volume = volume_folder_of("Volumes 01-03");
+
+    assert_eq!(volume, range("1", "3"));
+}
+
+#[test]
+fn reads_a_volume_folder_whose_series_title_is_a_volume_marker_word() {
+    let volume = read_volume_folder_name("Volume 03", "Volume");
+
+    assert_eq!(volume, single("3"));
+}
+
+#[test]
+fn reads_no_volume_folder_from_a_series_title_written_before_a_volume_of_another_series() {
+    let volume = read_volume_folder_name("Sample Series 04 Vol 2", "Sample Author");
+
+    assert_eq!(volume, None);
+}
+
+#[test]
+fn reads_no_volume_folder_from_a_name_holding_more_than_volume_markers() {
+    let volumes = [
+        "Volume 03 Extras",
+        "Volume 03 05",
+        "Sample Series 045 v03",
+        "v03 c017",
+        "c003",
+        "Sample Series 04",
+        "Specials",
+        "[v03]",
+    ]
+    .map(volume_folder_of);
+
+    assert_eq!(volumes, [None; 8]);
 }
 
 fn tag() -> impl Strategy<Value = String> {

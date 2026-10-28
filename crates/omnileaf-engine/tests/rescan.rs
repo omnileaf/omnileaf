@@ -308,7 +308,7 @@ async fn follows_a_renamed_file_and_keeps_its_book() {
             ..FileChanges::default()
         })
     );
-    assert_eq!(folder.scanned.books_in(SERIES_01), ["v01 (fixed)", "v02"]);
+    assert_eq!(folder.scanned.books_in(SERIES_01), ["v01", "v02"]);
     assert_eq!(folder.book_ids_in(SERIES_01), before);
     assert_eq!(folder.position_of(renamed), Some(5));
 }
