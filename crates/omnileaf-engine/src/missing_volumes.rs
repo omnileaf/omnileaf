@@ -4,17 +4,20 @@ use crate::{BookNumber, NumberRange};
 
 const THOUSANDTHS_PER_VOLUME: u32 = 1000;
 
-/// The whole volumes absent from one, or from nought when a volume 0 is present, up to the highest whole volume present, merged into runs.
+/// The whole volumes absent from one, or from nought when a volume 0 is present, up to the whole part of the highest volume present, merged into runs.
 pub(crate) fn missing_volumes(placed: &[Numbering]) -> Vec<NumberRange> {
+    let Some(highest) = last_volume(placed).map(|last| last.0 / THOUSANDTHS_PER_VOLUME) else {
+        return Vec::new();
+    };
     let mut present: Vec<(u32, u32)> = placed.iter().filter_map(whole_volumes).collect();
     present.sort_unstable();
     let mut next = match present.first() {
         Some(&(0, _)) => 0,
-        Some(_) => 1,
-        None => return Vec::new(),
+        _ => 1,
     };
+    let past_highest = (highest + 1, highest + 1);
     let mut missing = Vec::new();
-    for (first, last) in present {
+    for (first, last) in present.into_iter().chain([past_highest]) {
         if first > next {
             missing.push(NumberRange {
                 first: whole_volume(next),
@@ -159,6 +162,44 @@ mod tests {
     }
 
     #[test]
+    fn misses_every_whole_volume_below_a_decimal_top_volume() {
+        let placed = [
+            volume(1, 1),
+            volume(3, 3),
+            Numbering::Volume {
+                numbers: numbers(9500, 9500),
+            },
+        ];
+
+        assert_eq!(missing_volumes(&placed), missing(&[(2, 2), (4, 9)]));
+    }
+
+    #[test]
+    fn misses_the_whole_volumes_below_a_chapter_read_inside_a_decimal_volume() {
+        let placed = [volume(1, 1), chapter_in(3500)];
+
+        assert_eq!(missing_volumes(&placed), missing(&[(2, 3)]));
+    }
+
+    #[test]
+    fn misses_the_whole_volumes_below_a_series_of_only_decimal_volumes() {
+        let placed = [Numbering::Volume {
+            numbers: numbers(2500, 2500),
+        }];
+
+        assert_eq!(missing_volumes(&placed), missing(&[(1, 2)]));
+    }
+
+    #[test]
+    fn misses_nothing_below_a_lone_half_volume_before_one() {
+        let placed = [Numbering::Volume {
+            numbers: numbers(500, 500),
+        }];
+
+        assert_eq!(missing_volumes(&placed), missing(&[]));
+    }
+
+    #[test]
     fn names_no_last_volume_in_a_series_without_volumes() {
         let placed = [
             Numbering::Special { number: None },
@@ -212,10 +253,17 @@ mod tests {
         #[test]
         fn misses_exactly_the_whole_volumes_up_to_the_highest_that_no_book_holds(
             volumes in placed_volumes(),
+            decimal in proptest::option::of(1..40_000_u32).prop_filter(
+                "a decimal volume",
+                |decimal| decimal.is_none_or(|decimal| decimal % ONE != 0),
+            ),
         ) {
             let placed: Vec<Numbering> = volumes
                 .iter()
                 .map(|&(first, length)| volume(first, first + length))
+                .chain(decimal.map(|decimal| Numbering::Volume {
+                    numbers: numbers(decimal, decimal),
+                }))
                 .collect();
             let present: Vec<u32> = volumes
                 .iter()
@@ -224,8 +272,10 @@ mod tests {
             let start = u32::from(!present.contains(&0));
             let expected: Vec<u32> = present
                 .iter()
+                .copied()
+                .chain(decimal.map(|decimal| decimal / ONE))
                 .max()
-                .map(|&highest| (start..=highest).filter(|n| !present.contains(n)).collect())
+                .map(|highest| (start..=highest).filter(|n| !present.contains(n)).collect())
                 .unwrap_or_default();
 
             let found = missing_volumes(&placed);
