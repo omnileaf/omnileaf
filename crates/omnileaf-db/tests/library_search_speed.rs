@@ -26,7 +26,10 @@ const PAGE_SIZE: u16 = 50;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(10);
 
-const TEXTS: [&str; 9] = [
+const GENRES: u32 = 50;
+const EVERY_TWENTIETH_CREDITED: u32 = 20;
+
+const TEXTS: [&str; 12] = [
     "sample",
     "sample series",
     "series 09",
@@ -36,6 +39,9 @@ const TEXTS: [&str; 9] = [
     "s",
     "12",
     "zz",
+    "writer",
+    "writer 091",
+    "genre 7",
 ];
 
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
@@ -103,6 +109,24 @@ async fn add_generated_library(database: &Database) {
                 SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
                 WHERE series.added_at_ms % ?1 = 0",
                 [EVERY_HUNDREDTH_FINISHED],
+            )?;
+            transaction.execute(
+                "INSERT INTO book_details (book_id)
+                SELECT book.id FROM book",
+                [],
+            )?;
+            transaction.execute(
+                "INSERT INTO book_person (book_id, role, name)
+                SELECT book.id, 'writer', 'Writer ' || series.added_at_ms
+                FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = 0",
+                [EVERY_TWENTIETH_CREDITED],
+            )?;
+            transaction.execute(
+                "INSERT INTO book_tag (book_id, kind, name)
+                SELECT book.id, 'tag', 'Genre ' || (series.added_at_ms % ?1)
+                FROM book JOIN series ON series.local_id = book.series_local_id",
+                [GENRES],
             )?;
             Ok(())
         })

@@ -99,6 +99,38 @@ impl Library {
             .unwrap()
     }
 
+    async fn run(&self, sql: &'static str, params: Vec<String>) {
+        self.store
+            .database()
+            .write(move |transaction| {
+                transaction.execute(sql, rusqlite::params_from_iter(params))?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn credit(&self, series: &str, role: &'static str, name: &str) {
+        self.run(
+            "INSERT OR IGNORE INTO book_details (book_id)
+            SELECT book.id FROM book JOIN series ON series.local_id = book.series_local_id
+            WHERE series.title = ?1",
+            vec![series.to_owned()],
+        )
+        .await;
+        let sql = if role == "tag" {
+            "INSERT INTO book_tag (book_id, kind, name)
+            SELECT book.id, 'tag', ?2 FROM book JOIN series ON series.local_id = book.series_local_id
+            WHERE series.title = ?1"
+        } else {
+            "INSERT INTO book_person (book_id, role, name)
+            SELECT book.id, 'writer', ?2 FROM book JOIN series ON series.local_id = book.series_local_id
+            WHERE series.title = ?1"
+        };
+        self.run(sql, vec![series.to_owned(), name.to_owned()])
+            .await;
+    }
+
     async fn mark_read(&self, series: &'static str) {
         let book = BookId::local(&fingerprint(series, VOLUME_ONE));
         self.store
@@ -266,6 +298,85 @@ async fn counts_what_a_search_finds_through_its_filter() {
     ];
 
     assert_eq!(counts, [2, 1, 3, 1]);
+}
+
+#[tokio::test]
+async fn finds_the_series_whose_books_name_a_person_or_a_tag_holding_every_word() {
+    let library = Library::with("people-and-tags", &SHELF).await;
+    library
+        .credit("Harbour Gate", "writer", "Aiko Tanaka")
+        .await;
+    library.credit("Market Lanterns", "tag", "slow burn").await;
+    library.credit("Écho du Port", "tag", "Aiko fans").await;
+
+    let found = [
+        library.finding("tanaka").await,
+        library.finding("aiko tan").await,
+        library.finding("aiko").await,
+        library.finding("SLOW burn").await,
+        library.finding("tanaka burn").await,
+    ];
+
+    assert_eq!(
+        found,
+        [
+            vec!["Harbour Gate"],
+            vec!["Harbour Gate"],
+            vec!["Écho du Port", "Harbour Gate"],
+            vec!["Market Lanterns"],
+            Vec::<&str>::new(),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn finds_a_series_once_whatever_many_ways_its_title_people_and_tags_match() {
+    let library = Library::with("people-once", &SHELF).await;
+    library
+        .credit("Harbour Gate", "writer", "Harbour Master")
+        .await;
+    library.credit("Harbour Gate", "tag", "harbour tales").await;
+    library
+        .credit("Lantern Market", "writer", "Harbour Master")
+        .await;
+
+    let found = library.finding("harbour").await;
+    let counted = library.count(search("harbour", SeriesFilter::NONE)).await;
+
+    assert_eq!(found, ["Harbour Gate", "Lantern Market"]);
+    assert_eq!(counted, 2);
+}
+
+#[tokio::test]
+async fn stops_finding_a_series_by_a_person_or_tag_its_books_no_longer_name() {
+    let library = Library::with("people-gone", &SHELF).await;
+    library
+        .credit("Harbour Gate", "writer", "Aiko Tanaka")
+        .await;
+    library
+        .credit("Lantern Market", "writer", "Aiko Tanaka")
+        .await;
+    library.credit("Harbour Gate", "tag", "slow burn").await;
+    library
+        .run(
+            "DELETE FROM book_person WHERE book_id IN (SELECT book.id FROM book
+                JOIN series ON series.local_id = book.series_local_id WHERE series.title = ?1)",
+            vec!["Harbour Gate".to_owned()],
+        )
+        .await;
+    library
+        .run(
+            "DELETE FROM book_tag WHERE name = ?1",
+            vec!["slow burn".to_owned()],
+        )
+        .await;
+
+    let found = [
+        library.finding("tanaka").await,
+        library.finding("slow burn").await,
+    ];
+
+    assert_eq!(found, [vec!["Lantern Market"], Vec::<&str>::new()]);
 }
 
 async fn closest(library: &Library, text: &str) -> Option<String> {
