@@ -43,10 +43,10 @@
       <Table aria-labelledby={exampleId} class="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead scope="col" class="whitespace-normal"
+            <TableHead scope="col" class="wrap-break-word whitespace-normal"
               >{m.folder_guide_name()}</TableHead
             >
-            <TableHead scope="col" class="whitespace-normal"
+            <TableHead scope="col" class="wrap-break-word whitespace-normal"
               >{m.folder_guide_read_as()}</TableHead
             >
           </TableRow>
@@ -85,7 +85,9 @@
                   <span class="truncate">{entry.name}</span>
                 </span>
               </TableCell>
-              <TableCell class="py-sm">{entry.readAs()}</TableCell>
+              <TableCell class="py-sm wrap-break-word"
+                >{entry.readAs()}</TableCell
+              >
             </TableRow>
           {/each}
         </TableBody>

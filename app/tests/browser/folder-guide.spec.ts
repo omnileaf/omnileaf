@@ -98,7 +98,7 @@ test("lists the naming rules in plain words", async ({ page }) => {
 test("keeps the example inside a narrow window at the largest text", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 360, height: 800 });
+  await page.setViewportSize({ width: 320, height: 800 });
   await setTextScale(page, LARGEST_TEXT_SCALE);
   await openGuide(page);
   await settle(page.getByRole("main"));
