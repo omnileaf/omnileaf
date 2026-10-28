@@ -18,11 +18,9 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
 
-    /**
-     * Tauri's own back handler stays with the first activity,
-     * so once Android recreates the activity back would close the app from any page.
-     */
-    override val handleBackNavigation = true
+    private var backNavigation: BackNavigation? = null
+
+    override val handleBackNavigation = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ChosenIconActions.startNewPage()
@@ -49,6 +47,7 @@ class MainActivity : TauriActivity() {
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
         this.webView = webView
+        takeBackWhileThePageCanGoBack(webView)
         webView.setBackgroundColor(startingBackground)
     }
 
@@ -57,6 +56,10 @@ class MainActivity : TauriActivity() {
     ) {
         window.setBackgroundDrawable(color.toDrawable())
         webView?.setBackgroundColor(color)
+    }
+
+    fun followWebHistory() {
+        backNavigation?.follow(webView?.canGoBack() == true)
     }
 
     fun orient(orientation: ScreenOrientation) {
@@ -70,6 +73,12 @@ class MainActivity : TauriActivity() {
      */
     private fun choiceAtLaunch(savedInstanceState: Bundle?): IconAction? =
         if (savedInstanceState == null && !intent.isFromRecents) intent.chosenIconAction() else null
+
+    private fun takeBackWhileThePageCanGoBack(webView: WebView) {
+        val back = BackNavigation(webView::goBack)
+        onBackPressedDispatcher.addCallback(this, back)
+        backNavigation = back
+    }
 
     private fun showTheAppBehindTheNavigationButtons() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
