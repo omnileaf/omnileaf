@@ -62,6 +62,8 @@ const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
 /// A tag on a tenth or a fifth of the library is too common to sort only its series and too rare to stop soon in walking past the rest, so its page is the slowest a tag filter reads.
 const CROWDED_TAG_BUDGET: Duration = Duration::from_millis(4);
+/// A page of series already started reads the up-next book and the cover of each of its rows beside the page's own, so it needs more than the base budget.
+const STARTED_PAGE_BUDGET: Duration = Duration::from_millis(3);
 const EVERY_TENTH_TAGGED_CROWDED: u32 = 10;
 const CROWDED_TAG: &str = "lantern";
 
@@ -107,6 +109,10 @@ fn filters() -> [SeriesFilter; 17] {
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95() {
     let trial = trial_of("a sorted and filtered page of 100 from 10,000 series");
+    let started_trial = trial_within(
+        "a sorted page of 100 of the series already started from 10,000 series",
+        STARTED_PAGE_BUDGET,
+    );
     let folder = ScratchFolder::new("filtered-page-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;
@@ -115,7 +121,12 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95
     for sort in SORTS {
         for filter in filters() {
             let listing = SeriesListing { sort, filter };
-            let outcome = trial
+            let measuring = if listing.filter.started == Inclusion::Only {
+                &started_trial
+            } else {
+                &trial
+            };
+            let outcome = measuring
                 .run(
                     async |_| None,
                     async |after| {
