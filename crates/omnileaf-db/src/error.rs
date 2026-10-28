@@ -1,6 +1,6 @@
 use std::{io, path::PathBuf};
 
-use omnileaf_sync_proto::{ClockError, SeriesId, Value};
+use omnileaf_sync_proto::{ClockError, KeyError, SeriesId, Value};
 
 use crate::{catalog::RootId, store::Key};
 
@@ -99,6 +99,8 @@ pub enum Error {
         "continue a list in title order from a cursor whose series or writer went before the titles and names were keyed again"
     )]
     StaleCursor,
+    #[error("derive the id of a category or tag from its name")]
+    LabelName(#[from] KeyError),
     #[error("stamp a synced write with this device's clock")]
     Clock(#[from] ClockError),
     #[error("project register {key:?}, which holds {found:?} where its field holds another kind")]

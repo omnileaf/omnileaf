@@ -1,4 +1,6 @@
-use omnileaf_sync_proto::{BookId, BookmarkId, IdError, ProfileId};
+use std::borrow::Cow;
+
+use omnileaf_sync_proto::{BookId, BookmarkId, CategoryId, IdError, ProfileId, SeriesId, TagId};
 
 const BOOK: &str = "book";
 const POSITION: &str = "pos";
@@ -9,6 +11,11 @@ const BOOK_HIGH: &str = "book_hi";
 const BOOK_LOW: &str = "book_lo";
 const PAGE: &str = "page";
 const DELETED: &str = "deleted";
+const CATEGORY: &str = "category";
+const TAG: &str = "tag";
+const SERIES: &str = "series";
+const NAME: &str = "name";
+const ORDER: &str = "order";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
@@ -49,8 +56,80 @@ impl BookmarkKey {
             profile,
             entity: BOOKMARK,
             id: *self.id().as_bytes(),
+            field: Cow::Borrowed(field),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum LabelKey {
+    CategoryName(CategoryId),
+    CategoryOrder(CategoryId),
+    CategoryDeleted(CategoryId),
+    TagName(TagId),
+    TagDeleted(TagId),
+    SeriesCategory {
+        series: SeriesId,
+        category: CategoryId,
+    },
+    SeriesTag {
+        series: SeriesId,
+        tag: TagId,
+    },
+}
+
+impl LabelKey {
+    fn address(self, profile: ProfileId) -> Address {
+        let (entity, id, field) = match self {
+            Self::CategoryName(id) => (CATEGORY, *id.as_bytes(), Cow::Borrowed(NAME)),
+            Self::CategoryOrder(id) => (CATEGORY, *id.as_bytes(), Cow::Borrowed(ORDER)),
+            Self::CategoryDeleted(id) => (CATEGORY, *id.as_bytes(), Cow::Borrowed(DELETED)),
+            Self::TagName(id) => (TAG, *id.as_bytes(), Cow::Borrowed(NAME)),
+            Self::TagDeleted(id) => (TAG, *id.as_bytes(), Cow::Borrowed(DELETED)),
+            Self::SeriesCategory { series, category } => (
+                SERIES,
+                *series.as_bytes(),
+                Cow::Owned(category.membership_field()),
+            ),
+            Self::SeriesTag { series, tag } => (
+                SERIES,
+                *series.as_bytes(),
+                Cow::Owned(tag.membership_field()),
+            ),
+        };
+        Address {
+            profile,
+            entity,
+            id,
             field,
         }
+    }
+
+    fn stored(entity: &str, id: &[u8], field: &str) -> Result<Option<Self>, IdError> {
+        Ok(match (entity, field) {
+            (CATEGORY, NAME) => Some(Self::CategoryName(CategoryId::try_from(id)?)),
+            (CATEGORY, ORDER) => Some(Self::CategoryOrder(CategoryId::try_from(id)?)),
+            (CATEGORY, DELETED) => Some(Self::CategoryDeleted(CategoryId::try_from(id)?)),
+            (TAG, NAME) => Some(Self::TagName(TagId::try_from(id)?)),
+            (TAG, DELETED) => Some(Self::TagDeleted(TagId::try_from(id)?)),
+            (SERIES, _) => {
+                let series = || SeriesId::try_from(id);
+                if let Some(category) = CategoryId::from_membership_field(field) {
+                    Some(Self::SeriesCategory {
+                        series: series()?,
+                        category,
+                    })
+                } else if let Some(tag) = TagId::from_membership_field(field) {
+                    Some(Self::SeriesTag {
+                        series: series()?,
+                        tag,
+                    })
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
     }
 }
 
@@ -59,6 +138,13 @@ pub enum Key {
     Latest(LatestKey),
     Maximum(MaximumKey),
     Bookmark(BookmarkKey),
+    Label(LabelKey),
+}
+
+impl From<LabelKey> for Key {
+    fn from(key: LabelKey) -> Self {
+        Self::Label(key)
+    }
 }
 
 impl From<BookmarkKey> for Key {
@@ -83,7 +169,7 @@ pub(crate) struct Address {
     pub(crate) profile: ProfileId,
     pub(crate) entity: &'static str,
     pub(crate) id: [u8; 16],
-    pub(crate) field: &'static str,
+    pub(crate) field: Cow<'static, str>,
 }
 
 impl Key {
@@ -91,21 +177,25 @@ impl Key {
         match self {
             Self::Latest(LatestKey::BookPosition(book) | LatestKey::BookRead(book))
             | Self::Maximum(MaximumKey::BookFurthest(book)) => Some(book),
-            Self::Bookmark(_) => None,
+            Self::Bookmark(_) | Self::Label(_) => None,
         }
     }
 
-    pub(crate) const fn address(self, profile: ProfileId) -> Address {
+    pub(crate) fn address(self, profile: ProfileId) -> Address {
         match self {
             Self::Latest(key) => key.address(profile),
             Self::Maximum(key) => key.address(profile),
             Self::Bookmark(key) => key.address(profile),
+            Self::Label(key) => key.address(profile),
         }
     }
 
     pub(crate) fn stored(entity: &str, id: &[u8], field: &str) -> Result<Option<Self>, IdError> {
         let book = || BookId::try_from(id);
         let bookmark = || BookmarkId::try_from(id);
+        if let Some(label) = LabelKey::stored(entity, id, field)? {
+            return Ok(Some(label.into()));
+        }
         Ok(match (entity, field) {
             (BOOKMARK, BOOK_HIGH) => Some(BookmarkKey::BookHigh(bookmark()?).into()),
             (BOOKMARK, BOOK_LOW) => Some(BookmarkKey::BookLow(bookmark()?).into()),
@@ -141,7 +231,7 @@ const fn book_field(profile: ProfileId, book: BookId, field: &'static str) -> Ad
         profile,
         entity: BOOK,
         id: *book.as_bytes(),
-        field,
+        field: Cow::Borrowed(field),
     }
 }
 
@@ -153,25 +243,25 @@ mod tests {
 
     fn every_key(book: BookId) -> Vec<Key> {
         let bookmark = BookmarkId::of(book, 3);
-        let mut keys = Vec::new();
-        let mut next = Some(Key::from(LatestKey::BookPosition(book)));
-        while let Some(key) = next {
-            keys.push(key);
-            next = match key {
-                Key::Latest(LatestKey::BookPosition(_)) => Some(LatestKey::BookRead(book).into()),
-                Key::Latest(LatestKey::BookRead(_)) => Some(MaximumKey::BookFurthest(book).into()),
-                Key::Maximum(MaximumKey::BookFurthest(_)) => {
-                    Some(BookmarkKey::BookHigh(bookmark).into())
-                }
-                Key::Bookmark(BookmarkKey::BookHigh(_)) => {
-                    Some(BookmarkKey::BookLow(bookmark).into())
-                }
-                Key::Bookmark(BookmarkKey::BookLow(_)) => Some(BookmarkKey::Page(bookmark).into()),
-                Key::Bookmark(BookmarkKey::Page(_)) => Some(BookmarkKey::Deleted(bookmark).into()),
-                Key::Bookmark(BookmarkKey::Deleted(_)) => None,
-            };
-        }
-        keys
+        let category = CategoryId::from_name("Sample Shelf").unwrap();
+        let tag = TagId::from_name("Sample Tag").unwrap();
+        let series = SeriesId::local("Sample Series 03").unwrap();
+        vec![
+            LatestKey::BookPosition(book).into(),
+            LatestKey::BookRead(book).into(),
+            MaximumKey::BookFurthest(book).into(),
+            BookmarkKey::BookHigh(bookmark).into(),
+            BookmarkKey::BookLow(bookmark).into(),
+            BookmarkKey::Page(bookmark).into(),
+            BookmarkKey::Deleted(bookmark).into(),
+            LabelKey::CategoryName(category).into(),
+            LabelKey::CategoryOrder(category).into(),
+            LabelKey::CategoryDeleted(category).into(),
+            LabelKey::TagName(tag).into(),
+            LabelKey::TagDeleted(tag).into(),
+            LabelKey::SeriesCategory { series, category }.into(),
+            LabelKey::SeriesTag { series, tag }.into(),
+        ]
     }
 
     #[test]
@@ -183,7 +273,7 @@ mod tests {
             .iter()
             .map(|key| {
                 let address = key.address(ProfileId::default_profile());
-                Key::stored(address.entity, &address.id, address.field).unwrap()
+                Key::stored(address.entity, &address.id, &address.field).unwrap()
             })
             .collect();
 
@@ -195,5 +285,36 @@ mod tests {
         let read = Key::stored(BOOK, &[0; 16], "rating");
 
         assert!(matches!(read, Ok(None)));
+    }
+
+    #[test]
+    fn writes_a_membership_field_as_the_id_in_lowercase_hex() {
+        let series = SeriesId::local("Sample Series 03").unwrap();
+        let category = CategoryId::from_name("Sample Shelf").unwrap();
+
+        let address = Key::from(LabelKey::SeriesCategory { series, category })
+            .address(ProfileId::default_profile());
+
+        assert_eq!(
+            address.field,
+            format!("cat.{}", category.to_string().replace('-', ""))
+        );
+    }
+
+    #[test]
+    fn leaves_a_membership_field_that_is_not_an_id_in_hex_unread() {
+        let series = SeriesId::local("Sample Series 03").unwrap();
+        let id = series.as_bytes();
+
+        let unread = [
+            "cat.zz",
+            "cat.",
+            "tag.0123",
+            "mood.0123",
+            "cat.G0000000000000000000000000000000",
+        ]
+        .map(|field| Key::stored(SERIES, id, field).unwrap());
+
+        assert_eq!(unread, [None; 5]);
     }
 }

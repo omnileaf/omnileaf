@@ -1,13 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use omnileaf_sync_proto::{BookId, BookmarkId, ProfileId, Value};
+use omnileaf_sync_proto::{
+    BookId, BookmarkId, CategoryId, ProfileId, SeriesId, TagId, Value, norm,
+};
 use rusqlite::Connection;
 
 use crate::{
     Error,
     store::{
         Changed,
-        key::{BookmarkKey, Key, LatestKey, MaximumKey},
+        key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey},
         local::current_profile,
     },
 };
@@ -23,6 +25,30 @@ const BOOKMARK_REGISTERS: &str = "SELECT field, value FROM sync_register
 const PROJECT_BOOKMARK: &str =
     "INSERT OR IGNORE INTO book_bookmark (book_id, page) VALUES (?1, ?2)";
 const REMOVE_BOOKMARK: &str = "DELETE FROM book_bookmark WHERE book_id = ?1 AND page = ?2";
+
+const NAMED_REGISTERS: &str = "SELECT field, value FROM sync_register
+    WHERE entity = ?1 AND id = ?2 AND profile IN (?3, ?4)";
+const PROJECT_CATEGORY: &str =
+    "INSERT INTO category (category_id, name, position) VALUES (?1, ?2, ?3)
+    ON CONFLICT (category_id) DO UPDATE SET name = excluded.name, position = excluded.position";
+const REMOVE_CATEGORY: &str = "DELETE FROM category WHERE category_id = ?1";
+const PROJECT_TAG: &str = "INSERT INTO label_tag (tag_id, name, norm_name) VALUES (?1, ?2, ?3)
+    ON CONFLICT (tag_id) DO UPDATE SET name = excluded.name, norm_name = excluded.norm_name";
+const REMOVE_TAG: &str = "DELETE FROM label_tag WHERE tag_id = ?1";
+const PROJECT_SERIES_CATEGORY: &str =
+    "INSERT OR IGNORE INTO series_category (series_id, category_id) VALUES (?1, ?2)";
+const REMOVE_SERIES_CATEGORY: &str =
+    "DELETE FROM series_category WHERE series_id = ?1 AND category_id = ?2";
+const PROJECT_SERIES_TAG: &str =
+    "INSERT OR IGNORE INTO series_label_tag (series_id, tag_id) VALUES (?1, ?2)";
+const REMOVE_SERIES_TAG: &str = "DELETE FROM series_label_tag WHERE series_id = ?1 AND tag_id = ?2";
+const CLEAR_LABELS: [&str; 4] = [
+    "DELETE FROM category",
+    "DELETE FROM label_tag",
+    "DELETE FROM series_category",
+    "DELETE FROM series_label_tag",
+];
+const LAST_POSITION: i64 = i64::MAX;
 
 const PROJECT_POSITION: &str = "INSERT INTO book_state (book_id, position_page) VALUES (?1, ?2)
     ON CONFLICT (book_id) DO UPDATE SET position_page = excluded.position_page";
@@ -68,11 +94,263 @@ enum BookmarkPart {
     Deleted(Option<bool>),
 }
 
+#[derive(Default)]
+struct NamedRow {
+    name: Option<String>,
+    order: Option<u64>,
+    deleted: Option<bool>,
+}
+
+impl NamedRow {
+    fn shown_name(&self) -> Option<&str> {
+        if self.deleted == Some(true) {
+            return None;
+        }
+        self.name.as_deref()
+    }
+
+    fn position(&self) -> i64 {
+        self.order
+            .and_then(|order| i64::try_from(order).ok())
+            .unwrap_or(LAST_POSITION)
+    }
+}
+
+enum NamedPart {
+    Name(Option<String>),
+    Order(Option<u64>),
+    Deleted(Option<bool>),
+}
+
+impl NamedPart {
+    fn fill(self, row: &mut NamedRow) {
+        match self {
+            Self::Name(name) => row.name = name,
+            Self::Order(order) => row.order = order,
+            Self::Deleted(deleted) => row.deleted = deleted,
+        }
+    }
+}
+
+enum LabelProjection {
+    Category {
+        id: CategoryId,
+        part: NamedPart,
+    },
+    Tag {
+        id: TagId,
+        part: NamedPart,
+    },
+    InCategory {
+        series: SeriesId,
+        category: CategoryId,
+        is_member: Option<bool>,
+    },
+    WithTag {
+        series: SeriesId,
+        tag: TagId,
+        is_member: Option<bool>,
+    },
+}
+
+impl LabelProjection {
+    fn of(key: LabelKey, value: &Value) -> Option<Self> {
+        Some(match key {
+            LabelKey::CategoryName(id) => Self::Category {
+                id,
+                part: NamedPart::Name(text(value).ok()?),
+            },
+            LabelKey::CategoryOrder(id) => Self::Category {
+                id,
+                part: NamedPart::Order(unsigned(value).ok()?),
+            },
+            LabelKey::CategoryDeleted(id) => Self::Category {
+                id,
+                part: NamedPart::Deleted(flag(value).ok()?),
+            },
+            LabelKey::TagName(id) => Self::Tag {
+                id,
+                part: NamedPart::Name(text(value).ok()?),
+            },
+            LabelKey::TagDeleted(id) => Self::Tag {
+                id,
+                part: NamedPart::Deleted(flag(value).ok()?),
+            },
+            LabelKey::SeriesCategory { series, category } => Self::InCategory {
+                series,
+                category,
+                is_member: flag(value).ok()?,
+            },
+            LabelKey::SeriesTag { series, tag } => Self::WithTag {
+                series,
+                tag,
+                is_member: flag(value).ok()?,
+            },
+        })
+    }
+
+    fn apply(&self, connection: &Connection) -> Result<(), Error> {
+        match *self {
+            Self::Category { id, .. } => project_category(connection, id),
+            Self::Tag { id, .. } => project_tag(connection, id),
+            Self::InCategory {
+                series,
+                category,
+                is_member,
+            } => set_membership(
+                connection,
+                is_member == Some(true),
+                (PROJECT_SERIES_CATEGORY, REMOVE_SERIES_CATEGORY),
+                (series.as_bytes(), category.as_bytes()),
+            ),
+            Self::WithTag {
+                series,
+                tag,
+                is_member,
+            } => set_membership(
+                connection,
+                is_member == Some(true),
+                (PROJECT_SERIES_TAG, REMOVE_SERIES_TAG),
+                (series.as_bytes(), tag.as_bytes()),
+            ),
+        }
+    }
+}
+
+fn set_membership(
+    connection: &Connection,
+    is_member: bool,
+    (add, remove): (&str, &str),
+    (series, label): (&[u8; 16], &[u8; 16]),
+) -> Result<(), Error> {
+    let statement = if is_member { add } else { remove };
+    connection.execute(statement, (series, label))?;
+    Ok(())
+}
+
+fn named_row(
+    connection: &Connection,
+    entity: &str,
+    id: &[u8; 16],
+    key_of: impl Fn(&str) -> Option<LabelKey>,
+) -> Result<NamedRow, Error> {
+    let profile = current_profile(connection)?;
+    let mut statement = connection.prepare(NAMED_REGISTERS)?;
+    let mut registers = statement.query((
+        entity,
+        id,
+        profile.as_bytes(),
+        ProfileId::shared().as_bytes(),
+    ))?;
+    let mut row = NamedRow::default();
+    while let Some(register) = registers.next()? {
+        let field: String = register.get(0)?;
+        let cbor: Vec<u8> = register.get(1)?;
+        let (Some(key), Ok(value)) = (key_of(&field), Value::from_cbor(&cbor)) else {
+            continue;
+        };
+        if let Some(LabelProjection::Category { part, .. } | LabelProjection::Tag { part, .. }) =
+            LabelProjection::of(key, &value)
+        {
+            part.fill(&mut row);
+        }
+    }
+    Ok(row)
+}
+
+fn project_category(connection: &Connection, id: CategoryId) -> Result<(), Error> {
+    let row = named_row(connection, "category", id.as_bytes(), |field| match field {
+        "name" => Some(LabelKey::CategoryName(id)),
+        "order" => Some(LabelKey::CategoryOrder(id)),
+        "deleted" => Some(LabelKey::CategoryDeleted(id)),
+        _ => None,
+    })?;
+    match row.shown_name() {
+        Some(name) => {
+            connection.execute(PROJECT_CATEGORY, (id.as_bytes(), name, row.position()))?
+        }
+        None => connection.execute(REMOVE_CATEGORY, [id.as_bytes()])?,
+    };
+    Ok(())
+}
+
+fn project_tag(connection: &Connection, id: TagId) -> Result<(), Error> {
+    let row = named_row(connection, "tag", id.as_bytes(), |field| match field {
+        "name" => Some(LabelKey::TagName(id)),
+        "deleted" => Some(LabelKey::TagDeleted(id)),
+        _ => None,
+    })?;
+    match row.shown_name() {
+        Some(name) => connection.execute(PROJECT_TAG, (id.as_bytes(), name, norm(name)))?,
+        None => connection.execute(REMOVE_TAG, [id.as_bytes()])?,
+    };
+    Ok(())
+}
+
+#[derive(Default)]
+struct LabelRows {
+    categories: BTreeMap<CategoryId, NamedRow>,
+    tags: BTreeMap<TagId, NamedRow>,
+    in_category: BTreeSet<(SeriesId, CategoryId)>,
+    with_tag: BTreeSet<(SeriesId, TagId)>,
+}
+
+impl LabelRows {
+    fn take(&mut self, label: LabelProjection) {
+        match label {
+            LabelProjection::Category { id, part } => {
+                part.fill(self.categories.entry(id).or_default());
+            }
+            LabelProjection::Tag { id, part } => part.fill(self.tags.entry(id).or_default()),
+            LabelProjection::InCategory {
+                series,
+                category,
+                is_member: Some(true),
+            } => {
+                self.in_category.insert((series, category));
+            }
+            LabelProjection::WithTag {
+                series,
+                tag,
+                is_member: Some(true),
+            } => {
+                self.with_tag.insert((series, tag));
+            }
+            LabelProjection::InCategory { .. } | LabelProjection::WithTag { .. } => {}
+        }
+    }
+
+    fn insert(&self, connection: &Connection) -> Result<(), Error> {
+        let mut category = connection.prepare(PROJECT_CATEGORY)?;
+        for (id, row) in &self.categories {
+            if let Some(name) = row.shown_name() {
+                category.execute((id.as_bytes(), name, row.position()))?;
+            }
+        }
+        let mut tag = connection.prepare(PROJECT_TAG)?;
+        for (id, row) in &self.tags {
+            if let Some(name) = row.shown_name() {
+                tag.execute((id.as_bytes(), name, norm(name)))?;
+            }
+        }
+        let mut in_category = connection.prepare(PROJECT_SERIES_CATEGORY)?;
+        for (series, category) in &self.in_category {
+            in_category.execute((series.as_bytes(), category.as_bytes()))?;
+        }
+        let mut with_tag = connection.prepare(PROJECT_SERIES_TAG)?;
+        for (series, tag) in &self.with_tag {
+            with_tag.execute((series.as_bytes(), tag.as_bytes()))?;
+        }
+        Ok(())
+    }
+}
+
 enum Projection {
     Position { book: BookId, page: Option<u32> },
     Furthest { book: BookId, page: Option<u32> },
     Read { book: BookId, is_read: Option<bool> },
     Bookmark { id: BookmarkId, part: BookmarkPart },
+    Label(LabelProjection),
 }
 
 impl Projection {
@@ -99,6 +377,7 @@ impl Projection {
                     BookmarkKey::Deleted(_) => BookmarkPart::Deleted(flag(value).ok()?),
                 },
             },
+            Key::Label(key) => Self::Label(LabelProjection::of(key, value)?),
         })
     }
 
@@ -107,7 +386,7 @@ impl Projection {
             Self::Position { book, .. } | Self::Furthest { book, .. } | Self::Read { book, .. } => {
                 Some(book)
             }
-            Self::Bookmark { .. } => None,
+            Self::Bookmark { .. } | Self::Label(_) => None,
         }
     }
 
@@ -116,7 +395,7 @@ impl Projection {
             Self::Position { page, .. } => row.position_page = page,
             Self::Furthest { page, .. } => row.furthest_page = page,
             Self::Read { is_read, .. } => row.is_read = is_read,
-            Self::Bookmark { .. } => {}
+            Self::Bookmark { .. } | Self::Label(_) => {}
         }
     }
 
@@ -132,6 +411,10 @@ impl Projection {
     }
 
     fn apply(&self, connection: &Connection) -> Result<usize, Error> {
+        if let Self::Label(label) = self {
+            label.apply(connection)?;
+            return Ok(0);
+        }
         match *self {
             Self::Position { book, page } => {
                 Ok(connection.execute(PROJECT_POSITION, (book.as_bytes(), page))?)
@@ -146,7 +429,7 @@ impl Projection {
                 id,
                 part: BookmarkPart::Deleted(_),
             } => project_bookmark(connection, id),
-            Self::Bookmark { .. } => Ok(0),
+            Self::Bookmark { .. } | Self::Label(_) => Ok(0),
         }
     }
 }
@@ -200,14 +483,23 @@ pub(crate) fn project(connection: &Connection, key: Key, value: &Value) -> Resul
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
     connection.execute("DELETE FROM book_bookmark", [])?;
+    for clear in CLEAR_LABELS {
+        connection.execute(clear, [])?;
+    }
     let mut projected = BTreeSet::new();
     let mut rows: BTreeMap<BookId, BookStateRow> = BTreeMap::new();
     let mut bookmarks: BTreeMap<BookmarkId, BookmarkRow> = BTreeMap::new();
+    let mut labels = LabelRows::default();
     for (key, projection) in shown_projections(connection)? {
         match (projection.book(), key) {
             (Some(book), _) => projection.fill(rows.entry(book).or_default()),
             (None, Key::Bookmark(bookmark)) => {
                 projection.fill_bookmark(bookmarks.entry(bookmark.id()).or_default());
+            }
+            (None, Key::Label(_)) => {
+                if let Projection::Label(label) = projection {
+                    labels.take(label);
+                }
             }
             (None, _) => {}
         }
@@ -219,6 +511,7 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
             bookmark.execute((book.as_bytes(), page))?;
         }
     }
+    labels.insert(connection)?;
     let mut insert = connection.prepare(PROJECT_BOOK_STATE)?;
     for (book, row) in rows {
         insert.execute((
@@ -292,6 +585,14 @@ fn page(value: &Value) -> Result<Option<u32>, OtherKind> {
         Value::Null => Ok(None),
         Value::Unsigned(page) => u32::try_from(*page).map(Some).map_err(|_| OtherKind),
         Value::Bool(_) | Value::Text(_) => Err(OtherKind),
+    }
+}
+
+fn text(value: &Value) -> Result<Option<String>, OtherKind> {
+    match value {
+        Value::Null => Ok(None),
+        Value::Text(text) => Ok(Some(text.clone())),
+        Value::Bool(_) | Value::Unsigned(_) => Err(OtherKind),
     }
 }
 

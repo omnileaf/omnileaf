@@ -1,3 +1,5 @@
+mod labels;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use omnileaf_sync_proto::{BookId, BookmarkId, MergeClass, Register, SeriesId, Value};
