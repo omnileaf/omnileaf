@@ -100,7 +100,7 @@ impl<'t> Recorder<'t> {
 
     fn record(&mut self, scanned: &ScannedBook) -> Result<SeriesId, Error> {
         self.series
-            .add_unless_present(&scanned.series, &self.collation)?;
+            .add_or_rename(&scanned.series, &self.collation)?;
         let book = NewBook {
             fingerprint: scanned.fingerprint,
             series: scanned.series.id(),
