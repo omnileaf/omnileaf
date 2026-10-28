@@ -48,6 +48,7 @@
   import DownloadedMark from "./DownloadedMark.svelte";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { listRowLook } from "./list-row-look.ts";
+  import DragBox from "./DragBox.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
@@ -118,10 +119,11 @@
   const dragSelect =
     selection === undefined
       ? undefined
-      : new DragSelect(
-          selection,
-          (cell) => series.find(({ id }) => id === cell.dataset.seriesId)?.id,
-        );
+      : new DragSelect(selection, {
+          cells: "[data-series-id]",
+          idOf: (cell) =>
+            series.find(({ id }) => id === cell.dataset.seriesId)?.id,
+        });
 
   const revealed = new SvelteSet<SeriesId>();
 
@@ -598,16 +600,7 @@
         }}
       />
       {#if dragSelect?.box !== undefined}
-        {@const box = dragSelect.box}
-        <div
-          data-drag-box
-          aria-hidden="true"
-          class="pointer-events-none absolute z-drag-box rounded-drag-box border border-accent bg-drag-box"
-          style:left="{box.left}px"
-          style:top="{box.top}px"
-          style:width="{box.width}px"
-          style:height="{box.height}px"
-        ></div>
+        <DragBox box={dragSelect.box} />
       {/if}
     </div>
   </ContextMenu.Trigger>
