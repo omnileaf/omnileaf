@@ -65,6 +65,13 @@ export function withCategoryTabs(
   return { ...view, showsCategoryTabs };
 }
 
+export function withStackedCovers(
+  view: LibraryView,
+  stacksSeriesCovers: boolean,
+): LibraryView {
+  return { ...view, stacksSeriesCovers };
+}
+
 export function withItemCounts(
   view: LibraryView,
   showsItemCounts: boolean,
