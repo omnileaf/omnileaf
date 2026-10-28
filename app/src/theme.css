@@ -114,6 +114,8 @@
   --checkbox-off: transparent;
   --select-fill: transparent;
   --button-outline-fill: var(--background);
+  --tab-idle-ink: var(--foreground);
+  --tab-chosen-edge: transparent;
   --input-fill: transparent;
   --switch-thumb: var(--background);
   --switch-thumb-on: var(--background);
@@ -241,6 +243,8 @@
   --checkbox-off: color-mix(in oklch, var(--input) 30%, transparent);
   --select-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --button-outline-fill: color-mix(in oklch, var(--input) 30%, transparent);
+  --tab-idle-ink: var(--secondary-text);
+  --tab-chosen-edge: var(--input);
   --input-fill: color-mix(in oklch, var(--input) 30%, transparent);
   --switch-thumb: var(--foreground);
   --switch-thumb-on: var(--primary-foreground);
