@@ -13,16 +13,13 @@
 </script>
 
 <Switch
-  disabled
   bind:checked={
     () => look.cropsBorders,
     (isOn: boolean) => {
       settings.change("cropsBorders", isOn);
     }
   }
-  class={[SWITCH_ROW, "text-muted"]}
+  class={SWITCH_ROW}
 >
-  <span class="flex-1">
-    {m.reader_coming_soon({ feature: m.reader_crop_borders() })}
-  </span>
+  <span class="flex-1">{m.reader_crop_borders()}</span>
 </Switch>

@@ -1264,6 +1264,10 @@
   scrollbar-width: none;
 }
 
+@utility scroll-anchor-none {
+  overflow-anchor: none;
+}
+
 @utility bg-stand-in-pattern {
   background:
     repeating-linear-gradient(

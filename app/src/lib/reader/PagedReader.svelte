@@ -31,6 +31,14 @@
   import DirectionMenu from "#lib/reader/DirectionMenu.svelte";
   import { PageTurner } from "#lib/reader/page-turner.svelte.ts";
   import PageStack from "#lib/reader/PageStack.svelte";
+  import {
+    type CroppedPages,
+    croppedPages,
+    pageCrop,
+    type SpreadPlace,
+    type StripPlace,
+    suitsMode,
+  } from "#lib/reader/cropped-pages.ts";
   import AutoScrollBar from "#lib/reader/AutoScrollBar.svelte";
   import {
     autoScrollSpeed,
@@ -173,6 +181,53 @@
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
+  const crop = $derived(pageCrop(look.cropsBorders, isStrip));
+  let cropped: CroppedPages | undefined = $state.raw(
+    untrack(() =>
+      crop === "whole" ? { pages: book.pages, crop: "whole" } : undefined,
+    ),
+  );
+
+  const isStripShown = $derived(
+    cropped === undefined || suitsMode(cropped.crop, isStrip)
+      ? isStrip
+      : !isStrip,
+  );
+
+  let startAt: StripPlace | SpreadPlace | undefined = $state.raw();
+
+  function show(next: CroppedPages): void {
+    if (next.crop !== cropped?.crop) {
+      startAt = (isStripShown ? strip : paged)?.place();
+    }
+    cropped = next;
+  }
+
+  function showWholePages(pages: CroppedPages["pages"]): void {
+    if (cropped?.crop !== "whole" || cropped.pages !== pages) {
+      show({ pages, crop: "whole" });
+    }
+  }
+
+  $effect(() => {
+    const asked = crop;
+    const { pages } = book;
+    if (asked === "whole") {
+      untrack(() => {
+        showWholePages(pages);
+      });
+      return;
+    }
+    let isAsked = true;
+    void croppedPages(pages, asked).then((answer) => {
+      if (isAsked) {
+        show(answer);
+      }
+    });
+    return () => {
+      isAsked = false;
+    };
+  });
   const stripFound = untrack(() =>
     seenOnce(`omnileaf.stripFound.${book.series}`),
   );
@@ -187,8 +242,10 @@
         scrollByScreen: (step: number) => boolean;
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
+        place: () => StripPlace | undefined;
       }
     | undefined = $state();
+  let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let isTouchPausing = false;
   const canUseMyPace = $derived(
@@ -993,47 +1050,60 @@
       isPanelOpen && "expanded:inset-e-reader-settings-room",
     ]}
   >
-    {#if isStrip}
-      <StripStack
-        bind:this={strip}
-        pages={book.pages}
-        shown={turner.shown}
-        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        marks={bookmarks === null ? [] : [...bookmarks]}
-        overlay={stripZones}
-        onShown={(index: number) => {
-          turner.goTo(index);
-        }}
-        onShownReady={() => {
-          if (!hasOpened) {
-            hasOpened = true;
-            controls.bookOpened();
-          }
-        }}
-      />
-    {:else}
-      <PageStack
-        pages={book.pages}
-        shown={turner.shown}
-        {spread}
-        fit={look.fit}
-        {zoom}
-        isReversed={reading.direction === "rightToLeft"}
-        overlay={turnZones}
-        bookTitle={named.title}
-        isBlank={screenshotMode.isOn && screenshotMode.options.blankReaderPages}
-        {slide}
-        {isSettling}
-        onNextPage={() => {
-          act("next");
-        }}
-        onShownReady={() => {
-          if (!hasOpened) {
-            hasOpened = true;
-            controls.bookOpened();
-          }
-        }}
-      />
+    {#if cropped !== undefined}
+      {#key cropped.crop}
+        {#if isStripShown}
+          <StripStack
+            bind:this={strip}
+            pages={cropped.pages}
+            crop={cropped.crop}
+            shown={turner.shown}
+            isBlank={screenshotMode.isOn &&
+              screenshotMode.options.blankReaderPages}
+            marks={bookmarks === null ? [] : [...bookmarks]}
+            overlay={stripZones}
+            startAt={startAt?.kind === "strip" ? startAt : undefined}
+            onShown={(index: number) => {
+              turner.goTo(index);
+            }}
+            onShownReady={() => {
+              startAt = undefined;
+              if (!hasOpened) {
+                hasOpened = true;
+                controls.bookOpened();
+              }
+            }}
+          />
+        {:else}
+          <PageStack
+            bind:this={paged}
+            pages={cropped.pages}
+            crop={cropped.crop}
+            shown={turner.shown}
+            {spread}
+            fit={look.fit}
+            {zoom}
+            isReversed={reading.direction === "rightToLeft"}
+            overlay={turnZones}
+            bookTitle={named.title}
+            isBlank={screenshotMode.isOn &&
+              screenshotMode.options.blankReaderPages}
+            {slide}
+            {isSettling}
+            startAt={startAt?.kind === "spread" ? startAt : undefined}
+            onNextPage={() => {
+              act("next");
+            }}
+            onShownReady={() => {
+              startAt = undefined;
+              if (!hasOpened) {
+                hasOpened = true;
+                controls.bookOpened();
+              }
+            }}
+          />
+        {/if}
+      {/key}
     {/if}
     {#if look.light.isOn}
       <div

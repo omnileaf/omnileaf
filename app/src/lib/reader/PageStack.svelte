@@ -10,11 +10,13 @@
     EmptyTitle,
   } from "#lib/components/ui/empty/index.ts";
   import { Spinner } from "#lib/components/ui/spinner/index.ts";
-  import type { BookPage } from "#lib/ipc/bindings.ts";
+  import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { fittedTo } from "#lib/reader/page-fit.ts";
+  import { sizeOfPage, type SpreadPlace } from "#lib/reader/cropped-pages.ts";
+
+  import { fittedTo, type Size } from "#lib/reader/page-fit.ts";
   import type { PageFit } from "#lib/reader/reader-settings.svelte.ts";
   import type { Spread } from "#lib/reader/spreads.ts";
   import { pagesAround } from "#lib/reader/page-window.ts";
@@ -31,6 +33,7 @@
 
   let {
     pages,
+    crop,
     shown,
     spread,
     fit,
@@ -41,10 +44,12 @@
     isBlank,
     slide,
     isSettling,
+    startAt,
     onNextPage,
     onShownReady,
   }: {
     pages: readonly BookPage[];
+    crop: PageCrop;
     shown: number;
     spread: Spread;
     fit: PageFit;
@@ -55,6 +60,7 @@
     isBlank: boolean;
     slide: number;
     isSettling: boolean;
+    startAt: SpreadPlace | undefined;
     onNextPage: () => void;
     onShownReady: () => void;
   } = $props();
@@ -64,27 +70,66 @@
   const decoded = new SvelteSet<number>();
   const failed = new SvelteSet<number>();
   const retries = new SvelteMap<number, number>();
+  const croppedSizes = new SvelteMap<string, Size>();
   let spaceWidth = $state(0);
   let spaceHeight = $state(0);
   let isSlow = $state(false);
+  let startingPlace = untrack(() => startAt);
 
   const kept = $derived(pagesAround(shown, pages.length, PAGES_AHEAD));
   const isShownReady = $derived(
     isBlank || decoded.has(shown) || failed.has(shown),
   );
   const isShownFailed = $derived(failed.has(shown));
+  const isSpreadSettled = $derived(
+    isBlank || spread.every((index) => decoded.has(index) || failed.has(index)),
+  );
   const id = $props.id();
 
-  function sizeOf(page: BookPage) {
-    return page.size === null
+  const spreadHeight = $derived(heightOfSpread());
+
+  function ratioOf(index: number): number | undefined {
+    const page = pages[index];
+    const size =
+      page === undefined ? null : sizeOfPage(page, croppedSizes.get(page.path));
+    return size === null || size.height <= 0
       ? undefined
-      : zoomed(
-          fittedTo(
-            page.size,
+      : size.width / size.height;
+  }
+
+  function heightOfSpread(): number | undefined {
+    if (crop === "whole") {
+      return undefined;
+    }
+    let width = 0;
+    for (const index of spread) {
+      const ratio = ratioOf(index);
+      if (ratio === undefined) {
+        return undefined;
+      }
+      width += ratio;
+    }
+    return fittedTo(
+      { width, height: 1 },
+      { width: spaceWidth, height: spaceHeight },
+      fit,
+    ).height;
+  }
+
+  function sizeOf(index: number) {
+    const ratio = ratioOf(index);
+    if (ratio === undefined) {
+      return undefined;
+    }
+    return zoomed(
+      spreadHeight === undefined
+        ? fittedTo(
+            { width: ratio, height: 1 },
             { width: spaceWidth / spread.length, height: spaceHeight },
             fit,
-          ),
-        );
+          )
+        : { width: spreadHeight * ratio, height: spreadHeight },
+    );
   }
 
   function zoomed(size: { width: number; height: number }) {
@@ -100,6 +145,37 @@
   $effect(() => {
     startAtTop(shown);
   });
+
+  function rangeDown(element: HTMLElement): number {
+    return element.scrollHeight - element.clientHeight;
+  }
+
+  function rangeAcross(element: HTMLElement): number {
+    return element.scrollWidth - element.clientWidth;
+  }
+
+  function shareOf(offset: number, range: number): number {
+    return range > 0 ? offset / range : 0;
+  }
+
+  export function place(): SpreadPlace | undefined {
+    return scroller === undefined
+      ? undefined
+      : {
+          kind: "spread",
+          page: shown,
+          shareDown: shareOf(scroller.scrollTop, rangeDown(scroller)),
+          shareAcross: shareOf(scroller.scrollLeft, rangeAcross(scroller)),
+        };
+  }
+
+  function resumePlace(): void {
+    if (startingPlace?.page === shown && scroller !== undefined) {
+      scroller.scrollTop = startingPlace.shareDown * rangeDown(scroller);
+      scroller.scrollLeft = startingPlace.shareAcross * rangeAcross(scroller);
+    }
+    startingPlace = undefined;
+  }
 
   /** Forgets how the page's last image fared, so an image mounted afresh shows only once it decodes and a failure clears once it loads. */
   function freshImage(index: number): Attachment<HTMLImageElement> {
@@ -133,6 +209,15 @@
     }
   }
 
+  function sizeToCroppedImage(image: HTMLImageElement, page: BookPage): void {
+    if (crop !== "whole") {
+      croppedSizes.set(page.path, {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    }
+  }
+
   /** Marks the page ready only once its pixels are decoded, so turning to it never waits on a decode. */
   async function decode(image: HTMLImageElement, index: number): Promise<void> {
     try {
@@ -142,6 +227,12 @@
       failed.add(index);
     }
   }
+
+  $effect(() => {
+    if (isSpreadSettled) {
+      untrack(resumePlace);
+    }
+  });
 
   $effect(() => {
     if (isShownReady) {
@@ -185,7 +276,7 @@
     {#each kept as index (index)}
       {@const page = pages[index]}
       {#if page !== undefined}
-        {@const size = sizeOf(page)}
+        {@const size = sizeOf(index)}
         {@const isShown = spread.includes(index)}
         <div
           class={[
@@ -228,6 +319,7 @@
               ]}
               onload={(event) => {
                 if (event.currentTarget instanceof HTMLImageElement) {
+                  sizeToCroppedImage(event.currentTarget, page);
                   void decode(event.currentTarget, index);
                 }
               }}

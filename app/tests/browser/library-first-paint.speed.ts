@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { median } from "./median.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TEN_THOUSAND = 10_000;
@@ -54,11 +55,6 @@ async function openTheLibraryTimed(page: Page): Promise<number> {
       : window.__omnileafGridPaintedAt - window.__omnileafLibraryClickedAt,
   );
   return Number(await took.jsonValue());
-}
-
-function median(values: readonly number[]): number {
-  const sorted = values.toSorted((one, other) => one - other);
-  return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
 }
 
 test.use({

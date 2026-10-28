@@ -2,9 +2,12 @@
   import { type Snippet, untrack } from "svelte";
 
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
-  import type { BookPage } from "#lib/ipc/bindings.ts";
+  import type { BookPage, PageCrop } from "#lib/ipc/bindings.ts";
   import { omniUrl } from "#lib/omni/omni-url.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  import { sizeOfPage, type StripPlace } from "#lib/reader/cropped-pages.ts";
+  import type { Size } from "#lib/reader/page-fit.ts";
 
   const UNSIZED_RATIO = "1 / 3";
   const SCREEN_SHARE = 0.8;
@@ -12,26 +15,37 @@
 
   let {
     pages,
+    crop,
     shown,
     isBlank,
     marks,
     overlay,
+    startAt,
     onShown,
     onShownReady,
   }: {
     pages: readonly BookPage[];
+    crop: PageCrop;
     shown: number;
     isBlank: boolean;
     marks: readonly number[];
     overlay: Snippet;
+    startAt: StripPlace | undefined;
     onShown: (index: number) => void;
     onShownReady: () => void;
   } = $props();
 
   const animations = getAnimationsSetting();
+  const isCropped = $derived(crop !== "whole");
   let scroller: HTMLDivElement | undefined = $state();
   let spaceHeight = $state(0);
+  let spaceWidth = $state(0);
+  let placedWidth = 0;
+  let lastPlace: StripPlace | undefined;
+  let startingPlace = untrack(() => startAt);
   const pageElements: HTMLElement[] = [];
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- a load sets its page's aspect ratio on the element itself, so the map only answers the template's next read and needs no reactivity
+  const loadedSizes = new Map<string, Size>();
   let reported = -1;
   let isScrollPending = false;
   let unscrolled = 0;
@@ -67,9 +81,38 @@
   }
 
   function ratioOf(page: BookPage): string {
-    return page.size === null
+    const size = sizeOfPage(page, loadedSizes.get(page.path));
+    return size === null
       ? UNSIZED_RATIO
-      : `${String(page.size.width)} / ${String(page.size.height)}`;
+      : `${String(size.width)} / ${String(size.height)}`;
+  }
+
+  function sizeToCroppedImage(
+    image: HTMLImageElement,
+    page: BookPage,
+    index: number,
+  ): void {
+    const element = pageElements[index];
+    if (crop === "whole" || scroller === undefined || element === undefined) {
+      return;
+    }
+    loadedSizes.set(page.path, {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    });
+    const before = element.offsetHeight;
+    const shareAbove =
+      before > 0
+        ? Math.min(
+            1,
+            Math.max(0, (scroller.scrollTop - element.offsetTop) / before),
+          )
+        : 0;
+    element.style.aspectRatio = ratioOf(page);
+    if (shareAbove > 0) {
+      scroller.scrollTop += (element.offsetHeight - before) * shareAbove;
+    }
+    measure();
   }
 
   function pageAt(line: number): number {
@@ -87,6 +130,31 @@
     return low;
   }
 
+  export function place(): StripPlace | undefined {
+    if (scroller === undefined) {
+      return undefined;
+    }
+    const page = pageAt(scroller.scrollTop);
+    const element = pageElements[page];
+    if (element === undefined || element.offsetHeight === 0) {
+      return undefined;
+    }
+    return {
+      kind: "strip",
+      page,
+      shareOfPage:
+        (scroller.scrollTop - element.offsetTop) / element.offsetHeight,
+    };
+  }
+
+  function scrollToPlace(target: StripPlace): void {
+    const element = pageElements[target.page];
+    if (scroller !== undefined && element !== undefined) {
+      scroller.scrollTop =
+        element.offsetTop + element.offsetHeight * target.shareOfPage;
+    }
+  }
+
   function reportShown(): void {
     isScrollPending = false;
     if (scroller === undefined) {
@@ -100,6 +168,9 @@
   }
 
   function onScroll(): void {
+    if (isCropped && scroller?.clientWidth === placedWidth) {
+      lastPlace = place();
+    }
     measure();
     if (!isScrollPending) {
       isScrollPending = true;
@@ -152,7 +223,22 @@
         return;
       }
       reported = target;
-      scroller.scrollTop = pageElements[target]?.offsetTop ?? 0;
+      if (startingPlace === undefined) {
+        scroller.scrollTop = pageElements[target]?.offsetTop ?? 0;
+      } else {
+        scrollToPlace(startingPlace);
+        startingPlace = undefined;
+      }
+    });
+  });
+
+  $effect(() => {
+    const width = spaceWidth;
+    untrack(() => {
+      if (isCropped && lastPlace !== undefined && width !== placedWidth) {
+        scrollToPlace(lastPlace);
+      }
+      placedWidth = width;
     });
   });
 
@@ -170,8 +256,12 @@
 <div
   bind:this={scroller}
   bind:clientHeight={spaceHeight}
+  bind:clientWidth={spaceWidth}
   data-strip
-  class="absolute inset-none grid overflow-y-auto overscroll-contain desktop:scrollbar-none"
+  class={[
+    "absolute inset-none grid overflow-y-auto overscroll-contain desktop:scrollbar-none",
+    isCropped && "scroll-anchor-none",
+  ]}
   onscroll={onScroll}
 >
   <div
@@ -200,6 +290,11 @@
             decoding="async"
             draggable="false"
             class="block select-none block-full inline-full"
+            onload={(event) => {
+              if (event.currentTarget instanceof HTMLImageElement) {
+                sizeToCroppedImage(event.currentTarget, page, index);
+              }
+            }}
           />
         {/if}
       </div>
