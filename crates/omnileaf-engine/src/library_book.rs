@@ -219,6 +219,7 @@ mod tests {
             id: sample_book_id(1).0,
             position: 1,
             title: "Volume 1".to_owned(),
+            cover: None,
             added_at_ms: 0,
             reading: catalog::BookReading::NotStarted,
             page_count: Some(PAGE_COUNT),

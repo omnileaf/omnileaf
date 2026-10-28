@@ -24,6 +24,7 @@ const BOOK_COUNT: u32 = 10_000;
 const UNREAD_AT_THE_END: u32 = 100;
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
+const COMICS_FOLDER: &[u8] = b"/media/Sample Library";
 const BUDGET: Duration = Duration::from_millis(10);
 const LISTINGS: [BookListing; 4] = [
     BookListing {
@@ -81,7 +82,7 @@ async fn reads_the_first_page_of_a_10_000_book_series_in_any_listing_within_10_m
     assert!(outcome.is_within_budget(), "{outcome}");
 }
 
-/// Adds one series of 10,000 books with all but the last 100 marked read, so an unread page either way round looks past nearly every book to learn whether another page follows.
+/// Adds one series of 10,000 books, each in its own file, with all but the last 100 marked read, so an unread page either way round looks past nearly every book to learn whether another page follows.
 async fn add_long_series(database: &Database) -> SeriesId {
     let titles: Vec<String> = (0..BOOK_COUNT)
         .map(|number| format!("Volume {number:05}"))
@@ -98,6 +99,17 @@ async fn add_long_series(database: &Database) -> SeriesId {
     let read_before = format!("Volume {:05}", BOOK_COUNT - UNREAD_AT_THE_END);
     database
         .write(move |transaction| {
+            transaction.execute(
+                "INSERT INTO library_root (kind, locator_kind, location, added_at_ms)
+                VALUES ('linked', 'path', ?1, 0)",
+                [COMICS_FOLDER],
+            )?;
+            transaction.execute(
+                "INSERT INTO book_file (book_id, root_id, location, size_bytes, modified_at_ms)
+                SELECT book.id, library_root.id, CAST(book.title || '.cbz' AS BLOB), 1, 0
+                FROM book CROSS JOIN library_root",
+                [],
+            )?;
             transaction.execute(
                 "INSERT INTO book_state (book_id, is_read) SELECT id, 1 FROM book WHERE title < ?1",
                 [read_before],
