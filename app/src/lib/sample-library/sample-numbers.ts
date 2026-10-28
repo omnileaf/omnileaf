@@ -12,6 +12,7 @@ export interface SampleNumbering {
   readonly section: BookSection | null;
 }
 
+const FILED_CHAPTER_TITLE = /^Volume (?<volume>\d+) · Chapter (?<chapter>\d+)/u;
 const NUMBERED_TITLE = /^(?<marker>Volume|Chapter) (?<number>\d+)/u;
 const SECTION_OF_KIND = {
   volume: "volumes",
@@ -30,6 +31,16 @@ const NOT_PLACED: SampleNumbering = {
 };
 
 export function numberingOf(title: string): SampleNumbering {
+  const filed = FILED_CHAPTER_TITLE.exec(title)?.groups;
+  if (filed?.volume !== undefined && filed.chapter !== undefined) {
+    const chapter = Number(filed.chapter);
+    return {
+      kind: "chapter",
+      numbers: { first: chapter, last: chapter },
+      volume: Number(filed.volume),
+      section: "volumes",
+    };
+  }
   const groups = NUMBERED_TITLE.exec(title)?.groups;
   if (groups?.marker === undefined || groups.number === undefined) {
     return NOT_PLACED;
@@ -76,7 +87,9 @@ export function missingVolumes(
     books.flatMap((book) =>
       book.kind === "volume" && book.numbers !== null
         ? [book.numbers.first]
-        : [],
+        : book.volume === null
+          ? []
+          : [book.volume],
     ),
   );
   const highest = Math.max(0, ...present);
@@ -97,7 +110,11 @@ export function missingVolumes(
 
 export function lastVolume(books: readonly SampleNumbering[]): number | null {
   const volumes = books.flatMap((book) =>
-    book.kind === "volume" && book.numbers !== null ? [book.numbers.last] : [],
+    book.kind === "volume" && book.numbers !== null
+      ? [book.numbers.last]
+      : book.volume === null
+        ? []
+        : [book.volume],
   );
   return volumes.length === 0 ? null : Math.max(...volumes);
 }

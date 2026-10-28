@@ -174,6 +174,26 @@ export const LONG_TITLE =
 
 const AUTHOR_A = "Author A";
 
+const FILED_CHAPTERS = [
+  ["Volume 1 · Chapter 1", READ],
+  ["Volume 1 · Chapter 2", READ],
+  ["Volume 1 · Chapter 3", READ],
+  ["Volume 1 · Chapter 4", READ],
+  ["Volume 2 · Chapter 5", READ],
+  ["Volume 2 · Chapter 6", { state: "started", page: 11 }],
+  ["Volume 2 · Chapter 7", NOT_STARTED],
+  ["Volume 2 · Chapter 8", NOT_STARTED],
+  ["Chapter 9", NOT_STARTED],
+  ["Chapter 10", NOT_STARTED],
+] as const satisfies readonly (readonly [string, SampleReading])[];
+const FILED_CHAPTER_PAGES = 28;
+
+function filedChapters(): SampleBook[] {
+  return FILED_CHAPTERS.map(([title, reading]) =>
+    book(title, FILED_CHAPTER_PAGES, reading),
+  );
+}
+
 function series(
   number: number,
   title: string,
@@ -277,5 +297,6 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
       format: "Webtoon",
       isStrip: true,
     }),
+    series(21, numbered(21), 3, filedChapters()),
   ];
 }
