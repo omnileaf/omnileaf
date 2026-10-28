@@ -10,12 +10,14 @@ import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 
 @TauriPlugin
-class PowerSavingPlugin(activity: Activity) : Plugin(activity) {
-  private val context: Context = activity.applicationContext
+class PowerSavingPlugin(
+    activity: Activity,
+) : Plugin(activity) {
+    private val context: Context = activity.applicationContext
 
-  @Command
-  fun readPowerSaving(invoke: Invoke) {
-    val isSaving = context.getSystemService(PowerManager::class.java)?.isPowerSaveMode ?: false
-    invoke.resolve(JSObject().put("saving", isSaving))
-  }
+    @Command
+    fun readPowerSaving(invoke: Invoke) {
+        val isSaving = context.getSystemService(PowerManager::class.java)?.isPowerSaveMode ?: false
+        invoke.resolve(JSObject().put("saving", isSaving))
+    }
 }

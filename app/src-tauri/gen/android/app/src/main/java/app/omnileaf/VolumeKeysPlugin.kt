@@ -11,24 +11,27 @@ import app.tauri.plugin.PluginManager
 
 @InvokeArg
 class Capturing {
-  lateinit var channel: Channel
+    lateinit var channel: Channel
 }
 
 @TauriPlugin
-class VolumeKeysPlugin(activity: Activity) : Plugin(activity) {
-  @Command
-  fun capture(invoke: Invoke) {
-    val channel = invoke.parseArgs(Capturing::class.java).channel
-    val shownActivity = PluginManager.activity as? MainActivity
-      ?: return invoke.reject("no activity is showing the app")
-    shownActivity.runOnUiThread { shownActivity.volumeKeys.capture { turn -> channel.sendObject(turn.id) } }
-    invoke.resolve()
-  }
+class VolumeKeysPlugin(
+    activity: Activity,
+) : Plugin(activity) {
+    @Command
+    fun capture(invoke: Invoke) {
+        val channel = invoke.parseArgs(Capturing::class.java).channel
+        val shownActivity =
+            PluginManager.activity as? MainActivity
+                ?: return invoke.reject("no activity is showing the app")
+        shownActivity.runOnUiThread { shownActivity.volumeKeys.capture { turn -> channel.sendObject(turn.id) } }
+        invoke.resolve()
+    }
 
-  @Command
-  fun release(invoke: Invoke) {
-    val shownActivity = PluginManager.activity as? MainActivity
-    shownActivity?.runOnUiThread { shownActivity.volumeKeys.release() }
-    invoke.resolve()
-  }
+    @Command
+    fun release(invoke: Invoke) {
+        val shownActivity = PluginManager.activity as? MainActivity
+        shownActivity?.runOnUiThread { shownActivity.volumeKeys.release() }
+        invoke.resolve()
+    }
 }
