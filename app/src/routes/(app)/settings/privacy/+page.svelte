@@ -74,7 +74,7 @@
         aria-hidden="true"
         class="mbs-2xs shrink-0"
       />
-      <span>
+      <span class="min-inline-none">
         <WidthWording
           wording={isPointer(data.appInfo.platform)
             ? NOTHING_LEAVES_ON_DESKTOP

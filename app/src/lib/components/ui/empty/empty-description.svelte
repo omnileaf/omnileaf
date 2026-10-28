@@ -15,7 +15,7 @@
 <p
   bind:this={ref}
   data-slot="empty-description"
-  class={cn("text-muted", className)}
+  class={cn("wrap-anywhere text-muted min-inline-none", className)}
   {...restProps}
 >
   {@render children?.()}

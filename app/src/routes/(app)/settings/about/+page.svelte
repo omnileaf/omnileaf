@@ -41,7 +41,7 @@
 
 <SectionHeading title={m.about_title()} />
 <div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
-  <div class="flex flex-col items-center gap-xs text-center">
+  <div class="flex flex-col items-center gap-xs text-center min-inline-none">
     <img
       src={appIcon}
       alt=""
@@ -51,7 +51,7 @@
     />
     <h2
       class={[
-        "mbs-xs font-bold",
+        "mbs-xs font-bold wrap-anywhere",
         look === "phone" ? "text-app-name" : "text-group-title",
       ]}
     >

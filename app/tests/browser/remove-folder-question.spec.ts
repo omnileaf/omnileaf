@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
+import pseudo from "../../messages/en-XA.json" with { type: "json" };
 import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
@@ -7,8 +8,11 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  LARGEST_TEXT_SCALE,
   MEDIUM_MIN_WIDTH,
+  setTextScale,
   settle,
+  sidewaysOverflow,
   test,
   tokenColour,
   transitionsOf,
@@ -169,6 +173,24 @@ test("marks the removal question with a round danger badge", async ({
   );
   expect(width).toBe(height);
   expect(radius).toBeGreaterThanOrEqual(width / 2);
+});
+
+test("keeps the removal question's title and note inside it at the largest text in a long language", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("omnileaf.language", "en-XA");
+  });
+  await setTextScale(page, LARGEST_TEXT_SCALE);
+  await page.goto("/");
+  await page.getByRole("button", { name: pseudo.missing_unlink }).click();
+  const question = page.getByRole("alertdialog", {
+    name: pseudo.library_remove_folder_title,
+  });
+  await expect(question).toBeVisible();
+  await settle(question);
+
+  expect(await sidewaysOverflow(page, "[role=alertdialog]")).toEqual([]);
 });
 
 test.describe("from medium screens up", () => {

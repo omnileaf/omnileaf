@@ -72,7 +72,7 @@
                     <section.icon size={ICON_SIZE} />
                   </ItemMedia>
                   <ItemContent
-                    class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm ios:min-inline-none"
+                    class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm"
                   >
                     <ItemTitle
                       class="text-body ios:font-regular ios:min-inline-none desktop:text-callout desktop:font-medium"

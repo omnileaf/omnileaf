@@ -57,7 +57,7 @@
         aria-hidden="true"
         class="mbs-2xs shrink-0 text-accent"
       />
-      <span>{m.library_remove_folder_note()}</span>
+      <span class="min-inline-none">{m.library_remove_folder_note()}</span>
     </p>
   {/if}
 </ConfirmDialog>

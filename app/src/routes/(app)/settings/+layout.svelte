@@ -18,7 +18,7 @@
     class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-fit two-pane:max-inline-settings-list-widest two-pane:min-inline-settings-list"
   >
     <p
-      class="mbe-xs px-md text-page-title font-bold tracking-tight wrap-break-word desktop:mbe-none desktop:px-sm desktop:text-caption desktop:font-semibold desktop:tracking-normal desktop:text-muted"
+      class="mbe-xs px-md text-page-title font-bold tracking-tight desktop:mbe-none desktop:px-sm desktop:text-caption desktop:font-semibold desktop:tracking-normal desktop:text-muted"
     >
       {m.settings_title()}
     </p>
@@ -49,7 +49,7 @@
               />
               <span
                 data-label={section.label()}
-                class="room-for-bold-label wrap-break-word min-inline-none"
+                class="room-for-bold-label min-inline-none"
                 >{section.label()}</span
               >
             </a>

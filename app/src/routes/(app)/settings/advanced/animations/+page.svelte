@@ -76,9 +76,11 @@
     <span aria-hidden="true" class="flex shrink-0 items-center block-lh">
       <Info size={NOTE_ICON_SIZE} />
     </span>
-    {onPointer
-      ? m.animations_reduce_motion_desktop()
-      : m.animations_reduce_motion()}
+    <span class="min-inline-none">
+      {onPointer
+        ? m.animations_reduce_motion_desktop()
+        : m.animations_reduce_motion()}
+    </span>
   </p>
   <p class="text-footnote text-muted">{m.animations_page_turns()}</p>
 </div>

@@ -15,7 +15,7 @@
 <span
   bind:this={ref}
   data-slot="item-content"
-  class={cn("flex flex-1 flex-col", className)}
+  class={cn("flex flex-1 flex-col min-inline-none", className)}
   {...restProps}
 >
   {@render children?.()}
