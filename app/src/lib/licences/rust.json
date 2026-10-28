@@ -3063,6 +3063,14 @@
       ]
     },
     {
+      "name": "tauri-plugin-single-instance",
+      "version": "2.5.5",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        41
+      ]
+    },
+    {
       "name": "tauri-runtime",
       "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",

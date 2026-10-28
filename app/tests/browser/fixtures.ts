@@ -91,6 +91,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   },
   seriesBooks: () => ({ books: [], next: null }),
   seriesVolume: () => null,
+  fileToOpen: () => null,
   creatorSeries: () => [],
   markBooks: () => null,
   markSeriesRead: () => [],

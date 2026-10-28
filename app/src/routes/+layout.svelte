@@ -79,6 +79,7 @@
     setScreenshotModeShortcut,
   } from "#lib/screenshot-mode/shortcut-setting.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
+  import FileOpenSync from "#lib/open-file/FileOpenSync.svelte";
   import TrayMenuSync from "#lib/tray/TrayMenuSync.svelte";
 
   import type { LayoutProps } from "./$types";
@@ -234,6 +235,9 @@
   />
   {#if data.libraryProblem === null && isPointer(data.appInfo.platform)}
     <TrayMenuSync />
+  {/if}
+  {#if data.libraryProblem === null && !data.isFirstLaunch && isPointer(data.appInfo.platform)}
+    <FileOpenSync />
   {/if}
   {#if data.libraryProblem === null && !data.isFirstLaunch && !isPointer(data.appInfo.platform)}
     <IconActionsSync />

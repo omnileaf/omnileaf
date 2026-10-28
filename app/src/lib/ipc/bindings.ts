@@ -78,6 +78,11 @@ export const commands = {
 	markBooks: (books: (string & { readonly __brand: "BookId" })[], mark: ReadMark) => typedError<null, IpcError>(__TAURI_INVOKE("mark_books", { books, mark })),
 	markSeriesRead: (series: (string & { readonly __brand: "SeriesId" })[]) => typedError<(string & { readonly __brand: "BookId" })[], IpcError>(__TAURI_INVOKE("mark_series_read", { series })),
 	openBook: (id: string & { readonly __brand: "BookId" }, undecodable: ProbedFormat[]) => typedError<OpenedBook, IpcError>(__TAURI_INVOKE("open_book", { id, undecodable })),
+	/**  Opens the next file handed to the app, by the file manager or a second launch. */
+	fileToOpen: () => typedError<{
+	book: string & { readonly __brand: "BookId" },
+	isInLibrary: boolean,
+} | null, IpcError>(__TAURI_INVOKE("file_to_open")),
 	croppedPagePaths: (paths: (string & { readonly __brand: "PagePath" })[], crop: PageCrop) => __TAURI_INVOKE<(string & { readonly __brand: "PagePath" })[]>("cropped_page_paths", { paths, crop }),
 	readingRestored: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("reading_restored", { id, page, utcOffset })),
 	pageShown: (id: string & { readonly __brand: "BookId" }, page: number, utcOffset: number) => typedError<null, IpcError>(__TAURI_INVOKE("page_shown", { id, page, utcOffset })),
@@ -183,6 +188,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	fileOpenRequested: makeEvent<FileOpenRequested>("file-open-requested"),
 	libraryChanged: makeEvent<LibraryChanged>("library-changed"),
 	readingSaved: makeEvent<ReadingSaved>("reading-saved"),
 	trayItemChosen: makeEvent<TrayItemChosen>("tray-item-chosen"),
@@ -338,6 +344,14 @@ export type FileChanges = {
 	unreadableBooks: number,
 	unsupportedBooks: number,
 	unreadableFolders: number,
+};
+
+export type FileOpenRequested = null;
+
+/**  Which book a file opens, and whether the library already holds it. */
+export type FileToRead = {
+	book: string & { readonly __brand: "BookId" },
+	isInLibrary: boolean,
 };
 
 export type FileType = string;
@@ -629,6 +643,8 @@ export type OpenedBook = {
 	damage: BookDamage | null,
 	/**  About how long a page takes to read, absent until the library has timed enough reading. */
 	secondsPerPage: number | null,
+	/**  False for a file opened from outside the library, which has no series page to go back to. */
+	isInLibrary: boolean,
 };
 
 export type PageCrop = "whole" | "borders" | "sideBorders";

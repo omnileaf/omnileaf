@@ -6,9 +6,9 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
     BookSessions, BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits,
-    FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId,
-    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
-    HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library,
+    FileToRead, FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage,
+    FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark,
+    HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library,
     LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
     LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
     PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
@@ -28,6 +28,7 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    files_to_open::{FileOpenRequested, FilesToOpen},
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
@@ -100,6 +101,7 @@ macro_rules! app_commands {
             mark_books,
             mark_series_read,
             open_book,
+            file_to_open,
             cropped_page_paths,
             reading_restored,
             page_shown,
@@ -177,6 +179,7 @@ pub(crate) fn builder() -> Builder<Wry> {
     Builder::new()
         .commands(registered_commands())
         .events(collect_events![
+            FileOpenRequested,
             LibraryChanged,
             ReadingSaved,
             TrayItemChosen
@@ -775,6 +778,19 @@ async fn open_book(
     undecodable: Vec<ProbedFormat>,
 ) -> Result<OpenedBook, IpcError> {
     Ok(router.open_book(&library, id, undecodable).await?)
+}
+
+/// Opens the next file handed to the app, by the file manager or a second launch.
+#[tauri::command]
+#[specta::specta]
+async fn file_to_open(
+    library: State<'_, Library>,
+    files: State<'_, FilesToOpen>,
+) -> Result<Option<FileToRead>, IpcError> {
+    let Some(path) = files.next() else {
+        return Ok(None);
+    };
+    Ok(Some(library.open_file(path).await?))
 }
 
 #[tauri::command]

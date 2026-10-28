@@ -1481,6 +1481,7 @@ export function sampleBackend(
         role:
           peopleOf(series).find(({ name }) => name === creator)?.role ?? null,
       })),
+    fileToOpen: () => null,
     markBooks: (books, mark) => {
       for (const id of books) {
         setReading(
@@ -1560,6 +1561,7 @@ export function sampleBackend(
           (one, other) => one - other,
         ),
         secondsPerPage: Math.round(SAMPLE_SECONDS_PER_PAGE),
+        isInLibrary: true,
       };
     },
     bookPlace: placeOf,

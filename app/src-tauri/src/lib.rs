@@ -3,6 +3,7 @@ mod commands;
 mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
+mod files_to_open;
 #[cfg(target_os = "ios")]
 mod folder_access;
 #[cfg(any(target_os = "linux", test))]
@@ -75,11 +76,18 @@ pub fn run() {
         .init();
     let config = RuntimeConfig::from_environment();
     let commands = commands::builder();
-    let app = tauri::Builder::default()
+    let app = tauri::Builder::default();
+    #[cfg(desktop)]
+    let app = app.plugin(tauri_plugin_single_instance::init(|app, arguments, _| {
+        files_to_open::request(app, arguments.into_iter().skip(1));
+        files_to_open::show_main_window(app);
+    }));
+    let app = app
         .manage(Core::new())
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
         .manage(home_folder::ChosenHome::default())
+        .manage(files_to_open::FilesToOpen::default())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_opener::Builder::new()
@@ -105,6 +113,7 @@ pub fn run() {
                 }
             };
             app.manage(launch);
+            files_to_open::request(app.handle(), std::env::args().skip(1));
             Ok(())
         });
     #[cfg(desktop)]
