@@ -77,6 +77,12 @@ pub(crate) use first_book_in_series;
 pub(crate) use holds_a_started_book_not_read;
 pub(crate) use not_read;
 
+macro_rules! unread {
+    () => {
+        "book.is_marked_read = 0"
+    };
+}
+
 macro_rules! in_section {
     () => {
         "book.reading_order_key >= :section_start AND book.reading_order_key < :section_end"
@@ -101,6 +107,16 @@ const FIRST_IN_SECTION: &str = books_in_series!("ASC", in_section!());
 const NEXT_IN_SECTION: &str = books_in_series!("ASC", after_cursor!(">"), in_section!());
 const LAST_IN_SECTION: &str = books_in_series!("DESC", in_section!());
 const PREVIOUS_IN_SECTION: &str = books_in_series!("DESC", after_cursor!("<"), in_section!());
+const FIRST_UNREAD_IN_SERIES: &str = books_in_series!("ASC", unread!());
+const NEXT_UNREAD_IN_SERIES: &str = books_in_series!("ASC", unread!(), after_cursor!(">"));
+const LAST_UNREAD_IN_SERIES: &str = books_in_series!("DESC", unread!());
+const PREVIOUS_UNREAD_IN_SERIES: &str = books_in_series!("DESC", unread!(), after_cursor!("<"));
+const FIRST_UNREAD_IN_SECTION: &str = books_in_series!("ASC", unread!(), in_section!());
+const NEXT_UNREAD_IN_SECTION: &str =
+    books_in_series!("ASC", unread!(), after_cursor!(">"), in_section!());
+const LAST_UNREAD_IN_SECTION: &str = books_in_series!("DESC", unread!(), in_section!());
+const PREVIOUS_UNREAD_IN_SECTION: &str =
+    books_in_series!("DESC", unread!(), after_cursor!("<"), in_section!());
 const UP_NEXT: &str = concat!(
     "SELECT book.id, book.reading_order_key,
         book_state.is_read, book_state.is_started, book_state.position_page
@@ -127,6 +143,11 @@ const UNREAD_IN_SERIES: &str = concat!(
 const BOOKS_BEFORE: &str = "SELECT count(*) FROM book
     WHERE series_local_id = (SELECT local_id FROM series WHERE id = :series)
         AND (reading_order_key, id) < (:key, :id)";
+
+const BOOKS_BETWEEN: &str = "SELECT count(*) FROM book
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = :series)
+        AND (reading_order_key, id) > (:after_key, :after_id)
+        AND (reading_order_key, id) <= (:through_key, :through_id)";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BookSummary {
@@ -166,20 +187,33 @@ impl BookListing {
     };
 
     const fn query(self, is_continued: bool) -> &'static str {
-        match (self.direction, is_continued, self.section.is_some()) {
-            (SortDirection::Ascending, false, false) => FIRST_IN_SERIES,
-            (SortDirection::Ascending, true, false) => NEXT_IN_SERIES,
-            (SortDirection::Descending, false, false) => LAST_IN_SERIES,
-            (SortDirection::Descending, true, false) => PREVIOUS_IN_SERIES,
-            (SortDirection::Ascending, false, true) => FIRST_IN_SECTION,
-            (SortDirection::Ascending, true, true) => NEXT_IN_SECTION,
-            (SortDirection::Descending, false, true) => LAST_IN_SECTION,
-            (SortDirection::Descending, true, true) => PREVIOUS_IN_SECTION,
+        match (
+            self.shown,
+            self.direction,
+            is_continued,
+            self.section.is_some(),
+        ) {
+            (BooksShown::All, SortDirection::Ascending, false, false) => FIRST_IN_SERIES,
+            (BooksShown::All, SortDirection::Ascending, true, false) => NEXT_IN_SERIES,
+            (BooksShown::All, SortDirection::Descending, false, false) => LAST_IN_SERIES,
+            (BooksShown::All, SortDirection::Descending, true, false) => PREVIOUS_IN_SERIES,
+            (BooksShown::All, SortDirection::Ascending, false, true) => FIRST_IN_SECTION,
+            (BooksShown::All, SortDirection::Ascending, true, true) => NEXT_IN_SECTION,
+            (BooksShown::All, SortDirection::Descending, false, true) => LAST_IN_SECTION,
+            (BooksShown::All, SortDirection::Descending, true, true) => PREVIOUS_IN_SECTION,
+            (BooksShown::Unread, SortDirection::Ascending, false, false) => FIRST_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Ascending, true, false) => NEXT_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Descending, false, false) => LAST_UNREAD_IN_SERIES,
+            (BooksShown::Unread, SortDirection::Descending, true, false) => {
+                PREVIOUS_UNREAD_IN_SERIES
+            }
+            (BooksShown::Unread, SortDirection::Ascending, false, true) => FIRST_UNREAD_IN_SECTION,
+            (BooksShown::Unread, SortDirection::Ascending, true, true) => NEXT_UNREAD_IN_SECTION,
+            (BooksShown::Unread, SortDirection::Descending, false, true) => LAST_UNREAD_IN_SECTION,
+            (BooksShown::Unread, SortDirection::Descending, true, true) => {
+                PREVIOUS_UNREAD_IN_SECTION
+            }
         }
-    }
-
-    fn holds(self, reading: BookReading) -> bool {
-        self.shown == BooksShown::All || !matches!(reading, BookReading::Read { .. })
     }
 }
 
@@ -255,35 +289,28 @@ fn walk(
     let wanted = usize::try_from(request.size.rows_to_fetch()).unwrap_or(usize::MAX);
     let mut statement = connection.prepare(listing.query(request.after.is_some()))?;
     let mut rows = statement.query(params)?;
-    let mut held = Vec::with_capacity(wanted);
-    let mut position = None;
+    let mut held: Vec<(BookSummary, Position)> = Vec::with_capacity(wanted);
     while held.len() < wanted {
         let Some(row) = rows.next()? else {
             break;
         };
-        let reading = stored_reading(row)?;
-        let stored = listing
-            .holds(reading)
-            .then(|| stored_book(series, listing, reading, row))
-            .transpose()?;
-        let numbered = match (position, listing.direction) {
-            (Some(previous), SortDirection::Ascending) => previous + 1,
-            (Some(previous), SortDirection::Descending) => previous - 1,
-            (None, _) => {
-                let before = match &stored {
-                    Some((_, cursor)) => books_before(connection, cursor)?,
-                    None => {
-                        books_before(connection, &stored_book(series, listing, reading, row)?.1)?
-                    }
-                };
-                before + 1
+        let (mut book, cursor) = stored_book(series, listing, stored_reading(row)?, row)?;
+        book.position = match (held.last(), listing.shown, listing.direction) {
+            (None, _, _) => books_before(connection, &cursor)? + 1,
+            (Some((previous, _)), BooksShown::All, SortDirection::Ascending) => {
+                previous.position + 1
+            }
+            (Some((previous, _)), BooksShown::All, SortDirection::Descending) => {
+                previous.position - 1
+            }
+            (Some((previous, previous_cursor)), BooksShown::Unread, SortDirection::Ascending) => {
+                previous.position + books_between(connection, previous_cursor, &cursor)?
+            }
+            (Some((previous, previous_cursor)), BooksShown::Unread, SortDirection::Descending) => {
+                previous.position - books_between(connection, &cursor, previous_cursor)?
             }
         };
-        position = Some(numbered);
-        if let Some((mut book, cursor)) = stored {
-            book.position = numbered;
-            held.push((book, cursor));
-        }
+        held.push((book, cursor));
     }
     let mut details = connection.prepare(BOOK_DETAILS)?;
     for (book, _) in &mut held {
@@ -305,6 +332,41 @@ fn books_before(connection: &Connection, book: &Position) -> Result<u32, Error> 
     Ok(connection.query_row(
         BOOKS_BEFORE,
         named_params! { ":series": series.as_bytes(), ":key": sort_key, ":id": id.as_bytes() },
+        |row| row.get(0),
+    )?)
+}
+
+/// How many books of the series follow the earlier book up to and including the later one.
+fn books_between(
+    connection: &Connection,
+    earlier: &Position,
+    later: &Position,
+) -> Result<u32, Error> {
+    let (
+        Position::Book {
+            series,
+            sort_key: after_key,
+            id: after_id,
+            ..
+        },
+        Position::Book {
+            sort_key: through_key,
+            id: through_id,
+            ..
+        },
+    ) = (earlier, later)
+    else {
+        return Err(Error::CursorForAnotherList);
+    };
+    Ok(connection.query_row(
+        BOOKS_BETWEEN,
+        named_params! {
+            ":series": series.as_bytes(),
+            ":after_key": after_key,
+            ":after_id": after_id.as_bytes(),
+            ":through_key": through_key,
+            ":through_id": through_id.as_bytes(),
+        },
         |row| row.get(0),
     )?)
 }
@@ -433,19 +495,16 @@ mod tests {
     }
 
     #[test]
-    fn lists_a_series_books_either_way_round_and_only_unread_by_index_without_sorting() {
+    fn lists_a_series_books_either_way_round_by_index_without_sorting() {
         let scratch = ScratchLibrary::new("book-listing-plans");
-        let listings = [BooksShown::All, BooksShown::Unread]
-            .into_iter()
-            .flat_map(|shown| {
-                [SortDirection::Ascending, SortDirection::Descending].map(|direction| BookListing {
-                    shown,
-                    direction,
-                    section: None,
-                })
+        let listings =
+            [SortDirection::Ascending, SortDirection::Descending].map(|direction| BookListing {
+                direction,
+                ..BookListing::IN_ORDER
             });
 
         let plans: Vec<Vec<String>> = listings
+            .into_iter()
             .flat_map(|listing| [listing.query(false), listing.query(true)])
             .map(|query| scratch.query_plan(query))
             .collect();
@@ -462,6 +521,54 @@ mod tests {
                 "{plan:?}"
             );
         }
+    }
+
+    #[test]
+    fn lists_only_a_series_unread_books_from_their_own_index_without_passing_the_read_ones() {
+        let scratch = ScratchLibrary::new("unread-books-plans");
+        let listings = [SortDirection::Ascending, SortDirection::Descending]
+            .into_iter()
+            .flat_map(|direction| {
+                [None, Some(BookSection::Volumes)].map(|section| BookListing {
+                    shown: BooksShown::Unread,
+                    direction,
+                    section,
+                })
+            });
+
+        let plans: Vec<Vec<String>> = listings
+            .flat_map(|listing| [listing.query(false), listing.query(true)])
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        for plan in plans {
+            assert!(
+                plan[0].starts_with(
+                    "SEARCH book USING COVERING INDEX book_unread_by_series (series_local_id=?"
+                ),
+                "{plan:?}"
+            );
+            assert!(
+                !plan.iter().any(|step| step.contains("TEMP B-TREE")),
+                "{plan:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn counts_the_books_between_two_by_the_covering_index() {
+        let scratch = ScratchLibrary::new("books-between-plan");
+
+        let plan = scratch.query_plan(BOOKS_BETWEEN);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=? AND (reading_order_key,id)>(?,?) AND (reading_order_key,id)<(?,?))",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+            ]
+        );
     }
 
     #[test]

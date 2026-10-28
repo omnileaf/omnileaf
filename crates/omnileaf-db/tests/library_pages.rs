@@ -388,6 +388,115 @@ async fn pages_only_the_books_of_a_series_not_marked_read_either_way_round() {
     );
 }
 
+async fn unread_titles(library: &Library) -> Vec<Vec<String>> {
+    let unread = BookListing {
+        shown: BooksShown::Unread,
+        ..BookListing::IN_ORDER
+    };
+    library
+        .walk(
+            listed_book_titles(series_id("Sample Series 01"), unread),
+            10,
+        )
+        .await
+}
+
+#[tokio::test]
+async fn leaves_out_a_book_marked_read_before_it_was_added() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 01", "Volume 02", "Volume 03"],
+    )])
+    .await;
+
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute_batch(
+                "CREATE TEMP TABLE kept AS SELECT * FROM book WHERE title = 'Volume 02';
+                DELETE FROM book WHERE title = 'Volume 02';
+                INSERT INTO book_state (book_id, is_read) SELECT id, 1 FROM kept;
+                INSERT INTO book SELECT * FROM kept;",
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(unread_titles(&library).await, [["Volume 01", "Volume 03"]]);
+}
+
+#[tokio::test]
+async fn lists_a_book_again_once_it_is_marked_unread_or_its_reading_state_goes() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 01", "Volume 02", "Volume 03"],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read) SELECT id, 1 FROM book",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute_batch(
+                "UPDATE book_state SET is_read = 0
+                    WHERE book_id = (SELECT id FROM book WHERE title = 'Volume 01');
+                DELETE FROM book_state
+                    WHERE book_id = (SELECT id FROM book WHERE title = 'Volume 03');",
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(unread_titles(&library).await, [["Volume 01", "Volume 03"]]);
+}
+
+#[tokio::test]
+async fn moves_a_book_s_read_mark_with_its_reading_state() {
+    let library = Library::with(&[series_holding(
+        "Sample Series 01",
+        &["Volume 01", "Volume 02", "Volume 03"],
+    )])
+    .await;
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read)
+                SELECT id, 1 FROM book WHERE title = 'Volume 01'",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    library
+        .database
+        .write(|transaction| {
+            transaction.execute(
+                "UPDATE book_state SET book_id = (SELECT id FROM book WHERE title = 'Volume 03')",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(unread_titles(&library).await, [["Volume 01", "Volume 02"]]);
+}
+
 #[tokio::test]
 async fn numbers_each_book_by_its_place_in_the_series_whichever_books_are_listed() {
     let library = Library::with(&[series_holding(
