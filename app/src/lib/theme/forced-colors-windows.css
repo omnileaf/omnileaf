@@ -18,6 +18,7 @@
     --native-color-accent-hover: Highlight;
     --native-color-accent-pressed: Highlight;
     --native-color-switch-on: Highlight;
+    --native-color-switch-on-border: Highlight;
     --native-color-switch-off: ButtonFace;
     --native-color-switch-off-border: ButtonText;
     --native-color-switch-thumb: HighlightText;
@@ -37,7 +38,6 @@
     --native-color-row-selected: Highlight;
     --native-color-on-row-selected-muted: HighlightText;
     --native-color-on-top-bar: CanvasText;
-    --native-color-top-bar-scrolled: Canvas;
     --native-color-top-bar-scrolled-edge: CanvasText;
     --native-color-sheet: Canvas;
     --native-color-sheet-group: Canvas;
