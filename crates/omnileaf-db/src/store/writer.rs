@@ -1,4 +1,5 @@
 mod labels;
+mod series_edits;
 
 use std::collections::{BTreeMap, BTreeSet};
 

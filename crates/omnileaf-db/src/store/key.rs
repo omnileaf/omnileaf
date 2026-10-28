@@ -16,6 +16,11 @@ const TAG: &str = "tag";
 const SERIES: &str = "series";
 const NAME: &str = "name";
 const ORDER: &str = "order";
+const META_TITLE: &str = "meta.title";
+const META_SUMMARY: &str = "meta.summary";
+const META_PEOPLE: &str = "meta.people";
+const META_TAGS: &str = "meta.tags";
+const META_ADULT: &str = "meta.adult";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
@@ -58,6 +63,59 @@ impl BookmarkKey {
             id: *self.id().as_bytes(),
             field: Cow::Borrowed(field),
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SeriesEditKey {
+    Title(SeriesId),
+    Summary(SeriesId),
+    People(SeriesId),
+    Tags(SeriesId),
+    Adult(SeriesId),
+}
+
+impl SeriesEditKey {
+    #[must_use]
+    pub const fn series(self) -> SeriesId {
+        match self {
+            Self::Title(id)
+            | Self::Summary(id)
+            | Self::People(id)
+            | Self::Tags(id)
+            | Self::Adult(id) => id,
+        }
+    }
+
+    fn address(self) -> Address {
+        let field = match self {
+            Self::Title(_) => META_TITLE,
+            Self::Summary(_) => META_SUMMARY,
+            Self::People(_) => META_PEOPLE,
+            Self::Tags(_) => META_TAGS,
+            Self::Adult(_) => META_ADULT,
+        };
+        Address {
+            profile: ProfileId::shared(),
+            entity: SERIES,
+            id: *self.series().as_bytes(),
+            field: Cow::Borrowed(field),
+        }
+    }
+
+    pub(crate) fn stored(entity: &str, id: &[u8], field: &str) -> Result<Option<Self>, IdError> {
+        if entity != SERIES {
+            return Ok(None);
+        }
+        let series = || SeriesId::try_from(id);
+        Ok(match field {
+            META_TITLE => Some(Self::Title(series()?)),
+            META_SUMMARY => Some(Self::Summary(series()?)),
+            META_PEOPLE => Some(Self::People(series()?)),
+            META_TAGS => Some(Self::Tags(series()?)),
+            META_ADULT => Some(Self::Adult(series()?)),
+            _ => None,
+        })
     }
 }
 
@@ -139,6 +197,13 @@ pub enum Key {
     Maximum(MaximumKey),
     Bookmark(BookmarkKey),
     Label(LabelKey),
+    SeriesEdit(SeriesEditKey),
+}
+
+impl From<SeriesEditKey> for Key {
+    fn from(key: SeriesEditKey) -> Self {
+        Self::SeriesEdit(key)
+    }
 }
 
 impl From<LabelKey> for Key {
@@ -177,7 +242,7 @@ impl Key {
         match self {
             Self::Latest(LatestKey::BookPosition(book) | LatestKey::BookRead(book))
             | Self::Maximum(MaximumKey::BookFurthest(book)) => Some(book),
-            Self::Bookmark(_) | Self::Label(_) => None,
+            Self::Bookmark(_) | Self::Label(_) | Self::SeriesEdit(_) => None,
         }
     }
 
@@ -187,6 +252,7 @@ impl Key {
             Self::Maximum(key) => key.address(profile),
             Self::Bookmark(key) => key.address(profile),
             Self::Label(key) => key.address(profile),
+            Self::SeriesEdit(key) => key.address(),
         }
     }
 
@@ -195,6 +261,9 @@ impl Key {
         let bookmark = || BookmarkId::try_from(id);
         if let Some(label) = LabelKey::stored(entity, id, field)? {
             return Ok(Some(label.into()));
+        }
+        if let Some(edit) = SeriesEditKey::stored(entity, id, field)? {
+            return Ok(Some(edit.into()));
         }
         Ok(match (entity, field) {
             (BOOKMARK, BOOK_HIGH) => Some(BookmarkKey::BookHigh(bookmark()?).into()),
@@ -261,6 +330,11 @@ mod tests {
             LabelKey::TagDeleted(tag).into(),
             LabelKey::SeriesCategory { series, category }.into(),
             LabelKey::SeriesTag { series, tag }.into(),
+            SeriesEditKey::Title(series).into(),
+            SeriesEditKey::Summary(series).into(),
+            SeriesEditKey::People(series).into(),
+            SeriesEditKey::Tags(series).into(),
+            SeriesEditKey::Adult(series).into(),
         ]
     }
 
@@ -278,6 +352,20 @@ mod tests {
             .collect();
 
         assert_eq!(read_back, keys.into_iter().map(Some).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn writes_a_series_edit_to_the_shared_profile_whichever_profile_is_current() {
+        let series = SeriesId::local("Sample Series 03").unwrap();
+        let another = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d".parse().unwrap();
+
+        let profiles = [ProfileId::default_profile(), another].map(|profile| {
+            Key::from(SeriesEditKey::Title(series))
+                .address(profile)
+                .profile
+        });
+
+        assert_eq!(profiles, [ProfileId::shared(); 2]);
     }
 
     #[test]

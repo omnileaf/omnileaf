@@ -9,9 +9,11 @@ use crate::{
     Error,
     store::{
         Changed,
-        key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey},
+        key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey, SeriesEditKey},
         local::current_profile,
+        series_edit::{EditedPerson, SeriesEdits, decode_people, decode_tags},
     },
+    title_key::TitleCollation,
 };
 
 const REGISTERS_SHOWN_IN_PROFILE: &str = "SELECT entity, id, field, value FROM sync_register
@@ -48,6 +50,25 @@ const CLEAR_LABELS: [&str; 4] = [
     "DELETE FROM series_category",
     "DELETE FROM series_label_tag",
 ];
+const SERIES_EDIT_REGISTERS: &str = "SELECT field, value FROM sync_register
+    WHERE entity = 'series' AND id = ?1 AND profile = ?2 AND field LIKE 'meta.%'";
+const PROJECT_SERIES_EDIT: &str = "INSERT INTO series_edit
+    (series_id, title, summary, is_adult, has_people, has_tags) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+const PROJECT_EDITED_PERSON: &str = "INSERT INTO series_edit_person
+    (series_id, position, role, name, name_key) VALUES (?1, ?2, ?3, ?4, ?5)";
+const PROJECT_EDITED_TAG: &str =
+    "INSERT INTO series_edit_tag (series_id, position, name) VALUES (?1, ?2, ?3)";
+const REMOVE_SERIES_EDIT: [&str; 3] = [
+    "DELETE FROM series_edit WHERE series_id = ?1",
+    "DELETE FROM series_edit_person WHERE series_id = ?1",
+    "DELETE FROM series_edit_tag WHERE series_id = ?1",
+];
+const CLEAR_SERIES_EDITS: [&str; 3] = [
+    "DELETE FROM series_edit",
+    "DELETE FROM series_edit_person",
+    "DELETE FROM series_edit_tag",
+];
+const NO_ROLE: &str = "";
 const LAST_POSITION: i64 = i64::MAX;
 
 const PROJECT_POSITION: &str = "INSERT INTO book_state (book_id, position_page) VALUES (?1, ?2)
@@ -351,6 +372,7 @@ enum Projection {
     Read { book: BookId, is_read: Option<bool> },
     Bookmark { id: BookmarkId, part: BookmarkPart },
     Label(LabelProjection),
+    SeriesEdit(SeriesId),
 }
 
 impl Projection {
@@ -378,6 +400,16 @@ impl Projection {
                 },
             },
             Key::Label(key) => Self::Label(LabelProjection::of(key, value)?),
+            Key::SeriesEdit(key) => {
+                let is_readable = match key {
+                    SeriesEditKey::Adult(_) => flag(value).is_ok(),
+                    SeriesEditKey::Title(_)
+                    | SeriesEditKey::Summary(_)
+                    | SeriesEditKey::People(_)
+                    | SeriesEditKey::Tags(_) => text(value).is_ok(),
+                };
+                is_readable.then_some(Self::SeriesEdit(key.series()))?
+            }
         })
     }
 
@@ -386,7 +418,7 @@ impl Projection {
             Self::Position { book, .. } | Self::Furthest { book, .. } | Self::Read { book, .. } => {
                 Some(book)
             }
-            Self::Bookmark { .. } | Self::Label(_) => None,
+            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => None,
         }
     }
 
@@ -395,7 +427,7 @@ impl Projection {
             Self::Position { page, .. } => row.position_page = page,
             Self::Furthest { page, .. } => row.furthest_page = page,
             Self::Read { is_read, .. } => row.is_read = is_read,
-            Self::Bookmark { .. } | Self::Label(_) => {}
+            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => {}
         }
     }
 
@@ -415,6 +447,10 @@ impl Projection {
             label.apply(connection)?;
             return Ok(0);
         }
+        if let Self::SeriesEdit(series) = self {
+            project_series_edit(connection, *series)?;
+            return Ok(0);
+        }
         match *self {
             Self::Position { book, page } => {
                 Ok(connection.execute(PROJECT_POSITION, (book.as_bytes(), page))?)
@@ -429,7 +465,7 @@ impl Projection {
                 id,
                 part: BookmarkPart::Deleted(_),
             } => project_bookmark(connection, id),
-            Self::Bookmark { .. } | Self::Label(_) => Ok(0),
+            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => Ok(0),
         }
     }
 }
@@ -470,6 +506,92 @@ fn project_bookmark(connection: &Connection, id: BookmarkId) -> Result<usize, Er
     }
 }
 
+fn series_edits_of(connection: &Connection, series: SeriesId) -> Result<SeriesEdits, Error> {
+    let mut statement = connection.prepare(SERIES_EDIT_REGISTERS)?;
+    let mut registers = statement.query((series.as_bytes(), ProfileId::shared().as_bytes()))?;
+    let mut edits = SeriesEdits::default();
+    while let Some(register) = registers.next()? {
+        let field: String = register.get(0)?;
+        let cbor: Vec<u8> = register.get(1)?;
+        let (Ok(Some(key)), Ok(value)) = (
+            SeriesEditKey::stored("series", series.as_bytes(), &field),
+            Value::from_cbor(&cbor),
+        ) else {
+            continue;
+        };
+        match key {
+            SeriesEditKey::Title(_) => edits.title = text(&value).ok().flatten(),
+            SeriesEditKey::Summary(_) => edits.summary = text(&value).ok().flatten(),
+            SeriesEditKey::People(_) => {
+                edits.people = text(&value).ok().flatten().map(|text| decode_people(&text));
+            }
+            SeriesEditKey::Tags(_) => {
+                edits.tags = text(&value).ok().flatten().map(|text| decode_tags(&text));
+            }
+            SeriesEditKey::Adult(_) => {
+                edits.is_adult = flag(&value).ok().flatten() == Some(true);
+            }
+        }
+    }
+    Ok(edits.normalized())
+}
+
+fn project_series_edit(connection: &Connection, series: SeriesId) -> Result<(), Error> {
+    let id = series.as_bytes();
+    for remove in REMOVE_SERIES_EDIT {
+        connection.execute(remove, [id])?;
+    }
+    let edits = series_edits_of(connection, series)?;
+    if edits.is_empty() {
+        return Ok(());
+    }
+    insert_edited_people_and_tags(connection, series, &edits)?;
+    connection.execute(
+        PROJECT_SERIES_EDIT,
+        (
+            id,
+            &edits.title,
+            &edits.summary,
+            edits.is_adult,
+            edits.people.is_some(),
+            edits.tags.is_some(),
+        ),
+    )?;
+    Ok(())
+}
+
+fn insert_edited_people_and_tags(
+    connection: &Connection,
+    series: SeriesId,
+    edits: &SeriesEdits,
+) -> Result<(), Error> {
+    let id = series.as_bytes();
+    if let Some(people) = &edits.people {
+        let collation = TitleCollation::stored(connection)?;
+        let mut insert = connection.prepare(PROJECT_EDITED_PERSON)?;
+        let mut position = 0_i64;
+        for EditedPerson { name, roles } in people {
+            let key = collation.key(name);
+            let codes: Vec<&str> = if roles.is_empty() {
+                vec![NO_ROLE]
+            } else {
+                roles.iter().map(|role| role.as_stored()).collect()
+            };
+            for code in codes {
+                insert.execute((id, position, code, name, &key))?;
+                position += 1;
+            }
+        }
+    }
+    if let Some(tags) = &edits.tags {
+        let mut insert = connection.prepare(PROJECT_EDITED_TAG)?;
+        for (position, tag) in (0_i64..).zip(tags) {
+            insert.execute((id, position, tag))?;
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn project(connection: &Connection, key: Key, value: &Value) -> Result<(), Error> {
     let projection = Projection::of(key, value).ok_or_else(|| Error::UnexpectedValue {
         key,
@@ -483,13 +605,14 @@ pub(crate) fn project(connection: &Connection, key: Key, value: &Value) -> Resul
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
     connection.execute("DELETE FROM book_bookmark", [])?;
-    for clear in CLEAR_LABELS {
+    for clear in CLEAR_LABELS.into_iter().chain(CLEAR_SERIES_EDITS) {
         connection.execute(clear, [])?;
     }
     let mut projected = BTreeSet::new();
     let mut rows: BTreeMap<BookId, BookStateRow> = BTreeMap::new();
     let mut bookmarks: BTreeMap<BookmarkId, BookmarkRow> = BTreeMap::new();
     let mut labels = LabelRows::default();
+    let mut edited = BTreeSet::new();
     for (key, projection) in shown_projections(connection)? {
         match (projection.book(), key) {
             (Some(book), _) => projection.fill(rows.entry(book).or_default()),
@@ -501,9 +624,15 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
                     labels.take(label);
                 }
             }
+            (None, Key::SeriesEdit(edit)) => {
+                edited.insert(edit.series());
+            }
             (None, _) => {}
         }
         projected.insert(key);
+    }
+    for series in edited {
+        project_series_edit(connection, series)?;
     }
     let mut bookmark = connection.prepare(PROJECT_BOOKMARK)?;
     for (id, row) in bookmarks.iter().filter(|(_, row)| row.is_bookmarked()) {
