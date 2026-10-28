@@ -224,6 +224,7 @@ export const TOKEN_THEME = {
     "continue-disc",
     "continue-disc-small",
     "cover-caption",
+    "cover-caption-line",
     "cover-fit",
     "cover-gap",
     "cover-gap-loose",
