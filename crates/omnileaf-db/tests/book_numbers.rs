@@ -10,9 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookDetails, BookFile, BookListing, BookNumber, NewRoot, NewSeries, NumberRange, Numbering,
-        PageRequest, PageSize, RootId, RootKind, RootLocator, ScannedBook, Sourced, ValueSource,
-        add_root, record_moved_books, record_scanned_books, series_books,
+        BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, NewRoot,
+        NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind, RootLocator,
+        ScannedBook, SortDirection, Sourced, ValueSource, add_root, record_moved_books,
+        record_scanned_books, series_books, series_numberings,
     },
     rusqlite::types::Value,
 };
@@ -78,19 +79,33 @@ impl Library {
     }
 
     async fn titles_in_reading_order(&self) -> Vec<String> {
-        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
-        let request = PageRequest {
-            after: None,
-            size: PageSize::try_from(10).unwrap(),
-        };
-        let page = self
-            .database
-            .read(move |connection| {
-                series_books(connection, series, BookListing::IN_ORDER, &request)
-            })
+        self.listed(BookListing::IN_ORDER, 10)
             .await
-            .unwrap();
-        page.items.into_iter().map(|book| book.title).collect()
+            .into_iter()
+            .map(|book| book.title)
+            .collect()
+    }
+
+    async fn listed(&self, listing: BookListing, page_size: u16) -> Vec<BookSummary> {
+        let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+        let mut listed = Vec::new();
+        let mut after = None;
+        loop {
+            let request = PageRequest {
+                after,
+                size: PageSize::try_from(page_size).unwrap(),
+            };
+            let page = self
+                .database
+                .read(move |connection| series_books(connection, series, listing, &request))
+                .await
+                .unwrap();
+            listed.extend(page.items);
+            let Some(next) = page.next else {
+                return listed;
+            };
+            after = Some(next.to_string().parse().unwrap());
+        }
     }
 
     async fn numbers(&self) -> Vec<StoredNumbers> {
@@ -294,4 +309,154 @@ async fn lists_the_books_of_a_series_in_reading_order_by_their_numbers() {
         library.titles_in_reading_order().await,
         ["Volume 1", "c002", "c010", "Sample Series 01 Sketches"]
     );
+}
+
+fn every_section(library: &Library) -> Vec<ScannedBook> {
+    vec![
+        library.found(
+            "Volume 1",
+            Some(Numbering::Volume {
+                numbers: numbers(1000, 1000, ValueSource::FolderName),
+            }),
+        ),
+        library.found(
+            "v02 c003",
+            Some(Numbering::Chapter {
+                number: Some(numbers(3000, 3000, ValueSource::FileName)),
+                volume: Some(volume(2000, ValueSource::FileName)),
+            }),
+        ),
+        library.found(
+            "c010",
+            Some(Numbering::Chapter {
+                number: Some(numbers(10_000, 10_000, ValueSource::FileName)),
+                volume: None,
+            }),
+        ),
+        library.found(
+            "c011",
+            Some(Numbering::Chapter {
+                number: Some(numbers(11_000, 11_000, ValueSource::FileName)),
+                volume: None,
+            }),
+        ),
+        library.found(
+            "c012",
+            Some(Numbering::Chapter {
+                number: Some(numbers(12_000, 12_000, ValueSource::FileName)),
+                volume: None,
+            }),
+        ),
+        library.found("Sketches", Some(Numbering::Special { number: None })),
+        library.found("Not placed", None),
+    ]
+}
+
+fn in_section(section: BookSection) -> BookListing {
+    BookListing {
+        section: Some(section),
+        ..BookListing::IN_ORDER
+    }
+}
+
+fn titles_and_positions(books: Vec<BookSummary>) -> Vec<(String, u32)> {
+    books
+        .into_iter()
+        .map(|book| (book.title, book.position))
+        .collect()
+}
+
+#[tokio::test]
+async fn gives_each_listed_book_the_numbering_stored_for_it() {
+    let library = Library::open("listed-numbering").await;
+    let chapter = Numbering::Chapter {
+        number: Some(numbers(12_500, 13_000, ValueSource::FileName)),
+        volume: Some(volume(3000, ValueSource::FolderName)),
+    };
+    library
+        .record(vec![
+            library.found("v03 c012.5-13", Some(chapter)),
+            library.found("Not placed", None),
+        ])
+        .await;
+
+    let listed = library.listed(BookListing::IN_ORDER, 10).await;
+
+    assert_eq!(
+        listed
+            .into_iter()
+            .map(|book| (book.title, book.numbering))
+            .collect::<Vec<_>>(),
+        [
+            ("v03 c012.5-13".to_owned(), Some(chapter)),
+            ("Not placed".to_owned(), None),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_only_the_books_of_the_section_asked_for_counting_places_across_the_series() {
+    let library = Library::open("section-listing").await;
+    library.record(every_section(&library)).await;
+
+    let sections = [
+        BookSection::Volumes,
+        BookSection::Chapters,
+        BookSection::Specials,
+    ];
+    let mut listed = Vec::new();
+    for section in sections {
+        listed.push(titles_and_positions(
+            library.listed(in_section(section), 10).await,
+        ));
+    }
+
+    assert_eq!(
+        listed,
+        [
+            vec![("Volume 1".to_owned(), 1), ("v02 c003".to_owned(), 2)],
+            vec![
+                ("c010".to_owned(), 3),
+                ("c011".to_owned(), 4),
+                ("c012".to_owned(), 5),
+            ],
+            vec![("Sketches".to_owned(), 6)],
+        ]
+    );
+}
+
+#[tokio::test]
+async fn pages_through_a_section_either_way_round_without_running_into_the_next() {
+    let library = Library::open("section-paging").await;
+    library.record(every_section(&library)).await;
+    let last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..in_section(BookSection::Chapters)
+    };
+
+    let first_first = library.listed(in_section(BookSection::Chapters), 1).await;
+    let last_first = library.listed(last_first, 1).await;
+
+    assert_eq!(
+        [first_first, last_first]
+            .map(|books| books.into_iter().map(|book| book.title).collect::<Vec<_>>()),
+        [["c010", "c011", "c012"], ["c012", "c011", "c010"]]
+    );
+}
+
+#[tokio::test]
+async fn reads_the_numbering_of_every_placed_book_of_a_series_in_reading_order() {
+    let library = Library::open("series-numberings").await;
+    let found = every_section(&library);
+    let expected: Vec<Numbering> = found.iter().filter_map(|book| book.numbering).collect();
+    library.record(found).await;
+    let series = NewSeries::local(SERIES, ADDED_AT_MS).unwrap().id();
+
+    let numberings = library
+        .database
+        .read(move |connection| series_numberings(connection, series))
+        .await
+        .unwrap();
+
+    assert_eq!(numberings, expected);
 }

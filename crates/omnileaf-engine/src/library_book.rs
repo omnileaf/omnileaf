@@ -63,6 +63,7 @@ impl SeriesBookListing {
         Some(catalog::BookListing {
             shown,
             direction: self.direction.into(),
+            section: None,
         })
     }
 }
@@ -200,6 +201,7 @@ mod tests {
             added_at_ms: 0,
             reading: catalog::BookReading::NotStarted,
             page_count: Some(PAGE_COUNT),
+            numbering: None,
         }
     }
 

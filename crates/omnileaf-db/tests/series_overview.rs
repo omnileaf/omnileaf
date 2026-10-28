@@ -179,6 +179,7 @@ async fn sums_up_a_series_by_its_title_books_and_books_read() {
         SeriesOverview {
             id: series_id(SERIES),
             title: SERIES.to_owned(),
+            year: None,
             book_count: 5,
             read_count: 2,
             cover: None,

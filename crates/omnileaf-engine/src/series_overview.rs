@@ -170,6 +170,7 @@ mod tests {
             catalog::SeriesOverview {
                 id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
                 title: "Sample Series 04".to_owned(),
+                year: None,
                 book_count: 8,
                 read_count: 2,
                 cover: None,

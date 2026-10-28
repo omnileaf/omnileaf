@@ -4,14 +4,15 @@ use rusqlite::{Connection, OptionalExtension, Row};
 use crate::{
     Error,
     catalog::{
-        Cover, RootLocator, cover::stored_cover, root::stored_locator, stored_id::stored_id,
+        Cover, Numbering, RootLocator, cover::stored_cover, numbering::stored_numbering,
+        root::stored_locator, stored_id::stored_id,
     },
 };
 
 const OVERVIEW_OF_SERIES: &str = concat!(
     "SELECT library_root.locator_kind, library_root.location, library_root.bookmark,
         library_root.tree_name, library_root.tree_place,
-        series.id AS id, series.title, series.book_count, series.read_count,
+        series.id AS id, series.title, series.year, series.book_count, series.read_count,
         series.pages_left, series.uncounted_books, series.adult_rated_books > 0 AS is_rated_adult,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
@@ -19,12 +20,18 @@ const OVERVIEW_OF_SERIES: &str = concat!(
     " LEFT JOIN library_root ON library_root.id = cover.root_id
     WHERE series.id = ?1 AND series.book_count > 0"
 );
+const NUMBERING_OF_PLACED_BOOKS: &str = "SELECT kind, first_number, last_number, number_source,
+        volume_number, volume_source
+    FROM book
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = ?1) AND kind IS NOT NULL
+    ORDER BY reading_order_key, id";
 const ROOT_LOCATOR_KIND_COLUMN: usize = 0;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesOverview {
     pub id: SeriesId,
     pub title: String,
+    pub year: Option<u16>,
     pub book_count: u32,
     pub read_count: u32,
     /// The cover the library shows for the series, absent while none of its books has a file.
@@ -47,6 +54,20 @@ pub fn series_overview(
         .optional()?)
 }
 
+/// The numbering of each of a series' books placed by number, in reading order, leaving out books not placed yet.
+#[tracing::instrument(skip_all, fields(%series))]
+pub fn series_numberings(
+    connection: &Connection,
+    series: SeriesId,
+) -> Result<Vec<Numbering>, Error> {
+    let mut statement = connection.prepare(NUMBERING_OF_PLACED_BOOKS)?;
+    let placed = statement
+        .query_map([series.as_bytes()], stored_numbering)?
+        .filter_map(Result::transpose)
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(placed)
+}
+
 fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
     let cover = stored_cover(row)?;
     let folder = cover
@@ -55,6 +76,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
     Ok(SeriesOverview {
         id: stored_id(row, "id")?,
         title: row.get("title")?,
+        year: row.get("year")?,
         book_count: row.get("book_count")?,
         read_count: row.get("read_count")?,
         cover,
@@ -90,5 +112,21 @@ mod tests {
         expected
             .push("SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned());
         assert_eq!(plan, expected);
+    }
+
+    #[test]
+    fn reads_the_numbering_of_a_series_books_in_reading_order_by_index_without_sorting() {
+        let scratch = ScratchLibrary::new("series-numberings-plan");
+
+        let plan = scratch.query_plan(NUMBERING_OF_PLACED_BOOKS);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING INDEX book_by_series (series_local_id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+            ]
+        );
     }
 }

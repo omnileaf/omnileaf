@@ -52,7 +52,9 @@ pub use home_root::{home_root, keep_home_root_as_linked, set_home_root};
 pub use library_roots::{
     BookmarkedRoot, bookmarked_roots, library_root, library_roots, missing_roots,
 };
-pub use numbering::{BookKind, BookNumber, NumberRange, Numbering, Sourced, ValueSource};
+pub use numbering::{
+    BookKind, BookNumber, BookSection, NumberRange, Numbering, Sourced, ValueSource,
+};
 pub use page::{Page, PageRequest, PageSize};
 pub use page_dimensions::{PageDimensions, page_dimensions, store_page_dimensions};
 pub use person_series::{PersonSeries, person_series};
@@ -76,7 +78,7 @@ pub use series_file_details::{SeriesFileDetails, SeriesPerson, series_file_detai
 pub use series_listing::{
     Inclusion, SeriesFilter, SeriesListing, SeriesOrder, SeriesSort, SortDirection,
 };
-pub use series_overview::{SeriesOverview, series_overview};
+pub use series_overview::{SeriesOverview, series_numberings, series_overview};
 pub use series_page::{SeriesSummary, series_page};
 pub use series_search::{SeriesSearch, search_count, search_page};
 pub use series_titles::{SeriesTitle, series_titles};
