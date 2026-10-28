@@ -13,6 +13,7 @@
     DropdownMenuRadioItem,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { cn } from "#lib/components/cn.ts";
+  import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { quickSettingLook } from "#lib/reader/quick-setting.ts";
@@ -52,6 +53,17 @@
   const isAutomatic = $derived(reading.choice === "automatic");
   const chrome = getReaderChrome();
   const look = $derived(quickSettingLook(chrome.platform, chrome.width));
+  let isOpen = $state(false);
+
+  $effect(() => {
+    if (!isOpen) {
+      return;
+    }
+    return takeBackWithinScreen(() => {
+      isOpen = false;
+      onOpenChange(false);
+    });
+  });
 
   function choiceName(choice: DirectionChoice): string {
     return choice === "automatic"
@@ -67,7 +79,7 @@
   }
 </script>
 
-<DropdownMenu.Root {onOpenChange}>
+<DropdownMenu.Root bind:open={isOpen} {onOpenChange}>
   <DropdownMenu.Trigger
     class={cn(look.button, reading.direction === "rightToLeft" && look.lit)}
   >

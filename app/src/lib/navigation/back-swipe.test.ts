@@ -15,11 +15,11 @@ test("ignores the swipe on a top-level section, which has nothing to go back to"
   expect(backSwipeEdge(false, "rtl")).toBeNull();
 });
 
-test("starts with the previous screen 30% behind and dimmed", () => {
+test("starts with the previous screen 20% behind under a quarter of the scrim", () => {
   expect(placeScreens(0, false)).toEqual({
     current: 0,
-    previous: -0.3,
-    dimming: 0.12,
+    previous: -0.2,
+    dimming: 0.25,
   });
 });
 
@@ -27,8 +27,8 @@ test("moves the current screen one to one and brings the previous one in", () =>
   const placement = placeScreens(0.5, false);
 
   expect(placement.current).toBe(0.5);
-  expect(placement.previous).toBeCloseTo(-0.15);
-  expect(placement.dimming).toBeCloseTo(0.06);
+  expect(placement.previous).toBeCloseTo(-0.1);
+  expect(placement.dimming).toBeCloseTo(0.125);
 });
 
 test("has the previous screen in place and undimmed once the swipe arrives", () => {

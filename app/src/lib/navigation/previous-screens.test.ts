@@ -43,3 +43,24 @@ test("forgets every screen once it would show out of date", () => {
 
   expect(screens.of("/settings")).toBeUndefined();
 });
+
+test("lands on the screen it kept once the swipe's navigation arrives there", () => {
+  const screens = new PreviousScreens();
+  screens.keep("/series/1", screenSaying("Series"));
+  screens.landOn("/series/1");
+
+  const landed = screens.landedOn("/series/1");
+
+  expect(landed?.content.textContent).toBe("Series");
+});
+
+test("lands nowhere later once the swipe's navigation went nowhere", () => {
+  const screens = new PreviousScreens();
+  screens.keep("/series/1", screenSaying("Series"));
+  screens.landOn("/series/1");
+  screens.cancelLanding();
+
+  const landed = screens.landedOn("/series/1");
+
+  expect(landed).toBeUndefined();
+});

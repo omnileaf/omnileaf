@@ -24,6 +24,7 @@
   import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
   import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
+  import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -80,20 +81,48 @@
   const heading = $derived(moreHeading(title, seriesTitle));
   const headingId = $props.id();
   let isSheetOpen = $state(false);
+  let isMenuOpen = $state(false);
   const showFile = $derived(showFileLabel(platform));
 
   function closeSheet(): void {
     isSheetOpen = false;
     onOpenChange(false);
   }
+
+  function closeMenu(): void {
+    isMenuOpen = false;
+    onOpenChange(false);
+  }
+
+  function closesWhenGone(): () => void {
+    return () => {
+      if (isMenuOpen) {
+        closeMenu();
+      }
+      if (isSheetOpen) {
+        closeSheet();
+      }
+    };
+  }
+
+  $effect(() => {
+    if (isSheetOpen) {
+      return takeBackWithinScreen(closeSheet);
+    }
+    if (isMenuOpen) {
+      return takeBackWithinScreen(closeMenu);
+    }
+    return undefined;
+  });
 </script>
 
 {#if isWide.current || floats}
-  <DropdownMenu {onOpenChange}>
+  <DropdownMenu bind:open={isMenuOpen} {onOpenChange}>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
         <Button
           {...props}
+          {@attach closesWhenGone}
           look="icon"
           aria-label={m.reader_more()}
           class={button}
@@ -163,6 +192,7 @@
   </DropdownMenu>
 {:else}
   <Button
+    {@attach closesWhenGone}
     type="button"
     look="icon"
     aria-label={m.reader_more()}

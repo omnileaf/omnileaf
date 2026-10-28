@@ -1,18 +1,16 @@
-import { execFile } from "node:child_process";
 import { cp, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { promisify } from "node:util";
 
-import { afterAll, beforeAll, expect, inject, test } from "vitest";
+import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
+import { capability, onMyIphoneOmnileaf } from "./ios-app-data.ts";
 import { createSampleLibrary } from "./sample-library.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const ADDED_SERIES = "Series Added While Away";
 const SAMPLE_PAGE = join("Sample Series 03", "Chapter 01", "001.png");
 const ADDED_BOOK = "Chapter 01";
-const SIMCTL_TIMEOUT_MS = 30_000;
 const RESCAN_TIMEOUT_MS = 60_000;
 const TEST_TIMEOUT_MS = 180_000;
 const STAYS_IN_THE_BACKGROUND = -1;
@@ -23,35 +21,10 @@ const ADDED_SERIES_TITLE = xpath(
   `//main//*[normalize-space()='${ADDED_SERIES}']`,
 );
 
-const run = promisify(execFile);
-
 const appSession = useAppSession();
 
-function capability(name: string): string {
-  const value = inject("appUnderTest").capabilities[name];
-  if (typeof value !== "string") {
-    throw new Error(`the iOS session has no ${name}`);
-  }
-  return value;
-}
-
-async function homeFolder(): Promise<string> {
-  const { stdout } = await run(
-    "xcrun",
-    [
-      "simctl",
-      "get_app_container",
-      capability("appium:udid"),
-      capability("appium:bundleId"),
-      "data",
-    ],
-    { timeout: SIMCTL_TIMEOUT_MS },
-  );
-  return join(stdout.trim(), "Documents");
-}
-
 async function removeAddedSeries(): Promise<void> {
-  await rm(join(await homeFolder(), ADDED_SERIES), {
+  await rm(join(await onMyIphoneOmnileaf(), ADDED_SERIES), {
     recursive: true,
     force: true,
   });
@@ -84,7 +57,7 @@ test(
   { timeout: TEST_TIMEOUT_MS },
   async () => {
     const bundleId = capability("appium:bundleId");
-    const home = await homeFolder();
+    const home = await onMyIphoneOmnileaf();
     const sample = await createSampleLibrary();
     try {
       await appSession().runMobileCommand("backgroundApp", {

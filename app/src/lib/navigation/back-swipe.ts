@@ -8,8 +8,8 @@ export interface ScreenPlacement {
   readonly dimming: number;
 }
 
-const PREVIOUS_SCREEN_OFFSET = 0.3;
-const PREVIOUS_SCREEN_DIMMING = 0.12;
+const PREVIOUS_SCREEN_OFFSET = 0.2;
+const PREVIOUS_SCREEN_DIMMING = 0.25;
 const HALFWAY = 0.5;
 const FLICK_SCREEN_WIDTHS_PER_SECOND = 0.75;
 
@@ -23,6 +23,10 @@ export function backSwipeEdge(
   direction: TextDirection,
 ): SwipeEdge | null {
   return hasBackLink ? BACK_EDGES[direction] : null;
+}
+
+export function directionOf(screen: Element): TextDirection {
+  return getComputedStyle(screen).direction === "rtl" ? "rtl" : "ltr";
 }
 
 export function placeScreens(
@@ -44,3 +48,6 @@ export function isGoingBack(progress: number, velocity: number): boolean {
   }
   return progress > HALFWAY && velocity > -FLICK_SCREEN_WIDTHS_PER_SECOND;
 }
+
+export const SETTLING_MOTION =
+  "duration-slide ease-glass motion-reduce:duration-grow motion-reduce:ease-out";

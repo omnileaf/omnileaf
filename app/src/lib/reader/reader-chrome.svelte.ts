@@ -1,13 +1,19 @@
 import { createContext } from "svelte";
+import { MediaQuery } from "svelte/reactivity";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
-import { WindowWidth, type WidthClass } from "#lib/page/breakpoints.ts";
+import {
+  COMPACT_SIDE_QUERY,
+  WindowWidth,
+  type WidthClass,
+} from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
 
 import { floatsReaderBars, spansReaderBars } from "./reader-bar.ts";
 
 export class ReaderChrome {
   readonly #width = new WindowWidth();
+  readonly #hasCompactSide = new MediaQuery(COMPACT_SIDE_QUERY);
 
   constructor(readonly platform: Platform) {}
 
@@ -17,6 +23,10 @@ export class ReaderChrome {
 
   get isOnPhone(): boolean {
     return isPhone(this.platform, this.width);
+  }
+
+  get isPhoneSized(): boolean {
+    return this.#hasCompactSide.current;
   }
 
   get floats(): boolean {

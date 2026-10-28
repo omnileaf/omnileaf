@@ -23,6 +23,7 @@ import {
   tokenColour,
   viewportOf,
 } from "./fixtures.ts";
+import { NOT_STARTED as UNOPENED, readerBook } from "./reader-book.ts";
 import { settleBarTitle } from "./series-bar.ts";
 import {
   BOOKS_PER_PAGE,
@@ -1585,6 +1586,12 @@ test.describe("swiping back from the edge on an iPhone", () => {
     backend: {
       ...SHELF_BACKEND,
       appInfo: onPlatform("ios").backend.appInfo,
+      openBook: (id) => ({
+        ...readerBook(UNOPENED),
+        id,
+        series: SERIES_ID,
+        seriesTitle: SERIES_TITLE,
+      }),
       watchBackSwipes: (channel) => {
         swipes = channel;
         return null;
@@ -1631,9 +1638,29 @@ test.describe("swiping back from the edge on an iPhone", () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test("lets no swipe from the edge reach a book opened in the reader", async ({
+  test("takes a swipe from the edge in a book opened here back to the series", async ({
     page,
   }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await openFromTheLibrary(page);
+    const seriesSwipes = swipes;
+    await books(page)
+      .filter({ hasText: shelf.titleOf(5) })
+      .getByRole("link")
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
+    await expect.poll(() => swipes).not.toBe(seriesSwipes);
+    await expect.poll(() => allowedEdges.at(-1)).toBe("left");
+
+    await swipeBack();
+
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+  });
+
+  test("lets no swipe from the edge reach a book opened in the reader on a tablet", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
     await openFromTheLibrary(page);
     await expect.poll(() => allowedEdges.at(-1)).toBe("left");
 
@@ -1644,6 +1671,26 @@ test.describe("swiping back from the edge on an iPhone", () => {
 
     await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(5)}$`));
     await expect.poll(() => allowedEdges.at(-1)).toBeNull();
+  });
+
+  test("keeps the series still while a swipe back is on its way to end picking", async ({
+    page,
+  }) => {
+    await openFromTheLibrary(page);
+    const start = await boxOf(page.getByRole("main"));
+    await pickBooks(page, 4);
+    await expect.poll(() => swipes).toBeDefined();
+
+    await swipes?.send({ kind: "moved", progress: SWIPED_PAST_HALFWAY });
+    await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          requestAnimationFrame(resolve);
+        }),
+    );
+
+    expect((await boxOf(page.getByRole("main"))).x).toBe(start.x);
+    await expect(page.locator("[data-previous-screen]")).toHaveCount(0);
   });
 
   test("ends picking books with a swipe back, staying on the series, and leaves with the next", async ({
