@@ -1,5 +1,6 @@
 use std::ops::RangeInclusive;
 
+mod bare_number;
 mod language;
 mod markers;
 mod number;
@@ -7,6 +8,7 @@ mod scan;
 mod tags;
 mod title;
 
+use bare_number::read_bare_number;
 pub use language::LanguageTag;
 use markers::Markers;
 pub use number::{Number, NumberRange};
@@ -21,6 +23,7 @@ pub struct BookName {
     pub title: String,
     pub volume: Option<NumberRange>,
     pub chapter: Option<NumberRange>,
+    pub number: Option<NumberRange>,
     pub language: Option<LanguageTag>,
 }
 
@@ -31,17 +34,41 @@ pub struct SeriesName {
 }
 
 #[must_use]
-pub fn read_book_name(name: &str, _series_title: Option<&str>) -> BookName {
+pub fn read_book_name(name: &str, series_title: Option<&str>) -> BookName {
     let title = read_title(name);
-    let markers = match &title {
-        Title::Text(text) => Markers::read(text),
-        Title::OnlyTags(_) => Markers::default(),
+    let numbers = match &title {
+        Title::Text(text) => Numbers::read(text, series_title),
+        Title::OnlyTags(_) => Numbers::default(),
     };
     BookName {
         title: title.into_string(),
-        volume: markers.volume,
-        chapter: markers.chapter,
+        volume: numbers.volume,
+        chapter: numbers.chapter,
+        number: numbers.number,
         language: tags(name).find_map(LanguageTag::parse),
+    }
+}
+
+#[derive(Debug, Default)]
+struct Numbers {
+    volume: Option<NumberRange>,
+    chapter: Option<NumberRange>,
+    number: Option<NumberRange>,
+}
+
+impl Numbers {
+    fn read(title: &str, series_title: Option<&str>) -> Self {
+        let Markers { volume, chapter } = Markers::read(title);
+        let has_marker = volume.is_some() || chapter.is_some();
+        Self {
+            volume,
+            chapter,
+            number: if has_marker {
+                None
+            } else {
+                read_bare_number(title, series_title)
+            },
+        }
     }
 }
 

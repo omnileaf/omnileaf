@@ -430,6 +430,87 @@ fn never_reads_a_number_from_a_tag() {
     assert_eq!(markers, [(None, None), (None, None), (single("1"), None)]);
 }
 
+const SERIES_TITLE: Option<&str> = Some("Sample Series 04");
+
+fn bare_number_of(name: &str) -> Option<NumberRange> {
+    read_book_name(name, SERIES_TITLE).number
+}
+
+#[test]
+fn reads_the_number_left_once_the_series_title_is_removed() {
+    let numbers = ["Sample Series 04 003", "003", "Sample Series 04 Extras"].map(bare_number_of);
+
+    assert_eq!(numbers, [single("3"), single("3"), None]);
+}
+
+#[test]
+fn removes_the_series_title_ignoring_case_and_spacing() {
+    let numbers = [
+        read_book_name("sample_series  04 003", SERIES_TITLE),
+        read_book_name("Sample Series 04 003", Some("  SAMPLE__series 04 ")),
+    ]
+    .map(|book| book.number);
+
+    assert_eq!(numbers, [single("3"); 2]);
+}
+
+#[test]
+fn removes_the_series_title_only_at_a_word_boundary() {
+    let number = bare_number_of("Sample Series 045 003");
+
+    assert_eq!(number, single("45"));
+}
+
+#[test]
+fn reads_the_first_number_of_a_name_without_a_series_title() {
+    let number = read_book_name("Sample Series 04 003", None).number;
+
+    assert_eq!(number, single("4"));
+}
+
+#[test]
+fn reads_only_a_number_that_touches_no_letter_or_digit() {
+    let numbers = [
+        "Sample Series 04 3rd 5",
+        "Sample Series 04 x3 7",
+        "Sample Series 04 #2.5",
+        "Sample Series 04 3rd",
+    ]
+    .map(bare_number_of);
+
+    assert_eq!(numbers, [single("5"), single("7"), single("2.5"), None]);
+}
+
+#[test]
+fn reads_a_range_of_bare_numbers() {
+    let numbers = [
+        "Sample Series 04 001-003",
+        "Sample Series 04 001 ~ 003",
+        "Sample Series 04 003 - 001",
+        "Sample Series 04 001-003b",
+    ]
+    .map(bare_number_of);
+
+    assert_eq!(
+        numbers,
+        [range("1", "3"), range("1", "3"), single("3"), single("1")]
+    );
+}
+
+#[test]
+fn reads_no_bare_number_beside_a_marker() {
+    let book = read_book_name("Sample Series 04 v01 003", SERIES_TITLE);
+
+    assert_eq!((book.volume, book.number), (single("1"), None));
+}
+
+#[test]
+fn reads_no_bare_number_from_a_tag() {
+    let number = bare_number_of("Sample Series 04 [003] Extras");
+
+    assert_eq!(number, None);
+}
+
 fn tag() -> impl Strategy<Value = String> {
     ("[A-Za-z0-9 ._-]{0,8}", any::<bool>()).prop_map(|(text, square)| {
         if square {
@@ -457,7 +538,13 @@ fn decimal() -> impl Strategy<Value = String> {
 }
 
 fn marker() -> impl Strategy<Value = &'static str> {
-    prop_oneof![Just("v"), Just("Vol. "), Just("c"), Just("Chapter ")]
+    prop_oneof![
+        Just("v"),
+        Just("Vol. "),
+        Just("c"),
+        Just("Chapter "),
+        Just("")
+    ]
 }
 
 proptest! {
@@ -474,8 +561,8 @@ proptest! {
         let tagged = read_book_name(&tagged_words.join(" "), None);
 
         prop_assert_eq!(
-            (tagged.title, tagged.volume, tagged.chapter),
-            (plain.title, plain.volume, plain.chapter)
+            (tagged.title, tagged.volume, tagged.chapter, tagged.number),
+            (plain.title, plain.volume, plain.chapter, plain.number)
         );
     }
 
@@ -487,11 +574,15 @@ proptest! {
     ) {
         let padded_digits = format!("{}{digits}", "0".repeat(zeros));
 
-        let plain = read_book_name(&format!("Sample Series 04 {marker}{digits}"), None);
-        let padded = read_book_name(&format!("Sample Series 04 {marker}{padded_digits}"), None);
+        let plain = read_book_name(&format!("Sample Series 04 {marker}{digits}"), SERIES_TITLE);
+        let padded =
+            read_book_name(&format!("Sample Series 04 {marker}{padded_digits}"), SERIES_TITLE);
 
-        prop_assert!(plain.volume.or(plain.chapter).is_some());
-        prop_assert_eq!((padded.volume, padded.chapter), (plain.volume, plain.chapter));
+        prop_assert!(plain.volume.or(plain.chapter).or(plain.number).is_some());
+        prop_assert_eq!(
+            (padded.volume, padded.chapter, padded.number),
+            (plain.volume, plain.chapter, plain.number)
+        );
     }
 
     #[test]
