@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import type { NumberRange, SeriesBook } from "#lib/ipc/bindings.ts";
 
 import {
+  bookIdsOf,
   booksOnly,
   type GapPlacing,
   type SectionTile,
@@ -249,4 +250,16 @@ test("keys a book by its id and a gap by its first missing volume", () => {
   const tiles = withGaps([volume(4), volume(7)], IN_ORDER);
 
   expect(tiles.map(tileKey)).toEqual(["v4", "gap-5", "v7"]);
+});
+
+test("picks out the books, in order, and never a gap", () => {
+  const tiles = withGaps([volume(4), volume(7), volume(9)], {
+    ...IN_ORDER,
+    missing: [
+      { first: 5, last: 6 },
+      { first: 8, last: 8 },
+    ],
+  });
+
+  expect(bookIdsOf(tiles)).toEqual(["v4", "v7", "v9"]);
 });
