@@ -592,6 +592,7 @@ async fn sums_up_a_volume_by_its_chapters_read_cover_and_folder() {
                     found.read_count,
                     found.cover.is_some(),
                     found.cover_location,
+                    found.volume_source,
                 )
             })
         })
@@ -603,13 +604,15 @@ async fn sums_up_a_volume_by_its_chapters_read_cover_and_folder() {
                 3,
                 1,
                 true,
-                Some(PathBuf::from("Sample Series 01/Volume 2/v02 c005.cbz"))
+                Some(PathBuf::from("Sample Series 01/Volume 2/v02 c005.cbz")),
+                Some(ValueSource::FolderName)
             )),
             Some((
                 1,
                 1,
                 true,
-                Some(PathBuf::from("Sample Series 01/Volume 3/v03 c009.cbz"))
+                Some(PathBuf::from("Sample Series 01/Volume 3/v03 c009.cbz")),
+                Some(ValueSource::FolderName)
             )),
             None,
         ]

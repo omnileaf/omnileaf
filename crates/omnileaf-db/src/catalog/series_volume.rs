@@ -5,7 +5,7 @@ use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
-    catalog::{BookNumber, Cover, cover::stored_cover, native_path},
+    catalog::{BookNumber, Cover, ValueSource, cover::stored_cover, native_path},
     reading_order::volume_keys,
 };
 
@@ -19,7 +19,8 @@ const VOLUME_OF_SERIES: &str = "SELECT
                 AND book.reading_order_key >= :start AND book.reading_order_key < :end
                 AND book_state.is_read = 1) AS read_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev,
-        cover.location AS cover_location
+        cover.location AS cover_location,
+        (SELECT volume_source FROM book WHERE book.id = cover.book_id) AS volume_source
     FROM series
     LEFT JOIN book_file AS cover ON cover.id = (
         SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
@@ -40,6 +41,8 @@ pub struct VolumeOverview {
     pub cover: Option<Cover>,
     /// Where that chapter's file lies in its library folder, whose parent is the volume's folder.
     pub cover_location: Option<PathBuf>,
+    /// Where that chapter's volume number was read from, absent while the volume has no chapter with a file.
+    pub volume_source: Option<ValueSource>,
 }
 
 /// None for a series missing from the catalog or a volume holding no chapters.
@@ -74,5 +77,6 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<VolumeOverview> {
         read_count: row.get("read_count")?,
         cover,
         cover_location,
+        volume_source: row.get("volume_source")?,
     })
 }
