@@ -1,6 +1,6 @@
 import { expect, settle, test } from "./fixtures.ts";
 
-const HELD_IN_STARTING_STYLE_MS = 3000;
+const HELD_IN_STARTING_STYLE_MS = 4000;
 const NEVER_ENDING_SLIDE_S = 3600;
 
 test("finishes a slide that starts only once the grace period is over", async ({
@@ -30,6 +30,9 @@ test("finishes a slide that starts only once the grace period is over", async ({
   await settle(sheet);
 
   expect(
-    await sheet.evaluate((element) => element.getAnimations().length),
-  ).toBe(0);
+    await sheet.evaluate((element) => ({
+      animations: element.getAnimations().length,
+      translate: getComputedStyle(element).translate,
+    })),
+  ).toEqual({ animations: 0, translate: "none" });
 });
