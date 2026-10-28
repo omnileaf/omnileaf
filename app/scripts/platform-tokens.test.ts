@@ -329,3 +329,30 @@ test("matches the committed files, so a change to the source is regenerated", ()
 
   expect(committed).toEqual(rendered);
 });
+
+test("draws the wallpaper's colours after the contrast settings, so they win when both are on", () => {
+  const accent = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "android-light-contrast-high": "#002a18",
+      "android-dark-contrast-high": "#c2f0d2",
+      "android-light-colours-wallpaper":
+        "var(--android-wallpaper-light-primary)",
+      "android-dark-colours-wallpaper": "var(--android-wallpaper-dark-primary)",
+    },
+  };
+
+  const android = render(accent).get("tokens-android.css") ?? "";
+
+  expect(android.indexOf('[data-contrast="high"]')).toBeLessThan(
+    android.indexOf('[data-colours="wallpaper"]'),
+  );
+  expect(android).toContain(
+    `:root[data-platform="android"][data-colours="wallpaper"][data-theme="dark"],
+:root[data-platform="android"][data-colours="wallpaper"] [data-theme="dark"] {
+  --native-color-accent: var(--android-wallpaper-dark-primary);
+}
+`,
+  );
+});

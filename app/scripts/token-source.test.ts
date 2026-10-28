@@ -320,3 +320,41 @@ test("names a colour and a shadow that share a name, since Tailwind reads both a
     'Token "lift" is both a colour and a shadow; give one another name.',
   );
 });
+
+test("reads android's wallpaper colours in each theme", () => {
+  const fromWallpaper = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "android-light-colours-wallpaper":
+        "var(--android-wallpaper-light-primary)",
+      "android-dark-colours-wallpaper": "var(--android-wallpaper-dark-primary)",
+    },
+  };
+
+  const [token] = parse(fromWallpaper).tokens;
+
+  expect(token?.modes).toEqual([
+    {
+      platform: "android",
+      mode: "colours-wallpaper",
+      light: "var(--android-wallpaper-light-primary)",
+      dark: "var(--android-wallpaper-dark-primary)",
+    },
+  ]);
+});
+
+test("names wallpaper colours drawn on ios", () => {
+  const borrowed = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "ios-light-colours-wallpaper": "var(--android-wallpaper-light-primary)",
+      "ios-dark-colours-wallpaper": "var(--android-wallpaper-dark-primary)",
+    },
+  };
+
+  expect(() => parse(borrowed)).toThrow(
+    'Token "accent" sets colours-wallpaper on ios, but only android has colours-wallpaper.',
+  );
+});
