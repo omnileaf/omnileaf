@@ -1,4 +1,5 @@
 import { Channel } from "@tauri-apps/api/core";
+import { TauriEvent } from "@tauri-apps/api/event";
 import { afterEach, expect, test } from "vitest";
 
 import {
@@ -102,7 +103,7 @@ test("carries a drag over the window to whoever listens for it", async () => {
     setTimeout(resolve, 20);
   });
 
-  ipc.emit("tauri://drag-leave", null);
+  ipc.emit(TauriEvent.DRAG_LEAVE, null);
 
   await expect.poll(() => heard).toEqual([{ kind: "leave" }]);
   stop();

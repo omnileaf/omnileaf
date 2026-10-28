@@ -1,3 +1,4 @@
+import { TauriEvent } from "@tauri-apps/api/event";
 import type { Locator, Page } from "@playwright/test";
 
 import type {
@@ -15,9 +16,9 @@ import {
 } from "./fixtures.ts";
 import { BOOK_ID, NOT_STARTED, readerBook, servePages } from "./reader-book.ts";
 
-const DRAG_ENTER = "tauri://drag-enter";
-const DRAG_DROP = "tauri://drag-drop";
-const DRAG_LEAVE = "tauri://drag-leave";
+const DRAG_ENTER = TauriEvent.DRAG_ENTER;
+const DRAG_DROP = TauriEvent.DRAG_DROP;
+const DRAG_LEAVE = TauriEvent.DRAG_LEAVE;
 const PATHS = [
   "/home/reader/Downloads/One.cbz",
   "/home/reader/Downloads/Two.cbz",

@@ -1,4 +1,4 @@
-import { emit } from "@tauri-apps/api/event";
+import { emit, TauriEvent } from "@tauri-apps/api/event";
 import { clearMocks, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test, vi } from "vitest";
 
@@ -33,16 +33,16 @@ test("reports each stage of a drag, with positions in page pixels", async () => 
   const { heard, stop } = listening();
   await whenListening();
 
-  await emit("tauri://drag-enter", {
+  await emit(TauriEvent.DRAG_ENTER, {
     paths: ["/a/One.cbz"],
     position: { x: 400, y: 200 },
   });
-  await emit("tauri://drag-over", { position: { x: 600, y: 300 } });
-  await emit("tauri://drag-drop", {
+  await emit(TauriEvent.DRAG_OVER, { position: { x: 600, y: 300 } });
+  await emit(TauriEvent.DRAG_DROP, {
     paths: ["/a/One.cbz"],
     position: { x: 600, y: 300 },
   });
-  await emit("tauri://drag-leave", null);
+  await emit(TauriEvent.DRAG_LEAVE, null);
 
   await expect.poll(() => heard.length).toBe(4);
   expect(heard).toEqual([
@@ -60,7 +60,7 @@ test("stops reporting once stopped", async () => {
   stop();
   await whenListening();
 
-  await emit("tauri://drag-leave", null);
+  await emit(TauriEvent.DRAG_LEAVE, null);
   await whenListening();
 
   expect(heard).toEqual([]);
