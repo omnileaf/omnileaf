@@ -10,6 +10,7 @@
   import FoundLibraryStep from "#lib/first-launch/FoundLibraryStep.svelte";
   import { FIRST_LAUNCH_ROUTE } from "#lib/first-launch/gate.ts";
   import HomeStep from "#lib/first-launch/HomeStep.svelte";
+  import { usesSetupPages } from "#lib/first-launch/setup-pages.ts";
   import LinkStep from "#lib/first-launch/LinkStep.svelte";
   import { PickerQuestion } from "#lib/first-launch/picker-question.svelte.ts";
   import { STEP_TOAST_ROOM } from "#lib/first-launch/StepFrame.svelte";
@@ -51,6 +52,7 @@
   const theme = getThemeSetting();
 
   const device = $derived(deviceKindOf(data.appInfo.platform));
+  const isSetupPage = $derived(usesSetupPages(data.appInfo.platform));
   const homeArrival = arrivalToTell();
   let isLeaving = $state(false);
   let resumingAt: FirstLaunchStep | undefined = $state(stepToResumeAt());
@@ -239,14 +241,26 @@
 </script>
 
 <div
-  class="flex justify-center bg-background min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl ios:bg-ios-grouped"
+  class={[
+    "flex bg-background",
+    isSetupPage
+      ? "block-dvh"
+      : "justify-center min-block-dvh expanded:items-start expanded:bg-backdrop expanded:p-2xl ios:bg-ios-grouped",
+  ]}
 >
   <div
     bind:this={card}
-    class="flex flex-1 max-inline-first-launch-card min-inline-none expanded:flex-none expanded:rounded-sheet expanded:border expanded:border-border expanded:bg-background expanded:shadow-card expanded:inline-first-launch-card"
+    class={[
+      "flex flex-1 min-inline-none",
+      !isSetupPage &&
+        "max-inline-first-launch-card expanded:flex-none expanded:rounded-sheet expanded:border expanded:border-border expanded:bg-background expanded:shadow-card expanded:inline-first-launch-card",
+    ]}
   >
     <main
-      class="flex flex-1 flex-col pbs-safe-top min-inline-none expanded:pbs-none"
+      class={[
+        "flex flex-1 flex-col min-inline-none",
+        isSetupPage ? "min-block-none" : "pbs-safe-top expanded:pbs-none",
+      ]}
     >
       {#if step === "welcome"}
         <WelcomeStep {device} onNext={next} />

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Folder, Lock, Sparkles } from "@lucide/svelte";
 
+  import { currentPlatform } from "#lib/page/platform.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -9,9 +10,12 @@
   import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
+  import { usesSetupPages } from "./setup-pages.ts";
   import StepHeader from "./StepHeader.svelte";
 
   const PROMISE_ICON_SIZE = 20;
+
+  const isSetupPage = usesSetupPages(currentPlatform());
 
   let { device, onNext }: { device: DeviceKind; onNext: () => void } = $props();
 
@@ -67,8 +71,12 @@
 <StepFrame step="welcome">
   <StepHeader scale="welcome">
     {#snippet badge()}
-      <div class="flex pbs-xl pbe-sm">
-        <AppIcon class="block-app-icon inline-app-icon" />
+      <div class={["flex pbe-sm", !isSetupPage && "pbs-xl"]}>
+        <AppIcon
+          class={isSetupPage
+            ? "block-setup-app-icon inline-setup-app-icon"
+            : "block-app-icon inline-app-icon"}
+        />
       </div>
     {/snippet}
     {m.first_launch_welcome_title()}
@@ -76,16 +84,35 @@
       <WidthWording wording={BODY[device]} />
     {/snippet}
   </StepHeader>
-  <ul class="mbs-sm flex flex-col gap-promise-gap">
+  <ul
+    class={[
+      "mbs-sm flex flex-col",
+      isSetupPage ? "gap-lg pbs-md" : "gap-promise-gap",
+    ]}
+  >
     {#each PROMISES[device] as promise (promise.title)}
-      <li class="flex items-center gap-promise-gap">
+      <li
+        class={[
+          "flex gap-promise-gap",
+          isSetupPage ? "items-start" : "items-center",
+        ]}
+      >
         <span
-          class="flex shrink-0 items-center justify-center rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile"
+          class={[
+            "flex shrink-0 items-center justify-center",
+            isSetupPage
+              ? "text-windows-accent"
+              : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile",
+          ]}
         >
           <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
         </span>
         <span class="flex flex-col">
-          <span class="font-semibold">{promise.title()}</span>
+          <span
+            class={isSetupPage
+              ? "text-label/setup-body font-semibold"
+              : "font-semibold"}>{promise.title()}</span
+          >
           <span class="text-footnote text-muted">
             <WidthWording wording={promise.detail} />
           </span>
