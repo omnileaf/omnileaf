@@ -11,11 +11,27 @@ use crate::{
     },
 };
 
+/// The series whose title, or one tag or one person's name, holds every phrase.
+macro_rules! matching_series {
+    () => {
+        "SELECT rowid AS local_id FROM series_fts WHERE series_fts MATCH :phrases
+        UNION ALL
+        SELECT series_tag.series_local_id FROM search_name_fts
+            JOIN search_name ON search_name.id = search_name_fts.rowid AND search_name.kind = 'tag'
+            JOIN series_tag ON series_tag.name = search_name.name
+            WHERE search_name_fts MATCH :phrases
+        UNION ALL
+        SELECT book.series_local_id FROM search_name_fts
+            JOIN search_name ON search_name.id = search_name_fts.rowid AND search_name.kind = 'person'
+            JOIN book_person ON book_person.name = search_name.name
+            JOIN book ON book.id = book_person.book_id
+            WHERE search_name_fts MATCH :phrases"
+    };
+}
+
 /// Matches the phrases once for all three stages, rather than once in each.
 const MATCHED: Listing<TitlePlace> = listing! {
-    with: "WITH matched AS MATERIALIZED (
-            SELECT rowid AS local_id FROM series_fts WHERE series_fts MATCH :phrases
-        ) ",
+    with: concat!("WITH matched AS MATERIALIZED (", matching_series!(), ") "),
     condition: " AND series.local_id IN matched",
     seek: "(series.title_key, series.id) > (:after_key, :after_id)",
     order: "title_key, id",
@@ -33,7 +49,9 @@ const CONTAINING: Listing<TitlePlace> = listing! {
 const MATCHED_COUNT: &str = concat!(
     "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)
-        AND local_id IN (SELECT rowid FROM series_fts WHERE series_fts MATCH :phrases)",
+        AND local_id IN (",
+    matching_series!(),
+    ")",
     counted_conditions!()
 );
 
@@ -117,12 +135,41 @@ mod tests {
     const FIRST_TITLES: &str =
         "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=?)";
     const TITLES_AFTER: &str = "SEARCH series USING INDEX series_by_stage_and_title (reading_stage=? AND (title_key,id)>(?,?))";
-    const MATCH_PHRASES: &str = "SCAN series_fts VIRTUAL TABLE INDEX 0:M1";
+    const MATCHING_TITLES_TAGS_AND_PEOPLE: [&str; 12] = [
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN series_fts VIRTUAL TABLE INDEX 0:M1",
+        "UNION ALL",
+        "SCAN search_name_fts VIRTUAL TABLE INDEX 0:M1",
+        "SEARCH search_name USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH series_tag USING COVERING INDEX series_tag_by_name (name=?)",
+        "UNION ALL",
+        "SCAN search_name_fts VIRTUAL TABLE INDEX 0:M1",
+        "SEARCH search_name USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH book_person USING COVERING INDEX book_person_by_name (name=?)",
+        "SEARCH book USING PRIMARY KEY (id=?)",
+    ];
+
+    /// A count reads the list straight from the union, whose three parts each build a bloom filter.
+    fn matching_titles_tags_and_people_for_a_count() -> Vec<String> {
+        let bloom_filter_after = [2, 6, 11];
+        MATCHING_TITLES_TAGS_AND_PEOPLE
+            .iter()
+            .enumerate()
+            .flat_map(|(at, &step)| {
+                let bloom = bloom_filter_after
+                    .contains(&at)
+                    .then_some("CREATE BLOOM FILTER");
+                [Some(step), bloom].into_iter().flatten()
+            })
+            .map(ToOwned::to_owned)
+            .collect()
+    }
 
     /// The numbers SQLite gives each stage's list of series carrying a chosen tag, its list of matched series, then its two cover subqueries, outer first.
     const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, u8, (u8, u8)); 3] =
-        [(6, 7, (4, 2)), (15, 16, (13, 11)), (22, 23, (20, 18))];
-    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (9, 10);
+        [(8, 9, (6, 4)), (17, 18, (15, 13)), (24, 25, (22, 20))];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (11, 12);
 
     fn matching_each_stage(series_step: &str) -> Vec<String> {
         let [unstarted, in_progress, finished] = matched_stages(series_step);
@@ -135,10 +182,13 @@ mod tests {
 
     fn matched_stages(series_step: &str) -> [Vec<String>; 3] {
         SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(tags, list, covers)| {
-            let matched_once: &[&str] = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].1 {
-                &["MATERIALIZE matched", MATCH_PHRASES]
+            let matched_once: Vec<&str> = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].1 {
+                ["MATERIALIZE matched"]
+                    .into_iter()
+                    .chain(MATCHING_TITLES_TAGS_AND_PEOPLE)
+                    .collect()
             } else {
-                &[]
+                Vec::new()
             };
             let steps = [series_step.to_owned(), format!("LIST SUBQUERY {list}")]
                 .into_iter()
@@ -200,15 +250,11 @@ mod tests {
         assert_eq!(
             plans,
             [
-                [
-                    by_stage.to_owned(),
-                    "LIST SUBQUERY 1".to_owned(),
-                    MATCH_PHRASES.to_owned(),
-                    "CREATE BLOOM FILTER".to_owned(),
-                ]
-                .into_iter()
-                .chain(tag_list_steps(2))
-                .collect::<Vec<_>>(),
+                [by_stage.to_owned(), "LIST SUBQUERY 3".to_owned(),]
+                    .into_iter()
+                    .chain(matching_titles_tags_and_people_for_a_count())
+                    .chain(tag_list_steps(4))
+                    .collect::<Vec<_>>(),
                 [by_stage.to_owned()]
                     .into_iter()
                     .chain(tag_list_steps(1))

@@ -93,6 +93,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0057_count_the_manga_books_of_each_series"),
     migration!("0058_create_book_bookmarks"),
     migration!("0059_count_the_bookmarked_books_of_each_series"),
+    migration!("0060_search_the_people_and_tags_of_the_library"),
 ];
 
 pub(crate) fn pending(
@@ -1800,6 +1801,55 @@ mod tests {
             )
             .unwrap();
         assert_eq!(kept, 0);
+    }
+
+    #[test]
+    fn makes_the_people_and_tags_kept_from_before_they_were_searchable_searchable() {
+        let scratch = ScratchLibrary::new("search-names-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..59]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'01', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        for statement in [
+            "INSERT INTO book_details (book_id) VALUES (?1)",
+            "INSERT INTO book_person (book_id, role, name) VALUES (?1, 'writer', 'Aiko Tanaka')",
+            "INSERT INTO book_tag (book_id, kind, name) VALUES (?1, 'tag', 'slow burn')",
+        ] {
+            connection.execute(statement, [book(1).as_bytes()]).unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let found: Vec<(String, String)> = connection
+            .prepare(
+                "SELECT search_name.kind, search_name.name FROM search_name_fts
+                JOIN search_name ON search_name.id = search_name_fts.rowid
+                WHERE search_name_fts MATCH '\"tanaka\" OR \"slow\"' ORDER BY search_name.kind",
+            )
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            found,
+            [
+                ("person".to_owned(), "Aiko Tanaka".to_owned()),
+                ("tag".to_owned(), "slow burn".to_owned())
+            ]
+        );
     }
 
     #[test]
