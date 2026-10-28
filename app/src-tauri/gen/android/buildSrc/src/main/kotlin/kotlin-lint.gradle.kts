@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.CommonExtension
 import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
@@ -25,4 +26,12 @@ detekt {
 
 tasks.withType<Detekt>().configureEach {
     exclude(tauriGeneratedSources)
+}
+
+extensions.configure<CommonExtension> {
+    lint.apply {
+        warningsAsErrors = true
+        abortOnError = true
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+    }
 }

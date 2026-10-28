@@ -18,12 +18,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        disable += setOf("GradleDependency", "NewerVersionAvailable")
-    }
 }
 
 kotlin {
