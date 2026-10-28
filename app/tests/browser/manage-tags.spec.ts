@@ -119,7 +119,7 @@ test("says when the library keeps no tags yet", async ({ page }) => {
   await expect(page.getByText("No tags yet.", { exact: false })).toBeVisible();
 });
 
-test("opens Manage tags from Settings › Library, saying how many tags there are", async ({
+test("opens Manage tags from Settings > Library, saying how many tags there are", async ({
   page,
 }) => {
   await page.goto("/settings/library");

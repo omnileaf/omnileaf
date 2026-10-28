@@ -134,7 +134,7 @@ test.describe("on a touch screen", () => {
 });
 
 for (const scheme of ["light", "dark"] as const) {
-  test(`Settings › Privacy has no accessibility violations in ${scheme}`, async ({
+  test(`Settings > Privacy has no accessibility violations in ${scheme}`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme });

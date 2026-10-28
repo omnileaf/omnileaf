@@ -148,7 +148,7 @@ function readerComingSoonStep(name: string): IconAction {
 
 const ICON_ACTIONS: readonly IconAction[] = [
   {
-    screen: "Settings › Library",
+    screen: "Settings > Library",
     backend: FOLDERS_BACKEND,
     reach: async (page) => {
       await page.goto("/settings/library");

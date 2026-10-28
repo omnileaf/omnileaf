@@ -31,7 +31,7 @@ const SAMPLE_LIBRARY_SCANNED = {
 
 const PLACES = [
   { place: "the empty library", path: "/", region: EMPTY_LIBRARY },
-  { place: "Settings › Library", path: "/settings/library", region: "Folders" },
+  { place: "Settings > Library", path: "/settings/library", region: "Folders" },
 ] as const;
 
 function addFolderIn(page: Page, region: string) {
@@ -84,7 +84,7 @@ test.describe("with a folder of books", () => {
     await expect(report).toHaveCount(0);
   });
 
-  test("shows the books in the library from Settings › Library", async ({
+  test("shows the books in the library from Settings > Library", async ({
     page,
   }) => {
     await page.goto("/settings/library");
@@ -386,7 +386,7 @@ test.describe("from finding books to the result", () => {
   }
 });
 
-test("opens Settings › Library from Settings", async ({ page }) => {
+test("opens Settings > Library from Settings", async ({ page }) => {
   await page.goto("/settings");
 
   await page
@@ -433,7 +433,7 @@ for (const { platform, buttonHeight } of [
 }
 
 for (const colorScheme of ["light", "dark"] as const) {
-  test(`Settings › Library has no accessibility violations in the ${colorScheme} theme`, async ({
+  test(`Settings > Library has no accessibility violations in the ${colorScheme} theme`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme });

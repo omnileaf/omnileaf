@@ -918,7 +918,7 @@ for (const name of [`Back to ${BOOK_SERIES_TITLE}`, "Back to the series"]) {
   });
 }
 
-test("turns Skip Up next on in Settings › Reader from up next's switch", async ({
+test("turns Skip Up next on in Settings > Reader from up next's switch", async ({
   page,
 }) => {
   await openBook(page);

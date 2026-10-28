@@ -144,7 +144,7 @@ test("puts the navigation at the bottom on phones and at the side from 600px", a
   }
 });
 
-test("shows the version the backend reports in Settings › About", async ({
+test("shows the version the backend reports in Settings > About", async ({
   page,
 }) => {
   await page.goto("/settings/about");

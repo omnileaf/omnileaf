@@ -420,7 +420,7 @@ test.describe("a file rated 18+", () => {
     details = { ...FROM_FILES, isRatedAdult: true };
   });
 
-  test("keeps the 18+ mark on and locked, and links to Settings › Library", async ({
+  test("keeps the 18+ mark on and locked, and links to Settings > Library", async ({
     page,
   }) => {
     const shown = await openEditor(page);

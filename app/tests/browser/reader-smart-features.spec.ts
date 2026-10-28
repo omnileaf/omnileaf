@@ -134,7 +134,7 @@ test.describe("in the reader", () => {
   });
 });
 
-test.describe("in Settings › Reader", () => {
+test.describe("in Settings > Reader", () => {
   test("says the defaults give way to a series' own settings", async ({
     page,
   }) => {

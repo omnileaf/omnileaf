@@ -313,7 +313,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
       testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
-      test(`Settings › General › Language has no accessibility violations in the ${colorScheme} theme`, async ({
+      test(`Settings > General > Language has no accessibility violations in the ${colorScheme} theme`, async ({
         page,
       }) => {
         await page.emulateMedia({ colorScheme });

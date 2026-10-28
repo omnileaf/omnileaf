@@ -228,7 +228,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
       testOnlyInItsWebview(platform);
       test.use(onPlatform(platform));
 
-      test(`Settings › About › Open-source licences has no accessibility violations in the ${colorScheme} theme`, async ({
+      test(`Settings > About > Open-source licences has no accessibility violations in the ${colorScheme} theme`, async ({
         page,
       }) => {
         await page.emulateMedia({ colorScheme });
