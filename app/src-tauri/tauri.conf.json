@@ -32,22 +32,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "fileAssociations": [
-      {
-        "ext": ["cbz"],
-        "name": "Comic book archive",
-        "description": "Comic book archive",
-        "mimeType": "application/vnd.comicbook+zip",
-        "role": "Viewer"
-      },
-      {
-        "ext": ["cb7"],
-        "name": "Comic book 7-Zip archive",
-        "description": "Comic book 7-Zip archive",
-        "mimeType": "application/x-cb7",
-        "role": "Viewer"
-      }
-    ],
     "android": {
       "minSdkVersion": 26
     },

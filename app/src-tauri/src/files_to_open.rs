@@ -34,6 +34,7 @@ impl FilesToOpen {
     }
 }
 
+#[cfg(desktop)]
 pub(crate) fn in_directory(
     directory: &str,
     arguments: impl IntoIterator<Item = String>,
@@ -122,6 +123,7 @@ mod tests {
         assert_eq!((queued, order), (true, [Some(first), Some(second), None]));
     }
 
+    #[cfg(desktop)]
     #[test]
     fn finds_the_files_of_a_second_launch_from_the_directory_it_ran_in() {
         let folder =
