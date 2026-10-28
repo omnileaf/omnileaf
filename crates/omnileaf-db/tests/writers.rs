@@ -11,14 +11,16 @@ use omnileaf_db::{
     Database,
     catalog::{
         BookDetails, BookFile, BookPerson, Cursor, NewRoot, NewSeries, PageRequest, PageSize,
-        PersonRole, RootId, RootKind, RootLocator, ScannedBook, WriterSummary, add_root,
-        record_scanned_books, writers,
+        PersonRole, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing,
+        SeriesOrder, SeriesSort, WriterSummary, add_root, record_scanned_books,
+        writer_series_count, writer_series_page, writers,
     },
 };
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
 use support::{ScratchFolder, library_config};
 
 const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
+const A_TO_Z: SeriesListing = SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title));
 
 struct Library {
     database: Database,
@@ -63,6 +65,22 @@ impl Library {
             .await
             .unwrap();
         (page.items, page.next)
+    }
+
+    async fn series_of(&self, writer: &'static str) -> (Vec<String>, u32) {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        self.database
+            .read(move |connection| {
+                let page = writer_series_page(connection, writer, &A_TO_Z, &request)?;
+                let count = writer_series_count(connection, writer, &SeriesFilter::NONE)?;
+                let titles = page.items.into_iter().map(|series| series.title).collect();
+                Ok((titles, count))
+            })
+            .await
+            .unwrap()
     }
 }
 
@@ -144,6 +162,29 @@ async fn pages_through_the_writers_with_a_cursor() {
             vec![writer("Sample Author A", 1)],
             vec![writer("Sample Author B", 1)],
             None
+        )
+    );
+}
+
+#[tokio::test]
+async fn lists_and_counts_only_the_series_naming_a_writer() {
+    let library = Library::with_books(
+        "writer-series",
+        &[
+            ("Sample Series 01", &["Sample Author A", "Sample Author B"]),
+            ("Sample Series 02", &["Sample Author A"]),
+            ("Sample Series 03", &["Sample Author B"]),
+        ],
+    )
+    .await;
+
+    let named = library.series_of("Sample Author A").await;
+
+    assert_eq!(
+        named,
+        (
+            vec!["Sample Series 01".to_owned(), "Sample Series 02".to_owned()],
+            2
         )
     );
 }

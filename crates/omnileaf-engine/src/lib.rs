@@ -38,6 +38,7 @@ mod library_search;
 mod library_series;
 mod library_tabs;
 mod library_view;
+mod library_writer;
 mod linux_share;
 mod log_stand_ins;
 mod macos_share;
@@ -125,6 +126,7 @@ pub use library_view::{
     DesktopCoversPerRow, LibraryDisplay, LibraryGrouping, LibraryView, OnCovers, PhoneCoversPerRow,
     TabletCoversPerRow,
 };
+pub use library_writer::{LibraryWriter, WriterCursor, WriterPage};
 pub use linux_share::{MountTables, unreachable_linux_share};
 pub use log_stand_ins::{CleanedLog, LogStandIns};
 pub use missing_folder::{FolderProblem, MissingFolder};
