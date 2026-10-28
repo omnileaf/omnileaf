@@ -16,7 +16,9 @@ mod scanned;
 mod support;
 
 use books::write_book;
-use omnileaf_engine::{BookSection, LibraryListing, SeriesBook, SeriesBookListing, SeriesId};
+use omnileaf_engine::{
+    BookNumber, BookSection, LibraryListing, SeriesBook, SeriesBookListing, SeriesId,
+};
 use scanned::Scanned;
 use serde_json::{Value, json};
 use support::ScratchFolder;
@@ -156,5 +158,81 @@ async fn sums_up_a_series_by_its_year_section_counts_missing_volumes_and_last_vo
             ]),
             json!(9.5),
         ]
+    );
+}
+
+fn volume(number: f64) -> BookNumber {
+    BookNumber::try_from(number).unwrap()
+}
+
+#[tokio::test]
+async fn lists_only_the_chapters_filed_in_a_volume_with_their_place_in_the_series() {
+    let sample = Sample::scan("listed-volume-chapters", SERIES_04_BOOKS).await;
+    let listing = SeriesBookListing {
+        volume: Some(volume(1.0)),
+        ..SeriesBookListing::default()
+    };
+
+    let chapters = sample
+        .scanned
+        .library
+        .series_books(sample.series, listing, None)
+        .await
+        .unwrap()
+        .books;
+
+    assert_eq!(
+        chapters
+            .iter()
+            .map(|book| (book.title.as_str(), book.position))
+            .collect::<Vec<_>>(),
+        [("Sample Series 04 c001", 1), ("Sample Series 04 c002.5", 2)]
+    );
+}
+
+#[tokio::test]
+async fn sums_up_a_volume_by_its_chapters_cover_and_folder() {
+    let sample = Sample::scan("volume-overview-served", SERIES_04_BOOKS).await;
+
+    let found = sample
+        .scanned
+        .library
+        .series_volume(sample.series, volume(1.0))
+        .await
+        .unwrap()
+        .unwrap();
+
+    let served = serde_json::to_value(found).unwrap();
+    assert_eq!(
+        ["volume", "folder", "bookCount", "readCount"]
+            .map(|field| served.get(field).cloned().unwrap()),
+        [json!(1.0), json!("Volume 01"), json!(2), json!(0)]
+    );
+    assert!(served.get("cover").is_some_and(|cover| !cover.is_null()));
+}
+
+#[tokio::test]
+async fn finds_no_volume_where_no_chapter_is_filed_in_one() {
+    let sample = Sample::scan("volume-absent", SERIES_04_BOOKS).await;
+
+    let found = [volume(3.0), volume(42.0)]
+        .map(|number| sample.scanned.library.series_volume(sample.series, number));
+    let mut none = Vec::new();
+    for lookup in found {
+        none.push(lookup.await.unwrap().is_none());
+    }
+
+    assert_eq!(none, [true, true]);
+}
+
+#[test]
+fn reads_a_book_number_from_its_decimal_value_and_refuses_one_that_cannot_be_held() {
+    let numbers: Vec<Option<BookNumber>> = [12.5, 0.0, -1.0, f64::NAN, 5_000_000.0]
+        .map(|number| BookNumber::try_from(number).ok())
+        .into();
+
+    assert_eq!(
+        numbers.iter().map(Option::is_some).collect::<Vec<_>>(),
+        [true, true, false, false, false]
     );
 }

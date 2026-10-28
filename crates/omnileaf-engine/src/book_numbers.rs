@@ -21,15 +21,25 @@ pub enum BookSection {
 }
 
 /// Crosses as its decimal value, so 12.5 is `12.5`, while held in thousandths so it compares exactly.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(into = "f64")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(into = "f64", try_from = "f64")]
 pub struct BookNumber(pub(crate) u32);
+
+#[derive(Debug, thiserror::Error)]
+#[error("read {0} as a book number, which counts from 0 in thousandths up to what fits 32 bits")]
+pub struct BookNumberError(f64);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberRange {
     pub first: BookNumber,
     pub last: BookNumber,
+}
+
+impl BookNumber {
+    pub(crate) const fn in_catalog(self) -> catalog::BookNumber {
+        catalog::BookNumber::from_thousandths(self.0)
+    }
 }
 
 impl BookSection {
@@ -74,6 +84,23 @@ impl From<catalog::NumberRange> for NumberRange {
             first: range.first().into(),
             last: range.last().into(),
         }
+    }
+}
+
+impl TryFrom<f64> for BookNumber {
+    type Error = BookNumberError;
+
+    fn try_from(number: f64) -> Result<Self, BookNumberError> {
+        let thousandths = (number * THOUSANDTHS_PER_ONE).round();
+        if !(0.0..=f64::from(u32::MAX)).contains(&thousandths) {
+            return Err(BookNumberError(number));
+        }
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "the range check keeps the rounded value within u32"
+        )]
+        Ok(Self(thousandths as u32))
     }
 }
 

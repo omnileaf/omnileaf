@@ -73,6 +73,7 @@ mod scan;
 mod series_details;
 mod series_naming;
 mod series_overview;
+mod series_volume;
 mod side_borders;
 mod skipped_types;
 mod storage_use;
@@ -171,6 +172,7 @@ pub use series_overview::{
     CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
     SeriesSection,
 };
+pub use series_volume::SeriesVolume;
 pub use skipped_types::SkippedType;
 pub use storage_use::{CacheSizes, LOW_SPACE_BYTES, StorageUse, VolumeSpace, database_bytes};
 pub use utc_offset::{UtcOffset, UtcOffsetOutOfRange};

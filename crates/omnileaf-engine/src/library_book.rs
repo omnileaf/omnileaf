@@ -57,6 +57,10 @@ pub struct SeriesBookListing {
     #[serde(default)]
     #[specta(optional)]
     pub section: Option<BookSection>,
+    /// The volume whose chapters alone are listed, which takes the place of `section`.
+    #[serde(default)]
+    #[specta(optional)]
+    pub volume: Option<BookNumber>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -79,7 +83,7 @@ impl SeriesBookListing {
             shown,
             direction: self.direction.into(),
             section: self.section.map(BookSection::in_catalog),
-            volume: None,
+            volume: self.volume.map(BookNumber::in_catalog),
         }
     }
 }
