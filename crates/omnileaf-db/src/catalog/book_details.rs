@@ -7,9 +7,9 @@ use crate::{Error, title_key::TitleCollation};
 
 const RECORD_DETAILS: &str = "INSERT INTO book_details (
         book_id, series, number, title, volume, summary, publisher, format, language,
-        reading_direction, age_rating, year
+        reading_direction, age_rating, year, is_manga
     )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
     ON CONFLICT (book_id) DO UPDATE SET
         series = excluded.series,
         number = excluded.number,
@@ -21,12 +21,13 @@ const RECORD_DETAILS: &str = "INSERT INTO book_details (
         language = excluded.language,
         reading_direction = excluded.reading_direction,
         age_rating = excluded.age_rating,
-        year = excluded.year
+        year = excluded.year,
+        is_manga = excluded.is_manga
     WHERE (series, number, title, volume, summary, publisher, format, language,
-            reading_direction, age_rating, year)
+            reading_direction, age_rating, year, is_manga)
         IS NOT (excluded.series, excluded.number, excluded.title, excluded.volume,
             excluded.summary, excluded.publisher, excluded.format, excluded.language,
-            excluded.reading_direction, excluded.age_rating, excluded.year)";
+            excluded.reading_direction, excluded.age_rating, excluded.year, excluded.is_manga)";
 
 const PEOPLE: NamedRows = NamedRows {
     stored: "SELECT role, name FROM book_person WHERE book_id = ?1",
@@ -67,6 +68,7 @@ pub struct BookDetails {
     pub reading_direction: Option<ReadingDirection>,
     pub age_rating: Option<AgeRating>,
     pub year: Option<u16>,
+    pub is_manga: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -149,6 +151,7 @@ impl<'t> DetailsRecorder<'t> {
             details.reading_direction.map(ReadingDirection::as_stored),
             details.age_rating.map(AgeRating::as_stored),
             details.year,
+            details.is_manga,
         ))?;
         self.people
             .keep(book, &details.named_people(), |add, role, name| {

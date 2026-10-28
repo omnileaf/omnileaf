@@ -92,6 +92,7 @@ pub struct ComicInfo {
     pub tags: Vec<String>,
     pub language: Option<String>,
     pub reading_direction: Option<ReadingDirection>,
+    pub is_manga: Option<bool>,
     pub age_rating: Option<AgeRating>,
     pub year: Option<u16>,
     pub page_count: Option<u32>,
@@ -208,7 +209,10 @@ fn set_field(info: &mut ComicInfo, field: &str, value: &str) {
         "Genre" => info.genres = list(value),
         "Tags" => info.tags = list(value),
         "LanguageISO" => info.language = text(),
-        "Manga" => info.reading_direction = reading_direction(value),
+        "Manga" => {
+            info.reading_direction = reading_direction(value);
+            info.is_manga = is_manga(value);
+        }
         "AgeRating" => info.age_rating = age_rating(value),
         "Year" => info.year = value.parse().ok(),
         "PageCount" => info.page_count = value.parse().ok(),
@@ -232,6 +236,14 @@ fn reading_direction(manga: &str) -> Option<ReadingDirection> {
     match manga {
         "Yes" | "YesAndRightToLeft" => Some(ReadingDirection::RightToLeft),
         "No" => Some(ReadingDirection::LeftToRight),
+        _ => None,
+    }
+}
+
+fn is_manga(manga: &str) -> Option<bool> {
+    match manga {
+        "Yes" | "YesAndRightToLeft" => Some(true),
+        "No" => Some(false),
         _ => None,
     }
 }
