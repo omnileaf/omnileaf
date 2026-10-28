@@ -41,6 +41,8 @@ pub struct SeriesFilter {
     pub finished: Inclusion,
     pub last_read_before_ms: Option<i64>,
     pub duplicates: Inclusion,
+    /// Is in one of these formats, or any format when empty.
+    pub formats: Vec<SeriesFormat>,
     /// Is in one of these languages, or any language when empty.
     pub languages: Vec<String>,
     /// Holds a book carrying one of these tags or genres, or any book when empty.
@@ -48,6 +50,13 @@ pub struct SeriesFilter {
     /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds.
     pub adult: Inclusion,
     pub counts_age_ratings: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SeriesFormat {
+    Comic,
+    Manga,
+    Book,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -92,6 +101,7 @@ impl SeriesFilter {
         finished: Inclusion::Any,
         last_read_before_ms: None,
         duplicates: Inclusion::Any,
+        formats: Vec::new(),
         languages: Vec::new(),
         tags: Vec::new(),
         adult: Inclusion::Any,
@@ -125,6 +135,12 @@ impl SeriesFilter {
     #[must_use]
     pub const fn with_duplicates(mut self, duplicates: Inclusion) -> Self {
         self.duplicates = duplicates;
+        self
+    }
+
+    #[must_use]
+    pub fn with_formats(mut self, formats: Vec<SeriesFormat>) -> Self {
+        self.formats = formats;
         self
     }
 
@@ -264,6 +280,10 @@ macro_rules! conditions {
             " AND (:last_read_before_ms IS NULL
             OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
         AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)
+        AND (:formats IS NULL OR instr(
+            :formats,
+            char(31) || CASE WHEN series.manga_books > 0 THEN 'manga' ELSE 'comic' END || char(31)
+        ) > 0)
         AND (:languages IS NULL OR (instr(series.language, char(31)) = 0
             AND instr(:languages, char(31) || series.language || char(31)) > 0))
         AND (:tag_list IS NULL OR ",
@@ -300,10 +320,28 @@ pub(crate) use conditions;
 pub(crate) use counted_conditions;
 pub(crate) use smart_conditions;
 
+impl SeriesFormat {
+    const fn stored(self) -> &'static str {
+        match self {
+            Self::Comic => "comic",
+            Self::Manga => "manga",
+            Self::Book => "book",
+        }
+    }
+}
+
+fn format_names(formats: &[SeriesFormat]) -> Vec<String> {
+    formats
+        .iter()
+        .map(|format| format.stored().to_owned())
+        .collect()
+}
+
 pub(crate) struct FilterParams {
     stages: StageParams,
     last_read_before_ms: Option<i64>,
     holds_duplicates: Option<bool>,
+    formats: Option<String>,
     languages: Option<String>,
     tag_list: Option<String>,
     holds_adult: Option<bool>,
@@ -320,6 +358,7 @@ impl FilterParams {
             stages,
             last_read_before_ms: filter.last_read_before_ms,
             holds_duplicates: filter.duplicates.required(),
+            formats: delimited_list(&format_names(&filter.formats)),
             languages: delimited_list(&filter.languages),
             tag_list: json_list(&filter.tags),
             holds_adult: filter.adult.required(),
@@ -327,7 +366,7 @@ impl FilterParams {
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 9] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 10] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
@@ -335,6 +374,7 @@ impl FilterParams {
             finished,
             (":last_read_before_ms", &self.last_read_before_ms),
             (":holds_duplicates", &self.holds_duplicates),
+            (":formats", &self.formats),
             (":languages", &self.languages),
             (":tag_list", &self.tag_list),
             (":holds_adult", &self.holds_adult),

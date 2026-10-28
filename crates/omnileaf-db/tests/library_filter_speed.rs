@@ -12,8 +12,8 @@ use std::{num::NonZeroUsize, time::Duration};
 use omnileaf_db::{
     Database,
     catalog::{
-        Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
-        SeriesSort, series_count, series_page,
+        Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesFormat, SeriesListing,
+        SeriesOrder, SeriesSort, series_count, series_page,
     },
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
@@ -46,6 +46,8 @@ const COPIES_FOLDER: &[u8] = b"/media/Copies";
 const EVERY_HUNDREDTH_IN_A_RARE_LANGUAGE: u32 = 100;
 const RARE_LANGUAGE_REMAINDER: u32 = 3;
 const RARE_LANGUAGE: &str = "ja";
+const EVERY_HUNDREDTH_MANGA: u32 = 100;
+const MANGA_REMAINDER: u32 = 6;
 const EVERY_HUNDREDTH_TAGGED_RARE: u32 = 100;
 const RARE_TAG_REMAINDER: u32 = 5;
 const RARE_TAG: &str = "storms";
@@ -73,7 +75,7 @@ fn crowded_tags() -> [SeriesFilter; 2] {
 }
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-fn filters() -> [SeriesFilter; 13] {
+fn filters() -> [SeriesFilter; 15] {
     [
         SeriesFilter::NONE,
         SeriesFilter::NONE.with_unread(Inclusion::Only),
@@ -88,6 +90,8 @@ fn filters() -> [SeriesFilter; 13] {
         SeriesFilter::NONE.with_adult(Inclusion::Only, true),
         SeriesFilter::NONE.with_adult(Inclusion::Hide, true),
         SeriesFilter::NONE.with_tags(vec![RARE_TAG.to_owned()]),
+        SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga]),
+        SeriesFilter::NONE.with_formats(vec![SeriesFormat::Comic]),
     ]
 }
 
@@ -338,6 +342,13 @@ async fn add_generated_library(database: &Database) {
             transaction.execute(
                 "UPDATE series SET adult_rated_books = 1 WHERE added_at_ms % ?1 = ?2",
                 (EVERY_HUNDREDTH_RATED_ADULT, RATED_ADULT_REMAINDER),
+            )?;
+            transaction.execute(
+                "INSERT INTO book_details (book_id, is_manga)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3
+                ON CONFLICT (book_id) DO UPDATE SET is_manga = 1",
+                (EVERY_HUNDREDTH_MANGA, MANGA_REMAINDER, BOOK_TITLES[0]),
             )?;
             tag_first_books(
                 transaction,

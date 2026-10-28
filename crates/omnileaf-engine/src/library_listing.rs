@@ -1,6 +1,6 @@
 use omnileaf_db::catalog::{
-    FilterChoices, Inclusion as StoredInclusion, SeriesFilter, SeriesListing, SeriesOrder,
-    SeriesSort, SortDirection as StoredDirection,
+    FilterChoices, Inclusion as StoredInclusion, SeriesFilter, SeriesFormat as StoredFormat,
+    SeriesListing, SeriesOrder, SeriesSort, SortDirection as StoredDirection,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -185,6 +185,7 @@ impl From<SeriesListing> for LibraryListing {
 impl LibraryFilterChoices {
     pub(crate) fn new(stored: FilterChoices, adult: AdultContent) -> Self {
         Self {
+            formats: stored.formats.into_iter().map(SeriesFormat::from).collect(),
             languages: stored.languages,
             tags: stored.tags,
             rates_adult: adult.counts_as_adult(stored.holds_rated_adult),
@@ -209,6 +210,12 @@ impl LibraryFilter {
             } else {
                 StoredInclusion::Any
             },
+            formats: self
+                .formats
+                .iter()
+                .copied()
+                .map(StoredFormat::from)
+                .collect(),
             languages: self.languages.clone(),
             tags: self.tags.clone(),
             adult: self.adult.into(),
@@ -224,6 +231,26 @@ impl From<SeriesFilter> for LibraryFilter {
             started: filter.started.into(),
             finished: filter.finished.into(),
             ..LibraryListing::default().filter
+        }
+    }
+}
+
+impl From<SeriesFormat> for StoredFormat {
+    fn from(format: SeriesFormat) -> Self {
+        match format {
+            SeriesFormat::Comic => Self::Comic,
+            SeriesFormat::Manga => Self::Manga,
+            SeriesFormat::Book => Self::Book,
+        }
+    }
+}
+
+impl From<StoredFormat> for SeriesFormat {
+    fn from(format: StoredFormat) -> Self {
+        match format {
+            StoredFormat::Comic => Self::Comic,
+            StoredFormat::Manga => Self::Manga,
+            StoredFormat::Book => Self::Book,
         }
     }
 }
