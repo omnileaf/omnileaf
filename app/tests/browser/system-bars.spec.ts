@@ -48,7 +48,7 @@ test("reports the device's new theme when it changes", async ({ page }) => {
   await expect.poll(lastReportedTheme).toBe("dark");
 });
 
-test("reports the theme chosen in Settings › Appearance", async ({ page }) => {
+test("reports the theme chosen in Settings > Appearance", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/settings/appearance");
   await expect.poll(lastReportedTheme).toBe("dark");

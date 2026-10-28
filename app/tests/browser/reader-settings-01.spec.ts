@@ -119,7 +119,7 @@ test.describe("a book of tall pages", () => {
   });
 });
 
-test.describe("Settings › Reader", () => {
+test.describe("Settings > Reader", () => {
   test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
   test("starts a series with no reading mode of its own in the one chosen for new series", async ({

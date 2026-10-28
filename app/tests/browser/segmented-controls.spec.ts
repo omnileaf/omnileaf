@@ -107,7 +107,7 @@ const CONTROLS: readonly SegmentedControl[] = [
     },
   },
   {
-    name: "Settings › Appearance's Light or dark",
+    name: "Settings > Appearance's Light or dark",
     hasIcons: false,
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
@@ -118,7 +118,7 @@ const CONTROLS: readonly SegmentedControl[] = [
       ),
   },
   {
-    name: "Settings › Privacy's Crash reports",
+    name: "Settings > Privacy's Crash reports",
     hasIcons: false,
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>

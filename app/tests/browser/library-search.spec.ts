@@ -384,7 +384,7 @@ test("names the field's clear button and each filter's remove button in a toolti
   }
 });
 
-test("names Library › Search in the desktop toolbar", async ({ page }) => {
+test("names Library > Search in the desktop toolbar", async ({ page }) => {
   test.skip(!isDesktop(page), "desktop only");
   await page.goto("/search");
 

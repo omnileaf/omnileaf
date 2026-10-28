@@ -122,7 +122,7 @@ test("chooses the tap zones in Reading settings", async ({ page }) => {
   );
 });
 
-test("starts every series with the tap zones chosen in Settings › Reader", async ({
+test("starts every series with the tap zones chosen in Settings > Reader", async ({
   page,
 }) => {
   await page.goto("/settings/reading");

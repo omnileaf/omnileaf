@@ -61,7 +61,7 @@ test("warns how much is left and that the oldest cached pages and covers go firs
   );
 });
 
-test("leads to Settings › Storage from Free up space", async ({ page }) => {
+test("leads to Settings > Storage from Free up space", async ({ page }) => {
   await page.goto("/");
 
   await notice(page).getByRole("button", { name: "Free up space" }).click();

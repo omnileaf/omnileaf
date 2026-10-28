@@ -136,7 +136,7 @@ test.describe("with a folder whose files changed", () => {
     },
   });
 
-  test("rescans a folder from Settings › Library and reports what changed", async ({
+  test("rescans a folder from Settings > Library and reports what changed", async ({
     page,
   }) => {
     await rescanSampleComics(page);

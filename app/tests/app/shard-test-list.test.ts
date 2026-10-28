@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   type ListedTest,
   listedTests,
+  mergeTimings,
   shardTestList,
   shardTests,
   testDurations,
@@ -251,6 +252,31 @@ test("leaves a failed test out of the timings and keeps a flaky one at all its a
 
   expect(timings).toEqual({
     "about.spec.ts › passes on retry": { "webkit-phone": 1300 },
+  });
+});
+
+test("keeps the times a narrowed run did not measure, and takes the ones it did", () => {
+  const kept: Timings = {
+    "about.spec.ts › shows the version": {
+      "chromium-phone": 1200,
+      "webkit-phone": 2400,
+    },
+    "library.spec.ts › lists the series": { "chromium-phone": 800 },
+  };
+  const measured: Timings = {
+    "about.spec.ts › shows the version": { "chromium-phone": 900 },
+    "reader.spec.ts › turns a page": { "webkit-phone": 600 },
+  };
+
+  const merged = mergeTimings(kept, measured);
+
+  expect(merged).toEqual({
+    "about.spec.ts › shows the version": {
+      "chromium-phone": 900,
+      "webkit-phone": 2400,
+    },
+    "library.spec.ts › lists the series": { "chromium-phone": 800 },
+    "reader.spec.ts › turns a page": { "webkit-phone": 600 },
   });
 });
 

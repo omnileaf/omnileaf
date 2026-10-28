@@ -9,6 +9,7 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import { expectPhone, isPhonePlatform } from "./phone-platform.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const READ = { state: "read" } as const;
@@ -220,16 +221,15 @@ function backToSeries(page: Page): Locator {
 }
 
 test.describe("a creator on a phone", { tag: "@native" }, () => {
+  test.skip(({ platform }) => !isPhonePlatform(platform), "phones only");
+
   test.use({ backend: backendWith(THEIR_SERIES) });
 
   test("shows the way back as a circle holding only its chevron, above the name", async ({
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
 
     await openCreatorFromSeries(page);
     const back = await boxOf(backToSeries(page));
@@ -256,10 +256,7 @@ test.describe("a creator on a phone", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    expectPhone(platform);
 
     await openCreatorFromSeries(page);
     const cover = page
@@ -280,16 +277,15 @@ test.describe(
   "a creator whose series have gone, on a phone",
   { tag: "@native" },
   () => {
+    test.skip(({ platform }) => !isPhonePlatform(platform), "phones only");
+
     test.use({ backend: backendWith([]) });
 
     test("leads back to the library with the phone's own second button", async ({
       page,
       platform,
     }) => {
-      if (platform !== "ios" && platform !== "android") {
-        test.skip();
-        return;
-      }
+      expectPhone(platform);
 
       await openCreatorFromSeries(page);
       const button = await boxOf(

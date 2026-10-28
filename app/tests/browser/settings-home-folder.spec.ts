@@ -61,7 +61,7 @@ for (const [device, userAgent, location] of [
   ["an iPhone", IPHONE_USER_AGENT, "On My iPhone › Omnileaf"],
   ["an iPad", IPAD_USER_AGENT, "On My iPad › Omnileaf"],
 ] as const) {
-  test.describe(`the home folder in Settings › Library on ${device}`, () => {
+  test.describe(`the home folder in Settings > Library on ${device}`, () => {
     test.use({ ...withFolders("ios"), userAgent });
 
     test("names where the Files app shows it on the device at any window width, without the app's private path", async ({
@@ -76,7 +76,7 @@ for (const [device, userAgent, location] of [
 }
 
 for (const userAgent of [IPHONE_USER_AGENT, IPAD_USER_AGENT]) {
-  test.describe(`linked folders in Settings › Library on ios, as ${userAgent.includes("iPhone") ? "an iPhone" : "an iPad"}`, () => {
+  test.describe(`linked folders in Settings > Library on ios, as ${userAgent.includes("iPhone") ? "an iPhone" : "an iPad"}`, () => {
     test.use({ ...withFolders("ios"), userAgent });
 
     test("names a linked folder by where the Files app shows it, without its path", async ({
@@ -92,7 +92,7 @@ for (const userAgent of [IPHONE_USER_AGENT, IPAD_USER_AGENT]) {
   });
 }
 
-test.describe("linked folders in Settings › Library on linux", () => {
+test.describe("linked folders in Settings > Library on linux", () => {
   test.use(withFolders("linux"));
 
   test("keeps the path of a linked folder", async ({ page }) => {
@@ -102,7 +102,7 @@ test.describe("linked folders in Settings › Library on linux", () => {
   });
 });
 
-test.describe("Settings › Library's grouped ground on an iPad", () => {
+test.describe("Settings > Library's grouped ground on an iPad", () => {
   testOnlyInItsWebview("ios");
   test.use({ ...onPlatform("ios"), userAgent: IPAD_USER_AGENT });
 
@@ -135,7 +135,7 @@ test.describe("Settings › Library's grouped ground on an iPad", () => {
 });
 
 for (const platform of ["android", "linux"] as const) {
-  test.describe(`the home folder in Settings › Library on ${platform}`, () => {
+  test.describe(`the home folder in Settings > Library on ${platform}`, () => {
     testOnlyInItsWebview(platform);
     test.use(withFolders(platform));
 
@@ -221,7 +221,7 @@ for (const [platform, change] of [
   ["windows", "Change"],
   ["macos", "Change…"],
 ] as const) {
-  test.describe(`changing the home folder in Settings › Library on ${platform}`, () => {
+  test.describe(`changing the home folder in Settings > Library on ${platform}`, () => {
     testOnlyInItsWebview(platform);
     test.use({ backend: changingHomeOn(platform) });
 

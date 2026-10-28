@@ -38,7 +38,7 @@ function ageRatings(page: Page): Locator {
   });
 }
 
-test("opens 18+ content from Settings › Library, saying how it's treated", async ({
+test("opens 18+ content from Settings > Library, saying how it's treated", async ({
   page,
 }) => {
   stored = { ...NEW_ADULT_CONTENT, treatment: "blur" };

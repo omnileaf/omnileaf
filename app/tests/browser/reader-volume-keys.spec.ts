@@ -329,7 +329,7 @@ test.describe("on a computer", () => {
     await expect(volumeKeysRow(panel)).toHaveCount(0);
   });
 
-  test("shows no volume keys row in Settings › Reader", async ({ page }) => {
+  test("shows no volume keys row in Settings > Reader", async ({ page }) => {
     const tapZones = await openReaderSettingsPage(page);
 
     await expect(
@@ -353,7 +353,7 @@ test.describe("on an iPhone", () => {
     await expect(volumeKeysRow(panel)).toHaveCount(0);
   });
 
-  test("shows no volume keys row in Settings › Reader", async ({ page }) => {
+  test("shows no volume keys row in Settings > Reader", async ({ page }) => {
     const tapZones = await openReaderSettingsPage(page);
 
     await expect(
@@ -363,10 +363,10 @@ test.describe("on an iPhone", () => {
   });
 });
 
-test.describe("Settings › Reader on Android", () => {
+test.describe("Settings > Reader on Android", () => {
   test.use({ backend: volumeKeysBackend("android") });
 
-  test("changes the volume keys default from Settings › Reader", async ({
+  test("changes the volume keys default from Settings > Reader", async ({
     page,
   }) => {
     const tapZones = await openReaderSettingsPage(page);
@@ -385,7 +385,7 @@ test.describe("Settings › Reader on Android", () => {
   });
 
   for (const colorScheme of COLOR_SCHEMES) {
-    test(`Settings › Reader with the volume keys row has no accessibility violations in the ${colorScheme} theme`, async ({
+    test(`Settings > Reader with the volume keys row has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });

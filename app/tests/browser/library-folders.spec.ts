@@ -74,7 +74,7 @@ test.beforeEach(() => {
   library.reset();
 });
 
-test("shows the home folder and the linked folders in Settings › Library", async ({
+test("shows the home folder and the linked folders in Settings > Library", async ({
   page,
 }) => {
   await page.goto("/settings/library");
@@ -222,7 +222,7 @@ test.describe("on iOS", () => {
   testOnlyInItsWebview("ios");
   test.use({ backend: { ...LIBRARY_BACKEND, ...onPlatform("ios").backend } });
 
-  test("sets Settings › Library on the grouped ground with its cards as cells", async ({
+  test("sets Settings > Library on the grouped ground with its cards as cells", async ({
     page,
   }) => {
     await page.goto("/settings/library");

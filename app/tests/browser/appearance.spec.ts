@@ -131,7 +131,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
 }
 
 for (const label of ["Light", "Dark"]) {
-  test(`Settings › Appearance has no accessibility violations in ${label}`, async ({
+  test(`Settings > Appearance has no accessibility violations in ${label}`, async ({
     page,
   }) => {
     await chooseTheme(page, label);

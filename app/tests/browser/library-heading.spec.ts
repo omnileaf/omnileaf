@@ -596,7 +596,7 @@ for (const platform of PLATFORMS) {
     test.describe("with books in the library", () => {
       test.use({ backend: backendFor(platform, "filled") });
 
-      test("leaves adding folders to Settings › Library and offers View options", async ({
+      test("leaves adding folders to Settings > Library and offers View options", async ({
         page,
       }) => {
         await page.goto("/");
