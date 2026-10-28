@@ -1,12 +1,15 @@
 package app.omnileaf
 
+private const val MEDIUM_CONTRAST_LEVEL = 0.5f
+private const val HIGH_CONTRAST_LEVEL = 1f
+
 internal enum class SystemContrast(
     val id: String,
     private val lowestLevel: Float,
 ) {
     STANDARD("standard", Float.NEGATIVE_INFINITY),
-    MEDIUM("medium", 0.5f),
-    HIGH("high", 1f),
+    MEDIUM("medium", MEDIUM_CONTRAST_LEVEL),
+    HIGH("high", HIGH_CONTRAST_LEVEL),
     ;
 
     companion object {
