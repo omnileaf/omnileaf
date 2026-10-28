@@ -278,7 +278,6 @@ fn projectable(entity: &str, id: &[u8], field: &str, cbor: &[u8]) -> Option<(Key
     let Some(projection) = Projection::of(key, &value) else {
         tracing::warn!(
             ?key,
-            ?value,
             "left out a synced register holding a value its field cannot"
         );
         return None;
