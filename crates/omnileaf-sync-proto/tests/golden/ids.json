@@ -123,6 +123,16 @@
     {
       "key": "profile.shared.v1",
       "id": "ec4608de-8243-8e4c-abb8-093f1404dc5a"
+    },
+    {
+      "key": "bookmark.v1",
+      "inputs": ["a9874d5a-1607-8103-9c82-2ffaf786c06c", "0"],
+      "id": "1b09c252-2496-839b-978a-ab6e8f1a67f6"
+    },
+    {
+      "key": "bookmark.v1",
+      "inputs": ["a9874d5a-1607-8103-9c82-2ffaf786c06c", "41"],
+      "id": "f7cce55d-088c-81ef-8c67-3c2b3f57c122"
     }
   ]
 }

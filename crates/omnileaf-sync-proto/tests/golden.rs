@@ -8,8 +8,8 @@ mod support;
 use std::fmt::Write;
 
 use omnileaf_sync_proto::{
-    BookId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, ProfileId, SeriesId, SourceId,
-    Value, norm,
+    BookId, BookmarkId, CategoryId, Fingerprint, FolderImage, Hlc, ImageEntry, ProfileId, SeriesId,
+    SourceId, Value, norm,
 };
 use serde::Deserialize;
 
@@ -65,6 +65,9 @@ fn ids_match_the_golden_vectors() {
                 SeriesId::named(format_family, series_name)
                     .unwrap()
                     .to_string()
+            }
+            ("bookmark.v1", None, Some([book, page])) => {
+                BookmarkId::of(book.parse().unwrap(), page.parse().unwrap()).to_string()
             }
             ("category.v1", Some(input), None) => CategoryId::from_name(input).unwrap().to_string(),
             ("source.local.v1", None, None) => SourceId::local().to_string(),
