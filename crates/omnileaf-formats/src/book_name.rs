@@ -1,14 +1,17 @@
 use std::ops::RangeInclusive;
 
 mod language;
+mod markers;
 mod number;
+mod scan;
 mod tags;
 mod title;
 
 pub use language::LanguageTag;
+use markers::Markers;
 pub use number::{Number, NumberRange};
 use tags::tags;
-use title::read_title;
+use title::{Title, read_title};
 
 const YEAR_DIGITS: usize = 4;
 const SERIES_YEARS: RangeInclusive<u16> = 1900..=2099;
@@ -16,6 +19,8 @@ const SERIES_YEARS: RangeInclusive<u16> = 1900..=2099;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BookName {
     pub title: String,
+    pub volume: Option<NumberRange>,
+    pub chapter: Option<NumberRange>,
     pub language: Option<LanguageTag>,
 }
 
@@ -27,8 +32,15 @@ pub struct SeriesName {
 
 #[must_use]
 pub fn read_book_name(name: &str, _series_title: Option<&str>) -> BookName {
+    let title = read_title(name);
+    let markers = match &title {
+        Title::Text(text) => Markers::read(text),
+        Title::OnlyTags(_) => Markers::default(),
+    };
     BookName {
-        title: read_title(name).into_string(),
+        title: title.into_string(),
+        volume: markers.volume,
+        chapter: markers.chapter,
         language: tags(name).find_map(LanguageTag::parse),
     }
 }
