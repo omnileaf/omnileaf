@@ -32,6 +32,15 @@ const IN_CATEGORY: Partial<Record<string, typeof LIBRARY>> = {
   manga: LIBRARY.slice(0, 4),
   comics: LIBRARY.slice(4, 6),
 };
+const WRITERS = [
+  { name: "Author A", seriesCount: 3 },
+  { name: "Author B", seriesCount: 2 },
+];
+const BY_WRITER: Partial<Record<string, typeof LIBRARY>> = {
+  "Author A": LIBRARY.slice(0, 3),
+  "Author B": LIBRARY.slice(2, 4),
+};
+const NAMING_NO_WRITER = LIBRARY.slice(4, 6);
 const IN_FOLDER: Partial<Record<string, typeof LIBRARY>> = {
   "comics-folder": LIBRARY.slice(0, 7),
   "manga-folder": LIBRARY.slice(7),
@@ -53,6 +62,12 @@ test.use({
     folderSeries: (folder, after, listing) =>
       pagedSeries(() => IN_FOLDER[folder] ?? [])(after, listing),
     folderSeriesCount: (folder) => (IN_FOLDER[folder] ?? []).length,
+    libraryWriters: () => ({ writers: WRITERS, next: null }),
+    writerSeries: (writer, after, listing) =>
+      pagedSeries(() => BY_WRITER[writer] ?? [])(after, listing),
+    writerSeriesCount: (writer) => (BY_WRITER[writer] ?? []).length,
+    writerlessSeries: pagedSeries(() => NAMING_NO_WRITER),
+    writerlessSeriesCount: () => NAMING_NO_WRITER.length,
     libraryView: () => storedView,
     setLibraryView: (view) => {
       storedView = view;
@@ -145,4 +160,61 @@ test("lists the whole library when grouped by category with none kept", async ({
     page.getByRole("list", { name: "Series" }).getByRole("listitem"),
   ).toHaveCount(LIBRARY.length);
   await expect(page.getByRole("region", { name: "Manga" })).toHaveCount(0);
+});
+
+test("draws a section for each writer, then the series naming nobody, without the tabs", async ({
+  page,
+}) => {
+  await openGroupedBy(page, "creator");
+
+  await expect(
+    page
+      .getByRole("region")
+      .filter({ has: page.getByRole("heading", { level: 2 }) }),
+  ).toHaveText([
+    /^Author A.*3 series/,
+    /^Author B.*2 series/,
+    /^No creator in the files.*2 series · add one with Edit details on the series page/,
+  ]);
+  await expect(coversIn(group(page, "Author A"))).toHaveCount(3);
+  await expect(coversIn(group(page, "Author B"))).toHaveCount(2);
+  await expect(page.getByRole("tablist", { name: "Categories" })).toHaveCount(
+    0,
+  );
+});
+
+test("lists a series with two writers under both", async ({ page }) => {
+  await openGroupedBy(page, "creator");
+  const shared = LIBRARY[2]?.title ?? "";
+
+  await expect(
+    coversIn(group(page, "Author A")).filter({ hasText: shared }),
+  ).toHaveCount(1);
+  await expect(
+    coversIn(group(page, "Author B")).filter({ hasText: shared }),
+  ).toHaveCount(1);
+});
+
+test("opens a writer's page from their heading", async ({ page }) => {
+  await openGroupedBy(page, "creator");
+
+  await group(page, "Author B")
+    .getByRole("heading")
+    .getByRole("link", { name: "Author B" })
+    .click();
+
+  await expect(page).toHaveURL(/\/creator\/Author%20B$/);
+});
+
+test("leaves the series naming nobody without a link", async ({ page }) => {
+  await openGroupedBy(page, "creator");
+
+  await expect(
+    group(page, "No creator in the files").getByRole("heading"),
+  ).toBeVisible();
+  await expect(
+    group(page, "No creator in the files")
+      .getByRole("heading")
+      .getByRole("link"),
+  ).toHaveCount(0);
 });

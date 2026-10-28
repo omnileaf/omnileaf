@@ -17,6 +17,7 @@
     type LibrarySeries,
     type LibraryTab as KeptTab,
     type LibraryView,
+    type LibraryWriter,
     type MissingFolder,
     type SeriesPage,
     type IpcError,
@@ -156,27 +157,8 @@
   const groupBy = $derived<LibraryGrouping>(
     view.reading.kind === "read" ? view.reading.value.groupBy : "none",
   );
-  const groups = $derived(
-    groupBy === "folder"
-      ? folders.map((folder) => ({
-          key: folder.id,
-          name: folder.name,
-          listSeries: (after: Parameters<ListSeries>[0]) =>
-            commands.folderSeries(folder.id, after, listedBy()),
-          countSeries: () =>
-            commands.folderSeriesCount(folder.id, listedBy().filter),
-        }))
-      : groupBy === "category"
-        ? categories.map((category) => ({
-            key: category.id,
-            name: category.name,
-            listSeries: (after: Parameters<ListSeries>[0]) =>
-              commands.categorySeries(category.id, after, listedBy()),
-            countSeries: () =>
-              commands.categorySeriesCount(category.id, listedBy().filter),
-          }))
-        : [],
-  );
+  let writers = $state<readonly LibraryWriter[]>([]);
+  const groups = $derived(groupsBy(groupBy));
   const tabsShown = $derived(
     groupBy === "none" &&
       showsTabs(shownTabs) &&
@@ -481,6 +463,76 @@
   );
   let emptyAddFolder: HTMLElement | null = $state(null);
 
+  interface Group {
+    readonly key: string;
+    readonly name: string;
+    readonly creator?: string;
+    readonly pointer?: string;
+    readonly listSeries: ListSeries;
+    readonly countSeries: () => ReturnType<typeof commands.librarySeriesCount>;
+  }
+
+  function groupsBy(grouping: LibraryGrouping): readonly Group[] {
+    switch (grouping) {
+      case "none":
+        return [];
+      case "folder":
+        return folders.map((folder) => ({
+          key: folder.id,
+          name: folder.name,
+          listSeries: (after) =>
+            commands.folderSeries(folder.id, after, listedBy()),
+          countSeries: () =>
+            commands.folderSeriesCount(folder.id, listedBy().filter),
+        }));
+      case "category":
+        return categories.map((category) => ({
+          key: category.id,
+          name: category.name,
+          listSeries: (after) =>
+            commands.categorySeries(category.id, after, listedBy()),
+          countSeries: () =>
+            commands.categorySeriesCount(category.id, listedBy().filter),
+        }));
+      case "creator":
+        return [...writers.map(writerGroup), WRITERLESS_GROUP];
+      default:
+        return assertNever(grouping);
+    }
+  }
+
+  function writerGroup({ name }: LibraryWriter): Group {
+    return {
+      key: `writer:${name}`,
+      name,
+      creator: name,
+      listSeries: (after) => commands.writerSeries(name, after, listedBy()),
+      countSeries: () => commands.writerSeriesCount(name, listedBy().filter),
+    };
+  }
+
+  const WRITERLESS_GROUP: Group = {
+    key: "writerless",
+    name: m.library_group_no_creator(),
+    pointer: m.library_group_no_creator_hint(),
+    listSeries: (after) => commands.writerlessSeries(after, listedBy()),
+    countSeries: () => commands.writerlessSeriesCount(listedBy().filter),
+  };
+
+  async function loadWriters(): Promise<void> {
+    const found: LibraryWriter[] = [];
+    let after: Parameters<typeof commands.libraryWriters>[0] = null;
+    do {
+      const page = await commands.libraryWriters(after);
+      if (page.status === "error") {
+        return;
+      }
+      found.push(...page.data.writers);
+      after = page.data.next;
+    } while (after !== null);
+    writers = found;
+  }
+
   async function loadFolders(): Promise<void> {
     const found: LibraryFolder[] = [];
     let after: Parameters<typeof commands.libraryFolders>[0] = null;
@@ -498,6 +550,9 @@
   $effect(() => {
     if (groupBy === "folder") {
       void untrack(loadFolders);
+    }
+    if (groupBy === "creator") {
+      void untrack(loadWriters);
     }
   });
 
@@ -927,6 +982,8 @@
               {#each groups as group (group.key)}
                 <SeriesGroup
                   name={group.name}
+                  creator={group.creator}
+                  pointer={group.pointer}
                   listSeries={group.listSeries}
                   countSeries={group.countSeries}
                   {listed}
