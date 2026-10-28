@@ -19,7 +19,9 @@ import {
   test,
   testOnlyInItsWebview,
   tokenColour,
+  transitionsOf,
   viewportOf,
+  watchTransitions,
 } from "./fixtures.ts";
 import { openSortAndFilter } from "./library-controls.ts";
 import type { WireSeries } from "./series-catalog.ts";
@@ -789,30 +791,17 @@ test("slides in as it opens, which reduced motion turns into appearing at once",
 }) => {
   test.skip(isDocked(page), "a desktop docks the panel at once");
   await openLibrary(page);
+  const transitions = await watchTransitions(page);
+
   await filterButton(page).click();
-  await expect(filterAndSort(page)).toBeVisible();
 
-  const slides = await filterAndSort(page).evaluate((dialog) =>
-    dialog
-      .getAnimations()
-      .map(
-        (animation) =>
-          animation instanceof CSSTransition && animation.transitionProperty,
-      ),
-  );
-
-  expect(slides).toContain("translate");
-
+  await expect.poll(transitions).toContain("dialog translate");
   await page.keyboard.press("Escape");
   await expect(filterAndSort(page)).toBeHidden();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await filterButton(page).click();
   await expect(filterAndSort(page)).toBeVisible();
-  expect(
-    await filterAndSort(page).evaluate(
-      (dialog) => dialog.getAnimations().length,
-    ),
-  ).toBe(0);
+  expect(await transitionsOf(filterAndSort(page))).toEqual([]);
 });
 
 test("lists the filter in use as a chip under the library, and takes it off with its cross", async ({
