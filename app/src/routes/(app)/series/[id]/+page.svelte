@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert, RefreshCw } from "@lucide/svelte";
+  import { BookmarkX, CircleAlert, RefreshCw } from "@lucide/svelte";
   import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -156,6 +156,49 @@
     }
     readAgain();
     return true;
+  }
+
+  async function bookmarkSelected(
+    picked: SeriesBook["id"][],
+  ): Promise<{ newlyBookmarked: number; failed: boolean }> {
+    if (books?.list.kind !== "loaded") {
+      reportError(
+        new Error(`read the books of series ${foundId} to bookmark`),
+      );
+      notices.show({
+        tone: "warning",
+        icon: BookmarkX,
+        title: m.series_bookmark_failed(),
+        body: m.series_bookmark_failed_body(),
+      });
+      return { newlyBookmarked: 0, failed: true };
+    }
+    const alreadyBookmarked = new Set(
+      books.list.items
+        .filter((book) => book.isBookmarked)
+        .map((book) => book.id),
+    );
+    const toBookmark = picked.filter((id) => !alreadyBookmarked.has(id));
+    const results = await Promise.all(
+      toBookmark.map((id) => commands.bookmarkPages(id, [0], true)),
+    );
+    const bookmarked = results.filter((result) => result.status === "ok");
+    const failed = bookmarked.length < toBookmark.length;
+    for (const result of results) {
+      if (result.status === "error") {
+        reportError(result.error);
+      }
+    }
+    if (failed) {
+      notices.show({
+        tone: "warning",
+        icon: BookmarkX,
+        title: m.series_bookmark_failed(),
+        body: m.series_bookmark_failed_body(),
+      });
+    }
+    readAgain();
+    return { newlyBookmarked: bookmarked.length, failed };
   }
 
   function opposite(read: ReadMark): ReadMark {
@@ -414,6 +457,7 @@
                   }}
                   onLoadAll={() => books.loadAll()}
                   onMark={mark}
+                  onBookmark={bookmarkSelected}
                   platform={data.appInfo.platform}
                 />
               {/if}

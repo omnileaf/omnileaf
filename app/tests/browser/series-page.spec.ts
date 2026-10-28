@@ -79,6 +79,8 @@ const SHELF_BACKEND: FakeBackend = {
   seriesBooks: (id, listing, after) =>
     shelf.backend().seriesBooks(id, listing, after),
   markBooks: (books, mark) => shelf.backend().markBooks(books, mark),
+  bookmarkPages: (book, pages, isBookmarked) =>
+    shelf.backend().bookmarkPages(book, pages, isBookmarked),
 };
 
 test.use({ backend: SHELF_BACKEND });
@@ -742,6 +744,41 @@ test("returns focus to where picking starts once the books picked are marked", a
   await selectedBooks(page).getByRole("button", { name: "Mark read" }).click();
 
   await expect(start).toBeFocused();
+});
+
+test("bookmarks the books picked from the selection bar", async ({ page }) => {
+  await openSeries(page);
+  await pickBooks(page, 4, 5);
+
+  await selectedBooks(page).getByRole("button", { name: "Bookmark" }).click();
+
+  expect(shelf.bookmarked).toEqual([
+    { book: shelf.idOf(4), pages: [0], isBookmarked: true },
+    { book: shelf.idOf(5), pages: [0], isBookmarked: true },
+  ]);
+  await expect(
+    books(page).nth(4).getByRole("img", { name: "Bookmarked" }),
+  ).toBeVisible();
+  await expect(
+    books(page).nth(5).getByRole("img", { name: "Bookmarked" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Bookmarked 2 books" }),
+  ).toBeAttached();
+});
+
+test("leaves an already bookmarked book untouched when bookmarking a selection", async ({
+  page,
+}) => {
+  shelf.bookmark(4);
+  await openSeries(page);
+  await pickBooks(page, 4, 5);
+
+  await selectedBooks(page).getByRole("button", { name: "Bookmark" }).click();
+
+  expect(shelf.bookmarked).toEqual([
+    { book: shelf.idOf(5), pages: [0], isBookmarked: true },
+  ]);
 });
 
 test("keeps the books picked when Escape closes quick open", async ({

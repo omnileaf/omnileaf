@@ -1914,6 +1914,23 @@
       }
     }
   ],
+  "series_bookmark": "⟦Ɓööķɱáŕķ····⟧",
+  "series_bookmarked_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Ɓööķɱáŕķéð {formattedCount} ƀööķ·············⟧",
+        "countPlural=other": "⟦Ɓööķɱáŕķéð {formattedCount} ƀööķš··············⟧"
+      }
+    }
+  ],
+  "series_bookmark_failed": "⟦Çöûļðñ'ţ ķééþ ţĥé ƀööķɱáŕķ···········⟧",
+  "series_bookmark_failed_body": "⟦Ţŕý áĝáíñ íñ á ɱöɱéñţ.·········⟧",
   "reader_back_label": "⟦Ɓáçķ ţö ţĥé ļíƀŕáŕý········⟧",
   "reader_back_to_series": "⟦Ɓáçķ ţö {series}·······⟧",
   "reader_breadcrumb": "⟦Ɓŕéáðçŕûɱƀ····⟧",
