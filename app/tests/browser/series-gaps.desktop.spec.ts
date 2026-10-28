@@ -29,6 +29,15 @@ function kinds(page: Page) {
   return page.getByRole("tablist", { name: "Kinds of book" });
 }
 
+async function sortLastFirst(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Sort: In order" }).click();
+  await page.getByRole("menuitemradio", { name: "Last first" }).click();
+}
+
+function volumeItems(page: Page) {
+  return page.getByRole("list", { name: "Volumes" }).getByRole("listitem");
+}
+
 test.describe("a series missing two volumes", () => {
   const shelf = new SectionShelf(
     [
@@ -184,13 +193,9 @@ test.describe("finding and sorting a series' volumes", () => {
   }) => {
     await openSeries(page);
 
-    await page.getByRole("button", { name: "Sort: In order" }).click();
-    await page.getByRole("menuitemradio", { name: "Last first" }).click();
+    await sortLastFirst(page);
 
-    const items = page
-      .getByRole("list", { name: "Volumes" })
-      .getByRole("listitem");
-    await expect(items).toHaveText([
+    await expect(volumeItems(page)).toHaveText([
       /Volume 17/,
       /Volumes 8–16/,
       /Volume 7/,
@@ -199,6 +204,89 @@ test.describe("finding and sorting a series' volumes", () => {
       /Volumes 2–3/,
       /Volume 1/,
     ]);
+  });
+});
+
+test.describe("a series whose last volume is a decimal", () => {
+  const shelf = new SectionShelf(
+    [...volumes(1, 3, 5, 6, 9.5), ...chapters(99)],
+    [
+      { first: 2, last: 2 },
+      { first: 4, last: 4 },
+      { first: 7, last: 9 },
+    ],
+  );
+  test.use({ backend: shelf.backend() });
+
+  test("holds the place of each volume missing below it", async ({ page }) => {
+    await openSeries(page);
+
+    await expect(volumeItems(page)).toHaveText([
+      /Volume 1/,
+      /Volume 2/,
+      /Volume 3/,
+      /Volume 4/,
+      /Volume 5/,
+      /Volume 6/,
+      /Volumes 7–9/,
+      /Volume 9\.5/,
+    ]);
+    await expect(
+      page.getByText(
+        "Volumes 2, 4, and 7–9 aren’t in the folder. The gaps keep the others in place.",
+      ),
+    ).toBeVisible();
+  });
+
+  test("puts it first with the gap below it next", async ({ page }) => {
+    await openSeries(page);
+
+    await sortLastFirst(page);
+
+    await expect(volumeItems(page)).toHaveText([
+      /Volume 9\.5/,
+      /Volumes 7–9/,
+      /Volume 6/,
+      /Volume 5/,
+      /Volume 4/,
+      /Volume 3/,
+      /Volume 2/,
+      /Volume 1/,
+    ]);
+  });
+
+  test("says the chapters come after it", async ({ page }) => {
+    await openSeries(page);
+
+    await kinds(page).getByRole("tab", { name: "Chapters" }).click();
+
+    await expect(
+      page.getByText("The chapters after Volume 9.5."),
+    ).toBeVisible();
+  });
+});
+
+test.describe("a series of one decimal volume", () => {
+  const shelf = new SectionShelf(volumes(2.5), [{ first: 1, last: 2 }]);
+  test.use({ backend: shelf.backend() });
+
+  test("holds the place of the volumes missing below it", async ({ page }) => {
+    await openSeries(page);
+
+    await expect(volumeItems(page)).toHaveText([/Volumes 1–2/, /Volume 2\.5/]);
+    await expect(
+      page.getByText(
+        "Volumes 1 and 2 aren’t in the folder. The gap keeps the others in place.",
+      ),
+    ).toBeVisible();
+  });
+
+  test("ends with the gap when the last come first", async ({ page }) => {
+    await openSeries(page);
+
+    await sortLastFirst(page);
+
+    await expect(volumeItems(page)).toHaveText([/Volume 2\.5/, /Volumes 1–2/]);
   });
 });
 
