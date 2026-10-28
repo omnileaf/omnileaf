@@ -87,6 +87,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0051_name_each_series_in_the_language_tagged_in_its_book_names"),
     migration!("0052_stack_series_covers_in_the_library_view"),
     migration!("0053_key_the_folders_that_group_series"),
+    migration!("0054_index_the_unread_books_of_each_series"),
 ];
 
 pub(crate) fn pending(
@@ -1754,6 +1755,53 @@ mod tests {
             .collect::<Result<_, _>>()
             .unwrap();
         assert_eq!(groups, ["", "author a", "Author B"].map(PathBuf::from));
+    }
+
+    #[test]
+    fn marks_each_book_read_before_unread_books_were_indexed_as_read() {
+        let scratch = ScratchLibrary::new("unread-books-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..53]).unwrap(),
+            StoppedClock,
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for number in 1..=3 {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', ?2, 0)",
+                    (book(number).as_bytes(), [u8::try_from(number).unwrap()]),
+                )
+                .unwrap();
+        }
+        let written = store.write(|writer| {
+            writer.set_read(book(2), true)?;
+            writer.set_read(book(3), false)
+        });
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let marked: Vec<i64> = connection
+            .prepare("SELECT is_marked_read FROM book ORDER BY reading_order_key")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(marked, [0, 1, 0]);
     }
 
     #[test]
