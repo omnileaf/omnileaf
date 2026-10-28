@@ -73,19 +73,19 @@ const NATIVE_ICON_ONLY = {
 } satisfies Record<ButtonSize, string>;
 
 const PLAIN =
-  "bg-transparent text-native-on-button-plain not-disabled:hover:tint-native-button-plain-hover not-disabled:active:tint-native-button-plain-pressed";
+  "bg-transparent text-native-on-button-plain not-disabled:not-aria-disabled:hover:tint-native-button-plain-hover not-disabled:not-aria-disabled:active:tint-native-button-plain-pressed";
 
 const NATIVE_VARIANTS = {
   primary:
-    "bg-native-button-primary text-native-on-button-primary not-disabled:hover:tint-native-button-primary-hover not-disabled:active:tint-native-button-primary-pressed",
+    "bg-native-button-primary text-native-on-button-primary not-disabled:not-aria-disabled:hover:tint-native-button-primary-hover not-disabled:not-aria-disabled:active:tint-native-button-primary-pressed",
   secondary:
-    "bg-native-button-secondary text-native-on-button-secondary not-disabled:hover:tint-native-button-secondary-hover not-disabled:active:tint-native-button-secondary-pressed",
+    "bg-native-button-secondary text-native-on-button-secondary not-disabled:not-aria-disabled:hover:tint-native-button-secondary-hover not-disabled:not-aria-disabled:active:tint-native-button-secondary-pressed",
   outline:
-    "border border-native-button-outline-edge bg-native-button-outline text-native-on-button-outline not-disabled:hover:tint-native-button-outline-hover not-disabled:active:tint-native-button-outline-pressed",
+    "border border-native-button-outline-edge bg-native-button-outline text-native-on-button-outline not-disabled:not-aria-disabled:hover:tint-native-button-outline-hover not-disabled:not-aria-disabled:active:tint-native-button-outline-pressed",
   plain: PLAIN,
   link: PLAIN,
   destructive:
-    "bg-native-button-destructive text-native-on-button-destructive not-disabled:hover:tint-native-button-destructive-hover not-disabled:active:tint-native-button-destructive-pressed",
+    "bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed",
 } satisfies Record<ButtonVariant, string>;
 
 const DESKTOP_VARIANTS = {

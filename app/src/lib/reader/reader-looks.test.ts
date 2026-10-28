@@ -20,6 +20,8 @@ const SCREENS = [
   screen: string;
 }[];
 
+const PHONES = new Set(["iPhone", "Android phone"]);
+
 test.each(SCREENS)(
   "floats the reader's bars on the $screen only if it is an iPhone",
   ({ platform, width, screen }) => {
@@ -28,13 +30,19 @@ test.each(SCREENS)(
 );
 
 test.each(SCREENS)(
-  "keeps today's reader buttons on the $screen unless it is an iPhone",
+  "keeps today's reader buttons on the $screen unless it is a phone",
   ({ platform, width, screen }) => {
     expect(readerButton(platform, width) === READER_BUTTON).toBe(
-      screen !== "iPhone",
+      !PHONES.has(screen),
     );
   },
 );
+
+test("draws the iPhone's and the Android phone's reader buttons each their own way", () => {
+  expect(readerButton("ios", "compact")).not.toBe(
+    readerButton("android", "compact"),
+  );
+});
 
 test.each(SCREENS)(
   "draws quick settings as toolbar items on the $screen only if it is an iPhone",

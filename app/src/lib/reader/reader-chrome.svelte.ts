@@ -4,7 +4,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { WindowWidth, type WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
 
-import { floatsReaderBars } from "./reader-bar.ts";
+import { floatsReaderBars, spansReaderBars } from "./reader-bar.ts";
 
 export class ReaderChrome {
   readonly #width = new WindowWidth();
@@ -21,6 +21,10 @@ export class ReaderChrome {
 
   get floats(): boolean {
     return floatsReaderBars(this.platform, this.width);
+  }
+
+  get spans(): boolean {
+    return spansReaderBars(this.platform, this.width);
   }
 }
 

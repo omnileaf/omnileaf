@@ -126,6 +126,7 @@
   --tracking-native-bar-title: var(--native-tracking-bar-title);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
   --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
+  --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);
   --shadow-native-bar-button-lift: var(--native-shadow-bar-button-lift);
   --color-native-on-top-bar: var(--native-color-on-top-bar);
   --color-native-top-bar-scrolled: var(--native-color-top-bar-scrolled);

@@ -7,6 +7,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   settle,
   onPlatform,
   test,
@@ -55,6 +56,13 @@ test.beforeEach(() => {
 
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
+}
+
+function drawnEdgeOf(bar: Locator): Promise<string> {
+  return bar.evaluate((element) => {
+    const { borderTopWidth, borderTopColor } = getComputedStyle(element);
+    return borderTopWidth === "0px" ? "rgba(0, 0, 0, 0)" : borderTopColor;
+  });
 }
 
 function isHitToItsEdges(target: Locator): Promise<boolean> {
@@ -292,7 +300,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 test.describe("on Android", () => {
   test.use({ backend: readerBackend(onPlatform("android").backend) });
 
-  test("lays the bars on the surface container with no edge or blur, as Material 3 does", async ({
+  test("lays the bars on the surface container, a phone's on the top bar's own, with no edge or blur, as Material 3 does", async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: "dark" });
@@ -300,10 +308,15 @@ test.describe("on Android", () => {
 
     const bar = page.locator("main header > div");
 
-    await expect(bar).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    expect(await drawnEdgeOf(bar)).toBe("rgba(0, 0, 0, 0)");
     await expect(bar).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--android-container"),
+      await tokenColour(
+        page,
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? "--native-color-top-bar-scrolled"
+          : "--android-container",
+      ),
     );
     await expect(bar).toHaveCSS("backdrop-filter", "none");
   });

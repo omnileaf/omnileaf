@@ -14,6 +14,7 @@
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   import {
+    EDGE_TO_EDGE_BARS,
     READER_CAPSULE,
     READER_GLASS,
     READER_ICON_SIZE,
@@ -95,8 +96,13 @@
         isShown && "*:pointer-events-auto",
       )
     : cn(
-        READER_GLASS,
-        "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+        "flex flex-col gap-sm",
+        chrome.spans
+          ? [EDGE_TO_EDGE_BARS, "px-lg pbs-sm pbe-native-reader-bar-end"]
+          : [
+              READER_GLASS,
+              "p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+            ],
       )}
   {@attach tracksMouse}
 >
@@ -141,7 +147,10 @@
     dir="ltr"
     class={floats
       ? cn(READER_CAPSULE, "gap-2xs self-stretch px-2xs")
-      : "flex items-center gap-xs expanded:gap-sm"}
+      : cn(
+          "flex items-center gap-xs expanded:gap-sm",
+          chrome.isOnPhone && "gap-sm",
+        )}
   >
     <BookStepLink step="previous" neighbour={previous} />
     {#if onPlay !== undefined}
@@ -154,7 +163,7 @@
         <ReaderIcon
           name="play"
           fallback={Play}
-          isKit={chrome.floats}
+          isKit={chrome.isOnPhone}
           size={READER_ICON_SIZE}
         />
       </button>

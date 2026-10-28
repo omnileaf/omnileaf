@@ -49,7 +49,7 @@
         <ReaderIcon
           name={shape.kitIcon}
           fallback={shape.icon}
-          isKit={chrome.floats}
+          isKit={chrome.isOnPhone}
           size={ICON_SIZE}
         />
       </Button>
@@ -69,7 +69,7 @@
         <ReaderIcon
           name={shape.kitIcon}
           fallback={shape.icon}
-          isKit={chrome.floats}
+          isKit={chrome.isOnPhone}
           size={ICON_SIZE}
         />
       </a>

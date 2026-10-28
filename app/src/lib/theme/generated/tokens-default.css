@@ -123,6 +123,7 @@
   --native-tracking-bar-title: 0;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
+  --native-spacing-reader-bar-end: 0px;
   --native-shadow-bar-button-lift: var(--shadow-raised);
   --native-color-on-top-bar: var(--foreground);
   --native-color-top-bar-scrolled: var(--background);

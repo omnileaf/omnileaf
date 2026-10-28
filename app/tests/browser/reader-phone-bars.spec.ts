@@ -7,6 +7,7 @@ import {
   LARGEST_TEXT_SCALE,
   setTextScale,
   settle,
+  targetOf,
   test,
   tokenColour,
   viewportOf,
@@ -26,7 +27,13 @@ import {
 const TABLET = { width: 820, height: 1180 };
 const IOS_BAR_BUTTON_PX = 44;
 const ANDROID_TARGET_PX = 48;
+const ANDROID_BUTTON_PX = 40;
+const ANDROID_ICON_PX = 24;
+const ANDROID_ROW_PX = 56;
+const ANDROID_SHEET_TITLE = { size: "22px", leading: "28px", weight: "400" };
 const READER_THEME = "dark";
+const BACK_TO_LIBRARY = "Back to the library";
+const MORE_ROWS = ["Mark read", "Start over", "Show the file", BACK_TO_LIBRARY];
 const NO_BLUR = "none";
 const CLEAR = "rgba(0, 0, 0, 0)";
 const BACK_TO_SERIES = `Back to ${BOOK_SERIES_TITLE}`;
@@ -37,10 +44,22 @@ const CAPSULE_INLINE_PADDING = "12px";
 const BESIDE_CAPSULE_PX = 16;
 const IOS_MENU_MAX_PX = 320;
 const MIRRORED = "-1 1";
+const CONTROLS_HIDE_AFTER_MS = 3000;
+const FRAME_MS = 16;
+const CONTROLS_PAUSE_AHEAD_MS = 500;
+const SHEET_SLIDE_MS = 500;
 const LONG_BOOK_TITLE =
   "Volume 3 · Letters from Across the Northern Sea, Written Every Winter by the Lighthouse Keeper";
 const STRIP_PAGE_SIZE = { width: 800, height: 2400 };
 const SECONDS_PER_PAGE = 15;
+const NO_TINT = "none";
+const STATUS_BAR_PX = 24;
+const GESTURE_BAR_PX = 24;
+const ANDROID_TOP_BAR_PX = 64;
+const ANDROID_BOTTOM_BAR_BLOCK_PX = 8;
+const SQUARE = "0px";
+const NO_BORDER = "0px";
+const NO_SHADOW = "none";
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
@@ -56,12 +75,45 @@ function topBar(page: Page): Locator {
   return page.locator("main > header");
 }
 
+function bottomBar(page: Page): Locator {
+  return page.locator("main > div:has(input[type=range]) > div");
+}
+
+async function provideSystemBars(page: Page): Promise<void> {
+  await page.evaluate(
+    ([top, bottom]) => {
+      const root = document.documentElement.style;
+      root.setProperty("--system-inset-top", `${String(top)}px`);
+      root.setProperty("--system-inset-bottom", `${String(bottom)}px`);
+    },
+    [STATUS_BAR_PX, GESTURE_BAR_PX] as const,
+  );
+  await settle(page.getByRole("main"));
+}
+
 function readerActions(page: Page): Locator {
   return page.getByRole("group", { name: "Reader actions" });
 }
 
 function quickSettings(page: Page): Locator {
   return page.getByRole("group", { name: "Quick settings" });
+}
+
+function controlBars(page: Page): Locator {
+  return page.locator("main > header, main > div:has(input[type=range])");
+}
+
+async function expectControlsHidden(page: Page): Promise<void> {
+  for (const bar of await controlBars(page).all()) {
+    await expect(bar).toHaveCSS("opacity", "0");
+  }
+}
+
+async function openBookBeforeControlsHide(page: Page): Promise<void> {
+  await page.clock.install();
+  await openBook(page);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + CONTROLS_PAUSE_AHEAD_MS);
 }
 
 function spillsOf(within: Locator): Promise<string[]> {
@@ -112,6 +164,26 @@ function backingOf(bar: Locator): Promise<{
   });
 }
 
+async function overlappingTargets(
+  controls: readonly Locator[],
+): Promise<unknown[]> {
+  const targets = await Promise.all(
+    controls.map(async (control) => {
+      const box = await boxOf(control);
+      const middle = box.x + box.width / 2;
+      return {
+        start: middle - ANDROID_TARGET_PX / 2,
+        end: middle + ANDROID_TARGET_PX / 2,
+      };
+    }),
+  );
+  return targets.flatMap((target, index) =>
+    targets
+      .slice(index + 1)
+      .filter((other) => other.start < target.end && target.start < other.end),
+  );
+}
+
 async function openStrip(page: Page): Promise<void> {
   await page.addInitScript((series) => {
     localStorage.setItem(`omnileaf.stripFound.${series}`, "seen");
@@ -120,6 +192,21 @@ async function openStrip(page: Page): Promise<void> {
   await servePages(page);
   await page.goto(`/read/${BOOK_ID}`);
   await expect(page.locator("[data-strip]")).toBeVisible();
+}
+
+async function holdFingerOn(page: Page, control: Locator): Promise<void> {
+  const box = await boxOf(control);
+  const session = await page.context().newCDPSession(page);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }],
+  });
+}
+
+function comingSoonTooltip(page: Page, feature: string): Locator {
+  return page
+    .locator("[data-tooltip-content]")
+    .filter({ hasText: `${feature} · coming soon` });
 }
 
 test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
@@ -320,7 +407,7 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios") {
+    if (platform !== "ios" && platform !== "android") {
       test.skip();
       return;
     }
@@ -453,6 +540,224 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     expect(spilling).toEqual([]);
   });
 
+  test("draws Android's bar actions as plain icons in the muted ink with a 48 dp target", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const muted = await tokenColour(page, "--secondary-text", READER_THEME);
+
+    for (const name of ["Bookmark this page", "Reading settings", "More"]) {
+      const action = topBar(page).getByRole("button", { name, exact: true });
+      const box = await boxOf(action);
+      const icon = await boxOf(action.locator("[data-icon]"));
+
+      expect([box.width, box.height]).toEqual([
+        ANDROID_BUTTON_PX,
+        ANDROID_BUTTON_PX,
+      ]);
+      expect(await targetOf(action)).toEqual({
+        width: ANDROID_TARGET_PX,
+        height: ANDROID_TARGET_PX,
+      });
+      expect([icon.width, icon.height]).toEqual([
+        ANDROID_ICON_PX,
+        ANDROID_ICON_PX,
+      ]);
+      await expect(action).toHaveCSS("color", muted);
+      await expect(action).toHaveCSS("background-color", CLEAR);
+    }
+  });
+
+  test("gives Android's coming-soon bar action no tint while pressed", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const bookmark = topBar(page).getByRole("button", {
+      name: "Bookmark this page",
+      exact: true,
+    });
+    await expect(bookmark).toHaveAttribute("aria-disabled", "true");
+    const box = await boxOf(bookmark);
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+
+    await expect(bookmark).toHaveCSS("background-image", NO_TINT);
+    await page.mouse.up();
+  });
+
+  test("names Android's coming-soon bar action in a tooltip once a finger is held on it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const bookmark = topBar(page).getByRole("button", {
+      name: "Bookmark this page",
+      exact: true,
+    });
+
+    await holdFingerOn(page, bookmark);
+
+    await expect(comingSoonTooltip(page, "Bookmark this page")).toBeVisible();
+  });
+
+  test("tints Android's chapter links while pressed", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    const next = page.getByRole("link", { name: /^Next chapter/ });
+    const box = await boxOf(next);
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+
+    await expect(next).not.toHaveCSS("background-image", NO_TINT);
+  });
+
+  test("runs Android's bars edge to edge on the container colour, past the status and gesture bars, as the boards draw them", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await provideSystemBars(page);
+    const { width, height } = viewportOf(page);
+    const container = await tokenColour(
+      page,
+      "--native-color-top-bar-scrolled",
+      READER_THEME,
+    );
+
+    const top = await boxOf(topBar(page).locator("> div"));
+    const bottom = await boxOf(bottomBar(page));
+
+    expect(top).toEqual({
+      x: 0,
+      y: 0,
+      width,
+      height: STATUS_BAR_PX + ANDROID_TOP_BAR_PX,
+    });
+    expect([bottom.x, bottom.width, bottom.y + bottom.height]).toEqual([
+      0,
+      width,
+      height,
+    ]);
+    await expect(topBar(page).locator("> div")).toHaveCSS(
+      "padding-top",
+      `${String(STATUS_BAR_PX)}px`,
+    );
+    await expect(bottomBar(page)).toHaveCSS(
+      "padding-bottom",
+      `${String(GESTURE_BAR_PX + ANDROID_BOTTOM_BAR_BLOCK_PX)}px`,
+    );
+    for (const bar of [topBar(page).locator("> div"), bottomBar(page)]) {
+      await expect(bar).toHaveCSS("border-top-left-radius", SQUARE);
+      await expect(bar).toHaveCSS("border-top-width", NO_BORDER);
+      await expect(bar).toHaveCSS("box-shadow", NO_SHADOW);
+      await expect(bar).toHaveCSS("background-color", container);
+    }
+  });
+
+  test("opens Android's More as a sheet of 56 dp rows under the book, its series and page", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+
+    await expect(sheet).toContainText(`${BOOK_SERIES_TITLE} · ${FIRST_PAGE}`);
+    const heading = sheet.getByRole("heading", { name: BOOK_TITLE });
+    await expect(heading).toHaveCSS("font-size", ANDROID_SHEET_TITLE.size);
+    await expect(heading).toHaveCSS("line-height", ANDROID_SHEET_TITLE.leading);
+    await expect(heading).toHaveCSS("font-weight", ANDROID_SHEET_TITLE.weight);
+    for (const name of MORE_ROWS) {
+      const row = sheet.getByRole(
+        name === BACK_TO_LIBRARY ? "link" : "button",
+        {
+          name,
+        },
+      );
+      expect((await boxOf(row)).height).toBe(ANDROID_ROW_PX);
+    }
+    const rule = sheet.getByRole("separator");
+    await expect(rule).toHaveCount(1);
+    await expect(rule).toHaveCSS(
+      "border-top-color",
+      await tokenColour(page, "--native-color-menu-rule", READER_THEME),
+    );
+  });
+
+  test("gives the Android phone's coming-soon More row no pressed look", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+    const row = sheet.getByRole("button", { name: "Show the file" });
+    const box = await boxOf(row);
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await settle(row);
+
+    await expect(row).toHaveCSS("background-color", CLEAR);
+    await page.mouse.up();
+  });
+
+  test("names the Android phone's coming-soon More row in a tooltip once a finger is held on it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await settle(sheet);
+    const row = sheet.getByRole("button", { name: "Show the file" });
+
+    await holdFingerOn(page, row);
+
+    await expect(comingSoonTooltip(page, "Show the file")).toBeVisible();
+  });
+
   test("centres the iPhone's Light title over its sheet in a longer language", async ({
     page,
     platform,
@@ -497,6 +802,96 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
         .getByRole("link", { name: BACK_TO_SERIES })
         .locator("[data-icon]"),
     ).toHaveCSS("scale", MIRRORED);
+  });
+
+  test("spaces Android's bar buttons so no two 48 dp targets overlap", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBook(page);
+
+    const overlaps = await overlappingTargets([
+      topBar(page).getByRole("link", { name: BACK_TO_SERIES }),
+      ...["Bookmark this page", "Reading settings", "More"].map((name) =>
+        topBar(page).getByRole("button", { name, exact: true }),
+      ),
+    ]);
+
+    expect(overlaps).toEqual([]);
+  });
+
+  test("keeps Android's bars up on More once Escape closes its sheet, and lets them hide when focus leaves", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBookBeforeControlsHide(page);
+    const more = topBar(page).getByRole("button", { name: "More" });
+    await more.click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await expect(sheet).toBeVisible();
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet.locator(":focus")).toBeAttached();
+    await page.mouse.move(
+      viewportOf(page).width / 2,
+      (await boxOf(sheet)).y / 2,
+    );
+
+    await page.keyboard.press("Escape");
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet).toBeHidden();
+    await expect(more).toBeFocused();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+    for (const bar of await controlBars(page).all()) {
+      await expect(bar).not.toHaveClass(/opacity-0/);
+    }
+    await more.blur();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+
+    await expectControlsHidden(page);
+  });
+
+  test("lets Android's bars hide again once More's sheet closes with a tap beside it", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openBookBeforeControlsHide(page);
+    await topBar(page).getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
+    await expect(sheet).toBeVisible();
+
+    await page.mouse.click(
+      viewportOf(page).width / 2,
+      (await boxOf(sheet)).y / 2,
+    );
+    await page.clock.runFor(SHEET_SLIDE_MS);
+    await expect(sheet).toBeHidden();
+    await page.clock.runFor(CONTROLS_HIDE_AFTER_MS + FRAME_MS);
+
+    await expectControlsHidden(page);
+  });
+
+  test("keeps a tablet's bars floating inside the screen's edges with rounded corners", async ({
+    page,
+  }) => {
+    await page.setViewportSize(TABLET);
+    await openBook(page);
+
+    for (const bar of [topBar(page).locator("> div"), bottomBar(page)]) {
+      expect((await boxOf(bar)).x).toBeGreaterThan(0);
+      await expect(bar).not.toHaveCSS("border-top-left-radius", SQUARE);
+    }
   });
 
   test("keeps one glass bar and More's sheet on a tablet", async ({ page }) => {
@@ -645,6 +1040,25 @@ test.describe(
         "data-icon",
         "play",
       );
+    });
+
+    test("spaces the Android phone's pager buttons so no two 48 dp targets overlap", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+
+      const overlaps = await overlappingTargets([
+        page.getByRole("link", { name: /^Previous chapter/ }),
+        page.getByRole("button", { name: "Start auto scroll" }),
+        page.getByRole("link", { name: /^Next chapter/ }),
+      ]);
+
+      expect(overlaps).toEqual([]);
     });
   },
 );
