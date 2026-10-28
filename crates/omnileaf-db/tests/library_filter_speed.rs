@@ -13,9 +13,11 @@ use omnileaf_db::{
     Database,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesFormat, SeriesListing,
-        SeriesOrder, SeriesSort, series_count, series_page,
+        SeriesOrder, SeriesSort, category_series_count, category_series_page, series_count,
+        series_page,
     },
 };
+use omnileaf_sync_proto::CategoryId;
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
 use rusqlite::Transaction;
 use speed::add_generated_series;
@@ -57,6 +59,10 @@ const EVERY_FIFTH_TAGGED_COMMON: u32 = 5;
 const COMMON_TAG: &str = "harbour";
 const EVERY_HUNDREDTH_RATED_ADULT: u32 = 100;
 const RATED_ADULT_REMAINDER: u32 = 4;
+const EVERY_HUNDREDTH_IN_A_RARE_CATEGORY: u32 = 100;
+const EVERY_TENTH_IN_A_COMMON_CATEGORY: u32 = 10;
+const RARE_CATEGORY: &str = "Rare shelf";
+const COMMON_CATEGORY: &str = "Common shelf";
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -208,6 +214,112 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     }
 
     assert_eq!(over_budget, Vec::<String>::new());
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_and_count_of_a_category_of_a_hundredth_or_a_tenth_of_10_000_series_within_4_ms_at_p95()
+ {
+    let trial = trial_within(
+        "a page of 100 or a count of the series in a category of a hundredth or a tenth of 10,000 series",
+        CROWDED_TAG_BUDGET,
+    );
+    let folder = ScratchFolder::new("category-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_generated_library(&database).await;
+    add_generated_categories(&database).await;
+
+    let mut over_budget = Vec::new();
+    for category in
+        [RARE_CATEGORY, COMMON_CATEGORY].map(|name| CategoryId::from_name(name).unwrap())
+    {
+        for sort in SORTS {
+            for filter in [
+                SeriesFilter::NONE,
+                SeriesFilter::NONE.with_unread(Inclusion::Only),
+            ] {
+                let listing = SeriesListing { sort, filter };
+                let outcome = trial
+                    .run(
+                        async |_| None,
+                        async |after| {
+                            *after = read_category_page(
+                                &database,
+                                category,
+                                listing.clone(),
+                                after.take(),
+                            )
+                            .await;
+                        },
+                    )
+                    .await;
+                eprintln!("{category} {listing:?}: {outcome}");
+                if !outcome.is_within_budget() {
+                    over_budget.push(format!("{category} {listing:?}: {outcome}"));
+                }
+            }
+        }
+        let filter = SeriesFilter::NONE.with_unread(Inclusion::Only);
+        let outcome = trial
+            .run(
+                async |_| (),
+                async |()| count_category(&database, category, filter.clone()).await,
+            )
+            .await;
+        eprintln!("{category} count: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{category} count: {outcome}"));
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+async fn add_generated_categories(database: &Database) {
+    database
+        .write(|transaction| {
+            for (name, every) in [
+                (RARE_CATEGORY, EVERY_HUNDREDTH_IN_A_RARE_CATEGORY),
+                (COMMON_CATEGORY, EVERY_TENTH_IN_A_COMMON_CATEGORY),
+            ] {
+                transaction.execute(
+                    "INSERT INTO series_category (series_id, category_id)
+                    SELECT id, ?1 FROM series WHERE added_at_ms % ?2 = 0",
+                    (CategoryId::from_name(name).unwrap().as_bytes(), every),
+                )?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+async fn read_category_page(
+    database: &Database,
+    category: CategoryId,
+    listing: SeriesListing,
+    after: Option<Cursor>,
+) -> Option<Cursor> {
+    let request = PageRequest {
+        after,
+        size: PageSize::try_from(PAGE_SIZE).unwrap(),
+    };
+    database
+        .read(move |connection| category_series_page(connection, category, &listing, &request))
+        .await
+        .unwrap()
+        .next
+}
+
+async fn count_category(database: &Database, category: CategoryId, filter: SeriesFilter) {
+    database
+        .read(move |connection| category_series_count(connection, category, &filter))
+        .await
+        .unwrap();
 }
 
 /// Forgotten and stored-twice series that are too many to sort on their own, all finished, beside thousands of unstarted series that hold none of them.
