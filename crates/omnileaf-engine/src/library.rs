@@ -520,6 +520,46 @@ impl Library {
             .await?)
     }
 
+    /// Counts the series each of the writers has in the library through the filter, in the order asked, in one read.
+    pub async fn writer_series_counts(
+        &self,
+        writers: Vec<String>,
+        filter: LibraryFilter,
+    ) -> Result<Vec<u32>, LibraryError> {
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                writers
+                    .iter()
+                    .map(|writer| writer_series_count(connection, writer, &filter))
+                    .collect()
+            })
+            .await?)
+    }
+
+    /// Counts the series each of the folders holds through the filter, in the order asked, in one read.
+    pub async fn folder_series_counts(
+        &self,
+        folders: Vec<FolderId>,
+        filter: LibraryFilter,
+    ) -> Result<Vec<u32>, LibraryError> {
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                folders
+                    .iter()
+                    .map(|folder| folder_series_count(connection, folder.0, &filter))
+                    .collect()
+            })
+            .await?)
+    }
+
     pub async fn folder_book_count(&self, id: FolderId) -> Result<u32, LibraryError> {
         Ok(self
             .store

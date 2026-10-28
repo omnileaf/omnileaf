@@ -1345,6 +1345,23 @@ export function sampleBackend(
         passes(series, filter, facts),
       ).length;
     },
+    writerSeriesCounts: async (writers, filter) => {
+      await libraryReady();
+      return writers.map(
+        (writer) =>
+          seriesWrittenBy(writer).filter((series) =>
+            passes(series, filter, facts),
+          ).length,
+      );
+    },
+    folderSeriesCounts: async (folders, filter) => {
+      await libraryReady();
+      return folders.map((folder) =>
+        folder === LIBRARY_FOLDER_ID
+          ? library.filter((series) => passes(series, filter, facts)).length
+          : 0,
+      );
+    },
     librarySearch: async (after, search) => {
       await libraryReady();
       const text = search.text.trim().toLocaleLowerCase();
