@@ -29,7 +29,6 @@ const PAGES = 30;
 const PHONE_TITLE_TRIGGER_PX = 48;
 const DESKTOP_CRUMB_TRIGGER_PX = 32;
 const IOS_TOUCH_TARGET_PX = 44;
-const IOS_NAMED_BACK_MAX_PX = 168;
 
 function bookAt(index: number, change: Partial<WireBook> = {}): WireBook {
   const id = `0190a3e4-0000-8000-8000-0000000000${(0xb0 + index).toString(16)}`;
@@ -405,7 +404,7 @@ test.describe("on an iPhone with a long series name", () => {
   });
   testOnlyInItsWebview("ios");
 
-  test("leaves the title room to tap beside a back link capped as the board caps it", async ({
+  test("leaves the title room to tap beside a back circle the size of a bar button", async ({
     page,
   }) => {
     test.skip(
@@ -422,6 +421,6 @@ test.describe("on an iPhone with a long series name", () => {
 
     expect(title.width).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
     expect(title.height).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
-    expect(back.width).toBeLessThanOrEqual(IOS_NAMED_BACK_MAX_PX);
+    expect(back.width).toBe(IOS_TOUCH_TARGET_PX);
   });
 });

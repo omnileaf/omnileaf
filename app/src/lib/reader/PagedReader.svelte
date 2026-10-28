@@ -13,14 +13,14 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { cn } from "#lib/components/cn.ts";
   import {
     commands,
     type OpenedBook,
     type Platform,
   } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone, isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -65,6 +65,11 @@
   import { tapZonesFor } from "#lib/reader/tap-zones.ts";
   import ReaderPanel from "#lib/reader/ReaderPanel.svelte";
   import ReaderTopBar from "#lib/reader/ReaderTopBar.svelte";
+  import { READER_CAPSULE } from "#lib/reader/reader-bar.ts";
+  import {
+    ReaderChrome,
+    setReaderChrome,
+  } from "#lib/reader/reader-chrome.svelte.ts";
   import { isZoomedIn, zoneAction } from "#lib/reader/reader-zoom.ts";
   import {
     type ReadingCore,
@@ -145,8 +150,8 @@
   let hasOpened = false;
   const skipUpNext = getSkipUpNextSetting();
   const notices = getNotices();
-  const width = new WindowWidth();
-  const readsQuietly = $derived(isPhone(platform, width.current));
+  const chrome = untrack(() => new ReaderChrome(platform));
+  setReaderChrome(chrome);
   const reading = untrack(() =>
     seriesReadingDirection(
       book.series,
@@ -461,7 +466,7 @@
     }
     const finished = resolve("/read/[book]", { book: book.id });
     startNextBook();
-    if (readsQuietly) {
+    if (chrome.isOnPhone) {
       return;
     }
     notices.offerUndo({
@@ -524,7 +529,7 @@
     }
     const isOn = !isBookmarked;
     const pages = spread.filter((page) => bookmarks.has(page) !== isOn);
-    if ((await keepBookmarks(bookmarks, pages, isOn)) && !readsQuietly) {
+    if ((await keepBookmarks(bookmarks, pages, isOn)) && !chrome.isOnPhone) {
       notices.offerUndo({
         title: pagesWord(pages, isOn),
         undo: () => {
@@ -599,7 +604,7 @@
       }
       return;
     }
-    if (readsQuietly) {
+    if (chrome.isOnPhone) {
       return;
     }
     notices.show({
@@ -622,7 +627,7 @@
   function sayDirectionFound(): void {
     const noticed = seenOnce(`omnileaf.directionFound.${book.series}`);
     if (
-      readsQuietly ||
+      chrome.isOnPhone ||
       noticed.isSeen ||
       !reading.isDetected ||
       reading.direction !== "rightToLeft"
@@ -855,6 +860,9 @@
 {#snippet more()}
   <ReaderMore
     title={named.title}
+    seriesTitle={named.seriesTitle}
+    {pageNumber}
+    {pageCount}
     {platform}
     onMarkRead={() => {
       void markRead();
@@ -1119,6 +1127,7 @@
       class={[
         "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
         isPanelOpen && "expanded:inset-e-reader-settings-room",
+        chrome.floats && "pointer-events-none",
         !controls.isShown && "pointer-events-none opacity-0",
       ]}
       {...controlEvents}
@@ -1151,8 +1160,12 @@
         class="pointer-events-none absolute inset-x-none inset-be-reader-bar-bottom flex justify-center"
       >
         <span
-          class="rounded-full bg-reader-glass px-sm py-2xs text-caption font-semibold text-reader-muted tabular-nums"
-          >{spreadPosition(spread, pageCount)}</span
+          class={cn(
+            "rounded-full px-sm py-2xs text-caption font-semibold tabular-nums",
+            chrome.floats
+              ? [READER_CAPSULE, "px-md"]
+              : "bg-reader-glass text-reader-muted",
+          )}>{spreadPosition(spread, pageCount)}</span
         >
       </div>
     {/if}

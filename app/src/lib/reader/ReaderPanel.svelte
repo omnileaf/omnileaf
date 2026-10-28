@@ -14,10 +14,13 @@
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   import {
-    READER_BUTTON,
+    READER_CAPSULE,
     READER_GLASS,
     READER_ICON_SIZE,
+    readerButton,
   } from "./reader-bar.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import { type Spread, spreadPosition } from "./spreads.ts";
 
   const TIME_ICON_SIZE = 14;
@@ -54,6 +57,8 @@
   } = $props();
 
   const count = $derived(pages.length);
+  const chrome = getReaderChrome();
+  const floats = $derived(chrome.floats);
   let isDragged = $state(false);
   let isSliderFocused = $state(false);
   let isHovered = $state(false);
@@ -84,13 +89,33 @@
 </script>
 
 <div
-  class={cn(
-    READER_GLASS,
-    "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
-  )}
+  class={floats
+    ? cn(
+        "flex flex-col items-center gap-sm",
+        isShown && "*:pointer-events-auto",
+      )
+    : cn(
+        READER_GLASS,
+        "flex flex-col gap-sm p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+      )}
   {@attach tracksMouse}
 >
-  {#if isPreviewing}
+  {#if isPreviewing && floats}
+    <div
+      class={cn(
+        READER_CAPSULE,
+        "flex-col items-stretch self-stretch rounded-reader-glass",
+      )}
+    >
+      <NearbyPages
+        {pages}
+        {shown}
+        {isBlank}
+        isReversed={direction === "rightToLeft"}
+        onPick={onSeek}
+      />
+    </div>
+  {:else if isPreviewing}
     <NearbyPages
       {pages}
       {shown}
@@ -103,21 +128,35 @@
     <div
       role="group"
       aria-label={m.reader_quick_settings()}
-      class="flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"
+      class={floats
+        ? cn(READER_CAPSULE, "flex-wrap justify-center px-2xs max-inline-full")
+        : "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"}
     >
       {@render quickSettings()}
     </div>
   {/if}
-  <div dir="ltr" class="flex items-center gap-xs expanded:gap-sm">
+  <div
+    role={floats ? "group" : undefined}
+    aria-label={floats ? m.reader_pages_title() : undefined}
+    dir="ltr"
+    class={floats
+      ? cn(READER_CAPSULE, "gap-2xs self-stretch px-2xs")
+      : "flex items-center gap-xs expanded:gap-sm"}
+  >
     <BookStepLink step="previous" neighbour={previous} />
     {#if onPlay !== undefined}
       <button
         type="button"
         aria-label={m.reader_start_auto_scroll()}
-        class={READER_BUTTON}
+        class={readerButton(chrome.platform, chrome.width)}
         onclick={onPlay}
       >
-        <Play size={READER_ICON_SIZE} aria-hidden="true" />
+        <ReaderIcon
+          name="play"
+          fallback={Play}
+          isKit={chrome.floats}
+          size={READER_ICON_SIZE}
+        />
       </button>
     {/if}
     <span
@@ -142,7 +181,10 @@
   </div>
   {#if secondsLeft !== undefined}
     <p
-      class="flex items-center justify-center gap-xs text-caption text-reader-muted"
+      class={cn(
+        "flex items-center justify-center gap-xs text-caption text-reader-muted",
+        floats && [READER_CAPSULE, "px-md py-2xs"],
+      )}
     >
       <Clock size={TIME_ICON_SIZE} aria-hidden="true" />
       {secondsLeft < SECONDS_IN_A_MINUTE

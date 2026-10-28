@@ -6,7 +6,7 @@
     Library,
     RotateCcw,
   } from "@lucide/svelte";
-  import { Dialog } from "bits-ui";
+  import { Dialog, DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
@@ -18,6 +18,7 @@
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
@@ -26,7 +27,10 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import ComingSoon from "./ComingSoon.svelte";
-  import { READER_BUTTON, READER_ICON_SIZE } from "./reader-bar.ts";
+  import { moreHeading } from "./more-heading.ts";
+  import { READER_ICON_SIZE, readerButton } from "./reader-bar.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
 
   const ITEM_ICON_SIZE = 16;
   const SHEET_ACTION =
@@ -34,12 +38,18 @@
 
   let {
     title,
+    seriesTitle,
+    pageNumber,
+    pageCount,
     platform,
     onMarkRead,
     onStartOver,
     onOpenChange,
   }: {
     title: string;
+    seriesTitle: string;
+    pageNumber: number;
+    pageCount: number;
     platform: Platform;
     onMarkRead: () => void;
     onStartOver: () => void;
@@ -47,6 +57,11 @@
   } = $props();
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
+  const chrome = getReaderChrome();
+  const floats = $derived(chrome.floats);
+  const button = $derived(readerButton(platform, chrome.width));
+  const heading = $derived(moreHeading(title, seriesTitle));
+  const headingId = $props.id();
   let isSheetOpen = $state(false);
   const showFile = $derived(showFileLabel(platform));
 
@@ -56,7 +71,7 @@
   }
 </script>
 
-{#if isWide.current}
+{#if isWide.current || floats}
   <DropdownMenu {onOpenChange}>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
@@ -64,34 +79,69 @@
           {...props}
           look="icon"
           aria-label={m.reader_more()}
-          class={READER_BUTTON}
+          class={button}
         >
-          <Ellipsis size={READER_ICON_SIZE} aria-hidden="true" />
+          <ReaderIcon
+            name="ellipsis"
+            fallback={Ellipsis}
+            isKit={floats}
+            size={READER_ICON_SIZE}
+          />
         </Button>
       {/snippet}
     </DropdownMenuTrigger>
-    <DropdownMenuContent to="main" align="end" class="min-inline-book-menu">
-      <DropdownMenuItem onSelect={onMarkRead}>
-        <Eye size={ITEM_ICON_SIZE} aria-hidden="true" />
-        {m.reader_mark_read()}
-      </DropdownMenuItem>
-      <DropdownMenuItem onSelect={onStartOver}>
-        <RotateCcw size={ITEM_ICON_SIZE} aria-hidden="true" />
-        {m.reader_start_over()}
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled>
-        <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
-        {m.reader_coming_soon({ feature: showFile })}
-      </DropdownMenuItem>
-      <hr class="-mx-xs my-xs border-border" />
-      <DropdownMenuItem>
-        {#snippet child({ props })}
-          <a {...props} href={resolve("/(app)")}>
-            <Library size={ITEM_ICON_SIZE} aria-hidden="true" />
-            {m.reader_back_label()}
-          </a>
-        {/snippet}
-      </DropdownMenuItem>
+    <DropdownMenuContent
+      to="main"
+      align="end"
+      class={cn("min-inline-book-menu", floats && "max-inline-book-menu-max")}
+    >
+      {#if floats}
+        <div
+          id={headingId}
+          aria-hidden="true"
+          class="flex flex-col px-native-menu-item-inline py-xs text-footnote text-muted min-inline-none"
+        >
+          <span class="text-native-on-menu tabular-nums">
+            {m.reader_page_of({ page: pageNumber, count: pageCount })}
+          </span>
+          <span class="flex gap-2xs min-inline-none">
+            <span class="truncate">{heading.lead}</span>
+            {#if heading.tail !== ""}
+              <span class="shrink-0 whitespace-nowrap">{heading.tail}</span>
+            {/if}
+          </span>
+        </div>
+      {/if}
+      <DropdownMenuPrimitive.Group
+        aria-labelledby={floats ? headingId : undefined}
+        class="flex flex-col"
+      >
+        <DropdownMenuItem onSelect={onMarkRead}>
+          <Eye size={ITEM_ICON_SIZE} aria-hidden="true" />
+          {m.reader_mark_read()}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onStartOver}>
+          <RotateCcw size={ITEM_ICON_SIZE} aria-hidden="true" />
+          {m.reader_start_over()}
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled>
+          <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
+          {m.reader_coming_soon({ feature: showFile })}
+        </DropdownMenuItem>
+        {#if chrome.isOnPhone}
+          <DropdownMenuSeparator />
+        {:else}
+          <hr class="-mx-xs my-xs border-border" />
+        {/if}
+        <DropdownMenuItem>
+          {#snippet child({ props })}
+            <a {...props} href={resolve("/(app)")}>
+              <Library size={ITEM_ICON_SIZE} aria-hidden="true" />
+              {m.reader_back_label()}
+            </a>
+          {/snippet}
+        </DropdownMenuItem>
+      </DropdownMenuPrimitive.Group>
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}
@@ -101,7 +151,7 @@
     aria-label={m.reader_more()}
     aria-haspopup="dialog"
     aria-expanded={isSheetOpen}
-    class={READER_BUTTON}
+    class={button}
     onclick={() => {
       isSheetOpen = true;
       onOpenChange(true);

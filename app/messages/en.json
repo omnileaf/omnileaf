@@ -1962,6 +1962,22 @@
   "reader_shortcuts_close": "Close keyboard shortcuts",
   "reader_jump_to_book": "Jump to a book",
   "reader_jump_from_book": "{title}, Jump to a book",
+  "reader_jump_from_series_book": [
+    {
+      "declarations": [
+        "input series",
+        "input title",
+        "input page",
+        "input count",
+        "local formattedPage = page: number",
+        "local formattedCount = count: number"
+      ],
+      "match": {
+        "*": "{series} {title} · Page {formattedPage} of {formattedCount}, Jump to a book"
+      }
+    }
+  ],
+  "reader_page_after_book": "· {page}",
   "reader_jump_close": "Close Jump to a book",
   "reader_jump_loading": "Loading the series' books",
   "reader_jump_subtitle": [
@@ -2057,6 +2073,7 @@
   "reader_crop_borders": "Crop white borders",
   "reader_volume_keys": "Turn pages with the volume keys",
   "reader_volume_keys_help": "Only in the reader; everywhere else they change the volume.",
+  "reader_actions": "Reader actions",
   "reader_more": "More",
   "reader_mark_read": "Mark read",
   "reader_start_over": "Start over",
@@ -2080,6 +2097,7 @@
     }
   ],
   "reader_coming_soon": "{feature} · coming soon",
+  "reader_more_volume": "· {volume}",
   "reader_finished": "{title} finished",
   "reader_marked_read": "Marked as read",
   "reader_marked_read_after": "Marked as read · {time}",

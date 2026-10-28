@@ -12,6 +12,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
   test,
@@ -1390,6 +1391,10 @@ test.describe("on Android", () => {
   test("answers a touch within 48 dp of the back link while drawing it at the boards' size", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "phones draw android's own 48 dp back button",
+    );
     await openBook(page);
     const link = await boxOf(controls(page));
     const reach = (ANDROID_TOUCH_TARGET_PX - link.height) / 2;
