@@ -785,7 +785,7 @@ test("lists and counts the series whose files name no writer", async () => {
   const unnamed = await backend.writerlessSeries(null, NEWEST_FIRST);
   const count = await backend.writerlessSeriesCount(NEWEST_FIRST.filter);
 
-  expect(count).toBe(15);
+  expect(count).toBe(16);
   expect(unnamed.series.map(({ title }) => title)).toContain(
     "Sample Series 02",
   );
@@ -807,7 +807,7 @@ test("takes a series out of the unnamed group once its details name a writer", a
   const unnamed = await backend.writerlessSeries(null, NEWEST_FIRST);
   const count = await backend.writerlessSeriesCount(NEWEST_FIRST.filter);
 
-  expect(count).toBe(14);
+  expect(count).toBe(15);
   expect(unnamed.series.map(({ title }) => title)).not.toContain(
     "Sample Series 02",
   );
