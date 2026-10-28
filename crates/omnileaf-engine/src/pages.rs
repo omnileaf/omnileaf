@@ -256,10 +256,13 @@ impl Pages {
             tracing::debug!(error = %describe_error(&error), "learn how long a page takes to read");
             None
         });
-        let bookmarked_pages = library.bookmarked_pages(id).await.unwrap_or_else(|error| {
-            tracing::debug!(error = %describe_error(&error), "show the book without its bookmarks");
-            Vec::new()
-        });
+        let bookmarked_pages = library.bookmarked_pages(id).await.map_or_else(
+            |error| {
+                tracing::debug!(error = %describe_error(&error), "show the book without its bookmarks");
+                None
+            },
+            Some,
+        );
         let start = start_page(found.reading, opened.page_count);
         self.read_ahead(
             &opened,
@@ -267,8 +270,8 @@ impl Pages {
             PageCrop::Whole,
         );
         Ok(OpenedBook {
+            bookmarked_pages,
             damage,
-            bookmarked_pages: Some(bookmarked_pages),
             ..opened_book(to_open, &sizes, start, direction, seconds_per_page)
         })
     }

@@ -657,8 +657,10 @@ mod tests {
             [
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
-                "CORRELATED SCALAR SUBQUERY 1",
+                "CORRELATED SCALAR SUBQUERY 2",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+                "CORRELATED SCALAR SUBQUERY 1",
+                "SEARCH book_bookmark USING PRIMARY KEY (book_id=?)",
             ]
         );
     }

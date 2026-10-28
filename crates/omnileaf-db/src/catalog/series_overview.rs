@@ -15,9 +15,9 @@ const OVERVIEW_OF_SERIES: &str = concat!(
         series.id AS id, series.title, series.title_source, series.year, series.year_source,
         series.language, series.language_source, series.book_count, series.read_count,
         series.pages_left, series.uncounted_books, series.adult_rated_books > 0 AS is_rated_adult,
-        (SELECT count(DISTINCT book.id) FROM book
-            JOIN book_bookmark ON book_bookmark.book_id = book.id
-            WHERE book.series_local_id = series.local_id) AS bookmark_count,
+        (SELECT count(*) FROM book WHERE book.series_local_id = series.local_id
+            AND EXISTS (SELECT 1 FROM book_bookmark WHERE book_bookmark.book_id = book.id))
+            AS bookmark_count,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM series ",
     crate::catalog::cover::join_series_cover!(),
@@ -131,10 +131,17 @@ mod tests {
 
         let mut expected = with_covers(
             vec!["SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)".to_owned()],
-            (3, 1),
+            (5, 3),
         );
-        expected
-            .push("SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned());
+        expected.extend(
+            [
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
+                "CORRELATED SCALAR SUBQUERY 2",
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SEARCH book_bookmark EXISTS USING PRIMARY KEY (book_id=?)",
+            ]
+            .map(ToOwned::to_owned),
+        );
         assert_eq!(plan, expected);
     }
 
