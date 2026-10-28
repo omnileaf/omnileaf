@@ -677,13 +677,13 @@ async fn creator_series(
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "the library keeps no bookmarks yet, so the pages have nowhere to go"
-)]
-fn bookmark_pages(book: BookId, pages: Vec<u32>, is_bookmarked: bool) -> Result<(), IpcError> {
-    Err(IpcError::bookmarks_not_kept())
+async fn bookmark_pages(
+    library: State<'_, Library>,
+    book: BookId,
+    pages: Vec<u32>,
+    is_bookmarked: bool,
+) -> Result<(), IpcError> {
+    Ok(library.bookmark_pages(book, pages, is_bookmarked).await?)
 }
 
 #[tauri::command]

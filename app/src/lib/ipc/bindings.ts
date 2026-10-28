@@ -615,7 +615,7 @@ export type OpenedBook = {
 	next: SeriesNeighbour | null,
 	/**  Absent when the book's details don't say which way it reads. */
 	readingDirection: ReadingDirection | null,
-	/**  Counting from 0; absent while the library keeps no bookmarks. */
+	/**  Counting from 0; absent when the bookmarks could not be read. */
 	bookmarkedPages: number[] | null,
 	damage: BookDamage | null,
 	/**  About how long a page takes to read, absent until the library has timed enough reading. */
