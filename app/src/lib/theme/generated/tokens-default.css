@@ -247,4 +247,6 @@
   --native-leading-end-stat-label: var(--text-caption--line-height);
   --native-tracking-end-stat-label: 0;
   --native-weight-end-stat-label: var(--font-weight-regular);
+  --native-color-accent-hover: var(--primary);
+  --native-color-accent-pressed: var(--primary);
 }

@@ -65,6 +65,8 @@
   --native-color-notice: #f6f6f680;
   --native-color-on-notice: #000000e4;
   --native-color-focus-ring: #000000e4;
+  --native-color-accent-hover: rgba(47, 111, 79, 0.9);
+  --native-color-accent-pressed: rgba(47, 111, 79, 0.8);
 }
 
 :root[data-platform="windows"][data-theme="dark"],
@@ -115,6 +117,8 @@
   --native-color-notice: #ffffff08;
   --native-color-on-notice: #ffffff;
   --native-color-focus-ring: #ffffff;
+  --native-color-accent-hover: rgba(127, 203, 157, 0.9);
+  --native-color-accent-pressed: rgba(127, 203, 157, 0.8);
 }
 
 :root[data-platform="windows"][data-transparency="reduced"],

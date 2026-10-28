@@ -169,6 +169,8 @@
   --native-leading-end-stat-label: calc(18 / 13);
   --native-tracking-end-stat-label: -0.08px;
   --native-weight-end-stat-label: 400;
+  --native-color-accent-hover: #00000000;
+  --native-color-accent-pressed: #00000000;
 }
 
 :root[data-platform="ios"],

@@ -884,6 +884,7 @@
 }
 
 @import "./lib/theme/generated/index.css";
+@import "./lib/theme/forced-colors-windows.css";
 @import "./lib/icons/icons.css" layer(base);
 
 :root {

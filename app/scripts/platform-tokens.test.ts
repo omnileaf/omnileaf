@@ -288,6 +288,23 @@ test("ports real Windows values for a colour, a size and a motion token", () => 
   expect(windows).toContain("--native-duration-fade: 150ms;");
 });
 
+test("draws the Windows accent hover and pressed fills resolved against the accent", () => {
+  const windows = renderPlatformTokens(tokens).get("tokens-windows.css") ?? "";
+
+  expect(windows).toContain(
+    "--native-color-accent-hover: rgba(47, 111, 79, 0.9);",
+  );
+  expect(windows).toContain(
+    "--native-color-accent-pressed: rgba(47, 111, 79, 0.8);",
+  );
+  expect(windows).toContain(
+    "--native-color-accent-hover: rgba(127, 203, 157, 0.9);",
+  );
+  expect(windows).toContain(
+    "--native-color-accent-pressed: rgba(127, 203, 157, 0.8);",
+  );
+});
+
 test("draws the Windows menu without transparency when the setting is off", () => {
   const windows = renderPlatformTokens(tokens).get("tokens-windows.css") ?? "";
 
