@@ -48,6 +48,8 @@ const RARE_LANGUAGE_REMAINDER: u32 = 3;
 const RARE_LANGUAGE: &str = "ja";
 const EVERY_HUNDREDTH_MANGA: u32 = 100;
 const MANGA_REMAINDER: u32 = 6;
+const EVERY_HUNDREDTH_BOOKMARKED: u32 = 100;
+const BOOKMARKED_REMAINDER: u32 = 8;
 const EVERY_HUNDREDTH_TAGGED_RARE: u32 = 100;
 const RARE_TAG_REMAINDER: u32 = 5;
 const RARE_TAG: &str = "storms";
@@ -75,7 +77,7 @@ fn crowded_tags() -> [SeriesFilter; 2] {
 }
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-fn filters() -> [SeriesFilter; 15] {
+fn filters() -> [SeriesFilter; 17] {
     [
         SeriesFilter::NONE,
         SeriesFilter::NONE.with_unread(Inclusion::Only),
@@ -92,6 +94,8 @@ fn filters() -> [SeriesFilter; 15] {
         SeriesFilter::NONE.with_tags(vec![RARE_TAG.to_owned()]),
         SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga]),
         SeriesFilter::NONE.with_formats(vec![SeriesFormat::Comic]),
+        SeriesFilter::NONE.with_bookmarked(Inclusion::Only),
+        SeriesFilter::NONE.with_bookmarked(Inclusion::Hide),
     ]
 }
 
@@ -349,6 +353,16 @@ async fn add_generated_library(database: &Database) {
                 WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3
                 ON CONFLICT (book_id) DO UPDATE SET is_manga = 1",
                 (EVERY_HUNDREDTH_MANGA, MANGA_REMAINDER, BOOK_TITLES[0]),
+            )?;
+            transaction.execute(
+                "INSERT INTO book_bookmark (book_id, page)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3",
+                (
+                    EVERY_HUNDREDTH_BOOKMARKED,
+                    BOOKMARKED_REMAINDER,
+                    BOOK_TITLES[0],
+                ),
             )?;
             tag_first_books(
                 transaction,

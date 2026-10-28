@@ -92,6 +92,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0056_count_the_books_carrying_each_tag_in_each_series"),
     migration!("0057_count_the_manga_books_of_each_series"),
     migration!("0058_create_book_bookmarks"),
+    migration!("0059_count_the_bookmarked_books_of_each_series"),
 ];
 
 pub(crate) fn pending(
