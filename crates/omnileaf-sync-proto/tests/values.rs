@@ -29,9 +29,61 @@ fn refuses_an_integer_cut_short() {
 
 #[test]
 fn refuses_a_kind_of_value_this_version_does_not_read() {
-    let text = Value::from_cbor(&[0x61, 0x61]);
+    let array = Value::from_cbor(&[0x81, 0x01]);
 
-    assert_eq!(text, Err(ValueError::Unsupported { initial: 0x61 }));
+    assert_eq!(array, Err(ValueError::Unsupported { initial: 0x81 }));
+}
+
+#[test]
+fn refuses_a_text_written_with_a_longer_length_than_it_needs() {
+    let decoded = Value::from_cbor(&[0x78, 0x01, b'a']);
+
+    assert_eq!(decoded, Err(ValueError::NotShortest));
+}
+
+#[test]
+fn refuses_a_text_cut_short_or_followed_by_more_bytes() {
+    let decoded = [
+        Value::from_cbor(&[0x63, b'a', b'b']),
+        Value::from_cbor(&[0x61, b'a', b'b']),
+    ];
+
+    assert_eq!(
+        decoded,
+        [
+            Err(ValueError::Truncated),
+            Err(ValueError::TrailingBytes { count: 1 })
+        ]
+    );
+}
+
+#[test]
+fn refuses_a_text_that_is_not_utf8() {
+    let decoded = Value::from_cbor(&[0x62, 0xc3, 0x28]);
+
+    assert_eq!(decoded, Err(ValueError::NotUtf8));
+}
+
+#[test]
+fn writes_a_text_as_its_length_then_its_bytes_in_the_shortest_form() {
+    let long = "x".repeat(24);
+
+    let written = [
+        Value::Text(String::new()).to_cbor(),
+        Value::Text("a".to_owned()).to_cbor(),
+        Value::Text("é".to_owned()).to_cbor(),
+        Value::Text(long).to_cbor(),
+    ];
+
+    assert_eq!(
+        written,
+        [
+            vec![0x60],
+            vec![0x61, b'a'],
+            vec![0x62, 0xc3, 0xa9],
+            [vec![0x78, 24], vec![b'x'; 24]].concat()
+        ]
+    );
 }
 
 fn any_value() -> impl Strategy<Value = Value> {
@@ -39,6 +91,7 @@ fn any_value() -> impl Strategy<Value = Value> {
         Just(Value::Null),
         any::<bool>().prop_map(Value::Bool),
         any::<u64>().prop_map(Value::Unsigned),
+        ".{0,300}".prop_map(Value::Text),
     ]
 }
 
