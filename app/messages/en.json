@@ -190,6 +190,8 @@
   "library_view_layout": "Layout",
   "library_category_tabs": "Category tabs",
   "library_category_tabs_hint": "Your categories as tabs above the library.",
+  "library_stack_covers": "Stack series covers",
+  "library_stack_covers_hint": "A series with more than one book shows its covers stacked.",
   "library_view_kept_phone": "Kept on this phone.",
   "library_display_grid": "Grid",
   "library_display_compact": "Compact",

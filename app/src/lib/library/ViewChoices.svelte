@@ -5,8 +5,10 @@
     LibraryView,
     OnCovers,
   } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { coverTileLook } from "./cover-tile";
   import CoversPerRowChoice from "./CoversPerRowChoice.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
   import GroupByChoice from "./GroupByChoice.svelte";
@@ -22,6 +24,7 @@
     withGroupBy,
     withItemCounts,
     withOnCovers,
+    withStackedCovers,
   } from "./library-view";
 
   let {
@@ -40,6 +43,7 @@
 
   const layoutId = $props.id();
   const pageId = `${layoutId}-page`;
+  const canStackCovers = coverTileLook(currentPlatform()).stack !== null;
   const coversInARow = $derived(
     view.display === "list" ? undefined : coversDrawn,
   );
@@ -88,6 +92,16 @@
         isOn={view.showsCategoryTabs}
         onToggle={(isShown: boolean) => {
           onChoose(withCategoryTabs(view, isShown));
+        }}
+      />
+    {/if}
+    {#if canStackCovers}
+      <ViewSwitchRow
+        label={m.library_stack_covers()}
+        description={m.library_stack_covers_hint()}
+        isOn={view.stacksSeriesCovers}
+        onToggle={(stacks: boolean) => {
+          onChoose(withStackedCovers(view, stacks));
         }}
       />
     {/if}
