@@ -238,6 +238,44 @@ async fn lists_no_book_as_bookmarked_once_every_bookmark_was_taken_off() {
 }
 
 #[tokio::test]
+async fn takes_every_bookmark_off_the_books_asked_for_and_counts_the_pages_cleared() {
+    let sample = SampleLibrary::open("bookmarks-cleared").await;
+    let series = sample.series_named(FIRST_SERIES).await;
+    let books = sample.books(series).await;
+    sample
+        .library
+        .bookmark_pages(books[0].id, vec![0, 1], true)
+        .await
+        .unwrap();
+    sample
+        .library
+        .bookmark_pages(books[1].id, vec![2], true)
+        .await
+        .unwrap();
+    sample
+        .library
+        .bookmark_pages(books[2].id, vec![0], true)
+        .await
+        .unwrap();
+
+    let cleared = sample
+        .library
+        .clear_bookmarks(vec![books[0].id, books[1].id, books[0].id])
+        .await
+        .unwrap();
+
+    let bookmarked = SeriesBookListing {
+        shown: BooksShown::Bookmarked,
+        ..SeriesBookListing::default()
+    };
+    let left = sample.listed_books(series, bookmarked).await;
+    assert_eq!(
+        (cleared, left.iter().map(|book| book.id).collect::<Vec<_>>()),
+        (3, vec![books[2].id])
+    );
+}
+
+#[tokio::test]
 async fn finds_no_series_by_a_creator_no_book_names() {
     let sample = SampleLibrary::open("creator-series").await;
 

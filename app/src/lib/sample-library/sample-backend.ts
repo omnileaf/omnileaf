@@ -1575,6 +1575,14 @@ export function sampleBackend(
       bookmarks.set(id, kept);
       return null;
     },
+    clearBookmarks: (ids) => {
+      let cleared = 0;
+      for (const id of ids) {
+        cleared += bookmarks.get(id)?.size ?? 0;
+        bookmarks.delete(id);
+      }
+      return cleared;
+    },
     croppedPagePaths: (paths) => paths,
     readingRestored: () => null,
     pageShown: (id, page) => {

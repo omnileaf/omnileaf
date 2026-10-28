@@ -88,6 +88,7 @@ macro_rules! app_commands {
             series_books,
             creator_series,
             bookmark_pages,
+            clear_bookmarks,
             book_place,
             hide_files_like,
             hide_file_type,
@@ -684,6 +685,12 @@ async fn bookmark_pages(
     is_bookmarked: bool,
 ) -> Result<(), IpcError> {
     Ok(library.bookmark_pages(book, pages, is_bookmarked).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn clear_bookmarks(library: State<'_, Library>, books: Vec<BookId>) -> Result<u32, IpcError> {
+    Ok(library.clear_bookmarks(books).await?)
 }
 
 #[tauri::command]
