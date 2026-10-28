@@ -45,6 +45,7 @@ fn details_of(info: ComicInfo) -> BookDetails {
         reading_direction: info.reading_direction.map(stored_direction),
         age_rating: info.age_rating.map(stored_rating),
         year: info.year,
+        is_manga: info.is_manga,
     }
 }
 

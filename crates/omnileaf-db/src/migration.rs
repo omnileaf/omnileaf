@@ -90,6 +90,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0054_index_the_unread_books_of_each_series"),
     migration!("0055_index_series_by_language_and_rating"),
     migration!("0056_count_the_books_carrying_each_tag_in_each_series"),
+    migration!("0057_count_the_manga_books_of_each_series"),
 ];
 
 pub(crate) fn pending(
@@ -1760,6 +1761,46 @@ mod tests {
     }
 
     #[test]
+    fn reads_every_book_again_to_learn_which_are_manga() {
+        let scratch = ScratchLibrary::new("manga-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..56]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                 VALUES (?1, 1, 'Volume 01', x'01', 0)",
+                [book(1).as_bytes()],
+            )
+            .unwrap();
+        for statement in [
+            "INSERT INTO book_details (book_id) VALUES (?1)",
+            "INSERT INTO book_person (book_id, role, name) VALUES (?1, 'writer', 'Sample Author')",
+            "INSERT INTO book_tag (book_id, kind, name) VALUES (?1, 'genre', 'Mystery')",
+        ] {
+            connection.execute(statement, [book(1).as_bytes()]).unwrap();
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let kept: i64 = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM book_details) + (SELECT count(*) FROM book_person)
+                    + (SELECT count(*) FROM book_tag) + (SELECT count(*) FROM series_tag)",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(kept, 0);
+    }
+
+    #[test]
     fn counts_the_books_carrying_each_tag_in_each_series_kept_from_before_they_were_counted() {
         let scratch = ScratchLibrary::new("series-tags-upgrade");
         drop(Database::open_with(&scratch.config, &MIGRATIONS[..55]).unwrap());
@@ -1800,7 +1841,7 @@ mod tests {
                 .unwrap();
         }
 
-        drop(Database::open(&scratch.config).unwrap());
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..56]).unwrap());
 
         let counted: Vec<(String, i64)> = connection
             .prepare("SELECT name, book_count FROM series_tag ORDER BY name")

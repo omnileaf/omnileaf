@@ -146,7 +146,7 @@ impl Library {
     async fn details(&self) -> Vec<Vec<Value>> {
         self.rows(
             "SELECT series, number, title, volume, summary, publisher, format, language,
-                reading_direction, age_rating, year
+                reading_direction, age_rating, year, is_manga
             FROM book_details ORDER BY book_id",
             |row| {
                 (0..row.as_ref().column_count())
@@ -256,6 +256,7 @@ fn sample_details() -> BookDetails {
         tags: vec!["harbour".to_owned()],
         language: Some("en".to_owned()),
         reading_direction: Some(ReadingDirection::RightToLeft),
+        is_manga: Some(true),
         age_rating: Some(AgeRating::Teen),
         year: Some(2019),
     }
@@ -595,6 +596,7 @@ async fn keeps_the_details_a_scan_read_from_a_book() {
             text("right_to_left"),
             text("teen"),
             Value::Integer(2019),
+            Value::Integer(1),
         ]]
     );
     assert_eq!(
@@ -615,7 +617,7 @@ async fn marks_a_book_whose_files_give_no_details_as_read_for_them() {
         .record(library.found("Sample Series 01", "Sample Series 01/Volume 01.cbz", 1))
         .await;
 
-    assert_eq!(library.details().await, [vec![Value::Null; 11]]);
+    assert_eq!(library.details().await, [vec![Value::Null; 12]]);
 }
 
 #[tokio::test]
