@@ -153,25 +153,36 @@ impl Library {
     }
 
     async fn read_dropped(&self, usable: Vec<Dropped>) -> Result<DropOutcome, DropError> {
+        let mut first_failure = None;
         for dropped in usable {
             let path = match dropped {
                 Dropped::Comic { path, .. } => path,
-                Dropped::Folder(folder) => match self.first_book_in(folder).await? {
-                    Some(path) => path,
-                    None => continue,
+                Dropped::Folder(folder) => match self.first_book_in(folder).await {
+                    Ok(Some(path)) => path,
+                    Ok(None) => continue,
+                    Err(error) => {
+                        first_failure.get_or_insert(DropError::Library(error));
+                        continue;
+                    }
                 },
                 Dropped::Refused(_) => continue,
             };
-            let FileToRead {
-                book,
-                is_in_library,
-            } = self.open_file(path).await?;
-            return Ok(DropOutcome::Reading {
-                book,
-                is_in_library,
-            });
+            match self.open_file(path).await {
+                Ok(FileToRead {
+                    book,
+                    is_in_library,
+                }) => {
+                    return Ok(DropOutcome::Reading {
+                        book,
+                        is_in_library,
+                    });
+                }
+                Err(error) => {
+                    first_failure.get_or_insert(DropError::Open(error));
+                }
+            }
         }
-        Err(DropError::NothingToUse)
+        Err(first_failure.unwrap_or(DropError::NothingToUse))
     }
 
     async fn first_book_in(&self, folder: PathBuf) -> Result<Option<PathBuf>, LibraryError> {
@@ -189,10 +200,19 @@ impl Library {
             })
             .collect();
         let mut scans = Vec::with_capacity(folders.len());
+        let mut first_failure = None;
         for folder in folders {
-            scans.push(self.add_folder(folder, |_| {}).await?);
+            match self.add_folder(folder, |_| {}).await {
+                Ok(scan) => scans.push(scan),
+                Err(error) => {
+                    first_failure.get_or_insert(error);
+                }
+            }
         }
-        Ok(DropOutcome::Added { folders: scans })
+        match first_failure {
+            Some(error) if scans.is_empty() => Err(error.into()),
+            Some(_) | None => Ok(DropOutcome::Added { folders: scans }),
+        }
     }
 
     async fn copy_dropped(&self, usable: Vec<Dropped>) -> Result<DropOutcome, DropError> {
@@ -205,15 +225,13 @@ impl Library {
             })
             .collect();
         let copying = home.clone();
-        let copied = spawn_blocking(move || {
-            sources.iter().try_fold(0_u32, |files, source| {
-                copy_into(source, &copying).map(|copied| files.saturating_add(copied))
-            })
-        })
-        .await
-        .map_err(LibraryError::from)??;
-        self.rescan_folder(home_id, |_| {}).await?;
-        Ok(DropOutcome::Copied { files: copied })
+        let copied = spawn_blocking(move || copy_all(&sources, &copying))
+            .await
+            .map_err(LibraryError::from)?;
+        if let Err(error) = self.rescan_folder(home_id, |_| {}).await {
+            tracing::warn!(error = %crate::describe_error(&error), "list the files copied into the home folder");
+        }
+        copied.map(|files| DropOutcome::Copied { files })
     }
 
     async fn home_folder_path(&self) -> Result<(PathBuf, FolderId), LibraryError> {
@@ -258,6 +276,39 @@ fn summarise(dropped: impl Iterator<Item = Dropped>) -> DropSummary {
     }
 }
 
+fn copy_all(sources: &[PathBuf], home: &Path) -> Result<u32, DropError> {
+    if !home.is_dir() {
+        return Err(DropError::Library(LibraryError::FolderUnreadable {
+            path: home.to_path_buf(),
+            source: io::ErrorKind::NotFound.into(),
+        }));
+    }
+    let home_now = home.canonicalize().map_err(|source| DropError::Copy {
+        path: home.to_path_buf(),
+        source,
+    })?;
+    let mut files = 0_u32;
+    let mut copied_any = false;
+    for source in sources {
+        if source.file_name().is_none() || holds_home(source, &home_now) {
+            continue;
+        }
+        files = files.saturating_add(copy_into(source, home)?);
+        copied_any = true;
+    }
+    if copied_any {
+        Ok(files)
+    } else {
+        Err(DropError::NothingToUse)
+    }
+}
+
+fn holds_home(source: &Path, home: &Path) -> bool {
+    source
+        .canonicalize()
+        .is_ok_and(|source| home.starts_with(source))
+}
+
 fn copy_into(source: &Path, folder: &Path) -> Result<u32, DropError> {
     let name = source.file_name().unwrap_or_default();
     let target = unused_name(folder, Path::new(name));
@@ -283,9 +334,12 @@ fn copy_folder(source: &Path, target: &Path) -> Result<u32, DropError> {
         let entry = entry.map_err(|error| copy_error(source, error))?;
         let path = entry.path();
         let inside = target.join(entry.file_name());
-        if path.is_dir() {
+        let kind = entry
+            .file_type()
+            .map_err(|error| copy_error(&path, error))?;
+        if kind.is_dir() {
             files = files.saturating_add(copy_folder(&path, &inside)?);
-        } else {
+        } else if kind.is_file() {
             fs::copy(&path, &inside).map_err(|error| copy_error(&path, error))?;
             files = files.saturating_add(1);
         }

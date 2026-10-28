@@ -209,3 +209,90 @@ async fn refuses_a_drop_holding_no_comic_and_no_folder() {
 
     assert!(matches!(refused, Err(DropError::NothingToUse)));
 }
+
+#[tokio::test]
+async fn copies_no_folder_that_holds_the_home_folder_into_it() {
+    let scratch = ScratchFolder::new("drop-copy-holder");
+    let holder = scratch.path().join("Holder");
+    let library = Library::open(holder.join("Home"), FixedClock)
+        .await
+        .unwrap();
+    write_book(&holder.join("One.cbz"), 1);
+    let before = fs::read_dir(&holder).unwrap().count();
+
+    let refused = library
+        .drop_files(vec![holder.clone()], DropMode::Copy)
+        .await;
+
+    assert!(matches!(refused, Err(DropError::NothingToUse)));
+    assert_eq!(fs::read_dir(&holder).unwrap().count(), before);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn copies_the_files_of_a_folder_but_follows_none_of_its_links() {
+    let dropping = Dropping::new("drop-copy-links").await;
+    dropping.comic("Shelf", "One.cbz", 1);
+    let shelf = dropping.outside.path().join("Shelf");
+    std::os::unix::fs::symlink(dropping.outside.path(), shelf.join("loop")).unwrap();
+
+    let outcome = dropping
+        .library
+        .drop_files(vec![shelf], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert!(matches!(outcome, DropOutcome::Copied { files: 1 }));
+    assert!(dropping.home.path().join("Shelf").join("One.cbz").is_file());
+    assert!(!dropping.home.path().join("Shelf").join("loop").exists());
+}
+
+#[tokio::test]
+async fn reads_the_next_file_dropped_when_the_first_cannot_be_read() {
+    let dropping = Dropping::new("drop-read-fallthrough").await;
+    let broken = dropping.outside.path().join("A Broken.cbz");
+    fs::create_dir_all(dropping.outside.path()).unwrap();
+    fs::write(&broken, b"not an archive").unwrap();
+    let fine = dropping.comic("Loose", "B Fine.cbz", 2);
+
+    let outcome = dropping
+        .library
+        .drop_files(vec![broken, fine], DropMode::ReadNow)
+        .await
+        .unwrap();
+
+    assert!(matches!(outcome, DropOutcome::Reading { .. }));
+}
+
+#[tokio::test]
+async fn reports_the_failure_of_the_only_file_dropped_when_it_cannot_be_read() {
+    let dropping = Dropping::new("drop-read-broken").await;
+    let broken = dropping.outside.path().join("Broken.cbz");
+    fs::create_dir_all(dropping.outside.path()).unwrap();
+    fs::write(&broken, b"not an archive").unwrap();
+
+    let refused = dropping
+        .library
+        .drop_files(vec![broken], DropMode::ReadNow)
+        .await;
+
+    assert!(matches!(refused, Err(DropError::Open(_))));
+}
+
+#[tokio::test]
+async fn adds_the_folders_that_can_be_read_though_another_cannot() {
+    let dropping = Dropping::new("drop-add-partial").await;
+    let file = dropping.comic("Loose Comics", "One.cbz", 1);
+    let gone = dropping.outside.path().join("Gone Folder");
+    fs::create_dir_all(&gone).unwrap();
+    let dropped_folder = gone.clone();
+    fs::remove_dir_all(&gone).unwrap();
+
+    let outcome = dropping
+        .library
+        .drop_files(vec![file, dropped_folder], DropMode::Add)
+        .await
+        .unwrap();
+
+    assert!(matches!(outcome, DropOutcome::Added { folders } if folders.len() == 1));
+}
