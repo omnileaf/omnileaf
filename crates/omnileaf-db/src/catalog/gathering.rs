@@ -1,4 +1,4 @@
-use rusqlite::{Connection, ToSql};
+use rusqlite::{Connection, ToSql, named_params};
 
 use crate::{
     Error,
@@ -13,7 +13,7 @@ const FEW_SERIES: i64 = 400;
 
 /// SQLite's planner prefers walking a sort order's index on from a cursor over sorting a few series, so the candidates name the index that finds them.
 macro_rules! candidates {
-    (index: $index:literal, condition: $condition:literal $(,)?) => {
+    (index: $index:literal, condition: $condition:expr $(,)?) => {
         concat!(
             " FROM series INDEXED BY ",
             $index,
@@ -23,11 +23,23 @@ macro_rules! candidates {
     };
 }
 
+macro_rules! forgotten {
+    () => {
+        "series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms"
+    };
+}
+
+macro_rules! duplicated {
+    () => {
+        "series.duplicated_books > 0"
+    };
+}
+
 macro_rules! forgotten_candidates {
     () => {
         $crate::catalog::gathering::candidates! {
             index: "series_by_stage_and_last_read",
-            condition: "series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms",
+            condition: $crate::catalog::gathering::forgotten!(),
         }
     };
 }
@@ -36,10 +48,31 @@ macro_rules! duplicated_candidates {
     () => {
         $crate::catalog::gathering::candidates! {
             index: "series_with_duplicates_by_stage",
-            condition: "series.duplicated_books > 0",
+            condition: $crate::catalog::gathering::duplicated!(),
         }
     };
 }
+
+macro_rules! holds_at_stage {
+    (index: $index:literal, condition: $condition:expr $(,)?) => {
+        concat!(
+            "SELECT EXISTS (SELECT 1 FROM series INDEXED BY ",
+            $index,
+            " WHERE series.reading_stage = :stage AND ",
+            $condition,
+            ")"
+        )
+    };
+}
+
+const FORGOTTEN_AT_STAGE: &str = holds_at_stage! {
+    index: "series_by_stage_and_last_read",
+    condition: forgotten!(),
+};
+const DUPLICATED_AT_STAGE: &str = holds_at_stage! {
+    index: "series_with_duplicates_by_stage",
+    condition: duplicated!(),
+};
 
 macro_rules! are_few {
     ($candidates:expr) => {
@@ -132,7 +165,9 @@ macro_rules! gatherings {
 }
 
 pub(crate) use candidates;
+pub(crate) use duplicated;
 pub(crate) use duplicated_candidates;
+pub(crate) use forgotten;
 pub(crate) use forgotten_candidates;
 pub(crate) use gatherings;
 pub(crate) use sorted_directions;
@@ -185,6 +220,34 @@ impl<P> Gatherings<P> {
             Gathering::FewDuplicated => self.few_duplicated.toward(direction),
         }
     }
+}
+
+/// The stages the filter lets through, less each one holding no series that meets its smart conditions.
+pub(crate) fn stages_holding_matches(
+    connection: &Connection,
+    filter: SeriesFilter,
+) -> Result<StageParams, Error> {
+    if filter.last_read_before_ms.is_none() && filter.duplicates != Inclusion::Only {
+        return Ok(StageParams::of(filter));
+    }
+    let mut forgotten = connection.prepare(FORGOTTEN_AT_STAGE)?;
+    let mut duplicated = connection.prepare(DUPLICATED_AT_STAGE)?;
+    StageParams::of(filter).keeping(|stage| {
+        let holds_forgotten = match filter.last_read_before_ms {
+            Some(before) => forgotten.query_row(
+                named_params! { ":stage": stage, ":last_read_before_ms": before },
+                |row| row.get(0),
+            )?,
+            None => true,
+        };
+        let holds_duplicated = match filter.duplicates {
+            Inclusion::Only => {
+                duplicated.query_row(named_params! { ":stage": stage }, |row| row.get(0))?
+            }
+            Inclusion::Any | Inclusion::Hide => true,
+        };
+        Ok(holds_forgotten && holds_duplicated)
+    })
 }
 
 fn are_few(
@@ -260,6 +323,38 @@ mod tests {
         ]
     }
 
+    const ONLY_UNSTARTED: StageParams = StageParams::of(SeriesFilter {
+        started: Inclusion::Hide,
+        ..SeriesFilter::NONE
+    });
+
+    #[test]
+    fn leaves_out_each_stage_holding_no_forgotten_series() {
+        let library = Library::read_and_copied("stages-holding-forgotten", 3);
+
+        let stages = stages_holding_matches(&library.connection, FORGOTTEN).unwrap();
+
+        assert_eq!(stages, ONLY_UNSTARTED);
+    }
+
+    #[test]
+    fn leaves_out_each_stage_holding_no_series_with_a_book_stored_twice() {
+        let library = Library::read_and_copied("stages-holding-duplicated", 3);
+
+        let stages = stages_holding_matches(&library.connection, DUPLICATED).unwrap();
+
+        assert_eq!(stages, ONLY_UNSTARTED);
+    }
+
+    #[test]
+    fn keeps_every_stage_the_filter_lets_through_without_a_smart_condition() {
+        let library = Library::read_and_copied("stages-without-smart-filter", 3);
+
+        let stages = stages_holding_matches(&library.connection, SeriesFilter::NONE).unwrap();
+
+        assert_eq!(stages, StageParams::of(SeriesFilter::NONE));
+    }
+
     #[test]
     fn reads_each_stage_in_order_without_a_smart_filter() {
         let library = Library::read_and_copied("gathering-unfiltered", 0);
@@ -315,6 +410,38 @@ mod tests {
         });
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn looks_for_a_forgotten_series_at_one_stage_through_when_each_was_last_read() {
+        let scratch = ScratchLibrary::new("forgotten-at-stage-plan");
+
+        let plan = scratch.query_plan(FORGOTTEN_AT_STAGE);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN CONSTANT ROW",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING INDEX series_by_stage_and_last_read (reading_stage=? AND last_read_at_ms>? AND last_read_at_ms<?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn looks_for_a_series_holding_a_book_stored_twice_at_one_stage_through_their_own_index() {
+        let scratch = ScratchLibrary::new("duplicated-at-stage-plan");
+
+        let plan = scratch.query_plan(DUPLICATED_AT_STAGE);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN CONSTANT ROW",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING INDEX series_with_duplicates_by_stage (reading_stage=?)",
+            ]
+        );
     }
 
     #[test]
