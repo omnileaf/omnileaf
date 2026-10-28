@@ -3,6 +3,7 @@
 
   import type {
     BookSection,
+    ReadMark,
     SeriesBook,
     SortDirection,
   } from "#lib/ipc/bindings.ts";
@@ -29,6 +30,7 @@
     search,
     books,
     usesStandIns,
+    onMark,
     children,
   }: {
     section: BookSection | undefined;
@@ -39,6 +41,7 @@
     search: string;
     books: ListedBooks | undefined;
     usesStandIns: boolean;
+    onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     children: Snippet;
   } = $props();
 
@@ -87,6 +90,8 @@
         void books.loadMore();
       }}
       {usesStandIns}
+      {onMark}
+      onLoadAll={() => books.loadAll()}
     />
   {/key}
 {/if}

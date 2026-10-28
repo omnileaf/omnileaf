@@ -61,6 +61,7 @@ export class SectionShelf {
   #books: WireBook[];
   readonly #missing: readonly WireRange[];
   readonly listings: { readonly section: string | null | undefined }[] = [];
+  readonly marked: { readonly books: string[]; readonly mark: string }[] = [];
 
   constructor(
     books: readonly ShelvedBook[],
@@ -147,6 +148,16 @@ export class SectionShelf {
         const ordered =
           listing.direction === "descending" ? shown.toReversed() : shown;
         return { books: id === SERIES_ID ? ordered : [], next: null };
+      },
+      markBooks: (books, mark) => {
+        this.marked.push({ books, mark });
+        for (const book of this.#books) {
+          if (books.includes(book.id)) {
+            book.reading =
+              mark === "read" ? { state: "read" } : { state: "notStarted" };
+          }
+        }
+        return null;
       },
     };
   }
