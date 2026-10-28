@@ -1,9 +1,14 @@
-use omnileaf_sync_proto::{BookId, IdError, ProfileId};
+use omnileaf_sync_proto::{BookId, BookmarkId, IdError, ProfileId};
 
 const BOOK: &str = "book";
 const POSITION: &str = "pos";
 const READ: &str = "read";
 const FURTHEST: &str = "max";
+const BOOKMARK: &str = "bookmark";
+const BOOK_HIGH: &str = "book_hi";
+const BOOK_LOW: &str = "book_lo";
+const PAGE: &str = "page";
+const DELETED: &str = "deleted";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
@@ -16,10 +21,50 @@ pub enum MaximumKey {
     BookFurthest(BookId),
 }
 
+/// The halves of a bookmarked book's id and the page are kept beside the flag because a bookmark's id is derived from both and cannot be read back into them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BookmarkKey {
+    BookHigh(BookmarkId),
+    BookLow(BookmarkId),
+    Page(BookmarkId),
+    Deleted(BookmarkId),
+}
+
+impl BookmarkKey {
+    #[must_use]
+    pub const fn id(self) -> BookmarkId {
+        match self {
+            Self::BookHigh(id) | Self::BookLow(id) | Self::Page(id) | Self::Deleted(id) => id,
+        }
+    }
+
+    const fn address(self, profile: ProfileId) -> Address {
+        let field = match self {
+            Self::BookHigh(_) => BOOK_HIGH,
+            Self::BookLow(_) => BOOK_LOW,
+            Self::Page(_) => PAGE,
+            Self::Deleted(_) => DELETED,
+        };
+        Address {
+            profile,
+            entity: BOOKMARK,
+            id: *self.id().as_bytes(),
+            field,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Key {
     Latest(LatestKey),
     Maximum(MaximumKey),
+    Bookmark(BookmarkKey),
+}
+
+impl From<BookmarkKey> for Key {
+    fn from(key: BookmarkKey) -> Self {
+        Self::Bookmark(key)
+    }
 }
 
 impl From<LatestKey> for Key {
@@ -42,10 +87,11 @@ pub(crate) struct Address {
 }
 
 impl Key {
-    pub(crate) const fn book(self) -> BookId {
+    pub(crate) const fn book(self) -> Option<BookId> {
         match self {
             Self::Latest(LatestKey::BookPosition(book) | LatestKey::BookRead(book))
-            | Self::Maximum(MaximumKey::BookFurthest(book)) => book,
+            | Self::Maximum(MaximumKey::BookFurthest(book)) => Some(book),
+            Self::Bookmark(_) => None,
         }
     }
 
@@ -53,12 +99,18 @@ impl Key {
         match self {
             Self::Latest(key) => key.address(profile),
             Self::Maximum(key) => key.address(profile),
+            Self::Bookmark(key) => key.address(profile),
         }
     }
 
     pub(crate) fn stored(entity: &str, id: &[u8], field: &str) -> Result<Option<Self>, IdError> {
         let book = || BookId::try_from(id);
+        let bookmark = || BookmarkId::try_from(id);
         Ok(match (entity, field) {
+            (BOOKMARK, BOOK_HIGH) => Some(BookmarkKey::BookHigh(bookmark()?).into()),
+            (BOOKMARK, BOOK_LOW) => Some(BookmarkKey::BookLow(bookmark()?).into()),
+            (BOOKMARK, PAGE) => Some(BookmarkKey::Page(bookmark()?).into()),
+            (BOOKMARK, DELETED) => Some(BookmarkKey::Deleted(bookmark()?).into()),
             (BOOK, POSITION) => Some(LatestKey::BookPosition(book()?).into()),
             (BOOK, READ) => Some(LatestKey::BookRead(book()?).into()),
             (BOOK, FURTHEST) => Some(MaximumKey::BookFurthest(book()?).into()),
@@ -100,6 +152,7 @@ mod tests {
     use super::*;
 
     fn every_key(book: BookId) -> Vec<Key> {
+        let bookmark = BookmarkId::of(book, 3);
         let mut keys = Vec::new();
         let mut next = Some(Key::from(LatestKey::BookPosition(book)));
         while let Some(key) = next {
@@ -107,7 +160,15 @@ mod tests {
             next = match key {
                 Key::Latest(LatestKey::BookPosition(_)) => Some(LatestKey::BookRead(book).into()),
                 Key::Latest(LatestKey::BookRead(_)) => Some(MaximumKey::BookFurthest(book).into()),
-                Key::Maximum(MaximumKey::BookFurthest(_)) => None,
+                Key::Maximum(MaximumKey::BookFurthest(_)) => {
+                    Some(BookmarkKey::BookHigh(bookmark).into())
+                }
+                Key::Bookmark(BookmarkKey::BookHigh(_)) => {
+                    Some(BookmarkKey::BookLow(bookmark).into())
+                }
+                Key::Bookmark(BookmarkKey::BookLow(_)) => Some(BookmarkKey::Page(bookmark).into()),
+                Key::Bookmark(BookmarkKey::Page(_)) => Some(BookmarkKey::Deleted(bookmark).into()),
+                Key::Bookmark(BookmarkKey::Deleted(_)) => None,
             };
         }
         keys

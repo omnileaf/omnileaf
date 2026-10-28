@@ -8,7 +8,7 @@ mod writer;
 
 use std::{collections::BTreeSet, sync::Arc};
 
-pub use key::{Key, LatestKey, MaximumKey};
+pub use key::{BookmarkKey, Key, LatestKey, MaximumKey};
 use omnileaf_sync_proto::ProfileId;
 pub use reading_state::{ReadingState, reading_state};
 pub use session::{Continuity, SessionPlace};
