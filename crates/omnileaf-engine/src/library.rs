@@ -678,7 +678,7 @@ impl Library {
             .database()
             .read(move |connection| series_volume(connection, series, volume.in_catalog()))
             .await?;
-        Ok(found.map(|found| SeriesVolume::new(volume, found)))
+        Ok(found.map(|found| SeriesVolume::new(volume, &found)))
     }
 
     /// Whether the library keeps edits over the files' details yet, which the interface offers Edit details by.

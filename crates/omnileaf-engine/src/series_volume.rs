@@ -18,7 +18,7 @@ pub struct SeriesVolume {
 }
 
 impl SeriesVolume {
-    pub(crate) fn new(volume: BookNumber, found: catalog::VolumeOverview) -> Self {
+    pub(crate) fn new(volume: BookNumber, found: &catalog::VolumeOverview) -> Self {
         Self {
             volume,
             folder: found.cover_location.as_deref().and_then(volume_folder),
