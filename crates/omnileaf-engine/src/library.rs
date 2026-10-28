@@ -11,7 +11,7 @@ use std::{
 
 use omnileaf_db::{
     Config, Database,
-    adult_content::set_adult_content,
+    adult_content::{AdultHiding, set_adult_content},
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
         PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
@@ -844,10 +844,12 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let page = history_page(connection, &of.into(), &request)?;
+                let page = history_page(connection, &of.into(), &request, AdultHiding::default())?;
                 let days = page.items.iter().map(|entry| entry.local_day);
                 let read_ms_by_day = match (days.clone().min(), days.max()) {
-                    (Some(first), Some(last)) => reading_time_by_day(connection, first..=last)?,
+                    (Some(first), Some(last)) => {
+                        reading_time_by_day(connection, first..=last, AdultHiding::default())?
+                    }
                     _ => BTreeMap::new(),
                 };
                 Ok((page, read_ms_by_day))
@@ -916,8 +918,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 Ok((
-                    reading_since(connection, week_start.0)?,
-                    days_in_a_row(connection, today.0)?,
+                    reading_since(connection, week_start.0, AdultHiding::default())?,
+                    days_in_a_row(connection, today.0, AdultHiding::default())?,
                 ))
             })
             .await?;
@@ -934,14 +936,18 @@ impl Library {
         let summed = self
             .store
             .database()
-            .read(move |connection| book_sessions(connection, book.0))
+            .read(move |connection| book_sessions(connection, book.0, AdultHiding::default()))
             .await?;
         Ok(summed.map(BookSessions::from))
     }
 
     /// The series in the library with any reading, in title order.
     pub async fn history_series(&self) -> Result<Vec<HistorySeries>, LibraryError> {
-        let series = self.store.database().read(series_read).await?;
+        let series = self
+            .store
+            .database()
+            .read(|connection| series_read(connection, AdultHiding::default()))
+            .await?;
         Ok(series
             .into_iter()
             .map(|(id, title)| HistorySeries {
@@ -957,7 +963,7 @@ impl Library {
         let read_ms = self
             .store
             .database()
-            .read(move |connection| book_reading_time(connection, book.0))
+            .read(move |connection| book_reading_time(connection, book.0, AdultHiding::default()))
             .await?;
         Ok(whole_seconds(read_ms))
     }
@@ -971,7 +977,7 @@ impl Library {
         let summed = self
             .store
             .database()
-            .read(move |connection| reading_summary(connection, book.0))
+            .read(move |connection| reading_summary(connection, book.0, AdultHiding::default()))
             .await?;
         Ok(summed.map(ReadingSummary::from))
     }
@@ -986,7 +992,7 @@ impl Library {
         let read_ms_by_day = self
             .store
             .database()
-            .read(move |connection| reading_time_by_day(connection, days))
+            .read(move |connection| reading_time_by_day(connection, days, AdultHiding::default()))
             .await?;
         let read_ms = read_ms_by_day
             .values()

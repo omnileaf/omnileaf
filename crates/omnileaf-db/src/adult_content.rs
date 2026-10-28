@@ -1,4 +1,4 @@
-use rusqlite::{Connection, OptionalExtension, Row, Transaction};
+use rusqlite::{Connection, OptionalExtension, Row, ToSql, Transaction};
 
 use crate::Error;
 
@@ -26,6 +26,35 @@ pub struct StoredAdultContent {
     pub treatment: AdultTreatment,
     pub counts_age_ratings: bool,
 }
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct AdultHiding {
+    pub leaves_out_adult: bool,
+    pub counts_age_ratings: bool,
+}
+
+impl AdultHiding {
+    pub(crate) fn params(&self) -> [(&'static str, &dyn ToSql); 2] {
+        [
+            (":leaves_out_adult", &self.leaves_out_adult),
+            (":counts_age_ratings", &self.counts_age_ratings),
+        ]
+    }
+}
+
+macro_rules! in_hidden_adult_series {
+    ($series:literal) => {
+        concat!(
+            "(:leaves_out_adult AND ",
+            $series,
+            ".adult_rated_books > 0 AND (:counts_age_ratings OR ",
+            $series,
+            ".marked_adult = 1))"
+        )
+    };
+}
+
+pub(crate) use in_hidden_adult_series;
 
 pub fn adult_content(connection: &Connection) -> Result<Option<StoredAdultContent>, Error> {
     let row = connection
