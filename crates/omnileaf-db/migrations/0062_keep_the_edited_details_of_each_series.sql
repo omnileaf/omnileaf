@@ -90,3 +90,98 @@ AFTER UPDATE OF language, age_rating ON book_details BEGIN
     WHERE new.age_rating IS NOT old.age_rating
         AND local_id = (SELECT series_local_id FROM book WHERE id = new.book_id);
 END;
+
+ALTER TABLE series ADD COLUMN edits_tags INTEGER NOT NULL DEFAULT 0 CHECK (edits_tags IN (0, 1));
+
+DROP TRIGGER book_tag_counted_after_insert;
+DROP TRIGGER book_tag_counted_out_after_delete;
+DROP TRIGGER book_tags_counted_out_before_delete;
+DROP TRIGGER book_tags_counted_again_after_move;
+
+CREATE TRIGGER book_tag_counted_after_insert AFTER INSERT ON book_tag
+WHEN NOT EXISTS (
+    SELECT 1 FROM book_tag AS other
+    WHERE other.book_id = new.book_id AND other.name = new.name AND other.kind IS NOT new.kind
+)
+BEGIN
+    INSERT INTO series_tag (series_local_id, name, book_count)
+    SELECT book.series_local_id, new.name, 1 FROM book
+    WHERE book.id = new.book_id
+        AND (SELECT edits_tags FROM series WHERE local_id = book.series_local_id) = 0
+    ON CONFLICT (series_local_id, name) DO UPDATE SET book_count = book_count + 1;
+END;
+
+CREATE TRIGGER book_tag_counted_out_after_delete AFTER DELETE ON book_tag
+WHEN NOT EXISTS (
+    SELECT 1 FROM book_tag AS other WHERE other.book_id = old.book_id AND other.name = old.name
+)
+BEGIN
+    DELETE FROM series_tag
+    WHERE book_count = 1 AND name = old.name
+        AND series_local_id = (SELECT series_local_id FROM book WHERE id = old.book_id)
+        AND (SELECT edits_tags FROM series WHERE local_id = series_tag.series_local_id) = 0;
+    UPDATE series_tag SET book_count = book_count - 1
+    WHERE book_count > 1 AND name = old.name
+        AND series_local_id = (SELECT series_local_id FROM book WHERE id = old.book_id)
+        AND (SELECT edits_tags FROM series WHERE local_id = series_tag.series_local_id) = 0;
+END;
+
+CREATE TRIGGER book_tags_counted_out_before_delete BEFORE DELETE ON book
+WHEN (SELECT edits_tags FROM series WHERE local_id = old.series_local_id) = 0
+BEGIN
+    DELETE FROM series_tag
+    WHERE series_local_id = old.series_local_id AND book_count = 1
+        AND name IN (SELECT name FROM book_tag WHERE book_id = old.id);
+    UPDATE series_tag SET book_count = book_count - 1
+    WHERE series_local_id = old.series_local_id AND book_count > 1
+        AND name IN (SELECT name FROM book_tag WHERE book_id = old.id);
+END;
+
+CREATE TRIGGER book_tags_counted_again_after_move AFTER UPDATE OF series_local_id ON book BEGIN
+    DELETE FROM series_tag
+    WHERE series_local_id = old.series_local_id AND book_count = 1
+        AND name IN (SELECT name FROM book_tag WHERE book_id = old.id)
+        AND (SELECT edits_tags FROM series WHERE local_id = old.series_local_id) = 0;
+    UPDATE series_tag SET book_count = book_count - 1
+    WHERE series_local_id = old.series_local_id AND book_count > 1
+        AND name IN (SELECT name FROM book_tag WHERE book_id = old.id)
+        AND (SELECT edits_tags FROM series WHERE local_id = old.series_local_id) = 0;
+    INSERT INTO series_tag (series_local_id, name, book_count)
+    SELECT DISTINCT new.series_local_id, name, 1 FROM book_tag
+    WHERE book_id = new.id
+        AND (SELECT edits_tags FROM series WHERE local_id = new.series_local_id) = 0
+    ON CONFLICT (series_local_id, name) DO UPDATE SET book_count = book_count + 1;
+END;
+
+CREATE TRIGGER series_edit_tags_series_after_insert AFTER INSERT ON series_edit
+WHEN new.has_tags = 1
+BEGIN
+    UPDATE series SET edits_tags = 1 WHERE id = new.series_id;
+    DELETE FROM series_tag
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = new.series_id);
+    INSERT OR IGNORE INTO series_tag (series_local_id, name, book_count)
+    SELECT series.local_id, series_edit_tag.name, 1 FROM series_edit_tag
+    JOIN series ON series.id = series_edit_tag.series_id
+    WHERE series_edit_tag.series_id = new.series_id;
+END;
+
+CREATE TRIGGER series_edit_untags_series_after_delete AFTER DELETE ON series_edit
+WHEN old.has_tags = 1
+BEGIN
+    UPDATE series SET edits_tags = 0 WHERE id = old.series_id;
+    DELETE FROM series_tag
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = old.series_id);
+    INSERT INTO series_tag (series_local_id, name, book_count)
+    SELECT book.series_local_id, book_tag.name, count(DISTINCT book.id)
+    FROM book_tag JOIN book ON book.id = book_tag.book_id
+    WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = old.series_id)
+    GROUP BY book.series_local_id, book_tag.name;
+END;
+
+CREATE TRIGGER series_takes_its_edited_tags_after_insert AFTER INSERT ON series
+WHEN EXISTS (SELECT 1 FROM series_edit WHERE series_id = new.id AND has_tags = 1)
+BEGIN
+    UPDATE series SET edits_tags = 1 WHERE local_id = new.local_id;
+    INSERT OR IGNORE INTO series_tag (series_local_id, name, book_count)
+    SELECT new.local_id, name, 1 FROM series_edit_tag WHERE series_id = new.id;
+END;
