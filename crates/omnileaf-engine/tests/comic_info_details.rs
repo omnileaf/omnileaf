@@ -555,3 +555,52 @@ async fn offers_the_18_plus_filter_once_a_series_counts_as_18_plus() {
 
     assert!(offered);
 }
+
+fn tagged(tags: &[&str]) -> LibraryFilter {
+    LibraryFilter {
+        tags: tags.iter().map(|&tag| tag.to_owned()).collect(),
+        ..LibraryListing::default().filter
+    }
+}
+
+#[tokio::test]
+async fn lists_and_counts_the_series_carrying_one_of_the_chosen_tags_or_genres() {
+    let scanned = Scanned::with(
+        "filter-tags",
+        &[
+            (SERIES_01, ADULT_IN_JAPANESE),
+            (SERIES_02, EVERYONE_IN_ENGLISH),
+            ("Sample Series 03", SHARING_NOTHING),
+        ],
+    )
+    .await;
+
+    let listed = [
+        scanned.titles(tagged(&["harbour"])).await,
+        scanned.titles(tagged(&["storms", "trains"])).await,
+        scanned.titles(tagged(&["Mystery"])).await,
+        scanned.titles(tagged(&["unheard of"])).await,
+    ];
+    let counted = scanned
+        .library
+        .series_count(tagged(&["storms", "trains"]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (listed, counted),
+        (
+            [
+                vec![SERIES_01.to_owned()],
+                vec![
+                    SERIES_01.to_owned(),
+                    SERIES_02.to_owned(),
+                    "Sample Series 03".to_owned()
+                ],
+                vec![SERIES_01.to_owned()],
+                Vec::new(),
+            ],
+            3
+        )
+    );
+}

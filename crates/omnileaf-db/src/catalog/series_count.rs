@@ -2,13 +2,13 @@ use rusqlite::Connection;
 
 use crate::{
     Error,
-    catalog::series_listing::{FilterParams, SeriesFilter, smart_conditions},
+    catalog::series_listing::{FilterParams, SeriesFilter, counted_conditions},
 };
 
 const SERIES_WITH_BOOKS: &str = concat!(
     "SELECT count(*) FROM series INDEXED BY series_by_stage_and_time_left
     WHERE reading_stage IN (:unstarted, :in_progress, :finished)",
-    smart_conditions!()
+    counted_conditions!()
 );
 
 pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u32, Error> {
@@ -21,7 +21,7 @@ pub fn series_count(connection: &Connection, filter: &SeriesFilter) -> Result<u3
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scratch::ScratchLibrary;
+    use crate::{catalog::staged_rows::plans::tag_list_steps, scratch::ScratchLibrary};
 
     #[test]
     fn counts_only_the_stretches_of_an_index_holding_the_stages_the_filter_lets_through() {
@@ -31,7 +31,13 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)"]
+            [
+                "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=?)"
+                    .to_owned()
+            ]
+            .into_iter()
+            .chain(tag_list_steps(1))
+            .collect::<Vec<_>>()
         );
     }
 }

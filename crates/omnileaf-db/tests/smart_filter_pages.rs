@@ -40,6 +40,8 @@ const EVERY_FIFTH_READ_LATELY: u32 = 5;
 const EVERY_FOURTH_COPIED: u32 = 4;
 const EVERY_SEVENTH_IN_JAPANESE: u32 = 7;
 const EVERY_EIGHTH_RATED_ADULT: u32 = 8;
+const EVERY_ELEVENTH_TAGGED_STORMS: u32 = 11;
+const EVERY_THIRTEENTH_TAGGED_HARBOUR: u32 = 13;
 const PAGE_OF_TWO: u16 = 2;
 const PAGE_OF_THREE: u16 = 3;
 const PAGE_OF_TWO_HUNDRED: u16 = 200;
@@ -124,6 +126,32 @@ impl Shelf {
             .unwrap();
     }
 
+    async fn tag(&self, tag: &'static str, numbers: impl Iterator<Item = u32>) {
+        let titles: Vec<String> = numbers.map(series_name).collect();
+        self.store
+            .database()
+            .write(move |transaction| {
+                let mut details = transaction.prepare(
+                    "INSERT OR IGNORE INTO book_details (book_id)
+                    SELECT book.id FROM book JOIN series ON series.local_id = book.series_local_id
+                    WHERE series.title = ?1",
+                )?;
+                let mut tagged = transaction.prepare(
+                    "INSERT OR IGNORE INTO book_tag (book_id, kind, name)
+                    SELECT book.id, 'tag', ?2 FROM book
+                    JOIN series ON series.local_id = book.series_local_id
+                    WHERE series.title = ?1",
+                )?;
+                for title in &titles {
+                    details.execute([title])?;
+                    tagged.execute((title, tag))?;
+                }
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
     async fn copy_into_backup(&self, numbers: impl Iterator<Item = u32>) {
         self.scan(self.backup, numbers).await;
     }
@@ -190,6 +218,7 @@ impl Shelf {
                 last_read_before_ms: None,
                 duplicates: Inclusion::Any,
                 languages: Vec::new(),
+                tags: Vec::new(),
                 adult: Inclusion::Any,
                 ..listing.filter
             },
@@ -350,9 +379,7 @@ async fn pages_hundreds_of_series_holding_a_book_stored_twice_by_earliest_added(
     assert_eq!(pages, pages_of(&duplicated, PAGE_OF_TWO_HUNDRED.into()));
 }
 
-#[tokio::test]
-async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_order_does_in_every_sort()
- {
+async fn mixed_shelf() -> Shelf {
     let shelf = Shelf::holding("few-matches-like-each-stage", MIXED_SHELF).await;
     shelf
         .read(multiples_of(EVERY_THIRD_READ_LONG_AGO, MIXED_SHELF), 0)
@@ -370,65 +397,93 @@ async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_or
     shelf
         .copy_into_backup(multiples_of(EVERY_FOURTH_COPIED, MIXED_SHELF))
         .await;
-    let forgotten = titles_of(
-        multiples_of(EVERY_THIRD_READ_LONG_AGO, MIXED_SHELF)
-            .filter(|number| !number.is_multiple_of(EVERY_FIFTH_READ_LATELY)),
-    );
-    let duplicated = titles_of(multiples_of(EVERY_FOURTH_COPIED, MIXED_SHELF));
-    let forgotten_and_duplicated: BTreeSet<String> =
-        forgotten.intersection(&duplicated).cloned().collect();
     shelf
         .name_language_and_rating(
             multiples_of(EVERY_SEVENTH_IN_JAPANESE, MIXED_SHELF),
             multiples_of(EVERY_EIGHTH_RATED_ADULT, MIXED_SHELF),
         )
         .await;
-    let japanese = titles_of(multiples_of(EVERY_SEVENTH_IN_JAPANESE, MIXED_SHELF));
-    let rated_adult = titles_of(multiples_of(EVERY_EIGHTH_RATED_ADULT, MIXED_SHELF));
-    let japanese_and_duplicated: BTreeSet<String> =
-        japanese.intersection(&duplicated).cloned().collect();
+    shelf
+        .tag(
+            "storms",
+            multiples_of(EVERY_ELEVENTH_TAGGED_STORMS, MIXED_SHELF),
+        )
+        .await;
+    shelf
+        .tag(
+            "harbour",
+            multiples_of(EVERY_THIRTEENTH_TAGGED_HARBOUR, MIXED_SHELF),
+        )
+        .await;
+    shelf
+}
+
+fn series_of(step: u32) -> BTreeSet<String> {
+    titles_of(multiples_of(step, MIXED_SHELF))
+}
+
+fn also(one: &BTreeSet<String>, other: &BTreeSet<String>) -> BTreeSet<String> {
+    one.intersection(other).cloned().collect()
+}
+
+fn tagged_with(tags: &[&str]) -> SeriesFilter {
+    SeriesFilter::NONE.with_tags(tags.iter().map(|&tag| tag.to_owned()).collect())
+}
+
+/// Each filter that matches few of the shelf's series, with the series it matches.
+fn few_matches() -> Vec<(SeriesFilter, BTreeSet<String>)> {
+    let forgotten = titles_of(
+        multiples_of(EVERY_THIRD_READ_LONG_AGO, MIXED_SHELF)
+            .filter(|number| !number.is_multiple_of(EVERY_FIFTH_READ_LATELY)),
+    );
+    let duplicated = series_of(EVERY_FOURTH_COPIED);
+    let japanese = series_of(EVERY_SEVENTH_IN_JAPANESE);
+    let stormy = series_of(EVERY_ELEVENTH_TAGGED_STORMS);
     let in_japanese = SeriesFilter::NONE.with_languages(vec!["ja".to_owned()]);
-    let few_matches = [
-        (FORGOTTEN, &forgotten),
+    vec![
+        (FORGOTTEN, forgotten.clone()),
+        (FORGOTTEN.with_finished(Inclusion::Hide), forgotten.clone()),
+        (DUPLICATED, duplicated.clone()),
+        (DUPLICATED.with_started(Inclusion::Only), duplicated.clone()),
         (
-            SeriesFilter {
-                finished: Inclusion::Hide,
-                ..FORGOTTEN
-            },
-            &forgotten,
+            FORGOTTEN.with_duplicates(Inclusion::Only),
+            also(&forgotten, &duplicated),
         ),
-        (DUPLICATED, &duplicated),
-        (
-            SeriesFilter {
-                started: Inclusion::Only,
-                ..DUPLICATED
-            },
-            &duplicated,
-        ),
-        (
-            SeriesFilter {
-                duplicates: Inclusion::Only,
-                ..FORGOTTEN
-            },
-            &forgotten_and_duplicated,
-        ),
-        (in_japanese.clone(), &japanese),
+        (in_japanese.clone(), japanese.clone()),
         (
             SeriesFilter::NONE.with_adult(Inclusion::Only, true),
-            &rated_adult,
+            series_of(EVERY_EIGHTH_RATED_ADULT),
         ),
         (
             in_japanese.with_duplicates(Inclusion::Only),
-            &japanese_and_duplicated,
+            also(&japanese, &duplicated),
         ),
-    ];
+        (tagged_with(&["storms"]), stormy.clone()),
+        (
+            tagged_with(&["storms", "harbour"]),
+            stormy
+                .union(&series_of(EVERY_THIRTEENTH_TAGGED_HARBOUR))
+                .cloned()
+                .collect(),
+        ),
+        (
+            tagged_with(&["storms"]).with_duplicates(Inclusion::Only),
+            also(&stormy, &duplicated),
+        ),
+    ]
+}
+
+#[tokio::test]
+async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_order_does_in_every_sort()
+ {
+    let shelf = mixed_shelf().await;
 
     for sort in every_sort() {
-        for (filter, matching) in few_matches.clone() {
+        for (filter, matching) in few_matches() {
             let listing = SeriesListing { sort, filter };
             let listed = shelf.listed_series(listing.clone(), PAGE_OF_TWO).await;
             let walked = shelf
-                .listed_by_each_stage_in_order(listing.clone(), matching)
+                .listed_by_each_stage_in_order(listing.clone(), &matching)
                 .await;
             assert_eq!(listed, walked, "{listing:?}");
         }

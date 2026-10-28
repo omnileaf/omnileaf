@@ -584,3 +584,80 @@ async fn counts_no_series_as_18_plus_while_age_ratings_do_not_count() {
 
     assert_eq!(listed, [titles(&[]), titles(&[1, 2, 3, 4])]);
 }
+
+async fn tag_the_books(
+    library: &Library,
+    tagged: &'static [(&'static str, &'static str, &'static str)],
+) {
+    library
+        .store
+        .database()
+        .write(move |transaction| {
+            let mut details = transaction.prepare(
+                "INSERT OR IGNORE INTO book_details (book_id)
+                SELECT book.id FROM book WHERE book.title = ?2
+                    AND book.series_local_id = (SELECT local_id FROM series WHERE title = ?1)",
+            )?;
+            let mut tag = transaction.prepare(
+                "INSERT INTO book_tag (book_id, kind, name)
+                SELECT book.id, 'tag', ?3 FROM book WHERE book.title = ?2
+                    AND book.series_local_id = (SELECT local_id FROM series WHERE title = ?1)",
+            )?;
+            for &(series, book, name) in tagged {
+                details.execute((series, book))?;
+                tag.execute((series, book, name))?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+const TAGGED_BOOKS: &[(&str, &str, &str)] = &[
+    ("Sample Series 01", "Volume 01", "storms"),
+    ("Sample Series 01", "Volume 02", "harbour"),
+    ("Sample Series 02", "Volume 02", "harbour"),
+    ("Sample Series 03", "Volume 01", "trains"),
+    ("Sample Series 04", "Volume 01", "storms"),
+    ("Sample Series 04", "Volume 02", "storms"),
+];
+
+fn tagged(tags: &[&str]) -> SeriesFilter {
+    SeriesFilter::NONE.with_tags(tags.iter().map(|&tag| tag.to_owned()).collect())
+}
+
+#[tokio::test]
+async fn lists_each_series_once_when_a_book_carries_one_of_the_chosen_tags() {
+    let library = Library::with("only-tags", &READING_STAGES[..5]).await;
+    tag_the_books(&library, TAGGED_BOOKS).await;
+
+    let listed = library.filtered(tagged(&["storms", "harbour"])).await;
+
+    assert_eq!(listed, titles(&[1, 2, 4]));
+}
+
+#[tokio::test]
+async fn counts_the_series_carrying_a_chosen_tag_and_no_tag_matches_nothing() {
+    let library = Library::with("count-tags", &READING_STAGES[..5]).await;
+    tag_the_books(&library, TAGGED_BOOKS).await;
+
+    let counted = [
+        library.count(tagged(&["trains"])).await,
+        library.count(tagged(&["unheard of"])).await,
+        library.count(SeriesFilter::NONE).await,
+    ];
+
+    assert_eq!(counted, [1, 0, 5]);
+}
+
+#[tokio::test]
+async fn meets_the_tags_and_the_reading_state_together() {
+    let library = Library::at_reading_stages("tags-and-state").await;
+    tag_the_books(&library, TAGGED_BOOKS).await;
+
+    let listed = library
+        .filtered(tagged(&["storms", "harbour"]).with_unread(Inclusion::Hide))
+        .await;
+
+    assert_eq!(listed, titles(&[4]));
+}

@@ -11,6 +11,8 @@ use crate::{
 };
 
 const FEW_SERIES: i64 = 400;
+/// Sorting the series carrying a tag beats walking each stage up to about this many, since a walk probes every series it passes for the tag.
+const FEW_TAGGED_SERIES: i64 = 1_500;
 
 /// SQLite's planner prefers walking a sort order's index on from a cursor over sorting a few series, so the candidates name the index that finds them.
 macro_rules! candidates {
@@ -63,6 +65,17 @@ macro_rules! language_candidates {
     };
 }
 
+macro_rules! tagged_candidates {
+    () => {
+        concat!(
+            " FROM series NOT INDEXED WHERE series.local_id IN (
+                SELECT series_tag.series_local_id FROM json_each(:tag_list) AS wanted
+                JOIN series_tag ON series_tag.name = wanted.value)
+            AND series.reading_stage IN (:unstarted, :in_progress, :finished)"
+        )
+    };
+}
+
 macro_rules! rated_adult_candidates {
     () => {
         $crate::catalog::gathering::candidates! {
@@ -107,6 +120,9 @@ const FORGOTTEN_ARE_FEW: &str = are_few!(forgotten_candidates!());
 const DUPLICATED_ARE_FEW: &str = are_few!(duplicated_candidates!());
 const LANGUAGES_ARE_FEW: &str = are_few!(language_candidates!());
 const RATED_ADULT_ARE_FEW: &str = are_few!(rated_adult_candidates!());
+/// Counts the entries of the chosen tags' index rather than the series, which can only overcount, so it never takes a crowded tag for a rare one.
+const TAGGED_ARE_FEW: &str = "SELECT count(*) < :few FROM (
+    SELECT 1 FROM series_tag WHERE name IN (SELECT value FROM json_each(:tag_list)) LIMIT :few)";
 
 /// SQLite works out every result column of a row before sorting it, so only the keys are sorted and the page's other columns read afterwards.
 macro_rules! sorted_page {
@@ -186,6 +202,11 @@ macro_rules! gatherings {
                 key: $key,
                 sort_position: $position,
             },
+            few_tagged: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::tagged_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
             few_rated_adult: $crate::catalog::gathering::sorted_directions! {
                 candidates: $crate::catalog::gathering::rated_adult_candidates!(),
                 key: $key,
@@ -205,6 +226,7 @@ pub(crate) use language_candidates;
 pub(crate) use rated_adult_candidates;
 pub(crate) use sorted_directions;
 pub(crate) use sorted_page;
+pub(crate) use tagged_candidates;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Gathering {
@@ -213,6 +235,7 @@ pub(crate) enum Gathering {
     FewDuplicated,
     FewInLanguages,
     FewRatedAdult,
+    FewTagged,
 }
 
 pub(crate) struct Gatherings<P> {
@@ -221,6 +244,7 @@ pub(crate) struct Gatherings<P> {
     pub(crate) few_duplicated: Directions<P>,
     pub(crate) few_in_languages: Directions<P>,
     pub(crate) few_rated_adult: Directions<P>,
+    pub(crate) few_tagged: Directions<P>,
 }
 
 impl Gathering {
@@ -251,6 +275,11 @@ impl Gathering {
         {
             return Ok(Self::FewInLanguages);
         }
+        if let Some(tags) = json_list(&filter.tags)
+            && tagged_are_few(connection, &tags)?
+        {
+            return Ok(Self::FewTagged);
+        }
         if filter.adult == Inclusion::Only
             && are_few(connection, RATED_ADULT_ARE_FEW, &stages, &[])?
         {
@@ -272,6 +301,7 @@ impl<P> Gatherings<P> {
             Gathering::FewDuplicated => self.few_duplicated.toward(direction),
             Gathering::FewInLanguages => self.few_in_languages.toward(direction),
             Gathering::FewRatedAdult => self.few_rated_adult.toward(direction),
+            Gathering::FewTagged => self.few_tagged.toward(direction),
         }
     }
 }
@@ -302,6 +332,13 @@ pub(crate) fn stages_holding_matches(
         };
         Ok(holds_forgotten && holds_duplicated)
     })
+}
+
+fn tagged_are_few(connection: &Connection, tags: &str) -> Result<bool, Error> {
+    Ok(connection.prepare(TAGGED_ARE_FEW)?.query_row(
+        named_params! { ":few": FEW_TAGGED_SERIES, ":tag_list": tags },
+        |row| row.get(0),
+    )?)
 }
 
 fn are_few(
@@ -484,6 +521,45 @@ mod tests {
         assert_eq!(gathering, Gathering::EachStageInOrder);
     }
 
+    impl Library {
+        fn with_tagged_books(self, count: i64) -> Self {
+            self.connection
+                .execute_batch(&format!(
+                    "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                    SELECT randomblob(16), local_id, 'Volume 01', x'01', 0 FROM series
+                    ORDER BY local_id LIMIT {count};
+                    INSERT INTO book_details (book_id) SELECT id FROM book;
+                    INSERT INTO book_tag (book_id, kind, name) SELECT id, 'tag', 'storms' FROM book;"
+                ))
+                .unwrap();
+            self
+        }
+    }
+
+    fn tagged_storms() -> SeriesFilter {
+        SeriesFilter::NONE.with_tags(vec!["storms".to_owned()])
+    }
+
+    #[test]
+    fn gathers_the_series_carrying_a_chosen_tag_while_they_are_few() {
+        let library = Library::read_and_copied("gathering-few-tagged", FEW_TAGGED_SERIES + 100)
+            .with_tagged_books(FEW_TAGGED_SERIES - 1);
+
+        let gathering = library.gathering(&tagged_storms());
+
+        assert_eq!(gathering, Gathering::FewTagged);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_once_the_series_carrying_a_chosen_tag_are_no_longer_few() {
+        let library = Library::read_and_copied("gathering-many-tagged", FEW_TAGGED_SERIES + 100)
+            .with_tagged_books(FEW_TAGGED_SERIES);
+
+        let gathering = library.gathering(&tagged_storms());
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
     #[test]
     fn gathers_the_series_rated_18_plus_while_they_are_few() {
         let library = Library::read_and_copied("gathering-few-adult", FEW_SERIES - 1);
@@ -517,6 +593,24 @@ mod tests {
             [
                 "CO-ROUTINE (subquery-2)",
                 "SEARCH series USING INDEX series_by_language (language=? AND reading_stage=?)",
+                "LIST SUBQUERY 1",
+                "SCAN json_each VIRTUAL TABLE INDEX 1:",
+                "SCAN (subquery-2)",
+            ]
+        );
+    }
+
+    #[test]
+    fn counts_the_series_carrying_a_chosen_tag_through_the_tag_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("tagged-are-few-plan");
+
+        let plan = scratch.query_plan(TAGGED_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            [
+                "CO-ROUTINE (subquery-2)",
+                "SEARCH series_tag USING COVERING INDEX series_tag_by_name (name=?)",
                 "LIST SUBQUERY 1",
                 "SCAN json_each VIRTUAL TABLE INDEX 1:",
                 "SCAN (subquery-2)",

@@ -1,6 +1,6 @@
 use rusqlite::ToSql;
 
-use crate::catalog::value_list::delimited_list;
+use crate::catalog::value_list::{delimited_list, json_list};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeriesListing {
@@ -43,6 +43,8 @@ pub struct SeriesFilter {
     pub duplicates: Inclusion,
     /// Is in one of these languages, or any language when empty.
     pub languages: Vec<String>,
+    /// Holds a book carrying one of these tags or genres, or any book when empty.
+    pub tags: Vec<String>,
     /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds.
     pub adult: Inclusion,
     pub counts_age_ratings: bool,
@@ -91,6 +93,7 @@ impl SeriesFilter {
         last_read_before_ms: None,
         duplicates: Inclusion::Any,
         languages: Vec::new(),
+        tags: Vec::new(),
         adult: Inclusion::Any,
         counts_age_ratings: true,
     };
@@ -128,6 +131,12 @@ impl SeriesFilter {
     #[must_use]
     pub fn with_languages(mut self, languages: Vec<String>) -> Self {
         self.languages = languages;
+        self
+    }
+
+    #[must_use]
+    pub fn with_tags(mut self, tags: Vec<String>) -> Self {
+        self.tags = tags;
         self
     }
 
@@ -249,18 +258,46 @@ const fn admitted(filter: &SeriesFilter, stage: ReadingStage) -> Option<i64> {
     }
 }
 
-macro_rules! smart_conditions {
-    () => {
-        " AND (:last_read_before_ms IS NULL
+macro_rules! conditions {
+    ($tags:literal) => {
+        concat!(
+            " AND (:last_read_before_ms IS NULL
             OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
         AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)
         AND (:languages IS NULL OR (instr(series.language, char(31)) = 0
             AND instr(:languages, char(31) || series.language || char(31)) > 0))
+        AND (:tag_list IS NULL OR ",
+            $tags,
+            ")
         AND (:holds_adult IS NULL
             OR (series.adult_rated_books > 0 AND :counts_age_ratings) = :holds_adult)"
+        )
     };
 }
 
+/// For a page, which looks at each series it walks past, so a series' tags are probed one series at a time.
+macro_rules! smart_conditions {
+    () => {
+        $crate::catalog::series_listing::conditions!(
+            "EXISTS (SELECT 1 FROM series_tag
+            WHERE series_tag.series_local_id = series.local_id
+                AND series_tag.name IN (SELECT value FROM json_each(:tag_list)))"
+        )
+    };
+}
+
+/// For a count, which looks at every series, so the series carrying a tag are read once from the tag's index.
+macro_rules! counted_conditions {
+    () => {
+        $crate::catalog::series_listing::conditions!(
+            "series.local_id IN (SELECT series_tag.series_local_id FROM json_each(:tag_list) AS wanted
+            JOIN series_tag ON series_tag.name = wanted.value)"
+        )
+    };
+}
+
+pub(crate) use conditions;
+pub(crate) use counted_conditions;
 pub(crate) use smart_conditions;
 
 pub(crate) struct FilterParams {
@@ -268,6 +305,7 @@ pub(crate) struct FilterParams {
     last_read_before_ms: Option<i64>,
     holds_duplicates: Option<bool>,
     languages: Option<String>,
+    tag_list: Option<String>,
     holds_adult: Option<bool>,
     counts_age_ratings: bool,
 }
@@ -283,12 +321,13 @@ impl FilterParams {
             last_read_before_ms: filter.last_read_before_ms,
             holds_duplicates: filter.duplicates.required(),
             languages: delimited_list(&filter.languages),
+            tag_list: json_list(&filter.tags),
             holds_adult: filter.adult.required(),
             counts_age_ratings: filter.counts_age_ratings,
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 8] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 9] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
@@ -297,6 +336,7 @@ impl FilterParams {
             (":last_read_before_ms", &self.last_read_before_ms),
             (":holds_duplicates", &self.holds_duplicates),
             (":languages", &self.languages),
+            (":tag_list", &self.tag_list),
             (":holds_adult", &self.holds_adult),
             (":counts_age_ratings", &self.counts_age_ratings),
         ]

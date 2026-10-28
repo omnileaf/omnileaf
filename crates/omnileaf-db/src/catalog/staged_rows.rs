@@ -267,17 +267,61 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
 #[cfg(test)]
 pub(crate) mod plans {
     /// The numbers SQLite gives each stage's two cover subqueries, outer first.
-    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (9, 7), (13, 11)];
-    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (5, 6);
+    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (11, 9), (17, 15)];
+    const TAG_SUBQUERIES_OF_EACH_STAGE: [u8; 3] = [5, 13, 19];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (7, 8);
 
     pub(crate) fn merging_each_stage(series_step: &str) -> Vec<String> {
-        let [unstarted, in_progress, finished] = COVER_SUBQUERIES_OF_EACH_STAGE
-            .map(|subqueries| with_covers(vec![series_step.to_owned()], subqueries));
+        let [unstarted, in_progress, finished] = [0, 1, 2].map(|stage| {
+            with_covers(
+                with_tag_probe(
+                    vec![series_step.to_owned()],
+                    TAG_SUBQUERIES_OF_EACH_STAGE[stage],
+                ),
+                COVER_SUBQUERIES_OF_EACH_STAGE[stage],
+            )
+        });
         merging([
             unstarted,
             continuing_from_the_book_up_next(in_progress, IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES),
             finished,
         ])
+    }
+
+    /// The steps of the check a page makes on each series it walks past, that it carries a chosen tag, whose list of chosen tags SQLite numbers one before it.
+    pub(crate) fn tag_probe_steps(subquery: u8) -> Vec<String> {
+        [
+            format!("CORRELATED SCALAR SUBQUERY {subquery}"),
+            "SEARCH series_tag USING PRIMARY KEY (series_local_id=? AND name=?)".to_owned(),
+            format!("LIST SUBQUERY {}", subquery - 1),
+            "SCAN json_each VIRTUAL TABLE INDEX 1:".to_owned(),
+        ]
+        .into()
+    }
+
+    /// The steps of the list a count reads once, of the series carrying a chosen tag.
+    pub(crate) fn tag_list_steps(subquery: u8) -> Vec<String> {
+        [
+            format!("LIST SUBQUERY {subquery}"),
+            "SCAN wanted VIRTUAL TABLE INDEX 1:".to_owned(),
+            "SEARCH series_tag USING COVERING INDEX series_tag_by_name (name=?)".to_owned(),
+            "CREATE BLOOM FILTER".to_owned(),
+        ]
+        .into()
+    }
+
+    /// The tag probe's steps placed after the first step of a plan.
+    pub(crate) fn with_tag_probe(
+        steps: impl IntoIterator<Item = String>,
+        subquery: u8,
+    ) -> Vec<String> {
+        let mut steps = steps.into_iter();
+        steps
+            .next()
+            .into_iter()
+            .chain(tag_probe_steps(subquery))
+            .chain(steps)
+            .collect()
     }
 
     pub(crate) fn continuing_from_the_book_up_next(

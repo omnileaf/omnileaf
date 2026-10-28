@@ -46,11 +46,20 @@ const COPIES_FOLDER: &[u8] = b"/media/Copies";
 const EVERY_HUNDREDTH_IN_A_RARE_LANGUAGE: u32 = 100;
 const RARE_LANGUAGE_REMAINDER: u32 = 3;
 const RARE_LANGUAGE: &str = "ja";
+const EVERY_HUNDREDTH_TAGGED_RARE: u32 = 100;
+const RARE_TAG_REMAINDER: u32 = 5;
+const RARE_TAG: &str = "storms";
+const EVERY_FIFTH_TAGGED_COMMON: u32 = 5;
+const COMMON_TAG: &str = "harbour";
 const EVERY_HUNDREDTH_RATED_ADULT: u32 = 100;
 const RATED_ADULT_REMAINDER: u32 = 4;
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
+/// A tag on a tenth or a fifth of the library is too common to sort only its series and too rare to stop soon in walking past the rest, so its page is the slowest a tag filter reads.
+const CROWDED_TAG_BUDGET: Duration = Duration::from_millis(4);
+const EVERY_TENTH_TAGGED_CROWDED: u32 = 10;
+const CROWDED_TAG: &str = "lantern";
 
 const SORTS: [SeriesSort; 4] = [
     SeriesSort::ascending(SeriesOrder::Title),
@@ -59,8 +68,12 @@ const SORTS: [SeriesSort; 4] = [
     SeriesSort::descending(SeriesOrder::DateAdded),
 ];
 
+fn crowded_tags() -> [SeriesFilter; 2] {
+    [CROWDED_TAG, COMMON_TAG].map(|tag| SeriesFilter::NONE.with_tags(vec![tag.to_owned()]))
+}
+
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-fn filters() -> [SeriesFilter; 12] {
+fn filters() -> [SeriesFilter; 13] {
     [
         SeriesFilter::NONE,
         SeriesFilter::NONE.with_unread(Inclusion::Only),
@@ -74,6 +87,7 @@ fn filters() -> [SeriesFilter; 12] {
         SeriesFilter::NONE.with_languages(vec![RARE_LANGUAGE.to_owned()]),
         SeriesFilter::NONE.with_adult(Inclusion::Only, true),
         SeriesFilter::NONE.with_adult(Inclusion::Hide, true),
+        SeriesFilter::NONE.with_tags(vec![RARE_TAG.to_owned()]),
     ]
 }
 
@@ -117,6 +131,43 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_4_ms_at_p95() {
+    let trial = trial_within(
+        "a page of 100 of the series carrying a tag on a tenth or a fifth of 10,000 series",
+        CROWDED_TAG_BUDGET,
+    );
+    let folder = ScratchFolder::new("mid-band-tag-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_generated_library(&database).await;
+
+    let mut over_budget = Vec::new();
+    for sort in SORTS {
+        for filter in crowded_tags() {
+            let listing = SeriesListing { sort, filter };
+            let outcome = trial
+                .run(
+                    async |_| None,
+                    async |after| {
+                        *after = read_page(&database, listing.clone(), after.take()).await;
+                    },
+                )
+                .await;
+            eprintln!("{listing:?}: {outcome}");
+            if !outcome.is_within_budget() {
+                over_budget.push(format!("{listing:?}: {outcome}"));
+            }
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
 async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     let trial = trial_of("a filtered count of 10,000 series");
     let folder = ScratchFolder::new("filtered-count-speed");
@@ -124,7 +175,7 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     add_generated_library(&database).await;
 
     let mut over_budget = Vec::new();
-    for filter in filters() {
+    for filter in filters().into_iter().chain(crowded_tags()) {
         let outcome = trial
             .run(
                 async |_| (),
@@ -225,13 +276,17 @@ async fn add_library_with_finished_smart_matches(database: &Database) {
 }
 
 fn trial_of(measured: &'static str) -> SpeedTrial {
+    trial_within(measured, BUDGET)
+}
+
+fn trial_within(measured: &'static str, budget: Duration) -> SpeedTrial {
     SpeedTrial {
         measured,
         sampling: Sampling::Repeated {
             samples: NonZeroUsize::new(SAMPLES).unwrap(),
             statistic: Statistic::Percentile95,
         },
-        budget: TimingBudget::from_env(BUDGET),
+        budget: TimingBudget::from_env(budget),
     }
 }
 
@@ -284,10 +339,37 @@ async fn add_generated_library(database: &Database) {
                 "UPDATE series SET adult_rated_books = 1 WHERE added_at_ms % ?1 = ?2",
                 (EVERY_HUNDREDTH_RATED_ADULT, RATED_ADULT_REMAINDER),
             )?;
+            tag_first_books(
+                transaction,
+                RARE_TAG,
+                (EVERY_HUNDREDTH_TAGGED_RARE, RARE_TAG_REMAINDER),
+            )?;
+            tag_first_books(transaction, COMMON_TAG, (EVERY_FIFTH_TAGGED_COMMON, 0))?;
+            tag_first_books(transaction, CROWDED_TAG, (EVERY_TENTH_TAGGED_CROWDED, 1))?;
             Ok(())
         })
         .await
         .unwrap();
+}
+
+fn tag_first_books(
+    transaction: &Transaction<'_>,
+    tag: &str,
+    (every, remainder): (u32, u32),
+) -> rusqlite::Result<()> {
+    transaction.execute(
+        "INSERT OR IGNORE INTO book_details (book_id)
+        SELECT book.id FROM book JOIN series ON series.local_id = book.series_local_id
+        WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3",
+        (every, remainder, BOOK_TITLES[0]),
+    )?;
+    transaction.execute(
+        "INSERT INTO book_tag (book_id, kind, name)
+        SELECT book.id, 'tag', ?4 FROM book JOIN series ON series.local_id = book.series_local_id
+        WHERE series.added_at_ms % ?1 = ?2 AND book.title = ?3",
+        (every, remainder, BOOK_TITLES[0], tag),
+    )?;
+    Ok(())
 }
 
 fn store_first_books_twice(
