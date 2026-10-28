@@ -11,6 +11,9 @@ export interface CoverTileLook {
   readonly markOff: string;
 }
 
+export const PICKED_COVER_RING =
+  "outline-2 outline-offset-2 outline-foreground";
+
 const BADGE_PLACEMENT =
   "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center text-caption medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
 
