@@ -3,6 +3,8 @@
 
   import { beforeNavigate } from "$app/navigation";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import DragBox from "#lib/library/DragBox.svelte";
+  import { DragSelect } from "#lib/library/drag-select.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -40,6 +42,11 @@
   } = $props();
 
   const selection = new Selection<BookId>();
+  const dragSelect = new DragSelect(selection, {
+    cells: "[data-book-id]",
+    idOf: (cell) =>
+      bookIdsOf(tiles).find((book) => book === cell.dataset.bookId),
+  });
   const platform = currentPlatform();
   let outcome: Outcome = $state({ kind: "none" });
   let area: HTMLElement | undefined = $state();
@@ -150,7 +157,12 @@
 />
 
 <div bind:this={area} class="contents" onfocusin={noteFocusedBook}>
-  <SectionCovers {...covers} {tiles} {selection} />
+  <div class="relative" {@attach dragSelect.attach}>
+    <SectionCovers {...covers} {tiles} {selection} />
+    {#if dragSelect.box !== undefined}
+      <DragBox box={dragSelect.box} />
+    {/if}
+  </div>
   {#if selection.count > 0}
     <SelectionBar
       count={selection.count}
