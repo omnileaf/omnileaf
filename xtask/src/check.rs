@@ -383,6 +383,19 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["--recursive", "run", "test:app"],
     },
     Step {
+        name: "android lint",
+        group: Group::Android,
+        program: "app/src-tauri/gen/android/gradlew",
+        args: &[
+            "--project-dir",
+            "app/src-tauri/gen/android",
+            "spotlessCheck",
+            "detekt",
+            ":app:lintUniversalDebug",
+            ":omnileaf-folder-access:lintDebug",
+        ],
+    },
+    Step {
         name: "android tests",
         group: Group::Android,
         program: "pnpm",
@@ -718,6 +731,11 @@ mod tests {
                 "comment rules",
             ]
         );
+    }
+
+    #[test]
+    fn the_android_group_checks_the_kotlin_before_running_the_app() {
+        assert_eq!(names_in(Group::Android), ["android lint", "android tests"]);
     }
 
     #[test]
