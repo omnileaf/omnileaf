@@ -364,7 +364,7 @@
           <div class="min-inline-none">
             <p
               {@attach notesCutOff(one.id)}
-              class={["line-clamp-2 font-medium wrap-break-word", look.title]}
+              class={["line-clamp-2 font-medium", look.title]}
             >
               {shown.title}
             </p>

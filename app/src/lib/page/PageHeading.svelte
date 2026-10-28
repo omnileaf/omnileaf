@@ -7,7 +7,7 @@
     $props();
 
   const TODAYS_TITLE =
-    "wrap-break-word text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
+    "text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
 
   const platform = currentPlatform();
   const width = new WindowWidth();

@@ -34,7 +34,7 @@
 <ItemMedia aria-hidden="true" class="shrink-0">
   <Icon size={ROW_ICON_SIZES[look]} />
 </ItemMedia>
-<ItemContent class="wrap-anywhere">
+<ItemContent>
   <ItemTitle class={LABELS[look]}>{label}</ItemTitle>
   <ItemDescription
     dir={isAddress ? "ltr" : undefined}
