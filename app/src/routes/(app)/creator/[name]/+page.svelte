@@ -1,7 +1,15 @@
 <script lang="ts">
-  import { ChevronLeft, FolderSearch, Library } from "@lucide/svelte";
+  import {
+    ChevronLeft,
+    CircleAlert,
+    FolderSearch,
+    Library,
+    RefreshCw,
+  } from "@lucide/svelte";
+  import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { invalidate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { buttonClasses } from "#lib/components/ui/button/looks.ts";
@@ -28,7 +36,11 @@
   import { isPhone } from "#lib/page/platform.ts";
   import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { TODAYS_PROBLEM_ACTIONS } from "#lib/reader/problem-actions.ts";
+  import ProblemHeading from "#lib/reader/ProblemHeading.svelte";
+  import { PROBLEM_TEXT, problemLayout } from "#lib/reader/problem-heading.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { CREATOR_SERIES } from "#lib/series/creator-series.ts";
   import { roleName } from "#lib/series/creator-role.ts";
   import { SERIES_CHIP } from "#lib/series/series-chip.ts";
   import { SERIES_CONTROL } from "#lib/series/series-control.ts";
@@ -39,7 +51,7 @@
   const BACK_ICON_SIZE = 20;
   const ICON_SIZE = 16;
   const TODAYS_ACTIONS: ActionGroupLook = {
-    group: "contents",
+    group: "flex flex-wrap justify-center gap-sm",
     main: "",
     other: SERIES_CONTROL,
   };
@@ -55,8 +67,37 @@
   const actions = $derived(
     actionGroupLook(platform, width.current, TODAYS_ACTIONS),
   );
+  const problemActions = $derived(
+    actionGroupLook(platform, width.current, TODAYS_PROBLEM_ACTIONS),
+  );
   const hasToolbar = $derived(DESKTOPS.includes(platform) && isWide.current);
   const look = $derived(screenshotMode.isOn ? standInLook : realLook);
+  const layout = $derived(problemLayout(platform, width.current));
+  let isReadingAgain = $state(false);
+  let attempts = $state(0);
+  let nameHeading: HTMLElement | null = $state(null);
+  let tryAgainButton: HTMLButtonElement | null = $state(null);
+
+  async function readAgain(): Promise<void> {
+    if (isReadingAgain) {
+      return;
+    }
+    isReadingAgain = true;
+    try {
+      await invalidate(CREATOR_SERIES);
+    } catch (error) {
+      reportError(error);
+    } finally {
+      isReadingAgain = false;
+    }
+    attempts += 1;
+    await tick();
+    (data.series.kind === "failed"
+      ? tryAgainButton
+      : nameHeading?.querySelector("h1")
+    )?.focus();
+  }
+
   const back = $derived(
     data.from === undefined
       ? {
@@ -139,75 +180,118 @@
     {/if}
   </header>
 {/if}
-<div
-  class={[
-    "flex flex-1 flex-col gap-lg expanded:gap-xl",
-    hasToolbar && "pbs-xl",
-  ]}
->
-  <div class="flex flex-col gap-2xs">
-    {#if isOnPhone}
-      <PageHeading title={data.name} size="large" />
-    {:else}
-      <h1
-        tabindex="-1"
-        class="text-page-title font-bold tracking-tight wrap-break-word expanded:text-series-title"
+{#if data.series.kind === "read"}
+  {@const found = data.series.series}
+  <div
+    class={[
+      "flex flex-1 flex-col gap-lg expanded:gap-xl",
+      hasToolbar && "pbs-xl",
+    ]}
+  >
+    <div bind:this={nameHeading} class="flex flex-col gap-2xs">
+      {#if isOnPhone}
+        <PageHeading title={data.name} size="large" />
+      {:else}
+        <h1
+          tabindex="-1"
+          class="text-page-title font-bold tracking-tight wrap-break-word expanded:text-series-title"
+        >
+          {data.name}
+        </h1>
+      {/if}
+      {#if found.length > 0}
+        <p class="text-small text-muted">
+          {m.creator_series_count({ count: found.length })}
+        </p>
+      {/if}
+    </div>
+    {#if found.length > 0}
+      <ul
+        aria-label={m.creator_series_list({ name: data.name })}
+        class="grid grid-cols-3 gap-x-md gap-y-cover-row expanded:grid-cols-6 expanded:gap-x-xl expanded:gap-y-cover-row-wide"
       >
-        {data.name}
-      </h1>
-    {/if}
-    {#if data.series.length > 0}
-      <p class="text-small text-muted">
-        {m.creator_series_count({ count: data.series.length })}
-      </p>
+        {#each found as series (series.id)}
+          {@const shown = look(series)}
+          <li class="min-inline-none">
+            <a
+              href={resolve("/(app)/series/[id]", { id: series.id })}
+              class="flex flex-col gap-icon-gap expanded:gap-sm"
+            >
+              <span
+                class={cn(
+                  "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
+                  tile.cover,
+                )}
+              >
+                <CoverImage cover={shown.cover} {coverUrl} />
+              </span>
+              <span class="flex flex-col min-inline-none">
+                <span
+                  class="line-clamp-2 text-small font-medium wrap-break-word"
+                >
+                  {shown.title}
+                </span>
+                {#if series.role !== null}
+                  <span class="text-caption text-muted">
+                    {roleName(series.role)}
+                  </span>
+                {/if}
+              </span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <EmptyState
+        icon={FolderSearch}
+        title={m.creator_empty({ name: data.name })}
+        body={m.creator_empty_body()}
+      >
+        <div class={cn(actions.group, "mbs-lg")}>
+          <a href={resolve("/(app)")} class={actions.other}>
+            <Library size={ICON_SIZE} aria-hidden="true" />
+            {m.series_back_label()}
+          </a>
+        </div>
+      </EmptyState>
     {/if}
   </div>
-  {#if data.series.length > 0}
-    <ul
-      aria-label={m.creator_series_list({ name: data.name })}
-      class="grid grid-cols-3 gap-x-md gap-y-cover-row expanded:grid-cols-6 expanded:gap-x-xl expanded:gap-y-cover-row-wide"
-    >
-      {#each data.series as series (series.id)}
-        {@const shown = look(series)}
-        <li class="min-inline-none">
-          <a
-            href={resolve("/(app)/series/[id]", { id: series.id })}
-            class="flex flex-col gap-icon-gap expanded:gap-sm"
+{:else}
+  <div
+    class={[
+      "flex flex-1 items-center justify-center pbe-empty-lift",
+      hasToolbar && "pbs-xl",
+    ]}
+  >
+    {#key attempts}
+      <section
+        role="alert"
+        class="flex flex-col gap-lg inline-full max-inline-damaged-book"
+      >
+        <ProblemHeading icon={CircleAlert} {platform}>
+          {m.creator_failed({ name: data.name })}
+        </ProblemHeading>
+        <p class={["text-body expanded:text-small", PROBLEM_TEXT[layout]]}>
+          {m.library_unchanged()}
+        </p>
+        <div class={problemActions.group}>
+          <button
+            bind:this={tryAgainButton}
+            type="button"
+            class={problemActions.main}
+            aria-disabled={isReadingAgain}
+            aria-busy={isReadingAgain}
+            onclick={() => void readAgain()}
           >
-            <span
-              class={cn(
-                "relative aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
-                tile.cover,
-              )}
-            >
-              <CoverImage cover={shown.cover} {coverUrl} />
-            </span>
-            <span class="flex flex-col min-inline-none">
-              <span class="line-clamp-2 text-small font-medium wrap-break-word">
-                {shown.title}
-              </span>
-              {#if series.role !== null}
-                <span class="text-caption text-muted">
-                  {roleName(series.role)}
-                </span>
-              {/if}
-            </span>
+            <RefreshCw size={ICON_SIZE} aria-hidden="true" />
+            {m.library_try_again()}
+          </button>
+          <a href={resolve("/(app)")} class={problemActions.other}>
+            <Library size={ICON_SIZE} aria-hidden="true" />
+            {m.series_back_label()}
           </a>
-        </li>
-      {/each}
-    </ul>
-  {:else}
-    <EmptyState
-      icon={FolderSearch}
-      title={m.creator_empty({ name: data.name })}
-      body={m.creator_empty_body()}
-    >
-      <div class={actions.group}>
-        <a href={resolve("/(app)")} class={cn(actions.other, "mbs-lg")}>
-          <Library size={ICON_SIZE} aria-hidden="true" />
-          {m.series_back_label()}
-        </a>
-      </div>
-    </EmptyState>
-  {/if}
-</div>
+        </div>
+      </section>
+    {/key}
+  </div>
+{/if}

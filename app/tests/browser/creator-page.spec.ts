@@ -1,11 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { FakeBackend } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
   expect,
   EXPANDED_MIN_WIDTH,
+  framesPassed,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -52,6 +53,47 @@ function backendWith(found: typeof THEIR_SERIES | readonly []): FakeBackend {
   };
 }
 
+const CATALOG_UNREADABLE = "the catalog could not be read";
+
+const creatorRead = { fails: true, held: Promise.resolve(), asked: 0 };
+
+function backendFailingWhileAsked(): FakeBackend {
+  const found = backendWith(THEIR_SERIES);
+  return {
+    ...found,
+    creatorSeries: async (creator) => {
+      creatorRead.asked += 1;
+      await creatorRead.held;
+      if (creatorRead.fails) {
+        throw new CommandFailure({
+          code: "internal",
+          message: CATALOG_UNREADABLE,
+        });
+      }
+      return found.creatorSeries(creator);
+    },
+  };
+}
+
+function failureHeading(page: Page): Locator {
+  return page.getByRole("heading", {
+    level: 1,
+    name: `Couldn't read the series by ${CREATOR}`,
+  });
+}
+
+function failure(page: Page): Locator {
+  return page.getByRole("alert").filter({ has: failureHeading(page) });
+}
+
+function tryAgain(page: Page): Locator {
+  return failure(page).getByRole("button", { name: "Try again" });
+}
+
+function backToLibrary(page: Page): Locator {
+  return failure(page).getByRole("link", { name: "Back to the library" });
+}
+
 function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
@@ -65,16 +107,35 @@ async function openLongNamedCreator(page: Page): Promise<void> {
   ).toBeVisible();
 }
 
-async function openCreatorFromSeries(page: Page): Promise<void> {
+function creatorHeading(page: Page): Locator {
+  return page.getByRole("heading", { level: 1, name: CREATOR, exact: true });
+}
+
+async function clickCreatorOnSeries(page: Page): Promise<void> {
   await page.goto(`/series/${SERIES_ID}`);
   await page
     .getByRole("region", { name: "About this series" })
     .getByRole("link", { name: CREATOR })
     .first()
     .click();
-  await expect(
-    page.getByRole("heading", { level: 1, name: CREATOR }),
-  ).toBeVisible();
+}
+
+async function openCreatorFromSeries(page: Page): Promise<void> {
+  await clickCreatorOnSeries(page);
+  await expect(creatorHeading(page)).toBeVisible();
+}
+
+async function openFailedCreator(page: Page): Promise<void> {
+  await clickCreatorOnSeries(page);
+  await expect(failureHeading(page)).toBeVisible();
+}
+
+async function tryAgainAndFailAgain(page: Page): Promise<void> {
+  await failure(page).evaluate((alert) => {
+    alert.dataset.firstAnnounced = "";
+  });
+  await tryAgain(page).click();
+  await expect(page.locator("[data-first-announced]")).toHaveCount(0);
 }
 
 test.describe("a creator with series in the library", () => {
@@ -213,7 +274,7 @@ test.describe("a creator with a long name and a series with an unbroken title", 
 });
 
 const PHONE_COVER_CORNER = { ios: "6px", android: "4px" } as const;
-const PHONE_SECOND_BUTTON_HEIGHT = { ios: 50, android: 40 } as const;
+const PHONE_BUTTON_HEIGHT = { ios: 50, android: 40 } as const;
 const TABLET = { width: 820, height: 1180 };
 
 function backToSeries(page: Page): Locator {
@@ -295,10 +356,263 @@ test.describe(
           .last(),
       );
 
-      expect(button.height).toBeCloseTo(
-        PHONE_SECOND_BUTTON_HEIGHT[platform],
+      expect(button.height).toBeCloseTo(PHONE_BUTTON_HEIGHT[platform], 0);
+    });
+  },
+);
+
+test.describe("a creator whose series can't be read", () => {
+  test.use({ backend: backendFailingWhileAsked() });
+
+  test.beforeEach(() => {
+    creatorRead.fails = true;
+    creatorRead.held = Promise.resolve();
+  });
+
+  test("says their series couldn't be read and that nothing changed", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+
+    await expect(failure(page)).toContainText(
+      "Nothing in your library has changed.",
+    );
+  });
+
+  test("leaves the crash prompt closed, since the failure screen explains it", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  });
+
+  test("reads their series again on Try again and moves focus to their name", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+    creatorRead.fails = false;
+
+    await tryAgain(page).click();
+
+    await expect(
+      page
+        .getByRole("list", { name: `Series by ${CREATOR}` })
+        .getByRole("listitem"),
+    ).toHaveCount(THEIR_SERIES.length);
+    await expect(failure(page)).toHaveCount(0);
+    await expect(creatorHeading(page)).toBeFocused();
+  });
+
+  test("holds Try again busy while it reads again", async ({ page }) => {
+    await openFailedCreator(page);
+    const answer = Promise.withResolvers<undefined>();
+    creatorRead.held = answer.promise;
+    creatorRead.fails = false;
+
+    await tryAgain(page).click();
+
+    await expect(tryAgain(page)).toHaveAttribute("aria-busy", "true");
+    await expect(tryAgain(page)).toHaveAttribute("aria-disabled", "true");
+    answer.resolve(undefined);
+    await expect(creatorHeading(page)).toBeVisible();
+  });
+
+  test("keeps focus on Try again while it reads again", async ({ page }) => {
+    await openFailedCreator(page);
+    const answer = Promise.withResolvers<undefined>();
+    creatorRead.held = answer.promise;
+    await tryAgain(page).focus();
+
+    await page.keyboard.press("Enter");
+    await expect(tryAgain(page)).toHaveAttribute("aria-busy", "true");
+    await framesPassed(page);
+
+    await expect(tryAgain(page)).toBeFocused();
+    answer.resolve(undefined);
+  });
+
+  test("reads once however often Try again is pressed while it reads", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+    const answer = Promise.withResolvers<undefined>();
+    creatorRead.held = answer.promise;
+    creatorRead.fails = false;
+    const askedBefore = creatorRead.asked;
+    await tryAgain(page).focus();
+
+    await page.keyboard.press("Enter");
+    await expect(tryAgain(page)).toHaveAttribute("aria-busy", "true");
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Space");
+    answer.resolve(undefined);
+
+    await expect(creatorHeading(page)).toBeVisible();
+    expect(creatorRead.asked - askedBefore).toBe(1);
+  });
+
+  test("announces the failure again when Try again fails too", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+
+    await tryAgainAndFailAgain(page);
+
+    await expect(failure(page)).toBeVisible();
+  });
+
+  test("keeps focus on Try again when Try again fails too", async ({
+    page,
+  }) => {
+    await openFailedCreator(page);
+
+    await tryAgainAndFailAgain(page);
+
+    await expect(tryAgain(page)).toBeFocused();
+  });
+
+  test("sets Try again apart from Back to the library", async ({ page }) => {
+    await openFailedCreator(page);
+
+    const backgroundOf = (control: Locator): Promise<string> =>
+      control.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+    expect(await backgroundOf(tryAgain(page))).not.toBe(
+      await backgroundOf(backToLibrary(page)),
+    );
+  });
+
+  test("leads back to the library", async ({ page }) => {
+    await openFailedCreator(page);
+
+    await backToLibrary(page).click();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("has no accessibility violations", async ({ page }) => {
+    await openFailedCreator(page);
+    await expect(failure(page)).toBeVisible();
+
+    const violations = await accessibilityViolations(page);
+
+    expect(violations).toEqual([]);
+  });
+});
+
+test.describe(
+  "a creator whose series can't be read, on a phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: backendFailingWhileAsked() });
+
+    test.beforeEach(() => {
+      creatorRead.fails = true;
+      creatorRead.held = Promise.resolve();
+    });
+
+    test("starts its badge, title and note on Android and centres them on iOS, as each phone's problem screens do", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform === undefined, "the native phone projects only");
+      await openFailedCreator(page);
+
+      const expected = platform === "ios" ? "center" : "start";
+      const shownBadge = await boxOf(
+        failure(page).locator('[data-slot="empty-media"]'),
+      );
+      const title = await boxOf(failureHeading(page));
+
+      await expect(failureHeading(page)).toHaveCSS("text-align", expected);
+      await expect(
+        failure(page).getByText("Nothing in your library has changed."),
+      ).toHaveCSS("text-align", expected);
+      expect(title.y).toBeGreaterThanOrEqual(shownBadge.y + shownBadge.height);
+      const badgeEdge =
+        expected === "start"
+          ? shownBadge.x
+          : shownBadge.x + shownBadge.width / 2;
+      const titleEdge =
+        expected === "start" ? title.x : title.x + title.width / 2;
+      expect(badgeEdge).toBeCloseTo(titleEdge, 0);
+    });
+
+    test("keeps focus on Try again when Try again fails too", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform === undefined, "the native phone projects only");
+      await openFailedCreator(page);
+
+      await tryAgainAndFailAgain(page);
+
+      await expect(tryAgain(page)).toBeFocused();
+    });
+
+    test("centres Try again over Back to the library as iOS capsules of one width", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios") {
+        test.skip();
+        return;
+      }
+
+      await openFailedCreator(page);
+      const again = await boxOf(tryAgain(page));
+      const back = await boxOf(backToLibrary(page));
+
+      expect(back.y).toBeGreaterThan(again.y + again.height);
+      expect(back.width).toBeCloseTo(again.width, 0);
+      expect(again.x + again.width / 2).toBeCloseTo(
+        viewportOf(page).width / 2,
         0,
       );
+      expect(again.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.ios, 0);
+      const corner = await tryAgain(page).evaluate((button) =>
+        parseFloat(getComputedStyle(button).borderTopLeftRadius),
+      );
+      expect(corner).toBeGreaterThanOrEqual(again.height / 2);
+    });
+
+    test("stacks Try again over Back to the library at each one's own width on Android", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+
+      await openFailedCreator(page);
+      const again = await boxOf(tryAgain(page));
+      const back = await boxOf(backToLibrary(page));
+
+      expect(back.y).toBeGreaterThan(again.y + again.height);
+      expect(back.width).not.toBeCloseTo(again.width, 0);
+      expect(again.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.android, 0);
+      expect(back.height).toBeCloseTo(PHONE_BUTTON_HEIGHT.android, 0);
+    });
+
+    test("keeps the problem screens' own rounded buttons on an iPad", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "ios") {
+        test.skip();
+        return;
+      }
+      await page.setViewportSize(TABLET);
+
+      await openFailedCreator(page);
+      const again = await boxOf(tryAgain(page));
+      const corner = await tryAgain(page).evaluate((button) =>
+        parseFloat(getComputedStyle(button).borderTopLeftRadius),
+      );
+
+      expect(corner).toBeLessThan(again.height / 2);
     });
   },
 );
