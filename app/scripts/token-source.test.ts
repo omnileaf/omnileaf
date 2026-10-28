@@ -133,6 +133,44 @@ test("reads a contrast value for macOS in each theme, alongside iOS", () => {
   });
 });
 
+test("lets Windows skip a token other platforms cover, since Windows is not drawn everywhere", () => {
+  const withWindows = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "windows-light": "#2f6f4f",
+      "windows-dark": "#7fcb9d",
+    },
+  };
+
+  const source = parse(withWindows, FADE);
+
+  expect(source.platforms).toEqual(["android", "ios", "windows"]);
+  expect(source.tokens[1]?.platforms.has("windows")).toBe(false);
+});
+
+test("reads a reduced transparency value for Windows in each theme", () => {
+  const solid = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "windows-light": "#fcfcfcd9",
+      "windows-dark": "#2c2c2cf5",
+      "windows-light-transparency-reduced": "#f9f9f9",
+      "windows-dark-transparency-reduced": "#2c2c2c",
+    },
+  };
+
+  const [token] = parse(solid).tokens;
+
+  expect(token?.modes).toContainEqual({
+    platform: "windows",
+    mode: "transparency-reduced",
+    light: "#f9f9f9",
+    dark: "#2c2c2c",
+  });
+});
+
 test("names a contrast value given for one theme only", () => {
   const lightOnly = {
     ...ACCENT,
@@ -211,7 +249,7 @@ test("names a reduced transparency value drawn on android", () => {
   };
 
   expect(() => parse(borrowed)).toThrow(
-    'Token "accent" sets transparency-reduced on android, but only ios has transparency-reduced.',
+    'Token "accent" sets transparency-reduced on android, but only ios and windows have transparency-reduced.',
   );
 });
 
