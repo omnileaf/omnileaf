@@ -70,6 +70,7 @@ export const commands = {
 	title: string,
 	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
+	isInLibrary: boolean,
 } | null, IpcError>(__TAURI_INVOKE("book_place", { book })),
 	hideFilesLike: (book: string & { readonly __brand: "BookId" }) => typedError<FileType, IpcError>(__TAURI_INVOKE("hide_files_like", { book })),
 	hideFileType: (fileType: FileType) => typedError<null, IpcError>(__TAURI_INVOKE("hide_file_type", { fileType })),
@@ -258,6 +259,7 @@ export type BookPlace = {
 	title: string,
 	series: string & { readonly __brand: "SeriesId" },
 	seriesTitle: string,
+	isInLibrary: boolean,
 };
 
 export type BookReading = { state: "notStarted" } | 

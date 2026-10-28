@@ -188,3 +188,26 @@ async fn refuses_a_file_that_is_not_a_readable_book() {
 
     assert!(matches!(refused, Err(OpenFileError::Unreadable { .. })));
 }
+
+#[tokio::test]
+async fn names_the_place_of_a_file_outside_the_library_as_not_in_it() {
+    let opening = Opening::new("place-outside").await;
+    let path = opening.file("Loose Comics", "Odd Tale.cbz", SEED);
+    let to_read = opening.library.open_file(path).await.unwrap();
+
+    let place = opening
+        .library
+        .book_place(to_read.book)
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(
+        (
+            place.title.as_str(),
+            place.series_title.as_str(),
+            place.is_in_library
+        ),
+        ("Odd Tale", "Loose Comics", false)
+    );
+}

@@ -741,6 +741,7 @@ export function sampleBackend(
           title: book.title,
           series: sampleSeriesId(series.number),
           seriesTitle: titleOf(series),
+          isInLibrary: true,
         };
       }
     }

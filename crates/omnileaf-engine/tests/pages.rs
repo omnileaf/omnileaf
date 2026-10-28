@@ -467,6 +467,7 @@ async fn names_a_books_place_for_the_way_back_without_opening_it() {
             title: opened.title,
             series: opened.series,
             series_title: opened.series_title,
+            is_in_library: true,
         })
     );
 }

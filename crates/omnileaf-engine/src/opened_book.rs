@@ -81,6 +81,7 @@ pub struct BookPlace {
     pub title: String,
     pub series: SeriesId,
     pub series_title: String,
+    pub is_in_library: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
