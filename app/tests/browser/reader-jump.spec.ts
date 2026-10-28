@@ -43,6 +43,10 @@ function bookAt(index: number, change: Partial<WireBook> = {}): WireBook {
     isBookmarked: false,
     isNew: false,
     isFileMissing: false,
+    kind: null,
+    numbers: null,
+    volume: null,
+    section: null,
     ...change,
   };
 }

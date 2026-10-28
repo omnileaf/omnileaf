@@ -53,6 +53,10 @@ export class FakeShelf {
       isBookmarked: false,
       isNew: false,
       isFileMissing: false,
+      kind: null,
+      numbers: null,
+      volume: null,
+      section: null,
     }));
   }
 
@@ -110,6 +114,9 @@ export class FakeShelf {
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,
           ...this.#details,
+          year: null,
+          sections: [],
+          missingVolumes: [],
         };
       },
       seriesBooks: async (id, listing, after) => {

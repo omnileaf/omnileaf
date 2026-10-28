@@ -142,6 +142,7 @@ async fn lists_only_a_series_books_not_read_the_other_way_round_numbered_by_plac
     let unread_reversed = SeriesBookListing {
         shown: BooksShown::Unread,
         direction: SortDirection::Descending,
+        ..SeriesBookListing::default()
     };
 
     let listed = sample.listed_books(series, unread_reversed).await;
@@ -163,6 +164,7 @@ async fn lists_no_book_as_bookmarked_while_the_library_keeps_no_bookmarks() {
     let bookmarked = SeriesBookListing {
         shown: BooksShown::Bookmarked,
         direction: SortDirection::Ascending,
+        ..SeriesBookListing::default()
     };
 
     let page = sample

@@ -218,6 +218,8 @@ export type BookFile = {
 	fileType: FileType | null,
 };
 
+export type BookKind = "volume" | "chapter" | "special";
+
 export type BookPage = {
 	path: string & { readonly __brand: "PagePath" },
 	thumbnail: string & { readonly __brand: "PageThumbnailPath" },
@@ -236,6 +238,8 @@ export type BookPlace = {
 export type BookReading = { state: "notStarted" } | 
 /**  The page is where reading goes on from, counting from 1, and absent when only the furthest page read is known. */
 { state: "started"; page: number | null } | { state: "read" };
+
+export type BookSection = "volumes" | "chapters" | "specials";
 
 export type BookSessions = {
 	sessions: number,
@@ -564,6 +568,11 @@ export type NetworkShare = {
 	name: string,
 };
 
+export type NumberRange = {
+	first: number,
+	last: number,
+};
+
 export type OnCovers = {
 	showsUnreadCount: boolean,
 	showsDownloaded: boolean,
@@ -700,11 +709,19 @@ export type SeriesBook = {
 	isNew: boolean,
 	/**  Whether the book's file was moved or deleted; never, while the library keeps no book without its file. */
 	isFileMissing: boolean,
+	/**  Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again. */
+	kind: BookKind | null,
+	numbers: NumberRange | null,
+	/**  The volume a chapter is read inside. */
+	volume: number | null,
+	section: BookSection | null,
 };
 
 export type SeriesBookListing = {
 	shown: BooksShown,
 	direction: SortDirection,
+	/**  Absent to list every book of the series. */
+	section?: BookSection | null,
 };
 
 export type SeriesBookPage = {
@@ -754,6 +771,7 @@ export type SeriesNeighbour = {
 export type SeriesOverview = {
 	id: string & { readonly __brand: "SeriesId" },
 	title: string,
+	year: number | null,
 	bookCount: number,
 	readCount: number,
 	bookmarkCount: number,
@@ -769,6 +787,9 @@ export type SeriesOverview = {
 	related: RelatedSeries[],
 	/**  About how long the books left take to read at the reading speed learned on this device, absent until the library times reading or while a book left has no page count. */
 	secondsLeft: number | null,
+	/**  The sections holding at least one book, in reading order. */
+	sections: BookSection[],
+	missingVolumes: NumberRange[],
 };
 
 export type SeriesPage = {
