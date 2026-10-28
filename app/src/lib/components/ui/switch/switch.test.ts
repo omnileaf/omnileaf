@@ -68,11 +68,11 @@ const LOOKS: readonly SwitchLook[] = [
     platform: "windows",
     track: [40, 20],
     knobOff: 12,
-    knobOn: 14,
-    trackOff: "transparent",
-    trackOn: "--primary",
-    knobOffFill: "--windows-secondary-text",
-    edgeOff: "--windows-secondary-text",
+    knobOn: 12,
+    trackOff: "#00000006",
+    trackOn: "#2f6f4f",
+    knobOffFill: "#0000009e",
+    edgeOff: "#00000072",
   },
 ];
 

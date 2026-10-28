@@ -275,6 +275,31 @@ test("ports real macOS values for a colour, a size and a motion token", () => {
   expect(macos).toContain("--native-duration-fade: 150ms;");
 });
 
+test("ports real Windows values for a colour, a size and a motion token", () => {
+  const windows = renderPlatformTokens(tokens).get("tokens-windows.css") ?? "";
+
+  expect(windows).toContain("--native-color-switch-on: #2f6f4f;");
+  expect(windows).toContain(
+    ':root[data-platform="windows"][data-theme="dark"]',
+  );
+  expect(windows).toContain("--native-color-switch-on: #7fcb9d;");
+  expect(windows).toContain("--native-radius-button: 4px;");
+  expect(windows).toContain("--native-spacing-switch-length: 40px;");
+  expect(windows).toContain("--native-duration-fade: 150ms;");
+});
+
+test("draws the Windows menu without transparency when the setting is off", () => {
+  const windows = renderPlatformTokens(tokens).get("tokens-windows.css") ?? "";
+
+  expect(windows).toContain(
+    `:root[data-platform="windows"][data-transparency="reduced"],
+:root[data-platform="windows"][data-transparency="reduced"] [data-theme="light"] {
+  --native-color-menu: #f9f9f9;
+}
+`,
+  );
+});
+
 test("matches the committed files, so a change to the source is regenerated", () => {
   const committed = Object.fromEntries(
     Object.entries(COMMITTED).map(([path, css]) => [
