@@ -149,7 +149,11 @@ async fn sums_up_a_series_by_its_year_section_counts_missing_volumes_and_last_vo
                 {"section": "chapters", "bookCount": 1},
                 {"section": "specials", "bookCount": 1},
             ]),
-            json!([{"first": 2.0, "last": 2.0}, {"first": 4.0, "last": 4.0}]),
+            json!([
+                {"first": 2.0, "last": 2.0},
+                {"first": 4.0, "last": 4.0},
+                {"first": 7.0, "last": 9.0},
+            ]),
             json!(9.5),
         ]
     );
