@@ -74,4 +74,23 @@ test.describe("the first launch on Windows", () => {
     await expect(progress).toHaveText("1 of 3");
     await expect(page.getByText(HOME_LOCATION)).toBeVisible();
   });
+
+  test("keeps the home folder on one card with Change at its end, what it holds on another", async ({
+    page,
+  }) => {
+    await page.goto("/first-launch");
+    await page.getByRole("button", { name: "Get started" }).click();
+    const card = page.getByRole("region", { name: "Home folder" });
+    await expect(card).toBeVisible();
+
+    const change = await boxOf(
+      card.getByRole("button", { name: "Change", exact: true }),
+    );
+    const path = await boxOf(card.getByText(HOME_LOCATION));
+    const keeps = await boxOf(card.getByText("Keeps", { exact: true }));
+
+    expect(change.x).toBeGreaterThan(path.x + path.width);
+    expect(keeps.y).toBeGreaterThan(path.y + path.height);
+    await expect(card.locator("code")).toHaveCount(0);
+  });
 });

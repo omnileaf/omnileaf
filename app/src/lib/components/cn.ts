@@ -579,6 +579,7 @@ export const TOKEN_THEME = {
     "setup-column",
     "setup-first-top",
     "setup-hero-icon",
+    "setup-term",
     "setup-top",
     "shadcn-button",
     "shadcn-control",

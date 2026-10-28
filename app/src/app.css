@@ -411,6 +411,7 @@
   --spacing-windows-indicator: 0.1875rem;
   --spacing-windows-indicator-length: 1rem;
   --spacing-setup-column: 37.5rem;
+  --spacing-setup-term: 8.75rem;
   --spacing-setup-top: 3.25rem;
   --spacing-setup-first-top: 3.75rem;
   --spacing-setup-bar: 7.5rem;
@@ -1427,6 +1428,10 @@
 
 @utility grid-cols-details {
   grid-template-columns: auto minmax(0, 1fr);
+}
+
+@utility grid-cols-setup-facts {
+  grid-template-columns: var(--spacing-setup-term) minmax(0, 1fr);
 }
 
 @utility grid-cols-stats {
