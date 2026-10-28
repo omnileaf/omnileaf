@@ -527,6 +527,7 @@ export const TOKEN_THEME = {
     "search-kind-inline",
     "section-gap",
     "section-search",
+    "section-search-narrowest",
     "segment",
     "segment-compact",
     "segment-icon-desktop",

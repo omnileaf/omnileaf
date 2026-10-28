@@ -46,9 +46,9 @@
   }
 </script>
 
-<div class="ms-auto flex items-center gap-sm">
+<div class="ms-auto flex flex-1 items-center justify-end gap-sm">
   <InputGroup
-    class="gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-section-search focus-within:border-accent"
+    class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent"
   >
     <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
     <Input
