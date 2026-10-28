@@ -72,7 +72,9 @@ fn heard_synced(changed: &Result<Changed, RecvError>) -> Heard {
         )
         | Err(RecvError::Lagged(_)) => Heard::Change,
         Ok(Changed::Registers { keys, .. })
-            if keys.iter().any(|key| matches!(key, Key::Bookmark(_))) =>
+            if keys
+                .iter()
+                .any(|key| matches!(key, Key::Bookmark(_) | Key::Label(_))) =>
         {
             Heard::Change
         }

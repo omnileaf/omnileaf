@@ -47,6 +47,10 @@ pub(crate) enum IpcErrorCode {
         reason = "the interface keeps its notice for this code until it stops showing it"
     )]
     BookmarksNotKept,
+    #[expect(
+        dead_code,
+        reason = "the interface keeps its notice for this code until it stops showing it"
+    )]
     LabelsNotKept,
     DetailsNotKept,
     ReportNotSaved,
@@ -121,13 +125,6 @@ impl IpcError {
         Self {
             code: IpcErrorCode::DevelopmentBuildOnly,
             message: "only development builds can crash on purpose",
-        }
-    }
-
-    pub(crate) fn labels_not_kept() -> Self {
-        Self {
-            code: IpcErrorCode::LabelsNotKept,
-            message: "the library keeps no categories or tags yet",
         }
     }
 
@@ -390,14 +387,6 @@ mod tests {
         assert_eq!(
             IpcError::details_not_kept().code,
             IpcErrorCode::DetailsNotKept
-        );
-    }
-
-    #[test]
-    fn tells_the_interface_the_library_keeps_no_categories_or_tags_yet() {
-        assert_eq!(
-            IpcError::labels_not_kept().code,
-            IpcErrorCode::LabelsNotKept
         );
     }
 

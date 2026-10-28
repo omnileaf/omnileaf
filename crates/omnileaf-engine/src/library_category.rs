@@ -14,6 +14,18 @@ pub struct LibraryCategory {
 #[serde(transparent)]
 pub struct CategoryId(String);
 
+impl CategoryId {
+    pub(crate) fn stored(&self) -> Option<omnileaf_sync_proto::CategoryId> {
+        self.0.parse().ok()
+    }
+}
+
+impl From<omnileaf_sync_proto::CategoryId> for CategoryId {
+    fn from(id: omnileaf_sync_proto::CategoryId) -> Self {
+        Self(id.to_string())
+    }
+}
+
 impl From<String> for CategoryId {
     fn from(id: String) -> Self {
         Self(id)
