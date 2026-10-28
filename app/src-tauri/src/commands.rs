@@ -4,17 +4,18 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 #[cfg(debug_assertions)]
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
-    AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookPlace, BookSessions,
-    BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits, FileType,
-    FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage,
-    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
-    HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory,
-    LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
-    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
-    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, ReportCode,
-    ResourceRouter, RootLocator, SavedProblemReport, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels, SeriesOverview,
-    SeriesPage, SpellingSuggestion, StorageUse, UtcOffset, WriterCursor, WriterPage,
+    AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
+    BookSessions, BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits,
+    FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId,
+    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
+    HistoryPage, HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library,
+    LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing,
+    LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook,
+    PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary,
+    ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse, UtcOffset,
+    WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -86,6 +87,7 @@ macro_rules! app_commands {
             library_search_count,
             series_overview,
             series_books,
+            series_volume,
             creator_series,
             bookmark_pages,
             book_place,
@@ -664,6 +666,16 @@ async fn series_books(
     after: Option<BookCursor>,
 ) -> Result<SeriesBookPage, IpcError> {
     Ok(library.series_books(id, listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn series_volume(
+    library: State<'_, Library>,
+    id: SeriesId,
+    volume: BookNumber,
+) -> Result<Option<SeriesVolume>, IpcError> {
+    Ok(library.series_volume(id, volume).await?)
 }
 
 #[tauri::command]

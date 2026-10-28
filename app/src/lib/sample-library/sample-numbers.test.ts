@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {
+  isFiledInVolume,
   lastVolume,
   missingVolumes,
   numberingOf,
@@ -42,4 +43,16 @@ test("names no last volume in a series without volumes", () => {
   const books = ["Chapter 2", "Sketches"].map(numberingOf);
 
   expect(lastVolume(books)).toBeNull();
+});
+
+test("files a chapter in the volume it is read inside and no other book", () => {
+  const chapter = { ...numberingOf("Chapter 2"), volume: 3 };
+  const volumeBook = numberingOf("Volume 3");
+
+  expect([
+    isFiledInVolume(3, chapter),
+    isFiledInVolume(4, chapter),
+    isFiledInVolume(3, volumeBook),
+    isFiledInVolume(null, volumeBook),
+  ]).toEqual([true, false, false, true]);
 });
