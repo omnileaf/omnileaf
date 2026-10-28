@@ -85,9 +85,23 @@
     if (first === null) {
       return undefined;
     }
+    const columns = columnsOf(grid);
+    const nextRow = grid.children.item(columns);
+    if (nextRow !== null) {
+      return {
+        columns,
+        rowStride:
+          nextRow.getBoundingClientRect().top -
+          first.getBoundingClientRect().top,
+      };
+    }
+    const isPartDrawn = grid.childElementCount < (knownTotal ?? items.length);
+    if (isPartDrawn && measure?.columns === columns) {
+      return measure;
+    }
     const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);
     return {
-      columns: columnsOf(grid),
+      columns,
       rowStride:
         first.getBoundingClientRect().height +
         (Number.isNaN(rowGap) ? 0 : rowGap),

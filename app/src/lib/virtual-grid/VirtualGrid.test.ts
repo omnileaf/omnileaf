@@ -1,5 +1,5 @@
 import { createRawSnippet } from "svelte";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, onTestFinished, test, vi } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -140,6 +140,79 @@ test("fills the screen again once its styles lay items as tall as they are wide 
   expect(stride).toBe(
     `${String(first.getBoundingClientRect().height + rowGap)}px`,
   );
+});
+
+async function renderSeparatedRows(rows: number) {
+  const screen = await render(VirtualGrid<Sample>, {
+    items: samples(rows),
+    key: (sample: Sample) => sample.id,
+    label: LABEL,
+    isComplete: true,
+    cell,
+    class: "grid-cols-1",
+    itemClass: "border-be-8 border-solid last:border-be-0",
+  });
+  const list = screen.getByRole("list", { name: LABEL });
+  await expect.element(list.getByRole("listitem").first()).toBeVisible();
+  await settled();
+  const frame = list.element().parentElement;
+  if (frame === null) {
+    throw new Error("the grid has no frame");
+  }
+  const room = frame.getBoundingClientRect().height;
+  return { list, frame, room, stride: room / rows };
+}
+
+function addSpace(place: "before" | "after", height: number): HTMLDivElement {
+  const space = document.createElement("div");
+  space.style.blockSize = `${String(height)}px`;
+  document.body[place === "before" ? "prepend" : "append"](space);
+  onTestFinished(() => {
+    space.remove();
+  });
+  return space;
+}
+
+test("keeps the room of every row once only the last, which has no separator, is laid out", async () => {
+  const rows = 10;
+  const { list, frame, room, stride } = await renderSeparatedRows(rows);
+  addSpace("after", room * 4);
+
+  window.scrollTo(0, frame.offsetTop + (rows + 1.5) * stride);
+  await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
+  await settled();
+
+  expect(frame.getBoundingClientRect().height).toBe(room);
+});
+
+test("keeps the room of every row once only the first is laid out below the screen", async () => {
+  const { list, frame, room, stride } = await renderSeparatedRows(3);
+
+  addSpace(
+    "before",
+    window.innerHeight + 1.5 * stride - frame.getBoundingClientRect().top,
+  );
+  window.dispatchEvent(new Event("resize"));
+  await expect.poll(() => list.getByRole("listitem").elements().length).toBe(1);
+  await settled();
+
+  expect(frame.getBoundingClientRect().height).toBe(room);
+});
+
+test("measures its one row again once the row grows", async () => {
+  const { list } = await renderGrid(2);
+  await settled();
+  const frame = list.element().parentElement;
+  const before = frame?.getBoundingClientRect().height ?? 0;
+
+  list.element().style.rowGap = "0px";
+  for (const item of list.getByRole("listitem").elements()) {
+    item.style.blockSize = `${String(before * 2)}px`;
+  }
+
+  await expect
+    .poll(() => frame?.getBoundingClientRect().height)
+    .toBeGreaterThan(before);
 });
 
 test("gives each item its place in the whole list", async () => {
