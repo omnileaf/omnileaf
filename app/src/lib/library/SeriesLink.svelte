@@ -6,11 +6,8 @@
   import { LongPress } from "#lib/components/long-press.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
 
-  import {
-    isReleaseOfHold,
-    noteHeld,
-    seriesSelection,
-  } from "./series-selection";
+  import { isReleaseOfHold, noteHeld } from "./held-pick";
+  import { seriesSelection } from "./series-selection";
 
   const LONG_PRESS_MS = 500;
 
