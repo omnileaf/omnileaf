@@ -60,6 +60,7 @@ export const commands = {
 } | null, IpcError>(__TAURI_INVOKE("series_volume", { id, volume })),
 	creatorSeries: (creator: string) => typedError<CreatorSeries[], IpcError>(__TAURI_INVOKE("creator_series", { creator })),
 	bookmarkPages: (book: string & { readonly __brand: "BookId" }, pages: number[], isBookmarked: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("bookmark_pages", { book, pages, isBookmarked })),
+	clearBookmarks: (books: (string & { readonly __brand: "BookId" })[]) => typedError<number, IpcError>(__TAURI_INVOKE("clear_bookmarks", { books })),
 	bookPlace: (book: string & { readonly __brand: "BookId" }) => typedError<{
 	id: string & { readonly __brand: "BookId" },
 	title: string,

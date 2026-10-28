@@ -936,6 +936,37 @@ impl Library {
             .await?)
     }
 
+    /// Takes every bookmark off the books in one write, giving how many bookmarked pages that cleared.
+    #[tracing::instrument(skip_all, fields(books = books.len()))]
+    pub async fn clear_bookmarks(&self, books: Vec<BookId>) -> Result<u32, LibraryError> {
+        let held = self
+            .store
+            .database()
+            .read(move |connection| {
+                books
+                    .iter()
+                    .collect::<std::collections::HashSet<_>>()
+                    .into_iter()
+                    .map(|book| {
+                        Ok(book_bookmarks(connection, book.0)?
+                            .into_iter()
+                            .map(|page| (book.0, page))
+                            .collect::<Vec<_>>())
+                    })
+                    .collect::<Result<Vec<_>, omnileaf_db::Error>>()
+            })
+            .await?
+            .concat();
+        let cleared = saturating_u32(held.len());
+        self.store
+            .write(move |writer| {
+                held.iter()
+                    .try_for_each(|&(book, page)| writer.set_bookmark(book, page, false))
+            })
+            .await?;
+        Ok(cleared)
+    }
+
     pub(crate) async fn bookmarked_pages(&self, book: BookId) -> Result<Vec<u32>, LibraryError> {
         Ok(self
             .store
