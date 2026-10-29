@@ -88,7 +88,7 @@
 
 <section class={["flex flex-col", isGrouped && "px-lg"]}>
   <h3 class={headingClass}>{m.library_sort()}</h3>
-  <div class={isGrouped ? GROUPED_GROUP : undefined}>
+  <div class={isGrouped ? groupClass : undefined}>
     <SortSelect
       sort={listing.sort}
       onSortBy={(by: LibrarySortBy) => {
