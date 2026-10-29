@@ -92,7 +92,12 @@
   </section>
   <section aria-labelledby={filterId} class="flex flex-col gap-sm">
     <h2 id={filterId} class="font-semibold">{m.search_type_to_filter()}</h2>
-    <ul class={["flex flex-wrap gap-sm", isNative && "order-1"]}>
+    {#if isNative}
+      <p class="text-detail text-muted">
+        {m.search_filter_example({ unread: words.unread })}
+      </p>
+    {/if}
+    <ul class="flex flex-wrap gap-sm">
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
           <code class={isNative ? NATIVE_WORD : TODAYS_WORD}>
@@ -101,8 +106,10 @@
         </li>
       {/each}
     </ul>
-    <p class={["text-detail text-muted", isNative && "order-0"]}>
-      {m.search_filter_example({ unread: words.unread })}
-    </p>
+    {#if !isNative}
+      <p class="text-detail text-muted">
+        {m.search_filter_example({ unread: words.unread })}
+      </p>
+    {/if}
   </section>
 </div>
