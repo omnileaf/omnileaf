@@ -11,7 +11,10 @@ use std::{
 
 use omnileaf_db::{
     Database, Error,
-    catalog::{BookFileToRemove, RootLocator, ScannedBook, books_of_series, removed_among},
+    catalog::{
+        BookFileToRemove, RootId, RootLocator, ScannedBook, books_of_series, files_of_books,
+        removed_among,
+    },
     rusqlite::Connection,
     store::Store,
 };
@@ -44,6 +47,14 @@ pub struct RemovalReport {
     pub removed_series: u32,
     pub removed_books: u32,
     pub files: Vec<FileRemoval>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RemovalPreview {
+    pub books: u32,
+    pub files: u32,
+    pub folders: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -100,6 +111,21 @@ pub(crate) fn expand(
     Ok(Expanded {
         books: books.into_iter().collect(),
         series_held: saturating_u32(series_held.len()),
+    })
+}
+
+pub(crate) fn preview(
+    connection: &Connection,
+    targets: &[RemovalTarget],
+) -> Result<RemovalPreview, Error> {
+    let Expanded { books, .. } = expand(connection, targets)?;
+    let files = files_of_books(connection, &books)?;
+    let held: BTreeSet<StoredBookId> = files.iter().map(|file| file.book).collect();
+    let folders: BTreeSet<RootId> = files.iter().map(|file| file.root_id).collect();
+    Ok(RemovalPreview {
+        books: saturating_u32(held.len()),
+        files: saturating_u32(files.len()),
+        folders: saturating_u32(folders.len()),
     })
 }
 

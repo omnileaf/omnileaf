@@ -136,7 +136,9 @@ pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
     SeriesFormat, SmartFilter, SortDirection,
 };
-pub use library_removal::{FileOutcome, FileRemoval, RemovalFailure, RemovalReport, RemovalTarget};
+pub use library_removal::{
+    FileOutcome, FileRemoval, RemovalFailure, RemovalPreview, RemovalReport, RemovalTarget,
+};
 pub use library_search::{LibrarySearch, SpellingSuggestion};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_tabs::{LibraryTab, LibraryTabId};
