@@ -9,12 +9,15 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle, type ShownFolder } from "./folder-title";
   import { ICON_SIZE } from "./icon-size";
 
   const SEPARATOR = " · ";
+  const NATIVE_ICON_SIZE = 22;
 
   let {
     folder,
@@ -32,6 +35,11 @@
     action?: Snippet;
   } = $props();
 
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const iconSize = $derived(isNative ? NATIVE_ICON_SIZE : ICON_SIZE);
+
   const status = $derived.by((): string | undefined => {
     if (isFoundEmpty) {
       return m.library_folder_found_empty();
@@ -40,25 +48,30 @@
   });
 </script>
 
-<Item look="folder" class={[isOwnCard && "windows:py-md windows:pe-lg"]}>
+<Item
+  look={isNative ? "row" : "folder"}
+  class={[isOwnCard && "windows:py-md windows:pe-lg"]}
+>
   <ItemMedia
-    class={[
-      "rounded-control block-icon-tile inline-icon-tile",
-      folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
-      isOwnCard && "windows:bg-transparent",
-    ]}
+    class={isNative
+      ? "text-accent"
+      : [
+          "rounded-control block-icon-tile inline-icon-tile",
+          folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
+          isOwnCard && "windows:bg-transparent",
+        ]}
   >
     {#if folder.kind === "home"}
-      <House size={ICON_SIZE} aria-hidden="true" />
+      <House size={iconSize} aria-hidden="true" />
     {:else}
-      <Folder size={ICON_SIZE} aria-hidden="true" />
+      <Folder size={iconSize} aria-hidden="true" />
     {/if}
   </ItemMedia>
   <ItemContent>
-    <ItemTitle class="truncate text-body font-medium"
+    <ItemTitle class={isNative ? "truncate" : "truncate text-body font-medium"}
       >{folderTitle(folder)}</ItemTitle
     >
-    <ItemDescription class="truncate text-detail">
+    <ItemDescription class={isNative ? "truncate" : "truncate text-detail"}>
       {#if status !== undefined}<span>{status}</span>{SEPARATOR}{/if}
       {#if location === undefined}
         {folder.location}
