@@ -132,6 +132,7 @@
   --native-color-on-bar-button: var(--foreground);
   --native-color-tab-bar: var(--bar);
   --native-color-tab-pill: var(--glass-pill);
+  --native-color-accent-soft: var(--chip);
   --native-color-jump-current: transparent;
   --native-color-on-jump-current: var(--color-accent);
   --native-color-jump-current-progress-rest: transparent;

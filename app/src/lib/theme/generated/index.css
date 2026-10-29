@@ -137,6 +137,7 @@
   --color-native-on-bar-button: var(--native-color-on-bar-button);
   --color-native-tab-bar: var(--native-color-tab-bar);
   --color-native-tab-pill: var(--native-color-tab-pill);
+  --color-native-accent-soft: var(--native-color-accent-soft);
   --color-native-jump-current: var(--native-color-jump-current);
   --color-native-on-jump-current: var(--native-color-on-jump-current);
   --color-native-jump-current-progress-rest: var(--native-color-jump-current-progress-rest);
