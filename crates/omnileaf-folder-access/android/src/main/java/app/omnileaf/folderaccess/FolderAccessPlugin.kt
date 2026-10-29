@@ -168,8 +168,8 @@ public class FolderAccessPlugin
         }
     }
 
-/** A picked tree grants read access only, unless the picker is asked for write access too. */
-private fun folderPickerIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+/** A picker grants a tree only the access its intent asks for, so it is asked for write access beside read. */
+private fun folderPickerIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(READ_WRITE_GRANT)
 
 /** `detachFd` gives up the descriptor without closing it, so the Rust side that reads the reply owns it. */
 private fun handOver(descriptor: ParcelFileDescriptor): JSObject = JSObject().put("fd", descriptor.detachFd())
