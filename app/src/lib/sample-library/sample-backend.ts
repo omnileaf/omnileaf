@@ -82,10 +82,7 @@ interface RemovedBook {
   readonly slot: number;
 }
 
-interface RemovalTarget {
-  readonly kind: "series" | "book";
-  readonly id: string;
-}
+type RemovalTarget = Parameters<FakeBackend["removeFromLibrary"]>[0][number];
 
 const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
 const LIBRARY_STATES = [
