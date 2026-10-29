@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
+import {
+  CommandFailure,
+  emitFakeEvent,
+  type FakeBackend,
+} from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -194,6 +198,41 @@ test.describe("a creator with series in the library", () => {
       expect(violations).toEqual([]);
     });
   }
+});
+
+test.describe("a creator whose series change while their page is open", () => {
+  const shown = {
+    series: THEIR_SERIES as readonly (typeof THEIR_SERIES)[number][],
+  };
+
+  test.use({
+    backend: {
+      ...backendWith(THEIR_SERIES),
+      creatorSeries: (creator) =>
+        creator === CREATOR
+          ? shown.series.map((series) => ({ ...series }))
+          : [],
+    },
+  });
+
+  test.beforeEach(() => {
+    shown.series = THEIR_SERIES;
+  });
+
+  test("reads their series again when the library changes", async ({
+    page,
+  }) => {
+    await openCreatorFromSeries(page);
+    const items = page
+      .getByRole("list", { name: `Series by ${CREATOR}` })
+      .getByRole("listitem");
+    await expect(items).toHaveCount(3);
+
+    shown.series = THEIR_SERIES.slice(0, 1);
+    await emitFakeEvent(page, "library-changed");
+
+    await expect(items).toHaveCount(1);
+  });
 });
 
 test.describe("a creator whose series have gone", () => {

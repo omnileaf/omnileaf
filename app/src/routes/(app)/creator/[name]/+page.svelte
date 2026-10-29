@@ -6,7 +6,7 @@
     Library,
     RefreshCw,
   } from "@lucide/svelte";
-  import { tick } from "svelte";
+  import { onMount, tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { invalidate } from "$app/navigation";
@@ -24,6 +24,7 @@
   import CoverImage from "#lib/library/CoverImage.svelte";
   import { coverTileLook } from "#lib/library/cover-tile.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
+  import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import {
     type ActionGroupLook,
@@ -77,6 +78,12 @@
   let attempts = $state(0);
   let nameHeading: HTMLElement | null = $state(null);
   let tryAgainButton: HTMLButtonElement | null = $state(null);
+
+  onMount(() =>
+    listenForLibraryChanges(() => {
+      invalidate(CREATOR_SERIES).catch(reportError);
+    }, reportError),
+  );
 
   async function readAgain(): Promise<void> {
     if (isReadingAgain) {
