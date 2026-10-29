@@ -483,10 +483,28 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
-for (const { platform, weight, colour, isTouch } of [
-  { platform: "linux", weight: "500", colour: "foreground", isTouch: false },
-  { platform: "android", weight: "500", colour: "accent", isTouch: true },
-  { platform: "ios", weight: "600", colour: "foreground", isTouch: true },
+for (const { platform, weight, colour, token, isTouch } of [
+  {
+    platform: "linux",
+    weight: "500",
+    colour: "foreground",
+    token: "--color-foreground",
+    isTouch: false,
+  },
+  {
+    platform: "android",
+    weight: "500",
+    colour: "accent",
+    token: "--color-accent",
+    isTouch: true,
+  },
+  {
+    platform: "ios",
+    weight: "510",
+    colour: "bar button",
+    token: "--native-color-on-bar-button",
+    isTouch: true,
+  },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -511,10 +529,7 @@ for (const { platform, weight, colour, isTouch } of [
       const reset = panel.getByRole("button", { name: "Reset" });
 
       await expect(reset).toHaveCSS("font-weight", weight);
-      await expect(reset).toHaveCSS(
-        "color",
-        await tokenColour(page, `--color-${colour}`),
-      );
+      await expect(reset).toHaveCSS("color", await tokenColour(page, token));
     });
   });
 }
