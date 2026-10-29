@@ -1,4 +1,4 @@
-use std::{future::ready, io, path::Path};
+use std::{fmt, io, path::Path};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposal {
@@ -36,6 +36,15 @@ pub enum FileFate<'a, D> {
 #[derive(Clone, Copy, Debug)]
 pub enum NoDisposal {}
 
+impl<D> fmt::Debug for FileFate<'_, D> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Keep => formatter.write_str("Keep"),
+            Self::Dispose(_) => formatter.debug_tuple("Dispose").finish_non_exhaustive(),
+        }
+    }
+}
+
 impl FileFate<'_, NoDisposal> {
     #[must_use]
     pub const fn keep() -> Self {
@@ -44,11 +53,8 @@ impl FileFate<'_, NoDisposal> {
 }
 
 impl FileDisposal for NoDisposal {
-    fn dispose(
-        &self,
-        _file: &Path,
-    ) -> impl Future<Output = Result<Disposal, DisposalFailure>> + Send {
-        ready(Err(DisposalFailure::Unsupported))
+    async fn dispose(&self, _file: &Path) -> Result<Disposal, DisposalFailure> {
+        match *self {}
     }
 }
 
@@ -67,6 +73,26 @@ impl From<io::ErrorKind> for DisposalFailure {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct Trash;
+
+    impl FileDisposal for Trash {
+        async fn dispose(&self, _file: &Path) -> Result<Disposal, DisposalFailure> {
+            Ok(Disposal::Trashed)
+        }
+    }
+
+    #[test]
+    fn prints_a_file_fate_without_needing_its_disposal_to_print() {
+        let trash = Trash;
+
+        let printed = (
+            format!("{:?}", FileFate::keep()),
+            format!("{:?}", FileFate::Dispose(&trash)),
+        );
+
+        assert_eq!(printed, ("Keep".to_owned(), "Dispose(..)".to_owned()));
+    }
 
     #[test]
     fn reads_each_error_kind_a_removal_meets_as_its_own_failure() {
