@@ -667,6 +667,7 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     let mut bookmarks: BTreeMap<BookmarkId, BookmarkRow> = BTreeMap::new();
     let mut labels = LabelRows::default();
     let mut edited = BTreeSet::new();
+    let mut removed = BTreeSet::new();
     for (key, projection) in shown_projections(connection)? {
         match (projection.book(), key) {
             (Some(book), _) => projection.fill(rows.entry(book).or_default()),
@@ -682,7 +683,13 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
                 edited.insert(edit.series());
             }
             (None, Key::Removal(_)) => {
-                projection.apply(connection)?;
+                if let Projection::Removal {
+                    book,
+                    is_removed: true,
+                } = projection
+                {
+                    removed.insert(book);
+                }
             }
             (None, _) => {}
         }
@@ -696,6 +703,10 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
         if let Some((book, page)) = row.place(*id) {
             bookmark.execute((book.as_bytes(), page))?;
         }
+    }
+    let mut remove = connection.prepare(PROJECT_REMOVED)?;
+    for book in removed {
+        remove.execute([book.as_bytes()])?;
     }
     labels.insert(connection)?;
     let mut insert = connection.prepare(PROJECT_BOOK_STATE)?;
