@@ -43,6 +43,7 @@ const TWO_BATCHES: u32 = 40;
 const REPEATED_IN_SECOND_BATCH: usize = 35;
 const PAGES_PER_BOOK: u32 = 10;
 const FAKE_TAG: &str = "fake-tag";
+const EDITED_TITLE: &str = "Edited Series 01";
 const AUTHOR_FOLDER: &str = "Author B";
 const THIRD_SERIES_FOLDER: &str = "Author B/Sample Series 03";
 const FOURTH_SERIES_FOLDER: &str = "Author B/Sample Series 04";
@@ -296,6 +297,14 @@ impl Library {
             .read(|connection| series_count(connection, &SeriesFilter::NONE))
             .await
             .unwrap()
+    }
+
+    async fn shelving(&self) -> (i64, u32, Vec<FolderGroupSummary>) {
+        (
+            self.rows_of("series_folder").await,
+            self.shown_series().await,
+            self.folder_groups().await,
+        )
     }
 
     async fn folder_groups(&self) -> Vec<FolderGroupSummary> {
@@ -703,6 +712,74 @@ async fn removing_a_book_keeps_its_reading_position_bookmarks_and_series_edits()
         )
     );
     assert!(kept_edits.is_adult);
+}
+
+#[tokio::test]
+async fn removing_every_book_of_a_series_keeps_its_row_and_edits() {
+    let library = Library::open("remove-series-keeps-edits").await;
+    library.record(library.comics, FIRST_SERIES, 1).await;
+    library.record(library.comics, FIRST_SERIES, 2).await;
+    let series = SeriesId::local(FIRST_SERIES).unwrap();
+    let edits = SeriesEdits {
+        title: Some(EDITED_TITLE.to_owned()),
+        tags: Some(vec![FAKE_TAG.to_owned()]),
+        is_adult: true,
+        ..SeriesEdits::default()
+    };
+    library
+        .store
+        .write({
+            let edits = edits.clone();
+            move |writer| writer.edit_series(series, edits)
+        })
+        .await
+        .unwrap();
+    let tables = ["series", "series_edit", "series_edit_tag"];
+    let mut rows_before = Vec::new();
+    for table in tables {
+        rows_before.push(library.rows_of(table).await);
+    }
+
+    library.remove(&[book(1), book(2)]).await;
+
+    let mut rows_after = Vec::new();
+    for table in tables {
+        rows_after.push(library.rows_of(table).await);
+    }
+    let kept_edits = library
+        .store
+        .database()
+        .read(move |connection| series_edits(connection, series))
+        .await
+        .unwrap();
+    assert_eq!(rows_before, [1, 1, 1]);
+    assert_eq!(rows_after, rows_before);
+    assert_eq!(kept_edits, edits);
+}
+
+#[tokio::test]
+async fn recording_a_folder_series_again_after_removal_files_it_back_in_the_listing() {
+    let library = Library::open("remove-folder-series-again").await;
+    library.record_in_folder(THIRD_SERIES_FOLDER, 1).await;
+    library.record_in_folder(THIRD_SERIES_FOLDER, 2).await;
+    let group = FolderGroupSummary {
+        group: FolderGroup {
+            root: library.comics,
+            location: PathBuf::from(AUTHOR_FOLDER),
+        },
+        series_count: 1,
+    };
+    let before = library.shelving().await;
+
+    library.remove(&[book(1), book(2)]).await;
+    let emptied = library.shelving().await;
+    library.record_in_folder(THIRD_SERIES_FOLDER, 1).await;
+    library.record_in_folder(THIRD_SERIES_FOLDER, 2).await;
+    let restored = library.shelving().await;
+
+    assert_eq!(before, (1, 1, vec![group]));
+    assert_eq!(emptied, (0, 0, Vec::new()));
+    assert_eq!(restored, before);
 }
 
 #[tokio::test]
