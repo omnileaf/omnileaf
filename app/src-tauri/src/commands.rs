@@ -1132,7 +1132,9 @@ async fn remove_from_library(
     delete_files: bool,
 ) -> Result<RemovalReport, IpcError> {
     #[cfg(target_os = "ios")]
-    crate::folder_access::reopen_picked_folders(&app, &library).await?;
+    if delete_files {
+        crate::folder_access::reopen_picked_folders(&app, &library).await?;
+    }
     let report = if delete_files {
         library
             .remove_from_library(&targets, FileFate::Dispose(&SystemTrash))
