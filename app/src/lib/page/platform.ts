@@ -54,3 +54,12 @@ const HAS_NATIVE_LOOK = {
 export function hasNativeLook(platform: Platform): boolean {
   return HAS_NATIVE_LOOK[platform];
 }
+
+const HAS_NATIVE_BUTTON = {
+  ...HAS_NATIVE_LOOK,
+  macos: true,
+} satisfies Record<Platform, boolean>;
+
+export function hasNativeButton(platform: Platform): boolean {
+  return HAS_NATIVE_BUTTON[platform];
+}

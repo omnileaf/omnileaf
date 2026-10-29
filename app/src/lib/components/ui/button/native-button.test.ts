@@ -149,3 +149,90 @@ for (const look of NATIVE_LOOKS) {
     expect(style.backgroundColor).toBe(look.secondaryFill);
   });
 }
+
+const MACOS_LOOK = {
+  height: 24,
+  radius: "6px",
+  fill: "rgb(47, 111, 79)",
+  darkFill: "rgb(46, 125, 85)",
+  secondaryFill: "rgba(0, 0, 0, 0.08)",
+  secondaryInk: "rgba(0, 0, 0, 0.85)",
+  fontSize: "13px",
+  fontWeight: "510",
+} as const;
+
+async function macosButton(variant: "primary" | "secondary") {
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = "light";
+  await render(Button, { variant, type: "button", children: label });
+  return page.getByRole("button", { name: "Remove" }).element();
+}
+
+test("draws a primary button as macOS's own 24px button", async () => {
+  const button = await macosButton("primary");
+  const style = getComputedStyle(button);
+
+  expect({
+    height: button.getBoundingClientRect().height,
+    radius: style.borderTopLeftRadius,
+    fill: style.backgroundColor,
+    fontSize: style.fontSize,
+    fontWeight: style.fontWeight,
+  }).toEqual({
+    height: MACOS_LOOK.height,
+    radius: MACOS_LOOK.radius,
+    fill: MACOS_LOOK.fill,
+    fontSize: MACOS_LOOK.fontSize,
+    fontWeight: MACOS_LOOK.fontWeight,
+  });
+});
+
+test("draws a secondary button on macOS's control fill, in the label colour", async () => {
+  const button = await macosButton("secondary");
+  const style = getComputedStyle(button);
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    MACOS_LOOK.secondaryFill,
+    MACOS_LOOK.secondaryInk,
+  ]);
+});
+
+test("keeps macOS's hit area to the button itself, since a pointer needs no touch target", async () => {
+  const button = await macosButton("primary");
+
+  expect(getComputedStyle(button, "::before").height).toBe(
+    `${String(MACOS_LOOK.height)}px`,
+  );
+});
+
+test("draws macOS's button in its dark colours inside a dark part of the page", async () => {
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = "light";
+  const darkPart = document.createElement("main");
+  darkPart.dataset.theme = "dark";
+  document.body.append(darkPart);
+  await render(Button, {
+    target: darkPart,
+    props: { variant: "primary", type: "button", children: label },
+  });
+
+  const button = page.getByRole("button", { name: "Remove" }).element();
+
+  expect(getComputedStyle(button).backgroundColor).toBe(MACOS_LOOK.darkFill);
+  darkPart.remove();
+});
+
+test("keeps a primary button on linux taller than macOS's, as it was", async () => {
+  followCorePlatform("linux");
+  await render(Button, {
+    variant: "primary",
+    type: "button",
+    children: label,
+  });
+
+  const button = page.getByRole("button", { name: "Remove" }).element();
+
+  expect(button.getBoundingClientRect().height).toBeGreaterThan(
+    MACOS_LOOK.height,
+  );
+});

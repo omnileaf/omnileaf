@@ -1,6 +1,6 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
-import { hasNativeLook, isPhone } from "#lib/page/platform.ts";
+import { hasNativeButton, hasNativeLook, isPhone } from "#lib/page/platform.ts";
 import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
 const FOCUS_RING = "focus-visible:focus-ring";
@@ -107,7 +107,7 @@ export function variantClasses(
   isIconOnly: boolean,
   platform: Platform,
 ): string {
-  if (!hasNativeLook(platform)) {
+  if (!hasNativeButton(platform)) {
     return isIconOnly
       ? `${DESKTOP_VARIANTS[variant]} ${DESKTOP_ICON_ONLY}`
       : DESKTOP_VARIANTS[variant];
