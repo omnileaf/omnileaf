@@ -12,23 +12,27 @@ use std::{
     collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
+    pin::pin,
+    sync::{Arc, mpsc},
     time::{Duration, SystemTime},
 };
 
 use books::write_book;
 use omnileaf_db::{Config, Database, catalog::removed_among, rusqlite::Connection, store::Store};
 use omnileaf_engine::{
-    BookId, BookReading, DetailEdits, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, LibraryChanges,
-    LibraryListing, RemovalReport, RemovalTarget, RescanOutcome, SeriesBookListing, SeriesId,
+    BookId, BookReading, DetailEdits, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, Library,
+    LibraryChanges, LibraryListing, RemovalReport, RemovalTarget, RescanOutcome, ScanProgress,
+    SeriesBookListing, SeriesId,
 };
 use omnileaf_sync_proto::ProfileId;
 use scanned::{Scanned, owned};
 use support::{FixedClock, ScratchFolder};
-use tokio::time::timeout;
+use tokio::{sync::oneshot, time::timeout};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 const DATABASE_FILE: &str = "library.sqlite";
+const LONG_ENOUGH_TO_REMOVE: Duration = Duration::from_millis(300);
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
 
@@ -559,6 +563,54 @@ async fn adding_a_folder_clears_only_the_markers_of_the_books_it_holds() {
         .unwrap();
 
     assert_eq!(linked.markers(), 1);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn removing_waits_for_a_running_scan_then_removes_what_it_recorded() {
+    let reference = Removing::new("remove-waits-reference").await;
+    let mut targets = Vec::new();
+    for title in [SERIES_01, SERIES_02] {
+        for id in reference.books(title).await {
+            targets.push(RemovalTarget::Book { id });
+        }
+    }
+    let home = ScratchFolder::new("remove-waits-home");
+    let library = Arc::new(
+        Library::open(home.path().to_path_buf(), FixedClock)
+            .await
+            .unwrap(),
+    );
+    let (started, scan_started) = oneshot::channel();
+    let (release, released) = mpsc::channel::<()>();
+    let comics = reference.comics.path().to_path_buf();
+    let scanning = tokio::spawn({
+        let library = Arc::clone(&library);
+        async move {
+            let mut pause = Some((started, released));
+            library
+                .add_folder(comics, move |step| {
+                    if let (ScanProgress::Adding { .. }, Some((started, released))) =
+                        (&step, pause.take())
+                    {
+                        started.send(()).unwrap();
+                        released.recv().unwrap();
+                    }
+                })
+                .await
+                .unwrap()
+        }
+    });
+    scan_started.await.unwrap();
+    let mut removal = pin!(library.remove_from_library(&targets));
+    let waited = timeout(LONG_ENOUGH_TO_REMOVE, removal.as_mut()).await;
+
+    release.send(()).unwrap();
+    let scan = scanning.await.unwrap();
+    let report = removal.await.unwrap();
+
+    assert!(waited.is_err());
+    assert_eq!(scan.books, 3);
+    assert_eq!(report, counts(0, 3));
 }
 
 async fn caught_up(changes: &mut LibraryChanges) {
