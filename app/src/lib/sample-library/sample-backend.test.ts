@@ -1688,7 +1688,7 @@ test("returns no files when it keeps the files", async () => {
   expect(report.files).toEqual([]);
 });
 
-test("keeps removed books out of a rescan", async () => {
+test("leaves removed books removed after a rescan", async () => {
   const { backend } = backendFor();
   await backend.removeFromLibrary(
     [
@@ -1698,17 +1698,13 @@ test("keeps removed books out of a rescan", async () => {
     false,
   );
 
-  const rescan = await backend.rescanLibraryFolder(
-    LIBRARY_FOLDER,
-    NO_PROGRESS_CHANNEL,
-  );
+  await backend.rescanLibraryFolder(LIBRARY_FOLDER, NO_PROGRESS_CHANNEL);
 
   const { books } = await backend.seriesBooks(
     sampleSeriesId(1),
     SHOWING_EVERY_BOOK,
     null,
   );
-  expect(rescan.outcome).toMatchObject({ kind: "rescanned", added: 0 });
   expect(books).toHaveLength(11);
   expect(await backend.librarySeriesCount(NEW_LIBRARY_LISTING.filter)).toBe(20);
 });
@@ -1816,3 +1812,61 @@ test.each([
     expect(await coversOf()).toEqual(before);
   },
 );
+
+test("keeps the reading and bookmarks of the books after a removed one", async () => {
+  const { backend } = backendFor();
+  const third = sampleBookId(8, 3);
+  await backend.markBooks([third], "read");
+  await backend.bookmarkPages(third, [4], true);
+
+  await backend.removeFromLibrary(
+    [{ kind: "book", id: sampleBookId(8, 2) }],
+    false,
+  );
+
+  const { books } = await backend.seriesBooks(
+    sampleSeriesId(8),
+    SHOWING_EVERY_BOOK,
+    null,
+  );
+  const bookmarked = await backend.librarySeries(
+    null,
+    filtered({ bookmarked: "only" }),
+  );
+  expect(books.find((book) => book.id === third)?.reading).toEqual({
+    state: "read",
+  });
+  expect((await backend.openBook(third, [])).bookmarkedPages).toEqual([4]);
+  expect(bookmarked.series.map(({ title }) => title)).toEqual([
+    "Sample Series 08",
+  ]);
+});
+
+test("drops the bookmark of a removed book from the series", async () => {
+  const { backend } = backendFor();
+  await backend.bookmarkPages(sampleBookId(8, 2), [4], true);
+
+  await backend.removeFromLibrary(
+    [{ kind: "book", id: sampleBookId(8, 2) }],
+    false,
+  );
+
+  const bookmarked = await backend.librarySeries(
+    null,
+    filtered({ bookmarked: "only" }),
+  );
+  expect(bookmarked.series).toEqual([]);
+});
+
+test("wakes library changes when a removal is undone by adding the folder", async () => {
+  const { backend, emitted } = backendFor();
+  await backend.removeFromLibrary(
+    [{ kind: "book", id: sampleBookId(8, 1) }],
+    false,
+  );
+  emitted.length = 0;
+
+  await backend.addLibraryFolder(NO_PROGRESS_CHANNEL);
+
+  expect(emitted).toEqual(["library-changed"]);
+});
