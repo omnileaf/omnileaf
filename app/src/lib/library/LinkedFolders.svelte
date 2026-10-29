@@ -252,13 +252,25 @@
       <p class="px-lg pbe-xs text-body">{m.library_folders_none()}</p>
     {/if}
     {#if isInCard}
-      <div class="px-lg pbs-sm pbe-md">
-        <AddFolderButton
-          bind:element={addButton}
-          {adding}
-          placement="card-foot"
-        />
-      </div>
+      {#if isNative}
+        <div
+          class="relative before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator"
+        >
+          <AddFolderButton
+            bind:element={addButton}
+            {adding}
+            placement="list-row"
+          />
+        </div>
+      {:else}
+        <div class="px-lg pbs-sm pbe-md">
+          <AddFolderButton
+            bind:element={addButton}
+            {adding}
+            placement="card-foot"
+          />
+        </div>
+      {/if}
     {/if}
   </div>
   {#if folders.list.kind === "failed"}

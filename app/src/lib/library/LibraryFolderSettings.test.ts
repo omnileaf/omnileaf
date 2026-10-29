@@ -1542,3 +1542,37 @@ test("draws Rescan in the accent colour on an iPhone", async () => {
     resolvedColour("--color-accent", "color"),
   );
 });
+
+test("ends the linked folders with an Add a folder row in accent type on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+
+  const add = folders.getByRole("button", { name: "Add a folder" });
+  await expect.element(add).toBeVisible();
+  const style = getComputedStyle(add.element());
+  const row = folders
+    .getByRole("listitem")
+    .last()
+    .element()
+    .getBoundingClientRect();
+  const box = add.element().getBoundingClientRect();
+  const glyph = (
+    add.element().querySelector("svg") ?? add.element()
+  ).getBoundingClientRect();
+
+  expect({
+    size: style.fontSize,
+    weight: style.fontWeight,
+    ink: style.color,
+    height: box.height,
+    glyphStart: glyph.left - box.left,
+    isOutlined: style.borderTopWidth !== "0px",
+  }).toEqual({
+    size: "17px",
+    weight: "400",
+    ink: resolvedColour("--color-accent", "color"),
+    height: 52,
+    glyphStart: 16,
+    isOutlined: false,
+  });
+  expect(box.top).toBeGreaterThanOrEqual(row.bottom);
+});
