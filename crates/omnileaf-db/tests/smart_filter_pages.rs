@@ -43,6 +43,9 @@ const EVERY_EIGHTH_RATED_ADULT: u32 = 8;
 const EVERY_ELEVENTH_TAGGED_STORMS: u32 = 11;
 const EVERY_THIRTEENTH_TAGGED_HARBOUR: u32 = 13;
 const EVERY_SEVENTEENTH_MANGA: u32 = 17;
+const EVERY_NINETEENTH_ON_THE_LAST_PAGE_BUT_ONE: u32 = 19;
+const LAST_PAGE_BUT_ONE: u32 = PAGE_COUNT - 1;
+const ONE_PAGE_LEFT: u32 = 1;
 const PAGE_OF_TWO: u16 = 2;
 const PAGE_OF_THREE: u16 = 3;
 const PAGE_OF_TWO_HUNDRED: u16 = 200;
@@ -50,6 +53,7 @@ const FORGOTTEN: SeriesFilter = SeriesFilter::NONE.with_last_read_before_ms(Some
     (NOW_UNIX_MS + FORGOTTEN_BEFORE_MINUTES * MINUTE_MS).cast_signed(),
 ));
 const DUPLICATED: SeriesFilter = SeriesFilter::NONE.with_duplicates(Inclusion::Only);
+const QUICK_READS: SeriesFilter = SeriesFilter::NONE.with_pages_left_at_most(Some(ONE_PAGE_LEFT));
 const ORDERS: [SeriesOrder; 6] = [
     SeriesOrder::Title,
     SeriesOrder::DateAdded,
@@ -196,6 +200,11 @@ impl Shelf {
             .await;
     }
 
+    async fn move_to_page(&self, numbers: impl Iterator<Item = u32>, page: u32) {
+        self.write_each_book(numbers, move |writer, book| writer.set_position(book, page))
+            .await;
+    }
+
     async fn finish(&self, numbers: impl Iterator<Item = u32>) {
         self.write_each_book(numbers, |writer, book| writer.set_read(book, true))
             .await;
@@ -242,6 +251,7 @@ impl Shelf {
                 tags: Vec::new(),
                 formats: Vec::new(),
                 adult: Inclusion::Any,
+                pages_left_at_most: None,
                 ..listing.filter
             },
             ..listing
@@ -441,6 +451,12 @@ async fn mixed_shelf() -> Shelf {
         .mark_manga(multiples_of(EVERY_SEVENTEENTH_MANGA, MIXED_SHELF))
         .await;
     shelf
+        .move_to_page(
+            multiples_of(EVERY_NINETEENTH_ON_THE_LAST_PAGE_BUT_ONE, MIXED_SHELF),
+            LAST_PAGE_BUT_ONE,
+        )
+        .await;
+    shelf
 }
 
 fn series_of(step: u32) -> BTreeSet<String> {
@@ -464,6 +480,10 @@ fn few_matches() -> Vec<(SeriesFilter, BTreeSet<String>)> {
     let duplicated = series_of(EVERY_FOURTH_COPIED);
     let japanese = series_of(EVERY_SEVENTH_IN_JAPANESE);
     let stormy = series_of(EVERY_ELEVENTH_TAGGED_STORMS);
+    let quick = titles_of(
+        multiples_of(EVERY_NINETEENTH_ON_THE_LAST_PAGE_BUT_ONE, MIXED_SHELF)
+            .filter(|number| !number.is_multiple_of(EVERY_NINTH_FINISHED)),
+    );
     let in_japanese = SeriesFilter::NONE.with_languages(vec!["ja".to_owned()]);
     vec![
         (FORGOTTEN, forgotten.clone()),
@@ -486,6 +506,17 @@ fn few_matches() -> Vec<(SeriesFilter, BTreeSet<String>)> {
         (
             SeriesFilter::NONE.with_formats(vec![SeriesFormat::Manga]),
             series_of(EVERY_SEVENTEENTH_MANGA),
+        ),
+        (QUICK_READS, quick.clone()),
+        (QUICK_READS.with_finished(Inclusion::Hide), quick.clone()),
+        (QUICK_READS.with_started(Inclusion::Only), quick.clone()),
+        (
+            QUICK_READS.with_last_read_before_ms(FORGOTTEN.last_read_before_ms),
+            also(&forgotten, &quick),
+        ),
+        (
+            QUICK_READS.with_duplicates(Inclusion::Only),
+            also(&duplicated, &quick),
         ),
         (tagged_with(&["storms"]), stormy.clone()),
         (
@@ -517,4 +548,43 @@ async fn pages_the_few_series_a_smart_filter_matches_as_reading_each_stage_in_or
             assert_eq!(listed, walked, "{listing:?}");
         }
     }
+}
+
+#[tokio::test]
+async fn pages_hundreds_of_quick_reads_from_z_to_a() {
+    let shelf = Shelf::holding("many-quick-reads-pages", LONG_SHELF).await;
+    let quick: Vec<u32> = all_but_multiples_of(EVERY_SIXTH, LONG_SHELF).collect();
+    shelf
+        .move_to_page(quick.iter().copied(), LAST_PAGE_BUT_ONE)
+        .await;
+    let listing = SeriesListing {
+        sort: SeriesSort::descending(SeriesOrder::Title),
+        filter: QUICK_READS,
+    };
+
+    let pages = shelf.pages(listing, PAGE_OF_TWO_HUNDRED).await;
+
+    let from_z_to_a: Vec<u32> = quick.into_iter().rev().collect();
+    assert_eq!(pages, pages_of(&from_z_to_a, PAGE_OF_TWO_HUNDRED.into()));
+}
+
+#[tokio::test]
+async fn pages_hundreds_of_quick_reads_that_are_also_forgotten_and_stored_twice() {
+    let shelf = Shelf::holding("many-quick-forgotten-duplicated-pages", LONG_SHELF).await;
+    let quick: Vec<u32> = all_but_multiples_of(EVERY_SIXTH, LONG_SHELF).collect();
+    shelf.read(quick.iter().copied(), 0).await;
+    shelf.copy_into_backup(quick.iter().copied()).await;
+    shelf
+        .move_to_page(quick.iter().copied(), LAST_PAGE_BUT_ONE)
+        .await;
+    let listing = SeriesListing {
+        sort: SeriesSort::ascending(SeriesOrder::DateAdded),
+        filter: QUICK_READS
+            .with_last_read_before_ms(FORGOTTEN.last_read_before_ms)
+            .with_duplicates(Inclusion::Only),
+    };
+
+    let pages = shelf.pages(listing, PAGE_OF_TWO_HUNDRED).await;
+
+    assert_eq!(pages, pages_of(&quick, PAGE_OF_TWO_HUNDRED.into()));
 }
