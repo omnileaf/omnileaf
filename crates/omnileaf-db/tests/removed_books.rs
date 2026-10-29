@@ -95,6 +95,19 @@ async fn forget_projected_removals(store: &Store) {
         .unwrap();
 }
 
+async fn project_removal_without_register(store: &Store, book: BookId) {
+    store
+        .database()
+        .write(move |transaction| {
+            Ok(transaction.execute(
+                "INSERT INTO book_removed (book_id) VALUES (?1)",
+                [book.as_bytes()],
+            )?)
+        })
+        .await
+        .unwrap();
+}
+
 #[tokio::test]
 async fn marking_a_book_removed_shows_it_in_book_removed() {
     let folder = ScratchFolder::new("removed-marked");
@@ -174,6 +187,21 @@ async fn rebuilding_the_projections_restores_removed_books() {
     set_removed(&store, book(2), true).await;
     set_removed(&store, book(2), false).await;
     forget_projected_removals(&store).await;
+
+    store.rebuild_projections().await.unwrap();
+
+    assert_eq!(removed_books(&store).await, [book(1)]);
+}
+
+#[tokio::test]
+async fn rebuilding_the_projections_drops_a_removal_no_register_holds() {
+    let folder = ScratchFolder::new("removed-stale");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_removed(&store, book(1), true).await;
+    set_removed(&store, book(2), true).await;
+    set_removed(&store, book(2), false).await;
+    project_removal_without_register(&store, book(2)).await;
+    project_removal_without_register(&store, book(3)).await;
 
     store.rebuild_projections().await.unwrap();
 
