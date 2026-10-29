@@ -228,5 +228,9 @@ test("keeps the unframed sections on an iPad", async () => {
   const sheet = page.getByRole("dialog").element();
 
   expect(sheet.getAttribute("data-ground")).toBeNull();
+  const heading = page.getByRole("heading", { name: "Filter", exact: true });
+
   expect(getComputedStyle(groupAfter("Filter")).borderRadius).not.toBe("26px");
+  expect(getComputedStyle(heading.element()).fontWeight).toBe("600");
+  expect(getComputedStyle(heading.element()).paddingLeft).toBe("0px");
 });
