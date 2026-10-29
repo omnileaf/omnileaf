@@ -584,6 +584,7 @@ impl Library {
         listing: LibraryListing,
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
+        let adult_seen = self.adult_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -593,7 +594,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let adult = AdultContent::stored(connection)?;
+                let adult = adult_seen.view(connection)?;
                 let listing = listing.at(now_ms, adult);
                 Ok((
                     writerless_series_page(connection, &listing, &request)?,
@@ -601,19 +602,20 @@ impl Library {
                 ))
             })
             .await?;
-        Ok(SeriesPage::new(page.0, page.1))
+        Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
     pub async fn writerless_series_count(
         &self,
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
+        let adult_seen = self.adult_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, AdultContent::stored(connection)?);
+                let filter = filter.at(now_ms, adult_seen.view(connection)?);
                 writerless_series_count(connection, &filter)
             })
             .await?)
