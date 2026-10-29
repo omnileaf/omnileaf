@@ -1576,3 +1576,30 @@ test("ends the linked folders with an Add a folder row in accent type on an iPho
   });
   expect(box.top).toBeGreaterThanOrEqual(row.bottom);
 });
+
+test("draws no divider above Add a folder while no folder is linked on an iPhone", async () => {
+  serveFolders([HOME]);
+  await page.viewport(390, 844);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const { folders } = await renderSettings({ platform: "ios" });
+
+  const add = folders.getByRole("button", { name: "Add a folder" });
+  await expect.element(add).toBeVisible();
+  const row = add.element().parentElement;
+
+  expect(
+    getComputedStyle(row ?? document.body, "::before").borderTopWidth,
+  ).toBe("0px");
+});
+
+test("draws a focus outline on the Add a folder row on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+
+  const add = folders.getByRole("button", { name: "Add a folder" });
+  await expect.element(add).toBeVisible();
+
+  expect(add.element().getAttribute("class")).toContain(
+    "focus-visible:outline-2",
+  );
+});

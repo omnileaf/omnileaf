@@ -254,7 +254,11 @@
     {#if isInCard}
       {#if isNative}
         <div
-          class="relative before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator"
+          class={[
+            "relative",
+            (shownFolders.length > 0 || beingAdded !== undefined) &&
+              "before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator",
+          ]}
         >
           <AddFolderButton
             bind:element={addButton}
