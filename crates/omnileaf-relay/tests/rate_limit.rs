@@ -92,15 +92,15 @@ async fn counts_each_address_on_its_own() {
 }
 
 #[tokio::test]
-async fn counts_an_ipv6_network_as_one_address() {
+async fn counts_an_ipv6_site_prefix_as_one_address() {
     let relay = relay_limited(limits(1, 10));
     challenge_from(&relay, "2001:db8:1:2::1").await;
 
-    let same_network = challenge_from(&relay, "2001:db8:1:2:ffff::9").await;
-    let other_network = challenge_from(&relay, "2001:db8:1:3::1").await;
+    let same_site = challenge_from(&relay, "2001:db8:1:ff00::9").await;
+    let other_site = challenge_from(&relay, "2001:db8:2:2::1").await;
 
-    assert_eq!(same_network, StatusCode::TOO_MANY_REQUESTS);
-    assert_eq!(other_network, StatusCode::CREATED);
+    assert_eq!(same_site, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(other_site, StatusCode::CREATED);
 }
 
 #[tokio::test]
@@ -176,7 +176,7 @@ async fn never_writes_a_client_address_to_the_database() {
                 let text = address.as_bytes();
                 let raw: Vec<u8> = match address.parse::<std::net::IpAddr>().unwrap() {
                     std::net::IpAddr::V4(v4) => v4.octets().to_vec(),
-                    std::net::IpAddr::V6(v6) => v6.octets()[..8].to_vec(),
+                    std::net::IpAddr::V6(v6) => v6.octets()[..6].to_vec(),
                 };
                 contains(value, text) || contains(value, &raw)
             })

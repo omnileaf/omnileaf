@@ -3,7 +3,7 @@ use std::net::{IpAddr, SocketAddr};
 use axum::http::HeaderMap;
 
 const CLOUDFLARE_CLIENT_HEADER: &str = "cf-connecting-ip";
-const IPV6_NETWORK_BYTES: usize = 8;
+const IPV6_SITE_PREFIX_BYTES: usize = 6;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ClientIpSource {
@@ -14,7 +14,7 @@ pub enum ClientIpSource {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ClientAddress {
     V4([u8; 4]),
-    V6Network([u8; IPV6_NETWORK_BYTES]),
+    V6SitePrefix([u8; IPV6_SITE_PREFIX_BYTES]),
     Unidentified,
 }
 
@@ -39,12 +39,12 @@ impl ClientAddress {
         match address.to_canonical() {
             IpAddr::V4(v4) => Self::V4(v4.octets()),
             IpAddr::V6(v6) => {
-                let mut network = [0; IPV6_NETWORK_BYTES];
+                let mut network = [0; IPV6_SITE_PREFIX_BYTES];
                 network
                     .iter_mut()
                     .zip(v6.octets())
                     .for_each(|(slot, byte)| *slot = byte);
-                Self::V6Network(network)
+                Self::V6SitePrefix(network)
             }
         }
     }
@@ -52,7 +52,7 @@ impl ClientAddress {
     pub(crate) fn bucket_bytes(&self) -> &[u8] {
         match self {
             Self::V4(octets) => octets,
-            Self::V6Network(network) => network,
+            Self::V6SitePrefix(network) => network,
             Self::Unidentified => &[],
         }
     }
