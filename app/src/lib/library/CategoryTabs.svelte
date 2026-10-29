@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronDown, Pencil, Plus } from "@lucide/svelte";
+  import { ChevronDown, Pencil, Plus } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
   import { flushSync } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
@@ -18,13 +18,14 @@
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
-  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import CategoryGlyph from "./CategoryGlyph.svelte";
+  import { categoryTabsLook } from "./category-tabs-look.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
 
   interface Tab {
@@ -52,8 +53,15 @@
   const width = new WindowWidth();
   const isWide = $derived(width.current !== "compact");
   const onPhone = $derived(isPhone(platform, width.current));
+  const look = $derived(categoryTabsLook(platform, width.current));
   const editPhone = $derived(phoneAction(platform, width.current, "other"));
-  const newPhone = $derived(phoneAction(platform, width.current, "main"));
+  const newPhone = $derived.by(() => {
+    const action = phoneAction(platform, width.current, "main");
+    const { newVariant } = look.sheet;
+    return action === undefined || newVariant === undefined
+      ? action
+      : { ...action, variant: newVariant };
+  });
   const tabs = $derived<readonly Tab[]>(
     arranged.map(({ id, name }) => ({ id: tabKey(id), name })),
   );
@@ -185,9 +193,7 @@
   }
 </script>
 
-<div
-  class="-ms-gutter -me-page-end flex items-center gap-xs border-be border-border ps-gutter pe-page-end max-medium:-ms-page-start max-medium:ps-page-start desktop:expanded:ps-xl in-toolbar:ps-lg"
->
+<div class={look.row}>
   <div
     bind:this={strip}
     role="tablist"
@@ -208,11 +214,8 @@
           onChoose(tab.id);
         }}
         class={[
-          "relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs expanded:min-block-pointer-button touch:touch-target-across",
-          ROW_FOCUS_RING,
-          isChosen
-            ? "font-semibold text-foreground after:bg-foreground"
-            : "font-medium text-muted hover:text-foreground",
+          look.tab,
+          isChosen ? look.chosenTab : look.otherTab,
           hidden.has(tab.id) && !isChosen && "medium:invisible",
         ]}
       >
@@ -265,12 +268,12 @@
       aria-label={m.library_categories_every()}
       aria-haspopup="dialog"
       aria-expanded={isSheetOpen}
-      class="shrink-0 block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"
+      class={look.arrow}
       onclick={() => {
         isSheetOpen = true;
       }}
     >
-      <ChevronDown size={SHEET_ICON_SIZE} aria-hidden="true" />
+      <CategoryGlyph name="chevron-down" isMaterial={look.usesMaterialIcons} />
     </Button>
     <Dialog.Root bind:open={isSheetOpen}>
       <DrawerContent
@@ -279,18 +282,20 @@
         }}
         aria-labelledby={titleId}
       >
-        <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
-          <span
-            aria-hidden="true"
-            class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
-          >
-            <LibraryGlyph size={SHEET_ICON_SIZE} />
-          </span>
+        <div class={look.sheet.header}>
+          {#if look.sheet.hasBadge}
+            <span
+              aria-hidden="true"
+              class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+            >
+              <LibraryGlyph size={SHEET_ICON_SIZE} />
+            </span>
+          {/if}
           <div class="flex flex-col">
-            <DialogTitle id={titleId} class="text-title font-bold">
+            <DialogTitle id={titleId} class={look.sheet.title}>
               {m.library_categories()}
             </DialogTitle>
-            <Dialog.Description class="text-small text-muted">
+            <Dialog.Description class={look.sheet.description}>
               {m.library_categories_every_description()}
             </Dialog.Description>
           </div>
@@ -298,10 +303,7 @@
         <div
           role="radiogroup"
           aria-labelledby={titleId}
-          class={[
-            "flex flex-col overflow-auto pbs-sm min-block-none",
-            onPhone ? "row-rules" : "px-sm",
-          ]}
+          class={look.sheet.list}
         >
           {#each tabs as tab (tab.id)}
             {@const isChosen = tab.id === chosen}
@@ -309,9 +311,7 @@
               type="button"
               role="radio"
               aria-checked={isChosen}
-              class={onPhone
-                ? ITEM_LOOKS.row
-                : "flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed"}
+              class={look.sheet.option}
               onclick={() => {
                 onChoose(tab.id);
                 isSheetOpen = false;
@@ -319,12 +319,15 @@
             >
               <span data-slot="item-title" class="flex-1">{tab.name}</span>
               {#if isChosen}
-                <Check size={ICON_SIZE} aria-hidden="true" />
+                <CategoryGlyph
+                  name="check"
+                  isMaterial={look.usesMaterialIcons}
+                />
               {/if}
             </button>
           {/each}
         </div>
-        <div class="flex gap-sm px-sheet-inline pbs-md pbe-sheet-bottom">
+        <div class={look.sheet.foot}>
           <Button
             type="button"
             {...editPhone === undefined
@@ -338,7 +341,7 @@
             ]}
             onclick={openSettings}
           >
-            <Pencil size={ICON_SIZE} aria-hidden="true" />
+            <CategoryGlyph name="pencil" isMaterial={look.usesMaterialIcons} />
             {m.library_categories_edit_short()}
           </Button>
           <Button
@@ -354,7 +357,7 @@
             ]}
             onclick={openSettings}
           >
-            <Plus size={ICON_SIZE} aria-hidden="true" />
+            <CategoryGlyph name="plus" isMaterial={look.usesMaterialIcons} />
             {m.library_category_new()}
           </Button>
         </div>
