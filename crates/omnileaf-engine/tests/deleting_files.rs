@@ -493,6 +493,20 @@ async fn a_stored_location_climbing_out_of_the_root_is_refused_and_the_file_outs
 }
 
 #[tokio::test]
+async fn a_stored_location_ending_in_a_parent_step_is_named_by_that_step_alone() {
+    let removal = removing_a_file_stored_at("delete-parent-step", |_| {
+        PathBuf::from(SERIES_02).join("..")
+    })
+    .await;
+
+    assert_eq!(
+        removal.outcomes,
+        [("..".to_owned(), failed(RemovalFailure::Other))]
+    );
+    assert!(removal.is_untouched());
+}
+
+#[tokio::test]
 async fn an_empty_stored_location_is_refused_and_the_root_folder_stays() {
     let removal = removing_a_file_stored_at("delete-empty", |_| PathBuf::new()).await;
 

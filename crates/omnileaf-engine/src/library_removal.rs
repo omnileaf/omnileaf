@@ -357,10 +357,10 @@ fn failure_reading(error: &UnreadableBook) -> DisposalFailure {
 
 fn file_name(location: &Path) -> String {
     location
-        .file_name()
-        .unwrap_or(location.as_os_str())
-        .to_string_lossy()
-        .into_owned()
+        .components()
+        .next_back()
+        .map(|last| last.as_os_str().to_string_lossy().into_owned())
+        .unwrap_or_default()
 }
 
 impl From<Result<Disposal, DisposalFailure>> for FileOutcome {
