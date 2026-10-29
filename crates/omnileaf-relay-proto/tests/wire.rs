@@ -115,3 +115,17 @@ fn reads_an_error_code_it_does_not_know() {
 
     assert_eq!(body.error.code, ErrorCode::Unrecognised);
 }
+
+#[test]
+fn reads_a_status_it_does_not_know_as_unknown() {
+    let replies: StatusReplies = serde_json::from_value(json!({
+        "reports": [
+            { "code": "R-0000-0001", "status": "somethingNew" },
+            { "code": "R-0000-0002", "status": "received" }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(replies.reports[0].status, ReportStatus::Unknown);
+    assert_eq!(replies.reports[1].status, ReportStatus::Received);
+}

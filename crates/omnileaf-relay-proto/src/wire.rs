@@ -46,8 +46,11 @@ pub struct ReportReceipt {
 pub enum ReportStatus {
     Received,
     Reviewing,
-    Published { issue: u64 },
+    Published {
+        issue: u64,
+    },
     Closed,
+    #[serde(other)]
     Unknown,
 }
 
