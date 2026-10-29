@@ -343,6 +343,7 @@
   "library_filter_with_count": "Filter · {count}",
   "library_sort": "Sort",
   "library_sort_by": "Sort by",
+  "library_sort_order": "Order",
   "library_reset": "Reset",
   "library_close": "Close",
   "library_close_filter_and_sort": "Close sort and filter",

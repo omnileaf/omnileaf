@@ -884,11 +884,19 @@ for (const platform of ["android", "ios"] as const) {
       const select = await boxOf(
         panel.getByRole("combobox", { name: "Sort by" }),
       );
+      expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
+
+      if (platform === "ios" && isPhone(page)) {
+        const order = await boxOf(
+          panel.getByRole("combobox", { name: "Order" }),
+        );
+        expect(order.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
+        return;
+      }
+
       const direction = await boxOf(
         panel.getByRole("button", { name: "Order: A to Z. Change to Z to A" }),
       );
-
-      expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
       expect([direction.width, direction.height]).toEqual([
         TOUCH_TARGET,
         TOUCH_TARGET,
