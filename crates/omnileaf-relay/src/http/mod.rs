@@ -20,9 +20,9 @@ use tower_http::timeout::TimeoutLayer;
 pub use failure::Failure;
 
 use crate::{
-    client_ip::ClientIpSource,
+    client_ip::{ClientAddress, ClientIpSource},
     clock::Clock,
-    rate_limit::Limits,
+    rate_limit::{Action, Admission, Attempt, Limits},
     store::{Store, StoreError},
 };
 
@@ -62,6 +62,31 @@ impl Relay {
             .map_err(|error| Failure::internal(&error))?
             .map_err(|error| Failure::internal(&error))
     }
+
+    async fn admit(&self, address: ClientAddress, action: Action) -> Result<(), Failure> {
+        let limit = self.settings.limits.for_action(action);
+        let at = self.clock.now();
+        let admission = self
+            .with_store(move |store| {
+                store.admit(
+                    Attempt {
+                        address: &address,
+                        action,
+                        at,
+                    },
+                    limit,
+                )
+            })
+            .await?;
+        match admission {
+            Admission::Admitted => Ok(()),
+            Admission::Limited {
+                retry_after_seconds,
+            } => Err(Failure::RateLimited {
+                retry_after_seconds,
+            }),
+        }
+    }
 }
 
 pub fn router(relay: Relay) -> Router {
@@ -80,35 +105,4 @@ pub fn router(relay: Relay) -> Router {
 
 async fn health() -> Json<Value> {
     Json(json!({ "ok": true }))
-}
-
-impl Relay {
-    async fn admit(
-        &self,
-        address: crate::client_ip::ClientAddress,
-        action: crate::rate_limit::Action,
-    ) -> Result<(), Failure> {
-        let limit = self.settings.limits.for_action(action);
-        let at = self.clock.now();
-        let admission = self
-            .with_store(move |store| {
-                store.admit(
-                    crate::rate_limit::Attempt {
-                        address: &address,
-                        action,
-                        at,
-                    },
-                    limit,
-                )
-            })
-            .await?;
-        match admission {
-            crate::rate_limit::Admission::Admitted => Ok(()),
-            crate::rate_limit::Admission::Limited {
-                retry_after_seconds,
-            } => Err(Failure::RateLimited {
-                retry_after_seconds,
-            }),
-        }
-    }
 }
