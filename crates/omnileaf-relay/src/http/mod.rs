@@ -9,14 +9,17 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{
     Json, Router,
+    error_handling::HandleErrorLayer,
     extract::{DefaultBodyLimit, FromRequest, Request},
-    http::StatusCode,
     routing::{get, post},
 };
 use omnileaf_relay_proto::{limits::REQUEST_BODY_BYTES, pow::Difficulty};
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
-use tower_http::timeout::TimeoutLayer;
+use tower::{
+    BoxError, ServiceBuilder, limit::GlobalConcurrencyLimitLayer, load_shed::error::Overloaded,
+    timeout::error::Elapsed,
+};
 
 pub use failure::Failure;
 use json_body::JsonBody;
@@ -29,6 +32,7 @@ use crate::{
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+const RETRY_WHEN_BUSY_SECONDS: u64 = 30;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Settings {
@@ -109,13 +113,51 @@ pub fn router(relay: Relay) -> Router {
         .route("/relay/v1/reports", post(report::take_in))
         .route("/relay/v1/reports/statuses", post(status::look_up))
         .layer(DefaultBodyLimit::max(REQUEST_BODY_BYTES))
-        .layer(TimeoutLayer::with_status_code(
-            StatusCode::REQUEST_TIMEOUT,
-            REQUEST_TIMEOUT,
-        ))
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(answer_unserved))
+                .load_shed()
+                .layer(GlobalConcurrencyLimitLayer::new(
+                    relay.settings.limits.concurrent_requests,
+                ))
+                .timeout(REQUEST_TIMEOUT),
+        )
         .with_state(relay)
+}
+
+async fn answer_unserved(error: BoxError) -> Failure {
+    unserved(&*error)
+}
+
+fn unserved(error: &(dyn std::error::Error + Send + Sync + 'static)) -> Failure {
+    if error.is::<Elapsed>() || error.is::<Overloaded>() {
+        Failure::RelayBusy {
+            retry_after_seconds: RETRY_WHEN_BUSY_SECONDS,
+        }
+    } else {
+        Failure::internal(error)
+    }
 }
 
 async fn health() -> Json<Value> {
     Json(json!({ "ok": true }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn answers_a_request_that_ran_out_of_time_as_busy() {
+        let failure = unserved(&Elapsed::new());
+
+        assert!(matches!(failure, Failure::RelayBusy { .. }));
+    }
+
+    #[test]
+    fn answers_a_shed_request_as_busy() {
+        let failure = unserved(&Overloaded::new());
+
+        assert!(matches!(failure, Failure::RelayBusy { .. }));
+    }
 }

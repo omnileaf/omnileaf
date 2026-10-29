@@ -29,6 +29,7 @@ pub struct Limits {
     pub outstanding_challenges: u32,
     pub reports_per_day: u32,
     pub pending_reports: u32,
+    pub concurrent_requests: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -62,6 +63,7 @@ impl Default for Limits {
             outstanding_challenges: 10_000,
             reports_per_day: 500,
             pending_reports: 2_000,
+            concurrent_requests: 32,
         }
     }
 }

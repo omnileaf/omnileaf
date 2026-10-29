@@ -306,3 +306,19 @@ async fn limits_an_address_before_reading_its_body() {
 
     assert_eq!(answer.status, StatusCode::TOO_MANY_REQUESTS);
 }
+
+#[tokio::test]
+async fn sheds_requests_once_every_slot_is_taken() {
+    let relay = relay_limited(Limits {
+        concurrent_requests: 0,
+        ..Limits::default()
+    });
+
+    let answer = relay
+        .post_from("203.0.113.7", "/relay/v1/challenges", &json!({}))
+        .await;
+
+    assert_eq!(answer.status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(answer.body["error"]["code"], "relayBusy");
+    assert!(answer.headers.contains_key("retry-after"));
+}

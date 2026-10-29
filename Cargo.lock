@@ -3736,7 +3736,6 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tower",
- "tower-http",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5848,6 +5847,7 @@ dependencies = [
  "pin-project-lite",
  "sync_wrapper",
  "tokio",
+ "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -5865,7 +5865,6 @@ dependencies = [
  "http",
  "http-body",
  "pin-project-lite",
- "tokio",
  "tower",
  "tower-layer",
  "tower-service",

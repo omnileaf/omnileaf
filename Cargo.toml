@@ -75,7 +75,6 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"
 tokio = { version = "1.53.1", default-features = false }
 tower = { version = "0.5.3", default-features = false, features = ["util"] }
-tower-http = { version = "0.6.11", default-features = false, features = ["timeout"] }
 trash = { version = "5.2.9", default-features = false, features = ["chrono", "coinit_apartmentthreaded"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
