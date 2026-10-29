@@ -1711,10 +1711,16 @@ impl Library {
     pub(crate) async fn rescan_folder_bringing_back_removed_books(
         &self,
         id: FolderId,
+        copied: Vec<PathBuf>,
     ) -> Result<FolderRescan, LibraryError> {
         let scanning = self.catalog_change_lock.lock().await;
-        self.rescan_while_scanning(id, scanning, RemovedBooks::BroughtBack, |_| {})
-            .await
+        self.rescan_while_scanning(
+            id,
+            scanning,
+            RemovedBooks::BringingBackUnder(copied),
+            |_| {},
+        )
+        .await
     }
 
     #[tracing::instrument(skip_all)]
@@ -1829,7 +1835,7 @@ impl Library {
         let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding { found: 0 });
         let rescan = if let Some(files) = self.files_of(&root.locator) {
-            self.rescan_files(root.id, root.kind, files, removed_books, on_progress)
+            self.rescan_files(root.id, root.kind, files, &removed_books, on_progress)
                 .await?
         } else {
             tracing::warn!("keep the books of a folder this device can't open");
@@ -1850,7 +1856,7 @@ impl Library {
         root: RootId,
         kind: RootKind,
         files: RootFiles,
-        removed_books: RemovedBooks,
+        removed_books: &RemovedBooks,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<Rescan, LibraryError> {
         match walk(

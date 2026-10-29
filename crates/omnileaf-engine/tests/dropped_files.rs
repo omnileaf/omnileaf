@@ -244,6 +244,60 @@ async fn copying_a_removed_book_into_the_home_folder_again_clears_its_marker_and
 }
 
 #[tokio::test]
+async fn copying_one_removed_book_back_leaves_the_other_removed_book_still_in_the_home_folder_out()
+{
+    let dropping = Dropping::new("drop-copy-narrow").await;
+    let first = dropping.comic("Loose", "One.cbz", 1);
+    let second = dropping.comic("Loose", "Two.cbz", 2);
+    dropping
+        .library
+        .drop_files(vec![first.clone(), second], DropMode::Copy)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 2);
+
+    dropping
+        .library
+        .drop_files(vec![first], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (dropping.markers(), dropping.series_titles().await),
+        (1, ["One".to_owned()].to_vec())
+    );
+}
+
+#[tokio::test]
+async fn copying_a_removed_folder_back_restores_its_books_and_leaves_a_removed_book_beside_it_out()
+{
+    let dropping = Dropping::new("drop-copy-folder-narrow").await;
+    dropping.comic("Shelf", "One.cbz", 1);
+    dropping.comic("Shelf", "Two.cbz", 2);
+    let beside = dropping.comic("Beside", "Three.cbz", 3);
+    let shelf = dropping.outside.path().join("Shelf");
+    dropping
+        .library
+        .drop_files(vec![shelf.clone(), beside], DropMode::Copy)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 3);
+
+    dropping
+        .library
+        .drop_files(vec![shelf], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (dropping.markers(), dropping.series_titles().await),
+        (1, ["Shelf".to_owned()].to_vec())
+    );
+}
+
+#[tokio::test]
 async fn copies_what_is_dropped_into_the_home_folder_and_lists_it() {
     let dropping = Dropping::new("drop-copy").await;
     let file = dropping.comic("Loose", "One.cbz", 1);

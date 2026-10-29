@@ -67,7 +67,7 @@ pub(crate) async fn rescan(
     store: &Store,
     target: Target,
     layout: Layout,
-    removed_books: RemovedBooks,
+    removed_books: &RemovedBooks,
     on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<Rescan, LibraryError> {
     let database = store.database();
@@ -114,7 +114,7 @@ async fn record_changed(
     target: &Target,
     plan: &mut Plan,
     to_read: Vec<ToRead>,
-    removed_books: RemovedBooks,
+    removed_books: &RemovedBooks,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<(), LibraryError> {
     let total = saturating_u32(to_read.len());

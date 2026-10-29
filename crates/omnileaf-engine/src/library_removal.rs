@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, path::PathBuf};
 
 use omnileaf_db::{
     Database, Error,
@@ -100,10 +100,10 @@ pub(crate) async fn marked_among<'a>(
         .await?)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum RemovedBooks {
     LeftOut,
-    BroughtBack,
+    BringingBackUnder(Vec<PathBuf>),
 }
 
 pub(crate) async fn bring_back_marked(
@@ -116,17 +116,32 @@ pub(crate) async fn bring_back_marked(
 
 pub(crate) async fn marked_to_leave_out<'a>(
     store: &Store,
-    removed: RemovedBooks,
+    removed: &RemovedBooks,
     books: impl IntoIterator<Item = &'a ScannedBook>,
 ) -> Result<BTreeSet<StoredBookId>, LibraryError> {
-    let marked = marked_among(store.database(), books).await?;
+    let batch: Vec<&ScannedBook> = books.into_iter().collect();
+    let marked = marked_among(store.database(), batch.iter().copied()).await?;
     match removed {
         RemovedBooks::LeftOut => Ok(marked),
-        RemovedBooks::BroughtBack => {
-            restore(store, marked).await?;
-            Ok(BTreeSet::new())
+        RemovedBooks::BringingBackUnder(destinations) => {
+            let under = found_under(&batch, destinations);
+            let (bring_back, leave_out) = marked.into_iter().partition(|id| under.contains(id));
+            restore(store, bring_back).await?;
+            Ok(leave_out)
         }
     }
+}
+
+fn found_under(books: &[&ScannedBook], destinations: &[PathBuf]) -> BTreeSet<StoredBookId> {
+    books
+        .iter()
+        .filter(|book| {
+            destinations
+                .iter()
+                .any(|destination| book.file.location.starts_with(destination))
+        })
+        .map(|book| StoredBookId::local(&book.fingerprint))
+        .collect()
 }
 
 async fn restore(store: &Store, marked: BTreeSet<StoredBookId>) -> Result<(), LibraryError> {

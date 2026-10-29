@@ -225,16 +225,16 @@ impl Library {
             })
             .collect();
         let copying = home.clone();
-        let copied = spawn_blocking(move || copy_all(&sources, &copying))
+        let copy = spawn_blocking(move || copy_all(&sources, &copying))
             .await
             .map_err(LibraryError::from)?;
         if let Err(error) = self
-            .rescan_folder_bringing_back_removed_books(home_id)
+            .rescan_folder_bringing_back_removed_books(home_id, copy.destinations)
             .await
         {
             tracing::warn!(error = %crate::describe_error(&error), "list the files copied into the home folder");
         }
-        copied.map(|files| DropOutcome::Copied { files })
+        copy.files.map(|files| DropOutcome::Copied { files })
     }
 
     async fn home_folder_path(&self) -> Result<(PathBuf, FolderId), LibraryError> {
@@ -279,7 +279,25 @@ fn summarise(dropped: impl Iterator<Item = Dropped>) -> DropSummary {
     }
 }
 
-fn copy_all(sources: &[PathBuf], home: &Path) -> Result<u32, DropError> {
+struct Copying {
+    destinations: Vec<PathBuf>,
+    files: Result<u32, DropError>,
+}
+
+fn copy_all(sources: &[PathBuf], home: &Path) -> Copying {
+    let mut destinations = Vec::new();
+    let files = copy_each(sources, home, &mut destinations);
+    Copying {
+        destinations,
+        files,
+    }
+}
+
+fn copy_each(
+    sources: &[PathBuf],
+    home: &Path,
+    destinations: &mut Vec<PathBuf>,
+) -> Result<u32, DropError> {
     if !home.is_dir() {
         return Err(DropError::Library(LibraryError::FolderUnreadable {
             path: home.to_path_buf(),
@@ -291,18 +309,16 @@ fn copy_all(sources: &[PathBuf], home: &Path) -> Result<u32, DropError> {
         source,
     })?;
     let mut files = 0_u32;
-    let mut copied_any = false;
     for source in sources {
         if source.file_name().is_none() || holds_home(source, &home_now) {
             continue;
         }
-        files = files.saturating_add(copy_into(source, home)?);
-        copied_any = true;
+        files = files.saturating_add(copy_into(source, home, destinations)?);
     }
-    if copied_any {
-        Ok(files)
-    } else {
+    if destinations.is_empty() {
         Err(DropError::NothingToUse)
+    } else {
+        Ok(files)
     }
 }
 
@@ -312,9 +328,15 @@ fn holds_home(source: &Path, home: &Path) -> bool {
         .is_ok_and(|source| home.starts_with(source))
 }
 
-fn copy_into(source: &Path, folder: &Path) -> Result<u32, DropError> {
+fn copy_into(
+    source: &Path,
+    folder: &Path,
+    destinations: &mut Vec<PathBuf>,
+) -> Result<u32, DropError> {
     let name = source.file_name().unwrap_or_default();
-    let target = unused_name(folder, Path::new(name));
+    let destination = unused_name(folder, Path::new(name));
+    let target = folder.join(&destination);
+    destinations.push(destination);
     if source.is_dir() {
         copy_folder(source, &target)
     } else {
@@ -351,9 +373,8 @@ fn copy_folder(source: &Path, target: &Path) -> Result<u32, DropError> {
 }
 
 fn unused_name(folder: &Path, name: &Path) -> PathBuf {
-    let first = folder.join(name);
-    if !first.exists() {
-        return first;
+    if !folder.join(name).exists() {
+        return name.to_path_buf();
     }
     let stem = name
         .file_stem()
@@ -363,7 +384,7 @@ fn unused_name(folder: &Path, name: &Path) -> PathBuf {
         .map(|extension| format!(".{}", extension.to_string_lossy()))
         .unwrap_or_default();
     (2_u32..=u32::MAX)
-        .map(|number| folder.join(format!("{stem} ({number}){extension}")))
-        .find(|candidate| !candidate.exists())
-        .unwrap_or(first)
+        .map(|number| PathBuf::from(format!("{stem} ({number}){extension}")))
+        .find(|candidate| !folder.join(candidate).exists())
+        .unwrap_or_else(|| name.to_path_buf())
 }
