@@ -36,6 +36,8 @@ const MANGA: &str = "/media/Manga";
 const FIRST_SERIES: &str = "Sample Series 01";
 const SECOND_SERIES: &str = "Sample Series 02";
 const MORE_THAN_ONE_BATCH: u32 = 70;
+const TWO_BATCHES: u32 = 40;
+const REPEATED_IN_SECOND_BATCH: usize = 35;
 const PAGES_PER_BOOK: u32 = 10;
 const FAKE_TAG: &str = "fake-tag";
 const AUTHOR_FOLDER: &str = "Author B";
@@ -398,6 +400,20 @@ async fn files_of_books_finds_the_files_beyond_one_batch_and_none_for_unknown_bo
     let files = library.files_of(asked).await;
 
     assert_eq!(files.len(), usize::try_from(MORE_THAN_ONE_BATCH).unwrap());
+}
+
+#[tokio::test]
+async fn files_of_books_lists_a_file_once_when_its_book_repeats_across_batches() {
+    let library = Library::open("files-of-books-repeated").await;
+    for number in 1..=TWO_BATCHES {
+        library.record(library.comics, FIRST_SERIES, number).await;
+    }
+    let mut asked: Vec<BookId> = (1..=TWO_BATCHES).map(book).collect();
+    asked[REPEATED_IN_SECOND_BATCH] = asked[0];
+
+    let files = library.files_of(asked).await;
+
+    assert_eq!(files.len(), usize::try_from(TWO_BATCHES).unwrap() - 1);
 }
 
 #[tokio::test]

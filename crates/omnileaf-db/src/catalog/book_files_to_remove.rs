@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
 
 use omnileaf_sync_proto::BookId;
 use rusqlite::{Connection, Row, params_from_iter};
@@ -44,8 +44,14 @@ pub fn files_of_books(
     connection: &Connection,
     books: &[BookId],
 ) -> Result<Vec<BookFileToRemove>, Error> {
+    let asked: Vec<BookId> = books
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
     let mut files = Vec::new();
-    for batch in books.chunks(BOOKS_PER_QUERY) {
+    for batch in asked.chunks(BOOKS_PER_QUERY) {
         let mut statement = connection.prepare(&files_in(batch.len()))?;
         let found = statement.query_map(
             params_from_iter(batch.iter().map(BookId::as_bytes)),
