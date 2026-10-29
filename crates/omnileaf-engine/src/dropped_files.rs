@@ -228,7 +228,10 @@ impl Library {
         let copied = spawn_blocking(move || copy_all(&sources, &copying))
             .await
             .map_err(LibraryError::from)?;
-        if let Err(error) = self.rescan_folder(home_id, |_| {}).await {
+        if let Err(error) = self
+            .rescan_folder_bringing_back_removed_books(home_id)
+            .await
+        {
             tracing::warn!(error = %crate::describe_error(&error), "list the files copied into the home folder");
         }
         copied.map(|files| DropOutcome::Copied { files })

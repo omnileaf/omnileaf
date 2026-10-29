@@ -69,7 +69,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_removal::{Expanded, expand},
+    library_removal::{Expanded, RemovedBooks, expand},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -1658,7 +1658,8 @@ impl Library {
         if !staying.is_empty() {
             return Err(LibraryError::FolderAlreadyInLibrary { id });
         }
-        self.rescan_while_scanning(id, scanning, on_progress).await
+        self.rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, on_progress)
+            .await
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
@@ -1703,7 +1704,17 @@ impl Library {
         on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
         let scanning = self.catalog_change_lock.lock().await;
-        self.rescan_while_scanning(id, scanning, on_progress).await
+        self.rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, on_progress)
+            .await
+    }
+
+    pub(crate) async fn rescan_folder_bringing_back_removed_books(
+        &self,
+        id: FolderId,
+    ) -> Result<FolderRescan, LibraryError> {
+        let scanning = self.catalog_change_lock.lock().await;
+        self.rescan_while_scanning(id, scanning, RemovedBooks::BroughtBack, |_| {})
+            .await
     }
 
     #[tracing::instrument(skip_all)]
@@ -1744,7 +1755,9 @@ impl Library {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
             };
-            let rescan = self.rescan_while_scanning(id, scanning, |_| {}).await;
+            let rescan = self
+                .rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, |_| {})
+                .await;
             match unless_removed(rescan) {
                 Ok(Some(rescan)) => {
                     self.note_scheduled_rescan(conditions, &folders, &rescan)
@@ -1805,6 +1818,7 @@ impl Library {
         &self,
         id: FolderId,
         _scanning: MutexGuard<'_, ()>,
+        removed_books: RemovedBooks,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
         let root = self
@@ -1815,7 +1829,7 @@ impl Library {
         let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding { found: 0 });
         let rescan = if let Some(files) = self.files_of(&root.locator) {
-            self.rescan_files(root.id, root.kind, files, on_progress)
+            self.rescan_files(root.id, root.kind, files, removed_books, on_progress)
                 .await?
         } else {
             tracing::warn!("keep the books of a folder this device can't open");
@@ -1836,6 +1850,7 @@ impl Library {
         root: RootId,
         kind: RootKind,
         files: RootFiles,
+        removed_books: RemovedBooks,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<Rescan, LibraryError> {
         match walk(
@@ -1847,8 +1862,14 @@ impl Library {
         {
             Ok(layout) => {
                 let target = self.target(root, kind, files).await?;
-                let rescanned =
-                    rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
+                let rescanned = rescan(
+                    &self.store,
+                    target,
+                    layout,
+                    removed_books,
+                    self.noting_writes(on_progress),
+                )
+                .await?;
                 if let RescanOutcome::Rescanned(changes) = &rescanned.outcome
                     && changes.removed > 0
                 {

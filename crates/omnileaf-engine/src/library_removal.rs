@@ -100,17 +100,40 @@ pub(crate) async fn marked_among<'a>(
         .await?)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RemovedBooks {
+    LeftOut,
+    BroughtBack,
+}
+
 pub(crate) async fn bring_back_marked(
     store: &Store,
     books: &[ScannedBook],
 ) -> Result<(), LibraryError> {
-    let marked: Vec<StoredBookId> = marked_among(store.database(), books)
-        .await?
-        .into_iter()
-        .collect();
+    let marked = marked_among(store.database(), books).await?;
+    restore(store, marked).await
+}
+
+pub(crate) async fn marked_to_leave_out<'a>(
+    store: &Store,
+    removed: RemovedBooks,
+    books: impl IntoIterator<Item = &'a ScannedBook>,
+) -> Result<BTreeSet<StoredBookId>, LibraryError> {
+    let marked = marked_among(store.database(), books).await?;
+    match removed {
+        RemovedBooks::LeftOut => Ok(marked),
+        RemovedBooks::BroughtBack => {
+            restore(store, marked).await?;
+            Ok(BTreeSet::new())
+        }
+    }
+}
+
+async fn restore(store: &Store, marked: BTreeSet<StoredBookId>) -> Result<(), LibraryError> {
     if marked.is_empty() {
         return Ok(());
     }
+    let marked: Vec<StoredBookId> = marked.into_iter().collect();
     store
         .write(move |writer| writer.restore_removed(&marked))
         .await?;
