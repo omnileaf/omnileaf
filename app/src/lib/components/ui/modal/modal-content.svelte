@@ -12,7 +12,10 @@
 
   import { DialogContent } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
-  import type { SheetHeight } from "#lib/components/ui/drawer/sheet.ts";
+  import type {
+    SheetGround,
+    SheetHeight,
+  } from "#lib/components/ui/drawer/sheet.ts";
   import { SheetContent } from "#lib/components/ui/sheet/index.ts";
   import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
 
@@ -23,6 +26,7 @@
     wideClass,
     phoneClass,
     phoneHeight = "fit",
+    phoneGround = "plain",
     phoneOverlayClass,
     onDismiss,
     children,
@@ -33,6 +37,7 @@
     wideClass?: string;
     phoneClass?: string;
     phoneHeight?: SheetHeight;
+    phoneGround?: SheetGround;
     phoneOverlayClass?: string;
     onDismiss: () => void;
     children: Snippet<[ModalView]>;
@@ -55,6 +60,7 @@
     bind:ref
     class={phoneClass}
     height={phoneHeight}
+    ground={phoneGround}
     {onDismiss}
     {...restProps}
   >
