@@ -256,6 +256,34 @@ test("puts iOS's select circle at the cover's bottom end, on a scrim with a glas
   expect(gapsAround(mark).top).toBeGreaterThan(60);
 });
 
+test("keeps iOS's select circle in the top end of a compact cover, clear of its title band", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "compact",
+  });
+
+  expect({
+    gaps: gapsAround(mark),
+    fill: styleOf(mark).backgroundColor,
+  }).toMatchObject({
+    gaps: { top: 5, end: 5 },
+    fill: "rgba(0, 0, 0, 0.2)",
+  });
+});
+
+test("darkens iOS's select circle scrim in the dark theme", async () => {
+  document.documentElement.dataset.theme = "dark";
+  followCorePlatform("ios");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "grid",
+  });
+
+  expect(styleOf(mark).backgroundColor).toBe("rgba(0, 0, 0, 0.47)");
+});
+
 test("draws no outline round a picked cover on an iPhone, and keeps it on an iPad", async () => {
   document.documentElement.dataset.theme = "light";
   followCorePlatform("ios");

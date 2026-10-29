@@ -16,6 +16,7 @@ export interface CoverTileLook {
   readonly downloaded: string;
   readonly downloadedIcon: string;
   readonly mark: string;
+  readonly compactMark: string;
   readonly markOn: string;
   readonly markOff: string;
 }
@@ -51,6 +52,7 @@ const TODAYS_LOOK: CoverTileLook = {
   downloaded: "",
   downloadedIcon: "",
   mark: "",
+  compactMark: "",
   markOn: "",
   markOff: "",
 };
@@ -58,11 +60,17 @@ const TODAYS_LOOK: CoverTileLook = {
 const NATIVE_BADGE =
   "max-medium:rounded-native-cover-badge max-medium:bg-native-cover-badge max-medium:text-native-on-cover-badge";
 
+const NATIVE_SELECT_SIZE =
+  "max-medium:rounded-native-select max-medium:block-native-select max-medium:inline-native-select";
+
+const NATIVE_SELECT_MARK = `${NATIVE_SELECT_SIZE} max-medium:border-(length:--native-spacing-select-edge)`;
+
 const NATIVE_TILE = {
   pickedRing: PICKED_COVER_RING,
   stack: null,
   cover: "max-medium:rounded-native-cover",
-  mark: "max-medium:rounded-native-select max-medium:border-(length:--native-spacing-select-edge) max-medium:block-native-select max-medium:inline-native-select",
+  mark: NATIVE_SELECT_MARK,
+  compactMark: NATIVE_SELECT_MARK,
   markOn:
     "max-medium:border-native-cover-accent max-medium:bg-native-cover-accent max-medium:text-native-on-cover-accent",
   markOff:
@@ -74,9 +82,12 @@ const NATIVE_DOWNLOADED =
 
 const IOS_BADGE = `${NATIVE_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:backdrop-blur-ios max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
 
+const IOS_SELECT_STYLE = `${NATIVE_SELECT_SIZE} max-medium:border-0 max-medium:inset-ring-(length:--native-spacing-select-edge) max-medium:inset-ring-native-select-ring max-medium:shadow-native-shadow-glass max-medium:backdrop-blur-native-glass`;
+
 const IOS_SELECT_CIRCLE = {
   pickedRing: NO_PICKED_RING_ON_PHONES,
-  mark: "max-medium:inset-bs-auto max-medium:inset-be-badge-inset max-medium:inset-e-badge-inset max-medium:rounded-native-select max-medium:border-0 max-medium:block-native-select max-medium:inline-native-select max-medium:inset-ring-(length:--native-spacing-select-edge) max-medium:inset-ring-native-select-ring max-medium:shadow-native-shadow-glass max-medium:backdrop-blur-native-glass",
+  mark: `${IOS_SELECT_STYLE} max-medium:inset-bs-auto max-medium:inset-be-badge-inset max-medium:inset-e-badge-inset`,
+  compactMark: IOS_SELECT_STYLE,
   markOn:
     "max-medium:bg-native-cover-accent max-medium:text-native-on-cover-accent",
   markOff: "max-medium:bg-native-scrim",

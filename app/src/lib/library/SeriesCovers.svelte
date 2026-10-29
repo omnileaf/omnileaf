@@ -435,7 +435,7 @@
         {#if isSelecting}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
-            class={tile.mark}
+            class={tile.compactMark}
             onClass={tile.markOn}
             offClass={tile.markOff}
           />
