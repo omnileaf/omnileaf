@@ -21,6 +21,8 @@ use crate::{
     },
 };
 
+pub use removals::RemovedFromLibrary;
+
 macro_rules! is_started {
     () => {
         "(book_state.is_read IS 1 OR book_state.position_page IS NOT NULL
