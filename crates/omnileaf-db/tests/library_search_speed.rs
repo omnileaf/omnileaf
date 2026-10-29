@@ -12,9 +12,11 @@ use std::{mem, num::NonZeroUsize, time::Duration};
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
+    adult_content::AdultHiding,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SearchText, SeriesFilter, SeriesSearch,
-        search_chapters, search_chapters_count, search_count, search_page,
+        closest_chapter_title, closest_title_words, search_chapters, search_chapters_count,
+        search_count, search_page,
     },
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
@@ -79,6 +81,14 @@ const TEXTS: [&str; 17] = [
     "volume 1",
     "chapter 12",
     "special",
+];
+
+const MISSPELT_TEXTS: [&str; 5] = [
+    "volmue",
+    "chaptr 12",
+    "harbor gat",
+    "harbr gate 0500",
+    "smaple sereis",
 ];
 
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
@@ -188,6 +198,8 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
         }
     }
 
+    over_budget.extend(time_spellings(&database).await);
+
     assert_eq!(over_budget, Vec::<String>::new());
 }
 
@@ -211,6 +223,50 @@ async fn add_long_series(database: &Database) {
         }],
     )
     .await;
+}
+
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+async fn time_spellings(database: &Database) -> Vec<String> {
+    let trial = SpeedTrial {
+        measured: "a spelling suggestion over 100,000 books",
+        sampling: Sampling::Repeated {
+            samples: NonZeroUsize::new(SAMPLES).unwrap(),
+            statistic: Statistic::Percentile95,
+        },
+        budget: TimingBudget::from_env(BUDGET),
+    };
+    let mut over_budget = Vec::new();
+    for text in MISSPELT_TEXTS {
+        let outcome = trial
+            .run(
+                async |_| (),
+                async |()| {
+                    suggest(database, text).await;
+                },
+            )
+            .await;
+        eprintln!("spelling {text:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("spelling {text:?}: {outcome}"));
+        }
+    }
+    over_budget
+}
+
+async fn suggest(database: &Database, text: &'static str) {
+    database
+        .read(move |connection| {
+            let hiding = AdultHiding::default();
+            if closest_title_words(connection, text, hiding)?.is_none() {
+                closest_chapter_title(connection, text, hiding)?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
 }
 
 async fn add_generated_library(database: &Database) {
