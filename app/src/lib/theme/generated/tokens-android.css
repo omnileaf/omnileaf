@@ -195,6 +195,18 @@
   --native-color-accent-hover: #00000000;
   --native-color-accent-pressed: #00000000;
   --native-spacing-book-progress: 160px;
+  --native-text-tab-label: calc(0.875rem * var(--text-scale));
+  --native-leading-tab-label: calc(1.25 / 0.875);
+  --native-weight-tab-label: 500;
+  --native-tracking-tab-label: 0.1px;
+  --native-spacing-tab-min: 80px;
+  --native-spacing-tab-indicator: 3px;
+  --native-radius-tab-indicator: 3px;
+  --native-color-tab-indicator: var(--native-color-on-tab-current);
+  --native-color-tab-rule: var(--native-color-menu-rule);
+  --native-color-row-current: var(--native-color-jump-current);
+  --native-color-on-row-current: var(--native-color-on-jump-current);
+  --native-spacing-sheet-foot-bottom: calc(16px + var(--spacing-safe-bottom));
 }
 
 :root[data-platform="android"],

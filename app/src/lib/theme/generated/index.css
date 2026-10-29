@@ -274,6 +274,18 @@
   --color-native-accent-hover: var(--native-color-accent-hover);
   --color-native-accent-pressed: var(--native-color-accent-pressed);
   --spacing-native-book-progress: var(--native-spacing-book-progress);
+  --text-native-tab-label: var(--native-text-tab-label);
+  --leading-native-tab-label: var(--native-leading-tab-label);
+  --font-weight-native-tab-label: var(--native-weight-tab-label);
+  --tracking-native-tab-label: var(--native-tracking-tab-label);
+  --spacing-native-tab-min: var(--native-spacing-tab-min);
+  --spacing-native-tab-indicator: var(--native-spacing-tab-indicator);
+  --radius-native-tab-indicator: var(--native-radius-tab-indicator);
+  --color-native-tab-indicator: var(--native-color-tab-indicator);
+  --color-native-tab-rule: var(--native-color-tab-rule);
+  --color-native-row-current: var(--native-color-row-current);
+  --color-native-on-row-current: var(--native-color-on-row-current);
+  --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
 }
 
 @media (prefers-reduced-motion: reduce) {
