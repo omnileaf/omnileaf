@@ -7,6 +7,8 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import LibrarySelectionHeader from "./LibrarySelectionHeader.svelte";
 
 const PHONE = { width: 402, height: 874 };
@@ -55,6 +57,7 @@ test("puts Select all on the left and Done on the right of the count on an iPhon
   expect(getComputedStyle(done.element()).backgroundColor).not.toBe(
     getComputedStyle(selectAll.element()).backgroundColor,
   );
+  expect(right.height).toBe(left.height);
 
   await selectAll.click();
   await done.click();
@@ -62,6 +65,24 @@ test("puts Select all on the left and Done on the right of the count on an iPhon
     selectAll: onSelectAll.mock.calls.length,
     done: onCancel.mock.calls.length,
   }).toEqual({ selectAll: 1, done: 1 });
+});
+
+test("draws Select all as a glass bar button at weight 510 on an iPhone", () => {
+  renderHeader("ios");
+  const button = page.getByRole("button", { name: "Select all" }).element();
+  const style = getComputedStyle(button);
+
+  expect({
+    isCapsule:
+      Number.parseFloat(style.borderTopLeftRadius) >=
+      button.getBoundingClientRect().height / 2,
+    weight: style.fontWeight,
+    fill: style.backgroundColor,
+  }).toEqual({
+    isCapsule: true,
+    weight: "510",
+    fill: resolvedColour("--color-native-bar-button", "backgroundColor"),
+  });
 });
 
 test("centres the count between the buttons on an iPhone", () => {

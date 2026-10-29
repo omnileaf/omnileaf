@@ -37,9 +37,9 @@
   {#if onIosPhone}
     <Button
       type="button"
-      variant="plain"
+      look="header-control"
       aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
-      class="shrink-0"
+      class="px-md"
       onclick={onSelectAll}
     >
       {m.library_select_all()}
@@ -53,9 +53,9 @@
     </p>
     <Button
       type="button"
-      variant="primary"
+      look="header-control"
       aria-keyshortcuts="Escape"
-      class="shrink-0"
+      class="bg-native-button-primary px-md text-native-on-button-primary shadow-none ios:backdrop-blur-none"
       onclick={onCancel}
     >
       {m.library_selection_done()}
