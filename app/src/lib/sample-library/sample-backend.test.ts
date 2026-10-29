@@ -574,8 +574,23 @@ test("lists the series with under 30 minutes left at nine seconds a page as quic
   ]);
 });
 
-test("lists only the quick reads meeting every other smart filter on", async () => {
+test("lists no series that is both a quick read and forgotten while none is", async () => {
   expect(await titlesFor({ smart: ["quickReads", "forgotten"] })).toEqual([]);
+});
+
+const FORGOTTEN_NUMBER = 9;
+const FORGOTTEN_TITLE = "Sample Series 09";
+
+test("lists only the series that are quick reads and forgotten together once a forgotten series has under 30 minutes left", async () => {
+  const { backend } = backendFor();
+  await backend.markBooks([sampleBookId(FORGOTTEN_NUMBER, 1)], "unread");
+
+  const both = await backend.librarySeries(
+    null,
+    filtered({ smart: ["quickReads", "forgotten"] }),
+  );
+
+  expect(both.series.map((series) => series.title)).toEqual([FORGOTTEN_TITLE]);
 });
 
 test("lists a series with 199 pages left as a quick read, as 199 pages take 1,791 seconds", async () => {
