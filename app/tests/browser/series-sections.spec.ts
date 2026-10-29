@@ -1,7 +1,13 @@
 import type { Page } from "@playwright/test";
 
 import { emitFakeEvent } from "./fake-backend.ts";
-import { EXPANDED_MIN_WIDTH, expect, test, viewportOf } from "./fixtures.ts";
+import {
+  EXPANDED_MIN_WIDTH,
+  expect,
+  test,
+  tokenColour,
+  viewportOf,
+} from "./fixtures.ts";
 import {
   chapters,
   SectionShelf,
@@ -239,5 +245,25 @@ test.describe("a series with a read chapter", () => {
     await kinds(page).getByRole("tab", { name: "Chapters" }).click();
 
     await expect(bookRows(page)).toHaveText([/chapter 13/]);
+  });
+});
+
+test.describe("a series' section tabs on iOS", { tag: "@native" }, () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({ platform: "ios", backend: shelf.backend() });
+
+  test("draws the section tabs as a segmented control", async ({ page }) => {
+    await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
+    await openSeries(page);
+
+    const chosen = kinds(page).getByRole("tab", { name: "Volumes" });
+    await expect(chosen).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-segment-selected"),
+    );
+    await expect(kinds(page)).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-segmented-track"),
+    );
   });
 });
