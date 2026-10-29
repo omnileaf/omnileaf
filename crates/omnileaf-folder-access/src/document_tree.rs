@@ -755,14 +755,11 @@ mod tests {
         let file = fixture.write("a.cbz", BOOK);
         fixture
             .documents
-            .refuse_deletes_with(io::ErrorKind::ReadOnlyFilesystem);
+            .refuse_deletes_with(io::ErrorKind::PermissionDenied);
 
         let removed = fixture.tree.remove(&in_tree("a.cbz"));
 
-        assert_eq!(
-            removed.unwrap_err().kind(),
-            io::ErrorKind::ReadOnlyFilesystem
-        );
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
         assert!(file.is_file());
         assert!(fixture.tree.details(&in_tree("a.cbz")).is_ok());
     }

@@ -145,11 +145,10 @@ impl<'a> GrantRequest<'a> {
 
 pub(crate) fn refusal_kind(code: Option<&str>) -> io::ErrorKind {
     match code {
-        Some(PERMISSION_DENIED) => io::ErrorKind::PermissionDenied,
+        Some(PERMISSION_DENIED | READ_ONLY_GRANT) => io::ErrorKind::PermissionDenied,
         Some(NOT_FOUND) => io::ErrorKind::NotFound,
         Some(TIMED_OUT) => io::ErrorKind::TimedOut,
         Some(INCOMPLETE) => io::ErrorKind::ResourceBusy,
-        Some(READ_ONLY_GRANT) => io::ErrorKind::ReadOnlyFilesystem,
         Some(DELETE_REFUSED) => io::ErrorKind::Unsupported,
         Some(_) | None => io::ErrorKind::Other,
     }
@@ -410,7 +409,7 @@ mod tests {
                 io::ErrorKind::NotFound,
                 io::ErrorKind::TimedOut,
                 io::ErrorKind::ResourceBusy,
-                io::ErrorKind::ReadOnlyFilesystem,
+                io::ErrorKind::PermissionDenied,
                 io::ErrorKind::Unsupported,
                 io::ErrorKind::Other,
                 io::ErrorKind::Other,
