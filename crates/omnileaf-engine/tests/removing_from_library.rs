@@ -278,6 +278,18 @@ async fn a_series_and_one_of_its_books_together_count_the_book_once() {
     assert_eq!(report, counts(1, 2));
 }
 
+#[tokio::test]
+async fn a_series_named_twice_counts_once() {
+    let linked = Removing::new("remove-series-twice-named").await;
+    let series = RemovalTarget::Series {
+        id: linked.series(SERIES_01).await,
+    };
+
+    let report = linked.remove(&[series, series]).await;
+
+    assert_eq!(report, counts(1, 2));
+}
+
 #[tokio::test(start_paused = true)]
 async fn a_removal_wakes_library_changes() {
     let linked = Removing::new("remove-wakes-changes").await;

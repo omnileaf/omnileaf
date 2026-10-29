@@ -10,7 +10,7 @@ use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{BookId, LibraryError, SeriesId};
+use crate::{BookId, LibraryError, SeriesId, scan::saturating_u32};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -63,7 +63,7 @@ pub(crate) fn expand(
     targets: &[RemovalTarget],
 ) -> Result<Expanded, Error> {
     let mut books = BTreeSet::new();
-    let mut series_held = 0_u32;
+    let mut series_held = BTreeSet::new();
     for target in targets {
         match target {
             RemovalTarget::Book { id } => {
@@ -72,7 +72,7 @@ pub(crate) fn expand(
             RemovalTarget::Series { id } => {
                 let held = books_of_series(connection, id.0)?;
                 if !held.is_empty() {
-                    series_held = series_held.saturating_add(1);
+                    series_held.insert(id.0);
                 }
                 books.extend(held);
             }
@@ -80,7 +80,7 @@ pub(crate) fn expand(
     }
     Ok(Expanded {
         books: books.into_iter().collect(),
-        series_held,
+        series_held: saturating_u32(series_held.len()),
     })
 }
 
