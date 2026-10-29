@@ -18,7 +18,6 @@ use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, set_position};
 use support::ScratchFolder;
 
 const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
-const REMOVALS_PROJECTION: &str = "book_removed";
 const MORE_THAN_ONE_BATCH: u32 = 70;
 
 fn another_profile() -> ProfileId {
@@ -91,9 +90,7 @@ async fn count_rows(store: &Store, table: &'static str) -> u32 {
 async fn forget_projected_removals(store: &Store) {
     store
         .database()
-        .write(|transaction| {
-            Ok(transaction.execute(&format!("DELETE FROM {REMOVALS_PROJECTION}"), [])?)
-        })
+        .write(|transaction| Ok(transaction.execute("DELETE FROM book_removed", [])?))
         .await
         .unwrap();
 }
