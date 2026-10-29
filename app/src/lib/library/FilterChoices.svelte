@@ -9,7 +9,6 @@
     LibrarySortBy,
     SmartFilter,
   } from "#lib/ipc/bindings.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
@@ -19,6 +18,7 @@
     READ_STATE_LABELS,
   } from "./filter-labels";
   import FilterToggles from "./FilterToggles.svelte";
+  import { GROUPED_FOOTNOTE, groupLook } from "./group-look";
   import {
     type ChosenFrom,
     type IncludedBy,
@@ -39,13 +39,6 @@
   import SortSelect from "./SortSelect.svelte";
 
   const TAGS_AT_FIRST = 3;
-  const PLAIN_HEADING = "text-small font-semibold";
-  const GROUPED_HEADING =
-    "ps-lg text-native-row-title leading-native-row-title tracking-native-row-title font-native-group-header text-muted mbe-sm";
-  const PLAIN_GROUP = "flex flex-col divide-y divide-border";
-  const GROUPED_GROUP = `flex flex-col divide-y divide-border overflow-hidden px-lg ios-grouped:divide-ios-separator ${GROUP_PLATE}`;
-  const GROUPED_FOOTNOTE =
-    "ps-lg text-native-group-footer leading-native-group-footer tracking-native-group-footer text-muted";
   const PLUS_SIZE = 14;
   const INCLUSION_LABELS = {
     any: m.library_filter_any,
@@ -65,8 +58,7 @@
     isGrouped?: boolean;
   } = $props();
 
-  const headingClass = $derived(isGrouped ? GROUPED_HEADING : PLAIN_HEADING);
-  const groupClass = $derived(isGrouped ? GROUPED_GROUP : PLAIN_GROUP);
+  const look = $derived(groupLook(isGrouped));
   const sortByOptions = SORTS.map((by) => ({
     value: by,
     label: SORT_LABELS[by](),
@@ -109,10 +101,10 @@
   }
 </script>
 
-<section class={["flex flex-col", isGrouped && "px-lg"]}>
-  <h3 class={headingClass}>{m.library_sort()}</h3>
+<section class={["flex flex-col", look.section]}>
+  <h3 class={look.heading}>{m.library_sort()}</h3>
   {#if isGrouped}
-    <div class={groupClass}>
+    <div class={look.group}>
       <PickerRow
         label={m.library_sort_by()}
         options={sortByOptions}
@@ -136,7 +128,7 @@
       />
     </div>
     {#if listing.sort.by === "timeLeft"}
-      <p class="{GROUPED_FOOTNOTE} mbs-sm">
+      <p class={GROUPED_FOOTNOTE}>
         {m.library_sort_time_left_footnote()}
       </p>
     {/if}
@@ -152,9 +144,9 @@
     />
   {/if}
 </section>
-<section class={["flex flex-col", isGrouped ? "px-lg" : "pbs-lg"]}>
-  <h3 class={headingClass}>{m.library_filter()}</h3>
-  <div class={groupClass}>
+<section class={["flex flex-col", isGrouped ? look.section : "pbs-lg"]}>
+  <h3 class={look.heading}>{m.library_filter()}</h3>
+  <div class={look.group}>
     {#if isGrouped}
       <PickerRow
         label={m.library_read_state()}
@@ -276,9 +268,9 @@
   </div>
 </section>
 {#if isGrouped && choices.smart.length > 0}
-  <section class="flex flex-col px-lg">
-    <h3 class={headingClass}>{m.library_smart_filters()}</h3>
-    <div class={groupClass}>
+  <section class={["flex flex-col", look.section]}>
+    <h3 class={look.heading}>{m.library_smart_filters()}</h3>
+    <div class={look.group}>
       <SmartFilterRows
         offered={choices.smart}
         chosen={listing.filter.smart}
@@ -287,9 +279,9 @@
         }}
       />
     </div>
-    <p class="{GROUPED_FOOTNOTE} mbs-sm">{m.library_smart_filters_hint()}</p>
+    <p class={GROUPED_FOOTNOTE}>{m.library_smart_filters_hint()}</p>
     {#if !choices.smart.includes("readyToCleanUp")}
-      <p class="{GROUPED_FOOTNOTE} mbs-sm">
+      <p class={GROUPED_FOOTNOTE}>
         {m.library_smart_clean_up_waits()}
       </p>
     {/if}
