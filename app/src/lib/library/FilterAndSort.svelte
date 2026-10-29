@@ -49,6 +49,11 @@
   } = $props();
 
   const titleId = $props.id();
+  const showLabel = $derived(
+    matching === undefined
+      ? m.library_view_done()
+      : m.library_show_series({ count: matching }),
+  );
   const isIos = currentPlatform() === "ios";
   const filtersCount = $derived(filtersOn(listing.filter));
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
@@ -129,8 +134,8 @@
     <ModalContent
       wideLook="sheet"
       wideClass="inline-filter-panel"
-      phoneClass={isIos ? undefined : "inset-bs-sheet-top block-auto"}
-      phoneHeight={isIos ? "large" : undefined}
+      phoneClass={isIos ? "" : "inset-bs-sheet-top block-auto"}
+      phoneHeight={isIos ? "large" : "fit"}
       onDismiss={close}
       onCloseAutoFocus={focusButton}
     >
@@ -183,79 +188,70 @@
               {/if}
             </p>
           </div>
-        {:else if isIos}
-          <SheetBar
-            title={m.library_filter_and_sort()}
-            closeLabel={m.library_close()}
-            actionLabel={m.library_reset()}
-            onClose={close}
-            onAction={() => {
-              onChoose(NEW_LIBRARY_LISTING);
-            }}
-          />
-          <div
-            class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
-          >
-            <FilterChoices {listing} {choices} {onChoose} />
-          </div>
-          <div class="px-lg pbs-sm pbe-sheet-bottom">
-            <p role="status" class="sr-only">
-              {#if matching !== undefined}
-                {m.library_series_match({ count: matching })}
-              {/if}
-            </p>
-            <Button
-              type="button"
-              variant="primary"
-              size="large"
-              class="inline-full"
-              onclick={close}
-            >
-              {matching === undefined
-                ? m.library_view_done()
-                : m.library_show_series({ count: matching })}
-            </Button>
-          </div>
         {:else}
-          <div class="flex items-center gap-md px-sheet-inline pbs-md pbe-xs">
-            <HeaderBadge icon={ListFilter} look="header-accent" />
-            <DialogTitle id={titleId} class="flex-1 text-title font-bold">
-              {m.library_filter_and_sort()}
-            </DialogTitle>
-            <Button
-              type="button"
-              look="text"
-              class="px-xs text-body min-block-touch-target"
-              onclick={() => {
+          {#if isIos}
+            <SheetBar
+              title={m.library_filter_and_sort()}
+              closeLabel={m.library_close()}
+              actionLabel={m.library_reset()}
+              onClose={close}
+              onAction={() => {
                 onChoose(NEW_LIBRARY_LISTING);
               }}
-            >
-              {m.library_reset()}
-            </Button>
-          </div>
+            />
+          {:else}
+            <div class="flex items-center gap-md px-sheet-inline pbs-md pbe-xs">
+              <HeaderBadge icon={ListFilter} look="header-accent" />
+              <DialogTitle id={titleId} class="flex-1 text-title font-bold">
+                {m.library_filter_and_sort()}
+              </DialogTitle>
+              <Button
+                type="button"
+                look="text"
+                class="px-xs text-body min-block-touch-target"
+                onclick={() => {
+                  onChoose(NEW_LIBRARY_LISTING);
+                }}
+              >
+                {m.library_reset()}
+              </Button>
+            </div>
+          {/if}
           <div
             class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
           >
             <FilterChoices {listing} {choices} {onChoose} />
           </div>
           <div
-            class="border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"
+            class={isIos
+              ? "px-lg pbs-sm pbe-sheet-bottom"
+              : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"}
           >
             <p role="status" class="sr-only">
               {#if matching !== undefined}
                 {m.library_series_match({ count: matching })}
               {/if}
             </p>
-            <Button
-              type="button"
-              look="filled"
-              class="rounded-control text-body font-semibold inline-full min-block-touch-target"
-              onclick={close}
-            >
-              {matching === undefined
-                ? m.library_view_done()
-                : m.library_show_series({ count: matching })}
-            </Button>
+            {#if isIos}
+              <Button
+                type="button"
+                variant="primary"
+                size="large"
+                class="inline-full"
+                onclick={close}
+              >
+                {showLabel}
+              </Button>
+            {:else}
+              <Button
+                type="button"
+                look="filled"
+                class="rounded-control text-body font-semibold inline-full min-block-touch-target"
+                onclick={close}
+              >
+                {showLabel}
+              </Button>
+            {/if}
           </div>
         {/if}
       {/snippet}

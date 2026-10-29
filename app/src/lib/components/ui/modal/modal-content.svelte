@@ -22,7 +22,7 @@
     phoneLook = "drawer",
     wideClass,
     phoneClass,
-    phoneHeight,
+    phoneHeight = "fit",
     phoneOverlayClass,
     onDismiss,
     children,
