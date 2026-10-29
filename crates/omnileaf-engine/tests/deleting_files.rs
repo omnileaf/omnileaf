@@ -904,6 +904,7 @@ struct Tree {
     entered_stat: Notify,
     stat_calls: AtomicUsize,
     failing_stat: Mutex<Option<io::ErrorKind>>,
+    failing_removal: Mutex<Option<io::ErrorKind>>,
 }
 
 impl Tree {
@@ -932,6 +933,7 @@ impl Tree {
             entered_stat: Notify::new(),
             stat_calls: AtomicUsize::new(0),
             failing_stat: Mutex::default(),
+            failing_removal: Mutex::default(),
         })
     }
 
@@ -998,6 +1000,10 @@ impl Tree {
         }
     }
 
+    fn refusing_removal_with(&self, kind: io::ErrorKind) {
+        *self.failing_removal.lock().unwrap() = Some(kind);
+    }
+
     fn failing_stats_with(&self, kind: io::ErrorKind) {
         *self.failing_stat.lock().unwrap() = Some(kind);
     }
@@ -1059,6 +1065,9 @@ impl Storage for Tree {
         self.stalls_if_asked_to(Call::Remove);
         if !self.removes {
             return Err(io::ErrorKind::Unsupported.into());
+        }
+        if let Some(kind) = *self.failing_removal.lock().unwrap() {
+            return Err(kind.into());
         }
         fs::remove_file(self.on_device(file)?)
     }
@@ -1144,6 +1153,54 @@ async fn a_tree_that_cannot_remove_files_reports_them_unsupported_and_keeps_them
         )]
     );
     assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn a_refused_delete_reports_unsupported_location_through_the_engine() {
+    let tree = Tree::new("delete-refused-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-refused-tree-home").await;
+    let book = only_book(&library).await;
+    tree.refusing_removal_with(io::ErrorKind::ReadOnlyFilesystem);
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&FakeDisposal::default()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::UnsupportedLocation)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn a_tree_document_that_is_gone_counts_as_missing() {
+    let tree = Tree::new("delete-gone-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-gone-tree-home").await;
+    let book = only_book(&library).await;
+    fs::remove_file(tree.book()).unwrap();
+    let disposal = FakeDisposal::default();
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&disposal),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [("v01.cbz".to_owned(), FileOutcome::Missing)]
+    );
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
 }
 
 async fn removing_the_tree_book_while_a_call_never_answers(
