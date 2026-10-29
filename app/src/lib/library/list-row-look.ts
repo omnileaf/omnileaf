@@ -11,12 +11,12 @@ export interface ListRowLook {
 }
 
 const LINK =
-  "flex flex-1 items-center gap-md py-list-row-block min-inline-none";
+  "flex flex-1 items-center gap-md py-list-row-block min-inline-none wrap-normal";
 
 const TODAY: ListRowLook = {
   row: "flex items-center gap-xs border-be border-border",
   link: `${LINK} rounded-control`,
-  title: "line-clamp-2 font-medium",
+  title: "line-clamp-2 font-medium wrap-break-word",
   meta: "text-detail text-muted",
 };
 
@@ -24,7 +24,7 @@ const PHONE: ListRowLook = {
   row: "relative flex items-center gap-xs after:absolute after:inset-e-none after:inset-be-none after:inset-s-[calc(var(--spacing-list-cover)+2px+var(--spacing-md))] after:bg-native-row-rule after:block-native-hairline",
   link: `${LINK} transition-control active:bg-native-row-selected active:[--secondary-text:var(--native-color-on-row-selected-muted)]`,
   title:
-    "line-clamp-2 text-native-row-title leading-native-row-title font-native-row-title tracking-native-row-title",
+    "line-clamp-2 wrap-break-word text-native-row-title leading-native-row-title font-native-row-title tracking-native-row-title",
   meta: `${ROW_SUBTITLE_TYPE} text-muted`,
 };
 
