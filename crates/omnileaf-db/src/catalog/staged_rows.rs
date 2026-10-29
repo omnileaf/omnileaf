@@ -243,7 +243,7 @@ impl<P> Listing<P> {
         params.push((":limit", &read.limit));
         params.extend_from_slice(read.bound);
         params.extend_from_slice(after);
-        let mut statement = read.connection.prepare(sql)?;
+        let mut statement = read.connection.prepare_cached(sql)?;
         let rows = statement.query_map(params.as_slice(), |row| {
             Ok((summary(row)?, (self.sort_position)(row)?))
         })?;

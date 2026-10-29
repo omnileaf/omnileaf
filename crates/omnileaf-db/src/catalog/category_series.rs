@@ -22,9 +22,8 @@ use crate::{
 
 macro_rules! series_in_category {
     () => {
-        "SELECT series.local_id FROM series_category
-            JOIN series ON series.id = series_category.series_id
-            WHERE series_category.category_id = :category"
+        "SELECT category_member.series_local_id FROM category_member
+            WHERE category_member.category_id = :category"
     };
 }
 
@@ -73,12 +72,12 @@ const BY_TIME_LEFT: Directions<Position> = directions! {
 const FEW_IN_CATEGORY: i64 = 1_500;
 
 const CATEGORY_IS_FEW: &str = "SELECT count(*) < :few FROM (
-    SELECT 1 FROM series_category WHERE category_id = :category LIMIT :few)";
+    SELECT 1 FROM category_member WHERE category_id = :category LIMIT :few)";
 
 macro_rules! members_of_category {
     () => {
-        " FROM series_category CROSS JOIN series ON series.id = series_category.series_id
-            WHERE series_category.category_id = :category
+        " FROM category_member CROSS JOIN series ON series.local_id = category_member.series_local_id
+            WHERE category_member.category_id = :category
                 AND series.reading_stage IN (:unstarted, :in_progress, :finished)"
     };
 }
@@ -128,7 +127,7 @@ fn listing_toward<'a, P>(
 }
 
 fn category_is_few(connection: &Connection, category: &[u8; 16]) -> Result<bool, Error> {
-    Ok(connection.prepare(CATEGORY_IS_FEW)?.query_row(
+    Ok(connection.prepare_cached(CATEGORY_IS_FEW)?.query_row(
         named_params! { ":few": FEW_IN_CATEGORY, ":category": category },
         |row| row.get(0),
     )?)
@@ -204,7 +203,7 @@ pub fn category_series_count(
     let mut params = filter.named().to_vec();
     params.push((":category", &category_bytes));
     Ok(connection
-        .prepare(SERIES_IN_CATEGORY)?
+        .prepare_cached(SERIES_IN_CATEGORY)?
         .query_row(params.as_slice(), |row| row.get(0))?)
 }
 
@@ -213,8 +212,7 @@ mod tests {
     use super::*;
     use crate::scratch::ScratchLibrary;
 
-    const IN_CATEGORY: &str =
-        "SEARCH series_category USING COVERING INDEX series_category_by_category (category_id=?)";
+    const IN_CATEGORY: &str = "SEARCH category_member USING PRIMARY KEY (category_id=?)";
 
     #[test]
     fn gathers_the_category_s_series_once_from_its_index_and_reads_each_stage_in_order() {
@@ -286,5 +284,164 @@ mod tests {
         let plan = scratch.query_plan(SERIES_IN_CATEGORY);
 
         assert!(plan.iter().any(|step| step == IN_CATEGORY), "{plan:?}");
+    }
+
+    mod category_members {
+        use std::path::Path;
+
+        use omnileaf_sync_proto::SeriesId;
+        use proptest::{collection::vec, prelude::*};
+
+        use super::*;
+        use crate::{
+            Database,
+            migration::{self, MIGRATIONS},
+            scratch::ScratchLibrary,
+            store::projector::set_category_membership,
+        };
+
+        const SERIES: u8 = 3;
+        const CATEGORIES: u8 = 2;
+        const MIGRATION_BEFORE_CATEGORY_MEMBERS: usize = 64;
+
+        #[derive(Clone, Debug)]
+        enum Change {
+            AddSeries(u8),
+            DeleteSeries(u8),
+            RekeySeries(u8, u8),
+            AddMember(u8, u8),
+            RemoveMember(u8, u8),
+        }
+
+        fn any_change() -> impl Strategy<Value = Change> {
+            prop_oneof![
+                (0..SERIES).prop_map(Change::AddSeries),
+                (0..SERIES).prop_map(Change::DeleteSeries),
+                (0..SERIES, 0..SERIES).prop_map(|(from, to)| Change::RekeySeries(from, to)),
+                (0..SERIES, 0..CATEGORIES)
+                    .prop_map(|(series, category)| Change::AddMember(series, category)),
+                (0..SERIES, 0..CATEGORIES)
+                    .prop_map(|(series, category)| Change::RemoveMember(series, category)),
+            ]
+        }
+
+        fn id(number: u8) -> [u8; 16] {
+            *series_id(number).as_bytes()
+        }
+
+        fn series_id(number: u8) -> SeriesId {
+            SeriesId::local(&format!("series {number}")).unwrap()
+        }
+
+        fn category(number: u8) -> CategoryId {
+            CategoryId::from_name(&format!("category {number}")).unwrap()
+        }
+
+        fn migrated() -> Connection {
+            let mut connection = Connection::open_in_memory().unwrap();
+            migration::apply(&mut connection, Path::new(":memory:"), MIGRATIONS).unwrap();
+            connection
+        }
+
+        fn apply(connection: &Connection, change: &Change) {
+            match *change {
+                Change::AddSeries(number) => {
+                    connection
+                        .execute(
+                            "INSERT OR IGNORE INTO series
+                                (id, source_id, natural_key, title, title_key, added_at_ms)
+                            VALUES (?1, zeroblob(16), hex(?1), 'Series', x'', 0)",
+                            [id(number)],
+                        )
+                        .unwrap();
+                }
+                Change::DeleteSeries(number) => {
+                    connection
+                        .execute("DELETE FROM series WHERE id = ?1", [id(number)])
+                        .unwrap();
+                }
+                Change::RekeySeries(from, to) => {
+                    connection
+                        .execute(
+                            "UPDATE OR IGNORE series SET id = ?2, natural_key = hex(?2) WHERE id = ?1",
+                            (id(from), id(to)),
+                        )
+                        .unwrap();
+                }
+                Change::AddMember(series, number) => {
+                    set_category_membership(connection, series_id(series), category(number), true)
+                        .unwrap();
+                }
+                Change::RemoveMember(series, number) => {
+                    set_category_membership(connection, series_id(series), category(number), false)
+                        .unwrap();
+                }
+            }
+        }
+
+        fn pairs(connection: &Connection, sql: &str) -> Vec<(Vec<u8>, i64)> {
+            connection
+                .prepare(sql)
+                .unwrap()
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        }
+
+        proptest! {
+            #[test]
+            fn lists_each_member_series_of_a_category_by_local_id_after_any_changes(
+                changes in vec(any_change(), 0..24)
+            ) {
+                let connection = migrated();
+
+                for change in &changes {
+                    apply(&connection, change);
+                }
+
+                prop_assert_eq!(
+                    pairs(&connection, "SELECT category_id, series_local_id FROM category_member ORDER BY 1, 2"),
+                    pairs(
+                        &connection,
+                        "SELECT series_category.category_id, series.local_id
+                        FROM series_category JOIN series ON series.id = series_category.series_id
+                        ORDER BY 1, 2"
+                    )
+                );
+            }
+        }
+
+        #[test]
+        fn lists_the_members_of_each_category_kept_from_before_the_upgrade() {
+            let scratch = ScratchLibrary::new("category-member-upgrade");
+            drop(
+                Database::open_with(
+                    &scratch.config,
+                    &MIGRATIONS[..MIGRATION_BEFORE_CATEGORY_MEMBERS],
+                )
+                .unwrap(),
+            );
+            let connection = Connection::open(&scratch.config.path).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                     VALUES (?1, zeroblob(16), 'a', 'A', x'', 0)",
+                    [id(0)],
+                )
+                .unwrap();
+            set_category_membership(&connection, series_id(0), category(0), true).unwrap();
+            set_category_membership(&connection, series_id(1), category(0), true).unwrap();
+
+            drop(Database::open(&scratch.config).unwrap());
+
+            assert_eq!(
+                pairs(
+                    &connection,
+                    "SELECT category_id, series_local_id FROM category_member"
+                ),
+                [(category(0).as_bytes().to_vec(), 1)]
+            );
+        }
     }
 }

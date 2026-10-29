@@ -146,11 +146,11 @@ const TAGGED_ARE_FEW: &str = "SELECT count(*) < :few FROM (
 
 /// SQLite works out every result column of a row before sorting it, so only the keys are sorted and the page's other columns read afterwards.
 macro_rules! sorted_page {
-    (candidates: $candidates:expr, seek: $seek:expr, order: $order:expr $(,)?) => {
+    (candidates: $candidates:expr, conditions: $conditions:expr, seek: $seek:expr, order: $order:expr $(,)?) => {
         concat!(
             "WITH page AS MATERIALIZED (SELECT series.local_id",
             $candidates,
-            $crate::catalog::series_listing::smart_conditions!(),
+            $conditions,
             $seek,
             " ORDER BY ",
             $order,
@@ -169,15 +169,25 @@ macro_rules! sorted_page {
 
 macro_rules! sorted_directions {
     (candidates: $candidates:expr, key: $key:literal, sort_position: $position:expr $(,)?) => {
+        $crate::catalog::gathering::sorted_directions! {
+            candidates: $candidates,
+            conditions: $crate::catalog::series_listing::smart_conditions!(),
+            key: $key,
+            sort_position: $position,
+        }
+    };
+    (candidates: $candidates:expr, conditions: $conditions:expr, key: $key:literal, sort_position: $position:expr $(,)?) => {
         $crate::catalog::series_page::Directions {
             ascending: $crate::catalog::staged_rows::Listing {
                 first_page_query: $crate::catalog::gathering::sorted_page! {
                     candidates: $candidates,
+                    conditions: $conditions,
                     seek: "",
                     order: concat!($key, ", id"),
                 },
                 next_page_query: $crate::catalog::gathering::sorted_page! {
                     candidates: $candidates,
+                    conditions: $conditions,
                     seek: concat!(" AND (series.", $key, ", series.id) > (:after_key, :after_id)"),
                     order: concat!($key, ", id"),
                 },
@@ -186,11 +196,13 @@ macro_rules! sorted_directions {
             descending: $crate::catalog::staged_rows::Listing {
                 first_page_query: $crate::catalog::gathering::sorted_page! {
                     candidates: $candidates,
+                    conditions: $conditions,
                     seek: "",
                     order: concat!($key, " DESC, id DESC"),
                 },
                 next_page_query: $crate::catalog::gathering::sorted_page! {
                     candidates: $candidates,
+                    conditions: $conditions,
                     seek: concat!(" AND (series.", $key, ", series.id) < (:after_key, :after_id)"),
                     order: concat!($key, " DESC, id DESC"),
                 },
@@ -224,6 +236,7 @@ macro_rules! gatherings {
             },
             few_tagged: $crate::catalog::gathering::sorted_directions! {
                 candidates: $crate::catalog::gathering::tagged_candidates!(),
+                conditions: $crate::catalog::series_listing::conditions_of_tagged_candidates!(),
                 key: $key,
                 sort_position: $position,
             },
@@ -384,7 +397,7 @@ pub(crate) fn stages_holding_matches(
 }
 
 fn tagged_are_few(connection: &Connection, tags: &str) -> Result<bool, Error> {
-    Ok(connection.prepare(TAGGED_ARE_FEW)?.query_row(
+    Ok(connection.prepare_cached(TAGGED_ARE_FEW)?.query_row(
         named_params! { ":few": FEW_TAGGED_SERIES, ":tag_list": tags },
         |row| row.get(0),
     )?)
@@ -400,7 +413,7 @@ fn are_few(
     params.push((":few", &FEW_SERIES));
     params.extend_from_slice(bound);
     Ok(connection
-        .prepare(candidates_are_few)?
+        .prepare_cached(candidates_are_few)?
         .query_row(params.as_slice(), |row| row.get(0))?)
 }
 

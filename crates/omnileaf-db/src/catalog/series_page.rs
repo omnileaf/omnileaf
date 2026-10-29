@@ -750,9 +750,8 @@ mod tests {
             ["SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned()]
                 .into_iter()
                 .chain(candidates_by_tag)
-                .chain(tag_probe_steps(3))
                 .collect(),
-            (5, 6),
+            (3, 4),
         );
         assert_eq!(plans, vec![gathered; queries.len()]);
     }
