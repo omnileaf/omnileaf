@@ -64,6 +64,7 @@
   --native-color-on-bar-button: #2f6f4f;
   --native-color-tab-bar: rgba(242, 242, 242, 0.55);
   --native-color-tab-pill: rgba(0, 0, 0, 0.056);
+  --native-color-accent-soft: #ddebe2;
   --native-color-on-jump-current: #2f6f4f;
   --native-color-on-tab: rgba(0, 0, 0, 0.85);
   --native-color-on-tab-current: #2f6f4f;
@@ -136,6 +137,7 @@
   --native-color-on-bar-button: #7fcb9d;
   --native-color-tab-bar: rgba(153, 153, 153, 0.17);
   --native-color-tab-pill: rgba(255, 255, 255, 0.056);
+  --native-color-accent-soft: #243a2c;
   --native-color-on-jump-current: #7fcb9d;
   --native-color-on-tab: rgba(255, 255, 255, 0.85);
   --native-color-on-tab-current: #7fcb9d;

@@ -39,7 +39,12 @@
             onToggle(option.value);
           }
         }
-        class="flex shrink-0 items-center gap-xs rounded-control border border-border bg-card px-md text-small font-medium whitespace-nowrap block-search-chip hover:bg-hover aria-pressed:border-transparent aria-pressed:bg-chip touch:touch-target-around"
+        class={[
+          "flex shrink-0 items-center gap-xs rounded-control border px-md text-small font-medium whitespace-nowrap block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:block-native-segment touch:touch-target-around",
+          isChosen
+            ? "border-transparent bg-chip ios:max-medium:bg-native-accent-soft ios:max-medium:font-semibold ios:max-medium:text-foreground"
+            : "border-border bg-card hover:bg-hover ios:max-medium:bg-native-button-outline ios:max-medium:hover:bg-native-button-outline",
+        ]}
       >
         {#if isChosen}
           <Check size={CHECK_SIZE} aria-hidden="true" />
