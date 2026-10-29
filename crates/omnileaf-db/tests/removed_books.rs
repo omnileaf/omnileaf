@@ -237,7 +237,8 @@ async fn removed_among_finds_the_marked_ids_beyond_one_batch() {
     let folder = ScratchFolder::new("removed-among-many");
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
     let books: Vec<BookId> = (1..=MORE_THAN_ONE_BATCH).map(book).collect();
-    let marked = books[(books.len() - 2)..].to_vec();
+    let last = books.len() - 1;
+    let marked: Vec<BookId> = [0, 31, 32, last].map(|index| books[index]).to_vec();
     for marked in &marked {
         set_removed(&store, *marked, true).await;
     }
@@ -245,6 +246,17 @@ async fn removed_among_finds_the_marked_ids_beyond_one_batch() {
     let removed = removed_among_books(&store, books).await;
 
     assert_eq!(removed, marked.into_iter().collect());
+}
+
+#[tokio::test]
+async fn removed_among_gives_a_repeated_id_once() {
+    let folder = ScratchFolder::new("removed-among-repeated");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_removed(&store, book(1), true).await;
+
+    let removed = removed_among_books(&store, vec![book(1), book(1)]).await;
+
+    assert_eq!(removed, BTreeSet::from([book(1)]));
 }
 
 #[tokio::test]
