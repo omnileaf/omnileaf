@@ -79,7 +79,10 @@ fn checked(submission: ReportSubmission, now: UnixTime) -> Result<NewReport, Fai
     {
         return Err(Failure::TooLarge);
     }
-    if !opens_with_code(&submission.report, &code) {
+    if !is_version_text(&submission.version)
+        || !is_report_text(&submission.report)
+        || !opens_with_code(&submission.report, &code)
+    {
         return Err(Failure::BadRequest);
     }
     let reply_to = submission
@@ -115,4 +118,17 @@ fn opens_with_code(report: &str, code: &ReportCode) -> bool {
         .next()
         .and_then(|first| first.strip_prefix(CODE_LABEL))
         .is_some_and(|written| written == code.as_str())
+}
+
+fn is_version_text(version: &str) -> bool {
+    !version.is_empty()
+        && version.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '+' | '-')
+        })
+}
+
+fn is_report_text(report: &str) -> bool {
+    !report
+        .chars()
+        .any(|character| character.is_control() && !matches!(character, '\n' | '\t'))
 }

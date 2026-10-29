@@ -225,6 +225,83 @@ async fn refuses_a_version_over_its_cap() {
 }
 
 #[tokio::test]
+async fn refuses_a_version_that_holds_a_line_break() {
+    let relay = relay();
+    let mut forged = draft(CODE);
+    forged.version = "0.1\nR-AAAA-AAAA  2025-10-29 00:00 UTC  published #1  linux  0.1".to_owned();
+
+    let answer = relay.submit(&forged).await;
+
+    assert_eq!(answer.status, StatusCode::BAD_REQUEST);
+    assert_eq!(error_code(&answer), "badRequest");
+}
+
+#[tokio::test]
+async fn refuses_a_version_that_holds_markdown() {
+    let relay = relay();
+    let mut forged = draft(CODE);
+    forged.version = "0.1 @someone [click](https://example.com)".to_owned();
+
+    let answer = relay.submit(&forged).await;
+
+    assert_eq!(answer.status, StatusCode::BAD_REQUEST);
+    assert_eq!(error_code(&answer), "badRequest");
+}
+
+#[tokio::test]
+async fn refuses_an_empty_version() {
+    let relay = relay();
+    let mut empty = draft(CODE);
+    empty.version = String::new();
+
+    let answer = relay.submit(&empty).await;
+
+    assert_eq!(answer.status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn takes_a_prerelease_version_with_build_metadata() {
+    let relay = relay();
+    let mut prerelease = draft(CODE);
+    prerelease.version = "0.1.0-beta.2+3f2a9c1".to_owned();
+
+    let answer = relay.submit(&prerelease).await;
+
+    assert_eq!(answer.status, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn refuses_a_report_that_holds_a_terminal_escape() {
+    let relay = relay();
+    let report = format!("Report code: {CODE}\n\u{1b}]52;c;aGVsbG8=\u{7}\n");
+
+    let answer = relay.submit(&draft(CODE).with_report(report)).await;
+
+    assert_eq!(answer.status, StatusCode::BAD_REQUEST);
+    assert_eq!(error_code(&answer), "badRequest");
+}
+
+#[tokio::test]
+async fn refuses_a_report_that_holds_a_carriage_return() {
+    let relay = relay();
+    let report = format!("Report code: {CODE}\nhidden\rshown\n");
+
+    let answer = relay.submit(&draft(CODE).with_report(report)).await;
+
+    assert_eq!(error_code(&answer), "badRequest");
+}
+
+#[tokio::test]
+async fn takes_a_report_with_tabs_and_line_breaks() {
+    let relay = relay();
+    let report = format!("Report code: {CODE}\nfield\tvalue\nnext line\n");
+
+    let answer = relay.submit(&draft(CODE).with_report(report)).await;
+
+    assert_eq!(answer.status, StatusCode::CREATED);
+}
+
+#[tokio::test]
 async fn takes_a_reply_address_at_its_cap_and_refuses_one_byte_more() {
     let relay = relay();
     let at_cap = draft(CODE).with_reply_to(&address_of_length(REPLY_ADDRESS_BYTES));
