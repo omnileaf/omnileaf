@@ -20,6 +20,7 @@ internal fun refusalOf(error: Exception): Refusal =
         is ListingIncomplete -> Refusal(error.message, INCOMPLETE)
         is ReadOnlyGrant -> Refusal(error.message, READ_ONLY_GRANT)
         is DeleteRefused -> Refusal(error.message, DELETE_REFUSED)
+        is UnsupportedOperationException -> Refusal(error.message, DELETE_REFUSED)
         is SecurityException -> Refusal(error.message, PERMISSION_DENIED)
         is FileNotFoundException -> Refusal(error.message, NOT_FOUND)
         else -> Refusal(error.message ?: error.toString(), null)

@@ -30,6 +30,20 @@ class RefusalTest {
     }
 
     @Test
+    fun `reports a provider that cannot delete as a delete it refused`() {
+        val refusal = refusalOf(UnsupportedOperationException("Delete not supported"))
+
+        assertEquals(Refusal("Delete not supported", "deleteRefused"), refusal)
+    }
+
+    @Test
+    fun `reports a listing still loading as incomplete`() {
+        val refusal = refusalOf(ListingIncomplete("content://documents.test/tree/primary%3AComics/children"))
+
+        assertEquals("incomplete", refusal.code)
+    }
+
+    @Test
     fun `reports a read only grant by its own code`() {
         val refusal = refusalOf(ReadOnlyGrant("content://documents.test/tree/primary%3AComics"))
 
