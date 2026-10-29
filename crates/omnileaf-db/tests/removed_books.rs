@@ -165,6 +165,23 @@ async fn marking_a_cleared_book_removed_again_shows_it_in_book_removed() {
 }
 
 #[tokio::test]
+async fn restoring_books_clears_the_marked_ones_among_them_and_leaves_the_rest() {
+    let folder = ScratchFolder::new("removed-restored");
+    let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
+    set_removed(&store, book(1), true).await;
+    set_removed(&store, book(2), true).await;
+    let written = removal_registers(&store).await;
+
+    store
+        .write(|writer| writer.restore_removed(&[book(1), book(3)]))
+        .await
+        .unwrap();
+
+    assert_eq!(removed_books(&store).await, [book(2)]);
+    assert_eq!(removal_registers(&store).await.len(), written.len());
+}
+
+#[tokio::test]
 async fn every_profile_sees_a_removal_the_household_wrote() {
     let folder = ScratchFolder::new("removed-household");
     let store = open_store(&folder, FakeClock::at(NOW_UNIX_MS));
