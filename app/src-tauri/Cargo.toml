@@ -17,11 +17,14 @@ e2e = ["dep:tauri-plugin-wdio-webdriver"]
 tauri-build.workspace = true
 
 [dependencies]
+getrandom.workspace = true
 omnileaf-edge-swipe.workspace = true
 omnileaf-engine.workspace = true
-getrandom.workspace = true
 omnileaf-icon-actions.workspace = true
+omnileaf-relay-proto.workspace = true
 os_info.workspace = true
+reqwest.workspace = true
+rustls.workspace = true
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
@@ -34,6 +37,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
+webpki-roots.workspace = true
 
 [target.'cfg(target_os = "android")'.dependencies]
 thiserror.workspace = true
@@ -72,13 +76,15 @@ omnileaf-windows-probes.workspace = true
 rustix.workspace = true
 
 [dev-dependencies]
+axum.workspace = true
 omnileaf-db.workspace = true
 omnileaf-formats.workspace = true
+omnileaf-relay.workspace = true
 omnileaf-system-bars.workspace = true
 omnileaf-testkit.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }
-tokio = { workspace = true, features = ["macros", "rt", "test-util"] }
+tokio = { workspace = true, features = ["macros", "net", "rt", "rt-multi-thread", "test-util"] }
 
 [lints]
 workspace = true

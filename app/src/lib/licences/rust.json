@@ -5,7 +5,7 @@
       "version": "0.11.4",
       "licence": "BSD-2-Clause",
       "texts": [
-        45
+        48
       ]
     },
     {
@@ -21,7 +21,7 @@
       "version": "1.1.5",
       "licence": "Unlicense OR MIT",
       "texts": [
-        111
+        136
       ]
     },
     {
@@ -29,7 +29,7 @@
       "version": "2.0.4",
       "licence": "BSD-3-Clause",
       "texts": [
-        46
+        49
       ]
     },
     {
@@ -37,7 +37,7 @@
       "version": "3.0.0",
       "licence": "BSD-3-Clause",
       "texts": [
-        46
+        49
       ]
     },
     {
@@ -45,7 +45,7 @@
       "version": "0.2.4",
       "licence": "BSD-3-Clause",
       "texts": [
-        47
+        51
       ]
     },
     {
@@ -53,7 +53,7 @@
       "version": "0.3.0",
       "licence": "BSD-3-Clause",
       "texts": [
-        47
+        51
       ]
     },
     {
@@ -61,7 +61,7 @@
       "version": "0.1.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -69,7 +69,7 @@
       "version": "1.0.104",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -77,7 +77,7 @@
       "version": "3.6.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -85,7 +85,7 @@
       "version": "0.7.8",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -93,7 +93,7 @@
       "version": "0.11.1",
       "licence": "MIT",
       "texts": [
-        96
+        121
       ]
     },
     {
@@ -101,7 +101,7 @@
       "version": "0.7.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        16
+        17
       ]
     },
     {
@@ -109,7 +109,7 @@
       "version": "2.5.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -117,7 +117,7 @@
       "version": "1.14.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -125,7 +125,7 @@
       "version": "2.6.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -133,7 +133,7 @@
       "version": "3.4.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -141,7 +141,7 @@
       "version": "2.5.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -149,7 +149,7 @@
       "version": "1.1.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        27
+        30
       ]
     },
     {
@@ -157,7 +157,7 @@
       "version": "0.2.14",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -165,7 +165,7 @@
       "version": "4.7.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -173,7 +173,7 @@
       "version": "0.1.92",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -181,7 +181,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -189,7 +189,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -197,7 +197,7 @@
       "version": "1.1.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -205,7 +205,7 @@
       "version": "0.21.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -213,7 +213,7 @@
       "version": "0.22.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -221,7 +221,7 @@
       "version": "0.23.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -229,7 +229,7 @@
       "version": "0.8.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        30
+        33
       ]
     },
     {
@@ -237,7 +237,7 @@
       "version": "0.8.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        30
+        33
       ]
     },
     {
@@ -245,7 +245,7 @@
       "version": "1.3.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -253,7 +253,7 @@
       "version": "2.13.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -261,7 +261,7 @@
       "version": "1.8.7",
       "licence": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -269,7 +269,7 @@
       "version": "0.10.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -277,7 +277,7 @@
       "version": "0.6.2",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -285,7 +285,7 @@
       "version": "1.7.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -293,8 +293,8 @@
       "version": "9.0.0",
       "licence": "BSD-3-Clause AND MIT",
       "texts": [
-        46,
-        57
+        49,
+        80
       ]
     },
     {
@@ -302,7 +302,7 @@
       "version": "5.0.3",
       "licence": "BSD-3-Clause OR MIT",
       "texts": [
-        46
+        49
       ]
     },
     {
@@ -310,7 +310,7 @@
       "version": "6.0.1",
       "licence": "BSD-3-Clause OR MIT",
       "texts": [
-        46
+        49
       ]
     },
     {
@@ -318,7 +318,7 @@
       "version": "1.25.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        42
+        45
       ]
     },
     {
@@ -326,7 +326,7 @@
       "version": "1.5.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        111
+        136
       ]
     },
     {
@@ -334,7 +334,7 @@
       "version": "0.1.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        111
+        136
       ]
     },
     {
@@ -342,7 +342,7 @@
       "version": "1.12.1",
       "licence": "MIT",
       "texts": [
-        70
+        95
       ]
     },
     {
@@ -350,7 +350,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -358,7 +358,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -366,7 +366,7 @@
       "version": "1.2.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -374,7 +374,7 @@
       "version": "0.1.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        34
+        37
       ]
     },
     {
@@ -382,7 +382,7 @@
       "version": "0.19.2",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     },
     {
@@ -390,7 +390,7 @@
       "version": "1.1.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -398,7 +398,7 @@
       "version": "0.14.0",
       "licence": "MIT",
       "texts": [
-        89
+        114
       ]
     },
     {
@@ -406,7 +406,7 @@
       "version": "1.0.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -414,7 +414,7 @@
       "version": "0.4.45",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        44
+        47
       ]
     },
     {
@@ -422,7 +422,7 @@
       "version": "5.4.3",
       "licence": "BSL-1.0",
       "texts": [
-        49
+        53
       ]
     },
     {
@@ -430,7 +430,7 @@
       "version": "4.6.8",
       "licence": "MIT",
       "texts": [
-        114
+        139
       ]
     },
     {
@@ -438,7 +438,7 @@
       "version": "2.5.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -446,7 +446,7 @@
       "version": "0.4.2",
       "licence": "CC0-1.0 OR MIT-0 OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -454,7 +454,7 @@
       "version": "0.18.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        21
+        22
       ]
     },
     {
@@ -462,7 +462,7 @@
       "version": "0.10.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -470,7 +470,7 @@
       "version": "0.8.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -478,7 +478,7 @@
       "version": "0.25.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -486,7 +486,7 @@
       "version": "0.2.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -494,7 +494,7 @@
       "version": "0.2.17",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -502,7 +502,7 @@
       "version": "0.3.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -510,7 +510,7 @@
       "version": "1.5.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -518,7 +518,7 @@
       "version": "0.5.17",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -526,7 +526,7 @@
       "version": "0.8.8",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -534,7 +534,7 @@
       "version": "0.9.21",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -542,7 +542,7 @@
       "version": "0.8.23",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -550,7 +550,7 @@
       "version": "0.1.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -558,7 +558,7 @@
       "version": "0.37.0",
       "licence": "MPL-2.0",
       "texts": [
-        126
+        151
       ]
     },
     {
@@ -566,7 +566,7 @@
       "version": "0.7.1",
       "licence": "MPL-2.0",
       "texts": [
-        126
+        151
       ]
     },
     {
@@ -574,7 +574,7 @@
       "version": "1.0.13",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        41
+        44
       ]
     },
     {
@@ -582,7 +582,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -590,7 +590,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -598,7 +598,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -606,7 +606,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -614,7 +614,7 @@
       "version": "0.23.0",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -622,7 +622,7 @@
       "version": "0.24.1",
       "licence": "MIT",
       "texts": [
-        90
+        115
       ]
     },
     {
@@ -630,7 +630,7 @@
       "version": "0.9.12",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        38
+        41
       ]
     },
     {
@@ -646,7 +646,7 @@
       "version": "2.1.1",
       "licence": "MIT",
       "texts": [
-        116
+        141
       ]
     },
     {
@@ -654,7 +654,7 @@
       "version": "2.1.1",
       "licence": "MIT",
       "texts": [
-        116
+        141
       ]
     },
     {
@@ -662,7 +662,7 @@
       "version": "0.10.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -670,7 +670,7 @@
       "version": "7.0.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -678,7 +678,7 @@
       "version": "0.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -686,7 +686,7 @@
       "version": "0.3.1",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -694,7 +694,7 @@
       "version": "0.2.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -702,7 +702,7 @@
       "version": "0.5.3",
       "licence": "MIT",
       "texts": [
-        65
+        88
       ]
     },
     {
@@ -710,7 +710,7 @@
       "version": "0.8.2",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -718,7 +718,7 @@
       "version": "0.4.3",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -726,7 +726,7 @@
       "version": "0.2.12",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -734,7 +734,7 @@
       "version": "0.28.0",
       "licence": "MIT",
       "texts": [
-        99
+        124
       ]
     },
     {
@@ -742,7 +742,7 @@
       "version": "1.2.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        30
+        33
       ]
     },
     {
@@ -750,8 +750,8 @@
       "version": "0.1.2",
       "licence": "Apache-2.0 AND MIT",
       "texts": [
-        40,
-        101
+        43,
+        126
       ]
     },
     {
@@ -759,7 +759,7 @@
       "version": "1.0.11",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -767,7 +767,7 @@
       "version": "0.3.5",
       "licence": "MPL-2.0",
       "texts": [
-        125
+        150
       ]
     },
     {
@@ -775,7 +775,7 @@
       "version": "1.0.5",
       "licence": "CC0-1.0 OR MIT-0 OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -783,7 +783,7 @@
       "version": "1.0.20",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -791,7 +791,7 @@
       "version": "1.18.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -807,7 +807,7 @@
       "version": "1.1.1",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     },
     {
@@ -815,7 +815,7 @@
       "version": "0.7.12",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        36
+        39
       ]
     },
     {
@@ -823,7 +823,7 @@
       "version": "0.7.12",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        37
+        40
       ]
     },
     {
@@ -831,7 +831,7 @@
       "version": "1.0.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -839,7 +839,7 @@
       "version": "0.4.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -847,7 +847,7 @@
       "version": "0.3.14",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -855,7 +855,7 @@
       "version": "3.4.0",
       "licence": "BSL-1.0",
       "texts": [
-        48
+        52
       ]
     },
     {
@@ -863,7 +863,7 @@
       "version": "5.4.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -871,7 +871,7 @@
       "version": "0.5.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -879,7 +879,7 @@
       "version": "0.3.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -887,7 +887,7 @@
       "version": "0.1.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -895,7 +895,7 @@
       "version": "6.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        5
+        6
       ]
     },
     {
@@ -903,7 +903,7 @@
       "version": "2.5.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -911,7 +911,7 @@
       "version": "0.2.7",
       "licence": "MIT",
       "texts": [
-        85
+        110
       ]
     },
     {
@@ -919,7 +919,7 @@
       "version": "0.3.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -927,7 +927,7 @@
       "version": "0.3.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -935,7 +935,7 @@
       "version": "0.5.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -943,7 +943,7 @@
       "version": "1.1.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -951,7 +951,7 @@
       "version": "1.0.7",
       "licence": "Apache-2.0  OR  MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -959,7 +959,7 @@
       "version": "0.1.5",
       "licence": "Zlib",
       "texts": [
-        130
+        155
       ]
     },
     {
@@ -967,7 +967,7 @@
       "version": "0.2.0",
       "licence": "Zlib",
       "texts": [
-        130
+        155
       ]
     },
     {
@@ -975,7 +975,7 @@
       "version": "0.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -983,7 +983,7 @@
       "version": "0.2.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -991,7 +991,7 @@
       "version": "0.3.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -999,7 +999,7 @@
       "version": "1.2.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1007,7 +1007,7 @@
       "version": "4.1.0",
       "licence": "MIT",
       "texts": [
-        115
+        140
       ]
     },
     {
@@ -1015,7 +1015,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1023,7 +1023,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1031,7 +1031,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1039,7 +1039,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1047,7 +1047,7 @@
       "version": "2.6.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1055,7 +1055,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1063,7 +1063,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1071,7 +1071,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1079,7 +1079,7 @@
       "version": "0.3.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        18
+        19
       ]
     },
     {
@@ -1087,7 +1087,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1095,7 +1095,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1103,7 +1103,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1111,7 +1111,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1119,7 +1119,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1127,7 +1127,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1135,7 +1135,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1143,7 +1143,7 @@
       "version": "0.14.7",
       "licence": "MIT",
       "texts": [
-        123
+        148
       ]
     },
     {
@@ -1151,7 +1151,15 @@
       "version": "1.1.0",
       "licence": "Apache-2.0",
       "texts": [
-        28
+        31
+      ]
+    },
+    {
+      "name": "getrandom",
+      "version": "0.2.17",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        36
       ]
     },
     {
@@ -1159,7 +1167,7 @@
       "version": "0.3.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        33
+        36
       ]
     },
     {
@@ -1167,7 +1175,7 @@
       "version": "0.4.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        33
+        36
       ]
     },
     {
@@ -1175,7 +1183,7 @@
       "version": "0.18.4",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1183,7 +1191,7 @@
       "version": "0.18.1",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1191,7 +1199,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1199,7 +1207,7 @@
       "version": "0.18.5",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1207,7 +1215,7 @@
       "version": "0.18.1",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1215,7 +1223,7 @@
       "version": "0.3.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1223,7 +1231,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1231,7 +1239,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1239,7 +1247,7 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -1247,7 +1255,15 @@
       "version": "0.18.2",
       "licence": "MIT",
       "texts": [
-        106
+        131
+      ]
+    },
+    {
+      "name": "h2",
+      "version": "0.4.20",
+      "licence": "MIT",
+      "texts": [
+        94
       ]
     },
     {
@@ -1255,7 +1271,7 @@
       "version": "2.7.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1263,7 +1279,7 @@
       "version": "0.15.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1271,7 +1287,7 @@
       "version": "0.17.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1279,7 +1295,7 @@
       "version": "0.12.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        29
+        32
       ]
     },
     {
@@ -1287,7 +1303,7 @@
       "version": "0.4.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1295,7 +1311,7 @@
       "version": "0.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1303,7 +1319,7 @@
       "version": "0.4.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -1311,7 +1327,7 @@
       "version": "0.39.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1319,7 +1335,7 @@
       "version": "1.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        22
+        23
       ]
     },
     {
@@ -1327,7 +1343,7 @@
       "version": "1.1.0",
       "licence": "MIT",
       "texts": [
-        78
+        103
       ]
     },
     {
@@ -1335,7 +1351,7 @@
       "version": "0.1.5",
       "licence": "MIT",
       "texts": [
-        78
+        103
       ]
     },
     {
@@ -1343,7 +1359,7 @@
       "version": "1.10.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1351,7 +1367,15 @@
       "version": "1.11.1",
       "licence": "MIT",
       "texts": [
-        61
+        84
+      ]
+    },
+    {
+      "name": "hyper-rustls",
+      "version": "0.27.10",
+      "licence": "Apache-2.0 OR ISC OR MIT",
+      "texts": [
+        31
       ]
     },
     {
@@ -1359,7 +1383,7 @@
       "version": "0.1.21",
       "licence": "MIT",
       "texts": [
-        79
+        104
       ]
     },
     {
@@ -1367,7 +1391,7 @@
       "version": "0.1.65",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        25
+        27
       ]
     },
     {
@@ -1375,7 +1399,7 @@
       "version": "0.6.0",
       "licence": "MIT",
       "texts": [
-        91
+        116
       ]
     },
     {
@@ -1383,7 +1407,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1391,7 +1415,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1399,7 +1423,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1407,7 +1431,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1415,7 +1439,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1423,7 +1447,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1431,7 +1455,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1439,7 +1463,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1447,7 +1471,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1455,7 +1479,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1463,7 +1487,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1471,7 +1495,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1479,7 +1503,7 @@
       "version": "2.4.0",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1487,7 +1511,7 @@
       "version": "1.0.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1495,7 +1519,7 @@
       "version": "1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1503,7 +1527,7 @@
       "version": "1.2.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1511,7 +1535,7 @@
       "version": "0.25.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1519,7 +1543,7 @@
       "version": "0.2.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1527,7 +1551,7 @@
       "version": "0.15.0",
       "licence": "MIT",
       "texts": [
-        88
+        113
       ]
     },
     {
@@ -1535,7 +1559,7 @@
       "version": "2.14.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1543,7 +1567,7 @@
       "version": "0.22.0",
       "licence": "MIT",
       "texts": [
-        93
+        118
       ]
     },
     {
@@ -1551,7 +1575,7 @@
       "version": "0.11.5",
       "licence": "ISC",
       "texts": [
-        53
+        74
       ]
     },
     {
@@ -1559,7 +1583,7 @@
       "version": "0.1.8",
       "licence": "ISC",
       "texts": [
-        52
+        73
       ]
     },
     {
@@ -1567,7 +1591,7 @@
       "version": "2.12.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        12
+        13
       ]
     },
     {
@@ -1575,7 +1599,7 @@
       "version": "0.2.0",
       "licence": "MIT",
       "texts": [
-        100
+        125
       ]
     },
     {
@@ -1583,7 +1607,7 @@
       "version": "0.4.0",
       "licence": "MIT",
       "texts": [
-        100
+        125
       ]
     },
     {
@@ -1591,7 +1615,7 @@
       "version": "1.0.18",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1599,7 +1623,7 @@
       "version": "1.1.2",
       "licence": "MIT",
       "texts": [
-        108
+        133
       ]
     },
     {
@@ -1607,7 +1631,7 @@
       "version": "1.1.1",
       "licence": "MIT",
       "texts": [
-        107
+        132
       ]
     },
     {
@@ -1615,7 +1639,23 @@
       "version": "0.21.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
+      ]
+    },
+    {
+      "name": "jni",
+      "version": "0.22.4",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        46
+      ]
+    },
+    {
+      "name": "jni-macros",
+      "version": "0.22.4",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        46
       ]
     },
     {
@@ -1623,7 +1663,7 @@
       "version": "0.3.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -1631,7 +1671,7 @@
       "version": "0.4.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -1639,7 +1679,7 @@
       "version": "0.4.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1647,7 +1687,7 @@
       "version": "0.3.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1655,8 +1695,8 @@
       "version": "0.7.1",
       "licence": "(MIT OR Apache-2.0) AND IJG",
       "texts": [
-        35,
-        51
+        38,
+        56
       ]
     },
     {
@@ -1664,7 +1704,7 @@
       "version": "4.2.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        14
+        15
       ]
     },
     {
@@ -1672,7 +1712,7 @@
       "version": "0.7.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        17
+        18
       ]
     },
     {
@@ -1680,7 +1720,7 @@
       "version": "1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1688,7 +1728,7 @@
       "version": "1.0.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1696,7 +1736,7 @@
       "version": "0.11.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1704,7 +1744,7 @@
       "version": "0.13.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1712,7 +1752,7 @@
       "version": "0.6.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1720,7 +1760,7 @@
       "version": "0.13.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1728,7 +1768,7 @@
       "version": "0.2.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1736,7 +1776,7 @@
       "version": "0.11.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1744,7 +1784,7 @@
       "version": "0.12.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1752,7 +1792,7 @@
       "version": "1.0.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1760,7 +1800,7 @@
       "version": "0.12.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1768,7 +1808,7 @@
       "version": "1.0.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1776,7 +1816,7 @@
       "version": "0.11.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1784,7 +1824,7 @@
       "version": "0.8.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        27
+        30
       ]
     },
     {
@@ -1792,7 +1832,7 @@
       "version": "1.2.1",
       "licence": "MIT",
       "texts": [
-        68
+        92
       ]
     },
     {
@@ -1800,7 +1840,7 @@
       "version": "1.1.2",
       "licence": "MIT",
       "texts": [
-        68
+        92
       ]
     },
     {
@@ -1808,7 +1848,7 @@
       "version": "1.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1816,7 +1856,7 @@
       "version": "0.9.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1824,7 +1864,7 @@
       "version": "0.9.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1841,7 +1881,7 @@
       "version": "0.2.189",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1849,7 +1889,7 @@
       "version": "0.2.7",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        38
+        41
       ]
     },
     {
@@ -1857,7 +1897,7 @@
       "version": "0.7.4",
       "licence": "ISC",
       "texts": [
-        54
+        76
       ]
     },
     {
@@ -1865,7 +1905,7 @@
       "version": "0.38.2",
       "licence": "MIT",
       "texts": [
-        59
+        82
       ]
     },
     {
@@ -1874,7 +1914,7 @@
       "licence": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
       "texts": [
         4,
-        28
+        31
       ]
     },
     {
@@ -1882,7 +1922,7 @@
       "version": "0.8.3",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -1890,7 +1930,7 @@
       "version": "1.0.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1898,7 +1938,7 @@
       "version": "0.4.14",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1906,7 +1946,7 @@
       "version": "0.4.34",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1914,7 +1954,7 @@
       "version": "0.23.0",
       "licence": "Apache-2.0",
       "texts": [
-        10
+        11
       ]
     },
     {
@@ -1922,7 +1962,7 @@
       "version": "0.39.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1930,7 +1970,7 @@
       "version": "2.8.3",
       "licence": "Unlicense OR MIT",
       "texts": [
-        111
+        136
       ]
     },
     {
@@ -1938,7 +1978,7 @@
       "version": "0.9.1",
       "licence": "MIT",
       "texts": [
-        69
+        93
       ]
     },
     {
@@ -1946,7 +1986,7 @@
       "version": "0.3.17",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1954,7 +1994,7 @@
       "version": "0.8.9",
       "licence": "MIT OR Zlib OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1962,7 +2002,7 @@
       "version": "0.9.1",
       "licence": "MIT OR Zlib OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -1970,7 +2010,7 @@
       "version": "1.2.3",
       "licence": "MIT",
       "texts": [
-        58
+        81
       ]
     },
     {
@@ -1978,7 +2018,7 @@
       "version": "0.8.1",
       "licence": "BSD-3-Clause OR Apache-2.0",
       "texts": [
-        9
+        10
       ]
     },
     {
@@ -1986,7 +2026,7 @@
       "version": "0.20.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -1994,7 +2034,7 @@
       "version": "0.9.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2002,7 +2042,7 @@
       "version": "0.1.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2010,7 +2050,7 @@
       "version": "0.6.0+11769913",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2018,7 +2058,7 @@
       "version": "1.0.6",
       "licence": "MIT",
       "texts": [
-        64
+        87
       ]
     },
     {
@@ -2026,7 +2066,7 @@
       "version": "0.31.3",
       "licence": "MIT",
       "texts": [
-        112
+        137
       ]
     },
     {
@@ -2034,7 +2074,7 @@
       "version": "8.0.0",
       "licence": "MIT",
       "texts": [
-        60
+        83
       ]
     },
     {
@@ -2042,7 +2082,7 @@
       "version": "8.2.0",
       "licence": "CC0-1.0",
       "texts": [
-        50
+        54
       ]
     },
     {
@@ -2050,7 +2090,7 @@
       "version": "2.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        26
+        29
       ]
     },
     {
@@ -2058,7 +2098,7 @@
       "version": "0.50.3",
       "licence": "MIT",
       "texts": [
-        122
+        147
       ]
     },
     {
@@ -2066,7 +2106,7 @@
       "version": "0.2.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2074,7 +2114,7 @@
       "version": "0.2.19",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2082,7 +2122,7 @@
       "version": "0.7.6",
       "licence": "BSD-3-Clause OR MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2090,7 +2130,7 @@
       "version": "0.7.6",
       "licence": "BSD-3-Clause OR MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2098,7 +2138,7 @@
       "version": "0.6.4",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2106,7 +2146,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2114,7 +2154,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2122,7 +2162,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2130,7 +2170,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2138,7 +2178,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2146,7 +2186,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2154,7 +2194,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2162,7 +2202,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2170,7 +2210,7 @@
       "version": "4.1.0",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2178,7 +2218,7 @@
       "version": "0.1.1",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2186,7 +2226,7 @@
       "version": "0.3.2",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2194,7 +2234,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2202,7 +2242,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2210,7 +2250,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2218,7 +2258,7 @@
       "version": "0.3.2",
       "licence": "Zlib OR Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2226,7 +2266,7 @@
       "version": "1.21.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2234,7 +2274,15 @@
       "version": "5.4.4",
       "licence": "MIT",
       "texts": [
-        121
+        146
+      ]
+    },
+    {
+      "name": "openssl-probe",
+      "version": "0.2.2",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        31
       ]
     },
     {
@@ -2242,7 +2290,7 @@
       "version": "0.2.0",
       "licence": "MPL-2.0",
       "texts": [
-        127
+        152
       ]
     },
     {
@@ -2250,7 +2298,7 @@
       "version": "0.2.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2258,7 +2306,7 @@
       "version": "3.15.0",
       "licence": "MIT",
       "texts": [
-        119
+        144
       ]
     },
     {
@@ -2266,7 +2314,7 @@
       "version": "1.2.3",
       "licence": "MIT",
       "texts": [
-        120
+        145
       ]
     },
     {
@@ -2274,7 +2322,7 @@
       "version": "0.18.3",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -2282,7 +2330,7 @@
       "version": "0.18.0",
       "licence": "MIT",
       "texts": [
-        106
+        131
       ]
     },
     {
@@ -2290,7 +2338,7 @@
       "version": "2.2.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2298,7 +2346,7 @@
       "version": "0.12.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2306,7 +2354,7 @@
       "version": "0.9.12",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2314,7 +2362,7 @@
       "version": "1.0.15",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2322,7 +2370,7 @@
       "version": "2.3.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2330,7 +2378,7 @@
       "version": "0.8.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2338,7 +2386,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        110
+        135
       ]
     },
     {
@@ -2346,7 +2394,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        110
+        135
       ]
     },
     {
@@ -2354,7 +2402,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        110
+        135
       ]
     },
     {
@@ -2362,7 +2410,7 @@
       "version": "0.13.1",
       "licence": "MIT",
       "texts": [
-        110
+        135
       ]
     },
     {
@@ -2370,7 +2418,7 @@
       "version": "0.2.17",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2378,7 +2426,7 @@
       "version": "0.2.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2386,7 +2434,7 @@
       "version": "1.10.1",
       "licence": "MIT",
       "texts": [
-        62
+        85
       ]
     },
     {
@@ -2394,7 +2442,7 @@
       "version": "0.18.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2402,7 +2450,7 @@
       "version": "3.11.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2410,7 +2458,7 @@
       "version": "0.4.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2418,7 +2466,7 @@
       "version": "0.1.6",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -2434,7 +2482,7 @@
       "version": "0.2.21",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        23
+        25
       ]
     },
     {
@@ -2442,7 +2490,7 @@
       "version": "0.1.1",
       "licence": "MIT",
       "texts": [
-        87
+        112
       ]
     },
     {
@@ -2450,7 +2498,7 @@
       "version": "1.3.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        34
+        37
       ]
     },
     {
@@ -2458,7 +2506,7 @@
       "version": "2.0.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        34
+        37
       ]
     },
     {
@@ -2466,7 +2514,7 @@
       "version": "3.5.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        34
+        37
       ]
     },
     {
@@ -2474,7 +2522,7 @@
       "version": "1.0.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        24
+        26
       ]
     },
     {
@@ -2482,7 +2530,7 @@
       "version": "1.0.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        24
+        26
       ]
     },
     {
@@ -2490,7 +2538,7 @@
       "version": "1.0.107",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2498,7 +2546,7 @@
       "version": "0.1.30",
       "licence": "BSD-3-Clause OR Apache-2.0",
       "texts": [
-        9
+        10
       ]
     },
     {
@@ -2506,7 +2554,7 @@
       "version": "2.0.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -2514,7 +2562,7 @@
       "version": "0.41.0",
       "licence": "MIT",
       "texts": [
-        117
+        142
       ]
     },
     {
@@ -2522,7 +2570,7 @@
       "version": "0.42.0",
       "licence": "MIT",
       "texts": [
-        117
+        142
       ]
     },
     {
@@ -2530,7 +2578,7 @@
       "version": "1.0.47",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2538,7 +2586,7 @@
       "version": "0.9.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2546,7 +2594,7 @@
       "version": "0.9.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2554,7 +2602,7 @@
       "version": "0.9.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        32
+        35
       ]
     },
     {
@@ -2562,7 +2610,7 @@
       "version": "0.6.2",
       "licence": "MIT OR Apache-2.0 OR Zlib",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2570,7 +2618,7 @@
       "version": "1.12.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2578,7 +2626,7 @@
       "version": "1.13.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2586,7 +2634,7 @@
       "version": "1.13.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2594,7 +2642,7 @@
       "version": "0.4.18",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2602,7 +2650,7 @@
       "version": "0.8.11",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2610,7 +2658,7 @@
       "version": "0.13.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        20
+        21
       ]
     },
     {
@@ -2618,7 +2666,32 @@
       "version": "0.16.0",
       "licence": "MIT",
       "texts": [
-        98
+        123
+      ]
+    },
+    {
+      "name": "ring",
+      "version": "0.17.14",
+      "licence": "Apache-2.0 AND ISC",
+      "texts": [
+        5,
+        31,
+        57,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        75
       ]
     },
     {
@@ -2626,7 +2699,7 @@
       "version": "0.40.2",
       "licence": "MIT",
       "texts": [
-        59
+        82
       ]
     },
     {
@@ -2634,7 +2707,7 @@
       "version": "2.1.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2643,7 +2716,55 @@
       "licence": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
       "texts": [
         4,
+        31
+      ]
+    },
+    {
+      "name": "rustls",
+      "version": "0.23.46",
+      "licence": "Apache-2.0 OR ISC OR MIT",
+      "texts": [
+        31
+      ]
+    },
+    {
+      "name": "rustls-native-certs",
+      "version": "0.8.5",
+      "licence": "Apache-2.0 OR ISC OR MIT",
+      "texts": [
+        31
+      ]
+    },
+    {
+      "name": "rustls-pki-types",
+      "version": "1.15.1",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
         28
+      ]
+    },
+    {
+      "name": "rustls-platform-verifier",
+      "version": "0.7.1",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        12
+      ]
+    },
+    {
+      "name": "rustls-platform-verifier-android",
+      "version": "0.2.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        46
+      ]
+    },
+    {
+      "name": "rustls-webpki",
+      "version": "0.103.16",
+      "licence": "ISC",
+      "texts": [
+        77
       ]
     },
     {
@@ -2651,7 +2772,7 @@
       "version": "1.0.23",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2659,7 +2780,15 @@
       "version": "1.0.6",
       "licence": "Unlicense OR MIT",
       "texts": [
-        118
+        143
+      ]
+    },
+    {
+      "name": "schannel",
+      "version": "0.1.30",
+      "licence": "MIT",
+      "texts": [
+        89
       ]
     },
     {
@@ -2667,7 +2796,7 @@
       "version": "0.8.22",
       "licence": "MIT",
       "texts": [
-        94
+        119
       ]
     },
     {
@@ -2675,8 +2804,8 @@
       "version": "0.8.22",
       "licence": "MIT",
       "texts": [
-        56,
-        94
+        79,
+        119
       ]
     },
     {
@@ -2684,7 +2813,7 @@
       "version": "1.0.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2692,7 +2821,23 @@
       "version": "1.2.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
+      ]
+    },
+    {
+      "name": "security-framework",
+      "version": "3.7.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        31
+      ]
+    },
+    {
+      "name": "security-framework-sys",
+      "version": "2.17.0",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        31
       ]
     },
     {
@@ -2700,7 +2845,7 @@
       "version": "0.38.0",
       "licence": "MPL-2.0",
       "texts": [
-        127
+        152
       ]
     },
     {
@@ -2708,7 +2853,7 @@
       "version": "1.0.28",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2716,7 +2861,7 @@
       "version": "1.0.229",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2724,7 +2869,7 @@
       "version": "0.1.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2732,7 +2877,7 @@
       "version": "1.0.229",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2740,7 +2885,7 @@
       "version": "1.0.229",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2748,7 +2893,7 @@
       "version": "0.29.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2756,7 +2901,7 @@
       "version": "1.0.154",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2764,7 +2909,7 @@
       "version": "0.1.21",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -2772,7 +2917,7 @@
       "version": "1.1.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -2780,7 +2925,7 @@
       "version": "3.24.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2788,7 +2933,7 @@
       "version": "3.24.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2796,7 +2941,7 @@
       "version": "0.1.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        11
+        12
       ]
     },
     {
@@ -2804,7 +2949,7 @@
       "version": "0.1.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        11
+        12
       ]
     },
     {
@@ -2812,7 +2957,7 @@
       "version": "0.4.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2820,7 +2965,7 @@
       "version": "0.24.1",
       "licence": "Apache-2.0",
       "texts": [
-        10
+        11
       ]
     },
     {
@@ -2828,7 +2973,7 @@
       "version": "0.10.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        31
+        34
       ]
     },
     {
@@ -2836,7 +2981,7 @@
       "version": "0.1.7",
       "licence": "MIT",
       "texts": [
-        74
+        99
       ]
     },
     {
@@ -2844,7 +2989,7 @@
       "version": "1.4.8",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2852,7 +2997,23 @@
       "version": "0.3.10",
       "licence": "MIT",
       "texts": [
-        103
+        128
+      ]
+    },
+    {
+      "name": "simd_cesu8",
+      "version": "1.2.0",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        31
+      ]
+    },
+    {
+      "name": "simdutf8",
+      "version": "0.1.5",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        46
       ]
     },
     {
@@ -2868,7 +3029,7 @@
       "version": "0.4.12",
       "licence": "MIT",
       "texts": [
-        73
+        98
       ]
     },
     {
@@ -2876,7 +3037,7 @@
       "version": "1.16.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2884,7 +3045,7 @@
       "version": "0.6.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2892,7 +3053,7 @@
       "version": "0.4.8",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        39
+        42
       ]
     },
     {
@@ -2900,7 +3061,7 @@
       "version": "0.5.0",
       "licence": "MIT",
       "texts": [
-        107
+        132
       ]
     },
     {
@@ -2908,7 +3069,7 @@
       "version": "0.5.0",
       "licence": "MIT",
       "texts": [
-        107
+        132
       ]
     },
     {
@@ -2916,7 +3077,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2924,7 +3085,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2932,7 +3093,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2940,7 +3101,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2948,7 +3109,7 @@
       "version": "0.0.12",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -2956,7 +3117,7 @@
       "version": "1.2.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2964,7 +3125,7 @@
       "version": "0.9.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2972,7 +3133,15 @@
       "version": "0.11.1",
       "licence": "MIT",
       "texts": [
-        113
+        138
+      ]
+    },
+    {
+      "name": "subtle",
+      "version": "2.6.1",
+      "licence": "BSD-3-Clause",
+      "texts": [
+        50
       ]
     },
     {
@@ -2980,7 +3149,7 @@
       "version": "1.0.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        13
+        14
       ]
     },
     {
@@ -2988,7 +3157,7 @@
       "version": "1.0.109",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -2996,7 +3165,7 @@
       "version": "2.0.119",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3004,7 +3173,7 @@
       "version": "3.0.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3012,7 +3181,7 @@
       "version": "1.0.2",
       "licence": "Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3020,7 +3189,7 @@
       "version": "0.14.0",
       "licence": "MIT",
       "texts": [
-        82
+        107
       ]
     },
     {
@@ -3028,7 +3197,7 @@
       "version": "0.37.1",
       "licence": "Apache-2.0",
       "texts": [
-        40
+        43
       ]
     },
     {
@@ -3036,7 +3205,7 @@
       "version": "0.1.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3044,7 +3213,7 @@
       "version": "2.12.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3052,7 +3221,7 @@
       "version": "2.7.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3060,7 +3229,7 @@
       "version": "2.7.4",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3068,7 +3237,7 @@
       "version": "2.5.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3076,7 +3245,7 @@
       "version": "2.8.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3084,7 +3253,7 @@
       "version": "2.7.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3092,7 +3261,7 @@
       "version": "2.7.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3100,7 +3269,7 @@
       "version": "2.5.5",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3108,7 +3277,7 @@
       "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3116,7 +3285,7 @@
       "version": "2.12.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3124,7 +3293,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -3132,7 +3301,7 @@
       "version": "2.0.0-rc.25",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -3140,7 +3309,7 @@
       "version": "2.10.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3148,7 +3317,7 @@
       "version": "3.27.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3156,7 +3325,7 @@
       "version": "0.5.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3164,7 +3333,7 @@
       "version": "1.0.69",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3172,7 +3341,7 @@
       "version": "2.0.21",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3180,7 +3349,7 @@
       "version": "1.0.69",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3188,7 +3357,7 @@
       "version": "2.0.21",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3196,7 +3365,7 @@
       "version": "1.1.10",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3204,7 +3373,7 @@
       "version": "0.11.3",
       "licence": "MIT",
       "texts": [
-        92
+        117
       ]
     },
     {
@@ -3212,7 +3381,7 @@
       "version": "0.3.55",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3220,7 +3389,7 @@
       "version": "0.1.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3228,7 +3397,7 @@
       "version": "0.2.32",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3236,7 +3405,7 @@
       "version": "0.8.5",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -3252,7 +3421,7 @@
       "version": "1.54.1",
       "licence": "MIT",
       "texts": [
-        102
+        127
       ]
     },
     {
@@ -3260,7 +3429,15 @@
       "version": "2.7.2",
       "licence": "MIT",
       "texts": [
-        95
+        120
+      ]
+    },
+    {
+      "name": "tokio-rustls",
+      "version": "0.26.6",
+      "licence": "MIT OR Apache-2.0",
+      "texts": [
+        24
       ]
     },
     {
@@ -3268,7 +3445,7 @@
       "version": "0.7.19",
       "licence": "MIT",
       "texts": [
-        102
+        127
       ]
     },
     {
@@ -3276,7 +3453,7 @@
       "version": "1.1.6+spec-1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3284,7 +3461,7 @@
       "version": "0.6.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3292,7 +3469,7 @@
       "version": "1.1.1+spec-1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3300,7 +3477,7 @@
       "version": "0.19.15",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3308,7 +3485,7 @@
       "version": "0.20.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3316,7 +3493,7 @@
       "version": "0.25.15+spec-1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3324,7 +3501,7 @@
       "version": "1.1.3+spec-1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3332,7 +3509,7 @@
       "version": "1.1.2+spec-1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        15
+        16
       ]
     },
     {
@@ -3340,7 +3517,7 @@
       "version": "0.5.3",
       "licence": "MIT",
       "texts": [
-        76
+        101
       ]
     },
     {
@@ -3348,7 +3525,7 @@
       "version": "0.6.11",
       "licence": "MIT",
       "texts": [
-        77
+        102
       ]
     },
     {
@@ -3356,7 +3533,7 @@
       "version": "0.3.3",
       "licence": "MIT",
       "texts": [
-        76
+        101
       ]
     },
     {
@@ -3364,7 +3541,7 @@
       "version": "0.3.3",
       "licence": "MIT",
       "texts": [
-        76
+        101
       ]
     },
     {
@@ -3372,7 +3549,7 @@
       "version": "0.1.44",
       "licence": "MIT",
       "texts": [
-        75
+        100
       ]
     },
     {
@@ -3380,7 +3557,7 @@
       "version": "0.1.31",
       "licence": "MIT",
       "texts": [
-        75
+        100
       ]
     },
     {
@@ -3388,8 +3565,8 @@
       "version": "0.1.36",
       "licence": "MIT",
       "texts": [
-        75,
-        109
+        100,
+        134
       ]
     },
     {
@@ -3397,7 +3574,7 @@
       "version": "0.2.0",
       "licence": "MIT",
       "texts": [
-        75
+        100
       ]
     },
     {
@@ -3405,7 +3582,7 @@
       "version": "0.3.23",
       "licence": "MIT",
       "texts": [
-        75
+        100
       ]
     },
     {
@@ -3413,7 +3590,7 @@
       "version": "5.2.9",
       "licence": "MIT",
       "texts": [
-        83
+        108
       ]
     },
     {
@@ -3421,7 +3598,7 @@
       "version": "0.25.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3429,7 +3606,7 @@
       "version": "3.2.2",
       "licence": "MIT",
       "texts": [
-        86
+        111
       ]
     },
     {
@@ -3437,7 +3614,7 @@
       "version": "0.2.5",
       "licence": "MIT",
       "texts": [
-        72
+        97
       ]
     },
     {
@@ -3445,7 +3622,7 @@
       "version": "0.13.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3453,7 +3630,7 @@
       "version": "1.0.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        43
+        46
       ]
     },
     {
@@ -3461,7 +3638,7 @@
       "version": "1.20.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        19
+        20
       ]
     },
     {
@@ -3469,7 +3646,7 @@
       "version": "1.2.1",
       "licence": "MIT",
       "texts": [
-        55
+        78
       ]
     },
     {
@@ -3477,8 +3654,8 @@
       "version": "1.0.26",
       "licence": "(MIT OR Apache-2.0) AND Unicode-3.0",
       "texts": [
-        43,
-        128
+        46,
+        153
       ]
     },
     {
@@ -3486,8 +3663,8 @@
       "version": "0.1.26",
       "licence": "(MIT OR Apache-2.0) AND Unicode-3.0",
       "texts": [
-        28,
-        128
+        31,
+        153
       ]
     },
     {
@@ -3495,7 +3672,15 @@
       "version": "1.13.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
+      ]
+    },
+    {
+      "name": "untrusted",
+      "version": "0.9.0",
+      "licence": "ISC",
+      "texts": [
+        59
       ]
     },
     {
@@ -3503,7 +3688,7 @@
       "version": "2.5.8",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3511,7 +3696,7 @@
       "version": "2.1.3",
       "licence": "MIT",
       "texts": [
-        124
+        149
       ]
     },
     {
@@ -3519,7 +3704,7 @@
       "version": "0.6.0",
       "licence": "MIT",
       "texts": [
-        97
+        122
       ]
     },
     {
@@ -3543,7 +3728,7 @@
       "version": "1.28.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3551,7 +3736,7 @@
       "version": "2.5.0",
       "licence": "Unlicense OR MIT",
       "texts": [
-        111
+        136
       ]
     },
     {
@@ -3559,7 +3744,7 @@
       "version": "0.3.1",
       "licence": "MIT",
       "texts": [
-        71
+        96
       ]
     },
     {
@@ -3567,7 +3752,7 @@
       "version": "0.3.17",
       "licence": "MIT",
       "texts": [
-        63
+        86
       ]
     },
     {
@@ -3575,7 +3760,7 @@
       "version": "0.31.15",
       "licence": "MIT",
       "texts": [
-        63
+        86
       ]
     },
     {
@@ -3583,8 +3768,8 @@
       "version": "0.32.13",
       "licence": "MIT",
       "texts": [
-        63,
-        84
+        86,
+        109
       ]
     },
     {
@@ -3592,7 +3777,7 @@
       "version": "0.3.12",
       "licence": "MIT",
       "texts": [
-        63
+        86
       ]
     },
     {
@@ -3600,7 +3785,7 @@
       "version": "0.31.11",
       "licence": "MIT",
       "texts": [
-        63
+        86
       ]
     },
     {
@@ -3608,7 +3793,7 @@
       "version": "0.31.11",
       "licence": "MIT",
       "texts": [
-        63
+        86
       ]
     },
     {
@@ -3616,7 +3801,7 @@
       "version": "1.1.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        8
+        9
       ]
     },
     {
@@ -3624,7 +3809,7 @@
       "version": "0.2.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3632,7 +3817,7 @@
       "version": "2.0.2",
       "licence": "MIT",
       "texts": [
-        67
+        91
       ]
     },
     {
@@ -3640,7 +3825,15 @@
       "version": "2.0.2",
       "licence": "MIT",
       "texts": [
-        66
+        90
+      ]
+    },
+    {
+      "name": "webpki-roots",
+      "version": "1.0.11",
+      "licence": "CDLA-Permissive-2.0",
+      "texts": [
+        55
       ]
     },
     {
@@ -3648,7 +3841,7 @@
       "version": "0.39.1",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -3656,7 +3849,7 @@
       "version": "0.8.1",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -3664,7 +3857,7 @@
       "version": "0.39.1",
       "licence": "MIT",
       "texts": [
-        101
+        126
       ]
     },
     {
@@ -3672,7 +3865,7 @@
       "version": "0.1.12",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        27
+        30
       ]
     },
     {
@@ -3680,7 +3873,7 @@
       "version": "0.3.9",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        14
+        15
       ]
     },
     {
@@ -3688,7 +3881,7 @@
       "version": "0.1.11",
       "licence": "Unlicense OR MIT",
       "texts": [
-        118
+        143
       ]
     },
     {
@@ -3696,7 +3889,7 @@
       "version": "0.8.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3704,7 +3897,7 @@
       "version": "0.62.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3712,7 +3905,7 @@
       "version": "0.3.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3720,7 +3913,7 @@
       "version": "0.62.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3728,7 +3921,7 @@
       "version": "0.3.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3736,7 +3929,7 @@
       "version": "0.60.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3744,7 +3937,7 @@
       "version": "0.59.3",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3752,7 +3945,7 @@
       "version": "0.2.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3760,7 +3953,7 @@
       "version": "0.3.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3768,7 +3961,7 @@
       "version": "0.4.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3776,7 +3969,7 @@
       "version": "0.5.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3784,7 +3977,7 @@
       "version": "0.45.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3792,7 +3985,7 @@
       "version": "0.60.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3800,7 +3993,7 @@
       "version": "0.61.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3808,7 +4001,7 @@
       "version": "0.42.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3816,7 +4009,7 @@
       "version": "0.53.5",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3824,7 +4017,7 @@
       "version": "0.2.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3832,7 +4025,7 @@
       "version": "0.1.7",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3840,7 +4033,7 @@
       "version": "0.53.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3848,7 +4041,7 @@
       "version": "0.42.2",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3856,7 +4049,7 @@
       "version": "0.53.1",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        6
+        7
       ]
     },
     {
@@ -3864,7 +4057,7 @@
       "version": "0.5.40",
       "licence": "MIT",
       "texts": [
-        105
+        130
       ]
     },
     {
@@ -3872,7 +4065,7 @@
       "version": "1.0.4",
       "licence": "MIT",
       "texts": [
-        105
+        130
       ]
     },
     {
@@ -3880,7 +4073,7 @@
       "version": "0.9.4",
       "licence": "MIT OR Apache-2.0",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3896,7 +4089,7 @@
       "version": "0.6.4",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -3904,7 +4097,7 @@
       "version": "0.57.0",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
-        28
+        31
       ]
     },
     {
@@ -3912,7 +4105,7 @@
       "version": "2.21.0",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     },
     {
@@ -3920,7 +4113,7 @@
       "version": "2.21.0",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     },
     {
@@ -3944,7 +4137,7 @@
       "version": "0.8.4",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -3952,7 +4145,7 @@
       "version": "0.8.4",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -3960,7 +4153,7 @@
       "version": "5.19.0",
       "licence": "MIT",
       "texts": [
-        80
+        105
       ]
     },
     {
@@ -3968,7 +4161,7 @@
       "version": "5.19.0",
       "licence": "MIT",
       "texts": [
-        80
+        105
       ]
     },
     {
@@ -3976,7 +4169,7 @@
       "version": "4.3.4",
       "licence": "MIT",
       "texts": [
-        80
+        105
       ]
     },
     {
@@ -3984,7 +4177,7 @@
       "version": "1.1.0",
       "licence": "MIT",
       "texts": [
-        81
+        106
       ]
     },
     {
@@ -3992,7 +4185,7 @@
       "version": "0.8.59",
       "licence": "BSD-2-Clause OR Apache-2.0 OR MIT",
       "texts": [
-        7
+        8
       ]
     },
     {
@@ -4000,7 +4193,7 @@
       "version": "0.8.59",
       "licence": "BSD-2-Clause OR Apache-2.0 OR MIT",
       "texts": [
-        7
+        8
       ]
     },
     {
@@ -4008,7 +4201,7 @@
       "version": "0.1.8",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -4016,7 +4209,15 @@
       "version": "0.1.8",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
+      ]
+    },
+    {
+      "name": "zeroize",
+      "version": "1.9.1",
+      "licence": "Apache-2.0 OR MIT",
+      "texts": [
+        3
       ]
     },
     {
@@ -4024,7 +4225,7 @@
       "version": "0.2.5",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -4032,7 +4233,7 @@
       "version": "0.11.9",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -4040,7 +4241,7 @@
       "version": "0.11.7",
       "licence": "Unicode-3.0",
       "texts": [
-        129
+        154
       ]
     },
     {
@@ -4048,7 +4249,7 @@
       "version": "9.1.1",
       "licence": "MIT",
       "texts": [
-        109
+        134
       ]
     },
     {
@@ -4056,7 +4257,7 @@
       "version": "1.0.23",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     },
     {
@@ -4064,7 +4265,7 @@
       "version": "0.5.3",
       "licence": "MIT OR Apache-2.0 OR Zlib",
       "texts": [
-        11
+        12
       ]
     },
     {
@@ -4072,7 +4273,7 @@
       "version": "0.5.15",
       "licence": "MIT OR Apache-2.0 OR Zlib",
       "texts": [
-        11
+        12
       ]
     },
     {
@@ -4080,7 +4281,7 @@
       "version": "5.15.0",
       "licence": "MIT",
       "texts": [
-        80
+        105
       ]
     },
     {
@@ -4088,7 +4289,7 @@
       "version": "5.15.0",
       "licence": "MIT",
       "texts": [
-        80
+        105
       ]
     },
     {
@@ -4096,7 +4297,7 @@
       "version": "4.2.0",
       "licence": "MIT",
       "texts": [
-        104
+        129
       ]
     }
   ],
@@ -4120,6 +4321,10 @@
     {
       "licence": "Apache-2.0",
       "text": "\n                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii) ownership of fifty percent (50%) or more of the\n      outstanding shares, or (iii) beneficial ownership of such entity.\n\n      \"You\" (or \"Your\") shall mean an individual or Legal Entity\n      exercising permissions granted by this License.\n\n      \"Source\" form shall mean the preferred form for making modifications,\n      including but not limited to software source code, documentation\n      source, and configuration files.\n\n      \"Object\" form shall mean any form resulting from mechanical\n      transformation or translation of a Source form, including but\n      not limited to compiled object code, generated documentation,\n      and conversions to other media types.\n\n      \"Work\" shall mean the work of authorship, whether in Source or\n      Object form, made available under the License, as indicated by a\n      copyright notice that is included in or attached to the work\n      (an example is provided in the Appendix below).\n\n      \"Derivative Works\" shall mean any work, whether in Source or Object\n      form, that is based on (or derived from) the Work and for which the\n      editorial revisions, annotations, elaborations, or other modifications\n      represent, as a whole, an original work of authorship. For the purposes\n      of this License, Derivative Works shall not include works that remain\n      separable from, or merely link (or bind by name) to the interfaces of,\n      the Work and Derivative Works thereof.\n\n      \"Contribution\" shall mean any work of authorship, including\n      the original version of the Work and any modifications or additions\n      to that Work or Derivative Works thereof, that is intentionally\n      submitted to Licensor for inclusion in the Work by the copyright owner\n      or by an individual or Legal Entity authorized to submit on behalf of\n      the copyright owner. For the purposes of this definition, \"submitted\"\n      means any form of electronic, verbal, or written communication sent\n      to the Licensor or its representatives, including but not limited to\n      communication on electronic mailing lists, source code control systems,\n      and issue tracking systems that are managed by, or on behalf of, the\n      Licensor for the purpose of discussing and improving the Work, but\n      excluding communication that is conspicuously marked or otherwise\n      designated in writing by the copyright owner as \"Not a Contribution.\"\n\n      \"Contributor\" shall mean Licensor and any individual or Legal Entity\n      on behalf of whom a Contribution has been received by Licensor and\n      subsequently incorporated within the Work.\n\n   2. Grant of Copyright License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      copyright license to reproduce, prepare Derivative Works of,\n      publicly display, publicly perform, sublicense, and distribute the\n      Work and such Derivative Works in Source or Object form.\n\n   3. Grant of Patent License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      (except as stated in this section) patent license to make, have made,\n      use, offer to sell, sell, import, and otherwise transfer the Work,\n      where such license applies only to those patent claims licensable\n      by such Contributor that are necessarily infringed by their\n      Contribution(s) alone or by combination of their Contribution(s)\n      with the Work to which such Contribution(s) was submitted. If You\n      institute patent litigation against any entity (including a\n      cross-claim or counterclaim in a lawsuit) alleging that the Work\n      or a Contribution incorporated within the Work constitutes direct\n      or contributory patent infringement, then any patent licenses\n      granted to You under this License for that Work shall terminate\n      as of the date such litigation is filed.\n\n   4. Redistribution. You may reproduce and distribute copies of the\n      Work or Derivative Works thereof in any medium, with or without\n      modifications, and in Source or Object form, provided that You\n      meet the following conditions:\n\n      (a) You must give any other recipients of the Work or\n          Derivative Works a copy of this License; and\n\n      (b) You must cause any modified files to carry prominent notices\n          stating that You changed the files; and\n\n      (c) You must retain, in the Source form of any Derivative Works\n          that You distribute, all copyright, patent, trademark, and\n          attribution notices from the Source form of the Work,\n          excluding those notices that do not pertain to any part of\n          the Derivative Works; and\n\n      (d) If the Work includes a \"NOTICE\" text file as part of its\n          distribution, then any Derivative Works that You distribute must\n          include a readable copy of the attribution notices contained\n          within such NOTICE file, excluding those notices that do not\n          pertain to any part of the Derivative Works, in at least one\n          of the following places: within a NOTICE text file distributed\n          as part of the Derivative Works; within the Source form or\n          documentation, if provided along with the Derivative Works; or,\n          within a display generated by the Derivative Works, if and\n          wherever such third-party notices normally appear. The contents\n          of the NOTICE file are for informational purposes only and\n          do not modify the License. You may add Your own attribution\n          notices within Derivative Works that You distribute, alongside\n          or as an addendum to the NOTICE text from the Work, provided\n          that such additional attribution notices cannot be construed\n          as modifying the License.\n\n      You may add Your own copyright statement to Your modifications and\n      may provide additional or different license terms and conditions\n      for use, reproduction, or distribution of Your modifications, or\n      for any such Derivative Works as a whole, provided Your use,\n      reproduction, and distribution of the Work otherwise complies with\n      the conditions stated in this License.\n\n   5. Submission of Contributions. Unless You explicitly state otherwise,\n      any Contribution intentionally submitted for inclusion in the Work\n      by You to the Licensor shall be under the terms and conditions of\n      this License, without any additional terms or conditions.\n      Notwithstanding the above, nothing herein shall supersede or modify\n      the terms of any separate license agreement you may have executed\n      with Licensor regarding such Contributions.\n\n   6. Trademarks. This License does not grant permission to use the trade\n      names, trademarks, service marks, or product names of the Licensor,\n      except as required for reasonable and customary use in describing the\n      origin of the Work and reproducing the content of the NOTICE file.\n\n   7. Disclaimer of Warranty. Unless required by applicable law or\n      agreed to in writing, Licensor provides the Work (and each\n      Contributor provides its Contributions) on an \"AS IS\" BASIS,\n      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n      implied, including, without limitation, any warranties or conditions\n      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n      PARTICULAR PURPOSE. You are solely responsible for determining the\n      appropriateness of using or redistributing the Work and assume any\n      risks associated with Your exercise of permissions under this License.\n\n   8. Limitation of Liability. In no event and under no legal theory,\n      whether in tort (including negligence), contract, or otherwise,\n      unless required by applicable law (such as deliberate and grossly\n      negligent acts) or agreed to in writing, shall any Contributor be\n      liable to You for damages, including any direct, indirect, special,\n      incidental, or consequential damages of any character arising as a\n      result of this License or out of the use or inability to use the\n      Work (including but not limited to damages for loss of goodwill,\n      work stoppage, computer failure or malfunction, or any and all\n      other commercial damages or losses), even if such Contributor\n      has been advised of the possibility of such damages.\n\n   9. Accepting Warranty or Additional Liability. While redistributing\n      the Work or Derivative Works thereof, You may choose to offer,\n      and charge a fee for, acceptance of support, warranty, indemnity,\n      or other liability obligations and/or rights consistent with this\n      License. However, in accepting such obligations, You may act only\n      on Your own behalf and on Your sole responsibility, not on behalf\n      of any other Contributor, and only if You agree to indemnify,\n      defend, and hold each Contributor harmless for any liability\n      incurred by, or claims asserted against, such Contributor by reason\n      of your accepting any such warranty or additional liability.\n\n   END OF TERMS AND CONDITIONS\n\n   APPENDIX: How to apply the Apache License to your work.\n\n      To apply the Apache License to your work, attach the following\n      boilerplate notice, with the fields enclosed by brackets \"[]\"\n      replaced with your own identifying information. (Don't include\n      the brackets!)  The text should be enclosed in the appropriate\n      comment syntax for the file format. We also recommend that a\n      file or class name and description of purpose be included on the\n      same \"printed page\" as the copyright notice for easier\n      identification within third-party archives.\n\n   Copyright [yyyy] [name of copyright owner]\n\n   Licensed under the Apache License, Version 2.0 (the \"License\");\n   you may not use this file except in compliance with the License.\n   You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   Unless required by applicable law or agreed to in writing, software\n   distributed under the License is distributed on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n   See the License for the specific language governing permissions and\n   limitations under the License.\n\n\n--- LLVM Exceptions to the Apache 2.0 License ----\n\nAs an exception, if, as a result of your compiling your source code, portions\nof this Software are embedded into an Object form of such source code, you\nmay redistribute such embedded portions in such Object form without complying\nwith the conditions of Sections 4(a), 4(b) and 4(d) of the License.\n\nIn addition, if you combine or link compiled forms of this Software with\nsoftware that is licensed under the GPLv2 (\"Combined Software\") and if a\ncourt of competent jurisdiction determines that the patent provision (Section\n3), the indemnity provision (Section 9) or other Section of the License\nconflicts with the conditions of the GPLv2, you may retroactively and\nprospectively choose to deem waived or otherwise exclude such Section(s) of\nthe License, but only in their entirety and only with respect to the Combined\nSoftware.\n\n"
+    },
+    {
+      "licence": "Apache-2.0",
+      "text": "\n                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii) ownership of fifty percent (50%) or more of the\n      outstanding shares, or (iii) beneficial ownership of such entity.\n\n      \"You\" (or \"Your\") shall mean an individual or Legal Entity\n      exercising permissions granted by this License.\n\n      \"Source\" form shall mean the preferred form for making modifications,\n      including but not limited to software source code, documentation\n      source, and configuration files.\n\n      \"Object\" form shall mean any form resulting from mechanical\n      transformation or translation of a Source form, including but\n      not limited to compiled object code, generated documentation,\n      and conversions to other media types.\n\n      \"Work\" shall mean the work of authorship, whether in Source or\n      Object form, made available under the License, as indicated by a\n      copyright notice that is included in or attached to the work\n      (an example is provided in the Appendix below).\n\n      \"Derivative Works\" shall mean any work, whether in Source or Object\n      form, that is based on (or derived from) the Work and for which the\n      editorial revisions, annotations, elaborations, or other modifications\n      represent, as a whole, an original work of authorship. For the purposes\n      of this License, Derivative Works shall not include works that remain\n      separable from, or merely link (or bind by name) to the interfaces of,\n      the Work and Derivative Works thereof.\n\n      \"Contribution\" shall mean any work of authorship, including\n      the original version of the Work and any modifications or additions\n      to that Work or Derivative Works thereof, that is intentionally\n      submitted to Licensor for inclusion in the Work by the copyright owner\n      or by an individual or Legal Entity authorized to submit on behalf of\n      the copyright owner. For the purposes of this definition, \"submitted\"\n      means any form of electronic, verbal, or written communication sent\n      to the Licensor or its representatives, including but not limited to\n      communication on electronic mailing lists, source code control systems,\n      and issue tracking systems that are managed by, or on behalf of, the\n      Licensor for the purpose of discussing and improving the Work, but\n      excluding communication that is conspicuously marked or otherwise\n      designated in writing by the copyright owner as \"Not a Contribution.\"\n\n      \"Contributor\" shall mean Licensor and any individual or Legal Entity\n      on behalf of whom a Contribution has been received by Licensor and\n      subsequently incorporated within the Work.\n\n   2. Grant of Copyright License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      copyright license to reproduce, prepare Derivative Works of,\n      publicly display, publicly perform, sublicense, and distribute the\n      Work and such Derivative Works in Source or Object form.\n\n   3. Grant of Patent License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      (except as stated in this section) patent license to make, have made,\n      use, offer to sell, sell, import, and otherwise transfer the Work,\n      where such license applies only to those patent claims licensable\n      by such Contributor that are necessarily infringed by their\n      Contribution(s) alone or by combination of their Contribution(s)\n      with the Work to which such Contribution(s) was submitted. If You\n      institute patent litigation against any entity (including a\n      cross-claim or counterclaim in a lawsuit) alleging that the Work\n      or a Contribution incorporated within the Work constitutes direct\n      or contributory patent infringement, then any patent licenses\n      granted to You under this License for that Work shall terminate\n      as of the date such litigation is filed.\n\n   4. Redistribution. You may reproduce and distribute copies of the\n      Work or Derivative Works thereof in any medium, with or without\n      modifications, and in Source or Object form, provided that You\n      meet the following conditions:\n\n      (a) You must give any other recipients of the Work or\n          Derivative Works a copy of this License; and\n\n      (b) You must cause any modified files to carry prominent notices\n          stating that You changed the files; and\n\n      (c) You must retain, in the Source form of any Derivative Works\n          that You distribute, all copyright, patent, trademark, and\n          attribution notices from the Source form of the Work,\n          excluding those notices that do not pertain to any part of\n          the Derivative Works; and\n\n      (d) If the Work includes a \"NOTICE\" text file as part of its\n          distribution, then any Derivative Works that You distribute must\n          include a readable copy of the attribution notices contained\n          within such NOTICE file, excluding those notices that do not\n          pertain to any part of the Derivative Works, in at least one\n          of the following places: within a NOTICE text file distributed\n          as part of the Derivative Works; within the Source form or\n          documentation, if provided along with the Derivative Works; or,\n          within a display generated by the Derivative Works, if and\n          wherever such third-party notices normally appear. The contents\n          of the NOTICE file are for informational purposes only and\n          do not modify the License. You may add Your own attribution\n          notices within Derivative Works that You distribute, alongside\n          or as an addendum to the NOTICE text from the Work, provided\n          that such additional attribution notices cannot be construed\n          as modifying the License.\n\n      You may add Your own copyright statement to Your modifications and\n      may provide additional or different license terms and conditions\n      for use, reproduction, or distribution of Your modifications, or\n      for any such Derivative Works as a whole, provided Your use,\n      reproduction, and distribution of the Work otherwise complies with\n      the conditions stated in this License.\n\n   5. Submission of Contributions. Unless You explicitly state otherwise,\n      any Contribution intentionally submitted for inclusion in the Work\n      by You to the Licensor shall be under the terms and conditions of\n      this License, without any additional terms or conditions.\n      Notwithstanding the above, nothing herein shall supersede or modify\n      the terms of any separate license agreement you may have executed\n      with Licensor regarding such Contributions.\n\n   6. Trademarks. This License does not grant permission to use the trade\n      names, trademarks, service marks, or product names of the Licensor,\n      except as required for reasonable and customary use in describing the\n      origin of the Work and reproducing the content of the NOTICE file.\n\n   7. Disclaimer of Warranty. Unless required by applicable law or\n      agreed to in writing, Licensor provides the Work (and each\n      Contributor provides its Contributions) on an \"AS IS\" BASIS,\n      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n      implied, including, without limitation, any warranties or conditions\n      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n      PARTICULAR PURPOSE. You are solely responsible for determining the\n      appropriateness of using or redistributing the Work and assume any\n      risks associated with Your exercise of permissions under this License.\n\n   8. Limitation of Liability. In no event and under no legal theory,\n      whether in tort (including negligence), contract, or otherwise,\n      unless required by applicable law (such as deliberate and grossly\n      negligent acts) or agreed to in writing, shall any Contributor be\n      liable to You for damages, including any direct, indirect, special,\n      incidental, or consequential damages of any character arising as a\n      result of this License or out of the use or inability to use the\n      Work (including but not limited to damages for loss of goodwill,\n      work stoppage, computer failure or malfunction, or any and all\n      other commercial damages or losses), even if such Contributor\n      has been advised of the possibility of such damages.\n\n   9. Accepting Warranty or Additional Liability. While redistributing\n      the Work or Derivative Works thereof, You may choose to offer,\n      and charge a fee for, acceptance of support, warranty, indemnity,\n      or other liability obligations and/or rights consistent with this\n      License. However, in accepting such obligations, You may act only\n      on Your own behalf and on Your sole responsibility, not on behalf\n      of any other Contributor, and only if You agree to indemnify,\n      defend, and hold each Contributor harmless for any liability\n      incurred by, or claims asserted against, such Contributor by reason\n      of your accepting any such warranty or additional liability.\n\n   END OF TERMS AND CONDITIONS\n\n   APPENDIX: How to apply the Apache License to your work.\n\n      To apply the Apache License to your work, attach the following\n      boilerplate notice, with the fields enclosed by brackets \"[]\"\n      replaced with your own identifying information. (Don't include\n      the brackets!)  The text should be enclosed in the appropriate\n      comment syntax for the file format. We also recommend that a\n      file or class name and description of purpose be included on the\n      same \"printed page\" as the copyright notice for easier\n      identification within third-party archives.\n\n   Copyright [yyyy] [name of copyright owner]\n\n   Licensed under the Apache License, Version 2.0 (the \"License\");\n   you may not use this file except in compliance with the License.\n   You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   Unless required by applicable law or agreed to in writing, software\n   distributed under the License is distributed on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n   See the License for the specific language governing permissions and\n   limitations under the License.\n\n\nLicenses for support code\n-------------------------\n\nParts of the TLS test suite are under the Go license. This code is not included\nin BoringSSL (i.e. libcrypto and libssl) when compiled, however, so\ndistributing code linked against BoringSSL does not trigger this license:\n\nCopyright (c) 2009 The Go Authors. All rights reserved.\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are\nmet:\n\n   * Redistributions of source code must retain the above copyright\nnotice, this list of conditions and the following disclaimer.\n   * Redistributions in binary form must reproduce the above\ncopyright notice, this list of conditions and the following disclaimer\nin the documentation and/or other materials provided with the\ndistribution.\n   * Neither the name of Google Inc. nor the names of its\ncontributors may be used to endorse or promote products derived from\nthis software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\nA PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nOWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\nLIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\nDATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\nTHEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\nOF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\n\nBoringSSL uses the Chromium test infrastructure to run a continuous build,\ntrybots etc. The scripts which manage this, and the script for generating build\nmetadata, are under the Chromium license. Distributing code linked against\nBoringSSL does not trigger this license.\n\nCopyright 2015 The Chromium Authors. All rights reserved.\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are\nmet:\n\n   * Redistributions of source code must retain the above copyright\nnotice, this list of conditions and the following disclaimer.\n   * Redistributions in binary form must reproduce the above\ncopyright notice, this list of conditions and the following disclaimer\nin the documentation and/or other materials provided with the\ndistribution.\n   * Neither the name of Google Inc. nor the names of its\ncontributors may be used to endorse or promote products derived from\nthis software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\nA PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nOWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\nLIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\nDATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\nTHEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\nOF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
     },
     {
       "licence": "Apache-2.0",
@@ -4195,6 +4400,10 @@
     },
     {
       "licence": "Apache-2.0",
+      "text": "                              Apache License\n                        Version 2.0, January 2004\n                     http://www.apache.org/licenses/\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n   \"License\" shall mean the terms and conditions for use, reproduction,\n   and distribution as defined by Sections 1 through 9 of this document.\n\n   \"Licensor\" shall mean the copyright owner or entity authorized by\n   the copyright owner that is granting the License.\n\n   \"Legal Entity\" shall mean the union of the acting entity and all\n   other entities that control, are controlled by, or are under common\n   control with that entity. For the purposes of this definition,\n   \"control\" means (i) the power, direct or indirect, to cause the\n   direction or management of such entity, whether by contract or\n   otherwise, or (ii) ownership of fifty percent (50%) or more of the\n   outstanding shares, or (iii) beneficial ownership of such entity.\n\n   \"You\" (or \"Your\") shall mean an individual or Legal Entity\n   exercising permissions granted by this License.\n\n   \"Source\" form shall mean the preferred form for making modifications,\n   including but not limited to software source code, documentation\n   source, and configuration files.\n\n   \"Object\" form shall mean any form resulting from mechanical\n   transformation or translation of a Source form, including but\n   not limited to compiled object code, generated documentation,\n   and conversions to other media types.\n\n   \"Work\" shall mean the work of authorship, whether in Source or\n   Object form, made available under the License, as indicated by a\n   copyright notice that is included in or attached to the work\n   (an example is provided in the Appendix below).\n\n   \"Derivative Works\" shall mean any work, whether in Source or Object\n   form, that is based on (or derived from) the Work and for which the\n   editorial revisions, annotations, elaborations, or other modifications\n   represent, as a whole, an original work of authorship. For the purposes\n   of this License, Derivative Works shall not include works that remain\n   separable from, or merely link (or bind by name) to the interfaces of,\n   the Work and Derivative Works thereof.\n\n   \"Contribution\" shall mean any work of authorship, including\n   the original version of the Work and any modifications or additions\n   to that Work or Derivative Works thereof, that is intentionally\n   submitted to Licensor for inclusion in the Work by the copyright owner\n   or by an individual or Legal Entity authorized to submit on behalf of\n   the copyright owner. For the purposes of this definition, \"submitted\"\n   means any form of electronic, verbal, or written communication sent\n   to the Licensor or its representatives, including but not limited to\n   communication on electronic mailing lists, source code control systems,\n   and issue tracking systems that are managed by, or on behalf of, the\n   Licensor for the purpose of discussing and improving the Work, but\n   excluding communication that is conspicuously marked or otherwise\n   designated in writing by the copyright owner as \"Not a Contribution.\"\n\n   \"Contributor\" shall mean Licensor and any individual or Legal Entity\n   on behalf of whom a Contribution has been received by Licensor and\n   subsequently incorporated within the Work.\n\n2. Grant of Copyright License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   copyright license to reproduce, prepare Derivative Works of,\n   publicly display, publicly perform, sublicense, and distribute the\n   Work and such Derivative Works in Source or Object form.\n\n3. Grant of Patent License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   (except as stated in this section) patent license to make, have made,\n   use, offer to sell, sell, import, and otherwise transfer the Work,\n   where such license applies only to those patent claims licensable\n   by such Contributor that are necessarily infringed by their\n   Contribution(s) alone or by combination of their Contribution(s)\n   with the Work to which such Contribution(s) was submitted. If You\n   institute patent litigation against any entity (including a\n   cross-claim or counterclaim in a lawsuit) alleging that the Work\n   or a Contribution incorporated within the Work constitutes direct\n   or contributory patent infringement, then any patent licenses\n   granted to You under this License for that Work shall terminate\n   as of the date such litigation is filed.\n\n4. Redistribution. You may reproduce and distribute copies of the\n   Work or Derivative Works thereof in any medium, with or without\n   modifications, and in Source or Object form, provided that You\n   meet the following conditions:\n\n   (a) You must give any other recipients of the Work or\n       Derivative Works a copy of this License; and\n\n   (b) You must cause any modified files to carry prominent notices\n       stating that You changed the files; and\n\n   (c) You must retain, in the Source form of any Derivative Works\n       that You distribute, all copyright, patent, trademark, and\n       attribution notices from the Source form of the Work,\n       excluding those notices that do not pertain to any part of\n       the Derivative Works; and\n\n   (d) If the Work includes a \"NOTICE\" text file as part of its\n       distribution, then any Derivative Works that You distribute must\n       include a readable copy of the attribution notices contained\n       within such NOTICE file, excluding those notices that do not\n       pertain to any part of the Derivative Works, in at least one\n       of the following places: within a NOTICE text file distributed\n       as part of the Derivative Works; within the Source form or\n       documentation, if provided along with the Derivative Works; or,\n       within a display generated by the Derivative Works, if and\n       wherever such third-party notices normally appear. The contents\n       of the NOTICE file are for informational purposes only and\n       do not modify the License. You may add Your own attribution\n       notices within Derivative Works that You distribute, alongside\n       or as an addendum to the NOTICE text from the Work, provided\n       that such additional attribution notices cannot be construed\n       as modifying the License.\n\n   You may add Your own copyright statement to Your modifications and\n   may provide additional or different license terms and conditions\n   for use, reproduction, or distribution of Your modifications, or\n   for any such Derivative Works as a whole, provided Your use,\n   reproduction, and distribution of the Work otherwise complies with\n   the conditions stated in this License.\n\n5. Submission of Contributions. Unless You explicitly state otherwise,\n   any Contribution intentionally submitted for inclusion in the Work\n   by You to the Licensor shall be under the terms and conditions of\n   this License, without any additional terms or conditions.\n   Notwithstanding the above, nothing herein shall supersede or modify\n   the terms of any separate license agreement you may have executed\n   with Licensor regarding such Contributions.\n\n6. Trademarks. This License does not grant permission to use the trade\n   names, trademarks, service marks, or product names of the Licensor,\n   except as required for reasonable and customary use in describing the\n   origin of the Work and reproducing the content of the NOTICE file.\n\n7. Disclaimer of Warranty. Unless required by applicable law or\n   agreed to in writing, Licensor provides the Work (and each\n   Contributor provides its Contributions) on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n   implied, including, without limitation, any warranties or conditions\n   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n   PARTICULAR PURPOSE. You are solely responsible for determining the\n   appropriateness of using or redistributing the Work and assume any\n   risks associated with Your exercise of permissions under this License.\n\n8. Limitation of Liability. In no event and under no legal theory,\n   whether in tort (including negligence), contract, or otherwise,\n   unless required by applicable law (such as deliberate and grossly\n   negligent acts) or agreed to in writing, shall any Contributor be\n   liable to You for damages, including any direct, indirect, special,\n   incidental, or consequential damages of any character arising as a\n   result of this License or out of the use or inability to use the\n   Work (including but not limited to damages for loss of goodwill,\n   work stoppage, computer failure or malfunction, or any and all\n   other commercial damages or losses), even if such Contributor\n   has been advised of the possibility of such damages.\n\n9. Accepting Warranty or Additional Liability. While redistributing\n   the Work or Derivative Works thereof, You may choose to offer,\n   and charge a fee for, acceptance of support, warranty, indemnity,\n   or other liability obligations and/or rights consistent with this\n   License. However, in accepting such obligations, You may act only\n   on Your own behalf and on Your sole responsibility, not on behalf\n   of any other Contributor, and only if You agree to indemnify,\n   defend, and hold each Contributor harmless for any liability\n   incurred by, or claims asserted against, such Contributor by reason\n   of your accepting any such warranty or additional liability.\n\nEND OF TERMS AND CONDITIONS\n\nAPPENDIX: How to apply the Apache License to your work.\n\n   To apply the Apache License to your work, attach the following\n   boilerplate notice, with the fields enclosed by brackets \"[]\"\n   replaced with your own identifying information. (Don't include\n   the brackets!)  The text should be enclosed in the appropriate\n   comment syntax for the file format. We also recommend that a\n   file or class name and description of purpose be included on the\n   same \"printed page\" as the copyright notice for easier\n   identification within third-party archives.\n\nCopyright 2017 quininer kel\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n"
+    },
+    {
+      "licence": "Apache-2.0",
       "text": "                              Apache License\n                        Version 2.0, January 2004\n                     http://www.apache.org/licenses/\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n   \"License\" shall mean the terms and conditions for use, reproduction,\n   and distribution as defined by Sections 1 through 9 of this document.\n\n   \"Licensor\" shall mean the copyright owner or entity authorized by\n   the copyright owner that is granting the License.\n\n   \"Legal Entity\" shall mean the union of the acting entity and all\n   other entities that control, are controlled by, or are under common\n   control with that entity. For the purposes of this definition,\n   \"control\" means (i) the power, direct or indirect, to cause the\n   direction or management of such entity, whether by contract or\n   otherwise, or (ii) ownership of fifty percent (50%) or more of the\n   outstanding shares, or (iii) beneficial ownership of such entity.\n\n   \"You\" (or \"Your\") shall mean an individual or Legal Entity\n   exercising permissions granted by this License.\n\n   \"Source\" form shall mean the preferred form for making modifications,\n   including but not limited to software source code, documentation\n   source, and configuration files.\n\n   \"Object\" form shall mean any form resulting from mechanical\n   transformation or translation of a Source form, including but\n   not limited to compiled object code, generated documentation,\n   and conversions to other media types.\n\n   \"Work\" shall mean the work of authorship, whether in Source or\n   Object form, made available under the License, as indicated by a\n   copyright notice that is included in or attached to the work\n   (an example is provided in the Appendix below).\n\n   \"Derivative Works\" shall mean any work, whether in Source or Object\n   form, that is based on (or derived from) the Work and for which the\n   editorial revisions, annotations, elaborations, or other modifications\n   represent, as a whole, an original work of authorship. For the purposes\n   of this License, Derivative Works shall not include works that remain\n   separable from, or merely link (or bind by name) to the interfaces of,\n   the Work and Derivative Works thereof.\n\n   \"Contribution\" shall mean any work of authorship, including\n   the original version of the Work and any modifications or additions\n   to that Work or Derivative Works thereof, that is intentionally\n   submitted to Licensor for inclusion in the Work by the copyright owner\n   or by an individual or Legal Entity authorized to submit on behalf of\n   the copyright owner. For the purposes of this definition, \"submitted\"\n   means any form of electronic, verbal, or written communication sent\n   to the Licensor or its representatives, including but not limited to\n   communication on electronic mailing lists, source code control systems,\n   and issue tracking systems that are managed by, or on behalf of, the\n   Licensor for the purpose of discussing and improving the Work, but\n   excluding communication that is conspicuously marked or otherwise\n   designated in writing by the copyright owner as \"Not a Contribution.\"\n\n   \"Contributor\" shall mean Licensor and any individual or Legal Entity\n   on behalf of whom a Contribution has been received by Licensor and\n   subsequently incorporated within the Work.\n\n2. Grant of Copyright License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   copyright license to reproduce, prepare Derivative Works of,\n   publicly display, publicly perform, sublicense, and distribute the\n   Work and such Derivative Works in Source or Object form.\n\n3. Grant of Patent License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   (except as stated in this section) patent license to make, have made,\n   use, offer to sell, sell, import, and otherwise transfer the Work,\n   where such license applies only to those patent claims licensable\n   by such Contributor that are necessarily infringed by their\n   Contribution(s) alone or by combination of their Contribution(s)\n   with the Work to which such Contribution(s) was submitted. If You\n   institute patent litigation against any entity (including a\n   cross-claim or counterclaim in a lawsuit) alleging that the Work\n   or a Contribution incorporated within the Work constitutes direct\n   or contributory patent infringement, then any patent licenses\n   granted to You under this License for that Work shall terminate\n   as of the date such litigation is filed.\n\n4. Redistribution. You may reproduce and distribute copies of the\n   Work or Derivative Works thereof in any medium, with or without\n   modifications, and in Source or Object form, provided that You\n   meet the following conditions:\n\n   (a) You must give any other recipients of the Work or\n       Derivative Works a copy of this License; and\n\n   (b) You must cause any modified files to carry prominent notices\n       stating that You changed the files; and\n\n   (c) You must retain, in the Source form of any Derivative Works\n       that You distribute, all copyright, patent, trademark, and\n       attribution notices from the Source form of the Work,\n       excluding those notices that do not pertain to any part of\n       the Derivative Works; and\n\n   (d) If the Work includes a \"NOTICE\" text file as part of its\n       distribution, then any Derivative Works that You distribute must\n       include a readable copy of the attribution notices contained\n       within such NOTICE file, excluding those notices that do not\n       pertain to any part of the Derivative Works, in at least one\n       of the following places: within a NOTICE text file distributed\n       as part of the Derivative Works; within the Source form or\n       documentation, if provided along with the Derivative Works; or,\n       within a display generated by the Derivative Works, if and\n       wherever such third-party notices normally appear. The contents\n       of the NOTICE file are for informational purposes only and\n       do not modify the License. You may add Your own attribution\n       notices within Derivative Works that You distribute, alongside\n       or as an addendum to the NOTICE text from the Work, provided\n       that such additional attribution notices cannot be construed\n       as modifying the License.\n\n   You may add Your own copyright statement to Your modifications and\n   may provide additional or different license terms and conditions\n   for use, reproduction, or distribution of Your modifications, or\n   for any such Derivative Works as a whole, provided Your use,\n   reproduction, and distribution of the Work otherwise complies with\n   the conditions stated in this License.\n\n5. Submission of Contributions. Unless You explicitly state otherwise,\n   any Contribution intentionally submitted for inclusion in the Work\n   by You to the Licensor shall be under the terms and conditions of\n   this License, without any additional terms or conditions.\n   Notwithstanding the above, nothing herein shall supersede or modify\n   the terms of any separate license agreement you may have executed\n   with Licensor regarding such Contributions.\n\n6. Trademarks. This License does not grant permission to use the trade\n   names, trademarks, service marks, or product names of the Licensor,\n   except as required for reasonable and customary use in describing the\n   origin of the Work and reproducing the content of the NOTICE file.\n\n7. Disclaimer of Warranty. Unless required by applicable law or\n   agreed to in writing, Licensor provides the Work (and each\n   Contributor provides its Contributions) on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n   implied, including, without limitation, any warranties or conditions\n   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n   PARTICULAR PURPOSE. You are solely responsible for determining the\n   appropriateness of using or redistributing the Work and assume any\n   risks associated with Your exercise of permissions under this License.\n\n8. Limitation of Liability. In no event and under no legal theory,\n   whether in tort (including negligence), contract, or otherwise,\n   unless required by applicable law (such as deliberate and grossly\n   negligent acts) or agreed to in writing, shall any Contributor be\n   liable to You for damages, including any direct, indirect, special,\n   incidental, or consequential damages of any character arising as a\n   result of this License or out of the use or inability to use the\n   Work (including but not limited to damages for loss of goodwill,\n   work stoppage, computer failure or malfunction, or any and all\n   other commercial damages or losses), even if such Contributor\n   has been advised of the possibility of such damages.\n\n9. Accepting Warranty or Additional Liability. While redistributing\n   the Work or Derivative Works thereof, You may choose to offer,\n   and charge a fee for, acceptance of support, warranty, indemnity,\n   or other liability obligations and/or rights consistent with this\n   License. However, in accepting such obligations, You may act only\n   on Your own behalf and on Your sole responsibility, not on behalf\n   of any other Contributor, and only if You agree to indemnify,\n   defend, and hold each Contributor harmless for any liability\n   incurred by, or claims asserted against, such Contributor by reason\n   of your accepting any such warranty or additional liability.\n\nEND OF TERMS AND CONDITIONS\n\nAPPENDIX: How to apply the Apache License to your work.\n\n   To apply the Apache License to your work, attach the following\n   boilerplate notice, with the fields enclosed by brackets \"[]\"\n   replaced with your own identifying information. (Don't include\n   the brackets!)  The text should be enclosed in the appropriate\n   comment syntax for the file format. We also recommend that a\n   file or class name and description of purpose be included on the\n   same \"printed page\" as the copyright notice for easier\n   identification within third-party archives.\n\nCopyright 2019 The CryptoCorrosion Contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n   http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n"
     },
     {
@@ -4204,6 +4413,10 @@
     {
       "licence": "Apache-2.0",
       "text": "                              Apache License\n                        Version 2.0, January 2004\n                     http://www.apache.org/licenses/\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n   \"License\" shall mean the terms and conditions for use, reproduction,\n   and distribution as defined by Sections 1 through 9 of this document.\n\n   \"Licensor\" shall mean the copyright owner or entity authorized by\n   the copyright owner that is granting the License.\n\n   \"Legal Entity\" shall mean the union of the acting entity and all\n   other entities that control, are controlled by, or are under common\n   control with that entity. For the purposes of this definition,\n   \"control\" means (i) the power, direct or indirect, to cause the\n   direction or management of such entity, whether by contract or\n   otherwise, or (ii) ownership of fifty percent (50%) or more of the\n   outstanding shares, or (iii) beneficial ownership of such entity.\n\n   \"You\" (or \"Your\") shall mean an individual or Legal Entity\n   exercising permissions granted by this License.\n\n   \"Source\" form shall mean the preferred form for making modifications,\n   including but not limited to software source code, documentation\n   source, and configuration files.\n\n   \"Object\" form shall mean any form resulting from mechanical\n   transformation or translation of a Source form, including but\n   not limited to compiled object code, generated documentation,\n   and conversions to other media types.\n\n   \"Work\" shall mean the work of authorship, whether in Source or\n   Object form, made available under the License, as indicated by a\n   copyright notice that is included in or attached to the work\n   (an example is provided in the Appendix below).\n\n   \"Derivative Works\" shall mean any work, whether in Source or Object\n   form, that is based on (or derived from) the Work and for which the\n   editorial revisions, annotations, elaborations, or other modifications\n   represent, as a whole, an original work of authorship. For the purposes\n   of this License, Derivative Works shall not include works that remain\n   separable from, or merely link (or bind by name) to the interfaces of,\n   the Work and Derivative Works thereof.\n\n   \"Contribution\" shall mean any work of authorship, including\n   the original version of the Work and any modifications or additions\n   to that Work or Derivative Works thereof, that is intentionally\n   submitted to Licensor for inclusion in the Work by the copyright owner\n   or by an individual or Legal Entity authorized to submit on behalf of\n   the copyright owner. For the purposes of this definition, \"submitted\"\n   means any form of electronic, verbal, or written communication sent\n   to the Licensor or its representatives, including but not limited to\n   communication on electronic mailing lists, source code control systems,\n   and issue tracking systems that are managed by, or on behalf of, the\n   Licensor for the purpose of discussing and improving the Work, but\n   excluding communication that is conspicuously marked or otherwise\n   designated in writing by the copyright owner as \"Not a Contribution.\"\n\n   \"Contributor\" shall mean Licensor and any individual or Legal Entity\n   on behalf of whom a Contribution has been received by Licensor and\n   subsequently incorporated within the Work.\n\n2. Grant of Copyright License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   copyright license to reproduce, prepare Derivative Works of,\n   publicly display, publicly perform, sublicense, and distribute the\n   Work and such Derivative Works in Source or Object form.\n\n3. Grant of Patent License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   (except as stated in this section) patent license to make, have made,\n   use, offer to sell, sell, import, and otherwise transfer the Work,\n   where such license applies only to those patent claims licensable\n   by such Contributor that are necessarily infringed by their\n   Contribution(s) alone or by combination of their Contribution(s)\n   with the Work to which such Contribution(s) was submitted. If You\n   institute patent litigation against any entity (including a\n   cross-claim or counterclaim in a lawsuit) alleging that the Work\n   or a Contribution incorporated within the Work constitutes direct\n   or contributory patent infringement, then any patent licenses\n   granted to You under this License for that Work shall terminate\n   as of the date such litigation is filed.\n\n4. Redistribution. You may reproduce and distribute copies of the\n   Work or Derivative Works thereof in any medium, with or without\n   modifications, and in Source or Object form, provided that You\n   meet the following conditions:\n\n   (a) You must give any other recipients of the Work or\n       Derivative Works a copy of this License; and\n\n   (b) You must cause any modified files to carry prominent notices\n       stating that You changed the files; and\n\n   (c) You must retain, in the Source form of any Derivative Works\n       that You distribute, all copyright, patent, trademark, and\n       attribution notices from the Source form of the Work,\n       excluding those notices that do not pertain to any part of\n       the Derivative Works; and\n\n   (d) If the Work includes a \"NOTICE\" text file as part of its\n       distribution, then any Derivative Works that You distribute must\n       include a readable copy of the attribution notices contained\n       within such NOTICE file, excluding those notices that do not\n       pertain to any part of the Derivative Works, in at least one\n       of the following places: within a NOTICE text file distributed\n       as part of the Derivative Works; within the Source form or\n       documentation, if provided along with the Derivative Works; or,\n       within a display generated by the Derivative Works, if and\n       wherever such third-party notices normally appear. The contents\n       of the NOTICE file are for informational purposes only and\n       do not modify the License. You may add Your own attribution\n       notices within Derivative Works that You distribute, alongside\n       or as an addendum to the NOTICE text from the Work, provided\n       that such additional attribution notices cannot be construed\n       as modifying the License.\n\n   You may add Your own copyright statement to Your modifications and\n   may provide additional or different license terms and conditions\n   for use, reproduction, or distribution of Your modifications, or\n   for any such Derivative Works as a whole, provided Your use,\n   reproduction, and distribution of the Work otherwise complies with\n   the conditions stated in this License.\n\n5. Submission of Contributions. Unless You explicitly state otherwise,\n   any Contribution intentionally submitted for inclusion in the Work\n   by You to the Licensor shall be under the terms and conditions of\n   this License, without any additional terms or conditions.\n   Notwithstanding the above, nothing herein shall supersede or modify\n   the terms of any separate license agreement you may have executed\n   with Licensor regarding such Contributions.\n\n6. Trademarks. This License does not grant permission to use the trade\n   names, trademarks, service marks, or product names of the Licensor,\n   except as required for reasonable and customary use in describing the\n   origin of the Work and reproducing the content of the NOTICE file.\n\n7. Disclaimer of Warranty. Unless required by applicable law or\n   agreed to in writing, Licensor provides the Work (and each\n   Contributor provides its Contributions) on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n   implied, including, without limitation, any warranties or conditions\n   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n   PARTICULAR PURPOSE. You are solely responsible for determining the\n   appropriateness of using or redistributing the Work and assume any\n   risks associated with Your exercise of permissions under this License.\n\n8. Limitation of Liability. In no event and under no legal theory,\n   whether in tort (including negligence), contract, or otherwise,\n   unless required by applicable law (such as deliberate and grossly\n   negligent acts) or agreed to in writing, shall any Contributor be\n   liable to You for damages, including any direct, indirect, special,\n   incidental, or consequential damages of any character arising as a\n   result of this License or out of the use or inability to use the\n   Work (including but not limited to damages for loss of goodwill,\n   work stoppage, computer failure or malfunction, or any and all\n   other commercial damages or losses), even if such Contributor\n   has been advised of the possibility of such damages.\n\n9. Accepting Warranty or Additional Liability. While redistributing\n   the Work or Derivative Works thereof, You may choose to offer,\n   and charge a fee for, acceptance of support, warranty, indemnity,\n   or other liability obligations and/or rights consistent with this\n   License. However, in accepting such obligations, You may act only\n   on Your own behalf and on Your sole responsibility, not on behalf\n   of any other Contributor, and only if You agree to indemnify,\n   defend, and hold each Contributor harmless for any liability\n   incurred by, or claims asserted against, such Contributor by reason\n   of your accepting any such warranty or additional liability.\n\nEND OF TERMS AND CONDITIONS\n\nAPPENDIX: How to apply the Apache License to your work.\n\n   To apply the Apache License to your work, attach the following\n   boilerplate notice, with the fields enclosed by brackets \"[]\"\n   replaced with your own identifying information. (Don't include\n   the brackets!)  The text should be enclosed in the appropriate\n   comment syntax for the file format. We also recommend that a\n   file or class name and description of purpose be included on the\n   same \"printed page\" as the copyright notice for easier\n   identification within third-party archives.\n\nCopyright 2020 Andrew Straw\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n"
+    },
+    {
+      "licence": "Apache-2.0",
+      "text": "                              Apache License\n                        Version 2.0, January 2004\n                     http://www.apache.org/licenses/\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n   \"License\" shall mean the terms and conditions for use, reproduction,\n   and distribution as defined by Sections 1 through 9 of this document.\n\n   \"Licensor\" shall mean the copyright owner or entity authorized by\n   the copyright owner that is granting the License.\n\n   \"Legal Entity\" shall mean the union of the acting entity and all\n   other entities that control, are controlled by, or are under common\n   control with that entity. For the purposes of this definition,\n   \"control\" means (i) the power, direct or indirect, to cause the\n   direction or management of such entity, whether by contract or\n   otherwise, or (ii) ownership of fifty percent (50%) or more of the\n   outstanding shares, or (iii) beneficial ownership of such entity.\n\n   \"You\" (or \"Your\") shall mean an individual or Legal Entity\n   exercising permissions granted by this License.\n\n   \"Source\" form shall mean the preferred form for making modifications,\n   including but not limited to software source code, documentation\n   source, and configuration files.\n\n   \"Object\" form shall mean any form resulting from mechanical\n   transformation or translation of a Source form, including but\n   not limited to compiled object code, generated documentation,\n   and conversions to other media types.\n\n   \"Work\" shall mean the work of authorship, whether in Source or\n   Object form, made available under the License, as indicated by a\n   copyright notice that is included in or attached to the work\n   (an example is provided in the Appendix below).\n\n   \"Derivative Works\" shall mean any work, whether in Source or Object\n   form, that is based on (or derived from) the Work and for which the\n   editorial revisions, annotations, elaborations, or other modifications\n   represent, as a whole, an original work of authorship. For the purposes\n   of this License, Derivative Works shall not include works that remain\n   separable from, or merely link (or bind by name) to the interfaces of,\n   the Work and Derivative Works thereof.\n\n   \"Contribution\" shall mean any work of authorship, including\n   the original version of the Work and any modifications or additions\n   to that Work or Derivative Works thereof, that is intentionally\n   submitted to Licensor for inclusion in the Work by the copyright owner\n   or by an individual or Legal Entity authorized to submit on behalf of\n   the copyright owner. For the purposes of this definition, \"submitted\"\n   means any form of electronic, verbal, or written communication sent\n   to the Licensor or its representatives, including but not limited to\n   communication on electronic mailing lists, source code control systems,\n   and issue tracking systems that are managed by, or on behalf of, the\n   Licensor for the purpose of discussing and improving the Work, but\n   excluding communication that is conspicuously marked or otherwise\n   designated in writing by the copyright owner as \"Not a Contribution.\"\n\n   \"Contributor\" shall mean Licensor and any individual or Legal Entity\n   on behalf of whom a Contribution has been received by Licensor and\n   subsequently incorporated within the Work.\n\n2. Grant of Copyright License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   copyright license to reproduce, prepare Derivative Works of,\n   publicly display, publicly perform, sublicense, and distribute the\n   Work and such Derivative Works in Source or Object form.\n\n3. Grant of Patent License. Subject to the terms and conditions of\n   this License, each Contributor hereby grants to You a perpetual,\n   worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n   (except as stated in this section) patent license to make, have made,\n   use, offer to sell, sell, import, and otherwise transfer the Work,\n   where such license applies only to those patent claims licensable\n   by such Contributor that are necessarily infringed by their\n   Contribution(s) alone or by combination of their Contribution(s)\n   with the Work to which such Contribution(s) was submitted. If You\n   institute patent litigation against any entity (including a\n   cross-claim or counterclaim in a lawsuit) alleging that the Work\n   or a Contribution incorporated within the Work constitutes direct\n   or contributory patent infringement, then any patent licenses\n   granted to You under this License for that Work shall terminate\n   as of the date such litigation is filed.\n\n4. Redistribution. You may reproduce and distribute copies of the\n   Work or Derivative Works thereof in any medium, with or without\n   modifications, and in Source or Object form, provided that You\n   meet the following conditions:\n\n   (a) You must give any other recipients of the Work or\n       Derivative Works a copy of this License; and\n\n   (b) You must cause any modified files to carry prominent notices\n       stating that You changed the files; and\n\n   (c) You must retain, in the Source form of any Derivative Works\n       that You distribute, all copyright, patent, trademark, and\n       attribution notices from the Source form of the Work,\n       excluding those notices that do not pertain to any part of\n       the Derivative Works; and\n\n   (d) If the Work includes a \"NOTICE\" text file as part of its\n       distribution, then any Derivative Works that You distribute must\n       include a readable copy of the attribution notices contained\n       within such NOTICE file, excluding those notices that do not\n       pertain to any part of the Derivative Works, in at least one\n       of the following places: within a NOTICE text file distributed\n       as part of the Derivative Works; within the Source form or\n       documentation, if provided along with the Derivative Works; or,\n       within a display generated by the Derivative Works, if and\n       wherever such third-party notices normally appear. The contents\n       of the NOTICE file are for informational purposes only and\n       do not modify the License. You may add Your own attribution\n       notices within Derivative Works that You distribute, alongside\n       or as an addendum to the NOTICE text from the Work, provided\n       that such additional attribution notices cannot be construed\n       as modifying the License.\n\n   You may add Your own copyright statement to Your modifications and\n   may provide additional or different license terms and conditions\n   for use, reproduction, or distribution of Your modifications, or\n   for any such Derivative Works as a whole, provided Your use,\n   reproduction, and distribution of the Work otherwise complies with\n   the conditions stated in this License.\n\n5. Submission of Contributions. Unless You explicitly state otherwise,\n   any Contribution intentionally submitted for inclusion in the Work\n   by You to the Licensor shall be under the terms and conditions of\n   this License, without any additional terms or conditions.\n   Notwithstanding the above, nothing herein shall supersede or modify\n   the terms of any separate license agreement you may have executed\n   with Licensor regarding such Contributions.\n\n6. Trademarks. This License does not grant permission to use the trade\n   names, trademarks, service marks, or product names of the Licensor,\n   except as required for reasonable and customary use in describing the\n   origin of the Work and reproducing the content of the NOTICE file.\n\n7. Disclaimer of Warranty. Unless required by applicable law or\n   agreed to in writing, Licensor provides the Work (and each\n   Contributor provides its Contributions) on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n   implied, including, without limitation, any warranties or conditions\n   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n   PARTICULAR PURPOSE. You are solely responsible for determining the\n   appropriateness of using or redistributing the Work and assume any\n   risks associated with Your exercise of permissions under this License.\n\n8. Limitation of Liability. In no event and under no legal theory,\n   whether in tort (including negligence), contract, or otherwise,\n   unless required by applicable law (such as deliberate and grossly\n   negligent acts) or agreed to in writing, shall any Contributor be\n   liable to You for damages, including any direct, indirect, special,\n   incidental, or consequential damages of any character arising as a\n   result of this License or out of the use or inability to use the\n   Work (including but not limited to damages for loss of goodwill,\n   work stoppage, computer failure or malfunction, or any and all\n   other commercial damages or losses), even if such Contributor\n   has been advised of the possibility of such damages.\n\n9. Accepting Warranty or Additional Liability. While redistributing\n   the Work or Derivative Works thereof, You may choose to offer,\n   and charge a fee for, acceptance of support, warranty, indemnity,\n   or other liability obligations and/or rights consistent with this\n   License. However, in accepting such obligations, You may act only\n   on Your own behalf and on Your sole responsibility, not on behalf\n   of any other Contributor, and only if You agree to indemnify,\n   defend, and hold each Contributor harmless for any liability\n   incurred by, or claims asserted against, such Contributor by reason\n   of your accepting any such warranty or additional liability.\n\nEND OF TERMS AND CONDITIONS\n\nAPPENDIX: How to apply the Apache License to your work.\n\n   To apply the Apache License to your work, attach the following\n   boilerplate notice, with the fields enclosed by brackets \"[]\"\n   replaced with your own identifying information. (Don't include\n   the brackets!)  The text should be enclosed in the appropriate\n   comment syntax for the file format. We also recommend that a\n   file or class name and description of purpose be included on the\n   same \"printed page\" as the copyright notice for easier\n   identification within third-party archives.\n\nCopyright 2023 Dirkjan Ochtman\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n"
     },
     {
       "licence": "Apache-2.0",
@@ -4291,6 +4504,10 @@
     },
     {
       "licence": "BSD-3-Clause",
+      "text": "Copyright (c) 2016-2017 Isis Agora Lovecruft, Henry de Valence. All rights reserved.\nCopyright (c) 2016-2024 Isis Agora Lovecruft. All rights reserved.\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are\nmet:\n\n1. Redistributions of source code must retain the above copyright\nnotice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary form must reproduce the above copyright\nnotice, this list of conditions and the following disclaimer in the\ndocumentation and/or other materials provided with the distribution.\n\n3. Neither the name of the copyright holder nor the names of its\ncontributors may be used to endorse or promote products derived from\nthis software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS\nIS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED\nTO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A\nPARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nHOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED\nTO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\nPROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF\nLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\nNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. \n"
+    },
+    {
+      "licence": "BSD-3-Clause",
       "text": "Copyright (c) <year> <owner>. \n\nRedistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\n\n1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\n\n3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
     },
     {
@@ -4306,8 +4523,76 @@
       "text": "Creative Commons CC0 1.0 Universal\n\n<<beginOptional;name=ccOptionalIntro>> CREATIVE COMMONS CORPORATION IS NOT A LAW FIRM AND DOES NOT PROVIDE LEGAL SERVICES. DISTRIBUTION OF THIS DOCUMENT DOES NOT CREATE AN ATTORNEY-CLIENT RELATIONSHIP. CREATIVE COMMONS PROVIDES THIS INFORMATION ON AN \"AS-IS\" BASIS. CREATIVE COMMONS MAKES NO WARRANTIES REGARDING THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS PROVIDED HEREUNDER, AND DISCLAIMS LIABILITY FOR DAMAGES RESULTING FROM THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS PROVIDED HEREUNDER.  <<endOptional>>\n\nStatement of Purpose\n\nThe laws of most jurisdictions throughout the world automatically confer exclusive Copyright and Related Rights (defined below) upon the creator and subsequent owner(s) (each and all, an \"owner\") of an original work of authorship and/or a database (each, a \"Work\").\n\nCertain owners wish to permanently relinquish those rights to a Work for the purpose of contributing to a commons of creative, cultural and scientific works (\"Commons\") that the public can reliably and without fear of later claims of infringement build upon, modify, incorporate in other works, reuse and redistribute as freely as possible in any form whatsoever and for any purposes, including without limitation commercial purposes. These owners may contribute to the Commons to promote the ideal of a free culture and the further production of creative, cultural and scientific works, or to gain reputation or greater distribution for their Work in part through the use and efforts of others.\n\nFor these and/or other purposes and motivations, and without any expectation of additional consideration or compensation, the person associating CC0 with a Work (the \"Affirmer\"), to the extent that he or she is an owner of Copyright and Related Rights in the Work, voluntarily elects to apply CC0 to the Work and publicly distribute the Work under its terms, with knowledge of his or her Copyright and Related Rights in the Work and the meaning and intended legal effect of CC0 on those rights.\n\n1. Copyright and Related Rights. A Work made available under CC0 may be protected by copyright and related or neighboring rights (\"Copyright and Related Rights\"). Copyright and Related Rights include, but are not limited to, the following:\n\n     i. the right to reproduce, adapt, distribute, perform, display, communicate, and translate a Work;\n\n     ii. moral rights retained by the original author(s) and/or performer(s);\n\n     iii. publicity and privacy rights pertaining to a person's image or likeness depicted in a Work;\n\n     iv. rights protecting against unfair competition in regards to a Work, subject to the limitations in paragraph 4(a), below;\n\n     v. rights protecting the extraction, dissemination, use and reuse of data in a Work;\n\n     vi. database rights (such as those arising under Directive 96/9/EC of the European Parliament and of the Council of 11 March 1996 on the legal protection of databases, and under any national implementation thereof, including any amended or successor version of such directive); and\n\n     vii. other similar, equivalent or corresponding rights throughout the world based on applicable law or treaty, and any national implementations thereof.\n\n2. Waiver. To the greatest extent permitted by, but not in contravention of, applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and unconditionally waives, abandons, and surrenders all of Affirmer's Copyright and Related Rights and associated claims and causes of action, whether now known or unknown (including existing as well as future claims and causes of action), in the Work (i) in all territories worldwide, (ii) for the maximum duration provided by applicable law or treaty (including future time extensions), (iii) in any current or future medium and for any number of copies, and (iv) for any purpose whatsoever, including without limitation commercial, advertising or promotional purposes (the \"Waiver\"). Affirmer makes the Waiver for the benefit of each member of the public at large and to the detriment of Affirmer's heirs and successors, fully intending that such Waiver shall not be subject to revocation, rescission, cancellation, termination, or any other legal or equitable action to disrupt the quiet enjoyment of the Work by the public as contemplated by Affirmer's express Statement of Purpose.\n\n3. Public License Fallback. Should any part of the Waiver for any reason be judged legally invalid or ineffective under applicable law, then the Waiver shall be preserved to the maximum extent permitted taking into account Affirmer's express Statement of Purpose. In addition, to the extent the Waiver is so judged Affirmer hereby grants to each affected person a royalty-free, non transferable, non sublicensable, non exclusive, irrevocable and unconditional license to exercise Affirmer's Copyright and Related Rights in the Work (i) in all territories worldwide, (ii) for the maximum duration provided by applicable law or treaty (including future time extensions), (iii) in any current or future medium and for any number of copies, and (iv) for any purpose whatsoever, including without limitation commercial, advertising or promotional purposes (the \"License\"). The License shall be deemed effective as of the date CC0 was applied by Affirmer to the Work. Should any part of the License for any reason be judged legally invalid or ineffective under applicable law, such partial invalidity or ineffectiveness shall not invalidate the remainder of the License, and in such case Affirmer hereby affirms that he or she will not (i) exercise any of his or her remaining Copyright and Related Rights in the Work or (ii) assert any associated claims and causes of action with respect to the Work, in either case contrary to Affirmer's express Statement of Purpose.\n\n4. Limitations and Disclaimers.\n\n     a. No trademark or patent rights held by Affirmer are waived, abandoned, surrendered, licensed or otherwise affected by this document.\n\n     b. Affirmer offers the Work as-is and makes no representations or warranties of any kind concerning the Work, express, implied, statutory or otherwise, including without limitation warranties of title, merchantability, fitness for a particular purpose, non infringement, or the absence of latent or other defects, accuracy, or the present or absence of errors, whether or not discoverable, all to the greatest extent permissible under applicable law.\n\n     c. Affirmer disclaims responsibility for clearing rights of other persons that may apply to the Work or any use thereof, including without limitation any person's Copyright and Related Rights in the Work. Further, Affirmer disclaims responsibility for obtaining any necessary consents, permissions or other rights required for any use of the Work.\n\n     d. Affirmer understands and acknowledges that Creative Commons is not a party to this document and has no duty or obligation with respect to this CC0 or use of the Work. "
     },
     {
+      "licence": "CDLA-Permissive-2.0",
+      "text": "# Community Data License Agreement - Permissive - Version 2.0\n\nThis is the Community Data License Agreement - Permissive, Version\n2.0 (the \"agreement\"). Data Provider(s) and Data Recipient(s) agree\nas follows:\n\n## 1. Provision of the Data\n\n1.1. A Data Recipient may use, modify, and share the Data made\navailable by Data Provider(s) under this agreement if that Data\nRecipient follows the terms of this agreement.\n\n1.2. This agreement does not impose any restriction on a Data\nRecipient's use, modification, or sharing of any portions of the\nData that are in the public domain or that may be used, modified,\nor shared under any other legal exception or limitation.\n\n## 2. Conditions for Sharing Data\n\n2.1. A Data Recipient may share Data, with or without modifications, so\nlong as the Data Recipient makes available the text of this agreement\nwith the shared Data.\n\n## 3. No Restrictions on Results\n\n3.1. This agreement does not impose any restriction or obligations\nwith respect to the use, modification, or sharing of Results.\n\n## 4. No Warranty; Limitation of Liability\n\n4.1. All Data Recipients receive the Data subject to the following\nterms:\n\nTHE DATA IS PROVIDED ON AN \"AS IS\" BASIS, WITHOUT REPRESENTATIONS,\nWARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED\nINCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE,\nNON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.\n\nNO DATA PROVIDER SHALL HAVE ANY LIABILITY FOR ANY DIRECT, INDIRECT,\nINCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING\nWITHOUT LIMITATION LOST PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF\nLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\nNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE DATA OR RESULTS,\nEVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.\n\n## 5. Definitions\n\n5.1. \"Data\" means the material received by a Data Recipient under\nthis agreement.\n\n5.2. \"Data Provider\" means any person who is the source of Data\nprovided under this agreement and in reliance on a Data Recipient's\nagreement to its terms.\n\n5.3. \"Data Recipient\" means any person who receives Data directly\nor indirectly from a Data Provider and agrees to the terms of this\nagreement.\n\n5.4. \"Results\" means any outcome obtained by computational analysis\nof Data, including for example machine learning models and models'\ninsights.\n"
+    },
+    {
       "licence": "IJG",
       "text": "Independent JPEG Group License\n\nLEGAL ISSUES\n\nIn plain English:\n\n1. We don't promise that this software works. (But if you find any bugs, please let us know!)\n2. You can use this software for whatever you want. You don't have to pay us.\n3. You may not pretend that you wrote this software. If you use it in a program, you must acknowledge somewhere in your documentation that you've used the IJG code.\n\nIn legalese:\n\nThe authors make NO WARRANTY or representation, either express or implied, with respect to this software, its quality, accuracy, merchantability, or fitness for a particular purpose. This software is provided \"AS IS\", and you, its user, assume the entire risk as to its quality and accuracy.\n\nThis software is copyright (C) 1991-1998, Thomas G. Lane. All Rights Reserved except as specified below.\n\nPermission is hereby granted to use, copy, modify, and distribute this software (or portions thereof) for any purpose, without fee, subject to these conditions:\n\n     (1) If any part of the source code for this software is distributed, then this README file must be included, with this copyright and no-warranty notice unaltered; and any additions, deletions, or changes to the original files must be clearly indicated in accompanying documentation.\n     (2) If only executable code is distributed, then the accompanying documentation must state that \"this software is based in part on the work of the Independent JPEG Group\".\n     (3) Permission for use of this software is granted only if the user accepts full responsibility for any undesirable consequences; the authors accept NO LIABILITY for damages of any kind.\n\nThese conditions apply to any software derived from or based on the IJG code, not just to the unmodified library. If you use our work, you ought to acknowledge us.\n\nPermission is NOT granted for the use of any IJG author's name or company name in advertising or publicity relating to this software or products derived from it. This software may be referred to only as \"the Independent JPEG Group's software\".\n\nWe specifically permit and encourage the use of this software as the basis of commercial products, provided that all warranty or liability claims are assumed by the product vendor.\n\nansi2knr.c is included in this distribution by permission of L. Peter Deutsch, sole proprietor of its copyright holder, Aladdin Enterprises of Menlo Park, CA. ansi2knr.c is NOT covered by the above copyright and conditions, but instead by the usual distribution terms of the Free Software Foundation; principally, that you must include source code if you redistribute it. (See the file ansi2knr.c for full details.) However, since ansi2knr.c is not needed as part of any program generated from the IJG code, this does not limit you more than the foregoing paragraphs do.\n\nThe Unix configuration script \"configure\" was produced with GNU Autoconf. It is copyright by the Free Software Foundation but is freely distributable. The same holds for its supporting scripts (config.guess, config.sub, ltconfig, ltmain.sh). Another support script, install-sh, is copyright by M.I.T. but is also freely distributable.\n\nIt appears that the arithmetic coding option of the JPEG spec is covered by patents owned by IBM, AT&T, and Mitsubishi. Hence arithmetic coding cannot legally be used without obtaining one or more licenses. For this reason, support for arithmetic coding has been removed from the free JPEG software. (Since arithmetic coding provides only a marginal gain over the unpatented Huffman mode, it is unlikely that very many implementations will support it.) So far as we are aware, there are no patent restrictions on the remaining code.\n\nThe IJG distribution formerly included code to read and write GIF files. To avoid entanglement with the Unisys LZW patent, GIF reading support has been removed altogether, and the GIF writer has been simplified to produce \"uncompressed GIFs\". This technique does not use the LZW algorithm; the resulting GIF files are larger than usual, but are readable by all standard GIF decoders.\n\nWe are required to state that\n     \"The Graphics Interchange Format(c) is the Copyright property of CompuServe Incorporated. GIF(sm) is a Service Mark property of CompuServe Incorporated.\"\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "/* Copyright (c) 2014, Intel Corporation.\n *\n * Permission to use, copy, modify, and/or distribute this software for any\n * purpose with or without fee is hereby granted, provided that the above\n * copyright notice and this permission notice appear in all copies.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */\n\n#ifndef OPENSSL_HEADER_EC_ECP_NISTZ384_H\n#define OPENSSL_HEADER_EC_ECP_NISTZ384_H\n\n#include \"../../limbs/limbs.h\"\n\n#define P384_LIMBS (384u / LIMB_BITS)\n\ntypedef struct {\n  Limb X[P384_LIMBS];\n  Limb Y[P384_LIMBS];\n  Limb Z[P384_LIMBS];\n} P384_POINT;\n\ntypedef struct {\n  Limb X[P384_LIMBS];\n  Limb Y[P384_LIMBS];\n} P384_POINT_AFFINE;\n\n\n#endif // OPENSSL_HEADER_EC_ECP_NISTZ384_H\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2015-2016 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n//! EdDSA Signatures.\n\nuse super::ops::ELEM_LEN;\nuse crate::digest;\n\npub mod signing;\npub mod verification;\n\n/// The length of an Ed25519 public key.\npub const ED25519_PUBLIC_KEY_LEN: usize = ELEM_LEN;\n\npub fn eddsa_digest(signature_r: &[u8], public_key: &[u8], msg: &[u8]) -> digest::Digest {\n    let mut ctx = digest::Context::new(&digest::SHA512);\n    ctx.update(signature_r);\n    ctx.update(public_key);\n    ctx.update(msg);\n    ctx.finish()\n}\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2015-2016 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHORS DISCLAIM ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR\n// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF\n// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2015-2022 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nuse crate::limb::Limb;\n\n#[derive(Clone, Copy)]\n#[repr(transparent)]\npub struct N0([Limb; 2]);\n\nimpl N0 {\n    #[cfg(feature = \"alloc\")]\n    pub(super) const LIMBS_USED: usize = 64 / crate::limb::LIMB_BITS;\n\n    #[inline]\n    pub const fn precalculated(n0: u64) -> Self {\n        #[cfg(target_pointer_width = \"64\")]\n        {\n            Self([n0, 0])\n        }\n\n        #[cfg(target_pointer_width = \"32\")]\n        {\n            Self([n0 as Limb, (n0 >> crate::limb::LIMB_BITS) as Limb])\n        }\n    }\n}\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2015-2025 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nuse crate::{bb, error};\n\n#[deprecated(\n    note = \"To be removed. Internal function not intended for external use with no promises regarding side channels.\"\n)]\npub fn verify_slices_are_equal(a: &[u8], b: &[u8]) -> Result<(), error::Unspecified> {\n    bb::verify_slices_are_equal(a, b)\n}\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2016 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n//! Elliptic curve operations and schemes using Curve25519.\n\npub mod ed25519;\n\npub mod x25519;\n\nmod ops;\nmod scalar;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2016-2024 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nuse crate::error::{KeyRejected, Unspecified};\n\nimpl From<untrusted::EndOfInput> for Unspecified {\n    fn from(source: untrusted::EndOfInput) -> Self {\n        super::erase(source)\n    }\n}\n\nimpl From<core::array::TryFromSliceError> for Unspecified {\n    fn from(source: core::array::TryFromSliceError) -> Self {\n        super::erase(source)\n    }\n}\n\nimpl From<KeyRejected> for Unspecified {\n    fn from(source: KeyRejected) -> Self {\n        super::erase(source)\n    }\n}\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2018 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n//! Serialization and deserialization.\n\n#[doc(hidden)]\npub mod der;\n\n#[cfg(feature = \"alloc\")]\nmod writer;\n\n#[cfg(feature = \"alloc\")]\npub(crate) mod der_writer;\n\npub(crate) mod positive;\n\npub use self::positive::Positive;\n\n#[cfg(feature = \"alloc\")]\npub(crate) use self::writer::TooLongError;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2019-2024 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nuse super::BlockLen;\n\npub(super) use self::{\n    sha2_32::{block_data_order_32, State32, SHA256_BLOCK_LEN},\n    sha2_64::{block_data_order_64, State64, SHA512_BLOCK_LEN},\n};\n\npub(super) const CHAINING_WORDS: usize = 8;\n\n#[cfg(any(\n    all(target_arch = \"aarch64\", target_endian = \"little\"),\n    all(target_arch = \"arm\", target_endian = \"little\"),\n    target_arch = \"x86_64\"\n))]\n#[macro_use]\nmod ffi;\n\npub(super) mod fallback;\nmod sha2_32;\nmod sha2_64;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2024 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n// TODO(MSRV 1.76): Replace with `core::ptr::from_mut`.\n#[allow(dead_code)]\n#[inline(always)]\npub fn from_mut<T: ?Sized>(r: &mut T) -> *mut T {\n    r\n}\n\n// TODO(MSRV 1.76): Replace with `core::ptr::from_ref`.\n#[allow(dead_code)]\n#[inline(always)]\npub const fn from_ref<T: ?Sized>(r: &T) -> *const T {\n    r\n}\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2024 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n//! Integration tests for non-public APIs.\n\nmod bits_tests;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2024 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\npub use self::{\n    array::Array,\n    base::{IndexError, Overlapping},\n    partial_block::PartialBlock,\n};\n\nmod array;\nmod base;\nmod partial_block;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2025 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n#![cfg(all(target_arch = \"aarch64\", target_endian = \"little\"))]\n\npub(in super::super) mod mont;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2025 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\n#![cfg(target_arch = \"x86_64\")]\n\npub(in super::super::super) mod mont;\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2025 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nmod storage;\n\npub(super) use self::storage::{AlignedStorage, LIMBS_PER_CHUNK};\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "// Copyright 2025 Brian Smith.\n//\n// Permission to use, copy, modify, and/or distribute this software for any\n// purpose with or without fee is hereby granted, provided that the above\n// copyright notice and this permission notice appear in all copies.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\n// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\n// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\npub(super) mod aarch64;\npub(super) mod x86_64;\n"
     },
     {
       "licence": "ISC",
@@ -4319,7 +4604,15 @@
     },
     {
       "licence": "ISC",
+      "text": "Copyright 2015-2025 Brian Smith.\n\nPermission to use, copy, modify, and/or distribute this software for any\npurpose with or without fee is hereby granted, provided that the above\ncopyright notice and this permission notice appear in all copies.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\nWITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\nMERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\nSPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\nWHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION\nOF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN\nCONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n"
+    },
+    {
+      "licence": "ISC",
       "text": "Copyright © 2015, Simonas Kazlauskas\n\nPermission to use, copy, modify, and/or distribute this software for any purpose with or without\nfee is hereby granted, provided that the above copyright notice and this permission notice appear\nin all copies.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS\nSOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE\nAUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\nWHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,\nNEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF\nTHIS SOFTWARE.\n"
+    },
+    {
+      "licence": "ISC",
+      "text": "Except as otherwise noted, this project is licensed under the following\n(ISC-style) terms:\n\nCopyright 2015 Brian Smith.\n\nPermission to use, copy, modify, and/or distribute this software for any\npurpose with or without fee is hereby granted, provided that the above\ncopyright notice and this permission notice appear in all copies.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHORS DISCLAIM ALL WARRANTIES\nWITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\nMERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR\nANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\nWHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\nACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF\nOR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n\nThe files under third-party/chromium are licensed as described in\nthird-party/chromium/LICENSE.\n"
     },
     {
       "licence": "MIT",
@@ -4367,6 +4660,10 @@
     },
     {
       "licence": "MIT",
+      "text": "Copyright (c) 2015 steffengy\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+    },
+    {
+      "licence": "MIT",
       "text": "Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER\nIN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
     },
     {
@@ -4380,6 +4677,10 @@
     {
       "licence": "MIT",
       "text": "Copyright (c) 2017 Gilad Naaman\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    },
+    {
+      "licence": "MIT",
+      "text": "Copyright (c) 2017 h2 authors\n\nPermission is hereby granted, free of charge, to any\nperson obtaining a copy of this software and associated\ndocumentation files (the \"Software\"), to deal in the\nSoftware without restriction, including without\nlimitation the rights to use, copy, modify, merge,\npublish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software\nis furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice\nshall be included in all copies or substantial portions\nof the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF\nANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED\nTO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A\nPARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT\nSHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\nCLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR\nIN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER\nDEALINGS IN THE SOFTWARE.\n"
     },
     {
       "licence": "MIT",
