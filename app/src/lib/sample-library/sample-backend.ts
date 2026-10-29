@@ -1121,7 +1121,7 @@ export function sampleBackend(
       const chosen = series.map(seriesWith);
       const holding = (holds: (one: SampleSeries) => boolean) =>
         chosen.filter(holds).length;
-      const libraryTags = [...new Set(library.flatMap(tagsOf))];
+      const libraryTags = [...new Set(shownLibrary().flatMap(tagsOf))];
       const tags = libraryTags
         .map((tag) => ({
           tag,
@@ -1222,7 +1222,7 @@ export function sampleBackend(
     libraryTags: async () => {
       await libraryReady();
       const counts = new Map<string, number>();
-      for (const series of library) {
+      for (const series of shownLibrary()) {
         for (const tag of tagsOf(series)) {
           counts.set(tag, (counts.get(tag) ?? 0) + 1);
         }
@@ -1256,16 +1256,16 @@ export function sampleBackend(
       await libraryReady();
       return {
         formats: FORMATS.filter((format) =>
-          library.some((series) => formatOf(series) === format),
+          shownLibrary().some((series) => formatOf(series) === format),
         ),
         languages: [
           ...new Set(
-            library
+            shownLibrary()
               .toSorted((one, other) => one.number - other.number)
               .flatMap((series) => languageOf(series) ?? []),
           ),
         ],
-        tags: [...new Set(library.flatMap(tagsOf))],
+        tags: [...new Set(shownLibrary().flatMap(tagsOf))],
         ratesAdult: !screenshotMode && library.length > 0,
         keepsBookmarks: library.length > 0,
         smart: library.some((series) =>

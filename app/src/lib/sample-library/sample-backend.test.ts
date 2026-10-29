@@ -756,6 +756,80 @@ test("counts the writers, folder groups and creator series the same way as their
   expect(writers.every(({ seriesCount }) => seriesCount > 0)).toBe(true);
 });
 
+const MARKED_BY_HAND = {
+  title: null,
+  people: null,
+  summary: null,
+  isMarkedAdult: true,
+} as const;
+
+test("counts and offers only the tags, and relates only the series, that screenshot mode leaves shown", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(7), {
+    ...MARKED_BY_HAND,
+    tags: ["Hidden only"],
+  });
+  const before = {
+    tags: (await backend.libraryTags()).map(({ name }) => name),
+    offered: (await backend.libraryFilterChoices()).tags,
+    related: (await backend.seriesOverview(sampleSeriesId(4))).related.map(
+      ({ title }) => title,
+    ),
+  };
+
+  await backend.setScreenshotMode(true);
+  const after = {
+    tags: await backend.libraryTags(),
+    offered: await backend.libraryFilterChoices(),
+    related: (await backend.seriesOverview(sampleSeriesId(4))).related.map(
+      ({ title }) => title,
+    ),
+  };
+
+  expect(before.tags).toContain("Hidden only");
+  expect(before.offered).toContain("Hidden only");
+  expect(before.related).toContain("Sample Series 07");
+  expect(after.tags.map(({ name }) => name)).not.toContain("Hidden only");
+  expect(after.offered.tags).not.toContain("Hidden only");
+  expect(after.offered.ratesAdult).toBe(false);
+  expect(after.related).not.toContain("Sample Series 07");
+  for (const { name, seriesCount } of after.tags) {
+    expect(
+      await backend.librarySeriesCount({
+        ...NEWEST_FIRST.filter,
+        tags: [name],
+      }),
+    ).toBe(seriesCount);
+  }
+});
+
+test("gives no sessions or summary for a book of a series screenshot mode hides", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(11), {
+    ...MARKED_BY_HAND,
+    tags: null,
+  });
+  const read = (
+    await backend.readingHistory(null, { kind: "everything" })
+  ).entries.find(({ seriesTitle }) => seriesTitle === "Sample Series 11");
+  if (read === undefined) {
+    throw new Error("the sample has read nothing of series 11");
+  }
+
+  const shown = [
+    await backend.bookSessions(read.book),
+    await backend.readingSummary(read.book),
+  ];
+  await backend.setScreenshotMode(true);
+  const hidden = [
+    await backend.bookSessions(read.book),
+    await backend.readingSummary(read.book),
+  ];
+
+  expect(shown.every((found) => found !== null)).toBe(true);
+  expect(hidden).toEqual([null, null]);
+});
+
 test("remembers the choice for adult content", async () => {
   const { backend } = backendFor();
   const blurred = { treatment: "blur", countsAgeRatings: false } as const;
