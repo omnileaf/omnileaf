@@ -45,6 +45,7 @@ omnileaf-formats = { path = "crates/omnileaf-formats" }
 omnileaf-icon-actions = { path = "crates/omnileaf-icon-actions" }
 omnileaf-imaging = { path = "crates/omnileaf-imaging" }
 omnileaf-libarchive = { path = "crates/omnileaf-libarchive" }
+omnileaf-relay-proto = { path = "crates/omnileaf-relay-proto" }
 omnileaf-sync-proto = { path = "crates/omnileaf-sync-proto" }
 omnileaf-system-bars = { path = "crates/omnileaf-system-bars" }
 omnileaf-testkit = { path = "crates/omnileaf-testkit" }

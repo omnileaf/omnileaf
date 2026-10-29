@@ -3720,6 +3720,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "omnileaf-relay-proto"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "blake3",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "omnileaf-sync-proto"
 version = "0.0.0"
 dependencies = [
