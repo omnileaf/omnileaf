@@ -419,9 +419,9 @@ pub(crate) fn stages_holding_matches(
     {
         return Ok(StageParams::of(filter));
     }
-    let mut forgotten = connection.prepare_cached(FORGOTTEN_AT_STAGE)?;
-    let mut duplicated = connection.prepare_cached(DUPLICATED_AT_STAGE)?;
-    let mut quick = connection.prepare_cached(QUICK_AT_STAGE)?;
+    let mut forgotten = connection.prepare(FORGOTTEN_AT_STAGE)?;
+    let mut duplicated = connection.prepare(DUPLICATED_AT_STAGE)?;
+    let mut quick = connection.prepare(QUICK_AT_STAGE)?;
     StageParams::of(filter).keeping(|stage| {
         let holds_forgotten = match filter.last_read_before_ms {
             Some(before) => forgotten.query_row(
