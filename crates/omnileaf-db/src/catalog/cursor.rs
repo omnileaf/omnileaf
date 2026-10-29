@@ -26,6 +26,7 @@ const UNREAD_COUNT_TAG: u8 = 8;
 const TIME_LEFT_TAG: u8 = 9;
 const WRITER_TAG: u8 = 10;
 const FOLDER_GROUP_TAG: u8 = 11;
+const CHAPTER_TAG: u8 = 12;
 const ID_LENGTH: usize = 16;
 const KEY_LENGTH_PREFIX: usize = size_of::<u32>();
 const MILLIS_LENGTH: usize = size_of::<i64>();
@@ -84,6 +85,9 @@ pub(crate) enum Position {
     FolderGroup {
         root: i64,
         location: Vec<u8>,
+    },
+    Chapter {
+        index_id: i64,
     },
 }
 
@@ -160,6 +164,7 @@ impl Position {
             Self::FolderGroup { root, location } => {
                 [&[FOLDER_GROUP_TAG][..], &root.to_be_bytes(), location].concat()
             }
+            Self::Chapter { index_id } => [&[CHAPTER_TAG][..], &index_id.to_be_bytes()].concat(),
         }
     }
 
@@ -249,6 +254,9 @@ impl Position {
                     location: location.to_vec(),
                 })
             }
+            CHAPTER_TAG => Some(Self::Chapter {
+                index_id: i64::from_be_bytes(rest.try_into().ok()?),
+            }),
             _ => None,
         }
     }

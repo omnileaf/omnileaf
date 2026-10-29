@@ -62,7 +62,8 @@ pub fn library_roots(
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
             | Position::Writer { .. }
-            | Position::FolderGroup { .. },
+            | Position::FolderGroup { .. }
+            | Position::Chapter { .. },
         ) => {
             return Err(Error::CursorForAnotherList);
         }
