@@ -652,6 +652,184 @@ test("leaves adult series out of the list, its count and search once they're hid
   );
 });
 
+const ADULT_TITLES = ["Sample Series 13", "Sample Series 17"];
+
+async function listedTitles(backend: ReturnType<typeof backendFor>["backend"]) {
+  const page = await backend.librarySeries(null, NEWEST_FIRST);
+  return page.series.map((series) => series.title);
+}
+
+test("leaves the adult series out of every list and count while screenshot mode is on, and brings them back once it's off", async () => {
+  const { backend } = backendFor();
+  const everything = { kind: "everything" } as const;
+  const before = {
+    listed: await listedTitles(backend),
+    count: await backend.librarySeriesCount(NEWEST_FIRST.filter),
+    history: (await backend.readingHistory(null, everything)).entries,
+    historySeries: await backend.historySeries(),
+  };
+
+  await backend.setScreenshotMode(true);
+  const hidden = {
+    listed: await listedTitles(backend),
+    count: await backend.librarySeriesCount(NEWEST_FIRST.filter),
+    history: (await backend.readingHistory(null, everything)).entries,
+    historySeries: await backend.historySeries(),
+    found: (
+      await backend.librarySearch(null, {
+        text: "Sample Series 1",
+        filter: NEWEST_FIRST.filter,
+      })
+    ).series.map((series) => series.title),
+    foundCount: await backend.librarySearchCount({
+      text: "Sample Series 1",
+      filter: NEWEST_FIRST.filter,
+    }),
+  };
+  await backend.setScreenshotMode(false);
+
+  expect(ADULT_TITLES.every((title) => before.listed.includes(title))).toBe(
+    true,
+  );
+  expect(
+    ADULT_TITLES.every((title) =>
+      before.historySeries.some((series) => series.title === title),
+    ),
+  ).toBe(true);
+  expect(hidden.listed.filter((title) => ADULT_TITLES.includes(title))).toEqual(
+    [],
+  );
+  expect(hidden.count).toBe(hidden.listed.length);
+  expect(hidden.foundCount).toBe(hidden.found.length);
+  expect(hidden.found).not.toContain("Sample Series 17");
+  expect(
+    [
+      ...hidden.history.map(({ seriesTitle }) => seriesTitle),
+      ...hidden.historySeries.map(({ title }) => title),
+    ].filter((title) => ADULT_TITLES.includes(title)),
+  ).toEqual([]);
+  expect(await listedTitles(backend)).toEqual(before.listed);
+  expect(await backend.librarySeriesCount(NEWEST_FIRST.filter)).toBe(
+    before.count,
+  );
+  expect((await backend.readingHistory(null, everything)).entries).toEqual(
+    before.history,
+  );
+});
+
+test("reports whether screenshot mode is on and leaves the stored adult setting alone", async () => {
+  const { backend } = backendFor();
+  const stored = await backend.libraryAdultContent();
+
+  const off = await backend.getScreenshotMode();
+  await backend.setScreenshotMode(true);
+
+  expect([off, await backend.getScreenshotMode()]).toEqual([false, true]);
+  expect(await backend.libraryAdultContent()).toEqual(stored);
+});
+
+test("counts the writers, folder groups and creator series the same way as their lists while screenshot mode is on", async () => {
+  const { backend } = backendFor();
+  await backend.setScreenshotMode(true);
+
+  const groups = (await backend.folderGroups(null)).groups;
+  const groupCounts = groups.reduce(
+    (sum, { seriesCount }) => sum + seriesCount,
+    0,
+  );
+  const writers = (await backend.libraryWriters(null)).writers;
+  const writerLists = await Promise.all(
+    writers.map(async ({ name }) => ({
+      name,
+      counted: await backend.writerSeriesCount(name, NEWEST_FIRST.filter),
+      listed: (await backend.writerSeries(name, null, NEWEST_FIRST)).series
+        .length,
+    })),
+  );
+
+  expect(groupCounts).toBe(
+    await backend.librarySeriesCount(NEWEST_FIRST.filter),
+  );
+  expect(
+    writerLists.filter(({ counted, listed }) => counted !== listed),
+  ).toEqual([]);
+  expect(writers.every(({ seriesCount }) => seriesCount > 0)).toBe(true);
+});
+
+const MARKED_BY_HAND = {
+  title: null,
+  people: null,
+  summary: null,
+  isMarkedAdult: true,
+} as const;
+
+test("counts and offers only the tags, and relates only the series, that screenshot mode leaves shown", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(7), {
+    ...MARKED_BY_HAND,
+    tags: ["Hidden only"],
+  });
+  const before = {
+    tags: (await backend.libraryTags()).map(({ name }) => name),
+    offered: (await backend.libraryFilterChoices()).tags,
+    related: (await backend.seriesOverview(sampleSeriesId(4))).related.map(
+      ({ title }) => title,
+    ),
+  };
+
+  await backend.setScreenshotMode(true);
+  const after = {
+    tags: await backend.libraryTags(),
+    offered: await backend.libraryFilterChoices(),
+    related: (await backend.seriesOverview(sampleSeriesId(4))).related.map(
+      ({ title }) => title,
+    ),
+  };
+
+  expect(before.tags).toContain("Hidden only");
+  expect(before.offered).toContain("Hidden only");
+  expect(before.related).toContain("Sample Series 07");
+  expect(after.tags.map(({ name }) => name)).not.toContain("Hidden only");
+  expect(after.offered.tags).not.toContain("Hidden only");
+  expect(after.offered.ratesAdult).toBe(false);
+  expect(after.related).not.toContain("Sample Series 07");
+  for (const { name, seriesCount } of after.tags) {
+    expect(
+      await backend.librarySeriesCount({
+        ...NEWEST_FIRST.filter,
+        tags: [name],
+      }),
+    ).toBe(seriesCount);
+  }
+});
+
+test("gives no sessions or summary for a book of a series screenshot mode hides", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(11), {
+    ...MARKED_BY_HAND,
+    tags: null,
+  });
+  const read = (
+    await backend.readingHistory(null, { kind: "everything" })
+  ).entries.find(({ seriesTitle }) => seriesTitle === "Sample Series 11");
+  if (read === undefined) {
+    throw new Error("the sample has read nothing of series 11");
+  }
+
+  const shown = [
+    await backend.bookSessions(read.book),
+    await backend.readingSummary(read.book),
+  ];
+  await backend.setScreenshotMode(true);
+  const hidden = [
+    await backend.bookSessions(read.book),
+    await backend.readingSummary(read.book),
+  ];
+
+  expect(shown.every((found) => found !== null)).toBe(true);
+  expect(hidden).toEqual([null, null]);
+});
+
 test("remembers the choice for adult content", async () => {
   const { backend } = backendFor();
   const blurred = { treatment: "blur", countsAgeRatings: false } as const;

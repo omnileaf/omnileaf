@@ -161,6 +161,8 @@ macro_rules! app_commands {
             set_scheduled_rescans,
             set_book_open,
             set_learns_reading_speed,
+            set_screenshot_mode,
+            get_screenshot_mode,
             copy_version_details,
             open_project_link,
             problem_report,
@@ -1246,6 +1248,26 @@ fn set_book_open(library: State<'_, Library>, is_open: bool) {
 )]
 fn set_learns_reading_speed(library: State<'_, Library>, is_on: bool) {
     library.set_learns_reading_speed(is_on);
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn set_screenshot_mode(library: State<'_, Library>, on: bool) {
+    library.set_screenshot_mode(on);
+}
+
+#[tauri::command]
+#[specta::specta]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
+fn get_screenshot_mode(library: State<'_, Library>) -> bool {
+    library.screenshot_mode()
 }
 
 #[tauri::command]
