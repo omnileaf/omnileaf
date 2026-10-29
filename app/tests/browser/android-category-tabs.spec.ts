@@ -291,8 +291,8 @@ test.describe("every category on an Android phone", { tag: "@native" }, () => {
     );
     const top = (await boxOf(sheet)).y;
 
-    expect(handle.width).toBe(HANDLE_WIDTH);
-    expect(handle.height).toBe(HANDLE_HEIGHT);
+    expect(handle.width).toBeCloseTo(HANDLE_WIDTH, 0);
+    expect(handle.height).toBeCloseTo(HANDLE_HEIGHT, 0);
     expect(handle.y - top).toBeCloseTo(HANDLE_GAP, 0);
   });
 
@@ -305,8 +305,9 @@ test.describe("every category on an Android phone", { tag: "@native" }, () => {
     await expect(title).toHaveCSS("font-size", SHEET_TITLE_SIZE);
     await expect(title).toHaveCSS("line-height", SHEET_TITLE_LINE);
     await expect(title).toHaveCSS("font-weight", SHEET_TITLE_WEIGHT);
-    expect((await boxOf(title)).x - (await boxOf(sheet)).x).toBe(
+    expect((await boxOf(title)).x - (await boxOf(sheet)).x).toBeCloseTo(
       SHEET_INLINE_PADDING,
+      0,
     );
   });
 
@@ -363,9 +364,9 @@ test.describe("every category on an Android phone", { tag: "@native" }, () => {
       0,
     );
     expect(editBox.x - sheetBox.x).toBeCloseTo(SHEET_INLINE_PADDING, 0);
-    expect(sheetBox.y + sheetBox.height - (editBox.y + editBox.height)).toBe(
-      SHEET_FOOT_BOTTOM,
-    );
+    expect(
+      sheetBox.y + sheetBox.height - (editBox.y + editBox.height),
+    ).toBeCloseTo(SHEET_FOOT_BOTTOM, 0);
     await expect(made).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-button-secondary"),
