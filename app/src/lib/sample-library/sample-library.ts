@@ -88,8 +88,9 @@ function volumes(count: number, readUpTo: number, pages = 180): SampleBook[] {
 }
 
 const SAMPLE_04_PAGES = [188, 176, 192, 184, 190, 186, 200, 196] as const;
-const STRIP_CHAPTERS = 12;
-const STRIP_CHAPTER_PAGES = 64;
+export const STRIP_SERIES_NUMBER = 20;
+export const STRIP_CHAPTERS = 12;
+export const STRIP_CHAPTER_PAGES = 64;
 const STRIP_SAVED_PAGE = 41;
 
 function stripChapters(): SampleBook[] {
@@ -294,10 +295,16 @@ export function sampleLibrary(sixthVolume: SampleFile): SampleSeries[] {
     series(16, numbered(16), 3, volumes(6, 1)),
     series(17, numbered(17), 4, volumes(2, 2)),
     series(18, numbered(18), 5, volumes(16, 4)),
-    series(20, numbered(20), 2, stripChapters(), {
-      format: "Webtoon",
-      isStrip: true,
-    }),
+    series(
+      STRIP_SERIES_NUMBER,
+      numbered(STRIP_SERIES_NUMBER),
+      2,
+      stripChapters(),
+      {
+        format: "Webtoon",
+        isStrip: true,
+      },
+    ),
     series(21, numbered(21), 3, filedChapters()),
   ];
 }

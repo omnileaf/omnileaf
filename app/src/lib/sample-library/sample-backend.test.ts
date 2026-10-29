@@ -4,7 +4,14 @@ import { type LibraryListing } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
-import { LONG_TITLE, sampleBookId, sampleSeriesId } from "./sample-library.ts";
+import {
+  LONG_TITLE,
+  STRIP_CHAPTER_PAGES,
+  STRIP_CHAPTERS,
+  STRIP_SERIES_NUMBER,
+  sampleBookId,
+  sampleSeriesId,
+} from "./sample-library.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 
@@ -525,17 +532,19 @@ test("lists only the series with a bookmarked page once Bookmarked is the only o
   ]);
 });
 
-const STRIP_NUMBER = 20;
-const STRIP_CHAPTER_PAGES = 64;
-const STRIP_CHAPTERS_RESET = [9, 10, 11] as const;
-const STRIP_LAST_CHAPTER = 12;
+const STRIP_LAST_CHAPTER = STRIP_CHAPTERS;
+const STRIP_CHAPTERS_RESET = [
+  STRIP_LAST_CHAPTER - 3,
+  STRIP_LAST_CHAPTER - 2,
+  STRIP_LAST_CHAPTER - 1,
+] as const;
 const STRIP_RESET_PAGE = 1;
 const STRIP_TITLE = "Sample Series 20";
 
 async function leaveStripPagesLeft(backend: FakeBackend, pagesLeft: number) {
   for (const chapter of STRIP_CHAPTERS_RESET) {
     await backend.pageShown(
-      sampleBookId(STRIP_NUMBER, chapter),
+      sampleBookId(STRIP_SERIES_NUMBER, chapter),
       STRIP_RESET_PAGE,
       0,
     );
@@ -543,7 +552,7 @@ async function leaveStripPagesLeft(backend: FakeBackend, pagesLeft: number) {
   const leftOutsideLast =
     STRIP_CHAPTERS_RESET.length * (STRIP_CHAPTER_PAGES - STRIP_RESET_PAGE);
   await backend.pageShown(
-    sampleBookId(STRIP_NUMBER, STRIP_LAST_CHAPTER),
+    sampleBookId(STRIP_SERIES_NUMBER, STRIP_LAST_CHAPTER),
     STRIP_CHAPTER_PAGES - (pagesLeft - leftOutsideLast),
     0,
   );
@@ -588,7 +597,7 @@ test("leaves out a series with 200 pages left, as 200 pages take 1,800 seconds",
 test("leaves a series out of the quick reads once it is finished", async () => {
   const { backend } = backendFor();
 
-  await backend.markSeriesRead([sampleSeriesId(STRIP_NUMBER)]);
+  await backend.markSeriesRead([sampleSeriesId(STRIP_SERIES_NUMBER)]);
 
   expect(await quickReadTitles(backend)).toEqual([
     "Sample Series 11",
