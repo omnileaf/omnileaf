@@ -4,7 +4,14 @@ import type {
   ColourRoles,
   WallpaperColours,
 } from "../../src/lib/ipc/bindings.ts";
-import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
+import { BLUE_WALLPAPER as SAMPLE } from "../sample-wallpaper.ts";
+import {
+  accessibilityViolations,
+  expect,
+  onPlatform,
+  test,
+  testOnlyInItsWebview,
+} from "./fixtures.ts";
 
 const COLOURS_KEY = "omnileaf.colours";
 const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
@@ -72,6 +79,17 @@ function lightPrimary(page: Page): Promise<string> {
   );
 }
 
+function tabPill(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--native-color-tab-pill)";
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  });
+}
+
 async function leaveAndComeBack(page: Page): Promise<void> {
   await page.evaluate(() => {
     for (const state of ["hidden", "visible"]) {
@@ -120,4 +138,34 @@ test.describe("colours from the wallpaper", () => {
 
     await expect.poll(() => lightPrimary(page)).toBe("#8c4a5d");
   });
+
+  test("draws the tab bar's pill in the wallpaper's colours", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await chooseColours(page, "wallpaper");
+
+    await page.goto("/settings");
+
+    await expect
+      .poll(() => tabPill(page))
+      .toBe(`rgb(${[0x41, 0x61, 0x89].join(", ")})`);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the wallpaper's colours in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      wallpaper = SAMPLE;
+      await page.emulateMedia({ colorScheme });
+      await chooseColours(page, "wallpaper");
+      await page.goto("/settings");
+      await expect(page.locator(":root")).toHaveAttribute(
+        "data-colours",
+        "wallpaper",
+      );
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });

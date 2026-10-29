@@ -75,6 +75,7 @@ const MODE_ATTRIBUTE = {
   "contrast-high": '[data-contrast="high"]',
   "contrast-more": '[data-contrast="more"]',
   "transparency-reduced": '[data-transparency="reduced"]',
+  "colours-wallpaper": '[data-colours="wallpaper"]',
 } satisfies Record<Mode, string>;
 
 function modeBlocks(tokens: readonly Token[], platform: Platform): string[] {

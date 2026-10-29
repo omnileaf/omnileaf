@@ -32,6 +32,7 @@ export const MODES = [
   "contrast-high",
   "contrast-more",
   "transparency-reduced",
+  "colours-wallpaper",
 ] as const;
 
 export type Mode = (typeof MODES)[number];
@@ -41,6 +42,7 @@ const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
   "contrast-high": ["android"],
   "contrast-more": ["ios", "macos"],
   "transparency-reduced": ["ios", "windows"],
+  "colours-wallpaper": ["android"],
 };
 
 export interface ModeValue {
