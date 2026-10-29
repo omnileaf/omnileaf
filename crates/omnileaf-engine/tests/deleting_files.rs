@@ -425,6 +425,24 @@ impl StoredOutside {
     }
 }
 
+#[cfg(unix)]
+fn stored_bytes(location: &Path) -> Vec<u8> {
+    use std::os::unix::ffi::OsStrExt;
+
+    location.as_os_str().as_bytes().to_vec()
+}
+
+#[cfg(windows)]
+fn stored_bytes(location: &Path) -> Vec<u8> {
+    use std::os::windows::ffi::OsStrExt;
+
+    location
+        .as_os_str()
+        .encode_wide()
+        .flat_map(u16::to_le_bytes)
+        .collect()
+}
+
 async fn removing_a_file_stored_at(
     name: &str,
     stored_location: impl FnOnce(&Path) -> PathBuf,
@@ -440,7 +458,7 @@ async fn removing_a_file_stored_at(
         .unwrap()
         .execute(
             "UPDATE book_file SET location = ?1",
-            [stored.as_os_str().as_encoded_bytes()],
+            [stored_bytes(&stored)],
         )
         .unwrap();
     let folders = Deleting {
