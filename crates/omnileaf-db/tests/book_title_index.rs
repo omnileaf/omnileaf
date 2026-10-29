@@ -13,6 +13,7 @@ mod support;
 use std::path::PathBuf;
 
 use omnileaf_db::{
+    Error,
     catalog::{
         BookDetails, BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, ScannedBook,
         add_root, record_scanned_books, remove_root,
@@ -29,9 +30,11 @@ const ANOTHER_SERIES: &str = "Sample Series 02";
 const PAGES_PER_BOOK: u32 = 10;
 const FILE_NAME: &str = "file_name";
 const COMIC_INFO: &str = "comic_info";
+const DETAILS_ROW_AND_ITS_MAPPING_ROW: usize = 2;
 
 type Found = Vec<(String, String)>;
 type Row = (i64, String, String);
+type Mapped = Vec<(Vec<u8>, String, String)>;
 
 struct SampleBook<'a> {
     number: u32,
@@ -157,6 +160,51 @@ impl Library {
                     .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
                     .collect::<Result<_, _>>()?;
                 Ok(rows)
+            })
+            .await
+            .unwrap()
+    }
+
+    async fn series_of(&self, book: BookId) -> String {
+        self.store
+            .database()
+            .read(move |connection| {
+                Ok(connection.query_row(
+                    "SELECT series.title FROM book
+                    JOIN series ON series.local_id = book.series_local_id
+                    WHERE book.id = ?1",
+                    [book.as_bytes()],
+                    |row| row.get(0),
+                )?)
+            })
+            .await
+            .unwrap()
+    }
+
+    async fn mapped_and_expected_titles(&self) -> (Mapped, Mapped) {
+        self.store
+            .database()
+            .read(|connection| {
+                let titles = |sql: &str| -> Result<Mapped, Error> {
+                    connection
+                        .prepare(sql)?
+                        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+                        .collect::<Result<_, _>>()
+                        .map_err(Error::from)
+                };
+                Ok((
+                    titles(
+                        "SELECT book_id, kind, title FROM book_title_search
+                        ORDER BY book_id, kind",
+                    )?,
+                    titles(
+                        "SELECT id, 'file_name', title FROM book
+                        UNION ALL
+                        SELECT book_id, 'comic_info', trim(title) FROM book_details
+                        WHERE nullif(trim(title), '') IS NOT NULL
+                        ORDER BY 1, 2",
+                    )?,
+                ))
             })
             .await
             .unwrap()
@@ -310,6 +358,22 @@ async fn writes_no_index_row_for_a_comic_info_title_set_to_itself() {
 }
 
 #[tokio::test]
+async fn leaves_the_index_untouched_when_the_comic_info_title_only_gains_trailing_space() {
+    let library = Library::open("book-titles-comic-info-padded").await;
+    library
+        .record(SampleBook::titled(1, "Volume 01").with_comic_info_title("The Lantern Keeper"))
+        .await;
+    let before = library.rows().await;
+
+    let changed = library
+        .rows_changed_by("UPDATE book_details SET title = title || ' '")
+        .await;
+
+    assert_eq!(library.rows().await, before);
+    assert_eq!(changed, DETAILS_ROW_AND_ITS_MAPPING_ROW);
+}
+
+#[tokio::test]
 async fn swaps_only_the_comic_info_text_when_the_comic_info_title_changes() {
     let library = Library::open("book-titles-comic-info-changed").await;
     library
@@ -447,6 +511,7 @@ async fn keeps_the_index_rows_of_a_book_moved_to_another_series() {
         .await;
     let before = library.rows().await;
     assert_eq!(before.len(), 2);
+    assert_eq!(library.series_of(book(1)).await, SERIES);
 
     library
         .record(
@@ -456,6 +521,7 @@ async fn keeps_the_index_rows_of_a_book_moved_to_another_series() {
         )
         .await;
 
+    assert_eq!(library.series_of(book(1)).await, ANOTHER_SERIES);
     assert_eq!(library.rows().await, before);
 }
 
@@ -478,5 +544,8 @@ async fn keeps_the_index_in_step_with_the_books_through_mixed_changes() {
         .execute("DELETE FROM book WHERE id IN (SELECT id FROM book LIMIT 4)")
         .await;
 
+    let (mapped, expected) = library.mapped_and_expected_titles().await;
+    assert!(!expected.is_empty());
+    assert_eq!(mapped, expected);
     assert!(library.integrity_holds().await);
 }
