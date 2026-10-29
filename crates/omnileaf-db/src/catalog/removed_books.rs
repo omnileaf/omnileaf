@@ -3,12 +3,16 @@ use std::collections::BTreeSet;
 use omnileaf_sync_proto::BookId;
 use rusqlite::{Connection, params_from_iter};
 
-use crate::{Error, catalog::stored_id::stored_id};
-
-const BOOKS_PER_QUERY: usize = 32;
+use crate::{
+    Error,
+    catalog::{
+        book_batches::{BOOKS_PER_QUERY, book_placeholders},
+        stored_id::stored_id,
+    },
+};
 
 fn removed_in(count: usize) -> String {
-    let placeholders = vec!["?"; count].join(", ");
+    let placeholders = book_placeholders(count);
     format!("SELECT book_id FROM book_removed WHERE book_id IN ({placeholders})")
 }
 
