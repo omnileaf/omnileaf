@@ -5,7 +5,7 @@ use omnileaf_db::catalog::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::AdultContent;
+use crate::adult_content::AdultView;
 
 pub(crate) const SMART_FILTERS_KEPT: &[SmartFilter] =
     &[SmartFilter::Forgotten, SmartFilter::Duplicates];
@@ -133,7 +133,7 @@ impl Default for LibraryListing {
 }
 
 impl LibraryListing {
-    pub(crate) fn at(&self, now_ms: i64, adult: AdultContent) -> SeriesListing {
+    pub(crate) fn at(&self, now_ms: i64, adult: AdultView) -> SeriesListing {
         SeriesListing {
             sort: SeriesSort {
                 order: match self.sort.by {
@@ -183,13 +183,16 @@ impl From<SeriesListing> for LibraryListing {
 }
 
 impl LibraryFilterChoices {
-    pub(crate) fn new(stored: FilterChoices, adult: AdultContent) -> Self {
+    pub(crate) fn new(stored: FilterChoices, adult: AdultView) -> Self {
         let keeps_bookmarks = !stored.formats.is_empty();
         Self {
             formats: stored.formats.into_iter().map(SeriesFormat::from).collect(),
             languages: stored.languages,
             tags: stored.tags,
-            rates_adult: adult.counts_as_adult(stored.holds_rated_adult, stored.holds_marked_adult),
+            rates_adult: !adult.in_screenshot_mode()
+                && adult
+                    .setting()
+                    .counts_as_adult(stored.holds_rated_adult, stored.holds_marked_adult),
             keeps_bookmarks,
             smart: SMART_FILTERS_KEPT.to_vec(),
         }
@@ -197,7 +200,7 @@ impl LibraryFilterChoices {
 }
 
 impl LibraryFilter {
-    pub(crate) fn at(&self, now_ms: i64, adult: AdultContent) -> SeriesFilter {
+    pub(crate) fn at(&self, now_ms: i64, adult: AdultView) -> SeriesFilter {
         SeriesFilter {
             unread: self.unread.into(),
             started: self.started.into(),
@@ -220,8 +223,12 @@ impl LibraryFilter {
             languages: self.languages.clone(),
             tags: self.tags.clone(),
             bookmarked: self.bookmarked.into(),
-            adult: self.adult.into(),
-            counts_age_ratings: adult.counts_age_ratings,
+            adult: if adult.in_screenshot_mode() {
+                StoredInclusion::Hide
+            } else {
+                self.adult.into()
+            },
+            counts_age_ratings: adult.setting().counts_age_ratings,
         }
     }
 }
@@ -289,7 +296,7 @@ mod tests {
         let listing = LibraryListing::default();
 
         assert_eq!(
-            listing.at(NOW_MS, AdultContent::default()),
+            listing.at(NOW_MS, AdultView::default()),
             SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title))
         );
     }
@@ -364,7 +371,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS, AdultContent::default());
+        let stored = filter.at(NOW_MS, AdultView::default());
 
         assert_eq!(stored.last_read_before_ms, Some(NOW_MS - NINETY_DAYS_MS));
     }
@@ -376,7 +383,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS, AdultContent::default());
+        let stored = filter.at(NOW_MS, AdultView::default());
 
         assert_eq!(stored.duplicates, StoredInclusion::Only);
     }
@@ -401,7 +408,7 @@ mod tests {
             },
         };
 
-        let read = LibraryListing::from(listing.at(NOW_MS, AdultContent::default()));
+        let read = LibraryListing::from(listing.at(NOW_MS, AdultView::default()));
 
         assert_eq!(read, listing);
     }

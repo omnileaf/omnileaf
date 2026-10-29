@@ -10,7 +10,7 @@ use omnileaf_db::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{AdultContent, LibraryFilter};
+use crate::{LibraryFilter, adult_content::AdultView};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -36,16 +36,15 @@ pub struct SpellingSuggestion {
 pub(crate) fn spelling_suggestion(
     connection: &Connection,
     text: &str,
+    hiding: AdultHiding,
 ) -> Result<Option<SpellingSuggestion>, omnileaf_db::Error> {
     if text.chars().count() > usize::from(LibrarySearch::MAX_CHARS) {
         return Ok(None);
     }
     Ok(
-        closest_title_words(connection, text, AdultHiding::default())?.map(|text| {
-            SpellingSuggestion {
-                text,
-                chapter_of: None,
-            }
+        closest_title_words(connection, text, hiding)?.map(|text| SpellingSuggestion {
+            text,
+            chapter_of: None,
         }),
     )
 }
@@ -59,7 +58,7 @@ impl StoredSearch {
     pub(crate) fn parse(
         search: &LibrarySearch,
         now_ms: i64,
-        adult: AdultContent,
+        adult: AdultView,
     ) -> Result<Self, omnileaf_db::Error> {
         let filter = search.filter.at(now_ms, adult);
         Ok(match SearchText::parse(&search.text)? {
