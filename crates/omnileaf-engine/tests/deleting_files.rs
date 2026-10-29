@@ -50,6 +50,7 @@ const LONG_ENOUGH_TO_REMOVE: Duration = Duration::from_millis(300);
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 const TREE_NAME: &str = "Comics";
 const PAST_ANY_LIMIT: Duration = Duration::from_secs(600);
+const SLOWER_THAN_A_LISTING: Duration = Duration::from_secs(10);
 const STALLED_AT_MOST: Duration = Duration::from_secs(5);
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 
@@ -744,16 +745,40 @@ async fn the_library_lock_is_held_while_files_are_disposed_so_an_added_folder_wa
 }
 
 #[cfg(unix)]
+struct Permissions {
+    folder: PathBuf,
+}
+
+#[cfg(unix)]
+impl Permissions {
+    fn set(folder: PathBuf, mode: u32) -> Self {
+        use std::os::unix::fs::PermissionsExt;
+
+        fs::set_permissions(&folder, fs::Permissions::from_mode(mode)).unwrap();
+        Self { folder }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for Permissions {
+    fn drop(&mut self) {
+        use std::os::unix::fs::PermissionsExt;
+
+        let restored = fs::set_permissions(&self.folder, fs::Permissions::from_mode(0o755));
+        if !std::thread::panicking() {
+            restored.unwrap();
+        }
+    }
+}
+
+#[cfg(unix)]
 #[tokio::test]
 async fn a_linked_folder_that_cannot_be_written_reports_permission_denied() {
-    use std::os::unix::fs::PermissionsExt;
     let deleting = Deleting::new("delete-read-only").await;
     let series = deleting.series(SERIES_02).await;
     let folder = deleting.path(SERIES_02);
-    fs::set_permissions(&folder, fs::Permissions::from_mode(0o555)).unwrap();
-    let writable_anyway = fs::write(folder.join("probe"), b"").is_ok();
-    if writable_anyway {
-        fs::set_permissions(&folder, fs::Permissions::from_mode(0o755)).unwrap();
+    let _read_only = Permissions::set(folder.clone(), 0o555);
+    if fs::write(folder.join("probe"), b"").is_ok() {
         skipped_as_privileged("a_linked_folder_that_cannot_be_written_reports_permission_denied");
         return;
     }
@@ -762,7 +787,6 @@ async fn a_linked_folder_that_cannot_be_written_reports_permission_denied() {
         .delete(&[RemovalTarget::Series { id: series }], &DiskDisposal)
         .await;
 
-    fs::set_permissions(&folder, fs::Permissions::from_mode(0o755)).unwrap();
     assert_eq!(
         by_name(report.files),
         [(
@@ -774,12 +798,40 @@ async fn a_linked_folder_that_cannot_be_written_reports_permission_denied() {
 }
 
 #[cfg(unix)]
+#[tokio::test]
+async fn a_root_that_cannot_be_listed_reports_its_files_permission_denied_not_unsupported() {
+    let deleting = Deleting::new("delete-unlistable").await;
+    let series = deleting.series(SERIES_02).await;
+    let _unlistable = Permissions::set(deleting.comics.path().to_path_buf(), 0o000);
+    if fs::read_dir(deleting.comics.path()).is_ok() {
+        skipped_as_privileged(
+            "a_root_that_cannot_be_listed_reports_its_files_permission_denied_not_unsupported",
+        );
+        return;
+    }
+    let disposal = FakeDisposal::default();
+
+    let report = deleting
+        .delete(&[RemovalTarget::Series { id: series }], &disposal)
+        .await;
+
+    assert_eq!(
+        by_name(report.files),
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::PermissionDenied)
+        )]
+    );
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+}
+
+#[cfg(unix)]
 #[expect(
     clippy::print_stderr,
     reason = "a test run as a privileged user cannot make a folder unwritable, and says it did not run"
 )]
 fn skipped_as_privileged(test: &str) {
-    eprintln!("skipped {test}: the user can write to a folder made read-only");
+    eprintln!("skipped {test}: the user can use a folder made unusable");
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1201,4 +1253,28 @@ fn a_removal_given_up_on_while_queued_never_deletes_the_file_when_the_thread_fre
         );
         assert!(tree.book().is_file());
     });
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_stat_slower_than_a_listing_is_still_waited_for_and_the_file_goes() {
+    let tree = Tree::new("delete-slow-stat", true);
+    let (library, _home) = library_reading(&tree, "delete-slow-stat-home").await;
+    let book = only_book(&library).await;
+    let stalled = tree.stalling_on(Call::Details);
+    let disposal = FakeDisposal::default();
+    let targets = [RemovalTarget::Book { id: book }];
+    let removal = library.remove_from_library(&targets, FileFate::Dispose(&disposal));
+    let answering_late = async {
+        stalled.entered.notified().await;
+        advance(SLOWER_THAN_A_LISTING).await;
+        drop(stalled);
+    };
+
+    let (report, ()) = tokio::join!(removal, answering_late);
+
+    assert_eq!(
+        by_name(report.unwrap().files),
+        [("v01.cbz".to_owned(), FileOutcome::Deleted)]
+    );
+    assert!(!tree.book().exists());
 }

@@ -28,6 +28,7 @@ use crate::{
 };
 
 const FILE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+const FILE_STAMP_TIMEOUT: Duration = Duration::from_secs(30);
 const FILE_DISPOSAL_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
@@ -104,42 +105,43 @@ pub(crate) fn expand(
 
 pub(crate) async fn removal_of(
     file: &BookFileToRemove,
-    root: Option<(&Arc<dyn Storage>, &Path)>,
+    root: Result<(&Arc<dyn Storage>, &Path), DisposalFailure>,
     disposal: &impl FileDisposal,
 ) -> FileRemoval {
-    let outcome = match root {
-        Some((storage, folder)) => {
-            FileOutcome::from(dispose_file(storage, folder, file, disposal).await)
-        }
-        None => FileOutcome::from(DisposalFailure::Unsupported),
+    let disposed = match root {
+        Ok((storage, folder)) => dispose_file(storage, folder, file, disposal).await,
+        Err(failure) => Err(failure),
     };
     FileRemoval {
         book: BookId(file.book),
         name: file_name(&file.location),
-        outcome,
+        outcome: FileOutcome::from(disposed),
     }
 }
 
-pub(crate) async fn is_reachable(storage: &Arc<dyn Storage>, folder: &Path) -> bool {
+pub(crate) async fn check_reachable(
+    storage: &Arc<dyn Storage>,
+    folder: &Path,
+) -> Result<(), DisposalFailure> {
     let (storage, listed_folder) = (Arc::clone(storage), folder.to_path_buf());
-    let Ok(listed) = blocking_within(
+    let listed = blocking_within(
         FILE_CHECK_TIMEOUT,
         DisposalFailure::Unsupported,
         move || storage.entries(&listed_folder),
     )
-    .await
-    else {
-        return false;
-    };
+    .await?;
     match listed {
-        Ok(entries) if !entries.is_empty() => true,
+        Ok(entries) if !entries.is_empty() => Ok(()),
         Ok(_) => {
             tracing::warn!(folder = %folder.display(), "remove files from a folder that lists as empty");
-            false
+            Err(DisposalFailure::Unsupported)
         }
         Err(error) => {
             tracing::warn!(folder = %folder.display(), %error, "read a folder to remove files from");
-            false
+            Err(match DisposalFailure::from(error.kind()) {
+                DisposalFailure::NotFound | DisposalFailure::Other => DisposalFailure::Unsupported,
+                failure => failure,
+            })
         }
     }
 }
@@ -254,7 +256,7 @@ async fn still_the_scanned_file(
 ) -> Result<(), DisposalFailure> {
     let (storage, path) = (Arc::clone(storage), path.to_path_buf());
     let stamp = blocking_within(
-        FILE_CHECK_TIMEOUT,
+        FILE_STAMP_TIMEOUT,
         DisposalFailure::Unsupported,
         move || FileStamp::read(&storage, &path),
     )

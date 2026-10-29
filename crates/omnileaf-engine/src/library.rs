@@ -63,14 +63,14 @@ use crate::{
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
-    file_disposal::{FileDisposal, FileFate},
+    file_disposal::{DisposalFailure, FileDisposal, FileFate},
     file_in_storage::FileInStorage,
     file_type::HiddenFileTypes,
     history::whole_seconds,
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_removal::{Expanded, RemovedBooks, expand, is_reachable, removal_of},
+    library_removal::{Expanded, RemovedBooks, check_reachable, expand, removal_of},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -2196,7 +2196,7 @@ impl Library {
         files: Vec<BookFileToRemove>,
         disposal: &impl FileDisposal,
     ) -> Vec<FileRemoval> {
-        let mut roots: BTreeMap<RootId, Option<RootFiles>> = BTreeMap::new();
+        let mut roots: BTreeMap<RootId, Result<RootFiles, DisposalFailure>> = BTreeMap::new();
         for file in &files {
             if let btree_map::Entry::Vacant(unchecked) = roots.entry(file.root_id) {
                 unchecked.insert(self.reachable_files_of(&file.root).await);
@@ -2204,20 +2204,23 @@ impl Library {
         }
         let mut removals = Vec::with_capacity(files.len());
         for file in &files {
-            let root = roots
-                .get(&file.root_id)
-                .and_then(Option::as_ref)
-                .map(|root| (&root.storage, root.folder.as_path()));
+            let root = match roots.get(&file.root_id) {
+                Some(Ok(root)) => Ok((&root.storage, root.folder.as_path())),
+                Some(Err(failure)) => Err(*failure),
+                None => Err(DisposalFailure::Unsupported),
+            };
             removals.push(removal_of(file, root, disposal).await);
         }
         removals
     }
 
-    async fn reachable_files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
-        let root = self.files_of(locator)?;
-        is_reachable(&root.storage, &root.folder)
-            .await
-            .then_some(root)
+    async fn reachable_files_of(
+        &self,
+        locator: &RootLocator,
+    ) -> Result<RootFiles, DisposalFailure> {
+        let root = self.files_of(locator).ok_or(DisposalFailure::Unsupported)?;
+        check_reachable(&root.storage, &root.folder).await?;
+        Ok(root)
     }
 
     fn file_in(&self, locator: &RootLocator, location: &Path) -> Option<FileInStorage> {
