@@ -67,6 +67,10 @@
   });
   const isMacos = platform === "macos";
   const macosControl = variantClasses("secondary", "regular", false, platform);
+  const macosComingSoon = cn(
+    macosControl,
+    "text-native-on-button-disabled aria-disabled:pointer-events-auto",
+  );
   const isAllRead = $derived(overview.readCount === overview.bookCount);
   const state = $derived.by(() => {
     if (isAllRead) {
@@ -122,7 +126,7 @@
     <ComingSoonControl
       label={m.series_reading_state({ state })}
       class={isMacos
-        ? cn(macosControl, "flex-1 justify-between min-inline-none")
+        ? cn(macosComingSoon, "flex-1 justify-between min-inline-none")
         : cn(
             SERIES_CONTROL,
             "flex-1 justify-between rounded-shadcn-control font-regular text-foreground min-inline-none",
@@ -140,7 +144,7 @@
           ? m.series_tags()
           : m.series_tags_for({ title: overview.title })}
         class={isMacos
-          ? cn(macosControl, "@series-split:flex-1")
+          ? cn(macosComingSoon, "@series-split:flex-1")
           : cn(
               SERIES_CONTROL,
               "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",

@@ -141,3 +141,21 @@ test("keeps Continue, Tags and Mark read as they were on Linux", async () => {
     asElement(page.getByRole("link").element()).getBoundingClientRect().height,
   ).toBeGreaterThan(24);
 });
+
+test("keeps the unavailable Tags control hoverable and dimmed on macOS", async () => {
+  await onPlatform("macos");
+  await render(SeriesActions, {
+    overview: OVERVIEW,
+    isWide: true,
+    onMarkAll: () => Promise.resolve(),
+  });
+
+  const style = getComputedStyle(
+    asElement(page.getByRole("button", { name: "Tags" }).element()),
+  );
+
+  expect({ events: style.pointerEvents, ink: style.color }).toEqual({
+    events: "auto",
+    ink: resolvedColour("--color-native-on-button-disabled", "color"),
+  });
+});
