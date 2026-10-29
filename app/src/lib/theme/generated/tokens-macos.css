@@ -4,6 +4,11 @@
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
   --native-blur-glass: 30px;
   --native-radius-button: 6px;
+  --native-spacing-button: 24px;
+  --native-spacing-target: 0px;
+  --native-text-button: calc(0.8125rem * var(--text-scale));
+  --native-leading-button: calc(1 / 0.8125);
+  --native-weight-button: 510;
   --native-spacing-switch-length: 36px;
   --native-spacing-switch-thickness: 16px;
   --native-spacing-switch-knob: 13px;
@@ -12,6 +17,7 @@
   --native-radius-group: 12px;
   --native-radius-card: 12px;
   --native-spacing-hairline: 0.5px;
+  --native-spacing-button-large: 28px;
   --native-spacing-read-mark: 1.125rem;
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;
@@ -25,7 +31,7 @@
   --native-color-button-primary: #2f6f4f;
   --native-color-on-button-primary: #ffffff;
   --native-color-button-secondary: rgba(0, 0, 0, 0.08);
-  --native-color-on-button-secondary: #2f6f4f;
+  --native-color-on-button-secondary: rgba(0, 0, 0, 0.85);
   --native-color-button-primary-hover: rgba(0, 0, 0, 0.018);
   --native-color-button-primary-pressed: rgba(0, 0, 0, 0.16);
   --native-color-button-secondary-hover: rgba(0, 0, 0, 0.018);
@@ -50,7 +56,7 @@
   --native-color-row-selected: rgba(0, 0, 0, 0.056);
   --native-color-on-row-selected-muted: oklch(0.5 0.005 286);
   --native-color-button-outline: rgba(0, 0, 0, 0.08);
-  --native-color-on-button-outline: #2f6f4f;
+  --native-color-on-button-outline: rgba(0, 0, 0, 0.85);
   --native-color-button-outline-edge: #00000000;
   --native-color-button-outline-hover: rgba(0, 0, 0, 0.018);
   --native-color-button-outline-pressed: rgba(0, 0, 0, 0.16);
@@ -100,7 +106,7 @@
   --native-color-button-primary: #2e7d55;
   --native-color-on-button-primary: #ffffff;
   --native-color-button-secondary: rgba(255, 255, 255, 0.07);
-  --native-color-on-button-secondary: #7fcb9d;
+  --native-color-on-button-secondary: rgba(255, 255, 255, 0.85);
   --native-color-button-primary-hover: rgba(255, 255, 255, 0.03);
   --native-color-button-primary-pressed: rgba(255, 255, 255, 0.16);
   --native-color-button-secondary-hover: rgba(255, 255, 255, 0.03);
@@ -125,7 +131,7 @@
   --native-color-row-selected: rgba(255, 255, 255, 0.056);
   --native-color-on-row-selected-muted: oklch(0.78 0 0);
   --native-color-button-outline: rgba(255, 255, 255, 0.07);
-  --native-color-on-button-outline: #7fcb9d;
+  --native-color-on-button-outline: rgba(255, 255, 255, 0.85);
   --native-color-button-outline-edge: #00000000;
   --native-color-button-outline-hover: rgba(255, 255, 255, 0.03);
   --native-color-button-outline-pressed: rgba(255, 255, 255, 0.16);
@@ -172,7 +178,7 @@
 :root[data-platform="macos"][data-contrast="more"] [data-theme="light"] {
   --native-color-button-primary: #1f5a3c;
   --native-color-button-secondary: rgba(0, 0, 0, 0.17);
-  --native-color-on-button-secondary: #1f5a3c;
+  --native-color-on-button-secondary: #000000;
   --native-color-switch-on: #1f5a3c;
   --native-color-switch-off: rgba(0, 0, 0, 0.35);
   --native-color-switch-off-border: #000000;
@@ -185,7 +191,7 @@
   --native-color-row-selected: rgba(0, 0, 0, 0.13);
   --native-color-on-row-selected-muted: #3e3e3e;
   --native-color-button-outline: rgba(0, 0, 0, 0.17);
-  --native-color-on-button-outline: #1f5a3c;
+  --native-color-on-button-outline: #000000;
   --native-color-button-outline-edge: rgba(0, 0, 0, 0.82);
   --native-color-on-button-plain: #1f5a3c;
   --native-color-on-button-destructive: #7f1d1d;
@@ -217,7 +223,7 @@
 :root[data-platform="macos"][data-contrast="more"] [data-theme="dark"] {
   --native-color-button-primary: #2e7d55;
   --native-color-button-secondary: rgba(255, 255, 255, 0.18);
-  --native-color-on-button-secondary: #a8e0bd;
+  --native-color-on-button-secondary: #ffffff;
   --native-color-switch-on: #2e7d55;
   --native-color-switch-off: rgba(255, 255, 255, 0.29);
   --native-color-switch-off-border: #ffffff;
@@ -230,7 +236,7 @@
   --native-color-row-selected: rgba(255, 255, 255, 0.14);
   --native-color-on-row-selected-muted: #bcbcbc;
   --native-color-button-outline: rgba(255, 255, 255, 0.18);
-  --native-color-on-button-outline: #a8e0bd;
+  --native-color-on-button-outline: #ffffff;
   --native-color-button-outline-edge: rgba(255, 255, 255, 0.92);
   --native-color-on-button-plain: #a8e0bd;
   --native-color-on-button-destructive: #ffc9c9;
