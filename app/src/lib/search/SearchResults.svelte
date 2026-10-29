@@ -4,6 +4,8 @@
   import ListCover from "#lib/library/ListCover.svelte";
   import { SCREEN_SIZES } from "#lib/library/library-view.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import type { Reveal } from "#lib/virtual-grid/grid-keys.ts";
@@ -39,6 +41,12 @@
     view: LibraryView | undefined;
   } = $props();
 
+  const TODAYS_MARK = "rounded-badge bg-chip text-foreground";
+  const NATIVE_MARK = "rounded-none bg-native-accent-soft text-inherit";
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const headingId = $props.id();
@@ -71,7 +79,7 @@
     <p class="truncate text-lead font-semibold large:text-small">
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
-          <mark class="rounded-badge bg-chip text-foreground">{part.text}</mark>
+          <mark class={isNative ? NATIVE_MARK : TODAYS_MARK}>{part.text}</mark>
         {:else}
           {part.text}
         {/if}

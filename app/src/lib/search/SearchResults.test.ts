@@ -1,9 +1,15 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
+
+import { resolvedColour } from "../../../tests/components/resolved-colour";
 
 import { commands, type LibrarySeries } from "#lib/ipc/bindings.ts";
 import type { CoverPath } from "#lib/library/cover-url.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SearchResults from "./SearchResults.svelte";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
@@ -13,6 +19,8 @@ const STAND_IN = /^Series \d{2,3}$/;
 
 afterEach(() => {
   clearMocks();
+  delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
 });
 
 async function foundSeries(): Promise<readonly LibrarySeries[]> {
@@ -79,4 +87,29 @@ test("shows each real title and cover while Screenshot mode is off", async () =>
   const found = screen.getByRole("option").nth(0);
   await expect.element(found.getByText(REAL_TITLE)).toBeVisible();
   await expect.element(found.getByRole("presentation")).toBeInTheDocument();
+});
+
+test("marks the matched word on the accent-soft fill on an iPhone", async () => {
+  await page.viewport(390, 800);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const screen = await render(SearchResults, {
+    series: await foundSeries(),
+    count: 1,
+    isComplete: true,
+    onNearEnd: () => undefined,
+    coverUrl: fakeCoverUrl,
+    usesStandIns: false,
+    listId: "results",
+    activeKey: undefined,
+    onOpen: () => undefined,
+    words: "hidden",
+    view: undefined,
+  });
+
+  const mark = screen.getByText("Hidden", { exact: true }).element();
+
+  expect(getComputedStyle(mark).backgroundColor).toBe(
+    resolvedColour("--color-native-accent-soft", "backgroundColor"),
+  );
 });
