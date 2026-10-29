@@ -23,19 +23,21 @@ const ICON_ONLY = {
 
 const INERT = "disabled:pointer-events-none aria-disabled:pointer-events-none";
 
-const ICON_ONLY_FILL = `bg-native-icon-button-fill text-native-on-button-secondary not-disabled:not-aria-disabled:hover:bg-native-icon-button-fill-hover not-disabled:not-aria-disabled:active:bg-native-icon-button-fill-pressed disabled:bg-native-icon-button-fill-disabled aria-disabled:bg-native-icon-button-fill-disabled disabled:text-native-on-button-disabled aria-disabled:text-native-on-button-disabled ${INERT}`;
+const ICON_ONLY_FILL = `bg-native-icon-button-fill text-native-on-button-secondary not-disabled:not-aria-disabled:hover:bg-native-icon-button-fill-hover not-disabled:not-aria-disabled:active:bg-native-icon-button-fill-pressed disabled:bg-native-icon-button-fill-disabled disabled:text-native-on-button-disabled ${INERT}`;
 
-const SECONDARY = `bg-native-button-secondary text-native-on-button-secondary not-disabled:not-aria-disabled:hover:bg-native-control-fill-hover not-disabled:not-aria-disabled:active:bg-native-control-fill-pressed disabled:bg-native-button-secondary/50 aria-disabled:bg-native-button-secondary/50 disabled:text-native-on-button-disabled aria-disabled:text-native-on-button-disabled ${INERT}`;
+const SECONDARY = `bg-native-button-secondary text-native-on-button-secondary not-disabled:not-aria-disabled:hover:bg-native-control-fill-hover not-disabled:not-aria-disabled:active:bg-native-control-fill-pressed disabled:bg-native-button-secondary/50 disabled:text-native-on-button-disabled ${INERT}`;
 
 const VARIANTS = {
-  primary: `bg-native-button-primary text-native-on-button-primary not-disabled:not-aria-disabled:hover:tint-native-button-primary-hover not-disabled:not-aria-disabled:active:tint-native-button-primary-pressed disabled:bg-native-button-primary/40 aria-disabled:bg-native-button-primary/40 disabled:text-native-on-button-primary/50 aria-disabled:text-native-on-button-primary/50 ${INERT}`,
+  primary: `bg-native-button-primary text-native-on-button-primary not-disabled:not-aria-disabled:hover:tint-native-button-primary-hover not-disabled:not-aria-disabled:active:tint-native-button-primary-pressed disabled:bg-native-button-primary/40 disabled:text-native-on-button-primary/50 ${INERT}`,
   secondary: SECONDARY,
   outline: SECONDARY,
-  destructive: `bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed disabled:bg-native-button-destructive/60 aria-disabled:bg-native-button-destructive/60 disabled:text-native-on-button-destructive/40 aria-disabled:text-native-on-button-destructive/40 ${INERT}`,
-  plain: `bg-transparent text-native-on-button-plain not-disabled:not-aria-disabled:active:text-native-on-button-plain-pressed disabled:text-native-on-button-plain/50 aria-disabled:text-native-on-button-plain/50 ${INERT}`,
+  destructive: `bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed disabled:bg-native-button-destructive/60 disabled:text-native-on-button-destructive/40 ${INERT}`,
+  plain: `bg-transparent text-native-on-button-plain not-disabled:not-aria-disabled:active:text-native-on-button-plain-pressed disabled:text-native-on-button-plain/50 ${INERT}`,
 } satisfies Record<Exclude<ButtonVariant, "link">, string>;
 
-const LINK = `min-block-none rounded-native-button-small bg-transparent px-none text-native-button leading-native-button font-native-button text-native-on-button-link underline-offset-2 not-disabled:not-aria-disabled:hover:underline not-disabled:not-aria-disabled:active:underline disabled:text-native-on-button-link/50 aria-disabled:text-native-on-button-link/50 ${INERT}`;
+const LINK_INK = `bg-transparent text-native-on-button-link underline-offset-2 not-disabled:not-aria-disabled:hover:underline not-disabled:not-aria-disabled:active:underline disabled:text-native-on-button-link/50 ${INERT}`;
+
+const LINK = `min-block-none rounded-native-button-small px-none text-native-button leading-native-button font-native-button ${LINK_INK}`;
 
 export function macosButtonClasses(
   variant: ButtonVariant,
@@ -43,7 +45,9 @@ export function macosButtonClasses(
   isIconOnly: boolean,
 ): string {
   if (variant === "link") {
-    return `${BASE} ${LINK}`;
+    return size === "regular"
+      ? `${BASE} ${LINK}`
+      : `${BASE} ${SIZES[size]} ${LINK_INK}`;
   }
   if (!isIconOnly) {
     return `${BASE} ${SIZES[size]} ${VARIANTS[variant]}`;

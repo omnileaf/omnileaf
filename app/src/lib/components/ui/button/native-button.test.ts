@@ -1,6 +1,6 @@
 import { createRawSnippet } from "svelte";
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
@@ -8,6 +8,7 @@ import "../../../../app.css";
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followDisplayModes } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import Button from "./button.svelte";
@@ -54,6 +55,7 @@ const label = createRawSnippet(() => ({ render: () => "<span>Remove</span>" }));
 
 afterEach(() => {
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
 });
 
 for (const platform of PLATFORMS) {
@@ -279,6 +281,7 @@ test("darkens macOS's secondary fill under the pointer", async () => {
   await expect
     .poll(() => getComputedStyle(button).backgroundColor)
     .toBe("rgba(0, 0, 0, 0.11)");
+  await userEvent.unhover(page.getByRole("button", { name: "Remove" }));
 });
 
 test("draws macOS's destructive button in the soft red with a red label", async () => {
@@ -320,6 +323,7 @@ test("draws macOS's link button as bare accent text that underlines under the po
   await page.getByRole("button", { name: "Remove" }).hover();
 
   expect(getComputedStyle(button).textDecorationLine).toContain("underline");
+  await userEvent.unhover(page.getByRole("button", { name: "Remove" }));
 });
 
 test("greys macOS's disabled buttons and stops them taking the pointer", async () => {
@@ -363,6 +367,63 @@ test("lightens macOS's secondary label in the dark theme", async () => {
     "rgba(255, 255, 255, 0.07)",
     "rgba(255, 255, 255, 0.85)",
   ]);
+});
+
+test("keeps macOS's busy button on its 4px gap and its own fill, not the disabled look", async () => {
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = "light";
+  document.body.replaceChildren();
+  let finish = (): void => undefined;
+  await render(Button, {
+    variant: "secondary",
+    type: "button",
+    children: label,
+    onClickPromise: () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  });
+  const busy = page.getByRole("button", { name: "Remove" });
+
+  await busy.click();
+  await expect.element(busy).toHaveAttribute("aria-busy", "true");
+  const style = getComputedStyle(busy.element());
+
+  expect([style.columnGap, style.backgroundColor]).toEqual([
+    "4px",
+    "rgba(0, 0, 0, 0.08)",
+  ]);
+  finish();
+  await userEvent.unhover(busy);
+});
+
+test("sizes macOS's link button with its size, like any other button", async () => {
+  const heights: Record<string, number> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    heights[size] = sizeOf(await macosButton({ variant: "link", size })).height;
+  }
+
+  expect(heights).toEqual({ small: 20, regular: 16, large: 28 });
+});
+
+for (const variant of ["primary", "destructive", "plain"] as const) {
+  test(`dims macOS's disabled ${variant} button`, async () => {
+    const enabled = getComputedStyle(await macosButton({ variant }));
+    const enabledLook = [enabled.backgroundColor, enabled.color];
+    const disabled = getComputedStyle(
+      await macosButton({ variant, disabled: true }),
+    );
+
+    expect([disabled.backgroundColor, disabled.color]).not.toEqual(enabledLook);
+  });
+}
+
+test("sets macOS's secondary label in pure black under Increase Contrast", async () => {
+  followDisplayModes({ contrast: "more", transparency: undefined });
+
+  const style = getComputedStyle(await macosButton());
+
+  expect(style.color).toBe("rgb(0, 0, 0)");
 });
 
 for (const platform of ["linux", "windows"] as const) {
