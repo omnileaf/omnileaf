@@ -23,15 +23,29 @@ interface Revealed {
   readonly offset: number;
 }
 
-const REVEALED_PX = 112;
+export const REVEALED_PX = 112;
+
+export interface OpenAction {
+  readonly revealPx: () => number;
+  readonly actPastOpenPx: number;
+}
+
+const FIXED_ACTION: OpenAction = {
+  revealPx: () => REVEALED_PX,
+  actPastOpenPx: 0,
+};
 
 function directionOf(row: HTMLElement): Direction {
   return getComputedStyle(row).direction === "rtl" ? "rtl" : "ltr";
 }
 
-function revealedOffset(side: SwipeSide, direction: Direction): number {
+function revealedOffset(
+  side: SwipeSide,
+  direction: Direction,
+  revealedPx: number,
+): number {
   return travelToward(
-    side === "towardEnd" ? REVEALED_PX : -REVEALED_PX,
+    side === "towardEnd" ? revealedPx : -revealedPx,
     direction,
   );
 }
@@ -97,7 +111,7 @@ export class RowSwipe {
     return true;
   }
 
-  released(): SwipeOutcome {
+  released(action: OpenAction = FIXED_ACTION): SwipeOutcome {
     const press = this.#press;
     this.#press = undefined;
     if (press === undefined || !this.isDragging) {
@@ -109,6 +123,8 @@ export class RowSwipe {
       {
         travel: travelToward(this.#movedRight, press.direction),
         rowWidth: press.width,
+        openPx: Math.abs(press.base),
+        actPastOpenPx: action.actPastOpenPx,
       },
       this.canSwipe,
     );
@@ -117,7 +133,11 @@ export class RowSwipe {
         ? {
             key: press.key,
             side: outcome.side,
-            offset: revealedOffset(outcome.side, press.direction),
+            offset: revealedOffset(
+              outcome.side,
+              press.direction,
+              action.revealPx(),
+            ),
           }
         : undefined;
     return outcome;

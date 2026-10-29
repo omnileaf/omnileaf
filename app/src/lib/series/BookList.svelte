@@ -6,12 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
-  import {
-    Item,
-    ItemContent,
-    ItemDescription,
-    ItemTitle,
-  } from "#lib/components/ui/item/index.ts";
+  import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import type { PhonePlatform } from "#lib/page/platform.ts";
@@ -19,14 +14,12 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { bookActions } from "./book-actions";
-  import { bookSummary } from "./book-reading";
-  import BookMarks from "./BookMarks.svelte";
   import BookMenu from "./BookMenu.svelte";
-  import BookProgress from "./BookProgress.svelte";
   import BookRowText from "./BookRowText.svelte";
+  import PhoneBookRowText from "./PhoneBookRowText.svelte";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import BookSheet from "./BookSheet.svelte";
-  import { RowSwipe } from "./row-swipe.svelte";
+  import { REVEALED_PX, RowSwipe } from "./row-swipe.svelte";
   import type { SwipeOutcome } from "./swipe";
   import { getSwipeActionsSetting } from "./swipe-actions.svelte";
 
@@ -34,12 +27,17 @@
 
   const LONG_PRESS_MS = 500;
   const SWIPE_ICON_SIZE = 20;
+  const CAPSULE_GAP_PX = 8;
+  const CAPSULE_WIDEST_REVEAL_PX = 156;
+  const CAPSULE_ACT_PAST_OPEN_PX = 48;
 
   interface PhoneList {
     readonly plate: string;
     readonly surface: string;
     readonly progress: "beside" | "below";
     readonly more: "menu" | "sheet";
+    readonly longPress: "menu" | "pick";
+    readonly isSwipeCapsule: boolean;
   }
 
   const PHONE_LISTS: Readonly<Record<PhonePlatform, PhoneList>> = {
@@ -48,12 +46,16 @@
       surface: "bg-native-group",
       progress: "beside",
       more: "menu",
+      longPress: "menu",
+      isSwipeCapsule: true,
     },
     android: {
       plate: "-ms-page-start -me-page-end",
       surface: "bg-native-grouped-ground",
       progress: "below",
       more: "sheet",
+      longPress: "pick",
+      isSwipeCapsule: false,
     },
   };
 
@@ -66,6 +68,7 @@
     onNearEnd,
     selection,
     onStartPicking,
+    onPickedNone,
     onMark,
     onSwiped,
   }: {
@@ -77,6 +80,7 @@
     onNearEnd: () => void;
     selection: Selection<BookId>;
     onStartPicking: (book: SeriesBook) => void;
+    onPickedNone: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
     onSwiped: (
       book: SeriesBook,
@@ -89,6 +93,8 @@
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
   const longPress = new LongPress(LONG_PRESS_MS);
+  let menuFor: BookId | undefined = $state();
+  let isContextMenu = $state(false);
   const grid = $derived({
     items: books,
     key: (book: SeriesBook) => book.id,
@@ -112,6 +118,32 @@
     }
   }
 
+  function held(book: SeriesBook): void {
+    swipe.cancelled();
+    swipe.close();
+    if (phone?.longPress === "menu") {
+      menuFor = book.id;
+      isContextMenu = true;
+    } else {
+      onStartPicking(book);
+    }
+  }
+
+  function capsuleRevealPx(row: HTMLElement): number {
+    const word = row.parentElement?.querySelector("[data-swipe-action] > *");
+    const action = word?.parentElement;
+    if (!(word instanceof HTMLElement) || action == null) {
+      return REVEALED_PX;
+    }
+    const style = getComputedStyle(action);
+    const measured =
+      word.offsetWidth +
+      Number.parseFloat(style.paddingInlineStart) +
+      Number.parseFloat(style.paddingInlineEnd) +
+      CAPSULE_GAP_PX;
+    return Math.min(Math.max(measured, REVEALED_PX), CAPSULE_WIDEST_REVEAL_PX);
+  }
+
   function releasePress(): void {
     longPress.released();
   }
@@ -128,7 +160,32 @@
 
 {#snippet row(book: SeriesBook)}
   {@const isPicked = selection.has(book.id)}
-  {#if selection.isSelecting}
+  {#if selection.isSelecting && phone !== undefined}
+    <Item look="row" data-picked={isPicked || undefined} class="cursor-pointer">
+      {#snippet child({ props })}
+        <label {...props}>
+          <Checkbox
+            bind:checked={
+              () => isPicked,
+              () => {
+                selection.toggle(book.id);
+                if (selection.count === 0) {
+                  onPickedNone();
+                }
+              }
+            }
+            aria-label={m.series_select_book({ title: book.title })}
+            class="rounded-native-select block-native-select inline-native-select aria-checked:border-native-button-primary aria-checked:bg-native-button-primary aria-checked:text-native-on-button-primary"
+          />
+          <PhoneBookRowText
+            {book}
+            progress={phone.progress}
+            hasTwoLineTitle={hasTwoLineTitles}
+          />
+        </label>
+      {/snippet}
+    </Item>
+  {:else if selection.isSelecting}
     <label
       data-picked={isPicked || undefined}
       class={[
@@ -162,11 +219,15 @@
     {@const action =
       side === undefined ? "nothing" : swipeActions.actionFor(side)}
     {@const mark = bookActions(book.reading).mark}
+    {@const isCapsule = phone?.isSwipeCapsule === true && action === "markRead"}
     <div class="relative overflow-hidden">
       {#if side !== undefined && action === "markRead"}
         <div
           class={[
-            "absolute inset-none flex items-center bg-accent px-sm text-on-accent",
+            "absolute inset-none flex items-center",
+            isCapsule
+              ? "bg-native-grouped-ground p-2xs"
+              : "bg-accent px-sm text-on-accent",
             side === "towardEnd" ? "justify-start" : "justify-end",
           ]}
         >
@@ -175,19 +236,35 @@
             look="icon"
             tabindex={swipe.isRevealed(book.id) ? 0 : -1}
             aria-hidden={!swipe.isRevealed(book.id)}
-            class="flex-col gap-2xs px-md text-caption font-bold min-block-touch-target"
+            data-swipe-action
+            style={isCapsule
+              ? `inline-size: ${String(Math.max(Math.abs(swipe.offsetOf(book.id)) - CAPSULE_GAP_PX, 0))}px`
+              : undefined}
+            class={isCapsule
+              ? "gap-xs self-stretch overflow-hidden rounded-full bg-native-button-primary px-md text-caption font-bold whitespace-nowrap text-native-on-button-primary"
+              : "flex-col gap-2xs px-md text-caption font-bold min-block-touch-target"}
             onclick={() => {
               swipe.close();
               onSwiped(book, mark, "tapped");
             }}
           >
-            {#if mark === "read"}
-              <Eye size={SWIPE_ICON_SIZE} aria-hidden="true" />
-              {m.series_mark_read()}
-            {:else}
-              <EyeOff size={SWIPE_ICON_SIZE} aria-hidden="true" />
-              {m.series_mark_unread()}
-            {/if}
+            <span
+              class={[
+                "flex items-center",
+                isCapsule ? "gap-xs" : "flex-col gap-2xs",
+                isCapsule && swipe.isRevealed(book.id)
+                  ? "text-center whitespace-normal min-inline-none"
+                  : "shrink-0",
+              ]}
+            >
+              {#if mark === "read"}
+                <Eye size={SWIPE_ICON_SIZE} aria-hidden="true" />
+                {m.series_mark_read()}
+              {:else}
+                <EyeOff size={SWIPE_ICON_SIZE} aria-hidden="true" />
+                {m.series_mark_unread()}
+              {/if}
+            </span>
           </Button>
         </div>
       {/if}
@@ -199,6 +276,7 @@
           phone === undefined
             ? "gap-xs bg-card py-sm ps-md pe-2xs min-block-book-row"
             : phone.surface,
+          isCapsule && "rounded-full",
           !swipe.isDragging &&
             "motion-safe:transition-transform motion-safe:duration-slide",
         ]}
@@ -208,7 +286,7 @@
             swipe.pressed(event, book.id, event.currentTarget);
           }
           longPress.pressed(event, () => {
-            onStartPicking(book);
+            held(book);
           });
         }}
         onpointermove={(event) => {
@@ -217,9 +295,22 @@
           }
         }}
         onpointerupcapture={(event) => {
-          const isRowGesture = swipe.isDragging || swipe.isRevealed(book.id);
+          const isRowGesture =
+            swipe.isDragging ||
+            swipe.isRevealed(book.id) ||
+            (isContextMenu && menuFor === book.id);
           releasePress();
-          swiped(book, swipe.released());
+          swiped(
+            book,
+            swipe.released(
+              phone?.isSwipeCapsule === true
+                ? {
+                    revealPx: () => capsuleRevealPx(event.currentTarget),
+                    actPastOpenPx: CAPSULE_ACT_PAST_OPEN_PX,
+                  }
+                : undefined,
+            ),
+          );
           if (isRowGesture) {
             event.stopPropagation();
           }
@@ -255,39 +346,11 @@
                 href={resolve("/read/[book]", { book: book.id })}
                 draggable="false"
               >
-                <ItemContent class="gap-2xs min-inline-none">
-                  <span class="flex items-center gap-icon-gap min-inline-none">
-                    <ItemTitle
-                      class={[
-                        "min-inline-none",
-                        hasTwoLineTitles
-                          ? "line-clamp-2 wrap-break-word min-block-two-lines"
-                          : "truncate",
-                        book.reading.state === "read" && "text-muted",
-                      ]}
-                    >
-                      {book.title}
-                    </ItemTitle>
-                    <BookMarks {book} />
-                  </span>
-                  <ItemDescription class="truncate"
-                    >{bookSummary(book)}</ItemDescription
-                  >
-                  {#if phone.progress === "below"}
-                    <span class="mbs-xs flex block-progress-thin">
-                      <BookProgress
-                        {book}
-                        class="inline-native-book-progress max-inline-full"
-                      />
-                    </span>
-                  {/if}
-                </ItemContent>
-                {#if phone.progress === "beside"}
-                  <BookProgress
-                    {book}
-                    class="shrink-0 inline-native-book-progress"
-                  />
-                {/if}
+                <PhoneBookRowText
+                  {book}
+                  progress={phone.progress}
+                  hasTwoLineTitle={hasTwoLineTitles}
+                />
               </a>
             {/snippet}
           </Item>
@@ -296,6 +359,18 @@
           <BookMenu
             {book}
             phone={{ seriesTitle }}
+            bind:open={
+              () => menuFor === book.id,
+              (isOpen: boolean) => {
+                if (isOpen) {
+                  menuFor = book.id;
+                } else if (menuFor === book.id) {
+                  menuFor = undefined;
+                  isContextMenu = false;
+                }
+              }
+            }
+            isContext={isContextMenu && menuFor === book.id}
             onMark={(chosen: ReadMark) => {
               onMark([book.id], chosen);
             }}

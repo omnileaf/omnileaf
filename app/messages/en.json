@@ -1780,6 +1780,7 @@
   ],
   "series_select": "Select",
   "series_select_all": "Select all",
+  "series_deselect_all": "Deselect all",
   "series_select_book": "Select {title}",
   "series_selected_count": [
     {
@@ -1811,11 +1812,13 @@
   ],
   "series_selection_toolbar": "Selected books",
   "series_clear_selection": "Clear the selection",
+  "series_selection_done": "Done",
   "series_clear_selection_with_key": "{key}, clear the selection",
   "series_escape_key": "Esc",
   "series_column_actions": "Actions",
   "series_book_more": "More for {title}",
   "series_book_more_short": "More",
+  "series_book_context_menu": "{book} · {reading}",
   "series_continue_reading": "Continue reading",
   "series_start_reading": "Start reading",
   "series_mark_read": "Mark read",

@@ -39,10 +39,19 @@ const NATIVE_TABS = {
   currentIcon: "max-medium:text-native-on-tab-pill",
 };
 
+export const FLOATING_BAR =
+  "max-medium:fixed max-medium:inset-x-lg max-medium:inset-be-floating-gap max-medium:z-tab-bar max-medium:mx-auto max-medium:inline-fit max-medium:rounded-full max-medium:border-0 max-medium:inset-ring max-medium:inset-ring-glass-edge max-medium:bg-native-tab-bar max-medium:py-native-tab-bar-inset max-medium:px-native-tab-bar-inline max-medium:shadow-floating max-medium:backdrop-blur-glass max-medium:backdrop-saturate-160 max-medium:block-native-tab-bar";
+
+export const DOCKED_BAR =
+  "max-medium:pe-safe-end max-medium:border-bs-0 max-medium:bg-native-tab-bar";
+
+export const DOCKED_ROW =
+  "max-medium:p-none max-medium:min-block-native-tab-bar";
+
 const TAB_BAR_LOOKS = {
   ios: {
     ...NATIVE_TABS,
-    bar: "max-medium:fixed max-medium:inset-x-lg max-medium:inset-be-floating-gap max-medium:z-tab-bar max-medium:mx-auto max-medium:inline-fit max-medium:rounded-full max-medium:border-0 max-medium:inset-ring max-medium:inset-ring-glass-edge max-medium:bg-native-tab-bar max-medium:py-native-tab-bar-inset max-medium:px-native-tab-bar-inline max-medium:shadow-floating max-medium:backdrop-blur-glass max-medium:backdrop-saturate-160 max-medium:block-native-tab-bar",
+    bar: FLOATING_BAR,
     row: "max-medium:relative max-medium:p-none max-medium:block-full",
     glassPill: "max-medium:block max-medium:bg-native-tab-pill",
     tab: `${NATIVE_TAB} max-medium:gap-2xs max-medium:rounded-full max-medium:py-none`,
@@ -51,8 +60,8 @@ const TAB_BAR_LOOKS = {
   },
   android: {
     ...NATIVE_TABS,
-    bar: "max-medium:pe-safe-end max-medium:border-bs-0 max-medium:bg-native-tab-bar",
-    row: "max-medium:p-none max-medium:min-block-native-tab-bar",
+    bar: DOCKED_BAR,
+    row: DOCKED_ROW,
     glassPill: "",
     tab: NATIVE_TAB,
     iconHolder: "",

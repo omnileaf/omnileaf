@@ -149,6 +149,7 @@
 }
 @custom-variant with-card-action (&:has(> [data-slot="card-action"]));
 @custom-variant while-picking (&:where(main:has([data-picking]) *));
+@custom-variant while-phone-picks (&:where(:root:has(main [data-picking-bar]) *));
 
 @theme {
   --*: initial;

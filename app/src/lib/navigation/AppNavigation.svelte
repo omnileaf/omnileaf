@@ -98,7 +98,7 @@
   data-sidebar-hidden={sidebar.isHidden || undefined}
   onanimationend={endArrivalOnceStill}
   class={[
-    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar",
+    "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar while-phone-picks:hidden",
     "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-sidebar desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
     look.bar,
   ]}
