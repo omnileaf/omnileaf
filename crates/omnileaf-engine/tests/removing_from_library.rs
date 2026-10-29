@@ -18,8 +18,8 @@ use std::{
 use books::write_book;
 use omnileaf_db::{Config, Database, catalog::removed_among, rusqlite::Connection, store::Store};
 use omnileaf_engine::{
-    BookId, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, LibraryChanges, LibraryListing,
-    RemovalReport, RemovalTarget, RescanOutcome, SeriesBookListing, SeriesId,
+    BookId, BookReading, DetailEdits, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, LibraryChanges,
+    LibraryListing, RemovalReport, RemovalTarget, RescanOutcome, SeriesBookListing, SeriesId,
 };
 use omnileaf_sync_proto::ProfileId;
 use scanned::{Scanned, owned};
@@ -102,6 +102,51 @@ impl Removing {
         )
     }
 
+    async fn remove_folder(&self) {
+        self.scanned
+            .library
+            .remove_folder(self.scanned.id)
+            .await
+            .unwrap();
+    }
+
+    async fn add_folder_again(&self) {
+        self.scanned
+            .library
+            .add_folder(self.comics.path().to_path_buf(), |_| {})
+            .await
+            .unwrap();
+    }
+
+    fn markers(&self) -> u32 {
+        self.scanned
+            .connection()
+            .query_row("SELECT count(*) FROM book_removed", [], |row| row.get(0))
+            .unwrap()
+    }
+
+    async fn reading_of(&self, title: &str, book: BookId) -> BookReading {
+        let series = self.series(title).await;
+        self.scanned
+            .library
+            .series_books(series, SeriesBookListing::default(), None)
+            .await
+            .unwrap()
+            .books
+            .into_iter()
+            .find(|listed| listed.id == book)
+            .unwrap()
+            .reading
+    }
+
+    async fn set_position(&self, book: BookId, page: u32) {
+        let book: omnileaf_sync_proto::BookId = book.to_string().parse().unwrap();
+        self.other_device()
+            .write(move |writer| writer.set_position(book, page))
+            .await
+            .unwrap();
+    }
+
     async fn mark_removed(&self, book: BookId) {
         let marked: omnileaf_sync_proto::BookId = book.to_string().parse().unwrap();
         self.other_device()
@@ -111,9 +156,10 @@ impl Removing {
     }
 
     async fn rescan(&self) -> RescanOutcome {
-        self.scanned
-            .library
-            .rescan_folder(self.scanned.id, |_| {})
+        let library = &self.scanned.library;
+        let linked = library.folders(None).await.unwrap().folders.pop().unwrap();
+        library
+            .rescan_folder(linked.id, |_| {})
             .await
             .unwrap()
             .outcome
@@ -363,6 +409,156 @@ async fn a_file_changed_into_a_removed_book_forgets_the_book_it_held_and_stays_o
     );
     assert_eq!(second, rescanned(FileChanges::default()));
     assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 1)]));
+}
+
+#[tokio::test]
+async fn adding_the_folder_again_brings_back_removed_books_and_clears_the_markers_under_it() {
+    let linked = Removing::new("readd-after-folder-removed").await;
+    let series = linked.series(SERIES_01).await;
+    linked.remove(&[RemovalTarget::Series { id: series }]).await;
+    linked.remove_folder().await;
+
+    linked.add_folder_again().await;
+
+    assert_eq!(
+        linked.scanned.series(),
+        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+    );
+    assert_eq!(linked.markers(), 0);
+    assert_eq!(linked.rescan().await, rescanned(FileChanges::default()));
+    assert_eq!(
+        linked.scanned.series(),
+        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+    );
+}
+
+#[tokio::test]
+async fn adding_a_linked_folder_again_returns_a_book_removed_from_it_with_its_progress() {
+    let linked = Removing::new("readd-linked-folder").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.set_position(book, 1).await;
+    let reading = linked.reading_of(SERIES_02, book).await;
+    linked.remove(&[RemovalTarget::Book { id: book }]).await;
+
+    linked.add_folder_again().await;
+
+    assert_eq!(
+        linked.scanned.series(),
+        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+    );
+    assert_eq!(linked.reading_of(SERIES_02, book).await, reading);
+    assert_eq!(linked.markers(), 0);
+}
+
+#[tokio::test]
+async fn adding_the_folder_again_restores_reading_progress_bookmarks_and_edits() {
+    let linked = Removing::new("readd-restores-state").await;
+    let series = linked.series(SERIES_01).await;
+    let book = linked.books(SERIES_01).await[0];
+    linked.set_position(book, 1).await;
+    linked
+        .scanned
+        .library
+        .bookmark_pages(book, vec![0], true)
+        .await
+        .unwrap();
+    linked
+        .scanned
+        .library
+        .edit_series_details(
+            series,
+            DetailEdits {
+                title: None,
+                people: None,
+                tags: Some(vec!["lanterns".to_owned()]),
+                summary: None,
+                is_marked_adult: false,
+            },
+        )
+        .await
+        .unwrap();
+    let reading = linked.reading_of(SERIES_01, book).await;
+    linked.remove(&[RemovalTarget::Series { id: series }]).await;
+    linked.remove_folder().await;
+
+    linked.add_folder_again().await;
+
+    let series = linked.series(SERIES_01).await;
+    let overview = linked
+        .scanned
+        .library
+        .series_overview(series)
+        .await
+        .unwrap();
+    let details = linked.scanned.library.series_details(series).await.unwrap();
+    assert_eq!(linked.reading_of(SERIES_01, book).await, reading);
+    assert_eq!(overview.bookmark_count, 1);
+    assert_eq!(details.tags.edited, Some(vec!["lanterns".to_owned()]));
+    assert_eq!(linked.markers(), 0);
+}
+
+#[tokio::test]
+async fn adding_the_folder_again_clears_a_removal_that_arrived_while_it_was_unlinked() {
+    let linked = Removing::new("readd-marker-while-unlinked").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.remove_folder().await;
+    linked.mark_removed(book).await;
+
+    linked.add_folder_again().await;
+
+    assert_eq!(
+        linked.scanned.series(),
+        owned(&[(SERIES_01, 2), (SERIES_02, 1)])
+    );
+    assert_eq!(linked.markers(), 0);
+}
+
+#[tokio::test]
+async fn a_rescan_of_another_folder_does_not_clear_markers_of_books_it_does_not_hold() {
+    let linked = Removing::new("rescan-other-folder").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.remove(&[RemovalTarget::Book { id: book }]).await;
+    let other = ScratchFolder::new("rescan-other-folder-other");
+    write_book(&other.path().join("Sample Series 03").join("v01.cbz"), 7);
+    let library = &linked.scanned.library;
+    library
+        .add_folder(other.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let other_id = library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .pop()
+        .unwrap()
+        .id;
+    linked
+        .mark_removed(linked.books("Sample Series 03").await[0])
+        .await;
+
+    library.rescan_folder(other_id, |_| {}).await.unwrap();
+
+    assert_eq!(linked.markers(), 2);
+}
+
+#[tokio::test]
+async fn adding_a_folder_clears_only_the_markers_of_the_books_it_holds() {
+    let linked = Removing::new("add-folder-other-markers").await;
+    let kept_out = linked.books(SERIES_02).await[0];
+    linked.remove(&[RemovalTarget::Book { id: kept_out }]).await;
+    let other =
+        Removing::holding("add-folder-other-markers-other", &[("Sample Series 03", 7)]).await;
+    let held = other.books("Sample Series 03").await[0];
+    let library = &linked.scanned.library;
+    linked.mark_removed(held).await;
+
+    library
+        .add_folder(other.comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(linked.markers(), 1);
 }
 
 async fn caught_up(changes: &mut LibraryChanges) {

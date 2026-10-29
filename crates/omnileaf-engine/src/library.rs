@@ -287,13 +287,7 @@ impl Library {
         .await?;
         let root = self.link(locator).await?;
         let target = self.target(root, RootKind::Linked, files).await?;
-        scan(
-            self.store.database(),
-            target,
-            layout,
-            self.noting_writes(on_progress),
-        )
-        .await
+        scan(&self.store, target, layout, self.noting_writes(on_progress)).await
     }
 
     pub async fn folders(&self, after: Option<FolderCursor>) -> Result<FolderPage, LibraryError> {
