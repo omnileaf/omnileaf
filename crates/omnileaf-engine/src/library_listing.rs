@@ -313,7 +313,10 @@ impl From<StoredInclusion> for Inclusion {
 
 #[cfg(test)]
 mod tests {
+    use omnileaf_db::catalog;
+
     use super::*;
+    use crate::series_overview::SeriesOverview;
 
     const NOW_MS: i64 = 1_790_000_000_000;
     const NINETY_DAYS_MS: i64 = 7_776_000_000;
@@ -463,18 +466,55 @@ mod tests {
         assert_eq!(stored.pages_left_at_most, None);
     }
 
+    fn is_under_thirty_minutes_left_as_the_overview_counts_it(
+        pages_left: u32,
+        seconds_per_page: u32,
+    ) -> bool {
+        let overview = SeriesOverview::new(
+            catalog::SeriesOverview {
+                id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
+                title: "Sample Series 04".to_owned(),
+                file_title: "Sample Series 04".to_owned(),
+                title_source: None,
+                year: None,
+                language: None,
+                book_count: 8,
+                read_count: 2,
+                cover: None,
+                folder: None,
+                pages_left: Some(pages_left),
+                is_rated_adult: false,
+                is_marked_adult: false,
+                bookmark_count: 0,
+            },
+            None,
+            Some(seconds_per_page),
+        );
+        overview
+            .seconds_left
+            .is_some_and(|seconds| seconds < QUICK_READ_SECONDS)
+    }
+
     #[test]
-    fn keeps_a_series_when_its_time_left_is_under_thirty_minutes_as_the_overview_counts_it() {
+    fn asks_for_the_most_pages_left_that_the_overview_still_counts_as_a_quick_read() {
         for seconds_per_page in 1..=3600_u32 {
             let most_pages = pages_asked_for_at(Some(seconds_per_page)).unwrap();
 
-            for pages_left in 1..=2000_u32 {
-                assert_eq!(
-                    pages_left <= most_pages,
-                    pages_left * seconds_per_page < QUICK_READ_SECONDS,
-                    "{pages_left} pages at {seconds_per_page} s a page"
+            let at_most = most_pages == 0
+                || is_under_thirty_minutes_left_as_the_overview_counts_it(
+                    most_pages,
+                    seconds_per_page,
                 );
-            }
+            let one_more = is_under_thirty_minutes_left_as_the_overview_counts_it(
+                most_pages + 1,
+                seconds_per_page,
+            );
+
+            assert_eq!(
+                (at_most, one_more),
+                (true, false),
+                "{most_pages} pages at {seconds_per_page} s a page"
+            );
         }
     }
 
