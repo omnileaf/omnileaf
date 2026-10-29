@@ -1,7 +1,9 @@
 import type { Page } from "@playwright/test";
 
+import { CommandFailure } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  DEFAULT_BACKEND,
   expect,
   onPlatform,
   test,
@@ -20,6 +22,37 @@ async function keepReports(page: Page): Promise<void> {
     JSON.stringify([
       { code: "R-2QX9", madeAtMs: NEWER },
       { code: "R-7F3K", madeAtMs: OLDER },
+    ]),
+  );
+}
+
+const SENT_REPORTS = [
+  { code: "R-0000-0001", review: { kind: "received" } },
+  { code: "R-0000-0002", review: { kind: "reviewing" } },
+  { code: "R-0000-0003", review: { kind: "published", issue: 412 } },
+  { code: "R-0000-0004", review: { kind: "closed" } },
+  { code: "R-0000-0005", review: { kind: "unknown" } },
+] as const;
+
+async function keepSentReports(
+  page: Page,
+  lastReview?: { kind: "published"; issue: number },
+): Promise<void> {
+  await page.addInitScript(
+    (kept) => {
+      window.localStorage.setItem("omnileaf.yourReports", kept);
+    },
+    JSON.stringify([
+      ...SENT_REPORTS.map(({ code }, index) => ({
+        code,
+        madeAtMs: NEWER - index,
+        way: "send",
+        statusKey: `key-${code}`,
+        ...(lastReview === undefined ? {} : { lastReview }),
+      })),
+      { code: "R-0000-0006", madeAtMs: OLDER, way: "copy" },
+      { code: "R-0000-0007", madeAtMs: OLDER - 1, way: "save" },
+      { code: "R-0000-0008", madeAtMs: OLDER - 2, way: "github" },
     ]),
   );
 }
@@ -62,6 +95,67 @@ test.describe("with two reports kept", () => {
   });
 });
 
+test.describe("with sent reports the maintainers have looked at", () => {
+  const asked: string[][] = [];
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      problemReportStatuses: (reports) => {
+        asked.push(reports.map(({ code }) => code));
+        return SENT_REPORTS.map(({ code, review }) => ({ code, review }));
+      },
+    },
+  });
+
+  test.beforeEach(async ({ page }) => {
+    asked.length = 0;
+    await keepSentReports(page);
+  });
+
+  test("says Answered only beside the reports that were answered", async ({
+    page,
+  }) => {
+    await page.goto(REPORTS_PAGE);
+
+    const rows = reportList(page).getByRole("listitem");
+
+    await expect(rows.nth(2)).toContainText("Answered · code R-0000-0003");
+    await expect(rows.nth(3)).toContainText("Answered · code R-0000-0004");
+    await expect(rows.nth(0)).toContainText("Code R-0000-0001");
+    await expect(rows.nth(1)).toContainText("Code R-0000-0002");
+    await expect(rows.nth(4)).toContainText("Code R-0000-0005");
+    await expect(rows.nth(5)).toContainText("Code R-0000-0006");
+    await expect(rows.nth(6)).toContainText("Code R-0000-0007");
+    await expect(rows.nth(7)).toContainText("Code R-0000-0008");
+    expect(asked).toEqual([SENT_REPORTS.map(({ code }) => code)]);
+  });
+});
+
+test.describe("when the answers can't be fetched", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      problemReportStatuses: () => {
+        throw new CommandFailure({
+          code: "relayUnreachable",
+          message: "the report could not reach Omnileaf",
+        });
+      },
+    },
+  });
+
+  test("keeps the last answer it heard", async ({ page }) => {
+    await keepSentReports(page, { kind: "published", issue: 412 });
+
+    await page.goto(REPORTS_PAGE);
+
+    await expect(reportList(page).getByRole("listitem").first()).toContainText(
+      "Answered · code R-0000-0001",
+    );
+  });
+});
+
 test("leaves Your reports off About until a report is kept", async ({
   page,
 }) => {
@@ -90,7 +184,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
       test(`Your reports has no accessibility violations in the ${colorScheme} theme`, async ({
         page,
       }) => {
-        await keepReports(page);
+        await keepSentReports(page, { kind: "published", issue: 412 });
         await page.emulateMedia({ colorScheme });
         await page.goto(REPORTS_PAGE);
         await expect(reportList(page)).toBeVisible();
