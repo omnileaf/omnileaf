@@ -2,10 +2,10 @@
   import { BookmarkPlus, Eye, EyeOff, X } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { Card } from "#lib/components/ui/card/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
+  import SelectionToolbar from "#lib/page/SelectionToolbar.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 16;
@@ -27,16 +27,10 @@
   } = $props();
 </script>
 
-<Card
-  role="group"
-  aria-label={m.series_selection_toolbar()}
-  class="sticky inset-be-lg flex items-center gap-2xs self-center p-xs shadow-popover"
+<SelectionToolbar
+  label={m.series_selection_toolbar()}
+  count={m.series_selected_books({ count })}
 >
-  <span
-    class="me-xs rounded-control bg-accent-soft px-sm text-detail font-bold whitespace-nowrap"
-  >
-    {m.series_selected_books({ count })}
-  </span>
   {#each MARKS as { mark, icon: Icon, label } (mark)}
     <Tooltip
       label={label()}
@@ -97,4 +91,4 @@
       </Button>
     {/snippet}
   </Tooltip>
-</Card>
+</SelectionToolbar>
