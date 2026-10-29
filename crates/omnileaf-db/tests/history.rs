@@ -1219,17 +1219,20 @@ async fn leaves_the_reading_of_a_removed_book_out_of_the_aggregates_while_hiding
 #[tokio::test]
 async fn lists_no_entry_for_a_book_removed_from_the_library_yet_keeps_its_sessions_in_the_totals() {
     let history = History::open("history-removed-from-library").await;
+    let first_opened_ms = NOW_UNIX_MS - 2 * HOUR_MS;
+    let removed_opened_ms = NOW_UNIX_MS - HOUR_MS;
+    history
+        .read(book(1), first_opened_ms, first_opened_ms + 3 * MINUTE_MS, 0)
+        .await;
     history
         .read(
-            book(1),
-            NOW_UNIX_MS - 2 * HOUR_MS,
-            NOW_UNIX_MS - 2 * HOUR_MS,
+            book(4),
+            removed_opened_ms,
+            removed_opened_ms + 2 * MINUTE_MS,
             0,
         )
         .await;
-    history
-        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
-        .await;
+    let listed_before = history.listed_books().await;
     let totals_before = history.reading_aggregates(AdultHiding::default()).await;
 
     history
@@ -1239,9 +1242,11 @@ async fn lists_no_entry_for_a_book_removed_from_the_library_yet_keeps_its_sessio
         .unwrap();
 
     let totals_after = history.reading_aggregates(AdultHiding::default()).await;
+    assert_eq!(listed_before, [book(4), book(1)]);
     assert_eq!(history.listed_books().await, [book(1)]);
     assert_eq!(totals_after, totals_before);
     assert_eq!(totals_after.0, 2);
+    assert_eq!(totals_after.1, ms(5 * MINUTE_MS));
 }
 
 #[tokio::test]
