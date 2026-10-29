@@ -53,11 +53,6 @@ interface TileLook {
   readonly emptyMark: { readonly edge: string; readonly ring: string };
 }
 
-/** Chromium snaps border widths down to whole device pixels. */
-function snappedBorder(width: number): string {
-  return `${String(Math.floor(width * devicePixelRatio) / devicePixelRatio)}px`;
-}
-
 async function oneSeries(): Promise<LibrarySeries> {
   mockIPC(() => ({
     series: [
@@ -209,7 +204,7 @@ afterEach(() => {
 });
 
 test("draws iOS's tile with glass badges and edit-mode select circles", async () => {
-  const look = await lookOn("ios", "light");
+  const { emptyMark, ...look } = await lookOn("ios", "light");
 
   expect(look).toEqual({
     cover: { corner: "6px" },
@@ -226,13 +221,11 @@ test("draws iOS's tile with glass badges and edit-mode select circles", async ()
       fill: "rgb(47, 111, 79)",
       tick: "rgb(255, 255, 255)",
     },
-    emptyMark: {
-      edge: "none",
-      ring: expect.stringContaining(
-        "rgb(255, 255, 255) 0px 0px 0px 1.5px inset",
-      ),
-    },
   });
+  expect(emptyMark.edge).toBe("none");
+  expect(emptyMark.ring).toContain(
+    "rgb(255, 255, 255) 0px 0px 0px 1.5px inset",
+  );
 });
 
 test("puts iOS's select circle at the cover's bottom end, on a scrim with a glass blur", async () => {
@@ -243,17 +236,20 @@ test("puts iOS's select circle at the cover's bottom end, on a scrim with a glas
     display: "grid",
   });
   const style = styleOf(mark);
+  const gaps = gapsAround(mark);
 
   expect({
-    gaps: gapsAround(mark),
+    bottom: gaps.bottom,
+    end: gaps.end,
     fill: style.backgroundColor,
     blur: style.backdropFilter.includes("blur(30px)"),
   }).toEqual({
-    gaps: { top: expect.any(Number), bottom: 6, end: 6 },
+    bottom: 6,
+    end: 6,
     fill: "rgba(0, 0, 0, 0.2)",
     blur: true,
   });
-  expect(gapsAround(mark).top).toBeGreaterThan(60);
+  expect(gaps.top).toBeGreaterThan(60);
 });
 
 test("keeps iOS's select circle in the top end of a compact cover, clear of its title band", async () => {
