@@ -4,6 +4,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
+  import SelectionToolbar from "#lib/page/SelectionToolbar.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { LabelsFrom } from "./series-selection";
@@ -53,16 +54,10 @@
 </script>
 
 {#if isPill}
-  <Card
-    role="group"
-    aria-label={m.library_selection_toolbar()}
-    class="sticky inset-be-lg flex items-center gap-2xs self-center p-xs shadow-popover"
+  <SelectionToolbar
+    label={m.library_selection_toolbar()}
+    count={m.library_selected_series({ count })}
   >
-    <span
-      class="me-xs rounded-control bg-accent-soft px-sm text-detail font-bold whitespace-nowrap"
-    >
-      {m.library_selected_series({ count })}
-    </span>
     {#each actions as { name, icon: Icon, label, act } (name)}
       <Button
         type="button"
@@ -86,7 +81,7 @@
       {m.library_cancel()}
       <Kbd>{m.series_escape_key()}</Kbd>
     </Button>
-  </Card>
+  </SelectionToolbar>
 {:else}
   <Card
     role="group"
