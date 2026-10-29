@@ -18,11 +18,11 @@ use std::{
 use omnileaf_db::{
     adult_content::AdultHiding,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookFileToRemove, FolderGroup, FolderGroupSummary,
-        NewRoot, NewSeries, PageRequest, PageSize, RemovedBook, RootId, RootKind, RootLocator,
-        ScannedBook, SeriesFilter, SeriesFolder, SeriesNaming, Sourced, ValueSource, add_root,
-        book_bookmarks, books_of_series, files_of_books, folder_groups, record_scanned_books,
-        remove_marked_books, removed_among, series_count,
+        AgeRating, AndroidTree, AppleBookmark, BookDetails, BookFile, BookFileToRemove,
+        FolderGroup, FolderGroupSummary, NewRoot, NewSeries, PageRequest, PageSize, RemovedBook,
+        RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesFolder, SeriesNaming,
+        Sourced, TreeUri, ValueSource, add_root, book_bookmarks, books_of_series, files_of_books,
+        folder_groups, record_scanned_books, remove_marked_books, removed_among, series_count,
     },
     store::{ReadingState, RemovedFromLibrary, SeriesEdits, Store, reading_state, series_edits},
 };
@@ -33,6 +33,9 @@ use support::ScratchFolder;
 const ADDED_AT_MS: i64 = 1_780_000_000_000;
 const COMICS: &str = "/media/Comics";
 const MANGA: &str = "/media/Manga";
+const BOOKMARKED: &str = "/media/Bookmarked";
+const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
+const FOLDER_BOOKMARK: &[u8] = b"bookmark of the sample library";
 const FIRST_SERIES: &str = "Sample Series 01";
 const SECOND_SERIES: &str = "Sample Series 02";
 const MORE_THAN_ONE_BATCH: u32 = 70;
@@ -323,9 +326,13 @@ impl Library {
 }
 
 async fn add_linked_root(store: &Store, path: &str) -> RootId {
+    add_linked_locator(store, RootLocator::Path(PathBuf::from(path))).await
+}
+
+async fn add_linked_locator(store: &Store, locator: RootLocator) -> RootId {
     let root = NewRoot {
         kind: RootKind::Linked,
-        locator: RootLocator::Path(PathBuf::from(path)),
+        locator,
         added_at_ms: ADDED_AT_MS,
     };
     store
@@ -333,6 +340,22 @@ async fn add_linked_root(store: &Store, path: &str) -> RootId {
         .write(move |transaction| add_root(transaction, &root))
         .await
         .unwrap()
+}
+
+fn comics_tree() -> AndroidTree {
+    AndroidTree::new(
+        TreeUri::parse(COMICS_TREE.to_owned()).unwrap(),
+        "Comics".to_owned(),
+        "Internal storage › Documents".to_owned(),
+    )
+    .unwrap()
+}
+
+fn bookmarked_folder() -> RootLocator {
+    RootLocator::AppleBookmark {
+        path: PathBuf::from(BOOKMARKED),
+        bookmark: AppleBookmark::new(FOLDER_BOOKMARK.to_vec()),
+    }
 }
 
 fn fingerprint_of(number: u32) -> Fingerprint {
@@ -414,6 +437,40 @@ async fn files_of_books_lists_a_file_once_when_its_book_repeats_across_batches()
     let files = library.files_of(asked).await;
 
     assert_eq!(files.len(), usize::try_from(TWO_BATCHES).unwrap() - 1);
+}
+
+#[tokio::test]
+async fn files_of_books_decodes_the_apple_bookmark_root_of_a_file() {
+    let library = Library::open("files-of-books-bookmark").await;
+    let root = add_linked_locator(&library.store, bookmarked_folder()).await;
+    library.record(root, FIRST_SERIES, 1).await;
+
+    let files = library.files_of(vec![book(1)]).await;
+
+    assert_eq!(
+        files,
+        [BookFileToRemove {
+            root: bookmarked_folder(),
+            ..file_to_remove(1, FIRST_SERIES, (root, BOOKMARKED))
+        }]
+    );
+}
+
+#[tokio::test]
+async fn files_of_books_decodes_the_android_tree_root_of_a_file() {
+    let library = Library::open("files-of-books-tree").await;
+    let root = add_linked_locator(&library.store, RootLocator::AndroidTree(comics_tree())).await;
+    library.record(root, FIRST_SERIES, 1).await;
+
+    let files = library.files_of(vec![book(1)]).await;
+
+    assert_eq!(
+        files,
+        [BookFileToRemove {
+            root: RootLocator::AndroidTree(comics_tree()),
+            ..file_to_remove(1, FIRST_SERIES, (root, COMICS_TREE))
+        }]
+    );
 }
 
 #[tokio::test]
