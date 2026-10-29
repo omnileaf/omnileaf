@@ -2,6 +2,7 @@
   import { BookOpen, RotateCcwClock } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { GROUPED_GROUP_LOOK } from "#lib/library/group-look.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -12,6 +13,7 @@
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
   const ROW_ICON_SIZE = 16;
+  const TODAYS_HEADING = "font-semibold";
   const TODAYS_WORD =
     "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
   const NATIVE_WORD =
@@ -37,6 +39,9 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const headingClass = $derived(
+    isNative ? GROUPED_GROUP_LOOK.heading : TODAYS_HEADING,
+  );
   const locale = getLocale();
 </script>
 
@@ -44,7 +49,7 @@
   {#if recent.length > 0}
     <section aria-labelledby={recentId} class="flex flex-col gap-xs">
       <div class="flex items-center justify-between gap-sm">
-        <h2 id={recentId} class="font-semibold">{m.search_recent()}</h2>
+        <h2 id={recentId} class={headingClass}>{m.search_recent()}</h2>
         <Button look="text" onclick={onClear}>
           {m.search_recent_clear()}
         </Button>
@@ -75,7 +80,7 @@
     </section>
   {/if}
   <section aria-labelledby={byId} class="flex flex-col gap-xs">
-    <h2 id={byId} class="font-semibold">{m.search_by()}</h2>
+    <h2 id={byId} class={headingClass}>{m.search_by()}</h2>
     <ul class="flex flex-col divide-y divide-border">
       <li class="flex items-center gap-md py-md">
         <BookOpen
@@ -91,7 +96,7 @@
     </ul>
   </section>
   <section aria-labelledby={filterId} class="flex flex-col gap-sm">
-    <h2 id={filterId} class="font-semibold">{m.search_type_to_filter()}</h2>
+    <h2 id={filterId} class={headingClass}>{m.search_type_to_filter()}</h2>
     {#if isNative}
       <p class="text-detail text-muted">
         {m.search_filter_example({ unread: words.unread })}

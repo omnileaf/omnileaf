@@ -88,3 +88,16 @@ test("keeps the code tags and the sentence below them on an iPad", async () => {
     "mono",
   );
 });
+
+test("sets the section headings in 17 point semibold muted type on an iPhone", async () => {
+  await startOn("ios", PHONE);
+
+  const heading = getComputedStyle(
+    page.getByRole("heading", { name: "Type a filter to narrow" }).element(),
+  );
+
+  expect({ size: heading.fontSize, weight: heading.fontWeight }).toEqual({
+    size: "17px",
+    weight: "590",
+  });
+});
