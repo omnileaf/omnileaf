@@ -17,9 +17,15 @@ export interface SectionScreen {
 
 type SectionViews = Readonly<Record<BookSection, SectionView>>;
 
+const DESKTOP_SECTION_VIEWS: SectionViews = {
+  volumes: "covers",
+  chapters: "books",
+  specials: "covers",
+};
+
 const SECTION_VIEWS = {
-  linux: { volumes: "covers", chapters: "books", specials: "covers" },
-  macos: undefined,
+  linux: DESKTOP_SECTION_VIEWS,
+  macos: DESKTOP_SECTION_VIEWS,
   windows: undefined,
   ios: undefined,
   android: undefined,
