@@ -11,7 +11,12 @@ import {
 } from "./section-listing";
 
 const LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: true };
+const MACOS_WINDOW: SectionScreen = { platform: "macos", isWide: true };
 const NARROW_LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: false };
+const WIDE_TABBED_WINDOWS: readonly SectionScreen[] = [
+  LINUX_WINDOW,
+  MACOS_WINDOW,
+];
 const EVERY_SECTION: readonly BookSection[] = [
   "volumes",
   "chapters",
@@ -19,17 +24,22 @@ const EVERY_SECTION: readonly BookSection[] = [
 ];
 const IN_ORDER: SeriesBookListing = { shown: "all", direction: "ascending" };
 
-test("gives linux a tab for each section of a series with more than one", () => {
-  expect(sectionTabs(EVERY_SECTION, LINUX_WINDOW)).toEqual(EVERY_SECTION);
-});
+test.each(WIDE_TABBED_WINDOWS)(
+  "gives $platform a tab for each section of a series with more than one",
+  (screen) => {
+    expect(sectionTabs(EVERY_SECTION, screen)).toEqual(EVERY_SECTION);
+  },
+);
 
-test("gives a series with one kind of book no tabs", () => {
-  expect(sectionTabs(["volumes"], LINUX_WINDOW)).toEqual([]);
-});
+test.each(WIDE_TABBED_WINDOWS)(
+  "gives a series with one kind of book no tabs on $platform",
+  (screen) => {
+    expect(sectionTabs(["volumes"], screen)).toEqual([]);
+  },
+);
 
 test.each<SectionScreen>([
   NARROW_LINUX_WINDOW,
-  { platform: "macos", isWide: true },
   { platform: "windows", isWide: true },
   { platform: "ios", isWide: false },
   { platform: "android", isWide: true },
@@ -102,28 +112,30 @@ test("shows no section for a series whose books have none or several unchosen", 
   ]).toEqual([undefined, undefined]);
 });
 
-test.each<[BookSection, string]>([
-  ["volumes", "covers"],
-  ["chapters", "books"],
-  ["specials", "covers"],
-])("shows linux's %s as %s", (section, view) => {
-  const listing = sectionListing(
-    { ...IN_ORDER, section },
-    EVERY_SECTION,
-    LINUX_WINDOW,
-  );
+for (const screen of WIDE_TABBED_WINDOWS) {
+  test.each<[BookSection, string]>([
+    ["volumes", "covers"],
+    ["chapters", "books"],
+    ["specials", "covers"],
+  ])(`shows ${screen.platform}'s %s as %s`, (section, view) => {
+    const listing = sectionListing(
+      { ...IN_ORDER, section },
+      EVERY_SECTION,
+      screen,
+    );
 
-  expect(sectionView(listing, EVERY_SECTION, LINUX_WINDOW)).toBe(view);
-});
+    expect(sectionView(listing, EVERY_SECTION, screen)).toBe(view);
+  });
 
-test("shows a series of volumes only as covers on linux", () => {
-  const listing = sectionListing(IN_ORDER, ["volumes"], LINUX_WINDOW);
+  test(`shows a series of volumes only as covers on ${screen.platform}`, () => {
+    const listing = sectionListing(IN_ORDER, ["volumes"], screen);
 
-  expect([listing, sectionView(listing, ["volumes"], LINUX_WINDOW)]).toEqual([
-    IN_ORDER,
-    "covers",
-  ]);
-});
+    expect([listing, sectionView(listing, ["volumes"], screen)]).toEqual([
+      IN_ORDER,
+      "covers",
+    ]);
+  });
+}
 
 test("keeps the books list for chapters only and for unsorted books", () => {
   expect([
