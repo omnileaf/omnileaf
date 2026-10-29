@@ -13,11 +13,13 @@
     options,
     value,
     onChoose,
+    describedBy,
   }: {
     label: string;
     options: readonly Option[];
     value: string;
     onChoose: (value: string) => void;
+    describedBy?: string | undefined;
   } = $props();
 
   const valueLabel = $derived(
@@ -26,7 +28,7 @@
 </script>
 
 <div
-  class="relative flex items-center gap-native-row-gap py-native-row-block min-block-native-row"
+  class="relative flex items-center gap-native-row-gap py-native-row-block min-block-native-row select-focused:outline-2 select-focused:-outline-offset-2 select-focused:outline-accent"
 >
   <span
     class="flex-1 text-native-row-title/native-row-title font-native-row-title tracking-native-row-title"
@@ -42,6 +44,7 @@
   </span>
   <select
     aria-label={label}
+    aria-describedby={describedBy}
     {value}
     class="absolute inset-none opacity-0 block-full inline-full"
     onchange={({

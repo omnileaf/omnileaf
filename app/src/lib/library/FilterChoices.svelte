@@ -59,20 +59,22 @@
   } = $props();
 
   const look = $derived(groupLook(isGrouped));
-  const sortByOptions = SORTS.map((by) => ({
-    value: by,
-    label: SORT_LABELS[by](),
-  }));
+  const sortByOptions = $derived(
+    SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() })),
+  );
   const directionOptions = $derived(
     (["ascending", "descending"] as const).map((direction, index) => ({
       value: direction,
       label: directionWordings(listing.sort.by)[index]?.label() ?? "",
     })),
   );
-  const readStateOptions = READ_STATES.map((state) => ({
-    value: state,
-    label: READ_STATE_LABELS[state](),
-  }));
+  const readStateOptions = $derived(
+    READ_STATES.map((state) => ({
+      value: state,
+      label: READ_STATE_LABELS[state](),
+    })),
+  );
+  const timeLeftNoteId = $props.id();
 
   let showsEveryTag = $state(false);
 
@@ -108,6 +110,9 @@
       <PickerRow
         label={m.library_sort_by()}
         options={sortByOptions}
+        describedBy={listing.sort.by === "timeLeft"
+          ? timeLeftNoteId
+          : undefined}
         value={listing.sort.by}
         onChoose={(value: string) => {
           const by = SORTS.find((sort) => sort === value);
@@ -128,7 +133,7 @@
       />
     </div>
     {#if listing.sort.by === "timeLeft"}
-      <p class={GROUPED_FOOTNOTE}>
+      <p id={timeLeftNoteId} class={GROUPED_FOOTNOTE}>
         {m.library_sort_time_left_footnote()}
       </p>
     {/if}
@@ -206,7 +211,7 @@
           <Button
             type="button"
             look="outline"
-            class="flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip touch:touch-target-around"
+            class="flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"
             onclick={() => {
               showsEveryTag = true;
             }}

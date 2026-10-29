@@ -8,12 +8,16 @@
 
   const REMOVE_ICON_SIZE = 12;
 
-  let { label, onRemove }: { label: string; onRemove: () => void } = $props();
+  let {
+    label,
+    onRemove,
+    chipClass,
+  }: { label: string; onRemove: () => void; chipClass: string } = $props();
 
   const removeLabel = $derived(m.library_remove_filter({ filter: label }));
 </script>
 
-<Badge look="filter" class="ps-search-chip-start pe-2xs block-search-chip">
+<Badge look="filter" class={chipClass}>
   {#snippet child({ props })}
     <li {...props}>
       {label}
