@@ -18,6 +18,7 @@ mod device_class;
 mod dropped_files;
 mod error_chain;
 mod external_storage;
+mod file_disposal;
 mod file_in_storage;
 mod file_type;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -104,6 +105,7 @@ pub use dropped_files::{
 };
 pub use error_chain::describe_error;
 pub use external_storage::{storage_by_device, storage_in_mountinfo, storage_of_windows_path};
+pub use file_disposal::{Disposal, DisposalFailure, FileDisposal};
 pub use file_type::FileType;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use folder_watch::{AppFiles, FolderWatch, FolderWatchSwitch};
