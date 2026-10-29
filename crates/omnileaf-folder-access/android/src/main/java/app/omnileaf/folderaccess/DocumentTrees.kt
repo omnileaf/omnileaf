@@ -14,6 +14,8 @@ import app.tauri.plugin.JSObject
 import kotlinx.coroutines.CompletableDeferred
 import java.io.FileNotFoundException
 
+private const val TREE_GRANT_FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+
 internal class ListingIncomplete(
     listing: Uri,
 ) : Exception("the documents provider is still loading $listing")
@@ -32,7 +34,7 @@ internal class DocumentTrees(
         tree: Uri,
         signal: CancellationSignal,
     ): JSObject {
-        resolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        resolver.takePersistableUriPermission(tree, TREE_GRANT_FLAGS)
         var isDescribed = false
         try {
             val described = describe(tree, signal)
@@ -72,16 +74,26 @@ internal class DocumentTrees(
         return resolver.openFileDescriptor(uri, "r", signal) ?: throw FileNotFoundException("open $uri")
     }
 
+    fun delete(
+        tree: Uri,
+        document: String,
+    ) {
+        val isWritable = resolver.persistedUriPermissions.any { it.uri == tree && it.isWritePermission }
+        deleteIfGranted(tree.toString(), document, isWritable) {
+            DocumentsContract.deleteDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, document))
+        }
+    }
+
     fun persistedGrants(): JSObject {
         val grants =
             resolver.persistedUriPermissions
-                .filter { it.isReadPermission && DocumentsContract.isTreeUri(it.uri) }
+                .filter { (it.isReadPermission || it.isWritePermission) && DocumentsContract.isTreeUri(it.uri) }
                 .map { JSObject().put("uri", it.uri.toString()).put("persistedAtMs", it.persistedTime) }
         return JSObject().put("grants", JSArray(grants))
     }
 
     fun release(tree: Uri) {
-        resolver.releasePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        resolver.releasePersistableUriPermission(tree, TREE_GRANT_FLAGS)
     }
 
     private fun describe(

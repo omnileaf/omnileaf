@@ -20,14 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.io.FileNotFoundException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-private const val PERMISSION_DENIED = "permissionDenied"
-private const val NOT_FOUND = "notFound"
-private const val TIMED_OUT = "timedOut"
-private const val INCOMPLETE = "incomplete"
 private const val FOLDER_PICKED = "folderPicked"
 
 /** A cloud provider may fetch a folder's listing over the network before it answers. */
@@ -35,6 +30,9 @@ private val LISTING_BOUND = 15.seconds
 
 /** A cloud provider may download the whole document before it hands over a descriptor. */
 private val OPENING_BOUND = 30.seconds
+
+/** A cloud provider may reach its server before it deletes a document. */
+private val DELETING_BOUND = 20.seconds
 
 @InvokeArg
 public class DocumentArgs {
@@ -65,7 +63,7 @@ public class FolderAccessPlugin
             }
             isPicking = true
             try {
-                startActivityForResult(invoke, Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), FOLDER_PICKED)
+                startActivityForResult(invoke, folderPickerIntent(), FOLDER_PICKED)
             } catch (error: ActivityNotFoundException) {
                 pickerFailed(invoke, error)
             } catch (error: IllegalStateException) {
@@ -106,6 +104,16 @@ public class FolderAccessPlugin
                         trees.open(args.tree.toUri(), document, signal)
                     }
                 handOver(descriptor)
+            }
+        }
+
+        @Command
+        public fun deleteDocument(invoke: Invoke) {
+            val args = invoke.parseArgs(DocumentArgs::class.java)
+            val document = requireNotNull(args.document) { "delete a document without naming it" }
+            answer(invoke) {
+                withinBound(DELETING_BOUND) { _ -> trees.delete(args.tree.toUri(), document) }
+                null
             }
         }
 
@@ -152,20 +160,16 @@ public class FolderAccessPlugin
                     if (reply == null) invoke.resolve() else invoke.resolve(reply)
                 } catch (error: CancellationException) {
                     throw error
-                } catch (error: CallTimedOut) {
-                    invoke.reject(error.message, TIMED_OUT)
-                } catch (error: ListingIncomplete) {
-                    invoke.reject(error.message, INCOMPLETE)
-                } catch (error: SecurityException) {
-                    invoke.reject(error.message, PERMISSION_DENIED)
-                } catch (error: FileNotFoundException) {
-                    invoke.reject(error.message, NOT_FOUND)
                 } catch (error: Exception) {
-                    invoke.reject(error.message ?: error.toString())
+                    val refusal = refusalOf(error)
+                    invoke.reject(refusal.message, refusal.code)
                 }
             }
         }
     }
+
+/** A picked tree grants read access only, unless the picker is asked for write access too. */
+private fun folderPickerIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
 
 /** `detachFd` gives up the descriptor without closing it, so the Rust side that reads the reply owns it. */
 private fun handOver(descriptor: ParcelFileDescriptor): JSObject = JSObject().put("fd", descriptor.detachFd())
