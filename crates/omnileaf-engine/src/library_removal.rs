@@ -308,13 +308,15 @@ async fn blocking_within<T: Send + 'static>(
 
 /// A trash call stuck on a dead network mount cannot be cancelled, so giving up on it leaves its thread running until the mount answers.
 async fn dispose_within(disposal: &impl FileDisposal, path: &Path) -> Result<Disposal, Fault> {
-    match timeout(FILE_DISPOSAL_TIMEOUT, disposal.dispose(path)).await {
-        Ok(disposed) => disposed.map_err(Fault::Failed),
-        Err(_) => {
-            tracing::warn!(file = %path.display(), "wait for a file to be disposed of");
-            Err(Fault::Hung(DisposalFailure::Other))
-        }
-    }
+    timeout(FILE_DISPOSAL_TIMEOUT, disposal.dispose(path))
+        .await
+        .map_or_else(
+            |_| {
+                tracing::warn!(file = %path.display(), "wait for a file to be disposed of");
+                Err(Fault::Hung(DisposalFailure::Other))
+            },
+            |disposed| disposed.map_err(Fault::Failed),
+        )
 }
 
 async fn still_the_scanned_file(

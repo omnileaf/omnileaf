@@ -53,6 +53,10 @@ impl FileFate<'_, NoDisposal> {
 }
 
 impl FileDisposal for NoDisposal {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "an empty enum has no value to call this on, so the body is the proof that it never runs"
+    )]
     async fn dispose(&self, _file: &Path) -> Result<Disposal, DisposalFailure> {
         match *self {}
     }
@@ -72,13 +76,18 @@ impl From<io::ErrorKind> for DisposalFailure {
 
 #[cfg(test)]
 mod tests {
+    use std::future::ready;
+
     use super::*;
 
     struct Trash;
 
     impl FileDisposal for Trash {
-        async fn dispose(&self, _file: &Path) -> Result<Disposal, DisposalFailure> {
-            Ok(Disposal::Trashed)
+        fn dispose(
+            &self,
+            _file: &Path,
+        ) -> impl Future<Output = Result<Disposal, DisposalFailure>> + Send {
+            ready(Ok(Disposal::Trashed))
         }
     }
 
