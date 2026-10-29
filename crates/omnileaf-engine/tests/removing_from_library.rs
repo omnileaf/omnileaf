@@ -8,13 +8,18 @@ mod books;
 mod scanned;
 mod support;
 
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    fs,
+    path::{Path, PathBuf},
+    time::{Duration, SystemTime},
+};
 
 use books::write_book;
-use omnileaf_db::{Config, Database, catalog::removed_among, store::Store};
+use omnileaf_db::{Config, Database, catalog::removed_among, rusqlite::Connection, store::Store};
 use omnileaf_engine::{
-    BookId, LIBRARY_CHANGES_GATHERED_FOR, LibraryChanges, LibraryListing, RemovalReport,
-    RemovalTarget, SeriesBookListing, SeriesId,
+    BookId, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, LibraryChanges, LibraryListing,
+    RemovalReport, RemovalTarget, RescanOutcome, SeriesBookListing, SeriesId,
 };
 use omnileaf_sync_proto::ProfileId;
 use scanned::{Scanned, owned};
@@ -24,6 +29,7 @@ use tokio::time::timeout;
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 const DATABASE_FILE: &str = "library.sqlite";
+const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
 
 struct Removing {
@@ -96,6 +102,27 @@ impl Removing {
         )
     }
 
+    async fn mark_removed(&self, book: BookId) {
+        let marked: omnileaf_sync_proto::BookId = book.to_string().parse().unwrap();
+        self.other_device()
+            .write(move |writer| writer.set_removed(marked, true))
+            .await
+            .unwrap();
+    }
+
+    async fn rescan(&self) -> RescanOutcome {
+        self.scanned
+            .library
+            .rescan_folder(self.scanned.id, |_| {})
+            .await
+            .unwrap()
+            .outcome
+    }
+
+    fn writer(&self) -> Connection {
+        Connection::open(self.scanned.home.path().join(DATABASE_FILE)).unwrap()
+    }
+
     async fn remove(&self, targets: &[RemovalTarget]) -> RemovalReport {
         self.scanned
             .library
@@ -103,6 +130,19 @@ impl Removing {
             .await
             .unwrap()
     }
+}
+
+fn mark_changed(path: &Path) {
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(SystemTime::UNIX_EPOCH + CHANGED_AT)
+        .unwrap();
+}
+
+fn rescanned(changes: FileChanges) -> RescanOutcome {
+    RescanOutcome::Rescanned(changes)
 }
 
 fn counts(removed_series: u32, removed_books: u32) -> RemovalReport {
@@ -243,6 +283,86 @@ async fn removing_a_book_another_device_already_marked_still_removes_it_and_wake
             .await
             .is_ok()
     );
+}
+
+#[tokio::test]
+async fn a_rescan_leaves_a_removed_book_out_and_does_not_report_it_as_added() {
+    let linked = Removing::new("rescan-removed-not-yet").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.remove(&[RemovalTarget::Book { id: book }]).await;
+
+    let outcome = linked.rescan().await;
+
+    assert_eq!(outcome, rescanned(FileChanges::default()));
+    assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 2)]));
+}
+
+#[tokio::test]
+async fn a_rescan_forgets_a_stored_book_another_device_marked_removed() {
+    let linked = Removing::new("rescan-removed-stored").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.mark_removed(book).await;
+    linked
+        .writer()
+        .execute("DELETE FROM book_details", [])
+        .unwrap();
+
+    let outcome = linked.rescan().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 2)]));
+}
+
+#[tokio::test]
+async fn a_rescan_counts_no_move_for_a_book_another_device_marked_removed() {
+    let linked = Removing::new("rescan-removed-moved").await;
+    let book = linked.books(SERIES_02).await[0];
+    linked.mark_removed(book).await;
+    fs::rename(
+        linked.path("Sample Series 02/v01.cbz"),
+        linked.path("Sample Series 02/v01 (fixed).cbz"),
+    )
+    .unwrap();
+
+    let outcome = linked.rescan().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 2)]));
+}
+
+#[tokio::test]
+async fn a_file_changed_into_a_removed_book_forgets_the_book_it_held_and_stays_out() {
+    let linked = Removing::new("rescan-removed-changed-into").await;
+    let removed = linked.books(SERIES_02).await[0];
+    linked.remove(&[RemovalTarget::Book { id: removed }]).await;
+    let replaced = linked.path("Sample Series 01/v01.cbz");
+    write_book(&replaced, 3);
+    mark_changed(&replaced);
+
+    let first = linked.rescan().await;
+    let second = linked.rescan().await;
+
+    assert_eq!(
+        first,
+        rescanned(FileChanges {
+            removed: 1,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(second, rescanned(FileChanges::default()));
+    assert_eq!(linked.scanned.series(), owned(&[(SERIES_01, 1)]));
 }
 
 async fn caught_up(changes: &mut LibraryChanges) {

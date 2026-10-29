@@ -14,6 +14,7 @@ use tokio::task::spawn_blocking;
 use crate::{
     FolderId, LibraryError, ScanProgress, SkippedType,
     library_layout::Layout,
+    library_removal::marked_among,
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
     scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
 };
@@ -117,7 +118,12 @@ async fn record_changed(
         }
         let read = read_batch(target, batch).await?;
         scanned = scanned.saturating_add(saturating_u32(read.len()));
-        let recording = plan.sort(read);
+        let removed = marked_among(
+            database,
+            read.iter().filter_map(|read| read.book.as_ref().ok()),
+        )
+        .await?;
+        let recording = plan.sort(read, &removed);
         database
             .write(move |transaction| {
                 record_scanned_books(transaction, &recording.unmoved)?;

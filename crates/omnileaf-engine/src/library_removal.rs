@@ -1,10 +1,15 @@
 use std::collections::BTreeSet;
 
-use omnileaf_db::{Error, catalog::books_of_series, rusqlite::Connection};
+use omnileaf_db::{
+    Database, Error,
+    catalog::{ScannedBook, books_of_series, removed_among},
+    rusqlite::Connection,
+};
+use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{BookId, SeriesId};
+use crate::{BookId, LibraryError, SeriesId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -48,7 +53,7 @@ pub enum RemovalFailure {
 }
 
 pub(crate) struct Expanded {
-    pub(crate) books: Vec<omnileaf_sync_proto::BookId>,
+    pub(crate) books: Vec<StoredBookId>,
     pub(crate) series_held: u32,
 }
 
@@ -76,4 +81,20 @@ pub(crate) fn expand(
         books: books.into_iter().collect(),
         series_held,
     })
+}
+
+pub(crate) async fn marked_among<'a>(
+    database: &Database,
+    books: impl IntoIterator<Item = &'a ScannedBook>,
+) -> Result<BTreeSet<StoredBookId>, LibraryError> {
+    let found: Vec<StoredBookId> = books
+        .into_iter()
+        .map(|book| StoredBookId::local(&book.fingerprint))
+        .collect();
+    if found.is_empty() {
+        return Ok(BTreeSet::new());
+    }
+    Ok(database
+        .read(move |connection| removed_among(connection, &found))
+        .await?)
 }
