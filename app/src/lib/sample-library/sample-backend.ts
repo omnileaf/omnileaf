@@ -979,6 +979,12 @@ export function sampleBackend(
         "the sample library links no folders of its own",
       );
     },
+    addOpenedBookFolder: () => {
+      throw failure(
+        "bookNotFound",
+        "the sample library opens no books from outside it",
+      );
+    },
     matchSystemBars: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,

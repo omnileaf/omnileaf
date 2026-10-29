@@ -13,7 +13,9 @@ use serde::Serialize;
 use specta::Type;
 use tokio::task::spawn_blocking;
 
-use crate::{BookId, FileType, Library, LibraryError, library_layout::folder_name};
+use crate::{
+    BookId, FileType, FolderScan, Library, LibraryError, ScanProgress, library_layout::folder_name,
+};
 
 /// A book the reader opened from a file outside the library, which the library doesn't list.
 pub(crate) type OpenedFiles = std::sync::Mutex<std::collections::HashMap<StoredBookId, OpenedFile>>;
@@ -106,6 +108,22 @@ impl Library {
             book: BookId(book),
             is_in_library: false,
         })
+    }
+
+    /// Fails with [`LibraryError::BookNotFound`] for a book that wasn't opened from outside the library, and so has no folder to add.
+    pub async fn add_opened_book_folder(
+        &self,
+        book: BookId,
+        on_progress: impl FnMut(ScanProgress) + Send,
+    ) -> Result<FolderScan, LibraryError> {
+        let folder = self
+            .opened_files
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&book.0)
+            .map(|opened| opened.folder.clone())
+            .ok_or(LibraryError::BookNotFound { id: book })?;
+        self.add_folder(folder, on_progress).await
     }
 
     pub(crate) async fn opened_file_to_read(&self, book: StoredBookId) -> Option<BookToRead> {

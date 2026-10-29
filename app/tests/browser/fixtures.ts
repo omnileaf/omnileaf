@@ -70,6 +70,12 @@ export const DEFAULT_BACKEND: FakeBackend = {
       message: "the default backend links no folders",
     });
   },
+  addOpenedBookFolder: () => {
+    throw new CommandFailure({
+      code: "bookNotFound",
+      message: "the default backend opens no books from outside the library",
+    });
+  },
   libraryFolders: () => ({ folders: [], next: null }),
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,

@@ -56,6 +56,7 @@ macro_rules! app_commands {
             home_arrival,
             add_library_folder,
             link_library_folder,
+            add_opened_book_folder,
             match_system_bars,
             watch_back_swipes,
             allow_back_swipe,
@@ -262,6 +263,18 @@ async fn link_library_folder(
 ) -> Result<FolderScan, IpcError> {
     Ok(library
         .add_folder(folder, reporting_to(on_progress))
+        .await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn add_opened_book_folder(
+    library: State<'_, Library>,
+    book: BookId,
+    on_progress: Channel<ScanProgress>,
+) -> Result<FolderScan, IpcError> {
+    Ok(library
+        .add_opened_book_folder(book, reporting_to(on_progress))
         .await?)
 }
 
