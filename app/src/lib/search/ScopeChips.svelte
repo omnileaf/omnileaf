@@ -11,7 +11,7 @@
 
   const CHECK_SIZE = 16;
   const NATIVE_CHIP =
-    "border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
+    "border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-auto min-block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
   const NATIVE_GROUP =
     "flex-nowrap gap-sm overflow-x-auto py-sm scrollbar-none";
 

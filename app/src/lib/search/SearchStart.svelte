@@ -15,7 +15,7 @@
   const TODAYS_WORD =
     "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
   const NATIVE_WORD =
-    "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button block-native-segment";
+    "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
   let {
     recent,
