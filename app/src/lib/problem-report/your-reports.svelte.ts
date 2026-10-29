@@ -120,8 +120,12 @@ export class YourReports {
   }
 
   sentKeys(): SentReportKey[] {
-    return this.reports.flatMap(({ code, way, statusKey }) =>
-      way === "send" && statusKey !== undefined ? [{ code, statusKey }] : [],
+    return this.reports.flatMap(({ code, way, statusKey, lastReview }) =>
+      way === "send" &&
+      statusKey !== undefined &&
+      lastReview?.kind !== "published"
+        ? [{ code, statusKey }]
+        : [],
     );
   }
 

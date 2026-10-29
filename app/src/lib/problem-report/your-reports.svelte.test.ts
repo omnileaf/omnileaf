@@ -80,6 +80,21 @@ test("asks after only the reports it sent", () => {
   expect(keys).toEqual([{ code: "R-7K2M-QX9D", statusKey: "c3RhdHVz" }]);
 });
 
+test("stops asking after a report once it is published, but not once closed", () => {
+  const reports = new YourReports(memoryStore());
+  for (const code of ["R-0000-0001", "R-0000-0002", "R-0000-0003"]) {
+    reports.keep({ code, madeAtMs: NOON, way: "send", statusKey: "c3RhdHVz" });
+  }
+  reports.noteReviews([
+    { code: "R-0000-0001", review: { kind: "published", issue: 412 } },
+    { code: "R-0000-0002", review: { kind: "closed" } },
+  ]);
+
+  const asked = reports.sentKeys().map(({ code }) => code);
+
+  expect(asked).toEqual(["R-0000-0003", "R-0000-0002"]);
+});
+
 test("remembers the last review it heard of, even once the relay forgets", () => {
   const store = memoryStore();
   const reports = new YourReports(store);
