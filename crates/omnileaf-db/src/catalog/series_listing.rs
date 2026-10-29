@@ -314,6 +314,12 @@ macro_rules! smart_conditions {
     };
 }
 
+macro_rules! conditions_of_tagged_candidates {
+    () => {
+        $crate::catalog::series_listing::conditions!("TRUE")
+    };
+}
+
 /// For a count, which looks at every series, so the series carrying a tag are read once from the tag's index.
 macro_rules! counted_conditions {
     () => {
@@ -325,6 +331,7 @@ macro_rules! counted_conditions {
 }
 
 pub(crate) use conditions;
+pub(crate) use conditions_of_tagged_candidates;
 pub(crate) use counted_conditions;
 pub(crate) use smart_conditions;
 
