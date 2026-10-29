@@ -652,15 +652,21 @@ impl Library {
 
     pub async fn filter_choices(&self) -> Result<LibraryFilterChoices, LibraryError> {
         let adult_seen = self.adult_seen();
-        let (stored, adult) = self
+        let pace_seen = self.pace_seen();
+        let (stored, adult, knows_speed) = self
             .store
             .database()
             .read(move |connection| {
                 let view = adult_seen.view(connection)?;
-                Ok((stored_filter_choices(connection, view.hiding())?, view))
+                let knows_speed = pace_seen.known(connection)?.is_some();
+                Ok((
+                    stored_filter_choices(connection, view.hiding())?,
+                    view,
+                    knows_speed,
+                ))
             })
             .await?;
-        Ok(LibraryFilterChoices::new(stored, adult))
+        Ok(LibraryFilterChoices::new(stored, adult, knows_speed))
     }
 
     pub async fn category_series(

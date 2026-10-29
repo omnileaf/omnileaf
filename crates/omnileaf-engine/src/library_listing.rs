@@ -7,8 +7,21 @@ use specta::Type;
 
 use crate::adult_content::AdultView;
 
-pub(crate) const SMART_FILTERS_KEPT: &[SmartFilter] =
-    &[SmartFilter::Forgotten, SmartFilter::Duplicates];
+const QUICK_READ_SECONDS: u32 = 30 * 60;
+
+fn smart_filters_kept(knows_speed: bool) -> Vec<SmartFilter> {
+    knows_speed
+        .then_some(SmartFilter::QuickReads)
+        .into_iter()
+        .chain([SmartFilter::Forgotten, SmartFilter::Duplicates])
+        .collect()
+}
+
+fn quick_read_pages(seconds_per_page: Option<u32>) -> u32 {
+    seconds_per_page
+        .and_then(|seconds| (QUICK_READ_SECONDS - 1).checked_div(seconds))
+        .unwrap_or(0)
+}
 
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 const UNOPENED_UNTIL_FORGOTTEN_MS: i64 = 90 * DAY_MS;
@@ -188,7 +201,7 @@ impl From<SeriesListing> for LibraryListing {
 }
 
 impl LibraryFilterChoices {
-    pub(crate) fn new(stored: FilterChoices, adult: AdultView) -> Self {
+    pub(crate) fn new(stored: FilterChoices, adult: AdultView, knows_speed: bool) -> Self {
         let keeps_bookmarks = !stored.formats.is_empty();
         Self {
             formats: stored.formats.into_iter().map(SeriesFormat::from).collect(),
@@ -199,7 +212,7 @@ impl LibraryFilterChoices {
                     .setting()
                     .counts_as_adult(stored.holds_rated_adult, stored.holds_marked_adult),
             keeps_bookmarks,
-            smart: SMART_FILTERS_KEPT.to_vec(),
+            smart: smart_filters_kept(knows_speed),
         }
     }
 }
@@ -209,7 +222,7 @@ impl LibraryFilter {
         &self,
         now_ms: i64,
         adult: AdultView,
-        _seconds_per_page: Option<u32>,
+        seconds_per_page: Option<u32>,
     ) -> SeriesFilter {
         SeriesFilter {
             unread: self.unread.into(),
@@ -239,7 +252,10 @@ impl LibraryFilter {
                 self.adult.into()
             },
             counts_age_ratings: adult.setting().counts_age_ratings,
-            pages_left_at_most: None,
+            pages_left_at_most: self
+                .smart
+                .contains(&SmartFilter::QuickReads)
+                .then(|| quick_read_pages(seconds_per_page)),
         }
     }
 }
@@ -397,6 +413,95 @@ mod tests {
         let stored = filter.at(NOW_MS, AdultView::default(), None);
 
         assert_eq!(stored.duplicates, StoredInclusion::Only);
+    }
+
+    fn quick_reads_filter() -> LibraryFilter {
+        LibraryFilter {
+            smart: vec![SmartFilter::QuickReads],
+            ..LibraryListing::default().filter
+        }
+    }
+
+    fn pages_asked_for_at(seconds_per_page: Option<u32>) -> Option<u32> {
+        quick_reads_filter()
+            .at(NOW_MS, AdultView::default(), seconds_per_page)
+            .pages_left_at_most
+    }
+
+    #[test]
+    fn asks_for_149_pages_left_at_most_at_12_seconds_a_page() {
+        assert_eq!(pages_asked_for_at(Some(12)), Some(149));
+    }
+
+    #[test]
+    fn asks_for_1799_pages_left_at_most_at_one_second_a_page() {
+        assert_eq!(pages_asked_for_at(Some(1)), Some(1799));
+    }
+
+    #[test]
+    fn asks_for_no_pages_once_a_single_page_takes_thirty_minutes() {
+        assert_eq!(
+            [1800, 1801, 3600].map(|seconds| pages_asked_for_at(Some(seconds))),
+            [Some(0); 3]
+        );
+    }
+
+    #[test]
+    fn asks_for_no_pages_while_the_reading_speed_is_unknown() {
+        assert_eq!(pages_asked_for_at(None), Some(0));
+    }
+
+    #[test]
+    fn asks_for_no_pages_left_limit_unless_quick_reads_is_on() {
+        let filter = LibraryFilter {
+            smart: vec![SmartFilter::Forgotten, SmartFilter::Duplicates],
+            ..LibraryListing::default().filter
+        };
+
+        let stored = filter.at(NOW_MS, AdultView::default(), Some(12));
+
+        assert_eq!(stored.pages_left_at_most, None);
+    }
+
+    #[test]
+    fn keeps_a_series_when_its_time_left_is_under_thirty_minutes_as_the_overview_counts_it() {
+        for seconds_per_page in 1..=3600_u32 {
+            let most_pages = pages_asked_for_at(Some(seconds_per_page)).unwrap();
+
+            for pages_left in 1..=2000_u32 {
+                assert_eq!(
+                    pages_left <= most_pages,
+                    pages_left * seconds_per_page < QUICK_READ_SECONDS,
+                    "{pages_left} pages at {seconds_per_page} s a page"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn offers_quick_reads_first_once_a_reading_speed_is_known() {
+        let choices =
+            LibraryFilterChoices::new(FilterChoices::default(), AdultView::default(), true);
+
+        assert_eq!(
+            choices.smart,
+            [
+                SmartFilter::QuickReads,
+                SmartFilter::Forgotten,
+                SmartFilter::Duplicates
+            ]
+        );
+    }
+
+    #[test]
+    fn offers_no_quick_reads_while_no_reading_speed_is_known() {
+        let choices =
+            LibraryFilterChoices::new(FilterChoices::default(), AdultView::default(), false);
+
+        assert_eq!(
+            choices.smart,
+            [SmartFilter::Forgotten, SmartFilter::Duplicates]
+        );
     }
 
     #[test]

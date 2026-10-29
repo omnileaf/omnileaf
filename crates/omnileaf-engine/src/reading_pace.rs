@@ -12,6 +12,10 @@ impl ReadingPaceSeen {
         Self { learns: is_on }
     }
 
+    pub(crate) fn known(self, connection: &Connection) -> Result<Option<u32>, Error> {
+        self.learned(|| seconds_per_page(connection))
+    }
+
     pub(crate) fn needed_by(
         self,
         connection: &Connection,
