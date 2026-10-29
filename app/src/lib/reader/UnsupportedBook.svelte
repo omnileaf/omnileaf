@@ -57,7 +57,9 @@
 
   let hiding: Hiding = $state("offered");
 
-  const settings = untrack(() => readerSettings(place?.series ?? ""));
+  const settings = untrack(() =>
+    readerSettings(place !== null && place.isInLibrary ? place.series : ""),
+  );
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));

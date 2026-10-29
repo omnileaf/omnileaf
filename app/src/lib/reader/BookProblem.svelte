@@ -53,13 +53,18 @@
   }: { kind: BookProblem; place: BookPlace | null; platform: Platform } =
     $props();
 
-  const settings = untrack(() => readerSettings(place?.series ?? ""));
+  const inLibraryPlace = $derived(
+    place !== null && place.isInLibrary ? place : null,
+  );
+  const settings = untrack(() =>
+    readerSettings(place !== null && place.isInLibrary ? place.series : ""),
+  );
   const saying = $derived(SAYINGS[kind]);
   const libraryHref = resolve("/(app)");
   const seriesHref = $derived(
-    place === null
+    inLibraryPlace === null
       ? undefined
-      : resolve("/(app)/series/[id]", { id: place.series }),
+      : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
