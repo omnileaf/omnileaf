@@ -286,6 +286,7 @@ const HOME_FOLDER_LOCATIONS = {
   windows: "C:\\Users\\Reader\\AppData\\Roaming\\app.omnileaf",
   linux: "~/.local/share/app.omnileaf",
 } as const satisfies Record<Platform, string>;
+const SAMPLE_FOLDERS_HOLDING_BOOKS = 1;
 const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
 const LIBRARY_GROUP_ID = "5a4d1e00-0000-4000-8003-000000000000";
@@ -892,6 +893,14 @@ export function sampleBackend(
         index,
         id: bookIdIn(series, index),
       })) ?? []
+    );
+  }
+
+  function distinctBooksOf(
+    targets: readonly RemovalTarget[],
+  ): Map<string, BookOfSeries> {
+    return new Map(
+      targets.flatMap(booksOfTarget).map((found) => [found.id, found]),
     );
   }
 
@@ -1964,10 +1973,16 @@ export function sampleBackend(
       return null;
     },
     removeLibraryFolder: () => null,
+    previewRemoval: (targets) => {
+      const books = distinctBooksOf(targets).size;
+      return {
+        books,
+        files: books,
+        folders: books > 0 ? SAMPLE_FOLDERS_HOLDING_BOOKS : 0,
+      };
+    },
     removeFromLibrary: (targets, deleteFiles) => {
-      const doomed = new Map(
-        targets.flatMap(booksOfTarget).map((found) => [found.id, found]),
-      );
+      const doomed = distinctBooksOf(targets);
       const heldSeries = new Set(
         targets.flatMap((target) =>
           target.kind === "series" && booksOfTarget(target).length > 0

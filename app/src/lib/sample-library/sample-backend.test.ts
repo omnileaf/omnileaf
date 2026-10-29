@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { type LibraryListing } from "#lib/ipc/bindings.ts";
-import { CommandFailure } from "#lib/ipc/fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
 import { LONG_TITLE, sampleBookId, sampleSeriesId } from "./sample-library.ts";
@@ -20,6 +20,8 @@ function backendFor(search = "") {
   });
   return { backend, emitted };
 }
+
+type RemovalTarget = Parameters<FakeBackend["removeFromLibrary"]>[0][number];
 
 test("lists the library as the boards draw it, newest first", async () => {
   const { backend } = backendFor();
@@ -1643,6 +1645,107 @@ test("counts a series and one of its books once, and an unknown target not at al
   );
 
   expect([report.removedSeries, report.removedBooks]).toEqual([1, 2]);
+});
+
+test("previews a series as its books, one file each, in the sample folder", async () => {
+  const { backend } = backendFor();
+
+  const preview = await backend.previewRemoval([
+    { kind: "series", id: sampleSeriesId(8) },
+  ]);
+
+  expect(preview).toEqual({ books: 4, files: 4, folders: 1 });
+});
+
+test("previews a single book as one file in one folder", async () => {
+  const { backend } = backendFor();
+
+  const preview = await backend.previewRemoval([
+    { kind: "book", id: sampleBookId(8, 2) },
+  ]);
+
+  expect(preview).toEqual({ books: 1, files: 1, folders: 1 });
+});
+
+test("previews a series and one of its books once, and an unknown target not at all", async () => {
+  const { backend } = backendFor();
+
+  const preview = await backend.previewRemoval([
+    { kind: "series", id: sampleSeriesId(10) },
+    { kind: "book", id: sampleBookId(10, 1) },
+    { kind: "series", id: sampleSeriesId(999) },
+    { kind: "book", id: sampleBookId(999, 1) },
+  ]);
+
+  expect(preview).toEqual({ books: 2, files: 2, folders: 1 });
+});
+
+test("previews no folders when no target is held", async () => {
+  const { backend } = backendFor();
+
+  const preview = await backend.previewRemoval([
+    { kind: "series", id: sampleSeriesId(999) },
+  ]);
+
+  expect(preview).toEqual({ books: 0, files: 0, folders: 0 });
+});
+
+test("previews the same answer when asked again", async () => {
+  const { backend } = backendFor();
+  const targets: RemovalTarget[] = [{ kind: "series", id: sampleSeriesId(8) }];
+  const first = await backend.previewRemoval(targets);
+
+  const again = await backend.previewRemoval(targets);
+
+  expect(again).toEqual(first);
+});
+
+test("previews what deleting the same targets then reports as files", async () => {
+  const { backend } = backendFor();
+  const targets: RemovalTarget[] = [
+    { kind: "series", id: sampleSeriesId(8) },
+    { kind: "book", id: sampleBookId(8, 1) },
+    { kind: "book", id: sampleBookId(1, 3) },
+  ];
+  const preview = await backend.previewRemoval(targets);
+
+  const report = await backend.removeFromLibrary(targets, true);
+
+  expect([preview.books, preview.files]).toEqual([
+    report.removedBooks,
+    report.files.length,
+  ]);
+});
+
+test("previews nothing for books already removed", async () => {
+  const { backend } = backendFor();
+  const targets: RemovalTarget[] = [{ kind: "series", id: sampleSeriesId(8) }];
+  await backend.removeFromLibrary(targets, false);
+
+  const preview = await backend.previewRemoval(targets);
+
+  expect(preview).toEqual({ books: 0, files: 0, folders: 0 });
+});
+
+test("previews a series again after its folder is added back", async () => {
+  const { backend } = backendFor();
+  const targets: RemovalTarget[] = [{ kind: "series", id: sampleSeriesId(8) }];
+  await backend.removeFromLibrary(targets, false);
+  await backend.addLibraryFolder(NO_PROGRESS_CHANNEL);
+
+  const preview = await backend.previewRemoval(targets);
+
+  expect(preview).toEqual({ books: 4, files: 4, folders: 1 });
+});
+
+test("changes nothing in the library and wakes nothing when it previews", async () => {
+  const { backend, emitted } = backendFor();
+  const before = await backend.libraryFolderBookCount(LIBRARY_FOLDER);
+
+  await backend.previewRemoval([{ kind: "series", id: sampleSeriesId(8) }]);
+
+  expect(await backend.libraryFolderBookCount(LIBRARY_FOLDER)).toBe(before);
+  expect(emitted).toEqual([]);
 });
 
 function volumesOf(series: number, count: number): string[] {
