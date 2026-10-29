@@ -170,13 +170,18 @@ async function macosButton(options: MacosOptions = {}): Promise<HTMLElement> {
   await render(Button, {
     variant: options.variant ?? "secondary",
     size: options.size ?? "regular",
-    iconOnly: options.iconOnly ?? false,
     disabled: options.disabled ?? false,
-    label: "Remove",
     type: "button",
     children: label,
+    ...(options.iconOnly === true
+      ? { iconOnly: true as const, label: "Remove" }
+      : {}),
   });
-  return page.getByRole("button", { name: "Remove" }).element();
+  const element = page.getByRole("button", { name: "Remove" }).element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("the button drew no element");
+  }
+  return element;
 }
 
 function sizeOf(button: HTMLElement): { width: number; height: number } {
