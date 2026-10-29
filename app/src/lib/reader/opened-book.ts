@@ -21,3 +21,8 @@ function isBookId(text: string): text is BookId {
 export function bookIdIn(text: string): BookId | undefined {
   return isBookId(text) ? text : undefined;
 }
+
+/** Keys per-series reading state, kept out of a made-up series for a book opened outside the library. */
+export function librarySeriesKey(book: OpenedBook): string {
+  return book.isInLibrary ? book.series : "";
+}

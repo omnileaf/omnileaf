@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { showFileLabel, showFolderLabel } from "./show-file";
+import { openedFromLabel, showFileLabel, showFolderLabel } from "./show-file";
 
 test("names showing a book's file in each platform's own words", () => {
   const labels = (["ios", "android", "macos", "windows", "linux"] as const).map(
@@ -27,5 +27,19 @@ test("names showing a series' folder as the series page's menu says it", () => {
     "Show in folder",
     "Show in folder",
     "Show in folder",
+  ]);
+});
+
+test("names where a book opened from, in each platform's own words", () => {
+  const labels = (["ios", "android", "macos", "windows", "linux"] as const).map(
+    openedFromLabel,
+  );
+
+  expect(labels).toEqual([
+    "Opened from Files",
+    "Opened from your file manager",
+    "Opened from Finder",
+    "Opened from File Explorer",
+    "Opened from your file manager",
   ]);
 });

@@ -19,6 +19,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import { librarySeriesKey } from "./opened-book.ts";
   import ProblemHeading from "./ProblemHeading.svelte";
   import { PROBLEM_TEXT, problemLayout } from "./problem-heading.ts";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
@@ -38,7 +39,7 @@
     onRead: () => void;
   } = $props();
 
-  const settings = untrack(() => readerSettings(book.series));
+  const settings = untrack(() => readerSettings(librarySeriesKey(book)));
   const readable = $derived(book.pages.length);
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();

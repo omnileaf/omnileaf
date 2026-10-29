@@ -21,10 +21,13 @@
   const isOnPhone = $derived(isPhone(platform, width.current));
   const namesSeries = $derived(!(isOnPhone && platform === "ios"));
   const libraryHref = resolve("/(app)");
+  const inLibraryPlace = $derived(
+    place !== null && place.isInLibrary ? place : null,
+  );
   const seriesHref = $derived(
-    place === null
+    inLibraryPlace === null
       ? undefined
-      : resolve("/(app)/series/[id]", { id: place.series }),
+      : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
 </script>
 
@@ -34,33 +37,33 @@
 >
   <a
     href={seriesHref ?? libraryHref}
-    aria-label={place === null
+    aria-label={inLibraryPlace === null
       ? m.reader_back_label()
-      : m.reader_back_to_series({ series: place.seriesTitle })}
+      : m.reader_back_to_series({ series: inLibraryPlace.seriesTitle })}
     class={readerBackLook(platform, width.current)}
   >
     <ReaderBackArrow {platform} {isOnPhone} />
   </a>
-  {#if place !== null && seriesHref !== undefined && namesSeries}
+  {#if inLibraryPlace !== null && seriesHref !== undefined && namesSeries}
     <a
       href={seriesHref}
       aria-hidden="true"
       tabindex="-1"
       class="truncate text-small text-muted expanded:hidden"
-      >{place.seriesTitle}</a
+      >{inLibraryPlace.seriesTitle}</a
     >
     <Breadcrumb class="hidden text-small expanded:block">
       <BreadcrumbItem class="min-inline-none">
         <a
           href={seriesHref}
           class="block truncate text-muted transition-control max-inline-reader-crumb-series hover:text-foreground"
-          >{place.seriesTitle}</a
+          >{inLibraryPlace.seriesTitle}</a
         >
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
       <BreadcrumbItem class="min-inline-none">
         <BreadcrumbPage class="block truncate max-inline-reader-crumb-book">
-          {place.title}
+          {inLibraryPlace.title}
         </BreadcrumbPage>
       </BreadcrumbItem>
     </Breadcrumb>
