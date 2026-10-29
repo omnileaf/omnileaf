@@ -1,7 +1,11 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Request, State},
+    http::StatusCode,
+};
 use omnileaf_relay_proto::{Challenge, ChallengeRequest};
 
-use super::{Failure, Relay, json_body::JsonBody, requester::Requester};
+use super::{Failure, Relay, requester::Requester};
 use crate::{
     challenges::{CHALLENGE_LIFETIME_SECONDS, ChallengeIssue, ChallengeTerms},
     rate_limit::Action,
@@ -10,9 +14,11 @@ use crate::{
 pub(super) async fn issue(
     State(relay): State<Relay>,
     Requester(address): Requester,
-    JsonBody(ChallengeRequest {}): JsonBody<ChallengeRequest>,
+    request: Request,
 ) -> Result<(StatusCode, Json<Challenge>), Failure> {
-    relay.admit(address, Action::Challenge).await?;
+    let ChallengeRequest {} = relay
+        .read_admitted(address, Action::Challenge, request)
+        .await?;
     let terms = ChallengeTerms {
         difficulty: relay.settings.difficulty,
         outstanding_limit: relay.settings.limits.outstanding_challenges,

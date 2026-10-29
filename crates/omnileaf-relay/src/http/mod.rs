@@ -9,15 +9,17 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{
     Json, Router,
-    extract::DefaultBodyLimit,
+    extract::{DefaultBodyLimit, FromRequest, Request},
     http::StatusCode,
     routing::{get, post},
 };
 use omnileaf_relay_proto::{limits::REQUEST_BODY_BYTES, pow::Difficulty};
+use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use tower_http::timeout::TimeoutLayer;
 
 pub use failure::Failure;
+use json_body::JsonBody;
 
 use crate::{
     client_ip::{ClientAddress, ClientIpSource},
@@ -61,6 +63,17 @@ impl Relay {
             .await
             .map_err(|error| Failure::internal(&error))?
             .map_err(|error| Failure::internal(&error))
+    }
+
+    async fn read_admitted<T: DeserializeOwned>(
+        &self,
+        address: ClientAddress,
+        action: Action,
+        request: Request,
+    ) -> Result<T, Failure> {
+        self.admit(address, action).await?;
+        let JsonBody(body) = JsonBody::from_request(request, &()).await?;
+        Ok(body)
     }
 
     async fn admit(&self, address: ClientAddress, action: Action) -> Result<(), Failure> {

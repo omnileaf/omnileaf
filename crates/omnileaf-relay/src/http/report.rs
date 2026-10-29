@@ -1,11 +1,15 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Request, State},
+    http::StatusCode,
+};
 use omnileaf_relay_proto::{
     ReplyAddress, ReportCode, ReportReceipt, ReportStatus, ReportSubmission,
     limits::{REPORT_BYTES, REPORT_LINES, VERSION_BYTES},
     pow::{Puzzle, ReportContent},
 };
 
-use super::{Failure, Relay, json_body::JsonBody, requester::Requester};
+use super::{Failure, Relay, requester::Requester};
 use crate::{
     clock::{SECONDS_PER_HOUR, UnixTime},
     rate_limit::Action,
@@ -17,13 +21,15 @@ const CODE_LABEL: &str = "Report code: ";
 pub(super) async fn take_in(
     State(relay): State<Relay>,
     Requester(address): Requester,
-    JsonBody(submission): JsonBody<ReportSubmission>,
+    request: Request,
 ) -> Result<(StatusCode, Json<ReportReceipt>), Failure> {
+    let submission: ReportSubmission = relay
+        .read_admitted(address, Action::Report, request)
+        .await?;
     let now = relay.clock.now();
     let challenge = submission.proof.challenge;
     let nonce = submission.proof.nonce;
     let report = checked(submission, now)?;
-    relay.admit(address, Action::Report).await?;
     let receipt = Json(ReportReceipt {
         code: report.code.clone(),
         status: ReportStatus::Received,

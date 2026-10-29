@@ -287,3 +287,22 @@ async fn limits_each_action_on_its_own() {
 
     assert_eq!(status.status, StatusCode::OK);
 }
+
+#[tokio::test]
+async fn limits_an_address_before_reading_its_body() {
+    let relay = relay_limited(limits(1, 10));
+    challenge_from(&relay, "203.0.113.7").await;
+    let oversized = vec![b' '; omnileaf_relay_proto::limits::REQUEST_BODY_BYTES + 1];
+
+    let answer = relay
+        .send(
+            Request::post("/relay/v1/challenges")
+                .header("content-type", "application/json")
+                .header("cf-connecting-ip", "203.0.113.7")
+                .body(Body::from(oversized))
+                .unwrap(),
+        )
+        .await;
+
+    assert_eq!(answer.status, StatusCode::TOO_MANY_REQUESTS);
+}
