@@ -799,6 +799,47 @@ mod tests {
     }
 
     #[test]
+    fn deleting_a_folder_book_is_refused_and_asks_the_provider_for_nothing() {
+        let fixture = Fixture::new();
+        fixture.write("Series/Ch 01/1.png", BOOK);
+
+        let removed = fixture.tree.remove(&in_tree("Series/Ch 01"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::IsADirectory);
+        assert_eq!(fixture.deletes(), 0);
+    }
+
+    #[test]
+    fn deleting_a_document_whose_name_is_listed_twice_is_refused_and_deletes_neither() {
+        let fixture = Fixture::new();
+        let first = fixture.write("a.cbz", BOOK);
+        let second = fixture.write("b.cbz", BOOK);
+        fixture.documents.serve_as("b.cbz", "a.cbz");
+
+        let removed = fixture.tree.remove(&in_tree("a.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::InvalidData);
+        assert_eq!(fixture.deletes(), 0);
+        assert!(first.is_file() && second.is_file());
+    }
+
+    #[test]
+    fn lists_a_folder_again_after_a_delete_the_provider_refused() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+        fixture
+            .documents
+            .refuse_deletes_with(io::ErrorKind::PermissionDenied);
+        fixture.tree.remove(&in_tree("a.cbz")).unwrap_err();
+        let listed = fixture.listings();
+
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+
+        assert_eq!(fixture.listings(), listed + 1);
+    }
+
+    #[test]
     fn deleting_a_path_outside_the_tree_is_not_found_and_asks_the_provider_for_nothing() {
         let fixture = Fixture::new();
         fixture.write("a.cbz", BOOK);
