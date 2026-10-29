@@ -126,9 +126,9 @@ const UNCLEAR: &str = "DELETE FROM history_cleared WHERE id = 1";
 macro_rules! of_shown_series {
     () => {
         concat!(
-            "(NOT :leaves_out_adult OR NOT EXISTS (SELECT 1 FROM book
+            "(NOT :leaves_out_adult OR EXISTS (SELECT 1 FROM book
                 JOIN series ON series.local_id = book.series_local_id
-                WHERE book.id = reading_session.book_id AND ",
+                WHERE book.id = reading_session.book_id AND NOT ",
             in_hidden_adult_series!("series"),
             "))"
         )
@@ -229,7 +229,7 @@ pub enum HistoryOf {
     },
 }
 
-/// Lists the sessions of books still in the library outside the series `hiding` hides, the latest started first.
+/// Lists the sessions of books still in the library, the latest started first.
 #[tracing::instrument(skip_all, fields(?of, size = ?request.size))]
 pub fn history_page(
     connection: &Connection,
@@ -344,7 +344,7 @@ pub fn restore_history(transaction: &Transaction<'_>, mark: Option<i64>) -> Resu
     Ok(())
 }
 
-/// Milliseconds read on each local day in `days` that has any reading, whether or not its books are still in the library, leaving out the series `hiding` hides.
+/// Milliseconds read on each local day in `days` that has any reading, whether or not its books are still in the library.
 pub fn reading_time_by_day(
     connection: &Connection,
     days: RangeInclusive<i64>,
@@ -508,7 +508,7 @@ pub fn book_sessions(
     )?)
 }
 
-/// The series in the library with any reading that `hiding` does not hide, in title order.
+/// The series in the library with any reading, in title order.
 pub fn series_read(
     connection: &Connection,
     hiding: AdultHiding,

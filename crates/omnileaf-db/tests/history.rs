@@ -1169,3 +1169,90 @@ async fn leaves_18_plus_reading_out_of_the_times_and_counts_while_hiding() {
         (vec![(read, FIRST_SERIES.to_owned())], 0, None, None)
     );
 }
+
+impl History {
+    async fn remove_book(&self, series: &str, number: u32) {
+        let root = self.root;
+        let gone = location_of(series, number);
+        self.store
+            .database()
+            .write(move |transaction| {
+                let held = remove_book_files(transaction, root, &[gone])?;
+                remove_books_without_files(transaction, &held)
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn reading_aggregates(&self, hiding: AdultHiding) -> (u32, i64, u32, u32) {
+        let first_day = today() - 2;
+        self.store
+            .database()
+            .read(move |connection| {
+                let since = reading_since(connection, first_day, hiding)?;
+                let by_day = reading_time_by_day(connection, first_day..=today(), hiding)?;
+                Ok((
+                    since.books_opened,
+                    by_day.values().sum::<i64>(),
+                    since.books_finished,
+                    days_in_a_row(connection, today(), hiding)?,
+                ))
+            })
+            .await
+            .unwrap()
+    }
+}
+
+#[tokio::test]
+async fn leaves_the_reading_of_a_removed_book_out_of_the_aggregates_while_hiding() {
+    let history = History::with_adult_series_read("history-hides-removed").await;
+    history.read_days_ago(5, 2).await;
+    history.remove_book(RATED_SERIES, 5).await;
+
+    let hiding = history.reading_aggregates(HIDING_RATINGS).await;
+    let shown = history.reading_aggregates(AdultHiding::default()).await;
+
+    assert_eq!(hiding, (1, ms(MINUTE_MS), 0, 1));
+    assert_eq!(shown, (3, 4 * ms(MINUTE_MS), 0, 2));
+}
+
+#[tokio::test]
+async fn pages_through_history_with_a_cursor_while_hiding_18_plus_series() {
+    let history = History::open("history-hides-pages").await;
+    history.shelve_rated_adult(RATED_SERIES, 5).await;
+    history.shelve_marked_adult(MARKED_SERIES, 6).await;
+    for (hours_ago, number) in [(6, 1), (5, 5), (4, 2), (3, 6), (2, 3), (1, 4)] {
+        let at_ms = NOW_UNIX_MS - hours_ago * HOUR_MS;
+        history.read(book(number), at_ms, at_ms, 0).await;
+    }
+    let request = |after: Option<Cursor>| PageRequest {
+        after: after.map(|cursor| cursor.to_string().parse().unwrap()),
+        size: PageSize::try_from(2).unwrap(),
+    };
+
+    let mut pages = Vec::new();
+    let mut after = None;
+    loop {
+        let wanted = request(after);
+        let page = history
+            .store
+            .database()
+            .read(move |connection| {
+                history_page(connection, &HistoryOf::Everything, &wanted, HIDING_RATINGS)
+            })
+            .await
+            .unwrap();
+        pages.push(
+            page.items
+                .iter()
+                .map(|entry| entry.book)
+                .collect::<Vec<_>>(),
+        );
+        match page.next {
+            Some(next) => after = Some(next),
+            None => break,
+        }
+    }
+
+    assert_eq!(pages, [vec![book(4), book(3)], vec![book(2), book(1)]]);
+}
