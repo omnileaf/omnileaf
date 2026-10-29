@@ -9,6 +9,7 @@ mod support;
 use library_seed::{SeriesSeed, fingerprint, seed_library};
 use omnileaf_db::{
     Database,
+    adult_content::AdultHiding,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SearchText, SeriesFilter, SeriesSearch,
         closest_title_words, search_count, search_page,
@@ -384,7 +385,7 @@ async fn closest(library: &Library, text: &str) -> Option<String> {
     library
         .store
         .database()
-        .read(move |connection| closest_title_words(connection, &text))
+        .read(move |connection| closest_title_words(connection, &text, AdultHiding::default()))
         .await
         .unwrap()
 }

@@ -1,21 +1,24 @@
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Connection, Row};
+use rusqlite::{Connection, Row, ToSql};
 
 use crate::{
     Error,
+    adult_content::AdultHiding,
     catalog::{Cover, PersonRole, cover::stored_cover, stored_id::stored_id},
 };
 
 const SERIES_NAMING_PERSON: &str = concat!(
     "WITH named AS (
-        SELECT series_local_id, role FROM series_person WHERE name = ?1
+        SELECT series_local_id, role FROM series_person WHERE name = :person
     )
     SELECT series.id AS id, series.title, named.role,
         cover.book_id AS cover_book, cover.id AS cover_file, cover.rev AS cover_rev
     FROM named
     JOIN series ON series.local_id = named.series_local_id ",
     crate::catalog::cover::join_series_cover!(),
-    " WHERE series.reading_stage IS NOT NULL
+    " WHERE series.reading_stage IS NOT NULL AND NOT ",
+    crate::adult_content::in_hidden_adult_series!("series"),
+    "
     ORDER BY series.title_key, series.id, named.role"
 );
 
@@ -28,10 +31,18 @@ pub struct PersonSeries {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn person_series(connection: &Connection, person: &str) -> Result<Vec<PersonSeries>, Error> {
+pub fn person_series(
+    connection: &Connection,
+    person: &str,
+    hiding: AdultHiding,
+) -> Result<Vec<PersonSeries>, Error> {
+    let [leaves_out, counts] = hiding.params();
     let rows: Vec<(PersonSeries, String)> = connection
         .prepare(SERIES_NAMING_PERSON)?
-        .query_map([person], named_series)?
+        .query_map(
+            &[(":person", &person as &dyn ToSql), leaves_out, counts][..],
+            named_series,
+        )?
         .collect::<Result<_, _>>()?;
     let mut found: Vec<PersonSeries> = Vec::new();
     for (series, role) in rows {

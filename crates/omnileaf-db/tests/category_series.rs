@@ -13,6 +13,7 @@ mod support;
 
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
+    adult_content::AdultHiding,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SeriesFilter, SeriesListing, SeriesOrder,
         SeriesSort, category_series_count, category_series_page, library_categories, library_tags,
@@ -283,7 +284,7 @@ async fn counts_for_each_tag_the_shown_series_that_carry_it() {
     let counted: Vec<(String, u32)> = library
         .store
         .database()
-        .read(library_tags)
+        .read(|connection| library_tags(connection, AdultHiding::default()))
         .await
         .unwrap()
         .into_iter()

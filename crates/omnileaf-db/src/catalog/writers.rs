@@ -2,6 +2,7 @@ use rusqlite::{Connection, OptionalExtension, Params, Row, named_params};
 
 use crate::{
     Error,
+    adult_content::AdultHiding,
     catalog::{
         cursor::Position,
         page::{Page, PageRequest},
@@ -12,10 +13,14 @@ use crate::{
 
 macro_rules! writers_of_listed_series {
     () => {
-        "SELECT series_person.name_key, series_person.name, count(*) AS series_count
+        concat!(
+            "SELECT series_person.name_key, series_person.name, count(*) AS series_count
         FROM series_person
         JOIN series ON series.local_id = series_person.series_local_id
-        WHERE series_person.role = 'writer' AND series.reading_stage IS NOT NULL"
+        WHERE series_person.role = 'writer' AND series.reading_stage IS NOT NULL
+            AND NOT ",
+            $crate::adult_content::in_hidden_adult_series!("series")
+        )
     };
 }
 
@@ -51,6 +56,7 @@ struct WriterPlace {
 pub fn writers(
     connection: &Connection,
     request: &PageRequest,
+    hiding: AdultHiding,
 ) -> Result<Page<WriterSummary>, Error> {
     let _snapshot = snapshot(connection)?;
     let stamp = stored_stamp(connection)?;
@@ -61,11 +67,25 @@ pub fn writers(
         .map(|cursor| place_after(connection, stamp, &cursor.0))
         .transpose()?;
     let rows = match place {
-        None => listed(connection, FIRST_WRITERS, named_params! { ":limit": limit }),
+        None => listed(
+            connection,
+            FIRST_WRITERS,
+            named_params! {
+                ":limit": limit,
+                ":leaves_out_adult": hiding.leaves_out_adult,
+                ":counts_age_ratings": hiding.counts_age_ratings,
+            },
+        ),
         Some(WriterPlace { name_key, name }) => listed(
             connection,
             WRITERS_AFTER,
-            named_params! { ":limit": limit, ":after_key": name_key, ":after_name": name },
+            named_params! {
+                ":limit": limit,
+                ":after_key": name_key,
+                ":after_name": name,
+                ":leaves_out_adult": hiding.leaves_out_adult,
+                ":counts_age_ratings": hiding.counts_age_ratings,
+            },
         ),
     }?;
     let rows = rows

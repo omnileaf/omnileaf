@@ -34,6 +34,14 @@ pub struct AdultHiding {
 }
 
 impl AdultHiding {
+    pub(crate) fn params_while_hiding(&self) -> Vec<(&'static str, &dyn ToSql)> {
+        if self.leaves_out_adult {
+            self.params().to_vec()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub(crate) fn params(&self) -> [(&'static str, &dyn ToSql); 2] {
         [
             (":leaves_out_adult", &self.leaves_out_adult),

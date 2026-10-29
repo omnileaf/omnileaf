@@ -8,6 +8,7 @@ use rusqlite::{Connection, Params, Row, named_params};
 
 use crate::{
     Error,
+    adult_content::AdultHiding,
     catalog::{
         RootId,
         cursor::{Position, hex_bytes, write_hex},
@@ -19,11 +20,14 @@ use crate::{
 
 macro_rules! groups_of_listed_series {
     () => {
-        "SELECT series_folder.root_id, series_folder.group_location,
+        concat!(
+            "SELECT series_folder.root_id, series_folder.group_location,
             count(DISTINCT series_folder.series_local_id) AS series_count
         FROM series_folder
         JOIN series ON series.local_id = series_folder.series_local_id
-        WHERE series.reading_stage IS NOT NULL"
+        WHERE series.reading_stage IS NOT NULL AND NOT ",
+            $crate::adult_content::in_hidden_adult_series!("series")
+        )
     };
 }
 
@@ -68,10 +72,19 @@ pub struct FolderGroupSummary {
 pub fn folder_groups(
     connection: &Connection,
     request: &PageRequest,
+    hiding: AdultHiding,
 ) -> Result<Page<FolderGroupSummary>, Error> {
     let limit = request.size.rows_to_fetch();
     let rows = match request.after.as_ref().map(|cursor| &cursor.0) {
-        None => listed(connection, FIRST_GROUPS, named_params! { ":limit": limit }),
+        None => listed(
+            connection,
+            FIRST_GROUPS,
+            named_params! {
+                ":limit": limit,
+                ":leaves_out_adult": hiding.leaves_out_adult,
+                ":counts_age_ratings": hiding.counts_age_ratings,
+            },
+        ),
         Some(Position::FolderGroup { root, location }) => {
             let group = native_path::from_bytes(location.clone()).ok_or(Error::MalformedCursor)?;
             let key = group_key(&TitleCollation::stored(connection)?, &group);
@@ -83,6 +96,8 @@ pub fn folder_groups(
                     ":after_key": key,
                     ":after_root": root,
                     ":after_location": location,
+                    ":leaves_out_adult": hiding.leaves_out_adult,
+                    ":counts_age_ratings": hiding.counts_age_ratings,
                 },
             )
         }
