@@ -5,7 +5,8 @@
   import ChangeHomeButton from "#lib/first-launch/ChangeHomeButton.svelte";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
-  import { isPointer } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { isPointer, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
@@ -57,6 +58,9 @@
     platform: Platform;
     onShowBooks?: (() => void) | undefined;
   } = $props();
+
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
 
   const folders = new LibraryFolders(
     (after) => listFolders(after),
@@ -202,7 +206,14 @@
     rowAction={rescanButton}
   >
     <RescanStatus status={rescans.status} kind="home" />
-    <p class="mbs-sm px-xs text-caption text-muted">
+    <p
+      class={[
+        "mbs-sm px-xs text-muted",
+        isNative
+          ? "px-lg text-native-notice-body/native-notice-body"
+          : "text-caption",
+      ]}
+    >
       {homeHint()}
     </p>
   </HomeFolder>
