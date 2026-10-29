@@ -99,6 +99,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0063_stop_indexing_the_writers_of_books"),
     migration!("0064_keep_the_cover_file_of_each_series"),
     migration!("0065_list_the_series_of_each_category_by_local_id"),
+    migration!("0066_keep_the_books_removed_from_the_library"),
 ];
 
 pub(crate) fn pending(

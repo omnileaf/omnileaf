@@ -10,7 +10,7 @@ use crate::{
     Error,
     store::{
         Changed,
-        key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey, SeriesEditKey},
+        key::{BookmarkKey, Key, LabelKey, LatestKey, MaximumKey, RemovalKey, SeriesEditKey},
         local::current_profile,
         series_edit::{EditedPerson, SeriesEdits, decode_people, decode_tags},
     },
@@ -28,6 +28,9 @@ const BOOKMARK_REGISTERS: &str = "SELECT field, value FROM sync_register
 const PROJECT_BOOKMARK: &str =
     "INSERT OR IGNORE INTO book_bookmark (book_id, page) VALUES (?1, ?2)";
 const REMOVE_BOOKMARK: &str = "DELETE FROM book_bookmark WHERE book_id = ?1 AND page = ?2";
+
+const PROJECT_REMOVED: &str = "INSERT OR IGNORE INTO book_removed (book_id) VALUES (?1)";
+const REMOVE_REMOVED: &str = "DELETE FROM book_removed WHERE book_id = ?1";
 
 const NAMED_REGISTERS: &str = "SELECT field, value FROM sync_register
     WHERE entity = ?1 AND id = ?2 AND profile IN (?3, ?4)";
@@ -390,6 +393,7 @@ enum Projection {
     Bookmark { id: BookmarkId, part: BookmarkPart },
     Label(LabelProjection),
     SeriesEdit(SeriesId),
+    Removal { book: BookId, is_removed: bool },
 }
 
 impl Projection {
@@ -427,6 +431,10 @@ impl Projection {
                 };
                 is_readable.then_some(Self::SeriesEdit(key.series()))?
             }
+            Key::Removal(RemovalKey::Removed(book)) => Self::Removal {
+                book,
+                is_removed: flag(value).ok()? == Some(true),
+            },
         })
     }
 
@@ -435,7 +443,9 @@ impl Projection {
             Self::Position { book, .. } | Self::Furthest { book, .. } | Self::Read { book, .. } => {
                 Some(book)
             }
-            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => None,
+            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) | Self::Removal { .. } => {
+                None
+            }
         }
     }
 
@@ -444,7 +454,8 @@ impl Projection {
             Self::Position { page, .. } => row.position_page = page,
             Self::Furthest { page, .. } => row.furthest_page = page,
             Self::Read { is_read, .. } => row.is_read = is_read,
-            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => {}
+            Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) | Self::Removal { .. } => {
+            }
         }
     }
 
@@ -482,6 +493,14 @@ impl Projection {
                 id,
                 part: BookmarkPart::Deleted(_),
             } => project_bookmark(connection, id),
+            Self::Removal {
+                book,
+                is_removed: true,
+            } => Ok(connection.execute(PROJECT_REMOVED, [book.as_bytes()])?),
+            Self::Removal {
+                book,
+                is_removed: false,
+            } => Ok(connection.execute(REMOVE_REMOVED, [book.as_bytes()])?),
             Self::Bookmark { .. } | Self::Label(_) | Self::SeriesEdit(_) => Ok(0),
         }
     }
@@ -639,6 +658,7 @@ pub(crate) fn project(connection: &Connection, key: Key, value: &Value) -> Resul
 pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
     connection.execute("DELETE FROM book_state", [])?;
     connection.execute("DELETE FROM book_bookmark", [])?;
+    connection.execute("DELETE FROM book_removed", [])?;
     for clear in CLEAR_LABELS.into_iter().chain(CLEAR_SERIES_EDITS) {
         connection.execute(clear, [])?;
     }
@@ -660,6 +680,9 @@ pub(crate) fn rebuild(connection: &Connection) -> Result<Changed, Error> {
             }
             (None, Key::SeriesEdit(edit)) => {
                 edited.insert(edit.series());
+            }
+            (None, Key::Removal(_)) => {
+                projection.apply(connection)?;
             }
             (None, _) => {}
         }
