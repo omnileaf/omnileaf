@@ -3,7 +3,6 @@
     reason = "each test removes books from its own generated folder in a scratch library, so a failed set-up should stop the test"
 )]
 
-#[expect(dead_code, reason = "these tests write whole books, never loose pages")]
 mod books;
 mod disposal;
 #[expect(
@@ -24,7 +23,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use books::write_book;
+use books::{write_book, write_page};
 use disposal::{DiskDisposal, FakeDisposal, Pause};
 use omnileaf_engine::{
     AndroidTree, BookId, Disposal, DisposalFailure, FileDisposal, FileFate, FileOutcome,
@@ -329,6 +328,56 @@ async fn a_file_touched_since_the_scan_is_skipped_and_reported_failed() {
         [("v01.cbz".to_owned(), failed(RemovalFailure::Other))]
     );
     assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+}
+
+async fn scanned_folder_book(name: &str) -> (Deleting, PathBuf) {
+    let comics = ScratchFolder::new(name);
+    let chapter = comics.path().join(SERIES_01).join("Ch 01");
+    write_page(&chapter, 1);
+    let (scanned, _, _) = Scanned::folder(name, comics.path()).await;
+    (Deleting { scanned, comics }, chapter)
+}
+
+#[tokio::test]
+async fn a_folder_book_left_as_scanned_is_disposed() {
+    let (deleting, chapter) = scanned_folder_book("delete-folder-book-intact").await;
+    let series = deleting.series(SERIES_01).await;
+    let disposal = FakeDisposal::default();
+
+    let report = deleting
+        .delete(&[RemovalTarget::Series { id: series }], &disposal)
+        .await;
+
+    assert_eq!(
+        by_name(report.files),
+        [("Ch 01".to_owned(), FileOutcome::Trashed)]
+    );
+    assert_eq!(disposal.calls(), [chapter]);
+}
+
+#[tokio::test]
+async fn a_page_rewritten_inside_a_folder_book_skips_the_book_though_the_folder_time_is_unchanged()
+{
+    let (deleting, chapter) = scanned_folder_book("delete-folder-book-rewritten").await;
+    let series = deleting.series(SERIES_01).await;
+    let scanned_at = fs::metadata(&chapter).unwrap().modified().unwrap();
+    fs::write(chapter.join("001.png"), b"another page").unwrap();
+    assert_eq!(
+        fs::metadata(&chapter).unwrap().modified().unwrap(),
+        scanned_at
+    );
+    let disposal = FakeDisposal::default();
+
+    let report = deleting
+        .delete(&[RemovalTarget::Series { id: series }], &disposal)
+        .await;
+
+    assert_eq!(
+        by_name(report.files),
+        [("Ch 01".to_owned(), failed(RemovalFailure::Other))]
+    );
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+    assert_eq!(fs::read(chapter.join("001.png")).unwrap(), b"another page");
 }
 
 #[tokio::test]

@@ -1,6 +1,5 @@
 use std::{
     collections::BTreeSet,
-    io,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -11,7 +10,7 @@ use omnileaf_db::{
     rusqlite::Connection,
     store::Store,
 };
-use omnileaf_formats::{Details, Storage};
+use omnileaf_formats::Storage;
 use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -19,9 +18,8 @@ use tokio::task::spawn_blocking;
 
 use crate::{
     BookId, LibraryError, SeriesId,
-    clock::stored_ms,
     file_disposal::{Disposal, DisposalFailure, FileDisposal},
-    scan::saturating_u32,
+    scan::{FileStamp, UnreadableBook, saturating_u32},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
@@ -102,7 +100,9 @@ pub(crate) async fn removal_of(
     disposal: &impl FileDisposal,
 ) -> FileRemoval {
     let outcome = match root {
-        Some((storage, folder)) => dispose_file(storage, folder, file, disposal).await,
+        Some((storage, folder)) => {
+            FileOutcome::from(dispose_file(storage, folder, file, disposal).await)
+        }
         None => FileOutcome::from(DisposalFailure::Unsupported),
     };
     FileRemoval {
@@ -135,35 +135,24 @@ async fn dispose_file(
     folder: &Path,
     file: &BookFileToRemove,
     disposal: &impl FileDisposal,
-) -> FileOutcome {
+) -> Result<Disposal, DisposalFailure> {
     let path = folder.join(&file.location);
-    let stat = path.clone();
-    let details = {
-        let storage = Arc::clone(storage);
-        blocking(move || storage.details(&stat)).await
-    };
-    let details = match details {
-        Ok(details) => details,
-        Err(failure) => return FileOutcome::from(failure),
-    };
-    if let Err(outcome) = still_the_scanned_file(details, file) {
-        return outcome;
-    }
+    still_the_scanned_file(storage, &path, file).await?;
     match file.root {
         RootLocator::AndroidTree(_) => remove_through(storage, path).await,
-        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
-            FileOutcome::from(disposal.dispose(&path).await)
-        }
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => disposal.dispose(&path).await,
     }
 }
 
-async fn remove_through(storage: &Arc<dyn Storage>, path: PathBuf) -> FileOutcome {
+async fn remove_through(
+    storage: &Arc<dyn Storage>,
+    path: PathBuf,
+) -> Result<Disposal, DisposalFailure> {
     let storage = Arc::clone(storage);
-    match blocking(move || storage.remove(&path)).await {
-        Ok(Ok(())) => FileOutcome::Deleted,
-        Ok(Err(error)) => FileOutcome::from(DisposalFailure::from(error.kind())),
-        Err(failure) => FileOutcome::from(failure),
-    }
+    blocking(move || storage.remove(&path))
+        .await?
+        .map(|()| Disposal::Deleted)
+        .map_err(|error| DisposalFailure::from(error.kind()))
 }
 
 async fn blocking<T: Send + 'static>(
@@ -175,23 +164,38 @@ async fn blocking<T: Send + 'static>(
     })
 }
 
-fn still_the_scanned_file(
-    details: io::Result<Details>,
+async fn still_the_scanned_file(
+    storage: &Arc<dyn Storage>,
+    path: &Path,
     file: &BookFileToRemove,
-) -> Result<(), FileOutcome> {
-    let details =
-        details.map_err(|error| FileOutcome::from(DisposalFailure::from(error.kind())))?;
-    let (Details::Folder { modified } | Details::File { modified, .. }) = details;
-    let size_matches = match details {
-        Details::File { size, .. } => size == file.size_bytes,
-        Details::Folder { .. } => true,
+) -> Result<(), DisposalFailure> {
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
+    let stamp = blocking(move || FileStamp::read(&storage, &path))
+        .await?
+        .map_err(|error| {
+            tracing::warn!(book = %file.book, %error, "read a file to remove");
+            failure_reading(&error)
+        })?;
+    let scanned = FileStamp {
+        size_bytes: file.size_bytes,
+        modified_at_ms: file.modified_at_ms,
     };
-    let time_matches = modified.is_some_and(|modified| stored_ms(modified) == file.modified_at_ms);
-    if size_matches && time_matches {
+    if stamp == scanned {
         return Ok(());
     }
     tracing::warn!(book = %file.book, "skip a file that changed since the scan");
-    Err(FileOutcome::from(DisposalFailure::Other))
+    Err(DisposalFailure::Other)
+}
+
+fn failure_reading(error: &UnreadableBook) -> DisposalFailure {
+    match error {
+        UnreadableBook::Metadata(error) => DisposalFailure::from(error.kind()),
+        UnreadableBook::Format(_)
+        | UnreadableBook::HiddenType(_)
+        | UnreadableBook::UnsupportedType { .. }
+        | UnreadableBook::SeriesName(_)
+        | UnreadableBook::OutsideFolder(_) => DisposalFailure::Other,
+    }
 }
 
 fn file_name(location: &Path) -> String {
