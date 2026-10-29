@@ -164,10 +164,9 @@ mod tests {
             .collect()
     }
 
-    /// The numbers SQLite gives each stage's list of series carrying a chosen tag, its list of matched series, then its two cover subqueries, outer first.
-    const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, u8, (u8, u8)); 3] =
-        [(8, 9, (6, 4)), (17, 18, (15, 13)), (24, 25, (22, 20))];
-    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (11, 12);
+    /// The numbers SQLite gives each stage's list of series carrying a chosen tag, and its list of matched series.
+    const SUBQUERIES_OF_EACH_MATCHED_STAGE: [(u8, u8); 3] = [(5, 6), (11, 12), (15, 16)];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (8, 9);
 
     fn matching_each_stage(series_step: &str) -> Vec<String> {
         let [unstarted, in_progress, finished] = matched_stages(series_step);
@@ -179,7 +178,7 @@ mod tests {
     }
 
     fn matched_stages(series_step: &str) -> [Vec<String>; 3] {
-        SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(tags, list, covers)| {
+        SUBQUERIES_OF_EACH_MATCHED_STAGE.map(|(tags, list)| {
             let matched_once: Vec<&str> = if list == SUBQUERIES_OF_EACH_MATCHED_STAGE[0].1 {
                 ["MATERIALIZE matched"]
                     .into_iter()
@@ -194,7 +193,7 @@ mod tests {
                 .chain(["SCAN matched", "CREATE BLOOM FILTER"].map(ToOwned::to_owned))
                 .chain(tag_probe_steps(tags))
                 .collect();
-            with_covers(steps, covers)
+            with_covers(steps)
         })
     }
 

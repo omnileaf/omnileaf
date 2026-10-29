@@ -78,7 +78,7 @@ mod tests {
         ]
         .map(str::to_owned)
         .to_vec();
-        let mut expected = with_covers(named, (4, 2));
+        let mut expected = with_covers(named);
         expected.push("USE TEMP B-TREE FOR ORDER BY".to_owned());
         assert_eq!(plan, expected);
     }
