@@ -107,6 +107,32 @@ impl Library {
             .unwrap();
     }
 
+    async fn add_series_of_one_book(&self, title: &'static str) {
+        self.store
+            .database()
+            .write(move |transaction| {
+                transaction.execute(
+                    "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms, book_count)
+                    VALUES (?1, zeroblob(16), lower(?2), ?2, x'', 0, 1)",
+                    (series(title).as_bytes(), title),
+                )?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn remove_series(&self, title: &'static str) {
+        self.store
+            .database()
+            .write(move |transaction| {
+                transaction.execute("DELETE FROM series WHERE title = ?1", [title])?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+
     async fn file_tag(&self, title: &'static str, name: &'static str) {
         self.store
             .database()
@@ -179,6 +205,36 @@ async fn leaves_out_series_the_library_lacks_and_series_it_hides() {
 
     assert_eq!(titles, owned(&[TITLES[0]]));
     assert_eq!(counted, 1);
+}
+
+#[tokio::test]
+async fn lists_a_series_added_after_its_membership() {
+    let library = Library::with_series("category-series-late").await;
+    let late = "Sample Series 99";
+    let shelf = library
+        .category_of("Sample Shelf", &[TITLES[0], late])
+        .await;
+
+    library.add_series_of_one_book(late).await;
+
+    let (titles, _) = library.titles(shelf, None, 10).await;
+    let counted = library.count(shelf, SeriesFilter::NONE).await;
+    assert_eq!(titles, owned(&[late, TITLES[0]]));
+    assert_eq!(counted, 2);
+}
+
+#[tokio::test]
+async fn lists_a_series_again_once_it_is_removed_and_added_back() {
+    let library = Library::with_series("category-series-readded").await;
+    let shelf = library.category_of("Sample Shelf", &TITLES[..2]).await;
+
+    library.remove_series(TITLES[0]).await;
+    let (while_removed, _) = library.titles(shelf, None, 10).await;
+    library.add_series_of_one_book(TITLES[0]).await;
+    let (once_added_back, _) = library.titles(shelf, None, 10).await;
+
+    assert_eq!(while_removed, owned(&[TITLES[1]]));
+    assert_eq!(once_added_back, owned(&[TITLES[0], TITLES[1]]));
 }
 
 #[tokio::test]

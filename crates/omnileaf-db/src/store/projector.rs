@@ -251,6 +251,21 @@ fn set_membership(
     Ok(())
 }
 
+#[cfg(test)]
+pub(crate) fn set_category_membership(
+    connection: &Connection,
+    series: SeriesId,
+    category: CategoryId,
+    is_member: bool,
+) -> Result<(), Error> {
+    set_membership(
+        connection,
+        is_member,
+        (PROJECT_SERIES_CATEGORY, REMOVE_SERIES_CATEGORY),
+        (series.as_bytes(), category.as_bytes()),
+    )
+}
+
 fn named_row(
     connection: &Connection,
     entity: &str,

@@ -1,6 +1,6 @@
 mod key;
 mod local;
-mod projector;
+pub(crate) mod projector;
 mod reading_state;
 mod register;
 mod series_edit;
