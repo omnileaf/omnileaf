@@ -26,6 +26,9 @@ pub(crate) struct SentReportKey {
     status_key: String,
 }
 
+const SENDING: &str = "send a problem report";
+const LOOKING_UP: &str = "look up problem report statuses";
+
 #[derive(Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ProblemReportStatus {
@@ -53,7 +56,8 @@ pub(crate) async fn send(
         .state::<ShownProblemReport>()
         .status_key_for(report.code())?;
     let outgoing = outgoing(&report, reply_to, status_key)?;
-    relay(app)?.send(&outgoing).await?;
+    let sent = async { relay(app)?.send(&outgoing).await }.await;
+    sent.map_err(|error| IpcError::from_relay(&error, SENDING))?;
     Ok(SentProblemReport {
         code: report.code().clone(),
         status_key: outgoing.status_key.to_text(),
@@ -68,7 +72,8 @@ pub(crate) async fn statuses(
     let replies = if lookups.is_empty() {
         Vec::new()
     } else {
-        relay(app)?.statuses(lookups).await?
+        let answered = async { relay(app)?.statuses(lookups).await }.await;
+        answered.map_err(|error| IpcError::from_relay(&error, LOOKING_UP))?
     };
     Ok(keys
         .into_iter()

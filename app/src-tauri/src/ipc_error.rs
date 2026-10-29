@@ -5,9 +5,9 @@ use omnileaf_engine::{
     describe_error,
 };
 use serde::Serialize;
-
-use crate::report_relay::RelayError;
 use specta::Type;
+
+use crate::report_relay::{RelayError, is_passing_failure};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -288,10 +288,14 @@ impl From<OpenBookError> for IpcError {
     }
 }
 
-impl From<RelayError> for IpcError {
-    fn from(error: RelayError) -> Self {
+impl IpcError {
+    pub(crate) fn from_relay(error: &RelayError, attempted: &'static str) -> Self {
         let (code, message) = match error {
-            RelayError::Unreachable(_) | RelayError::Failed { .. } => (
+            RelayError::Unreachable(_) => (
+                IpcErrorCode::RelayUnreachable,
+                "the report could not reach Omnileaf",
+            ),
+            RelayError::Failed { status } if is_passing_failure(*status) => (
                 IpcErrorCode::RelayUnreachable,
                 "the report could not reach Omnileaf",
             ),
@@ -299,7 +303,10 @@ impl From<RelayError> for IpcError {
                 IpcErrorCode::RelayRateLimited,
                 "too many reports were sent from this network",
             ),
-            RelayError::Busy | RelayError::TooHard { .. } | RelayError::OutOfTime => (
+            RelayError::Busy
+            | RelayError::Failed { .. }
+            | RelayError::TooHard { .. }
+            | RelayError::OutOfTime => (
                 IpcErrorCode::RelayBusy,
                 "Omnileaf is taking no more reports for now",
             ),
@@ -312,9 +319,9 @@ impl From<RelayError> for IpcError {
             | RelayError::Address { .. }
             | RelayError::Tls(_)
             | RelayError::NotStarted
-            | RelayError::CodeTooShort => return Self::internal(&error),
+            | RelayError::CodeTooShort => return Self::internal(error),
         };
-        tracing::warn!(error = %describe_error(&error), "send a problem report");
+        tracing::warn!(error = %describe_error(error), attempted, "problem report relay refused");
         Self { code, message }
     }
 }
@@ -463,6 +470,9 @@ mod tests {
             RelayError::Failed {
                 status: reqwest::StatusCode::BAD_GATEWAY,
             },
+            RelayError::Failed {
+                status: reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+            },
             RelayError::RateLimited,
             RelayError::Busy,
             RelayError::TooHard { bits: 30 },
@@ -475,12 +485,13 @@ mod tests {
                 status: reqwest::StatusCode::OK,
             },
         ]
-        .map(|error| IpcError::from(error).code);
+        .map(|error| IpcError::from_relay(&error, "send a problem report").code);
 
         assert_eq!(
             codes,
             [
                 IpcErrorCode::RelayUnreachable,
+                IpcErrorCode::RelayBusy,
                 IpcErrorCode::RelayRateLimited,
                 IpcErrorCode::RelayBusy,
                 IpcErrorCode::RelayBusy,

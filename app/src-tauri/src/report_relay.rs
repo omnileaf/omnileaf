@@ -220,7 +220,7 @@ fn http_client() -> Result<Client, RelayError> {
         .build()?)
 }
 
-fn is_passing_failure(status: StatusCode) -> bool {
+pub(crate) fn is_passing_failure(status: StatusCode) -> bool {
     matches!(
         status,
         StatusCode::BAD_GATEWAY | StatusCode::GATEWAY_TIMEOUT
