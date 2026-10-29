@@ -557,7 +557,9 @@ function foundCoverOf(
   book: SampleBook,
   index: number,
 ): string | null {
-  return book.file === "missing" ? null : bookCoverOf(series, slotOf(series, index));
+  return book.file === "missing"
+    ? null
+    : bookCoverOf(series, slotOf(series, index));
 }
 
 /** Answers every command from the sample library, keeping what the reader marks or reads until the page reloads. */

@@ -1733,9 +1733,9 @@ test("fails each file for a different reason when the removal is failed", async 
 });
 
 test("ignores an unknown removal scenario", () => {
-  expect(
-    scenarioFrom(new URLSearchParams("removal=sideways")).removal,
-  ).toBe("clean");
+  expect(scenarioFrom(new URLSearchParams("removal=sideways")).removal).toBe(
+    "clean",
+  );
 });
 
 test("returns no files when it keeps the files", async () => {
