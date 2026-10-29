@@ -7,9 +7,12 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import LibrarySelectionHeader from "./LibrarySelectionHeader.svelte";
 
 const PHONE = { width: 402, height: 874 };
+const CLEAR_LAYER = "rgba(0, 0, 0, 0) 0px 0px 0px 0px";
 const TABLET = { width: 820, height: 1180 };
 
 function renderHeader(platform: Platform) {
@@ -55,6 +58,7 @@ test("puts Select all on the left and Done on the right of the count on an iPhon
   expect(getComputedStyle(done.element()).backgroundColor).not.toBe(
     getComputedStyle(selectAll.element()).backgroundColor,
   );
+  expect(right.height).toBe(left.height);
 
   await selectAll.click();
   await done.click();
@@ -62,6 +66,45 @@ test("puts Select all on the left and Done on the right of the count on an iPhon
     selectAll: onSelectAll.mock.calls.length,
     done: onCancel.mock.calls.length,
   }).toEqual({ selectAll: 1, done: 1 });
+});
+
+test("draws Select all as a glass bar button at weight 510 on an iPhone", () => {
+  renderHeader("ios");
+  const button = page.getByRole("button", { name: "Select all" }).element();
+  const style = getComputedStyle(button);
+
+  expect({
+    isCapsule:
+      Number.parseFloat(style.borderTopLeftRadius) >=
+      button.getBoundingClientRect().height / 2,
+    weight: style.fontWeight,
+    fill: style.backgroundColor,
+  }).toEqual({
+    isCapsule: true,
+    weight: "510",
+    fill: resolvedColour("--color-native-bar-button", "backgroundColor"),
+  });
+});
+
+test("draws Done as a bar-sized capsule on the primary fill, without the glass shadow, on an iPhone", () => {
+  renderHeader("ios");
+  const style = getComputedStyle(
+    page.getByRole("button", { name: "Done" }).element(),
+  );
+
+  expect({
+    fill: style.backgroundColor,
+    ink: style.color,
+    weight: style.fontWeight,
+    hasShadow:
+      style.boxShadow.replaceAll(CLEAR_LAYER, "").replaceAll(",", "").trim() !==
+      "",
+  }).toEqual({
+    fill: resolvedColour("--color-native-button-primary", "backgroundColor"),
+    ink: resolvedColour("--color-native-on-button-primary", "color"),
+    weight: "510",
+    hasShadow: false,
+  });
 });
 
 test("centres the count between the buttons on an iPhone", () => {
@@ -75,6 +118,10 @@ test("centres the count between the buttons on an iPhone", () => {
 test("keeps the cancel button and no Done on an Android phone", async () => {
   renderHeader("android");
 
+  expect(
+    getComputedStyle(page.getByRole("button", { name: "Select all" }).element())
+      .backgroundColor,
+  ).toBe("rgba(0, 0, 0, 0)");
   await expect
     .element(page.getByRole("button", { name: "Cancel selecting" }))
     .toBeInTheDocument();
@@ -87,6 +134,10 @@ test("keeps the cancel button and no Done on an iPad", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   renderHeader("ios");
 
+  expect(
+    getComputedStyle(page.getByRole("button", { name: "Select all" }).element())
+      .backgroundColor,
+  ).toBe("rgba(0, 0, 0, 0)");
   await expect
     .element(page.getByRole("button", { name: "Cancel selecting" }))
     .toBeInTheDocument();

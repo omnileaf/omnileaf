@@ -252,8 +252,8 @@ test("selecting has no accessibility violations", async ({ page }) => {
 });
 
 test.describe("the selection header on a phone", { tag: "@native" }, () => {
-  const BAR_BUTTON = { android: 48 } as const;
-  const PLAIN_BUTTON = { ios: 34, android: 40 } as const;
+  const BAR_BUTTON = { ios: 44, android: 48 } as const;
+  const PLAIN_BUTTON = { android: 40 } as const;
 
   test("ends selecting from the phone's own bar button and offers Select all as a plain button on Android", async ({
     page,
@@ -297,8 +297,8 @@ test.describe("the selection header on a phone", { tag: "@native" }, () => {
     await expect(
       page.getByRole("button", { name: "Cancel selecting" }),
     ).toHaveCount(0);
-    expect(done.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
-    expect(selectAll.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
+    expect(done.height).toBeCloseTo(BAR_BUTTON[platform], 0);
+    expect(selectAll.height).toBeCloseTo(BAR_BUTTON[platform], 0);
     expect(selectAll.x).toBeLessThan(done.x);
   });
 });
