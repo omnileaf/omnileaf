@@ -26,6 +26,8 @@ mod omni_protocol;
 mod power_mode;
 mod problem_reporting;
 mod put_away;
+mod report_relay;
+mod report_sending;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
@@ -113,6 +115,14 @@ pub fn run() {
             let window_backdrop = main_window::open(app, window_backdrop)?;
             app.manage(Core::new().with_window_backdrop(window_backdrop));
             crash_reporting::install(app.handle());
+            match report_relay::RelayClient::for_this_build() {
+                Ok(relay) => {
+                    app.manage(relay);
+                }
+                Err(error) => {
+                    tracing::error!(error = %describe_error(&error), "start the problem report relay's client");
+                }
+            }
             commands.mount_events(app);
             let launch = match open_library(app, &config?) {
                 Ok(home_arrival) => LibraryAtLaunch {

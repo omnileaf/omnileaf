@@ -39,7 +39,11 @@ const SHOWN_ON_FAILURE = {
   labelsNotKept: FAILED,
   detailsNotKept: FAILED,
   reportNotSaved: FAILED,
-  reportsNotSent: FAILED,
+  relayUnreachable: FAILED,
+  relayRateLimited: FAILED,
+  relayBusy: FAILED,
+  replyAddressInvalid: FAILED,
+  reportRefused: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookProblem | typeof UNSUPPORTED>;
 

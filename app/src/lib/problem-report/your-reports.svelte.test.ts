@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { YourReports } from "./your-reports.svelte";
+import { isAnswered, YourReports } from "./your-reports.svelte";
 
 const NOON = new Date(2026, 9, 16, 12).getTime();
 
@@ -44,4 +44,100 @@ test("keeps reports for this visit when storage refuses them", () => {
   reports.keep({ code: "R-8M4T", madeAtMs: NOON });
 
   expect(reports.reports).toEqual([{ code: "R-8M4T", madeAtMs: NOON }]);
+});
+
+test("keeps how a report went and a sent report's status key", () => {
+  const store = memoryStore();
+  const reports = new YourReports(store);
+
+  reports.keep({
+    code: "R-7K2M-QX9D",
+    madeAtMs: NOON,
+    way: "send",
+    statusKey: "c3RhdHVz",
+  });
+  reports.keep({ code: "R-2QX9-0000", madeAtMs: NOON + 1, way: "copy" });
+
+  expect(new YourReports(store).reports).toEqual([
+    { code: "R-2QX9-0000", madeAtMs: NOON + 1, way: "copy" },
+    { code: "R-7K2M-QX9D", madeAtMs: NOON, way: "send", statusKey: "c3RhdHVz" },
+  ]);
+});
+
+test("asks after only the reports it sent", () => {
+  const reports = new YourReports(memoryStore());
+  reports.keep({ code: "R-2QX9", madeAtMs: NOON });
+  reports.keep({ code: "R-2QX9-0000", madeAtMs: NOON + 1, way: "copy" });
+  reports.keep({
+    code: "R-7K2M-QX9D",
+    madeAtMs: NOON + 2,
+    way: "send",
+    statusKey: "c3RhdHVz",
+  });
+
+  const keys = reports.sentKeys();
+
+  expect(keys).toEqual([{ code: "R-7K2M-QX9D", statusKey: "c3RhdHVz" }]);
+});
+
+test("remembers the last review it heard of, even once the relay forgets", () => {
+  const store = memoryStore();
+  const reports = new YourReports(store);
+  reports.keep({
+    code: "R-7K2M-QX9D",
+    madeAtMs: NOON,
+    way: "send",
+    statusKey: "c3RhdHVz",
+  });
+
+  reports.noteReviews([
+    { code: "R-7K2M-QX9D", review: { kind: "published", issue: 412 } },
+  ]);
+  reports.noteReviews([{ code: "R-7K2M-QX9D", review: { kind: "unknown" } }]);
+
+  const [kept] = new YourReports(store).reports;
+  expect(kept?.lastReview).toEqual({ kind: "published", issue: 412 });
+  expect(kept !== undefined && isAnswered(kept)).toBe(true);
+});
+
+test("counts only a published or closed report as answered", () => {
+  const answered = (
+    [
+      { kind: "received" },
+      { kind: "reviewing" },
+      { kind: "published", issue: 7 },
+      { kind: "closed" },
+    ] as const
+  ).map((lastReview) =>
+    isAnswered({ code: "R-7K2M-QX9D", madeAtMs: NOON, lastReview }),
+  );
+
+  expect(answered).toEqual([false, false, true, true]);
+});
+
+test("keeps a report whose stored extras it can't read", () => {
+  const store = memoryStore({
+    "omnileaf.yourReports":
+      '[{"code":"R-7K2M-QX9D","madeAtMs":1,"way":"fax","statusKey":7,"lastReview":{"kind":"lost"}}]',
+  });
+
+  const reports = new YourReports(store);
+
+  expect(reports.reports).toEqual([{ code: "R-7K2M-QX9D", madeAtMs: 1 }]);
+});
+
+test("keeps the status key of a report copied first and sent after", () => {
+  const reports = new YourReports(memoryStore());
+  reports.keep({ code: "R-7K2M-QX9D", madeAtMs: NOON, way: "copy" });
+
+  reports.keep({
+    code: "R-7K2M-QX9D",
+    madeAtMs: NOON + 1,
+    way: "send",
+    statusKey: "c3RhdHVz",
+  });
+
+  expect(reports.reports).toEqual([
+    { code: "R-7K2M-QX9D", madeAtMs: NOON, way: "send", statusKey: "c3RhdHVz" },
+  ]);
 });

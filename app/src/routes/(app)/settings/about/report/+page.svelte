@@ -64,7 +64,12 @@
         return;
       }
       const { code } = data.report.data;
-      yourReports.keep({ code, madeAtMs: Date.now() });
+      yourReports.keep({
+        code,
+        madeAtMs: Date.now(),
+        way: shared.way,
+        ...(shared.way === "send" ? { statusKey: shared.sent.statusKey } : {}),
+      });
       const notice = sharedNotice(shared, {
         code,
         platform,

@@ -5,6 +5,8 @@ use omnileaf_engine::{
     describe_error,
 };
 use serde::Serialize;
+
+use crate::report_relay::RelayError;
 use specta::Type;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -58,7 +60,11 @@ pub(crate) enum IpcErrorCode {
     )]
     DetailsNotKept,
     ReportNotSaved,
-    ReportsNotSent,
+    RelayUnreachable,
+    RelayRateLimited,
+    RelayBusy,
+    ReplyAddressInvalid,
+    ReportRefused,
     Internal,
 }
 
@@ -132,10 +138,10 @@ impl IpcError {
         }
     }
 
-    pub(crate) fn reports_not_sent() -> Self {
+    pub(crate) fn reply_address_invalid() -> Self {
         Self {
-            code: IpcErrorCode::ReportsNotSent,
-            message: "problem reports have nowhere to be sent yet",
+            code: IpcErrorCode::ReplyAddressInvalid,
+            message: "the email address for a reply isn't valid",
         }
     }
 
@@ -282,6 +288,37 @@ impl From<OpenBookError> for IpcError {
     }
 }
 
+impl From<RelayError> for IpcError {
+    fn from(error: RelayError) -> Self {
+        let (code, message) = match error {
+            RelayError::Unreachable(_) | RelayError::Failed { .. } => (
+                IpcErrorCode::RelayUnreachable,
+                "the report could not reach Omnileaf",
+            ),
+            RelayError::RateLimited => (
+                IpcErrorCode::RelayRateLimited,
+                "too many reports were sent from this network",
+            ),
+            RelayError::Busy | RelayError::TooHard { .. } | RelayError::OutOfTime => (
+                IpcErrorCode::RelayBusy,
+                "Omnileaf is taking no more reports for now",
+            ),
+            RelayError::ReplyAddressInvalid => return Self::reply_address_invalid(),
+            RelayError::Refused { .. } => {
+                (IpcErrorCode::ReportRefused, "Omnileaf refused the report")
+            }
+            RelayError::UnexpectedAnswer { .. }
+            | RelayError::Solver(_)
+            | RelayError::Address { .. }
+            | RelayError::Tls(_)
+            | RelayError::NotStarted
+            | RelayError::CodeTooShort => return Self::internal(&error),
+        };
+        tracing::warn!(error = %describe_error(&error), "send a problem report");
+        Self { code, message }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{io, path::PathBuf};
@@ -380,14 +417,6 @@ mod tests {
     }
 
     #[test]
-    fn tells_the_interface_problem_reports_have_nowhere_to_be_sent_yet() {
-        assert_eq!(
-            IpcError::reports_not_sent().code,
-            IpcErrorCode::ReportsNotSent
-        );
-    }
-
-    #[test]
     fn tells_the_interface_why_a_book_did_not_open() {
         let id = BookId::try_from("0190a3e4-0000-8000-8000-000000000002".to_owned()).unwrap();
         let series = SeriesId::try_from("0190a3e4-0000-8000-8000-000000000001".to_owned()).unwrap();
@@ -423,6 +452,41 @@ mod tests {
                 IpcErrorCode::BookUnreadable,
                 IpcErrorCode::BookTypeUnsupported,
                 IpcErrorCode::SeriesNotFound,
+                IpcErrorCode::Internal,
+            ]
+        );
+    }
+
+    #[test]
+    fn tells_the_interface_why_a_report_was_not_sent() {
+        let codes = [
+            RelayError::Failed {
+                status: reqwest::StatusCode::BAD_GATEWAY,
+            },
+            RelayError::RateLimited,
+            RelayError::Busy,
+            RelayError::TooHard { bits: 30 },
+            RelayError::OutOfTime,
+            RelayError::ReplyAddressInvalid,
+            RelayError::Refused {
+                code: omnileaf_relay_proto::ErrorCode::CodeTaken,
+            },
+            RelayError::UnexpectedAnswer {
+                status: reqwest::StatusCode::OK,
+            },
+        ]
+        .map(|error| IpcError::from(error).code);
+
+        assert_eq!(
+            codes,
+            [
+                IpcErrorCode::RelayUnreachable,
+                IpcErrorCode::RelayRateLimited,
+                IpcErrorCode::RelayBusy,
+                IpcErrorCode::RelayBusy,
+                IpcErrorCode::RelayBusy,
+                IpcErrorCode::ReplyAddressInvalid,
+                IpcErrorCode::ReportRefused,
                 IpcErrorCode::Internal,
             ]
         );

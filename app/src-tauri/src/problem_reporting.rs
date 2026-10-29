@@ -8,6 +8,7 @@ use omnileaf_engine::{
     Core, Library, LocalDay, LogStandIns, ProblemReport, ProblemReportPreview, RecentLog,
     ReportCode, SavedPlace, SavedProblemReport,
 };
+use omnileaf_relay_proto::StatusKey;
 use tauri::{AppHandle, Manager};
 
 use crate::{ipc_error::IpcError, version_details};
@@ -16,6 +17,13 @@ use crate::{ipc_error::IpcError, version_details};
 pub(crate) struct ShownProblemReport {
     shown: Mutex<Option<ProblemReport>>,
     saved: Mutex<Option<PathBuf>>,
+    status_key: Mutex<Option<KeyedCode>>,
+}
+
+#[derive(Debug)]
+struct KeyedCode {
+    code: ReportCode,
+    key: StatusKey,
 }
 
 impl ShownProblemReport {
@@ -43,6 +51,24 @@ impl ShownProblemReport {
                     "no problem report has been saved",
                 ))
             })
+    }
+
+    pub(crate) fn status_key_for(&self, code: &ReportCode) -> Result<StatusKey, IpcError> {
+        let mut held = self
+            .status_key
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some(keyed) = held.as_ref().filter(|keyed| keyed.code == *code) {
+            return Ok(keyed.key.clone());
+        }
+        let mut key = [0; 32];
+        getrandom::fill(&mut key).map_err(|error| IpcError::internal(&error))?;
+        let key = StatusKey::from_bytes(key);
+        *held = Some(KeyedCode {
+            code: code.clone(),
+            key: key.clone(),
+        });
+        Ok(key)
     }
 
     fn remember_saved(&self, path: PathBuf) {
@@ -124,4 +150,34 @@ fn random_code() -> Result<ReportCode, IpcError> {
     let mut random = [0; 5];
     getrandom::fill(&mut random).map_err(|error| IpcError::internal(&error))?;
     Ok(ReportCode::from_random(random))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keeps_one_status_key_for_a_report_sent_again() {
+        let shown = ShownProblemReport::default();
+        let code = ReportCode::from_random([1, 2, 3, 4, 5]);
+
+        let first = shown.status_key_for(&code).unwrap();
+        let again = shown.status_key_for(&code).unwrap();
+
+        assert_eq!(first, again);
+    }
+
+    #[test]
+    fn gives_each_report_its_own_status_key() {
+        let shown = ShownProblemReport::default();
+
+        let first = shown
+            .status_key_for(&ReportCode::from_random([1, 2, 3, 4, 5]))
+            .unwrap();
+        let second = shown
+            .status_key_for(&ReportCode::from_random([5, 4, 3, 2, 1]))
+            .unwrap();
+
+        assert_ne!(first, second);
+    }
 }
