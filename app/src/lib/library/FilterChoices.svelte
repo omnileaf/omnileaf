@@ -7,16 +7,13 @@
     LibraryFilterChoices,
     LibraryListing,
     LibrarySortBy,
+    SmartFilter,
   } from "#lib/ipc/bindings.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
-  import {
-    FORMAT_LABELS,
-    languageName,
-    SMART_HINTS,
-    SMART_LABELS,
-  } from "./filter-labels";
+  import { FORMAT_LABELS, languageName } from "./filter-labels";
   import FilterToggles from "./FilterToggles.svelte";
   import {
     type ChosenFrom,
@@ -28,11 +25,18 @@
     withInclusion,
     withReadState,
   } from "./library-listing";
+  import SmartFilterRows from "./SmartFilterRows.svelte";
   import ReadStateChoice from "./ReadStateChoice.svelte";
   import SortSelect from "./SortSelect.svelte";
-  import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
   const TAGS_AT_FIRST = 3;
+  const PLAIN_HEADING = "text-small font-semibold";
+  const GROUPED_HEADING =
+    "ps-lg text-native-row-title leading-native-row-title tracking-native-row-title font-native-group-header text-muted mbe-sm";
+  const PLAIN_GROUP = "flex flex-col divide-y divide-border";
+  const GROUPED_GROUP = `flex flex-col divide-y divide-border overflow-hidden px-lg ios-grouped:divide-ios-separator ${GROUP_PLATE}`;
+  const GROUPED_FOOTNOTE =
+    "ps-lg text-native-group-footer leading-native-group-footer tracking-native-group-footer text-muted";
   const PLUS_SIZE = 14;
   const INCLUSION_LABELS = {
     any: m.library_filter_any,
@@ -44,11 +48,16 @@
     listing,
     choices,
     onChoose,
+    isGrouped = false,
   }: {
     listing: LibraryListing;
     choices: LibraryFilterChoices;
     onChoose: (listing: LibraryListing) => void;
+    isGrouped?: boolean;
   } = $props();
+
+  const headingClass = $derived(isGrouped ? GROUPED_HEADING : PLAIN_HEADING);
+  const groupClass = $derived(isGrouped ? GROUPED_GROUP : PLAIN_GROUP);
 
   let showsEveryTag = $state(false);
 
@@ -77,21 +86,23 @@
   }
 </script>
 
-<section class="flex flex-col">
-  <h3 class="text-small font-semibold">{m.library_sort()}</h3>
-  <SortSelect
-    sort={listing.sort}
-    onSortBy={(by: LibrarySortBy) => {
-      onChoose(sortedBy(listing, by));
-    }}
-    onReverse={() => {
-      onChoose(reversed(listing));
-    }}
-  />
+<section class={["flex flex-col", isGrouped && "px-lg"]}>
+  <h3 class={headingClass}>{m.library_sort()}</h3>
+  <div class={isGrouped ? GROUPED_GROUP : undefined}>
+    <SortSelect
+      sort={listing.sort}
+      onSortBy={(by: LibrarySortBy) => {
+        onChoose(sortedBy(listing, by));
+      }}
+      onReverse={() => {
+        onChoose(reversed(listing));
+      }}
+    />
+  </div>
 </section>
-<section class="flex flex-col pbs-lg">
-  <h3 class="text-small font-semibold">{m.library_filter()}</h3>
-  <div class="flex flex-col divide-y divide-border">
+<section class={["flex flex-col", isGrouped ? "px-lg" : "pbs-lg"]}>
+  <h3 class={headingClass}>{m.library_filter()}</h3>
+  <div class={groupClass}>
     <ReadStateChoice
       filter={listing.filter}
       onChoose={(state: ReadState) => {
@@ -170,7 +181,7 @@
         }}
       />
     {/if}
-    {#if choices.smart.length > 0}
+    {#if !isGrouped && choices.smart.length > 0}
       <div class="flex flex-col">
         <div class="flex flex-col gap-2xs pbs-setting-grid-pad">
           <p class="text-small font-semibold">{m.library_smart_filters()}</p>
@@ -179,16 +190,13 @@
           </p>
         </div>
         <div class="flex flex-col divide-y divide-border">
-          {#each choices.smart as smart (smart)}
-            <ViewSwitchRow
-              label={SMART_LABELS[smart]()}
-              description={SMART_HINTS[smart]()}
-              isOn={listing.filter.smart.includes(smart)}
-              onToggle={() => {
-                toggle("smart", smart);
-              }}
-            />
-          {/each}
+          <SmartFilterRows
+            offered={choices.smart}
+            chosen={listing.filter.smart}
+            onToggle={(smart: SmartFilter) => {
+              toggle("smart", smart);
+            }}
+          />
         </div>
         {#if !choices.smart.includes("readyToCleanUp")}
           <p
@@ -201,3 +209,23 @@
     {/if}
   </div>
 </section>
+{#if isGrouped && choices.smart.length > 0}
+  <section class="flex flex-col px-lg">
+    <h3 class={headingClass}>{m.library_smart_filters()}</h3>
+    <div class={groupClass}>
+      <SmartFilterRows
+        offered={choices.smart}
+        chosen={listing.filter.smart}
+        onToggle={(smart: SmartFilter) => {
+          toggle("smart", smart);
+        }}
+      />
+    </div>
+    <p class="{GROUPED_FOOTNOTE} mbs-sm">{m.library_smart_filters_hint()}</p>
+    {#if !choices.smart.includes("readyToCleanUp")}
+      <p class="{GROUPED_FOOTNOTE} mbs-sm">
+        {m.library_smart_clean_up_waits()}
+      </p>
+    {/if}
+  </section>
+{/if}

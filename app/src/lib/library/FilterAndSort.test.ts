@@ -23,13 +23,25 @@ const CHOICES: LibraryFilterChoices = {
   smart: [],
 };
 
-async function openSheetOn(platform: Platform) {
+const GROUPED_CHOICES: LibraryFilterChoices = {
+  formats: ["comic", "manga"],
+  languages: ["ja"],
+  tags: ["sea"],
+  ratesAdult: true,
+  keepsBookmarks: true,
+  smart: ["quickReads", "forgotten", "duplicates"],
+};
+
+async function openSheetOn(
+  platform: Platform,
+  choices: LibraryFilterChoices = CHOICES,
+) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await page.viewport(PHONE.width, PHONE.height);
   await render(FilterAndSort, {
     listing: NEW_LIBRARY_LISTING,
-    choices: CHOICES,
+    choices,
     matching: 24,
     docks: false,
     panelId: "filters",
@@ -132,4 +144,89 @@ test("keeps the side panel on a wide iOS window", async () => {
 
   expect(panel.width).toBeLessThan(WIDE.width / 2);
   expect(Math.round(panel.height)).toBe(WIDE.height);
+});
+
+function groupAfter(heading: string): HTMLElement {
+  const title = page.getByRole("heading", { name: heading, exact: true });
+  const group = title.element().nextElementSibling;
+  if (!(group instanceof HTMLElement)) {
+    throw new Error(`no group follows ${heading}`);
+  }
+  return group;
+}
+
+test("draws Sort, Filter and Smart filters as inset groups on a grouped ground on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES);
+
+  const sheet = page.getByRole("dialog").element();
+  const sheetBox = boxOf(sheet);
+
+  expect(sheet.getAttribute("data-ground")).toBe("grouped");
+  for (const heading of ["Sort", "Filter", "Smart filters"]) {
+    const group = groupAfter(heading);
+    const box = boxOf(group);
+    const style = getComputedStyle(group);
+
+    expect(box.left - sheetBox.left).toBe(16);
+    expect(sheetBox.right - box.right).toBe(16);
+    expect(style.borderRadius).toBe("26px");
+    expect(style.backgroundColor).toBe("rgb(255, 255, 255)");
+  }
+  expect(getComputedStyle(sheet).backgroundColor).toBe("rgb(242, 242, 247)");
+});
+
+test("sets each group's header in muted semibold type above its group on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES);
+
+  const sheetBox = boxOf(page.getByRole("dialog").element());
+  const title = page.getByRole("heading", { name: "Filter", exact: true });
+  const style = getComputedStyle(title.element());
+
+  expect(
+    boxOf(title.element()).left + parseFloat(style.paddingLeft) - sheetBox.left,
+  ).toBe(32);
+  expect(style.fontSize).toBe("17px");
+  expect(style.fontWeight).toBe("590");
+  expect(style.color).not.toBe(getComputedStyle(document.body).color);
+  expect(boxOf(groupAfter("Filter")).top - boxOf(title.element()).bottom).toBe(
+    8,
+  );
+});
+
+test("puts the smart filters hint under its group as a footer on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES);
+
+  const group = boxOf(groupAfter("Smart filters"));
+  const hint = page.getByText("They combine with the filters above.");
+  const box = boxOf(hint.element());
+
+  expect(box.top - group.bottom).toBe(8);
+  expect(
+    box.left +
+      parseFloat(getComputedStyle(hint.element()).paddingLeft) -
+      group.left,
+  ).toBe(16);
+  expect(getComputedStyle(hint.element()).fontSize).toBe("13px");
+});
+
+test("keeps the unframed sections on an iPad", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  await page.viewport(820, 1180);
+  await render(FilterAndSort, {
+    listing: NEW_LIBRARY_LISTING,
+    choices: GROUPED_CHOICES,
+    matching: 24,
+    docks: false,
+    panelId: "filters",
+    isOpen: true,
+    showsButton: false,
+    onChoose: () => undefined,
+    onOpen: () => undefined,
+  });
+
+  const sheet = page.getByRole("dialog").element();
+
+  expect(sheet.getAttribute("data-ground")).toBeNull();
+  expect(getComputedStyle(groupAfter("Filter")).borderRadius).not.toBe("26px");
 });
