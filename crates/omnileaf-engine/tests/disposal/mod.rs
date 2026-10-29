@@ -78,8 +78,10 @@ impl FileDisposal for FakeDisposal {
     }
 }
 
+#[cfg(unix)]
 pub(crate) struct DiskDisposal;
 
+#[cfg(unix)]
 impl FileDisposal for DiskDisposal {
     fn dispose(&self, file: &Path) -> impl Future<Output = Reply> + Send {
         ready(

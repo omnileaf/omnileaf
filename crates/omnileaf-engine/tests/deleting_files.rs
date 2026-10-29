@@ -30,7 +30,9 @@ use std::{
 };
 
 use books::{write_book, write_page};
-use disposal::{DiskDisposal, FakeDisposal, Pause, VanishingDisposal};
+#[cfg(unix)]
+use disposal::DiskDisposal;
+use disposal::{FakeDisposal, Pause, VanishingDisposal};
 use omnileaf_engine::{
     AndroidTree, BookId, Disposal, DisposalFailure, FileDisposal, FileFate, FileOutcome,
     FileRemoval, Library, LibraryListing, OpenTree, RemovalFailure, RemovalReport, RemovalTarget,
