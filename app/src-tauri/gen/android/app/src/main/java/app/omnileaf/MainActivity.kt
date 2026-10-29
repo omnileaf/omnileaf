@@ -22,6 +22,7 @@ class MainActivity : TauriActivity() {
         private set
 
     override val handleBackNavigation = false
+    override val handleBackButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ChosenIconActions.startNewPage()
