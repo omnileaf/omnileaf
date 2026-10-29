@@ -223,7 +223,7 @@ fn http_client() -> Result<Client, RelayError> {
 pub(crate) fn is_passing_failure(status: StatusCode) -> bool {
     matches!(
         status,
-        StatusCode::BAD_GATEWAY | StatusCode::GATEWAY_TIMEOUT
+        StatusCode::REQUEST_TIMEOUT | StatusCode::BAD_GATEWAY | StatusCode::GATEWAY_TIMEOUT
     )
 }
 
@@ -251,7 +251,9 @@ async fn refusal(response: reqwest::Response) -> RelayError {
     match status {
         StatusCode::TOO_MANY_REQUESTS => return RelayError::RateLimited,
         StatusCode::SERVICE_UNAVAILABLE => return RelayError::Busy,
-        _ if status.is_server_error() => return RelayError::Failed { status },
+        _ if status.is_server_error() || is_passing_failure(status) => {
+            return RelayError::Failed { status };
+        }
         _ => {}
     }
     match response.json::<ErrorBody>().await {
@@ -482,6 +484,32 @@ mod tests {
         let reports = recorded.reports.lock().unwrap();
         assert_eq!(reports.len(), 2);
         assert_eq!(reports[0].1, reports[1].1);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn tries_once_more_when_a_proxy_timed_the_request_out() {
+        let (client, recorded) = fake_relay(vec![(AxumStatus::REQUEST_TIMEOUT, json!({}))]).await;
+
+        let sent = client.send(&report()).await;
+
+        assert!(sent.is_ok(), "{sent:?}");
+        assert_eq!(recorded.reports.lock().unwrap().len(), 2);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn reads_a_second_proxy_timeout_as_a_failure_to_reach_the_relay() {
+        let (client, _) = fake_relay(vec![
+            (AxumStatus::REQUEST_TIMEOUT, json!({})),
+            (AxumStatus::REQUEST_TIMEOUT, json!({})),
+        ])
+        .await;
+
+        let sent = client.send(&report()).await;
+
+        assert!(
+            matches!(sent, Err(RelayError::Failed { status }) if status == StatusCode::REQUEST_TIMEOUT),
+            "{sent:?}"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
