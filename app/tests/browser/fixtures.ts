@@ -196,6 +196,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   libraryView: () => DEFAULT_LIBRARY_VIEW,
   setLibraryView: () => null,
   removeLibraryFolder: () => null,
+  removeFromLibrary: () => ({ removedSeries: 0, removedBooks: 0, files: [] }),
   libraryFolderBookCount: () => 0,
   rescanLibraryFolder: () => {
     throw new CommandFailure({

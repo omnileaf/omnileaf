@@ -20,6 +20,7 @@ export interface SampleBook {
   readonly isBookmarked: boolean;
   readonly isNew: boolean;
   readonly file: SampleFile;
+  readonly slot?: number;
 }
 
 export interface SampleCreator {
