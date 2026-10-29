@@ -511,9 +511,8 @@ test.describe("the heading as a filter changes the count", () => {
       const panel = page.getByRole("dialog", { name: "Sort and filter" });
       await settle(panel);
       await panel
-        .getByRole("group", { name: "Read state" })
-        .getByRole("radio", { name: "Unread", exact: true })
-        .click();
+        .getByRole("combobox", { name: "Read state" })
+        .selectOption({ label: "Unread" });
       await page.keyboard.press("Escape");
       await expect(panel).toBeHidden();
       await expect(

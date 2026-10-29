@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import type { LibraryFilterChoices, Platform } from "#lib/ipc/bindings.ts";
+import type {
+  LibraryFilterChoices,
+  LibraryListing,
+  Platform,
+} from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import FilterAndSort from "./FilterAndSort.svelte";
@@ -35,19 +39,21 @@ const GROUPED_CHOICES: LibraryFilterChoices = {
 async function openSheetOn(
   platform: Platform,
   choices: LibraryFilterChoices = CHOICES,
+  listing: LibraryListing = NEW_LIBRARY_LISTING,
+  onChoose: (listing: LibraryListing) => void = () => undefined,
 ) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await page.viewport(PHONE.width, PHONE.height);
   await render(FilterAndSort, {
-    listing: NEW_LIBRARY_LISTING,
+    listing,
     choices,
     matching: 24,
     docks: false,
     panelId: "filters",
     isOpen: true,
     showsButton: false,
-    onChoose: () => undefined,
+    onChoose,
     onOpen: () => undefined,
   });
 }
@@ -233,4 +239,108 @@ test("keeps the unframed sections on an iPad", async () => {
   expect(getComputedStyle(groupAfter("Filter")).borderRadius).not.toBe("26px");
   expect(getComputedStyle(heading.element()).fontWeight).toBe("600");
   expect(getComputedStyle(heading.element()).paddingLeft).toBe("0px");
+});
+
+test("lists Sort by and Order as picker rows with their value and a chevron on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES);
+
+  const group = groupAfter("Sort");
+  const sortBy = page.getByRole("combobox", { name: "Sort by" });
+  const order = page.getByRole("combobox", { name: "Order" });
+
+  await expect.element(sortBy).toHaveDisplayValue("Title");
+  await expect.element(order).toHaveDisplayValue("A to Z");
+  expect(group.contains(sortBy.element())).toBe(true);
+  expect(group.contains(order.element())).toBe(true);
+  for (const row of [sortBy, order]) {
+    const box = boxOf(row.element());
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.width).toBeGreaterThan(300);
+  }
+  expect(group.querySelectorAll("svg.lucide-chevron-right")).toHaveLength(2);
+});
+
+test("sorts by the series property picked in the Sort by row on an iPhone", async () => {
+  const chosen: LibraryListing[] = [];
+  await openSheetOn("ios", GROUPED_CHOICES, NEW_LIBRARY_LISTING, (listing) => {
+    chosen.push(listing);
+  });
+
+  await userEvent.selectOptions(
+    page.getByRole("combobox", { name: "Sort by" }),
+    "Recently read",
+  );
+
+  expect(chosen.map((listing) => listing.sort.by)).toEqual(["lastRead"]);
+});
+
+test("reverses the order from the Order row on an iPhone", async () => {
+  const chosen: LibraryListing[] = [];
+  await openSheetOn("ios", GROUPED_CHOICES, NEW_LIBRARY_LISTING, (listing) => {
+    chosen.push(listing);
+  });
+
+  await userEvent.selectOptions(
+    page.getByRole("combobox", { name: "Order" }),
+    "Z to A",
+  );
+
+  expect(chosen.map((listing) => listing.sort.direction)).toEqual([
+    "descending",
+  ]);
+});
+
+test("opens the read state as the first picker row of the Filter group on an iPhone", async () => {
+  const chosen: LibraryListing[] = [];
+  await openSheetOn("ios", GROUPED_CHOICES, NEW_LIBRARY_LISTING, (listing) => {
+    chosen.push(listing);
+  });
+  const readState = page.getByRole("combobox", { name: "Read state" });
+
+  await expect.element(readState).toHaveDisplayValue("Any");
+  expect(
+    groupAfter("Filter").firstElementChild?.contains(readState.element()),
+  ).toBe(true);
+  await userEvent.selectOptions(readState, "Unread");
+
+  expect(chosen).toHaveLength(1);
+  expect(chosen[0]?.filter.started).toBe("hide");
+});
+
+test("puts the time left note under the Sort group as a footer on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "timeLeft", direction: "ascending" },
+  });
+
+  const group = boxOf(groupAfter("Sort"));
+  const note = boxOf(
+    page.getByText("Time left uses your reading speed.").element(),
+  );
+
+  expect(note.top - group.bottom).toBe(8);
+});
+
+test("keeps the sort select and direction button on an iPad", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  await page.viewport(820, 1180);
+  await render(FilterAndSort, {
+    listing: NEW_LIBRARY_LISTING,
+    choices: GROUPED_CHOICES,
+    matching: 24,
+    docks: false,
+    panelId: "filters",
+    isOpen: true,
+    showsButton: false,
+    onChoose: () => undefined,
+    onOpen: () => undefined,
+  });
+
+  await expect
+    .element(page.getByRole("combobox", { name: "Order" }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(page.getByRole("button", { name: /^Order:/ }))
+    .toBeInTheDocument();
 });

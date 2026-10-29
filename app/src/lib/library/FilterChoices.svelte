@@ -13,20 +13,29 @@
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
-  import { FORMAT_LABELS, languageName } from "./filter-labels";
+  import {
+    FORMAT_LABELS,
+    languageName,
+    READ_STATE_LABELS,
+  } from "./filter-labels";
   import FilterToggles from "./FilterToggles.svelte";
   import {
     type ChosenFrom,
     type IncludedBy,
     type ReadState,
+    READ_STATES,
+    readStateOf,
     reversed,
+    SORTS,
     sortedBy,
     toggledIn,
     withInclusion,
     withReadState,
   } from "./library-listing";
   import SmartFilterRows from "./SmartFilterRows.svelte";
+  import PickerRow from "./PickerRow.svelte";
   import ReadStateChoice from "./ReadStateChoice.svelte";
+  import { directionWordings, SORT_LABELS } from "./sort-labels";
   import SortSelect from "./SortSelect.svelte";
 
   const TAGS_AT_FIRST = 3;
@@ -58,6 +67,20 @@
 
   const headingClass = $derived(isGrouped ? GROUPED_HEADING : PLAIN_HEADING);
   const groupClass = $derived(isGrouped ? GROUPED_GROUP : PLAIN_GROUP);
+  const sortByOptions = SORTS.map((by) => ({
+    value: by,
+    label: SORT_LABELS[by](),
+  }));
+  const directionOptions = $derived(
+    (["ascending", "descending"] as const).map((direction, index) => ({
+      value: direction,
+      label: directionWordings(listing.sort.by)[index]?.label() ?? "",
+    })),
+  );
+  const readStateOptions = READ_STATES.map((state) => ({
+    value: state,
+    label: READ_STATE_LABELS[state](),
+  }));
 
   let showsEveryTag = $state(false);
 
@@ -88,7 +111,36 @@
 
 <section class={["flex flex-col", isGrouped && "px-lg"]}>
   <h3 class={headingClass}>{m.library_sort()}</h3>
-  <div class={isGrouped ? groupClass : undefined}>
+  {#if isGrouped}
+    <div class={groupClass}>
+      <PickerRow
+        label={m.library_sort_by()}
+        options={sortByOptions}
+        value={listing.sort.by}
+        onChoose={(value: string) => {
+          const by = SORTS.find((sort) => sort === value);
+          if (by !== undefined) {
+            onChoose(sortedBy(listing, by));
+          }
+        }}
+      />
+      <PickerRow
+        label={m.library_sort_order()}
+        options={directionOptions}
+        value={listing.sort.direction}
+        onChoose={(value: string) => {
+          if (value !== listing.sort.direction) {
+            onChoose(reversed(listing));
+          }
+        }}
+      />
+    </div>
+    {#if listing.sort.by === "timeLeft"}
+      <p class="{GROUPED_FOOTNOTE} mbs-sm">
+        {m.library_sort_time_left_footnote()}
+      </p>
+    {/if}
+  {:else}
     <SortSelect
       sort={listing.sort}
       onSortBy={(by: LibrarySortBy) => {
@@ -98,17 +150,31 @@
         onChoose(reversed(listing));
       }}
     />
-  </div>
+  {/if}
 </section>
 <section class={["flex flex-col", isGrouped ? "px-lg" : "pbs-lg"]}>
   <h3 class={headingClass}>{m.library_filter()}</h3>
   <div class={groupClass}>
-    <ReadStateChoice
-      filter={listing.filter}
-      onChoose={(state: ReadState) => {
-        onChoose(withReadState(listing, state));
-      }}
-    />
+    {#if isGrouped}
+      <PickerRow
+        label={m.library_read_state()}
+        options={readStateOptions}
+        value={readStateOf(listing.filter)}
+        onChoose={(value: string) => {
+          const state = READ_STATES.find((candidate) => candidate === value);
+          if (state !== undefined) {
+            onChoose(withReadState(listing, state));
+          }
+        }}
+      />
+    {:else}
+      <ReadStateChoice
+        filter={listing.filter}
+        onChoose={(state: ReadState) => {
+          onChoose(withReadState(listing, state));
+        }}
+      />
+    {/if}
     {#if choices.formats.length > 0}
       <FilterToggles
         label={m.library_filter_format()}
