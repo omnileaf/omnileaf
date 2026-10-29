@@ -244,7 +244,7 @@ async fn time_spellings(database: &Database) -> Vec<String> {
             .run(
                 async |_| (),
                 async |()| {
-                    suggest(database, text).await;
+                    assert!(suggest(database, text).await, "{text:?} found no spelling");
                 },
             )
             .await;
@@ -256,17 +256,15 @@ async fn time_spellings(database: &Database) -> Vec<String> {
     over_budget
 }
 
-async fn suggest(database: &Database, text: &'static str) {
+async fn suggest(database: &Database, text: &'static str) -> bool {
     database
         .read(move |connection| {
             let hiding = AdultHiding::default();
-            if closest_title_words(connection, text, hiding)?.is_none() {
-                closest_chapter_title(connection, text, hiding)?;
-            }
-            Ok(())
+            Ok(closest_title_words(connection, text, hiding)?.is_some()
+                || closest_chapter_title(connection, text, hiding)?.is_some())
         })
         .await
-        .unwrap();
+        .unwrap()
 }
 
 async fn add_generated_library(database: &Database) {
