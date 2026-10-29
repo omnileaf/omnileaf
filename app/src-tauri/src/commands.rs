@@ -6,16 +6,17 @@ use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
     BookSessions, BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits,
-    DropMode, DropOutcome, DropSummary, FileToRead, FileType, FolderCursor, FolderGroupCursor,
-    FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary,
-    HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeArrival, InterfaceError,
-    LabelChanges, Library, LibraryCategory, LibraryError, LibraryFilter, LibraryFilterChoices,
-    LibraryListing, LibrarySearch, LibraryTab, LibraryTag, LibraryView, LocalDay, MissingFolder,
-    OpenedBook, PageCrop, PagePath, ProbedFormat, ProblemReportPreview, ProjectLink, ReadMark,
-    ReadingSummary, ReadingWeek, ReportCode, ResourceRouter, RootLocator, SavedProblemReport,
-    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
-    SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse,
-    UtcOffset, WriterCursor, WriterPage,
+    DropMode, DropOutcome, DropSummary, FileFate, FileToRead, FileType, FolderCursor,
+    FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan,
+    FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
+    HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError,
+    LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
+    LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
+    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
+    RemovalTarget, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
+    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
+    SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse, UtcOffset,
+    WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -28,6 +29,7 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
     folder_picker::pick_folder,
     folder_share::SystemShares,
@@ -147,6 +149,7 @@ macro_rules! app_commands {
             sign_in_to_library_folder,
             show_series_in_folder,
             remove_library_folder,
+            remove_from_library,
             library_folder_book_count,
             rescan_library_folder,
             rescan_library_folders,
@@ -1114,6 +1117,32 @@ async fn set_library_tabs(
 #[specta::specta]
 async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
     Ok(library.remove_folder(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove_from_library(
+    #[cfg_attr(
+        not(target_os = "ios"),
+        expect(unused_variables, reason = "only iOS reopens picked folders")
+    )]
+    app: AppHandle,
+    library: State<'_, Library>,
+    targets: Vec<RemovalTarget>,
+    delete_files: bool,
+) -> Result<RemovalReport, IpcError> {
+    #[cfg(target_os = "ios")]
+    crate::folder_access::reopen_picked_folders(&app, &library).await?;
+    let report = if delete_files {
+        library
+            .remove_from_library(&targets, FileFate::Dispose(&SystemTrash))
+            .await?
+    } else {
+        library
+            .remove_from_library(&targets, FileFate::keep())
+            .await?
+    };
+    Ok(report)
 }
 
 #[tauri::command]

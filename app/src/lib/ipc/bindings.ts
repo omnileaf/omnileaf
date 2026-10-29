@@ -153,6 +153,7 @@ export const commands = {
 	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
 	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
+	removeFromLibrary: (targets: RemovalTarget[], deleteFiles: boolean) => typedError<RemovalReport, IpcError>(__TAURI_INVOKE("remove_from_library", { targets, deleteFiles })),
 	libraryFolderBookCount: (id: string & { readonly __brand: "FolderId" }) => typedError<number, IpcError>(__TAURI_INVOKE("library_folder_book_count", { id })),
 	rescanLibraryFolder: (id: string & { readonly __brand: "FolderId" }, onProgress: Channel<ScanProgress>) => typedError<FolderRescan, IpcError>(__TAURI_INVOKE("rescan_library_folder", { id, onProgress })),
 	rescanLibraryFolders: () => typedError<FolderRescan[], IpcError>(__TAURI_INVOKE("rescan_library_folders")),
@@ -408,6 +409,14 @@ export type FileChanges = {
 };
 
 export type FileOpenRequested = null;
+
+export type FileOutcome = { kind: "trashed" } | { kind: "deleted" } | { kind: "missing" } | { kind: "failed"; reason: RemovalFailure };
+
+export type FileRemoval = {
+	book: string & { readonly __brand: "BookId" },
+	name: string,
+	outcome: FileOutcome,
+};
 
 /**  Which book a file opens, and whether the library already holds it. */
 export type FileToRead = {
@@ -785,6 +794,16 @@ export type RelatedSeries = {
 	reason: RelatedReason,
 	isAdult: boolean,
 };
+
+export type RemovalFailure = "permissionDenied" | "locked" | "unsupportedLocation" | "other";
+
+export type RemovalReport = {
+	removedSeries: number,
+	removedBooks: number,
+	files: FileRemoval[],
+};
+
+export type RemovalTarget = { kind: "series"; id: string & { readonly __brand: "SeriesId" } } | { kind: "book"; id: string & { readonly __brand: "BookId" } };
 
 export type ReportCode = string;
 

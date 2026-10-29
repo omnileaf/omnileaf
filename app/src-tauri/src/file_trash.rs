@@ -1,8 +1,3 @@
-#![cfg_attr(
-    not(all(test, desktop)),
-    expect(dead_code, reason = "the command that removes books is added next")
-)]
-
 use std::path::Path;
 
 #[cfg(windows)]
