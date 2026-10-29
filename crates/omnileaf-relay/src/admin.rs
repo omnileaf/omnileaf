@@ -210,7 +210,7 @@ impl fmt::Display for ShownReport {
         writeln!(f)?;
         match &self.report {
             Some(report) => write!(f, "{}", InertText(report)),
-            None => writeln!(f, "The report's text was removed after its review."),
+            None => writeln!(f, "The report's text was removed."),
         }
     }
 }

@@ -6,10 +6,12 @@ use crate::{
     store::{Store, StoreError},
 };
 
-const REVIEWED: &str = "status IN ('published', 'closed')";
+const REVIEWED_BEFORE: &str = "status IN ('published', 'closed') AND status_changed_at <= ?1";
+const UNREVIEWED_SINCE: &str = "status IN ('received', 'reviewing') AND received_at <= ?2";
 
 pub const TEXT_KEPT_AFTER_REVIEW_SECONDS: i64 = 90 * SECONDS_PER_DAY;
 pub const RECORD_KEPT_AFTER_REVIEW_SECONDS: i64 = 365 * SECONDS_PER_DAY;
+pub const TEXT_KEPT_UNREVIEWED_SECONDS: i64 = 180 * SECONDS_PER_DAY;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Purged {
@@ -21,6 +23,7 @@ pub struct Purged {
 impl Store {
     pub fn purge(&self, now: UnixTime) -> Result<Purged, StoreError> {
         let text_cutoff = now.minus_seconds(TEXT_KEPT_AFTER_REVIEW_SECONDS).seconds();
+        let unreviewed_cutoff = now.minus_seconds(TEXT_KEPT_UNREVIEWED_SECONDS).seconds();
         let record_cutoff = now
             .minus_seconds(RECORD_KEPT_AFTER_REVIEW_SECONDS)
             .seconds();
@@ -31,22 +34,19 @@ impl Store {
                 params![now.seconds()],
             )?;
             let reports = transaction.execute(
-                &format!("DELETE FROM reports WHERE {REVIEWED} AND status_changed_at <= ?1"),
+                &format!("DELETE FROM reports WHERE {REVIEWED_BEFORE}"),
                 params![record_cutoff],
             )?;
+            let spent = format!("({REVIEWED_BEFORE}) OR ({UNREVIEWED_SINCE})");
             transaction.execute(
                 &format!(
-                    "DELETE FROM reply_addresses WHERE code IN
-                     (SELECT code FROM reports WHERE {REVIEWED} AND status_changed_at <= ?1)"
+                    "DELETE FROM reply_addresses WHERE code IN (SELECT code FROM reports WHERE {spent})"
                 ),
-                params![text_cutoff],
+                params![text_cutoff, unreviewed_cutoff],
             )?;
             let report_texts = transaction.execute(
-                &format!(
-                    "UPDATE reports SET report = NULL
-                     WHERE {REVIEWED} AND status_changed_at <= ?1 AND report IS NOT NULL"
-                ),
-                params![text_cutoff],
+                &format!("UPDATE reports SET report = NULL WHERE ({spent}) AND report IS NOT NULL"),
+                params![text_cutoff, unreviewed_cutoff],
             )?;
             Ok(Purged {
                 challenges,

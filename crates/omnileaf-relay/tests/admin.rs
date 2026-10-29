@@ -11,7 +11,8 @@ mod support;
 
 use omnileaf_relay::{
     Export, IntakeCaps, IssueNumber, Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS, ReplyAddressView,
-    ReviewStatus, StatusKind, Store, TEXT_KEPT_AFTER_REVIEW_SECONDS, TargetStatus, UnixTime,
+    ReviewStatus, StatusKind, Store, TEXT_KEPT_AFTER_REVIEW_SECONDS, TEXT_KEPT_UNREVIEWED_SECONDS,
+    TargetStatus,
 };
 use support::{Draft, START, code, draft};
 
@@ -229,16 +230,37 @@ fn forgets_a_reviewed_report_a_year_after_review() {
 }
 
 #[test]
-fn keeps_reports_still_waiting_for_review() {
+fn drops_the_text_and_address_of_a_report_left_unreviewed() {
+    let store = store_with(&[CODE, "R-0000-0001"]);
+    store
+        .set_status(&code("R-0000-0001"), TargetStatus::Reviewing, START)
+        .unwrap();
+    let just_before = START.plus_seconds(TEXT_KEPT_UNREVIEWED_SECONDS - 1);
+    let on_time = START.plus_seconds(TEXT_KEPT_UNREVIEWED_SECONDS + 1);
+
+    let early = store.purge(just_before).unwrap();
+    let due = store.purge(on_time).unwrap();
+
+    assert_eq!(early, Purged::default());
+    assert_eq!(due.report_texts, 2);
+    for unreviewed in [CODE, "R-0000-0001"] {
+        let shown = store
+            .show(&code(unreviewed), ReplyAddressView::Shown)
+            .unwrap()
+            .unwrap();
+        assert_eq!((shown.report, shown.reply_address), (None, None));
+    }
+}
+
+#[test]
+fn keeps_the_record_of_a_report_still_waiting_for_review() {
     let store = store_with(&[CODE]);
 
     let purged = store
-        .purge(UnixTime::from_seconds(
-            START.seconds() + 2 * RECORD_KEPT_AFTER_REVIEW_SECONDS,
-        ))
+        .purge(START.plus_seconds(2 * RECORD_KEPT_AFTER_REVIEW_SECONDS))
         .unwrap();
 
-    assert_eq!(purged, Purged::default());
+    assert_eq!(purged.reports, 0);
     assert!(
         store
             .show(&code(CODE), ReplyAddressView::Hidden)

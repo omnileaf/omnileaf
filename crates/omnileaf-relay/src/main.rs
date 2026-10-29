@@ -273,7 +273,7 @@ fn review(store: &Store, command: ReportsCommand) -> anyhow::Result<()> {
         ReportsCommand::Export { code } => match store.export(&parse_code(code)?)? {
             Export::Ready(body) => write!(out, "{body}")?,
             Export::NotFound => bail!("no report has that code"),
-            Export::Purged => bail!("the report's text was removed after its review"),
+            Export::Purged => bail!("the report's text was removed"),
         },
         ReportsCommand::Purge => {
             let purged = store.purge(SystemClock.now())?;

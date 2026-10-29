@@ -18,6 +18,9 @@ pub use clock::{Clock, SystemClock, UnixTime};
 pub use http::{Failure, Relay, Settings, router};
 pub use rate_limit::{Action, ActionLimit, Admission, Attempt, Limits};
 pub use reports::{Intake, IntakeCaps, NewReport};
-pub use retention::{Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS, TEXT_KEPT_AFTER_REVIEW_SECONDS};
+pub use retention::{
+    Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS, TEXT_KEPT_AFTER_REVIEW_SECONDS,
+    TEXT_KEPT_UNREVIEWED_SECONDS,
+};
 pub use status::{IssueNumber, ReviewStatus, StatusKind, TargetStatus};
 pub use store::{Store, StoreError};
