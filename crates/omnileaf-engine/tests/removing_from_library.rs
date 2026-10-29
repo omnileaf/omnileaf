@@ -5,6 +5,10 @@
 
 #[expect(dead_code, reason = "these tests write whole books, never loose pages")]
 mod books;
+#[expect(
+    dead_code,
+    reason = "these tests count the books of each series, never read their titles"
+)]
 mod scanned;
 mod support;
 
