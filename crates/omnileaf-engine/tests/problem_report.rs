@@ -13,7 +13,7 @@ use omnileaf_engine::{
 use proptest::prelude::*;
 
 const BROWSER_URL_LIMIT: usize = 8000;
-const CODE: u32 = 0x000A_BCDE;
+const CODE: [u8; 5] = [0xDE, 0xBC, 0x0A, 0x00, 0x00];
 
 fn details() -> VersionDetails {
     VersionDetails {
@@ -39,7 +39,7 @@ fn logged() -> Vec<String> {
     ]
 }
 
-fn report_of(random: u32, lines: &[String]) -> ProblemReport {
+fn report_of(random: [u8; 5], lines: &[String]) -> ProblemReport {
     ProblemReport::new(
         ReportCode::from_random(random),
         details(),
@@ -103,7 +103,7 @@ fn writes_its_code_the_version_details_then_the_log_lines() {
 
     assert_eq!(
         text,
-        "Report code: R-Y6FN\n\
+        "Report code: R-Y6FN-0000\n\
          Omnileaf 1.2.3, release build\n\
          Platform: Linux on x86_64\n\
          System: Fedora 43\n\
@@ -129,15 +129,38 @@ fn says_when_nothing_was_logged() {
 }
 
 #[test]
-fn names_a_report_by_four_letters_or_digits_easy_to_read_aloud() {
-    let codes = [0, u32::MAX, CODE].map(|random| ReportCode::from_random(random).to_string());
+fn names_a_report_by_two_groups_of_four_letters_or_digits_easy_to_read_aloud() {
+    let codes =
+        [[0; 5], [u8::MAX; 5], CODE].map(|random| ReportCode::from_random(random).to_string());
 
-    assert_eq!(codes, ["R-0000", "R-ZZZZ", "R-Y6FN"]);
+    assert_eq!(codes, ["R-0000-0000", "R-ZZZZ-ZZZZ", "R-Y6FN-0000"]);
+}
+
+#[test]
+fn reads_a_four_symbol_code_kept_by_an_earlier_version() {
+    let read = serde_json::from_value::<ReportCode>(serde_json::json!("R-8M4T"));
+
+    assert_eq!(
+        read.map(|code| code.to_string()).ok().as_deref(),
+        Some("R-8M4T")
+    );
+}
+
+#[test]
+fn hands_the_relay_only_a_full_width_code() {
+    let wide = ReportCode::from_random(CODE);
+    let kept: ReportCode = serde_json::from_value(serde_json::json!("R-8M4T")).unwrap();
+
+    assert_eq!(
+        wide.to_relay().map(|code| code.to_string()).as_deref(),
+        Some("R-Y6FN-0000")
+    );
+    assert_eq!(kept.to_relay(), None);
 }
 
 proptest! {
     #[test]
-    fn reads_back_every_code_it_hands_out(random in any::<u32>()) {
+    fn reads_back_every_code_it_hands_out(random in any::<[u8; 5]>()) {
         let code = ReportCode::from_random(random);
 
         let read: ReportCode = serde_json::from_value(serde_json::json!(code.to_string())).unwrap();
@@ -149,7 +172,18 @@ proptest! {
 #[test]
 fn refuses_text_that_is_not_a_report_code() {
     let texts = [
-        "", "R-", "R-123", "R-12345", "X-1234", "r-1234", "R-12O4", "R-12 4",
+        "",
+        "R-",
+        "R-123",
+        "R-12345",
+        "X-1234",
+        "r-1234",
+        "R-12O4",
+        "R-12 4",
+        "R-1234-567",
+        "R-1234-56789",
+        "R-1234_5678",
+        "R-12345678",
     ];
 
     let read = texts.map(|text| serde_json::from_value::<ReportCode>(serde_json::json!(text)).ok());
@@ -159,8 +193,8 @@ fn refuses_text_that_is_not_a_report_code() {
 
 #[test]
 fn carries_nothing_that_tells_one_device_from_another_but_its_code() {
-    let first = report_of(1, &logged()).to_string();
-    let second = report_of(2, &logged()).to_string();
+    let first = report_of([1, 0, 0, 0, 0], &logged()).to_string();
+    let second = report_of([2, 0, 0, 0, 0], &logged()).to_string();
 
     let unlike: Vec<(&str, &str)> = first
         .lines()
@@ -168,7 +202,10 @@ fn carries_nothing_that_tells_one_device_from_another_but_its_code() {
         .filter(|(one, other)| one != other)
         .collect();
 
-    assert_eq!(unlike, [("Report code: R-1000", "Report code: R-2000")]);
+    assert_eq!(
+        unlike,
+        [("Report code: R-1000-0000", "Report code: R-2000-0000")]
+    );
 }
 
 #[test]
@@ -210,13 +247,14 @@ fn keeps_the_newest_lines_that_fit_and_says_how_many_older_ones_were_left_out() 
 
 proptest! {
     #[test]
-    fn every_code_uses_the_easily_read_letters_and_digits(random in any::<u32>()) {
+    fn every_code_uses_the_easily_read_letters_and_digits(random in any::<[u8; 5]>()) {
         let code = ReportCode::from_random(random).to_string();
 
         prop_assert!(code.starts_with("R-"));
-        prop_assert_eq!(code.len(), 6);
+        prop_assert_eq!(code.len(), 11);
+        prop_assert_eq!(code.chars().nth(6), Some('-'));
         prop_assert!(
-            code.chars().skip(2).all(|symbol| "0123456789ABCDEFGHJKMNPQRSTVWXYZ".contains(symbol)),
+            code.chars().skip(2).filter(|symbol| *symbol != '-').all(|symbol| "0123456789ABCDEFGHJKMNPQRSTVWXYZ".contains(symbol)),
             "{}",
             code
         );

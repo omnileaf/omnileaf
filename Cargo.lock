@@ -3556,6 +3556,7 @@ name = "omnileaf-app"
 version = "0.0.0"
 dependencies = [
  "dispatch2",
+ "getrandom 0.3.4",
  "gtk",
  "objc2-foundation",
  "omnileaf-db",
@@ -3638,6 +3639,7 @@ dependencies = [
  "omnileaf-db",
  "omnileaf-formats",
  "omnileaf-imaging",
+ "omnileaf-relay-proto",
  "omnileaf-sync-proto",
  "omnileaf-testkit",
  "proptest",

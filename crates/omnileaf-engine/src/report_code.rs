@@ -5,9 +5,7 @@ use specta::Type;
 
 const PREFIX: &str = "R-";
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const SYMBOLS: u32 = 4;
-const BITS_PER_SYMBOL: u32 = 5;
-const SYMBOL_MASK: u32 = (1 << BITS_PER_SYMBOL) - 1;
+const EARLIER_SYMBOLS: usize = 4;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(transparent)]
@@ -21,13 +19,13 @@ pub struct NotAReportCode {
 
 impl ReportCode {
     #[must_use]
-    pub fn from_random(random: u32) -> Self {
-        let symbols: String = (0..SYMBOLS)
-            .map(|place| (random >> (place * BITS_PER_SYMBOL)) & SYMBOL_MASK)
-            .filter_map(|index| ALPHABET.get(usize::try_from(index).ok()?))
-            .map(|symbol| char::from(*symbol))
-            .collect();
-        Self(format!("{PREFIX}{symbols}"))
+    pub fn from_random(random: [u8; 5]) -> Self {
+        Self(omnileaf_relay_proto::ReportCode::from_random(random).to_string())
+    }
+
+    #[must_use]
+    pub fn to_relay(&self) -> Option<omnileaf_relay_proto::ReportCode> {
+        omnileaf_relay_proto::ReportCode::try_from(self.0.clone()).ok()
     }
 }
 
@@ -37,10 +35,9 @@ impl fmt::Display for ReportCode {
     }
 }
 
-fn is_report_code(text: &str) -> bool {
+fn is_earlier_report_code(text: &str) -> bool {
     text.strip_prefix(PREFIX).is_some_and(|symbols| {
-        symbols.len() == SYMBOLS as usize
-            && symbols.bytes().all(|symbol| ALPHABET.contains(&symbol))
+        symbols.len() == EARLIER_SYMBOLS && symbols.bytes().all(|symbol| ALPHABET.contains(&symbol))
     })
 }
 
@@ -48,7 +45,8 @@ impl TryFrom<String> for ReportCode {
     type Error = NotAReportCode;
 
     fn try_from(text: String) -> Result<Self, Self::Error> {
-        if is_report_code(&text) {
+        let is_relay_code = omnileaf_relay_proto::ReportCode::try_from(text.clone()).is_ok();
+        if is_relay_code || is_earlier_report_code(&text) {
             Ok(Self(text))
         } else {
             Err(NotAReportCode { text })

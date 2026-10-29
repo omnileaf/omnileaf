@@ -1,9 +1,7 @@
 use std::{
-    hash::{BuildHasher, RandomState},
     io,
     path::{Path, PathBuf},
     sync::{Mutex, PoisonError},
-    time::SystemTime,
 };
 
 use omnileaf_engine::{
@@ -62,7 +60,7 @@ pub(crate) async fn gather(app: &AppHandle) -> Result<ProblemReport, IpcError> {
         .await
         .map_err(|error| IpcError::internal(&error))?;
     let log = stand_ins.clean_log(&app.state::<RecentLog>().lines());
-    Ok(ProblemReport::new(random_code(), details, log))
+    Ok(ProblemReport::new(random_code()?, details, log))
 }
 
 pub(crate) async fn shown_or_gathered(app: &AppHandle) -> Result<ProblemReport, IpcError> {
@@ -122,9 +120,8 @@ fn report_folder(_app: &AppHandle) -> io::Result<(PathBuf, SavedPlace)> {
     ))
 }
 
-/// `RandomState` seeds each hasher from the operating system's randomness, which is enough for a code that only needs to be unlikely to repeat.
-fn random_code() -> ReportCode {
-    let [first, second, third, fourth, ..] =
-        RandomState::new().hash_one(SystemTime::now()).to_le_bytes();
-    ReportCode::from_random(u32::from_le_bytes([first, second, third, fourth]))
+fn random_code() -> Result<ReportCode, IpcError> {
+    let mut random = [0; 5];
+    getrandom::fill(&mut random).map_err(|error| IpcError::internal(&error))?;
+    Ok(ReportCode::from_random(random))
 }
