@@ -271,6 +271,8 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
 
 const PAGE_SIZE = 50;
 const SAMPLE_SECONDS_PER_PAGE = 8.5;
+const SAMPLE_LEARNED_SECONDS_PER_PAGE = Math.round(SAMPLE_SECONDS_PER_PAGE);
+const QUICK_READ_SECONDS = 30 * 60;
 const SAMPLE_BOOK_KILOBYTES = 24_000;
 const SAMPLE_SUMMARY_SECONDS_PER_PAGE = 22.5;
 const PAGE_WIDTH = 1000;
@@ -436,8 +438,27 @@ interface SampleCategory {
 const SAMPLE_LANGUAGES = ["ja", "ja", "en", "fr", "ja", "en", "de"] as const;
 const SERIES_WITH_DOWNLOADS = new Set([1, 4, 6, 15]);
 const ADULT_SERIES = new Set([13, 17]);
+
+function pagesLeftIn(series: SampleSeries): number {
+  return series.books.reduce((pages, book) => {
+    if (isRead(book)) {
+      return pages;
+    }
+    const readUpTo = book.reading.state === "started" ? book.reading.page : 0;
+    return pages + book.pageCount - readUpTo;
+  }, 0);
+}
+
+function isQuickRead(series: SampleSeries): boolean {
+  const pagesLeft = pagesLeftIn(series);
+  return (
+    pagesLeft > 0 &&
+    pagesLeft * SAMPLE_LEARNED_SECONDS_PER_PAGE < QUICK_READ_SECONDS
+  );
+}
+
 const SMART_FILTERS: Record<SmartFilter, (series: SampleSeries) => boolean> = {
-  quickReads: (series) => [4, 7, 16, 18].includes(series.number),
+  quickReads: isQuickRead,
   forgotten: (series) => [9, 12, 17].includes(series.number),
   duplicates: (series) => [5, 14].includes(series.number),
   readyToCleanUp: (series) =>
@@ -982,14 +1003,7 @@ export function sampleBackend(
   }
 
   function secondsLeftIn(series: SampleSeries): number {
-    const pagesLeft = series.books.reduce((pages, book) => {
-      if (isRead(book)) {
-        return pages;
-      }
-      const readUpTo = book.reading.state === "started" ? book.reading.page : 0;
-      return pages + book.pageCount - readUpTo;
-    }, 0);
-    return Math.round(pagesLeft * SAMPLE_SECONDS_PER_PAGE);
+    return Math.round(pagesLeftIn(series) * SAMPLE_SECONDS_PER_PAGE);
   }
 
   function upNextOf(series: SampleSeries) {
@@ -1821,7 +1835,7 @@ export function sampleBackend(
         bookmarkedPages: [...(bookmarks.get(id) ?? [])].toSorted(
           (one, other) => one - other,
         ),
-        secondsPerPage: Math.round(SAMPLE_SECONDS_PER_PAGE),
+        secondsPerPage: SAMPLE_LEARNED_SECONDS_PER_PAGE,
         isInLibrary: true,
       };
     },

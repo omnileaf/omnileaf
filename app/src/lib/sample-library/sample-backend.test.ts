@@ -4,7 +4,14 @@ import { type LibraryListing } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
-import { LONG_TITLE, sampleBookId, sampleSeriesId } from "./sample-library.ts";
+import {
+  LONG_TITLE,
+  STRIP_CHAPTER_PAGES,
+  STRIP_CHAPTERS,
+  STRIP_SERIES_NUMBER,
+  sampleBookId,
+  sampleSeriesId,
+} from "./sample-library.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 
@@ -525,14 +532,92 @@ test("lists only the series with a bookmarked page once Bookmarked is the only o
   ]);
 });
 
-test("lists the quick reads, and only the series meeting every smart filter on", async () => {
+const STRIP_LAST_CHAPTER = STRIP_CHAPTERS;
+const STRIP_CHAPTERS_RESET = [
+  STRIP_LAST_CHAPTER - 3,
+  STRIP_LAST_CHAPTER - 2,
+  STRIP_LAST_CHAPTER - 1,
+] as const;
+const STRIP_RESET_PAGE = 1;
+const STRIP_TITLE = "Sample Series 20";
+
+async function leaveStripPagesLeft(backend: FakeBackend, pagesLeft: number) {
+  for (const chapter of STRIP_CHAPTERS_RESET) {
+    await backend.pageShown(
+      sampleBookId(STRIP_SERIES_NUMBER, chapter),
+      STRIP_RESET_PAGE,
+      0,
+    );
+  }
+  const leftOutsideLast =
+    STRIP_CHAPTERS_RESET.length * (STRIP_CHAPTER_PAGES - STRIP_RESET_PAGE);
+  await backend.pageShown(
+    sampleBookId(STRIP_SERIES_NUMBER, STRIP_LAST_CHAPTER),
+    STRIP_CHAPTER_PAGES - (pagesLeft - leftOutsideLast),
+    0,
+  );
+}
+
+async function quickReadTitles(backend: FakeBackend) {
+  const page = await backend.librarySeries(
+    null,
+    filtered({ smart: ["quickReads"] }),
+  );
+  return page.series.map((series) => series.title);
+}
+
+test("lists the series with under 30 minutes left at nine seconds a page as quick reads", async () => {
   expect(await titlesFor({ smart: ["quickReads"] })).toEqual([
-    "Sample Series 04",
-    "Sample Series 07",
-    "Sample Series 16",
-    "Sample Series 18",
+    "Sample Series 11",
+    "Sample Series 20",
+    "Sample Series 21",
   ]);
+});
+
+test("lists no series that is both a quick read and forgotten while none is", async () => {
   expect(await titlesFor({ smart: ["quickReads", "forgotten"] })).toEqual([]);
+});
+
+const FORGOTTEN_NUMBER = 9;
+const FORGOTTEN_TITLE = "Sample Series 09";
+
+test("lists only the series that are quick reads and forgotten together once a forgotten series has under 30 minutes left", async () => {
+  const { backend } = backendFor();
+  await backend.markBooks([sampleBookId(FORGOTTEN_NUMBER, 1)], "unread");
+
+  const both = await backend.librarySeries(
+    null,
+    filtered({ smart: ["quickReads", "forgotten"] }),
+  );
+
+  expect(both.series.map((series) => series.title)).toEqual([FORGOTTEN_TITLE]);
+});
+
+test("lists a series with 199 pages left as a quick read, as 199 pages take 1,791 seconds", async () => {
+  const { backend } = backendFor();
+
+  await leaveStripPagesLeft(backend, 199);
+
+  expect(await quickReadTitles(backend)).toContain(STRIP_TITLE);
+});
+
+test("leaves out a series with 200 pages left, as 200 pages take 1,800 seconds", async () => {
+  const { backend } = backendFor();
+
+  await leaveStripPagesLeft(backend, 200);
+
+  expect(await quickReadTitles(backend)).not.toContain(STRIP_TITLE);
+});
+
+test("leaves a series out of the quick reads once it is finished", async () => {
+  const { backend } = backendFor();
+
+  await backend.markSeriesRead([sampleSeriesId(STRIP_SERIES_NUMBER)]);
+
+  expect(await quickReadTitles(backend)).toEqual([
+    "Sample Series 11",
+    "Sample Series 21",
+  ]);
 });
 
 test("lists the series downloaded and finished as ready to clean up", async () => {
