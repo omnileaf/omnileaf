@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "#lib/components/ui/button/index.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { filterChipLook } from "./filter-chip-look";
@@ -10,9 +10,7 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isNative = $derived(
-    platform === "ios" && isPhone(platform, width.current),
-  );
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const look = $derived(filterChipLook(isNative));
 
   let {
