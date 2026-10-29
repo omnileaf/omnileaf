@@ -40,14 +40,14 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
-    fn reads_the_latest_sessions_backwards_along_their_start_with_no_sort() {
+    fn reads_the_latest_progressing_sessions_backwards_from_an_index_holding_only_them() {
         let scratch = ScratchLibrary::new("reading-speed-plan");
 
         let plan = scratch.query_plan(LATEST_PAGE_TIMES);
 
         assert_eq!(
             plan,
-            ["SCAN reading_session USING INDEX reading_session_by_start"]
+            ["SCAN reading_session USING COVERING INDEX reading_session_by_progress"]
         );
     }
 }
