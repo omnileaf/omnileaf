@@ -321,6 +321,13 @@ test("names a colour and a shadow that share a name, since Tailwind reads both a
   );
 });
 
+test("lets a colour and a blur share a name, since Tailwind reads them under different names", () => {
+  const colour = { name: "glass", kind: "color", value: { default: "red" } };
+  const blur = { name: "glass", kind: "blur", value: { default: "0px" } };
+
+  expect(() => parse(colour, blur)).not.toThrow();
+});
+
 test("reads android's wallpaper colours in each theme", () => {
   const fromWallpaper = {
     ...ACCENT,
