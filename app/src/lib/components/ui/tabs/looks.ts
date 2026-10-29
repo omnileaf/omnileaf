@@ -17,8 +17,15 @@ const SHADCN_LOOK: TabsLook = {
     "room-for-semibold-label inline-flex flex-1 items-center justify-center rounded-small-control border border-transparent px-sm py-xs text-small font-medium whitespace-nowrap transition-control not-aria-selected:text-tab-idle aria-selected:border-tab-chosen-edge aria-selected:text-foreground aria-selected:bg-raised aria-selected:font-semibold aria-selected:shadow-raised focus-visible:focus-ring",
 };
 
+/** Matches SegmentedControl.svelte's own iOS native look, so a series' section tabs read as the same segmented control as the rest of the kit. */
+const IOS_SEGMENTED_LOOK: TabsLook = {
+  list: "flex gap-native-segmented-gap rounded-native-segmented bg-native-segmented-track p-native-segmented-inset",
+  trigger:
+    "flex flex-auto items-center justify-center gap-sm rounded-native-segment min-block-native-segment px-native-segment-inline text-native-segment leading-native-segment tracking-native-segment not-aria-selected:bg-native-segment-fill not-aria-selected:font-native-segment not-aria-selected:text-native-on-segment aria-selected:rounded-native-segment-selected aria-selected:bg-native-segment-selected aria-selected:font-native-segment-selected aria-selected:text-native-on-segment-selected aria-selected:shadow-native-segment-lift",
+};
+
 export const TABS_LOOKS = {
-  ios: TODAYS_LOOK,
+  ios: IOS_SEGMENTED_LOOK,
   android: TODAYS_LOOK,
   linux: SHADCN_LOOK,
   macos: TODAYS_LOOK,

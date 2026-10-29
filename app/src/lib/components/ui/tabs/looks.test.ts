@@ -28,7 +28,7 @@ interface TabsDrawn {
 }
 
 async function tabsOn(
-  platform: "linux" | "macos",
+  platform: "linux" | "macos" | "ios",
   theme: string,
 ): Promise<TabsDrawn> {
   document.documentElement.dataset.theme = theme;
@@ -155,4 +155,14 @@ test("keeps the tabs as they were on macOS", async () => {
     "10px",
     "15px",
   ]);
+});
+
+test("draws iOS's tabs as a segmented control, a capsule track with a raised pill under the chosen one", async () => {
+  const drawn = await tabsOn("ios", "light");
+
+  expect(drawn.listHeight).toBeCloseTo(32, 0);
+  expect(drawn.listFill).toBe("rgba(118, 118, 128, 0.12)");
+  expect(drawn.chosenFill).toBe("rgb(255, 255, 255)");
+  expect(drawn.chosenWeight).toBe("590");
+  expect(drawn.labelSize).toBe("13px");
 });
