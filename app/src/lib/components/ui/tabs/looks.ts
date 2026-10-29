@@ -26,7 +26,7 @@ const IOS_SEGMENTED_LOOK: TabsLook = {
 
 const MACOS_SEGMENTED_LOOK: TabsLook = {
   list: IOS_SEGMENTED_LOOK.list,
-  trigger: `${IOS_SEGMENTED_LOOK.trigger} segment-divider`,
+  trigger: `${IOS_SEGMENTED_LOOK.trigger} segment-divider not-aria-selected:hover:bg-native-control-fill-hover`,
 };
 
 export const TABS_LOOKS = {

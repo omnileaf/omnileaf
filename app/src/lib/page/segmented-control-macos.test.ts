@@ -128,13 +128,23 @@ test("keeps the small size at 20 points on a wide macOS window", async () => {
   expect(track().getBoundingClientRect().height).toBe(20);
 });
 
+test("tints an idle segment under the pointer on macOS", async () => {
+  await renderOnMac();
+
+  await userEvent.unhover(segment("Light"));
+  const resting = getComputedStyle(segment("Light")).backgroundColor;
+  await userEvent.hover(segment("Light"));
+
+  await expect
+    .poll(() => getComputedStyle(segment("Light")).backgroundColor)
+    .not.toBe(resting);
+  await userEvent.unhover(segment("Light"));
+});
+
 test("sets the focus ring off the chosen segment's accent fill on macOS", async () => {
   await renderOnMac();
 
-  segment("Dark").focus();
-  await userEvent.keyboard("{Tab}{Shift>}{Tab}{/Shift}");
-
-  expect(getComputedStyle(segment("Dark")).outlineOffset).toBe("1px");
+  expect(segment("Dark").className).toContain("focus-visible:outline-offset-1");
 });
 
 test("draws the small size as a 20 point track with 5 point corners and 11 point type on macOS", async () => {

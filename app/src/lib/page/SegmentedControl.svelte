@@ -179,6 +179,7 @@
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
         isMacos && "segment-divider focus-visible:outline-offset-1",
+        isMacos && chosen !== option && "hover:bg-native-control-fill-hover",
         usesNativeTokens
           ? [NATIVE_LOOK.segment, isMacosSmall && MACOS_SMALL.segment]
           : isWindows
