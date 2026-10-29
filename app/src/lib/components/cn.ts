@@ -692,6 +692,7 @@ export const TOKEN_THEME = {
     "bold",
     "extrabold",
     "medium",
+    "native-bar-button",
     "native-bar-title",
     "native-button",
     "native-end-book",

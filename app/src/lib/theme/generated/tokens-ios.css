@@ -78,6 +78,7 @@
   --native-tracking-large-title: 0.4px;
   --native-text-bar-title: calc(1.0625rem * var(--text-scale));
   --native-leading-bar-title: calc(22 / 17);
+  --native-weight-bar-button: 510;
   --native-weight-bar-title: 600;
   --native-tracking-bar-title: -0.43px;
   --native-spacing-top-bar: 0px;

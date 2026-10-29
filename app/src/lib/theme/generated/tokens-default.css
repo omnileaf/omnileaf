@@ -122,6 +122,7 @@
   --native-tracking-large-title: var(--tracking-tight);
   --native-text-bar-title: var(--text-body);
   --native-leading-bar-title: var(--text-body--line-height);
+  --native-weight-bar-button: var(--font-weight-medium);
   --native-weight-bar-title: var(--font-weight-semibold);
   --native-tracking-bar-title: 0;
   --native-spacing-top-bar: 0px;
