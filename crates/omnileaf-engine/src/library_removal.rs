@@ -159,8 +159,12 @@ async fn restore(store: &Store, marked: BTreeSet<StoredBookId>) -> Result<(), Li
 mod tests {
     use omnileaf_db::{
         Config, Database,
+        catalog::{
+            BookDetails, BookFile, NewRoot, NewSeries, RootId, RootKind, RootLocator, add_root,
+        },
         rusqlite::{Connection, OpenFlags},
     };
+    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
     use omnileaf_testkit::ScratchFolder;
 
     use super::*;
@@ -170,6 +174,26 @@ mod tests {
         connection
             .pragma_query_value(None, "data_version", |row| row.get(0))
             .unwrap()
+    }
+
+    fn unmarked_book(root: RootId, crc32: u32) -> ScannedBook {
+        ScannedBook {
+            series: NewSeries::local("Sample Series 01", 0).unwrap(),
+            named_series: None,
+            fingerprint: Fingerprint::pmf1([ImageEntry { crc32, size: 100 }]).unwrap(),
+            title: format!("Volume {crc32:02}"),
+            added_at_ms: 0,
+            page_count: 1,
+            details: BookDetails::default(),
+            file: BookFile {
+                root,
+                location: format!("Sample Series 01/Volume {crc32:02}.cbz").into(),
+                size_bytes: 100,
+                modified_at_ms: 0,
+            },
+            numbering: None,
+            name_language: None,
+        }
     }
 
     #[tokio::test]
@@ -182,12 +206,27 @@ mod tests {
             mmap_size_bytes: 0,
         })
         .unwrap();
+        let root = database
+            .write(|transaction| {
+                add_root(
+                    transaction,
+                    &NewRoot {
+                        kind: RootKind::Linked,
+                        locator: RootLocator::Path(PathBuf::from("/media/Comics")),
+                        added_at_ms: 0,
+                    },
+                )
+            })
+            .await
+            .unwrap();
         let store = Store::new(database, SystemClock);
         let watching =
             Connection::open_with_flags(&file, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
         let before = data_version(&watching);
 
-        bring_back_marked(&store, &[]).await.unwrap();
+        bring_back_marked(&store, &[unmarked_book(root, 1), unmarked_book(root, 2)])
+            .await
+            .unwrap();
 
         assert_eq!(data_version(&watching), before);
     }
