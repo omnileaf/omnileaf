@@ -417,6 +417,7 @@
   "library_select_all_control": "Ctrl A",
   "library_select_all_command": "⌘ A",
   "library_cancel_selecting": "Cancel selecting",
+  "library_selection_done": "Done",
   "library_cancel": "Cancel",
   "library_mark_read": "Mark as read",
   "library_marked_read": "{count} series marked as read",
