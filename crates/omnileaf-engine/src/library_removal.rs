@@ -1,5 +1,6 @@
 use std::{
     collections::BTreeSet,
+    io,
     path::{Component, Path, PathBuf},
     sync::Arc,
 };
@@ -141,9 +142,21 @@ async fn dispose_file(
         return Err(DisposalFailure::Other);
     };
     still_the_scanned_file(storage, &path, file).await?;
-    match file.root {
-        RootLocator::AndroidTree(_) => remove_through(storage, path).await,
+    let disposed = match file.root {
+        RootLocator::AndroidTree(_) => remove_through(storage, &path).await,
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => disposal.dispose(&path).await,
+    };
+    match disposed {
+        Err(DisposalFailure::NotFound) => Err(failure_after_not_found(storage, &path).await),
+        disposed => disposed,
+    }
+}
+
+async fn failure_after_not_found(storage: &Arc<dyn Storage>, path: &Path) -> DisposalFailure {
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
+    match blocking(move || storage.details(&path)).await {
+        Ok(Err(error)) if error.kind() == io::ErrorKind::NotFound => DisposalFailure::NotFound,
+        Ok(_) | Err(_) => DisposalFailure::Other,
     }
 }
 
@@ -156,9 +169,9 @@ fn inside(folder: &Path, location: &Path) -> Option<PathBuf> {
 
 async fn remove_through(
     storage: &Arc<dyn Storage>,
-    path: PathBuf,
+    path: &Path,
 ) -> Result<Disposal, DisposalFailure> {
-    let storage = Arc::clone(storage);
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
     blocking(move || storage.remove(&path))
         .await?
         .map(|()| Disposal::Deleted)

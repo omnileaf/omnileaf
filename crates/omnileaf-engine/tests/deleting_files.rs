@@ -24,7 +24,7 @@ use std::{
 };
 
 use books::{write_book, write_page};
-use disposal::{DiskDisposal, FakeDisposal, Pause};
+use disposal::{DiskDisposal, FakeDisposal, Pause, VanishingDisposal};
 use omnileaf_engine::{
     AndroidTree, BookId, Disposal, DisposalFailure, FileDisposal, FileFate, FileOutcome,
     FileRemoval, Library, LibraryListing, OpenTree, RemovalFailure, RemovalReport, RemovalTarget,
@@ -209,6 +209,21 @@ async fn a_file_with_no_trash_to_go_to_is_reported_deleted() {
 async fn a_file_that_vanishes_while_it_is_removed_counts_as_missing() {
     let deleting = Deleting::new("delete-vanished").await;
     let book = deleting.books(SERIES_02).await[0];
+
+    let report = deleting
+        .delete(&[RemovalTarget::Book { id: book }], &VanishingDisposal)
+        .await;
+
+    assert_eq!(
+        by_name(report.files),
+        [("v01.cbz".to_owned(), FileOutcome::Missing)]
+    );
+}
+
+#[tokio::test]
+async fn a_disposal_that_says_not_found_for_a_file_still_on_disk_reports_it_failed() {
+    let deleting = Deleting::new("delete-not-found-but-there").await;
+    let book = deleting.books(SERIES_02).await[0];
     let disposal = FakeDisposal::default().replying("v01.cbz", Err(DisposalFailure::NotFound));
 
     let report = deleting
@@ -217,8 +232,9 @@ async fn a_file_that_vanishes_while_it_is_removed_counts_as_missing() {
 
     assert_eq!(
         by_name(report.files),
-        [("v01.cbz".to_owned(), FileOutcome::Missing)]
+        [("v01.cbz".to_owned(), failed(RemovalFailure::Other))]
     );
+    assert!(deleting.path("Sample Series 02/v01.cbz").is_file());
 }
 
 #[tokio::test]

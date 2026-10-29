@@ -74,3 +74,12 @@ impl FileDisposal for DiskDisposal {
         )
     }
 }
+
+pub(crate) struct VanishingDisposal;
+
+impl FileDisposal for VanishingDisposal {
+    fn dispose(&self, file: &Path) -> impl Future<Output = Reply> + Send {
+        fs::remove_file(file).unwrap();
+        ready(Err(DisposalFailure::NotFound))
+    }
+}
