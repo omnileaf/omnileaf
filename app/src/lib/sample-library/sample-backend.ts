@@ -11,11 +11,13 @@ import {
   type LibrarySortBy,
   type LibraryView,
   type Platform,
+  type RemovalFailure,
   type SeriesFormat,
   type SignInOutcome,
   type SmartFilter,
   type SourcedLanguage,
 } from "#lib/ipc/bindings.ts";
+import { assertNever } from "#lib/assert-never.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
@@ -49,6 +51,7 @@ import {
 type LibraryState = (typeof LIBRARY_STATES)[number];
 type SeriesState = "ready" | "loading" | "failed" | "empty";
 type SkippedKind = (typeof SKIPPED_KINDS)[number];
+type RemovalKind = (typeof REMOVAL_KINDS)[number];
 
 export interface SampleScenario {
   readonly platform: Platform;
@@ -61,6 +64,7 @@ export interface SampleScenario {
   readonly home: HomeKind;
   readonly space: SpaceKind;
   readonly skipped: SkippedKind;
+  readonly removal: RemovalKind;
 }
 
 export interface SampleEvents {
@@ -104,12 +108,20 @@ const SIXTH_VOLUME_FILES = [
 const READ_FILE_TYPE = "cbz";
 const UNSUPPORTED_FILE_TYPE = "cbr";
 const FILE_TYPES_NOT_READ_YET: readonly string[] = ["cbr", "rar"];
-const SAMPLE_FILE_OUTCOMES = [
+const REMOVAL_KINDS = ["clean", "mixed", "failed"] as const;
+const PLATFORMS_WITHOUT_TRASH: readonly Platform[] = ["ios", "android"];
+const MIXED_FILE_OUTCOMES = [
   { kind: "trashed" },
   { kind: "deleted" },
   { kind: "missing" },
   { kind: "failed", reason: "permissionDenied" },
 ] as const satisfies readonly FileOutcome[];
+const FILE_FAILURES = [
+  "permissionDenied",
+  "locked",
+  "unsupportedLocation",
+  "other",
+] as const satisfies readonly RemovalFailure[];
 const SKIPPED_KINDS = ["none", "types"] as const;
 const SKIPPED_TYPES = [
   {
@@ -253,6 +265,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     home: oneOf(HOME_KINDS, search.get("home"), "empty"),
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
     skipped: oneOf(SKIPPED_KINDS, search.get("skipped"), "none"),
+    removal: oneOf(REMOVAL_KINDS, search.get("removal"), "clean"),
   };
 }
 
@@ -493,12 +506,38 @@ function fileTypeOfBook(book: SampleBook): string {
   return book.file === "unsupported" ? UNSUPPORTED_FILE_TYPE : READ_FILE_TYPE;
 }
 
-function outcomeOfFile(position: number): FileOutcome {
-  const outcome = SAMPLE_FILE_OUTCOMES[position % SAMPLE_FILE_OUTCOMES.length];
-  if (outcome === undefined) {
-    throw new Error("the sample has no file outcomes to report");
+function cycled<Choice>(choices: readonly Choice[], position: number): Choice {
+  const choice = choices[position % choices.length];
+  if (choice === undefined) {
+    throw new Error("the sample has nothing to choose from");
   }
-  return outcome;
+  return choice;
+}
+
+function cleanOutcomeOf(platform: Platform, book: SampleBook): FileOutcome {
+  if (book.file === "missing") {
+    return { kind: "missing" };
+  }
+  return PLATFORMS_WITHOUT_TRASH.includes(platform)
+    ? { kind: "deleted" }
+    : { kind: "trashed" };
+}
+
+function outcomeOfFile(
+  scenario: SampleScenario,
+  book: SampleBook,
+  position: number,
+): FileOutcome {
+  switch (scenario.removal) {
+    case "clean":
+      return cleanOutcomeOf(scenario.platform, book);
+    case "mixed":
+      return cycled(MIXED_FILE_OUTCOMES, position);
+    case "failed":
+      return { kind: "failed", reason: cycled(FILE_FAILURES, position) };
+    default:
+      return assertNever(scenario.removal);
+  }
 }
 
 function bookCount(library: readonly SampleSeries[]): number {
@@ -1942,7 +1981,7 @@ export function sampleBackend(
                 {
                   book: id,
                   name: `${book.title}.${fileTypeOfBook(book)}`,
-                  outcome: outcomeOfFile(at),
+                  outcome: outcomeOfFile(scenario, book, at),
                 },
               ]
             : [];

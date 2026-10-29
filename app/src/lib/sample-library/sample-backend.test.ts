@@ -1645,7 +1645,30 @@ test("counts a series and one of its books once, and an unknown target not at al
   expect([report.removedSeries, report.removedBooks]).toEqual([1, 2]);
 });
 
-test("reports each file's outcome, including a failed one and a missing one, when files are deleted", async () => {
+function volumesOf(series: number, count: number): string[] {
+  return Array.from({ length: count }, (_, index) =>
+    sampleBookId(series, index + 1),
+  );
+}
+
+async function outcomesOfDeleting(search: string, series: number) {
+  const { backend } = backendFor(search);
+  const report = await backend.removeFromLibrary(
+    [{ kind: "series", id: sampleSeriesId(series) }],
+    true,
+  );
+  return report.files.map(({ book, outcome }) => [book, outcome]);
+}
+
+test("trashes every file of a removed series by default", async () => {
+  const outcomes = await outcomesOfDeleting("", 8);
+
+  expect(outcomes).toEqual(
+    volumesOf(8, 4).map((book) => [book, { kind: "trashed" }]),
+  );
+});
+
+test("names each file after its book and type", async () => {
   const { backend } = backendFor();
 
   const report = await backend.removeFromLibrary(
@@ -1653,28 +1676,66 @@ test("reports each file's outcome, including a failed one and a missing one, whe
     true,
   );
 
-  expect(report.files).toEqual([
-    {
-      book: sampleBookId(8, 1),
-      name: "Volume 1.cbz",
-      outcome: { kind: "trashed" },
-    },
-    {
-      book: sampleBookId(8, 2),
-      name: "Volume 2.cbz",
-      outcome: { kind: "deleted" },
-    },
-    {
-      book: sampleBookId(8, 3),
-      name: "Volume 3.cbz",
-      outcome: { kind: "missing" },
-    },
-    {
-      book: sampleBookId(8, 4),
-      name: "Volume 4.cbz",
-      outcome: { kind: "failed", reason: "permissionDenied" },
-    },
+  expect(report.files.map(({ name }) => name)).toEqual([
+    "Volume 1.cbz",
+    "Volume 2.cbz",
+    "Volume 3.cbz",
+    "Volume 4.cbz",
   ]);
+});
+
+test.each(["ios", "android"])(
+  "deletes the files outright on %s, which has no trash",
+  async (platform) => {
+    const outcomes = await outcomesOfDeleting(`platform=${platform}`, 8);
+
+    expect(outcomes).toEqual(
+      volumesOf(8, 4).map((book) => [book, { kind: "deleted" }]),
+    );
+  },
+);
+
+test("reports a missing file as missing and trashes the rest", async () => {
+  const outcomes = await outcomesOfDeleting("", 4);
+
+  expect(outcomes.map(([, outcome]) => outcome)).toEqual([
+    { kind: "trashed" },
+    { kind: "trashed" },
+    { kind: "trashed" },
+    { kind: "trashed" },
+    { kind: "trashed" },
+    { kind: "missing" },
+    { kind: "trashed" },
+    { kind: "trashed" },
+  ]);
+});
+
+test("reports every kind of outcome when the removal is mixed", async () => {
+  const outcomes = await outcomesOfDeleting("removal=mixed", 8);
+
+  expect(outcomes).toEqual([
+    [sampleBookId(8, 1), { kind: "trashed" }],
+    [sampleBookId(8, 2), { kind: "deleted" }],
+    [sampleBookId(8, 3), { kind: "missing" }],
+    [sampleBookId(8, 4), { kind: "failed", reason: "permissionDenied" }],
+  ]);
+});
+
+test("fails each file for a different reason when the removal is failed", async () => {
+  const outcomes = await outcomesOfDeleting("removal=failed", 8);
+
+  expect(outcomes).toEqual([
+    [sampleBookId(8, 1), { kind: "failed", reason: "permissionDenied" }],
+    [sampleBookId(8, 2), { kind: "failed", reason: "locked" }],
+    [sampleBookId(8, 3), { kind: "failed", reason: "unsupportedLocation" }],
+    [sampleBookId(8, 4), { kind: "failed", reason: "other" }],
+  ]);
+});
+
+test("ignores an unknown removal scenario", () => {
+  expect(
+    scenarioFrom(new URLSearchParams("removal=sideways")).removal,
+  ).toBe("clean");
 });
 
 test("returns no files when it keeps the files", async () => {
