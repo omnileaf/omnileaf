@@ -4,6 +4,7 @@ mod commands;
 mod crash_reporting;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
+mod file_trash;
 mod files_to_open;
 #[cfg(target_os = "ios")]
 mod folder_access;
