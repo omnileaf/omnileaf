@@ -72,30 +72,49 @@ async function tableOn(platform: "macos" | "linux") {
 }
 
 function cellsOf(row: number): HTMLElement[] {
-  const rows = document.querySelectorAll("tbody tr");
-  const cells = rows.item(row).querySelectorAll("td");
-  return [...cells].filter(
-    (cell): cell is HTMLTableCellElement => cell instanceof HTMLElement,
-  );
+  const cells = document
+    .querySelectorAll("tbody tr")
+    .item(row)
+    .querySelectorAll("td");
+  return [...cells];
+}
+
+function cardElement(): Element {
+  const card = document.querySelector("[data-slot=card]");
+  if (card === null) {
+    throw new Error("the table drew no card");
+  }
+  return card;
+}
+
+function cellStyle(row: number, column: number): CSSStyleDeclaration {
+  const cell = cellsOf(row)[column];
+  if (cell === undefined) {
+    throw new Error(`no cell at row ${String(row)}, column ${String(column)}`);
+  }
+  return getComputedStyle(cell);
 }
 
 test("draws the books as 20 point striped rows under a 31 point header on macOS", async () => {
   await tableOn("macos");
 
   const header = document.querySelector("th");
+  if (header === null) {
+    throw new Error("the table drew no header");
+  }
   const second = cellsOf(1)[1];
 
-  expect(header?.getBoundingClientRect().height).toBe(31);
+  expect(header.getBoundingClientRect().height).toBe(31);
   expect(second?.getBoundingClientRect().height).toBe(20);
-  expect(getComputedStyle(header ?? document.body).fontSize).toBe("11px");
+  expect(getComputedStyle(header).fontSize).toBe("11px");
 });
 
 test("fills the picked row with the accent and stripes the odd rows on macOS", async () => {
   await tableOn("macos");
 
-  const picked = getComputedStyle(cellsOf(0)[1] ?? document.body);
-  const striped = getComputedStyle(cellsOf(2)[1] ?? document.body);
-  const plain = getComputedStyle(cellsOf(1)[1] ?? document.body);
+  const picked = cellStyle(0, 1);
+  const striped = cellStyle(2, 1);
+  const plain = cellStyle(1, 1);
 
   expect(picked.backgroundColor).toBe(
     resolvedColour("--color-accent", "backgroundColor"),
@@ -107,8 +126,7 @@ test("fills the picked row with the accent and stripes the odd rows on macOS", a
 test("lays the books on the page rather than in a card on macOS", async () => {
   await tableOn("macos");
 
-  const card = document.querySelector("[data-slot=card]");
-  const style = getComputedStyle(card ?? document.body);
+  const style = getComputedStyle(cardElement());
 
   expect(style.borderTopWidth).toBe("0px");
   expect(style.boxShadow).toMatch(/^(none|rgba\(0, 0, 0, 0\))/);
@@ -117,9 +135,7 @@ test("lays the books on the page rather than in a card on macOS", async () => {
 test("keeps the card and the tall rows on Linux", async () => {
   await tableOn("linux");
 
-  const card = document.querySelector("[data-slot=card]");
-
-  expect(getComputedStyle(card ?? document.body).borderTopWidth).toBe("1px");
+  expect(getComputedStyle(cardElement()).borderTopWidth).toBe("1px");
   expect(cellsOf(1)[1]?.getBoundingClientRect().height).toBeGreaterThan(40);
 });
 
@@ -133,4 +149,22 @@ test("draws the progress words and bar side by side on macOS", async () => {
   expect(words?.getBoundingClientRect().right).toBeLessThanOrEqual(
     (bar?.getBoundingClientRect().left ?? 0) + 1,
   );
+});
+
+test("rounds the picked row's ends and inks its title in the on-accent colour on macOS", async () => {
+  await tableOn("macos");
+
+  const first = cellStyle(0, 0);
+  const last = cellStyle(0, 5);
+  const link = document.querySelector("tbody tr a");
+  if (link === null) {
+    throw new Error("the picked row drew no title link");
+  }
+  const title = getComputedStyle(link);
+
+  expect([first.borderStartStartRadius, last.borderEndEndRadius]).toEqual([
+    "8px",
+    "8px",
+  ]);
+  expect(title.color).toBe(resolvedColour("--color-on-accent", "color"));
 });

@@ -92,7 +92,7 @@
               {...props}
               look="row-action"
               aria-label={m.series_book_more({ title: book.title })}
-              class="block-pointer-target inline-pointer-target before:block-pointer-target before:inline-pointer-target macos:block-book-menu-macos macos:inline-book-menu-macos"
+              class="block-pointer-target inline-pointer-target before:block-pointer-target before:inline-pointer-target macos:block-book-menu-macos macos:inline-book-menu-macos macos:before:block-book-menu-macos macos:before:inline-book-menu-macos"
             >
               <Ellipsis size={ICON_SIZE} aria-hidden="true" />
             </Button>

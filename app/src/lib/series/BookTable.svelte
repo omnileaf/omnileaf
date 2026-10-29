@@ -124,6 +124,7 @@
       <TableRow
         aria-rowindex={rowIndex}
         aria-selected={isPicked}
+        data-stripe={rowIndex % 2 === 0}
         class={[
           "block-book-row-wide macos:border-0 macos:block-auto",
           isPicked &&
@@ -159,6 +160,7 @@
                 book.reading.state === "read" && !isPicked
                   ? "text-muted"
                   : "text-foreground",
+                isPicked && "macos:text-inherit",
               ]}
             >
               {book.title}

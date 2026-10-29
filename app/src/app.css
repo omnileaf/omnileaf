@@ -1311,35 +1311,42 @@
     var(--color-foreground) 5%,
     transparent
   );
-  & th {
+  border-collapse: separate;
+  border-spacing: 0;
+  & th[data-slot="table-head"] {
     block-size: 31px;
     padding: 4px 8px 8px;
     font-size: var(--native-text-button-small);
     font-weight: var(--native-weight-button);
     color: var(--color-muted);
   }
-  & td {
+  & td[data-slot="table-cell"] {
     block-size: 20px;
     padding: 0 8px;
     font-weight: var(--native-weight-button);
   }
-  & td:first-child {
+  & td[data-slot="table-cell"]:first-child {
     padding-inline-start: 9px;
     border-start-start-radius: 8px;
     border-end-start-radius: 8px;
   }
-  & td:last-child {
+  & td[data-slot="table-cell"]:last-child {
     padding-inline-end: 4px;
     border-start-end-radius: 8px;
     border-end-end-radius: 8px;
   }
-  & tbody tr:nth-child(odd) td,
-  & tbody tr:hover td {
+  & tbody tr[data-stripe="true"] td,
+  & tbody tr[data-slot="table-row"]:hover td {
     background: var(--macos-row-stripe);
   }
   & tbody tr[aria-selected="true"] td {
     background: var(--color-accent);
     color: var(--color-on-accent);
+  }
+  & tbody tr[aria-selected="true"] td > * {
+    --color-accent: var(--primary-foreground);
+    --color-on-accent: var(--primary);
+    --native-color-progress-fill: var(--primary-foreground);
   }
   & tbody tr[aria-selected="true"] + tr[aria-selected="true"] td {
     border-start-start-radius: 0;
