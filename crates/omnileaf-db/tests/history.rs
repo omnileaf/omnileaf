@@ -1217,6 +1217,34 @@ async fn leaves_the_reading_of_a_removed_book_out_of_the_aggregates_while_hiding
 }
 
 #[tokio::test]
+async fn lists_no_entry_for_a_book_removed_from_the_library_yet_keeps_its_sessions_in_the_totals() {
+    let history = History::open("history-removed-from-library").await;
+    history
+        .read(
+            book(1),
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            NOW_UNIX_MS - 2 * HOUR_MS,
+            0,
+        )
+        .await;
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+    let totals_before = history.reading_aggregates(AdultHiding::default()).await;
+
+    history
+        .store
+        .write(|writer| writer.remove_books_from_library(&[book(4)]))
+        .await
+        .unwrap();
+
+    let totals_after = history.reading_aggregates(AdultHiding::default()).await;
+    assert_eq!(history.listed_books().await, [book(1)]);
+    assert_eq!(totals_after, totals_before);
+    assert_eq!(totals_after.0, 2);
+}
+
+#[tokio::test]
 async fn pages_through_history_with_a_cursor_while_hiding_18_plus_series() {
     let history = History::open("history-hides-pages").await;
     history.shelve_rated_adult(RATED_SERIES, 5).await;
