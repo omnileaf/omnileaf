@@ -579,7 +579,7 @@ impl Library {
             .database()
             .read(|connection| {
                 Ok((
-                    stored_filter_choices(connection)?,
+                    stored_filter_choices(connection, AdultHiding::default())?,
                     AdultContent::stored(connection)?,
                 ))
             })

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use omnileaf_sync_proto::{CategoryId, SeriesId, TagId, norm};
 use rusqlite::Connection;
 
-use crate::{Error, catalog::stored_id::stored_id};
+use crate::{Error, adult_content::AdultHiding, catalog::stored_id::stored_id};
 
 const SUGGESTED_TAGS: usize = 10;
 const CATEGORIES: &str =
@@ -15,6 +15,17 @@ const SHOWN_SERIES_WITH_EACH_TAG: &str =
     LEFT JOIN series ON series.id = series_label_tag.series_id AND series.reading_stage IS NOT NULL
     GROUP BY label_tag.tag_id
     ORDER BY label_tag.name COLLATE NOCASE, label_tag.name";
+const SERIES_SHOWN_WHILE_HIDING_ADULT_WITH_EACH_TAG: &str = concat!(
+    "SELECT label_tag.name, count(series.local_id) FROM label_tag
+    LEFT JOIN series_label_tag ON series_label_tag.tag_id = label_tag.tag_id
+    LEFT JOIN series ON series.id = series_label_tag.series_id AND series.reading_stage IS NOT NULL
+        AND NOT ",
+    crate::adult_content::in_hidden_adult_series!("series"),
+    "
+    GROUP BY label_tag.tag_id
+    HAVING count(series.local_id) > 0 OR count(series_label_tag.series_id) = 0
+    ORDER BY label_tag.name COLLATE NOCASE, label_tag.name"
+);
 const CATEGORIES_OF_SERIES: &str =
     "SELECT category_id AS label FROM series_category WHERE series_id = ?1";
 const TAGS_OF_SERIES: &str = "SELECT tag_id AS label FROM series_label_tag WHERE series_id = ?1";
@@ -67,10 +78,14 @@ pub fn library_categories(connection: &Connection) -> Result<Vec<StoredCategory>
 }
 
 #[tracing::instrument(skip_all)]
-pub fn library_tags(connection: &Connection) -> Result<Vec<StoredTag>, Error> {
-    let mut statement = connection.prepare(SHOWN_SERIES_WITH_EACH_TAG)?;
+pub fn library_tags(connection: &Connection, hiding: AdultHiding) -> Result<Vec<StoredTag>, Error> {
+    let mut statement = connection.prepare(if hiding.leaves_out_adult {
+        SERIES_SHOWN_WHILE_HIDING_ADULT_WITH_EACH_TAG
+    } else {
+        SHOWN_SERIES_WITH_EACH_TAG
+    })?;
     let tags = statement
-        .query_map([], |row| {
+        .query_map(&hiding.params_while_hiding()[..], |row| {
             Ok(StoredTag {
                 name: row.get(0)?,
                 series_count: row.get(1)?,

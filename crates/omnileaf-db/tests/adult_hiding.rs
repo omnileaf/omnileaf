@@ -15,10 +15,11 @@ use std::path::{Path, PathBuf};
 use omnileaf_db::{
     adult_content::AdultHiding,
     catalog::{
-        AgeRating, BookDetails, BookFile, BookPerson, FolderGroup, NewRoot, NewSeries, PageRequest,
-        PageSize, PersonRole, RootId, RootKind, RootLocator, ScannedBook, SeriesFolder,
-        SeriesNaming, Sourced, ValueSource, add_root, closest_title_words, folder_groups,
-        person_series, record_scanned_books, writers,
+        AgeRating, BookDetails, BookFile, BookPerson, Cursor, FilterChoices, FolderGroup, NewRoot,
+        NewSeries, PageRequest, PageSize, PersonRole, RootId, RootKind, RootLocator, ScannedBook,
+        SeriesFolder, SeriesFormat, SeriesNaming, Sourced, ValueSource, add_root,
+        closest_title_words, filter_choices, folder_groups, library_tags, person_series,
+        record_scanned_books, writers,
     },
     store::{SeriesEdits, Store},
 };
@@ -30,7 +31,11 @@ const MODIFIED_AT_MS: i64 = 1_780_000_000_000;
 const SHOWN: &str = "Lantern Keepers/Sample Series 01";
 const RATED: &str = "Hidden Imprint/Forbidden Tale";
 const MARKED: &str = "Marked Imprint/Sample Series 03";
+const OTHER: &str = "Zine Imprint/Sample Series 04";
 const SHARED_WRITER: &str = "Pat Writer";
+const ANOTHER_SHOWN_WRITER: &str = "Zed Writer";
+const SHARED_TAG: &str = "shared";
+const RATED_ONLY_TAG: &str = "forbidden";
 const RATED_ONLY_WRITER: &str = "Sam Hidden";
 const HIDING: AdultHiding = AdultHiding {
     leaves_out_adult: true,
@@ -60,17 +65,34 @@ impl Library {
             .write(move |transaction| add_root(transaction, &root))
             .await
             .unwrap();
-        let scanned = vec![
-            scanned_book(root, 1, SHOWN, None, &[SHARED_WRITER]),
-            scanned_book(
-                root,
-                2,
-                RATED,
-                Some(AgeRating::AdultsOnly18),
-                &[SHARED_WRITER, RATED_ONLY_WRITER],
-            ),
-            scanned_book(root, 3, MARKED, None, &[]),
+        let seeds = [
+            Seed {
+                crc: 1,
+                folder: SHOWN,
+                writers: &[SHARED_WRITER, ANOTHER_SHOWN_WRITER],
+                ..Seed::plain()
+            },
+            Seed {
+                crc: 2,
+                folder: RATED,
+                age_rating: Some(AgeRating::AdultsOnly18),
+                writers: &[SHARED_WRITER, RATED_ONLY_WRITER],
+                tags: &[SHARED_TAG, RATED_ONLY_TAG],
+                language: "fr",
+                is_manga: true,
+            },
+            Seed {
+                crc: 3,
+                folder: MARKED,
+                ..Seed::plain()
+            },
+            Seed {
+                crc: 4,
+                folder: OTHER,
+                ..Seed::plain()
+            },
         ];
+        let scanned: Vec<ScannedBook> = seeds.iter().map(|seed| scanned_book(root, seed)).collect();
         store
             .database()
             .write(move |transaction| record_scanned_books(transaction, &scanned))
@@ -115,6 +137,89 @@ impl Library {
             .into_iter()
             .map(|writer| (writer.name, writer.series_count))
             .collect()
+    }
+
+    async fn writer_pages(&self, hiding: AdultHiding) -> Vec<Vec<String>> {
+        let mut pages = Vec::new();
+        let mut after: Option<Cursor> = None;
+        loop {
+            let request = PageRequest {
+                after: after.map(|cursor| cursor.to_string().parse().unwrap()),
+                size: PageSize::try_from(1).unwrap(),
+            };
+            let page = self
+                .store
+                .database()
+                .read(move |connection| writers(connection, &request, hiding))
+                .await
+                .unwrap();
+            pages.push(page.items.into_iter().map(|writer| writer.name).collect());
+            match page.next {
+                Some(next) => after = Some(next),
+                None => return pages,
+            }
+        }
+    }
+
+    async fn group_pages(&self, hiding: AdultHiding) -> Vec<Vec<String>> {
+        let mut pages = Vec::new();
+        let mut after: Option<Cursor> = None;
+        loop {
+            let request = PageRequest {
+                after: after.map(|cursor| cursor.to_string().parse().unwrap()),
+                size: PageSize::try_from(1).unwrap(),
+            };
+            let page = self
+                .store
+                .database()
+                .read(move |connection| folder_groups(connection, &request, hiding))
+                .await
+                .unwrap();
+            pages.push(
+                page.items
+                    .into_iter()
+                    .map(|summary| group_name(&summary.group))
+                    .collect(),
+            );
+            match page.next {
+                Some(next) => after = Some(next),
+                None => return pages,
+            }
+        }
+    }
+
+    async fn label_series_with_tags(&self) {
+        let shown = series_of(SHOWN).id();
+        let rated = series_of(RATED).id();
+        self.store
+            .write(move |writer| {
+                let harbour = writer.create_tag("Harbour")?;
+                let secret = writer.create_tag("Secret")?;
+                writer.create_tag("unused")?;
+                writer.set_tag_members(harbour, &[shown, rated], true)?;
+                writer.set_tag_members(secret, &[rated], true)
+            })
+            .await
+            .unwrap();
+    }
+
+    async fn tag_counts(&self, hiding: AdultHiding) -> Vec<(String, u32)> {
+        self.store
+            .database()
+            .read(move |connection| library_tags(connection, hiding))
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|tag| (tag.name, tag.series_count))
+            .collect()
+    }
+
+    async fn choices(&self, hiding: AdultHiding) -> FilterChoices {
+        self.store
+            .database()
+            .read(move |connection| filter_choices(connection, hiding))
+            .await
+            .unwrap()
     }
 
     async fn series_of_writer(&self, name: &str, hiding: AdultHiding) -> Vec<String> {
@@ -169,14 +274,33 @@ fn series_of(series_folder: &str) -> NewSeries {
     .unwrap()
 }
 
-fn scanned_book(
-    root: RootId,
+struct Seed<'a> {
     crc: u32,
-    series_folder: &str,
+    folder: &'a str,
     age_rating: Option<AgeRating>,
-    writers: &[&str],
-) -> ScannedBook {
-    let people = writers
+    writers: &'a [&'a str],
+    tags: &'a [&'a str],
+    language: &'a str,
+    is_manga: bool,
+}
+
+impl Seed<'_> {
+    const fn plain() -> Self {
+        Seed {
+            crc: 0,
+            folder: "",
+            age_rating: None,
+            writers: &[],
+            tags: &[SHARED_TAG],
+            language: "en",
+            is_manga: false,
+        }
+    }
+}
+
+fn scanned_book(root: RootId, seed: &Seed<'_>) -> ScannedBook {
+    let people = seed
+        .writers
         .iter()
         .map(|name| BookPerson {
             role: PersonRole::Writer,
@@ -184,26 +308,29 @@ fn scanned_book(
         })
         .collect();
     ScannedBook {
-        series: series_of(series_folder),
+        series: series_of(seed.folder),
         named_series: None,
         fingerprint: Fingerprint::pmf1([ImageEntry {
-            crc32: crc,
+            crc32: seed.crc,
             size: 100,
         }])
         .unwrap(),
-        title: format!("Volume {crc:02}"),
+        title: format!("Volume {:02}", seed.crc),
         added_at_ms: 0,
         page_count: 1,
         details: BookDetails {
-            age_rating,
+            age_rating: seed.age_rating,
             people,
+            tags: seed.tags.iter().map(|tag| (*tag).to_owned()).collect(),
+            language: Some(seed.language.to_owned()),
+            is_manga: Some(seed.is_manga),
             ..BookDetails::default()
         },
         numbering: None,
         name_language: None,
         file: BookFile {
             root,
-            location: Path::new(series_folder).join(format!("Volume {crc:02}.cbz")),
+            location: Path::new(seed.folder).join(format!("Volume {:02}.cbz", seed.crc)),
             size_bytes: 100,
             modified_at_ms: MODIFIED_AT_MS,
         },
@@ -233,10 +360,15 @@ async fn leaves_18_plus_series_out_of_the_folder_groups_and_their_counts_while_h
             named(&[
                 ("Hidden Imprint", 1),
                 ("Lantern Keepers", 1),
-                ("Marked Imprint", 1)
+                ("Marked Imprint", 1),
+                ("Zine Imprint", 1)
             ]),
-            named(&[("Lantern Keepers", 1)]),
-            named(&[("Hidden Imprint", 1), ("Lantern Keepers", 1)]),
+            named(&[("Lantern Keepers", 1), ("Zine Imprint", 1)]),
+            named(&[
+                ("Hidden Imprint", 1),
+                ("Lantern Keepers", 1),
+                ("Zine Imprint", 1)
+            ]),
         )
     );
 }
@@ -253,8 +385,12 @@ async fn leaves_18_plus_series_out_of_the_writers_and_their_counts_while_hiding(
     assert_eq!(
         writers,
         (
-            named(&[(SHARED_WRITER, 2), (RATED_ONLY_WRITER, 1)]),
-            named(&[(SHARED_WRITER, 1)]),
+            named(&[
+                (SHARED_WRITER, 2),
+                (RATED_ONLY_WRITER, 1),
+                (ANOTHER_SHOWN_WRITER, 1)
+            ]),
+            named(&[(SHARED_WRITER, 1), (ANOTHER_SHOWN_WRITER, 1)]),
         )
     );
 }
@@ -297,4 +433,84 @@ async fn suggests_no_word_of_an_18_plus_title_while_hiding() {
             Some("forbidden".to_owned())
         )
     );
+}
+
+#[tokio::test]
+async fn pages_through_the_writers_and_folder_groups_with_a_cursor_while_hiding() {
+    let library = Library::open("hiding-cursor-pages").await;
+
+    let pages = (
+        library.writer_pages(HIDING).await,
+        library.group_pages(HIDING).await,
+    );
+
+    assert_eq!(
+        pages,
+        (
+            vec![
+                vec![SHARED_WRITER.to_owned()],
+                vec![ANOTHER_SHOWN_WRITER.to_owned()]
+            ],
+            vec![
+                vec!["Lantern Keepers".to_owned()],
+                vec!["Zine Imprint".to_owned()]
+            ],
+        )
+    );
+}
+
+#[tokio::test]
+async fn counts_only_the_shown_series_of_each_tag_while_hiding() {
+    let library = Library::open("hiding-tag-counts").await;
+    library.label_series_with_tags().await;
+
+    let counts = (
+        library.tag_counts(AdultHiding::default()).await,
+        library.tag_counts(HIDING).await,
+    );
+
+    assert_eq!(
+        counts,
+        (
+            named(&[("Harbour", 2), ("Secret", 1), ("unused", 0)]),
+            named(&[("Harbour", 1), ("unused", 0)]),
+        )
+    );
+}
+
+#[tokio::test]
+async fn offers_only_the_formats_languages_and_tags_of_shown_series_while_hiding() {
+    let library = Library::open("hiding-filter-choices").await;
+
+    let offered = (
+        library.choices(AdultHiding::default()).await,
+        library.choices(HIDING).await,
+    );
+    let words = |choices: &FilterChoices| {
+        (
+            choices.formats.clone(),
+            choices.languages.clone(),
+            choices.tags.clone(),
+        )
+    };
+
+    assert_eq!(
+        (words(&offered.0), words(&offered.1)),
+        (
+            (
+                vec![SeriesFormat::Comic, SeriesFormat::Manga],
+                names_of(&["en", "fr"]),
+                names_of(&[RATED_ONLY_TAG, SHARED_TAG]),
+            ),
+            (
+                vec![SeriesFormat::Comic],
+                names_of(&["en"]),
+                names_of(&[SHARED_TAG])
+            ),
+        )
+    );
+}
+
+fn names_of(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| (*name).to_owned()).collect()
 }
