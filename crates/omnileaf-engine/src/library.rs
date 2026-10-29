@@ -13,8 +13,8 @@ use omnileaf_db::{
     Config, Database,
     adult_content::set_adult_content,
     catalog::{
-        AndroidTree, AppleBookmark, BookFileId, BookListing, BookToRead, Cover, NewRoot,
-        PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
+        AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
+        NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
         RootKind, RootLocator, add_root, book_bookmarks, book_to_read, bookmarked_roots,
         category_series_count, category_series_page, cover_file,
         filter_choices as stored_filter_choices, folder_group_series_count,
@@ -50,10 +50,10 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace, BookSessions,
-    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, DetailEdits, FileType,
-    FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage,
-    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
-    HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
+    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, DetailEdits, FileRemoval,
+    FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId,
+    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
+    HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
     LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
     RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
@@ -63,13 +63,14 @@ use crate::{
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_disposal::{DisposalFailure, FileDisposal, FileFate},
     file_in_storage::FileInStorage,
     file_type::HiddenFileTypes,
     history::whole_seconds,
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_removal::{Expanded, RemovedBooks, expand},
+    library_removal::{Expanded, RemovalRoot, RemovedBooks, expand, removal_of},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -1677,6 +1678,7 @@ impl Library {
     pub async fn remove_from_library(
         &self,
         targets: &[RemovalTarget],
+        fate: FileFate<'_, impl FileDisposal>,
     ) -> Result<RemovalReport, LibraryError> {
         let _scanning = self.catalog_change_lock.lock().await;
         let targets = targets.to_vec();
@@ -1690,10 +1692,14 @@ impl Library {
             .write(move |writer| writer.remove_books_from_library(&books))
             .await?;
         self.note_catalog_written();
+        let files = match fate {
+            FileFate::Keep => Vec::new(),
+            FileFate::Dispose(disposal) => self.dispose_files(removed.files, disposal).await,
+        };
         Ok(RemovalReport {
             removed_series: series_held,
             removed_books: saturating_u32(removed.books),
-            files: Vec::new(),
+            files,
         })
     }
 
@@ -2182,6 +2188,32 @@ impl Library {
     fn note_catalog_written(&self) {
         if self.catalog_writes.send(CatalogWritten).is_err() {
             tracing::trace!("no one is listening for library changes");
+        }
+    }
+
+    async fn dispose_files(
+        &self,
+        files: Vec<BookFileToRemove>,
+        disposal: &impl FileDisposal,
+    ) -> Vec<FileRemoval> {
+        let mut roots: BTreeMap<RootId, RemovalRoot> = BTreeMap::new();
+        let mut removals = Vec::with_capacity(files.len());
+        for file in &files {
+            let root = match roots.entry(file.root_id) {
+                btree_map::Entry::Occupied(known) => known.into_mut(),
+                btree_map::Entry::Vacant(unchecked) => {
+                    unchecked.insert(self.removal_root_of(&file.root).await)
+                }
+            };
+            removals.push(removal_of(file, root, disposal).await);
+        }
+        removals
+    }
+
+    async fn removal_root_of(&self, locator: &RootLocator) -> RemovalRoot {
+        match self.files_of(locator) {
+            Some(RootFiles { storage, folder }) => RemovalRoot::opened(storage, folder).await,
+            None => RemovalRoot::closed(DisposalFailure::Unsupported),
         }
     }
 

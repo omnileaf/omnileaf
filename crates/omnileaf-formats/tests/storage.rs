@@ -57,3 +57,14 @@ fn reports_a_missing_file_as_not_found() {
 
     assert_eq!(error.kind(), io::ErrorKind::NotFound);
 }
+
+#[test]
+fn leaves_removing_a_file_to_the_storage_that_can_trash_it() {
+    let scratch = ScratchFolder::new("storage-remove");
+    let file = scratch.write("Chapter/1.png", b"page");
+
+    let error = LocalStorage.remove(&file).unwrap_err();
+
+    assert_eq!(error.kind(), io::ErrorKind::Unsupported);
+    assert!(file.is_file());
+}

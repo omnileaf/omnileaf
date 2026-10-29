@@ -24,7 +24,7 @@ use std::{
 use books::write_book;
 use omnileaf_db::{Config, Database, catalog::removed_among, rusqlite::Connection, store::Store};
 use omnileaf_engine::{
-    BookId, BookReading, DetailEdits, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, Library,
+    BookId, BookReading, DetailEdits, FileChanges, FileFate, LIBRARY_CHANGES_GATHERED_FOR, Library,
     LibraryChanges, LibraryListing, RemovalReport, RemovalTarget, RescanOutcome, ScanProgress,
     SeriesBookListing, SeriesId,
 };
@@ -180,7 +180,7 @@ impl Removing {
     async fn remove(&self, targets: &[RemovalTarget]) -> RemovalReport {
         self.scanned
             .library
-            .remove_from_library(targets)
+            .remove_from_library(targets, FileFate::keep())
             .await
             .unwrap()
     }
@@ -617,7 +617,7 @@ async fn removing_waits_for_a_running_scan_then_removes_what_it_recorded() {
         }
     });
     scan_started.await.unwrap();
-    let mut removal = pin!(library.remove_from_library(&targets));
+    let mut removal = pin!(library.remove_from_library(&targets, FileFate::keep()));
     let waited = timeout(LONG_ENOUGH_TO_REMOVE, removal.as_mut()).await;
 
     release.send(()).unwrap();

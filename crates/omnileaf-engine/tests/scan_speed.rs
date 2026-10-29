@@ -2,7 +2,9 @@ mod support;
 
 use std::time::Duration;
 
-use omnileaf_engine::{FileChanges, Library, LibraryListing, RemovalTarget, RescanOutcome};
+use omnileaf_engine::{
+    FileChanges, FileFate, Library, LibraryListing, RemovalTarget, RescanOutcome,
+};
 use omnileaf_testkit::{
     GENERATED_LIBRARY_NAME, GeneratedLibrary, Sampling, SpeedTrial, TimingBudget,
     write_generated_library,
@@ -148,7 +150,10 @@ async fn rescans_1_000_books_with_300_removed_but_still_on_disk_within_300_ms() 
         .take(REMOVED_SERIES)
         .map(|series| RemovalTarget::Series { id: series.id })
         .collect();
-    let removal = library.remove_from_library(&removing).await.unwrap();
+    let removal = library
+        .remove_from_library(&removing, FileFate::keep())
+        .await
+        .unwrap();
     assert_eq!(removal.removed_books, REMOVED_BOOKS);
 
     let outcome = trial

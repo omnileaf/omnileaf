@@ -13,6 +13,9 @@ pub trait Storage: fmt::Debug + Send + Sync {
     /// Whether `path` is a folder or a file, following links.
     fn details(&self, path: &Path) -> io::Result<Details>;
     fn open(&self, file: &Path) -> io::Result<File>;
+    fn remove(&self, _file: &Path) -> io::Result<()> {
+        Err(io::ErrorKind::Unsupported.into())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

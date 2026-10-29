@@ -1,16 +1,35 @@
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    io,
+    path::{Component, Path, PathBuf},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use omnileaf_db::{
     Database, Error,
-    catalog::{ScannedBook, books_of_series, removed_among},
+    catalog::{BookFileToRemove, RootLocator, ScannedBook, books_of_series, removed_among},
     rusqlite::Connection,
     store::Store,
 };
+use omnileaf_formats::Storage;
 use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use tokio::{task::spawn_blocking, time::timeout};
 
-use crate::{BookId, LibraryError, SeriesId, scan::saturating_u32};
+use crate::{
+    BookId, LibraryError, SeriesId,
+    file_disposal::{Disposal, DisposalFailure, FileDisposal},
+    scan::{FileStamp, UnreadableBook, saturating_u32},
+};
+
+const FILE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+const FILE_STAMP_TIMEOUT: Duration = Duration::from_secs(30);
+const FILE_DISPOSAL_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -82,6 +101,291 @@ pub(crate) fn expand(
         books: books.into_iter().collect(),
         series_held: saturating_u32(series_held.len()),
     })
+}
+
+pub(crate) enum RemovalRoot {
+    Closed(DisposalFailure),
+    Open {
+        storage: Arc<dyn Storage>,
+        folder: PathBuf,
+        hung: Option<DisposalFailure>,
+    },
+}
+
+#[derive(Clone, Copy)]
+enum Fault {
+    Failed(DisposalFailure),
+    Hung(DisposalFailure),
+}
+
+impl Fault {
+    const fn failure(self) -> DisposalFailure {
+        match self {
+            Self::Failed(failure) | Self::Hung(failure) => failure,
+        }
+    }
+}
+
+impl From<DisposalFailure> for Fault {
+    fn from(failure: DisposalFailure) -> Self {
+        Self::Failed(failure)
+    }
+}
+
+impl RemovalRoot {
+    pub(crate) const fn closed(failure: DisposalFailure) -> Self {
+        Self::Closed(failure)
+    }
+
+    pub(crate) async fn opened(storage: Arc<dyn Storage>, folder: PathBuf) -> Self {
+        match check_reachable(&storage, &folder).await {
+            Ok(()) => Self::Open {
+                storage,
+                folder,
+                hung: None,
+            },
+            Err(failure) => Self::Closed(failure),
+        }
+    }
+
+    async fn dispose(
+        &mut self,
+        file: &BookFileToRemove,
+        disposal: &impl FileDisposal,
+    ) -> Result<Disposal, DisposalFailure> {
+        match self {
+            Self::Closed(failure) => Err(*failure),
+            Self::Open {
+                storage,
+                folder,
+                hung,
+            } => {
+                if let Some(failure) = *hung {
+                    return Err(failure);
+                }
+                match dispose_file(storage, folder, file, disposal).await {
+                    Ok(disposed) => Ok(disposed),
+                    Err(Fault::Failed(failure)) => Err(failure),
+                    Err(Fault::Hung(failure)) => {
+                        tracing::warn!(book = %file.book, "give up on a root that stopped answering");
+                        *hung = Some(failure);
+                        Err(failure)
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub(crate) async fn removal_of(
+    file: &BookFileToRemove,
+    root: &mut RemovalRoot,
+    disposal: &impl FileDisposal,
+) -> FileRemoval {
+    FileRemoval {
+        book: BookId(file.book),
+        name: file_name(&file.location),
+        outcome: FileOutcome::from(root.dispose(file, disposal).await),
+    }
+}
+
+async fn check_reachable(storage: &Arc<dyn Storage>, folder: &Path) -> Result<(), DisposalFailure> {
+    let (storage, listed_folder) = (Arc::clone(storage), folder.to_path_buf());
+    let listed = blocking_within(
+        FILE_CHECK_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || storage.entries(&listed_folder),
+    )
+    .await
+    .map_err(Fault::failure)?;
+    match listed {
+        Ok(entries) if !entries.is_empty() => Ok(()),
+        Ok(_) => {
+            tracing::warn!(folder = %folder.display(), "remove files from a folder that lists as empty");
+            Err(DisposalFailure::Unsupported)
+        }
+        Err(error) => {
+            tracing::warn!(folder = %folder.display(), %error, "read a folder to remove files from");
+            Err(match DisposalFailure::from(error.kind()) {
+                DisposalFailure::NotFound | DisposalFailure::Other => DisposalFailure::Unsupported,
+                failure => failure,
+            })
+        }
+    }
+}
+
+async fn dispose_file(
+    storage: &Arc<dyn Storage>,
+    folder: &Path,
+    file: &BookFileToRemove,
+    disposal: &impl FileDisposal,
+) -> Result<Disposal, Fault> {
+    let Some(path) = inside(folder, &file.location) else {
+        tracing::warn!(book = %file.book, "skip a file stored outside its folder");
+        return Err(DisposalFailure::Other.into());
+    };
+    still_the_scanned_file(storage, &path, file).await?;
+    let disposed = match file.root {
+        RootLocator::AndroidTree(_) => remove_through(storage, &path).await,
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+            dispose_within(disposal, &path).await
+        }
+    };
+    match disposed {
+        Err(Fault::Failed(DisposalFailure::NotFound)) => {
+            Err(failure_after_not_found(storage, &path).await)
+        }
+        disposed => disposed,
+    }
+}
+
+async fn failure_after_not_found(storage: &Arc<dyn Storage>, path: &Path) -> Fault {
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
+    match blocking_within(
+        FILE_CHECK_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || storage.details(&path),
+    )
+    .await
+    {
+        Ok(Err(error)) if error.kind() == io::ErrorKind::NotFound => {
+            Fault::Failed(DisposalFailure::NotFound)
+        }
+        Ok(_) | Err(Fault::Failed(_)) => Fault::Failed(DisposalFailure::Other),
+        Err(Fault::Hung(_)) => Fault::Hung(DisposalFailure::Other),
+    }
+}
+
+fn inside(folder: &Path, location: &Path) -> Option<PathBuf> {
+    let mut parts = location.components().peekable();
+    let names_something = parts.peek().is_some();
+    let stays_inside = parts.all(|part| matches!(part, Component::Normal(_)));
+    (names_something && stays_inside).then(|| folder.join(location))
+}
+
+async fn remove_through(storage: &Arc<dyn Storage>, path: &Path) -> Result<Disposal, Fault> {
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
+    blocking_within(FILE_DISPOSAL_TIMEOUT, DisposalFailure::Other, move || {
+        storage.remove(&path)
+    })
+    .await?
+    .map(|()| Disposal::Deleted)
+    .map_err(|error| Fault::Failed(DisposalFailure::from(error.kind())))
+}
+
+/// A blocking call stuck on a dead network mount cannot be cancelled, so giving up on it leaves its thread running until the mount answers.
+async fn blocking_within<T: Send + 'static>(
+    limit: Duration,
+    when_stuck: DisposalFailure,
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, Fault> {
+    let abandoned = Arc::new(AtomicBool::new(false));
+    let abandoned_by_caller = Arc::clone(&abandoned);
+    let mut task = spawn_blocking(move || {
+        if abandoned_by_caller.load(Ordering::Acquire) {
+            return None;
+        }
+        Some(work())
+    });
+    match timeout(limit, &mut task).await {
+        Ok(Ok(Some(done))) => Ok(done),
+        Ok(Ok(None)) => Err(Fault::Hung(when_stuck)),
+        Ok(Err(error)) => {
+            tracing::warn!(%error, "run blocking work on a file to remove");
+            Err(DisposalFailure::Other.into())
+        }
+        Err(_) => {
+            abandoned.store(true, Ordering::Release);
+            task.abort();
+            tracing::warn!(
+                limit_ms = limit.as_millis(),
+                "wait for blocking work on a file to remove"
+            );
+            Err(Fault::Hung(when_stuck))
+        }
+    }
+}
+
+/// A trash call stuck on a dead network mount cannot be cancelled, so giving up on it leaves its thread running until the mount answers.
+async fn dispose_within(disposal: &impl FileDisposal, path: &Path) -> Result<Disposal, Fault> {
+    timeout(FILE_DISPOSAL_TIMEOUT, disposal.dispose(path))
+        .await
+        .map_or_else(
+            |_| {
+                tracing::warn!(file = %path.display(), "wait for a file to be disposed of");
+                Err(Fault::Hung(DisposalFailure::Other))
+            },
+            |disposed| disposed.map_err(Fault::Failed),
+        )
+}
+
+async fn still_the_scanned_file(
+    storage: &Arc<dyn Storage>,
+    path: &Path,
+    file: &BookFileToRemove,
+) -> Result<(), Fault> {
+    let (storage, path) = (Arc::clone(storage), path.to_path_buf());
+    let stamp = blocking_within(
+        FILE_STAMP_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || FileStamp::read(&storage, &path),
+    )
+    .await?
+    .map_err(|error| {
+        tracing::warn!(book = %file.book, %error, "read a file to remove");
+        Fault::Failed(failure_reading(&error))
+    })?;
+    let scanned = FileStamp {
+        size_bytes: file.size_bytes,
+        modified_at_ms: file.modified_at_ms,
+    };
+    if stamp == scanned {
+        return Ok(());
+    }
+    tracing::warn!(book = %file.book, "skip a file that changed since the scan");
+    Err(DisposalFailure::Other.into())
+}
+
+fn failure_reading(error: &UnreadableBook) -> DisposalFailure {
+    match error {
+        UnreadableBook::Metadata(error) => DisposalFailure::from(error.kind()),
+        UnreadableBook::Format(_)
+        | UnreadableBook::HiddenType(_)
+        | UnreadableBook::UnsupportedType { .. }
+        | UnreadableBook::SeriesName(_)
+        | UnreadableBook::OutsideFolder(_) => DisposalFailure::Other,
+    }
+}
+
+fn file_name(location: &Path) -> String {
+    location
+        .components()
+        .next_back()
+        .map(|last| last.as_os_str().to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+impl From<Result<Disposal, DisposalFailure>> for FileOutcome {
+    fn from(disposed: Result<Disposal, DisposalFailure>) -> Self {
+        match disposed {
+            Ok(Disposal::Trashed) => Self::Trashed,
+            Ok(Disposal::Deleted) => Self::Deleted,
+            Err(failure) => Self::from(failure),
+        }
+    }
+}
+
+impl From<DisposalFailure> for FileOutcome {
+    fn from(failure: DisposalFailure) -> Self {
+        let reason = match failure {
+            DisposalFailure::NotFound => return Self::Missing,
+            DisposalFailure::PermissionDenied => RemovalFailure::PermissionDenied,
+            DisposalFailure::Locked => RemovalFailure::Locked,
+            DisposalFailure::Unsupported => RemovalFailure::UnsupportedLocation,
+            DisposalFailure::Other => RemovalFailure::Other,
+        };
+        Self::Failed { reason }
+    }
 }
 
 pub(crate) async fn marked_among<'a>(

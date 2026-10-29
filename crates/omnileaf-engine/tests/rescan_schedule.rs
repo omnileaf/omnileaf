@@ -26,9 +26,9 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, LIBRARY_CHANGES_GATHERED_FOR,
-    Library, LibraryChanged, LibraryListing, PowerMode, RESCAN_EVERY, RemovalTarget,
-    RescanConditions, RescanOutcome, Storage,
+    EXTERNAL_RESCAN_EVERY, FileChanges, FileFate, FolderId, FolderRescan,
+    LIBRARY_CHANGES_GATHERED_FOR, Library, LibraryChanged, LibraryListing, PowerMode, RESCAN_EVERY,
+    RemovalTarget, RescanConditions, RescanOutcome, Storage,
 };
 use stepped_clock::SteppedClock;
 use support::ScratchFolder;
@@ -188,7 +188,7 @@ async fn a_scheduled_rescan_leaves_a_removed_book_out() {
         .id;
     running
         .library
-        .remove_from_library(&[RemovalTarget::Series { id: series }])
+        .remove_from_library(&[RemovalTarget::Series { id: series }], FileFate::keep())
         .await
         .unwrap();
     running.clock.advance(RESCAN_EVERY);
