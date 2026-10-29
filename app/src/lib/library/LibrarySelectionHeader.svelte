@@ -45,7 +45,7 @@
       {m.library_select_all()}
     </Button>
     <p
-      class="min-inline-0 flex-1 truncate {foldingBarLook(platform)
+      class="flex-1 truncate min-inline-none {foldingBarLook(platform)
         .title} {NATIVE_TOP_BAR.barTitle}"
       aria-live="polite"
     >
