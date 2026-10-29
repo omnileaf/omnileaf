@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeSet,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 
@@ -136,12 +136,22 @@ async fn dispose_file(
     file: &BookFileToRemove,
     disposal: &impl FileDisposal,
 ) -> Result<Disposal, DisposalFailure> {
-    let path = folder.join(&file.location);
+    let Some(path) = inside(folder, &file.location) else {
+        tracing::warn!(book = %file.book, "skip a file stored outside its folder");
+        return Err(DisposalFailure::Other);
+    };
     still_the_scanned_file(storage, &path, file).await?;
     match file.root {
         RootLocator::AndroidTree(_) => remove_through(storage, path).await,
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => disposal.dispose(&path).await,
     }
+}
+
+fn inside(folder: &Path, location: &Path) -> Option<PathBuf> {
+    let mut parts = location.components().peekable();
+    let names_something = parts.peek().is_some();
+    let stays_inside = parts.all(|part| matches!(part, Component::Normal(_)));
+    (names_something && stays_inside).then(|| folder.join(location))
 }
 
 async fn remove_through(

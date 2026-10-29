@@ -380,6 +380,90 @@ async fn a_page_rewritten_inside_a_folder_book_skips_the_book_though_the_folder_
     assert_eq!(fs::read(chapter.join("001.png")).unwrap(), b"another page");
 }
 
+struct StoredOutside {
+    outcomes: Vec<(String, FileOutcome)>,
+    disposal: FakeDisposal,
+    file: PathBuf,
+    _folders: Deleting,
+}
+
+impl StoredOutside {
+    fn is_untouched(&self) -> bool {
+        self.disposal.calls().is_empty() && self.file.is_file()
+    }
+}
+
+async fn removing_a_file_stored_at(
+    name: &str,
+    stored_location: impl FnOnce(&Path) -> PathBuf,
+) -> StoredOutside {
+    let outer = ScratchFolder::new(name);
+    let library_folder = outer.path().join("library");
+    write_book(&library_folder.join(SERIES_02).join("v01.cbz"), 3);
+    let (scanned, _, _) = Scanned::folder(name, &library_folder).await;
+    let outside = outer.path().join("outside.cbz");
+    fs::rename(library_folder.join(SERIES_02).join("v01.cbz"), &outside).unwrap();
+    let stored = stored_location(&outside);
+    omnileaf_db::rusqlite::Connection::open(scanned.home.path().join("library.sqlite"))
+        .unwrap()
+        .execute(
+            "UPDATE book_file SET location = ?1",
+            [stored.as_os_str().as_encoded_bytes()],
+        )
+        .unwrap();
+    let folders = Deleting {
+        scanned,
+        comics: outer,
+    };
+    let series = folders.series(SERIES_02).await;
+    let disposal = FakeDisposal::default();
+
+    let report = folders
+        .delete(&[RemovalTarget::Series { id: series }], &disposal)
+        .await;
+
+    StoredOutside {
+        outcomes: by_name(report.files),
+        disposal,
+        file: outside,
+        _folders: folders,
+    }
+}
+
+#[tokio::test]
+async fn a_stored_location_climbing_out_of_the_root_is_refused_and_the_file_outside_stays() {
+    let removal =
+        removing_a_file_stored_at("delete-climbing", |_| PathBuf::from("../outside.cbz")).await;
+
+    assert_eq!(
+        removal.outcomes,
+        [("outside.cbz".to_owned(), failed(RemovalFailure::Other))]
+    );
+    assert!(removal.is_untouched());
+}
+
+#[tokio::test]
+async fn an_empty_stored_location_is_refused_and_the_root_folder_stays() {
+    let removal = removing_a_file_stored_at("delete-empty", |_| PathBuf::new()).await;
+
+    assert_eq!(
+        removal.outcomes,
+        [(String::new(), failed(RemovalFailure::Other))]
+    );
+    assert!(removal.is_untouched());
+}
+
+#[tokio::test]
+async fn an_absolute_stored_location_is_refused_and_the_file_it_names_stays() {
+    let removal = removing_a_file_stored_at("delete-absolute", Path::to_path_buf).await;
+
+    assert_eq!(
+        removal.outcomes,
+        [("outside.cbz".to_owned(), failed(RemovalFailure::Other))]
+    );
+    assert!(removal.is_untouched());
+}
+
 #[tokio::test]
 async fn a_root_that_is_unplugged_reports_its_files_failed_not_missing() {
     let deleting = Deleting::new("delete-unplugged").await;
