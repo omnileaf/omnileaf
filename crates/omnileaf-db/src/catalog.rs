@@ -24,6 +24,7 @@ mod person_series;
 mod place_in_series;
 mod related_series;
 mod relocated_roots;
+mod removed_books;
 mod root;
 mod root_availability;
 mod root_files;
@@ -78,6 +79,7 @@ pub use person_series::{PersonSeries, person_series};
 pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
 pub use related_series::{RelatedReason, RelatedSeries, RelatedSeriesWanted, related_series};
 pub use relocated_roots::relocate_roots;
+pub use removed_books::removed_among;
 pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
     add_root, relocate_root, remove_root,

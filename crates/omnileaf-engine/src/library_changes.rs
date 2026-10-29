@@ -73,12 +73,48 @@ fn heard_synced(changed: &Result<Changed, RecvError>) -> Heard {
         | Err(RecvError::Lagged(_)) => Heard::Change,
         Ok(Changed::Registers { keys, .. })
             if keys.iter().any(|key| {
-                matches!(key, Key::Bookmark(_) | Key::Label(_) | Key::SeriesEdit(_))
+                matches!(
+                    key,
+                    Key::Bookmark(_) | Key::Label(_) | Key::SeriesEdit(_) | Key::Removal(_)
+                )
             }) =>
         {
             Heard::Change
         }
         Ok(Changed::Registers { .. }) => Heard::Unrelated,
         Err(RecvError::Closed) => Heard::Closed,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use omnileaf_db::store::RemovalKey;
+    use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry};
+    use tokio::time::timeout;
+
+    use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn wakes_the_library_when_a_removal_arrives_from_another_device() {
+        let (catalog, _) = broadcast::channel(1);
+        let (synced, _) = broadcast::channel(1);
+        let mut changes = LibraryChanges {
+            catalog: catalog.subscribe(),
+            synced: synced.subscribe(),
+        };
+        let page = ImageEntry { crc32: 1, size: 1 };
+        let book = BookId::local(&Fingerprint::pmf1([page]).unwrap());
+        synced
+            .send(Changed::Registers {
+                keys: BTreeSet::from([Key::from(RemovalKey::Removed(book))]),
+                recounted: false,
+            })
+            .unwrap();
+
+        let heard = timeout(LIBRARY_CHANGES_GATHERED_FOR * 4, changes.next()).await;
+
+        assert_eq!(heard, Ok(Some(LibraryChanged)));
     }
 }

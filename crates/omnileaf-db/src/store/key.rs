@@ -21,6 +21,7 @@ const META_SUMMARY: &str = "meta.summary";
 const META_PEOPLE: &str = "meta.people";
 const META_TAGS: &str = "meta.tags";
 const META_ADULT: &str = "meta.adult";
+const REMOVED: &str = "removed";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LatestKey {
@@ -120,6 +121,24 @@ impl SeriesEditKey {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RemovalKey {
+    Removed(BookId),
+}
+
+impl RemovalKey {
+    #[must_use]
+    pub const fn book(self) -> BookId {
+        match self {
+            Self::Removed(book) => book,
+        }
+    }
+
+    fn address(self) -> Address {
+        book_field(ProfileId::shared(), self.book(), REMOVED)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LabelKey {
     CategoryName(CategoryId),
     CategoryOrder(CategoryId),
@@ -198,6 +217,13 @@ pub enum Key {
     Bookmark(BookmarkKey),
     Label(LabelKey),
     SeriesEdit(SeriesEditKey),
+    Removal(RemovalKey),
+}
+
+impl From<RemovalKey> for Key {
+    fn from(key: RemovalKey) -> Self {
+        Self::Removal(key)
+    }
 }
 
 impl From<SeriesEditKey> for Key {
@@ -242,7 +268,7 @@ impl Key {
         match self {
             Self::Latest(LatestKey::BookPosition(book) | LatestKey::BookRead(book))
             | Self::Maximum(MaximumKey::BookFurthest(book)) => Some(book),
-            Self::Bookmark(_) | Self::Label(_) | Self::SeriesEdit(_) => None,
+            Self::Bookmark(_) | Self::Label(_) | Self::SeriesEdit(_) | Self::Removal(_) => None,
         }
     }
 
@@ -253,6 +279,7 @@ impl Key {
             Self::Bookmark(key) => key.address(profile),
             Self::Label(key) => key.address(profile),
             Self::SeriesEdit(key) => key.address(),
+            Self::Removal(key) => key.address(),
         }
     }
 
@@ -273,6 +300,7 @@ impl Key {
             (BOOK, POSITION) => Some(LatestKey::BookPosition(book()?).into()),
             (BOOK, READ) => Some(LatestKey::BookRead(book()?).into()),
             (BOOK, FURTHEST) => Some(MaximumKey::BookFurthest(book()?).into()),
+            (BOOK, REMOVED) => Some(RemovalKey::Removed(book()?).into()),
             _ => None,
         })
     }
@@ -335,6 +363,7 @@ mod tests {
             SeriesEditKey::People(series).into(),
             SeriesEditKey::Tags(series).into(),
             SeriesEditKey::Adult(series).into(),
+            RemovalKey::Removed(book).into(),
         ]
     }
 
@@ -361,6 +390,20 @@ mod tests {
 
         let profiles = [ProfileId::default_profile(), another].map(|profile| {
             Key::from(SeriesEditKey::Title(series))
+                .address(profile)
+                .profile
+        });
+
+        assert_eq!(profiles, [ProfileId::shared(); 2]);
+    }
+
+    #[test]
+    fn writes_a_removal_to_the_shared_profile_whichever_profile_is_current() {
+        let book = BookId::local(&Fingerprint::pmf1([ImageEntry { crc32: 1, size: 1 }]).unwrap());
+        let another = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d".parse().unwrap();
+
+        let profiles = [ProfileId::default_profile(), another].map(|profile| {
+            Key::from(RemovalKey::Removed(book))
                 .address(profile)
                 .profile
         });
