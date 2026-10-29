@@ -55,10 +55,10 @@ use crate::{
     FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
     HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
-    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
-    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
+    RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesOverview, SeriesPage,
+    SeriesVolume, ShareAddress, ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     adult_content::{AdultSeen, AdultView},
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
@@ -69,6 +69,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
+    library_removal::{Expanded, RemovedBooks, expand},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -286,13 +287,7 @@ impl Library {
         .await?;
         let root = self.link(locator).await?;
         let target = self.target(root, RootKind::Linked, files).await?;
-        scan(
-            self.store.database(),
-            target,
-            layout,
-            self.noting_writes(on_progress),
-        )
-        .await
+        scan(&self.store, target, layout, self.noting_writes(on_progress)).await
     }
 
     pub async fn folders(&self, after: Option<FolderCursor>) -> Result<FolderPage, LibraryError> {
@@ -1663,7 +1658,8 @@ impl Library {
         if !staying.is_empty() {
             return Err(LibraryError::FolderAlreadyInLibrary { id });
         }
-        self.rescan_while_scanning(id, scanning, on_progress).await
+        self.rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, on_progress)
+            .await
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]
@@ -1677,6 +1673,30 @@ impl Library {
         Ok(())
     }
 
+    #[tracing::instrument(skip_all, fields(targets = targets.len()))]
+    pub async fn remove_from_library(
+        &self,
+        targets: &[RemovalTarget],
+    ) -> Result<RemovalReport, LibraryError> {
+        let _scanning = self.catalog_change_lock.lock().await;
+        let targets = targets.to_vec();
+        let Expanded { books, series_held } = self
+            .store
+            .database()
+            .read(move |connection| expand(connection, &targets))
+            .await?;
+        let removed = self
+            .store
+            .write(move |writer| writer.remove_books_from_library(&books))
+            .await?;
+        self.note_catalog_written();
+        Ok(RemovalReport {
+            removed_series: series_held,
+            removed_books: saturating_u32(removed.books),
+            files: Vec::new(),
+        })
+    }
+
     #[tracing::instrument(skip_all, fields(folder = %id))]
     pub async fn rescan_folder(
         &self,
@@ -1684,7 +1704,23 @@ impl Library {
         on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
         let scanning = self.catalog_change_lock.lock().await;
-        self.rescan_while_scanning(id, scanning, on_progress).await
+        self.rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, on_progress)
+            .await
+    }
+
+    pub(crate) async fn rescan_folder_bringing_back_removed_books(
+        &self,
+        id: FolderId,
+        copied: Vec<PathBuf>,
+    ) -> Result<FolderRescan, LibraryError> {
+        let scanning = self.catalog_change_lock.lock().await;
+        self.rescan_while_scanning(
+            id,
+            scanning,
+            RemovedBooks::BringingBackUnder(copied),
+            |_| {},
+        )
+        .await
     }
 
     #[tracing::instrument(skip_all)]
@@ -1725,7 +1761,9 @@ impl Library {
                 tracing::debug!("leave the folders whose turn came until no other scan runs");
                 break;
             };
-            let rescan = self.rescan_while_scanning(id, scanning, |_| {}).await;
+            let rescan = self
+                .rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, |_| {})
+                .await;
             match unless_removed(rescan) {
                 Ok(Some(rescan)) => {
                     self.note_scheduled_rescan(conditions, &folders, &rescan)
@@ -1786,6 +1824,7 @@ impl Library {
         &self,
         id: FolderId,
         _scanning: MutexGuard<'_, ()>,
+        removed_books: RemovedBooks,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<FolderRescan, LibraryError> {
         let root = self
@@ -1796,7 +1835,7 @@ impl Library {
         let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding { found: 0 });
         let rescan = if let Some(files) = self.files_of(&root.locator) {
-            self.rescan_files(root.id, root.kind, files, on_progress)
+            self.rescan_files(root.id, root.kind, files, &removed_books, on_progress)
                 .await?
         } else {
             tracing::warn!("keep the books of a folder this device can't open");
@@ -1817,6 +1856,7 @@ impl Library {
         root: RootId,
         kind: RootKind,
         files: RootFiles,
+        removed_books: &RemovedBooks,
         mut on_progress: impl FnMut(ScanProgress) + Send,
     ) -> Result<Rescan, LibraryError> {
         match walk(
@@ -1828,8 +1868,14 @@ impl Library {
         {
             Ok(layout) => {
                 let target = self.target(root, kind, files).await?;
-                let rescanned =
-                    rescan(&self.store, target, layout, self.noting_writes(on_progress)).await?;
+                let rescanned = rescan(
+                    &self.store,
+                    target,
+                    layout,
+                    removed_books,
+                    self.noting_writes(on_progress),
+                )
+                .await?;
                 if let RescanOutcome::Rescanned(changes) = &rescanned.outcome
                     && changes.removed > 0
                 {

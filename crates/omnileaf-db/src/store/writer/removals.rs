@@ -41,6 +41,13 @@ impl Writer<'_> {
         })
     }
 
+    #[tracing::instrument(skip_all, fields(books = books.len()))]
+    pub fn restore_removed(&mut self, books: &[BookId]) -> Result<(), Error> {
+        books
+            .iter()
+            .try_for_each(|book| self.set_removed(*book, false))
+    }
+
     fn is_removed(&self, book: BookId) -> Result<bool, Error> {
         Ok(removed_among(self.connection, &[book])?.contains(&book))
     }

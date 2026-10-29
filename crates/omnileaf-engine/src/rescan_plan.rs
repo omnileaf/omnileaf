@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, btree_map::Entry},
+    collections::{BTreeMap, BTreeSet, btree_map::Entry},
     path::{Path, PathBuf},
 };
 
@@ -101,7 +101,7 @@ impl Plan {
         (plan, to_read)
     }
 
-    pub(crate) fn sort(&mut self, read: Vec<ReadBook>) -> Recording {
+    pub(crate) fn sort(&mut self, read: Vec<ReadBook>, removed: &BTreeSet<BookId>) -> Recording {
         let mut recording = Recording::default();
         for ReadBook { book, known } in read {
             let book = match book {
@@ -116,6 +116,10 @@ impl Plan {
                 }
             };
             let id = BookId::local(&book.fingerprint);
+            if removed.contains(&id) {
+                self.leave_out(known);
+                continue;
+            }
             match known {
                 Known::DetailsUnread(kept) if kept.book == id => recording.unmoved.push(book),
                 Known::Changed(previous) | Known::DetailsUnread(previous) => {

@@ -2,7 +2,7 @@ mod support;
 
 use std::time::Duration;
 
-use omnileaf_engine::{FileChanges, Library, RescanOutcome};
+use omnileaf_engine::{FileChanges, Library, LibraryListing, RemovalTarget, RescanOutcome};
 use omnileaf_testkit::{
     GENERATED_LIBRARY_NAME, GeneratedLibrary, Sampling, SpeedTrial, TimingBudget,
     write_generated_library,
@@ -17,6 +17,9 @@ const LIBRARY: GeneratedLibrary = GeneratedLibrary {
 const BOOKS: u32 = LIBRARY.books();
 const BUDGET: Duration = Duration::from_secs(3);
 const UNCHANGED_RESCAN_BUDGET: Duration = Duration::from_millis(300);
+const REMOVED_SERIES: usize = 30;
+const REMOVED_BOOKS: u32 = 300;
+const REMOVED_RESCAN_BUDGET: Duration = Duration::from_millis(300);
 
 #[tokio::test]
 #[expect(
@@ -88,6 +91,65 @@ async fn rescans_an_unchanged_library_of_1_000_books_within_300_ms() {
         .last()
         .unwrap()
         .id;
+
+    let outcome = trial
+        .run(
+            async |_| (),
+            async |()| {
+                let rescan = library.rescan_folder(folder, |_| {}).await.unwrap();
+                assert_eq!(
+                    rescan.outcome,
+                    RescanOutcome::Rescanned(FileChanges::default())
+                );
+            },
+        )
+        .await;
+
+    eprintln!("{outcome}");
+    assert!(outcome.is_within_budget(), "{outcome}");
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured time so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn rescans_1_000_books_with_300_removed_but_still_on_disk_within_300_ms() {
+    let trial = SpeedTrial {
+        measured: "the rescan of 1,000 books, 300 of them removed but still on disk",
+        sampling: Sampling::Once,
+        budget: TimingBudget::from_env(REMOVED_RESCAN_BUDGET),
+    };
+    let comics = ScratchFolder::new("removed-rescan-speed-comics");
+    write_generated_library(comics.path(), LIBRARY).unwrap();
+    let home = ScratchFolder::new("removed-rescan-speed-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(GENERATED_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let folder = library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .last()
+        .unwrap()
+        .id;
+    let removing: Vec<RemovalTarget> = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .iter()
+        .take(REMOVED_SERIES)
+        .map(|series| RemovalTarget::Series { id: series.id })
+        .collect();
+    let removal = library.remove_from_library(&removing).await.unwrap();
+    assert_eq!(removal.removed_books, REMOVED_BOOKS);
 
     let outcome = trial
         .run(

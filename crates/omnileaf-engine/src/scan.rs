@@ -7,10 +7,10 @@ use std::{
 };
 
 use omnileaf_db::{
-    Database,
     catalog::{
         BookFile, NewSeries, RootId, RootKind, ScannedBook, SeriesFolder, record_scanned_books,
     },
+    store::Store,
 };
 use omnileaf_formats::{Book, Details, FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{KeyError, SeriesId};
@@ -25,6 +25,7 @@ use crate::{
     clock::unix_ms,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
+    library_removal::bring_back_marked,
     placement::{Placement, place_book},
     series_naming::series_named_in_files,
     skipped_types::{SkippedFile, SkippedType},
@@ -159,7 +160,7 @@ pub(crate) async fn walk(
 }
 
 pub(crate) async fn scan(
-    database: &Database,
+    store: &Store,
     target: Target,
     layout: Layout,
     mut on_progress: impl FnMut(ScanProgress) + Send,
@@ -178,7 +179,9 @@ pub(crate) async fn scan(
         })
         .await?;
         let found = tally.count(read);
-        let filed_in = database
+        bring_back_marked(store, &found).await?;
+        let filed_in = store
+            .database()
             .write(move |transaction| record_scanned_books(transaction, &found))
             .await?;
         tally.series.extend(filed_in);

@@ -14,6 +14,7 @@ use tokio::task::spawn_blocking;
 use crate::{
     FolderId, LibraryError, ScanProgress, SkippedType,
     library_layout::Layout,
+    library_removal::{RemovedBooks, marked_to_leave_out},
     rescan_plan::{Forgetting, Plan, ReadBook, Replacement, ToRead},
     scan::{BOOKS_PER_BATCH, Target, read_book, saturating_u32},
 };
@@ -66,6 +67,7 @@ pub(crate) async fn rescan(
     store: &Store,
     target: Target,
     layout: Layout,
+    removed_books: &RemovedBooks,
     on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<Rescan, LibraryError> {
     let database = store.database();
@@ -78,7 +80,15 @@ pub(crate) async fn rescan(
     }
     let planning = target.clone();
     let (mut plan, to_read) = spawn_blocking(move || Plan::new(&planning, layout, stored)).await?;
-    record_changed(database, &target, &mut plan, to_read, on_progress).await?;
+    record_changed(
+        store,
+        &target,
+        &mut plan,
+        to_read,
+        removed_books,
+        on_progress,
+    )
+    .await?;
     let finished = plan.finish();
     carry_reading_states(store, finished.forgetting.replaced.clone()).await?;
     let removed = forget(database, root, finished.forgetting).await?;
@@ -100,10 +110,11 @@ fn looks_unplugged(kind: RootKind, layout: &Layout, stored: &[StoredFile]) -> bo
 }
 
 async fn record_changed(
-    database: &Database,
+    store: &Store,
     target: &Target,
     plan: &mut Plan,
     to_read: Vec<ToRead>,
+    removed_books: &RemovedBooks,
     mut on_progress: impl FnMut(ScanProgress) + Send,
 ) -> Result<(), LibraryError> {
     let total = saturating_u32(to_read.len());
@@ -117,8 +128,15 @@ async fn record_changed(
         }
         let read = read_batch(target, batch).await?;
         scanned = scanned.saturating_add(saturating_u32(read.len()));
-        let recording = plan.sort(read);
-        database
+        let removed = marked_to_leave_out(
+            store,
+            removed_books,
+            read.iter().filter_map(|read| read.book.as_ref().ok()),
+        )
+        .await?;
+        let recording = plan.sort(read, &removed);
+        store
+            .database()
             .write(move |transaction| {
                 record_scanned_books(transaction, &recording.unmoved)?;
                 record_moved_books(transaction, &recording.moved)

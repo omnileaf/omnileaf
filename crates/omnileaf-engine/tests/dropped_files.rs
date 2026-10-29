@@ -13,8 +13,10 @@ mod support;
 use std::{fs, path::PathBuf};
 
 use books::write_book;
+use omnileaf_db::rusqlite::{Connection, OpenFlags};
 use omnileaf_engine::{
     DropError, DropMode, DropOutcome, Library, LibraryListing, RefusalReason, RefusedDrop,
+    RemovalTarget,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -48,6 +50,30 @@ impl Dropping {
         fs::create_dir_all(self.outside.path()).unwrap();
         fs::write(&path, bytes).unwrap();
         path
+    }
+
+    async fn remove_every_series(&self) {
+        let listed = self
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        let targets: Vec<RemovalTarget> = listed
+            .series
+            .iter()
+            .map(|series| RemovalTarget::Series { id: series.id })
+            .collect();
+        self.library.remove_from_library(&targets).await.unwrap();
+    }
+
+    fn markers(&self) -> u32 {
+        Connection::open_with_flags(
+            self.home.path().join("library.sqlite"),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .unwrap()
+        .query_row("SELECT count(*) FROM book_removed", [], |row| row.get(0))
+        .unwrap()
     }
 
     async fn series_titles(&self) -> Vec<String> {
@@ -170,6 +196,104 @@ async fn adds_the_folder_of_each_file_dropped_once() {
         (1, 2),
         "{:?}",
         dropping.series_titles().await
+    );
+}
+
+#[tokio::test]
+async fn dropping_the_folder_to_add_it_clears_markers() {
+    let dropping = Dropping::new("drop-add-clears").await;
+    let file = dropping.comic("Loose Comics", "One.cbz", 1);
+    dropping
+        .library
+        .drop_files(vec![file.clone()], DropMode::Add)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 1);
+
+    dropping
+        .library
+        .drop_files(vec![file], DropMode::Add)
+        .await
+        .unwrap();
+
+    assert_eq!(dropping.markers(), 0);
+    assert_eq!(dropping.series_titles().await, ["One"]);
+}
+
+#[tokio::test]
+async fn copying_a_removed_book_into_the_home_folder_again_clears_its_marker_and_lists_it() {
+    let dropping = Dropping::new("drop-copy-clears").await;
+    let file = dropping.comic("Loose", "One.cbz", 1);
+    dropping
+        .library
+        .drop_files(vec![file.clone()], DropMode::Copy)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 1);
+
+    dropping
+        .library
+        .drop_files(vec![file], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert_eq!(dropping.markers(), 0);
+    assert_eq!(dropping.series_titles().await.len(), 1);
+}
+
+#[tokio::test]
+async fn copying_one_removed_book_back_leaves_the_other_removed_book_still_in_the_home_folder_out()
+{
+    let dropping = Dropping::new("drop-copy-narrow").await;
+    let first = dropping.comic("Loose", "One.cbz", 1);
+    let second = dropping.comic("Loose", "Two.cbz", 2);
+    dropping
+        .library
+        .drop_files(vec![first.clone(), second], DropMode::Copy)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 2);
+
+    dropping
+        .library
+        .drop_files(vec![first], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (dropping.markers(), dropping.series_titles().await),
+        (1, ["One".to_owned()].to_vec())
+    );
+}
+
+#[tokio::test]
+async fn copying_a_removed_folder_back_restores_its_books_and_leaves_a_removed_book_beside_it_out()
+{
+    let dropping = Dropping::new("drop-copy-folder-narrow").await;
+    dropping.comic("Shelf", "One.cbz", 1);
+    dropping.comic("Shelf", "Two.cbz", 2);
+    let beside = dropping.comic("Beside", "Three.cbz", 3);
+    let shelf = dropping.outside.path().join("Shelf");
+    dropping
+        .library
+        .drop_files(vec![shelf.clone(), beside], DropMode::Copy)
+        .await
+        .unwrap();
+    dropping.remove_every_series().await;
+    assert_eq!(dropping.markers(), 3);
+
+    dropping
+        .library
+        .drop_files(vec![shelf], DropMode::Copy)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (dropping.markers(), dropping.series_titles().await),
+        (1, ["Shelf".to_owned()].to_vec())
     );
 }
 

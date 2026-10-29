@@ -27,7 +27,8 @@ use std::{
 use books::write_book;
 use omnileaf_engine::{
     EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, LIBRARY_CHANGES_GATHERED_FOR,
-    Library, LibraryChanged, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Storage,
+    Library, LibraryChanged, LibraryListing, PowerMode, RESCAN_EVERY, RemovalTarget,
+    RescanConditions, RescanOutcome, Storage,
 };
 use stepped_clock::SteppedClock;
 use support::ScratchFolder;
@@ -172,6 +173,38 @@ async fn rescans_every_folder_once_its_turn_comes_and_finds_the_books_added_mean
             ..FileChanges::default()
         }))
     );
+}
+
+#[tokio::test]
+async fn a_scheduled_rescan_leaves_a_removed_book_out() {
+    let running = Running::new("schedule-removed").await;
+    let series = running
+        .library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .remove(0)
+        .id;
+    running
+        .library
+        .remove_from_library(&[RemovalTarget::Series { id: series }])
+        .await
+        .unwrap();
+    running.clock.advance(RESCAN_EVERY);
+
+    let rescans = running.rescan_due().await;
+
+    assert_eq!(
+        running.outcome_of_linked(&rescans),
+        Some(RescanOutcome::Rescanned(FileChanges::default()))
+    );
+    let listed = running
+        .library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap();
+    assert_eq!(listed.series, []);
 }
 
 #[tokio::test]
