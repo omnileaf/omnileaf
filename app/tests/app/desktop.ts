@@ -1,10 +1,11 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { TestProject } from "vitest/node";
 
 import { launchDesktopApp } from "./desktop-app.ts";
+import { removeFolder } from "./remove-folder.ts";
 import { createSampleLibrary } from "./sample-library.ts";
 
 const WEBDRIVER_PORT = 4445;
@@ -22,8 +23,8 @@ export async function setup(
   const dataDir = await mkdtemp(join(tmpdir(), "omnileaf-e2e-data-"));
   const crashReports = await mkdtemp(join(tmpdir(), "omnileaf-e2e-crashes-"));
   const removeFolders = async (): Promise<void> => {
-    await rm(dataDir, { recursive: true, force: true });
-    await rm(crashReports, { recursive: true, force: true });
+    await removeFolder(dataDir);
+    await removeFolder(crashReports);
     await library.remove();
   };
   const app = await launchDesktopApp({
