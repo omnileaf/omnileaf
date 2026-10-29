@@ -12,9 +12,9 @@ export const NATIVE_TOP_BAR = {
   barTitle:
     "text-native-bar-title leading-native-bar-title font-native-bar-title tracking-native-bar-title text-native-on-top-bar",
   barButton:
-    "shrink-0 rounded-full bg-native-bar-button text-native-on-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios block-native-target inline-native-target",
+    "shrink-0 rounded-full bg-native-bar-button font-native-bar-button text-native-on-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios block-native-target inline-native-target",
   barButtonRow:
-    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios",
+    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:font-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios",
   edge: "border-be-(length:--native-spacing-hairline)",
   scrolled:
     "border-native-top-bar-scrolled-edge bg-native-top-bar-scrolled backdrop-blur-ios",

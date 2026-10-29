@@ -483,10 +483,25 @@ test("puts the sort and every filter back as a new library has them on Reset", a
   await expect.poll(() => storedListing).toEqual(NEW_LIBRARY_LISTING);
 });
 
-for (const { platform, weight, colour, isTouch } of [
-  { platform: "linux", weight: "500", colour: "foreground", isTouch: false },
-  { platform: "android", weight: "500", colour: "accent", isTouch: true },
-  { platform: "ios", weight: "600", colour: "foreground", isTouch: true },
+for (const { platform, weight, token, isTouch } of [
+  {
+    platform: "linux",
+    weight: "500",
+    token: "--color-foreground",
+    isTouch: false,
+  },
+  {
+    platform: "android",
+    weight: "500",
+    token: "--color-accent",
+    isTouch: true,
+  },
+  {
+    platform: "ios",
+    weight: "510",
+    token: "--native-color-on-bar-button",
+    isTouch: true,
+  },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -497,7 +512,7 @@ for (const { platform, weight, colour, isTouch } of [
       },
     });
 
-    test(`sets Reset at weight ${weight} in the ${colour} colour`, async ({
+    test(`sets Reset in ${platform}'s own weight and colour`, async ({
       page,
     }) => {
       await openLibrary(page);
@@ -510,10 +525,15 @@ for (const { platform, weight, colour, isTouch } of [
 
       const reset = panel.getByRole("button", { name: "Reset" });
 
-      await expect(reset).toHaveCSS("font-weight", weight);
+      const look =
+        platform === "ios" && !isPhone(page)
+          ? ({ weight: "600", token: "--color-foreground" } as const)
+          : { weight, token };
+
+      await expect(reset).toHaveCSS("font-weight", look.weight);
       await expect(reset).toHaveCSS(
         "color",
-        await tokenColour(page, `--color-${colour}`),
+        await tokenColour(page, look.token),
       );
     });
   });

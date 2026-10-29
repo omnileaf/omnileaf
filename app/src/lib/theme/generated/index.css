@@ -140,6 +140,7 @@
   --tracking-native-large-title: var(--native-tracking-large-title);
   --text-native-bar-title: var(--native-text-bar-title);
   --leading-native-bar-title: var(--native-leading-bar-title);
+  --font-weight-native-bar-button: var(--native-weight-bar-button);
   --font-weight-native-bar-title: var(--native-weight-bar-title);
   --tracking-native-bar-title: var(--native-tracking-bar-title);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
