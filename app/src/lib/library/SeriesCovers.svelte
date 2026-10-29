@@ -58,7 +58,7 @@
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
-  import { coverTileLook, PICKED_COVER_RING } from "./cover-tile";
+  import { coverTileLook } from "./cover-tile";
   import { SCREEN_SIZES } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -152,7 +152,7 @@
 
   function pickedRing(one: LibrarySeries): ClassValue {
     if (selection?.has(one.id) === true) {
-      return PICKED_COVER_RING;
+      return tile.pickedRing;
     }
     return isMenuOpen && menuSeries?.id === one.id
       ? "outline-2 outline-offset-2 outline-border"
@@ -435,7 +435,7 @@
         {#if isSelecting}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
-            class={tile.mark}
+            class={tile.compactMark}
             onClass={tile.markOn}
             offClass={tile.markOff}
           />

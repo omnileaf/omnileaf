@@ -53,11 +53,6 @@ interface TileLook {
   readonly emptyMark: { readonly edge: string; readonly ring: string };
 }
 
-/** Chromium snaps border widths down to whole device pixels. */
-function snappedBorder(width: number): string {
-  return `${String(Math.floor(width * devicePixelRatio) / devicePixelRatio)}px`;
-}
-
 async function oneSeries(): Promise<LibrarySeries> {
   mockIPC(() => ({
     series: [
@@ -171,9 +166,29 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
       tick: mark.color,
     },
     emptyMark: {
-      edge: `${emptyMark.borderTopWidth} ${emptyMark.borderTopColor}`,
+      edge:
+        emptyMark.borderTopWidth === "0px"
+          ? "none"
+          : `${emptyMark.borderTopWidth} ${emptyMark.borderTopColor}`,
       ring: visibleShadows(emptyMark.boxShadow),
     },
+  };
+}
+
+function gapsAround(mark: Element): {
+  top: number;
+  bottom: number;
+  end: number;
+} {
+  const cover = mark.parentElement?.getBoundingClientRect();
+  if (cover === undefined) {
+    throw new Error("the mark has no cover");
+  }
+  const box = mark.getBoundingClientRect();
+  return {
+    top: box.top - cover.top,
+    bottom: cover.bottom - box.bottom,
+    end: cover.right - box.right,
   };
 }
 
@@ -189,7 +204,7 @@ afterEach(() => {
 });
 
 test("draws iOS's tile with glass badges and edit-mode select circles", async () => {
-  const look = await lookOn("ios", "light");
+  const { emptyMark, ...look } = await lookOn("ios", "light");
 
   expect(look).toEqual({
     cover: { corner: "6px" },
@@ -206,11 +221,91 @@ test("draws iOS's tile with glass badges and edit-mode select circles", async ()
       fill: "rgb(47, 111, 79)",
       tick: "rgb(255, 255, 255)",
     },
-    emptyMark: {
-      edge: `${snappedBorder(1.5)} rgb(255, 255, 255)`,
-      ring: "rgba(0, 0, 0, 0.3) 0px 1px 3px 0px",
-    },
   });
+  expect(emptyMark.edge).toBe("none");
+  expect(emptyMark.ring).toContain(
+    "rgb(255, 255, 255) 0px 0px 0px 1.5px inset",
+  );
+});
+
+test("puts iOS's select circle at the cover's bottom end, on a scrim with a glass blur", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "grid",
+  });
+  const style = styleOf(mark);
+  const gaps = gapsAround(mark);
+
+  expect({
+    bottom: gaps.bottom,
+    end: gaps.end,
+    fill: style.backgroundColor,
+    blur: style.backdropFilter.includes("blur(30px)"),
+  }).toEqual({
+    bottom: 6,
+    end: 6,
+    fill: "rgba(0, 0, 0, 0.2)",
+    blur: true,
+  });
+  expect(gaps.top).toBeGreaterThan(60);
+});
+
+test("keeps iOS's select circle in the top end of a compact cover, clear of its title band", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "compact",
+  });
+
+  expect({
+    gaps: gapsAround(mark),
+    fill: styleOf(mark).backgroundColor,
+  }).toMatchObject({
+    gaps: { top: 5, end: 5 },
+    fill: "rgba(0, 0, 0, 0.2)",
+  });
+});
+
+test("darkens iOS's select circle scrim in the dark theme", async () => {
+  document.documentElement.dataset.theme = "dark";
+  followCorePlatform("ios");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "grid",
+  });
+
+  expect(styleOf(mark).backgroundColor).toBe("rgba(0, 0, 0, 0.47)");
+});
+
+test("draws no outline round a picked cover on an iPhone, and keeps it on an iPad", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const series = await oneSeries();
+  const phone = await markOf(series, { isOn: true, display: "grid" });
+  const onPhone = styleOf(phone.parentElement).outlineWidth;
+
+  await page.viewport(TABLET.width, TABLET.height);
+  document.body.replaceChildren();
+  const tablet = await markOf(series, { isOn: true, display: "grid" });
+
+  expect([onPhone, styleOf(tablet.parentElement).outlineWidth]).toEqual([
+    "0px",
+    "2px",
+  ]);
+});
+
+test("keeps Android's check box in the cover's top end", async () => {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("android");
+  const mark = await markOf(await oneSeries(), {
+    isOn: false,
+    display: "grid",
+  });
+
+  expect(gapsAround(mark)).toMatchObject({ top: 5, end: 5 });
 });
 
 test("darkens iOS's glass badges in the dark theme", async () => {
