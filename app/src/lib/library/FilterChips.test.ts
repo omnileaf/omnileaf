@@ -1,7 +1,12 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
+
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import FilterChips from "./FilterChips.svelte";
 
@@ -96,4 +101,110 @@ test("removes a chip with its cross, and every filter with Clear all", async () 
 
   expect(onRemove).toHaveBeenCalledWith("language");
   expect(onClearAll).toHaveBeenCalledOnce();
+});
+
+const PHONE = { width: 390, height: 800 } as const;
+const TABLET = { width: 1024, height: 800 } as const;
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
+  document.body.replaceChildren();
+});
+
+async function chipsOn(
+  platform: "ios" | "android",
+  size: { width: number; height: number },
+  chips: readonly { id: string; label: string }[],
+) {
+  await page.viewport(size.width, size.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  return chipsIn("100%", chips);
+}
+
+function removableChip(label: string): HTMLElement {
+  const chip = page
+    .getByRole("button", { name: `Remove ${label}` })
+    .element()
+    .closest("li");
+  if (chip === null) {
+    throw new Error(`no chip holds ${label}`);
+  }
+  return chip;
+}
+
+test("draws each filter in use as a 28 point capsule on the control fill on an iPhone", async () => {
+  await chipsOn("ios", PHONE, FEW);
+
+  for (const label of ["Unread", "Japanese"]) {
+    const chip = removableChip(label);
+    const style = getComputedStyle(chip);
+
+    expect({
+      isCapsule:
+        Number.parseFloat(style.borderTopLeftRadius) >=
+        chip.getBoundingClientRect().height / 2,
+      hasNoBorder: style.borderTopWidth === "0px",
+      height: chip.getBoundingClientRect().height,
+      fill: style.backgroundColor,
+    }).toEqual({
+      isCapsule: true,
+      hasNoBorder: true,
+      height: 28,
+      fill: resolvedColour("--color-native-button-outline", "backgroundColor"),
+    });
+  }
+});
+
+test("spaces the chips 8 points apart on an iPhone", async () => {
+  await chipsOn("ios", PHONE, FEW);
+
+  const first = removableChip("Unread").getBoundingClientRect();
+  const second = removableChip("Japanese").getBoundingClientRect();
+
+  expect(second.left - first.right).toBe(8);
+});
+
+test("draws +N as a 28 point capsule and Clear all as a plain button on an iPhone", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const { screen } = await chipsIn("22.5rem", MANY);
+
+  const more = screen
+    .getByRole("button", { name: /^Show \d+ more filters?$/ })
+    .element();
+  const clearAll = getComputedStyle(
+    screen.getByRole("button", { name: "Clear all" }).element(),
+  );
+
+  expect(more.getBoundingClientRect().height).toBe(28);
+  expect(getComputedStyle(more).backgroundColor).toBe(
+    resolvedColour("--color-native-button-outline", "backgroundColor"),
+  );
+  expect(clearAll.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+  expect(clearAll.color).toBe(
+    resolvedColour("--color-native-on-button-plain", "color"),
+  );
+});
+
+function chipLook(label: string) {
+  const style = getComputedStyle(removableChip(label));
+  return { border: style.borderTopWidth, fill: style.backgroundColor };
+}
+
+test("keeps the bordered chips on an iPad and an Android phone", async () => {
+  await chipsOn("ios", TABLET, FEW);
+  const onIpad = chipLook("Unread");
+  document.body.replaceChildren();
+  await chipsOn("android", PHONE, FEW);
+  const onAndroid = chipLook("Unread");
+
+  const bordered = {
+    border: "1px",
+    fill: resolvedColour("--card", "backgroundColor"),
+  };
+  expect(onIpad).toEqual(bordered);
+  expect(onAndroid).toEqual(bordered);
 });
