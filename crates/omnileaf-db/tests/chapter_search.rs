@@ -611,7 +611,7 @@ async fn follows_the_cursors_of_short_pages_to_exactly_the_hits_of_the_filter() 
 
     let pages = library.pages(&wanted, 10).await;
 
-    assert!(pages.len() >= 2);
+    assert_eq!(pages.len(), 2);
     assert_eq!(
         titles(&pages),
         ["Volume 5000", "Volume 5001", "Volume 5002"]

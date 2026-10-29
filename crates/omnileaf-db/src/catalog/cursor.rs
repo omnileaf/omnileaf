@@ -444,4 +444,30 @@ mod tests {
 
         assert_eq!(bytes.len(), listings.len());
     }
+
+    #[test]
+    fn reads_back_the_index_row_a_chapter_cursor_stands_at() {
+        for index_id in [0, 1, 2_000, i64::MAX] {
+            let cursor = Cursor(Position::Chapter { index_id });
+
+            let read: Cursor = cursor.to_string().parse().unwrap();
+
+            assert_eq!(read, cursor);
+        }
+    }
+
+    #[test]
+    fn refuses_a_chapter_cursor_cut_short_or_run_long() {
+        let whole = Cursor(Position::Chapter { index_id: 2_000 }).to_string();
+        let cut_short = &whole[..whole.len() - 2];
+        let run_long = format!("{whole}00");
+
+        let refused = [cut_short.parse::<Cursor>(), run_long.parse::<Cursor>()];
+
+        assert!(
+            refused
+                .iter()
+                .all(|read| matches!(read, Err(Error::MalformedCursor)))
+        );
+    }
 }
