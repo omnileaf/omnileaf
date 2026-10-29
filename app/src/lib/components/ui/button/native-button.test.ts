@@ -5,6 +5,8 @@ import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
@@ -150,59 +152,186 @@ for (const look of NATIVE_LOOKS) {
   });
 }
 
-const MACOS_LOOK = {
-  height: 24,
-  radius: "6px",
-  fill: "rgb(47, 111, 79)",
-  darkFill: "rgb(46, 125, 85)",
-  secondaryFill: "rgba(0, 0, 0, 0.08)",
-  secondaryInk: "rgba(0, 0, 0, 0.85)",
-  fontSize: "13px",
-  fontWeight: "510",
-} as const;
+type MacosVariant =
+  "primary" | "secondary" | "outline" | "plain" | "destructive" | "link";
 
-async function macosButton(variant: "primary" | "secondary") {
+interface MacosOptions {
+  readonly variant?: MacosVariant;
+  readonly size?: "small" | "regular" | "large";
+  readonly iconOnly?: boolean;
+  readonly disabled?: boolean;
+  readonly theme?: "light" | "dark";
+}
+
+async function macosButton(options: MacosOptions = {}): Promise<HTMLElement> {
+  document.body.replaceChildren();
   followCorePlatform("macos");
-  document.documentElement.dataset.theme = "light";
-  await render(Button, { variant, type: "button", children: label });
+  document.documentElement.dataset.theme = options.theme ?? "light";
+  await render(Button, {
+    variant: options.variant ?? "secondary",
+    size: options.size ?? "regular",
+    iconOnly: options.iconOnly ?? false,
+    disabled: options.disabled ?? false,
+    label: "Remove",
+    type: "button",
+    children: label,
+  });
   return page.getByRole("button", { name: "Remove" }).element();
 }
 
-test("draws a primary button as macOS's own 24px button", async () => {
-  const button = await macosButton("primary");
+function sizeOf(button: HTMLElement): { width: number; height: number } {
+  const { width, height } = button.getBoundingClientRect();
+  return { width, height };
+}
+
+function isCapsule(button: HTMLElement): boolean {
+  const { height } = sizeOf(button);
+  return (
+    Number.parseFloat(getComputedStyle(button).borderTopLeftRadius) >=
+    height / 2
+  );
+}
+
+test("draws macOS's regular button 24px tall with 6px corners and 13px type at weight 510", async () => {
+  const button = await macosButton({ variant: "primary" });
   const style = getComputedStyle(button);
 
   expect({
-    height: button.getBoundingClientRect().height,
+    height: sizeOf(button).height,
     radius: style.borderTopLeftRadius,
     fill: style.backgroundColor,
+    ink: style.color,
     fontSize: style.fontSize,
     fontWeight: style.fontWeight,
+    gap: style.columnGap,
   }).toEqual({
-    height: MACOS_LOOK.height,
-    radius: MACOS_LOOK.radius,
-    fill: MACOS_LOOK.fill,
-    fontSize: MACOS_LOOK.fontSize,
-    fontWeight: MACOS_LOOK.fontWeight,
+    height: 24,
+    radius: "6px",
+    fill: "rgb(47, 111, 79)",
+    ink: "rgb(255, 255, 255)",
+    fontSize: "13px",
+    fontWeight: "510",
+    gap: "4px",
   });
 });
 
-test("draws a secondary button on macOS's control fill, in the label colour", async () => {
-  const button = await macosButton("secondary");
-  const style = getComputedStyle(button);
+test("steps macOS's buttons 20, 24 and 28 tall, with the large one a capsule", async () => {
+  const heights: Record<string, number> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    document.body.replaceChildren();
+    const button = await macosButton({ size });
+    heights[size] = sizeOf(button).height;
+  }
+  const large = await macosButton({ size: "large" });
+
+  expect(heights).toEqual({ small: 20, regular: 24, large: 28 });
+  expect(isCapsule(large)).toBe(true);
+});
+
+test("sets macOS's small button in 11px type with 9px sides and 5px corners", async () => {
+  const style = getComputedStyle(await macosButton({ size: "small" }));
+
+  expect([
+    style.fontSize,
+    style.paddingInlineStart,
+    style.borderTopLeftRadius,
+  ]).toEqual(["11px", "9px", "5px"]);
+});
+
+test("draws macOS's icon-only buttons square to their height, as capsules on a faint fill", async () => {
+  const sizes: Record<string, { width: number; height: number }> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    document.body.replaceChildren();
+    sizes[size] = sizeOf(await macosButton({ size, iconOnly: true }));
+  }
+  const regular = await macosButton({ iconOnly: true });
+
+  expect(sizes).toEqual({
+    small: { width: 20, height: 20 },
+    regular: { width: 24, height: 24 },
+    large: { width: 28, height: 28 },
+  });
+  expect(isCapsule(regular)).toBe(true);
+  expect(getComputedStyle(regular).backgroundColor).toBe(
+    resolvedColour("--color-native-icon-button-fill", "backgroundColor"),
+  );
+});
+
+test("draws macOS's secondary button on the control fill, in the label colour", async () => {
+  const style = getComputedStyle(await macosButton());
 
   expect([style.backgroundColor, style.color]).toEqual([
-    MACOS_LOOK.secondaryFill,
-    MACOS_LOOK.secondaryInk,
+    "rgba(0, 0, 0, 0.08)",
+    "rgba(0, 0, 0, 0.85)",
   ]);
 });
 
-test("keeps macOS's hit area to the button itself, since a pointer needs no touch target", async () => {
-  const button = await macosButton("primary");
+test("darkens macOS's secondary fill under the pointer", async () => {
+  const button = await macosButton();
 
-  expect(getComputedStyle(button, "::before").height).toBe(
-    `${String(MACOS_LOOK.height)}px`,
-  );
+  await page.getByRole("button", { name: "Remove" }).hover();
+
+  await expect
+    .poll(() => getComputedStyle(button).backgroundColor)
+    .toBe("rgba(0, 0, 0, 0.11)");
+});
+
+test("draws macOS's destructive button in the soft red with a red label", async () => {
+  const style = getComputedStyle(await macosButton({ variant: "destructive" }));
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgb(246, 227, 227)",
+    "rgb(155, 44, 44)",
+  ]);
+});
+
+test("draws macOS's plain button without a fill, in the label colour", async () => {
+  const style = getComputedStyle(await macosButton({ variant: "plain" }));
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgba(0, 0, 0, 0)",
+    "rgba(0, 0, 0, 0.85)",
+  ]);
+});
+
+test("draws macOS's link button as bare accent text that underlines under the pointer", async () => {
+  const button = await macosButton({ variant: "link" });
+  const style = getComputedStyle(button);
+
+  expect({
+    height: sizeOf(button).height,
+    padding: style.paddingInlineStart,
+    fill: style.backgroundColor,
+    ink: style.color,
+    underlined: style.textDecorationLine.includes("underline"),
+  }).toEqual({
+    height: 16,
+    padding: "0px",
+    fill: "rgba(0, 0, 0, 0)",
+    ink: "rgb(47, 111, 79)",
+    underlined: false,
+  });
+
+  await page.getByRole("button", { name: "Remove" }).hover();
+
+  expect(getComputedStyle(button).textDecorationLine).toContain("underline");
+});
+
+test("greys macOS's disabled buttons and stops them taking the pointer", async () => {
+  const enabled = getComputedStyle(await macosButton());
+  const enabledFill = enabled.backgroundColor;
+  document.body.replaceChildren();
+  const disabled = getComputedStyle(await macosButton({ disabled: true }));
+
+  expect({
+    changesFill: disabled.backgroundColor !== enabledFill,
+    ink: disabled.color,
+    pointer: disabled.pointerEvents,
+  }).toEqual({
+    changesFill: true,
+    ink: "rgba(0, 0, 0, 0.25)",
+    pointer: "none",
+  });
 });
 
 test("draws macOS's button in its dark colours inside a dark part of the page", async () => {
@@ -218,21 +347,30 @@ test("draws macOS's button in its dark colours inside a dark part of the page", 
 
   const button = page.getByRole("button", { name: "Remove" }).element();
 
-  expect(getComputedStyle(button).backgroundColor).toBe(MACOS_LOOK.darkFill);
+  expect(getComputedStyle(button).backgroundColor).toBe("rgb(46, 125, 85)");
   darkPart.remove();
 });
 
-test("keeps a primary button on linux taller than macOS's, as it was", async () => {
-  followCorePlatform("linux");
-  await render(Button, {
-    variant: "primary",
-    type: "button",
-    children: label,
-  });
+test("lightens macOS's secondary label in the dark theme", async () => {
+  const style = getComputedStyle(await macosButton({ theme: "dark" }));
 
-  const button = page.getByRole("button", { name: "Remove" }).element();
-
-  expect(button.getBoundingClientRect().height).toBeGreaterThan(
-    MACOS_LOOK.height,
-  );
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgba(255, 255, 255, 0.07)",
+    "rgba(255, 255, 255, 0.85)",
+  ]);
 });
+
+for (const platform of ["linux", "windows"] as const) {
+  test(`keeps a primary button on ${platform} taller than macOS's, as it was`, async () => {
+    followCorePlatform(platform);
+    await render(Button, {
+      variant: "primary",
+      type: "button",
+      children: label,
+    });
+
+    const button = page.getByRole("button", { name: "Remove" }).element();
+
+    expect(button.getBoundingClientRect().height).toBeGreaterThan(24);
+  });
+}
