@@ -20,6 +20,7 @@ pub enum DisposalFailure {
     Other,
 }
 
+/// The returned future is dropped after thirty seconds, so an implementation that hands the work to a thread must have the thread check it is still wanted before acting, and a call already past that check can still remove the file after the report said it failed.
 pub trait FileDisposal: Send + Sync {
     fn dispose(
         &self,

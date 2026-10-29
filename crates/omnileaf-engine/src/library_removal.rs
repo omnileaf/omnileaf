@@ -2,7 +2,10 @@ use std::{
     collections::BTreeSet,
     io,
     path::{Component, Path, PathBuf},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -204,13 +207,24 @@ async fn blocking_within<T: Send + 'static>(
     when_stuck: DisposalFailure,
     work: impl FnOnce() -> T + Send + 'static,
 ) -> Result<T, DisposalFailure> {
-    match timeout(limit, spawn_blocking(work)).await {
-        Ok(Ok(done)) => Ok(done),
+    let abandoned = Arc::new(AtomicBool::new(false));
+    let abandoned_by_caller = Arc::clone(&abandoned);
+    let mut task = spawn_blocking(move || {
+        if abandoned_by_caller.load(Ordering::Acquire) {
+            return None;
+        }
+        Some(work())
+    });
+    match timeout(limit, &mut task).await {
+        Ok(Ok(Some(done))) => Ok(done),
+        Ok(Ok(None)) => Err(when_stuck),
         Ok(Err(error)) => {
             tracing::warn!(%error, "run blocking work on a file to remove");
             Err(DisposalFailure::Other)
         }
         Err(_) => {
+            abandoned.store(true, Ordering::Release);
+            task.abort();
             tracing::warn!(
                 limit_ms = limit.as_millis(),
                 "wait for blocking work on a file to remove"

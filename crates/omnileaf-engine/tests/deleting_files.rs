@@ -36,7 +36,10 @@ use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use scanned::{Scanned, owned};
 use support::{FixedClock, ScratchFolder};
 use tokio::{
+    runtime::Builder,
+    select,
     sync::Notify,
+    task::spawn_blocking,
     time::{advance, timeout},
 };
 
@@ -792,6 +795,11 @@ struct Stall {
     release: mpsc::Receiver<()>,
 }
 
+struct Crowd {
+    entered: Arc<Notify>,
+    release: mpsc::Receiver<()>,
+}
+
 struct Stalled {
     entered: Arc<Notify>,
     _release: mpsc::Sender<()>,
@@ -801,6 +809,7 @@ struct Tree {
     scratch: ScratchFolder,
     removes: bool,
     stall: Mutex<Option<Stall>>,
+    crowd: Mutex<Option<Crowd>>,
     failing_stat: Mutex<Option<io::ErrorKind>>,
 }
 
@@ -819,6 +828,7 @@ impl Tree {
             scratch,
             removes,
             stall: Mutex::default(),
+            crowd: Mutex::default(),
             failing_stat: Mutex::default(),
         })
     }
@@ -841,6 +851,29 @@ impl Tree {
         Stalled {
             entered,
             _release: release_sender,
+        }
+    }
+
+    fn crowding_out_the_next_call_after_a_stat(&self) -> Stalled {
+        let entered = Arc::new(Notify::new());
+        let (release_sender, release) = mpsc::channel();
+        *self.crowd.lock().unwrap() = Some(Crowd {
+            entered: Arc::clone(&entered),
+            release,
+        });
+        Stalled {
+            entered,
+            _release: release_sender,
+        }
+    }
+
+    fn crowds_out_the_next_call_if_asked_to(&self) {
+        let crowd = self.crowd.lock().unwrap().take();
+        if let Some(crowd) = crowd {
+            spawn_blocking(move || {
+                crowd.entered.notify_one();
+                crowd.release.recv_timeout(STALLED_AT_MOST).ok();
+            });
         }
     }
 
@@ -891,7 +924,9 @@ impl Storage for Tree {
         if let Some(kind) = *self.failing_stat.lock().unwrap() {
             return Err(kind.into());
         }
-        LocalStorage.details(&self.on_device(path)?)
+        let details = LocalStorage.details(&self.on_device(path)?);
+        self.crowds_out_the_next_call_if_asked_to();
+        details
     }
 
     fn open(&self, file: &Path) -> io::Result<File> {
@@ -1124,4 +1159,46 @@ async fn a_disposal_that_never_returns_fails_its_file_and_frees_the_library_for_
         .rescan_folder(deleting.scanned.id, |_| {})
         .await
         .unwrap();
+}
+
+fn on_a_single_blocking_thread(test: impl Future<Output = ()>) {
+    Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .max_blocking_threads(1)
+        .build()
+        .unwrap()
+        .block_on(test);
+}
+
+#[test]
+fn a_removal_given_up_on_while_queued_never_deletes_the_file_when_the_thread_frees_up() {
+    on_a_single_blocking_thread(async {
+        let tree = Tree::new("delete-late", true);
+        let (library, _home) = library_reading(&tree, "delete-late-home").await;
+        let book = only_book(&library).await;
+        let crowd = tree.crowding_out_the_next_call_after_a_stat();
+        let disposal = FakeDisposal::default();
+        let targets = [RemovalTarget::Book { id: book }];
+        let removal = library.remove_from_library(&targets, FileFate::Dispose(&disposal));
+        let giving_up = async {
+            crowd.entered.notified().await;
+            loop {
+                advance(PAST_ANY_LIMIT).await;
+            }
+        };
+
+        let report = select! {
+            report = removal => report.unwrap(),
+            () = giving_up => unreachable!("the wait for the removal never ends by itself"),
+        };
+        drop(crowd);
+        spawn_blocking(|| ()).await.unwrap();
+
+        assert_eq!(
+            by_name(report.files),
+            [("v01.cbz".to_owned(), failed(RemovalFailure::Other))]
+        );
+        assert!(tree.book().is_file());
+    });
 }
