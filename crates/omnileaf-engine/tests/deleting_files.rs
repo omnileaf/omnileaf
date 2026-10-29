@@ -20,7 +20,11 @@ use std::{
     io,
     path::{Path, PathBuf},
     pin::pin,
-    sync::{Arc, Mutex, mpsc},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+        mpsc,
+    },
     task::Poll,
     time::{Duration, SystemTime},
 };
@@ -862,25 +866,37 @@ struct Tree {
     removes: bool,
     stall: Mutex<Option<Stall>>,
     crowd: Mutex<Option<Crowd>>,
+    hanging_stat: Mutex<Option<Arc<Mutex<mpsc::Receiver<()>>>>>,
+    entered_stat: Notify,
+    stat_calls: AtomicUsize,
     failing_stat: Mutex<Option<io::ErrorKind>>,
 }
 
 impl Tree {
     fn new(name: &str, removes: bool) -> Arc<Self> {
+        Self::with_books(name, removes, 1)
+    }
+
+    fn with_books(name: &str, removes: bool, books: u64) -> Arc<Self> {
         let scratch = ScratchFolder::new(name);
-        write_book(
-            &scratch
-                .path()
-                .join(TREE_NAME)
-                .join(SERIES_02)
-                .join("v01.cbz"),
-            3,
-        );
+        for seed in 3..3 + books {
+            write_book(
+                &scratch
+                    .path()
+                    .join(TREE_NAME)
+                    .join(SERIES_02)
+                    .join(format!("v{:02}.cbz", seed - 2)),
+                seed,
+            );
+        }
         Arc::new(Self {
             scratch,
             removes,
             stall: Mutex::default(),
             crowd: Mutex::default(),
+            hanging_stat: Mutex::default(),
+            entered_stat: Notify::new(),
+            stat_calls: AtomicUsize::new(0),
             failing_stat: Mutex::default(),
         })
     }
@@ -929,6 +945,25 @@ impl Tree {
         }
     }
 
+    fn stats_never_answering(&self) -> mpsc::Sender<()> {
+        let (release_sender, release) = mpsc::channel();
+        *self.hanging_stat.lock().unwrap() = Some(Arc::new(Mutex::new(release)));
+        release_sender
+    }
+
+    fn stat_calls(&self) -> usize {
+        self.stat_calls.load(Ordering::SeqCst)
+    }
+
+    fn hangs_a_stat_if_asked_to(&self) {
+        self.stat_calls.fetch_add(1, Ordering::SeqCst);
+        let hanging = self.hanging_stat.lock().unwrap().clone();
+        if let Some(release) = hanging {
+            self.entered_stat.notify_one();
+            release.lock().unwrap().recv_timeout(STALLED_AT_MOST).ok();
+        }
+    }
+
     fn failing_stats_with(&self, kind: io::ErrorKind) {
         *self.failing_stat.lock().unwrap() = Some(kind);
     }
@@ -972,6 +1007,7 @@ impl Storage for Tree {
     }
 
     fn details(&self, path: &Path) -> io::Result<Details> {
+        self.hangs_a_stat_if_asked_to();
         self.stalls_if_asked_to(Call::Details);
         if let Some(kind) = *self.failing_stat.lock().unwrap() {
             return Err(kind.into());
@@ -1189,7 +1225,7 @@ async fn a_tree_whose_removal_never_answers_reports_its_file_failed_other() {
 }
 
 #[tokio::test(start_paused = true)]
-async fn a_disposal_that_never_returns_fails_its_file_and_frees_the_library_for_the_others() {
+async fn a_disposal_that_never_returns_fails_the_rest_of_its_root_and_frees_the_library() {
     let deleting = Deleting::new("delete-stuck-disposal").await;
     let series = deleting.series(SERIES_01).await;
     let disposal = FakeDisposal::default().hanging_on("v01.cbz");
@@ -1202,8 +1238,12 @@ async fn a_disposal_that_never_returns_fails_its_file_and_frees_the_library_for_
         by_name(report.files),
         [
             ("v01.cbz".to_owned(), failed(RemovalFailure::Other)),
-            ("v02.cbz".to_owned(), FileOutcome::Trashed),
+            ("v02.cbz".to_owned(), failed(RemovalFailure::Other)),
         ]
+    );
+    assert_eq!(
+        disposal.calls(),
+        [deleting.path("Sample Series 01/v01.cbz")]
     );
     deleting
         .scanned
@@ -1277,4 +1317,41 @@ async fn a_stat_slower_than_a_listing_is_still_waited_for_and_the_file_goes() {
         [("v01.cbz".to_owned(), FileOutcome::Deleted)]
     );
     assert!(!tree.book().exists());
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_root_whose_stat_never_answers_costs_one_timeout_and_fails_every_file() {
+    let tree = Tree::with_books("delete-stuck-root", true, 3);
+    let (library, _home) = library_reading(&tree, "delete-stuck-root-home").await;
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .remove(0)
+        .id;
+    let scan_stats = tree.stat_calls();
+    let _hung = tree.stats_never_answering();
+    let disposal = FakeDisposal::default();
+    let targets = [RemovalTarget::Series { id: series }];
+    let removal = library.remove_from_library(&targets, FileFate::Dispose(&disposal));
+    let giving_up = async {
+        tree.entered_stat.notified().await;
+        loop {
+            advance(PAST_ANY_LIMIT).await;
+        }
+    };
+
+    let report = select! {
+        report = removal => report.unwrap(),
+        () = giving_up => unreachable!("the wait for the removal never ends by itself"),
+    };
+
+    assert_eq!(
+        by_name(report.files),
+        ["v01.cbz", "v02.cbz", "v03.cbz"]
+            .map(|name| (name.to_owned(), failed(RemovalFailure::UnsupportedLocation)))
+    );
+    assert_eq!(tree.stat_calls() - scan_stats, 1);
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
 }

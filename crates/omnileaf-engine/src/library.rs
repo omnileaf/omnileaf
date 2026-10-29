@@ -70,7 +70,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_removal::{Expanded, RemovedBooks, check_reachable, expand, removal_of},
+    library_removal::{Expanded, RemovalRoot, RemovedBooks, expand, removal_of},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -2196,31 +2196,25 @@ impl Library {
         files: Vec<BookFileToRemove>,
         disposal: &impl FileDisposal,
     ) -> Vec<FileRemoval> {
-        let mut roots: BTreeMap<RootId, Result<RootFiles, DisposalFailure>> = BTreeMap::new();
-        for file in &files {
-            if let btree_map::Entry::Vacant(unchecked) = roots.entry(file.root_id) {
-                unchecked.insert(self.reachable_files_of(&file.root).await);
-            }
-        }
+        let mut roots: BTreeMap<RootId, RemovalRoot> = BTreeMap::new();
         let mut removals = Vec::with_capacity(files.len());
         for file in &files {
-            let root = match roots.get(&file.root_id) {
-                Some(Ok(root)) => Ok((&root.storage, root.folder.as_path())),
-                Some(Err(failure)) => Err(*failure),
-                None => Err(DisposalFailure::Unsupported),
+            let root = match roots.entry(file.root_id) {
+                btree_map::Entry::Occupied(known) => known.into_mut(),
+                btree_map::Entry::Vacant(unchecked) => {
+                    unchecked.insert(self.removal_root_of(&file.root).await)
+                }
             };
             removals.push(removal_of(file, root, disposal).await);
         }
         removals
     }
 
-    async fn reachable_files_of(
-        &self,
-        locator: &RootLocator,
-    ) -> Result<RootFiles, DisposalFailure> {
-        let root = self.files_of(locator).ok_or(DisposalFailure::Unsupported)?;
-        check_reachable(&root.storage, &root.folder).await?;
-        Ok(root)
+    async fn removal_root_of(&self, locator: &RootLocator) -> RemovalRoot {
+        match self.files_of(locator) {
+            Some(RootFiles { storage, folder }) => RemovalRoot::opened(storage, folder).await,
+            None => RemovalRoot::closed(DisposalFailure::Unsupported),
+        }
     }
 
     fn file_in(&self, locator: &RootLocator, location: &Path) -> Option<FileInStorage> {
