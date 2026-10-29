@@ -11,7 +11,7 @@ export interface ListRowLook {
 }
 
 const LINK =
-  "flex flex-1 items-center gap-md py-list-row-block min-inline-none";
+  "flex flex-1 items-center gap-md py-list-row-block min-inline-none wrap-normal";
 
 const TODAY: ListRowLook = {
   row: "flex items-center gap-xs border-be border-border",

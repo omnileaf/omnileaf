@@ -35,7 +35,7 @@
       <p class="truncate text-callout font-semibold max-medium:text-body">
         {m.app_name()}
       </p>
-      <p class="text-footnote wrap-break-word text-muted">
+      <p class="text-footnote text-muted">
         {m.crash_test_quit_build({ version })}
       </p>
     </div>

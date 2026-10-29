@@ -43,7 +43,7 @@
           isOnPhone
             ? "text-native-end-stat/native-end-stat font-native-end-stat tracking-native-end-stat"
             : "text-title font-semibold",
-          "wrap-break-word tabular-nums",
+          "tabular-nums",
         ]}
       >
         {value}
@@ -53,7 +53,7 @@
           isOnPhone
             ? "text-native-end-stat-label/native-end-stat-label font-native-end-stat-label tracking-native-end-stat-label"
             : "text-caption",
-          "wrap-break-word text-muted",
+          "text-muted",
         ]}
       >
         {label}

@@ -314,7 +314,10 @@
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
-  <div class="@container relative min-inline-none" data-series-id={one.id}>
+  <div
+    class="@container relative wrap-normal min-inline-none"
+    data-series-id={one.id}
+  >
     <Tooltip
       label={canHover.current && !isSelecting && cutOffTitles.has(one.id)
         ? shown.title
@@ -394,7 +397,10 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
-  <div class="@container relative min-inline-none" data-series-id={one.id}>
+  <div
+    class="@container relative wrap-normal min-inline-none"
+    data-series-id={one.id}
+  >
     <SeriesLink
       {...revealing(one, shown.title)}
       id={one.id}
@@ -451,7 +457,10 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
-  <div class="@container relative min-inline-none" data-series-id={one.id}>
+  <div
+    class="@container relative wrap-normal min-inline-none"
+    data-series-id={one.id}
+  >
     <SeriesLink
       {...revealing(one, shown.title)}
       id={one.id}
