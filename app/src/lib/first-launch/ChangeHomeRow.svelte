@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChevronRight } from "@lucide/svelte";
 
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -15,7 +16,10 @@
   aria-disabled="true"
   aria-labelledby={titleId}
   aria-describedby={pathId}
-  class="absolute inset-none flex items-center justify-end pe-md focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+  class={[
+    "absolute inset-none flex items-center justify-end pe-md",
+    ROW_FOCUS_RING,
+  ]}
 >
   <ChevronRight
     size={CHEVRON_SIZE}

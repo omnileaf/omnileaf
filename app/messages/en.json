@@ -1517,6 +1517,7 @@
   "series_books_list": "Books",
   "series_books_failed": "Couldn't load the books in this series. Try again later.",
   "series_show": "Show",
+  "series_show_choice": "Show: {shown}",
   "series_show_all": "All",
   "series_show_unread": "Unread",
   "series_no_unread": "Every book in this series is read.",

@@ -4,6 +4,9 @@ export const ROW_SUBTITLE_TYPE =
 const ABOUT_ROW =
   "flex inline-full items-center px-list-row text-start transition-control hover:bg-hover active:bg-pressed";
 
+export const ROW_FOCUS_RING =
+  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent";
+
 export const ITEM_LOOKS = {
   row: [
     "flex inline-full items-center gap-native-row-gap text-start transition-control not-aria-disabled:hover:bg-hover not-aria-disabled:active:bg-native-row-selected data-picked:bg-native-row-selected py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",

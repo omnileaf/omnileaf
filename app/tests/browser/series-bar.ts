@@ -7,7 +7,7 @@ export async function settleBarTitle(page: Page): Promise<void> {
     .poll(() =>
       page.evaluate(() => {
         const bar = document.querySelector("main header");
-        const shown = bar?.querySelector("span[aria-hidden=true]");
+        const shown = bar?.querySelector(":scope > span[aria-hidden=true]");
         const title = document.querySelector("main h1");
         if (bar === null || !shown || title === null) {
           return true;

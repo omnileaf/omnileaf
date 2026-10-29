@@ -1,6 +1,6 @@
 <script lang="ts" generics="Option extends string">
   import type { LucideProps } from "@lucide/svelte";
-  import type { Component } from "svelte";
+  import type { Component, Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
   import {
@@ -27,6 +27,8 @@
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
+    readonly segmentClass?: ClassValue;
+    readonly crowded?: Snippet | undefined;
   }
 
   const LOOKS = {
@@ -89,6 +91,8 @@
     onChoose,
     onFit,
     class: className,
+    segmentClass,
+    crowded,
   }: Props = $props();
 
   const look = $derived(LOOKS[size]);
@@ -109,6 +113,7 @@
   let fittedColumns: number | undefined = $state();
   const columns = $derived(fittedColumns ?? options.length);
   const isOneRow = $derived(columns === options.length);
+  const isCrowded = $derived(crowded !== undefined && !isOneRow);
 
   $effect(() => {
     if (track === null || ruler === undefined) {
@@ -138,7 +143,7 @@
     ? undefined
     : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
   class={[
-    "relative",
+    isCrowded ? "invisible absolute inset-x-none" : "relative",
     isOneRow ? "flex" : "grid",
     isNative
       ? NATIVE_LOOK.track
@@ -177,6 +182,7 @@
             : chosen === option
               ? "bg-raised font-semibold text-foreground shadow-raised"
               : "font-medium text-foreground hover:bg-hover",
+        segmentClass,
       ]}
     >
       <SegmentFace
@@ -193,7 +199,7 @@
     class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
   >
     {#each options as option (option)}
-      <span class={["flex flex-none items-center", face]}>
+      <span class={["flex flex-none items-center", face, segmentClass]}>
         <SegmentFace
           label={labels[option]()}
           icon={icons?.[option]}
@@ -204,3 +210,6 @@
     {/each}
   </span>
 </RadioGroup>
+{#if isCrowded}
+  {@render crowded?.()}
+{/if}

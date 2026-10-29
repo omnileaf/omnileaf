@@ -13,6 +13,8 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -26,14 +28,19 @@
 
   let {
     book,
+    isOnPhone,
     onMark,
     onSelect,
   }: {
     book: SeriesBook;
+    isOnPhone: boolean;
     onMark: (mark: ReadMark) => void;
     onSelect: () => void;
   } = $props();
 
+  const action = $derived(
+    isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
+  );
   const actions = $derived(bookActions(book.reading));
   let isOpen = $state(false);
 
@@ -42,26 +49,43 @@
   }
 </script>
 
-<Tooltip
-  label={m.series_book_more_short()}
-  type="button"
-  aria-haspopup="dialog"
-  aria-expanded={isOpen}
-  aria-label={m.series_book_more({ title: book.title })}
-  onclick={() => {
-    isOpen = true;
-  }}
->
-  {#snippet child({ props })}
-    <Button
-      {...props}
-      look="row-action"
-      class="shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target"
-    >
-      <Ellipsis size={ICON_SIZE} aria-hidden="true" />
-    </Button>
-  {/snippet}
-</Tooltip>
+{#if isOnPhone}
+  <Button
+    type="button"
+    variant="plain"
+    iconOnly
+    label={m.series_book_more({ title: book.title })}
+    aria-haspopup="dialog"
+    aria-expanded={isOpen}
+    class="me-xs shrink-0"
+    onclick={() => {
+      isOpen = true;
+    }}
+  >
+    <Icon name="ellipsis" />
+  </Button>
+{:else}
+  <Tooltip
+    label={m.series_book_more_short()}
+    type="button"
+    aria-haspopup="dialog"
+    aria-expanded={isOpen}
+    aria-label={m.series_book_more({ title: book.title })}
+    onclick={() => {
+      isOpen = true;
+    }}
+  >
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        look="row-action"
+        class="shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target"
+      >
+        <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+      </Button>
+    {/snippet}
+  </Tooltip>
+{/if}
 
 <Dialog.Root bind:open={isOpen}>
   <DrawerContent onDismiss={close} class="ios:bg-ios-grouped">
@@ -83,21 +107,25 @@
       </div>
     </div>
     <div
-      class="flex flex-col px-sm pbs-sm pbe-sheet-bottom ios:mx-sheet-inline ios:mbs-md ios:mbe-sheet-bottom ios:divide-y ios:divide-ios-separator ios:overflow-hidden ios:rounded-ios-cell ios:bg-ios-cell ios:p-none"
+      class={isOnPhone
+        ? "flex flex-col pbs-sm pbe-sheet-bottom"
+        : "flex flex-col px-sm pbs-sm pbe-sheet-bottom ios:mx-sheet-inline ios:mbs-md ios:mbe-sheet-bottom ios:divide-y ios:divide-ios-separator ios:overflow-hidden ios:rounded-ios-cell ios:bg-ios-cell ios:p-none"}
     >
       <a
         href={resolve("/read/[book]", { book: book.id })}
-        class={["flex items-center hover:bg-hover", ACTION]}
+        class={["flex items-center hover:bg-hover", action]}
       >
         <Play size={ICON_SIZE} aria-hidden="true" />
-        {actions.read === "continue"
-          ? m.series_continue_reading()
-          : m.series_start_reading()}
+        <span data-slot="item-title">
+          {actions.read === "continue"
+            ? m.series_continue_reading()
+            : m.series_start_reading()}
+        </span>
       </a>
       <Button
         type="button"
         look="row"
-        class={ACTION}
+        class={action}
         onclick={() => {
           close();
           onMark(actions.mark);
@@ -105,23 +133,23 @@
       >
         {#if actions.mark === "read"}
           <Eye size={ICON_SIZE} aria-hidden="true" />
-          {m.series_mark_read()}
+          <span data-slot="item-title">{m.series_mark_read()}</span>
         {:else}
           <EyeOff size={ICON_SIZE} aria-hidden="true" />
-          {m.series_mark_unread()}
+          <span data-slot="item-title">{m.series_mark_unread()}</span>
         {/if}
       </Button>
       <Button
         type="button"
         look="row"
-        class={ACTION}
+        class={action}
         onclick={() => {
           close();
           onSelect();
         }}
       >
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
-        {m.series_select()}
+        <span data-slot="item-title">{m.series_select()}</span>
       </Button>
     </div>
   </DrawerContent>

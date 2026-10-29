@@ -18,6 +18,18 @@ export function isPhone(platform: Platform, width: WidthClass): boolean {
   return !isPointer(platform) && width === "compact";
 }
 
+export type PhonePlatform = Extract<Platform, "android" | "ios">;
+
+export function phoneOf(
+  platform: Platform,
+  width: WidthClass,
+): PhonePlatform | undefined {
+  return (platform === "android" || platform === "ios") &&
+    isPhone(platform, width)
+    ? platform
+    : undefined;
+}
+
 const USES_COMMAND_KEY = {
   android: false,
   ios: true,
