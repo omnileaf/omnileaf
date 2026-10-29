@@ -2,6 +2,7 @@
   import type { OnCovers } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { groupLook } from "./group-look";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
   interface Choice {
@@ -26,19 +27,27 @@
   let {
     onCovers,
     onChoose,
+    isGrouped = false,
   }: {
     onCovers: OnCovers;
     onChoose: (name: keyof OnCovers, isShown: boolean) => void;
+    isGrouped?: boolean;
   } = $props();
+
+  const look = $derived(groupLook(isGrouped));
 
   const headingId = $props.id();
 </script>
 
-<section role="group" aria-labelledby={headingId} class="flex flex-col">
-  <h3 id={headingId} class="pbs-xl text-small font-semibold">
+<section
+  role="group"
+  aria-labelledby={headingId}
+  class={["flex flex-col", look.section]}
+>
+  <h3 id={headingId} class={[look.heading, !isGrouped && "pbs-xl"]}>
     {m.library_on_covers()}
   </h3>
-  <div class="flex flex-col divide-y divide-border">
+  <div class={look.group}>
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
         label={choice.label()}
