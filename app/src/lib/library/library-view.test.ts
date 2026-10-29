@@ -9,6 +9,7 @@ import {
   withItemCounts,
   withFitsCoversToWidth,
   withOnCovers,
+  withStackedCovers,
 } from "./library-view";
 
 const VIEW: LibraryView = {
@@ -55,6 +56,13 @@ test("changes how the library is drawn and keeps the covers per row", () => {
   const view = withDisplay(VIEW, "list");
 
   expect(view).toEqual({ ...VIEW, display: "list" });
+});
+
+test("turns the stacked series covers off and on again", () => {
+  const flat = withStackedCovers(VIEW, false);
+
+  expect(flat).toEqual({ ...VIEW, stacksSeriesCovers: false });
+  expect(withStackedCovers(flat, true)).toEqual(VIEW);
 });
 
 test("turns the item counts on and off", () => {

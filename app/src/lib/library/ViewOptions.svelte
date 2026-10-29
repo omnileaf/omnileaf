@@ -10,9 +10,11 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
   import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ViewChoices from "./ViewChoices.svelte";
+  import { viewPanelWidth } from "./view-panel";
 
   const ICON_SIZE = 16;
 
@@ -40,6 +42,7 @@
 
   const isWide = new MediaQuery(MEDIUM_QUERY);
   const titleId = $props.id();
+  const panelWidth = viewPanelWidth(currentPlatform());
 
   let direction: "ltr" | "rtl" = $state("ltr");
 
@@ -99,7 +102,10 @@
       dir={direction}
       align="end"
       aria-labelledby={titleId}
-      class="flex flex-col gap-md overflow-auto px-panel-inline pbs-lg pbe-panel-inline inline-view-panel max-block-full"
+      class={[
+        "flex flex-col gap-md overflow-auto px-panel-inline pbs-lg pbe-panel-inline max-block-full",
+        panelWidth,
+      ]}
       onCloseAutoFocus={focusButton}
     >
       <h2 id={titleId} class="text-panel-title font-bold">

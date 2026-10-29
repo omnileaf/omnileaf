@@ -46,7 +46,7 @@ interface ListLook {
   readonly coverHeight: number;
 }
 
-const PANEL_WIDTH = 360;
+const LINUX_PANEL_WIDTH = 400;
 const NARROWING = 100;
 const NARROWEST_COVER = 64;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
@@ -909,7 +909,10 @@ test.describe("view options", () => {
     await openWith(page, viewWith(page, "grid"));
     const options = await openViewOptions(page);
 
-    await choose(options, "Covers");
+    await choose(
+      options.getByRole("radiogroup", { name: "Display" }),
+      "Covers",
+    );
 
     await expect.poll(() => storedView.display).toBe("covers");
     await expect(
@@ -997,7 +1000,7 @@ test.describe("view options", () => {
     } else {
       expect(panel.y).toBeGreaterThan(button.y + button.height);
       expect(panel.x + panel.width).toBeCloseTo(button.x + button.width, 0);
-      expect(panel.width).toBe(PANEL_WIDTH);
+      expect(panel.width).toBe(LINUX_PANEL_WIDTH);
       await page.mouse.click(1, height - 1);
       await expect(options).toBeHidden();
     }

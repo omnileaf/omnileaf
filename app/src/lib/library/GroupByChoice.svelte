@@ -3,7 +3,12 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
-  const GROUPINGS: readonly LibraryGrouping[] = ["none", "category", "folder"];
+  const GROUPINGS: readonly LibraryGrouping[] = [
+    "none",
+    "category",
+    "folder",
+    "creator",
+  ];
 
   const LABELS = {
     none: m.library_group_none,
@@ -22,6 +27,7 @@
 
   const id = $props.id();
   const labelId = `${id}-label`;
+  const hintId = `${id}-hint`;
 </script>
 
 <div>
@@ -33,8 +39,12 @@
     labels={LABELS}
     {chosen}
     labelledBy={labelId}
+    describedBy={hintId}
     size="small"
     {onChoose}
     class="mbs-sm large:mbs-icon-gap"
   />
+  <p id={hintId} class="mbs-xs text-small text-muted large:text-caption">
+    {m.library_group_creator_hint()}
+  </p>
 </div>

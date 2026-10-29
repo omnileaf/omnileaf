@@ -92,6 +92,27 @@ test("groups by nothing in a new library, and keeps the grouping chosen", async 
   await expect.poll(() => storedView.groupBy).toBe("folder");
 });
 
+test("offers Creator beside None, Category and Folder, saying what it does", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const options = await openViewOptions(page);
+  const groupBy = options.getByRole("radiogroup", { name: "Group by" });
+
+  await expect(groupBy.getByRole("radio")).toHaveText([
+    /None/,
+    /Category/,
+    /Folder/,
+    /Creator/,
+  ]);
+  await expect(groupBy).toHaveAccessibleDescription(
+    "Creator puts each series under its writer; a series with two writers shows under both.",
+  );
+  await choose(groupBy, "Creator");
+
+  await expect.poll(() => storedView.groupBy).toBe("creator");
+});
+
 test("draws a section for each folder holding series, saying how many, without the tabs", async ({
   page,
 }) => {
