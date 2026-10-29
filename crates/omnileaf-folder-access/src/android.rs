@@ -18,6 +18,7 @@ const ANDROID_PLUGIN_CLASS: &str = "FolderAccessPlugin";
 const PICK_FOLDER: &str = "pickFolder";
 const LIST_DOCUMENTS: &str = "listDocuments";
 const OPEN_DOCUMENT: &str = "openDocument";
+const DELETE_DOCUMENT: &str = "deleteDocument";
 const PERSISTED_GRANTS: &str = "persistedGrants";
 const RELEASE_GRANT: &str = "releaseGrant";
 
@@ -82,6 +83,12 @@ impl<R: Runtime> Documents for FolderAccess<R> {
             .run_mobile_plugin(OPEN_DOCUMENT, DocumentRequest::document(tree, document))
             .map_err(io_error)?;
         File::try_from(opened)
+    }
+
+    fn delete(&self, tree: &TreeUri, document: &DocumentId) -> io::Result<()> {
+        self.0
+            .run_mobile_plugin(DELETE_DOCUMENT, DocumentRequest::document(tree, document))
+            .map_err(io_error)
     }
 }
 

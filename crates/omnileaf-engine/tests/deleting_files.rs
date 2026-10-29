@@ -22,7 +22,7 @@ use std::{
     pin::pin,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         mpsc,
     },
     task::Poll,
@@ -55,6 +55,7 @@ const SERIES_03: &str = "Sample Series 03";
 const LONG_ENOUGH_TO_REMOVE: Duration = Duration::from_millis(300);
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 const TREE_NAME: &str = "Comics";
+const CHAPTER: &str = "Ch 01";
 const PAST_ANY_LIMIT: Duration = Duration::from_secs(600);
 const SLOWER_THAN_A_LISTING: Duration = Duration::from_secs(10);
 const STALLED_AT_MOST: Duration = Duration::from_secs(5);
@@ -904,6 +905,8 @@ struct Tree {
     entered_stat: Notify,
     stat_calls: AtomicUsize,
     failing_stat: Mutex<Option<io::ErrorKind>>,
+    failing_removal: Mutex<Option<io::ErrorKind>>,
+    vanishes_when_removed: AtomicBool,
 }
 
 impl Tree {
@@ -932,7 +935,15 @@ impl Tree {
             entered_stat: Notify::new(),
             stat_calls: AtomicUsize::new(0),
             failing_stat: Mutex::default(),
+            failing_removal: Mutex::default(),
+            vanishes_when_removed: AtomicBool::new(false),
         })
+    }
+
+    fn with_folder_book(name: &str) -> Arc<Self> {
+        let tree = Self::with_books(name, true, 0);
+        write_page(&tree.chapter(), 1);
+        tree
     }
 
     fn on_device(&self, path: &Path) -> io::Result<PathBuf> {
@@ -998,6 +1009,14 @@ impl Tree {
         }
     }
 
+    fn refusing_removal_with(&self, kind: io::ErrorKind) {
+        *self.failing_removal.lock().unwrap() = Some(kind);
+    }
+
+    fn vanishing_when_removed(&self) {
+        self.vanishes_when_removed.store(true, Ordering::SeqCst);
+    }
+
     fn failing_stats_with(&self, kind: io::ErrorKind) {
         *self.failing_stat.lock().unwrap() = Some(kind);
     }
@@ -1025,6 +1044,14 @@ impl Tree {
             .join(TREE_NAME)
             .join(SERIES_02)
             .join("v01.cbz")
+    }
+
+    fn chapter(&self) -> PathBuf {
+        self.scratch
+            .path()
+            .join(TREE_NAME)
+            .join(SERIES_02)
+            .join(CHAPTER)
     }
 }
 
@@ -1060,7 +1087,18 @@ impl Storage for Tree {
         if !self.removes {
             return Err(io::ErrorKind::Unsupported.into());
         }
-        fs::remove_file(self.on_device(file)?)
+        if let Some(kind) = *self.failing_removal.lock().unwrap() {
+            return Err(kind.into());
+        }
+        let on_device = self.on_device(file)?;
+        if on_device.is_dir() {
+            return Err(io::ErrorKind::IsADirectory.into());
+        }
+        fs::remove_file(&on_device)?;
+        if self.vanishes_when_removed.load(Ordering::SeqCst) {
+            return Err(io::ErrorKind::NotFound.into());
+        }
+        Ok(())
     }
 }
 
@@ -1144,6 +1182,123 @@ async fn a_tree_that_cannot_remove_files_reports_them_unsupported_and_keeps_them
         )]
     );
     assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn a_refused_delete_reports_unsupported_location_through_the_engine() {
+    let tree = Tree::new("delete-refused-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-refused-tree-home").await;
+    let book = only_book(&library).await;
+    tree.refusing_removal_with(io::ErrorKind::Unsupported);
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&FakeDisposal::default()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::UnsupportedLocation)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn a_tree_whose_grant_only_reads_reports_its_file_permission_denied_and_keeps_it() {
+    let tree = Tree::new("delete-read-grant-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-read-grant-tree-home").await;
+    let book = only_book(&library).await;
+    tree.refusing_removal_with(io::ErrorKind::PermissionDenied);
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&FakeDisposal::default()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::PermissionDenied)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn a_tree_document_removed_since_the_scan_counts_as_missing() {
+    let tree = Tree::new("delete-gone-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-gone-tree-home").await;
+    let book = only_book(&library).await;
+    fs::remove_file(tree.book()).unwrap();
+    let disposal = FakeDisposal::default();
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&disposal),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [("v01.cbz".to_owned(), FileOutcome::Missing)]
+    );
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+}
+
+#[tokio::test]
+async fn a_tree_document_that_vanishes_as_it_is_removed_counts_as_missing() {
+    let tree = Tree::new("delete-vanishing-tree", true);
+    let (library, _home) = library_reading(&tree, "delete-vanishing-tree-home").await;
+    let book = only_book(&library).await;
+    tree.vanishing_when_removed();
+    let disposal = FakeDisposal::default();
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&disposal),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [("v01.cbz".to_owned(), FileOutcome::Missing)]
+    );
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+}
+
+#[tokio::test]
+async fn a_folder_book_in_a_tree_is_refused_as_failed_other_and_kept() {
+    let tree = Tree::with_folder_book("delete-tree-folder-book");
+    let (library, _home) = library_reading(&tree, "delete-tree-folder-book-home").await;
+    let book = only_book(&library).await;
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&FakeDisposal::default()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [(CHAPTER.to_owned(), failed(RemovalFailure::Other))]
+    );
+    assert!(tree.chapter().is_dir());
 }
 
 async fn removing_the_tree_book_while_a_call_never_answers(

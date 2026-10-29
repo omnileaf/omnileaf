@@ -11,6 +11,8 @@ const PERMISSION_DENIED: &str = "permissionDenied";
 const NOT_FOUND: &str = "notFound";
 const TIMED_OUT: &str = "timedOut";
 const INCOMPLETE: &str = "incomplete";
+const READ_ONLY_GRANT: &str = "readOnlyGrant";
+const DELETE_REFUSED: &str = "deleteRefused";
 const NAME_SEPARATORS: [char; 2] = ['/', '\\'];
 const SEPARATOR_STAND_IN: &str = "_";
 const UNREADABLE_NAME: &str = "";
@@ -143,10 +145,11 @@ impl<'a> GrantRequest<'a> {
 
 pub(crate) fn refusal_kind(code: Option<&str>) -> io::ErrorKind {
     match code {
-        Some(PERMISSION_DENIED) => io::ErrorKind::PermissionDenied,
+        Some(PERMISSION_DENIED | READ_ONLY_GRANT) => io::ErrorKind::PermissionDenied,
         Some(NOT_FOUND) => io::ErrorKind::NotFound,
         Some(TIMED_OUT) => io::ErrorKind::TimedOut,
         Some(INCOMPLETE) => io::ErrorKind::ResourceBusy,
+        Some(DELETE_REFUSED) => io::ErrorKind::Unsupported,
         Some(_) | None => io::ErrorKind::Other,
     }
 }
@@ -392,6 +395,8 @@ mod tests {
             Some("notFound"),
             Some("timedOut"),
             Some("incomplete"),
+            Some("readOnlyGrant"),
+            Some("deleteRefused"),
             Some("somethingElse"),
             None,
         ]
@@ -404,9 +409,42 @@ mod tests {
                 io::ErrorKind::NotFound,
                 io::ErrorKind::TimedOut,
                 io::ErrorKind::ResourceBusy,
+                io::ErrorKind::PermissionDenied,
+                io::ErrorKind::Unsupported,
                 io::ErrorKind::Other,
                 io::ErrorKind::Other,
             ]
         );
+    }
+
+    const KOTLIN_REFUSALS: &str =
+        include_str!("../android/src/main/java/app/omnileaf/folderaccess/Refusal.kt");
+    const KOTLIN_CODE_DECLARATION: &str = "private const val ";
+
+    fn kotlin_codes() -> Vec<String> {
+        let mut codes: Vec<String> = KOTLIN_REFUSALS
+            .lines()
+            .filter_map(|line| line.strip_prefix(KOTLIN_CODE_DECLARATION))
+            .filter_map(|declaration| declaration.split_once(" = "))
+            .map(|(_, quoted)| quoted.trim_matches('"').to_owned())
+            .collect();
+        codes.sort();
+        codes
+    }
+
+    #[test]
+    fn reads_every_refusal_code_the_android_plugin_sends() {
+        let mut read = [
+            PERMISSION_DENIED,
+            NOT_FOUND,
+            TIMED_OUT,
+            INCOMPLETE,
+            READ_ONLY_GRANT,
+            DELETE_REFUSED,
+        ]
+        .map(str::to_owned);
+        read.sort();
+
+        assert_eq!(kotlin_codes(), read);
     }
 }

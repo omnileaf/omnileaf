@@ -1,7 +1,6 @@
 package app.omnileaf.folderaccess
 
 import android.content.Context
-import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.net.Uri
@@ -15,7 +14,7 @@ import kotlinx.coroutines.CompletableDeferred
 import java.io.FileNotFoundException
 
 internal class ListingIncomplete(
-    listing: Uri,
+    listing: String,
 ) : Exception("the documents provider is still loading $listing")
 
 internal class ListingFailed(
@@ -32,7 +31,7 @@ internal class DocumentTrees(
         tree: Uri,
         signal: CancellationSignal,
     ): JSObject {
-        resolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        takeTreeGrant { flags -> resolver.takePersistableUriPermission(tree, flags) }
         var isDescribed = false
         try {
             val described = describe(tree, signal)
@@ -72,16 +71,26 @@ internal class DocumentTrees(
         return resolver.openFileDescriptor(uri, "r", signal) ?: throw FileNotFoundException("open $uri")
     }
 
+    fun delete(
+        tree: Uri,
+        document: String,
+    ) {
+        val isWritable = resolver.persistedUriPermissions.any { it.uri == tree && it.isWritePermission }
+        deleteIfGranted(tree.toString(), document, isWritable) {
+            DocumentsContract.deleteDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, document))
+        }
+    }
+
     fun persistedGrants(): JSObject {
         val grants =
             resolver.persistedUriPermissions
-                .filter { it.isReadPermission && DocumentsContract.isTreeUri(it.uri) }
+                .filter { (it.isReadPermission || it.isWritePermission) && DocumentsContract.isTreeUri(it.uri) }
                 .map { JSObject().put("uri", it.uri.toString()).put("persistedAtMs", it.persistedTime) }
         return JSObject().put("grants", JSArray(grants))
     }
 
     fun release(tree: Uri) {
-        resolver.releasePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        resolver.releasePersistableUriPermission(tree, READ_WRITE_GRANT)
     }
 
     private fun describe(
@@ -120,7 +129,7 @@ internal class DocumentTrees(
         cursor: Cursor,
         listing: Uri,
     ) {
-        val notifying = cursor.notificationUri ?: throw ListingIncomplete(listing)
+        val notifying = cursor.notificationUri ?: throw ListingIncomplete(listing.toString())
         val changed = CompletableDeferred<Unit>()
         val observer =
             object : ContentObserver(null) {

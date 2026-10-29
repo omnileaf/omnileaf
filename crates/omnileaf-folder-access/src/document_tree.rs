@@ -24,6 +24,7 @@ static COPIES_MADE: AtomicU64 = AtomicU64::new(0);
 pub trait Documents: fmt::Debug + Send + Sync {
     fn children(&self, tree: &TreeUri, folder: Option<&DocumentId>) -> io::Result<Vec<Document>>;
     fn open(&self, tree: &TreeUri, document: &DocumentId) -> io::Result<File>;
+    fn delete(&self, tree: &TreeUri, document: &DocumentId) -> io::Result<()>;
 }
 
 /// The provider's own name for a document, meaningful only to the provider.
@@ -272,6 +273,13 @@ impl<D: Documents> Storage for DocumentTree<D> {
     fn open(&self, file: &Path) -> io::Result<File> {
         self.open_document(&self.file(file)?)
     }
+
+    fn remove(&self, file: &Path) -> io::Result<()> {
+        let document = self.file(file)?;
+        let deleted = self.documents.delete(&self.tree, &document.id);
+        self.listings().clear();
+        deleted
+    }
 }
 
 fn split(path: &Path) -> Option<(&Path, &OsStr)> {
@@ -325,6 +333,8 @@ mod tests {
         opens: AtomicUsize,
         is_streaming: AtomicBool,
         hides_stamps: AtomicBool,
+        delete_failure: Mutex<Option<io::ErrorKind>>,
+        deletes: AtomicUsize,
     }
 
     impl FakeDocuments {
@@ -338,7 +348,13 @@ mod tests {
                 opens: AtomicUsize::new(0),
                 is_streaming: AtomicBool::new(false),
                 hides_stamps: AtomicBool::new(false),
+                delete_failure: Mutex::default(),
+                deletes: AtomicUsize::new(0),
             })
+        }
+
+        fn refuse_deletes_with(&self, kind: io::ErrorKind) {
+            *self.delete_failure.lock().unwrap() = Some(kind);
         }
 
         fn serve_as(&self, name: &str, served: &str) {
@@ -420,6 +436,14 @@ mod tests {
                 Ok(file)
             }
         }
+
+        fn delete(&self, _tree: &TreeUri, document: &DocumentId) -> io::Result<()> {
+            self.deletes.fetch_add(1, Ordering::SeqCst);
+            if let Some(kind) = *self.delete_failure.lock().unwrap() {
+                return Err(kind.into());
+            }
+            fs::remove_file(self.path_of(document))
+        }
     }
 
     fn streamed(mut file: File) -> File {
@@ -492,6 +516,10 @@ mod tests {
 
         fn opens(&self) -> usize {
             self.documents.opens.load(Ordering::SeqCst)
+        }
+
+        fn deletes(&self) -> usize {
+            self.documents.deletes.load(Ordering::SeqCst)
         }
     }
 
@@ -702,5 +730,123 @@ mod tests {
         fixture.tree.details(&in_tree(&folders[0])).unwrap();
 
         assert_eq!(fixture.listings(), listed + 1);
+    }
+
+    #[test]
+    fn deleting_a_document_in_a_tree_removes_it_and_the_next_listing_no_longer_shows_it() {
+        let fixture = Fixture::new();
+        let file = fixture.write("a.cbz", BOOK);
+        fixture.write("b.cbz", BOOK);
+        fixture.tree.entries(Path::new(TREE_NAME)).unwrap();
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+
+        fixture.tree.remove(&in_tree("a.cbz")).unwrap();
+
+        let details = fixture.tree.details(&in_tree("a.cbz"));
+        let entries = fixture.tree.entries(Path::new(TREE_NAME)).unwrap();
+        assert_eq!(details.unwrap_err().kind(), io::ErrorKind::NotFound);
+        assert_eq!(entries, [entry("b.cbz", EntryKind::File { size: 4 })]);
+        assert!(!file.exists());
+    }
+
+    #[test]
+    fn a_refused_delete_passes_its_failure_through_and_keeps_the_document() {
+        let fixture = Fixture::new();
+        let file = fixture.write("a.cbz", BOOK);
+        fixture
+            .documents
+            .refuse_deletes_with(io::ErrorKind::PermissionDenied);
+
+        let removed = fixture.tree.remove(&in_tree("a.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+        assert!(file.is_file());
+        assert!(fixture.tree.details(&in_tree("a.cbz")).is_ok());
+    }
+
+    #[test]
+    fn deleting_a_document_the_provider_no_longer_holds_is_not_found() {
+        let fixture = Fixture::new();
+        let file = fixture.write("a.cbz", BOOK);
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+        fs::remove_file(file).unwrap();
+
+        let removed = fixture.tree.remove(&in_tree("a.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn deleting_a_name_the_tree_never_listed_is_not_found_and_asks_the_provider_for_nothing() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+
+        let removed = fixture.tree.remove(&in_tree("b.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::NotFound);
+        assert_eq!(fixture.deletes(), 0);
+    }
+
+    #[test]
+    fn deleting_a_folder_is_refused_and_asks_the_provider_for_nothing() {
+        let fixture = Fixture::new();
+        fixture.write("Series/a.cbz", BOOK);
+
+        let removed = fixture.tree.remove(&in_tree("Series"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::IsADirectory);
+        assert_eq!(fixture.deletes(), 0);
+    }
+
+    #[test]
+    fn deleting_a_folder_book_is_refused_and_asks_the_provider_for_nothing() {
+        let fixture = Fixture::new();
+        fixture.write("Series/Ch 01/1.png", BOOK);
+
+        let removed = fixture.tree.remove(&in_tree("Series/Ch 01"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::IsADirectory);
+        assert_eq!(fixture.deletes(), 0);
+    }
+
+    #[test]
+    fn deleting_a_document_whose_name_is_listed_twice_is_refused_and_deletes_neither() {
+        let fixture = Fixture::new();
+        let first = fixture.write("a.cbz", BOOK);
+        let second = fixture.write("b.cbz", BOOK);
+        fixture.documents.serve_as("b.cbz", "a.cbz");
+
+        let removed = fixture.tree.remove(&in_tree("a.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::InvalidData);
+        assert_eq!(fixture.deletes(), 0);
+        assert!(first.is_file() && second.is_file());
+    }
+
+    #[test]
+    fn lists_a_folder_again_after_a_delete_the_provider_refused() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+        fixture
+            .documents
+            .refuse_deletes_with(io::ErrorKind::PermissionDenied);
+        fixture.tree.remove(&in_tree("a.cbz")).unwrap_err();
+        let listed = fixture.listings();
+
+        fixture.tree.details(&in_tree("a.cbz")).unwrap();
+
+        assert_eq!(fixture.listings(), listed + 1);
+    }
+
+    #[test]
+    fn deleting_a_path_outside_the_tree_is_not_found_and_asks_the_provider_for_nothing() {
+        let fixture = Fixture::new();
+        fixture.write("a.cbz", BOOK);
+
+        let removed = fixture.tree.remove(Path::new("Elsewhere/a.cbz"));
+
+        assert_eq!(removed.unwrap_err().kind(), io::ErrorKind::NotFound);
+        assert_eq!(fixture.deletes(), 0);
     }
 }
