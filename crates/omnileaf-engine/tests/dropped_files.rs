@@ -8,11 +8,17 @@
     reason = "these tests write plain archives, so the other kinds of book go unused"
 )]
 mod books;
+#[expect(
+    dead_code,
+    reason = "these tests keep the files, so the fake disposal never needs a reply or a pause"
+)]
+mod disposal;
 mod support;
 
 use std::{fs, path::PathBuf};
 
 use books::write_book;
+use disposal::FakeDisposal;
 use omnileaf_db::rusqlite::{Connection, OpenFlags};
 use omnileaf_engine::{
     DropError, DropMode, DropOutcome, Library, LibraryListing, RefusalReason, RefusedDrop,
@@ -63,7 +69,10 @@ impl Dropping {
             .iter()
             .map(|series| RemovalTarget::Series { id: series.id })
             .collect();
-        self.library.remove_from_library(&targets).await.unwrap();
+        self.library
+            .remove_from_library(&targets, false, &FakeDisposal::default())
+            .await
+            .unwrap();
     }
 
     fn markers(&self) -> u32 {

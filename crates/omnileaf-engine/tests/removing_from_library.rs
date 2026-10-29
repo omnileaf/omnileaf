@@ -7,6 +7,11 @@
 mod books;
 #[expect(
     dead_code,
+    reason = "these tests keep the files, so the fake disposal never needs a reply or a pause"
+)]
+mod disposal;
+#[expect(
+    dead_code,
     reason = "these tests count the books of each series, never read their titles"
 )]
 mod scanned;
@@ -22,6 +27,7 @@ use std::{
 };
 
 use books::write_book;
+use disposal::FakeDisposal;
 use omnileaf_db::{Config, Database, catalog::removed_among, rusqlite::Connection, store::Store};
 use omnileaf_engine::{
     BookId, BookReading, DetailEdits, FileChanges, LIBRARY_CHANGES_GATHERED_FOR, Library,
@@ -180,7 +186,7 @@ impl Removing {
     async fn remove(&self, targets: &[RemovalTarget]) -> RemovalReport {
         self.scanned
             .library
-            .remove_from_library(targets)
+            .remove_from_library(targets, false, &FakeDisposal::default())
             .await
             .unwrap()
     }
@@ -617,7 +623,8 @@ async fn removing_waits_for_a_running_scan_then_removes_what_it_recorded() {
         }
     });
     scan_started.await.unwrap();
-    let mut removal = pin!(library.remove_from_library(&targets));
+    let disposal = FakeDisposal::default();
+    let mut removal = pin!(library.remove_from_library(&targets, false, &disposal));
     let waited = timeout(LONG_ENOUGH_TO_REMOVE, removal.as_mut()).await;
 
     release.send(()).unwrap();

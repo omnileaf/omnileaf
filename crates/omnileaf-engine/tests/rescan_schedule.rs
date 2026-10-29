@@ -5,6 +5,11 @@
 
 #[expect(dead_code, reason = "these tests write whole books, never loose pages")]
 mod books;
+#[expect(
+    dead_code,
+    reason = "these tests keep the files, so the fake disposal never needs a reply or a pause"
+)]
+mod disposal;
 mod stepped_clock;
 #[expect(
     dead_code,
@@ -25,6 +30,7 @@ use std::{
 };
 
 use books::write_book;
+use disposal::FakeDisposal;
 use omnileaf_engine::{
     EXTERNAL_RESCAN_EVERY, FileChanges, FolderId, FolderRescan, LIBRARY_CHANGES_GATHERED_FOR,
     Library, LibraryChanged, LibraryListing, PowerMode, RESCAN_EVERY, RemovalTarget,
@@ -188,7 +194,11 @@ async fn a_scheduled_rescan_leaves_a_removed_book_out() {
         .id;
     running
         .library
-        .remove_from_library(&[RemovalTarget::Series { id: series }])
+        .remove_from_library(
+            &[RemovalTarget::Series { id: series }],
+            false,
+            &FakeDisposal::default(),
+        )
         .await
         .unwrap();
     running.clock.advance(RESCAN_EVERY);

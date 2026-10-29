@@ -63,6 +63,7 @@ use crate::{
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
     device_class::{IS_MOBILE, MEBIBYTE},
+    file_disposal::FileDisposal,
     file_in_storage::FileInStorage,
     file_type::HiddenFileTypes,
     history::whole_seconds,
@@ -138,9 +139,9 @@ pub struct Library {
     pub(crate) opened_files: OpenedFiles,
 }
 
-struct RootFiles {
-    storage: Arc<dyn omnileaf_formats::Storage>,
-    folder: PathBuf,
+pub(crate) struct RootFiles {
+    pub(crate) storage: Arc<dyn omnileaf_formats::Storage>,
+    pub(crate) folder: PathBuf,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -1673,10 +1674,12 @@ impl Library {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(targets = targets.len()))]
+    #[tracing::instrument(skip_all, fields(targets = targets.len(), delete_files))]
     pub async fn remove_from_library(
         &self,
         targets: &[RemovalTarget],
+        delete_files: bool,
+        disposal: &impl FileDisposal,
     ) -> Result<RemovalReport, LibraryError> {
         let _scanning = self.catalog_change_lock.lock().await;
         let targets = targets.to_vec();
@@ -1690,10 +1693,15 @@ impl Library {
             .write(move |writer| writer.remove_books_from_library(&books))
             .await?;
         self.note_catalog_written();
+        let files = if delete_files {
+            self.dispose_files(removed.files, disposal).await
+        } else {
+            Vec::new()
+        };
         Ok(RemovalReport {
             removed_series: series_held,
             removed_books: saturating_u32(removed.books),
-            files: Vec::new(),
+            files,
         })
     }
 
@@ -2193,7 +2201,7 @@ impl Library {
         })
     }
 
-    fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
+    pub(crate) fn files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
         let storage = match locator {
             RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
                 Arc::clone(&self.local_storage)

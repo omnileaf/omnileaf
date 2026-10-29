@@ -1,16 +1,29 @@
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet, btree_map::Entry},
+    io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use omnileaf_db::{
     Database, Error,
-    catalog::{ScannedBook, books_of_series, removed_among},
+    catalog::{BookFileToRemove, RootLocator, ScannedBook, books_of_series, removed_among},
     rusqlite::Connection,
     store::Store,
 };
+use omnileaf_formats::{Details, Storage};
 use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use tokio::task::spawn_blocking;
 
-use crate::{BookId, LibraryError, SeriesId, scan::saturating_u32};
+use crate::{
+    BookId, Library, LibraryError, SeriesId,
+    clock::stored_ms,
+    file_disposal::{Disposal, DisposalFailure, FileDisposal},
+    library::RootFiles,
+    scan::saturating_u32,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -82,6 +95,142 @@ pub(crate) fn expand(
         books: books.into_iter().collect(),
         series_held: saturating_u32(series_held.len()),
     })
+}
+
+impl Library {
+    pub(crate) async fn dispose_files(
+        &self,
+        files: Vec<BookFileToRemove>,
+        disposal: &impl FileDisposal,
+    ) -> Vec<FileRemoval> {
+        let mut roots = BTreeMap::new();
+        for file in &files {
+            if let Entry::Vacant(unchecked) = roots.entry(file.root_id) {
+                unchecked.insert(self.reachable_files_of(&file.root).await);
+            }
+        }
+        let mut removals = Vec::with_capacity(files.len());
+        for file in files {
+            let outcome = match roots.get(&file.root_id).and_then(Option::as_ref) {
+                Some(root) => dispose_file(root, &file, disposal).await,
+                None => FileOutcome::from(DisposalFailure::Unsupported),
+            };
+            removals.push(FileRemoval {
+                book: BookId(file.book),
+                name: file_name(&file.location),
+                outcome,
+            });
+        }
+        removals
+    }
+
+    async fn reachable_files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
+        let root = self.files_of(locator)?;
+        let (storage, folder) = (Arc::clone(&root.storage), root.folder.clone());
+        let listed = blocking(move || storage.entries(&folder)).await.ok()?;
+        match listed {
+            Ok(entries) if !entries.is_empty() => Some(root),
+            Ok(_) => {
+                tracing::warn!(folder = %root.folder.display(), "find a folder to remove files from empty");
+                None
+            }
+            Err(error) => {
+                tracing::warn!(folder = %root.folder.display(), %error, "read a folder to remove files from");
+                None
+            }
+        }
+    }
+}
+
+async fn dispose_file(
+    root: &RootFiles,
+    file: &BookFileToRemove,
+    disposal: &impl FileDisposal,
+) -> FileOutcome {
+    let path = root.folder.join(&file.location);
+    let storage = Arc::clone(&root.storage);
+    let stat = path.clone();
+    let details = match blocking(move || storage.details(&stat)).await {
+        Ok(details) => details,
+        Err(failure) => return FileOutcome::from(failure),
+    };
+    if let Err(outcome) = still_the_scanned_file(details, file) {
+        return outcome;
+    }
+    match file.root {
+        RootLocator::AndroidTree(_) => remove_through(&root.storage, path).await,
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+            FileOutcome::from(disposal.dispose(&path).await)
+        }
+    }
+}
+
+async fn remove_through(storage: &Arc<dyn Storage>, path: PathBuf) -> FileOutcome {
+    let storage = Arc::clone(storage);
+    match blocking(move || storage.remove(&path)).await {
+        Ok(Ok(())) => FileOutcome::Deleted,
+        Ok(Err(error)) => FileOutcome::from(DisposalFailure::from(error.kind())),
+        Err(failure) => FileOutcome::from(failure),
+    }
+}
+
+async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, DisposalFailure> {
+    spawn_blocking(work).await.map_err(|error| {
+        tracing::warn!(%error, "run blocking work on a file to remove");
+        DisposalFailure::Other
+    })
+}
+
+fn still_the_scanned_file(
+    details: io::Result<Details>,
+    file: &BookFileToRemove,
+) -> Result<(), FileOutcome> {
+    let details =
+        details.map_err(|error| FileOutcome::from(DisposalFailure::from(error.kind())))?;
+    let (Details::Folder { modified } | Details::File { modified, .. }) = details;
+    let size_matches = match details {
+        Details::File { size, .. } => size == file.size_bytes,
+        Details::Folder { .. } => true,
+    };
+    let time_matches = modified.is_some_and(|modified| stored_ms(modified) == file.modified_at_ms);
+    if size_matches && time_matches {
+        return Ok(());
+    }
+    tracing::warn!(book = %file.book, "skip a file that changed since the scan");
+    Err(FileOutcome::from(DisposalFailure::Other))
+}
+
+fn file_name(location: &Path) -> String {
+    location
+        .file_name()
+        .unwrap_or(location.as_os_str())
+        .to_string_lossy()
+        .into_owned()
+}
+
+impl From<Result<Disposal, DisposalFailure>> for FileOutcome {
+    fn from(disposed: Result<Disposal, DisposalFailure>) -> Self {
+        match disposed {
+            Ok(Disposal::Trashed) => Self::Trashed,
+            Ok(Disposal::Deleted) => Self::Deleted,
+            Err(failure) => Self::from(failure),
+        }
+    }
+}
+
+impl From<DisposalFailure> for FileOutcome {
+    fn from(failure: DisposalFailure) -> Self {
+        let reason = match failure {
+            DisposalFailure::NotFound => return Self::Missing,
+            DisposalFailure::PermissionDenied => RemovalFailure::PermissionDenied,
+            DisposalFailure::Locked => RemovalFailure::Locked,
+            DisposalFailure::Unsupported => RemovalFailure::UnsupportedLocation,
+            DisposalFailure::Other => RemovalFailure::Other,
+        };
+        Self::Failed { reason }
+    }
 }
 
 pub(crate) async fn marked_among<'a>(

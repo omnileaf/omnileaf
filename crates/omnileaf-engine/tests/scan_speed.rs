@@ -1,5 +1,11 @@
+#[expect(
+    dead_code,
+    reason = "these tests keep the files, so the fake disposal never needs a reply or a pause"
+)]
+mod disposal;
 mod support;
 
+use disposal::FakeDisposal;
 use std::time::Duration;
 
 use omnileaf_engine::{FileChanges, Library, LibraryListing, RemovalTarget, RescanOutcome};
@@ -148,7 +154,10 @@ async fn rescans_1_000_books_with_300_removed_but_still_on_disk_within_300_ms() 
         .take(REMOVED_SERIES)
         .map(|series| RemovalTarget::Series { id: series.id })
         .collect();
-    let removal = library.remove_from_library(&removing).await.unwrap();
+    let removal = library
+        .remove_from_library(&removing, false, &FakeDisposal::default())
+        .await
+        .unwrap();
     assert_eq!(removal.removed_books, REMOVED_BOOKS);
 
     let outcome = trial
