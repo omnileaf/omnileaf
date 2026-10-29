@@ -3565,6 +3565,7 @@ dependencies = [
  "omnileaf-formats",
  "omnileaf-icon-actions",
  "omnileaf-system-bars",
+ "omnileaf-testkit",
  "omnileaf-windows-probes",
  "os_info",
  "rustix",
@@ -3584,6 +3585,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "trash",
  "webkit2gtk",
  "zbus",
 ]
@@ -5894,6 +5896,23 @@ dependencies = [
  "thread_local",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trash"
+version = "5.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be89b3fe156965d29ac4f8522f3a640c655affdd9f21cb4f36857f0c92c00317"
+dependencies = [
+ "libc",
+ "log",
+ "objc2",
+ "objc2-foundation",
+ "once_cell",
+ "percent-encoding",
+ "scopeguard",
+ "urlencoding",
+ "windows",
 ]
 
 [[package]]

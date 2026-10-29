@@ -65,6 +65,7 @@ tauri-plugin-wdio-webdriver = "1.4.0"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"
 tokio = { version = "1.53.1", default-features = false }
+trash = { version = "5.2.9", default-features = false, features = ["coinit_apartmentthreaded"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
 unicode-normalization = "0.1.26"
