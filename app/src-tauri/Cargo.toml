@@ -54,6 +54,7 @@ dispatch2.workspace = true
 tauri = { workspace = true, features = ["image-png", "tray-icon"] }
 tauri-plugin-dialog.workspace = true
 tauri-plugin-single-instance.workspace = true
+trash.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk.workspace = true
@@ -73,6 +74,7 @@ rustix.workspace = true
 omnileaf-db.workspace = true
 omnileaf-formats.workspace = true
 omnileaf-system-bars.workspace = true
+omnileaf-testkit.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }
 tokio = { workspace = true, features = ["macros", "rt", "test-util"] }
