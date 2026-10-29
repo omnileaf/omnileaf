@@ -230,4 +230,97 @@ mod tests {
 
         assert_eq!(data_version(&watching), before);
     }
+
+    fn series_id() -> SeriesId {
+        SeriesId(omnileaf_sync_proto::SeriesId::local("Sample Series 01").unwrap())
+    }
+
+    fn book_id(crc32: u32) -> BookId {
+        BookId(StoredBookId::local(
+            &Fingerprint::pmf1([ImageEntry { crc32, size: 100 }]).unwrap(),
+        ))
+    }
+
+    #[test]
+    fn reads_a_removal_target_tagged_by_its_kind_from_the_interface() {
+        let series = serde_json::json!({ "kind": "series", "id": series_id() });
+        let book = serde_json::json!({ "kind": "book", "id": book_id(1) });
+
+        let read = (
+            serde_json::from_value::<RemovalTarget>(series).unwrap(),
+            serde_json::from_value::<RemovalTarget>(book).unwrap(),
+        );
+
+        assert_eq!(
+            read,
+            (
+                RemovalTarget::Series { id: series_id() },
+                RemovalTarget::Book { id: book_id(1) }
+            )
+        );
+    }
+
+    #[test]
+    fn sends_a_removal_report_in_camel_case_with_counts_as_numbers() {
+        let report = RemovalReport {
+            removed_series: 2,
+            removed_books: 5,
+            files: vec![FileRemoval {
+                book: book_id(1),
+                name: "Volume 01.cbz".to_owned(),
+                outcome: FileOutcome::Trashed,
+            }],
+        };
+
+        let sent = serde_json::to_value(report).unwrap();
+
+        assert_eq!(
+            sent,
+            serde_json::json!({
+                "removedSeries": 2,
+                "removedBooks": 5,
+                "files": [{
+                    "book": book_id(1),
+                    "name": "Volume 01.cbz",
+                    "outcome": { "kind": "trashed" },
+                }],
+            })
+        );
+    }
+
+    #[test]
+    fn sends_each_file_outcome_tagged_by_its_kind_with_a_failure_reason() {
+        let outcomes = [
+            FileOutcome::Trashed,
+            FileOutcome::Deleted,
+            FileOutcome::Missing,
+            FileOutcome::Failed {
+                reason: RemovalFailure::PermissionDenied,
+            },
+            FileOutcome::Failed {
+                reason: RemovalFailure::Locked,
+            },
+            FileOutcome::Failed {
+                reason: RemovalFailure::UnsupportedLocation,
+            },
+            FileOutcome::Failed {
+                reason: RemovalFailure::Other,
+            },
+        ];
+
+        let sent = serde_json::to_value(outcomes).unwrap();
+
+        assert_eq!(
+            sent,
+            serde_json::json!([
+                { "kind": "trashed" },
+                { "kind": "deleted" },
+                { "kind": "missing" },
+                { "kind": "failed", "reason": "permissionDenied" },
+                { "kind": "failed", "reason": "locked" },
+                { "kind": "failed", "reason": "unsupportedLocation" },
+                { "kind": "failed", "reason": "other" },
+            ])
+        );
+    }
 }
