@@ -4,16 +4,19 @@
 )]
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs,
     future::ready,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use omnileaf_engine::{Disposal, DisposalFailure, FileDisposal};
-use tokio::sync::Notify;
+use tokio::{sync::Notify, time::sleep};
+
+const HANGS_FOR: Duration = Duration::from_secs(3_600);
 
 type Reply = Result<Disposal, DisposalFailure>;
 
@@ -27,12 +30,18 @@ pub(crate) struct Pause {
 pub(crate) struct FakeDisposal {
     replies: Mutex<BTreeMap<OsString, Reply>>,
     calls: Mutex<Vec<PathBuf>>,
+    hanging: Mutex<BTreeSet<OsString>>,
     pause: Mutex<Option<Pause>>,
 }
 
 impl FakeDisposal {
     pub(crate) fn replying(self, name: &str, reply: Reply) -> Self {
         self.replies.lock().unwrap().insert(name.into(), reply);
+        self
+    }
+
+    pub(crate) fn hanging_on(self, name: &str) -> Self {
+        self.hanging.lock().unwrap().insert(name.into());
         self
     }
 
@@ -51,6 +60,12 @@ impl FakeDisposal {
 impl FileDisposal for FakeDisposal {
     async fn dispose(&self, file: &Path) -> Reply {
         self.calls.lock().unwrap().push(file.to_path_buf());
+        let hangs = file
+            .file_name()
+            .is_some_and(|name| self.hanging.lock().unwrap().contains(name));
+        if hangs {
+            sleep(HANGS_FOR).await;
+        }
         let pause = self.pause.lock().unwrap().take();
         if let Some(pause) = pause {
             pause.entered.notify_one();

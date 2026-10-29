@@ -19,7 +19,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     pin::pin,
-    sync::Arc,
+    sync::{Arc, Mutex, mpsc},
     time::{Duration, SystemTime},
 };
 
@@ -33,13 +33,18 @@ use omnileaf_engine::{
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use scanned::{Scanned, owned};
 use support::{FixedClock, ScratchFolder};
-use tokio::time::timeout;
+use tokio::{
+    sync::Notify,
+    time::{advance, timeout},
+};
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
 const LONG_ENOUGH_TO_REMOVE: Duration = Duration::from_millis(300);
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 const TREE_NAME: &str = "Comics";
+const PAST_ANY_LIMIT: Duration = Duration::from_secs(600);
+const STALLED_AT_MOST: Duration = Duration::from_secs(5);
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 
 struct Deleting {
@@ -715,9 +720,28 @@ fn skipped_as_privileged(test: &str) {
     eprintln!("skipped {test}: the user can write to a folder made read-only");
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Call {
+    Entries,
+    Details,
+    Remove,
+}
+
+struct Stall {
+    call: Call,
+    entered: Arc<Notify>,
+    release: mpsc::Receiver<()>,
+}
+
+struct Stalled {
+    entered: Arc<Notify>,
+    _release: mpsc::Sender<()>,
+}
+
 struct Tree {
     scratch: ScratchFolder,
     removes: bool,
+    stall: Mutex<Option<Stall>>,
 }
 
 impl Tree {
@@ -731,7 +755,11 @@ impl Tree {
                 .join("v01.cbz"),
             3,
         );
-        Arc::new(Self { scratch, removes })
+        Arc::new(Self {
+            scratch,
+            removes,
+            stall: Mutex::default(),
+        })
     }
 
     fn on_device(&self, path: &Path) -> io::Result<PathBuf> {
@@ -739,6 +767,32 @@ impl Tree {
             .strip_prefix(TREE_NAME)
             .map_err(|_| io::Error::from(io::ErrorKind::NotFound))?;
         Ok(self.scratch.path().join(TREE_NAME).join(inside))
+    }
+
+    fn stalling_on(&self, call: Call) -> Stalled {
+        let entered = Arc::new(Notify::new());
+        let (release_sender, release) = mpsc::channel();
+        *self.stall.lock().unwrap() = Some(Stall {
+            call,
+            entered: Arc::clone(&entered),
+            release,
+        });
+        Stalled {
+            entered,
+            _release: release_sender,
+        }
+    }
+
+    fn stalls_if_asked_to(&self, call: Call) {
+        let stall = self
+            .stall
+            .lock()
+            .unwrap()
+            .take_if(|stall| stall.call == call);
+        if let Some(stall) = stall {
+            stall.entered.notify_one();
+            stall.release.recv_timeout(STALLED_AT_MOST).ok();
+        }
     }
 
     fn opener(self: &Arc<Self>) -> OpenTree {
@@ -763,10 +817,12 @@ impl fmt::Debug for Tree {
 
 impl Storage for Tree {
     fn entries(&self, folder: &Path) -> io::Result<Vec<Entry>> {
+        self.stalls_if_asked_to(Call::Entries);
         LocalStorage.entries(&self.on_device(folder)?)
     }
 
     fn details(&self, path: &Path) -> io::Result<Details> {
+        self.stalls_if_asked_to(Call::Details);
         LocalStorage.details(&self.on_device(path)?)
     }
 
@@ -775,6 +831,7 @@ impl Storage for Tree {
     }
 
     fn remove(&self, file: &Path) -> io::Result<()> {
+        self.stalls_if_asked_to(Call::Remove);
         if !self.removes {
             return Err(io::ErrorKind::Unsupported.into());
         }
@@ -862,4 +919,94 @@ async fn a_tree_that_cannot_remove_files_reports_them_unsupported_and_keeps_them
         )]
     );
     assert!(tree.book().is_file());
+}
+
+async fn removing_the_tree_book_while_a_call_never_answers(
+    name: &str,
+    stuck_call: Call,
+) -> (Vec<(String, FileOutcome)>, Arc<Tree>) {
+    let tree = Tree::new(name, true);
+    let (library, _home) = library_reading(&tree, &format!("{name}-home")).await;
+    let book = only_book(&library).await;
+    let stalled = tree.stalling_on(stuck_call);
+    let disposal = FakeDisposal::default();
+    let targets = [RemovalTarget::Book { id: book }];
+    let removal = library.remove_from_library(&targets, FileFate::Dispose(&disposal));
+    let giving_up = async {
+        stalled.entered.notified().await;
+        advance(PAST_ANY_LIMIT).await;
+    };
+
+    let (report, ()) = tokio::join!(removal, giving_up);
+
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+    (by_name(report.unwrap().files), tree)
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_tree_whose_listing_never_answers_reports_its_files_unsupported_and_keeps_them() {
+    let (files, tree) =
+        removing_the_tree_book_while_a_call_never_answers("delete-stuck-listing", Call::Entries)
+            .await;
+
+    assert_eq!(
+        files,
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::UnsupportedLocation)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_tree_whose_stat_never_answers_reports_its_file_unsupported_and_keeps_it() {
+    let (files, tree) =
+        removing_the_tree_book_while_a_call_never_answers("delete-stuck-stat", Call::Details).await;
+
+    assert_eq!(
+        files,
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::UnsupportedLocation)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_tree_whose_removal_never_answers_reports_its_file_failed_other() {
+    let (files, _tree) =
+        removing_the_tree_book_while_a_call_never_answers("delete-stuck-remove", Call::Remove)
+            .await;
+
+    assert_eq!(
+        files,
+        [("v01.cbz".to_owned(), failed(RemovalFailure::Other))]
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_disposal_that_never_returns_fails_its_file_and_frees_the_library_for_the_others() {
+    let deleting = Deleting::new("delete-stuck-disposal").await;
+    let series = deleting.series(SERIES_01).await;
+    let disposal = FakeDisposal::default().hanging_on("v01.cbz");
+
+    let report = deleting
+        .delete(&[RemovalTarget::Series { id: series }], &disposal)
+        .await;
+
+    assert_eq!(
+        by_name(report.files),
+        [
+            ("v01.cbz".to_owned(), failed(RemovalFailure::Other)),
+            ("v02.cbz".to_owned(), FileOutcome::Trashed),
+        ]
+    );
+    deleting
+        .scanned
+        .library
+        .rescan_folder(deleting.scanned.id, |_| {})
+        .await
+        .unwrap();
 }

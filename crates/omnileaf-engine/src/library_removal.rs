@@ -3,6 +3,7 @@ use std::{
     io,
     path::{Component, Path, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 
 use omnileaf_db::{
@@ -15,13 +16,16 @@ use omnileaf_formats::Storage;
 use omnileaf_sync_proto::BookId as StoredBookId;
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tokio::task::spawn_blocking;
+use tokio::{task::spawn_blocking, time::timeout};
 
 use crate::{
     BookId, LibraryError, SeriesId,
     file_disposal::{Disposal, DisposalFailure, FileDisposal},
     scan::{FileStamp, UnreadableBook, saturating_u32},
 };
+
+const FILE_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+const FILE_DISPOSAL_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -115,7 +119,13 @@ pub(crate) async fn removal_of(
 
 pub(crate) async fn is_reachable(storage: &Arc<dyn Storage>, folder: &Path) -> bool {
     let (storage, listed_folder) = (Arc::clone(storage), folder.to_path_buf());
-    let Ok(listed) = blocking(move || storage.entries(&listed_folder)).await else {
+    let Ok(listed) = blocking_within(
+        FILE_CHECK_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || storage.entries(&listed_folder),
+    )
+    .await
+    else {
         return false;
     };
     match listed {
@@ -144,7 +154,9 @@ async fn dispose_file(
     still_the_scanned_file(storage, &path, file).await?;
     let disposed = match file.root {
         RootLocator::AndroidTree(_) => remove_through(storage, &path).await,
-        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => disposal.dispose(&path).await,
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+            dispose_within(disposal, &path).await
+        }
     };
     match disposed {
         Err(DisposalFailure::NotFound) => Err(failure_after_not_found(storage, &path).await),
@@ -154,7 +166,13 @@ async fn dispose_file(
 
 async fn failure_after_not_found(storage: &Arc<dyn Storage>, path: &Path) -> DisposalFailure {
     let (storage, path) = (Arc::clone(storage), path.to_path_buf());
-    match blocking(move || storage.details(&path)).await {
+    match blocking_within(
+        FILE_CHECK_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || storage.details(&path),
+    )
+    .await
+    {
         Ok(Err(error)) if error.kind() == io::ErrorKind::NotFound => DisposalFailure::NotFound,
         Ok(_) | Err(_) => DisposalFailure::Other,
     }
@@ -172,19 +190,47 @@ async fn remove_through(
     path: &Path,
 ) -> Result<Disposal, DisposalFailure> {
     let (storage, path) = (Arc::clone(storage), path.to_path_buf());
-    blocking(move || storage.remove(&path))
-        .await?
-        .map(|()| Disposal::Deleted)
-        .map_err(|error| DisposalFailure::from(error.kind()))
+    blocking_within(FILE_DISPOSAL_TIMEOUT, DisposalFailure::Other, move || {
+        storage.remove(&path)
+    })
+    .await?
+    .map(|()| Disposal::Deleted)
+    .map_err(|error| DisposalFailure::from(error.kind()))
 }
 
-async fn blocking<T: Send + 'static>(
+/// A blocking call stuck on a dead network mount cannot be cancelled, so giving up on it leaves its thread running until the mount answers.
+async fn blocking_within<T: Send + 'static>(
+    limit: Duration,
+    when_stuck: DisposalFailure,
     work: impl FnOnce() -> T + Send + 'static,
 ) -> Result<T, DisposalFailure> {
-    spawn_blocking(work).await.map_err(|error| {
-        tracing::warn!(%error, "run blocking work on a file to remove");
-        DisposalFailure::Other
-    })
+    match timeout(limit, spawn_blocking(work)).await {
+        Ok(Ok(done)) => Ok(done),
+        Ok(Err(error)) => {
+            tracing::warn!(%error, "run blocking work on a file to remove");
+            Err(DisposalFailure::Other)
+        }
+        Err(_) => {
+            tracing::warn!(
+                limit_ms = limit.as_millis(),
+                "wait for blocking work on a file to remove"
+            );
+            Err(when_stuck)
+        }
+    }
+}
+
+/// A trash call stuck on a dead network mount cannot be cancelled, so giving up on it leaves its thread running until the mount answers.
+async fn dispose_within(
+    disposal: &impl FileDisposal,
+    path: &Path,
+) -> Result<Disposal, DisposalFailure> {
+    timeout(FILE_DISPOSAL_TIMEOUT, disposal.dispose(path))
+        .await
+        .unwrap_or_else(|_| {
+            tracing::warn!(file = %path.display(), "wait for a file to be disposed of");
+            Err(DisposalFailure::Other)
+        })
 }
 
 async fn still_the_scanned_file(
@@ -193,12 +239,16 @@ async fn still_the_scanned_file(
     file: &BookFileToRemove,
 ) -> Result<(), DisposalFailure> {
     let (storage, path) = (Arc::clone(storage), path.to_path_buf());
-    let stamp = blocking(move || FileStamp::read(&storage, &path))
-        .await?
-        .map_err(|error| {
-            tracing::warn!(book = %file.book, %error, "read a file to remove");
-            failure_reading(&error)
-        })?;
+    let stamp = blocking_within(
+        FILE_CHECK_TIMEOUT,
+        DisposalFailure::Unsupported,
+        move || FileStamp::read(&storage, &path),
+    )
+    .await?
+    .map_err(|error| {
+        tracing::warn!(book = %file.book, %error, "read a file to remove");
+        failure_reading(&error)
+    })?;
     let scanned = FileStamp {
         size_bytes: file.size_bytes,
         modified_at_ms: file.modified_at_ms,
