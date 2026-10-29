@@ -9,6 +9,8 @@
   import type { Component } from "svelte";
 
   import type { LibraryDisplay } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -40,6 +42,9 @@
     $props();
 
   const id = $props.id();
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const showsIcons = $derived(phoneOf(platform, width.current) !== "ios");
   const labelId = `${id}-label`;
 </script>
 
@@ -50,7 +55,7 @@
   <SegmentedControl
     options={DISPLAYS}
     labels={LABELS}
-    icons={ICONS}
+    icons={showsIcons ? ICONS : undefined}
     {chosen}
     labelledBy={labelId}
     size="small"

@@ -15,9 +15,11 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 type Messages = typeof english;
 
+const COMPACT_BELOW = 600;
+
 interface SegmentedControl {
   readonly name: string;
-  readonly hasIcons: boolean;
+  readonly hasIcons: (platform: string, width: number) => boolean;
   readonly backend: (platform: Platform) => FakeBackend;
   readonly open: (page: Page, messages: Messages) => Promise<Locator>;
 }
@@ -92,7 +94,7 @@ async function settingsGroup(
 const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
-    hasIcons: true,
+    hasIcons: (platform, width) => platform !== "ios" || width >= COMPACT_BELOW,
     backend: withSeries,
     open: async (page, messages) => {
       await page.goto("/");
@@ -108,7 +110,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   },
   {
     name: "Settings > Appearance's Light or dark",
-    hasIcons: false,
+    hasIcons: () => false,
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(
@@ -119,14 +121,14 @@ const CONTROLS: readonly SegmentedControl[] = [
   },
   {
     name: "Settings > Privacy's Crash reports",
-    hasIcons: false,
+    hasIcons: () => false,
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(page, "/settings/privacy", messages.privacy_crash_reports),
   },
   {
     name: "first launch's Appearance",
-    hasIcons: false,
+    hasIcons: () => false,
     backend: onFirstLaunch,
     open: async (page, messages) => {
       await goToStep(page, CHOICES_STEP, messages);
@@ -266,7 +268,9 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 expect(await trackSpill(group)).toBeLessThanOrEqual(0);
                 for (const segment of segments) {
                   expect(segment.target).toBeGreaterThanOrEqual(target);
-                  expect(segment.hasIcon).toBe(control.hasIcons);
+                  expect(segment.hasIcon).toBe(
+                    control.hasIcons(platform, width),
+                  );
                 }
                 if (rows.length > 1) {
                   expect(new Set(rows.map((row) => row.length)).size).toBe(1);

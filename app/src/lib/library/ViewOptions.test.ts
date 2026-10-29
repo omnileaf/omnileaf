@@ -131,3 +131,15 @@ test("keeps the Done sheet on an Android phone", async () => {
     page.getByRole("dialog").element().getAttribute("data-ground"),
   ).toBeNull();
 });
+
+test("draws the Display choices as labels alone in one row on an iPhone", async () => {
+  await openOn("ios");
+
+  const display = page.getByRole("radiogroup", { name: "Display" }).element();
+  const tops = [...display.querySelectorAll("[role=radio]")].map(
+    (segment) => segment.getBoundingClientRect().top,
+  );
+
+  expect(display.querySelectorAll("svg")).toHaveLength(0);
+  expect(new Set(tops).size).toBe(1);
+});
