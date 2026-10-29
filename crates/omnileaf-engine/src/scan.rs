@@ -22,7 +22,7 @@ use crate::{
     LibraryError,
     book_details::read_details,
     book_numbering::FileNumbers,
-    clock::unix_ms,
+    clock::stored_ms,
     file_type::{FileType, HiddenFileTypes},
     library_layout::{FoundBook, Layout, find_books, folder_name},
     library_removal::bring_back_marked,
@@ -300,7 +300,7 @@ impl FileStamp {
         };
         Ok(Self {
             size_bytes,
-            modified_at_ms: i64::try_from(unix_ms(modified)).unwrap_or(i64::MAX),
+            modified_at_ms: stored_ms(modified),
         })
     }
 }

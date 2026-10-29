@@ -11,6 +11,10 @@ impl Clock for SystemClock {
     }
 }
 
+pub(crate) fn stored_ms(time: SystemTime) -> i64 {
+    i64::try_from(unix_ms(time)).unwrap_or(i64::MAX)
+}
+
 pub(crate) fn unix_ms(now: SystemTime) -> u64 {
     match now.duration_since(UNIX_EPOCH) {
         Ok(elapsed) => u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),
