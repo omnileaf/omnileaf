@@ -11,6 +11,8 @@ const PERMISSION_DENIED: &str = "permissionDenied";
 const NOT_FOUND: &str = "notFound";
 const TIMED_OUT: &str = "timedOut";
 const INCOMPLETE: &str = "incomplete";
+const READ_ONLY_GRANT: &str = "readOnlyGrant";
+const DELETE_REFUSED: &str = "deleteRefused";
 const NAME_SEPARATORS: [char; 2] = ['/', '\\'];
 const SEPARATOR_STAND_IN: &str = "_";
 const UNREADABLE_NAME: &str = "";
@@ -147,6 +149,8 @@ pub(crate) fn refusal_kind(code: Option<&str>) -> io::ErrorKind {
         Some(NOT_FOUND) => io::ErrorKind::NotFound,
         Some(TIMED_OUT) => io::ErrorKind::TimedOut,
         Some(INCOMPLETE) => io::ErrorKind::ResourceBusy,
+        Some(READ_ONLY_GRANT) => io::ErrorKind::ReadOnlyFilesystem,
+        Some(DELETE_REFUSED) => io::ErrorKind::Unsupported,
         Some(_) | None => io::ErrorKind::Other,
     }
 }
@@ -392,6 +396,8 @@ mod tests {
             Some("notFound"),
             Some("timedOut"),
             Some("incomplete"),
+            Some("readOnlyGrant"),
+            Some("deleteRefused"),
             Some("somethingElse"),
             None,
         ]
@@ -404,6 +410,8 @@ mod tests {
                 io::ErrorKind::NotFound,
                 io::ErrorKind::TimedOut,
                 io::ErrorKind::ResourceBusy,
+                io::ErrorKind::ReadOnlyFilesystem,
+                io::ErrorKind::Unsupported,
                 io::ErrorKind::Other,
                 io::ErrorKind::Other,
             ]
