@@ -280,6 +280,7 @@ mod tests {
         response::{IntoResponse, Response},
         routing::post,
     };
+    use omnileaf_engine::{AppInfo, LogStandIns, ProblemReport};
     use omnileaf_relay::{ClientIpSource, Limits, Relay, Settings, Store, SystemClock, router};
     use omnileaf_relay_proto::ReportStatus;
     use serde_json::{Value, json};
@@ -288,6 +289,7 @@ mod tests {
 
     const TEST_BITS: u32 = 4;
     const NO_PAUSE: Duration = Duration::ZERO;
+    const LATE_START_PAUSE: Duration = Duration::from_secs(2);
 
     #[derive(Clone, Default)]
     struct Recorded {
@@ -297,12 +299,24 @@ mod tests {
     }
 
     fn report() -> OutgoingReport {
-        let code = ReportCode::from_random([1, 2, 3, 4, 5]);
+        let shown = ProblemReport::new(
+            omnileaf_engine::ReportCode::from_random([1, 2, 3, 4, 5]),
+            crate::version_details::current(AppInfo {
+                version: env!("CARGO_PKG_VERSION").to_owned(),
+                platform: omnileaf_engine::Platform::Linux,
+                source_code: "repo.example.org/omnileaf".to_owned(),
+                is_development_build: true,
+            }),
+            LogStandIns::default().clean_log(&[
+                "WARN omnileaf_engine::scan: skip a book\tpath=/home/reader/Comics/Old.cbz"
+                    .to_owned(),
+            ]),
+        );
         OutgoingReport {
-            report: format!("Report code: {code}\nLog, names replaced:\nNothing logged yet.\n"),
-            code,
+            report: shown.to_string(),
+            code: shown.code().to_relay().unwrap(),
             platform: Platform::Linux,
-            version: "0.1.0".to_owned(),
+            version: shown.app().version.clone(),
             reply_to: Some(ReplyAddress::parse("reader@example.com").unwrap()),
             status_key: StatusKey::from_bytes([9; 32]),
         }
@@ -364,17 +378,22 @@ mod tests {
         response
     }
 
-    async fn fake_relay(answers: Vec<(AxumStatus, Value)>) -> (RelayClient, Recorded) {
+    fn fake_relay_app() -> (Router, Recorded) {
         let recorded = Recorded::default();
+        let app = Router::new()
+            .route("/relay/v1/challenges", post(issue_challenge))
+            .route("/relay/v1/reports", post(record_report))
+            .with_state(recorded.clone());
+        (app, recorded)
+    }
+
+    async fn fake_relay(answers: Vec<(AxumStatus, Value)>) -> (RelayClient, Recorded) {
+        let (app, recorded) = fake_relay_app();
         recorded
             .answers
             .lock()
             .unwrap()
             .extend(answers.into_iter().rev());
-        let app = Router::new()
-            .route("/relay/v1/challenges", post(issue_challenge))
-            .route("/relay/v1/reports", post(record_report))
-            .with_state(recorded.clone());
         let client = RelayClient::new(&serve(app).await, NO_PAUSE).unwrap();
         (client, recorded)
     }
@@ -586,6 +605,26 @@ mod tests {
         let sent = client.send(&report()).await;
 
         assert!(matches!(sent, Err(RelayError::Unreachable(_))));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn tries_once_more_when_the_first_connection_is_refused() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let base = Url::parse(&format!("http://{address}/relay/v1/")).unwrap();
+        let client = RelayClient::new(&base, LATE_START_PAUSE).unwrap();
+        let (app, recorded) = fake_relay_app();
+        tokio::spawn(async move {
+            tokio::time::sleep(LATE_START_PAUSE / 4).await;
+            let listener = tokio::net::TcpListener::bind(address).await.unwrap();
+            axum::serve(listener, app).await
+        });
+
+        let sent = client.send(&report()).await;
+
+        assert!(sent.is_ok(), "{sent:?}");
+        assert_eq!(recorded.reports.lock().unwrap().len(), 1);
     }
 
     #[tokio::test(flavor = "multi_thread")]
