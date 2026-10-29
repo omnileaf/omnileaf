@@ -49,7 +49,7 @@
 </script>
 
 <Item
-  look={isNative ? "row" : "folder"}
+  look={isNative ? "row-static" : "folder"}
   class={[isOwnCard && "windows:py-md windows:pe-lg"]}
 >
   <ItemMedia

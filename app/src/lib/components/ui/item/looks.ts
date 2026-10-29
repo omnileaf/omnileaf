@@ -7,13 +7,22 @@ const ABOUT_ROW =
 export const ROW_FOCUS_RING =
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent";
 
+const ROW = [
+  "flex inline-full items-center gap-native-row-gap text-start transition-control not-aria-disabled:hover:bg-hover not-aria-disabled:active:bg-native-row-selected data-picked:bg-native-row-selected py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",
+  "**:data-[slot=item-title]:text-native-row-title **:data-[slot=item-title]:leading-native-row-title **:data-[slot=item-title]:font-native-row-title **:data-[slot=item-title]:tracking-native-row-title",
+  "**:data-[slot=item-description]:text-native-row-subtitle **:data-[slot=item-description]:leading-native-row-subtitle **:data-[slot=item-description]:tracking-native-row-subtitle",
+  "not-aria-disabled:active:[--secondary-text:var(--native-color-on-row-selected-muted)] data-picked:[--secondary-text:var(--native-color-on-row-selected-muted)]",
+].join(" ");
+
+const PRESS_STATES = /(?:^|:)(?:hover|active):|^data-picked:/;
+
+const STATIC_ROW = ROW.split(" ")
+  .filter((name) => !PRESS_STATES.test(name))
+  .join(" ");
+
 export const ITEM_LOOKS = {
-  row: [
-    "flex inline-full items-center gap-native-row-gap text-start transition-control not-aria-disabled:hover:bg-hover not-aria-disabled:active:bg-native-row-selected data-picked:bg-native-row-selected py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row has-data-[slot=item-description]:min-block-native-row-two",
-    "**:data-[slot=item-title]:text-native-row-title **:data-[slot=item-title]:leading-native-row-title **:data-[slot=item-title]:font-native-row-title **:data-[slot=item-title]:tracking-native-row-title",
-    "**:data-[slot=item-description]:text-native-row-subtitle **:data-[slot=item-description]:leading-native-row-subtitle **:data-[slot=item-description]:tracking-native-row-subtitle",
-    "not-aria-disabled:active:[--secondary-text:var(--native-color-on-row-selected-muted)] data-picked:[--secondary-text:var(--native-color-on-row-selected-muted)]",
-  ].join(" "),
+  row: ROW,
+  "row-static": STATIC_ROW,
   folder:
     "flex items-center gap-md py-sm ps-md pe-sm min-block-row expanded:min-block-row-compact",
   "settings-section":

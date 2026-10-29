@@ -107,3 +107,10 @@ test("keeps the icon tile and the shorter row on an iPad and an Android phone", 
     expect(drawn.height).toBeLessThan(70);
   }
 });
+
+test("leaves the iPhone folder row without a pressed or hover tint, since the row opens nothing", async () => {
+  await rowOn("ios", PHONE);
+
+  expect(item().className).not.toMatch(/(?:hover|active):bg-/);
+  expect(item().className).not.toContain("data-picked:");
+});
