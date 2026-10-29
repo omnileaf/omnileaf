@@ -29,7 +29,7 @@ export interface CategoryTabsLook {
   readonly sheet: CategorySheetLook;
 }
 
-const NARROW_WINDOW_SHEET: CategorySheetLook = {
+const SHARED_SHEET: CategorySheetLook = {
   header: "flex items-center gap-md px-sheet-inline pbs-sheet-gap",
   hasBadge: true,
   title: "text-title font-bold",
@@ -49,13 +49,13 @@ const SHARED_LOOK: CategoryTabsLook = {
   otherTab: "font-medium text-muted hover:text-foreground",
   arrow:
     "shrink-0 block-touch-target inline-touch-target hover:bg-hover active:bg-pressed",
-  sheet: NARROW_WINDOW_SHEET,
+  sheet: SHARED_SHEET,
 };
 
 const SHARED_PHONE_LOOK: CategoryTabsLook = {
   ...SHARED_LOOK,
   sheet: {
-    ...NARROW_WINDOW_SHEET,
+    ...SHARED_SHEET,
     list: "flex flex-col overflow-auto pbs-sm min-block-none row-rules",
     option: ITEM_LOOKS.row,
   },
