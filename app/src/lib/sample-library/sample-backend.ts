@@ -518,7 +518,7 @@ function foundCoverOf(
   book: SampleBook,
   index: number,
 ): string | null {
-  return book.file === "missing" ? null : bookCoverOf(series, index + 1);
+  return book.file === "missing" ? null : bookCoverOf(series, slotOf(series, index));
 }
 
 /** Answers every command from the sample library, keeping what the reader marks or reads until the page reloads. */
@@ -958,7 +958,7 @@ export function sampleBackend(
                 series: sampleSeriesId(series.number),
                 seriesTitle: titleOf(series),
                 position: index + 1,
-                cover: bookCoverOf(series, index + 1),
+                cover: bookCoverOf(series, slotOf(series, index)),
                 startedAtMs: addedAt(series),
                 utcOffsetMinutes: 0,
                 readSeconds: SESSION_SECONDS,
@@ -1002,7 +1002,7 @@ export function sampleBackend(
         series: sampleSeriesId(series.number),
         seriesTitle: series.title,
         position: index + 1,
-        cover: bookCoverOf(series, index + 1),
+        cover: bookCoverOf(series, slotOf(series, index)),
         startedAtMs: addedAt(series),
         utcOffsetMinutes: 0,
         readSeconds: SESSION_SECONDS,
@@ -1739,7 +1739,7 @@ export function sampleBackend(
           "the book's file is of a type this version can't read yet",
         );
       }
-      const number = index + 1;
+      const slot = slotOf(series, index);
       const isDamaged = book.file === "damaged";
       const readablePages = isDamaged
         ? book.pageCount - DAMAGED_PAGES_LOST
@@ -1750,7 +1750,7 @@ export function sampleBackend(
         series: sampleSeriesId(series.number),
         seriesTitle: titleOf(series),
         pages: Array.from({ length: readablePages }, (_, page) => {
-          const path = `${series.isStrip ? "strips" : "pages"}/${String(series.number)}-${String(series.art)}-${String(number)}-${String(page + 1)}`;
+          const path = `${series.isStrip ? "strips" : "pages"}/${String(series.number)}-${String(series.art)}-${String(slot)}-${String(page + 1)}`;
           return {
             path,
             thumbnail: `thumbnails/${path}`,
@@ -1761,7 +1761,7 @@ export function sampleBackend(
         }),
         startPage: book.reading.state === "started" ? book.reading.page - 1 : 0,
         reading: wireReading(book.reading),
-        position: number,
+        position: index + 1,
         previous: neighbour(series, index - 1),
         next: neighbour(series, index + 1),
         readingDirection: series.readingDirection,

@@ -1760,3 +1760,59 @@ test("wakes library changes when it removes", async () => {
 
   expect(emitted).toEqual(["library-changed"]);
 });
+
+test("keeps the art of the books after a removed one where it was", async () => {
+  const { backend } = backendFor();
+  const series = sampleSeriesId(8);
+  const before = await backend.seriesBooks(series, SHOWING_EVERY_BOOK, null);
+  const coverOf = (books: typeof before.books, id: string) =>
+    books.find((book) => book.id === id)?.cover;
+  const pathsOf = async (id: string) =>
+    (await backend.openBook(id, [])).pages.map(({ path }) => path);
+  const thirdPagesBefore = await pathsOf(sampleBookId(8, 3));
+
+  await backend.removeFromLibrary(
+    [{ kind: "book", id: sampleBookId(8, 2) }],
+    false,
+  );
+
+  const after = await backend.seriesBooks(series, SHOWING_EVERY_BOOK, null);
+  expect(after.books.map((book) => book.position)).toEqual([1, 2, 3]);
+  expect(coverOf(after.books, sampleBookId(8, 3))).toBe(
+    coverOf(before.books, sampleBookId(8, 3)),
+  );
+  expect(coverOf(after.books, sampleBookId(8, 4))).toBe(
+    coverOf(before.books, sampleBookId(8, 4)),
+  );
+  expect(await pathsOf(sampleBookId(8, 3))).toEqual(thirdPagesBefore);
+});
+
+test.each([
+  {
+    reading: "finished",
+    series: 8,
+    matching: "Sample Series 08",
+    read: [sampleBookId(8, 3)],
+  },
+  { reading: "started", series: 4, matching: "Sample Series 04", read: [] },
+])(
+  "keeps the cover of a $reading book in History after a removed one before it",
+  async ({ series, matching, read }) => {
+    const { backend } = backendFor();
+    const books = { kind: "books", matching } as const;
+    await backend.markBooks(read, "read");
+    const coversOf = async () =>
+      (await backend.readingHistory(null, books)).entries.map(
+        ({ book, cover }) => [book, cover],
+      );
+    const before = await coversOf();
+
+    await backend.removeFromLibrary(
+      [{ kind: "book", id: sampleBookId(series, 2) }],
+      false,
+    );
+
+    expect(before).not.toEqual([]);
+    expect(await coversOf()).toEqual(before);
+  },
+);
