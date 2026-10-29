@@ -12,10 +12,12 @@ import {
 
 const LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: true };
 const MACOS_WINDOW: SectionScreen = { platform: "macos", isWide: true };
+const WIDE_IOS_WINDOW: SectionScreen = { platform: "ios", isWide: true };
 const NARROW_LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: false };
 const WIDE_TABBED_WINDOWS: readonly SectionScreen[] = [
   LINUX_WINDOW,
   MACOS_WINDOW,
+  WIDE_IOS_WINDOW,
 ];
 const EVERY_SECTION: readonly BookSection[] = [
   "volumes",
