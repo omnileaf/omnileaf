@@ -184,6 +184,19 @@ impl Library {
             .unwrap()
     }
 
+    async fn changes_retitling_in_place(&self, title: &'static str) -> u64 {
+        self.database
+            .write(move |transaction| {
+                let before = transaction.total_changes();
+                transaction.execute_batch("SAVEPOINT retitled")?;
+                transaction.execute("UPDATE book SET title = ?1", [title])?;
+                transaction.execute_batch("RELEASE retitled")?;
+                Ok(transaction.total_changes() - before)
+            })
+            .await
+            .unwrap()
+    }
+
     async fn rows<T: Send + 'static>(
         &self,
         sql: &'static str,
@@ -798,19 +811,26 @@ async fn refiles_a_book_held_in_two_files_out_of_a_series_kept_by_its_name() {
 }
 
 #[tokio::test]
-async fn writes_only_the_book_when_a_book_is_scanned_again_under_another_title() {
+async fn writes_only_the_book_and_its_title_index_when_a_book_is_scanned_again_under_another_title()
+{
     let library = Library::open("scanned-retitled").await;
-    library
-        .record(library.found_in_folder("Sample Series 01", "v01", 1))
-        .await;
+    let retitled_in_place = Library::open("scanned-retitled-in-place").await;
+    for library in [&library, &retitled_in_place] {
+        library
+            .record(library.found_in_folder("Sample Series 01", "v01", 1))
+            .await;
+    }
     let retitled = ScannedBook {
         title: "Volume 01".to_owned(),
         ..library.found_in_folder("Sample Series 01", "v01", 1)
     };
+    let in_place = retitled_in_place
+        .changes_retitling_in_place("Volume 01")
+        .await;
 
     let changes = library.changes_recording(retitled).await;
 
-    assert_eq!(changes, 1);
+    assert_eq!(changes, in_place);
 }
 
 #[tokio::test]

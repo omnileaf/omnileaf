@@ -101,6 +101,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0065_list_the_series_of_each_category_by_local_id"),
     migration!("0066_keep_the_books_removed_from_the_library"),
     migration!("0067_index_the_sessions_that_moved_forward"),
+    migration!("0068_search_the_titles_of_each_book"),
 ];
 
 pub(crate) fn pending(
@@ -1859,6 +1860,74 @@ mod tests {
             [
                 ("person".to_owned(), "Aiko Tanaka".to_owned()),
                 ("tag".to_owned(), "slow burn".to_owned())
+            ]
+        );
+    }
+
+    #[test]
+    fn makes_the_titles_of_the_books_kept_from_before_they_were_searchable_searchable() {
+        let scratch = ScratchLibrary::new("book-titles-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..67]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, title, comic_info_title) in [
+            (1, "Volume 01", Some("The Lantern Keeper")),
+            (2, "Chapter 12", Some("   ")),
+            (3, "Special", None),
+        ] {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                     VALUES (?1, 1, ?2, x'01', 0)",
+                    (book(number).as_bytes(), title),
+                )
+                .unwrap();
+            if let Some(comic_info_title) = comic_info_title {
+                connection
+                    .execute(
+                        "INSERT INTO book_details (book_id, title) VALUES (?1, ?2)",
+                        (book(number).as_bytes(), comic_info_title),
+                    )
+                    .unwrap();
+            }
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let titles_where = |condition: &str| -> Vec<(String, String)> {
+            connection
+                .prepare(&format!(
+                    "SELECT kind, title FROM book_title_search WHERE {condition} ORDER BY title"
+                ))
+                .unwrap()
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        };
+        let indexed = |kind: &str, title: &str| (kind.to_owned(), title.to_owned());
+        assert_eq!(
+            titles_where("TRUE"),
+            [
+                indexed("file_name", "Chapter 12"),
+                indexed("file_name", "Special"),
+                indexed("comic_info", "The Lantern Keeper"),
+                indexed("file_name", "Volume 01"),
+            ]
+        );
+        assert_eq!(
+            titles_where(
+                "id IN (SELECT rowid FROM book_title_fts WHERE book_title_fts MATCH '\"lantern\" OR \"chapter\"')"
+            ),
+            [
+                indexed("file_name", "Chapter 12"),
+                indexed("comic_info", "The Lantern Keeper"),
             ]
         );
     }
