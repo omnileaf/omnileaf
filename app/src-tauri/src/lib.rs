@@ -29,6 +29,7 @@ mod screen_orientation;
 mod share_sign_in;
 mod storage;
 mod system_bars;
+mod system_contrast;
 mod system_settings;
 mod system_sign_in;
 mod tray;
@@ -132,6 +133,7 @@ pub fn run() {
         .plugin(omnileaf_folder_access::init())
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
+        .plugin(system_contrast::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
         .plugin(icon_actions::plugin())

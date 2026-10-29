@@ -988,6 +988,7 @@ export function sampleBackend(
     matchSystemBars: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
+    watchSystemContrast: () => null,
     captureVolumeKeys: () => null,
     releaseVolumeKeys: () => null,
     libraryFolders: () => ({

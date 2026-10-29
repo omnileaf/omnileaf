@@ -20,11 +20,15 @@ function markRoot(attribute: string, value: string | undefined): void {
   }
 }
 
+export function followContrast(contrast: Contrast | undefined): void {
+  markRoot("data-contrast", contrast);
+}
+
 export function followDisplayModes({
   contrast,
   transparency,
 }: DisplayModes): void {
-  markRoot("data-contrast", contrast);
+  followContrast(contrast);
   markRoot("data-transparency", transparency);
 }
 
