@@ -346,6 +346,10 @@ test.describe("with two categories", () => {
         viewportOf(page).width >= EXPANDED_MIN_WIDTH,
         "expanded screens draw the tabs for the pointer",
       );
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "phones draw Material tabs at least 80 wide",
+      );
       await openLibrary(page);
       const all = tabs(page).getByRole("tab", { name: "All" });
 

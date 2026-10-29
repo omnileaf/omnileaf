@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronDown, Pencil, Plus } from "@lucide/svelte";
+  import { ChevronDown, Pencil, Plus } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
   import { flushSync } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
@@ -24,6 +24,7 @@
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import CategoryGlyph from "./CategoryGlyph.svelte";
   import { categoryTabsLook } from "./category-tabs-look.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
 
@@ -54,7 +55,13 @@
   const onPhone = $derived(isPhone(platform, width.current));
   const look = $derived(categoryTabsLook(platform, width.current));
   const editPhone = $derived(phoneAction(platform, width.current, "other"));
-  const newPhone = $derived(phoneAction(platform, width.current, "main"));
+  const newPhone = $derived.by(() => {
+    const action = phoneAction(platform, width.current, "main");
+    const { newVariant } = look.sheet;
+    return action === undefined || newVariant === undefined
+      ? action
+      : { ...action, variant: newVariant };
+  });
   const tabs = $derived<readonly Tab[]>(
     arranged.map(({ id, name }) => ({ id: tabKey(id), name })),
   );
@@ -266,7 +273,7 @@
         isSheetOpen = true;
       }}
     >
-      <ChevronDown size={SHEET_ICON_SIZE} aria-hidden="true" />
+      <CategoryGlyph name="chevron-down" isMaterial={look.usesMaterialIcons} />
     </Button>
     <Dialog.Root bind:open={isSheetOpen}>
       <DrawerContent
@@ -276,12 +283,14 @@
         aria-labelledby={titleId}
       >
         <div class={look.sheet.header}>
-          <span
-            aria-hidden="true"
-            class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
-          >
-            <LibraryGlyph size={SHEET_ICON_SIZE} />
-          </span>
+          {#if look.sheet.hasBadge}
+            <span
+              aria-hidden="true"
+              class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+            >
+              <LibraryGlyph size={SHEET_ICON_SIZE} />
+            </span>
+          {/if}
           <div class="flex flex-col">
             <DialogTitle id={titleId} class={look.sheet.title}>
               {m.library_categories()}
@@ -310,7 +319,10 @@
             >
               <span data-slot="item-title" class="flex-1">{tab.name}</span>
               {#if isChosen}
-                <Check size={ICON_SIZE} aria-hidden="true" />
+                <CategoryGlyph
+                  name="check"
+                  isMaterial={look.usesMaterialIcons}
+                />
               {/if}
             </button>
           {/each}
@@ -329,7 +341,7 @@
             ]}
             onclick={openSettings}
           >
-            <Pencil size={ICON_SIZE} aria-hidden="true" />
+            <CategoryGlyph name="pencil" isMaterial={look.usesMaterialIcons} />
             {m.library_categories_edit_short()}
           </Button>
           <Button
@@ -345,7 +357,7 @@
             ]}
             onclick={openSettings}
           >
-            <Plus size={ICON_SIZE} aria-hidden="true" />
+            <CategoryGlyph name="plus" isMaterial={look.usesMaterialIcons} />
             {m.library_category_new()}
           </Button>
         </div>
