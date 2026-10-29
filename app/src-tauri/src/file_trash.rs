@@ -23,6 +23,7 @@ impl FileDisposal for SystemTrash {
 
 #[cfg(desktop)]
 fn dispose(file: &Path) -> Result<Disposal, DisposalFailure> {
+    std::fs::symlink_metadata(file).map_err(|error| DisposalFailure::from(error.kind()))?;
     trash::delete(file)
         .map(|()| Disposal::Trashed)
         .map_err(|error| {
@@ -84,9 +85,27 @@ fn is_lock_violation(code: i32) -> bool {
 }
 
 #[cfg(test)]
+#[cfg(desktop)]
+mod desktop_tests {
+    use omnileaf_testkit::ScratchFolder;
+
+    use super::*;
+
+    #[test]
+    fn reports_a_file_that_vanished_as_not_found() {
+        let scratch = ScratchFolder::new("trash-vanished");
+        let gone = scratch.path().join("Volume 01.cbz");
+
+        let disposed = tauri::async_runtime::block_on(SystemTrash.dispose(&gone));
+
+        assert_eq!(disposed, Err(DisposalFailure::NotFound));
+    }
+}
+
+#[cfg(test)]
 #[cfg(target_os = "linux")]
 mod tests {
-    use std::{env, fs, io, path::PathBuf, process::Command};
+    use std::{env, ffi::OsString, fs, io, path::PathBuf, process::Command};
 
     use omnileaf_testkit::ScratchFolder;
 
@@ -108,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn reads_a_trash_error_it_cannot_place_as_other_and_never_as_a_deletion() {
+    fn reads_a_trash_error_it_cannot_place_as_other() {
         let error = trash::Error::Unknown {
             description: "no mount point found".to_owned(),
         };
@@ -118,8 +137,33 @@ mod tests {
         assert_eq!(failure, DisposalFailure::Other);
     }
 
+    const XDG_DATA_HOME: &str = "XDG_DATA_HOME";
+
     fn scratch_trash_home() -> Option<PathBuf> {
-        env::var_os(SCRATCH_TRASH_HOME).map(PathBuf::from)
+        scratch_trash_home_of(env::var_os(SCRATCH_TRASH_HOME), env::var_os(XDG_DATA_HOME))
+    }
+
+    fn scratch_trash_home_of(
+        home: Option<OsString>,
+        data_home: Option<OsString>,
+    ) -> Option<PathBuf> {
+        let home = PathBuf::from(home?);
+        PathBuf::from(data_home?).starts_with(&home).then_some(home)
+    }
+
+    #[test]
+    fn trusts_the_scratch_home_only_when_the_trash_lives_inside_it() {
+        let home = || Some(OsString::from("/scratch/home"));
+        let inside = Some(OsString::from("/scratch/home/data"));
+        let stray = Some(OsString::from("/home/person/.local/share"));
+
+        let trusted = scratch_trash_home_of(home(), inside.clone());
+        let stray_data = scratch_trash_home_of(home(), stray);
+        let unset_data = scratch_trash_home_of(home(), None);
+        let unset_home = scratch_trash_home_of(None, inside);
+
+        assert_eq!(trusted, Some(PathBuf::from("/scratch/home")));
+        assert_eq!([stray_data, unset_data, unset_home], [None, None, None]);
     }
 
     /// The trash crate reads `XDG_DATA_HOME` on each call and setting it would need `unsafe`, so the test reruns itself in a child process whose trash is a scratch folder.
@@ -128,11 +172,15 @@ mod tests {
         let output = Command::new(env::current_exe().unwrap())
             .args(["--exact", test, "--nocapture"])
             .env(SCRATCH_TRASH_HOME, home.path())
-            .env("XDG_DATA_HOME", home.path().join("data"))
+            .env(XDG_DATA_HOME, home.path().join("data"))
             .env("HOME", home.path())
             .output()
             .unwrap();
-        let report = String::from_utf8_lossy(&output.stdout);
+        let report = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
         assert!(output.status.success(), "{report}");
         assert!(report.contains(READ_BY_ONE_TEST), "{report}");
     }
@@ -155,6 +203,9 @@ mod tests {
         assert_eq!(disposed, Ok(Disposal::Trashed));
         assert!(!book.exists());
         assert!(home.join("data/Trash/files/Volume 01.cbz").is_file());
+        let info =
+            fs::read_to_string(home.join("data/Trash/info/Volume 01.cbz.trashinfo")).unwrap();
+        assert!(info.contains("DeletionDate="), "{info}");
     }
 
     #[test]
@@ -183,7 +234,7 @@ mod tests {
         let disposed = tauri::async_runtime::block_on(SystemTrash.dispose(&book));
 
         fs::set_permissions(&data, fs::Permissions::from_mode(0o755)).unwrap();
-        assert!(disposed.is_err(), "{disposed:?}");
+        assert_eq!(disposed, Err(DisposalFailure::PermissionDenied));
         assert!(book.is_file());
     }
 
