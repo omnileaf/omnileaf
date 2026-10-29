@@ -147,6 +147,7 @@
   --native-weight-tab: var(--font-weight-semibold);
   --native-tracking-tab: 0;
   --native-radius-cover: var(--radius-cover);
+  --native-spacing-read-mark: 1.5rem;
   --native-color-cover-badge: var(--card);
   --native-color-on-cover-badge: var(--foreground);
   --native-radius-cover-badge: var(--radius-label-badge);
