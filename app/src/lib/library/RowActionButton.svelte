@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -9,12 +10,14 @@
     tooltip,
     disabled = false,
     onclick,
+    class: className,
     children,
   }: {
     label: string;
     tooltip: string;
     disabled?: boolean;
     onclick: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
+    class?: ClassValue;
     children: Snippet;
   } = $props();
 </script>
@@ -24,7 +27,10 @@
     <Button
       {...props}
       look="row-action"
-      class="shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target"
+      class={[
+        "shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target",
+        className,
+      ]}
     >
       {@render children()}
     </Button>

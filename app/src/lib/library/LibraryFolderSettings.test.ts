@@ -16,9 +16,11 @@ import {
   type ScanProgress,
 } from "#lib/ipc/bindings.ts";
 import { Notices } from "#lib/notices/notices.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 import Toasts from "#lib/notices/Toasts.svelte";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";
+import { resolvedColour } from "../../../tests/components/resolved-colour";
 
 import type { AddFolder } from "./add-folder";
 import type { HomeCommands } from "./home-folder-change.svelte";
@@ -1473,4 +1475,68 @@ test("warns when the found library can't be used", async () => {
   await expect
     .element(toasts.getByText("Couldn't use that folder"))
     .toBeVisible();
+});
+
+async function renderOnIphone() {
+  serveFolders([HOME, COMICS, MANGA]);
+  await page.viewport(390, 844);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  return renderSettings({ platform: "ios" });
+}
+
+test("insets the divider between linked folders 50 points on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+
+  await expect.element(folders.getByRole("listitem").first()).toBeVisible();
+  const first = folders.getByRole("listitem").first().element();
+
+  expect(getComputedStyle(first, "::after").insetInlineStart).toBe("50px");
+});
+
+test("sets the home folder in 17 point regular type with its place in 15 point UI type on an iPhone", async () => {
+  const { home } = await renderOnIphone();
+
+  const heading = home.getByRole("heading", { name: "Home folder" });
+  await expect.element(heading).toBeVisible();
+  const title = getComputedStyle(heading.element());
+  const place = getComputedStyle(
+    home.element().querySelector("code") ?? document.body,
+  );
+
+  expect({
+    titleSize: title.fontSize,
+    titleWeight: title.fontWeight,
+    placeSize: place.fontSize,
+    isMono: place.fontFamily.includes("mono"),
+  }).toEqual({
+    titleSize: "17px",
+    titleWeight: "400",
+    placeSize: "15px",
+    isMono: false,
+  });
+});
+
+test("sets the home hint as a 13 point footer on an iPhone", async () => {
+  const { home } = await renderOnIphone();
+
+  const hintText = home.getByText(/^The library stays inside the app/);
+  await expect.element(hintText).toBeVisible();
+  const hint = getComputedStyle(hintText.element());
+
+  expect({ size: hint.fontSize, line: hint.lineHeight }).toEqual({
+    size: "13px",
+    line: "18px",
+  });
+});
+
+test("draws Rescan in the accent colour on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+
+  const rescan = folders.getByRole("button", { name: "Rescan Sample Comics" });
+  await expect.element(rescan).toBeVisible();
+
+  expect(getComputedStyle(rescan.element()).color).toBe(
+    resolvedColour("--color-accent", "color"),
+  );
 });

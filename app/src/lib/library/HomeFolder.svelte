@@ -5,6 +5,8 @@
   import { HardDrive } from "@lucide/svelte";
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { phoneOf } from "#lib/page/platform.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -28,7 +30,13 @@
   } = $props();
 
   const ICON_SIZE = 18;
+  const NATIVE_TITLE =
+    "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
+  const NATIVE_PLACE =
+    "font-ui text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle wrap-anywhere text-muted";
   const headingId = $props.id();
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
 </script>
 
 <section aria-labelledby={headingId} class={className}>
@@ -55,11 +63,17 @@
         <div class="flex flex-1 flex-col gap-2xs min-inline-none">
           <h2
             id={headingId}
-            class="text-body font-medium desktop:font-semibold"
+            class={isNative
+              ? NATIVE_TITLE
+              : "text-body font-medium desktop:font-semibold"}
           >
             {m.library_settings_home_folder()}
           </h2>
-          <code class="font-mono text-detail wrap-anywhere text-muted">
+          <code
+            class={isNative
+              ? NATIVE_PLACE
+              : "font-mono text-detail wrap-anywhere text-muted"}
+          >
             {folderLocation(home, platform)}
           </code>
         </div>

@@ -5,6 +5,8 @@
 
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices, UndoOffer } from "#lib/notices/notices.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { phoneOf } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -60,6 +62,8 @@
   let foldersHeading: HTMLHeadingElement | undefined = $state();
   const headingId = $props.id();
   const isInCard = $derived(addPlacement === "card");
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
 
@@ -192,7 +196,10 @@
             bind:this={rows[folder.id]}
             tabindex="-1"
             class={[
-              "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-s-ios-folder-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
+              isNative
+                ? "ios:not-last:after:inset-s-ios-folder-separator-native"
+                : "ios:not-last:after:inset-s-ios-folder-separator",
+              "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
               !isInCard &&
                 "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card windows:focus-visible:rounded-windows-control",
             ]}

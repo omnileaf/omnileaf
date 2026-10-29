@@ -29,6 +29,7 @@
   label={m.library_rescan_folder_label({ name: folderTitle(folder) })}
   tooltip={m.library_rescan_folder()}
   disabled={rescans.isBusy}
+  class="ios:max-medium:text-accent"
   onclick={() => {
     void rescan();
   }}
