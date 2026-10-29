@@ -31,7 +31,10 @@ private val LISTING_BOUND = 15.seconds
 /** A cloud provider may download the whole document before it hands over a descriptor. */
 private val OPENING_BOUND = 30.seconds
 
-/** A cloud provider may reach its server before it deletes a document. */
+/**
+ * A cloud provider may reach its server before it deletes a document, and a call still running when the bound elapses
+ * can finish afterwards, because `deleteDocument` takes no cancellation signal.
+ */
 private val DELETING_BOUND = 20.seconds
 
 @InvokeArg
