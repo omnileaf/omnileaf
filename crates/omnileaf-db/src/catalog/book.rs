@@ -205,7 +205,7 @@ pub fn remove_books_without_files(
     connection: &Connection,
     books: &[BookId],
 ) -> Result<usize, Error> {
-    let mut remove = connection.prepare(REMOVE_BOOK_WITHOUT_FILES)?;
+    let mut remove = connection.prepare_cached(REMOVE_BOOK_WITHOUT_FILES)?;
     let mut removed = 0;
     for book in books {
         removed = remove.execute([book.as_bytes()])?.saturating_add(removed);
