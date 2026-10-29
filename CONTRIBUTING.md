@@ -59,6 +59,14 @@ After changing any of them, run `cargo xtask icons`. It runs Tauri's icon genera
 
 The tray on Linux and Windows shows `branding/tray.svg`, the green square with only the leaf, since the books vanish at tray size. The macOS menu bar shows `branding/tray-macos.svg`, a one-colour leaf that macOS tints like other menu bar items. `cargo xtask icons` draws them into `app/src-tauri/icons/tray.png` and `tray-macos.png`.
 
+### Problem report relay
+
+Send to Omnileaf posts problem reports to the relay in `crates/omnileaf-relay`, which keeps them in its own SQLite file until a maintainer reviews them. Run it locally with `RELAY_TRUST_PEER=1 RELAY_POW_BITS=8 cargo run -p omnileaf-relay -- serve --listen 127.0.0.1:8080`. `RELAY_TRUST_PEER=1` counts requests by the connecting address instead of Cloudflare's `CF-Connecting-IP` header, which only a relay behind Cloudflare should read. `RELAY_DATABASE` names the file, `relay.sqlite3` by default, and `RELAY_POW_BITS` sets the proof of work each report needs, 20 bits unless set.
+
+Review goes through the same binary, never over HTTP: `omnileaf-relay reports list`, `reports show <code>` (add `--reply-address` to see the address a person left for replies), `reports set-status <code> reviewing|closed|published` (a published report needs `--issue <number>`) and `reports export <code>`, which prints the report as an issue body without the reply address. The relay removes a reviewed report's text and reply address after 90 days and the rest of it after a year, hourly while it serves, or straight away with `reports purge`. It never stores a client's address: rate limits count a hash keyed by a salt that changes every UTC day, and the old salts are deleted.
+
+`crates/omnileaf-relay/Dockerfile` builds its image from the repository root, as in `docker buildx build -f crates/omnileaf-relay/Dockerfile .`.
+
 ## Checking your work
 
 `cargo xtask check` runs the same checks as CI, in groups. `--only <group>` runs one of them: `rust`, `portable`, `interface`, `browser`, `app`, `android` or `ios`. A plain `cargo xtask check` runs every group except `android` and `ios`, which need an emulator or a Simulator. `cargo xtask doctor` lists the tools the groups need and shows how to install any that are missing. Rust itself comes from `rust-toolchain.toml`, which rustup picks up automatically. `--step <name>` and `--skip <name>` narrow a group to the checks named, by the names it prints, and `--partition hash:<k>/<n>` runs one nextest partition of the tests; CI splits the Windows Rust gate across runners this way, and passes `rust gate (windows)` only when every part passes.
