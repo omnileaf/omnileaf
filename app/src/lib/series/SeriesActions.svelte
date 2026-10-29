@@ -65,6 +65,12 @@
       ? undefined
       : { ...layout, other: other.variant };
   });
+  const isMacos = platform === "macos";
+  const macosControl = variantClasses("secondary", "regular", false, platform);
+  const macosComingSoon = cn(
+    macosControl,
+    "text-native-on-button-disabled aria-disabled:pointer-events-auto",
+  );
   const isAllRead = $derived(overview.readCount === overview.bookCount);
   const state = $derived.by(() => {
     if (isAllRead) {
@@ -119,10 +125,12 @@
   <div class="flex gap-sm @series-split:flex-col">
     <ComingSoonControl
       label={m.series_reading_state({ state })}
-      class={cn(
-        SERIES_CONTROL,
-        "flex-1 justify-between rounded-shadcn-control font-regular text-foreground min-inline-none",
-      )}
+      class={isMacos
+        ? cn(macosComingSoon, "flex-1 justify-between min-inline-none")
+        : cn(
+            SERIES_CONTROL,
+            "flex-1 justify-between rounded-shadcn-control font-regular text-foreground min-inline-none",
+          )}
     >
       <span class="flex items-center gap-sm min-inline-none">
         <BookOpen size={ICON_SIZE} aria-hidden="true" />
@@ -135,35 +143,56 @@
         label={isWide
           ? m.series_tags()
           : m.series_tags_for({ title: overview.title })}
-        class={cn(
-          SERIES_CONTROL,
-          "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
-        )}
+        class={isMacos
+          ? cn(macosComingSoon, "@series-split:flex-1")
+          : cn(
+              SERIES_CONTROL,
+              "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
+            )}
       >
         <Tag size={ICON_SIZE} aria-hidden="true" />
         {#if isWide}
           {m.series_tags()}
         {/if}
       </ComingSoonControl>
-      <Button
-        type="button"
-        look="outline"
-        aria-label={markLabel}
-        class={cn(
-          SERIES_CONTROL,
-          "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
-        )}
-        onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
-      >
-        {#if isAllRead}
-          <EyeOff size={ICON_SIZE} aria-hidden="true" />
-        {:else}
-          <Eye size={ICON_SIZE} aria-hidden="true" />
-        {/if}
-        {#if isWide}
-          {markLabel}
-        {/if}
-      </Button>
+      {#if isMacos}
+        <Button
+          type="button"
+          variant="secondary"
+          aria-label={markLabel}
+          class="@series-split:flex-1"
+          onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
+        >
+          {#if isAllRead}
+            <EyeOff size={ICON_SIZE} aria-hidden="true" />
+          {:else}
+            <Eye size={ICON_SIZE} aria-hidden="true" />
+          {/if}
+          {#if isWide}
+            {markLabel}
+          {/if}
+        </Button>
+      {:else}
+        <Button
+          type="button"
+          look="outline"
+          aria-label={markLabel}
+          class={cn(
+            SERIES_CONTROL,
+            "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
+          )}
+          onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
+        >
+          {#if isAllRead}
+            <EyeOff size={ICON_SIZE} aria-hidden="true" />
+          {:else}
+            <Eye size={ICON_SIZE} aria-hidden="true" />
+          {/if}
+          {#if isWide}
+            {markLabel}
+          {/if}
+        </Button>
+      {/if}
     </div>
   </div>
 {/if}

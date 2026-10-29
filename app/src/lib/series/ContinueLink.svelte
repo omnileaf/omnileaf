@@ -20,6 +20,12 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const look = $derived.by(() => {
+    if (platform === "macos") {
+      return cn(
+        variantClasses("primary", "regular", false, platform),
+        "max-inline-full",
+      );
+    }
     const phone = phoneAction(platform, width.current, "main");
     return phone === undefined
       ? TODAYS_LOOK
