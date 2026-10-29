@@ -1,3 +1,5 @@
+use std::fmt;
+
 use omnileaf_engine::{Platform as AppPlatform, ProblemReport, ReportCode};
 use omnileaf_relay_proto::{
     Platform, ReplyAddress, ReportStatus, StatusKey, StatusLookup, StatusReply,
@@ -12,14 +14,14 @@ use crate::{
     report_relay::{OutgoingReport, RelayClient, RelayError},
 };
 
-#[derive(Debug, PartialEq, Eq, Serialize, Type)]
+#[derive(PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SentProblemReport {
     code: ReportCode,
     status_key: String,
 }
 
-#[derive(Debug, Deserialize, Type)]
+#[derive(Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SentReportKey {
     code: ReportCode,
@@ -79,6 +81,22 @@ pub(crate) async fn statuses(
         .into_iter()
         .map(|key| status_of(key.code, &replies))
         .collect())
+}
+
+impl fmt::Debug for SentProblemReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SentProblemReport")
+            .field("code", &self.code)
+            .finish_non_exhaustive()
+    }
+}
+
+impl fmt::Debug for SentReportKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SentReportKey")
+            .field("code", &self.code)
+            .finish_non_exhaustive()
+    }
 }
 
 fn relay(app: &AppHandle) -> Result<tauri::State<'_, RelayClient>, RelayError> {
@@ -168,6 +186,30 @@ mod tests {
             code,
             status_key: status_key.to_owned(),
         }
+    }
+
+    #[test]
+    fn keeps_status_keys_out_of_debug_output() {
+        let key = StatusKey::from_bytes([9; 32]).to_text();
+        let sent = SentProblemReport {
+            code: wide_code(),
+            status_key: key.clone(),
+        };
+
+        let printed = [
+            format!("{sent:?}"),
+            format!("{:?}", key_for(wide_code(), &key)),
+        ];
+
+        assert!(
+            printed.iter().all(|text| !text.contains(&key)),
+            "{printed:?}"
+        );
+        assert!(
+            printed
+                .iter()
+                .all(|text| text.contains(&wide_code().to_string()))
+        );
     }
 
     #[test]
