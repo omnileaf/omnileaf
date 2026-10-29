@@ -2,6 +2,7 @@ import {
   type AdultContent,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
+  type FileOutcome,
   type FolderProblem,
   type Inclusion,
   type IpcErrorCode,
@@ -66,6 +67,26 @@ export interface SampleEvents {
   emit(event: string, payload: unknown): void;
 }
 
+interface BookLocation {
+  readonly series: SampleSeries;
+  readonly index: number;
+}
+
+interface BookOfSeries extends BookLocation {
+  readonly id: string;
+}
+
+interface RemovedBook {
+  readonly series: SampleSeries;
+  readonly book: SampleBook;
+  readonly slot: number;
+}
+
+interface RemovalTarget {
+  readonly kind: "series" | "book";
+  readonly id: string;
+}
+
 const PLATFORMS = ["android", "ios", "macos", "windows", "linux"] as const;
 const LIBRARY_STATES = [
   "ready",
@@ -86,6 +107,12 @@ const SIXTH_VOLUME_FILES = [
 const READ_FILE_TYPE = "cbz";
 const UNSUPPORTED_FILE_TYPE = "cbr";
 const FILE_TYPES_NOT_READ_YET: readonly string[] = ["cbr", "rar"];
+const SAMPLE_FILE_OUTCOMES = [
+  { kind: "trashed" },
+  { kind: "deleted" },
+  { kind: "missing" },
+  { kind: "failed", reason: "permissionDenied" },
+] as const satisfies readonly FileOutcome[];
 const SKIPPED_KINDS = ["none", "types"] as const;
 const SKIPPED_TYPES = [
   {
@@ -457,6 +484,26 @@ function wireReading(reading: SampleReading) {
     : reading;
 }
 
+function slotOf(series: SampleSeries, index: number): number {
+  return series.books[index]?.slot ?? index + 1;
+}
+
+function bookIdIn(series: SampleSeries, index: number): string {
+  return sampleBookId(series.number, slotOf(series, index));
+}
+
+function fileTypeOfBook(book: SampleBook): string {
+  return book.file === "unsupported" ? UNSUPPORTED_FILE_TYPE : READ_FILE_TYPE;
+}
+
+function outcomeOfFile(position: number): FileOutcome {
+  const outcome = SAMPLE_FILE_OUTCOMES[position % SAMPLE_FILE_OUTCOMES.length];
+  if (outcome === undefined) {
+    throw new Error("the sample has no file outcomes to report");
+  }
+  return outcome;
+}
+
 function bookCount(library: readonly SampleSeries[]): number {
   return library.reduce((count, series) => count + series.books.length, 0);
 }
@@ -493,6 +540,7 @@ export function sampleBackend(
   const bookmarks = new Map<string, Set<number>>();
   const readingBeforeMarked = new Map<string, SampleReading>();
   const hiddenTypes = new Set<string>();
+  const removedBooks = new Map<string, RemovedBook>();
 
   const categoriesCreated: { readonly id: string; readonly name: string }[] =
     [];
@@ -561,8 +609,7 @@ export function sampleBackend(
 
   const isBookmarked = (series: SampleSeries): boolean =>
     series.books.some(
-      (_, index) =>
-        (bookmarks.get(sampleBookId(series.number, index + 1))?.size ?? 0) > 0,
+      (_, index) => (bookmarks.get(bookIdIn(series, index))?.size ?? 0) > 0,
     );
   let adultContent: AdultContent = NEW_ADULT_CONTENT;
   let libraryTabs: Parameters<FakeBackend["setLibraryTabs"]>[0] = [
@@ -654,7 +701,7 @@ export function sampleBackend(
     const index = series.books.findIndex((book) => !isRead(book));
     return index === -1 || !series.books.some(isStarted)
       ? null
-      : sampleBookId(series.number, index + 1);
+      : bookIdIn(series, index);
   }
 
   function wireSeries(series: SampleSeries) {
@@ -726,25 +773,30 @@ export function sampleBackend(
     return found;
   }
 
-  function bookWith(id: string): {
-    readonly series: SampleSeries;
-    readonly index: number;
-  } {
+  function locateBook(id: string): BookLocation | undefined {
     for (const series of library) {
       const index = series.books.findIndex(
-        (_, at) => sampleBookId(series.number, at + 1) === id,
+        (_, at) => bookIdIn(series, at) === id,
       );
       if (index !== -1) {
         return { series, index };
       }
     }
-    throw failure("bookNotFound", "that book isn't in the library");
+    return undefined;
+  }
+
+  function bookWith(id: string): BookLocation {
+    const found = locateBook(id);
+    if (found === undefined) {
+      throw failure("bookNotFound", "that book isn't in the library");
+    }
+    return found;
   }
 
   function placeOf(id: string) {
     for (const series of library) {
       const index = series.books.findIndex(
-        (_, at) => sampleBookId(series.number, at + 1) === id,
+        (_, at) => bookIdIn(series, at) === id,
       );
       const book = series.books[index];
       if (book !== undefined) {
@@ -762,9 +814,8 @@ export function sampleBackend(
 
   function fileTypeOf(id: string): string {
     const { series, index } = bookWith(id);
-    return series.books[index]?.file === "unsupported"
-      ? UNSUPPORTED_FILE_TYPE
-      : READ_FILE_TYPE;
+    const book = series.books[index];
+    return book === undefined ? READ_FILE_TYPE : fileTypeOfBook(book);
   }
 
   function hide(fileType: string): void {
@@ -789,13 +840,74 @@ export function sampleBackend(
     library[library.indexOf(series)] = { ...series, books };
   }
 
+  function booksOfTarget(target: RemovalTarget): BookOfSeries[] {
+    if (target.kind === "book") {
+      const found = locateBook(target.id);
+      return found === undefined ? [] : [{ ...found, id: target.id }];
+    }
+    const series = library.find(
+      (candidate) => sampleSeriesId(candidate.number) === target.id,
+    );
+    return (
+      series?.books.map((_, index) => ({
+        series,
+        index,
+        id: bookIdIn(series, index),
+      })) ?? []
+    );
+  }
+
+  function putSeries(series: SampleSeries): void {
+    const at = library.findIndex(({ number }) => number === series.number);
+    if (at !== -1) {
+      library[at] = series;
+    } else {
+      library.push(series);
+    }
+  }
+
+  function dropBooks(doomed: ReadonlySet<string>, from: SampleSeries): void {
+    const books = from.books.flatMap((book, index) =>
+      doomed.has(bookIdIn(from, index))
+        ? []
+        : [{ ...book, slot: slotOf(from, index) }],
+    );
+    if (books.length > 0) {
+      putSeries({ ...from, books });
+    } else {
+      library.splice(library.indexOf(from), 1);
+    }
+  }
+
+  function restoreRemovedBooks(): { series: number; books: number } {
+    let restoredSeries = 0;
+    const restored = [...removedBooks.values()];
+    for (const { series, book, slot } of restored) {
+      const present = library.find(({ number }) => number === series.number);
+      restoredSeries += present === undefined ? 1 : 0;
+      const current = present ?? { ...series, books: [] };
+      const filed = current.books.map((other, index) => ({
+        ...other,
+        slot: slotOf(current, index),
+      }));
+      putSeries({
+        ...current,
+        books: [...filed, { ...book, slot }].toSorted(
+          (one, other) => one.slot - other.slot,
+        ),
+      });
+    }
+    removedBooks.clear();
+    return { series: restoredSeries, books: restored.length };
+  }
+
   function wireBook(series: SampleSeries, index: number) {
     const book = series.books[index];
     if (book === undefined) {
       throw failure("bookNotFound", "that book isn't in the library");
     }
     return {
-      id: sampleBookId(series.number, index + 1),
+      id: bookIdIn(series, index),
       position: index + 1,
       title: book.title,
       cover: foundCoverOf(series, book, index),
@@ -814,7 +926,7 @@ export function sampleBackend(
     return book === undefined
       ? null
       : {
-          id: sampleBookId(series.number, index + 1),
+          id: bookIdIn(series, index),
           title: book.title,
           cover: foundCoverOf(series, book, index),
           reading: wireReading(book.reading),
@@ -844,7 +956,7 @@ export function sampleBackend(
         book.reading.state === "started"
           ? [
               {
-                book: sampleBookId(series.number, index + 1),
+                book: bookIdIn(series, index),
                 bookTitle: book.title,
                 series: sampleSeriesId(series.number),
                 seriesTitle: titleOf(series),
@@ -888,7 +1000,7 @@ export function sampleBackend(
     }
     return [
       {
-        book: sampleBookId(series.number, index + 1),
+        book: bookIdIn(series, index),
         bookTitle: book.title,
         series: sampleSeriesId(series.number),
         seriesTitle: series.title,
@@ -973,18 +1085,33 @@ export function sampleBackend(
     }),
     libraryProblem: () => null,
     homeArrival: () => null,
-    addLibraryFolder: () =>
-      scenario.skipped === "types"
-        ? {
-            name: LIBRARY_FOLDER_NAME,
-            series: 0,
-            books: 0,
-            unreadableBooks: 0,
-            unsupportedBooks: SKIPPED_FILES,
-            unreadableFolders: 0,
-            skippedTypes: skippedTypes(),
-          }
-        : null,
+    addLibraryFolder: () => {
+      const restored = restoreRemovedBooks();
+      const skipped =
+        scenario.skipped === "types"
+          ? {
+              name: LIBRARY_FOLDER_NAME,
+              series: 0,
+              books: 0,
+              unreadableBooks: 0,
+              unsupportedBooks: SKIPPED_FILES,
+              unreadableFolders: 0,
+              skippedTypes: skippedTypes(),
+            }
+          : null;
+      if (restored.books === 0) {
+        return skipped;
+      }
+      events.emit("library-changed", null);
+      return {
+        name: LIBRARY_FOLDER_NAME,
+        unreadableBooks: 0,
+        unsupportedBooks: 0,
+        unreadableFolders: 0,
+        ...skipped,
+        ...restored,
+      };
+    },
     linkLibraryFolder: () => {
       throw failure(
         "folderUnreadable",
@@ -1589,7 +1716,7 @@ export function sampleBackend(
           if (isRead(book)) {
             return [];
           }
-          const bookId = sampleBookId(chosen.number, index + 1);
+          const bookId = bookIdIn(chosen, index);
           readingBeforeMarked.set(bookId, book.reading);
           setReading(bookId, { state: "read" });
           return [bookId];
@@ -1799,6 +1926,53 @@ export function sampleBackend(
       return null;
     },
     removeLibraryFolder: () => null,
+    removeFromLibrary: (targets, deleteFiles) => {
+      const doomed = new Map(
+        targets.flatMap(booksOfTarget).map((found) => [found.id, found]),
+      );
+      const heldSeries = new Set(
+        targets.flatMap((target) =>
+          target.kind === "series" && booksOfTarget(target).length > 0
+            ? [target.id]
+            : [],
+        ),
+      );
+      const files = [...doomed.values()].flatMap(
+        ({ id, series, index }, at) => {
+          const book = series.books[index];
+          return deleteFiles && book !== undefined
+            ? [
+                {
+                  book: id,
+                  name: `${book.title}.${fileTypeOfBook(book)}`,
+                  outcome: outcomeOfFile(at),
+                },
+              ]
+            : [];
+        },
+      );
+      for (const { id, series, index } of doomed.values()) {
+        const book = series.books[index];
+        if (book !== undefined) {
+          removedBooks.set(id, { series, book, slot: slotOf(series, index) });
+        }
+      }
+      const ids = new Set(doomed.keys());
+      const affected = new Set(
+        [...doomed.values()].map(({ series }) => series),
+      );
+      for (const series of affected) {
+        dropBooks(ids, series);
+      }
+      if (doomed.size > 0) {
+        events.emit("library-changed", null);
+      }
+      return {
+        removedSeries: heldSeries.size,
+        removedBooks: doomed.size,
+        files,
+      };
+    },
     libraryFolderBookCount: () => bookCount(library),
     rescanLibraryFolder: () => ({
       id: LIBRARY_FOLDER_ID,
