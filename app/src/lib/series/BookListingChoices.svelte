@@ -27,7 +27,7 @@
     SortDirection,
   } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
-  import type { PhonePlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -55,6 +55,7 @@
   }[];
   const ICON_SIZE = 16;
 
+  const isMacos = currentPlatform() === "macos";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
   let isSearching = $state(false);
@@ -190,6 +191,16 @@
     >
       <Icon name="search" />
     </Button>
+  {:else if isMacos}
+    <span id={showLabelId} class="text-small text-muted">{m.series_show()}</span
+    >
+    <SegmentedControl
+      options={SHOWN_OPTIONS}
+      labels={SHOWN_LABELS}
+      chosen={listing.shown}
+      labelledBy={showLabelId}
+      onChoose={chooseShown}
+    />
   {:else}
     <ToggleGroup
       aria-label={m.series_show()}
@@ -240,6 +251,23 @@
             class="shrink-0"
           >
             <Icon name="arrow-down-up" />
+          </Button>
+        {/snippet}
+      </DropdownMenuTrigger>
+    {:else if isMacos}
+      <DropdownMenuTrigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="secondary"
+            aria-label={m.series_sort({ order })}
+            class="expanded:ms-auto"
+          >
+            <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
+            <span class="max-expanded:sr-only">
+              {m.series_sort({ order })}
+            </span>
+            <Icon name="chevron-down" class="shrink-0 max-expanded:hidden" />
           </Button>
         {/snippet}
       </DropdownMenuTrigger>
