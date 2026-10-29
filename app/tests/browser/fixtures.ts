@@ -90,6 +90,8 @@ export const DEFAULT_BACKEND: FakeBackend = {
   writerSeriesCount: () => 0,
   writerSeriesCounts: (writers) => writers.map(() => 0),
   folderSeriesCounts: (folders) => folders.map(() => 0),
+  writerlessSeries: () => ({ series: [], next: null }),
+  writerlessSeriesCount: () => 0,
   librarySearchCount: () => 0,
   seriesOverview: () => {
     throw new CommandFailure({

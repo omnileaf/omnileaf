@@ -96,6 +96,21 @@ impl Shelf {
         (titles, count)
     }
 
+    async fn series_naming_no_writer(&self) -> (Vec<String>, u32) {
+        let page = self
+            .library
+            .writerless_series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        let count = self
+            .library
+            .writerless_series_count(LibraryListing::default().filter)
+            .await
+            .unwrap();
+        let titles = page.series.into_iter().map(|series| series.title).collect();
+        (titles, count)
+    }
+
     async fn rescan(&self) -> RescanOutcome {
         self.library
             .rescan_folder(self.folder, |_| {})
@@ -256,4 +271,27 @@ async fn lists_the_writers_in_the_order_of_the_app_s_language() {
 
     assert_eq!(before, ["Sample Author Ö", "Sample Author Z"]);
     assert_eq!(shelf.names().await, ["Sample Author Z", "Sample Author Ö"]);
+}
+
+#[tokio::test]
+async fn gathers_the_series_whose_files_name_no_writer() {
+    let shelf = Shelf::with(
+        "writers-nobody",
+        &[
+            (SERIES_01, &written_by(AUTHOR_A)),
+            (
+                SERIES_02,
+                "<ComicInfo><Penciller>Sample Artist</Penciller></ComicInfo>",
+            ),
+            (SERIES_03, "<ComicInfo><Title>Untold</Title></ComicInfo>"),
+        ],
+    )
+    .await;
+
+    let unnamed = shelf.series_naming_no_writer().await;
+
+    assert_eq!(
+        unnamed,
+        (vec![SERIES_02.to_owned(), SERIES_03.to_owned()], 2)
+    );
 }

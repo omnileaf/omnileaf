@@ -92,6 +92,8 @@ macro_rules! app_commands {
             writer_series_count,
             writer_series_counts,
             folder_series_counts,
+            writerless_series,
+            writerless_series_count,
             library_search,
             library_search_count,
             series_overview,
@@ -691,6 +693,25 @@ async fn writer_series_count(
     filter: LibraryFilter,
 ) -> Result<u32, IpcError> {
     Ok(library.writer_series_count(writer, filter).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn writerless_series(
+    library: State<'_, Library>,
+    after: Option<SeriesCursor>,
+    listing: LibraryListing,
+) -> Result<SeriesPage, IpcError> {
+    Ok(library.writerless_series(listing, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn writerless_series_count(
+    library: State<'_, Library>,
+    filter: LibraryFilter,
+) -> Result<u32, IpcError> {
+    Ok(library.writerless_series_count(filter).await?)
 }
 
 #[tauri::command]

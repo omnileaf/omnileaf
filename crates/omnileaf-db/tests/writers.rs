@@ -13,7 +13,8 @@ use omnileaf_db::{
         BookDetails, BookFile, BookPerson, Cursor, NewRoot, NewSeries, Page, PageRequest, PageSize,
         PersonRole, RootId, RootKind, RootLocator, ScannedBook, SeriesFilter, SeriesListing,
         SeriesOrder, SeriesSort, WriterSummary, add_root, record_scanned_books, remove_book_files,
-        remove_books_without_files, series_page, writer_series_count, writer_series_page, writers,
+        remove_books_without_files, series_page, writer_series_count, writer_series_page,
+        writerless_series_count, writerless_series_page, writers,
     },
     store::{Clock, Store},
 };
@@ -140,6 +141,23 @@ impl Library {
             .sort_titles_for(language.parse().unwrap())
             .await
             .unwrap();
+    }
+
+    async fn series_naming_no_writer(&self) -> (Vec<String>, u32) {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(10).unwrap(),
+        };
+        self.store
+            .database()
+            .read(move |connection| {
+                let page = writerless_series_page(connection, &A_TO_Z, &request)?;
+                let count = writerless_series_count(connection, &SeriesFilter::NONE)?;
+                let titles = page.items.into_iter().map(|series| series.title).collect();
+                Ok((titles, count))
+            })
+            .await
+            .unwrap()
     }
 
     async fn series_of(&self, writer: &'static str) -> (Vec<String>, u32) {
@@ -370,6 +388,30 @@ async fn lists_and_counts_only_the_series_naming_a_writer() {
         named,
         (
             vec!["Sample Series 01".to_owned(), "Sample Series 02".to_owned()],
+            2
+        )
+    );
+}
+
+#[tokio::test]
+async fn lists_and_counts_only_the_series_naming_no_writer() {
+    let library = Library::with_books(
+        "writerless-series",
+        &[
+            ("Sample Series 01", &["Sample Author A"]),
+            ("Sample Series 02", &[]),
+            ("Sample Series 03", &[]),
+            ("Sample Series 04", &["Sample Author B"]),
+        ],
+    )
+    .await;
+
+    let unnamed = library.series_naming_no_writer().await;
+
+    assert_eq!(
+        unnamed,
+        (
+            vec!["Sample Series 02".to_owned(), "Sample Series 03".to_owned()],
             2
         )
     );
