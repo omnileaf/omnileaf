@@ -55,10 +55,10 @@ use crate::{
     FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
     HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
-    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RescanOutcome,
-    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
-    SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
-    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
+    RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
+    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesOverview, SeriesPage,
+    SeriesVolume, ShareAddress, ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     adult_content::{AdultSeen, AdultView},
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
@@ -69,6 +69,7 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
+    library_removal::{Expanded, expand},
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -1675,6 +1676,30 @@ impl Library {
             .await?;
         self.note_catalog_written();
         Ok(())
+    }
+
+    #[tracing::instrument(skip_all, fields(targets = targets.len()))]
+    pub async fn remove_from_library(
+        &self,
+        targets: &[RemovalTarget],
+    ) -> Result<RemovalReport, LibraryError> {
+        let _scanning = self.catalog_change_lock.lock().await;
+        let targets = targets.to_vec();
+        let Expanded { books, series_held } = self
+            .store
+            .database()
+            .read(move |connection| expand(connection, &targets))
+            .await?;
+        let removed = self
+            .store
+            .write(move |writer| writer.remove_books_from_library(&books))
+            .await?;
+        self.note_catalog_written();
+        Ok(RemovalReport {
+            removed_series: series_held,
+            removed_books: saturating_u32(removed.books),
+            files: Vec::new(),
+        })
     }
 
     #[tracing::instrument(skip_all, fields(folder = %id))]

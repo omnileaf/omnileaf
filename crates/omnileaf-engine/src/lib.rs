@@ -37,6 +37,7 @@ mod library_folder_group;
 mod library_labels;
 mod library_layout;
 mod library_listing;
+mod library_removal;
 mod library_search;
 mod library_series;
 mod library_tabs;
@@ -133,6 +134,7 @@ pub use library_listing::{
     Inclusion, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySort, LibrarySortBy,
     SeriesFormat, SmartFilter, SortDirection,
 };
+pub use library_removal::{FileOutcome, FileRemoval, RemovalFailure, RemovalReport, RemovalTarget};
 pub use library_search::{LibrarySearch, SpellingSuggestion};
 pub use library_series::{LibrarySeries, SeriesCursor, SeriesId, SeriesPage};
 pub use library_tabs::{LibraryTab, LibraryTabId};
