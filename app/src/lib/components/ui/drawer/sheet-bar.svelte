@@ -27,7 +27,7 @@
     look="header-control"
     iconOnly
     label={closeLabel}
-    class="col-start-1 row-start-1 justify-self-start"
+    class="col-start-1 row-start-1 justify-self-start ios:backdrop-blur-none"
     onclick={onClose}
   >
     <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
@@ -40,7 +40,7 @@
   <Button
     type="button"
     look="header-control"
-    class="col-start-3 row-start-1 justify-self-end px-md"
+    class="col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none"
     onclick={onAction}
   >
     {actionLabel}
