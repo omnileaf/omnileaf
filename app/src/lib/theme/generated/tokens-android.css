@@ -10,6 +10,9 @@
   --native-ease-out: ease-out;
   --native-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-color-glass: var(--card);
+  --native-blur-glass: 0px;
+  --native-shadow-shadow-glass: none;
   --native-radius-button: 999px;
   --native-spacing-button: 40px;
   --native-spacing-button-inline: 16px;
