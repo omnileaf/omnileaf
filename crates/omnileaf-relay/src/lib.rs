@@ -3,6 +3,7 @@ mod challenges;
 mod client_ip;
 mod clock;
 mod http;
+mod inert_text;
 mod rate_limit;
 mod reports;
 mod retention;

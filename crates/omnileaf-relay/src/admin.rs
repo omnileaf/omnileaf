@@ -5,6 +5,7 @@ use rusqlite::{OptionalExtension, Row, params};
 
 use crate::{
     clock::UnixTime,
+    inert_text::{InertLine, InertText},
     status::{IssueNumber, ReviewStatus, StatusKind, TargetStatus},
     store::{Store, StoreError},
     utc::UtcText,
@@ -164,9 +165,9 @@ fn issue_body(listed: &ListedReport, report: &str) -> String {
     let fence = "`".repeat(longest_backtick_run(report).max(SHORTEST_FENCE - 1) + 1);
     format!(
         "Sent from Omnileaf {} on {}.\n\n{fence}text\n{}\n{fence}\n",
-        listed.version,
-        listed.platform,
-        report.trim_end()
+        InertLine(&listed.version),
+        InertLine(&listed.platform),
+        InertText(report.trim_end())
     )
 }
 
@@ -191,11 +192,11 @@ impl fmt::Display for ListedReport {
         write!(
             f,
             "{}  {}  {}  {}  {}",
-            self.code,
+            InertLine(&self.code),
             UtcText(self.received_at),
             self.status,
-            self.platform,
-            self.version
+            InertLine(&self.platform),
+            InertLine(&self.version)
         )
     }
 }
@@ -204,11 +205,11 @@ impl fmt::Display for ShownReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.listed)?;
         if let Some(address) = &self.reply_address {
-            writeln!(f, "Reply to: {address}")?;
+            writeln!(f, "Reply to: {}", InertLine(address))?;
         }
         writeln!(f)?;
         match &self.report {
-            Some(report) => f.write_str(report),
+            Some(report) => write!(f, "{}", InertText(report)),
             None => writeln!(f, "The report's text was removed after its review."),
         }
     }

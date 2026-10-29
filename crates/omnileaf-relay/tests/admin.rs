@@ -13,7 +13,7 @@ use omnileaf_relay::{
     Export, IntakeCaps, IssueNumber, Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS, ReplyAddressView,
     ReviewStatus, StatusKind, Store, TEXT_KEPT_AFTER_REVIEW_SECONDS, TargetStatus, UnixTime,
 };
-use support::{START, code, draft};
+use support::{Draft, START, code, draft};
 
 const CAPS: IntakeCaps = IntakeCaps {
     reports_per_day: 100,
@@ -117,6 +117,55 @@ fn fences_a_report_that_holds_backticks() {
 
     assert!(body.contains("`````text\n"));
     assert!(body.trim_end().ends_with("`````"));
+}
+
+fn store_holding(report: &Draft) -> Store {
+    let store = Store::open_in_memory().unwrap();
+    store.take_in(&report.as_new_report(START), CAPS).unwrap();
+    store
+}
+
+#[test]
+fn lists_a_stored_version_with_its_control_characters_escaped() {
+    let mut forged = draft(CODE);
+    forged.version = "0.1\nR-AAAA-AAAA  published #1\u{1b}[2K".to_owned();
+    let store = store_holding(&forged);
+
+    let line = store.list(None, 50).unwrap()[0].to_string();
+
+    assert!(!line.contains('\n'));
+    assert!(!line.contains('\u{1b}'));
+    assert!(line.ends_with(r"0.1\nR-AAAA-AAAA  published #1\u{1b}[2K"));
+}
+
+#[test]
+fn shows_terminal_escapes_and_bidi_overrides_as_text() {
+    let report =
+        format!("Report code: {CODE}\nkeep\tthis\n\u{1b}]52;c;aGk=\u{7}evil\u{202e}txt.exe\r\n");
+    let store = store_holding(&draft(CODE).with_report(report).with_reply_to(ADDRESS));
+
+    let shown = store
+        .show(&code(CODE), ReplyAddressView::Shown)
+        .unwrap()
+        .unwrap()
+        .to_string();
+
+    assert!(shown.contains("keep\tthis\n"));
+    assert!(shown.contains(r"\u{1b}]52;c;aGk=\u{7}evil\u{202e}txt.exe\r"));
+    assert!(!shown.contains(['\u{1b}', '\u{7}', '\u{202e}', '\r']));
+}
+
+#[test]
+fn exports_a_report_with_its_control_characters_escaped() {
+    let report = format!("Report code: {CODE}\n\u{1b}[31mred\u{2066}\n");
+    let store = store_holding(&draft(CODE).with_report(report));
+
+    let Export::Ready(body) = store.export(&code(CODE)).unwrap() else {
+        panic!("expected an issue body");
+    };
+
+    assert!(body.contains(r"\u{1b}[31mred\u{2066}"));
+    assert!(!body.contains(['\u{1b}', '\u{2066}']));
 }
 
 #[test]
