@@ -556,3 +556,31 @@ async fn counts_exactly_the_series_each_label_choice_and_related_list_shows_whil
         )
     );
 }
+
+const CHANGE_HEARD_WITHIN: std::time::Duration = std::time::Duration::from_secs(5);
+const NOTHING_HEARD_FOR: std::time::Duration = std::time::Duration::from_millis(300);
+
+#[tokio::test]
+async fn tells_the_interface_the_library_changed_when_screenshot_mode_turns_on_or_off() {
+    let scanned = Scanned::read_in_every_series("screenshot-mode-announces").await;
+    let mut changes = scanned.library.changes();
+
+    scanned.library.set_screenshot_mode(true);
+    let heard_on = tokio::time::timeout(CHANGE_HEARD_WITHIN, changes.next()).await;
+    scanned.library.set_screenshot_mode(false);
+    let heard_off = tokio::time::timeout(CHANGE_HEARD_WITHIN, changes.next()).await;
+
+    assert!(matches!(heard_on, Ok(Some(_))));
+    assert!(matches!(heard_off, Ok(Some(_))));
+}
+
+#[tokio::test]
+async fn tells_the_interface_nothing_when_screenshot_mode_is_set_as_it_already_is() {
+    let scanned = Scanned::read_in_every_series("screenshot-mode-unchanged").await;
+    let mut changes = scanned.library.changes();
+
+    scanned.library.set_screenshot_mode(false);
+    let heard = tokio::time::timeout(NOTHING_HEARD_FOR, changes.next()).await;
+
+    assert!(heard.is_err());
+}

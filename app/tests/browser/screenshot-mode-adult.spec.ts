@@ -120,3 +120,56 @@ for (const theme of ["light", "dark"] as const) {
     expect(await accessibilityViolations(page)).toEqual([]);
   });
 }
+
+test.describe("telling the library", () => {
+  let told: { readonly on: boolean; readonly beforeSeries: boolean }[] = [];
+  let seriesRead = 0;
+
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: (after, listing) => {
+        seriesRead += 1;
+        return pagedSeries(() => admitted(listing.filter))(after, listing);
+      },
+      librarySeriesCount: (filter) => admitted(filter).length,
+      setScreenshotMode: (on) => {
+        told.push({ on, beforeSeries: seriesRead === 0 });
+      },
+    },
+  });
+
+  test.beforeEach(() => {
+    told = [];
+    seriesRead = 0;
+  });
+
+  test("tells the library each time Screenshot mode turns on or off", async ({
+    page,
+  }) => {
+    await openTheLibraryOnADesktop(page);
+
+    await page.keyboard.press(SHORTCUT);
+    await expect(page.getByText("10 series")).toBeVisible();
+    await page.keyboard.press(SHORTCUT);
+    await expect(page.getByText("12 series")).toBeVisible();
+
+    expect(told.map(({ on }) => on)).toEqual([true, false]);
+  });
+
+  test("tells the library Screenshot mode is on before it reads any series", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.screenshotMode",
+        JSON.stringify({ activity: { kind: "on" } }),
+      );
+    });
+
+    await page.goto("/");
+    await expect(seriesList(page)).toBeVisible();
+
+    expect(told).toEqual([{ on: true, beforeSeries: true }]);
+  });
+});

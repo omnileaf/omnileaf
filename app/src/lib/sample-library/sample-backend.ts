@@ -1838,7 +1838,10 @@ export function sampleBackend(
     setBookOpen: () => undefined,
     setLearnsReadingSpeed: () => undefined,
     setScreenshotMode: (on) => {
-      screenshotMode = on;
+      if (screenshotMode !== on) {
+        screenshotMode = on;
+        events.emit("library-changed", null);
+      }
       return undefined;
     },
     getScreenshotMode: () => screenshotMode,

@@ -1341,7 +1341,10 @@ impl Library {
     }
 
     pub fn set_screenshot_mode(&self, is_on: bool) {
-        self.screenshot_mode.store(is_on, Ordering::Relaxed);
+        let was_on = self.screenshot_mode.swap(is_on, Ordering::Relaxed);
+        if was_on != is_on {
+            self.note_catalog_written();
+        }
     }
 
     #[must_use]

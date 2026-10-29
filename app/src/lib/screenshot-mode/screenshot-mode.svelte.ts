@@ -27,18 +27,29 @@ export interface Clock {
   at(time: number, run: () => void): () => void;
 }
 
+export interface ScreenshotModeEngine {
+  setOn(isOn: boolean): Promise<void>;
+  reportFailure(error: unknown): void;
+}
+
 export class ScreenshotMode {
   #settings: ScreenshotModeSettings = $state.raw(DEFAULT_SCREENSHOT_MODE);
   #cancelTurningOff: (() => void) | undefined;
+  #engineReady: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly store: PreferenceStore | undefined,
     private readonly clock: Clock,
+    private readonly engine: ScreenshotModeEngine,
   ) {
     const stored = parseScreenshotModeSettings(
       readPreference(store, PREFERENCE_KEY),
     );
     this.#apply(settle(stored, clock.now()));
+  }
+
+  get engineReady(): Promise<void> {
+    return this.#engineReady;
   }
 
   get activity(): ScreenshotModeActivity {
@@ -75,9 +86,24 @@ export class ScreenshotMode {
   }
 
   #apply(settings: ScreenshotModeSettings): void {
+    const wasOn = this.isOn;
     this.#settings = settings;
+    if (this.isOn !== wasOn) {
+      this.#engineReady = this.#tellEngine(this.isOn);
+    }
     rememberPreference(this.store, PREFERENCE_KEY, JSON.stringify(settings));
     this.#scheduleTurningOff(settings.activity);
+  }
+
+  async #tellEngine(isOn: boolean): Promise<void> {
+    try {
+      await this.engine.setOn(isOn);
+    } catch (error) {
+      this.engine.reportFailure(error);
+      if (isOn) {
+        this.#apply(turnOff(this.#settings));
+      }
+    }
   }
 
   #scheduleTurningOff(activity: ScreenshotModeActivity): void {
@@ -101,8 +127,10 @@ const browserClock: Clock = {
   },
 };
 
-export function screenshotModeForDocument(): ScreenshotMode {
-  return new ScreenshotMode(browserStorage(), browserClock);
+export function screenshotModeForDocument(
+  engine: ScreenshotModeEngine,
+): ScreenshotMode {
+  return new ScreenshotMode(browserStorage(), browserClock, engine);
 }
 
 export const [getScreenshotMode, setScreenshotMode] =

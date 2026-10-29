@@ -7,8 +7,13 @@ const STILL_CLOCK = {
   at: () => () => undefined,
 };
 
+const QUIET_ENGINE = {
+  setOn: () => Promise.resolve(),
+  reportFailure: () => undefined,
+};
+
 export function screenshotModeTurned(state: "on" | "off"): ScreenshotMode {
-  const mode = new ScreenshotMode(NO_STORAGE, STILL_CLOCK);
+  const mode = new ScreenshotMode(NO_STORAGE, STILL_CLOCK, QUIET_ENGINE);
   if (state === "on") {
     mode.toggle();
   }

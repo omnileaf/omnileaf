@@ -110,6 +110,21 @@ test("marks books read and says the library changed", async () => {
   expect(emitted).toContain("library-changed");
 });
 
+test("says the library changed when screenshot mode turns on or off, and not when it stays as it is", async () => {
+  const { backend, emitted } = backendFor();
+
+  await backend.setScreenshotMode(false);
+  const staying = emitted.filter((event) => event === "library-changed");
+  await backend.setScreenshotMode(true);
+  await backend.setScreenshotMode(true);
+  await backend.setScreenshotMode(false);
+
+  expect([
+    staying.length,
+    emitted.filter((event) => event === "library-changed").length,
+  ]).toEqual([0, 2]);
+});
+
 test("shows an empty library when asked for one", async () => {
   const { backend } = backendFor("library=empty");
 
