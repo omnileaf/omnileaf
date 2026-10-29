@@ -55,8 +55,8 @@ use crate::{
     FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
     HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
     LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
-    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
-    RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
+    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalPreview,
+    RemovalReport, RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
     SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesOverview, SeriesPage,
     SeriesVolume, ShareAddress, ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     adult_content::{AdultSeen, AdultView},
@@ -70,7 +70,9 @@ use crate::{
     library_changes::CatalogWritten,
     library_folder::{folder_location, root_folder},
     library_layout::folder_name,
-    library_removal::{Expanded, RemovalRoot, RemovedBooks, expand, removal_of},
+    library_removal::{
+        Expanded, RemovalRoot, RemovedBooks, expand, preview as removal_preview, removal_of,
+    },
     library_search::{SpellingSuggestion, StoredSearch, spelling_suggestion},
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
@@ -1672,6 +1674,19 @@ impl Library {
             .await?;
         self.note_catalog_written();
         Ok(())
+    }
+
+    #[tracing::instrument(skip_all, fields(targets = targets.len()))]
+    pub async fn preview_removal(
+        &self,
+        targets: &[RemovalTarget],
+    ) -> Result<RemovalPreview, LibraryError> {
+        let targets = targets.to_vec();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| removal_preview(connection, &targets))
+            .await?)
     }
 
     #[tracing::instrument(skip_all, fields(targets = targets.len()))]
