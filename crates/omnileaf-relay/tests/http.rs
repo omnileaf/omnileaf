@@ -196,6 +196,17 @@ async fn takes_a_report_at_its_byte_cap_and_refuses_one_byte_more() {
 }
 
 #[tokio::test]
+async fn takes_a_report_at_its_byte_cap_when_json_doubles_every_character() {
+    let relay = relay();
+    let header = format!("Report code: {CODE}\n");
+    let report = format!("{header}{}", "\\".repeat(REPORT_BYTES - header.len()));
+
+    let answer = relay.submit(&draft(CODE).with_report(report)).await;
+
+    assert_eq!(answer.status, StatusCode::CREATED);
+}
+
+#[tokio::test]
 async fn takes_a_report_at_its_line_cap_and_refuses_one_line_more() {
     let relay = relay();
     let lines = |code: &str, count: usize| {
