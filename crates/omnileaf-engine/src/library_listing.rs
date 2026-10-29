@@ -229,6 +229,7 @@ impl LibraryFilter {
                 self.adult.into()
             },
             counts_age_ratings: adult.setting().counts_age_ratings,
+            pages_left_at_most: None,
         }
     }
 }

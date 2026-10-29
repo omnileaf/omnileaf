@@ -52,6 +52,7 @@ pub struct SeriesFilter {
     /// Holds a book its files rate 18+, which counts only while `counts_age_ratings` holds, or is marked 18+ by hand, which always counts.
     pub adult: Inclusion,
     pub counts_age_ratings: bool,
+    pub pages_left_at_most: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -109,6 +110,7 @@ impl SeriesFilter {
         bookmarked: Inclusion::Any,
         adult: Inclusion::Any,
         counts_age_ratings: true,
+        pages_left_at_most: None,
     };
 
     #[must_use]
@@ -169,6 +171,12 @@ impl SeriesFilter {
     pub const fn with_adult(mut self, adult: Inclusion, counts_age_ratings: bool) -> Self {
         self.adult = adult;
         self.counts_age_ratings = counts_age_ratings;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_pages_left_at_most(mut self, pages_left_at_most: Option<u32>) -> Self {
+        self.pages_left_at_most = pages_left_at_most;
         self
     }
 }
@@ -288,6 +296,8 @@ macro_rules! conditions {
         concat!(
             " AND (:last_read_before_ms IS NULL
             OR (series.last_read_at_ms > 0 AND series.last_read_at_ms < :last_read_before_ms))
+        AND (:pages_left_at_most IS NULL
+            OR (series.time_left_key > 0 AND series.time_left_key <= :pages_left_at_most))
         AND (:holds_duplicates IS NULL OR (series.duplicated_books > 0) = :holds_duplicates)
         AND (:holds_manga IS NULL OR (series.manga_books > 0) = :holds_manga)
         AND (:languages IS NULL OR (instr(series.language, char(31)) = 0
@@ -356,6 +366,7 @@ fn manga_required(formats: &[SeriesFormat]) -> Option<i64> {
 pub(crate) struct FilterParams {
     stages: StageParams,
     last_read_before_ms: Option<i64>,
+    pages_left_at_most: Option<u32>,
     holds_duplicates: Option<bool>,
     holds_manga: Option<i64>,
     languages: Option<String>,
@@ -374,6 +385,7 @@ impl FilterParams {
         Self {
             stages,
             last_read_before_ms: filter.last_read_before_ms,
+            pages_left_at_most: filter.pages_left_at_most,
             holds_duplicates: filter.duplicates.required(),
             holds_manga: manga_required(&filter.formats),
             languages: delimited_list(&filter.languages),
@@ -384,13 +396,14 @@ impl FilterParams {
         }
     }
 
-    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 11] {
+    pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 12] {
         let [unstarted, in_progress, finished] = self.stages.named();
         [
             unstarted,
             in_progress,
             finished,
             (":last_read_before_ms", &self.last_read_before_ms),
+            (":pages_left_at_most", &self.pages_left_at_most),
             (":holds_duplicates", &self.holds_duplicates),
             (":holds_manga", &self.holds_manga),
             (":languages", &self.languages),
