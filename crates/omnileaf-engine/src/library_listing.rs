@@ -133,7 +133,12 @@ impl Default for LibraryListing {
 }
 
 impl LibraryListing {
-    pub(crate) fn at(&self, now_ms: i64, adult: AdultView) -> SeriesListing {
+    pub(crate) fn at(
+        &self,
+        now_ms: i64,
+        adult: AdultView,
+        seconds_per_page: Option<u32>,
+    ) -> SeriesListing {
         SeriesListing {
             sort: SeriesSort {
                 order: match self.sort.by {
@@ -146,7 +151,7 @@ impl LibraryListing {
                 },
                 direction: self.sort.direction.into(),
             },
-            filter: self.filter.at(now_ms, adult),
+            filter: self.filter.at(now_ms, adult, seconds_per_page),
         }
     }
 }
@@ -200,7 +205,12 @@ impl LibraryFilterChoices {
 }
 
 impl LibraryFilter {
-    pub(crate) fn at(&self, now_ms: i64, adult: AdultView) -> SeriesFilter {
+    pub(crate) fn at(
+        &self,
+        now_ms: i64,
+        adult: AdultView,
+        _seconds_per_page: Option<u32>,
+    ) -> SeriesFilter {
         SeriesFilter {
             unread: self.unread.into(),
             started: self.started.into(),
@@ -297,7 +307,7 @@ mod tests {
         let listing = LibraryListing::default();
 
         assert_eq!(
-            listing.at(NOW_MS, AdultView::default()),
+            listing.at(NOW_MS, AdultView::default(), None),
             SeriesListing::unfiltered(SeriesSort::ascending(SeriesOrder::Title))
         );
     }
@@ -372,7 +382,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS, AdultView::default());
+        let stored = filter.at(NOW_MS, AdultView::default(), None);
 
         assert_eq!(stored.last_read_before_ms, Some(NOW_MS - NINETY_DAYS_MS));
     }
@@ -384,7 +394,7 @@ mod tests {
             ..LibraryListing::default().filter
         };
 
-        let stored = filter.at(NOW_MS, AdultView::default());
+        let stored = filter.at(NOW_MS, AdultView::default(), None);
 
         assert_eq!(stored.duplicates, StoredInclusion::Only);
     }
@@ -409,7 +419,7 @@ mod tests {
             },
         };
 
-        let read = LibraryListing::from(listing.at(NOW_MS, AdultView::default()));
+        let read = LibraryListing::from(listing.at(NOW_MS, AdultView::default(), None));
 
         assert_eq!(read, listing);
     }

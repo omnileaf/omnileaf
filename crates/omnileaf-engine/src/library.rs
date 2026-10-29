@@ -80,6 +80,7 @@ use crate::{
     moved_home::move_home,
     network_share::unreachable_share_of,
     opened_file::OpenedFiles,
+    reading_pace::ReadingPaceSeen,
     reading_progress::{ReadingProgress, ReadingSaved},
     rescan::{Rescan, rescan},
     rescan_conditions::{RescanConditions, Storage},
@@ -335,6 +336,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -345,7 +347,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((series_page(connection, &listing, &request)?, adult))
             })
             .await?;
@@ -359,6 +362,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -369,7 +373,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((
                     folder_series_page(connection, folder.0, &listing, &request)?,
                     adult,
@@ -385,12 +390,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 folder_series_count(connection, folder.0, &filter)
             })
             .await?)
@@ -437,6 +444,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -447,7 +455,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((
                     folder_group_series_page(connection, &group.0, &listing, &request)?,
                     adult,
@@ -463,12 +472,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 folder_group_series_count(connection, &group.0, &filter)
             })
             .await?)
@@ -498,6 +509,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -508,7 +520,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((
                     writer_series_page(connection, &writer, &listing, &request)?,
                     adult,
@@ -524,12 +537,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 writer_series_count(connection, &writer, &filter)
             })
             .await?)
@@ -542,12 +557,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<Vec<u32>, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 writers
                     .iter()
                     .map(|writer| writer_series_count(connection, writer, &filter))
@@ -563,12 +580,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<Vec<u32>, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 folders
                     .iter()
                     .map(|folder| folder_series_count(connection, folder.0, &filter))
@@ -583,6 +602,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -593,7 +613,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((
                     writerless_series_page(connection, &listing, &request)?,
                     adult,
@@ -608,12 +629,14 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 writerless_series_count(connection, &filter)
             })
             .await?)
@@ -647,6 +670,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let Some(category) = category.stored() else {
             return Ok(SeriesPage {
                 series: Vec::new(),
@@ -663,7 +687,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let listing = listing.at(now_ms, adult);
+                let seconds_per_page = pace_seen.needed_by(connection, &listing.filter.smart)?;
+                let listing = listing.at(now_ms, adult, seconds_per_page);
                 Ok((
                     category_series_page(connection, category, &listing, &request)?,
                     adult,
@@ -679,6 +704,7 @@ impl Library {
         filter: LibraryFilter,
     ) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let Some(category) = category.stored() else {
             return Ok(0);
         };
@@ -687,7 +713,8 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 category_series_count(connection, category, &filter)
             })
             .await?)
@@ -695,12 +722,14 @@ impl Library {
 
     pub async fn series_count(&self, filter: LibraryFilter) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
-                let filter = filter.at(now_ms, adult_seen.view(connection)?);
+                let seconds_per_page = pace_seen.needed_by(connection, &filter.smart)?;
+                let filter = filter.at(now_ms, adult_seen.view(connection)?, seconds_per_page);
                 series_count(connection, &filter)
             })
             .await?)
@@ -712,6 +741,7 @@ impl Library {
         after: Option<SeriesCursor>,
     ) -> Result<SeriesPage, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let request = PageRequest {
             after: after.map(|cursor| cursor.0),
             size: PageSize::try_from(SERIES_PER_PAGE)?,
@@ -722,7 +752,8 @@ impl Library {
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                let search = StoredSearch::parse(&search, now_ms, adult)?;
+                let seconds_per_page = pace_seen.needed_by(connection, &search.filter.smart)?;
+                let search = StoredSearch::parse(&search, now_ms, adult, seconds_per_page)?;
                 Ok((search.page(connection, &request)?, adult))
             })
             .await?;
@@ -745,13 +776,15 @@ impl Library {
 
     pub async fn search_count(&self, search: LibrarySearch) -> Result<u32, LibraryError> {
         let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
         let now_ms = self.now_ms();
         Ok(self
             .store
             .database()
             .read(move |connection| {
                 let adult = adult_seen.view(connection)?;
-                StoredSearch::parse(&search, now_ms, adult)?.count(connection)
+                let seconds_per_page = pace_seen.needed_by(connection, &search.filter.smart)?;
+                StoredSearch::parse(&search, now_ms, adult, seconds_per_page)?.count(connection)
             })
             .await?)
     }
@@ -1248,7 +1281,7 @@ impl Library {
 
     #[tracing::instrument(skip_all)]
     pub async fn set_listing(&self, listing: LibraryListing) -> Result<(), LibraryError> {
-        let stored = listing.at(self.now_ms(), AdultView::default());
+        let stored = listing.at(self.now_ms(), AdultView::default(), None);
         Ok(self
             .store
             .database()
@@ -1332,6 +1365,10 @@ impl Library {
 
     async fn hidden_file_types(&self) -> Result<HiddenFileTypes, LibraryError> {
         Ok(self.hidden_types().await?.into_iter().collect())
+    }
+
+    pub(crate) fn pace_seen(&self) -> ReadingPaceSeen {
+        ReadingPaceSeen::while_learning_is(self.learns_reading_speed.load(Ordering::Relaxed))
     }
 
     pub(crate) fn adult_seen(&self) -> AdultSeen {

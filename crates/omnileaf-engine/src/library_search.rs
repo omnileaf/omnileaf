@@ -59,8 +59,9 @@ impl StoredSearch {
         search: &LibrarySearch,
         now_ms: i64,
         adult: AdultView,
+        seconds_per_page: Option<u32>,
     ) -> Result<Self, omnileaf_db::Error> {
-        let filter = search.filter.at(now_ms, adult);
+        let filter = search.filter.at(now_ms, adult, seconds_per_page);
         Ok(match SearchText::parse(&search.text)? {
             Some(text) => Self::Text(SeriesSearch { text, filter }),
             None => Self::Filter(filter),
