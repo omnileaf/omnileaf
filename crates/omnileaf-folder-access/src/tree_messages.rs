@@ -416,4 +416,35 @@ mod tests {
             ]
         );
     }
+
+    const KOTLIN_REFUSALS: &str =
+        include_str!("../android/src/main/java/app/omnileaf/folderaccess/Refusal.kt");
+    const KOTLIN_CODE_DECLARATION: &str = "private const val ";
+
+    fn kotlin_codes() -> Vec<String> {
+        let mut codes: Vec<String> = KOTLIN_REFUSALS
+            .lines()
+            .filter_map(|line| line.strip_prefix(KOTLIN_CODE_DECLARATION))
+            .filter_map(|declaration| declaration.split_once(" = "))
+            .map(|(_, quoted)| quoted.trim_matches('"').to_owned())
+            .collect();
+        codes.sort();
+        codes
+    }
+
+    #[test]
+    fn reads_every_refusal_code_the_android_plugin_sends() {
+        let mut read = [
+            PERMISSION_DENIED,
+            NOT_FOUND,
+            TIMED_OUT,
+            INCOMPLETE,
+            READ_ONLY_GRANT,
+            DELETE_REFUSED,
+        ]
+        .map(str::to_owned);
+        read.sort();
+
+        assert_eq!(kotlin_codes(), read);
+    }
 }
