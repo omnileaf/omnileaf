@@ -156,6 +156,7 @@
   --font-weight-native-tab: var(--native-weight-tab);
   --tracking-native-tab: var(--native-tracking-tab);
   --radius-native-cover: var(--native-radius-cover);
+  --spacing-native-read-mark: var(--native-spacing-read-mark);
   --color-native-cover-badge: var(--native-color-cover-badge);
   --color-native-on-cover-badge: var(--native-color-on-cover-badge);
   --radius-native-cover-badge: var(--native-radius-cover-badge);

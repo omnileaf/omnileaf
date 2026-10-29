@@ -63,13 +63,15 @@ function styleOf(element: Element | null): CSSStyleDeclaration {
   return getComputedStyle(element);
 }
 
-async function drawTiles(): Promise<{
+async function drawTiles(
+  platform: "linux" | "ios" | "macos" = "linux",
+): Promise<{
   readonly list: HTMLElement;
   readonly gap: HTMLElement;
   readonly link: HTMLElement;
   readonly started: HTMLElement;
 }> {
-  followCorePlatform("linux");
+  followCorePlatform(platform);
   document.documentElement.dataset.theme = "light";
   await render(SectionCoversHarness, { tiles: TILES, width: BOOKS_COLUMN });
   return {
@@ -215,6 +217,19 @@ test("marks a finished volume with a round check badge in its cover's corner", a
     ring: true,
     hidden: "true",
   });
+});
+
+test.each<["ios" | "macos", number]>([
+  ["ios", 22],
+  ["macos", 18],
+])("sizes %s's read mark at its own measured %dpx", async (platform, size) => {
+  const { link } = await drawTiles(platform);
+  const mark = link.firstElementChild?.querySelector("[data-read-mark]");
+
+  expect([
+    mark?.getBoundingClientRect().width,
+    mark?.getBoundingClientRect().height,
+  ]).toEqual([size, size]);
 });
 
 test("leaves an unfinished volume without the check badge", async () => {

@@ -14,7 +14,7 @@ const SHADCN_TILE: SectionTileLook = {
   cover:
     "relative block aspect-cover overflow-hidden rounded-cover border border-cover-edge bg-chip",
   readMark:
-    "absolute inset-e-read-mark-inset inset-bs-read-mark-inset flex items-center justify-center rounded-full bg-accent text-on-accent ring-2 ring-background block-xl inline-xl",
+    "absolute inset-e-read-mark-inset inset-bs-read-mark-inset flex items-center justify-center rounded-full bg-accent text-on-accent ring-2 ring-background block-native-read-mark inline-native-read-mark",
   gap: "flex aspect-cover items-center justify-center rounded-cover border border-dashed border-muted text-muted",
   title: "truncate text-small font-medium",
   meta: "truncate text-caption text-muted",
