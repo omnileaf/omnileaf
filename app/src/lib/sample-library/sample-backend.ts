@@ -989,6 +989,7 @@ export function sampleBackend(
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
+    wallpaperColours: () => null,
     captureVolumeKeys: () => null,
     releaseVolumeKeys: () => null,
     libraryFolders: () => ({

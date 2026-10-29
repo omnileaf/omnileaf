@@ -4,11 +4,16 @@
   import { page } from "$app/state";
 
   import { LinkOpening } from "#lib/about/link-opening.svelte.ts";
+  import {
+    coloursSettingForDocument,
+    setColoursSetting,
+  } from "#lib/appearance/colours.svelte.ts";
   import { systemBarsTheme } from "#lib/appearance/theme.ts";
   import {
     setThemeSetting,
     themeSettingForDocument,
   } from "#lib/appearance/theme.svelte.ts";
+  import { followWallpaperColours } from "#lib/appearance/wallpaper-colours.ts";
   import {
     crashReportSettingForDocument,
     setCrashReportSetting,
@@ -96,6 +101,7 @@
   let { data, children }: LayoutProps = $props();
 
   const themeSetting = setThemeSetting(themeSettingForDocument());
+  const colours = setColoursSetting(coloursSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
   const screenshotMode = setScreenshotMode(screenshotModeForDocument());
   const screenshotModeShortcut = setScreenshotModeShortcut(
@@ -143,8 +149,15 @@
     }
   }
 
+  function followColours(): void {
+    void followWallpaperColours(data.appInfo.platform, colours.choice);
+  }
+
   function followVisibility(): void {
     settleScreenshotMode();
+    if (document.visibilityState === "visible") {
+      followColours();
+    }
     if (rescansOnReturn && document.visibilityState === "visible") {
       void rescanOnReturn();
     }
@@ -160,6 +173,8 @@
   $effect(() => {
     void commands.setAppLanguage(language.resolved);
   });
+
+  $effect(followColours);
 
   $effect(() => {
     const root = document.documentElement;

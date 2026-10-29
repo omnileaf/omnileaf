@@ -37,6 +37,7 @@ mod tray;
 mod tree_storage;
 mod version_details;
 mod volume_keys;
+mod wallpaper_colours;
 
 use std::{
     error::Error,
@@ -134,6 +135,7 @@ pub fn run() {
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
+        .plugin(wallpaper_colours::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
         .plugin(icon_actions::plugin())

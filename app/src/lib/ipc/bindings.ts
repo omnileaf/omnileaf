@@ -23,6 +23,10 @@ export const commands = {
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
+	wallpaperColours: () => typedError<{
+	light: ColourRoles,
+	dark: ColourRoles,
+} | null, IpcError>(__TAURI_INVOKE("wallpaper_colours")),
 	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
 	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
@@ -290,6 +294,26 @@ export type CategoryHeld = {
 export type ChosenHomeFolder = {
 	location: string,
 	choice: HomeChoice,
+};
+
+export type ColourRoles = {
+	primary: number,
+	onPrimary: number,
+	secondaryContainer: number,
+	onSecondaryContainer: number,
+	tertiaryContainer: number,
+	onTertiaryContainer: number,
+	surface: number,
+	surfaceContainerLow: number,
+	surfaceContainer: number,
+	surfaceContainerHighest: number,
+	onSurface: number,
+	onSurfaceVariant: number,
+	outline: number,
+	outlineVariant: number,
+	inverseSurface: number,
+	inverseOnSurface: number,
+	inversePrimary: number,
 };
 
 export type CoversPerRow = {
@@ -987,6 +1011,11 @@ export type TrayShortcut = {
 };
 
 export type ValueSource = "folderName" | "fileName" | "files";
+
+export type WallpaperColours = {
+	light: ColourRoles,
+	dark: ColourRoles,
+};
 
 export type WriterPage = {
 	writers: LibraryWriter[],

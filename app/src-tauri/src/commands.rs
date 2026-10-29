@@ -47,6 +47,7 @@ use crate::{
     tray::{TrayItemChosen, TrayMenu},
     version_details,
     volume_keys::{self, PageTurn},
+    wallpaper_colours::{self, WallpaperColours},
 };
 
 macro_rules! app_commands {
@@ -62,6 +63,7 @@ macro_rules! app_commands {
             watch_back_swipes,
             allow_back_swipe,
             watch_system_contrast,
+            wallpaper_colours,
             capture_volume_keys,
             release_volume_keys,
             library_folders,
@@ -425,6 +427,12 @@ async fn watch_system_contrast(
     on_change: Channel<SystemContrast>,
 ) -> Result<(), IpcError> {
     system_contrast::watch(&app, on_change).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn wallpaper_colours(app: AppHandle) -> Result<Option<WallpaperColours>, IpcError> {
+    wallpaper_colours::read(&app).await
 }
 
 #[tauri::command]
