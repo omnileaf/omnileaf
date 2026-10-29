@@ -22,6 +22,7 @@ const SECOND_MS: u64 = 1_000;
 const BREAK_MS: u64 = 10 * 60 * SECOND_MS;
 const PAGE_COUNT: u32 = 400;
 const SESSIONS_LEARNED_FROM: u32 = 30;
+const STALLED_SESSIONS: u32 = 5_000;
 
 struct Reading {
     store: Store,
@@ -65,6 +66,29 @@ impl Reading {
         };
         self.store
             .write(move |writer| writer.record_reading(&place, continuity))
+            .await
+            .unwrap();
+    }
+
+    async fn stall_sessions_after(&self, newest_start_ms: u64, count: u32) {
+        self.store
+            .database()
+            .write(move |transaction| {
+                transaction.execute(
+                    "WITH RECURSIVE numbers (number) AS (
+                        SELECT 1 UNION ALL SELECT number + 1 FROM numbers WHERE number < ?3
+                    )
+                    INSERT INTO reading_session (
+                        book_id, started_at_ms, ended_at_ms, utc_offset_minutes,
+                        page, page_count, first_page
+                    )
+                    SELECT zeroblob(16), ?1 + number, ?1 + number + 1000, 0, 5, ?2,
+                        CASE WHEN number % 2 = 0 THEN 5 END
+                    FROM numbers",
+                    (newest_start_ms, PAGE_COUNT, count),
+                )?;
+                Ok(())
+            })
             .await
             .unwrap();
     }
@@ -136,6 +160,19 @@ async fn learns_only_from_the_latest_sessions() {
     for number in 0..SESSIONS_LEARNED_FROM {
         reading.session(book(100 + number), 0, 2, 10).await;
     }
+
+    assert_eq!(reading.seconds_per_page().await, Some(10));
+}
+
+#[tokio::test]
+async fn learns_the_speed_beside_thousands_of_later_sessions_that_turned_no_page_forward() {
+    let mut reading = Reading::open("speed-beside-stalled");
+    reading.session(book(1), 0, 10, 10).await;
+    reading.session(book(2), 0, 10, 10).await;
+    reading.session(book(3), 0, 10, 10).await;
+    reading
+        .stall_sessions_after(reading.now_ms, STALLED_SESSIONS)
+        .await;
 
     assert_eq!(reading.seconds_per_page().await, Some(10));
 }
