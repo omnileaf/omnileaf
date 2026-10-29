@@ -62,6 +62,7 @@ mod pages;
 mod placement;
 mod problem_report;
 mod project_link;
+mod reading_pace;
 mod reading_progress;
 mod reading_session;
 mod recent_log;
