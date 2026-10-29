@@ -5,6 +5,9 @@
 
 use std::path::Path;
 
+#[cfg(windows)]
+use std::os::windows::fs::OpenOptionsExt;
+
 use omnileaf_engine::{Disposal, DisposalFailure, FileDisposal};
 
 pub(crate) struct SystemTrash;
@@ -23,7 +26,9 @@ impl FileDisposal for SystemTrash {
 
 #[cfg(desktop)]
 fn dispose(file: &Path) -> Result<Disposal, DisposalFailure> {
-    std::fs::symlink_metadata(file).map_err(|error| DisposalFailure::from(error.kind()))?;
+    ensure_present(file)?;
+    #[cfg(windows)]
+    ensure_not_held_open(file)?;
     trash_context()
         .delete(file)
         .map(|()| Disposal::Trashed)
@@ -50,6 +55,28 @@ fn dispose(file: &Path) -> Result<Disposal, DisposalFailure> {
 #[cfg(target_os = "android")]
 fn dispose(_file: &Path) -> Result<Disposal, DisposalFailure> {
     Err(DisposalFailure::Unsupported)
+}
+
+#[cfg(desktop)]
+fn ensure_present(file: &Path) -> Result<(), DisposalFailure> {
+    std::fs::symlink_metadata(file)
+        .map(drop)
+        .map_err(|error| DisposalFailure::from(error.kind()))
+}
+
+/// The Shell aborts the move of a file another program holds open without sharing delete, and reports that abort with no error code.
+#[cfg(windows)]
+fn ensure_not_held_open(file: &Path) -> Result<(), DisposalFailure> {
+    let probe = std::fs::OpenOptions::new()
+        .access_mode(DELETE_ACCESS)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(file);
+    match probe {
+        Err(error) if error.raw_os_error().is_some_and(is_lock_violation) => {
+            Err(DisposalFailure::Locked)
+        }
+        Ok(_) | Err(_) => Ok(()),
+    }
 }
 
 /// The Finder backend the trash crate uses by default needs Automation permission, plays a sound and can offer to delete for good.
@@ -93,13 +120,21 @@ const ERROR_SHARING_VIOLATION: u32 = 32;
 #[cfg(windows)]
 const ERROR_LOCK_VIOLATION: u32 = 33;
 #[cfg(windows)]
+const COPYENGINE_E_SHARING_VIOLATION_SRC: u32 = 0x8027_0027;
+#[cfg(windows)]
+const COPYENGINE_E_SHARING_VIOLATION_DEST: u32 = 0x8027_0028;
+#[cfg(windows)]
 const HRESULT_FACILITY_MASK: u32 = 0xFFFF_0000;
 #[cfg(windows)]
 const HRESULT_FACILITY_WIN32: u32 = 0x8007_0000;
 #[cfg(windows)]
 const HRESULT_CODE_MASK: u32 = 0x0000_FFFF;
+#[cfg(windows)]
+const DELETE_ACCESS: u32 = 0x0001_0000;
+#[cfg(windows)]
+const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
 
-/// The Recycle Bin reports the code of a file another program holds open as an `HRESULT` wrapping the Win32 error.
+/// The Shell reports a file another program holds open as a Win32 error, an `HRESULT` wrapping one, or a copy engine sharing violation.
 #[cfg(windows)]
 fn is_lock_violation(code: i32) -> bool {
     let bits = u32::from_ne_bytes(code.to_ne_bytes());
@@ -107,7 +142,13 @@ fn is_lock_violation(code: i32) -> bool {
         HRESULT_FACILITY_WIN32 => bits & HRESULT_CODE_MASK,
         _ => bits,
     };
-    matches!(win32, ERROR_SHARING_VIOLATION | ERROR_LOCK_VIOLATION)
+    matches!(
+        win32,
+        ERROR_SHARING_VIOLATION
+            | ERROR_LOCK_VIOLATION
+            | COPYENGINE_E_SHARING_VIOLATION_SRC
+            | COPYENGINE_E_SHARING_VIOLATION_DEST
+    )
 }
 
 #[cfg(test)]
@@ -278,7 +319,7 @@ mod tests {
 #[cfg(test)]
 #[cfg(windows)]
 mod windows_tests {
-    use std::{fs::OpenOptions, os::windows::fs::OpenOptionsExt};
+    use std::fs::OpenOptions;
 
     use omnileaf_testkit::ScratchFolder;
 
@@ -286,8 +327,12 @@ mod windows_tests {
 
     const HRESULT_SHARING_VIOLATION: u32 = 0x8007_0020;
     const HRESULT_LOCK_VIOLATION: u32 = 0x8007_0021;
+    const COPYENGINE_SHARING_VIOLATION_SRC: u32 = 0x8027_0027;
+    const COPYENGINE_SHARING_VIOLATION_DEST: u32 = 0x8027_0028;
+    const WIN32_SHARING_VIOLATION: u32 = 32;
     const HRESULT_ACCESS_DENIED: u32 = 0x8007_0005;
     const NO_SHARING: u32 = 0;
+    const SHARE_READ_WRITE_DELETE: u32 = 0b111;
 
     fn os_error(code: u32) -> trash::Error {
         trash::Error::Os {
@@ -297,11 +342,17 @@ mod windows_tests {
     }
 
     #[test]
-    fn reads_the_sharing_and_lock_violations_as_locked() {
-        let failures = [HRESULT_SHARING_VIOLATION, HRESULT_LOCK_VIOLATION]
-            .map(|code| failure_of(&os_error(code)));
+    fn reads_every_sharing_and_lock_code_as_locked() {
+        let failures = [
+            WIN32_SHARING_VIOLATION,
+            HRESULT_SHARING_VIOLATION,
+            HRESULT_LOCK_VIOLATION,
+            COPYENGINE_SHARING_VIOLATION_SRC,
+            COPYENGINE_SHARING_VIOLATION_DEST,
+        ]
+        .map(|code| failure_of(&os_error(code)));
 
-        assert_eq!(failures, [DisposalFailure::Locked; 2]);
+        assert_eq!(failures, [DisposalFailure::Locked; 5]);
     }
 
     #[test]
@@ -309,6 +360,31 @@ mod windows_tests {
         let failure = failure_of(&os_error(HRESULT_ACCESS_DENIED));
 
         assert_eq!(failure, DisposalFailure::Other);
+    }
+
+    #[test]
+    fn lets_a_file_nobody_holds_pass_the_held_open_check() {
+        let scratch = ScratchFolder::new("trash-free");
+        let book = scratch.write("Volume 01.cbz", b"book");
+
+        let checked = ensure_not_held_open(&book);
+
+        assert_eq!(checked, Ok(()));
+    }
+
+    #[test]
+    fn lets_a_file_held_open_with_sharing_delete_pass_the_held_open_check() {
+        let scratch = ScratchFolder::new("trash-shared");
+        let book = scratch.write("Volume 01.cbz", b"book");
+        let _held = OpenOptions::new()
+            .read(true)
+            .share_mode(SHARE_READ_WRITE_DELETE)
+            .open(&book)
+            .unwrap();
+
+        let checked = ensure_not_held_open(&book);
+
+        assert_eq!(checked, Ok(()));
     }
 
     #[test]
