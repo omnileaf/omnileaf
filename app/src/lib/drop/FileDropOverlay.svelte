@@ -33,7 +33,7 @@
       <Card
         data-drop-target="readNow"
         data-over={state.over === "readNow"}
-        class="flex flex-col items-center gap-sm border-2 border-dashed p-xl text-center windows:border windows:border-windows-stroke-strong drop-over:border-solid drop-over:border-accent drop-over:bg-accent-soft windows:drop-over:border-2"
+        class="flex flex-col items-center gap-sm border-2 border-dashed p-xl text-center macos:border-solid macos:shadow-raised windows:border windows:border-windows-stroke-strong drop-over:border-solid drop-over:border-accent drop-over:bg-accent-soft windows:drop-over:border-2"
       >
         <BookOpen aria-hidden="true" />
         <p class="font-semibold">{m.drop_read_now()}</p>
@@ -47,7 +47,7 @@
         data-drop-target="add"
         data-over={state.over === "add"}
         data-copies={state.copies}
-        class="flex flex-col items-center gap-sm border-2 border-dashed p-xl text-center windows:border windows:border-windows-stroke-strong drop-over:border-solid drop-over:border-accent drop-over:bg-accent-soft windows:drop-over:border-2"
+        class="flex flex-col items-center gap-sm border-2 border-dashed p-xl text-center macos:border-solid macos:shadow-raised windows:border windows:border-windows-stroke-strong drop-over:border-solid drop-over:border-accent drop-over:bg-accent-soft windows:drop-over:border-2"
       >
         <FolderPlus aria-hidden="true" />
         <p class="font-semibold">{m.drop_add()}</p>
@@ -79,7 +79,10 @@
     class="pointer-events-auto fixed inset-none z-tooltip flex flex-col items-center justify-center bg-background/85 p-xl backdrop-blur-menu windows:inset-xs windows:rounded-dialog windows:border-2 windows:border-dashed windows:border-danger"
   >
     <Card class="flex flex-col items-center gap-sm p-xl text-center">
-      <CircleAlert aria-hidden="true" class="windows:text-danger" />
+      <CircleAlert
+        aria-hidden="true"
+        class="macos:text-muted windows:text-danger"
+      />
       <p class="font-semibold">{m.drop_nothing_added()}</p>
       {#each refusalLines(state.refused, shownName) as line (line)}
         <p class="text-muted">{line}</p>
