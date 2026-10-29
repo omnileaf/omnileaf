@@ -3,6 +3,7 @@ mod code;
 mod keys;
 pub mod limits;
 mod platform;
+pub mod pow;
 mod reply_address;
 mod wire;
 
