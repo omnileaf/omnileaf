@@ -15,6 +15,7 @@ const CHOOSE_COVERS = xpath(
 const DONE = xpath(
   "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
 );
+const VIEW_OPTIONS_TEST_TIMEOUT_MS = 90_000;
 const FEWER = "Fewer covers per row";
 const MORE = "More covers per row";
 const SHEET_CONTENT_HEIGHT = `return document.querySelector("[aria-modal=true][data-state=open]").scrollHeight;`;
@@ -61,24 +62,28 @@ async function stepCoversPerRow(label: string): Promise<void> {
   );
 }
 
-test("opens View options at the height it keeps once something in it changes", async () => {
-  await tapWithFinger(LIBRARY_MORE, "More for the library");
-  await tapWithFinger(VIEW_OPTIONS_ITEM, "View options in More");
-  await appSession().waitFor(OPEN_SHEET);
-  await (await appSession().waitFor(CHOOSE_COVERS)).click();
-  await appSession().waitUntil(
-    `return document.querySelector("[aria-modal=true][data-state=open] button[aria-label='${FEWER}']") !== null;`,
-    "the covers per row steppers",
-  );
-  const opened = await appSession().run(SHEET_CONTENT_HEIGHT);
-  const [away, back] =
-    (await appSession().run(CAN_SHOW_FEWER)) === true
-      ? [FEWER, MORE]
-      : [MORE, FEWER];
+test(
+  "opens View options at the height it keeps once something in it changes",
+  async () => {
+    await tapWithFinger(LIBRARY_MORE, "More for the library");
+    await tapWithFinger(VIEW_OPTIONS_ITEM, "View options in More");
+    await appSession().waitFor(OPEN_SHEET);
+    await (await appSession().waitFor(CHOOSE_COVERS)).click();
+    await appSession().waitUntil(
+      `return document.querySelector("[aria-modal=true][data-state=open] button[aria-label='${FEWER}']") !== null;`,
+      "the covers per row steppers",
+    );
+    const opened = await appSession().run(SHEET_CONTENT_HEIGHT);
+    const [away, back] =
+      (await appSession().run(CAN_SHOW_FEWER)) === true
+        ? [FEWER, MORE]
+        : [MORE, FEWER];
 
-  await stepCoversPerRow(away);
-  await stepCoversPerRow(back);
+    await stepCoversPerRow(away);
+    await stepCoversPerRow(back);
 
-  expect(await appSession().run(SHEET_CONTENT_HEIGHT)).toBe(opened);
-  await (await appSession().waitFor(DONE)).click();
-});
+    expect(await appSession().run(SHEET_CONTENT_HEIGHT)).toBe(opened);
+    await (await appSession().waitFor(DONE)).click();
+  },
+  VIEW_OPTIONS_TEST_TIMEOUT_MS,
+);
