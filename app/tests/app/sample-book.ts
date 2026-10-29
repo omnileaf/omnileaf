@@ -12,7 +12,8 @@ export const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
 
-export const SHOWS_VOLUMES_AS_COVERS = process.platform === "linux";
+export const SHOWS_VOLUMES_AS_COVERS =
+  process.platform === "linux" || process.platform === "darwin";
 
 const VOLUME_COVERS = "ul[aria-label='Volumes']";
 const BOOKS_TABLE = "table[aria-label='Books']";
