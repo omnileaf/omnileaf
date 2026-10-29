@@ -3,6 +3,8 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -10,6 +12,10 @@
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
   const ROW_ICON_SIZE = 16;
+  const TODAYS_WORD =
+    "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
+  const NATIVE_WORD =
+    "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
   let {
     recent,
@@ -28,6 +34,9 @@
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
   const words = filterWords();
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const locale = getLocale();
 </script>
 
@@ -83,19 +92,24 @@
   </section>
   <section aria-labelledby={filterId} class="flex flex-col gap-sm">
     <h2 id={filterId} class="font-semibold">{m.search_type_to_filter()}</h2>
+    {#if isNative}
+      <p class="text-detail text-muted">
+        {m.search_filter_example({ unread: words.unread })}
+      </p>
+    {/if}
     <ul class="flex flex-wrap gap-sm">
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
-          <code
-            class="rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground"
-          >
+          <code class={isNative ? NATIVE_WORD : TODAYS_WORD}>
             {words[condition]}
           </code>
         </li>
       {/each}
     </ul>
-    <p class="text-detail text-muted">
-      {m.search_filter_example({ unread: words.unread })}
-    </p>
+    {#if !isNative}
+      <p class="text-detail text-muted">
+        {m.search_filter_example({ unread: words.unread })}
+      </p>
+    {/if}
   </section>
 </div>
