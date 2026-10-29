@@ -1,5 +1,5 @@
 #![cfg_attr(
-    not(test),
+    not(all(test, desktop)),
     expect(dead_code, reason = "the command that removes books is added next")
 )]
 
@@ -24,7 +24,8 @@ impl FileDisposal for SystemTrash {
 #[cfg(desktop)]
 fn dispose(file: &Path) -> Result<Disposal, DisposalFailure> {
     std::fs::symlink_metadata(file).map_err(|error| DisposalFailure::from(error.kind()))?;
-    trash::delete(file)
+    trash_context()
+        .delete(file)
         .map(|()| Disposal::Trashed)
         .map_err(|error| {
             tracing::warn!(%error, file = %file.display(), "move a file to the trash");
@@ -51,15 +52,40 @@ fn dispose(_file: &Path) -> Result<Disposal, DisposalFailure> {
     Err(DisposalFailure::Unsupported)
 }
 
-#[cfg(desktop)]
+/// The Finder backend the trash crate uses by default needs Automation permission, plays a sound and can offer to delete for good.
+#[cfg(target_os = "macos")]
+fn trash_context() -> trash::TrashContext {
+    use trash::macos::{DeleteMethod, TrashContextExtMacos};
+
+    let mut context = trash::TrashContext::default();
+    context.set_delete_method(DeleteMethod::NsFileManager);
+    context
+}
+
+#[cfg(all(desktop, not(target_os = "macos")))]
+fn trash_context() -> trash::TrashContext {
+    trash::TrashContext::default()
+}
+
+#[cfg(all(unix, not(target_vendor = "apple"), not(target_os = "android")))]
 fn failure_of(error: &trash::Error) -> DisposalFailure {
     match error {
-        #[cfg(all(unix, not(target_vendor = "apple"), not(target_os = "android")))]
         trash::Error::FileSystem { source, .. } => DisposalFailure::from(source.kind()),
-        #[cfg(windows)]
+        _ => DisposalFailure::Other,
+    }
+}
+
+#[cfg(windows)]
+fn failure_of(error: &trash::Error) -> DisposalFailure {
+    match error {
         trash::Error::Os { code, .. } if is_lock_violation(*code) => DisposalFailure::Locked,
         _ => DisposalFailure::Other,
     }
+}
+
+#[cfg(target_os = "macos")]
+fn failure_of(_error: &trash::Error) -> DisposalFailure {
+    DisposalFailure::Other
 }
 
 #[cfg(windows)]
