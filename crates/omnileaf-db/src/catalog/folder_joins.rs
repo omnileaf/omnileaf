@@ -4,7 +4,7 @@ use std::{
 };
 
 use omnileaf_sync_proto::SeriesId;
-use rusqlite::{Statement, Transaction};
+use rusqlite::{Connection, Statement, Transaction};
 
 use crate::{
     Error,
@@ -101,12 +101,12 @@ impl<'t> FolderJoins<'t> {
 }
 
 pub(crate) fn forget_emptied_folders(
-    transaction: &Transaction<'_>,
+    connection: &Connection,
     root: RootId,
     removed: &[PathBuf],
 ) -> Result<(), Error> {
     let folders: BTreeSet<&Path> = removed.iter().flat_map(|file| file.ancestors()).collect();
-    let mut forget = transaction.prepare(FORGET_EMPTIED_FOLDER)?;
+    let mut forget = connection.prepare(FORGET_EMPTIED_FOLDER)?;
     for folder in folders {
         let (first_inside, past_inside) = locations_inside(folder);
         forget.execute((

@@ -1,7 +1,17 @@
 use omnileaf_sync_proto::{BookId, MergeClass, Value};
 
 use super::Writer;
-use crate::{Error, catalog::removed_among, store::key::RemovalKey};
+use crate::{
+    Error,
+    catalog::{BookFileToRemove, remove_catalog_rows, removed_among},
+    store::key::RemovalKey,
+};
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RemovedFromLibrary {
+    pub books: usize,
+    pub files: Vec<BookFileToRemove>,
+}
 
 impl Writer<'_> {
     #[tracing::instrument(skip_all, fields(%book, is_removed))]
@@ -14,6 +24,21 @@ impl Writer<'_> {
             MergeClass::LastWriterWins,
             &Value::Bool(is_removed),
         )
+    }
+
+    #[tracing::instrument(skip_all, fields(books = books.len()))]
+    pub fn remove_books_from_library(
+        &mut self,
+        books: &[BookId],
+    ) -> Result<RemovedFromLibrary, Error> {
+        let removed = remove_catalog_rows(self.connection, books)?;
+        for book in &removed {
+            self.set_removed(book.book, true)?;
+        }
+        Ok(RemovedFromLibrary {
+            books: removed.len(),
+            files: removed.into_iter().flat_map(|book| book.files).collect(),
+        })
     }
 
     fn is_removed(&self, book: BookId) -> Result<bool, Error> {

@@ -1,6 +1,8 @@
 mod book;
+mod book_batches;
 mod book_bookmarks;
 mod book_details;
+mod book_files_to_remove;
 mod book_to_read;
 mod category_series;
 mod closest_title_words;
@@ -49,9 +51,10 @@ mod writerless_series;
 mod writers;
 
 pub(crate) use book::series_of_book;
-pub use book::{NewBook, add_book, record_page_count, remove_books_without_files};
+pub use book::{NewBook, add_book, books_of_series, record_page_count, remove_books_without_files};
 pub use book_bookmarks::book_bookmarks;
 pub use book_details::{AgeRating, BookDetails, BookPerson, PersonRole, ReadingDirection};
+pub use book_files_to_remove::{BookFileToRemove, files_of_books};
 pub use book_to_read::{BookToRead, book_to_read};
 pub use category_series::{category_series_count, category_series_page};
 pub use closest_title_words::closest_title_words;
@@ -79,7 +82,8 @@ pub use person_series::{PersonSeries, person_series};
 pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
 pub use related_series::{RelatedReason, RelatedSeries, RelatedSeriesWanted, related_series};
 pub use relocated_roots::relocate_roots;
-pub use removed_books::removed_among;
+pub(crate) use removed_books::remove_catalog_rows;
+pub use removed_books::{RemovedBook, remove_marked_books, removed_among};
 pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
     add_root, relocate_root, remove_root,

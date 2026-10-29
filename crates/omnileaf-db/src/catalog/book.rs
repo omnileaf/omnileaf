@@ -84,6 +84,8 @@ const MOVE_BOOK: &str = move_book!("TRUE");
 const MOVE_BOOK_IN_ITS_ONLY_FILE: &str = move_book!(in_its_only_file!());
 const FILE_ROOT: &str = ":file_root";
 const FILE_LOCATION: &str = ":file_location";
+const BOOKS_OF_SERIES: &str = "SELECT id FROM book
+    WHERE series_local_id = (SELECT local_id FROM series WHERE id = ?1)";
 const SERIES_OF_BOOK: &str = "SELECT series.id AS series_id FROM book
     JOIN series ON series.local_id = book.series_local_id WHERE book.id = ?1";
 const SERIES_EXISTS: &str = "SELECT EXISTS (SELECT 1 FROM series WHERE id = ?1)";
@@ -200,15 +202,23 @@ pub fn record_page_count(
 
 #[tracing::instrument(skip_all, fields(books = books.len()))]
 pub fn remove_books_without_files(
-    transaction: &Transaction<'_>,
+    connection: &Connection,
     books: &[BookId],
 ) -> Result<usize, Error> {
-    let mut remove = transaction.prepare(REMOVE_BOOK_WITHOUT_FILES)?;
+    let mut remove = connection.prepare_cached(REMOVE_BOOK_WITHOUT_FILES)?;
     let mut removed = 0;
     for book in books {
         removed = remove.execute([book.as_bytes()])?.saturating_add(removed);
     }
     Ok(removed)
+}
+
+#[tracing::instrument(skip_all, fields(%series))]
+pub fn books_of_series(connection: &Connection, series: SeriesId) -> Result<Vec<BookId>, Error> {
+    Ok(connection
+        .prepare(BOOKS_OF_SERIES)?
+        .query_map([series.as_bytes()], |row| stored_id(row, "id"))?
+        .collect::<Result<_, _>>()?)
 }
 
 pub(crate) fn series_of_book(
@@ -389,6 +399,22 @@ mod tests {
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
                 "SEARCH book_details USING PRIMARY KEY (book_id=?)",
                 "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)"
+            ]
+        );
+    }
+
+    #[test]
+    fn lists_the_books_of_a_series_through_the_series_and_added_index() {
+        let scratch = ScratchLibrary::new("books-of-series-plan");
+
+        let plan = scratch.query_plan(BOOKS_OF_SERIES);
+
+        assert_eq!(
+            plan,
+            [
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)"
             ]
         );
     }

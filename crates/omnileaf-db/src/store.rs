@@ -15,7 +15,7 @@ pub use reading_state::{ReadingState, reading_state};
 pub use series_edit::{EditedPerson, SeriesEdits, series_edits};
 pub use session::{Continuity, SessionPlace};
 use tokio::sync::broadcast;
-pub use writer::Writer;
+pub use writer::{RemovedFromLibrary, Writer};
 
 pub(crate) fn reproject_series_edits(connection: &rusqlite::Connection) -> Result<(), Error> {
     projector::reproject_series_edits(connection)

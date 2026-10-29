@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use omnileaf_sync_proto::BookId;
-use rusqlite::{Connection, OptionalExtension, Row, Transaction};
+use rusqlite::{Connection, OptionalExtension, Row};
 
 use crate::{
     Error,
@@ -44,11 +44,11 @@ pub fn root_book_count(connection: &Connection, root: RootId) -> Result<u32, Err
 
 #[tracing::instrument(skip_all, fields(%root, files = locations.len()))]
 pub fn remove_book_files(
-    transaction: &Transaction<'_>,
+    connection: &Connection,
     root: RootId,
     locations: &[PathBuf],
 ) -> Result<Vec<BookId>, Error> {
-    let mut remove = transaction.prepare(REMOVE_FILE)?;
+    let mut remove = connection.prepare(REMOVE_FILE)?;
     let mut held = Vec::with_capacity(locations.len());
     for location in locations {
         let removed: Option<BookId> = remove
@@ -58,7 +58,7 @@ pub fn remove_book_files(
             .optional()?;
         held.extend(removed);
     }
-    forget_emptied_folders(transaction, root, locations)?;
+    forget_emptied_folders(connection, root, locations)?;
     Ok(held)
 }
 
