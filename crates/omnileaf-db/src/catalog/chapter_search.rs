@@ -1,5 +1,5 @@
 use omnileaf_sync_proto::{BookId, SeriesId};
-use rusqlite::{Connection, Row, ToSql, named_params};
+use rusqlite::{Connection, Row, ToSql};
 
 use crate::{
     Error,
@@ -7,7 +7,7 @@ use crate::{
         cursor::{Cursor, Position},
         page::{Page, PageRequest},
         search_text::Lookup,
-        series_listing::{FilterParams, smart_conditions},
+        series_listing::{FilterParams, adult_condition, smart_conditions},
         series_search::SeriesSearch,
         staged_rows::snapshot,
         stored_id::stored_id,
@@ -38,6 +38,17 @@ pub struct ChapterHit {
 const CANDIDATE_WINDOW_END: &str = "SELECT rowid FROM book_title_fts
     WHERE book_title_fts MATCH :phrases AND rowid > :after
     ORDER BY rowid LIMIT 2 OFFSET :before_last_candidate";
+
+const CANDIDATE_WINDOW_END_OF_SERIES_NOT_HIDDEN_AS_ADULT: &str = concat!(
+    "SELECT book_title_fts.rowid FROM book_title_fts
+    JOIN book_title_search ON book_title_search.id = book_title_fts.rowid
+    JOIN book ON book.id = book_title_search.book_id
+    JOIN series ON series.local_id = book.series_local_id
+    WHERE book_title_fts MATCH :phrases AND book_title_fts.rowid > :after
+        AND ",
+    adult_condition!(),
+    " ORDER BY book_title_fts.rowid LIMIT 2 OFFSET :before_last_candidate"
+);
 
 macro_rules! candidates_of_shown_series {
     () => {
@@ -87,18 +98,27 @@ struct CandidateWindow<'p> {
 }
 
 impl<'p> CandidateWindow<'p> {
-    fn read(connection: &Connection, phrases: &'p str, after: i64) -> Result<Self, Error> {
+    fn read(
+        connection: &Connection,
+        phrases: &'p str,
+        after: i64,
+        filter: &FilterParams,
+    ) -> Result<Self, Error> {
         let before_last_candidate = i64::from(CHAPTER_CANDIDATES_PER_CALL) - 1;
+        let mut params: Vec<(&str, &dyn ToSql)> = vec![
+            (":phrases", &phrases),
+            (":after", &after),
+            (":before_last_candidate", &before_last_candidate),
+        ];
+        let sql = if filter.hides_adult() {
+            params.extend_from_slice(&filter.named_adult());
+            CANDIDATE_WINDOW_END_OF_SERIES_NOT_HIDDEN_AS_ADULT
+        } else {
+            CANDIDATE_WINDOW_END
+        };
         let ends: Vec<i64> = connection
-            .prepare_cached(CANDIDATE_WINDOW_END)?
-            .query_map(
-                named_params! {
-                    ":phrases": phrases,
-                    ":after": after,
-                    ":before_last_candidate": before_last_candidate,
-                },
-                |row| row.get(0),
-            )?
+            .prepare_cached(sql)?
+            .query_map(params.as_slice(), |row| row.get(0))?
             .collect::<Result<_, _>>()?;
         let (last_id, leaves_more) = match ends.as_slice() {
             [last_id, _] => (*last_id, true),
@@ -142,8 +162,8 @@ pub fn search_chapters(
     };
     let after = index_id_after(request.after.as_ref())?;
     let _snapshot = snapshot(connection)?;
-    let window = CandidateWindow::read(connection, phrases, after)?;
     let filter = FilterParams::of(&search.filter);
+    let window = CandidateWindow::read(connection, phrases, after, &filter)?;
     let limit = request.size.rows_to_fetch();
     let mut params = filter.named().to_vec();
     params.extend_from_slice(&window.bound());
@@ -168,11 +188,11 @@ pub fn search_chapters_count(
         return Ok(Some(0));
     };
     let _snapshot = snapshot(connection)?;
-    let window = CandidateWindow::read(connection, phrases, BEFORE_FIRST_CANDIDATE)?;
+    let filter = FilterParams::of(&search.filter);
+    let window = CandidateWindow::read(connection, phrases, BEFORE_FIRST_CANDIDATE, &filter)?;
     if window.leaves_more {
         return Ok(None);
     }
-    let filter = FilterParams::of(&search.filter);
     let mut params = filter.named().to_vec();
     params.extend_from_slice(&window.bound());
     let count: u32 = connection
@@ -249,6 +269,23 @@ mod tests {
         let plan = scratch.query_plan(CANDIDATE_WINDOW_END);
 
         assert_eq!(plan, ["SCAN book_title_fts VIRTUAL TABLE INDEX 64:M1>"]);
+    }
+
+    #[test]
+    fn reads_the_window_of_candidates_of_series_not_hidden_as_adult_in_row_order_without_sorting() {
+        let scratch = ScratchLibrary::new("chapter-window-adult-plan");
+
+        let plan = scratch.query_plan(CANDIDATE_WINDOW_END_OF_SERIES_NOT_HIDDEN_AS_ADULT);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN book_title_fts VIRTUAL TABLE INDEX 64:M1>",
+                "SEARCH book_title_search USING INTEGER PRIMARY KEY (rowid=?)",
+                "SEARCH book USING PRIMARY KEY (id=?)",
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+            ]
+        );
     }
 
     #[test]

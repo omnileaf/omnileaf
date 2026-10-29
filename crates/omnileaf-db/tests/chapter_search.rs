@@ -138,6 +138,23 @@ impl Library {
             .unwrap();
     }
 
+    async fn record_adult_titled(&self, series: &str, numbers: Range<u32>) {
+        let scanned: Vec<ScannedBook> = numbers
+            .map(|number| {
+                let title = volume_title(number);
+                scanned_book(
+                    self.root,
+                    &Chapter::titled(number, series, &title).rated_adult(),
+                )
+            })
+            .collect();
+        self.store
+            .database()
+            .write(move |transaction| record_scanned_books(transaction, &scanned))
+            .await
+            .unwrap();
+    }
+
     async fn record_tagged(&self, series: &str, numbers: Range<u32>, tag: &str) {
         let scanned: Vec<ScannedBook> = numbers
             .map(|number| {
@@ -863,13 +880,64 @@ async fn leaves_out_the_chapters_of_series_rated_or_marked_18_plus_while_hiding_
 }
 
 #[tokio::test]
-async fn gives_an_empty_page_without_a_next_cursor_for_text_only_hidden_series_match() {
+async fn gives_an_empty_page_without_a_next_cursor_when_only_a_hidden_adult_chapter_matches() {
     let library = library_with_adult_series("chapters-adult-only-hidden").await;
 
     let pages = library
         .pages(&search("hidden stair", hiding_adult()), 10)
         .await;
     let counted = library.count("hidden stair", hiding_adult()).await;
+
+    assert_eq!(pages.len(), 1);
+    assert!(pages[0].hits.is_empty());
+    assert!(pages[0].next.is_none());
+    assert_eq!(counted, Some(0));
+}
+
+#[tokio::test]
+async fn reaches_the_one_shown_chapter_after_a_window_of_hidden_adult_chapters_and_ends_there() {
+    let library = Library::open("chapters-hidden-mass-before").await;
+    library.record_adult_titled(FORBIDDEN, 1..WINDOW + 20).await;
+    library
+        .record(Chapter::titled(9_000, LANTERNS, "Volume 9000"))
+        .await;
+    let hiding = search("volume", hiding_adult());
+
+    let pages = library.pages(&hiding, 10).await;
+    let counted = library.count("volume", hiding_adult()).await;
+
+    assert_eq!(titles(&pages), ["Volume 9000"]);
+    assert_eq!(pages.len(), 1);
+    assert!(pages[0].next.is_none());
+    assert_eq!(counted, Some(1));
+}
+
+#[tokio::test]
+async fn ends_at_the_one_shown_chapter_before_a_window_of_hidden_adult_chapters() {
+    let library = Library::open("chapters-hidden-mass-after").await;
+    library
+        .record(Chapter::titled(9_000, LANTERNS, "Volume 9000"))
+        .await;
+    library.record_adult_titled(FORBIDDEN, 1..WINDOW + 20).await;
+    let hiding = search("volume", hiding_adult());
+
+    let pages = library.pages(&hiding, 10).await;
+    let counted = library.count("volume", hiding_adult()).await;
+
+    assert_eq!(titles(&pages), ["Volume 9000"]);
+    assert_eq!(pages.len(), 1);
+    assert!(pages[0].next.is_none());
+    assert_eq!(counted, Some(1));
+}
+
+#[tokio::test]
+async fn gives_an_empty_page_without_a_next_cursor_when_a_window_of_chapters_is_all_hidden_adult() {
+    let library = Library::open("chapters-all-hidden-mass").await;
+    library.record_adult_titled(FORBIDDEN, 1..WINDOW + 20).await;
+    let hiding = search("volume", hiding_adult());
+
+    let pages = library.pages(&hiding, 10).await;
+    let counted = library.count("volume", hiding_adult()).await;
 
     assert_eq!(pages.len(), 1);
     assert!(pages[0].hits.is_empty());
