@@ -82,7 +82,7 @@ pub use person_series::{PersonSeries, person_series};
 pub use place_in_series::{PlaceInSeries, SeriesNeighbour, place_in_series};
 pub use related_series::{RelatedReason, RelatedSeries, RelatedSeriesWanted, related_series};
 pub use relocated_roots::relocate_roots;
-pub use removed_books::removed_among;
+pub use removed_books::{RemovedBook, remove_marked_books, removed_among};
 pub use root::{
     AndroidTree, AppleBookmark, LibraryRoot, NewRoot, RootId, RootKind, RootLocator, TreeUri,
     add_root, relocate_root, remove_root,
