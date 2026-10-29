@@ -398,6 +398,20 @@ mod tests {
     }
 
     #[test]
+    fn writes_a_removal_to_the_shared_profile_whichever_profile_is_current() {
+        let book = BookId::local(&Fingerprint::pmf1([ImageEntry { crc32: 1, size: 1 }]).unwrap());
+        let another = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d".parse().unwrap();
+
+        let profiles = [ProfileId::default_profile(), another].map(|profile| {
+            Key::from(RemovalKey::Removed(book))
+                .address(profile)
+                .profile
+        });
+
+        assert_eq!(profiles, [ProfileId::shared(); 2]);
+    }
+
+    #[test]
     fn leaves_a_field_this_version_does_not_know_unread() {
         let read = Key::stored(BOOK, &[0; 16], "rating");
 
