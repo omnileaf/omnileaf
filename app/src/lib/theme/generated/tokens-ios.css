@@ -150,6 +150,10 @@
   --native-spacing-notice-end: 6px;
   --native-spacing-notice-action: 36px;
   --native-spacing-notice-action-inline: 14px;
+  --native-weight-group-header: 590;
+  --native-text-group-footer: calc(0.8125rem * var(--text-scale));
+  --native-leading-group-footer: calc(18 / 13);
+  --native-tracking-group-footer: -0.08px;
   --native-text-notice-title: calc(0.9375rem * var(--text-scale));
   --native-leading-notice-title: calc(20 / 15);
   --native-weight-notice-title: 590;

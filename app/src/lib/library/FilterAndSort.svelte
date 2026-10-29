@@ -136,6 +136,7 @@
       wideClass="inline-filter-panel"
       phoneClass={isIos ? "" : "inset-bs-sheet-top block-auto"}
       phoneHeight={isIos ? "large" : "fit"}
+      phoneGround={isIos ? "grouped" : "plain"}
       onDismiss={close}
       onCloseAutoFocus={focusButton}
     >
@@ -218,9 +219,12 @@
             </div>
           {/if}
           <div
-            class="flex flex-1 flex-col overflow-y-auto px-sheet-inline pbs-sm pbe-lg min-block-none"
+            class={[
+              "flex flex-1 flex-col overflow-y-auto pbs-sm pbe-lg min-block-none",
+              isIos ? "gap-xl" : "px-sheet-inline",
+            ]}
           >
-            <FilterChoices {listing} {choices} {onChoose} />
+            <FilterChoices {listing} {choices} {onChoose} isGrouped={isIos} />
           </div>
           <div
             class={isIos
