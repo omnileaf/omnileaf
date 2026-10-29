@@ -344,3 +344,44 @@ test("keeps the sort select and direction button on an iPad", async () => {
     .element(page.getByRole("button", { name: /^Order:/ }))
     .toBeInTheDocument();
 });
+
+test("draws a focus ring on the picker row whose select has the keyboard focus on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES);
+  const select = page.getByRole("combobox", { name: "Sort by" }).element();
+
+  await userEvent.tab();
+  while (document.activeElement !== select) {
+    await userEvent.tab();
+  }
+  const row = select.parentElement;
+
+  expect(row).not.toBeNull();
+  expect(row === null ? "" : getComputedStyle(row).outlineStyle).toBe("solid");
+});
+
+test("describes the sort by row with the time left note on an iPhone", async () => {
+  await openSheetOn("ios", GROUPED_CHOICES, {
+    ...NEW_LIBRARY_LISTING,
+    sort: { by: "timeLeft", direction: "ascending" },
+  });
+
+  await expect
+    .element(page.getByRole("combobox", { name: "Sort by" }))
+    .toHaveAccessibleDescription("Time left uses your reading speed.");
+});
+
+test("draws More tags as a native capsule beside the tag chips on an iPhone", async () => {
+  await openSheetOn("ios", {
+    ...GROUPED_CHOICES,
+    tags: ["sea", "seinen", "slice", "school"],
+  });
+
+  const more = page.getByRole("button", { name: "More tags" }).element();
+  const style = getComputedStyle(more);
+
+  expect(more.getBoundingClientRect().height).toBe(28);
+  expect(style.borderTopWidth).toBe("0px");
+  expect(Number.parseFloat(style.borderTopLeftRadius)).toBeGreaterThanOrEqual(
+    14,
+  );
+});
