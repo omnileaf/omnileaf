@@ -57,7 +57,7 @@ impl From<io::ErrorKind> for DisposalFailure {
             io::ErrorKind::NotFound => Self::NotFound,
             io::ErrorKind::PermissionDenied => Self::PermissionDenied,
             io::ErrorKind::ResourceBusy => Self::Locked,
-            io::ErrorKind::Unsupported => Self::Unsupported,
+            io::ErrorKind::Unsupported | io::ErrorKind::ReadOnlyFilesystem => Self::Unsupported,
             _ => Self::Other,
         }
     }
@@ -74,6 +74,7 @@ mod tests {
             io::ErrorKind::PermissionDenied,
             io::ErrorKind::ResourceBusy,
             io::ErrorKind::Unsupported,
+            io::ErrorKind::ReadOnlyFilesystem,
             io::ErrorKind::TimedOut,
         ];
 
@@ -85,6 +86,7 @@ mod tests {
                 DisposalFailure::NotFound,
                 DisposalFailure::PermissionDenied,
                 DisposalFailure::Locked,
+                DisposalFailure::Unsupported,
                 DisposalFailure::Unsupported,
                 DisposalFailure::Other,
             ]
