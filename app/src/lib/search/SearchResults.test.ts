@@ -113,3 +113,51 @@ test("marks the matched word on the accent-soft fill on an iPhone", async () => 
     resolvedColour("--color-native-accent-soft", "backgroundColor"),
   );
 });
+
+test("sets a result in 17 point regular type over two 15 point muted lines, under a semibold heading, on an iPhone", async () => {
+  await page.viewport(390, 800);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const screen = await render(SearchResults, {
+    series: await foundSeries(),
+    count: 1,
+    isComplete: true,
+    onNearEnd: () => undefined,
+    coverUrl: fakeCoverUrl,
+    usesStandIns: false,
+    listId: "results",
+    activeKey: undefined,
+    onOpen: () => undefined,
+    words: "hidden",
+    view: undefined,
+  });
+
+  const found = screen.getByRole("option").nth(0);
+  const title = getComputedStyle(
+    found.getByText("Hidden", { exact: true }).element().parentElement ??
+      document.body,
+  );
+  const reason = getComputedStyle(
+    found.getByText("Title", { exact: true }).element(),
+  );
+  const books = getComputedStyle(found.getByText("3 books").element());
+  const heading = getComputedStyle(
+    screen.getByRole("heading", { level: 2 }).element(),
+  );
+
+  expect({
+    titleSize: title.fontSize,
+    titleWeight: title.fontWeight,
+    reasonSize: reason.fontSize,
+    booksSize: books.fontSize,
+    headingSize: heading.fontSize,
+    headingWeight: heading.fontWeight,
+  }).toEqual({
+    titleSize: "17px",
+    titleWeight: "400",
+    reasonSize: "15px",
+    booksSize: "15px",
+    headingSize: "17px",
+    headingWeight: "590",
+  });
+});
