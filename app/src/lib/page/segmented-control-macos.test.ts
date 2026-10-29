@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -20,6 +20,7 @@ const LABELS = {
 async function renderOnMac(
   theme: "light" | "dark" = "light",
   size: "small" | "regular" = "regular",
+  chosen: (typeof OPTIONS)[number] = "dark",
 ): Promise<void> {
   document.documentElement.dataset.theme = theme;
   followCorePlatform("macos");
@@ -31,7 +32,7 @@ async function renderOnMac(
   await render(SegmentedControl<(typeof OPTIONS)[number]>, {
     options: OPTIONS,
     labels: LABELS,
-    chosen: "dark",
+    chosen,
     size,
     labelledBy: "theme-heading",
     onChoose: () => undefined,
@@ -101,37 +102,39 @@ test("fills the chosen segment with the accent and its on-accent ink on macOS", 
   });
 });
 
-test("draws a 1 point divider between idle segments and hides the ones beside the chosen one on macOS", async () => {
+test("hides the dividers beside the chosen segment on macOS", async () => {
   await renderOnMac();
 
-  const beforeChosen = getComputedStyle(segment("Dark"), "::after");
-  const afterChosen = getComputedStyle(segment("System"), "::after");
-
-  expect(beforeChosen.opacity).toBe("0");
-  expect(afterChosen.opacity).toBe("0");
-  expect(getComputedStyle(segment("Dark"), "::after").width).toBe("1px");
+  expect(getComputedStyle(segment("Dark"), "::after").opacity).toBe("0");
+  expect(getComputedStyle(segment("System"), "::after").opacity).toBe("0");
 });
 
-test("draws the divider between two idle segments on macOS", async () => {
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("macos");
-  await page.viewport(1024, 800);
-  const heading = document.createElement("h2");
-  heading.id = "theme-heading";
-  heading.textContent = "Theme";
-  document.body.append(heading);
-  await render(SegmentedControl<(typeof OPTIONS)[number]>, {
-    options: OPTIONS,
-    labels: LABELS,
-    chosen: "light",
-    labelledBy: "theme-heading",
-    onChoose: () => undefined,
-  });
+test("draws a 1 point divider between two idle segments on macOS", async () => {
+  await renderOnMac("light", "regular", "light");
 
   const divider = getComputedStyle(segment("System"), "::after");
 
-  expect(divider.opacity).toBe("1");
-  expect(divider.width).toBe("1px");
+  expect({ opacity: divider.opacity, width: divider.width }).toEqual({
+    opacity: "1",
+    width: "1px",
+  });
+  expect(getComputedStyle(segment("System")).position).toBe("relative");
+});
+
+test("keeps the small size at 20 points on a wide macOS window", async () => {
+  await renderOnMac("light", "small");
+  await page.viewport(1600, 900);
+
+  expect(track().getBoundingClientRect().height).toBe(20);
+});
+
+test("sets the focus ring off the chosen segment's accent fill on macOS", async () => {
+  await renderOnMac();
+
+  segment("Dark").focus();
+  await userEvent.keyboard("{Tab}{Shift>}{Tab}{/Shift}");
+
+  expect(getComputedStyle(segment("Dark")).outlineOffset).toBe("1px");
 });
 
 test("draws the small size as a 20 point track with 5 point corners and 11 point type on macOS", async () => {

@@ -1296,6 +1296,7 @@
 }
 
 @utility segment-divider {
+  position: relative;
   &:not(:first-child)::after {
     content: "";
     position: absolute;

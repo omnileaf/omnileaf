@@ -178,7 +178,7 @@
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
-        isMacos && "segment-divider",
+        isMacos && "segment-divider focus-visible:outline-offset-1",
         usesNativeTokens
           ? [NATIVE_LOOK.segment, isMacosSmall && MACOS_SMALL.segment]
           : isWindows
@@ -186,7 +186,7 @@
             : look.segment,
         face,
         isOneRow
-          ? [look.onRow, "text-nowrap"]
+          ? [isMacosSmall ? "flex-auto" : look.onRow, "text-nowrap"]
           : "min-inline-none touch:min-block-touch-target",
         usesNativeTokens
           ? chosen === option
@@ -217,7 +217,14 @@
     class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
   >
     {#each options as option (option)}
-      <span class={["flex flex-none items-center", face, segmentClass]}>
+      <span
+        class={[
+          "flex flex-none items-center",
+          face,
+          isMacosSmall && MACOS_SMALL.segment,
+          segmentClass,
+        ]}
+      >
         <SegmentFace
           label={labels[option]()}
           icon={icons?.[option]}

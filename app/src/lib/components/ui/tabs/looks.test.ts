@@ -162,6 +162,9 @@ test("draws macOS's tabs as a segmented control, a recessed track with the accen
     otherWeight: "510",
     labelSize: "13px",
   });
+  expect(
+    getComputedStyle(page.getByRole("tab").nth(1).element()).position,
+  ).toBe("relative");
 });
 
 test("draws iOS's tabs as a segmented control, a capsule track with a raised pill under the chosen one", async () => {

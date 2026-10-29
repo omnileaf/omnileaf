@@ -17,7 +17,7 @@ const SHADCN_LOOK: TabsLook = {
     "room-for-semibold-label inline-flex flex-1 items-center justify-center rounded-small-control border border-transparent px-sm py-xs text-small font-medium whitespace-nowrap transition-control not-aria-selected:text-tab-idle aria-selected:border-tab-chosen-edge aria-selected:text-foreground aria-selected:bg-raised aria-selected:font-semibold aria-selected:shadow-raised focus-visible:focus-ring",
 };
 
-/** Matches SegmentedControl.svelte's own native look, so a series' section tabs read as the same segmented control as the rest of the kit. */
+/** Matches SegmentedControl.svelte's own iOS native look, so a series' section tabs read as the same segmented control as the rest of the kit. */
 const IOS_SEGMENTED_LOOK: TabsLook = {
   list: "flex gap-native-segmented-gap rounded-native-segmented bg-native-segmented-track p-native-segmented-inset",
   trigger:
