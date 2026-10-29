@@ -12,11 +12,11 @@ use omnileaf_engine::{
     HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError,
     LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
     LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
-    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, RemovalReport,
-    RemovalTarget, ReportCode, ResourceRouter, RootLocator, SavedProblemReport, ScanProgress,
-    SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesLabels,
-    SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse, UtcOffset,
-    WriterCursor, WriterPage,
+    ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, RemovalPreview,
+    RemovalReport, RemovalTarget, ReportCode, ResourceRouter, RootLocator, SavedProblemReport,
+    ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
+    SeriesLabels, SeriesOverview, SeriesPage, SeriesVolume, SpellingSuggestion, StorageUse,
+    UtcOffset, WriterCursor, WriterPage,
 };
 use omnileaf_icon_actions::IconAction;
 use tauri::{AppHandle, Manager, State, WebviewWindow, Window, Wry, ipc::Channel};
@@ -149,6 +149,7 @@ macro_rules! app_commands {
             sign_in_to_library_folder,
             show_series_in_folder,
             remove_library_folder,
+            preview_removal,
             remove_from_library,
             library_folder_book_count,
             rescan_library_folder,
@@ -1117,6 +1118,15 @@ async fn set_library_tabs(
 #[specta::specta]
 async fn remove_library_folder(library: State<'_, Library>, id: FolderId) -> Result<(), IpcError> {
     Ok(library.remove_folder(id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn preview_removal(
+    library: State<'_, Library>,
+    targets: Vec<RemovalTarget>,
+) -> Result<RemovalPreview, IpcError> {
+    Ok(library.preview_removal(&targets).await?)
 }
 
 #[tauri::command]
