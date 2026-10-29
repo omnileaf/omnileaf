@@ -28,7 +28,6 @@ pub fn closest_title_words(
         return Ok(None);
     };
     let typed: Vec<char> = typed.chars().collect();
-    let slips_allowed = slips_allowed(typed.len());
     let mut candidates = connection.prepare(CANDIDATES)?;
     let [leaves_out, counts] = hiding.params();
     let titles = candidates
@@ -44,14 +43,18 @@ pub fn closest_title_words(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(titles
         .iter()
-        .filter_map(|title| closest_words(&typed, &fold_case(title)))
-        .filter(|(slips, _)| (1..=slips_allowed).contains(slips))
+        .filter_map(|title| nearest_words(&typed, title))
         .min_by_key(|(slips, _)| *slips)
         .map(|(_, words)| words))
 }
 
 /// Each run of three characters typed, quoted so FTS5 reads it as itself, any one of which finds a title.
 fn trigram_query(typed: &str) -> Option<String> {
+    let trigrams = typed_trigrams(typed);
+    (!trigrams.is_empty()).then(|| any_trigram(&trigrams))
+}
+
+pub(super) fn typed_trigrams(typed: &str) -> Vec<String> {
     let chars: Vec<char> = typed.chars().collect();
     let mut trigrams: Vec<String> = chars
         .windows(TRIGRAM_CHARS)
@@ -59,13 +62,24 @@ fn trigram_query(typed: &str) -> Option<String> {
         .collect();
     trigrams.sort_unstable();
     trigrams.dedup();
-    (!trigrams.is_empty()).then(|| {
-        trigrams
-            .iter()
-            .map(|trigram| format!("\"{}\"", trigram.replace('"', "\"\"")))
-            .collect::<Vec<_>>()
-            .join(" OR ")
-    })
+    trigrams
+}
+
+pub(super) fn quoted(trigram: &str) -> String {
+    format!("\"{}\"", trigram.replace('"', "\"\""))
+}
+
+pub(super) fn any_trigram(trigrams: &[String]) -> String {
+    trigrams
+        .iter()
+        .map(|trigram| quoted(trigram))
+        .collect::<Vec<_>>()
+        .join(" OR ")
+}
+
+pub(super) fn nearest_words(typed: &[char], title: &str) -> Option<(usize, String)> {
+    closest_words(typed, &fold_case(title))
+        .filter(|(slips, _)| (1..=slips_allowed(typed.len())).contains(slips))
 }
 
 const fn slips_allowed(chars: usize) -> usize {
