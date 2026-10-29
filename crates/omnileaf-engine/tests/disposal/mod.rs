@@ -1,6 +1,6 @@
 #![expect(
     clippy::unwrap_used,
-    reason = "the fake disposal only locks its own lists, so a poisoned lock means a test already failed"
+    reason = "the fakes only lock their own lists and the vanishing one removes a file its test just wrote, so a panic here means the test is broken"
 )]
 
 use std::{
