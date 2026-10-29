@@ -19,6 +19,7 @@ const KINDS = [
   "weight",
   "tracking",
   "shadow",
+  "blur",
 ] as const;
 
 export type Kind = (typeof KINDS)[number];

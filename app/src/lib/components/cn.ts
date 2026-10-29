@@ -80,6 +80,7 @@ export const TOKEN_THEME = {
     "native-notice-lift",
     "native-segment-lift",
     "native-select-ring-lift",
+    "native-shadow-glass",
     "popover",
     "raised",
     "reader-bar",
@@ -748,7 +749,7 @@ export const TOKEN_THEME = {
     "ready-settle",
     "spin",
   ],
-  blur: ["glass", "ios", "menu", "reader", "series-band"],
+  blur: ["glass", "ios", "menu", "native-glass", "reader", "series-band"],
 } as const;
 
 export const cn = createCn({ extend: { theme: TOKEN_THEME } });

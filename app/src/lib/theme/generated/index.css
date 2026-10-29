@@ -15,6 +15,9 @@
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
+  --color-native-glass: var(--native-color-glass);
+  --blur-native-glass: var(--native-blur-glass);
+  --shadow-native-shadow-glass: var(--native-shadow-shadow-glass);
   --color-native-button-primary: var(--native-color-button-primary);
   --color-native-on-button-primary: var(--native-color-on-button-primary);
   --color-native-button-secondary: var(--native-color-button-secondary);

@@ -242,6 +242,23 @@ test("exposes shadows under Tailwind's shadow name", () => {
   );
 });
 
+test("exposes blurs under Tailwind's blur name", () => {
+  const glass = {
+    name: "glass",
+    kind: "blur",
+    value: { default: "0px", ios: "30px" },
+  };
+
+  const files = render(glass);
+
+  expect(files.get("index.css")).toContain(
+    "  --blur-native-glass: var(--native-blur-glass);\n",
+  );
+  expect(files.get("tokens-ios.css")).toContain(
+    "  --native-blur-glass: 30px;\n",
+  );
+});
+
 test("imports the defaults before every platform file", () => {
   const files = render(ACCENT, MOVE);
 
