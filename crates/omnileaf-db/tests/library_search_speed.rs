@@ -20,7 +20,19 @@ use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
 use speed::add_generated_series;
 use support::{ScratchFolder, library_config};
 
-const BOOK_TITLES: [&str; 1] = ["Volume 01"];
+const BOOK_TITLES: [&str; 10] = [
+    "Volume 01",
+    "Volume 02",
+    "Volume 03",
+    "Volume 04",
+    "Volume 05",
+    "Chapter 12",
+    "Chapter 120",
+    "Special",
+    "Side Story 3",
+    "Extra",
+];
+const EVERY_TENTH_BOOK_TITLED_IN_COMIC_INFO: u32 = 10;
 const EVERY_HUNDREDTH_FINISHED: u32 = 100;
 const PAGE_SIZE: u16 = 50;
 const SAMPLES: usize = 40;
@@ -29,7 +41,7 @@ const BUDGET: Duration = Duration::from_millis(10);
 const GENRES: u32 = 50;
 const EVERY_TWENTIETH_CREDITED: u32 = 20;
 
-const TEXTS: [&str; 12] = [
+const TEXTS: [&str; 17] = [
     "sample",
     "sample series",
     "series 09",
@@ -42,6 +54,11 @@ const TEXTS: [&str; 12] = [
     "writer",
     "writer 091",
     "genre 7",
+    "volume",
+    "chapter",
+    "volume 1",
+    "chapter 12",
+    "special",
 ];
 
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
@@ -111,9 +128,18 @@ async fn add_generated_library(database: &Database) {
                 [EVERY_HUNDREDTH_FINISHED],
             )?;
             transaction.execute(
-                "INSERT INTO book_details (book_id)
-                SELECT book.id FROM book",
-                [],
+                "INSERT INTO book_details (book_id, title)
+                SELECT ranked.id,
+                    CASE WHEN ranked.position = 1 + ranked.added_at_ms % ?1
+                        THEN 'Harbor Gate ' || ranked.added_at_ms END
+                FROM (
+                    SELECT book.id, series.added_at_ms,
+                        row_number() OVER (
+                            PARTITION BY book.series_local_id ORDER BY book.reading_order_key
+                        ) AS position
+                    FROM book JOIN series ON series.local_id = book.series_local_id
+                ) AS ranked",
+                [EVERY_TENTH_BOOK_TITLED_IN_COMIC_INFO],
             )?;
             transaction.execute(
                 "INSERT INTO book_person (book_id, role, name)
