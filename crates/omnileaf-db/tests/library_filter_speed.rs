@@ -63,6 +63,15 @@ const EVERY_HUNDREDTH_IN_A_RARE_CATEGORY: u32 = 100;
 const EVERY_TENTH_IN_A_COMMON_CATEGORY: u32 = 10;
 const RARE_CATEGORY: &str = "Rare shelf";
 const COMMON_CATEGORY: &str = "Common shelf";
+const LONG_BOOK_PAGES: u32 = 200;
+const EVERY_HUNDREDTH_QUICK: u32 = 100;
+const QUICK_REMAINDER: u32 = 7;
+const QUICK_BOOK_PAGES: u32 = 5;
+const EVERY_TENTH_BRIEF: u32 = 10;
+const BRIEF_REMAINDER: u32 = 7;
+const BRIEF_BOOK_PAGES: u32 = 10;
+const QUICK_PAGES_LEFT: u32 = 60;
+const BRIEF_PAGES_LEFT: u32 = 120;
 const PAGE_SIZE: u16 = 100;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
@@ -83,7 +92,7 @@ fn crowded_tags() -> [SeriesFilter; 2] {
 }
 
 /// No filter, and each condition alone either way, which takes in the filters matching a hundredth of the library and so reading furthest for a page.
-fn filters() -> [SeriesFilter; 17] {
+fn filters() -> [SeriesFilter; 18] {
     [
         SeriesFilter::NONE,
         SeriesFilter::NONE.with_unread(Inclusion::Only),
@@ -102,7 +111,12 @@ fn filters() -> [SeriesFilter; 17] {
         SeriesFilter::NONE.with_formats(vec![SeriesFormat::Comic]),
         SeriesFilter::NONE.with_bookmarked(Inclusion::Only),
         SeriesFilter::NONE.with_bookmarked(Inclusion::Hide),
+        SeriesFilter::NONE.with_pages_left_at_most(Some(QUICK_PAGES_LEFT)),
     ]
+}
+
+fn brief_reads() -> [SeriesFilter; 1] {
+    [SeriesFilter::NONE.with_pages_left_at_most(Some(BRIEF_PAGES_LEFT))]
 }
 
 #[tokio::test]
@@ -177,6 +191,54 @@ async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_
             if !outcome.is_within_budget() {
                 over_budget.push(format!("{listing:?}: {outcome}"));
             }
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_and_count_of_the_series_with_few_pages_left_on_a_tenth_of_10_000_series_within_2_ms_at_p95()
+ {
+    let trial =
+        trial_of("a page of 100 or a count of a tenth of 10,000 series with few pages left");
+    let folder = ScratchFolder::new("mid-band-pages-left-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_generated_library(&database).await;
+
+    let mut over_budget = Vec::new();
+    for sort in SORTS {
+        for filter in brief_reads() {
+            let listing = SeriesListing { sort, filter };
+            let outcome = trial
+                .run(
+                    async |_| None,
+                    async |after| {
+                        *after = read_page(&database, listing.clone(), after.take()).await;
+                    },
+                )
+                .await;
+            eprintln!("{listing:?}: {outcome}");
+            if !outcome.is_within_budget() {
+                over_budget.push(format!("{listing:?}: {outcome}"));
+            }
+        }
+    }
+    for filter in brief_reads() {
+        let outcome = trial
+            .run(
+                async |_| (),
+                async |()| count(&database, filter.clone()).await,
+            )
+            .await;
+        eprintln!("{filter:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{filter:?}: {outcome}"));
         }
     }
 
@@ -326,6 +388,7 @@ const CROWDED_SMART_FILTERS: [SeriesFilter; 2] = [
 const EVERY_TENTH_FINISHED: u32 = 10;
 const EVERY_TWENTIETH: u32 = 20;
 const EVERY_TWENTIETH_REMAINDER: u32 = 0;
+const UNSTARTED_QUICK_REMAINDER: u32 = 7;
 
 #[tokio::test]
 #[expect(
@@ -360,6 +423,128 @@ async fn reads_each_page_of_500_smart_matches_among_9_000_unstarted_series_withi
     }
 
     assert_eq!(over_budget, Vec::<String>::new());
+}
+
+const QUICK_READS: SeriesFilter =
+    SeriesFilter::NONE.with_pages_left_at_most(Some(QUICK_PAGES_LEFT));
+
+#[tokio::test]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_and_count_of_500_quick_reads_in_progress_among_9_000_long_unstarted_series_within_2_ms_at_p95()
+ {
+    let trial = trial_of(
+        "a page of 100 or a count of 500 partly read quick reads beside 9,000 long unstarted series",
+    );
+    let folder = ScratchFolder::new("crowded-quick-reads-in-progress-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_library_with_quick_reads_in_progress(&database).await;
+
+    assert_within_budget(&trial, &database, QUICK_READS).await;
+}
+
+#[tokio::test]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_page_and_count_of_500_quick_reads_among_9_000_long_unstarted_series_within_2_ms_at_p95()
+ {
+    let trial = trial_of(
+        "a page of 100 or a count of 500 unstarted quick reads beside 8,500 long unstarted series",
+    );
+    let folder = ScratchFolder::new("crowded-unstarted-quick-reads-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_library_with_unstarted_quick_reads(&database).await;
+
+    assert_within_budget(&trial, &database, QUICK_READS).await;
+}
+
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+async fn assert_within_budget(trial: &SpeedTrial, database: &Database, filter: SeriesFilter) {
+    let mut over_budget = Vec::new();
+    for sort in SORTS {
+        let listing = SeriesListing {
+            sort,
+            filter: filter.clone(),
+        };
+        let outcome = trial
+            .run(
+                async |_| None,
+                async |after| {
+                    *after = read_page(database, listing.clone(), after.take()).await;
+                },
+            )
+            .await;
+        eprintln!("{listing:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{listing:?}: {outcome}"));
+        }
+    }
+    let outcome = trial
+        .run(
+            async |_| (),
+            async |()| count(database, filter.clone()).await,
+        )
+        .await;
+    eprintln!("{filter:?}: {outcome}");
+    if !outcome.is_within_budget() {
+        over_budget.push(format!("{filter:?}: {outcome}"));
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+async fn add_library_with_quick_reads_in_progress(database: &Database) {
+    add_generated_series(database, &BOOK_TITLES).await;
+    database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = 0 AND book.title = ?2",
+                (EVERY_TENTH_STARTED, BOOK_TITLES[0]),
+            )?;
+            count_pages(transaction, EVERY_TWENTIETH, EVERY_TWENTIETH_REMAINDER)?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+async fn add_library_with_unstarted_quick_reads(database: &Database) {
+    add_generated_series(database, &BOOK_TITLES).await;
+    database
+        .write(|transaction| {
+            transaction.execute(
+                "INSERT INTO book_state (book_id, is_read)
+                SELECT book.id, 1 FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms % ?1 = 0",
+                [EVERY_TENTH_FINISHED],
+            )?;
+            count_pages(transaction, EVERY_TWENTIETH, UNSTARTED_QUICK_REMAINDER)?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+}
+
+fn count_pages(
+    transaction: &Transaction<'_>,
+    every_quick: u32,
+    quick_remainder: u32,
+) -> rusqlite::Result<()> {
+    transaction.execute(
+        "UPDATE book SET page_count = CASE
+            WHEN series.added_at_ms % ?1 = ?2 THEN ?3 ELSE ?4 END
+        FROM series WHERE series.local_id = book.series_local_id",
+        (
+            every_quick,
+            quick_remainder,
+            QUICK_BOOK_PAGES,
+            LONG_BOOK_PAGES,
+        ),
+    )?;
+    Ok(())
 }
 
 /// Finishes every tenth series, and of those reads every other one long ago and stores its first book twice.
@@ -490,6 +675,22 @@ async fn add_generated_library(database: &Database) {
             )?;
             tag_first_books(transaction, COMMON_TAG, (EVERY_FIFTH_TAGGED_COMMON, 0))?;
             tag_first_books(transaction, CROWDED_TAG, (EVERY_TENTH_TAGGED_CROWDED, 1))?;
+            transaction.execute(
+                "UPDATE book SET page_count = CASE
+                    WHEN series.added_at_ms % ?1 = ?2 THEN ?3
+                    WHEN series.added_at_ms % ?4 = ?5 THEN ?6
+                    ELSE ?7 END
+                FROM series WHERE series.local_id = book.series_local_id",
+                (
+                    EVERY_HUNDREDTH_QUICK,
+                    QUICK_REMAINDER,
+                    QUICK_BOOK_PAGES,
+                    EVERY_TENTH_BRIEF,
+                    BRIEF_REMAINDER,
+                    BRIEF_BOOK_PAGES,
+                    LONG_BOOK_PAGES,
+                ),
+            )?;
             Ok(())
         })
         .await
