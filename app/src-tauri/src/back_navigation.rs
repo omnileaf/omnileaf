@@ -1,5 +1,5 @@
 #[cfg(target_os = "android")]
-pub(crate) use android::{follow_history, plugin};
+pub(crate) use android::{follow_history, plugin, watch_gestures};
 
 #[cfg(not(target_os = "android"))]
 #[expect(
@@ -14,8 +14,11 @@ pub(crate) async fn follow_history(
 
 #[cfg(target_os = "android")]
 mod android {
+    use omnileaf_edge_swipe::BackSwipe;
+    use serde::Serialize;
     use tauri::{
         AppHandle, Manager, Wry,
+        ipc::Channel,
         plugin::{Builder, PluginHandle, TauriPlugin, mobile::PluginInvokeError},
     };
 
@@ -25,6 +28,7 @@ mod android {
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "BackNavigationPlugin";
     const FOLLOW_HISTORY: &str = "followHistory";
+    const WATCH_GESTURES: &str = "watchGestures";
 
     struct BackNavigationPlugin(PluginHandle<Wry>);
 
@@ -34,6 +38,11 @@ mod android {
         NotRegistered,
         #[error("match Android's back gesture to the page's history")]
         Plugin(#[from] PluginInvokeError),
+    }
+
+    #[derive(Serialize)]
+    struct Watching {
+        channel: Channel<BackSwipe>,
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -47,14 +56,29 @@ mod android {
     }
 
     pub(crate) async fn follow_history(app: &AppHandle) -> Result<(), IpcError> {
-        ask(app).await.map_err(|error| IpcError::internal(&error))
+        ask(app, FOLLOW_HISTORY, ())
+            .await
+            .map_err(|error| IpcError::internal(&error))
     }
 
-    async fn ask(app: &AppHandle) -> Result<(), BackNavigationError> {
+    pub(crate) async fn watch_gestures(
+        app: &AppHandle,
+        on_swipe: Channel<BackSwipe>,
+    ) -> Result<(), IpcError> {
+        ask(app, WATCH_GESTURES, Watching { channel: on_swipe })
+            .await
+            .map_err(|error| IpcError::internal(&error))
+    }
+
+    async fn ask(
+        app: &AppHandle,
+        command: &str,
+        payload: impl Serialize,
+    ) -> Result<(), BackNavigationError> {
         app.try_state::<BackNavigationPlugin>()
             .ok_or(BackNavigationError::NotRegistered)?
             .0
-            .run_mobile_plugin_async::<()>(FOLLOW_HISTORY, ())
+            .run_mobile_plugin_async::<()>(command, payload)
             .await?;
         Ok(())
     }
