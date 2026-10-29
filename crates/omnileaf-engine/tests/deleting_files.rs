@@ -16,10 +16,12 @@ use std::{
     collections::HashSet,
     fmt,
     fs::{self, File},
+    future::poll_fn,
     io,
     path::{Path, PathBuf},
     pin::pin,
     sync::{Arc, Mutex, mpsc},
+    task::Poll,
     time::{Duration, SystemTime},
 };
 
@@ -627,10 +629,15 @@ async fn the_report_names_file_names_and_never_absolute_paths() {
     assert!(!sent.contains(SERIES_01), "{sent}");
 }
 
+struct Waited {
+    pending_at_once: bool,
+    pending_after_the_upper_bound: bool,
+}
+
 async fn waits_while_files_are_disposed(
     deleting: &Deleting,
     operation: impl Future<Output = ()>,
-) -> bool {
+) -> Waited {
     let targets = [RemovalTarget::Series {
         id: deleting.series(SERIES_01).await,
     }];
@@ -640,12 +647,17 @@ async fn waits_while_files_are_disposed(
     let mut operation = pin!(operation);
     let waiting = async {
         pause.entered.notified().await;
-        let waited = timeout(LONG_ENOUGH_TO_REMOVE, operation.as_mut())
+        let pending_at_once =
+            poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx).is_pending())).await;
+        let pending_after_the_upper_bound = timeout(LONG_ENOUGH_TO_REMOVE, operation.as_mut())
             .await
             .is_err();
         pause.release.notify_one();
         operation.await;
-        waited
+        Waited {
+            pending_at_once,
+            pending_after_the_upper_bound,
+        }
     };
 
     let (_, waited) = tokio::join!(removal, waiting);
@@ -664,7 +676,8 @@ async fn the_library_lock_is_held_while_files_are_disposed_so_a_rescan_waits() {
     })
     .await;
 
-    assert!(waited);
+    assert!(waited.pending_at_once);
+    assert!(waited.pending_after_the_upper_bound);
 }
 
 #[tokio::test]
@@ -678,7 +691,8 @@ async fn the_library_lock_is_held_while_files_are_disposed_so_an_added_folder_wa
     })
     .await;
 
-    assert!(waited);
+    assert!(waited.pending_at_once);
+    assert!(waited.pending_after_the_upper_bound);
 }
 
 #[cfg(unix)]
