@@ -13,8 +13,9 @@ mod support;
 use std::{fs, path::Path, time::Duration};
 
 use omnileaf_engine::{
-    DetailEdits, Library, LibraryListing, OpenedBook, ProbedFormat, ResourceRouter,
-    SeriesBookListing, SeriesId, SmartFilter, UtcOffset,
+    CategoryId, DetailEdits, FolderId, FolderKind, LabelChanges, Library, LibraryFilter,
+    LibraryListing, LibrarySearch, OpenedBook, ProbedFormat, ResourceRouter, SeriesBookListing,
+    SeriesId, SeriesPage, SmartFilter, UtcOffset,
 };
 use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, cbz, page_jpeg};
 use stepped_clock::SteppedClock;
@@ -26,14 +27,19 @@ const SHORT: &str = "Short Series";
 const ADULT_SHORT: &str = "Adult Short Series";
 const LONG: &str = "Long Series";
 const SHORT_PAGES: u32 = 10;
-const LONG_PAGES: u32 = 200;
-const SECONDS_A_PAGE: u64 = 12;
-const SLOWER_SECONDS_A_PAGE: u64 = 20;
+const LONG_PAGES: u32 = 28;
+const PRACTICE_PAGES: u32 = 48;
+const SECONDS_A_PAGE: u64 = 120;
+const SLOWER_SECONDS_A_PAGE: u64 = 360;
 const PRACTICE_SESSIONS: u32 = 3;
 const PAGES_PER_PRACTICE_SESSION: u32 = 5;
-const SESSIONS_TO_OUTWEIGH_THE_FIRST_PACE: u32 = 16;
+const SESSIONS_TO_MOVE_THE_PACE: u32 = 3;
 const MORE_THAN_A_PAGE_OF_SERIES: u32 = 60;
+const SERIES_STAYING_QUICK: usize = 55;
+const STAYING_QUICK_PAGES: u32 = 2;
+const DROPPING_OUT_PAGES: u32 = 10;
 const SERIES_PER_PAGE: usize = 50;
+const SHELF: &str = "Sample Shelf";
 const BREAK: Duration = Duration::from_mins(10);
 const FORGOTTEN_AFTER: Duration = Duration::from_hours(91 * 24);
 
@@ -49,7 +55,7 @@ struct Shelf {
 impl Shelf {
     async fn with_series(name: &str, series: &[(&str, u32)]) -> Self {
         let comics = ScratchFolder::new(&format!("{name}-comics"));
-        let practice = (PRACTICE, LONG_PAGES);
+        let practice = (PRACTICE, PRACTICE_PAGES);
         for (seed, (title, pages)) in (1..).zip(series.iter().chain([&practice])) {
             let book = comics.path().join(FOLDER).join(title).join("v01.cbz");
             write_book(&book, seed, *pages);
@@ -147,6 +153,38 @@ impl Shelf {
         self.listed(&[SmartFilter::QuickReads]).await
     }
 
+    async fn linked_folder(&self) -> FolderId {
+        self.library
+            .folders(None)
+            .await
+            .unwrap()
+            .folders
+            .into_iter()
+            .find(|folder| folder.kind == FolderKind::Linked)
+            .unwrap()
+            .id
+    }
+
+    async fn shelved_series(&self) -> CategoryId {
+        let both = vec![
+            self.series_titled(SHORT).await,
+            self.series_titled(LONG).await,
+        ];
+        let changes = LabelChanges {
+            categories_created: vec![SHELF.to_owned()],
+            ..LabelChanges::default()
+        };
+        self.library.label_series(both, changes).await.unwrap();
+        self.library
+            .categories()
+            .await
+            .unwrap()
+            .into_iter()
+            .find(|category| category.name == SHELF)
+            .unwrap()
+            .id
+    }
+
     async fn offers_quick_reads(&self) -> bool {
         self.library
             .filter_choices()
@@ -170,6 +208,37 @@ fn write_book(path: &Path, seed: u64, pages: u32) {
 
 fn titles(titles: &[&str]) -> Vec<String> {
     titles.iter().map(|title| (*title).to_owned()).collect()
+}
+
+fn series_titles(page: SeriesPage) -> Vec<String> {
+    page.series.into_iter().map(|series| series.title).collect()
+}
+
+fn numbered_series_titles() -> Vec<String> {
+    (1..=MORE_THAN_A_PAGE_OF_SERIES)
+        .map(|number| format!("Series {number:02}"))
+        .collect()
+}
+
+fn pages_of_numbered_series(index: usize) -> u32 {
+    if index < SERIES_STAYING_QUICK {
+        STAYING_QUICK_PAGES
+    } else {
+        DROPPING_OUT_PAGES
+    }
+}
+
+fn quick_reads_filter() -> LibraryFilter {
+    let mut filter = LibraryListing::default().filter;
+    filter.smart = vec![SmartFilter::QuickReads];
+    filter
+}
+
+fn quick_reads_listing() -> LibraryListing {
+    LibraryListing {
+        filter: quick_reads_filter(),
+        ..LibraryListing::default()
+    }
 }
 
 #[tokio::test]
@@ -311,19 +380,20 @@ async fn lists_nothing_for_an_active_quick_reads_chip_once_learning_the_speed_is
 }
 
 #[tokio::test]
-async fn pages_on_through_quick_reads_after_the_learned_speed_changed_between_pages() {
-    let many: Vec<String> = (1..=MORE_THAN_A_PAGE_OF_SERIES)
-        .map(|number| format!("Short Series {number:02}"))
+async fn pages_on_through_quick_reads_at_the_pace_learned_since_the_first_page() {
+    let many = numbered_series_titles();
+    let series: Vec<(&str, u32)> = many
+        .iter()
+        .enumerate()
+        .map(|(index, title)| (title.as_str(), pages_of_numbered_series(index)))
         .collect();
-    let series: Vec<(&str, u32)> = many.iter().map(|title| (title.as_str(), 2)).collect();
     let shelf = Shelf::with_series("quick-reads-speed-changes", &series).await;
     shelf.learn_the_first_pace().await;
-    let mut listing = LibraryListing::default();
-    listing.filter.smart = vec![SmartFilter::QuickReads];
+    let listing = quick_reads_listing();
     let first = shelf.library.series(listing.clone(), None).await.unwrap();
 
     shelf
-        .learn_the_pace(SESSIONS_TO_OUTWEIGH_THE_FIRST_PACE, SLOWER_SECONDS_A_PAGE)
+        .learn_the_pace(SESSIONS_TO_MOVE_THE_PACE, SLOWER_SECONDS_A_PAGE)
         .await;
     let second = shelf
         .library
@@ -331,7 +401,103 @@ async fn pages_on_through_quick_reads_after_the_learned_speed_changed_between_pa
         .await
         .unwrap();
 
-    assert_eq!(first.series.len(), SERIES_PER_PAGE);
-    assert_eq!(first.series.len() + second.series.len(), many.len(),);
+    assert_eq!(
+        series_titles(first),
+        many.get(..SERIES_PER_PAGE).unwrap().to_vec()
+    );
     assert_eq!(second.next, None);
+    assert_eq!(
+        series_titles(second),
+        many.get(SERIES_PER_PAGE..SERIES_STAYING_QUICK)
+            .unwrap()
+            .to_vec()
+    );
+}
+
+#[tokio::test]
+async fn narrows_a_search_to_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-search").await;
+    shelf.learn_the_first_pace().await;
+    let search = LibrarySearch {
+        text: String::new(),
+        filter: quick_reads_filter(),
+    };
+
+    let found = shelf.library.search(search, None).await.unwrap();
+
+    assert_eq!(series_titles(found), titles(&[SHORT]));
+}
+
+#[tokio::test]
+async fn counts_a_search_among_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-search-count").await;
+    shelf.learn_the_first_pace().await;
+    let search = LibrarySearch {
+        text: String::new(),
+        filter: quick_reads_filter(),
+    };
+
+    let counted = shelf.library.search_count(search).await.unwrap();
+
+    assert_eq!(counted, 1);
+}
+
+#[tokio::test]
+async fn narrows_a_folder_to_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-folder").await;
+    shelf.learn_the_first_pace().await;
+    let folder = shelf.linked_folder().await;
+
+    let listed = shelf
+        .library
+        .folder_series(folder, quick_reads_listing(), None)
+        .await
+        .unwrap();
+
+    assert_eq!(series_titles(listed), titles(&[SHORT]));
+}
+
+#[tokio::test]
+async fn counts_a_folder_among_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-folder-count").await;
+    shelf.learn_the_first_pace().await;
+    let folder = shelf.linked_folder().await;
+
+    let counted = shelf
+        .library
+        .folder_series_count(folder, quick_reads_filter())
+        .await
+        .unwrap();
+
+    assert_eq!(counted, 1);
+}
+
+#[tokio::test]
+async fn narrows_a_category_to_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-category").await;
+    shelf.learn_the_first_pace().await;
+    let category = shelf.shelved_series().await;
+
+    let listed = shelf
+        .library
+        .category_series(category, quick_reads_listing(), None)
+        .await
+        .unwrap();
+
+    assert_eq!(series_titles(listed), titles(&[SHORT]));
+}
+
+#[tokio::test]
+async fn counts_a_category_among_the_quick_reads_at_the_learned_pace() {
+    let shelf = Shelf::with_a_short_and_a_long_series("quick-reads-category-count").await;
+    shelf.learn_the_first_pace().await;
+    let category = shelf.shelved_series().await;
+
+    let counted = shelf
+        .library
+        .category_series_count(category, quick_reads_filter())
+        .await
+        .unwrap();
+
+    assert_eq!(counted, 1);
 }
