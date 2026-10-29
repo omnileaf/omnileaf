@@ -336,7 +336,6 @@ mod tests {
         scratch::ScratchLibrary,
     };
 
-    const COVER_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (8, 6);
     const BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE: (u8, u8) = (4, 5);
 
     fn every_page_query_of<P>(directions: &Directions<P>) -> [&'static str; 4] {
@@ -366,23 +365,15 @@ mod tests {
     fn sorting_only_the_page(gathered: &str) -> Vec<String> {
         sorting_the_page_gathered_by(
             with_tag_probe(vec![gathered.to_owned()], 2),
-            COVER_SUBQUERIES_OF_THE_PAGE,
             BOOK_UP_NEXT_SUBQUERIES_OF_THE_PAGE,
         )
     }
 
-    fn sorting_the_page_gathered_by(
-        gathered: Vec<String>,
-        covers: (u8, u8),
-        book_up_next: (u8, u8),
-    ) -> Vec<String> {
-        let rows_of_the_page = with_covers(
-            vec![
-                "SCAN page".to_owned(),
-                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned(),
-            ],
-            covers,
-        );
+    fn sorting_the_page_gathered_by(gathered: Vec<String>, book_up_next: (u8, u8)) -> Vec<String> {
+        let rows_of_the_page = with_covers(vec![
+            "SCAN page".to_owned(),
+            "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)".to_owned(),
+        ]);
         ["MATERIALIZE page".to_owned()]
             .into_iter()
             .chain(gathered)
@@ -732,7 +723,6 @@ mod tests {
             .into_iter()
             .chain(tag_probe_steps(3))
             .collect(),
-            (9, 7),
             (5, 6),
         );
         assert_eq!(plans, vec![gathered; queries.len()]);
@@ -762,7 +752,6 @@ mod tests {
                 .chain(candidates_by_tag)
                 .chain(tag_probe_steps(3))
                 .collect(),
-            (9, 7),
             (5, 6),
         );
         assert_eq!(plans, vec![gathered; queries.len()]);

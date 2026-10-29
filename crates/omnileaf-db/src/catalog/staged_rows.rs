@@ -268,20 +268,15 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
 
 #[cfg(test)]
 pub(crate) mod plans {
-    /// The numbers SQLite gives each stage's two cover subqueries, outer first.
-    const COVER_SUBQUERIES_OF_EACH_STAGE: [(u8, u8); 3] = [(3, 1), (11, 9), (17, 15)];
-    const TAG_SUBQUERIES_OF_EACH_STAGE: [u8; 3] = [5, 13, 19];
-    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (7, 8);
+    const TAG_SUBQUERIES_OF_EACH_STAGE: [u8; 3] = [2, 7, 10];
+    const IN_PROGRESS_BOOK_UP_NEXT_SUBQUERIES: (u8, u8) = (4, 5);
 
     pub(crate) fn merging_each_stage(series_step: &str) -> Vec<String> {
         let [unstarted, in_progress, finished] = [0, 1, 2].map(|stage| {
-            with_covers(
-                with_tag_probe(
-                    vec![series_step.to_owned()],
-                    TAG_SUBQUERIES_OF_EACH_STAGE[stage],
-                ),
-                COVER_SUBQUERIES_OF_EACH_STAGE[stage],
-            )
+            with_covers(with_tag_probe(
+                vec![series_step.to_owned()],
+                TAG_SUBQUERIES_OF_EACH_STAGE[stage],
+            ))
         });
         merging([
             unstarted,
@@ -350,18 +345,10 @@ pub(crate) mod plans {
             .collect()
     }
 
-    pub(crate) fn with_covers(stage_steps: Vec<String>, (outer, inner): (u8, u8)) -> Vec<String> {
+    pub(crate) fn with_covers(stage_steps: Vec<String>) -> Vec<String> {
         stage_steps
             .into_iter()
-            .chain([
-                "SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned(),
-                format!("CORRELATED SCALAR SUBQUERY {outer}"),
-                "SEARCH book USING COVERING INDEX book_by_series (series_local_id=?)".to_owned(),
-                "SEARCH book_file EXISTS USING COVERING INDEX book_file_by_book (book_id=?)"
-                    .to_owned(),
-                format!("CORRELATED SCALAR SUBQUERY {inner}"),
-                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)".to_owned(),
-            ])
+            .chain(["SEARCH cover USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN".to_owned()])
             .collect()
     }
 

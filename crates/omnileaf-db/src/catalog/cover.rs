@@ -23,14 +23,7 @@ const FILE_LOCATION_COLUMN: usize = 5;
 /// Joins `series` to its cover's file as `cover`: the first file of its first book in title order that has one.
 macro_rules! join_series_cover {
     () => {
-        "LEFT JOIN book_file AS cover ON cover.id = (
-            SELECT (SELECT min(book_file.id) FROM book_file WHERE book_file.book_id = book.id)
-            FROM book
-            WHERE book.series_local_id = series.local_id
-                AND EXISTS (SELECT 1 FROM book_file WHERE book_file.book_id = book.id)
-            ORDER BY book.reading_order_key, book.id
-            LIMIT 1
-        )"
+        "LEFT JOIN book_file AS cover ON cover.id = series.cover_file_id"
     };
 }
 

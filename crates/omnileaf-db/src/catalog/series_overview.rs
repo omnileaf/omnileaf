@@ -134,10 +134,9 @@ mod tests {
 
         let plan = scratch.query_plan(OVERVIEW_OF_SERIES);
 
-        let mut expected = with_covers(
-            vec!["SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)".to_owned()],
-            (5, 3),
-        );
+        let mut expected = with_covers(vec![
+            "SEARCH series USING INDEX sqlite_autoindex_series_1 (id=?)".to_owned(),
+        ]);
         expected.extend(
             [
                 "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN",
