@@ -5,7 +5,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
-  import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
+  import { DrawerContent, SheetBar } from "#lib/components/ui/drawer/index.ts";
   import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
@@ -42,7 +42,9 @@
 
   const isWide = new MediaQuery(MEDIUM_QUERY);
   const titleId = $props.id();
-  const panelWidth = viewPanelWidth(currentPlatform());
+  const platform = currentPlatform();
+  const isIos = platform === "ios";
+  const panelWidth = viewPanelWidth(platform);
 
   let direction: "ltr" | "rtl" = $state("ltr");
 
@@ -122,33 +124,49 @@
   </Popover.Root>
 {:else}
   <Dialog.Root bind:open={isOpen}>
-    <DrawerContent onDismiss={close} onCloseAutoFocus={focusButton}>
-      <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
-        <span
-          aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
-        >
-          <SlidersHorizontal size={ICON_SIZE} />
-        </span>
-        <div class="flex flex-1 flex-col">
-          <DialogTitle class="text-title font-bold">
-            {m.library_view_options()}
-          </DialogTitle>
-          <Dialog.Description class="text-small text-muted">
-            {m.library_view_kept_phone()}
-          </Dialog.Description>
+    <DrawerContent
+      height={isIos ? "large" : "fit"}
+      ground={isIos ? "grouped" : "plain"}
+      onDismiss={close}
+      onCloseAutoFocus={focusButton}
+    >
+      {#if isIos}
+        <SheetBar
+          title={m.library_view_options()}
+          closeLabel={m.library_close()}
+          onClose={close}
+        />
+      {:else}
+        <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
+          <span
+            aria-hidden="true"
+            class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+          >
+            <SlidersHorizontal size={ICON_SIZE} />
+          </span>
+          <div class="flex flex-1 flex-col">
+            <DialogTitle class="text-title font-bold">
+              {m.library_view_options()}
+            </DialogTitle>
+            <Dialog.Description class="text-small text-muted">
+              {m.library_view_kept_phone()}
+            </Dialog.Description>
+          </div>
+          <Button
+            type="button"
+            look="quiet"
+            class="rounded-control px-xs text-body min-block-touch-target"
+            onclick={close}
+          >
+            {m.library_view_done()}
+          </Button>
         </div>
-        <Button
-          type="button"
-          look="quiet"
-          class="rounded-control px-xs text-body min-block-touch-target"
-          onclick={close}
-        >
-          {m.library_view_done()}
-        </Button>
-      </div>
+      {/if}
       <div
-        class="flex flex-col overflow-auto px-sheet-inline pbs-sheet-gap pbe-sheet-bottom min-block-none"
+        class={[
+          "flex flex-col overflow-auto pbs-sheet-gap pbe-sheet-bottom min-block-none",
+          isIos ? "gap-xl" : "px-sheet-inline",
+        ]}
       >
         <ViewChoices
           {view}
@@ -156,6 +174,7 @@
           {mostThatFit}
           {hasCategories}
           {onChoose}
+          isGrouped={isIos}
         />
       </div>
     </DrawerContent>

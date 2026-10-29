@@ -39,7 +39,9 @@
 </script>
 
 <div class="flex flex-col gap-sm">
-  <div class="flex items-center justify-between gap-md">
+  <div
+    class="flex items-center justify-between gap-md ios:max-medium:flex-col ios:max-medium:items-stretch"
+  >
     <p id={labelId} class="text-body font-semibold large:text-small">
       {m.library_covers_per_row()}
     </p>

@@ -15,9 +15,9 @@
   }: {
     title: string;
     closeLabel: string;
-    actionLabel: string;
+    actionLabel?: string;
     onClose: () => void;
-    onAction: () => void;
+    onAction?: () => void;
   } = $props();
 </script>
 
@@ -37,12 +37,14 @@
   >
     {title}
   </DialogTitle>
-  <Button
-    type="button"
-    look="header-control"
-    class="col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none"
-    onclick={onAction}
-  >
-    {actionLabel}
-  </Button>
+  {#if actionLabel !== undefined}
+    <Button
+      type="button"
+      look="header-control"
+      class="col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none"
+      onclick={onAction}
+    >
+      {actionLabel}
+    </Button>
+  {/if}
 </div>

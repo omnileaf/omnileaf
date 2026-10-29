@@ -13,6 +13,7 @@
   import DisplayChoice from "./DisplayChoice.svelte";
   import GroupByChoice from "./GroupByChoice.svelte";
   import OnCoversChoice from "./OnCoversChoice.svelte";
+  import { groupLook } from "./group-look";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
   import {
     type ScreenSize,
@@ -33,13 +34,17 @@
     mostThatFit,
     hasCategories,
     onChoose,
+    isGrouped = false,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
     mostThatFit: number | undefined;
     hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
+    isGrouped?: boolean;
   } = $props();
+
+  const look = $derived(groupLook(isGrouped));
 
   const layoutId = $props.id();
   const pageId = `${layoutId}-page`;
@@ -49,11 +54,11 @@
   );
 </script>
 
-<section aria-labelledby={layoutId} class="flex flex-col">
-  <h3 id={layoutId} class="text-small font-semibold">
+<section aria-labelledby={layoutId} class={["flex flex-col", look.section]}>
+  <h3 id={layoutId} class={look.heading}>
     {m.library_view_layout()}
   </h3>
-  <div class="flex flex-col divide-y divide-border">
+  <div class={look.group}>
     <div class="py-setting-grid-pad">
       <DisplayChoice
         chosen={view.display}
@@ -107,11 +112,15 @@
     {/if}
   </div>
 </section>
-<section role="group" aria-labelledby={pageId} class="flex flex-col">
-  <h3 id={pageId} class="pbs-xl text-small font-semibold">
+<section
+  role="group"
+  aria-labelledby={pageId}
+  class={["flex flex-col", look.section]}
+>
+  <h3 id={pageId} class={[look.heading, !isGrouped && "pbs-xl"]}>
     {m.library_on_the_page()}
   </h3>
-  <div class="flex flex-col divide-y divide-border">
+  <div class={look.group}>
     <ViewSwitchRow
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
@@ -131,6 +140,7 @@
   </div>
 </section>
 <OnCoversChoice
+  {isGrouped}
   onCovers={view.onCovers}
   onChoose={(name: keyof OnCovers, isShown: boolean) => {
     onChoose(withOnCovers(view, name, isShown));

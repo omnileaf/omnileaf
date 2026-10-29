@@ -12,8 +12,8 @@ const OPEN_SHEET = xpath(
 const CHOOSE_COVERS = xpath(
   "//*[@aria-modal='true'][@data-state='open']//*[@role='radio'][.//span[normalize-space()='Choose']]",
 );
-const DONE = xpath(
-  "//*[@aria-modal='true'][@data-state='open']//button[normalize-space()='Done']",
+const CLOSE = xpath(
+  "//*[@aria-modal='true'][@data-state='open']//button[@aria-label='Close']",
 );
 const VIEW_OPTIONS_TEST_TIMEOUT_MS = 90_000;
 const FEWER = "Fewer covers per row";
@@ -83,7 +83,7 @@ test(
     await stepCoversPerRow(back);
 
     expect(await appSession().run(SHEET_CONTENT_HEIGHT)).toBe(opened);
-    await (await appSession().waitFor(DONE)).click();
+    await (await appSession().waitFor(CLOSE)).click();
   },
   VIEW_OPTIONS_TEST_TIMEOUT_MS,
 );
