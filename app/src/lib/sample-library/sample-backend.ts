@@ -986,6 +986,7 @@ export function sampleBackend(
       );
     },
     matchSystemBars: () => null,
+    followBackHistory: () => null,
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,

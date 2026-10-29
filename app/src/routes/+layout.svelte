@@ -27,6 +27,7 @@
   import type { PromptLook } from "#lib/crash-report/look.ts";
   import IconActionsSync from "#lib/icon-actions/IconActionsSync.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { followHistoryForBack } from "#lib/navigation/android-back.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import {
     languageSettingForDocument,
@@ -126,6 +127,7 @@
   setNotices(new Notices(() => undo.rules));
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
+  followHistoryForBack(() => data.appInfo.platform);
 
   function settleScreenshotMode(): void {
     screenshotMode.settle();
