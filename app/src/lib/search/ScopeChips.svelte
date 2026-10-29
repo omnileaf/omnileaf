@@ -3,11 +3,16 @@
   import type { ClassValue } from "svelte/elements";
 
   import { Toggle } from "#lib/components/ui/toggle/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { SEARCH_SCOPES, type SearchScope } from "./search-query.svelte";
 
   const CHECK_SIZE = 16;
+  const NATIVE_CHIP =
+    "border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-native-segment aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
+  const NATIVE_GROUP = "flex-nowrap gap-sm overflow-x-auto scrollbar-none";
 
   const LABELS = {
     everything: m.search_everything,
@@ -24,12 +29,20 @@
     onNarrow: (scope: SearchScope) => void;
     class?: ClassValue;
   } = $props();
+
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isNative = $derived(phoneOf(platform, width.current) === "ios");
 </script>
 
 <div
   role="group"
   aria-label={m.search_scope()}
-  class={["flex shrink-0 flex-wrap gap-x-icon-gap gap-y-lg", className]}
+  class={[
+    "flex shrink-0",
+    isNative ? NATIVE_GROUP : "flex-wrap gap-x-icon-gap gap-y-lg",
+    className,
+  ]}
 >
   {#each SEARCH_SCOPES as choice (choice)}
     {@const isChosen = scope === choice}
@@ -40,6 +53,7 @@
           onNarrow(choice);
         }
       }
+      class={isNative ? NATIVE_CHIP : undefined}
     >
       <span class="flex items-center gap-xs">
         {#if isChosen}
