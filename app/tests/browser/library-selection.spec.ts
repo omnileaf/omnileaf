@@ -166,13 +166,16 @@ test("marks the series selected read, ends selecting, and offers Undo", async ({
     ]);
 });
 
-test("ends selecting with its cross, and leaves every series as it was", async ({
+test("ends selecting from its close button, and leaves every series as it was", async ({
   page,
 }) => {
   await openLibrary(page);
   await startSelecting(page, 0);
 
-  await page.getByRole("button", { name: "Cancel selecting" }).first().click();
+  await page
+    .getByRole("button", { name: /^(Cancel selecting|Done)$/ })
+    .first()
+    .click();
 
   await expect(seriesList(page).getByRole("checkbox")).toHaveCount(0);
   await expect(seriesList(page).getByRole("link")).not.toHaveCount(0);
@@ -249,14 +252,14 @@ test("selecting has no accessibility violations", async ({ page }) => {
 });
 
 test.describe("the selection header on a phone", { tag: "@native" }, () => {
-  const BAR_BUTTON = { ios: 44, android: 48 } as const;
+  const BAR_BUTTON = { android: 48 } as const;
   const PLAIN_BUTTON = { ios: 34, android: 40 } as const;
 
-  test("ends selecting from the phone's own bar button and offers Select all as a plain button", async ({
+  test("ends selecting from the phone's own bar button and offers Select all as a plain button on Android", async ({
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
+    if (platform !== "android") {
       test.skip();
       return;
     }
@@ -273,5 +276,29 @@ test.describe("the selection header on a phone", { tag: "@native" }, () => {
     expect(cancel.width).toBeCloseTo(BAR_BUTTON[platform], 0);
     expect(cancel.height).toBeCloseTo(BAR_BUTTON[platform], 0);
     expect(selectAll.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
+  });
+
+  test("ends selecting with Done, beside Select all and the count, on an iPhone", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "ios") {
+      test.skip();
+      return;
+    }
+    await openLibrary(page);
+
+    await startSelecting(page, 1);
+    const done = await boxOf(page.getByRole("button", { name: "Done" }));
+    const selectAll = await boxOf(
+      page.getByRole("button", { name: /^Select all/ }),
+    );
+
+    await expect(
+      page.getByRole("button", { name: "Cancel selecting" }),
+    ).toHaveCount(0);
+    expect(done.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
+    expect(selectAll.height).toBeCloseTo(PLAIN_BUTTON[platform], 0);
+    expect(selectAll.x).toBeLessThan(done.x);
   });
 });
