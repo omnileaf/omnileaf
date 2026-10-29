@@ -21,9 +21,9 @@ use std::sync::{
 
 use books::write_book_with;
 use omnileaf_engine::{
-    AdultContent, AdultTreatment, Clock, DetailEdits, FolderKind, HistoryOf, Library,
-    LibraryListing, LibrarySearch, ProbedFormat, ReadMark, ResourceRouter, SeriesBookListing,
-    UtcOffset,
+    AdultContent, AdultTreatment, Clock, DetailEdits, FolderId, FolderKind, HistoryOf,
+    LabelChanges, Library, LibraryListing, LibrarySearch, ProbedFormat, ReadMark, ResourceRouter,
+    SeriesBookListing, UtcOffset,
 };
 use support::{NOW_UNIX_MS, ScratchFolder};
 
@@ -31,9 +31,10 @@ const SHOWN: &str = "Sample Series 01";
 const RATED: &str = "Sample Forbidden Tale";
 const MARKED: &str = "Sample Series 03";
 const OTHER: &str = "Sample Series 04";
-const PLAIN_WRITER: &str = "<ComicInfo><Writer>Pat Writer</Writer></ComicInfo>";
-const RATED_18: &str =
-    "<ComicInfo><Writer>Sam Hidden</Writer><AgeRating>R18+</AgeRating></ComicInfo>";
+const PLAIN_WRITER: &str = "<ComicInfo><Writer>Pat Writer</Writer><Tags>shared</Tags>
+    <LanguageISO>en</LanguageISO></ComicInfo>";
+const RATED_18: &str = "<ComicInfo><Writer>Pat Writer</Writer><AgeRating>R18+</AgeRating>
+    <Tags>forbidden</Tags><LanguageISO>fr</LanguageISO><Manga>Yes</Manga></ComicInfo>";
 const MINUTE_MS: u64 = 60_000;
 
 #[derive(Clone)]
@@ -127,6 +128,41 @@ impl Scanned {
             scanned.read(title).await;
         }
         scanned
+    }
+
+    async fn linked_folder(&self) -> FolderId {
+        self.library
+            .folders(None)
+            .await
+            .unwrap()
+            .folders
+            .into_iter()
+            .find(|folder| folder.kind == FolderKind::Linked)
+            .unwrap()
+            .id
+    }
+
+    async fn label_shown_rated_and_marked(&self) {
+        let shown = self.series_named(SHOWN).await;
+        let rated = self.series_named(RATED).await;
+        let marked = self.series_named(MARKED).await;
+        let changes = |tags: &[&str], category: bool| LabelChanges {
+            categories_created: if category {
+                vec!["Favourites".to_owned()]
+            } else {
+                Vec::new()
+            },
+            tags_added: tags.iter().map(|tag| (*tag).to_owned()).collect(),
+            ..LabelChanges::default()
+        };
+        self.library
+            .label_series(vec![shown, rated, marked], changes(&["Harbour"], true))
+            .await
+            .unwrap();
+        self.library
+            .label_series(vec![rated], changes(&["Secret"], false))
+            .await
+            .unwrap();
     }
 
     async fn series_named(&self, title: &str) -> omnileaf_engine::SeriesId {
@@ -425,4 +461,98 @@ async fn starts_with_screenshot_mode_off() {
     scanned.library.set_screenshot_mode(true);
 
     assert_eq!((before, scanned.library.screenshot_mode()), (false, true));
+}
+
+#[tokio::test]
+async fn counts_exactly_the_series_each_label_choice_and_related_list_shows_while_screenshot_mode_is_on()
+ {
+    let scanned = Scanned::read_in_every_series("screenshot-mode-labels").await;
+    let library = &scanned.library;
+    let shown = scanned.series_named(SHOWN).await;
+    scanned.label_shown_rated_and_marked().await;
+    let category = library.categories().await.unwrap()[0].id.clone();
+    let overview_titles = || async {
+        library
+            .series_overview(shown)
+            .await
+            .unwrap()
+            .related
+            .into_iter()
+            .map(|series| series.title)
+            .collect::<Vec<_>>()
+    };
+    let before = (
+        library.tags().await.unwrap(),
+        library.filter_choices().await.unwrap(),
+        overview_titles().await,
+    );
+
+    library.set_screenshot_mode(true);
+    let filter = LibraryListing::default().filter;
+    let in_category = library
+        .category_series(category.clone(), LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .len();
+    let category_count = library
+        .category_series_count(category, filter.clone())
+        .await
+        .unwrap();
+    let tags = library.tags().await.unwrap();
+    let linked = scanned.linked_folder().await;
+    let folder_counts = library
+        .folder_series_counts(vec![linked], filter.clone())
+        .await
+        .unwrap();
+    let writer_counts = library
+        .writer_series_counts(vec!["Pat Writer".to_owned()], filter.clone())
+        .await
+        .unwrap();
+    let listed = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .len();
+    let choices = library.filter_choices().await.unwrap();
+    let related = overview_titles().await;
+
+    assert_eq!((in_category, category_count), (1, 1));
+    assert_eq!(
+        tags.iter()
+            .map(|tag| (tag.name.as_str(), tag.series_count))
+            .collect::<Vec<_>>(),
+        [("Harbour", 1)]
+    );
+    assert_eq!(
+        (folder_counts, writer_counts),
+        (vec![u32::try_from(listed).unwrap()], vec![2])
+    );
+    assert_eq!(
+        (
+            choices.tags,
+            choices.languages,
+            choices.formats.len(),
+            choices.rates_adult
+        ),
+        (names(&["shared"]), names(&["en"]), 1, false)
+    );
+    assert_eq!(related, names(&[OTHER]));
+    assert_eq!(
+        (
+            before.0.len(),
+            before.1.tags,
+            before.1.languages,
+            before.1.formats.len(),
+            before.2.len()
+        ),
+        (
+            2,
+            names(&["forbidden", "shared"]),
+            names(&["en", "fr"]),
+            2,
+            3
+        )
+    );
 }

@@ -594,10 +594,7 @@ impl Library {
             .database()
             .read(move |connection| {
                 let view = adult_seen.view(connection)?;
-                Ok((
-                    stored_filter_choices(connection, view.hiding())?,
-                    view,
-                ))
+                Ok((stored_filter_choices(connection, view.hiding())?, view))
             })
             .await?;
         Ok(LibraryFilterChoices::new(stored, adult))
@@ -1297,7 +1294,7 @@ impl Library {
         Ok(self.hidden_types().await?.into_iter().collect())
     }
 
-    fn adult_seen(&self) -> AdultSeen {
+    pub(crate) fn adult_seen(&self) -> AdultSeen {
         AdultSeen::while_screenshot_mode_is(self.screenshot_mode())
     }
 

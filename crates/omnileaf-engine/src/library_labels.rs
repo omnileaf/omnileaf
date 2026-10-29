@@ -1,12 +1,9 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use omnileaf_db::{
-    adult_content::AdultHiding,
-    catalog::{
-        SeriesLabelHoldings, StoredCategory, StoredTag, library_categories, library_tags,
-        series_labels as stored_series_labels,
-    },
+use omnileaf_db::catalog::{
+    SeriesLabelHoldings, StoredCategory, StoredTag, library_categories, library_tags,
+    series_labels as stored_series_labels,
 };
 
 use crate::{
@@ -64,10 +61,11 @@ impl Library {
     }
 
     pub async fn tags(&self) -> Result<Vec<LibraryTag>, LibraryError> {
+        let adult_seen = self.adult_seen();
         let stored = self
             .store
             .database()
-            .read(|connection| library_tags(connection, AdultHiding::default()))
+            .read(move |connection| library_tags(connection, adult_seen.hiding(connection)?))
             .await?;
         Ok(stored.into_iter().map(LibraryTag::from).collect())
     }
