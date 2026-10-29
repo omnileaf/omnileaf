@@ -29,6 +29,7 @@ export interface Clock {
 
 export interface ScreenshotModeEngine {
   setOn(isOn: boolean): Promise<void>;
+  reportFailure(error: unknown): void;
 }
 
 export class ScreenshotMode {
@@ -47,7 +48,6 @@ export class ScreenshotMode {
     this.#apply(settle(stored, clock.now()));
   }
 
-  /** Library reads wait for this, since the engine starts with Screenshot mode off at every launch. */
   get engineReady(): Promise<void> {
     return this.#engineReady;
   }
@@ -89,10 +89,21 @@ export class ScreenshotMode {
     const wasOn = this.isOn;
     this.#settings = settings;
     if (this.isOn !== wasOn) {
-      this.#engineReady = this.engine.setOn(this.isOn).catch(() => undefined);
+      this.#engineReady = this.#tellEngine(this.isOn);
     }
     rememberPreference(this.store, PREFERENCE_KEY, JSON.stringify(settings));
     this.#scheduleTurningOff(settings.activity);
+  }
+
+  async #tellEngine(isOn: boolean): Promise<void> {
+    try {
+      await this.engine.setOn(isOn);
+    } catch (error) {
+      this.engine.reportFailure(error);
+      if (isOn) {
+        this.#apply(turnOff(this.#settings));
+      }
+    }
   }
 
   #scheduleTurningOff(activity: ScreenshotModeActivity): void {

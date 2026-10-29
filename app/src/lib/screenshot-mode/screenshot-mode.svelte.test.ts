@@ -20,7 +20,7 @@ function memoryStore() {
 }
 
 function quietEngine(): ScreenshotModeEngine {
-  return { setOn: () => Promise.resolve() };
+  return { setOn: () => Promise.resolve(), reportFailure: () => undefined };
 }
 
 function recordingEngine() {
@@ -31,7 +31,8 @@ function recordingEngine() {
       told.push(isOn);
       return Promise.resolve();
     },
-  } satisfies ScreenshotModeEngine & Record<string, unknown>;
+    reportFailure: () => undefined,
+  } satisfies ScreenshotModeEngine & { told: boolean[] };
 }
 
 function manualClock() {
@@ -208,6 +209,7 @@ test("is ready for library reads only once the engine has heard it is on", async
       new Promise<void>((resolve) => {
         answer = resolve;
       }),
+    reportFailure: () => undefined,
   };
   const mode = new ScreenshotMode(store, clock, slowEngine);
   let isReady = false;
@@ -229,9 +231,24 @@ test("is still ready for library reads when the engine can't be told", async () 
   new ScreenshotMode(store, clock, quietEngine()).toggle();
   const failingEngine: ScreenshotModeEngine = {
     setOn: () => Promise.reject(new Error("the engine is gone")),
+    reportFailure: () => undefined,
   };
 
   const mode = new ScreenshotMode(store, clock, failingEngine);
 
   await expect(mode.engineReady).resolves.toBeUndefined();
+});
+
+test("turns itself back off and reports when the engine can't be told it is on", async () => {
+  const reported: unknown[] = [];
+  const failure = new Error("the engine is gone");
+  const mode = new ScreenshotMode(memoryStore(), manualClock(), {
+    setOn: (isOn) => (isOn ? Promise.reject(failure) : Promise.resolve()),
+    reportFailure: (error) => reported.push(error),
+  });
+
+  mode.toggle();
+  await mode.engineReady;
+
+  expect([mode.isOn, reported]).toEqual([false, [failure]]);
 });

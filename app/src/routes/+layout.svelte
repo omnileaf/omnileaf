@@ -107,6 +107,7 @@
   const screenshotMode = setScreenshotMode(
     screenshotModeForDocument({
       setOn: (isOn) => commands.setScreenshotMode(isOn),
+      reportFailure: reportError,
     }),
   );
   const startsInScreenshotMode = screenshotMode.isOn;
