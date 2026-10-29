@@ -20,8 +20,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function listingOn(platform: "macos" | "linux") {
-  await page.viewport(DESKTOP.width, DESKTOP.height);
+async function listingOn(
+  platform: "macos" | "linux",
+  size: { width: number; height: number } = DESKTOP,
+) {
+  await page.viewport(size.width, size.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   document.body.append(document.createElement("main"));
@@ -85,4 +88,12 @@ test("keeps Show as toggles and Sort as the outline button on Linux", async () =
       page.getByRole("button", { name: /^Sort/ }).element(),
     ).getBoundingClientRect().height,
   ).toBeGreaterThan(24);
+});
+
+test("keeps the search reachable on a narrow macOS window", async () => {
+  await listingOn("macos", { width: 700, height: 900 });
+
+  await expect
+    .element(page.getByRole("button", { name: "Find a book" }))
+    .toBeVisible();
 });
