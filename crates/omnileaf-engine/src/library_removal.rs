@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, btree_map::Entry},
+    collections::BTreeSet,
     io,
     path::{Path, PathBuf},
     sync::Arc,
@@ -18,10 +18,9 @@ use specta::Type;
 use tokio::task::spawn_blocking;
 
 use crate::{
-    BookId, Library, LibraryError, SeriesId,
+    BookId, LibraryError, SeriesId,
     clock::stored_ms,
     file_disposal::{Disposal, DisposalFailure, FileDisposal},
-    library::RootFiles,
     scan::saturating_u32,
 };
 
@@ -97,60 +96,53 @@ pub(crate) fn expand(
     })
 }
 
-impl Library {
-    pub(crate) async fn dispose_files(
-        &self,
-        files: Vec<BookFileToRemove>,
-        disposal: &impl FileDisposal,
-    ) -> Vec<FileRemoval> {
-        let mut roots = BTreeMap::new();
-        for file in &files {
-            if let Entry::Vacant(unchecked) = roots.entry(file.root_id) {
-                unchecked.insert(self.reachable_files_of(&file.root).await);
-            }
-        }
-        let mut removals = Vec::with_capacity(files.len());
-        for file in files {
-            let outcome = match roots.get(&file.root_id).and_then(Option::as_ref) {
-                Some(root) => dispose_file(root, &file, disposal).await,
-                None => FileOutcome::from(DisposalFailure::Unsupported),
-            };
-            removals.push(FileRemoval {
-                book: BookId(file.book),
-                name: file_name(&file.location),
-                outcome,
-            });
-        }
-        removals
+pub(crate) async fn removal_of(
+    file: &BookFileToRemove,
+    root: Option<(&Arc<dyn Storage>, &Path)>,
+    disposal: &impl FileDisposal,
+) -> FileRemoval {
+    let outcome = match root {
+        Some((storage, folder)) => dispose_file(storage, folder, file, disposal).await,
+        None => FileOutcome::from(DisposalFailure::Unsupported),
+    };
+    FileRemoval {
+        book: BookId(file.book),
+        name: file_name(&file.location),
+        outcome,
     }
+}
 
-    async fn reachable_files_of(&self, locator: &RootLocator) -> Option<RootFiles> {
-        let root = self.files_of(locator)?;
-        let (storage, folder) = (Arc::clone(&root.storage), root.folder.clone());
-        let listed = blocking(move || storage.entries(&folder)).await.ok()?;
-        match listed {
-            Ok(entries) if !entries.is_empty() => Some(root),
-            Ok(_) => {
-                tracing::warn!(folder = %root.folder.display(), "find a folder to remove files from empty");
-                None
-            }
-            Err(error) => {
-                tracing::warn!(folder = %root.folder.display(), %error, "read a folder to remove files from");
-                None
-            }
+pub(crate) async fn is_reachable(storage: &Arc<dyn Storage>, folder: &Path) -> bool {
+    let (storage, listed_folder) = (Arc::clone(storage), folder.to_path_buf());
+    let Ok(listed) = blocking(move || storage.entries(&listed_folder)).await else {
+        return false;
+    };
+    match listed {
+        Ok(entries) if !entries.is_empty() => true,
+        Ok(_) => {
+            tracing::warn!(folder = %folder.display(), "remove files from a folder that lists as empty");
+            false
+        }
+        Err(error) => {
+            tracing::warn!(folder = %folder.display(), %error, "read a folder to remove files from");
+            false
         }
     }
 }
 
 async fn dispose_file(
-    root: &RootFiles,
+    storage: &Arc<dyn Storage>,
+    folder: &Path,
     file: &BookFileToRemove,
     disposal: &impl FileDisposal,
 ) -> FileOutcome {
-    let path = root.folder.join(&file.location);
-    let storage = Arc::clone(&root.storage);
+    let path = folder.join(&file.location);
     let stat = path.clone();
-    let details = match blocking(move || storage.details(&stat)).await {
+    let details = {
+        let storage = Arc::clone(storage);
+        blocking(move || storage.details(&stat)).await
+    };
+    let details = match details {
         Ok(details) => details,
         Err(failure) => return FileOutcome::from(failure),
     };
@@ -158,7 +150,7 @@ async fn dispose_file(
         return outcome;
     }
     match file.root {
-        RootLocator::AndroidTree(_) => remove_through(&root.storage, path).await,
+        RootLocator::AndroidTree(_) => remove_through(storage, path).await,
         RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
             FileOutcome::from(disposal.dispose(&path).await)
         }

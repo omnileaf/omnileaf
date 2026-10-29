@@ -1,4 +1,4 @@
-use std::{io, path::Path};
+use std::{future::ready, io, path::Path};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposal {
@@ -25,6 +25,30 @@ pub trait FileDisposal: Send + Sync {
         &self,
         file: &Path,
     ) -> impl Future<Output = Result<Disposal, DisposalFailure>> + Send;
+}
+
+pub enum FileFate<'a, D> {
+    Keep,
+    Dispose(&'a D),
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum NoDisposal {}
+
+impl FileFate<'_, NoDisposal> {
+    #[must_use]
+    pub const fn keep() -> Self {
+        Self::Keep
+    }
+}
+
+impl FileDisposal for NoDisposal {
+    fn dispose(
+        &self,
+        _file: &Path,
+    ) -> impl Future<Output = Result<Disposal, DisposalFailure>> + Send {
+        ready(Err(DisposalFailure::Unsupported))
+    }
 }
 
 impl From<io::ErrorKind> for DisposalFailure {

@@ -27,9 +27,9 @@ use std::{
 use books::write_book;
 use disposal::{DiskDisposal, FakeDisposal, Pause};
 use omnileaf_engine::{
-    AndroidTree, BookId, Disposal, DisposalFailure, FileDisposal, FileOutcome, FileRemoval,
-    Library, LibraryListing, OpenTree, RemovalFailure, RemovalReport, RemovalTarget, RootLocator,
-    SeriesBookListing, SeriesId, TreeUri,
+    AndroidTree, BookId, Disposal, DisposalFailure, FileDisposal, FileFate, FileOutcome,
+    FileRemoval, Library, LibraryListing, OpenTree, RemovalFailure, RemovalReport, RemovalTarget,
+    RootLocator, SeriesBookListing, SeriesId, TreeUri,
 };
 use omnileaf_formats::{Details, Entry, LocalStorage, Storage};
 use scanned::{Scanned, owned};
@@ -102,7 +102,7 @@ impl Deleting {
     ) -> RemovalReport {
         self.scanned
             .library
-            .remove_from_library(targets, true, disposal)
+            .remove_from_library(targets, FileFate::Dispose(disposal))
             .await
             .unwrap()
     }
@@ -438,22 +438,21 @@ async fn a_book_held_in_two_folders_reports_one_result_per_file() {
 }
 
 #[tokio::test]
-async fn with_delete_files_off_no_disposal_runs() {
+async fn keeping_the_files_removes_the_books_and_leaves_every_file_on_disk() {
     let deleting = Deleting::new("delete-off").await;
     let series = deleting.series(SERIES_01).await;
-    let disposal = FakeDisposal::default();
 
     let report = deleting
         .scanned
         .library
-        .remove_from_library(&[RemovalTarget::Series { id: series }], false, &disposal)
+        .remove_from_library(&[RemovalTarget::Series { id: series }], FileFate::keep())
         .await
         .unwrap();
 
     assert_eq!(report.files, []);
     assert_eq!(report.removed_books, 2);
-    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
     assert!(deleting.path("Sample Series 01/v01.cbz").is_file());
+    assert!(deleting.path("Sample Series 01/v02.cbz").is_file());
 }
 
 #[tokio::test]
@@ -677,7 +676,10 @@ async fn a_file_in_a_tree_goes_through_its_storage_and_never_the_disposal() {
     let disposal = FakeDisposal::default();
 
     let report = library
-        .remove_from_library(&[RemovalTarget::Book { id: book }], true, &disposal)
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&disposal),
+        )
         .await
         .unwrap();
 
@@ -698,8 +700,7 @@ async fn a_tree_that_cannot_remove_files_reports_them_unsupported_and_keeps_them
     let report = library
         .remove_from_library(
             &[RemovalTarget::Book { id: book }],
-            true,
-            &FakeDisposal::default(),
+            FileFate::Dispose(&FakeDisposal::default()),
         )
         .await
         .unwrap();
