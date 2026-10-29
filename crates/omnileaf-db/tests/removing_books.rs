@@ -123,7 +123,9 @@ impl Library {
             .read(move |connection| files_of_books(connection, &books))
             .await
             .unwrap();
-        files.sort_by(|left, right| left.location.cmp(&right.location));
+        files.sort_by(|left, right| {
+            (&left.location, left.root_id).cmp(&(&right.location, right.root_id))
+        });
         files
     }
 
