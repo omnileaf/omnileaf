@@ -142,6 +142,8 @@ class PendingRescan {
 }
 
 afterEach(async () => {
+  delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
   await clearToasts();
   await new Promise((resolve) => setTimeout(resolve));
   clearMocks();

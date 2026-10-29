@@ -210,7 +210,7 @@
       class={[
         "mbs-sm px-xs text-muted",
         isNative
-          ? "ps-lg text-native-notice-body/native-notice-body"
+          ? "px-lg text-native-notice-body/native-notice-body"
           : "text-caption",
       ]}
     >

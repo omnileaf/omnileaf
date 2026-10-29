@@ -4,6 +4,7 @@
 
   import { HardDrive } from "@lucide/svelte";
 
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { phoneOf } from "#lib/page/platform.ts";
@@ -32,8 +33,7 @@
   const ICON_SIZE = 18;
   const NATIVE_TITLE =
     "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
-  const NATIVE_PLACE =
-    "font-ui text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle wrap-anywhere text-muted";
+  const NATIVE_PLACE = `font-ui ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
   const headingId = $props.id();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
