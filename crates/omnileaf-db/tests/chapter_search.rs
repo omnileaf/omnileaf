@@ -37,6 +37,7 @@ const MARKET: &str = "Market Square";
 const FORBIDDEN: &str = "Forbidden Tale";
 const CROWD: &str = "Crowd";
 const WANTED: &str = "wanted";
+const TAGGED_EVERY: u32 = 20;
 const WINDOW: u32 = CHAPTER_CANDIDATES_PER_CALL;
 
 struct Chapter<'a> {
@@ -170,6 +171,61 @@ impl Library {
             .write(move |transaction| record_scanned_books(transaction, &scanned))
             .await
             .unwrap();
+    }
+
+    async fn record_one_in_twenty_tagged(&self, numbers: Range<u32>, title_of: fn(u32) -> String) {
+        let scanned: Vec<ScannedBook> = numbers
+            .map(|number| {
+                let title = title_of(number);
+                let chapter = if number % TAGGED_EVERY == 0 {
+                    Chapter::titled(number, HARBOUR, &title).tagged(WANTED)
+                } else {
+                    Chapter::titled(number, CROWD, &title)
+                };
+                scanned_book(self.root, &chapter)
+            })
+            .collect();
+        self.store
+            .database()
+            .write(move |transaction| record_scanned_books(transaction, &scanned))
+            .await
+            .unwrap();
+    }
+
+    async fn record_titled_in_both_places(&self, series: &str, numbers: Range<u32>) {
+        let titles: Vec<(u32, String)> = numbers
+            .map(|number| (number, format!("Harbor Gate {number:04}")))
+            .collect();
+        let scanned: Vec<ScannedBook> = titles
+            .iter()
+            .map(|(number, title)| {
+                scanned_book(
+                    self.root,
+                    &Chapter::titled(*number, series, title).with_comic_info_title("Harbor Gate"),
+                )
+            })
+            .collect();
+        self.store
+            .database()
+            .write(move |transaction| record_scanned_books(transaction, &scanned))
+            .await
+            .unwrap();
+    }
+
+    async fn index_ids_of(&self, book: BookId) -> Vec<(String, i64)> {
+        self.store
+            .database()
+            .read(move |connection| {
+                let mut statement = connection.prepare(
+                    "SELECT kind, id FROM book_title_search WHERE book_id = ?1 ORDER BY id",
+                )?;
+                statement
+                    .query_map([book.as_bytes()], |row| Ok((row.get(0)?, row.get(1)?)))?
+                    .collect::<Result<_, _>>()
+                    .map_err(Error::from)
+            })
+            .await
+            .unwrap()
     }
 
     async fn add_series_without_books(&self, title: &str) {
@@ -1075,4 +1131,91 @@ async fn lists_books_with_the_same_title_in_the_order_they_were_indexed_every_ti
             .collect::<Vec<_>>(),
         [MARKET, LANTERNS, HARBOUR]
     );
+}
+
+fn gate_title(number: u32) -> String {
+    format!("Harbor Gate {number:04}")
+}
+
+#[tokio::test]
+async fn walks_every_hit_once_across_the_window_boundary_at_page_sizes_that_align_with_it_or_not() {
+    let library = Library::open("chapters-window-boundary").await;
+    library
+        .record_one_in_twenty_tagged(1..WINDOW + 150, gate_title)
+        .await;
+    let wanted = search(
+        "harbor gate",
+        SeriesFilter::NONE.with_tags(vec![WANTED.to_owned()]),
+    );
+    let expected: Vec<String> = (1..WINDOW + 150)
+        .filter(|number| number % TAGGED_EVERY == 0)
+        .map(gate_title)
+        .collect();
+
+    let walks = [
+        library.pages(&wanted, 200).await,
+        library.pages(&wanted, 50).await,
+        library.pages(&wanted, 70).await,
+    ];
+
+    for walk in &walks {
+        assert_eq!(titles(walk), expected);
+        assert!(walk.last().unwrap().next.is_none());
+    }
+}
+
+#[tokio::test]
+async fn returns_a_book_by_its_comic_info_title_when_its_dropped_file_name_row_ends_the_window() {
+    let library = Library::open("chapters-split-across-windows").await;
+    library
+        .record_one_in_twenty_tagged(1..WINDOW, gate_title)
+        .await;
+    let split = library
+        .record(
+            Chapter::titled(5_000, HARBOUR, "Harbor Gate 5000")
+                .with_comic_info_title("Harbor Gate")
+                .tagged(WANTED),
+        )
+        .await;
+    let wanted = search(
+        "harbor gate",
+        SeriesFilter::NONE.with_tags(vec![WANTED.to_owned()]),
+    );
+
+    let ids = library.index_ids_of(split).await;
+    let pages = library.pages(&wanted, 200).await;
+
+    assert_eq!(
+        ids,
+        [
+            ("file_name".to_owned(), i64::from(WINDOW)),
+            ("comic_info".to_owned(), i64::from(WINDOW) + 1),
+        ]
+    );
+    assert_eq!(
+        pages.iter().map(|page| page.hits.len()).collect::<Vec<_>>(),
+        [99, 1]
+    );
+    let found: Vec<_> = pages.iter().flat_map(|page| page.hits.iter()).collect();
+    let splits: Vec<_> = found.iter().filter(|hit| hit.book == split).collect();
+    assert_eq!(splits.len(), 1);
+    assert_eq!(splits[0].matched_in, ChapterTitleSource::ComicInfo);
+    assert!(pages.last().unwrap().next.is_none());
+}
+
+#[tokio::test]
+async fn walks_books_found_by_both_titles_once_each_when_their_rows_pass_the_window_but_the_books_do_not()
+ {
+    let library = Library::open("chapters-two-rows-per-book").await;
+    library.record_titled_in_both_places(CROWD, 1..1_101).await;
+    let gate = search("harbor gate", SeriesFilter::NONE);
+
+    let pages = library.pages(&gate, 200).await;
+    let counted = library.count("harbor gate", SeriesFilter::NONE).await;
+
+    let found = titles(&pages);
+    assert_eq!(found.len(), 1_100);
+    assert!(found.iter().all(|title| title == "Harbor Gate"));
+    assert!(pages.last().unwrap().next.is_none());
+    assert_eq!(counted, None);
 }
