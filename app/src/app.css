@@ -1299,6 +1299,22 @@
   --width: var(--container-toast);
 }
 
+@utility segment-divider {
+  position: relative;
+  &:not(:first-child)::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: -0.5px;
+    inset-block: 5px;
+    inline-size: 1px;
+    background: var(--color-faint);
+  }
+  &:is([aria-checked="true"], [aria-selected="true"])::after,
+  &:is([aria-checked="true"], [aria-selected="true"]) + &::after {
+    opacity: 0;
+  }
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
 }

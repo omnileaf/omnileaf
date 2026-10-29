@@ -24,11 +24,16 @@ const IOS_SEGMENTED_LOOK: TabsLook = {
     "flex flex-auto items-center justify-center gap-sm rounded-native-segment min-block-native-segment px-native-segment-inline text-native-segment leading-native-segment tracking-native-segment not-aria-selected:bg-native-segment-fill not-aria-selected:font-native-segment not-aria-selected:text-native-on-segment aria-selected:rounded-native-segment-selected aria-selected:bg-native-segment-selected aria-selected:font-native-segment-selected aria-selected:text-native-on-segment-selected aria-selected:shadow-native-segment-lift",
 };
 
+const MACOS_SEGMENTED_LOOK: TabsLook = {
+  list: IOS_SEGMENTED_LOOK.list,
+  trigger: `${IOS_SEGMENTED_LOOK.trigger} segment-divider not-aria-selected:hover:bg-native-control-fill-hover`,
+};
+
 export const TABS_LOOKS = {
   ios: IOS_SEGMENTED_LOOK,
   android: TODAYS_LOOK,
   linux: SHADCN_LOOK,
-  macos: TODAYS_LOOK,
+  macos: MACOS_SEGMENTED_LOOK,
   windows: TODAYS_LOOK,
 } satisfies Record<Platform, TabsLook>;
 

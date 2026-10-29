@@ -67,6 +67,14 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const MACOS_SMALL = {
+    track: "min-block-native-button-small rounded-native-button-small",
+    segment:
+      "min-block-native-button-small px-sm text-native-button-small leading-native-button-small",
+    corners:
+      "rounded-native-button-small first-of-type:rounded-s-native-button-small last-of-type:rounded-e-native-button-small",
+  };
+
   const WINDOWS_LOOK = {
     track:
       "gap-px rounded-windows-control border border-windows-stroke bg-native-segmented-track",
@@ -98,6 +106,9 @@
   const look = $derived(LOOKS[size]);
   const platform = currentPlatform();
   const isNative = hasNativeLook(platform);
+  const isMacos = platform === "macos";
+  const isMacosSmall = $derived(isMacos && size === "small");
+  const usesNativeTokens = isNative || isMacos;
   const isWindows = $derived(
     platform === "windows" && size === "regular" && isSetupRow,
   );
@@ -105,7 +116,12 @@
     if (isWindows) {
       return WINDOWS_LOOK.face;
     }
-    return isNative && size === "regular" ? NATIVE_LOOK.face : look.face;
+    if (isMacosSmall) {
+      return "";
+    }
+    return usesNativeTokens && size === "regular"
+      ? NATIVE_LOOK.face
+      : look.face;
   });
 
   let track = $state<HTMLElement | null>(null);
@@ -145,8 +161,8 @@
   class={[
     isCrowded ? "invisible absolute inset-x-none" : "relative",
     isOneRow ? "flex" : "grid",
-    isNative
-      ? NATIVE_LOOK.track
+    usesNativeTokens
+      ? [NATIVE_LOOK.track, isMacosSmall && MACOS_SMALL.track]
       : isWindows
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
@@ -162,16 +178,18 @@
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
-        isNative
-          ? NATIVE_LOOK.segment
+        isMacos && "segment-divider focus-visible:outline-offset-1",
+        isMacos && chosen !== option && "hover:bg-native-control-fill-hover",
+        usesNativeTokens
+          ? [NATIVE_LOOK.segment, isMacosSmall && MACOS_SMALL.segment]
           : isWindows
             ? WINDOWS_LOOK.segment
             : look.segment,
         face,
         isOneRow
-          ? [look.onRow, "text-nowrap"]
+          ? [isMacosSmall ? "flex-auto" : look.onRow, "text-nowrap"]
           : "min-inline-none touch:min-block-touch-target",
-        isNative
+        usesNativeTokens
           ? chosen === option
             ? NATIVE_LOOK.chosen
             : NATIVE_LOOK.unchosen
@@ -182,6 +200,7 @@
             : chosen === option
               ? "bg-raised font-semibold text-foreground shadow-raised"
               : "font-medium text-foreground hover:bg-hover",
+        isMacosSmall && MACOS_SMALL.corners,
         segmentClass,
       ]}
     >
@@ -199,7 +218,14 @@
     class="invisible absolute inset-x-none inset-bs-none flex overflow-hidden block-none"
   >
     {#each options as option (option)}
-      <span class={["flex flex-none items-center", face, segmentClass]}>
+      <span
+        class={[
+          "flex flex-none items-center",
+          face,
+          isMacosSmall && MACOS_SMALL.segment,
+          segmentClass,
+        ]}
+      >
         <SegmentFace
           label={labels[option]()}
           icon={icons?.[option]}

@@ -147,14 +147,24 @@ test("keeps linux's other tabs in the foreground ink with no chosen edge in the 
   });
 });
 
-test("keeps the tabs as they were on macOS", async () => {
+test("draws macOS's tabs as a segmented control, a recessed track with the accent under the chosen one", async () => {
   const drawn = await tabsOn("macos", "light");
 
-  expect([drawn.listIsHugged, drawn.triggerCorner, drawn.labelSize]).toEqual([
-    false,
-    "10px",
-    "15px",
-  ]);
+  expect(drawn).toEqual({
+    listHeight: 24,
+    listCorner: "6px",
+    listFill: "rgba(0, 0, 0, 0.1)",
+    listIsHugged: false,
+    triggerCorner: "6px",
+    chosenFill: resolvedColour("--color-accent", "backgroundColor"),
+    chosenWeight: "510",
+    otherFill: "rgba(0, 0, 0, 0)",
+    otherWeight: "510",
+    labelSize: "13px",
+  });
+  expect(
+    getComputedStyle(page.getByRole("tab").nth(1).element()).position,
+  ).toBe("relative");
 });
 
 test("draws iOS's tabs as a segmented control, a capsule track with a raised pill under the chosen one", async () => {
