@@ -45,8 +45,11 @@
     } = $props();
 
   const BUSY_ICON_SIZE = 18;
+  const MACOS_BUSY_ICON_SIZE = 13;
 
   const platform = currentPlatform();
+  const busyIconSize =
+    platform === "macos" ? MACOS_BUSY_ICON_SIZE : BUSY_ICON_SIZE;
   const width = new WindowWidth();
   const classes = $derived(
     look === undefined
@@ -84,7 +87,7 @@
 
 {#snippet content()}
   {#if isBusy}
-    <Spinner size={BUSY_ICON_SIZE} class="shrink-0" />
+    <Spinner size={busyIconSize} class="shrink-0" />
   {/if}
   {#if !(isBusy && iconOnly)}
     {@render children?.()}
@@ -97,7 +100,9 @@
     label={tooltip}
     class={cn(
       classes,
-      isBusy && "inline-flex items-center justify-center gap-sm",
+      isBusy &&
+        platform !== "macos" &&
+        "inline-flex items-center justify-center gap-sm",
       className,
     )}
     aria-label={label}
@@ -118,7 +123,9 @@
     bind:ref
     class={cn(
       classes,
-      isBusy && "inline-flex items-center justify-center gap-sm",
+      isBusy &&
+        platform !== "macos" &&
+        "inline-flex items-center justify-center gap-sm",
       className,
     )}
     aria-busy={isBusy || undefined}

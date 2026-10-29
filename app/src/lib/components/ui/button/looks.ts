@@ -3,6 +3,8 @@ import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { hasNativeLook, isPhone } from "#lib/page/platform.ts";
 import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
+import { macosButtonClasses } from "./macos-button.ts";
+
 const FOCUS_RING = "focus-visible:focus-ring";
 
 const CONFIRM =
@@ -107,6 +109,9 @@ export function variantClasses(
   isIconOnly: boolean,
   platform: Platform,
 ): string {
+  if (platform === "macos") {
+    return `${macosButtonClasses(variant, size, isIconOnly)} ${FOCUS_RING}`;
+  }
   if (!hasNativeLook(platform)) {
     return isIconOnly
       ? `${DESKTOP_VARIANTS[variant]} ${DESKTOP_ICON_ONLY}`

@@ -189,3 +189,30 @@ test.each<[ButtonLook, string]>([
     `not-disabled:not-aria-disabled:active:tint-native-button-${variant}-pressed`,
   );
 });
+
+const MACOS_ONLY = [
+  "native-control-fill",
+  "native-icon-button-fill",
+  "native-on-button-link",
+  "native-on-button-plain-pressed",
+  "rounded-native-button-small",
+  "font-native-button-large",
+];
+
+test("keeps macOS's button utilities out of every other platform's variant buttons", () => {
+  const others: readonly Platform[] = ["android", "ios", "linux", "windows"];
+  const sizes = ["small", "regular", "large"] as const;
+
+  const leaked = others.flatMap((platform) =>
+    VARIANTS.flatMap((variant) =>
+      sizes.flatMap((size) =>
+        [false, true].flatMap((isIconOnly) => {
+          const classes = variantClasses(variant, size, isIconOnly, platform);
+          return MACOS_ONLY.filter((name) => classes.includes(name));
+        }),
+      ),
+    ),
+  );
+
+  expect(leaked).toEqual([]);
+});

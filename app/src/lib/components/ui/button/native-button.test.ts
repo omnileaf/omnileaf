@@ -1,11 +1,14 @@
 import { createRawSnippet } from "svelte";
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
 
+import { resolvedColour } from "../../../../../tests/components/resolved-colour";
+
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followDisplayModes } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import Button from "./button.svelte";
@@ -52,6 +55,7 @@ const label = createRawSnippet(() => ({ render: () => "<span>Remove</span>" }));
 
 afterEach(() => {
   delete document.documentElement.dataset.theme;
+  followDisplayModes({ contrast: undefined, transparency: undefined });
 });
 
 for (const platform of PLATFORMS) {
@@ -147,5 +151,292 @@ for (const look of NATIVE_LOOKS) {
     expect(button.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
     expect(style.borderTopLeftRadius).toBe(CAPSULE);
     expect(style.backgroundColor).toBe(look.secondaryFill);
+  });
+}
+
+type MacosVariant =
+  "primary" | "secondary" | "outline" | "plain" | "destructive" | "link";
+
+interface MacosOptions {
+  readonly variant?: MacosVariant;
+  readonly size?: "small" | "regular" | "large";
+  readonly iconOnly?: boolean;
+  readonly disabled?: boolean;
+  readonly theme?: "light" | "dark";
+}
+
+async function macosButton(options: MacosOptions = {}): Promise<HTMLElement> {
+  document.body.replaceChildren();
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = options.theme ?? "light";
+  await render(Button, {
+    variant: options.variant ?? "secondary",
+    size: options.size ?? "regular",
+    disabled: options.disabled ?? false,
+    type: "button",
+    children: label,
+    ...(options.iconOnly === true
+      ? { iconOnly: true as const, label: "Remove" }
+      : {}),
+  });
+  const element = page.getByRole("button", { name: "Remove" }).element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("the button drew no element");
+  }
+  return element;
+}
+
+function sizeOf(button: HTMLElement): { width: number; height: number } {
+  const { width, height } = button.getBoundingClientRect();
+  return { width, height };
+}
+
+function isCapsule(button: HTMLElement): boolean {
+  const { height } = sizeOf(button);
+  return (
+    Number.parseFloat(getComputedStyle(button).borderTopLeftRadius) >=
+    height / 2
+  );
+}
+
+test("draws macOS's regular button 24px tall with 6px corners and 13px type at weight 510", async () => {
+  const button = await macosButton({ variant: "primary" });
+  const style = getComputedStyle(button);
+
+  expect({
+    height: sizeOf(button).height,
+    radius: style.borderTopLeftRadius,
+    fill: style.backgroundColor,
+    ink: style.color,
+    fontSize: style.fontSize,
+    fontWeight: style.fontWeight,
+    gap: style.columnGap,
+  }).toEqual({
+    height: 24,
+    radius: "6px",
+    fill: "rgb(47, 111, 79)",
+    ink: "rgb(255, 255, 255)",
+    fontSize: "13px",
+    fontWeight: "510",
+    gap: "4px",
+  });
+});
+
+test("steps macOS's buttons 20, 24 and 28 tall, with the large one a capsule", async () => {
+  const heights: Record<string, number> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    document.body.replaceChildren();
+    const button = await macosButton({ size });
+    heights[size] = sizeOf(button).height;
+  }
+  const large = await macosButton({ size: "large" });
+
+  expect(heights).toEqual({ small: 20, regular: 24, large: 28 });
+  expect(isCapsule(large)).toBe(true);
+});
+
+test("sets macOS's small button in 11px type with 9px sides and 5px corners", async () => {
+  const style = getComputedStyle(await macosButton({ size: "small" }));
+
+  expect([
+    style.fontSize,
+    style.paddingInlineStart,
+    style.borderTopLeftRadius,
+  ]).toEqual(["11px", "9px", "5px"]);
+});
+
+test("draws macOS's icon-only buttons square to their height, as capsules on a faint fill", async () => {
+  const sizes: Record<string, { width: number; height: number }> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    document.body.replaceChildren();
+    sizes[size] = sizeOf(await macosButton({ size, iconOnly: true }));
+  }
+  const regular = await macosButton({ iconOnly: true });
+
+  expect(sizes).toEqual({
+    small: { width: 20, height: 20 },
+    regular: { width: 24, height: 24 },
+    large: { width: 28, height: 28 },
+  });
+  expect(isCapsule(regular)).toBe(true);
+  expect(getComputedStyle(regular).backgroundColor).toBe(
+    resolvedColour("--color-native-icon-button-fill", "backgroundColor"),
+  );
+});
+
+test("draws macOS's secondary button on the control fill, in the label colour", async () => {
+  const style = getComputedStyle(await macosButton());
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgba(0, 0, 0, 0.08)",
+    "rgba(0, 0, 0, 0.85)",
+  ]);
+});
+
+test("darkens macOS's secondary fill under the pointer", async () => {
+  const button = await macosButton();
+
+  await page.getByRole("button", { name: "Remove" }).hover();
+
+  await expect
+    .poll(() => getComputedStyle(button).backgroundColor)
+    .toBe("rgba(0, 0, 0, 0.11)");
+  await userEvent.unhover(page.getByRole("button", { name: "Remove" }));
+});
+
+test("draws macOS's destructive button in the soft red with a red label", async () => {
+  const style = getComputedStyle(await macosButton({ variant: "destructive" }));
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgb(246, 227, 227)",
+    "rgb(155, 44, 44)",
+  ]);
+});
+
+test("draws macOS's plain button without a fill, in the label colour", async () => {
+  const style = getComputedStyle(await macosButton({ variant: "plain" }));
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgba(0, 0, 0, 0)",
+    "rgba(0, 0, 0, 0.85)",
+  ]);
+});
+
+test("draws macOS's link button as bare accent text that underlines under the pointer", async () => {
+  const button = await macosButton({ variant: "link" });
+  const style = getComputedStyle(button);
+
+  expect({
+    height: sizeOf(button).height,
+    padding: style.paddingInlineStart,
+    fill: style.backgroundColor,
+    ink: style.color,
+    underlined: style.textDecorationLine.includes("underline"),
+  }).toEqual({
+    height: 16,
+    padding: "0px",
+    fill: "rgba(0, 0, 0, 0)",
+    ink: "rgb(47, 111, 79)",
+    underlined: false,
+  });
+
+  await page.getByRole("button", { name: "Remove" }).hover();
+
+  expect(getComputedStyle(button).textDecorationLine).toContain("underline");
+  await userEvent.unhover(page.getByRole("button", { name: "Remove" }));
+});
+
+test("greys macOS's disabled buttons and stops them taking the pointer", async () => {
+  const enabled = getComputedStyle(await macosButton());
+  const enabledFill = enabled.backgroundColor;
+  document.body.replaceChildren();
+  const disabled = getComputedStyle(await macosButton({ disabled: true }));
+
+  expect({
+    changesFill: disabled.backgroundColor !== enabledFill,
+    ink: disabled.color,
+    pointer: disabled.pointerEvents,
+  }).toEqual({
+    changesFill: true,
+    ink: "rgba(0, 0, 0, 0.25)",
+    pointer: "none",
+  });
+});
+
+test("draws macOS's button in its dark colours inside a dark part of the page", async () => {
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = "light";
+  const darkPart = document.createElement("main");
+  darkPart.dataset.theme = "dark";
+  document.body.append(darkPart);
+  await render(Button, {
+    target: darkPart,
+    props: { variant: "primary", type: "button", children: label },
+  });
+
+  const button = page.getByRole("button", { name: "Remove" }).element();
+
+  expect(getComputedStyle(button).backgroundColor).toBe("rgb(46, 125, 85)");
+  darkPart.remove();
+});
+
+test("lightens macOS's secondary label in the dark theme", async () => {
+  const style = getComputedStyle(await macosButton({ theme: "dark" }));
+
+  expect([style.backgroundColor, style.color]).toEqual([
+    "rgba(255, 255, 255, 0.07)",
+    "rgba(255, 255, 255, 0.85)",
+  ]);
+});
+
+test("keeps macOS's busy button on its 4px gap and its own fill, not the disabled look", async () => {
+  followCorePlatform("macos");
+  document.documentElement.dataset.theme = "light";
+  document.body.replaceChildren();
+  let finish = (): void => undefined;
+  await render(Button, {
+    variant: "secondary",
+    type: "button",
+    children: label,
+    onClickPromise: () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  });
+  const busy = page.getByRole("button", { name: "Remove" });
+
+  await busy.click();
+  await expect.element(busy).toHaveAttribute("aria-busy", "true");
+  const style = getComputedStyle(busy.element());
+
+  expect([style.columnGap, style.backgroundColor]).toEqual([
+    "4px",
+    "rgba(0, 0, 0, 0.08)",
+  ]);
+  finish();
+  await userEvent.unhover(busy);
+});
+
+test("sizes macOS's link button with its size, like any other button", async () => {
+  const heights: Record<string, number> = {};
+  for (const size of ["small", "regular", "large"] as const) {
+    heights[size] = sizeOf(await macosButton({ variant: "link", size })).height;
+  }
+
+  expect(heights).toEqual({ small: 20, regular: 16, large: 28 });
+});
+
+for (const variant of ["primary", "destructive", "plain"] as const) {
+  test(`dims macOS's disabled ${variant} button`, async () => {
+    const enabled = getComputedStyle(await macosButton({ variant }));
+    const enabledLook = [enabled.backgroundColor, enabled.color];
+    const disabled = getComputedStyle(
+      await macosButton({ variant, disabled: true }),
+    );
+
+    expect([disabled.backgroundColor, disabled.color]).not.toEqual(enabledLook);
+  });
+}
+
+test("sets macOS's secondary label in pure black under Increase Contrast", async () => {
+  followDisplayModes({ contrast: "more", transparency: undefined });
+
+  const style = getComputedStyle(await macosButton());
+
+  expect(style.color).toBe("rgb(0, 0, 0)");
+});
+
+for (const platform of ["linux", "windows"] as const) {
+  test(`keeps a primary button on ${platform} taller than macOS's, as it was`, async () => {
+    followCorePlatform(platform);
+    await render(Button, {
+      variant: "primary",
+      type: "button",
+      children: label,
+    });
+
+    const button = page.getByRole("button", { name: "Remove" }).element();
+
+    expect(button.getBoundingClientRect().height).toBeGreaterThan(24);
   });
 }
