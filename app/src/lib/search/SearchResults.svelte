@@ -2,8 +2,6 @@
   import type { LibrarySeries, LibraryView } from "#lib/ipc/bindings.ts";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
-  import { GROUPED_GROUP_LOOK } from "#lib/library/group-look.ts";
   import { SCREEN_SIZES } from "#lib/library/library-view.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -14,6 +12,7 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { matchedWords } from "./matched-words";
+  import { searchLook } from "./search-look";
 
   let {
     series,
@@ -43,18 +42,13 @@
     view: LibraryView | undefined;
   } = $props();
 
-  const TODAYS_TITLE = "truncate text-lead font-semibold large:text-small";
-  const NATIVE_TITLE =
-    "truncate text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
-  const TODAYS_LINE = "text-caption text-muted";
-  const NATIVE_LINE = `${ROW_SUBTITLE_TYPE} text-muted`;
-  const TODAYS_HEADING = "font-semibold";
   const TODAYS_MARK = "rounded-badge bg-chip text-foreground";
   const NATIVE_MARK = "rounded-none bg-native-accent-soft text-inherit";
 
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const look = $derived(searchLook(isNative));
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const headingId = $props.id();
@@ -84,7 +78,7 @@
     class="rounded-result-cover inline-result-cover large:box-border large:rounded-cover large:inline-full"
   />
   <div class="flex flex-col gap-2xs min-inline-none">
-    <p class={isNative ? NATIVE_TITLE : TODAYS_TITLE}>
+    <p class={look.title}>
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
           <mark class={isNative ? NATIVE_MARK : TODAYS_MARK}>{part.text}</mark>
@@ -94,11 +88,11 @@
       {/each}
     </p>
     {#if hasWords}
-      <p class={isNative ? NATIVE_LINE : TODAYS_LINE}>
+      <p class={look.line}>
         {m.search_matched_title()}
       </p>
     {/if}
-    <p class={isNative ? NATIVE_LINE : TODAYS_LINE}>
+    <p class={look.line}>
       {m.library_series_books({ count: one.bookCount })}
     </p>
   </div>
@@ -108,10 +102,7 @@
   aria-labelledby={headingId}
   class="flex flex-col gap-sm large:gap-label"
 >
-  <h2
-    id={headingId}
-    class={isNative ? GROUPED_GROUP_LOOK.heading : TODAYS_HEADING}
-  >
+  <h2 id={headingId} class={look.heading}>
     {count === undefined
       ? m.quick_open_series()
       : m.search_series_heading({ count: numbers.format(count) })}

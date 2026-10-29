@@ -2,7 +2,6 @@
   import { BookOpen, RotateCcwClock } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { GROUPED_GROUP_LOOK } from "#lib/library/group-look.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -10,10 +9,10 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { filterWords } from "./condition-labels";
+  import { searchLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
   const ROW_ICON_SIZE = 16;
-  const TODAYS_HEADING = "font-semibold";
   const TODAYS_WORD =
     "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
   const NATIVE_WORD =
@@ -39,9 +38,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const headingClass = $derived(
-    isNative ? GROUPED_GROUP_LOOK.heading : TODAYS_HEADING,
-  );
+  const headingClass = $derived(searchLook(isNative).heading);
   const locale = getLocale();
 </script>
 

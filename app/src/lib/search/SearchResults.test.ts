@@ -152,6 +152,8 @@ test("sets a result in 17 point regular type over two 15 point muted lines, unde
     booksSize: books.fontSize,
     headingSize: heading.fontSize,
     headingWeight: heading.fontWeight,
+    headingInk: heading.color,
+    lineInk: reason.color,
   }).toEqual({
     titleSize: "17px",
     titleWeight: "400",
@@ -159,5 +161,7 @@ test("sets a result in 17 point regular type over two 15 point muted lines, unde
     booksSize: "15px",
     headingSize: "17px",
     headingWeight: "590",
+    headingInk: resolvedColour("--color-muted", "color"),
+    lineInk: resolvedColour("--color-muted", "color"),
   });
 });
