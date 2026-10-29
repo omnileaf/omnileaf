@@ -104,7 +104,13 @@
   const themeSetting = setThemeSetting(themeSettingForDocument());
   const colours = setColoursSetting(coloursSettingForDocument());
   const language = setLanguageSetting(languageSettingForDocument());
-  const screenshotMode = setScreenshotMode(screenshotModeForDocument());
+  const screenshotMode = setScreenshotMode(
+    screenshotModeForDocument({
+      setOn: (isOn) => commands.setScreenshotMode(isOn),
+    }),
+  );
+  const startsInScreenshotMode = screenshotMode.isOn;
+  const engineReadyAtStart = screenshotMode.engineReady;
   const screenshotModeShortcut = setScreenshotModeShortcut(
     screenshotModeShortcutForDocument(),
   );
@@ -247,10 +253,14 @@
   {/key}
 </svelte:head>
 
-{#if data.libraryProblem === null}
-  {@render children()}
-{:else}
+{#if data.libraryProblem !== null}
   <LibraryProblemScreen problem={data.libraryProblem} {opening} />
+{:else if startsInScreenshotMode}
+  {#await engineReadyAtStart then}
+    {@render children()}
+  {/await}
+{:else}
+  {@render children()}
 {/if}
 {#key language.resolved}
   <ScreenshotModeAnnouncement
