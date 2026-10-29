@@ -42,6 +42,7 @@ use tokio::{
 
 const SERIES_01: &str = "Sample Series 01";
 const SERIES_02: &str = "Sample Series 02";
+const SERIES_03: &str = "Sample Series 03";
 const LONG_ENOUGH_TO_REMOVE: Duration = Duration::from_millis(300);
 const COMICS_TREE: &str = "content://documents.test/tree/primary%3ADocuments%2FComics";
 const TREE_NAME: &str = "Comics";
@@ -515,6 +516,50 @@ async fn a_root_that_is_unplugged_reports_its_files_failed_not_missing() {
 }
 
 #[tokio::test]
+async fn an_unplugged_root_fails_only_its_own_files_while_another_root_is_still_removed() {
+    let deleting = Deleting::new("delete-one-unplugged").await;
+    let plugged = ScratchFolder::new("delete-one-unplugged-other");
+    write_book(&plugged.path().join(SERIES_03).join("w01.cbz"), 4);
+    deleting
+        .scanned
+        .library
+        .add_folder(plugged.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let targets = [
+        RemovalTarget::Series {
+            id: deleting.series(SERIES_01).await,
+        },
+        RemovalTarget::Series {
+            id: deleting.series(SERIES_03).await,
+        },
+    ];
+    fs::remove_dir_all(deleting.comics.path()).unwrap();
+    let disposal = FakeDisposal::default();
+
+    let report = deleting.delete(&targets, &disposal).await;
+
+    assert_eq!(
+        by_name(report.files),
+        [
+            (
+                "v01.cbz".to_owned(),
+                failed(RemovalFailure::UnsupportedLocation)
+            ),
+            (
+                "v02.cbz".to_owned(),
+                failed(RemovalFailure::UnsupportedLocation)
+            ),
+            ("w01.cbz".to_owned(), FileOutcome::Trashed),
+        ]
+    );
+    assert_eq!(
+        disposal.calls(),
+        [plugged.path().join("Sample Series 03/w01.cbz")]
+    );
+}
+
+#[tokio::test]
 async fn a_root_left_as_an_empty_mount_point_reports_its_files_failed_not_missing() {
     let deleting = Deleting::new("delete-mount-point").await;
     let series = deleting.series(SERIES_01).await;
@@ -756,6 +801,7 @@ struct Tree {
     scratch: ScratchFolder,
     removes: bool,
     stall: Mutex<Option<Stall>>,
+    failing_stat: Mutex<Option<io::ErrorKind>>,
 }
 
 impl Tree {
@@ -773,6 +819,7 @@ impl Tree {
             scratch,
             removes,
             stall: Mutex::default(),
+            failing_stat: Mutex::default(),
         })
     }
 
@@ -795,6 +842,10 @@ impl Tree {
             entered,
             _release: release_sender,
         }
+    }
+
+    fn failing_stats_with(&self, kind: io::ErrorKind) {
+        *self.failing_stat.lock().unwrap() = Some(kind);
     }
 
     fn stalls_if_asked_to(&self, call: Call) {
@@ -837,6 +888,9 @@ impl Storage for Tree {
 
     fn details(&self, path: &Path) -> io::Result<Details> {
         self.stalls_if_asked_to(Call::Details);
+        if let Some(kind) = *self.failing_stat.lock().unwrap() {
+            return Err(kind.into());
+        }
         LocalStorage.details(&self.on_device(path)?)
     }
 
@@ -955,6 +1009,53 @@ async fn removing_the_tree_book_while_a_call_never_answers(
 
     assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
     (by_name(report.unwrap().files), tree)
+}
+
+#[tokio::test]
+async fn a_tree_whose_stat_fails_reports_the_failure_and_keeps_the_file() {
+    let tree = Tree::new("delete-stat-fails", true);
+    let (library, _home) = library_reading(&tree, "delete-stat-fails-home").await;
+    let book = only_book(&library).await;
+    tree.failing_stats_with(io::ErrorKind::PermissionDenied);
+
+    let report = library
+        .remove_from_library(
+            &[RemovalTarget::Book { id: book }],
+            FileFate::Dispose(&FakeDisposal::default()),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        by_name(report.files),
+        [(
+            "v01.cbz".to_owned(),
+            failed(RemovalFailure::PermissionDenied)
+        )]
+    );
+    assert!(tree.book().is_file());
+}
+
+#[tokio::test]
+async fn files_of_an_already_removed_book_are_not_retried_by_a_later_delete() {
+    let deleting = Deleting::new("delete-twice").await;
+    let book = deleting.books(SERIES_02).await[0];
+    let targets = [RemovalTarget::Book { id: book }];
+    let first = deleting
+        .scanned
+        .library
+        .remove_from_library(&targets, FileFate::keep())
+        .await
+        .unwrap();
+    let disposal = FakeDisposal::default();
+
+    let second = deleting.delete(&targets, &disposal).await;
+
+    assert_eq!(first.removed_books, 1);
+    assert_eq!(second.removed_books, 0);
+    assert_eq!(second.files, []);
+    assert_eq!(disposal.calls(), Vec::<PathBuf>::new());
+    assert!(deleting.path("Sample Series 02/v01.cbz").is_file());
 }
 
 #[tokio::test(start_paused = true)]
