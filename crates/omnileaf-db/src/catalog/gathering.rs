@@ -38,6 +38,12 @@ macro_rules! duplicated {
     };
 }
 
+macro_rules! quick {
+    () => {
+        "series.time_left_key > 0 AND series.time_left_key <= :pages_left_at_most"
+    };
+}
+
 macro_rules! forgotten_candidates {
     () => {
         $crate::catalog::gathering::candidates! {
@@ -52,6 +58,15 @@ macro_rules! duplicated_candidates {
         $crate::catalog::gathering::candidates! {
             index: "series_with_duplicates_by_stage",
             condition: $crate::catalog::gathering::duplicated!(),
+        }
+    };
+}
+
+macro_rules! quick_candidates {
+    () => {
+        $crate::catalog::gathering::candidates! {
+            index: "series_by_stage_and_time_left",
+            condition: $crate::catalog::gathering::quick!(),
         }
     };
 }
@@ -123,6 +138,10 @@ const DUPLICATED_AT_STAGE: &str = holds_at_stage! {
     index: "series_with_duplicates_by_stage",
     condition: duplicated!(),
 };
+const QUICK_AT_STAGE: &str = holds_at_stage! {
+    index: "series_by_stage_and_time_left",
+    condition: quick!(),
+};
 
 macro_rules! are_few {
     ($candidates:expr) => {
@@ -136,6 +155,7 @@ macro_rules! are_few {
 
 const FORGOTTEN_ARE_FEW: &str = are_few!(forgotten_candidates!());
 const DUPLICATED_ARE_FEW: &str = are_few!(duplicated_candidates!());
+const QUICK_ARE_FEW: &str = are_few!(quick_candidates!());
 const LANGUAGES_ARE_FEW: &str = are_few!(language_candidates!());
 const RATED_ADULT_ARE_FEW: &str = are_few!(rated_adult_candidates!());
 const MANGA_ARE_FEW: &str = are_few!(manga_candidates!());
@@ -229,6 +249,11 @@ macro_rules! gatherings {
                 key: $key,
                 sort_position: $position,
             },
+            few_quick: $crate::catalog::gathering::sorted_directions! {
+                candidates: $crate::catalog::gathering::quick_candidates!(),
+                key: $key,
+                sort_position: $position,
+            },
             few_in_languages: $crate::catalog::gathering::sorted_directions! {
                 candidates: $crate::catalog::gathering::language_candidates!(),
                 key: $key,
@@ -268,6 +293,8 @@ pub(crate) use forgotten_candidates;
 pub(crate) use gatherings;
 pub(crate) use language_candidates;
 pub(crate) use manga_candidates;
+pub(crate) use quick;
+pub(crate) use quick_candidates;
 pub(crate) use rated_adult_candidates;
 pub(crate) use sorted_directions;
 pub(crate) use sorted_page;
@@ -278,6 +305,7 @@ pub(crate) enum Gathering {
     EachStageInOrder,
     FewForgotten,
     FewDuplicated,
+    FewQuickReads,
     FewInLanguages,
     FewRatedAdult,
     FewTagged,
@@ -289,6 +317,7 @@ pub(crate) struct Gatherings<P> {
     pub(crate) each_stage_in_order: Directions<P>,
     pub(crate) few_forgotten: Directions<P>,
     pub(crate) few_duplicated: Directions<P>,
+    pub(crate) few_quick: Directions<P>,
     pub(crate) few_in_languages: Directions<P>,
     pub(crate) few_rated_adult: Directions<P>,
     pub(crate) few_tagged: Directions<P>,
@@ -313,6 +342,16 @@ impl Gathering {
             && are_few(connection, DUPLICATED_ARE_FEW, &stages, &[])?
         {
             return Ok(Self::FewDuplicated);
+        }
+        if let Some(pages_left) = filter.pages_left_at_most
+            && are_few(
+                connection,
+                QUICK_ARE_FEW,
+                &stages,
+                &[(":pages_left_at_most", &pages_left)],
+            )?
+        {
+            return Ok(Self::FewQuickReads);
         }
         if let Some(languages) = json_list(&filter.languages)
             && are_few(
@@ -359,6 +398,7 @@ impl<P> Gatherings<P> {
             Gathering::EachStageInOrder => self.each_stage_in_order.toward(direction),
             Gathering::FewForgotten => self.few_forgotten.toward(direction),
             Gathering::FewDuplicated => self.few_duplicated.toward(direction),
+            Gathering::FewQuickReads => self.few_quick.toward(direction),
             Gathering::FewInLanguages => self.few_in_languages.toward(direction),
             Gathering::FewRatedAdult => self.few_rated_adult.toward(direction),
             Gathering::FewTagged => self.few_tagged.toward(direction),
@@ -373,11 +413,15 @@ pub(crate) fn stages_holding_matches(
     connection: &Connection,
     filter: &SeriesFilter,
 ) -> Result<StageParams, Error> {
-    if filter.last_read_before_ms.is_none() && filter.duplicates != Inclusion::Only {
+    if filter.last_read_before_ms.is_none()
+        && filter.duplicates != Inclusion::Only
+        && filter.pages_left_at_most.is_none()
+    {
         return Ok(StageParams::of(filter));
     }
     let mut forgotten = connection.prepare(FORGOTTEN_AT_STAGE)?;
     let mut duplicated = connection.prepare(DUPLICATED_AT_STAGE)?;
+    let mut quick = connection.prepare(QUICK_AT_STAGE)?;
     StageParams::of(filter).keeping(|stage| {
         let holds_forgotten = match filter.last_read_before_ms {
             Some(before) => forgotten.query_row(
@@ -392,7 +436,14 @@ pub(crate) fn stages_holding_matches(
             }
             Inclusion::Any | Inclusion::Hide => true,
         };
-        Ok(holds_forgotten && holds_duplicated)
+        let holds_quick_reads = match filter.pages_left_at_most {
+            Some(pages_left) => quick.query_row(
+                named_params! { ":stage": stage, ":pages_left_at_most": pages_left },
+                |row| row.get(0),
+            )?,
+            None => true,
+        };
+        Ok(holds_forgotten && holds_duplicated && holds_quick_reads)
     })
 }
 
@@ -428,6 +479,14 @@ mod tests {
     const FORGOTTEN: SeriesFilter =
         SeriesFilter::NONE.with_last_read_before_ms(Some(READ_AT_MS + 1));
     const DUPLICATED: SeriesFilter = SeriesFilter::NONE.with_duplicates(Inclusion::Only);
+    const PAGES_LEFT_AT_MOST: u32 = 60;
+    const QUICK_READS: SeriesFilter =
+        SeriesFilter::NONE.with_pages_left_at_most(Some(PAGES_LEFT_AT_MOST));
+    const FEW_PAGES_LEFT: i64 = 10;
+    const MANY_PAGES_LEFT: i64 = 1_000;
+    const UNSTARTED: (i64, i64) = (0, 0);
+    const IN_PROGRESS: (i64, i64) = (0, 1);
+    const FINISHED: (i64, i64) = (1, 0);
 
     struct Library {
         _scratch: ScratchLibrary,
@@ -545,6 +604,114 @@ mod tests {
         let gathering = library.gathering(&DUPLICATED);
 
         assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    impl Library {
+        fn with_pages_left(self, pages_left: i64) -> Self {
+            self.connection
+                .execute("UPDATE series SET pages_left = ?1", [pages_left])
+                .unwrap();
+            self
+        }
+
+        fn with_three_series_at(self, stages: [((i64, i64), i64); 3]) -> Self {
+            for (local_id, ((read_count, started_count), pages_left)) in (1..).zip(stages) {
+                self.connection
+                    .execute(
+                        "UPDATE series SET read_count = ?2, started_count = ?3, pages_left = ?4
+                        WHERE local_id = ?1",
+                        (local_id, read_count, started_count, pages_left),
+                    )
+                    .unwrap();
+            }
+            self
+        }
+    }
+
+    fn only_in_progress() -> StageParams {
+        StageParams::of(
+            &SeriesFilter::NONE
+                .with_started(Inclusion::Only)
+                .with_finished(Inclusion::Hide),
+        )
+    }
+
+    #[test]
+    fn leaves_out_the_finished_stage_and_each_stage_holding_no_quick_read() {
+        let library = Library::read_and_copied("stages-holding-quick-reads", 3)
+            .with_three_series_at([
+                (UNSTARTED, FEW_PAGES_LEFT),
+                (IN_PROGRESS, MANY_PAGES_LEFT),
+                (FINISHED, 0),
+            ]);
+
+        let stages = stages_holding_matches(&library.connection, &QUICK_READS).unwrap();
+
+        assert_eq!(stages, only_unstarted());
+    }
+
+    #[test]
+    fn keeps_the_in_progress_stage_holding_a_quick_read_beside_unstarted_long_books() {
+        let library = Library::read_and_copied("stages-holding-in-progress-quick-read", 3)
+            .with_three_series_at([
+                (UNSTARTED, MANY_PAGES_LEFT),
+                (IN_PROGRESS, FEW_PAGES_LEFT),
+                (FINISHED, 0),
+            ]);
+
+        let stages = stages_holding_matches(&library.connection, &QUICK_READS).unwrap();
+
+        assert_eq!(stages, only_in_progress());
+    }
+
+    #[test]
+    fn leaves_out_a_stage_holding_only_series_with_books_not_yet_counted() {
+        let library =
+            Library::read_and_copied("stages-holding-uncounted", 3).with_three_series_at([
+                (UNSTARTED, FEW_PAGES_LEFT),
+                (IN_PROGRESS, FEW_PAGES_LEFT),
+                (FINISHED, 0),
+            ]);
+        library
+            .connection
+            .execute(
+                "UPDATE series SET uncounted_books = 1 WHERE local_id = 1",
+                [],
+            )
+            .unwrap();
+
+        let stages = stages_holding_matches(&library.connection, &QUICK_READS).unwrap();
+
+        assert_eq!(stages, only_in_progress());
+    }
+
+    #[test]
+    fn gathers_the_quick_reads_while_they_are_few() {
+        let library = Library::read_and_copied("gathering-few-quick-reads", FEW_SERIES - 1)
+            .with_pages_left(FEW_PAGES_LEFT);
+
+        let gathering = library.gathering(&QUICK_READS);
+
+        assert_eq!(gathering, Gathering::FewQuickReads);
+    }
+
+    #[test]
+    fn reads_each_stage_in_order_once_the_quick_reads_are_no_longer_few() {
+        let library = Library::read_and_copied("gathering-many-quick-reads", FEW_SERIES)
+            .with_pages_left(FEW_PAGES_LEFT);
+
+        let gathering = library.gathering(&QUICK_READS);
+
+        assert_eq!(gathering, Gathering::EachStageInOrder);
+    }
+
+    #[test]
+    fn does_not_count_a_series_with_no_pages_left_among_the_quick_reads() {
+        let library = Library::read_and_copied("gathering-nothing-left-to-read", FEW_SERIES);
+
+        let gathering = library.gathering(&QUICK_READS);
+
+        assert_eq!(gathering, Gathering::FewQuickReads);
     }
 
     impl Library {
@@ -830,6 +997,36 @@ mod tests {
                 "SCALAR SUBQUERY 1",
                 "SEARCH series USING INDEX series_with_duplicates_by_stage (reading_stage=?)",
             ]
+        );
+    }
+
+    #[test]
+    fn looks_for_a_quick_read_at_one_stage_through_the_pages_left_index() {
+        let scratch = ScratchLibrary::new("quick-at-stage-plan");
+
+        let plan = scratch.query_plan(QUICK_AT_STAGE);
+
+        assert_eq!(
+            plan,
+            [
+                "SCAN CONSTANT ROW",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND time_left_key>? AND time_left_key<?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn counts_the_quick_reads_through_the_pages_left_index_up_to_a_few() {
+        let scratch = ScratchLibrary::new("quick-are-few-plan");
+
+        let plan = scratch.query_plan(QUICK_ARE_FEW);
+
+        assert_eq!(
+            plan,
+            counting_up_to_a_few(
+                "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND time_left_key>? AND time_left_key<?)"
+            )
         );
     }
 

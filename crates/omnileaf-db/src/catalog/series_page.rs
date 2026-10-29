@@ -154,6 +154,7 @@ pub fn series_page(
             Gathering::EachStageInOrder
             | Gathering::FewForgotten
             | Gathering::FewDuplicated
+            | Gathering::FewQuickReads
             | Gathering::FewRatedAdult
             | Gathering::FewTagged
             | Gathering::FewManga
@@ -672,6 +673,27 @@ mod tests {
 
         let gathered = sorting_only_the_page(
             "SEARCH series USING INDEX series_with_duplicates_by_stage (reading_stage=?)",
+        );
+        assert_eq!(plans, vec![gathered; queries.len()]);
+    }
+
+    #[test]
+    fn gathers_the_few_quick_reads_through_the_pages_left_index_then_sorts_only_their_keys() {
+        let scratch = ScratchLibrary::new("few-quick-reads-plan");
+        let queries: Vec<&str> = every_page_query_of(&BY_TITLE.few_quick)
+            .into_iter()
+            .chain(few_gathered_in_every_order(|gatherings| {
+                &gatherings.few_quick
+            }))
+            .collect();
+
+        let plans: Vec<Vec<String>> = queries
+            .iter()
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        let gathered = sorting_only_the_page(
+            "SEARCH series USING INDEX series_by_stage_and_time_left (reading_stage=? AND time_left_key>? AND time_left_key<?)",
         );
         assert_eq!(plans, vec![gathered; queries.len()]);
     }
