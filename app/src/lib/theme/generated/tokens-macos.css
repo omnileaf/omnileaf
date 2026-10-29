@@ -17,6 +17,20 @@
   --native-spacing-switch-knob: 13px;
   --native-spacing-switch-knob-length: 21px;
   --native-spacing-switch-inset: 1.5px;
+  --native-spacing-segmented-inset: 0px;
+  --native-spacing-segmented-gap: 0px;
+  --native-spacing-segment: 24px;
+  --native-spacing-segment-inline: 10px;
+  --native-radius-segmented: 6px;
+  --native-radius-segment: 6px;
+  --native-radius-segment-end: 6px;
+  --native-radius-segment-selected: 6px;
+  --native-text-segment: calc(0.8125rem * var(--text-scale));
+  --native-leading-segment: calc(16 / 13);
+  --native-weight-segment: 510;
+  --native-weight-segment-selected: 510;
+  --native-tracking-segment: 0;
+  --native-shadow-segment-lift: none;
   --native-radius-group: 12px;
   --native-radius-card: 12px;
   --native-spacing-hairline: 0.5px;
@@ -56,8 +70,8 @@
   --native-color-switch-thumb-off: oklch(1 0 0);
   --native-color-segmented-track: rgba(0, 0, 0, 0.10);
   --native-color-on-segment: rgba(0, 0, 0, 0.85);
-  --native-color-segment-selected: rgba(0, 0, 0, 0.03);
-  --native-color-on-segment-selected: rgba(0, 0, 0, 0.85);
+  --native-color-segment-selected: var(--color-accent);
+  --native-color-on-segment-selected: var(--color-on-accent);
   --native-color-progress-track: rgba(0, 0, 0, 0.08);
   --native-color-progress-fill: #2f6f4f;
   --native-color-progress-idle-track: rgba(0, 0, 0, 0.08);
@@ -140,8 +154,8 @@
   --native-color-switch-thumb-off: #e1e1e1;
   --native-color-segmented-track: rgba(255, 255, 255, 0.09);
   --native-color-on-segment: rgba(255, 255, 255, 0.85);
-  --native-color-segment-selected: rgba(255, 255, 255, 0.03);
-  --native-color-on-segment-selected: rgba(255, 255, 255, 0.85);
+  --native-color-segment-selected: var(--color-accent);
+  --native-color-on-segment-selected: var(--color-on-accent);
   --native-color-progress-track: rgba(255, 255, 255, 0.07);
   --native-color-progress-fill: #43a673;
   --native-color-progress-idle-track: rgba(255, 255, 255, 0.07);
@@ -213,7 +227,6 @@
   --native-color-switch-off: rgba(0, 0, 0, 0.35);
   --native-color-switch-off-border: #000000;
   --native-color-on-segment: #000000;
-  --native-color-on-segment-selected: #000000;
   --native-color-progress-track: rgba(0, 0, 0, 0.17);
   --native-color-progress-fill: #1f5a3c;
   --native-color-progress-idle-track: rgba(0, 0, 0, 0.17);
@@ -268,7 +281,6 @@
   --native-color-switch-off: rgba(255, 255, 255, 0.29);
   --native-color-switch-off-border: #ffffff;
   --native-color-on-segment: #ffffff;
-  --native-color-on-segment-selected: #ffffff;
   --native-color-progress-track: rgba(255, 255, 255, 0.18);
   --native-color-progress-fill: #43a673;
   --native-color-progress-idle-track: rgba(255, 255, 255, 0.18);
