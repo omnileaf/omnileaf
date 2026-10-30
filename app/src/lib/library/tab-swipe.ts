@@ -55,6 +55,7 @@ export function settlesAt({
 
 const EDGE_PX = 24;
 const SETTLE_MS = 200;
+const LATE_FRAME_FACTOR = 2;
 
 interface SwipeStart {
   readonly x: number;
@@ -98,10 +99,21 @@ export function swipesBetweenTabs(
         { duration: SETTLE_MS, easing: "ease-out" },
       );
       area.style.translate = toOffset;
-      return settling.finished.then(
-        () => true,
-        () => false,
-      );
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          resolve(true);
+        }, SETTLE_MS * LATE_FRAME_FACTOR);
+        void settling?.finished.then(
+          () => {
+            clearTimeout(timer);
+            resolve(true);
+          },
+          () => {
+            clearTimeout(timer);
+            resolve(false);
+          },
+        );
+      });
     };
     const down = (event: PointerEvent) => {
       if (
