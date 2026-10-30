@@ -2,7 +2,7 @@
   import { Menu } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
-  import { windowsButtonClasses } from "#lib/components/ui/button/windows-button.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -28,7 +28,7 @@
   aria-label={label}
   aria-keyshortcuts={TOGGLE_ARIA_KEYS}
   class={cn(
-    windowsButtonClasses("plain", "regular", true),
+    variantClasses("plain", "regular", true, "windows"),
     "shrink-0 block-pointer-button inline-pointer-target compact-pane:invisible",
   )}
   onclick={() => {

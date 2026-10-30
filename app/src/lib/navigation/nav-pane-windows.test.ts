@@ -148,13 +148,15 @@ test("marks the current item with a 3 by 16 accent pill on its leading edge", as
   expect(item("Library")).toHaveAttribute("aria-current", "page");
 });
 
-function paneToggle(name = "Hide the sidebar"): Element {
-  return asElement(
-    page
-      .getByRole("navigation", { name: "Main" })
-      .getByRole("button", { name })
-      .element(),
-  );
+function paneToggle(name = "Hide the sidebar"): HTMLElement {
+  const toggle = page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("button", { name })
+    .element();
+  if (!(toggle instanceof HTMLElement)) {
+    throw new Error("the navigation pane drew no toggle");
+  }
+  return toggle;
 }
 
 for (const width of [1280, 1007]) {
@@ -262,11 +264,7 @@ for (const theme of ["light", "dark"] as const) {
     const selected = [PANE_GROUND, "nav-item-selected"];
 
     const ratios = [
-      [
-        "text",
-        contrastOver("on-nav-item", selected),
-        LEAST_TEXT_CONTRAST,
-      ],
+      ["text", contrastOver("on-nav-item", selected), LEAST_TEXT_CONTRAST],
       ["pill", contrastOver("nav-indicator", selected), LEAST_GRAPHIC_CONTRAST],
       [
         "ring",
@@ -300,5 +298,20 @@ test("rings a keyboard-focused item in Windows' two-tone focus ring", async () =
     outline: resolvedColour("--native-color-focus-ring", "outlineColor"),
     width: "2px",
     inner: true,
+  });
+});
+
+test("rings a keyboard-focused pane toggle in Windows' two-tone focus ring", async () => {
+  await renderOnWindowsAt(1280);
+
+  paneToggle().focus({ focusVisible: true });
+  const style = getComputedStyle(paneToggle());
+
+  expect({
+    outline: style.outlineColor,
+    width: style.outlineWidth,
+  }).toEqual({
+    outline: resolvedColour("--native-color-focus-ring", "outlineColor"),
+    width: "2px",
   });
 });
