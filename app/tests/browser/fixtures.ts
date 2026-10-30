@@ -80,6 +80,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   librarySeries: () => ({ series: [], next: null }),
   librarySeriesCount: () => 0,
   librarySearch: () => ({ series: [], next: null }),
+  librarySearchChapters: () => ({ hits: [], next: null, count: 0 }),
   folderSeries: () => ({ series: [], next: null }),
   folderSeriesCount: () => 0,
   folderGroups: () => ({ groups: [], next: null }),

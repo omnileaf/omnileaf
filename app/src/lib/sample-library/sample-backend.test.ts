@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { type LibraryListing } from "#lib/ipc/bindings.ts";
+import { type LibraryFilter, type LibraryListing } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 
 import { sampleBackend, scenarioFrom } from "./sample-backend.ts";
@@ -2118,4 +2118,397 @@ test("wakes library changes when a removal is undone by adding the folder", asyn
   await backend.addLibraryFolder(NO_PROGRESS_CHANNEL);
 
   expect(emitted).toEqual(["library-changed"]);
+});
+
+type ChapterHit = Awaited<
+  ReturnType<FakeBackend["librarySearchChapters"]>
+>["hits"][number];
+
+const EVERY_SERIES: LibraryFilter = NEW_LIBRARY_LISTING.filter;
+
+function chapterSearch(text: string, filter: Partial<LibraryFilter> = {}) {
+  return { text, filter: { ...EVERY_SERIES, ...filter } };
+}
+
+async function everyChapterHit(
+  backend: FakeBackend,
+  text: string,
+  filter: Partial<LibraryFilter> = {},
+) {
+  const hits: ChapterHit[] = [];
+  let next: Parameters<FakeBackend["librarySearchChapters"]>[1] = null;
+  do {
+    const page = await backend.librarySearchChapters(
+      chapterSearch(text, filter),
+      next,
+    );
+    hits.push(...page.hits);
+    next = page.next;
+  } while (next !== null);
+  return hits;
+}
+
+const seriesTitlesOf = (hits: readonly ChapterHit[]) => [
+  ...new Set(hits.map((hit) => hit.seriesTitle)),
+];
+
+test("finds no chapter for blank text, answering an empty page of none", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySearchChapters(chapterSearch("   "), null);
+
+  expect(page).toEqual({ hits: [], next: null, count: 0 });
+});
+
+test("finds no chapter for fewer than three characters, answering an empty page of none", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySearchChapters(chapterSearch(" ch "), null);
+
+  expect(page).toEqual({ hits: [], next: null, count: 0 });
+});
+
+test("finds a chapter by its file name, naming its series, book and position", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySearchChapters(
+    chapterSearch("harbour gate"),
+    null,
+  );
+
+  expect(page).toEqual({
+    hits: [
+      {
+        series: sampleSeriesId(19),
+        seriesTitle: LONG_TITLE,
+        book: sampleBookId(19, 1),
+        position: 1,
+        title: "Volume 1 · Arrival at the Harbour Gate",
+        matchedIn: "fileName",
+      },
+      {
+        series: sampleSeriesId(11),
+        seriesTitle: "Sample Series 11",
+        book: sampleBookId(11, 148),
+        position: 148,
+        title: "Chapter 148 · The Harbour Gate at Night",
+        matchedIn: "fileName",
+      },
+    ],
+    next: null,
+    count: 2,
+  });
+});
+
+test("reports every hit as found by file name, the sample books holding no ComicInfo title", async () => {
+  const { backend } = backendFor();
+
+  const hits = await everyChapterHit(backend, "chapter");
+
+  expect(new Set(hits.map((hit) => hit.matchedIn))).toEqual(
+    new Set(["fileName"]),
+  );
+});
+
+test("finds a chapter whatever the letter case and order of the words typed", async () => {
+  const { backend } = backendFor();
+
+  const hits = await everyChapterHit(backend, "GATE  Harbour");
+
+  expect(hits.map((hit) => hit.book)).toEqual([
+    sampleBookId(19, 1),
+    sampleBookId(11, 148),
+  ]);
+});
+
+test("finds no chapter while every series holds no books", async () => {
+  const { backend } = backendFor("series=empty");
+
+  const page = await backend.librarySearchChapters(
+    chapterSearch("volume"),
+    null,
+  );
+
+  expect(page).toEqual({ hits: [], next: null, count: 0 });
+});
+
+test("finds no chapter in the series of a missing folder", async () => {
+  const { backend } = backendFor("missing=folder");
+  const missing = new Set([3, 6, 9, 12, 15, 18].map(sampleSeriesId));
+
+  const hits = await everyChapterHit(backend, "volume 2");
+
+  expect(hits.length).toBeGreaterThan(0);
+  expect(hits.filter((hit) => missing.has(hit.series))).toEqual([]);
+});
+
+test("pages through the hits twenty at a time with a cursor, each hit once and the count the same on every page", async () => {
+  const { backend } = backendFor();
+  const pages = [];
+
+  let next: Parameters<FakeBackend["librarySearchChapters"]>[1] = null;
+  do {
+    const page = await backend.librarySearchChapters(
+      chapterSearch("chapter"),
+      next,
+    );
+    pages.push(page);
+    next = page.next;
+  } while (next !== null);
+
+  const books = pages.flatMap((page) => page.hits.map((hit) => hit.book));
+  const sizes = pages.map((page) => page.hits.length);
+  expect([
+    pages.length > 1,
+    sizes.slice(0, -1).every((size) => size === 20),
+    new Set(books).size === books.length,
+    new Set(pages.map((page) => page.count)),
+  ]).toEqual([true, true, true, new Set([books.length])]);
+});
+
+test("counts the hits as a number, the sample never exhausting the window of candidates the library examines", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySearchChapters(
+    chapterSearch("chapter"),
+    null,
+  );
+
+  expect(page.count).toBe((await everyChapterHit(backend, "chapter")).length);
+});
+
+test("finds no chapter for the Book format, as the library holds none of that format yet", async () => {
+  const { backend } = backendFor();
+
+  const page = await backend.librarySearchChapters(
+    chapterSearch("harbour gate", { formats: ["book"] }),
+    null,
+  );
+
+  expect(page).toEqual({ hits: [], next: null, count: 0 });
+});
+
+test("narrows the hits to the manga series for Manga and to the other series for Comic, whatever Book is chosen beside them", async () => {
+  const { backend } = backendFor();
+  const found = async (formats: LibraryFilter["formats"]) =>
+    seriesTitlesOf(await everyChapterHit(backend, "harbour gate", { formats }));
+
+  expect([
+    await found(["manga"]),
+    await found(["manga", "book"]),
+    await found(["comic"]),
+    await found(["comic", "book"]),
+    await found(["comic", "manga"]),
+  ]).toEqual([
+    ["Sample Series 11"],
+    ["Sample Series 11"],
+    [LONG_TITLE],
+    [LONG_TITLE],
+    [LONG_TITLE, "Sample Series 11"],
+  ]);
+});
+
+test("narrows the hits to the series with every book read when asked for finished ones", async () => {
+  const { backend } = backendFor();
+
+  const hits = await everyChapterHit(backend, "volume 2", {
+    finished: "only",
+  });
+
+  expect(seriesTitlesOf(hits)).toEqual([
+    "Sample Series 02",
+    "Sample Series 09",
+    "Sample Series 15",
+    "Sample Series 17",
+  ]);
+});
+
+test("narrows the hits to the series carrying one of the tags chosen", async () => {
+  const { backend } = backendFor();
+
+  const hits = await everyChapterHit(backend, "volume 3", { tags: ["Sea"] });
+
+  expect(seriesTitlesOf(hits)).toEqual(["Sample Series 04", LONG_TITLE]);
+});
+
+test("narrows the hits to the series with a bookmarked page when Bookmarked is the only one", async () => {
+  const { backend } = backendFor();
+  await backend.bookmarkPages(sampleBookId(6, 2), [3], true);
+
+  const hits = await everyChapterHit(backend, "volume 2", {
+    bookmarked: "only",
+  });
+
+  expect(hits.map((hit) => hit.book)).toEqual([sampleBookId(6, 2)]);
+});
+
+test("narrows the hits to the series that are quick reads", async () => {
+  const { backend } = backendFor();
+
+  const hits = await everyChapterHit(backend, "volume 1", {
+    smart: ["quickReads"],
+  });
+
+  expect(seriesTitlesOf(hits)).toEqual(["Sample Series 21"]);
+});
+
+test("leaves the adult series out of the hits once they are hidden", async () => {
+  const { backend } = backendFor();
+  const shown = await everyChapterHit(backend, "volume 2");
+  await backend.setLibraryAdultContent({
+    treatment: "hide",
+    countsAgeRatings: true,
+  });
+
+  const hidden = await everyChapterHit(backend, "volume 2");
+
+  expect([
+    seriesTitlesOf(shown).includes("Sample Series 17"),
+    seriesTitlesOf(hidden).includes("Sample Series 17"),
+  ]).toEqual([true, false]);
+});
+
+test("leaves the hidden series out of the hits, the count and the cursor while screenshot mode is on", async () => {
+  const { backend } = backendFor();
+  const adult = new Set([13, 17].map(sampleSeriesId));
+  const search = chapterSearch("volume", {
+    unread: "only",
+    formats: ["manga"],
+  });
+  const everyone = await backend.librarySearchChapters(search, null);
+  await backend.setScreenshotMode(true);
+
+  const first = await backend.librarySearchChapters(search, null);
+  const second = await backend.librarySearchChapters(search, first.next);
+
+  expect([
+    everyone.count,
+    [...first.hits, ...second.hits].filter((hit) => adult.has(hit.series)),
+    [first.count, second.count],
+    [first.hits.length, second.hits.length],
+    second.next,
+  ]).toEqual([47, [], [40, 40], [20, 20], null]);
+});
+
+test("suggests the words of a series title before those of a chapter title nearer the search", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.librarySpellingSuggestion("lettr")).toEqual({
+    text: "letters",
+    chapterOf: null,
+  });
+});
+
+test("suggests the words of a chapter title without naming its series while screenshot mode is on", async () => {
+  const { backend } = backendFor();
+  await backend.setScreenshotMode(true);
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toEqual({
+    text: "harbour gate",
+    chapterOf: null,
+  });
+});
+
+test("suggests no chapter title for a series whose books are none", async () => {
+  const { backend } = backendFor("series=empty");
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toBeNull();
+});
+
+const MARKED_ADULT = {
+  title: null,
+  people: null,
+  tags: null,
+  summary: null,
+  isMarkedAdult: true,
+} as const;
+
+async function markHarbourSeriesAdult(backend: FakeBackend) {
+  for (const series of [11, 19]) {
+    await backend.editSeriesDetails(sampleSeriesId(series), MARKED_ADULT);
+  }
+}
+
+test("suggests no chapter title of an adult series the library hides", async () => {
+  const { backend } = backendFor();
+  await markHarbourSeriesAdult(backend);
+  await backend.setLibraryAdultContent({
+    treatment: "hide",
+    countsAgeRatings: true,
+  });
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toBeNull();
+});
+
+test("suggests a chapter title of an adult series the library shows", async () => {
+  const { backend } = backendFor();
+  await markHarbourSeriesAdult(backend);
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toEqual({
+    text: "harbour gate",
+    chapterOf: LONG_TITLE,
+  });
+});
+
+test("suggests no chapter title of an adult series while screenshot mode is on, and one once it is off", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(19), MARKED_ADULT);
+  const shown = await backend.librarySpellingSuggestion("arrivl at");
+  await backend.setScreenshotMode(true);
+
+  const hidden = await backend.librarySpellingSuggestion("arrivl at");
+
+  expect([shown, hidden]).toEqual([
+    { text: "arrival at", chapterOf: LONG_TITLE },
+    null,
+  ]);
+});
+
+const LIGHTHOUSE_SERIES = "the lighthouse";
+const MANGA_FORMAT = { formats: ["manga"] } satisfies Partial<LibraryFilter>;
+
+async function searchedSeries(
+  backend: FakeBackend,
+  text: string,
+  formats: LibraryFilter["formats"],
+) {
+  const search = { text, filter: { ...EVERY_SERIES, formats } };
+  const page = await backend.librarySearch(null, search);
+  return {
+    titles: page.series.map((series) => series.title).toSorted(),
+    count: await backend.librarySearchCount(search),
+  };
+}
+
+test("finds no series by text for the Book format, as the library holds none of that format yet", async () => {
+  const { backend } = backendFor();
+
+  expect(await searchedSeries(backend, LIGHTHOUSE_SERIES, ["book"])).toEqual({
+    titles: [],
+    count: 0,
+  });
+});
+
+test("finds a series by text for the Comic format when it holds no manga", async () => {
+  const { backend } = backendFor();
+
+  expect(await searchedSeries(backend, LIGHTHOUSE_SERIES, ["comic"])).toEqual({
+    titles: [LONG_TITLE],
+    count: 1,
+  });
+});
+
+test("finds only the series holding manga by text for the Manga format, whatever Book is chosen beside it", async () => {
+  const { backend } = backendFor();
+  const manga = (await titlesFor(MANGA_FORMAT)).toSorted();
+
+  expect([
+    await searchedSeries(backend, "sample series", ["manga"]),
+    await searchedSeries(backend, "sample series", ["manga", "book"]),
+    await searchedSeries(backend, LIGHTHOUSE_SERIES, ["manga"]),
+  ]).toEqual([
+    { titles: manga, count: manga.length },
+    { titles: manga, count: manga.length },
+    { titles: [], count: 0 },
+  ]);
 });

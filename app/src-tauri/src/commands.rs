@@ -5,13 +5,13 @@ use omnileaf_edge_swipe::{BackSwipe, SwipeEdge};
 use omnileaf_engine::BuildProfile;
 use omnileaf_engine::{
     AdultContent, AppInfo, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace,
-    BookSessions, BooksRemoval, CategoryId, Core, CoversPerRow, CreatorSeries, DetailEdits,
-    DropMode, DropOutcome, DropSummary, FileFate, FileToRead, FileType, FolderCursor,
-    FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage, FolderRescan,
-    FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage, HistorySeries,
-    HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory, LibraryError,
-    LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab, LibraryTag,
-    LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
+    BookSessions, BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, Core, CoversPerRow,
+    CreatorSeries, DetailEdits, DropMode, DropOutcome, DropSummary, FileFate, FileToRead, FileType,
+    FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId, FolderPage,
+    FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf, HistoryPage,
+    HistorySeries, HomeArrival, InterfaceError, LabelChanges, Library, LibraryCategory,
+    LibraryError, LibraryFilter, LibraryFilterChoices, LibraryListing, LibrarySearch, LibraryTab,
+    LibraryTag, LibraryView, LocalDay, MissingFolder, OpenedBook, PageCrop, PagePath, ProbedFormat,
     ProblemReportPreview, ProjectLink, ReadMark, ReadingSummary, ReadingWeek, RemovalPreview,
     RemovalReport, RemovalTarget, ReportCode, ResourceRouter, RootLocator, SavedProblemReport,
     ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId,
@@ -97,6 +97,7 @@ macro_rules! app_commands {
             writerless_series,
             writerless_series_count,
             library_search,
+            library_search_chapters,
             library_search_count,
             series_overview,
             series_books,
@@ -728,6 +729,16 @@ async fn library_search(
     search: LibrarySearch,
 ) -> Result<SeriesPage, IpcError> {
     Ok(library.search(search, after).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn library_search_chapters(
+    library: State<'_, Library>,
+    search: LibrarySearch,
+    after: Option<ChapterCursor>,
+) -> Result<ChapterHitPage, IpcError> {
+    Ok(library.search_chapters(search, after).await?)
 }
 
 #[tauri::command]

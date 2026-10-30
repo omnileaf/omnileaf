@@ -1,4 +1,4 @@
-const TRIGRAM_CHARS = 3;
+export const TRIGRAM_CHARS = 3;
 
 export interface ClosestWords {
   readonly slips: number;
@@ -53,7 +53,37 @@ export function closestWords(
   return closest;
 }
 
-export function slipsAllowed(chars: number): number {
+export interface TitleOnShelf {
+  readonly title: string;
+  readonly chapterOf: string | null;
+}
+
+export interface Suggestion {
+  readonly text: string;
+  readonly chapterOf: string | null;
+}
+
+export function closestTitle(
+  typed: string,
+  titles: readonly TitleOnShelf[],
+): Suggestion | null {
+  const allowed = slipsAllowed(Array.from(typed).length);
+  let best: (Suggestion & { readonly slips: number }) | null = null;
+  for (const { title, chapterOf } of titles) {
+    const closest = closestWords(typed, title.toLocaleLowerCase());
+    if (
+      closest !== undefined &&
+      closest.slips > 0 &&
+      closest.slips <= allowed &&
+      (best === null || closest.slips < best.slips)
+    ) {
+      best = { slips: closest.slips, text: closest.words, chapterOf };
+    }
+  }
+  return best === null ? null : { text: best.text, chapterOf: best.chapterOf };
+}
+
+function slipsAllowed(chars: number): number {
   if (chars <= 4) {
     return 1;
   }
