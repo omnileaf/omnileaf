@@ -67,7 +67,10 @@
   </div>
   <div
     bind:this={actions}
-    class="absolute inset-e-none inset-bs-none inset-be-none z-behind flex ps-native-swipe-action-gap pe-native-row-end"
+    class={[
+      "absolute inset-e-none inset-bs-none inset-be-none z-behind flex ps-native-swipe-action-gap pe-native-row-end motion-safe:transition-opacity motion-safe:duration-slide",
+      !isOpen && "opacity-0",
+    ]}
   >
     <button
       type="button"
