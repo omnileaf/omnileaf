@@ -2,8 +2,15 @@
   import { CircleAlert } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
+  import { cn } from "#lib/components/cn.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import {
+    alertLook,
+    TODAYS_ALERT_LOOK,
+  } from "#lib/components/ui/dialog/alert-look.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { NeedsAttention, Problem } from "./needs-attention.svelte";
@@ -11,6 +18,8 @@
   import type { WordingContext } from "./problem-wording";
 
   const ICON_SIZE = 18;
+  const DIALOG =
+    "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-card px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
 
   let {
     attention,
@@ -21,6 +30,9 @@
     context: WordingContext;
     onFix: (problem: Problem) => void;
   } = $props();
+
+  const isWindows = currentPlatform() === "windows";
+  const look = isWindows ? alertLook("windows") : TODAYS_ALERT_LOOK;
 
   function close(): void {
     attention.hide();
@@ -38,18 +50,26 @@
   }
 >
   <ModalContent
-    wideClass="inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-card px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit"
-    phoneClass="gap-lg px-sheet-inline pbs-sheet-gap pbe-sheet-bottom"
+    wideClass={cn(DIALOG, look.surface)}
+    phoneLook={isWindows ? "dialog" : "drawer"}
+    phoneClass={isWindows
+      ? cn(DIALOG, look.surface)
+      : "gap-lg px-sheet-inline pbs-sheet-gap pbe-sheet-bottom"}
+    phoneOverlayClass={look.scrim}
+    wideOverlayClass={look.scrim}
     onDismiss={close}
   >
     <div class="flex items-center gap-md">
       <span
         aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+        class={cn(
+          "flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense",
+          look.badge,
+        )}
       >
         <CircleAlert size={ICON_SIZE} />
       </span>
-      <DialogTitle class="text-title font-bold">
+      <DialogTitle class={cn("text-title font-bold", look.title)}>
         {m.attention_title()}
       </DialogTitle>
     </div>
@@ -63,5 +83,12 @@
         }}
       />
     </div>
+    {#if isWindows}
+      <div class={cn("-mbe-xl flex justify-end", look.actions)}>
+        <Button type="button" variant="primary" onclick={close}>
+          {m.attention_close()}
+        </Button>
+      </div>
+    {/if}
   </ModalContent>
 </Dialog.Root>
