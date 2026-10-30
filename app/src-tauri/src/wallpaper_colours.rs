@@ -42,10 +42,12 @@ pub(crate) struct AccentColours {
 const ACCENT_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Accent";
 #[cfg(windows)]
 const ACCENT_PALETTE: &str = "AccentPalette";
+#[cfg(windows)]
+const ACCENT_PALETTE_BYTES: usize = 32;
 
 #[cfg(windows)]
 pub(crate) fn read_accent() -> Option<AccentColours> {
-    omnileaf_windows_probes::user_binary_value(ACCENT_KEY, ACCENT_PALETTE)
+    omnileaf_windows_probes::user_binary_value::<ACCENT_PALETTE_BYTES>(ACCENT_KEY, ACCENT_PALETTE)
         .and_then(|palette| accent_from_palette(&palette))
 }
 
