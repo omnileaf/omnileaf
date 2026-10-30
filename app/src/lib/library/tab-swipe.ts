@@ -153,7 +153,8 @@ export function swipesBetweenTabs(
           onSwipe(committed);
         }
       };
-      if (!isSwiping || !settlesSmoothly()) {
+      const isDragged = area.style.translate !== "";
+      if (!isSwiping || !isDragged || !settlesSmoothly()) {
         finish();
         return;
       }
