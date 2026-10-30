@@ -52,7 +52,10 @@
 {#if list.list.kind === "loaded" && list.list.items.length > 0}
   <section aria-labelledby={headingId} class="flex flex-col gap-md">
     <div class="flex items-baseline gap-sm">
-      <h2 id={headingId} class="text-lead font-bold">
+      <h2
+        id={headingId}
+        class="text-native-group-heading/native-group-heading font-native-group-heading tracking-native-group-heading"
+      >
         {#if creator === undefined}
           {name}
         {:else}
@@ -60,7 +63,7 @@
         {/if}
       </h2>
       {#if count !== undefined}
-        <p class="text-detail text-muted">
+        <p class="text-detail text-muted ios:tracking-native-group-footer">
           {m.library_series_count({ count })}
           {#if pointer !== undefined}
             <span aria-hidden="true">·</span>
