@@ -29,6 +29,7 @@ const BUTTON_CORNER = "10px";
 const ROW_CORNER = "8px";
 const KEY_CORNER = "6px";
 const PAGE_BUTTON_HEIGHT = 36;
+const IOS_ROW_HEIGHT = 52;
 const IOS_BUTTON_HEIGHT = 50;
 const SHADCN_CORNER = "8px";
 const ANDROID_BUTTON_HEIGHT = 40;
@@ -589,14 +590,17 @@ test.describe("on an iPhone", () => {
     expect(await isPill(button)).toBe(true);
   });
 
-  test("draws the Folders card's Add a folder as a pill", async ({ page }) => {
+  test("draws the Folders card's Add a folder as the last list row", async ({
+    page,
+  }) => {
     await page.goto("/settings/library");
     const button = addFolderInFolders(page);
 
     const box = await boxOf(button);
     const corner = await cornerOf(button);
 
-    expect(parseFloat(corner)).toBeGreaterThanOrEqual(box.height / 2);
+    expect(box.height).toBeGreaterThanOrEqual(IOS_ROW_HEIGHT);
+    expect(parseFloat(corner)).toBe(0);
   });
   test.describe("in the reader", () => {
     test.use({ backend: readerOn("ios") });
