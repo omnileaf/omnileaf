@@ -30,6 +30,10 @@
   --native-spacing-slider-thumb: 18px;
   --native-spacing-slider-thumb-core: 12px;
   --native-spacing-slider-thumb-core-hover: 14px;
+  --native-text-page-title: calc(1.75rem * var(--text-scale));
+  --native-leading-page-title: calc(36 / 28);
+  --native-weight-page-title: 600;
+  --native-tracking-page-title: 0;
   --native-radius-dialog: 8px;
   --native-spacing-dialog: 448px;
   --native-radius-sheet: 8px;
@@ -54,6 +58,12 @@
   --native-spacing-info-bar-floating-top: 64px;
   --native-spacing-tab-block-start: 10px;
   --native-spacing-tab-block-end: 7px;
+  --native-spacing-command-hover-block: 6px;
+  --native-spacing-command-hover-inline: 2px;
+  --native-spacing-command-icon: 20px;
+  --native-text-command-label: calc(0.75rem * var(--text-scale));
+  --native-leading-command-label: calc(16 / 12);
+  --native-weight-command-label: 400;
 }
 
 :root[data-platform="windows"],

@@ -330,6 +330,12 @@
   --native-tracking-empty: 0;
   --native-weight-empty-title: 500;
   --native-weight-empty-body: 400;
+  --native-spacing-command-hover-block: 0px;
+  --native-spacing-command-hover-inline: 0px;
+  --native-spacing-command-icon: 0px;
+  --native-text-command-label: calc(0.75rem * var(--text-scale));
+  --native-leading-command-label: calc(16 / 12);
+  --native-weight-command-label: 400;
 }
 
 :root[data-platform="android"],
