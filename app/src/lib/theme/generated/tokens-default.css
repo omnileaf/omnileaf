@@ -87,6 +87,7 @@
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: color-mix(in oklab, var(--primary) 20%, transparent);
   --native-spacing-progress-gap: 0px;
+  --native-spacing-progress-thickness: var(--spacing-progress);
   --native-color-grouped-ground: var(--background);
   --native-color-group: var(--card);
   --native-radius-group: var(--radius-list);

@@ -64,6 +64,7 @@
   --native-tracking-segment: 0.1px;
   --native-shadow-segment-lift: none;
   --native-spacing-progress-gap: 4px;
+  --native-spacing-progress-thickness: var(--spacing-progress);
   --native-radius-group: 0px;
   --native-radius-card: 12px;
   --native-spacing-row: 56px;

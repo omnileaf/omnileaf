@@ -202,6 +202,13 @@ test("draws Windows's ContentDialog on Canvas with CanvasText edges", () => {
   expect(mapped.get("--native-color-dialog-band-edge")).toBe("CanvasText");
 });
 
+test("keeps Windows's indeterminate bar trackless under forced colours, as the contrast themes draw it", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.has("--native-color-progress-idle-track")).toBe(false);
+  expect(mapped.get("--native-color-progress-fill")).toBe("Highlight");
+});
+
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {
   const mapped = new Map(declarations(forcedColors));
 

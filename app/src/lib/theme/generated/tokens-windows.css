@@ -15,6 +15,7 @@
   --native-spacing-switch-knob-on-length: 12px;
   --native-spacing-switch-inset: 4px;
   --native-spacing-switch-inset-on: 4px;
+  --native-spacing-progress-thickness: 3px;
   --native-radius-card: 8px;
   --native-spacing-hairline: 1px;
   --native-spacing-button-small: 24px;
@@ -76,7 +77,7 @@
   --native-color-on-segment-selected: #000000e4;
   --native-color-progress-track: #00000072;
   --native-color-progress-fill: #2f6f4f;
-  --native-color-progress-idle-track: #00000072;
+  --native-color-progress-idle-track: transparent;
   --native-color-grouped-ground: #ffffff80;
   --native-color-group: #ffffffb3;
   --native-color-card: #ffffffb3;
@@ -167,7 +168,7 @@
   --native-color-on-segment-selected: #ffffff;
   --native-color-progress-track: #ffffff8b;
   --native-color-progress-fill: #7fcb9d;
-  --native-color-progress-idle-track: #ffffff8b;
+  --native-color-progress-idle-track: transparent;
   --native-color-grouped-ground: #3a3a3a4c;
   --native-color-group: #ffffff0d;
   --native-color-card: #ffffff0d;
