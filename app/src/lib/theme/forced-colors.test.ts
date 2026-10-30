@@ -155,6 +155,24 @@ test("rings focus inside in Canvas and takes no nav-item rule that reaches beyon
   expect(forcedColors).not.toContain("nav li");
 });
 
+test("fills a hovered or pressed command bar button on Highlight with HighlightText over it, and only that button", () => {
+  const squeezed = (css: string) => css.replace(/\s+/g, "");
+  const idle = ':not(:disabled):not([aria-expanded="true"])';
+  const buttons = (state: string, part: string) =>
+    `:root[data-platform="windows"] [data-command-button]${idle}:${state}${part}`;
+
+  expect(squeezed(forcedColors)).toContain(
+    squeezed(
+      `${buttons("hover", "::before")}, ${buttons("active", "::before")} { background-color: Highlight; }`,
+    ),
+  );
+  expect(squeezed(forcedColors)).toContain(
+    squeezed(
+      `${buttons("hover", "")}, ${buttons("active", "")} { color: HighlightText; }`,
+    ),
+  );
+});
+
 test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and a key hint the contrast theme's way", () => {
   const mapped = new Map(declarations(forcedColors));
 
