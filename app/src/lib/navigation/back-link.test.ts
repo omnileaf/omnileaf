@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "vitest";
 
-import { shownBackLink } from "./back-link";
+import { shownBackLink, wayBackFrom } from "./back-link";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -31,4 +31,15 @@ test("finds nothing on a page with no way back", () => {
   const root = place('<a href="/browse">Browse</a>');
 
   expect(shownBackLink(root)).toBeUndefined();
+});
+
+test("takes the screen's own way back before one shown beside it, as the collapsed tab bar's", () => {
+  place('<a href="/" data-back-link>Back to the library</a>');
+  const screen = place('<a href="/series/1" data-back-link>Series</a>');
+  const bare = place("<p>Search</p>");
+
+  expect([
+    wayBackFrom(screen)?.getAttribute("href"),
+    wayBackFrom(bare)?.getAttribute("href"),
+  ]).toEqual(["/series/1", "/"]);
 });

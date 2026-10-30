@@ -91,7 +91,7 @@ test.describe("on iOS", () => {
     expect(navigation.height).toBeCloseTo(viewport.height, 0);
   });
 
-  test("shrinks the bar on the search page to the current tab's circle at the bottom start", async ({
+  test("shrinks the bar on the search page to a circle at the bottom start leading back to the library", async ({
     page,
   }) => {
     const viewport = viewportOf(page);
@@ -101,8 +101,8 @@ test.describe("on iOS", () => {
 
     await expect(navigation.getByRole("link")).toHaveCount(1);
     await expect(
-      navigation.getByRole("link", { name: "Library" }),
-    ).toHaveAttribute("aria-current", "page");
+      navigation.getByRole("link", { name: "Back to the library" }),
+    ).not.toHaveAttribute("aria-current");
     const circle = await navigationBox(page);
     expect([circle.x, circle.width, circle.height]).toEqual([16, 48, 48]);
   });

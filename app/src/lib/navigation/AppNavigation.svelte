@@ -129,6 +129,7 @@
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
+      {@const isWayBack = isCollapsed && isSelected}
       {@const isArriving = destination.section === arriving}
       {#if destination.isAtSideEnd && attention !== undefined}
         <li class="hidden desktop-shell:mbs-auto desktop-shell:flex">
@@ -154,7 +155,9 @@
             <a
               {...props}
               href={resolve(SECTION_ROUTE_IDS[destination.section])}
-              aria-current={isSelected ? "page" : undefined}
+              aria-current={isSelected && !isWayBack ? "page" : undefined}
+              aria-label={isWayBack ? m.search_back() : undefined}
+              data-back-link={isWayBack || undefined}
               class={[
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,

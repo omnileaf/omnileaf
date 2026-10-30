@@ -1056,7 +1056,12 @@ test.describe("on an iPhone", () => {
     });
     await expect(
       page.getByRole("link", { name: "Back to the library" }),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
+    await expect(
+      page
+        .getByRole("navigation", { name: "Main" })
+        .getByRole("link", { name: "Back to the library" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   test("lifts the field and the Library circle 12 above the on-screen keyboard", async ({
