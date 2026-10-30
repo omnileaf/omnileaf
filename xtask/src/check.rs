@@ -90,8 +90,7 @@ pub(crate) const STEPS: &[Step] = &[
         group: Group::Portable,
         program: "cargo",
         args: &[
-            "nextest",
-            "run",
+            "test",
             "--package",
             "omnileaf-engine",
             "--lib",
