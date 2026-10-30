@@ -243,6 +243,7 @@ export type AppInfo = {
 	platform: Platform,
 	sourceCode: string,
 	isDevelopmentBuild: boolean,
+	windowBackdrop: WindowBackdrop,
 };
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
@@ -1065,6 +1066,8 @@ export type WallpaperColours = {
 	light: ColourRoles,
 	dark: ColourRoles,
 };
+
+export type WindowBackdrop = "mica" | "none";
 
 export type WriterPage = {
 	writers: LibraryWriter[],

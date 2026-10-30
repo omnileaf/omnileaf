@@ -90,7 +90,7 @@ mod version_details;
 mod windows_share;
 
 pub use adult_content::{AdultContent, AdultTreatment};
-pub use app_info::{AppInfo, Platform};
+pub use app_info::{AppInfo, Platform, WindowBackdrop};
 pub use app_language::AppLanguage;
 pub use book_numbers::{BookKind, BookNumber, BookSection, NumberRange};
 pub use bookmark_access::ResolvedBookmark;
@@ -209,6 +209,17 @@ impl Core {
                 platform: Platform::CURRENT,
                 source_code: ProjectLink::SourceCode.address().to_owned(),
                 is_development_build: BuildProfile::CURRENT == BuildProfile::Debug,
+                window_backdrop: WindowBackdrop::None,
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn with_window_backdrop(self, window_backdrop: WindowBackdrop) -> Self {
+        Self {
+            app_info: AppInfo {
+                window_backdrop,
+                ..self.app_info
             },
         }
     }

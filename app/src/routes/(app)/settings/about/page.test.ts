@@ -10,6 +10,7 @@ const PROPS = {
       platform: "linux" as const,
       sourceCode: "repo.example.org/omnileaf",
       isDevelopmentBuild: false,
+      windowBackdrop: "none" as const,
     },
     isFirstLaunch: false,
     libraryProblem: null,

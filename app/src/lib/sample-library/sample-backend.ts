@@ -1177,6 +1177,7 @@ export function sampleBackend(
       platform: scenario.platform,
       sourceCode: "repo.example.org/omnileaf",
       isDevelopmentBuild: true,
+      windowBackdrop: "none",
     }),
     libraryProblem: () => null,
     homeArrival: () => null,

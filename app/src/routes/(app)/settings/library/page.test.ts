@@ -41,6 +41,7 @@ test("offers to add a folder", async () => {
           platform: "linux",
           sourceCode: "repo.example.org/omnileaf",
           isDevelopmentBuild: false,
+          windowBackdrop: "none",
         },
         libraryProblem: null,
         homeArrival: null,
