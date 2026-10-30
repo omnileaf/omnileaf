@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Ellipsis, Eye, EyeOff, ListChecks, Play } from "@lucide/svelte";
+  import {
+    Bookmark,
+    Ellipsis,
+    Eye,
+    EyeOff,
+    ListChecks,
+    Play,
+  } from "@lucide/svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -27,6 +34,7 @@
     open = $bindable(false),
     isContext = false,
     onMark,
+    onBookmark,
     onSelect,
   }: {
     book: SeriesBook;
@@ -34,6 +42,7 @@
     open?: boolean;
     isContext?: boolean;
     onMark: (mark: ReadMark) => void;
+    onBookmark?: (() => void) | undefined;
     onSelect?: () => void;
   } = $props();
 
@@ -146,6 +155,12 @@
         {m.series_mark_unread()}
       {/if}
     </DropdownMenuItem>
+    {#if onBookmark !== undefined && !book.isBookmarked}
+      <DropdownMenuItem onSelect={onBookmark}>
+        <Bookmark size={ICON_SIZE} aria-hidden="true" />
+        {m.series_bookmark()}
+      </DropdownMenuItem>
+    {/if}
     {#if onSelect !== undefined}
       <DropdownMenuItem
         onSelect={() => {
