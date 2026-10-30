@@ -11,7 +11,7 @@
   import NavigationIcon from "./NavigationIcon.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
-  import { tabBarLook } from "./tab-bar.ts";
+  import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
   interface Destination {
     readonly section: Section;
@@ -47,12 +47,15 @@
   let {
     current,
     attention,
+    isCollapsed = false,
   }: {
     current: Section;
     attention?: Snippet<[{ isFolded: boolean }]> | undefined;
+    isCollapsed?: boolean;
   } = $props();
 
-  const look = tabBarLook(currentPlatform());
+  const platformLook = tabBarLook(currentPlatform());
+  const look = $derived(isCollapsed ? COLLAPSED_TAB_BAR_LOOK : platformLook);
   const sidebar = getSidebarSetting();
   const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
   const isFolded = $derived(sidebar.isHidden || isNarrowPointer.current);
@@ -136,6 +139,7 @@
         class={[
           "flex-1 min-inline-none medium:flex-none desktop-shell:flex-none",
           look.cell,
+          isCollapsed && !isSelected && "hidden",
           destination.isAtSideEnd &&
             (attention === undefined
               ? "medium:mbs-auto desktop-shell:mbs-auto"
@@ -192,8 +196,11 @@
                   ]}
                 />
               </span>
-              <span class="truncate max-inline-full sidebar-hidden:sr-only"
-                >{destination.label()}</span
+              <span
+                class={[
+                  "truncate max-inline-full sidebar-hidden:sr-only",
+                  isCollapsed && "sr-only",
+                ]}>{destination.label()}</span
               >
             </a>
           {/snippet}

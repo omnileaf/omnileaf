@@ -189,6 +189,8 @@
   --native-spacing-tab-bar: var(--spacing-floating-bar);
   --native-spacing-tab-bar-inset: var(--spacing-xs);
   --native-spacing-tab-bar-inline: var(--spacing-xs);
+  --native-spacing-toolbar-button: var(--spacing-touch-target);
+  --native-spacing-bottom-bar-start: var(--spacing-lg);
   --native-spacing-tab-cell: 100%;
   --native-text-tab: var(--text-tab);
   --native-leading-tab: var(--text-tab--line-height);

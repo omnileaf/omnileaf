@@ -129,6 +129,8 @@
   --native-spacing-tab-bar: 62px;
   --native-spacing-tab-bar-inset: 4px;
   --native-spacing-tab-bar-inline: 10px;
+  --native-spacing-toolbar-button: 48px;
+  --native-spacing-bottom-bar-start: max(calc(var(--spacing-safe-start) + 16px), calc((100% - 392px) / 2));
   --native-spacing-tab-cell: 84px;
   --native-text-tab: 0.625rem;
   --native-leading-tab: calc(12 / 10);
