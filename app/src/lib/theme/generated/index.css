@@ -278,6 +278,12 @@
   --leading-native-notice-label: var(--native-leading-notice-label);
   --font-weight-native-notice-label: var(--native-weight-notice-label);
   --tracking-native-notice-label: var(--native-tracking-notice-label);
+  --spacing-native-search-token: var(--native-spacing-search-token);
+  --spacing-native-search-token-inline: var(--native-spacing-search-token-inline);
+  --text-native-search-token: var(--native-text-search-token);
+  --leading-native-search-token: var(--native-leading-search-token);
+  --font-weight-native-search-token: var(--native-weight-search-token);
+  --tracking-native-search-token: var(--native-tracking-search-token);
   --shadow-native-notice-lift: var(--native-shadow-notice-lift);
   --spacing-native-notice-inline: var(--native-spacing-notice-inline);
   --spacing-native-notice-top: var(--native-spacing-notice-top);
