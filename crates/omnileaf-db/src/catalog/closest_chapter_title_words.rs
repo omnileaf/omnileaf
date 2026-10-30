@@ -1,8 +1,9 @@
 use rusqlite::{Connection, ToSql};
 
 use super::{
-    closest_title_words::{any_trigram, nearest_words, typed_trigrams},
     rarest_trigrams::{WINDOW, rarest_trigrams},
+    spelling_slips::nearest_words,
+    spelling_trigrams::{any_trigram, typed_trigrams},
 };
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 

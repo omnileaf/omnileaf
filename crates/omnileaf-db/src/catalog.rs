@@ -47,6 +47,8 @@ mod series_page;
 mod series_search;
 mod series_titles;
 mod series_volume;
+mod spelling_slips;
+mod spelling_trigrams;
 mod staged_rows;
 pub(crate) mod stored_id;
 mod value_list;

@@ -1,6 +1,6 @@
 use rusqlite::{Connection, ToSql};
 
-use super::closest_title_words::quoted;
+use super::spelling_trigrams::quoted;
 use crate::{Error, adult_content::AdultHiding};
 
 const MOST_TRIGRAMS: usize = 4;
