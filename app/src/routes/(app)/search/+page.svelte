@@ -49,6 +49,7 @@
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
   import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
+  import type { FilterPlace } from "#lib/search/search-look.ts";
   import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import {
@@ -109,6 +110,12 @@
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const isGroupedStart = $derived(isIPhone && !isLookingFor);
+  const filterPlace: FilterPlace = $derived.by(() => {
+    if (isIPhone) {
+      return "token";
+    }
+    return width.current === "compact" ? "row" : "field";
+  });
   /** The search as typed with its edges trimmed, so a space after the words changes nothing. */
   const searchKey = $derived(JSON.stringify(query.search));
   let answeredKey: string | undefined = $state();
@@ -346,9 +353,16 @@
     <SearchField
       text={query.text}
       conditions={query.conditions}
-      hasTokens={isIPhone}
+      {filterPlace}
       onType={type}
       onRemove={toggle}
+      onClear={() => {
+        if (filterPlace === "token") {
+          query.startOver("");
+        } else {
+          query.type("");
+        }
+      }}
       onEscape={close}
       {listId}
       activeId={activeSeries === undefined || drawnKey !== activeSeries.id
@@ -369,12 +383,11 @@
       }}
     />
   {:else}
-    {#if query.conditions.length > 0 && !isIPhone}
+    {#if query.conditions.length > 0 && filterPlace === "row"}
       <ConditionChips
         conditions={query.conditions}
         onRemove={toggle}
         look="row"
-        class="medium:hidden"
       />
     {/if}
     <ScopeChips

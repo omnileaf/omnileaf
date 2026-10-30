@@ -9,18 +9,18 @@ import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
+import type { FilterPlace } from "./search-look";
 import SearchField from "./SearchField.svelte";
 
 test("clears the typed text and keeps the field focused", async () => {
-  const typed: string[] = [];
+  const onClear = vi.fn();
   const screen = await render(SearchField, {
     text: "market",
     conditions: [],
-    hasTokens: false,
-    onType: (text: string) => {
-      typed.push(text);
-    },
+    filterPlace: "field",
+    onType: () => undefined,
     onRemove: () => undefined,
+    onClear,
     onEscape: () => undefined,
     listId: "results",
     activeId: undefined,
@@ -30,7 +30,7 @@ test("clears the typed text and keeps the field focused", async () => {
 
   await screen.getByRole("button", { name: "Clear" }).click();
 
-  expect(typed).toEqual([""]);
+  expect(onClear).toHaveBeenCalledOnce();
   await expect.element(screen.getByRole("combobox")).toHaveFocus();
 });
 
@@ -38,9 +38,10 @@ test("leaves typed titles as typed, without the keyboard's corrections", async (
   const screen = await render(SearchField, {
     text: "",
     conditions: [],
-    hasTokens: false,
+    filterPlace: "field",
     onType: () => undefined,
     onRemove: () => undefined,
+    onClear: () => undefined,
     onEscape: () => undefined,
     listId: "results",
     activeId: undefined,
@@ -56,27 +57,29 @@ test("leaves typed titles as typed, without the keyboard's corrections", async (
 });
 
 const IPHONE = { width: 402, height: 874 };
+const NARROW_PHONE = { width: 360, height: 780 };
 
-async function renderTokenField(
-  hasTokens: boolean,
+async function renderPlacedField(
+  filterPlace: FilterPlace,
   { text, conditions }: { text: string; conditions: FilterCondition[] },
 ) {
-  const onType = vi.fn();
   const onRemove = vi.fn();
-  followCorePlatform(hasTokens ? "ios" : "android");
+  const onClear = vi.fn();
+  followCorePlatform(filterPlace === "token" ? "ios" : "android");
   const screen = await render(SearchField, {
     text,
     conditions,
-    hasTokens,
-    onType,
+    filterPlace,
+    onType: () => undefined,
     onRemove,
+    onClear,
     onEscape: () => undefined,
     listId: "results",
     activeId: undefined,
     hasChoices: false,
     onKey: () => false,
   });
-  return { screen, onType, onRemove };
+  return { screen, onRemove, onClear };
 }
 
 describe("with a typed filter", () => {
@@ -91,21 +94,22 @@ describe("with a typed filter", () => {
     document.body.replaceChildren();
   });
 
-  test("shows the filter as a token inside the field and names it to the field on an iPhone", async () => {
-    const { screen } = await renderTokenField(true, {
+  test("draws the filter as a token inside the field that removes it when pressed", async () => {
+    const { screen, onRemove } = await renderPlacedField("token", {
       text: "harbour",
       conditions: ["unread"],
     });
     const field = screen.getByRole("combobox");
-    const token = screen.getByText("Unread", { exact: true });
+    const token = screen.getByRole("button", {
+      name: "Remove the Unread filter",
+    });
 
-    await expect.element(field).toHaveAccessibleDescription("Filters Unread");
-    await expect
-      .element(screen.getByRole("button", { name: "Remove the Unread filter" }))
-      .not.toBeInTheDocument();
+    await expect.element(token).toHaveTextContent("Unread");
+    await expect.element(field).not.toHaveAttribute("aria-describedby");
     const box = token.element().getBoundingClientRect();
-    const fieldBox = field.element().getBoundingClientRect();
-    expect(box.right).toBeLessThanOrEqual(fieldBox.left);
+    expect(box.right).toBeLessThanOrEqual(
+      field.element().getBoundingClientRect().left,
+    );
     const style = getComputedStyle(token.element());
     expect({
       height: box.height,
@@ -130,51 +134,70 @@ describe("with a typed filter", () => {
       tracking: "-0.23px",
       shrinks: "0",
     });
+
+    await token.click();
+
+    expect(onRemove.mock.calls).toEqual([["unread"]]);
   });
 
-  test("removes the last token with backspace at the start of the field on an iPhone", async () => {
-    const { screen, onRemove } = await renderTokenField(true, {
+  test("keeps the words a usable width beside every filter at 360 points, the tokens scrolling", async () => {
+    await page.viewport(NARROW_PHONE.width, NARROW_PHONE.height);
+    const { screen } = await renderPlacedField("token", {
+      text: "harbour",
+      conditions: ["unread", "started", "finished"],
+    });
+    const field = screen.getByRole("combobox").element();
+    const strip = screen.getByRole("group", { name: "Filters" }).element();
+    const group = field.parentElement;
+
+    expect(group?.scrollWidth).toBe(group?.clientWidth);
+    expect(strip.scrollWidth).toBeGreaterThan(strip.clientWidth);
+    expect(getComputedStyle(strip).scrollbarWidth).toBe("none");
+    expect(field.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      strip.getBoundingClientRect().width,
+    );
+  });
+
+  test("removes the last token with backspace only once the words are gone", async () => {
+    const { screen, onRemove } = await renderPlacedField("token", {
       text: "harbour",
       conditions: ["unread", "started"],
     });
     const field = screen.getByRole("combobox");
     await field.click();
     (field.element() as HTMLInputElement).setSelectionRange(0, 0);
+    await userEvent.keyboard("{Backspace}");
+    expect(onRemove).not.toHaveBeenCalled();
 
+    await screen.rerender({ text: "" });
     await userEvent.keyboard("{Backspace}");
 
     expect(onRemove.mock.calls).toEqual([["started"]]);
   });
 
-  test("clears the text and every token with Clear on an iPhone, shown for tokens alone", async () => {
-    const { screen, onType, onRemove } = await renderTokenField(true, {
+  test("offers Clear for tokens alone", async () => {
+    const { screen, onClear, onRemove } = await renderPlacedField("token", {
       text: "",
       conditions: ["unread", "started"],
     });
 
     await screen.getByRole("button", { name: "Clear" }).click();
 
-    expect(onType.mock.calls).toEqual([[""]]);
-    expect(onRemove.mock.calls).toEqual([["unread"], ["started"]]);
+    expect(onClear).toHaveBeenCalledOnce();
+    expect(onRemove).not.toHaveBeenCalled();
   });
 
-  test("keeps the filter out of the field, and backspace and Clear to the text, on an Android phone", async () => {
-    const { screen, onType, onRemove } = await renderTokenField(false, {
-      text: "harbour",
+  test("keeps the filter and Clear out of a field holding no words on an Android phone", async () => {
+    const { screen } = await renderPlacedField("row", {
+      text: "",
       conditions: ["unread"],
     });
-    const field = screen.getByRole("combobox");
-    await field.click();
-    (field.element() as HTMLInputElement).setSelectionRange(0, 0);
 
-    await userEvent.keyboard("{Backspace}");
-    await screen.getByRole("button", { name: "Clear" }).click();
-
-    await expect.element(field).not.toHaveAttribute("aria-describedby");
     await expect
-      .element(screen.getByText("Unread", { exact: true }))
-      .not.toBeVisible();
-    expect(onRemove).not.toHaveBeenCalled();
-    expect(onType.mock.calls).toEqual([[""]]);
+      .element(screen.getByRole("button", { name: /^Remove the/ }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Clear" }))
+      .not.toBeInTheDocument();
   });
 });
