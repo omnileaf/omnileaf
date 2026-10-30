@@ -493,7 +493,7 @@ for (const { platform, weight, token, isTouch } of [
   {
     platform: "android",
     weight: "500",
-    token: "--native-color-on-button-plain",
+    token: "--color-accent",
     isTouch: true,
   },
   {
@@ -528,7 +528,9 @@ for (const { platform, weight, token, isTouch } of [
       const look =
         platform === "ios" && !isPhone(page)
           ? ({ weight: "600", token: "--color-foreground" } as const)
-          : { weight, token };
+          : platform === "android" && isPhone(page)
+            ? ({ weight, token: "--native-color-on-button-plain" } as const)
+            : { weight, token };
 
       await expect(reset).toHaveCSS("font-weight", look.weight);
       await expect(reset).toHaveCSS(
