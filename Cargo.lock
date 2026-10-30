@@ -3802,6 +3802,7 @@ dependencies = [
  "libc",
  "omnileaf-testkit",
  "thiserror 2.0.21",
+ "unicode-normalization",
 ]
 
 [[package]]
