@@ -270,15 +270,7 @@ fn main() -> anyhow::Result<()> {
                 out.display()
             )]);
         }
-        Command::FuzzSeeds => {
-            let corpus = workspace::root().join(fuzz_seeds::CORPUS);
-            let written = fuzz_seeds::generate(&corpus)?;
-            print_lines(&[format!(
-                "wrote {} seeds to {}",
-                written.len(),
-                corpus.display()
-            )]);
-        }
+        Command::FuzzSeeds => write_fuzz_seeds()?,
         Command::Icons => icons::regenerate(&workspace::root())?,
         Command::Licences { check } => {
             let mode = if check {
@@ -463,6 +455,18 @@ fn check_push(remote: &str) -> anyhow::Result<()> {
 fn print_changed_areas(base: Option<&str>) -> anyhow::Result<()> {
     let areas = changes::areas_since(&workspace::root(), base)?;
     print_lines(&areas.outputs());
+    Ok(())
+}
+
+fn write_fuzz_seeds() -> anyhow::Result<()> {
+    let root = workspace::root();
+    let corpus = root.join(fuzz_seeds::CORPUS);
+    let written = fuzz_seeds::generate(&corpus, &root.join(rar_fixtures::FIXTURES))?;
+    print_lines(&[format!(
+        "wrote {} seeds to {}",
+        written.len(),
+        corpus.display()
+    )]);
     Ok(())
 }
 
