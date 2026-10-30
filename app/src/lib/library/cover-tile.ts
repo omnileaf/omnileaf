@@ -8,6 +8,8 @@ export interface CoverStackLook {
 }
 
 export interface CoverTileLook {
+  readonly link: string;
+  readonly focusRing: string | undefined;
   readonly pickedRing: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
@@ -19,6 +21,7 @@ export interface CoverTileLook {
   readonly compactMark: string;
   readonly markOn: string;
   readonly markOff: string;
+  readonly tick: string;
 }
 
 export const PICKED_COVER_RING =
@@ -44,6 +47,8 @@ const LINUX_STACK: CoverStackLook = {
 };
 
 const TODAYS_LOOK: CoverTileLook = {
+  link: "",
+  focusRing: undefined,
   pickedRing: PICKED_COVER_RING,
   stack: null,
   cover: "",
@@ -55,6 +60,7 @@ const TODAYS_LOOK: CoverTileLook = {
   compactMark: "",
   markOn: "",
   markOff: "",
+  tick: "",
 };
 
 const NATIVE_BADGE =
@@ -66,6 +72,9 @@ const NATIVE_SELECT_SIZE =
 const NATIVE_SELECT_MARK = `${NATIVE_SELECT_SIZE} max-medium:border-(length:--native-spacing-select-edge)`;
 
 const NATIVE_TILE = {
+  link: "",
+  focusRing: undefined,
+  tick: "",
   pickedRing: PICKED_COVER_RING,
   stack: null,
   cover: "max-medium:rounded-native-cover",
@@ -93,6 +102,27 @@ const IOS_SELECT_CIRCLE = {
   markOff: "max-medium:bg-native-scrim",
 };
 
+const WINDOWS_TILE_BOX =
+  "before:absolute before:z-behind before:-inset-native-tile-lift before:rounded-native-tile before:border-(length:--native-spacing-tile-edge) before:border-transparent before:transition-control";
+
+const WINDOWS_PLACEMENT = "inset-e-sm inset-bs-sm";
+
+const WINDOWS_TILE: CoverTileLook = {
+  ...TODAYS_LOOK,
+  link: `relative isolate ${WINDOWS_TILE_BOX} hover:before:bg-native-tile-hover active:before:bg-native-tile-pressed aria-checked:before:border-native-button-primary`,
+  focusRing:
+    "focus-visible:outline-none focus-visible:before:outline-2 focus-visible:before:outline-offset-1 focus-visible:before:outline-native-focus-ring focus-visible:before:ring-1 focus-visible:before:ring-native-focus-ring-inner",
+  pickedRing: "",
+  unread: `${BADGE_PLACEMENT} rounded-full px-xs min-block-native-tile-badge min-inline-native-tile-badge`,
+  downloaded: "block-native-tile-badge inline-native-tile-badge",
+  mark: `${WINDOWS_PLACEMENT} rounded-native-tile-check border block-native-tile-check inline-native-tile-check`,
+  compactMark: `${WINDOWS_PLACEMENT} rounded-native-tile-check border block-native-tile-check inline-native-tile-check`,
+  markOn:
+    "border-native-button-primary bg-native-button-primary text-native-on-button-primary",
+  markOff: "border-native-tile-check-edge bg-native-tile-check-fill",
+  tick: "block-native-tile-check-glyph inline-native-tile-check-glyph",
+};
+
 const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
@@ -111,7 +141,7 @@ const COVER_TILE_LOOKS = {
   },
   linux: { ...TODAYS_LOOK, stack: LINUX_STACK, unread: LINUX_BADGE },
   macos: TODAYS_LOOK,
-  windows: TODAYS_LOOK,
+  windows: WINDOWS_TILE,
 } satisfies Record<Platform, CoverTileLook>;
 
 export function coverTileLook(platform: Platform): CoverTileLook {

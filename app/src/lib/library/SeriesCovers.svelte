@@ -332,9 +332,11 @@
           id={one.id}
           title={shown.title}
           order={seriesOrder}
+          focusRing={tile.focusRing}
           class={[
             "flex flex-col gap-cover-caption min-inline-none medium:gap-sm",
             stack?.room,
+            tile.link,
           ]}
         >
           <CoverSheets look={stack} bookCount={one.bookCount} />
@@ -356,6 +358,7 @@
                 isOn={selection?.has(one.id) === true}
                 class={tile.mark}
                 onClass={tile.markOn}
+                tickClass={tile.tick}
                 offClass={tile.markOff}
               />
             {/if}
@@ -416,7 +419,8 @@
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class={["block min-inline-none", stack?.room]}
+      focusRing={tile.focusRing}
+      class={["block min-inline-none", stack?.room, tile.link]}
     >
       <CoverSheets look={stack} bookCount={one.bookCount} />
       <div
@@ -437,6 +441,7 @@
             isOn={selection?.has(one.id) === true}
             class={tile.compactMark}
             onClass={tile.markOn}
+            tickClass={tile.tick}
             offClass={tile.markOff}
           />
         {/if}
@@ -477,7 +482,8 @@
       id={one.id}
       title={shown.title}
       order={seriesOrder}
-      class={["block min-inline-none", stack?.room]}
+      focusRing={tile.focusRing}
+      class={["block min-inline-none", stack?.room, tile.link]}
     >
       <CoverSheets look={stack} bookCount={one.bookCount} />
       <div
@@ -499,6 +505,7 @@
             isOn={selection?.has(one.id) === true}
             class={tile.mark}
             onClass={tile.markOn}
+            tickClass={tile.tick}
             offClass={tile.markOff}
           />
         {/if}
