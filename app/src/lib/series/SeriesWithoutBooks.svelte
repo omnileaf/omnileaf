@@ -4,6 +4,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
+  import { showFolderLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ComingSoonControl from "./ComingSoonControl.svelte";
@@ -44,7 +45,7 @@
           onclick={onShowFolder}
         >
           <FolderOpen size={ICON_SIZE} aria-hidden="true" />
-          {m.show_in_finder()}
+          {showFolderLabel(platform)}
         </Button>
         <Button
           type="button"

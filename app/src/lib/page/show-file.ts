@@ -12,7 +12,7 @@ const SHOW_FILE = {
 const SHOW_FOLDER = {
   ios: m.show_in_files,
   android: m.series_show_the_folder,
-  macos: m.series_show_in_folder,
+  macos: m.show_in_finder,
   windows: m.series_show_in_folder,
   linux: m.series_show_in_folder,
 } satisfies Record<Platform, () => string>;

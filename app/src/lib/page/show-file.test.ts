@@ -24,7 +24,7 @@ test("names showing a series' folder as the series page's menu says it", () => {
   expect(labels).toEqual([
     "Show in Files",
     "Show the folder",
-    "Show in folder",
+    "Show in Finder",
     "Show in folder",
     "Show in folder",
   ]);
