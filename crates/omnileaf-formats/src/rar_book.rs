@@ -6,6 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use flate2::Crc;
 use omnileaf_libarchive::{DEFAULT_LIMIT_BYTES, Entry, EntryKind, Error, Reader};
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
 
@@ -117,7 +118,7 @@ impl RarBook {
                 continue;
             };
             let bytes = walk
-                .read_whole(limit)?
+                .read_whole(entry, limit)?
                 .ok_or_else(|| page_too_large(&self.path, listing, &self.limits, page))?;
             unread -= 1;
             if read(page, bytes).is_break() {
@@ -133,8 +134,8 @@ impl RarBook {
         limit: u64,
     ) -> Result<Option<Vec<u8>>, FormatError> {
         let mut walk = self.walk()?;
-        walk.find(wanted)?;
-        walk.read_whole(limit)
+        let entry = walk.find(wanted)?;
+        walk.read_whole(entry, limit)
     }
 
     fn read_entry<T>(
@@ -220,8 +221,20 @@ impl<'a> Walk<'a> {
         }
     }
 
-    fn read_whole(&mut self, limit: u64) -> Result<Option<Vec<u8>>, FormatError> {
-        self.read(|contents| read_within(contents, limit))
+    /// libarchive checks no stored entry's CRC-32 when its data is read to the end, so the bytes are checked against the header here.
+    fn read_whole(&mut self, entry: &RarEntry, limit: u64) -> Result<Option<Vec<u8>>, FormatError> {
+        let Some(bytes) = self.read(|contents| read_within(contents, limit))? else {
+            return Ok(None);
+        };
+        let mut crc = Crc::new();
+        crc.update(&bytes);
+        if entry.crc32.is_some_and(|expected| expected != crc.sum()) {
+            return Err(corrupt(
+                self.path,
+                format!("entry {} fails its CRC-32 check", entry.index),
+            ));
+        }
+        Ok(Some(bytes))
     }
 
     fn read<T>(

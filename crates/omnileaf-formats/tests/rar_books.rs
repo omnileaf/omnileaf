@@ -58,6 +58,17 @@ fn every_page_read(path: &Path) -> Vec<(usize, Vec<u8>)> {
     read
 }
 
+fn with_byte_flipped_inside(archive: &[u8], contents: &[u8]) -> Vec<u8> {
+    let start = archive
+        .windows(contents.len())
+        .position(|window| window == contents)
+        .unwrap();
+    let mut damaged = archive.to_vec();
+    let middle = damaged.get_mut(start + contents.len() / 2).unwrap();
+    *middle ^= 0xFF;
+    damaged
+}
+
 #[test]
 fn opens_a_cbr_and_lists_its_pages_in_natural_order() {
     let scratch = ScratchFolder::new("cbr-order");
@@ -223,6 +234,42 @@ fn reports_no_damage_for_a_whole_cbr() {
         let damage = open_book(&path).unwrap().damage();
 
         assert_eq!(damage, None, "{format:?}");
+    }
+}
+
+#[test]
+fn reports_a_cbr_page_whose_bytes_fail_their_checksum_as_damaged() {
+    let scratch = ScratchFolder::new("cbr-checksum");
+    for format in FORMATS {
+        let archive = with_byte_flipped_inside(&stored(&three_pages(), format), &page(1));
+        let path = scratch.write("book.cbr", &archive);
+        let mut book = open_book(&path).unwrap();
+
+        let error = book.read_page(1).unwrap_err();
+
+        assert!(
+            matches!(error, FormatError::CorruptRar { .. }),
+            "{format:?}: {error:?}"
+        );
+    }
+}
+
+#[test]
+fn reports_a_damaged_page_read_with_the_others_as_damaged() {
+    let scratch = ScratchFolder::new("cbr-checksum-every-page");
+    for format in FORMATS {
+        let archive = with_byte_flipped_inside(&stored(&three_pages(), format), &page(1));
+        let path = scratch.write("book.cbr", &archive);
+        let mut book = open_book(&path).unwrap();
+
+        let error = book
+            .read_every_page(|_, _| ControlFlow::Continue(()))
+            .unwrap_err();
+
+        assert!(
+            matches!(error, FormatError::CorruptRar { .. }),
+            "{format:?}: {error:?}"
+        );
     }
 }
 
