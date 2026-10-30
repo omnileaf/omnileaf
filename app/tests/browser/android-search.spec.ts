@@ -67,6 +67,21 @@ test.describe(
       );
     });
 
+    test("centres each scope's label between the chip's top and bottom", async ({
+      page,
+    }) => {
+      const chips = await openSearch(page);
+      const chip = chips.getByRole("button", { name: "Manga" });
+
+      const chipBox = await boxOf(chip);
+      const labelBox = await boxOf(chip.locator("span").first());
+
+      expect(labelBox.y + labelBox.height / 2).toBeCloseTo(
+        chipBox.y + chipBox.height / 2,
+        0,
+      );
+    });
+
     test("fills the chosen scope with the soft accent and ticks it, leaving the others outlined", async ({
       page,
     }) => {

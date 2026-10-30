@@ -81,7 +81,7 @@
       class={isMaterial
         ? [
             ANDROID_FILTER_CHIP.chip,
-            "snap-start",
+            "snap-start gap-none",
             isChosen
               ? [
                   ANDROID_FILTER_CHIP.chosen,
