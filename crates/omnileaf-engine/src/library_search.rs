@@ -3,14 +3,14 @@ use omnileaf_db::{
     adult_content::AdultHiding,
     catalog::{
         Page, PageRequest, SearchText, SeriesFilter, SeriesListing, SeriesOrder, SeriesSearch,
-        SeriesSort, SeriesSummary, closest_title_words, search_count, search_page, series_count,
-        series_page,
+        SeriesSort, SeriesSummary, closest_title_words, search_chapters, search_chapters_count,
+        search_count, search_page, series_count, series_page,
     },
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::{LibraryFilter, adult_content::AdultView};
+use crate::{ChapterHitPage, LibraryFilter, adult_content::AdultView};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -77,6 +77,20 @@ impl StoredSearch {
             Self::Text(search) => search_page(connection, search, request),
             Self::Filter(filter) => series_page(connection, &by_title(filter.clone()), request),
         }
+    }
+
+    pub(crate) fn chapters(
+        &self,
+        connection: &Connection,
+        request: &PageRequest,
+    ) -> Result<ChapterHitPage, omnileaf_db::Error> {
+        let Self::Text(search) = self else {
+            return Ok(ChapterHitPage::empty());
+        };
+        Ok(ChapterHitPage::new(
+            search_chapters(connection, search, request)?,
+            search_chapters_count(connection, search)?,
+        ))
     }
 
     pub(crate) fn count(&self, connection: &Connection) -> Result<u32, omnileaf_db::Error> {

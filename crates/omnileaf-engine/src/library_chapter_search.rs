@@ -1,4 +1,4 @@
-use omnileaf_db::catalog::{self, Cursor};
+use omnileaf_db::catalog::{self, Cursor, Page};
 use serde::{Deserialize, Serialize};
 use specta::{Type, Types, datatype::DataType};
 
@@ -52,6 +52,24 @@ impl From<catalog::ChapterHit> for ChapterHit {
             position: hit.position,
             title: hit.title,
             matched_in: hit.matched_in.into(),
+        }
+    }
+}
+
+impl ChapterHitPage {
+    pub(crate) fn new(page: Page<catalog::ChapterHit>, count: Option<u32>) -> Self {
+        Self {
+            hits: page.items.into_iter().map(ChapterHit::from).collect(),
+            next: page.next.map(ChapterCursor),
+            count,
+        }
+    }
+
+    pub(crate) const fn empty() -> Self {
+        Self {
+            hits: Vec::new(),
+            next: None,
+            count: Some(0),
         }
     }
 }
