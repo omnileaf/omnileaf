@@ -192,7 +192,7 @@
       <Icon name="search" />
     </Button>
   {:else if isMacos}
-    <div class="flex items-center gap-sm max-expanded:flex-1">
+    <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
       <span id={showLabelId} class="text-small text-muted">
         {m.series_show()}
       </span>
@@ -201,6 +201,8 @@
         labels={SHOWN_LABELS}
         chosen={listing.shown}
         labelledBy={showLabelId}
+        isFullWidth
+        class="flex-1 min-inline-none"
         onChoose={chooseShown}
       />
     </div>
