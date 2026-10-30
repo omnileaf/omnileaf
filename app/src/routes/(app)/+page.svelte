@@ -79,6 +79,7 @@
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
+  import { selectionActions } from "#lib/library/selection-actions.ts";
   import {
     type LabelsFrom,
     setSeriesSelection,
@@ -92,6 +93,7 @@
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { foldsBarActionsIntoMore } from "#lib/page/top-bar.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
+  import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -359,6 +361,20 @@
     foldsBarActionsIntoMore(data.appInfo.platform, width.current),
   );
   let headHeight = $state(0);
+  const commandsOnTop = $derived(
+    commandBarLook(data.appInfo.platform) !== undefined,
+  );
+  const actionsOnPicked = $derived(
+    selectionActions({
+      keepsLabels,
+      onLabels: (from: LabelsFrom) => {
+        label(selection.picked, from);
+      },
+      onMarkRead: () => {
+        void markRead(selection.picked);
+      },
+    }),
+  );
   const isDocked = $derived(docksFilter && isFilterOpen);
 
   function closeFilterPanel(): void {
@@ -907,6 +923,7 @@
     onCancel={() => {
       selection.end();
     }}
+    actions={commandsOnTop ? actionsOnPicked : []}
   />
 {:else}
   <CollectionHeading
@@ -1146,7 +1163,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && selection.count > 0}
+        {#if selection.isSelecting && selection.count > 0 && !commandsOnTop}
           <LibrarySelectionActions
             count={selection.count}
             isPill={docksFilter}
