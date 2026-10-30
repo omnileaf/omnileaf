@@ -120,7 +120,7 @@
   });
 </script>
 
-{#if isWide.current || floats || platform === "windows"}
+{#if isWide.current || floats || chrome.isCommandBar}
   <DropdownMenu bind:open={isMenuOpen} {onOpenChange}>
     <DropdownMenuTrigger>
       {#snippet child({ props })}

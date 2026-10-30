@@ -1,11 +1,12 @@
 <script lang="ts">
-  import type { Platform } from "#lib/ipc/bindings.ts";
-
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import { WINDOWS_COMMAND_LABEL } from "./windows-reader-bar.ts";
 
-  let { platform, label }: { platform: Platform; label: string } = $props();
+  let { label }: { label: string } = $props();
+
+  const chrome = getReaderChrome();
 </script>
 
-{#if platform === "windows"}
+{#if chrome.isCommandBar}
   <span class={WINDOWS_COMMAND_LABEL}>{label}</span>
 {/if}

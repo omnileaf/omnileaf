@@ -7,24 +7,31 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
-import { contrastOver } from "../../../tests/components/composited-contrast";
+import { contrastOverLayers } from "../../../tests/components/composited-contrast";
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
+import ReaderPanelHarness from "./ReaderPanelHarness.svelte";
 import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
 
 const DESKTOP = { width: 1280, height: 800 };
 const COMMAND_LABELS = ["Shortcuts", "Bookmark", "Settings", "Full screen"];
 const QUICK_SETTINGS = ["Two pages", "Fit height", "Light"];
 const DIRECTION = /^Left to right/;
+const BACKINGS = ["#000000", "#ffffff"] as const;
+const THEMES = ["light", "dark"] as const;
+const TEXT_CONTRAST = 4.5;
+const NON_TEXT_CONTRAST = 3;
+const VISIBLE_PX = 1;
 
 async function openReader(
   platform: Platform,
   theme: "light" | "dark" = "light",
+  size: { width: number; height: number } = DESKTOP,
 ): Promise<void> {
   document.body.replaceChildren();
   followCorePlatform(platform);
   document.documentElement.dataset.theme = theme;
-  await page.viewport(DESKTOP.width, DESKTOP.height);
+  await page.viewport(size.width, size.height);
   await render(ReaderTopBarHarness, { platform });
 }
 
@@ -115,7 +122,7 @@ test("sits the bar on the flyout acrylic over the page with a blur behind it", a
   );
 });
 
-test("draws the command bar's ink in the dark chrome too", async () => {
+test("sits the bar on the dark acrylic in the dark chrome", async () => {
   await openReader("windows", "dark");
 
   expect(getComputedStyle(bar()).backgroundColor).toBe(
@@ -150,6 +157,103 @@ test("draws the direction command the size of the others with its words whole", 
     true,
   );
   expect(words.length).toBeGreaterThan(0);
+});
+
+async function readRightToLeft(): Promise<HTMLElement> {
+  await page.getByRole("button", { name: DIRECTION }).click();
+  await page.getByRole("menuitemradio", { name: "Right to left" }).click();
+  await userEvent.unhover(page.getByRole("button", { name: /^Right to left/ }));
+  const direction = page
+    .getByRole("button", { name: /^Right to left/ })
+    .element();
+  if (!(direction instanceof HTMLElement)) {
+    throw new Error("the direction command drew no element");
+  }
+  return direction;
+}
+
+for (const theme of THEMES) {
+  test(`fills the direction command with the accent while it reads right to left in the ${theme} chrome`, async () => {
+    await openReader("windows", theme);
+    const direction = await readRightToLeft();
+
+    await expect
+      .poll(() => getComputedStyle(direction, "::before").backgroundColor)
+      .toBe(resolvedColour("--native-color-button-primary", "backgroundColor"));
+  });
+
+  test(`keeps the lit direction command readable under the pointer in the ${theme} chrome`, async () => {
+    await openReader("windows", theme);
+    const direction = await readRightToLeft();
+
+    await userEvent.hover(direction);
+
+    await expect
+      .poll(() => getComputedStyle(direction, "::before").backgroundColor)
+      .toBe(
+        resolvedColour(
+          "--native-color-button-primary-hover",
+          "backgroundColor",
+        ),
+      );
+    expect(getComputedStyle(direction).color).toBe(
+      resolvedColour("--native-color-on-button-primary", "color"),
+    );
+  });
+}
+
+test("takes the direction command's words out of a 48 wide button in a narrow window", async () => {
+  document.body.replaceChildren();
+  followCorePlatform("windows");
+  document.documentElement.dataset.theme = "light";
+  await page.viewport(500, 800);
+  await render(ReaderPanelHarness, { platform: "windows", controls: "dark" });
+  const direction = page.getByRole("button", { name: DIRECTION }).element();
+  const shown = [...direction.querySelectorAll("span")].filter(
+    (span) => span.clientWidth > 1 && span.textContent.trim() !== "",
+  );
+
+  expect(shown).toEqual([]);
+  expect(direction.getBoundingClientRect().width).toBe(48);
+});
+
+test("fills Shortcuts with the subtle layer while its dialog is open", async () => {
+  await openReader("windows");
+  const shortcuts = quickSetting("Keyboard shortcuts");
+
+  await userEvent.unhover(shortcuts);
+  expect(getComputedStyle(shortcuts, "::before").backgroundColor).toBe(
+    "rgba(0, 0, 0, 0)",
+  );
+  await userEvent.click(shortcuts);
+  await userEvent.unhover(shortcuts);
+
+  await expect
+    .poll(() => getComputedStyle(shortcuts, "::before").backgroundColor)
+    .toBe(
+      resolvedColour("--native-color-button-plain-hover", "backgroundColor"),
+    );
+});
+
+test("leaves the room a focus ring needs above the bar's tallest buttons", async () => {
+  await openReader("windows");
+  const settings = page
+    .getByRole("button", { name: "Reading settings" })
+    .element();
+
+  for (let tabs = 0; document.activeElement !== settings && tabs < 20; tabs++) {
+    await userEvent.tab();
+  }
+  const ring = getComputedStyle(settings);
+  const ringReach =
+    Number.parseFloat(ring.outlineWidth) +
+    Number.parseFloat(ring.outlineOffset);
+
+  expect(document.activeElement).toBe(settings);
+  expect(settings.getBoundingClientRect().height).toBe(64);
+  expect(
+    settings.getBoundingClientRect().top - ringReach,
+  ).toBeGreaterThanOrEqual(0);
 });
 
 test("keeps the AUTO mark out of the command's room", async () => {
@@ -239,48 +343,103 @@ test("leaves Full screen's key off the other desktops' bar", async () => {
   ).toBeNull();
 });
 
-const BACKINGS = ["#000000", "#ffffff"] as const;
-const THEMES = ["light", "dark"] as const;
-const TEXT_CONTRAST = 4.5;
-const NON_TEXT_CONTRAST = 3;
+function wordsIn(root: Element): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>("*")].filter((element) => {
+    const hasWords = [...element.childNodes].some(
+      (node) =>
+        node.nodeType === Node.TEXT_NODE &&
+        (node.textContent ?? "").trim() !== "",
+    );
+    const box = element.getBoundingClientRect();
+    return (
+      hasWords &&
+      box.width > VISIBLE_PX &&
+      box.height > VISIBLE_PX &&
+      getComputedStyle(element).visibility === "visible" &&
+      element.closest("[aria-disabled=true]") === null
+    );
+  });
+}
+
+function barGround(): string {
+  return getComputedStyle(bar()).backgroundColor;
+}
 
 for (const theme of THEMES) {
   for (const backing of BACKINGS) {
-    test(`reads the bar's words at 4.5 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+    test(`reads every word of the bar at 4.5 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
       await openReader("windows", theme);
+      const words = wordsIn(bar());
 
-      for (const ink of ["on-menu", "on-button-plain"]) {
-        expect(contrastOver(ink, "menu", backing), ink).toBeGreaterThanOrEqual(
-          TEXT_CONTRAST,
-        );
+      expect(words.length).toBeGreaterThan(0);
+      for (const word of words) {
+        expect(
+          contrastOverLayers(
+            getComputedStyle(word).color,
+            [barGround()],
+            backing,
+          ),
+          word.textContent,
+        ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
       }
     });
 
-    test(`draws the bar's marks at 3 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+    test(`draws every icon of the bar at 3 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
       await openReader("windows", theme);
+      const icons = [...bar().querySelectorAll("svg")];
 
-      for (const mark of [
-        "button-primary",
-        "progress-track",
-        "progress-fill",
-        "switch-off-border",
-        "focus-ring",
-      ]) {
+      expect(icons.length).toBeGreaterThan(0);
+      for (const icon of icons) {
         expect(
-          contrastOver(mark, "menu", backing),
-          mark,
+          contrastOverLayers(
+            getComputedStyle(icon).color,
+            [barGround()],
+            backing,
+          ),
+          icon.parentElement?.getAttribute("aria-label") ?? "an icon",
         ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
       }
     });
+
+    test(`draws a switched on command's fill at 3 to 1 and its words at 4.5 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+      await openReader("windows", theme);
+      const twoPages = quickSetting("Two pages");
+
+      await page.getByRole("button", { name: "Two pages" }).click();
+      await userEvent.unhover(page.getByRole("button", { name: "Two pages" }));
+      await expect
+        .poll(() => getComputedStyle(twoPages, "::before").backgroundColor)
+        .toBe(
+          resolvedColour("--native-color-button-primary", "backgroundColor"),
+        );
+      const fill = getComputedStyle(twoPages, "::before").backgroundColor;
+      const words = wordsIn(twoPages)[0];
+
+      expect(
+        contrastOverLayers(fill, [barGround()], backing),
+      ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
+      expect(
+        contrastOverLayers(
+          getComputedStyle(words ?? twoPages).color,
+          [barGround(), fill],
+          backing,
+        ),
+      ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+    });
+
+    test(`rings a focused command at 3 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+      await openReader("windows", theme);
+
+      await userEvent.tab();
+      const focused = document.activeElement;
+      const ring = getComputedStyle(focused ?? bar());
+
+      expect(ring.outlineStyle).toBe("solid");
+      expect(
+        contrastOverLayers(ring.outlineColor, [barGround()], backing),
+      ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
+    });
   }
-
-  test(`reads a switched on command at 4.5 to 1 in the ${theme} chrome`, async () => {
-    await openReader("windows", theme);
-
-    expect(
-      contrastOver("on-button-primary", "button-primary", "#000000"),
-    ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
-  });
 }
 
 for (const platform of ["linux", "macos", "ios", "android"] as const) {

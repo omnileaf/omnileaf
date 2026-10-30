@@ -21,6 +21,7 @@
   setReaderChrome(untrack(() => new ReaderChrome(platform)));
 
   let layout: PageLayout = $state("automatic");
+  let areShortcutsOpen = $state(false);
 
   const values = new SvelteMap<string, string>();
   const reading = new SeriesReadingDirection(
@@ -80,8 +81,10 @@
     {quickSettings}
     {more}
     isSettingsOpen={false}
-    areShortcutsOpen={false}
-    onShortcuts={nothing}
+    {areShortcutsOpen}
+    onShortcuts={() => {
+      areShortcutsOpen = !areShortcutsOpen;
+    }}
     bookmark={{ label: "Bookmark this page", isPressed: false }}
     onBookmark={nothing}
     isJumpOpen={false}

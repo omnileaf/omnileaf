@@ -5,6 +5,7 @@ import { floatsReaderBars } from "./reader-bar.ts";
 import {
   WINDOWS_COMMAND_BUTTON,
   WINDOWS_COMMAND_LABEL,
+  usesCommandBar,
   WINDOWS_ICON_SIZE,
   WINDOWS_TOGGLED_ON,
 } from "./windows-reader-bar.ts";
@@ -66,7 +67,7 @@ const WINDOWS_LOOK: QuickSettingLook = {
   iconSize: WINDOWS_ICON_SIZE,
   hasKitIcons: false,
   hasChevron: false,
-  directionName: "text-center",
+  directionName: "text-center max-medium:sr-only",
   autoMark: "sr-only",
 };
 
@@ -74,7 +75,7 @@ export function quickSettingLook(
   platform: Platform,
   width: WidthClass,
 ): QuickSettingLook {
-  if (platform === "windows") {
+  if (usesCommandBar(platform)) {
     return WINDOWS_LOOK;
   }
   return floatsReaderBars(platform, width) ? CAPSULE_LOOK : SEGMENT_LOOK;
