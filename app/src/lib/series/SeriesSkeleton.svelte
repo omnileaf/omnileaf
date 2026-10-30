@@ -1,7 +1,15 @@
 <script lang="ts">
+  import { cn } from "#lib/components/cn.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  import {
+    ABOUT_COLUMN,
+    ABOUT_COVER,
+    ABOUT_HEAD,
+    ABOUT_LINES,
+  } from "./series-about-layout.ts";
 
   const ROWS = 3;
   const MACOS_ROWS = 8;
@@ -15,20 +23,20 @@
   class="flex flex-col gap-xl max-expanded:mbs-sm @series-split:flex-row @series-split:items-start @series-split:gap-2xl"
 >
   {#if isMacos}
-    <div
-      class="flex flex-col items-start gap-native-series-gap @series-split:shrink-0 @series-split:inline-native-series-aside"
-    >
+    <div class={ABOUT_COLUMN}>
+      <div class={ABOUT_HEAD}>
+        <Skeleton class={cn(ABOUT_COVER, "rounded-skeleton-macos")} />
+        <div class={ABOUT_LINES}>
+          <Skeleton
+            class="rounded-skeleton-macos block-xl inline-skeleton-title-macos"
+          />
+          <Skeleton
+            class="rounded-skeleton-macos block-skeleton-line-macos inline-skeleton-line"
+          />
+        </div>
+      </div>
       <Skeleton
-        class="aspect-cover rounded-skeleton-macos inline-native-series-cover-wide"
-      />
-      <Skeleton
-        class="rounded-skeleton-macos block-xl inline-skeleton-title-macos"
-      />
-      <Skeleton
-        class="rounded-skeleton-macos block-skeleton-line-macos inline-skeleton-line"
-      />
-      <Skeleton
-        class="mbs-skeleton-lift-macos rounded-skeleton-macos block-xl inline-full"
+        class="rounded-skeleton-macos block-native-button inline-full"
       />
     </div>
     <div class="flex flex-1 flex-col gap-native-series-gap min-inline-none">

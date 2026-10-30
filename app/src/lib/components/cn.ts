@@ -677,7 +677,6 @@ export const TOKEN_THEME = {
     "skeleton-card-macos",
     "skeleton-card-wide",
     "skeleton-check-macos",
-    "skeleton-lift-macos",
     "skeleton-line",
     "skeleton-line-macos",
     "skeleton-row-macos",
