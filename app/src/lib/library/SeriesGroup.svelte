@@ -54,7 +54,7 @@
     <div class="flex items-baseline gap-sm">
       <h2
         id={headingId}
-        class="text-native-group-heading/native-group-heading font-native-group-heading tracking-native-group-heading"
+        class="text-native-group-heading/native-group-heading font-native-group-heading ios:tracking-native-group-heading"
       >
         {#if creator === undefined}
           {name}

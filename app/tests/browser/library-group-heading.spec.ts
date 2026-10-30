@@ -38,3 +38,28 @@ test("sets a group's heading as a 20px title at weight 590 with the count in foo
   await expect(heading).toHaveCSS("letter-spacing", "-0.45px");
   await expect(section.getByText("6 series")).toHaveCSS("font-size", "13px");
 });
+
+test.describe("on android", () => {
+  test.use({
+    backend: {
+      ...onPlatform("android").backend,
+      librarySeries: pagedSeries(() => LIBRARY),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryFolders: () => ({ folders: [FOLDER], next: null }),
+      folderSeries: (_folder, after, listing) =>
+        pagedSeries(() => LIBRARY)(after, listing),
+      folderSeriesCount: () => LIBRARY.length,
+      libraryView: () => ({ ...DEFAULT_LIBRARY_VIEW, groupBy: "folder" }),
+    },
+  });
+
+  test("keeps a group's heading bold in lead type", async ({ page }) => {
+    await page.goto("/");
+    const heading = page
+      .getByRole("region", { name: "Comics", exact: true })
+      .getByRole("heading", { level: 2 });
+
+    await expect(heading).toHaveCSS("font-size", "15px");
+    await expect(heading).toHaveCSS("font-weight", "700");
+  });
+});
