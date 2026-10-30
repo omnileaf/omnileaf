@@ -113,6 +113,9 @@ const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
   "row-selected": ["on-row-selected-muted"],
   "menu-chosen": ["on-menu-chosen"],
   "menu-item-hover": [],
+  "nav-item-hover": [],
+  "nav-item-pressed": [],
+  "nav-item-selected": ["nav-indicator"],
 };
 
 test("pairs every Highlight fill with HighlightText for the text on it", () => {
@@ -143,6 +146,26 @@ test("turns the text of a picked or pressed row and a highlighted menu item and 
     /\[role\^="menuitem"\]\[data-highlighted\],[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \[data-slot="kbd"\] \{ color: HighlightText; \}/,
   );
   expect(flat).not.toContain("@media (width < 600px)");
+});
+
+test("turns the text of the current, hovered, pressed or open navigation item to HighlightText and rings focus inside in Canvas", () => {
+  const flat = forcedColors.replace(/\s+/g, " ");
+  const mapped = new Map(declarations(forcedColors));
+
+  const navigationRule = flat.match(/[^{}]*nav li [^{}]*\{[^{}]*\}/)?.[0];
+
+  for (const state of [
+    "nav li [aria-current]",
+    'nav li [aria-expanded="true"]',
+    "nav li a:hover",
+    "nav li a:active",
+    "nav li button:hover",
+    "nav li button:active",
+  ]) {
+    expect(navigationRule, state).toContain(state);
+  }
+  expect(navigationRule).toContain("{ color: HighlightText; }");
+  expect(mapped.get("--native-color-focus-ring-inner")).toBe("Canvas");
 });
 
 test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and a key hint the contrast theme's way", () => {

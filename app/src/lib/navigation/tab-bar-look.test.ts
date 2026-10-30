@@ -14,6 +14,7 @@ import WithAppContext from "../../../tests/components/WithAppContext.svelte";
 import AppNavigation from "./AppNavigation.svelte";
 
 const PHONE = { width: 390, height: 844 };
+const OTHER_PLATFORM_VARIANT = /^(ios|android|macos|windows):/;
 
 const NavigationWithAppContext = WithAppContext<
   ComponentProps<typeof AppNavigation>
@@ -198,7 +199,8 @@ test("keeps today's sidebar on Linux at a phone's width", async () => {
   await renderOnPhoneInLight("linux");
 
   const classes = [bar(), tab("Library"), labelOf("Library")]
-    .map((element) => element.className)
+    .flatMap((element) => element.className.split(" "))
+    .filter((name) => !OTHER_PLATFORM_VARIANT.test(name))
     .join(" ");
 
   expect(classes).not.toContain("native");

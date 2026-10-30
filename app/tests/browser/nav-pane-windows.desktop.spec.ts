@@ -7,7 +7,9 @@ import {
   expect,
   fakeAppInfo,
   test,
+  literalColour,
   testOnlyInItsWebview,
+  tokenColour,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
@@ -106,6 +108,48 @@ test.describe("on Windows", () => {
       await expect(page.locator("[data-tooltip-content]")).toHaveText("Browse");
     });
   }
+
+  test("lays the kit's pressed fill under an item while it is pressed", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, WIDE_WINDOW);
+    const browse = pane(page).getByRole("link", { name: "Browse" });
+    const centre = await boxOf(browse);
+
+    await page.mouse.move(
+      centre.x + centre.width / 2,
+      centre.y + centre.height / 2,
+    );
+    await page.mouse.down();
+
+    await expect(browse).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-nav-item-pressed"),
+    );
+    await page.mouse.up();
+  });
+
+  test("draws the current item on Highlight with its text and pill in HighlightText under forced colours", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" });
+    await openLibraryAt(page, WIDE_WINDOW);
+    const library = pane(page).getByRole("link", { name: "Library" });
+
+    const pill = await library.evaluate(
+      (link) => getComputedStyle(link, "::before").backgroundColor,
+    );
+
+    await expect(library).toHaveCSS(
+      "background-color",
+      await literalColour(page, "Highlight"),
+    );
+    await expect(library).toHaveCSS(
+      "color",
+      await literalColour(page, "HighlightText"),
+    );
+    expect(pill).toBe(await literalColour(page, "HighlightText"));
+  });
 
   for (const colorScheme of ["light", "dark"] as const) {
     test(`has no accessibility violations with the pane open or folded in the ${colorScheme} theme`, async ({

@@ -93,6 +93,10 @@
   --color-native-progress-idle-track: var(--native-color-progress-idle-track);
   --spacing-native-progress-gap: var(--native-spacing-progress-gap);
   --spacing-native-progress-thickness: var(--native-spacing-progress-thickness);
+  --color-native-nav-item-hover: var(--native-color-nav-item-hover);
+  --color-native-nav-item-pressed: var(--native-color-nav-item-pressed);
+  --color-native-nav-item-selected: var(--native-color-nav-item-selected);
+  --color-native-nav-indicator: var(--native-color-nav-indicator);
   --color-native-grouped-ground: var(--native-color-grouped-ground);
   --color-native-group: var(--native-color-group);
   --radius-native-group: var(--native-radius-group);

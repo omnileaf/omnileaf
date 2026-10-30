@@ -233,7 +233,7 @@ test.describe("on Windows", () => {
 
         await expect(settings).toHaveCSS(
           "background-color",
-          await tokenColour(page, "--windows-subtle"),
+          await tokenColour(page, "--native-color-nav-item-hover"),
         );
         const inks = await inkOverFallback(
           navigation(page),
@@ -253,7 +253,7 @@ test.describe("on Windows", () => {
 
         await expect(attentionItem(page)).toHaveCSS(
           "background-color",
-          await tokenColour(page, "--windows-subtle"),
+          await tokenColour(page, "--native-color-nav-item-hover"),
         );
       });
 

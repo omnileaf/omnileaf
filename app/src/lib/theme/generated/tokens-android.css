@@ -65,6 +65,10 @@
   --native-shadow-segment-lift: none;
   --native-spacing-progress-gap: 4px;
   --native-spacing-progress-thickness: var(--spacing-progress);
+  --native-color-nav-item-hover: var(--sidebar-accent);
+  --native-color-nav-item-pressed: var(--sidebar-accent);
+  --native-color-nav-item-selected: var(--sidebar-selection);
+  --native-color-nav-indicator: var(--color-accent);
   --native-radius-group: 0px;
   --native-radius-card: 12px;
   --native-spacing-row: 56px;

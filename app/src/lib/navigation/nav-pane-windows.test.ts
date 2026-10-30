@@ -8,12 +8,25 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { contrastOver } from "../../../tests/components/contrast-ratio.ts";
 import { resolvedColour } from "../../../tests/components/resolved-colour.ts";
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode.ts";
 import WithAppContext from "../../../tests/components/WithAppContext.svelte";
 import AppNavigation from "./AppNavigation.svelte";
 
 const WINDOW_HEIGHT = 800;
+const LEAST_TEXT_CONTRAST = 4.5;
+const LEAST_GRAPHIC_CONTRAST = 3;
+const PANE_GROUND = "--windows-mica";
+const KIT_FILLS = {
+  light: { hover: "rgba(0, 0, 0, 0.035)", selected: "rgba(0, 0, 0, 0.035)" },
+  dark: {
+    hover: "rgba(255, 255, 255, 0.06)",
+    selected: "rgba(255, 255, 255, 0.06)",
+  },
+} as const;
+
+type Theme = keyof typeof KIT_FILLS;
 const OPEN_PANE_WIDTHS = [1280, 1008];
 const COMPACT_PANE_WIDTHS = [1007, 840, 700];
 
@@ -25,9 +38,13 @@ async function renderOnWindowsAt(width: number): Promise<void> {
   await renderAt(width, "windows");
 }
 
-async function renderAt(width: number, platform: Platform): Promise<void> {
+async function renderAt(
+  width: number,
+  platform: Platform,
+  theme: Theme = "light",
+): Promise<void> {
   await page.viewport(width, WINDOW_HEIGHT);
-  document.documentElement.dataset.theme = "light";
+  document.documentElement.dataset.theme = theme;
   followCorePlatform(platform);
   await render(NavigationWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
@@ -224,4 +241,64 @@ test("leaves the arrow keys to the page on other desktops", async () => {
   await userEvent.keyboard("{ArrowDown}");
 
   expect(focusedName()).toBe("Library");
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`fills Windows' current and hovered items with the kit's subtle fill in the ${theme} theme`, async () => {
+    await renderAt(1280, "windows", theme);
+
+    await userEvent.hover(item("Browse"));
+
+    await expect
+      .poll(() => ({
+        selected: getComputedStyle(item("Library")).backgroundColor,
+        hover: getComputedStyle(item("Browse")).backgroundColor,
+      }))
+      .toEqual(KIT_FILLS[theme]);
+  });
+
+  test(`keeps Windows' pane text at 4.5:1 and its pill and focus ring at 3:1 in the ${theme} theme`, async () => {
+    await renderAt(1280, "windows", theme);
+    const selected = [PANE_GROUND, "nav-item-selected"];
+
+    const ratios = [
+      [
+        "text",
+        contrastOver("--sidebar-foreground", selected),
+        LEAST_TEXT_CONTRAST,
+      ],
+      ["pill", contrastOver("nav-indicator", selected), LEAST_GRAPHIC_CONTRAST],
+      [
+        "ring",
+        contrastOver("focus-ring", [PANE_GROUND]),
+        LEAST_GRAPHIC_CONTRAST,
+      ],
+      [
+        "ring on the current item",
+        contrastOver("focus-ring", selected),
+        LEAST_GRAPHIC_CONTRAST,
+      ],
+    ] as const;
+
+    expect(ratios.filter(([, ratio, least]) => ratio < least)).toEqual([]);
+  });
+}
+
+test("rings a keyboard-focused item in Windows' two-tone focus ring", async () => {
+  await renderOnWindowsAt(1280);
+
+  (item("Browse") as HTMLElement).focus({ focusVisible: true });
+  const style = getComputedStyle(item("Browse"));
+
+  expect({
+    outline: style.outlineColor,
+    width: style.outlineWidth,
+    inner: style.boxShadow.includes(
+      resolvedColour("--native-color-focus-ring-inner", "color"),
+    ),
+  }).toEqual({
+    outline: resolvedColour("--native-color-focus-ring", "outlineColor"),
+    width: "2px",
+    inner: true,
+  });
 });

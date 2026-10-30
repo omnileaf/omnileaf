@@ -53,6 +53,23 @@ export function contrastRatio(ink: string, ground: string): number {
   return ratioOf(channels(ink), channels(ground));
 }
 
+function resolvedLayers(tokens: readonly string[]): string[] {
+  return tokens.map((token) =>
+    resolvedColour(
+      token.startsWith("--") ? token : `--native-color-${token}`,
+      "color",
+    ),
+  );
+}
+
+export function contrastOver(ink: string, layers: readonly string[]): number {
+  const grounds = resolvedLayers(layers);
+  return ratioOf(
+    opaqueChannels([...grounds, ...resolvedLayers([ink])]),
+    opaqueChannels(grounds),
+  );
+}
+
 export function drawnContrast(element: Element): number {
   const style = getComputedStyle(element);
   const ground = opaqueChannels([style.backgroundColor]);
