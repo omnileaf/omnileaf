@@ -1109,6 +1109,35 @@ test.describe("on an iPhone", () => {
     });
   }
 
+  test("draws the field on the same glass as the Library circle under Reduce Transparency and Increase Contrast", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the bottom field is the iPhone's",
+    );
+    await page.goto("/search");
+    await expect(searchField(page)).toBeVisible();
+    const backgroundOf = (locator: Locator) =>
+      locator.evaluate((element) => getComputedStyle(element).backgroundColor);
+    const field = searchField(page).locator("..");
+    const circle = page.getByRole("navigation", { name: "Main" });
+
+    for (const [mode, value] of [
+      ["transparency", "reduced"],
+      ["contrast", "more"],
+    ] as const) {
+      await page.evaluate(
+        ([name, chosen]) => {
+          document.documentElement.setAttribute(`data-${name}`, chosen);
+        },
+        [mode, value] as const,
+      );
+
+      expect(await backgroundOf(field), mode).toBe(await backgroundOf(circle));
+    }
+  });
+
   function tokens(page: Page): Locator {
     return searchField(page)
       .locator("..")

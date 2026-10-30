@@ -215,7 +215,7 @@ describe("in an iPhone's bottom bar", () => {
     document.body.replaceChildren();
   });
 
-  test("draws the field as a 48 tall glass capsule with a 22 icon 6 from 17 point words", async () => {
+  test("draws the field as a 48 tall capsule of the tab bar's glass with a 22 icon 6 from 17 point words", async () => {
     const { screen } = await renderPlacedField("token", {
       text: "",
       conditions: [],
@@ -249,7 +249,7 @@ describe("in an iPhone's bottom bar", () => {
       isCapsule: true,
       edge: "0px",
       fill: "rgba(255, 255, 255, 0.7)",
-      backdrop: "blur(30px) saturate(1.8)",
+      backdrop: "blur(24px) saturate(1.6)",
       icon: [22, 22],
       gap: "6px",
       size: "17px",

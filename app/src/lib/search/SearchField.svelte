@@ -9,6 +9,7 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
+  import { FLOATING_GLASS } from "#lib/navigation/tab-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
 
@@ -97,7 +98,7 @@
 </script>
 
 <InputGroup
-  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide ios:max-medium:gap-native-search-field-gap ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-glass ios:max-medium:shadow-native-shadow-glass ios:max-medium:backdrop-blur-native-glass ios:max-medium:backdrop-saturate-180 ios:max-medium:block-native-toolbar-button ios:max-medium:focus-within:focus-ring android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target"
+  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide ios:max-medium:gap-native-search-field-gap ios:max-medium:block-native-toolbar-button ios:max-medium:focus-within:focus-ring android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target {FLOATING_GLASS}"
 >
   <Search
     size={SEARCH_ICON_SIZE}
