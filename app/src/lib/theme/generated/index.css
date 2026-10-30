@@ -273,6 +273,7 @@
   --color-native-menu-item-hover: var(--native-color-menu-item-hover);
   --color-native-on-menu-disabled: var(--native-color-on-menu-disabled);
   --color-native-key-ink: var(--native-color-key-ink);
+  --color-native-on-surface: var(--native-color-on-surface);
   --radius-native-menu: var(--native-radius-menu);
   --radius-native-menu-item: var(--native-radius-menu-item);
   --radius-native-menu-item-end: var(--native-radius-menu-item-end);

@@ -68,6 +68,7 @@
     --native-color-menu-item-hover: Highlight;
     --native-color-on-menu-disabled: GrayText;
     --native-color-key-ink: CanvasText;
+    --native-color-on-surface: CanvasText;
     --native-color-notice: Canvas;
     --native-color-on-notice: CanvasText;
     --native-color-focus-ring: CanvasText;

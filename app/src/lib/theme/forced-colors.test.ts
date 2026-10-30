@@ -151,6 +151,7 @@ test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and
   expect(mapped.get("--native-color-menu-edge")).toBe("CanvasText");
   expect(mapped.get("--native-color-on-menu-disabled")).toBe("GrayText");
   expect(mapped.get("--native-color-key-ink")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-surface")).toBe("CanvasText");
 });
 
 test("draws Windows's disabled buttons in GrayText and its hyperlink button in LinkText", () => {
