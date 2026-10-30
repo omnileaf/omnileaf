@@ -34,6 +34,7 @@ const LOST_SERIES: &str = "Lost Imprint";
 const PAGES_PER_BOOK: u32 = 10;
 const MORE_BOOKS_THAN_THE_WINDOW_HOLDS: u32 = 300;
 const CROWD_PER_TRIGRAM: u32 = 60;
+const FIRST_CROWD: u32 = 100;
 const HIDING: AdultHiding = AdultHiding {
     leaves_out_adult: true,
     counts_age_ratings: true,
@@ -570,7 +571,7 @@ async fn suggests_a_title_within_three_slips_of_a_long_text_although_other_title
 }
 
 #[tokio::test]
-async fn suggests_the_title_added_first_among_equally_near_ones() {
+async fn suggests_the_title_with_the_lower_id_among_equally_near_ones() {
     let added_first = Library::open("chapter-spelling-tie-first").await;
     added_first.record(SampleBook::titled(1, "Lantrenx")).await;
     added_first.record(SampleBook::titled(2, "Lantern")).await;
@@ -590,4 +591,59 @@ async fn suggests_the_title_added_first_among_equally_near_ones() {
             Some(suggested("lantern", SERIES))
         )
     );
+}
+
+fn two_crowds_with_the_near_title_last(second_crowd: u32) -> Vec<String> {
+    let mut titles: Vec<String> = (1..=FIRST_CROWD)
+        .map(|number| format!("qwert {number:03}"))
+        .collect();
+    titles.extend((1..=second_crowd).map(|number| format!("xrtyuiopaxxx {number:03}")));
+    titles.push("qwetyuiopa".to_owned());
+    titles
+}
+
+fn two_crowds_with_the_near_title_between(second_crowd: u32) -> Vec<String> {
+    let mut titles: Vec<String> = (1..=FIRST_CROWD)
+        .map(|number| format!("qwert {number:03}"))
+        .collect();
+    titles.push("qwertyuiopb".to_owned());
+    titles.extend((1..=second_crowd).map(|number| format!("xrtyuiopaxxx {number:03}")));
+    titles
+}
+
+async fn suggestion_among(name: &str, titles: &[String]) -> Option<ChapterSuggestion> {
+    let library = Library::open(name).await;
+    let samples = (1..)
+        .zip(titles)
+        .map(|(number, title)| SampleBook::titled(number, title))
+        .collect();
+    library.record_all(library.root, samples).await;
+    library.suggestion("qwertyuiopa").await
+}
+
+#[tokio::test]
+async fn suggests_a_title_after_overlapping_crowds_that_hold_fewer_than_the_window_in_all() {
+    let titles = two_crowds_with_the_near_title_last(50);
+
+    let suggestion = suggestion_among("chapter-spelling-overlap", &titles).await;
+
+    assert_eq!(suggestion, Some(suggested("qwetyuiopa", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_the_199th_matching_title_of_overlapping_crowds() {
+    let titles = two_crowds_with_the_near_title_last(98);
+
+    let suggestion = suggestion_among("chapter-spelling-just-under", &titles).await;
+
+    assert_eq!(suggestion, Some(suggested("qwetyuiopa", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_a_title_among_the_first_200_of_201_matching_titles_by_a_four_gram_of_the_text() {
+    let titles = two_crowds_with_the_near_title_between(100);
+
+    let suggestion = suggestion_among("chapter-spelling-just-over", &titles).await;
+
+    assert_eq!(suggestion, Some(suggested("qwertyuiopb", SERIES)));
 }

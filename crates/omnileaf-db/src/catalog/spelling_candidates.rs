@@ -1,6 +1,6 @@
 use std::{cmp::Reverse, collections::HashSet};
 
-use rusqlite::{Connection, ToSql};
+use rusqlite::{Connection, Statement, ToSql};
 
 use super::{
     fts_terms::{any_of, quoted},
@@ -13,13 +13,50 @@ const WINDOW: usize = 4 * COMMON_AT;
 const MOST_PHRASES: usize = 4;
 const FOUR_GRAM_TRIGRAMS: usize = 2;
 
+struct Probe<'connection> {
+    statement: Statement<'connection>,
+    hiding: AdultHiding,
+}
+
+impl Probe<'_> {
+    fn matches_up_to(&mut self, query: &str, limit: usize) -> Result<usize, Error> {
+        let [leaves_out, counts] = self.hiding.params();
+        let matches = self.statement.query_row(
+            &[
+                (":query", &query as &dyn ToSql),
+                (":limit", &limit),
+                leaves_out,
+                counts,
+            ][..],
+            |row| row.get(0),
+        )?;
+        Ok(matches)
+    }
+}
+
 pub(super) fn match_queries(
     connection: &Connection,
     matches_up_to_common: &str,
     typed: &str,
     hiding: AdultHiding,
 ) -> Result<Vec<String>, Error> {
-    let found = trigrams_found(connection, matches_up_to_common, typed, hiding)?;
+    let mut probe = Probe {
+        statement: connection.prepare(matches_up_to_common)?,
+        hiding,
+    };
+    let found = trigrams_found(&mut probe, typed)?;
+    if found.is_empty() {
+        return Ok(Vec::new());
+    }
+    let every_trigram = any_of(
+        &found
+            .iter()
+            .map(|(_, trigram)| trigram.clone())
+            .collect::<Vec<_>>(),
+    );
+    if probe.matches_up_to(&every_trigram, WINDOW + 1)? <= WINDOW {
+        return Ok(vec![every_trigram]);
+    }
     let typed: Vec<char> = typed.chars().collect();
     let longest_runs = longest_runs_of_found(&typed, &found);
     let (whole, left_over) = split_whole_and_left_over(found);
@@ -39,38 +76,28 @@ pub(super) fn match_queries(
 
 pub(super) fn read_window<T>(
     queries: &[String],
+    id_of: impl Fn(&T) -> i64,
     mut read: impl FnMut(&str, usize) -> Result<Vec<T>, Error>,
 ) -> Result<Vec<T>, Error> {
-    let mut rows = Vec::new();
+    let mut rows: Vec<T> = Vec::new();
+    let mut read_ids: HashSet<i64> = HashSet::new();
     for query in queries {
-        let room = WINDOW - rows.len();
-        if room == 0 {
+        if rows.len() >= WINDOW {
             break;
         }
-        rows.extend(read(query, room)?);
+        for row in read(query, WINDOW + rows.len())? {
+            if rows.len() < WINDOW && read_ids.insert(id_of(&row)) {
+                rows.push(row);
+            }
+        }
     }
     Ok(rows)
 }
 
-fn trigrams_found(
-    connection: &Connection,
-    matches_up_to_common: &str,
-    typed: &str,
-    hiding: AdultHiding,
-) -> Result<Vec<(usize, String)>, Error> {
-    let mut probe = connection.prepare(matches_up_to_common)?;
-    let [leaves_out, counts] = hiding.params();
+fn trigrams_found(probe: &mut Probe<'_>, typed: &str) -> Result<Vec<(usize, String)>, Error> {
     let mut found = Vec::new();
     for trigram in typed_trigrams(typed) {
-        let matches: usize = probe.query_row(
-            &[
-                (":query", &quoted(&trigram) as &dyn ToSql),
-                (":limit", &COMMON_AT),
-                leaves_out,
-                counts,
-            ][..],
-            |row| row.get(0),
-        )?;
+        let matches = probe.matches_up_to(&quoted(&trigram), COMMON_AT)?;
         if matches > 0 {
             found.push((matches, trigram));
         }

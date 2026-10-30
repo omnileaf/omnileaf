@@ -69,20 +69,24 @@ fn candidates(
 ) -> Result<Vec<(i64, String, String)>, Error> {
     let [leaves_out, counts] = hiding.params();
     let mut statement = connection.prepare(CANDIDATES)?;
-    read_window(queries, |query, limit| {
-        let rows = statement
-            .query_map(
-                &[
-                    (":query", &query as &dyn ToSql),
-                    (":limit", &limit),
-                    leaves_out,
-                    counts,
-                ][..],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
-            )?
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(rows)
-    })
+    read_window(
+        queries,
+        |(book, _, _)| *book,
+        |query, limit| {
+            let rows = statement
+                .query_map(
+                    &[
+                        (":query", &query as &dyn ToSql),
+                        (":limit", &limit),
+                        leaves_out,
+                        counts,
+                    ][..],
+                    |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+                )?
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(rows)
+        },
+    )
 }
 
 #[cfg(test)]

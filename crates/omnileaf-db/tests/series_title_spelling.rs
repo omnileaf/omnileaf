@@ -12,6 +12,11 @@ use support::{ScratchFolder, library_config};
 
 const MORE_SERIES_THAN_THE_WINDOW_HOLDS: u32 = 300;
 const CROWD_PER_TRIGRAM: u32 = 60;
+const FIRST_CROWD: u32 = 100;
+const HIDING: AdultHiding = AdultHiding {
+    leaves_out_adult: true,
+    counts_age_ratings: true,
+};
 
 struct Library {
     database: Database,
@@ -34,11 +39,29 @@ impl Library {
     }
 
     async fn closest(&self, text: &str) -> Option<String> {
+        self.closest_while(text, AdultHiding::default()).await
+    }
+
+    async fn closest_while(&self, text: &str, hiding: AdultHiding) -> Option<String> {
         let text = text.to_owned();
         self.database
-            .read(move |connection| closest_title_words(connection, &text, AdultHiding::default()))
+            .read(move |connection| closest_title_words(connection, &text, hiding))
             .await
             .unwrap()
+    }
+
+    async fn mark_adult(&self, title: &str) {
+        let title = title.to_owned();
+        self.database
+            .write(move |transaction| {
+                transaction.execute(
+                    "UPDATE series SET adult_rated_books = 1, marked_adult = 1 WHERE title = ?1",
+                    [title],
+                )?;
+                Ok(())
+            })
+            .await
+            .unwrap();
     }
 }
 
@@ -94,7 +117,7 @@ async fn suggests_a_title_within_three_slips_of_a_long_text_although_other_title
 }
 
 #[tokio::test]
-async fn suggests_the_title_added_first_among_equally_near_ones() {
+async fn suggests_the_title_with_the_lower_id_among_equally_near_ones() {
     let added_first = Library::with(
         "series-spelling-tie-first",
         &titles(&["Lantrenx", "Lantern"]),
@@ -115,4 +138,66 @@ async fn suggests_the_title_added_first_among_equally_near_ones() {
         suggestions,
         (Some("lantrenx".to_owned()), Some("lantern".to_owned()))
     );
+}
+
+fn two_crowds_with_the_near_title_last(second_crowd: u32) -> Vec<String> {
+    let mut shelf: Vec<String> = (1..=FIRST_CROWD)
+        .map(|number| format!("qwert {number:03}"))
+        .collect();
+    shelf.extend((1..=second_crowd).map(|number| format!("xrtyuiopaxxx {number:03}")));
+    shelf.push("qwetyuiopa".to_owned());
+    shelf
+}
+
+fn two_crowds_with_the_near_title_between(second_crowd: u32) -> Vec<String> {
+    let mut shelf: Vec<String> = (1..=FIRST_CROWD)
+        .map(|number| format!("qwert {number:03}"))
+        .collect();
+    shelf.push("qwertyuiopb".to_owned());
+    shelf.extend((1..=second_crowd).map(|number| format!("xrtyuiopaxxx {number:03}")));
+    shelf
+}
+
+#[tokio::test]
+async fn suggests_a_title_after_overlapping_crowds_that_hold_fewer_than_the_window_in_all() {
+    let shelf = two_crowds_with_the_near_title_last(50);
+    let library = Library::with("series-spelling-overlap", &shelf).await;
+
+    let suggestion = library.closest("qwertyuiopa").await;
+
+    assert_eq!(suggestion.as_deref(), Some("qwetyuiopa"));
+}
+
+#[tokio::test]
+async fn suggests_the_199th_matching_title_of_overlapping_crowds() {
+    let shelf = two_crowds_with_the_near_title_last(98);
+    let library = Library::with("series-spelling-just-under", &shelf).await;
+
+    let suggestion = library.closest("qwertyuiopa").await;
+
+    assert_eq!(suggestion.as_deref(), Some("qwetyuiopa"));
+}
+
+#[tokio::test]
+async fn suggests_a_title_among_the_first_200_of_201_matching_titles_by_a_four_gram_of_the_text() {
+    let shelf = two_crowds_with_the_near_title_between(100);
+    let library = Library::with("series-spelling-just-over", &shelf).await;
+
+    let suggestion = library.closest("qwertyuiopa").await;
+
+    assert_eq!(suggestion.as_deref(), Some("qwertyuiopb"));
+}
+
+#[tokio::test]
+async fn suggests_a_visible_title_although_its_rarest_trigrams_are_in_a_hidden_series_only() {
+    let mut shelf: Vec<String> = (1..=5)
+        .map(|number| format!("Lantern Keeper {number}"))
+        .collect();
+    shelf.push("Lantren Keeper Redux".to_owned());
+    let library = Library::with("series-spelling-hidden-rarest", &shelf).await;
+    library.mark_adult("Lantren Keeper Redux").await;
+
+    let suggestion = library.closest_while("lantren keeper", HIDING).await;
+
+    assert_eq!(suggestion.as_deref(), Some("lantern keeper"));
 }
