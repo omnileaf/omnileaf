@@ -7,6 +7,7 @@ mod book_to_read;
 mod category_series;
 mod chapter_positions;
 mod chapter_search;
+mod closest_chapter_title_words;
 mod closest_title_words;
 pub(crate) mod cover;
 pub(crate) mod cursor;
@@ -15,6 +16,7 @@ mod folder_group_series;
 pub(crate) mod folder_groups;
 mod folder_joins;
 mod folder_series;
+mod fts_terms;
 pub(crate) mod gathering;
 mod hidden_series;
 mod home_root;
@@ -45,6 +47,9 @@ mod series_page;
 mod series_search;
 mod series_titles;
 mod series_volume;
+mod spelling_candidates;
+mod spelling_slips;
+mod spelling_trigrams;
 mod staged_rows;
 pub(crate) mod stored_id;
 mod value_list;
@@ -63,6 +68,7 @@ pub use chapter_search::{
     CHAPTER_CANDIDATES_PER_CALL, ChapterHit, ChapterTitleSource, search_chapters,
     search_chapters_count,
 };
+pub use closest_chapter_title_words::{ChapterSuggestion, closest_chapter_title};
 pub use closest_title_words::closest_title_words;
 pub use cover::{BookFileId, Cover, cover_file};
 pub use cursor::Cursor;

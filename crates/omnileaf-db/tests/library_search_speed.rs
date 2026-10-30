@@ -12,9 +12,11 @@ use std::{mem, num::NonZeroUsize, time::Duration};
 use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
+    adult_content::AdultHiding,
     catalog::{
         Cursor, Inclusion, PageRequest, PageSize, SearchText, SeriesFilter, SeriesSearch,
-        search_chapters, search_chapters_count, search_count, search_page,
+        closest_chapter_title, closest_title_words, search_chapters, search_chapters_count,
+        search_count, search_page,
     },
 };
 use omnileaf_testkit::{Sampling, SpeedTrial, Statistic, TimingBudget};
@@ -80,6 +82,84 @@ const TEXTS: [&str; 17] = [
     "chapter 12",
     "special",
 ];
+
+const LONG_SPELLING_SERIES: &str = "The Long And Winding Chronicles Of The Lantern Keepers";
+
+const LATE_CROWD_SERIES: &str = "Late Crowd";
+const LATE_CROWD_TRIGRAMS: [&str; 5] = ["zxc", "xcv", "cvb", "vbn", "bnx"];
+const LATE_CROWD_PER_TRIGRAM: u32 = 60;
+const LATE_NEAR_TITLE: &str = "zxcvbnm";
+
+const ONE_SERIES_IN_TEN_STAYS_VISIBLE: i64 = 10;
+const SERIES_ADDED_BEFORE_THIS_ARE_HIDDEN_MS: i64 = 9_000;
+
+const HIDE_NINE_SERIES_IN_TEN: &str = "UPDATE series SET adult_rated_books = 1, marked_adult = 1
+    WHERE added_at_ms % ?1 != 0";
+const HIDE_THE_FIRST_NINE_TENTHS: &str = "UPDATE series SET adult_rated_books = 1, marked_adult = 1
+    WHERE added_at_ms < ?1";
+
+const TEXTS_AMONG_A_HIDDEN_BLOCK: [&str; 3] = ["volmue", "chaptr 12", "smaple sereis"];
+
+struct Spelling {
+    text: &'static str,
+    found_by_series: bool,
+    found_by_chapter: bool,
+}
+
+const fn found_by_series(text: &'static str) -> Spelling {
+    Spelling {
+        text,
+        found_by_series: true,
+        found_by_chapter: false,
+    }
+}
+
+const fn found_by_chapter(text: &'static str) -> Spelling {
+    Spelling {
+        text,
+        found_by_series: false,
+        found_by_chapter: true,
+    }
+}
+
+const fn found_by_neither(text: &'static str) -> Spelling {
+    Spelling {
+        text,
+        found_by_series: false,
+        found_by_chapter: false,
+    }
+}
+
+const SPELLINGS: [Spelling; 9] = [
+    found_by_chapter("volmue"),
+    found_by_chapter("chaptr 12"),
+    found_by_chapter("harbor gat"),
+    found_by_chapter("harbr gate 5"),
+    found_by_series("smaple sereis"),
+    found_by_series("the long and windng chronicels of the lantern"),
+    found_by_chapter("zxcvbnx"),
+    found_by_neither("sample xyzzy"),
+    found_by_neither("quixotic zebra"),
+];
+
+const SPELLINGS_AMONG_HIDDEN_SERIES: [Spelling; 5] = [
+    found_by_chapter("volmue"),
+    found_by_chapter("chaptr 12"),
+    found_by_series("smaple sereis"),
+    found_by_neither("sample xyzzy"),
+    found_by_neither("quixotic zebra"),
+];
+
+const HIDING_ADULT: AdultHiding = AdultHiding {
+    leaves_out_adult: true,
+    counts_age_ratings: true,
+};
+
+#[derive(Clone, Copy, Debug)]
+enum Arm {
+    Series,
+    Chapter,
+}
 
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
 const FILTERS: [SeriesFilter; 2] = [
@@ -188,6 +268,20 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
         }
     }
 
+    for hiding in [AdultHiding::default(), HIDING_ADULT] {
+        assert_spellings(&database, &SPELLINGS, hiding).await;
+    }
+    over_budget.extend(
+        time_spellings(
+            &database,
+            &SPELLINGS.map(|spelling| spelling.text),
+            &[AdultHiding::default(), HIDING_ADULT],
+        )
+        .await,
+    );
+    over_budget.extend(time_spellings_among_hidden_series().await);
+    over_budget.extend(time_spellings_behind_a_hidden_block().await);
+
     assert_eq!(over_budget, Vec::<String>::new());
 }
 
@@ -213,9 +307,135 @@ async fn add_long_series(database: &Database) {
     .await;
 }
 
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+async fn time_spellings(
+    database: &Database,
+    texts: &[&'static str],
+    hidings: &[AdultHiding],
+) -> Vec<String> {
+    let trial = SpeedTrial {
+        measured: "a spelling suggestion over 100,000 books",
+        sampling: Sampling::Repeated {
+            samples: NonZeroUsize::new(SAMPLES).unwrap(),
+            statistic: Statistic::Percentile95,
+        },
+        budget: TimingBudget::from_env(BUDGET),
+    };
+    let mut over_budget = Vec::new();
+    for &hiding in hidings {
+        for &text in texts {
+            for arm in [Arm::Series, Arm::Chapter] {
+                let outcome = trial
+                    .run(
+                        async |_| (),
+                        async |()| {
+                            suggest(database, arm, text, hiding).await;
+                        },
+                    )
+                    .await;
+                let case = format!("spelling {text:?} by {arm:?} while {hiding:?}");
+                eprintln!("{case}: {outcome}");
+                if !outcome.is_within_budget() {
+                    over_budget.push(format!("{case}: {outcome}"));
+                }
+            }
+        }
+    }
+    over_budget
+}
+
+async fn assert_spellings(database: &Database, spellings: &[Spelling], hiding: AdultHiding) {
+    for spelling in spellings {
+        let found = [
+            suggest(database, Arm::Series, spelling.text, hiding).await,
+            suggest(database, Arm::Chapter, spelling.text, hiding).await,
+        ];
+        assert_eq!(
+            found,
+            [spelling.found_by_series, spelling.found_by_chapter],
+            "{:?} while {hiding:?} found a spelling in the series and the chapter titles",
+            spelling.text
+        );
+    }
+}
+
+async fn suggest(database: &Database, arm: Arm, text: &'static str, hiding: AdultHiding) -> bool {
+    database
+        .read(move |connection| match arm {
+            Arm::Series => Ok(closest_title_words(connection, text, hiding)?.is_some()),
+            Arm::Chapter => Ok(closest_chapter_title(connection, text, hiding)?.is_some()),
+        })
+        .await
+        .unwrap()
+}
+
+async fn library_hiding_series(
+    name: &str,
+    hide: &'static str,
+    bound: i64,
+) -> (Database, ScratchFolder) {
+    let folder = ScratchFolder::new(name);
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_generated_series(&database, &BOOK_TITLES).await;
+    database
+        .write(move |transaction| {
+            transaction.execute(hide, [bound])?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    (database, folder)
+}
+
+async fn time_spellings_among_hidden_series() -> Vec<String> {
+    let (database, _folder) = library_hiding_series(
+        "search-speed-hidden-series",
+        HIDE_NINE_SERIES_IN_TEN,
+        ONE_SERIES_IN_TEN_STAYS_VISIBLE,
+    )
+    .await;
+    assert_spellings(&database, &SPELLINGS_AMONG_HIDDEN_SERIES, HIDING_ADULT).await;
+    let texts = SPELLINGS_AMONG_HIDDEN_SERIES.map(|spelling| spelling.text);
+    time_spellings(&database, &texts, &[HIDING_ADULT]).await
+}
+
+async fn time_spellings_behind_a_hidden_block() -> Vec<String> {
+    let (database, _folder) = library_hiding_series(
+        "search-speed-hidden-block",
+        HIDE_THE_FIRST_NINE_TENTHS,
+        SERIES_ADDED_BEFORE_THIS_ARE_HIDDEN_MS,
+    )
+    .await;
+    time_spellings(&database, &TEXTS_AMONG_A_HIDDEN_BLOCK, &[HIDING_ADULT]).await
+}
+
+async fn add_late_crowd(database: &Database) {
+    let mut titles: Vec<String> = LATE_CROWD_TRIGRAMS
+        .iter()
+        .flat_map(|trigram| {
+            (1..=LATE_CROWD_PER_TRIGRAM).map(move |number| format!("{trigram} Zone {number:02}"))
+        })
+        .collect();
+    titles.push(LATE_NEAR_TITLE.to_owned());
+    let titles: Vec<&str> = titles.iter().map(String::as_str).collect();
+    seed_library(
+        database,
+        &[SeriesSeed {
+            book_titles: &titles,
+            ..SeriesSeed::named(LATE_CROWD_SERIES)
+        }],
+    )
+    .await;
+}
+
 async fn add_generated_library(database: &Database) {
     add_long_series(database).await;
+    seed_library(database, &[SeriesSeed::named(LONG_SPELLING_SERIES)]).await;
     add_generated_series(database, &BOOK_TITLES).await;
+    add_late_crowd(database).await;
     database
         .write(|transaction| {
             transaction.execute(
