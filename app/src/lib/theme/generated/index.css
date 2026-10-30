@@ -438,6 +438,7 @@
   --spacing-native-tile-check-glyph: var(--native-spacing-tile-check-glyph);
   --radius-native-tile: var(--native-radius-tile);
   --radius-native-tile-check: var(--native-radius-tile-check);
+  --spacing-native-tile-corner: var(--native-spacing-tile-corner);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -493,6 +493,7 @@ export const TOKEN_THEME = {
     "native-tile-badge",
     "native-tile-check",
     "native-tile-check-glyph",
+    "native-tile-corner",
     "native-tile-edge",
     "native-tile-inset",
     "native-tile-lift",

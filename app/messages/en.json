@@ -450,6 +450,7 @@
   "library_open_series": "Open series",
   "library_labels_menu": "Categories and tags…",
   "library_select": "Select",
+  "library_select_cover": "Select {title}",
   "library_more": "More for the library",
   "library_select_series": "Select series",
   "library_edit_categories": "Edit categories",

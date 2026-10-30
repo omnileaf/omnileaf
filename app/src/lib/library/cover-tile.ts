@@ -8,7 +8,10 @@ export interface CoverStackLook {
 }
 
 export interface CoverTileLook {
+  readonly cell: string;
   readonly link: string;
+  readonly tags: string;
+  readonly hoverCheck: string | undefined;
   readonly focusRing: string | undefined;
   readonly pickedRing: string;
   readonly stack: CoverStackLook | null;
@@ -47,7 +50,10 @@ const LINUX_STACK: CoverStackLook = {
 };
 
 const TODAYS_LOOK: CoverTileLook = {
+  cell: "",
   link: "",
+  tags: "",
+  hoverCheck: undefined,
   focusRing: undefined,
   pickedRing: PICKED_COVER_RING,
   stack: null,
@@ -72,7 +78,10 @@ const NATIVE_SELECT_SIZE =
 const NATIVE_SELECT_MARK = `${NATIVE_SELECT_SIZE} max-medium:border-(length:--native-spacing-select-edge)`;
 
 const NATIVE_TILE = {
+  cell: "",
   link: "",
+  tags: "",
+  hoverCheck: undefined,
   focusRing: undefined,
   tick: "",
   pickedRing: PICKED_COVER_RING,
@@ -107,16 +116,22 @@ const WINDOWS_TILE_BOX =
 
 const WINDOWS_PLACEMENT = "inset-e-sm inset-bs-sm";
 
+const WINDOWS_CHECK_BOX =
+  "rounded-native-tile-check border block-native-tile-check inline-native-tile-check";
+
 const WINDOWS_TILE: CoverTileLook = {
   ...TODAYS_LOOK,
+  cell: "group/tile",
+  tags: "transition-control group-focus-within/tile:opacity-0 group-hover/tile:opacity-0",
+  hoverCheck: `inset-e-native-tile-corner inset-bs-native-tile-corner border-native-tile-check-edge bg-native-tile-check-fill ${WINDOWS_CHECK_BOX}`,
   link: `relative isolate ${WINDOWS_TILE_BOX} hover:before:bg-native-tile-hover active:before:bg-native-tile-pressed aria-checked:before:border-native-button-primary`,
   focusRing:
     "focus-visible:outline-none focus-visible:before:outline-2 focus-visible:before:outline-offset-1 focus-visible:before:outline-native-focus-ring focus-visible:before:ring-1 focus-visible:before:ring-native-focus-ring-inner",
   pickedRing: "",
   unread: `${BADGE_PLACEMENT} rounded-full px-xs min-block-native-tile-badge min-inline-native-tile-badge`,
   downloaded: "block-native-tile-badge inline-native-tile-badge",
-  mark: `${WINDOWS_PLACEMENT} rounded-native-tile-check border block-native-tile-check inline-native-tile-check`,
-  compactMark: `${WINDOWS_PLACEMENT} rounded-native-tile-check border block-native-tile-check inline-native-tile-check`,
+  mark: `${WINDOWS_PLACEMENT} ${WINDOWS_CHECK_BOX}`,
+  compactMark: `${WINDOWS_PLACEMENT} ${WINDOWS_CHECK_BOX}`,
   markOn:
     "border-native-button-primary bg-native-button-primary text-native-on-button-primary",
   markOff: "border-native-tile-check-edge bg-native-tile-check-fill",

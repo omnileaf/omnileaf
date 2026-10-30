@@ -72,6 +72,7 @@
   --native-spacing-tile-check-glyph: 12px;
   --native-radius-tile: 4px;
   --native-radius-tile-check: 4px;
+  --native-spacing-tile-corner: 9px;
 }
 
 :root[data-platform="windows"],

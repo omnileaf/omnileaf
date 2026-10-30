@@ -433,4 +433,5 @@
   --native-spacing-tile-check-glyph: 0px;
   --native-radius-tile: 0px;
   --native-radius-tile-check: 0px;
+  --native-spacing-tile-corner: 0px;
 }

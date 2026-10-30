@@ -55,6 +55,7 @@
   import type { SeriesId } from "#lib/series/series-id.ts";
   import type { SeriesMenuActions } from "./series-menu";
   import SelectionMark from "./SelectionMark.svelte";
+  import TileCheck from "./TileCheck.svelte";
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
@@ -317,7 +318,7 @@
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
   <div
-    class="@container relative wrap-normal min-inline-none"
+    class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
   >
     <Tooltip
@@ -392,6 +393,7 @@
         </SeriesLink>
       {/snippet}
     </Tooltip>
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
     {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
@@ -411,7 +413,7 @@
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
   <div
-    class="@container relative wrap-normal min-inline-none"
+    class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
   >
     <SeriesLink
@@ -456,6 +458,7 @@
         </div>
       </div>
     </SeriesLink>
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
     {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}
@@ -474,7 +477,7 @@
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
   <div
-    class="@container relative wrap-normal min-inline-none"
+    class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
   >
     <SeriesLink
@@ -512,6 +515,7 @@
         <p class="sr-only">{shown.title}</p>
       </div>
     </SeriesLink>
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
     {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
         book={continues}

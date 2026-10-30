@@ -281,3 +281,91 @@ test("leaves Linux's tile with no edge", async () => {
 
   expect(styleOf(link).borderTopWidth).toBe("0px");
 });
+
+async function hoverableTile(platform: Platform) {
+  const series = await drawOn(platform, "light");
+  const selection = new Selection<SeriesId>();
+  const screen = await render(SelectingCoversHarness, {
+    selection,
+    ...coversOf(series),
+    view: {
+      ...DEFAULT_LIBRARY_VIEW,
+      display: "grid" as const,
+      onCovers: ON_COVERS,
+    },
+  });
+  const cell = screen.container.querySelector("[data-series-id]");
+  const cover = screen.getByRole("presentation").element().parentElement;
+  return {
+    selection,
+    series,
+    cell: cell as HTMLElement,
+    cover: cover as HTMLElement,
+  };
+}
+
+function checkBox() {
+  return page.getByRole("checkbox", { name: "Select Harbour Lights" });
+}
+
+function tagsOf(cover: HTMLElement): HTMLElement {
+  const tags = cover.querySelector('[data-slot="cover-tags"]');
+  if (!(tags instanceof HTMLElement)) {
+    throw new Error("the cover drew no tags");
+  }
+  return tags;
+}
+
+test("keeps the check box out of sight until the pointer is over the tile, and lifts the tags off its place", async () => {
+  const { cell, cover } = await hoverableTile("windows");
+
+  const resting = [
+    styleOf(checkBox().element()).opacity,
+    styleOf(tagsOf(cover)).opacity,
+  ];
+  await userEvent.hover(cell);
+  await vi.waitFor(() => {
+    expect([
+      styleOf(checkBox().element()).opacity,
+      styleOf(tagsOf(cover)).opacity,
+    ]).toEqual(["1", "0"]);
+  });
+
+  expect(resting).toEqual(["0", "1"]);
+});
+
+test("puts the hover check box where the selecting check box will be", async () => {
+  const { cell, cover } = await hoverableTile("windows");
+  await userEvent.hover(cell);
+
+  const box = checkBox().element();
+
+  expect([
+    box.getBoundingClientRect().width,
+    gapsAround(box, cover).top,
+    gapsAround(box, cover).end,
+  ]).toEqual([20, 8 + COVER_EDGE, 8 + COVER_EDGE]);
+});
+
+test("starts selecting with this tile picked when its check box is clicked", async () => {
+  const { selection, series } = await hoverableTile("windows");
+
+  await userEvent.click(checkBox());
+
+  expect([selection.isSelecting, selection.has(series.id)]).toEqual([
+    true,
+    true,
+  ]);
+});
+
+test("leaves the check box out of the tab order so the arrow keys and Space stay the keyboard's way to pick", async () => {
+  await hoverableTile("windows");
+
+  expect(checkBox().element().getAttribute("tabindex")).toBe("-1");
+});
+
+test("draws no hover check box on Linux", async () => {
+  await hoverableTile("linux");
+
+  expect(page.getByRole("checkbox").elements()).toEqual([]);
+});
