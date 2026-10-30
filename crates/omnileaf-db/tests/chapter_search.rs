@@ -537,6 +537,40 @@ async fn says_which_series_and_book_a_hit_belongs_to_and_the_book_s_place_in_the
 }
 
 #[tokio::test]
+async fn places_hits_found_out_of_reading_order_at_their_reading_position_in_each_series() {
+    let library = Library::open("chapters-places-out-of-order").await;
+    for (number, series, title) in [
+        (1, LANTERNS, "Volume 03"),
+        (2, MARKET, "Volume 02"),
+        (3, LANTERNS, "Volume 01"),
+        (4, MARKET, "Volume 05"),
+        (5, LANTERNS, "Volume 02"),
+    ] {
+        library.record(Chapter::titled(number, series, title)).await;
+    }
+
+    let page = library
+        .page(&search("volume", SeriesFilter::NONE), None, 10)
+        .await;
+
+    let placed: Vec<(String, u32)> = page
+        .hits
+        .iter()
+        .map(|hit| (hit.title.clone(), hit.position))
+        .collect();
+    assert_eq!(
+        placed,
+        [
+            ("Volume 03".to_owned(), 3),
+            ("Volume 02".to_owned(), 1),
+            ("Volume 01".to_owned(), 1),
+            ("Volume 05".to_owned(), 2),
+            ("Volume 02".to_owned(), 2),
+        ]
+    );
+}
+
+#[tokio::test]
 async fn lists_hits_in_the_order_the_books_were_indexed() {
     let library = Library::open("chapters-index-order").await;
     library
@@ -1181,6 +1215,7 @@ async fn returns_a_book_by_its_comic_info_title_when_its_dropped_file_name_row_e
         "harbor gate",
         SeriesFilter::NONE.with_tags(vec![WANTED.to_owned()]),
     );
+    let tagged_before_the_split = usize::try_from((WINDOW - 1) / TAGGED_EVERY).unwrap();
 
     let ids = library.index_ids_of(split).await;
     let pages = library.pages(&wanted, 200).await;
@@ -1194,7 +1229,7 @@ async fn returns_a_book_by_its_comic_info_title_when_its_dropped_file_name_row_e
     );
     assert_eq!(
         pages.iter().map(|page| page.hits.len()).collect::<Vec<_>>(),
-        [99, 1]
+        [tagged_before_the_split, 1]
     );
     let found: Vec<_> = pages.iter().flat_map(|page| page.hits.iter()).collect();
     let splits: Vec<_> = found.iter().filter(|hit| hit.book == split).collect();

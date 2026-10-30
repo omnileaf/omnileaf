@@ -5,6 +5,7 @@ mod book_details;
 mod book_files_to_remove;
 mod book_to_read;
 mod category_series;
+mod chapter_positions;
 mod chapter_search;
 mod closest_title_words;
 pub(crate) mod cover;
