@@ -367,6 +367,43 @@ test.describe("Windows library", () => {
       ).toHaveCount(1);
     });
 
+    test("draws a turned-off command on no Highlight fill under forced colours, even under the pointer", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ forcedColors: "active" });
+      await page
+        .getByRole("list", { name: "Series" })
+        .getByRole("listitem")
+        .first()
+        .locator("[data-pickable-link]")
+        .click();
+      const markRead = command(page, "Mark as read");
+      await expect(markRead).toBeDisabled();
+
+      await markRead.hover({ force: true });
+      await settle(markRead);
+
+      const [layer, ink, highlight, highlightText] = await markRead.evaluate(
+        (element) => {
+          const probe = document.createElement("div");
+          probe.style.cssText =
+            "background-color: Highlight; color: HighlightText";
+          document.body.append(probe);
+          const drawn = getComputedStyle(probe);
+          const values = [
+            getComputedStyle(element, "::before").backgroundColor,
+            getComputedStyle(element).color,
+            drawn.backgroundColor,
+            drawn.color,
+          ];
+          probe.remove();
+          return values;
+        },
+      );
+      expect(layer).not.toBe(highlight);
+      expect(ink).not.toBe(highlightText);
+    });
+
     test("has no accessibility violations", async ({ page }) => {
       expect(await accessibilityViolations(page)).toEqual([]);
     });
