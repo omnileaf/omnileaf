@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{cmp::Reverse, collections::HashSet};
 
 use rusqlite::{Connection, ToSql};
 
@@ -10,29 +10,6 @@ const WINDOW: usize = 4 * COMMON_AT;
 const MOST_PHRASES: usize = 4;
 const FOUR_GRAM_TRIGRAMS: usize = 2;
 
-struct Run {
-    first_trigram: usize,
-    trigrams: usize,
-}
-
-impl Run {
-    fn phrase(&self, typed: &[char]) -> Option<String> {
-        phrase(typed, self.first_trigram, self.trigrams)
-    }
-
-    fn four_grams(&self, typed: &[char]) -> Vec<String> {
-        (self.first_trigram..self.first_trigram + self.trigrams + 1 - FOUR_GRAM_TRIGRAMS)
-            .filter_map(|first| phrase(typed, first, FOUR_GRAM_TRIGRAMS))
-            .collect()
-    }
-}
-
-fn phrase(typed: &[char], first_trigram: usize, trigrams: usize) -> Option<String> {
-    typed
-        .get(first_trigram..first_trigram + trigrams + TRIGRAM_CHARS - 1)
-        .map(|chars| chars.iter().collect())
-}
-
 pub(super) fn match_queries(
     connection: &Connection,
     matches_up_to_common: &str,
@@ -41,34 +18,15 @@ pub(super) fn match_queries(
 ) -> Result<Vec<String>, Error> {
     let found = trigrams_found(connection, matches_up_to_common, typed, hiding)?;
     let typed: Vec<char> = typed.chars().collect();
-    let found_runs = runs_of(
-        &typed,
-        &found.iter().map(|(_, trigram)| trigram.as_str()).collect(),
-    );
+    let longest_runs = longest_runs_of_found(&typed, &found);
     let (whole, left_over) = split_whole_and_left_over(found);
-    let left_over_runs = runs_of(&typed, &left_over.iter().map(String::as_str).collect());
-    let mut found_runs: Vec<Run> = found_runs
+    let four_grams = four_grams_of_left_over(&typed, &left_over);
+    let queries = [any_of(&whole)]
         .into_iter()
-        .filter(|run| run.trigrams >= FOUR_GRAM_TRIGRAMS)
-        .collect();
-    found_runs.sort_by_key(|run| std::cmp::Reverse(run.trigrams));
-    let mut queries: Vec<String> = vec![any_of(&whole)];
-    queries.extend(
-        found_runs
-            .iter()
-            .take(MOST_PHRASES)
-            .filter_map(|run| run.phrase(&typed))
-            .map(|phrase| quoted(&phrase)),
-    );
-    let four_grams: Vec<String> = left_over_runs
-        .iter()
-        .flat_map(|run| run.four_grams(&typed))
-        .take(MOST_PHRASES)
-        .collect();
-    queries.push(any_of(&four_grams));
-    queries.push(any_of(&left_over));
+        .chain(longest_runs.iter().map(|run| quoted(run)))
+        .chain([any_of(&four_grams), any_of(&left_over)]);
     let mut distinct: Vec<String> = Vec::new();
-    for query in queries.into_iter().filter(|query| !query.is_empty()) {
+    for query in queries.filter(|query| !query.is_empty()) {
         if !distinct.contains(&query) {
             distinct.push(query);
         }
@@ -128,6 +86,40 @@ fn split_whole_and_left_over(mut found: Vec<(usize, String)>) -> (Vec<String>, V
         whole.into_iter().map(|(_, trigram)| trigram).collect(),
         left_over.into_iter().map(|(_, trigram)| trigram).collect(),
     )
+}
+
+fn longest_runs_of_found(typed: &[char], found: &[(usize, String)]) -> Vec<String> {
+    let found: HashSet<&str> = found.iter().map(|(_, trigram)| trigram.as_str()).collect();
+    let mut runs = runs_of(typed, &found);
+    runs.retain(|run| run.trigrams >= FOUR_GRAM_TRIGRAMS);
+    runs.sort_by_key(|run| Reverse(run.trigrams));
+    runs.iter()
+        .take(MOST_PHRASES)
+        .filter_map(|run| phrase(typed, run.first_trigram, run.trigrams))
+        .collect()
+}
+
+fn four_grams_of_left_over(typed: &[char], left_over: &[String]) -> Vec<String> {
+    let left_over: HashSet<&str> = left_over.iter().map(String::as_str).collect();
+    runs_of(typed, &left_over)
+        .iter()
+        .flat_map(|run| {
+            (run.first_trigram..run.first_trigram + run.trigrams + 1 - FOUR_GRAM_TRIGRAMS)
+                .filter_map(|first| phrase(typed, first, FOUR_GRAM_TRIGRAMS))
+        })
+        .take(MOST_PHRASES)
+        .collect()
+}
+
+fn phrase(typed: &[char], first_trigram: usize, trigrams: usize) -> Option<String> {
+    typed
+        .get(first_trigram..first_trigram + trigrams + TRIGRAM_CHARS - 1)
+        .map(|chars| chars.iter().collect())
+}
+
+struct Run {
+    first_trigram: usize,
+    trigrams: usize,
 }
 
 fn runs_of(typed: &[char], trigrams: &HashSet<&str>) -> Vec<Run> {
