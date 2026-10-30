@@ -1801,3 +1801,33 @@ test("drops the divider above Add a folder while the last row is swiped open on 
     getComputedStyle(addRow ?? document.body, "::before").borderTopWidth,
   ).toBe("0px");
 });
+
+test("keeps a row in place and square when it is dragged toward its end on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  await expect.element(comicsRow(folders)).toBeInTheDocument();
+  const title = comicsTitle(folders);
+  const content = title.closest("[data-swiped]");
+  title.dispatchEvent(
+    new PointerEvent("pointerdown", {
+      pointerType: "touch",
+      bubbles: true,
+      clientX: 100,
+      clientY: 10,
+    }),
+  );
+
+  title.dispatchEvent(
+    new PointerEvent("pointermove", {
+      pointerType: "touch",
+      bubbles: true,
+      clientX: 180,
+      clientY: 10,
+    }),
+  );
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  expect(content?.getBoundingClientRect().left).toBe(
+    comicsRow(folders).element().getBoundingClientRect().left,
+  );
+  expect(content?.getAttribute("class")).not.toContain("rounded-full");
+});
