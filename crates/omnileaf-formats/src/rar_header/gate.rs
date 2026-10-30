@@ -69,13 +69,7 @@ impl<'a> Gate<'a> {
         if header.is_directory {
             return Ok(());
         }
-        self.total_unpacked = self.total_unpacked.saturating_add(header.unpacked_size);
-        if self.total_unpacked > self.limits.max_total_bytes {
-            return Err(FormatError::TooLargeInTotal {
-                path: self.path.to_owned(),
-                limit: self.limits.max_total_bytes,
-            });
-        }
+        self.add_to_total(header.unpacked_size)?;
         if is_contained_page(&header.name) && header.unpacked_size > self.limits.max_page_bytes {
             return Err(FormatError::PageTooLarge {
                 path: self.path.to_owned(),
@@ -94,6 +88,12 @@ impl<'a> Gate<'a> {
             data_offset: header.data_offset,
         });
         Ok(())
+    }
+
+    pub(super) fn accept_service(&mut self, header: &FileHeader) -> Result<(), FormatError> {
+        self.count_member()?;
+        self.add_to_total(header.unpacked_size)?;
+        self.extend_run(header)
     }
 
     pub(super) fn finish(mut self, format: RarFormat) -> Result<RarListing, FormatError> {
@@ -153,11 +153,29 @@ impl<'a> Gate<'a> {
         }
     }
 
+    pub(super) fn unsupported_entry(&self, name: String) -> FormatError {
+        FormatError::UnsupportedEntry {
+            path: self.path.to_owned(),
+            name,
+        }
+    }
+
     pub(super) fn corrupt(&self, message: &str) -> FormatError {
         FormatError::CorruptRar {
             path: self.path.to_owned(),
             message: message.to_owned(),
         }
+    }
+
+    fn add_to_total(&mut self, unpacked_size: u64) -> Result<(), FormatError> {
+        self.total_unpacked = self.total_unpacked.saturating_add(unpacked_size);
+        if self.total_unpacked > self.limits.max_total_bytes {
+            return Err(FormatError::TooLargeInTotal {
+                path: self.path.to_owned(),
+                limit: self.limits.max_total_bytes,
+            });
+        }
+        Ok(())
     }
 
     /// A solid entry continues the compressed stream of the entries before it, so the ratio is judged over each stream rather than each entry.

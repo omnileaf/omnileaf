@@ -31,7 +31,12 @@ impl<'a> Fields<'a> {
         let mut value = 0_u64;
         for group in 0..LONGEST_VINT_BYTES {
             let byte = self.byte()?;
-            value |= u64::from(byte & VINT_DATA_MASK).checked_shl(group * VINT_DATA_BITS)?;
+            let bits = u64::from(byte & VINT_DATA_MASK);
+            let shift = group * VINT_DATA_BITS;
+            let shifted = bits
+                .checked_shl(shift)
+                .filter(|shifted| shifted >> shift == bits)?;
+            value |= shifted;
             if byte & VINT_CONTINUES == 0 {
                 return Some(value);
             }
@@ -52,7 +57,7 @@ mod tests {
 
     #[test]
     fn reads_rar5_vints_of_every_length() {
-        let cases: [(&[u8], Option<u64>); 5] = [
+        let cases: [(&[u8], Option<u64>); 7] = [
             (&[0x05], Some(5)),
             (&[0x80, 0x01], Some(0x80)),
             (&[0x80, 0x80, 0x80, 0x00], Some(0)),
@@ -61,6 +66,14 @@ mod tests {
                 Some(u64::MAX),
             ),
             (&[0x80, 0x80], None),
+            (
+                &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02],
+                None,
+            ),
+            (
+                &[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80],
+                None,
+            ),
         ];
 
         let read: Vec<Option<u64>> = cases

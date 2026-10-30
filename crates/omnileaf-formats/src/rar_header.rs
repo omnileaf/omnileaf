@@ -2,6 +2,7 @@ mod fields;
 mod gate;
 mod rar4;
 mod rar5;
+mod rar5_extra;
 mod source;
 
 use std::{

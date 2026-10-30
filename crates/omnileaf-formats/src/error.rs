@@ -51,6 +51,8 @@ pub enum FormatError {
     UnsupportedCompression { path: PathBuf, method: String },
     #[error("{} needs a decoding dictionary larger than the {limit} bytes allowed", path.display())]
     DictionaryTooLarge { path: PathBuf, limit: u64 },
+    #[error("{name} in {} is a link or another kind of entry this app can't open", path.display())]
+    UnsupportedEntry { path: PathBuf, name: String },
     #[error("{} is one part of a multi-volume archive, which this app can't open", path.display())]
     MultiVolume { path: PathBuf },
     #[error("{} has an entry name longer than the {limit} characters allowed", path.display())]

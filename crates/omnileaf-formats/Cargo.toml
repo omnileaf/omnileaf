@@ -29,5 +29,9 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 name = "rar_crafted"
 required-features = ["rar"]
 
+[[test]]
+name = "rar5_disagreements"
+required-features = ["rar"]
+
 [lints]
 workspace = true
