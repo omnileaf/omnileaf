@@ -1,0 +1,513 @@
+{
+  "tools": {
+    "rar5": {
+      "version": "7.23",
+      "sha256": "56c3c4fd46faa7a9f52264d30cb96813e19ec7c4587d9f18424d7e909cf78555"
+    },
+    "rar4": {
+      "version": "6.24",
+      "sha256": "71ab9088d575e438d243672fcc6d36d2f9a39f5a8d4d26e998129cea12dbf682"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "rar5-stored.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m0",
+        "rar5-stored.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "8a90d4b1f6636727cd75ddadc0d01c06f7b5a5a19c1385cc22f212d53952e660",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar5-normal.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m3",
+        "rar5-normal.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "10c8e7292f4ff48518d8981fbe316b221656ea9b3e2c76d82670ee161f585ea2",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar5-best.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m5",
+        "-md128k",
+        "rar5-best.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "ee4b5ad6d43face2170c3fe5f7bb388e3a4a6fd87842beb96be3a79c6ffcf720",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar5-solid.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-s",
+        "-m3",
+        "rar5-solid.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "c1d31f544386b82cd03780c56275fe87a5ffe7846c341388896ade668962dc85",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar5-unicode-names.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m3",
+        "rar5-unicode-names.cbr",
+        "003.png",
+        "002.png",
+        "001-é日本.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "0259f88a4b1eb1a8a43a74a761a6c4abd7d31623ea5e7ed6543414ed98d728a6",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001-é日本.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar4-stored.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m0",
+        "rar4-stored.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "ae006d037796fe3ffccb71a4a814adb223bb40d25795c6353b328312fbec8250",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar4-normal.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m3",
+        "rar4-normal.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "de6d80eedb6a014a34f253c947d218846c1a4fc889db128e510e2fbfe4f7b7a0",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar4-ppmd.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m3",
+        "-mct+",
+        "rar4-ppmd.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "f2c1a9e4567a86bf7707fe81000a99c93f51395ef3141c00319b05e99726f394",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar4-unicode-names.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m3",
+        "rar4-unicode-names.cbr",
+        "003.png",
+        "002.png",
+        "001-é日本.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "7f880db28c66c515e1652fc374a226ce8007462557eeeac9422d33052d2ccac2",
+      "outcome": {
+        "opens": {
+          "pages": [
+            {
+              "name": "001-é日本.png",
+              "size": 300,
+              "sha256": "0e161c105749f2c0212501a1e409c38b182a231a371525395678737e90bc37db"
+            },
+            {
+              "name": "002.png",
+              "size": 2000,
+              "sha256": "802b9fcf8add20231c7046e6c4b874320bccefb8e726da7916e0c4c001dba660"
+            },
+            {
+              "name": "003.png",
+              "size": 450,
+              "sha256": "1d950371e758ba0b6aeba7a077aa7367f750d017238e7d9fc07dc2c0948f043b"
+            }
+          ],
+          "comic_info": {
+            "series": "Sample Series 01",
+            "number": "1"
+          }
+        }
+      }
+    },
+    {
+      "file": "rar4-solid.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-s",
+        "-m3",
+        "rar4-solid.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "c45e14a5bf7ddc5ff63e96399e81125d439d6d63fd19a0dff2f1d80c41564f3b",
+      "outcome": {
+        "refused": "solid_rar4"
+      }
+    },
+    {
+      "file": "rar5-encrypted.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m3",
+        "-pomnileaf",
+        "rar5-encrypted.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "3be2ba59a79b9101cc3e7ea130ae5fbc6c41c807c01aefad9d96ed766e932634",
+      "outcome": {
+        "refused": "encrypted"
+      }
+    },
+    {
+      "file": "rar5-encrypted-headers.cbr",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m3",
+        "-hpomnileaf",
+        "rar5-encrypted-headers.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "5062f1828a86344fc0ac04e88b0655e532e086104b7f4916cc6ed68874aa1a76",
+      "outcome": {
+        "refused": "encrypted"
+      }
+    },
+    {
+      "file": "rar4-encrypted.cbr",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m3",
+        "-pomnileaf",
+        "rar4-encrypted.cbr",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "9de3ef4feeed2155d2494f24c081cdc561ec7e811011711953d1bca5c10c5d83",
+      "outcome": {
+        "refused": "encrypted"
+      }
+    },
+    {
+      "file": "rar5-multivolume.part1.rar",
+      "maker": "rar5",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-m0",
+        "-v1k",
+        "rar5-multivolume.rar",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "c863cb718bb3f29f23afac94b2240245a47a885435f13de653a6610102774951",
+      "outcome": {
+        "refused": "multi_volume"
+      }
+    },
+    {
+      "file": "rar4-multivolume.part1.rar",
+      "maker": "rar4",
+      "arguments": [
+        "a",
+        "-idq",
+        "-ts-",
+        "-ma4",
+        "-m0",
+        "-v1k",
+        "rar4-multivolume.rar",
+        "003.png",
+        "002.png",
+        "001.png",
+        "ComicInfo.xml"
+      ],
+      "sha256": "334f0a9b5a6716edf0579c1964cf3166636c1e6d65a199de049ddfc364164dbf",
+      "outcome": {
+        "refused": "multi_volume"
+      }
+    }
+  ]
+}
