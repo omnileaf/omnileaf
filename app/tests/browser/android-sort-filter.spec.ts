@@ -38,6 +38,13 @@ const FOOT_BUTTON_HEIGHT = 56;
 const FOOT_BOTTOM = 16;
 const FOOT_TOP = 12;
 const SEPARATOR_WIDTH = "1px";
+const FIELD_HEIGHT = 56;
+const FIELD_RADIUS = "4px";
+const FIELD_BORDER = "1px";
+const FIELD_LABEL_SIZE = "12px";
+const FIELD_LABEL_LINE = "16px";
+const ORDER_BUTTON_SIZE = 40;
+const SORT_ROW_GAP = 8;
 
 function backendWith(choices: LibraryFilterChoices) {
   return {
@@ -132,6 +139,80 @@ test.describe(
         expect(
           (await boxOf(showButton(sheet))).y - (await boxOf(foot)).y,
         ).toBeCloseTo(FOOT_TOP, 0);
+      });
+    });
+
+    test.describe("the sort row", () => {
+      test.use({ backend: backendWith(FEW_CHOICES) });
+
+      test("sets Sort by as a 56px outlined field with a 4px corner", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const field = sheet.getByRole("combobox", { name: "Sort by" });
+
+        expect((await boxOf(field)).height).toBeCloseTo(FIELD_HEIGHT, 0);
+        await expect(field).toHaveCSS("border-top-width", FIELD_BORDER);
+        await expect(field).toHaveCSS("border-top-left-radius", FIELD_RADIUS);
+        await expect(field).toHaveCSS(
+          "border-top-color",
+          await tokenColour(page, "--native-color-button-outline-edge"),
+        );
+      });
+
+      test("sits the label on the field's top edge at 12px on a 16px line, over the sheet's own ground", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const field = sheet.getByRole("combobox", { name: "Sort by" });
+        const label = sheet.getByText("Sort by", { exact: true });
+
+        const fieldBox = await boxOf(field);
+        const labelBox = await boxOf(label);
+
+        await expect(label).toHaveCSS("font-size", FIELD_LABEL_SIZE);
+        await expect(label).toHaveCSS("line-height", FIELD_LABEL_LINE);
+        expect(labelBox.y + labelBox.height / 2).toBeCloseTo(fieldBox.y, 0);
+        await expect(label).toHaveCSS(
+          "background-color",
+          await sheet.evaluate(
+            (element) => getComputedStyle(element).backgroundColor,
+          ),
+        );
+      });
+
+      test("puts the field 16px from the sheet's edge with the order button 8px after it, a 40px outlined circle", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const field = await boxOf(
+          sheet.getByRole("combobox", { name: "Sort by" }),
+        );
+        const order = sheet.getByRole("button", { name: /^Order:/ });
+        const orderBox = await boxOf(order);
+        const sheetBox = await boxOf(sheet);
+
+        expect(field.x - sheetBox.x).toBeCloseTo(SHEET_INLINE_PADDING, 0);
+        expect(orderBox.x - (field.x + field.width)).toBeCloseTo(
+          SORT_ROW_GAP,
+          0,
+        );
+        expect(orderBox.width).toBeCloseTo(ORDER_BUTTON_SIZE, 0);
+        expect(orderBox.height).toBeCloseTo(ORDER_BUTTON_SIZE, 0);
+        await expect(order).toHaveCSS(
+          "border-top-color",
+          await tokenColour(page, "--native-color-button-outline-edge"),
+        );
+      });
+
+      test("reverses the order from the button", async ({ page }) => {
+        const sheet = await openSheet(page);
+        const order = sheet.getByRole("button", { name: /^Order:/ });
+        const before = await order.getAttribute("aria-label");
+
+        await order.click();
+
+        await expect(order).not.toHaveAttribute("aria-label", before ?? "");
       });
     });
 

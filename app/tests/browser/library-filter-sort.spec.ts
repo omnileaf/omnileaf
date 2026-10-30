@@ -896,9 +896,21 @@ for (const platform of ["android", "ios"] as const) {
         return;
       }
 
-      const direction = await boxOf(
-        panel.getByRole("button", { name: "Order: A to Z. Change to Z to A" }),
-      );
+      const order = panel.getByRole("button", {
+        name: "Order: A to Z. Change to Z to A",
+      });
+      const direction = await boxOf(order);
+      if (platform === "android" && isPhone(page)) {
+        const reach = (TOUCH_TARGET - direction.height) / 2 - 1;
+        const edge = await order.evaluate((button, corner) => {
+          const { left, top } = button.getBoundingClientRect();
+          return (
+            document.elementFromPoint(left - corner, top - corner) === button
+          );
+        }, reach);
+        expect(edge).toBe(true);
+        return;
+      }
       expect([direction.width, direction.height]).toEqual([
         TOUCH_TARGET,
         TOUCH_TARGET,
