@@ -11,6 +11,9 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
+const NARROW_PHONE = { width: 360, height: 780 };
+const INSET_PX = 16;
+
 function navigationBox(page: Page) {
   return boxOf(page.getByRole("navigation", { name: "Main" }));
 }
@@ -35,6 +38,19 @@ test.describe("on iOS", () => {
       "border-radius",
       "0px",
     );
+  });
+
+  test("keeps the floating bar inside its insets on a 360-point phone", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.setViewportSize(NARROW_PHONE);
+    await page.goto("/");
+
+    const bar = await navigationBox(page);
+
+    expect(bar.x).toBeCloseTo(INSET_PX, 0);
+    expect(bar.x + bar.width).toBeCloseTo(NARROW_PHONE.width - INSET_PX, 0);
   });
 
   test("leaves room under the page so the floating bar never covers content", async ({
