@@ -74,6 +74,31 @@ test("uses only system colours, and only for tokens that have a Windows value", 
   }
 });
 
+const INFO_BAR_COLOURS = {
+  "--native-color-info-bar": "Canvas",
+  "--native-color-info-bar-success": "Canvas",
+  "--native-color-info-bar-warning": "Canvas",
+  "--native-color-info-bar-error": "Canvas",
+  "--native-color-on-info-bar": "CanvasText",
+  "--native-color-info-bar-edge": "CanvasText",
+  "--native-color-info-bar-icon": "CanvasText",
+  "--native-color-info-bar-success-icon": "CanvasText",
+  "--native-color-info-bar-warning-icon": "CanvasText",
+  "--native-color-info-bar-error-icon": "CanvasText",
+  "--native-color-info-bar-floating": "Canvas",
+  "--native-color-info-bar-floating-edge": "CanvasText",
+} as const;
+
+test("draws every InfoBar colour in the contrast theme's canvas and its text", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  const infoBarColours = Object.fromEntries(
+    Object.keys(INFO_BAR_COLOURS).map((token) => [token, mapped.get(token)]),
+  );
+
+  expect(infoBarColours).toEqual(INFO_BAR_COLOURS);
+});
+
 const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
   "button-primary": ["on-button-primary"],
   "button-primary-hover": ["on-button-primary"],

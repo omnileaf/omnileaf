@@ -3,6 +3,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import SidebarToggle from "#lib/navigation/SidebarToggle.svelte";
+  import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
 
   let { class: className, children }: { class?: string; children: Snippet } =
     $props();
@@ -26,3 +27,4 @@
   </div>
   {@render children()}
 </div>
+<PageNoticeSlot />

@@ -63,6 +63,18 @@
     --native-color-notice: Canvas;
     --native-color-on-notice: CanvasText;
     --native-color-focus-ring: CanvasText;
+    --native-color-info-bar: Canvas;
+    --native-color-info-bar-success: Canvas;
+    --native-color-info-bar-warning: Canvas;
+    --native-color-info-bar-error: Canvas;
+    --native-color-on-info-bar: CanvasText;
+    --native-color-info-bar-edge: CanvasText;
+    --native-color-info-bar-icon: CanvasText;
+    --native-color-info-bar-success-icon: CanvasText;
+    --native-color-info-bar-warning-icon: CanvasText;
+    --native-color-info-bar-error-icon: CanvasText;
+    --native-color-info-bar-floating: Canvas;
+    --native-color-info-bar-floating-edge: CanvasText;
   }
 
   :root[data-platform="windows"] [data-slot="item"][data-picked],

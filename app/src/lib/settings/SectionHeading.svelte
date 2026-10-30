@@ -10,6 +10,7 @@
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
@@ -125,3 +126,4 @@
     {title}
   </h1>
 </header>
+<PageNoticeSlot />

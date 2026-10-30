@@ -10,6 +10,7 @@
   import { page } from "$app/state";
   import type { SwipeEdge } from "#lib/ipc/bindings.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
@@ -131,5 +132,6 @@
     swiped.look,
   ]}
 >
+  <PageNoticeSlot />
   {@render children()}
 </main>

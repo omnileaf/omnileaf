@@ -24,6 +24,17 @@
   --native-radius-dialog: 8px;
   --native-radius-sheet: 8px;
   --native-radius-menu: 8px;
+  --native-blur-info-bar-floating: 30px;
+  --native-radius-info-bar: 4px;
+  --native-radius-info-bar-floating: 8px;
+  --native-spacing-info-bar: 48px;
+  --native-spacing-info-bar-end: 64px;
+  --native-spacing-info-bar-words-block: 14px;
+  --native-spacing-info-bar-close: 38px;
+  --native-spacing-info-bar-close-inset: 5px;
+  --native-spacing-info-bar-stacked-indent: 30px;
+  --native-spacing-info-bar-stacked-end: 18px;
+  --native-spacing-info-bar-floating-top: 64px;
 }
 
 :root[data-platform="windows"],
@@ -90,6 +101,19 @@
   --native-color-notice: #f6f6f680;
   --native-color-on-notice: #000000e4;
   --native-color-focus-ring: #000000e4;
+  --native-color-info-bar: #f6f6f680;
+  --native-color-info-bar-success: #dff6dd;
+  --native-color-info-bar-warning: #fff4ce;
+  --native-color-info-bar-error: #fde7e9;
+  --native-color-on-info-bar: #000000e4;
+  --native-color-info-bar-edge: #0000000f;
+  --native-color-info-bar-icon: var(--primary);
+  --native-color-info-bar-success-icon: #0f7b0f;
+  --native-color-info-bar-warning-icon: #9d5d00;
+  --native-color-info-bar-error-icon: #c42b1c;
+  --native-color-info-bar-floating: #fcfcfcd9;
+  --native-color-info-bar-floating-edge: #0000000f;
+  --native-shadow-info-bar-floating-lift: 0 0.5rem 1rem #00000024;
   --native-color-accent-hover: rgba(47, 111, 79, 0.9);
   --native-color-accent-pressed: rgba(47, 111, 79, 0.8);
 }
@@ -158,6 +182,19 @@
   --native-color-notice: #ffffff08;
   --native-color-on-notice: #ffffff;
   --native-color-focus-ring: #ffffff;
+  --native-color-info-bar: #ffffff08;
+  --native-color-info-bar-success: #393d1b;
+  --native-color-info-bar-warning: #433519;
+  --native-color-info-bar-error: #442726;
+  --native-color-on-info-bar: #ffffff;
+  --native-color-info-bar-edge: #00000019;
+  --native-color-info-bar-icon: var(--primary);
+  --native-color-info-bar-success-icon: #6ccb5f;
+  --native-color-info-bar-warning-icon: #fce100;
+  --native-color-info-bar-error-icon: #ff99a4;
+  --native-color-info-bar-floating: #2c2c2cf5;
+  --native-color-info-bar-floating-edge: #00000033;
+  --native-shadow-info-bar-floating-lift: 0 0.5rem 1rem #00000042;
   --native-color-accent-hover: rgba(127, 203, 157, 0.9);
   --native-color-accent-pressed: rgba(127, 203, 157, 0.8);
 }
@@ -165,11 +202,13 @@
 :root[data-platform="windows"][data-transparency="reduced"],
 :root[data-platform="windows"][data-transparency="reduced"] [data-theme="light"] {
   --native-color-menu: #f9f9f9;
+  --native-color-info-bar-floating: #f9f9f9;
 }
 
 :root[data-platform="windows"][data-transparency="reduced"][data-theme="dark"],
 :root[data-platform="windows"][data-transparency="reduced"] [data-theme="dark"] {
   --native-color-menu: #2c2c2c;
+  --native-color-info-bar-floating: #2c2c2c;
 }
 
 :root[data-platform="windows"][data-colours="wallpaper"],

@@ -16,7 +16,9 @@
   const look = toastLook(currentPlatform());
 
   const actionUnderWords = $derived(
-    notice.tone === "warning" ? notice.action : undefined,
+    notice.tone === "warning" && look.putsWarningActionUnderWords
+      ? notice.action
+      : undefined,
   );
 </script>
 

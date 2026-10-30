@@ -21,7 +21,7 @@ const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
 export const FINISHED_SCAN_REPORT = xpath(
-  "//li[@data-sonner-toast]//p[starts-with(normalize-space(), 'Added ')]",
+  "//*[@data-sonner-toast or @data-info-bar]//p[starts-with(normalize-space(), 'Added ')]",
 );
 const ON_LIBRARY_PAGE = "return location.pathname === '/';";
 

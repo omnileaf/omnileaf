@@ -14,6 +14,7 @@
 
 <ToastCard
   tone="plain"
+  severity="success"
   title={offer.title}
   body={offer.body}
   action={{ label: m.undo_action(), run: offer.undo }}
