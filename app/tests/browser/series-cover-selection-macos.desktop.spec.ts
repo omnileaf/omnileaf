@@ -181,3 +181,24 @@ test.describe("marking the picked covers on macOS", () => {
     ).toHaveText(/Unread$/);
   });
 });
+
+test.describe("the picked covers in the macOS title bar", () => {
+  const shelf = new SectionShelf([...volumes(1, 3, 4)]);
+  test.use({ backend: shelf.backend() });
+
+  test("counts them and holds their actions in the title bar", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await commandClick(page, "Volume 1");
+
+    const titleBar = page.locator("[data-page-toolbar]");
+    await expect(titleBar.getByRole("status")).toHaveText("1 of 3 selected");
+    await expect(
+      titleBar
+        .getByRole("group", { name: "Selected books" })
+        .getByRole("button", { name: "Mark read" }),
+    ).toBeVisible();
+  });
+});
