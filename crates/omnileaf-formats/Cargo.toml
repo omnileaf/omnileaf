@@ -7,10 +7,11 @@ license.workspace = true
 publish.workspace = true
 
 [features]
-rar = []
+rar = ["dep:omnileaf-libarchive"]
 
 [dependencies]
 flate2.workspace = true
+omnileaf-libarchive = { workspace = true, optional = true }
 omnileaf-sync-proto.workspace = true
 quick-xml.workspace = true
 sevenz-rust2.workspace = true
@@ -31,6 +32,10 @@ required-features = ["rar"]
 
 [[test]]
 name = "rar4_disagreements"
+required-features = ["rar"]
+
+[[test]]
+name = "rar_books"
 required-features = ["rar"]
 
 [[test]]

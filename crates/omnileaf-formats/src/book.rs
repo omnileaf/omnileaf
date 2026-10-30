@@ -2,6 +2,8 @@ use std::{ops::ControlFlow, path::Path, sync::Arc};
 
 use omnileaf_sync_proto::Fingerprint;
 
+#[cfg(feature = "rar")]
+use crate::rar_book::RarBook;
 use crate::{
     ComicInfo, FormatError, Limits, LocalStorage, PageKind, Storage, container::Container,
     error::read_failed, folder::FolderBook, natural_cmp, parse_comic_info,
@@ -22,6 +24,8 @@ pub enum Book {
     SevenZip(SevenZipBook),
     Folder(FolderBook),
     Salvaged(SalvagedZipBook),
+    #[cfg(feature = "rar")]
+    Rar(RarBook),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -35,6 +39,8 @@ impl Book {
         match self {
             Self::Salvaged(_) => Some(Damage::EndsEarly),
             Self::Archive(_) | Self::SevenZip(_) | Self::Folder(_) => None,
+            #[cfg(feature = "rar")]
+            Self::Rar(_) => None,
         }
     }
 
@@ -45,6 +51,8 @@ impl Book {
             Self::SevenZip(book) => book.pages(),
             Self::Folder(book) => book.pages(),
             Self::Salvaged(book) => book.pages(),
+            #[cfg(feature = "rar")]
+            Self::Rar(book) => book.pages(),
         }
     }
 
@@ -67,6 +75,8 @@ impl Book {
             Self::SevenZip(book) => book.read_page(index),
             Self::Folder(book) => book.read_page(index),
             Self::Salvaged(book) => book.read_page(index),
+            #[cfg(feature = "rar")]
+            Self::Rar(book) => book.read_page(index),
         }
     }
 
@@ -75,6 +85,10 @@ impl Book {
         mut read: impl FnMut(usize, Vec<u8>) -> ControlFlow<()>,
     ) -> Result<(), FormatError> {
         if let Self::SevenZip(book) = self {
+            return book.read_every_page(read);
+        }
+        #[cfg(feature = "rar")]
+        if let Self::Rar(book) = self {
             return book.read_every_page(read);
         }
         for index in 0..self.pages().len() {
@@ -91,6 +105,8 @@ impl Book {
             Self::SevenZip(book) => book.read_page_start(index, length),
             Self::Folder(book) => book.read_page_start(index, length),
             Self::Salvaged(book) => book.read_page_start(index, length),
+            #[cfg(feature = "rar")]
+            Self::Rar(book) => book.read_page_start(index, length),
         }
     }
 
@@ -100,6 +116,8 @@ impl Book {
             Self::SevenZip(book) => (book.path().to_owned(), book.read_comic_info()?),
             Self::Folder(book) => (book.path().to_owned(), book.read_comic_info()?),
             Self::Salvaged(book) => (book.path().to_owned(), book.read_comic_info()?),
+            #[cfg(feature = "rar")]
+            Self::Rar(book) => (book.path().to_owned(), book.read_comic_info()?),
         };
         xml.map(|xml| {
             parse_comic_info(&xml).map_err(|source| FormatError::BadComicInfo { path, source })
@@ -113,6 +131,8 @@ impl Book {
             Self::SevenZip(book) => book.fingerprint(),
             Self::Folder(book) => book.fingerprint(),
             Self::Salvaged(book) => book.fingerprint(),
+            #[cfg(feature = "rar")]
+            Self::Rar(book) => book.fingerprint(),
         }
     }
 }
@@ -136,6 +156,8 @@ pub fn open_book_in(
         Container::SevenZip(file) => {
             SevenZipBook::from_file(file, path, limits).map(Book::SevenZip)
         }
+        #[cfg(feature = "rar")]
+        Container::Rar(file) => RarBook::from_file(file, path, limits).map(Book::Rar),
     }
 }
 

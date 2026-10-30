@@ -7,7 +7,7 @@ mod support;
 
 use std::{ops::ControlFlow, path::Path};
 
-use omnileaf_formats::{FormatError, Limits, UnsupportedArchive, open_book, open_book_with};
+use omnileaf_formats::{FormatError, Limits, open_book, open_book_with};
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
 
@@ -193,6 +193,7 @@ fn refuses_a_file_that_is_not_an_archive() {
     );
 }
 
+#[cfg(not(feature = "rar"))]
 #[test]
 fn recognises_rar_archives_it_cannot_open_yet() {
     let scratch = ScratchFolder::new("not-yet");
@@ -208,7 +209,7 @@ fn recognises_rar_archives_it_cannot_open_yet() {
             matches!(
                 error,
                 FormatError::ArchiveNotSupportedYet {
-                    archive: UnsupportedArchive::Rar,
+                    archive: omnileaf_formats::UnsupportedArchive::Rar,
                     ..
                 }
             ),
