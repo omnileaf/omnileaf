@@ -176,6 +176,14 @@
   --native-text-series-path: var(--text-caption);
   --native-leading-series-path: var(--text-caption--line-height);
   --native-shadow-series-cover: var(--shadow-series-cover);
+  --native-spacing-series-aside: var(--spacing-series-aside);
+  --native-spacing-series-cover-wide: var(--spacing-series-cover-wide);
+  --native-spacing-series-gap: var(--spacing-lg);
+  --native-spacing-series-lines-gap: var(--spacing-icon-gap);
+  --native-spacing-series-actions-gap: var(--spacing-sm);
+  --native-spacing-series-select-gap: var(--spacing-sm);
+  --native-spacing-series-icon: 16px;
+  --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;

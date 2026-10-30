@@ -429,12 +429,7 @@
         onMarkAll={markAll}
         onEditDetails={keepsDetailEdits ? editDetails : undefined}
       />
-      <div
-        class={[
-          "flex flex-1 flex-col min-inline-none",
-          data.appInfo.platform === "macos" ? "gap-series-gap-macos" : "gap-lg",
-        ]}
-      >
+      <div class="flex flex-1 flex-col gap-native-series-gap min-inline-none">
         {#if overview.bookCount === 0}
           <SeriesWithoutBooks
             platform={data.appInfo.platform}

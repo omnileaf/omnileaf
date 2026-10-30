@@ -41,6 +41,7 @@ const LINUX = {
   titleFontSize: "24px",
   metaFontSize: "14px",
   booksGap: "16px",
+  icon: 16,
 };
 
 function about(page: Page): Locator {
@@ -186,9 +187,12 @@ test.describe("the series' side column on macOS", () => {
     expect(right.x + right.width).toBe(side.x + side.width);
     expect(right.x - (left.x + left.width)).toBe(MACOS.rowGap);
     expect(left.width).toBe(right.width);
-    const icons = state.locator("svg");
-    expect((await roundedBoxOf(icons.first())).width).toBe(MACOS.selectIcon);
-    expect((await roundedBoxOf(icons.last())).width).toBe(MACOS.chevron);
+    expect((await roundedBoxOf(state.locator("svg"))).width).toBe(
+      MACOS.selectIcon,
+    );
+    expect(
+      (await roundedBoxOf(state.locator("[data-icon=chevrons-up-down]"))).width,
+    ).toBe(MACOS.chevron);
     expect((await roundedBoxOf(tags.locator("svg"))).width).toBe(
       MACOS.buttonIcon,
     );
@@ -216,6 +220,10 @@ test.describe("the series' side column on Linux", () => {
     expect((await typeOf(heading(page))).fontSize).toBe(LINUX.titleFontSize);
     expect((await typeOf(count(page))).fontSize).toBe(LINUX.metaFontSize);
     expect(await rowGapOf(booksColumn(page))).toBe(LINUX.booksGap);
+    for (const icon of await about(page).locator("button svg").all()) {
+      const drawn = await roundedBoxOf(icon);
+      expect([drawn.width, drawn.height]).toEqual([LINUX.icon, LINUX.icon]);
+    }
   });
 });
 

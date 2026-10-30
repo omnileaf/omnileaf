@@ -16,10 +16,10 @@
 >
   {#if isMacos}
     <div
-      class="flex flex-col items-start gap-series-gap-macos @series-split:shrink-0 @series-split:inline-series-aside-macos"
+      class="flex flex-col items-start gap-native-series-gap @series-split:shrink-0 @series-split:inline-native-series-aside"
     >
       <Skeleton
-        class="aspect-cover rounded-skeleton-macos inline-series-cover-macos"
+        class="aspect-cover rounded-skeleton-macos inline-native-series-cover-wide"
       />
       <Skeleton
         class="rounded-skeleton-macos block-xl inline-skeleton-title-macos"
@@ -31,7 +31,7 @@
         class="mbs-skeleton-lift-macos rounded-skeleton-macos block-xl inline-full"
       />
     </div>
-    <div class="flex flex-1 flex-col gap-series-gap-macos min-inline-none">
+    <div class="flex flex-1 flex-col gap-native-series-gap min-inline-none">
       <Skeleton class="rounded-native-card block-skeleton-card-macos" />
       <Skeleton class="rounded-skeleton-macos block-xl inline-3/5" />
       <div class="flex flex-col">

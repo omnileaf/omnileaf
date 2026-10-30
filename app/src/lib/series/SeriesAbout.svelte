@@ -52,44 +52,15 @@
   import SeriesCredits from "./SeriesCredits.svelte";
   import SeriesDetailsList from "./SeriesDetailsList.svelte";
   import SeriesSummary from "./SeriesSummary.svelte";
+  import {
+    ABOUT_COLUMN,
+    ABOUT_COVER,
+    ABOUT_HEAD,
+    ABOUT_LINES,
+  } from "./series-about-layout.ts";
 
   const ICON_SIZE = 16;
   const NO_COVER_ICON_SIZE = 32;
-
-  interface AboutLook {
-    readonly column: string;
-    readonly head: string;
-    readonly cover: string;
-    readonly lines: string;
-    readonly title: string;
-    readonly meta: string;
-    readonly path: string;
-    readonly pathIconSize: number;
-  }
-
-  const OTHER_LOOK: AboutLook = {
-    column: "gap-xl expanded:gap-lg @series-split:inline-series-aside",
-    head: "gap-lg",
-    cover:
-      "shadow-series-cover inline-series-cover expanded:inline-series-cover-wide",
-    lines: "gap-xs expanded:gap-icon-gap",
-    title: "text-series-title tracking-tight",
-    meta: "text-small",
-    path: "text-caption",
-    pathIconSize: ICON_SIZE,
-  };
-
-  const MACOS_LOOK: AboutLook = {
-    column: "gap-series-gap-macos @series-split:inline-series-aside-macos",
-    head: "gap-series-gap-macos",
-    cover: "shadow-native-series-cover inline-series-cover-macos",
-    lines: "gap-xs",
-    title:
-      "text-native-series-title/native-series-title tracking-native-series-title",
-    meta: "text-native-series-meta/native-series-meta",
-    path: "text-native-series-path/native-series-path",
-    pathIconSize: 13,
-  };
 
   interface DetailsRow {
     readonly plate: string;
@@ -130,7 +101,6 @@
   } = $props();
 
   const platform = currentPlatform();
-  const look = platform === "macos" ? MACOS_LOOK : OTHER_LOOK;
   const width = new WindowWidth();
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
@@ -149,22 +119,14 @@
   }
 </script>
 
-<section
-  aria-label={m.series_about()}
-  class={["flex flex-col @series-split:shrink-0", look.column]}
->
-  <div
-    class={[
-      "flex flex-col items-center text-center expanded:items-start expanded:text-start",
-      look.head,
-    ]}
-  >
+<section aria-label={m.series_about()} class={ABOUT_COLUMN}>
+  <div class={ABOUT_HEAD}>
     <div
       role="img"
       aria-label={m.series_cover({ title: overview.title })}
       class={[
-        "relative flex aspect-cover shrink-0 items-center justify-center overflow-hidden rounded-series-cover bg-chip text-muted",
-        look.cover,
+        "relative flex items-center justify-center overflow-hidden rounded-series-cover bg-chip text-muted shadow-native-series-cover",
+        ABOUT_COVER,
       ]}
     >
       {#if cover.kind === "none"}
@@ -172,30 +134,21 @@
       {/if}
       <CoverImage {cover} {coverUrl} />
     </div>
-    <div
-      class={[
-        "flex flex-col items-center max-inline-full expanded:items-start",
-        look.lines,
-      ]}
-    >
+    <div class={ABOUT_LINES}>
       <h1
         tabindex="-1"
-        class={[
-          "line-clamp-3 font-bold text-balance expanded:text-pretty",
-          look.title,
-        ]}
+        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty"
       >
         {overview.title}
       </h1>
       <SeriesCredits
-        class={look.meta}
         creators={overview.creators}
         from={overview.id}
         onShowAll={() => {
           void showAllCreators();
         }}
       />
-      <p class={["text-muted", look.meta]}>
+      <p class="text-native-series-meta/native-series-meta text-muted">
         {#if overview.bookCount === 0}
           {m.series_no_books_count()}
         {:else if overview.format === null}
@@ -206,18 +159,15 @@
       </p>
       {#if overview.folder !== null}
         <p
-          class={[
-            "flex items-center gap-icon-gap text-muted max-inline-full",
-            look.meta,
-          ]}
+          class="flex items-center gap-icon-gap text-native-series-meta/native-series-meta text-muted max-inline-full"
         >
           <Folder
-            size={look.pathIconSize}
             role="img"
             aria-label={m.series_folder()}
-            class="shrink-0"
+            class="shrink-0 block-native-series-icon inline-native-series-icon"
           />
-          <span class={["truncate font-mono", look.path]}
+          <span
+            class="truncate font-mono text-native-series-path/native-series-path"
             >{overview.folder}</span
           >
         </p>
