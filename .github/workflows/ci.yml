@@ -158,11 +158,21 @@ jobs:
         run: test "$PARTS" = success || test "$PARTS" = skipped
 
   rust-macos:
-    name: rust gate (macos)
+    name: rust gate (macos ${{ matrix.part }})
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.native != 'false' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'macos')) }}
     runs-on: macos-15
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { part: lint, cache: lint, check: --step lint }
+          - { part: tests 1/3, cache: tests, check: --step test --partition hash:1/3 }
+          - { part: tests 2/3, cache: tests, check: --step test --partition hash:2/3 }
+          - { part: tests 3/3, cache: tests, check: --step test --partition hash:3/3 }
+          - { part: budgets, cache: budgets, check: --skip lint --skip test --skip "library filter speed" }
+          - { part: filter budgets, cache: budgets, check: --step "library filter speed" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -171,6 +181,20 @@ jobs:
       - uses: ./.github/actions/rust-gate
         with:
           budget-slack: 2
+          cache-key: ${{ matrix.cache }}
+          check-args: ${{ matrix.check }}
+
+  rust-macos-gate:
+    name: rust gate (macos)
+    needs: rust-macos
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Pass only when every part passed, or none were needed
+        env:
+          PARTS: ${{ needs.rust-macos.result }}
+        run: test "$PARTS" = success || test "$PARTS" = skipped
 
   portable:
     name: portable gate
