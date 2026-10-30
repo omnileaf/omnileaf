@@ -86,7 +86,7 @@ enum ReportsCommand {
     SetStatus {
         code: String,
         status: TargetArg,
-        /// The public issue a published report became.
+        /// The public issue a published report became, or the one a duplicate repeats.
         #[arg(long)]
         issue: Option<u64>,
     },
@@ -101,6 +101,7 @@ enum StatusArg {
     Received,
     Reviewing,
     Published,
+    Duplicate,
     Closed,
 }
 
@@ -108,6 +109,7 @@ enum StatusArg {
 enum TargetArg {
     Reviewing,
     Published,
+    Duplicate,
     Closed,
 }
 
@@ -293,16 +295,20 @@ fn parse_code(code: String) -> anyhow::Result<ReportCode> {
 
 fn target_status(status: TargetArg, issue: Option<u64>) -> anyhow::Result<TargetStatus> {
     match (status, issue) {
-        (TargetArg::Published, Some(number)) => IssueNumber::new(number)
-            .map(TargetStatus::Published)
-            .context("an issue number is a positive whole number"),
+        (TargetArg::Published, Some(number)) => issue_number(number).map(TargetStatus::Published),
+        (TargetArg::Duplicate, Some(number)) => issue_number(number).map(TargetStatus::Duplicate),
         (TargetArg::Published, None) => bail!("a published report needs --issue"),
+        (TargetArg::Duplicate, None) => bail!("a duplicate report needs the --issue it repeats"),
         (TargetArg::Reviewing | TargetArg::Closed, Some(_)) => {
-            bail!("only a published report takes --issue")
+            bail!("only a published or duplicate report takes --issue")
         }
         (TargetArg::Reviewing, None) => Ok(TargetStatus::Reviewing),
         (TargetArg::Closed, None) => Ok(TargetStatus::Closed),
     }
+}
+
+fn issue_number(number: u64) -> anyhow::Result<IssueNumber> {
+    IssueNumber::new(number).context("an issue number is a positive whole number")
 }
 
 impl From<StatusArg> for StatusKind {
@@ -311,6 +317,7 @@ impl From<StatusArg> for StatusKind {
             StatusArg::Received => Self::Received,
             StatusArg::Reviewing => Self::Reviewing,
             StatusArg::Published => Self::Published,
+            StatusArg::Duplicate => Self::Duplicate,
             StatusArg::Closed => Self::Closed,
         }
     }
