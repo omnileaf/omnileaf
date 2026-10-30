@@ -1,12 +1,5 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    ChevronDown,
-    ChevronsUpDown,
-    Eye,
-    EyeOff,
-    Tag,
-  } from "@lucide/svelte";
+  import { BookOpen, ChevronDown, Eye, EyeOff, Tag } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -26,9 +19,9 @@
   import ComingSoonControl from "./ComingSoonControl.svelte";
   import { SERIES_CONTROL } from "./series-control.ts";
 
-  const ICON_SIZE = 16;
-  const MACOS_ICON_SIZE = 13;
-  const MACOS_CHEVRON_SIZE = 11;
+  const ICON = "shrink-0 block-native-series-icon inline-native-series-icon";
+  const CHEVRON =
+    "shrink-0 block-native-series-chevron inline-native-series-chevron";
 
   interface PhoneLayout {
     readonly row: string;
@@ -75,7 +68,15 @@
       : { ...layout, other: other.variant };
   });
   const isMacos = platform === "macos";
-  const iconSize = isMacos ? MACOS_ICON_SIZE : ICON_SIZE;
+  const markButton = isMacos
+    ? { variant: "secondary" as const, class: "@series-split:flex-1" }
+    : {
+        look: "outline" as const,
+        class: cn(
+          SERIES_CONTROL,
+          "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
+        ),
+      };
   const macosControl = variantClasses("secondary", "regular", false, platform);
   const macosComingSoon = cn(
     macosControl,
@@ -133,10 +134,7 @@
   </div>
 {:else}
   <div
-    class={[
-      "flex gap-sm @series-split:flex-col",
-      isMacos && "@series-split:gap-series-gap-macos",
-    ]}
+    class="flex gap-sm @series-split:flex-col @series-split:gap-native-series-actions-gap"
   >
     <ComingSoonControl
       label={m.series_reading_state({ state })}
@@ -151,18 +149,15 @@
           )}
     >
       <span
-        class={[
-          "flex items-center min-inline-none",
-          isMacos ? "gap-icon-gap" : "gap-sm",
-        ]}
+        class="flex items-center gap-native-series-select-gap min-inline-none"
       >
-        <BookOpen size={iconSize} aria-hidden="true" />
+        <BookOpen aria-hidden="true" class={ICON} />
         <span class="truncate">{state}</span>
       </span>
       {#if isMacos}
-        <ChevronsUpDown size={MACOS_CHEVRON_SIZE} aria-hidden="true" />
+        <Icon name="chevrons-up-down" class={CHEVRON} />
       {:else}
-        <ChevronDown size={ICON_SIZE} aria-hidden="true" class="opacity-50" />
+        <ChevronDown aria-hidden="true" class={cn(CHEVRON, "opacity-50")} />
       {/if}
     </ComingSoonControl>
     <div class="flex gap-sm">
@@ -177,49 +172,26 @@
               "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
             )}
       >
-        <Tag size={iconSize} aria-hidden="true" />
+        <Tag aria-hidden="true" class={ICON} />
         {#if isWide}
           {m.series_tags()}
         {/if}
       </ComingSoonControl>
-      {#if isMacos}
-        <Button
-          type="button"
-          variant="secondary"
-          aria-label={markLabel}
-          class="@series-split:flex-1"
-          onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
-        >
-          {#if isAllRead}
-            <EyeOff size={MACOS_ICON_SIZE} aria-hidden="true" />
-          {:else}
-            <Eye size={MACOS_ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {#if isWide}
-            {markLabel}
-          {/if}
-        </Button>
-      {:else}
-        <Button
-          type="button"
-          look="outline"
-          aria-label={markLabel}
-          class={cn(
-            SERIES_CONTROL,
-            "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
-          )}
-          onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
-        >
-          {#if isAllRead}
-            <EyeOff size={ICON_SIZE} aria-hidden="true" />
-          {:else}
-            <Eye size={ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {#if isWide}
-            {markLabel}
-          {/if}
-        </Button>
-      {/if}
+      <Button
+        type="button"
+        {...markButton}
+        aria-label={markLabel}
+        onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
+      >
+        {#if isAllRead}
+          <EyeOff aria-hidden="true" class={ICON} />
+        {:else}
+          <Eye aria-hidden="true" class={ICON} />
+        {/if}
+        {#if isWide}
+          {markLabel}
+        {/if}
+      </Button>
     </div>
   </div>
 {/if}

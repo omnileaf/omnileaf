@@ -1,6 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, expect, testOnlyInItsWebview, test } from "./fixtures.ts";
+import {
+  boxOf,
+  EXPANDED_MIN_WIDTH,
+  expect,
+  testOnlyInItsWebview,
+  test,
+} from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 type Box = Awaited<ReturnType<typeof boxOf>>;
@@ -41,6 +47,7 @@ const LINUX = {
   titleFontSize: "24px",
   metaFontSize: "14px",
   booksGap: "16px",
+  icon: 16,
 };
 
 function about(page: Page): Locator {
@@ -186,9 +193,12 @@ test.describe("the series' side column on macOS", () => {
     expect(right.x + right.width).toBe(side.x + side.width);
     expect(right.x - (left.x + left.width)).toBe(MACOS.rowGap);
     expect(left.width).toBe(right.width);
-    const icons = state.locator("svg");
-    expect((await roundedBoxOf(icons.first())).width).toBe(MACOS.selectIcon);
-    expect((await roundedBoxOf(icons.last())).width).toBe(MACOS.chevron);
+    expect((await roundedBoxOf(state.locator("svg"))).width).toBe(
+      MACOS.selectIcon,
+    );
+    expect(
+      (await roundedBoxOf(state.locator("[data-icon=chevrons-up-down]"))).width,
+    ).toBe(MACOS.chevron);
     expect((await roundedBoxOf(tags.locator("svg"))).width).toBe(
       MACOS.buttonIcon,
     );
@@ -216,6 +226,10 @@ test.describe("the series' side column on Linux", () => {
     expect((await typeOf(heading(page))).fontSize).toBe(LINUX.titleFontSize);
     expect((await typeOf(count(page))).fontSize).toBe(LINUX.metaFontSize);
     expect(await rowGapOf(booksColumn(page))).toBe(LINUX.booksGap);
+    for (const icon of await about(page).locator("button svg").all()) {
+      const drawn = await roundedBoxOf(icon);
+      expect([drawn.width, drawn.height]).toEqual([LINUX.icon, LINUX.icon]);
+    }
   });
 });
 
@@ -223,7 +237,6 @@ const SKELETON = {
   cover: { width: 168, height: 252 },
   title: { width: 210, height: 24 },
   meta: { width: 140, height: 14 },
-  buttonLift: 6,
   button: 24,
   card: 112,
   cardRadius: "12px",
@@ -308,15 +321,6 @@ test.describe("the series' skeleton on macOS", () => {
     ]);
     expect(sizeOf(meta)).toEqual([SKELETON.meta.width, SKELETON.meta.height]);
     expect(sizeOf(button)).toEqual([MACOS.side, SKELETON.button]);
-    expect(pick(boxes, 1).y - (pick(boxes, 0).y + SKELETON.cover.height)).toBe(
-      MACOS.sideGap,
-    );
-    expect(pick(boxes, 2).y - (pick(boxes, 1).y + SKELETON.title.height)).toBe(
-      MACOS.sideGap,
-    );
-    expect(pick(boxes, 3).y - (pick(boxes, 2).y + SKELETON.meta.height)).toBe(
-      MACOS.sideGap + SKELETON.buttonLift,
-    );
     expect(await radiusOf(pieces(page).first())).toBe(SKELETON.radius);
   });
 
@@ -376,4 +380,71 @@ test.describe("the series' skeleton on Linux", () => {
     expect(sizeOf(boxes[0])).toEqual([LINUX.cover.width, LINUX.cover.height]);
     expect(boxes).toHaveLength(12);
   });
+});
+
+const NARROW_WINDOW = { width: 700, height: 800 };
+
+test.describe("the series' skeleton turning into the side column on macOS", () => {
+  testOnlyInItsWebview("macos");
+  let release: () => void = () => undefined;
+  test.use({
+    platform: "macos",
+    backend: {
+      ...shelf.backend(),
+      seriesOverview: async (id) => {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return shelf.backend().seriesOverview(id);
+      },
+    },
+  });
+
+  for (const window of [WINDOW, NARROW_WINDOW]) {
+    test(`keeps the loaded column's places and rhythm ${String(window.width)} wide`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(window);
+      const [standIn, title, meta, control] = await openLoading(page);
+      release();
+      await expect(heading(page)).toBeVisible();
+      const loadedCover = await roundedBoxOf(cover(page));
+      const loadedTitle = await roundedBoxOf(heading(page));
+      const byline = await roundedBoxOf(credits(page));
+      const path = await roundedBoxOf(
+        about(page)
+          .locator("p")
+          .filter({ has: page.getByRole("img", { name: "Folder" }) }),
+      );
+      const state = await roundedBoxOf(
+        about(page).getByRole("button", { name: /^Reading state/ }),
+      );
+      if (
+        standIn === undefined ||
+        title === undefined ||
+        meta === undefined ||
+        control === undefined
+      ) {
+        throw new Error("the skeleton's side column is missing pieces");
+      }
+
+      expect(standIn).toEqual(loadedCover);
+      expect(title.y).toBe(loadedTitle.y);
+      if (window.width >= EXPANDED_MIN_WIDTH) {
+        expect(title.x).toBe(loadedTitle.x);
+      } else {
+        expect(
+          Math.abs(
+            title.x + title.width / 2 - (loadedTitle.x + loadedTitle.width / 2),
+          ),
+        ).toBeLessThanOrEqual(1);
+      }
+      expect(meta.y - (title.y + title.height)).toBe(
+        byline.y - (loadedTitle.y + loadedTitle.height),
+      );
+      expect(control.y - (meta.y + meta.height)).toBe(
+        state.y - (path.y + path.height),
+      );
+    });
+  }
 });

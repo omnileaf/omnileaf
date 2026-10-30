@@ -53,6 +53,14 @@
   --native-leading-series-meta: calc(16 / 13);
   --native-text-series-path: calc(0.6875rem * var(--text-scale));
   --native-leading-series-path: calc(16 / 11);
+  --native-spacing-series-aside: 264px;
+  --native-spacing-series-cover-wide: 168px;
+  --native-spacing-series-gap: 14px;
+  --native-spacing-series-lines-gap: 4px;
+  --native-spacing-series-actions-gap: 14px;
+  --native-spacing-series-select-gap: var(--spacing-icon-gap);
+  --native-spacing-series-icon: 13px;
+  --native-spacing-series-chevron: 11px;
   --native-spacing-read-mark: 1.125rem;
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;

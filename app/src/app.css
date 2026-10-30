@@ -561,9 +561,6 @@
   --spacing-series-cover: 7.5rem;
   --spacing-series-cover-wide: 11.25rem;
   --spacing-series-aside: 17.5rem;
-  --spacing-series-aside-macos: 16.5rem;
-  --spacing-series-cover-macos: 10.5rem;
-  --spacing-series-gap-macos: 0.875rem;
   --spacing-book-menu: 12rem;
   --spacing-book-menu-max: 20rem;
   --spacing-two-lines: 2lh;
@@ -581,7 +578,6 @@
   --spacing-skeleton-card-wide: 9rem;
   --spacing-skeleton-title-macos: 13.125rem;
   --spacing-skeleton-line-macos: 0.875rem;
-  --spacing-skeleton-lift-macos: 0.375rem;
   --spacing-skeleton-card-macos: 7rem;
   --spacing-skeleton-row-macos: 1.25rem;
   --spacing-skeleton-check-macos: 0.875rem;
