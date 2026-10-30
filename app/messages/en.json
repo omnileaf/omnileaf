@@ -1797,6 +1797,19 @@
       }
     }
   ],
+  "series_selected_of": [
+    {
+      "declarations": [
+        "input count",
+        "input total",
+        "local formattedCount = count: number",
+        "local formattedTotal = total: number"
+      ],
+      "match": {
+        "*": "{formattedCount} of {formattedTotal} selected"
+      }
+    }
+  ],
   "series_selected_books": [
     {
       "declarations": [

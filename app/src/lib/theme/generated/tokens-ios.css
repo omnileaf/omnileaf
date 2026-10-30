@@ -94,6 +94,13 @@
   --native-weight-bar-button: 510;
   --native-weight-bar-title: 600;
   --native-tracking-bar-title: -0.43px;
+  --native-text-title-bar-title: calc(1.0625rem * var(--text-scale));
+  --native-leading-title-bar-title: calc(22 / 17);
+  --native-weight-title-bar-title: 600;
+  --native-tracking-title-bar-title: -0.43px;
+  --native-text-title-bar-status: var(--text-small);
+  --native-leading-title-bar-status: var(--text-small--line-height);
+  --native-weight-title-bar-status: var(--font-weight-medium);
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;

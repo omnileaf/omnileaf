@@ -51,6 +51,7 @@
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
   import SeriesBar from "#lib/series/SeriesBar.svelte";
+  import SeriesTitleBar from "#lib/series/SeriesTitleBar.svelte";
   import {
     standInBook,
     standInOverview,
@@ -115,6 +116,7 @@
   let editedSeries = $state<EditedSeries | undefined>();
   let adultTreatment: AdultTreatment | undefined = $state();
   let barHeight = $state(0);
+  let pickedCount: number | undefined = $state();
   let isTitleUnderBar = $state(false);
 
   function watchTitleUnderBar(barBottom: number): () => void {
@@ -345,7 +347,19 @@
   });
 </script>
 
-{#if hasToolbar}
+{#if hasToolbar && data.appInfo.platform === "macos"}
+  <PageToolbar>
+    <SeriesTitleBar
+      title={overview?.title}
+      status={pickedCount === undefined || found === undefined
+        ? undefined
+        : m.series_selected_of({
+            count: pickedCount,
+            total: found.overview.bookCount,
+          })}
+    />
+  </PageToolbar>
+{:else if hasToolbar}
   <PageToolbar>
     <Breadcrumb
       aria-label={m.series_breadcrumb()}
@@ -461,6 +475,9 @@
                   onMark={mark}
                   onBookmark={bookmarkSelected}
                   platform={data.appInfo.platform}
+                  onPickedCount={(count: number | undefined) => {
+                    pickedCount = count;
+                  }}
                 />
               {/if}
             </SeriesSections>
