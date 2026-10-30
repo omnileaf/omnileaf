@@ -318,3 +318,46 @@ fn refuses_a_source_that_reports_more_bytes_than_it_was_given() {
 }
 
 const COMPRESSED_STREAM_ERROR: &str = "Unsupported block header size (was 4, max is 2)";
+
+const SWEEP_CHILD: &str = "OMNILEAF_LIBARCHIVE_SWEEP_CHILD";
+const LONG_NAME_BYTES: usize = 2047;
+const SWEEP_LIMITS: std::ops::Range<usize> = 96 * 1024..160 * 1024;
+const SWEEP_STEP_BYTES: usize = 64;
+
+#[test]
+fn sweep_child_reads_a_long_name_at_every_limit() {
+    if std::env::var_os(SWEEP_CHILD).is_none() {
+        return;
+    }
+    let name = "a".repeat(LONG_NAME_BYTES);
+    let archive = stored(RarFormat::RAR5, &[(name.as_str(), b"x")]);
+    for limit in SWEEP_LIMITS.step_by(SWEEP_STEP_BYTES) {
+        let result = listing(archive.clone(), limit);
+
+        assert!(
+            matches!(&result, Ok(listing) if listing.len() == 1)
+                || matches!(result, Err(Error::BudgetExceeded { .. })),
+            "limit {limit}: {result:?}"
+        );
+    }
+}
+
+#[test]
+fn ends_with_ok_or_budget_exceeded_at_every_limit_for_a_long_name() {
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "sweep_child_reads_a_long_name_at_every_limit",
+            "--nocapture",
+        ])
+        .env(SWEEP_CHILD, "1")
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

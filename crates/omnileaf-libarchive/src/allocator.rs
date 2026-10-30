@@ -41,8 +41,8 @@ struct Header {
 const HEADER_BYTES: usize = size_of::<Header>();
 const BLOCK_ALIGNMENT: usize = align_of::<Header>();
 
-/// libarchive exits the process when a tiny allocation fails, as it does for error messages and names, so tiny requests may pass the limit into a reserve.
-const TINY_REQUEST_BYTES: usize = 4096;
+/// libarchive exits the process when an allocation for an error message, a name or a link fails, each 16 KiB or less, so requests up to 64 KiB may pass the limit into a reserve.
+const TINY_REQUEST_BYTES: usize = 64 * 1024;
 const RESERVE_FOR_TINY_REQUESTS_BYTES: usize = 8 * 1024 * 1024;
 
 pub(crate) struct Budget {
@@ -476,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn counts_a_request_of_up_to_4_kib_as_tiny() {
+    fn counts_a_request_of_up_to_64_kib_as_tiny() {
         let budget = full_budget();
         let _scope = Scope::enter(&budget);
 
