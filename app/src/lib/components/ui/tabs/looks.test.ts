@@ -182,11 +182,13 @@ const WINDOWS_SELECTOR_BARS = {
     ink: "rgba(0, 0, 0, 0.894)",
     muted: "rgba(0, 0, 0, 0.62)",
     accent: "rgb(47, 111, 79)",
+    turnedOff: "rgba(0, 0, 0, 0.447)",
   },
   dark: {
     ink: "rgb(255, 255, 255)",
     muted: "rgba(255, 255, 255, 0.773)",
     accent: "rgb(127, 203, 157)",
+    turnedOff: "rgba(255, 255, 255, 0.53)",
   },
 } as const;
 
@@ -214,6 +216,16 @@ for (const [theme, look] of Object.entries(WINDOWS_SELECTOR_BARS)) {
     expect(pill.height).toBe("3px");
     expect(pill.opacity).toBe("1");
     expect(getComputedStyle(other, "::after").opacity).toBe("0");
+  });
+
+  test(`dims a turned-off Windows tab in the ${theme} theme's disabled text`, async () => {
+    document.documentElement.dataset.theme = theme;
+    followCorePlatform("windows");
+    await render(TabsHarness, { hasTurnedOffTab: true });
+
+    const extras = page.getByRole("tab", { name: "Extras" }).element();
+
+    expect(getComputedStyle(extras).color).toBe(look.turnedOff);
   });
 
   test(`mutes a Windows tab's text under the pointer in the ${theme} theme`, async () => {
