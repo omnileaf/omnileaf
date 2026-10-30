@@ -114,6 +114,7 @@
     onMark,
     onBookmark,
     platform,
+    onPickedCount,
   }: {
     books: readonly SeriesBook[];
     seriesTitle: string;
@@ -130,6 +131,7 @@
       books: BookId[],
     ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
     platform: Platform;
+    onPickedCount?: ((count: number | undefined) => void) | undefined;
   } = $props();
 
   type Outcome =
@@ -174,6 +176,13 @@
   let selectAllBox: HTMLElement | null = $state(null);
 
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
+
+  $effect(() => {
+    onPickedCount?.(isPicking ? selection.count : undefined);
+    return () => {
+      onPickedCount?.(undefined);
+    };
+  });
   const isAllPicked = $derived(
     phone?.hasDeselectAll === true && isComplete && selection.hasAll(ids),
   );

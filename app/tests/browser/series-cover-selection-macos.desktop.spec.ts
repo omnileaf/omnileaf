@@ -159,7 +159,9 @@ test.describe("marking the picked covers on macOS", () => {
 
     await toolbar(page).getByRole("button", { name: "Mark read" }).click();
 
-    await expect(page.getByRole("status")).toHaveText("Marked 1 book read");
+    await expect(
+      page.getByRole("status").filter({ hasText: "Marked" }),
+    ).toHaveText("Marked 1 book read");
     await expect(
       volumeCovers(page).getByRole("link", { name: "Volume 1" }),
     ).toHaveText(/Read$/);
@@ -171,7 +173,9 @@ test.describe("marking the picked covers on macOS", () => {
 
     await toolbar(page).getByRole("button", { name: "Mark unread" }).click();
 
-    await expect(page.getByRole("status")).toHaveText("Marked 1 book unread");
+    await expect(
+      page.getByRole("status").filter({ hasText: "Marked" }),
+    ).toHaveText("Marked 1 book unread");
     await expect(
       volumeCovers(page).getByRole("link", { name: "Volume 2" }),
     ).toHaveText(/Unread$/);
