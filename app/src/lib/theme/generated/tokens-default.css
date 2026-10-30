@@ -273,6 +273,8 @@
   --native-leading-notice-label: var(--text-label--line-height);
   --native-weight-notice-label: var(--font-weight-medium);
   --native-tracking-notice-label: 0;
+  --native-spacing-search-token: 26px;
+  --native-spacing-search-token-inline: 9px;
   --native-shadow-notice-lift: var(--shadow-toast);
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;

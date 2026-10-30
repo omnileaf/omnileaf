@@ -393,6 +393,8 @@ export const TOKEN_THEME = {
     "native-row-rule-start",
     "native-row-start",
     "native-row-two",
+    "native-search-token",
+    "native-search-token-inline",
     "native-segment",
     "native-segment-inline",
     "native-segmented-gap",

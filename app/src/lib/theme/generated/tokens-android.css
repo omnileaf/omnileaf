@@ -197,6 +197,8 @@
   --native-leading-notice-label: calc(20 / 14);
   --native-weight-notice-label: 500;
   --native-tracking-notice-label: 0.1px;
+  --native-spacing-search-token: 26px;
+  --native-spacing-search-token-inline: 9px;
   --native-shadow-notice-lift: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
   --native-spacing-notice-inline: 16px;
   --native-spacing-notice-top: 0px;
