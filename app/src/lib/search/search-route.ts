@@ -1,4 +1,7 @@
+import type { PageRouteId } from "$app/types";
 import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
+
+export const SEARCH_ROUTE_ID = "/(app)/search" satisfies PageRouteId;
 
 const TYPED_PARAMETER = "q";
 

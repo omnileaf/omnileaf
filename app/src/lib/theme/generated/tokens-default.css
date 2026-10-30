@@ -191,11 +191,17 @@
   --native-spacing-tab-bar-inline: var(--spacing-xs);
   --native-spacing-toolbar-button: var(--spacing-touch-target);
   --native-spacing-bottom-bar-start: var(--spacing-lg);
+  --native-spacing-bottom-bar-end: var(--spacing-lg);
+  --native-spacing-search-bar-start: var(--spacing-lg);
   --native-spacing-tab-cell: 100%;
   --native-text-tab: var(--text-tab);
   --native-leading-tab: var(--text-tab--line-height);
   --native-weight-tab: var(--font-weight-semibold);
   --native-tracking-tab: 0;
+  --native-text-search-field: var(--text-body);
+  --native-leading-search-field: var(--text-body--line-height);
+  --native-weight-search-field: var(--font-weight-regular);
+  --native-tracking-search-field: 0;
   --native-radius-cover: var(--radius-cover);
   --native-spacing-read-mark: 1.5rem;
   --native-color-cover-badge: var(--card);
@@ -280,6 +286,7 @@
   --native-tracking-notice-label: 0;
   --native-spacing-search-token: 26px;
   --native-spacing-search-token-inline: 9px;
+  --native-spacing-search-field-gap: var(--spacing-sm);
   --native-shadow-notice-lift: var(--shadow-toast);
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;

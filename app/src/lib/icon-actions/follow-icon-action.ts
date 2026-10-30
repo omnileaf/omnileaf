@@ -2,6 +2,7 @@ import { resolve } from "$app/paths";
 import type { ResolvedPathname } from "$app/types";
 import { assertNever } from "#lib/assert-never.ts";
 import type { IconAction } from "#lib/ipc/bindings.ts";
+import { SEARCH_ROUTE_ID } from "#lib/search/search-route.ts";
 
 export interface IconActionTargets {
   readonly toggleScreenshotMode: () => Promise<void>;
@@ -28,7 +29,7 @@ export async function followIconAction(
       await continueReading(targets);
       return;
     case "searchLibrary":
-      await targets.open(resolve("/(app)/search"));
+      await targets.open(resolve(SEARCH_ROUTE_ID));
       return;
     default:
       assertNever(action);

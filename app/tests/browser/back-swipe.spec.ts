@@ -8,6 +8,7 @@ import {
   EXPANDED_MIN_WIDTH,
   expect,
   fakeAppInfo,
+  MEDIUM_MIN_WIDTH,
   settle,
   test,
   tokenColour,
@@ -104,6 +105,24 @@ test("lets a swipe from the right edge go back in right-to-left layouts", async 
   await openNestedScreen(page, "rtl");
 
   await expect.poll(lastAllowedEdge).toBe("right");
+});
+
+test("lets a swipe from the left edge go back from search to the library on an iPhone", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "the bottom field is the iPhone's",
+  );
+  await page.goto("/search");
+  await expect.poll(lastAllowedEdge).toBe("left");
+
+  await swipe(
+    { kind: "moved", progress: 0.7 },
+    { kind: "released", progress: 0.7, velocity: 0 },
+  );
+
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test("lets no swipe go back from a top-level section", async ({ page }) => {

@@ -14,7 +14,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
-  import { shownBackLink } from "./back-link";
+  import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
   import { focusArrival } from "./page-heading";
@@ -46,13 +46,13 @@
   );
 
   function backPathFrom(screen: HTMLElement): string | undefined {
-    const link = shownBackLink(screen);
+    const link = wayBackFrom(screen);
     return link === undefined ? undefined : new URL(link.href).pathname;
   }
 
   function goBack(): boolean {
     const link =
-      swiped.element === undefined ? undefined : shownBackLink(swiped.element);
+      swiped.element === undefined ? undefined : wayBackFrom(swiped.element);
     link?.click();
     return link !== undefined;
   }
@@ -105,7 +105,7 @@
   });
 
   function edgeIn(main: HTMLElement): SwipeEdge | null {
-    return backSwipeEdge(shownBackLink(main) !== undefined, directionOf(main));
+    return backSwipeEdge(wayBackFrom(main) !== undefined, directionOf(main));
   }
 
   $effect(() => {

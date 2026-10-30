@@ -102,11 +102,11 @@ test("sits iOS's current tab on a 54 tall pill inset 4, in the accent", async ()
   expect(getComputedStyle(tab("Browse")).color).toBe("rgb(0, 0, 0)");
 });
 
-test("shrinks iOS's collapsed tab bar to a 48 circle at the start holding only the current tab's icon", async () => {
+test("shrinks iOS's collapsed tab bar to a 48 circle at the start holding only a way back to the current tab", async () => {
   await renderOnPhoneInLight("ios", true);
 
   const circle = bar().getBoundingClientRect();
-  const icon = iconOf("Library").getBoundingClientRect();
+  const icon = asElement(bar().querySelector("a svg")).getBoundingClientRect();
   const links = page
     .getByRole("navigation", { name: "Main" })
     .getByRole("link")
@@ -117,7 +117,11 @@ test("shrinks iOS's collapsed tab bar to a 48 circle at the start holding only t
     width: Math.round(circle.width),
     height: Math.round(circle.height),
     start: Math.round(circle.left),
-    current: links.map((link) => link.getAttribute("aria-current")),
+    links: links.map((link) => [
+      link.getAttribute("aria-label"),
+      link.getAttribute("aria-current"),
+      link.hasAttribute("data-back-link"),
+    ]),
     iconCentre: Math.round(icon.left + icon.width / 2 - circle.left),
     isRound:
       Number.parseFloat(getComputedStyle(bar()).borderTopLeftRadius) >= 24,
@@ -125,7 +129,7 @@ test("shrinks iOS's collapsed tab bar to a 48 circle at the start holding only t
     width: 48,
     height: 48,
     start: 16,
-    current: ["page"],
+    links: [["Back to the library", null, true]],
     iconCentre: 24,
     isRound: true,
   });

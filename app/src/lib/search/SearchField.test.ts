@@ -201,3 +201,75 @@ describe("with a typed filter", () => {
       .not.toBeInTheDocument();
   });
 });
+
+describe("in an iPhone's bottom bar", () => {
+  beforeEach(async () => {
+    document.documentElement.dataset.theme = "light";
+    await page.viewport(IPHONE.width, IPHONE.height);
+  });
+
+  afterEach(() => {
+    delete document.documentElement.dataset.platform;
+    delete document.documentElement.dataset.theme;
+    document.documentElement.style.removeProperty("--text-scale");
+    document.body.replaceChildren();
+  });
+
+  test("draws the field as a 48 tall capsule of the tab bar's glass with a 22 icon 6 from 17 point words", async () => {
+    const { screen } = await renderPlacedField("token", {
+      text: "",
+      conditions: [],
+    });
+    const words = screen.getByRole("combobox").element();
+    const group = words.parentElement;
+    if (group === null) {
+      throw new Error("the field drew no group");
+    }
+    const box = group.getBoundingClientRect();
+    const style = getComputedStyle(group);
+    const typed = getComputedStyle(words);
+    const icon = group.querySelector("svg")?.getBoundingClientRect();
+
+    expect({
+      height: box.height,
+      wordsHeight: words.getBoundingClientRect().height,
+      isCapsule: Number.parseFloat(style.borderTopLeftRadius) >= box.height / 2,
+      edge: style.borderTopWidth,
+      fill: style.backgroundColor,
+      backdrop: style.backdropFilter,
+      icon: [icon?.width, icon?.height],
+      gap: style.columnGap,
+      size: typed.fontSize,
+      lineHeight: typed.lineHeight,
+      weight: typed.fontWeight,
+      tracking: typed.letterSpacing,
+    }).toEqual({
+      height: 48,
+      wordsHeight: 48,
+      isCapsule: true,
+      edge: "0px",
+      fill: "rgba(255, 255, 255, 0.7)",
+      backdrop: "blur(24px) saturate(1.6)",
+      icon: [22, 22],
+      gap: "6px",
+      size: "17px",
+      lineHeight: "22px",
+      weight: "400",
+      tracking: "-0.43px",
+    });
+  });
+
+  test("keeps the field and its words their size at the largest text", async () => {
+    document.documentElement.style.setProperty("--text-scale", "2");
+    const { screen } = await renderPlacedField("token", {
+      text: "",
+      conditions: [],
+    });
+    const words = screen.getByRole("combobox").element();
+
+    expect({
+      height: words.parentElement?.getBoundingClientRect().height,
+      size: getComputedStyle(words).fontSize,
+    }).toEqual({ height: 48, size: "17px" });
+  });
+});

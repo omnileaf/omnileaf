@@ -35,6 +35,7 @@
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import ScreenshotModeNotice from "#lib/screenshot-mode/ScreenshotModeNotice.svelte";
   import QuickOpen from "#lib/search/QuickOpen.svelte";
+  import { SEARCH_ROUTE_ID } from "#lib/search/search-route.ts";
   import {
     setStorageCheck,
     StorageCheck,
@@ -50,7 +51,6 @@
   import type { LayoutProps } from "./$types";
 
   const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
-  const SEARCH_ROUTE = "/(app)/search";
 
   let { children, data }: LayoutProps = $props();
 
@@ -102,7 +102,7 @@
 
   const width = new WindowWidth();
   const isTabBarCollapsed = $derived(
-    page.route.id === SEARCH_ROUTE &&
+    page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const wordingContext = $derived({

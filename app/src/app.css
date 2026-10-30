@@ -700,8 +700,13 @@
     var(--spacing-md),
     calc(var(--spacing-safe-bottom) - var(--spacing-md))
   );
+  --spacing-keyboard: var(--keyboard-inset, 0px);
+  --spacing-floating-lift: max(
+    var(--spacing-floating-gap),
+    calc(var(--spacing-keyboard) + var(--spacing-md))
+  );
   --spacing-floating-clearance: calc(
-    var(--spacing-floating-bar) + var(--spacing-floating-gap) +
+    var(--spacing-floating-bar) + var(--spacing-floating-lift) +
       var(--spacing-lg)
   );
 

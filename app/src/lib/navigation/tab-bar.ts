@@ -39,10 +39,10 @@ const NATIVE_TABS = {
   currentIcon: "max-medium:text-native-on-tab-pill",
 };
 
-const FLOATING_GLASS =
-  "max-medium:fixed max-medium:inset-be-floating-gap max-medium:z-tab-bar max-medium:rounded-full max-medium:border-0 max-medium:inset-ring max-medium:inset-ring-glass-edge max-medium:bg-native-tab-bar max-medium:shadow-floating max-medium:backdrop-blur-glass max-medium:backdrop-saturate-160";
+export const FLOATING_GLASS =
+  "ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:inset-ring ios:max-medium:inset-ring-glass-edge ios:max-medium:bg-native-tab-bar ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160";
 
-export const FLOATING_BAR = `${FLOATING_GLASS} max-medium:inset-x-lg max-medium:mx-auto max-medium:inline-auto max-medium:max-inline-fit max-medium:py-native-tab-bar-inset max-medium:px-native-tab-bar-inline max-medium:block-native-tab-bar`;
+export const FLOATING_BAR = `${FLOATING_GLASS} max-medium:fixed max-medium:z-tab-bar max-medium:inset-be-floating-gap max-medium:inset-x-lg max-medium:mx-auto max-medium:inline-auto max-medium:max-inline-fit max-medium:py-native-tab-bar-inset max-medium:px-native-tab-bar-inline max-medium:block-native-tab-bar`;
 
 export const DOCKED_BAR =
   "max-medium:pe-safe-end max-medium:border-bs-0 max-medium:bg-native-tab-bar";
@@ -76,7 +76,7 @@ const TAB_BAR_LOOKS = {
 
 export const COLLAPSED_TAB_BAR_LOOK: TabBarLook = {
   ...TAB_BAR_LOOKS.ios,
-  bar: `${FLOATING_GLASS} max-medium:inset-s-native-bottom-bar-start max-medium:p-none max-medium:block-native-toolbar-button max-medium:inline-native-toolbar-button`,
+  bar: `${FLOATING_GLASS} max-medium:fixed max-medium:z-tab-bar max-medium:inset-be-floating-lift max-medium:inset-s-native-bottom-bar-start max-medium:p-none max-medium:block-native-toolbar-button max-medium:inline-native-toolbar-button`,
   glassPill: "",
   cell: "",
 };

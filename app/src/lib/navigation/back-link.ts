@@ -5,3 +5,9 @@ export function shownBackLink(root: ParentNode): HTMLAnchorElement | undefined {
     (link) => link.getClientRects().length > 0,
   );
 }
+
+export function wayBackFrom(
+  screen: HTMLElement,
+): HTMLAnchorElement | undefined {
+  return shownBackLink(screen) ?? shownBackLink(screen.ownerDocument);
+}
