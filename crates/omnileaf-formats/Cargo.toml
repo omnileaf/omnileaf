@@ -47,5 +47,9 @@ required-features = ["rar"]
 name = "rar_made_by_rar"
 required-features = ["rar"]
 
+[[test]]
+name = "rar_speed"
+required-features = ["rar"]
+
 [lints]
 workspace = true
