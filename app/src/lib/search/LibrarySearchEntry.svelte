@@ -15,7 +15,7 @@
   import { shortcut } from "#lib/shortcut.ts";
 
   import { searchShortcutLabel } from "./quick-open-shortcut.ts";
-  import { searchQuery } from "./search-route";
+  import { SEARCH_ROUTE_ID, searchQuery } from "./search-route";
 
   const ICON_SIZE = 16;
   const FIELD_ICON_SIZE = 16;
@@ -25,7 +25,7 @@
   const width = new WindowWidth();
 
   function searchTheLibrary(): void {
-    void goto(resolve("/(app)/search"));
+    void goto(resolve(SEARCH_ROUTE_ID));
   }
 
   function openSearch(
@@ -51,7 +51,7 @@
   {#snippet child({ props })}
     <a
       {...props}
-      href={resolve("/(app)/search")}
+      href={resolve(SEARCH_ROUTE_ID)}
       aria-label={m.search_open()}
       class={[
         "flex items-center justify-center rounded-full transition-control hover:tint-hover active:tint-pressed large:hidden",
