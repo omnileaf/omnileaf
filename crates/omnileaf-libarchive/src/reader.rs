@@ -4,7 +4,7 @@
 )]
 
 use std::{
-    ffi::{CStr, c_int, c_void},
+    ffi::{CStr, CString, c_int, c_void},
     io::{self, Read, Seek, SeekFrom},
     ptr::{self, NonNull},
     sync::Arc,
@@ -18,6 +18,7 @@ use crate::{
 };
 
 const READ_BUFFER_BYTES: usize = 64 * 1024;
+const ERROR_MESSAGE_ROOM_BYTES: usize = 1024;
 const ARCHIVE_ERROR: isize = -1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -138,6 +139,7 @@ impl<R: Read + Seek> Reader<R> {
         let Some(archive) = archive else {
             return Err(exceeded_or(&budget, Error::Unavailable));
         };
+        reserve_room_for_error_messages(archive);
         let source = NonNull::from(Box::leak(source));
         let client_data = source.as_ptr().cast::<c_void>();
         // SAFETY: `archive` is live, and `client_data` stays valid for as long as the archive does.
@@ -173,6 +175,7 @@ impl<R: Read + Seek> Reader<R> {
         // SAFETY: `archive` is live and `entry` is a valid out pointer.
         let status =
             unsafe { ffi::archive_read_next_header(self.archive.as_ptr(), &raw mut entry) };
+        self.refuse_if_exceeded()?;
         let entry = match HeaderStatus::of(status) {
             HeaderStatus::Read => Some(entry_of(entry)?),
             HeaderStatus::End => None,
@@ -261,6 +264,17 @@ impl<R> Drop for Reader<R> {
 
 // SAFETY: libarchive keeps no thread-local state, and the reader owns its budget and source.
 unsafe impl<R: Send> Send for Reader<R> {}
+
+/// libarchive exits the process when formatting an error message fails to allocate, so the message buffer is sized while the budget still has room.
+fn reserve_room_for_error_messages(archive: NonNull<ffi::Archive>) {
+    let room = vec![b' '; ERROR_MESSAGE_ROOM_BYTES];
+    let room = CString::new(room).unwrap_or_default();
+    // SAFETY: `archive` is live, and the format takes exactly one NUL-terminated string.
+    unsafe {
+        ffi::archive_set_error(archive.as_ptr(), 0, c"%s".as_ptr(), room.as_ptr());
+        ffi::archive_clear_error(archive.as_ptr());
+    }
+}
 
 fn exceeded_or(budget: &Budget, other: Error) -> Error {
     if budget.is_exceeded() {

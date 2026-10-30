@@ -58,6 +58,13 @@ unsafe extern "C" {
     ) -> isize;
     pub(crate) fn archive_read_data_skip(archive: *mut Archive) -> c_int;
     pub(crate) fn archive_error_string(archive: *mut Archive) -> *const c_char;
+    pub(crate) fn archive_set_error(
+        archive: *mut Archive,
+        error_number: c_int,
+        format: *const c_char,
+        ...
+    );
+    pub(crate) fn archive_clear_error(archive: *mut Archive);
     #[cfg(unix)]
     pub(crate) fn archive_entry_pathname(entry: *mut ArchiveEntry) -> *const c_char;
     #[cfg(windows)]
