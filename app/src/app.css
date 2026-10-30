@@ -1323,6 +1323,7 @@
   & td[data-slot="table-cell"] {
     block-size: 20px;
     padding: 0 8px;
+    white-space: nowrap;
     font-weight: var(--native-weight-button);
   }
   & td[data-slot="table-cell"]:first-child {
