@@ -118,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn has_no_colour_settings_to_open_off_windows() {
+    fn has_no_colour_settings_to_open_on_linux() {
         let app = tauri::test::mock_app();
 
         let opened = open_colours(app.handle());
