@@ -118,6 +118,32 @@ test.describe(
       await expect(match).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     });
 
+    test("heads the start screen's sections in the green accent and sets its rows at 16px with 24px icons", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+
+      for (const name of ["You can search for", "Type a filter to narrow"]) {
+        const heading = page.getByRole("heading", { name });
+        await expect(heading).toHaveCSS("font-size", "14px");
+        await expect(heading).toHaveCSS("font-weight", "500");
+        await expect(heading).toHaveCSS(
+          "color",
+          await tokenColour(page, "--native-color-on-button-plain"),
+        );
+      }
+      const row = page.getByText("Title or series", { exact: true });
+      await expect(row).toHaveCSS("font-size", "16px");
+      await expect(row).toHaveCSS("line-height", "24px");
+      expect(
+        (
+          await boxOf(
+            page.locator("li", { hasText: "Title or series" }).locator("svg"),
+          )
+        ).width,
+      ).toBeCloseTo(24, 0);
+    });
+
     test("sets the chips 8px apart in one row that scrolls sideways", async ({
       page,
     }) => {

@@ -95,7 +95,27 @@ export const NATIVE_START_LOOK: StartLook = {
   filters: "flex flex-wrap gap-sm px-lg",
 };
 
-export function startLook(isNative: boolean): StartLook {
+export const ANDROID_START_LOOK: StartLook = {
+  body: "flex flex-col",
+  section: "flex flex-col",
+  head: "flex items-center justify-between gap-sm",
+  heading: ANDROID_SEARCH_LOOK.heading,
+  headingBesideAction: ANDROID_SEARCH_LOOK.heading,
+  clear: { variant: "plain" },
+  rows: "flex flex-col",
+  row: `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}`,
+  staticRow: ITEM_LOOKS["row-static"],
+  lead: "flex shrink-0 items-center justify-center text-muted",
+  iconSize: 24,
+  filterSection: "flex flex-col",
+  example: `${ROW_SUBTITLE_TYPE} pbe-sm text-muted`,
+  filters: "flex flex-wrap gap-sm pbe-sm",
+};
+
+export function startLook(isNative: boolean, isMaterial = false): StartLook {
+  if (isMaterial) {
+    return ANDROID_START_LOOK;
+  }
   return isNative ? NATIVE_START_LOOK : TODAYS_START_LOOK;
 }
 

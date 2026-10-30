@@ -6,6 +6,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+
   import { filterWords } from "./condition-labels";
   import { startLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
@@ -34,7 +36,8 @@
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
   const words = filterWords();
-  const look = $derived(startLook(isGrouped));
+  const android = new AndroidPhone();
+  const look = $derived(startLook(isGrouped, android.isOn));
   const locale = getLocale();
 </script>
 

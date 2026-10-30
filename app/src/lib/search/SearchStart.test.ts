@@ -193,14 +193,14 @@ test("puts Clear in a 34 point plain button beside the recent searches heading o
   expect(clear.getBoundingClientRect().height).toBe(34);
 });
 
-test("keeps the recent searches as plain divided rows on an Android phone", async () => {
+test("draws the recent searches as plain Material rows on an Android phone, a 24px icon 16px in from the edge", async () => {
   await startOn("android", PHONE, RECENT);
 
   expect(plateOf(rowsOf("Recent searches"))).toEqual({
     fill: "rgba(0, 0, 0, 0)",
     corner: "0px",
   });
-  expect(rowOf("unread manga").titleStart).toBe(28);
+  expect(rowOf("unread manga").titleStart).toBe(56);
 });
 
 test("keeps the plain divided rows on an iPhone when the page leaves the start ungrouped", async () => {
