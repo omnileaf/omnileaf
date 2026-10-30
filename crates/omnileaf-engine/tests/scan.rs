@@ -713,6 +713,7 @@ async fn counts_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unread
     );
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn counts_as_unsupported_exactly_the_files_it_lists_as_skipped() {
     let comics = ScratchFolder::new("scan-skipped-all-listed");
@@ -729,7 +730,7 @@ async fn counts_as_unsupported_exactly_the_files_it_lists_as_skipped() {
 }
 
 #[tokio::test]
-async fn counts_a_damaged_file_of_a_type_it_does_not_read_as_unreadable_without_listing_it() {
+async fn counts_a_damaged_cbr_as_unreadable_without_listing_it() {
     let comics = ScratchFolder::new("scan-skipped-damaged");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     comics.write("Sample Series 01/v02.cbr", b"");

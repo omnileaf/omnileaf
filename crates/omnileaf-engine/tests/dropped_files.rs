@@ -93,24 +93,37 @@ impl Dropping {
 
 #[cfg(feature = "rar")]
 #[tokio::test]
-async fn counts_a_dropped_cbr_and_rar_among_the_comics_and_refuses_only_the_text() {
+async fn names_the_first_file_how_many_more_their_size_and_refuses_only_what_is_no_comic() {
     let dropping = Dropping::new("drop-summary-rar").await;
     let first = dropping.comic("Loose", "One.cbz", 1);
-    let cbr = dropping.other_file("Two.cbr", b"Rar!");
-    let rar = dropping.other_file("Three.rar", b"Rar!");
+    let second = dropping.comic("Loose", "Two.cbz", 2);
+    let folder = dropping.outside.path().join("Loose");
+    let cbr = dropping.other_file("Three.cbr", b"Rar!");
+    let rar = dropping.other_file("Four.rar", b"Rar!");
     let text = dropping.other_file("notes.txt", b"hello");
+    let bytes: u64 = [&first, &second, &cbr, &rar]
+        .iter()
+        .map(|path| fs::metadata(path).unwrap().len())
+        .sum();
+    let size = u32::try_from(bytes.div_ceil(1000)).unwrap();
 
     let summary = dropping
         .library
-        .inspect_drop(vec![first, cbr, text, rar])
+        .inspect_drop(vec![first, cbr, text, second, folder, rar])
         .await
         .unwrap();
 
     assert_eq!(
-        (summary.first.as_deref(), summary.more, summary.refused),
+        (
+            summary.first.as_deref(),
+            summary.more,
+            summary.total_kilobytes,
+            summary.refused
+        ),
         (
             Some("One.cbz"),
-            2,
+            4,
+            size,
             vec![RefusedDrop {
                 name: "notes.txt".to_owned(),
                 reason: RefusalReason::NotAComic

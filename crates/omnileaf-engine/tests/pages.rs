@@ -743,8 +743,10 @@ async fn serves_every_page_of_a_cbr_and_of_a_rar() {
         let opened = reader.open(NOTHING_UNDECODABLE).await;
 
         assert_eq!(opened.pages.len(), pages.len(), "{file}");
-        let served = reader.page(&opened, 0).await;
-        assert_eq!(served_size(&served), wanted, "{file}");
+        for index in 0..pages.len() {
+            let served = reader.page(&opened, index).await;
+            assert_eq!(served_size(&served), wanted, "{file} page {index}");
+        }
     }
 }
 
@@ -806,7 +808,7 @@ async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
 }
 
 #[tokio::test]
-async fn refuses_a_damaged_file_of_a_type_it_cannot_read_as_unreadable() {
+async fn refuses_a_damaged_cbr_as_unreadable() {
     let comics = ScratchFolder::new("damaged-unsupported-type-comics");
     let series = comics.path().join(FOLDER).join(SERIES);
     fs::create_dir_all(&series).unwrap();
