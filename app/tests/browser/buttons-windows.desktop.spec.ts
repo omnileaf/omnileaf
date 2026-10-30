@@ -67,6 +67,8 @@ const START_NEW_LIBRARY = "Start a new library instead";
 
 const ICON_INSET = "7px";
 
+const BACK_SIZE_ON_THE_BOARD = 32;
+
 function escapedForPattern(text: string): string {
   return text.replaceAll(/[().]/g, String.raw`\$&`);
 }
@@ -168,7 +170,10 @@ test.describe("Windows buttons", () => {
         await expect(back).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
         await expect(back).toHaveCSS("padding-top", ICON_INSET);
         await expect(back).toHaveCSS("padding-inline-start", ICON_INSET);
-        expect(box?.width).toBe(box?.height);
+        expect([box?.width, box?.height]).toEqual([
+          BACK_SIZE_ON_THE_BOARD,
+          BACK_SIZE_ON_THE_BOARD,
+        ]);
         await back.hover();
         await expect(back).toHaveCSS("background-color", look.subtleHover);
         await pressWithoutClicking(page, back);

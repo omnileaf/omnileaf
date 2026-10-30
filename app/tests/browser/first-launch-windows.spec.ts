@@ -78,6 +78,7 @@ test.describe("the first launch on Windows", () => {
 
     expect(back.x).toBeLessThan(bar.x);
     expect(back.y).toBeLessThan(64);
+    expect([back.width, back.height]).toEqual([32, 32]);
     expect(bar.x + bar.width).toBeGreaterThan(viewportOf(page).width - 24 - 1);
     await expect(progress).toHaveText("1 of 3");
     await expect(page.getByText(HOME_LOCATION)).toBeVisible();

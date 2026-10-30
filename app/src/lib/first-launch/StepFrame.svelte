@@ -19,6 +19,7 @@
   import { type FirstLaunchStep, numberOf } from "./steps";
 
   const BACK_ICON_SIZE = 24;
+  const SETUP_BACK_ICON_SIZE = 16;
 
   let {
     step,
@@ -50,7 +51,7 @@
           label={m.first_launch_back()}
           onclick={onBack}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} aria-hidden="true" />
+          <ArrowLeft size={SETUP_BACK_ICON_SIZE} aria-hidden="true" />
         </Button>
       {/if}
       <div class="ms-auto">
