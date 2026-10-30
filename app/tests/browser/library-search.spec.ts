@@ -17,6 +17,7 @@ import {
   expect,
   fakeAppInfo,
   LARGE_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   targetOf,
   test,
   testOnlyInItsWebview,
@@ -883,6 +884,13 @@ test.describe("on Android", () => {
     backend: { ...SEARCHING_BACKEND, appInfo: () => fakeAppInfo("android") },
   });
 
+  test("keeps the search start on the page's own ground", async ({ page }) => {
+    await page.goto("/search");
+    await expect(page.getByText("You can search for")).toBeVisible();
+
+    await expect(page.locator('[data-ground="grouped"]')).toHaveCount(0);
+  });
+
   test("answers a touch 48 dp around the field's Clear while drawing it 28px", async ({
     page,
   }) => {
@@ -949,6 +957,34 @@ test.describe("on Android", () => {
       await expect(field).toHaveCSS("border-top-width", "0px");
     });
   }
+});
+
+test.describe("on an iPhone", () => {
+  testOnlyInItsWebview("ios");
+  test.use({
+    backend: { ...SEARCHING_BACKEND, appInfo: () => fakeAppInfo("ios") },
+  });
+
+  test("lays the search start on the grouped ground, and the results back on the page's own", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the grouped start is the iPhone's",
+    );
+    await page.goto("/search");
+    const ground = page.locator('[data-ground="grouped"]');
+
+    await expect(ground).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-grouped-ground"),
+    );
+    await expect(ground).toContainText("You can search for");
+
+    await searchField(page).fill("market");
+
+    await expect(ground).toHaveCount(0);
+  });
 });
 
 test.describe("with a likely spelling for a search that finds nothing", () => {
