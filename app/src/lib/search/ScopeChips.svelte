@@ -37,10 +37,21 @@
 
   let row: HTMLElement | undefined = $state();
 
+  function revealSideways(strip: HTMLElement, chip: Element): void {
+    const stripBox = strip.getBoundingClientRect();
+    const chipBox = chip.getBoundingClientRect();
+    if (chipBox.left < stripBox.left) {
+      strip.scrollBy({ left: chipBox.left - stripBox.left });
+    } else if (chipBox.right > stripBox.right) {
+      strip.scrollBy({ left: chipBox.right - stripBox.right });
+    }
+  }
+
   $effect(() => {
-    row
-      ?.querySelector(`[data-scope="${scope}"]`)
-      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const chip = row?.querySelector(`[data-scope="${scope}"]`);
+    if (row !== undefined && chip !== null && chip !== undefined) {
+      revealSideways(row, chip);
+    }
   });
 </script>
 
