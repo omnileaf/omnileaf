@@ -69,7 +69,10 @@ test.describe("a series that can't be read on Linux", () => {
 
 test.describe("a series without books on macOS", () => {
   testOnlyInItsWebview("macos");
-  const shown: string[] = [];
+  let shown: string[] = [];
+  test.beforeEach(() => {
+    shown = [];
+  });
   test.use({
     platform: "macos",
     backend: {
@@ -95,7 +98,7 @@ test.describe("a series without books on macOS", () => {
       expect((await boxOf(button)).height).toBe(LARGE_BUTTON_HEIGHT);
     }
     await emptyButtons(page).first().click();
-    expect(shown).toEqual([SERIES_ID]);
+    await expect.poll(() => shown).toEqual([SERIES_ID]);
   });
 });
 
