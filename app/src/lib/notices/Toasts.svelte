@@ -1,16 +1,16 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
-  import { toast, type ToasterProps } from "svelte-sonner";
+  import type { ToasterProps } from "svelte-sonner";
 
   import type { Theme } from "#lib/appearance/theme.ts";
   import { Toaster } from "#lib/components/ui/sonner/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
-  import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { shortcut } from "#lib/shortcut.ts";
 
+  import { NoticeRegion } from "./notice-region.svelte";
   import type { Notices } from "./notices";
   import { setUndoShortcut, undoShortcutOn } from "./undo-shortcut";
 
@@ -66,83 +66,7 @@
     isWide.current ? [endSide] : [PHONE_EDGE[platform]],
   );
 
-  let region: HTMLElement | undefined;
-  let cameFrom: HTMLElement | undefined;
-  let isPointerOver = $state(false);
-  let isFocusWithin = $state(false);
-  let isTapped = $state(false);
-  const isSpread = $derived(isPointerOver || isFocusWithin || isTapped);
-
-  $effect(() => {
-    if (toast.getActiveToasts().length === 0) {
-      isPointerOver = false;
-      isFocusWithin = false;
-      isTapped = false;
-    }
-  });
-
-  $effect(() => {
-    if (isSpread) {
-      notices.hold();
-    } else {
-      notices.release();
-    }
-  });
-
-  function isInside(target: EventTarget | null): boolean {
-    return target instanceof Node && region?.contains(target) === true;
-  }
-
-  function noteFocusArriving(event: FocusEvent): void {
-    isFocusWithin = true;
-    const from = event.relatedTarget;
-    if (from instanceof HTMLElement && !isInside(from)) {
-      cameFrom = from;
-    }
-  }
-
-  function noteFocusLeaving(event: FocusEvent): void {
-    if (!isInside(event.relatedTarget)) {
-      isFocusWithin = false;
-    }
-  }
-
-  function returnFocus(): void {
-    if (!isInside(document.activeElement)) {
-      return;
-    }
-    if (cameFrom?.isConnected === true) {
-      cameFrom.focus();
-    } else {
-      focusPageHeading();
-    }
-  }
-
-  function returnFocusFromButton(event: MouseEvent): void {
-    if (event.target instanceof Element && event.target.closest("button")) {
-      returnFocus();
-    }
-  }
-
-  function noteTap(event: PointerEvent): void {
-    if (event.pointerType !== "mouse") {
-      isTapped = true;
-    }
-  }
-
-  function forgetTapElsewhere(event: PointerEvent): void {
-    if (!isInside(event.target)) {
-      isTapped = false;
-    }
-  }
-
-  function undoFromKeyboard(): void {
-    if (notices.undoOffer === undefined) {
-      return;
-    }
-    returnFocus();
-    notices.undo();
-  }
+  const region = new NoticeRegion(untrack(() => notices));
 </script>
 
 <svelte:window
@@ -150,30 +74,26 @@
     key: "z",
     command: platform,
     shift: false,
-    run: undoFromKeyboard,
+    run: region.undoFromKeyboard,
   })}
-  onpointerdown={forgetTapElsewhere}
+  onpointerdown={region.forgetTapElsewhere}
 />
 
 <div
-  bind:this={region}
+  bind:this={region.element}
   role="presentation"
-  onfocusin={noteFocusArriving}
-  onfocusout={noteFocusLeaving}
-  onclickcapture={returnFocusFromButton}
-  onpointerdown={noteTap}
-  onpointerenter={(event) => {
-    isPointerOver = event.pointerType === "mouse";
-  }}
-  onpointerleave={() => {
-    isPointerOver = false;
-  }}
+  onfocusin={region.noteFocusArriving}
+  onfocusout={region.noteFocusLeaving}
+  onclickcapture={region.returnFocusFromButton}
+  onpointerdown={region.noteTap}
+  onpointerenter={region.notePointerEntering}
+  onpointerleave={region.notePointerLeaving}
 >
   <Toaster
     {theme}
     {position}
     {swipeDirections}
-    expand={isSpread}
+    expand={region.isSpread}
     offset={cornerOffset}
     mobileOffset={phoneOffset}
     containerAriaLabel={m.notice_region()}
