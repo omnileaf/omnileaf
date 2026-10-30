@@ -194,6 +194,14 @@ test("edges Windows's buttons in ButtonText and keeps the standard button on But
   expect(mapped.get("--native-color-on-button-pressed")).toBe("CanvasText");
 });
 
+test("draws Windows's ContentDialog on Canvas with CanvasText edges", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-dialog-layer")).toBe("Canvas");
+  expect(mapped.get("--native-color-dialog-edge")).toBe("CanvasText");
+  expect(mapped.get("--native-color-dialog-band-edge")).toBe("CanvasText");
+});
+
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {
   const mapped = new Map(declarations(forcedColors));
 

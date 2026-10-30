@@ -55,6 +55,9 @@
     --native-color-sheet: Canvas;
     --native-color-sheet-group: Canvas;
     --native-color-dialog: Canvas;
+    --native-color-dialog-layer: Canvas;
+    --native-color-dialog-edge: CanvasText;
+    --native-color-dialog-band-edge: CanvasText;
     --native-color-menu: Canvas;
     --native-color-on-menu: CanvasText;
     --native-color-menu-chosen: Highlight;

@@ -86,6 +86,7 @@ export const TOKEN_THEME = {
     "ios-segment",
     "menu",
     "native-bar-button-lift",
+    "native-dialog-lift",
     "native-info-bar-floating-lift",
     "native-menu-lift",
     "native-notice-lift",

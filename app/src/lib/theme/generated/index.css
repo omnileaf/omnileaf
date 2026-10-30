@@ -244,6 +244,9 @@
   --color-native-sheet-group: var(--native-color-sheet-group);
   --color-native-scrim: var(--native-color-scrim);
   --color-native-dialog: var(--native-color-dialog);
+  --color-native-dialog-layer: var(--native-color-dialog-layer);
+  --color-native-dialog-edge: var(--native-color-dialog-edge);
+  --color-native-dialog-band-edge: var(--native-color-dialog-band-edge);
   --radius-native-dialog: var(--native-radius-dialog);
   --spacing-native-dialog: var(--native-spacing-dialog);
   --spacing-native-dialog-text-inline: var(--native-spacing-dialog-text-inline);
@@ -279,6 +282,7 @@
   --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
   --shadow-native-menu-lift: var(--native-shadow-menu-lift);
   --shadow-native-tooltip-lift: var(--native-shadow-tooltip-lift);
+  --shadow-native-dialog-lift: var(--native-shadow-dialog-lift);
   --color-native-notice: var(--native-color-notice);
   --color-native-on-notice: var(--native-color-on-notice);
   --color-native-notice-action: var(--native-color-notice-action);

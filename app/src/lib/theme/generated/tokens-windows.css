@@ -22,6 +22,7 @@
   --native-spacing-icon-button-inset: 7px;
   --native-spacing-icon-button-small-inset: 3px;
   --native-radius-dialog: 8px;
+  --native-spacing-dialog: 448px;
   --native-radius-sheet: 8px;
   --native-radius-menu: 8px;
   --native-radius-menu-item: 4px;
@@ -100,6 +101,9 @@
   --native-color-sheet-group: #ffffffb3;
   --native-color-scrim: #0000004d;
   --native-color-dialog: #f3f3f3;
+  --native-color-dialog-layer: #ffffff;
+  --native-color-dialog-edge: #75757566;
+  --native-color-dialog-band-edge: #0000000f;
   --native-color-menu: #fcfcfcd9;
   --native-color-on-menu: #000000e4;
   --native-color-menu-chosen: #00000009;
@@ -111,6 +115,7 @@
   --native-color-key-ink: #0000009e;
   --native-shadow-menu-lift: 0 8px 16px #00000024;
   --native-shadow-tooltip-lift: 0 4px 8px #00000024;
+  --native-shadow-dialog-lift: 0 2rem 4rem #00000030, 0 1.125rem 1.313rem #00000026;
   --native-color-notice: #f6f6f680;
   --native-color-on-notice: #000000e4;
   --native-color-focus-ring: #000000e4;
@@ -187,6 +192,9 @@
   --native-color-sheet-group: #ffffff0d;
   --native-color-scrim: #0000004d;
   --native-color-dialog: #202020;
+  --native-color-dialog-layer: #ffffff0d;
+  --native-color-dialog-edge: #75757566;
+  --native-color-dialog-band-edge: #00000019;
   --native-color-menu: #2c2c2cf5;
   --native-color-on-menu: #ffffff;
   --native-color-menu-chosen: #ffffff0f;
@@ -198,6 +206,7 @@
   --native-color-key-ink: #ffffffc5;
   --native-shadow-menu-lift: 0 8px 16px #00000042;
   --native-shadow-tooltip-lift: 0 4px 8px #00000042;
+  --native-shadow-dialog-lift: 0 2rem 4rem #0000005e, 0 1.125rem 1.313rem #0000005e;
   --native-color-notice: #ffffff08;
   --native-color-on-notice: #ffffff;
   --native-color-focus-ring: #ffffff;

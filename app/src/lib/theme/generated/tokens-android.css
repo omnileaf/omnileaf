@@ -174,6 +174,9 @@
   --native-spacing-select-edge: 2px;
   --native-shadow-select-ring-lift: none;
   --native-color-dialog: var(--dialog-surface);
+  --native-color-dialog-layer: transparent;
+  --native-color-dialog-edge: var(--dialog-edge);
+  --native-color-dialog-band-edge: var(--border);
   --native-radius-dialog: var(--radius-panel);
   --native-spacing-dialog: var(--spacing-dialog);
   --native-spacing-dialog-text-inline: 0px;
@@ -203,6 +206,7 @@
   --native-spacing-menu-rule-block: 4px;
   --native-shadow-menu-lift: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
   --native-shadow-tooltip-lift: var(--tooltip-shadow);
+  --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-radius-notice: 4px;
   --native-radius-notice-tall: 4px;
   --native-spacing-notice: 48px;
