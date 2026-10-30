@@ -44,6 +44,7 @@
 
   let {
     tone,
+    severity,
     icon,
     title,
     body,
@@ -54,6 +55,7 @@
     onDismiss,
   }: {
     tone: NoticeTone;
+    severity?: InfoBarSeverity;
     icon: Snippet;
     title: string | Snippet;
     body?: string | undefined;
@@ -73,7 +75,7 @@
 
 {#if platform === "windows"}
   <WindowsInfoBar
-    severity={SEVERITIES[tone]}
+    severity={severity ?? SEVERITIES[tone]}
     {icon}
     {title}
     {body}

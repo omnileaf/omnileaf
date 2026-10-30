@@ -407,3 +407,13 @@ test("keeps Windows notices out of sonner's store and forgets each one once it g
     .not.toBeInTheDocument();
   expect(notices.onScreen).toEqual([]);
 });
+
+test("fills an undo InfoBar with the success tone", async () => {
+  placePageWithSlot();
+  const notices = await renderOnWindows();
+
+  notices.offerUndo({ title: "Comics removed", undo: () => undefined });
+
+  await expect.element(infoBarSaying("Comics removed")).toBeVisible();
+  expect(surfaceOf(barOf("Comics removed")).dataset.severity).toBe("success");
+});
