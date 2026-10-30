@@ -240,6 +240,15 @@ test("draws Windows's destructive button as its standard button, with nothing re
   }
 });
 
+test("presses Windows's hyperlink button into its own pressed text, never the accent fill's colour", () => {
+  const classes = variantClasses("link", "regular", false, "windows");
+
+  expect(classes).toContain(
+    "not-disabled:not-aria-disabled:active:text-native-on-button-link-pressed",
+  );
+  expect(classes).not.toContain("text-native-button-primary");
+});
+
 test("rings every Windows variant button with the platform's focus ring and its inner line", () => {
   const unringed = VARIANTS.filter((variant) => {
     const classes = variantClasses(variant, "regular", false, "windows");

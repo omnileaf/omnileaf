@@ -11,10 +11,12 @@ const SIZES = {
   large: REGULAR,
 } satisfies Record<ButtonSize, string>;
 
-const REGULAR_ICON_ONLY = "block-native-button inline-native-button px-none";
+const REGULAR_ICON_ONLY =
+  "min-block-native-button min-inline-native-button p-native-icon-button-inset";
 
 const ICON_ONLY = {
-  small: "block-native-button-small inline-native-button-small px-none",
+  small:
+    "min-block-native-button-small min-inline-native-button-small p-native-icon-button-small-inset",
   regular: REGULAR_ICON_ONLY,
   large: REGULAR_ICON_ONLY,
 } satisfies Record<ButtonSize, string>;
@@ -33,7 +35,7 @@ const VARIANTS = {
   outline: STANDARD,
   destructive: STANDARD,
   plain: `${SUBTLE_GROUND} text-native-on-button-plain not-disabled:not-aria-disabled:active:text-native-on-button-pressed`,
-  link: `${SUBTLE_GROUND} text-native-on-button-link not-disabled:not-aria-disabled:active:text-native-button-primary`,
+  link: `${SUBTLE_GROUND} text-native-on-button-link not-disabled:not-aria-disabled:active:text-native-on-button-link-pressed`,
 } satisfies Record<ButtonVariant, string>;
 
 export function windowsButtonClasses(

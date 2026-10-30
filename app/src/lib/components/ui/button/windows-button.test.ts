@@ -13,6 +13,13 @@ import type { ButtonSize, ButtonVariant } from "./looks.ts";
 
 const label = createRawSnippet(() => ({ render: () => "<span>Remove</span>" }));
 
+function iconOf(size: number) {
+  return createRawSnippet(() => ({
+    render: () =>
+      `<svg width="${String(size)}" height="${String(size)}" aria-hidden="true"></svg>`,
+  }));
+}
+
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
 
 const PLATFORMS: readonly Platform[] = [
@@ -27,9 +34,12 @@ interface WindowsOptions {
   readonly variant?: ButtonVariant;
   readonly size?: ButtonSize;
   readonly iconOnly?: boolean;
+  readonly iconSize?: number;
   readonly disabled?: boolean;
   readonly theme?: "light" | "dark";
 }
+
+const DEFAULT_ICON_SIZE = 16;
 
 async function windowsButton(
   options: WindowsOptions = {},
@@ -42,10 +52,13 @@ async function windowsButton(
     size: options.size ?? "regular",
     disabled: options.disabled ?? false,
     type: "button",
-    children: label,
     ...(options.iconOnly === true
-      ? { iconOnly: true as const, label: "Remove" }
-      : {}),
+      ? {
+          iconOnly: true as const,
+          label: "Remove",
+          children: iconOf(options.iconSize ?? DEFAULT_ICON_SIZE),
+        }
+      : { children: label }),
   });
   const element = page.getByRole("button", { name: "Remove" }).element();
   if (!(element instanceof HTMLElement)) {
@@ -165,21 +178,21 @@ test("draws Windows's accent button in the light green with black text in the da
   );
 });
 
+const STANDARD_LOOK = [
+  "rgba(255, 255, 255, 0.7)",
+  "rgba(0, 0, 0, 0.894)",
+  "rgba(0, 0, 0, 0.16)",
+];
+
 for (const variant of ["secondary", "outline", "destructive"] as const) {
   test(`draws Windows's ${variant} button as the standard button, never red`, async () => {
-    const standard = getComputedStyle(await windowsButton());
-    const standardLook = [
-      standard.backgroundColor,
-      standard.color,
-      standard.borderBottomColor,
-    ];
     const style = getComputedStyle(await windowsButton({ variant }));
 
     expect([
       style.backgroundColor,
       style.color,
       style.borderBottomColor,
-    ]).toEqual(standardLook);
+    ]).toEqual(STANDARD_LOOK);
   });
 }
 
@@ -264,6 +277,28 @@ test("steps Windows's buttons 24 and 32 tall, with the large one as tall as the 
   expect(small.paddingInlineStart).toBe("7px");
 });
 
+test("pads Windows's icon-only buttons 7px around the icon, 3px on the small one", async () => {
+  const paddings: Record<string, string[]> = {};
+  for (const size of ["small", "regular"] as const) {
+    const style = getComputedStyle(
+      await windowsButton({ variant: "plain", size, iconOnly: true }),
+    );
+    paddings[size] = [style.paddingTop, style.paddingInlineStart];
+  }
+
+  expect(paddings).toEqual({ small: ["3px", "3px"], regular: ["7px", "7px"] });
+});
+
+test("grows Windows's icon-only button around a larger icon", async () => {
+  const button = await windowsButton({
+    variant: "plain",
+    iconOnly: true,
+    iconSize: 24,
+  });
+
+  expect(sizeOf(button)).toEqual({ width: 40, height: 40 });
+});
+
 test("draws Windows's icon-only buttons square to their height", async () => {
   const sizes: Record<string, { width: number; height: number }> = {};
   for (const size of ["small", "regular"] as const) {
@@ -344,5 +379,90 @@ for (const platform of PLATFORMS) {
     await expect
       .element(page.getByRole("button", { name: "Remove" }))
       .toBeVisible();
+  });
+}
+
+interface PressedLook {
+  readonly variant: "secondary" | "link";
+  readonly theme: "light" | "dark";
+  readonly fill: string;
+  readonly ink: string;
+}
+
+const PRESSED_LOOKS: readonly PressedLook[] = [
+  {
+    variant: "secondary",
+    theme: "light",
+    fill: "rgba(249, 249, 249, 0.3)",
+    ink: "rgba(0, 0, 0, 0.62)",
+  },
+  {
+    variant: "secondary",
+    theme: "dark",
+    fill: "rgba(255, 255, 255, 0.03)",
+    ink: "rgba(255, 255, 255, 0.773)",
+  },
+  {
+    variant: "link",
+    theme: "light",
+    fill: "rgba(0, 0, 0, 0.024)",
+    ink: "rgb(47, 111, 79)",
+  },
+  {
+    variant: "link",
+    theme: "dark",
+    fill: "rgba(255, 255, 255, 0.04)",
+    ink: "rgb(127, 203, 157)",
+  },
+];
+
+for (const look of PRESSED_LOOKS) {
+  test(`presses Windows's ${look.variant} button in the ${look.theme} theme`, async () => {
+    const button = await windowsButton({
+      variant: look.variant,
+      theme: look.theme,
+    });
+    await userEvent.tab();
+
+    await userEvent.keyboard("[Space>]");
+
+    await expect
+      .poll(() => {
+        const style = getComputedStyle(button);
+        return [style.backgroundColor, style.color];
+      })
+      .toEqual([look.fill, look.ink]);
+    await userEvent.keyboard("[/Space]");
+  });
+}
+
+test("draws Windows's disabled buttons in the dark theme's disabled fills and text", async () => {
+  const standard = getComputedStyle(
+    await windowsButton({ disabled: true, theme: "dark" }),
+  );
+  const standardLook = [standard.backgroundColor, standard.color];
+  const accent = getComputedStyle(
+    await windowsButton({ variant: "primary", disabled: true, theme: "dark" }),
+  );
+
+  expect({
+    standard: standardLook,
+    accent: [accent.backgroundColor, accent.color],
+  }).toEqual({
+    standard: ["rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.53)"],
+    accent: ["rgba(255, 255, 255, 0.157)", "rgba(255, 255, 255, 0.53)"],
+  });
+});
+
+for (const variant of ["plain", "link"] as const) {
+  test(`greys the text of Windows's disabled ${variant} button`, async () => {
+    const style = getComputedStyle(
+      await windowsButton({ variant, disabled: true }),
+    );
+
+    expect([style.backgroundColor, style.color]).toEqual([
+      TRANSPARENT,
+      "rgba(0, 0, 0, 0.447)",
+    ]);
   });
 }
