@@ -63,6 +63,7 @@ export class TabPage {
 
   showing(tab: LibraryTabId): this {
     this.#tab = tab;
+    this.count.clear();
     return this;
   }
 }

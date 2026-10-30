@@ -12,6 +12,11 @@ export class LibrarySeriesCount {
     private readonly onFailure: (error: IpcError) => void,
   ) {}
 
+  clear(): void {
+    this.#latestLoad += 1;
+    this.count = undefined;
+  }
+
   async load(): Promise<void> {
     const load = ++this.#latestLoad;
     this.count = undefined;

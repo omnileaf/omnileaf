@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Channel } from "@tauri-apps/api/core";
   import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
-  import { onMount, tick, untrack } from "svelte";
+  import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { assertNever } from "#lib/assert-never.ts";
   import {
     type AdultContent,
+    type AdultTreatment,
     commands,
     DEFAULT_LIBRARY_VIEW,
     type LibraryCategory,
@@ -27,7 +29,8 @@
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import ChooseShareAgainSheet from "#lib/library/ChooseShareAgainSheet.svelte";
-  import { coverUrl } from "#lib/library/cover-url.ts";
+  import { type CoverUrl, coverUrl } from "#lib/library/cover-url.ts";
+  import type { SeriesMenuActions } from "#lib/library/series-menu.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
   import FilterAndSort from "#lib/library/FilterAndSort.svelte";
   import LibraryMore from "#lib/library/LibraryMore.svelte";
@@ -59,6 +62,7 @@
     showsTabs,
     tabKey,
   } from "#lib/library/library-tabs.ts";
+  import type { TabPage } from "#lib/library/tab-page.svelte.ts";
   import { TabPages } from "#lib/library/tab-pages.svelte.ts";
   import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
@@ -101,11 +105,25 @@
 
   let { data }: PageProps = $props();
 
+  interface CoversLook {
+    readonly coverUrl: CoverUrl;
+    readonly view: LibraryView;
+    readonly usesStandIns: boolean;
+    readonly adultTreatment: AdultTreatment;
+    readonly onColumns?: (columns: number) => void;
+    readonly onMostThatFit?: (most: number) => void;
+    readonly menu?: SeriesMenuActions;
+  }
+
+  const seriesGrid: Snippet<[TabPage, CoversLook]> = pageCovers;
+
   const TRY_AGAIN_ICON_SIZE = 16;
   const FILTER_PANEL_ID = "library-filter";
   const ALL_TAB: LibraryTabId = { kind: "all" };
   const BESIDE_PHONE_TABS = 1;
+  const PERCENT = 100;
 
+  const animations = getAnimationsSetting();
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
   const showsAttentionDot = $derived(
@@ -171,6 +189,15 @@
     reportError(error);
   });
   const chosenPage = $derived(pages.of(chosenTab ?? ALL_TAB));
+  const pagerSlots = $derived.by(() => {
+    const chosenAt = pages.held.findIndex(({ key }) => key === chosenTabKey);
+    return pages.held.map(({ key, page }, at) => ({
+      key,
+      page,
+      offset: at - chosenAt,
+      scrolled: pages.scroll.recall(key),
+    }));
+  });
   const library = $derived(chosenPage.series);
   const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
@@ -347,6 +374,39 @@
   const libraryView = $derived(
     view.reading.kind === "read" ? view.reading.value : undefined,
   );
+  const looks = $derived<CoversLook>({
+    coverUrl,
+    view: libraryView ?? DEFAULT_LIBRARY_VIEW,
+    usesStandIns: screenshotMode.isOn,
+    adultTreatment:
+      adultContent.reading.kind === "read"
+        ? adultContent.reading.value.treatment
+        : "show",
+  });
+  const covers = $derived<CoversLook>({
+    ...looks,
+    onColumns: (columns: number) => {
+      measuredColumns = columns;
+    },
+    onMostThatFit: (most: number) => {
+      mostThatFit = most;
+    },
+    menu: {
+      canLabel: keepsLabels,
+      canEditDetails: keepsDetailEdits,
+      onEditDetails: editDetails,
+      onMarkRead: (one: LibrarySeries) => {
+        void markRead([one.id]);
+      },
+      onLabel: (one: LibrarySeries) => {
+        label([one.id], "categories");
+      },
+      onSelect: (one: LibrarySeries) => {
+        selection.begin(one.id);
+      },
+      onShowInFolder: showInFolder,
+    },
+  });
   const loaded = $derived(
     library.list.kind === "loaded" && libraryView !== undefined
       ? { series: library.list, view: libraryView }
@@ -442,7 +502,9 @@
     if (listed !== undefined && countsSeries) {
       const { count } = chosenPage;
       untrack(() => {
-        void count.load();
+        if (count.count === undefined) {
+          void count.load();
+        }
       });
     }
   });
@@ -581,7 +643,16 @@
     }
   }
 
+  let pager = $state<HTMLElement | null>(null);
   let stopHoldingScroll: (() => void) | undefined;
+
+  function coversTopIn(main: HTMLElement): number {
+    return pager === null
+      ? 0
+      : pager.getBoundingClientRect().top -
+          main.getBoundingClientRect().top +
+          main.scrollTop;
+  }
 
   function chooseTab(chosen: string): void {
     const main = document.querySelector("main");
@@ -591,10 +662,17 @@
       main?.scrollTo({ top: 0 });
       return;
     }
-    pages.scroll.remember(chosenTabKey, main.scrollTop);
+    pages.scroll.remember(
+      chosenTabKey,
+      Math.max(0, main.scrollTop - coversTopIn(main)),
+    );
     tab.choose(chosen);
     void tick().then(() => {
-      stopHoldingScroll = holdScrollTop(main, pages.scroll.recall(chosen));
+      const scrolled = pages.scroll.recall(chosen);
+      stopHoldingScroll = holdScrollTop(
+        main,
+        scrolled === 0 ? 0 : coversTopIn(main) + scrolled,
+      );
     });
   }
 
@@ -697,6 +775,22 @@
 
   $effect(keepFocusOnPageOnceAddFolderGoes);
 </script>
+
+{#snippet pageCovers(page: TabPage, props: CoversLook)}
+  {#if page.series.list.kind === "loaded"}
+    <SeriesCovers
+      series={page.series.list.items}
+      isComplete={page.series.list.isComplete}
+      total={page.count.count}
+      onNearEnd={() => {
+        void page.series.loadMore();
+      }}
+      {...props}
+    />
+  {:else if page.series.list.kind === "loading"}
+    <CoverSkeletons coversPerRow={props.view.coversPerRow} />
+  {/if}
+{/snippet}
 
 {#snippet attentionDot()}
   <NeedsAttentionDot
@@ -945,96 +1039,70 @@
           </div>
         {/if}
         <div
-          {@attach tabsShown &&
-            !selection.isSelecting &&
-            swipesBetweenTabs(
-              swipeTab,
-              (step) => tabBeside(step) !== undefined,
-            )}
-          class="mbs-lg flex-1 touch-pan-y medium:mbs-xl"
+          class="-me-page-end mbs-lg flex flex-1 flex-col overflow-x-clip pe-page-end max-medium:-ms-page-start max-medium:ps-page-start medium:-ms-gutter medium:mbs-xl medium:ps-gutter"
         >
-          {#if groups.length > 0}
-            {@const covers = {
-              onColumns: (columns: number) => {
-                measuredColumns = columns;
-              },
-              onMostThatFit: (most: number) => {
-                mostThatFit = most;
-              },
-              coverUrl,
-              view: loaded.view,
-              usesStandIns: screenshotMode.isOn,
-              adultTreatment:
-                adultContent.reading.kind === "read"
-                  ? adultContent.reading.value.treatment
-                  : "show",
-              menu: {
-                canLabel: keepsLabels,
-                canEditDetails: keepsDetailEdits,
-                onEditDetails: editDetails,
-                onMarkRead: (one: LibrarySeries) => {
-                  void markRead([one.id]);
-                },
-                onLabel: (one: LibrarySeries) => {
-                  label([one.id], "categories");
-                },
-                onSelect: (one: LibrarySeries) => {
-                  selection.begin(one.id);
-                },
-                onShowInFolder: showInFolder,
-              },
-            }}
-            <div class="flex flex-col gap-xl">
-              {#each groups as group (group.key)}
-                <SeriesGroup
-                  name={group.name}
-                  creator={group.creator}
-                  pointer={group.pointer}
-                  listSeries={group.listSeries}
-                  countSeries={group.countSeries}
-                  {listed}
-                  {covers}
-                />
+          <div
+            bind:this={pager}
+            {@attach tabsShown &&
+              !selection.isSelecting &&
+              swipesBetweenTabs(
+                swipeTab,
+                (step) => tabBeside(step) !== undefined,
+                () => pagesBesideChosen > 0 && animations.moves("navigation"),
+              )}
+            class="relative flex-1 touch-pan-y"
+          >
+            {#if groups.length > 0}
+              <div class="flex flex-col gap-xl">
+                {#each groups as group (group.key)}
+                  <SeriesGroup
+                    name={group.name}
+                    creator={group.creator}
+                    pointer={group.pointer}
+                    listSeries={group.listSeries}
+                    countSeries={group.countSeries}
+                    {listed}
+                    {covers}
+                  />
+                {/each}
+              </div>
+            {:else if pagesBesideChosen > 0}
+              {#each pagerSlots as slot (slot.key)}
+                {@const isChosen = slot.offset === 0}
+                <div
+                  inert={!isChosen}
+                  aria-hidden={isChosen ? undefined : "true"}
+                  data-pager-page={isChosen ? "chosen" : "beside"}
+                  class={isChosen
+                    ? "relative"
+                    : "absolute inset-bs-none overflow-clip block-full inline-full"}
+                  style:inset-inline-start={isChosen
+                    ? undefined
+                    : `${String(slot.offset * PERCENT)}%`}
+                >
+                  <div
+                    class={isChosen
+                      ? undefined
+                      : "sticky inset-bs-none overflow-clip block-dvh"}
+                  >
+                    <div
+                      style:translate={isChosen
+                        ? undefined
+                        : `0 -${String(slot.scrolled)}px`}
+                    >
+                      {#if isChosen}
+                        <FastScroll total={seriesCount.count} {letterAt} />
+                      {/if}
+                      {@render seriesGrid(slot.page, isChosen ? covers : looks)}
+                    </div>
+                  </div>
+                </div>
               {/each}
-            </div>
-          {:else}
-            <FastScroll total={seriesCount.count} {letterAt} />
-            <SeriesCovers
-              series={loaded.series.items}
-              isComplete={loaded.series.isComplete}
-              total={seriesCount.count}
-              onNearEnd={() => {
-                void library.loadMore();
-              }}
-              onColumns={(columns: number) => {
-                measuredColumns = columns;
-              }}
-              onMostThatFit={(most: number) => {
-                mostThatFit = most;
-              }}
-              {coverUrl}
-              view={loaded.view}
-              usesStandIns={screenshotMode.isOn}
-              adultTreatment={adultContent.reading.kind === "read"
-                ? adultContent.reading.value.treatment
-                : "show"}
-              menu={{
-                canLabel: keepsLabels,
-                canEditDetails: keepsDetailEdits,
-                onEditDetails: editDetails,
-                onMarkRead: (one: LibrarySeries) => {
-                  void markRead([one.id]);
-                },
-                onLabel: (one: LibrarySeries) => {
-                  label([one.id], "categories");
-                },
-                onSelect: (one: LibrarySeries) => {
-                  selection.begin(one.id);
-                },
-                onShowInFolder: showInFolder,
-              }}
-            />
-          {/if}
+            {:else}
+              <FastScroll total={seriesCount.count} {letterAt} />
+              {@render seriesGrid(chosenPage, covers)}
+            {/if}
+          </div>
         </div>
         {#if selection.isSelecting && selection.count > 0}
           <LibrarySelectionActions

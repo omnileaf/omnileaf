@@ -225,3 +225,18 @@ test("keeps the chosen tab's page when the listing changes, so its series stay u
   expect(pages.of(MANGA)).toBe(shown);
   expect(pages.of(MANGA).series.list.kind).toBe("loaded");
 });
+
+test("forgets the count of the page it shows another tab in, until that tab is counted", async () => {
+  const { pages } = pagesAsked();
+  pages.show({ basis: NEW_LIBRARY_LISTING, tabs: TABS, chosen: ALL, reach: 0 });
+  await pages.of(ALL).count.load();
+
+  pages.show({
+    basis: NEW_LIBRARY_LISTING,
+    tabs: TABS,
+    chosen: NOVELS,
+    reach: 0,
+  });
+
+  expect(pages.of(NOVELS).count.count).toBeUndefined();
+});
