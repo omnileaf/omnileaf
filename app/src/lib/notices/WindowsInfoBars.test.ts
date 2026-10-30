@@ -247,22 +247,70 @@ test("stacks the message over its action when the InfoBar is too narrow for one 
   );
 });
 
-test("announces a warning at once and a plain notice politely in the Notifications region", async () => {
+test("announces warnings in one assertive live region and every other notice in one polite region", async () => {
   placePageWithSlot();
   const notices = await renderOnWindows();
 
   notices.show(UNAVAILABLE);
   notices.show(READY);
+  notices.offerUndo({ title: "Comics removed", undo: () => undefined });
+
+  await expect.element(infoBarSaying("Comics removed")).toBeVisible();
+  const region = page.getByRole("region", { name: "Notifications" }).element();
+  const assertive = region.querySelectorAll('[aria-live="assertive"]');
+  const polite = region.querySelectorAll('[aria-live="polite"]');
+  expect(region.hasAttribute("aria-live")).toBe(false);
+  expect([assertive.length, polite.length]).toEqual([1, 1]);
+  expect(assertive[0]?.textContent).toContain(UNAVAILABLE.title);
+  expect(assertive[0]?.textContent).not.toContain(READY.title);
+  expect(polite[0]?.textContent).toContain(READY.title);
+  expect(polite[0]?.textContent).toContain("Comics removed");
+  expect(
+    region.querySelectorAll('[role="alert"], [role="status"]'),
+  ).toHaveLength(0);
+});
+
+test("jumps to the InfoBars with F6", async () => {
+  const { heading } = placePageWithSlot();
+  const notices = await renderOnWindows();
+  notices.show(UNAVAILABLE);
+  await expect.element(infoBarSaying(UNAVAILABLE.title)).toBeVisible();
+  heading.focus();
+
+  await userEvent.keyboard("{F6}");
+  const region = page.getByRole("region", { name: "Notifications" });
+  await expect.element(region).toHaveFocus();
+  await userEvent.keyboard("{Tab}");
 
   await expect
-    .element(page.getByRole("alert").filter({ hasText: UNAVAILABLE.title }))
-    .toBeVisible();
-  await expect
-    .element(page.getByRole("status").filter({ hasText: READY.title }))
-    .toBeVisible();
-  await expect
-    .element(page.getByRole("region", { name: "Notifications" }))
-    .toHaveAttribute("aria-live", "polite");
+    .element(page.getByRole("button", { name: "Find the folder" }))
+    .toHaveFocus();
+  await expect.element(region).toHaveAttribute("aria-keyshortcuts", "F6");
+});
+
+test("keeps a fourth InfoBar hidden in the page and shows that same element once a newer one goes", async () => {
+  placePageWithSlot();
+  const notices = await renderOnWindows();
+  const shown = ["First", "Second", "Third", "Fourth"].map((title) => ({
+    ...READY,
+    title,
+  }));
+  for (const notice of shown) {
+    notices.show(notice);
+  }
+  await expect.element(infoBarSaying("Fourth")).toBeVisible();
+  const oldest = barOf("First");
+  expect(oldest.hidden).toBe(true);
+  expect(
+    [...document.querySelectorAll<HTMLElement>("[data-info-bar]")].filter(
+      (bar) => !bar.hidden,
+    ),
+  ).toHaveLength(3);
+
+  notices.withdraw(shown[3] ?? READY);
+
+  await expect.element(infoBarSaying("First")).toBeVisible();
+  expect(barOf("First")).toBe(oldest);
 });
 
 test("leaves focus where it was when an InfoBar appears", async () => {
