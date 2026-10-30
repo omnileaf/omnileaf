@@ -7,7 +7,6 @@ import {
   expect,
   fakeAppInfo,
   test,
-  literalColour,
   testOnlyInItsWebview,
   tokenColour,
 } from "./fixtures.ts";
