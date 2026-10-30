@@ -19,6 +19,8 @@ use crate::{
 
 const READ_BUFFER_BYTES: usize = 64 * 1024;
 const ERROR_MESSAGE_ROOM_BYTES: usize = 1024;
+/// RAR4 stores a name without the Unicode flag in an unnamed code page, which libarchive would read in the host's code page on Windows and as raw bytes elsewhere.
+const LEGACY_NAMES_AS_UTF8: &CStr = c"rar:hdrcharset=UTF-8";
 const ARCHIVE_ERROR: isize = -1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -146,6 +148,10 @@ impl<R: Read + Seek> Reader<R> {
         let status = unsafe {
             ffi::archive_read_support_format_rar(archive.as_ptr())
                 .min(ffi::archive_read_support_format_rar5(archive.as_ptr()))
+                .min(ffi::archive_read_set_options(
+                    archive.as_ptr(),
+                    LEGACY_NAMES_AS_UTF8.as_ptr(),
+                ))
                 .min(ffi::archive_read_open2(
                     archive.as_ptr(),
                     client_data,
@@ -179,9 +185,8 @@ impl<R: Read + Seek> Reader<R> {
         let entry = match HeaderStatus::of(status) {
             HeaderStatus::Read => Some(entry_of(entry)?),
             HeaderStatus::End => None,
-            HeaderStatus::NameOrLinkNotConverted | HeaderStatus::Failed => {
-                return Err(self.error());
-            }
+            HeaderStatus::NameOrLinkNotConverted => return Err(self.unreadable_name()),
+            HeaderStatus::Failed => return Err(self.error()),
         };
         self.refuse_if_exceeded()?;
         Ok(entry)
@@ -221,6 +226,13 @@ impl<R: Read + Seek> Reader<R> {
             });
         }
         Ok(())
+    }
+
+    fn unreadable_name(&mut self) -> Error {
+        match self.error() {
+            Error::Archive { message } => Error::UnreadableName { message },
+            other => other,
+        }
     }
 
     fn error(&mut self) -> Error {
@@ -299,7 +311,7 @@ fn path_of(entry: *mut ffi::ArchiveEntry) -> Result<String, Error> {
     raw.to_str()
         .map(str::to_owned)
         .map_err(|_| Error::UnreadableName {
-            lossy: raw.to_string_lossy().into_owned(),
+            message: raw.to_string_lossy().into_owned(),
         })
 }
 
@@ -316,7 +328,7 @@ fn path_of(entry: *mut ffi::ArchiveEntry) -> Result<String, Error> {
     path.to_str()
         .map(str::to_owned)
         .map_err(|_| Error::UnreadableName {
-            lossy: path.to_string_lossy().into_owned(),
+            message: path.to_string_lossy().into_owned(),
         })
 }
 

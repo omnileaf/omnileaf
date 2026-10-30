@@ -191,15 +191,24 @@ fn reads_a_unicode_flagged_rar4_name_as_utf8() {
 }
 
 #[test]
-fn refuses_a_rar4_name_that_is_not_valid_text() {
+fn refuses_a_legacy_rar4_name_that_is_not_utf8_whatever_the_host_code_page() {
     let archive = raw_rar4::stored_with_raw_name(b"caf\xe9.txt", b"alpha");
 
     let result = listing(archive, DEFAULT_LIMIT_BYTES);
 
     assert!(
-        matches!(&result, Err(Error::UnreadableName { lossy }) if lossy == "caf\u{fffd}.txt"),
+        matches!(&result, Err(Error::UnreadableName { message }) if message.contains("cannot be converted from UTF-8")),
         "{result:?}"
     );
+}
+
+#[test]
+fn reads_a_legacy_rar4_name_that_is_utf8() {
+    let archive = raw_rar4::stored_with_raw_name("caf\u{e9}.txt".as_bytes(), b"alpha");
+
+    let listing = listing(archive, DEFAULT_LIMIT_BYTES).unwrap();
+
+    assert_eq!(listing, [file("caf\u{e9}.txt", b"alpha")]);
 }
 
 #[test]

@@ -39,6 +39,7 @@ unsafe extern "C" {
     pub(crate) fn archive_read_free(archive: *mut Archive) -> c_int;
     pub(crate) fn archive_read_support_format_rar(archive: *mut Archive) -> c_int;
     pub(crate) fn archive_read_support_format_rar5(archive: *mut Archive) -> c_int;
+    pub(crate) fn archive_read_set_options(archive: *mut Archive, options: *const c_char) -> c_int;
     pub(crate) fn archive_read_open2(
         archive: *mut Archive,
         client_data: *mut c_void,

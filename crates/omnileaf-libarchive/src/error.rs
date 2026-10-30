@@ -6,8 +6,8 @@ pub enum Error {
     Unavailable,
     #[error("libarchive needed more than its {limit_bytes} byte memory budget")]
     BudgetExceeded { limit_bytes: usize },
-    #[error("the entry name {lossy:?} is not valid UTF-8")]
-    UnreadableName { lossy: String },
+    #[error("the entry name is not valid UTF-8: {message}")]
+    UnreadableName { message: String },
     #[error("libarchive: {message}")]
     Archive { message: String },
     #[error("reading the archive source: {0}")]
