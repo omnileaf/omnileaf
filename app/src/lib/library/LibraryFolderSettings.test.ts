@@ -1970,3 +1970,58 @@ test("drops a folder's warning while its removal can still be undone on an iPhon
 
   await expect.element(warning).not.toBeInTheDocument();
 });
+
+test("heads the looks empty warning at the third level, as on other screens, on an iPhone", async () => {
+  const { warning } = await renderFoundEmptyOnIphone();
+
+  await expect
+    .element(
+      warning.getByRole("heading", {
+        level: 3,
+        name: "Sample Comics looks empty",
+      }),
+    )
+    .toBeVisible();
+});
+
+test("turns the iPhone warning into an alert that tries removing the books again without asking", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("ios");
+  const results = [REMOVAL_FAILED, BOOKS_REMOVED];
+  const removedFrom: FolderId[] = [];
+  const { folders, dialog } = await renderSettings({
+    platform: "ios",
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      return (results.shift() ?? BOOKS_REMOVED)(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await page.getByRole("button", { name: "Remove its books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
+  const alert = page
+    .getByRole("alert")
+    .filter({ hasText: "Couldn't remove the books" });
+  await expect
+    .element(
+      alert.getByRole("heading", {
+        level: 3,
+        name: "Couldn't remove the books",
+      }),
+    )
+    .toBeVisible();
+  expect({
+    isAboveFolders: isBefore(alert.element(), folders.element()),
+    icon: alert.element().querySelector("svg")?.getAttribute("class"),
+  }).toEqual({
+    isAboveFolders: true,
+    icon: expect.stringContaining("circle-alert") as unknown,
+  });
+
+  await alert.getByRole("button", { name: "Try again" }).click();
+
+  await expect.poll(() => removedFrom).toEqual([COMICS.id, COMICS.id]);
+  expect(dialog.elements()).toEqual([]);
+});

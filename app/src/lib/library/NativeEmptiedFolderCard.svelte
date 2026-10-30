@@ -2,6 +2,7 @@
   import { RefreshCw, Trash } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -14,7 +15,7 @@
   import type { EmptiedFolder } from "./rescans.svelte";
 
   const ICON_SIZE = 22;
-  const ACTION_ICON_SIZE = 17;
+  const ALERT_ACTION_ICON_SIZE = 17;
 
   type Asked = (asker: HTMLButtonElement) => void;
 
@@ -43,13 +44,16 @@
   <button
     type="button"
     disabled={isBusy}
-    class="relative flex items-center py-native-row-block ps-native-alert-action-start pe-native-row-end text-start text-native-row-title/native-row-title font-native-row-title tracking-native-row-title text-accent inline-full min-block-native-row after:absolute after:inset-s-native-alert-action-start after:inset-e-none after:inset-bs-none after:border-bs after:border-native-row-rule last:rounded-b-native-group focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent enabled:active:bg-native-row-pressed disabled:opacity-60"
+    class={[
+      "relative flex items-center py-native-row-block ps-native-alert-action-start pe-native-row-end text-start text-native-row-title/native-row-title font-native-row-title tracking-native-row-title text-accent inline-full min-block-native-row after:absolute after:inset-s-native-alert-action-start after:inset-e-none after:inset-bs-none after:border-bs after:border-native-row-rule last:rounded-b-native-group enabled:active:bg-native-row-pressed disabled:opacity-60",
+      ROW_FOCUS_RING,
+    ]}
     onclick={(event) => {
       onAsk(event.currentTarget);
     }}
   >
     <ActionIcon
-      size={ACTION_ICON_SIZE}
+      size={ALERT_ACTION_ICON_SIZE}
       class="absolute inset-s-native-alert-action-icon"
     />
     {label}
@@ -62,12 +66,12 @@
   class="grid grid-cols-alert gap-x-native-row-gap gap-y-2xs rounded-native-group bg-warning-soft px-native-row-start pbs-native-alert-block font-ui wrap-anywhere text-on-warning"
 >
   <Icon size={ICON_SIZE} class="row-span-2" />
-  <h2
+  <h3
     id={titleId}
     class="col-start-2 text-native-row-title/native-row-title font-semibold tracking-native-row-title"
   >
     {look.title({ name })}
-  </h2>
+  </h3>
   <p
     class="col-start-2 text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle"
   >
