@@ -25,6 +25,11 @@
   --native-spacing-command-bar: 48px;
   --native-spacing-command-button: 68px;
   --native-spacing-command-button-block: 64px;
+  --native-spacing-slider: 32px;
+  --native-spacing-slider-track: 4px;
+  --native-spacing-slider-thumb: 18px;
+  --native-spacing-slider-thumb-core: 12px;
+  --native-spacing-slider-thumb-core-hover: 14px;
   --native-radius-dialog: 8px;
   --native-spacing-dialog: 448px;
   --native-radius-sheet: 8px;

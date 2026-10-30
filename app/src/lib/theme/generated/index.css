@@ -153,6 +153,11 @@
   --spacing-native-command-bar: var(--native-spacing-command-bar);
   --spacing-native-command-button: var(--native-spacing-command-button);
   --spacing-native-command-button-block: var(--native-spacing-command-button-block);
+  --spacing-native-slider: var(--native-spacing-slider);
+  --spacing-native-slider-track: var(--native-spacing-slider-track);
+  --spacing-native-slider-thumb: var(--native-spacing-slider-thumb);
+  --spacing-native-slider-thumb-core: var(--native-spacing-slider-thumb-core);
+  --spacing-native-slider-thumb-core-hover: var(--native-spacing-slider-thumb-core-hover);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
