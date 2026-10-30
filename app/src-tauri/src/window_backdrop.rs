@@ -1,10 +1,7 @@
 use omnileaf_engine::WindowBackdrop;
-use tauri::{App, WebviewWindowBuilder, Wry};
 
 /// Windows 11 builds before 22523 lack `DWMWA_SYSTEMBACKDROP_TYPE`, and Tauri falls back to an undocumented attribute there.
 const FIRST_SYSTEM_BACKDROP_BUILD: u32 = 22_523;
-
-type MainWindowBuilder<'a> = WebviewWindowBuilder<'a, Wry, App>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(
@@ -54,32 +51,11 @@ pub(crate) fn of_this_system() -> WindowBackdrop {
     WindowBackdrop::None
 }
 
-pub(crate) fn open_windows(app: &App, backdrop: WindowBackdrop) -> tauri::Result<()> {
-    for config in &app.config().app.windows {
-        with_backdrop(WebviewWindowBuilder::from_config(app, config)?, backdrop).build()?;
+pub(crate) fn confirmed(chosen: WindowBackdrop, drawn: WindowBackdrop) -> WindowBackdrop {
+    match (chosen, drawn) {
+        (WindowBackdrop::Mica, WindowBackdrop::Mica) => WindowBackdrop::Mica,
+        (WindowBackdrop::Mica | WindowBackdrop::None, _) => WindowBackdrop::None,
     }
-    Ok(())
-}
-
-fn with_backdrop(window: MainWindowBuilder<'_>, backdrop: WindowBackdrop) -> MainWindowBuilder<'_> {
-    match backdrop {
-        WindowBackdrop::Mica => with_mica(window),
-        WindowBackdrop::None => window,
-    }
-}
-
-#[cfg(windows)]
-fn with_mica(window: MainWindowBuilder<'_>) -> MainWindowBuilder<'_> {
-    use tauri::window::{Effect, EffectsBuilder};
-
-    window
-        .transparent(true)
-        .effects(EffectsBuilder::new().effect(Effect::Mica).build())
-}
-
-#[cfg(not(windows))]
-fn with_mica(window: MainWindowBuilder<'_>) -> MainWindowBuilder<'_> {
-    window
 }
 
 #[cfg(windows)]
@@ -110,7 +86,7 @@ mod windows {
 mod tests {
     use omnileaf_engine::WindowBackdrop;
 
-    use super::{TransparencyEffects, backdrop_for};
+    use super::{TransparencyEffects, backdrop_for, confirmed};
 
     const WINDOWS_10_22H2: u32 = 19_045;
     const WINDOWS_11_21H2: u32 = 22_000;
@@ -160,5 +136,26 @@ mod tests {
                 TransparencyEffects::Off
             ]
         );
+    }
+
+    #[test]
+    fn reports_mica_once_windows_draws_it() {
+        let backdrop = confirmed(WindowBackdrop::Mica, WindowBackdrop::Mica);
+
+        assert_eq!(backdrop, WindowBackdrop::Mica);
+    }
+
+    #[test]
+    fn reports_a_solid_window_where_windows_drew_no_mica_it_was_asked_for() {
+        let backdrop = confirmed(WindowBackdrop::Mica, WindowBackdrop::None);
+
+        assert_eq!(backdrop, WindowBackdrop::None);
+    }
+
+    #[test]
+    fn reports_a_solid_window_where_none_was_asked_for() {
+        let backdrop = confirmed(WindowBackdrop::None, WindowBackdrop::None);
+
+        assert_eq!(backdrop, WindowBackdrop::None);
     }
 }

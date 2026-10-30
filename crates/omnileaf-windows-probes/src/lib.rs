@@ -8,7 +8,7 @@ use windows_sys::Win32::Foundation::{
     MAX_PATH, NO_ERROR, S_OK,
 };
 use windows_sys::Win32::Graphics::Dwm::{
-    DWM_SYSTEMBACKDROP_TYPE, DWMWA_SYSTEMBACKDROP_TYPE, DwmGetWindowAttribute,
+    DWM_SYSTEMBACKDROP_TYPE, DWMSBT_MAINWINDOW, DWMWA_SYSTEMBACKDROP_TYPE, DwmGetWindowAttribute,
 };
 use windows_sys::Win32::NetworkManagement::WNet::{
     CONNECT_INTERACTIVE, CONNECT_PROMPT, NETRESOURCEW, RESOURCETYPE_DISK, WNetAddConnection3W,
@@ -240,6 +240,12 @@ pub fn system_backdrop_type(window: usize) -> Option<i32> {
     (answer == S_OK).then_some(backdrop)
 }
 
+/// Answers whether DWM draws the `DWMSBT_MAINWINDOW` backdrop, which is Mica, behind a window.
+#[must_use]
+pub fn draws_main_window_backdrop(window: usize) -> bool {
+    system_backdrop_type(window) == Some(DWMSBT_MAINWINDOW)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -316,6 +322,11 @@ mod tests {
     #[test]
     fn reads_no_backdrop_of_a_window_that_is_not_there() {
         assert_eq!(system_backdrop_type(0), None);
+    }
+
+    #[test]
+    fn draws_no_mica_behind_a_window_that_is_not_there() {
+        assert!(!draws_main_window_backdrop(0));
     }
 
     #[test]

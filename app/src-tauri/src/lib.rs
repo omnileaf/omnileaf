@@ -21,6 +21,7 @@ mod icon_actions;
 mod ipc_error;
 mod library_events;
 mod library_problem;
+mod main_window;
 mod omni_protocol;
 mod power_mode;
 mod problem_reporting;
@@ -96,7 +97,6 @@ pub fn run() {
         app
     };
     let app = app
-        .manage(Core::new().with_window_backdrop(window_backdrop))
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
         .manage(home_folder::ChosenHome::default())
@@ -110,7 +110,8 @@ pub fn run() {
         .invoke_handler(invoke_handler)
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
-            window_backdrop::open_windows(app, window_backdrop)?;
+            let window_backdrop = main_window::open(app, window_backdrop)?;
+            app.manage(Core::new().with_window_backdrop(window_backdrop));
             crash_reporting::install(app.handle());
             commands.mount_events(app);
             let launch = match open_library(app, &config?) {
