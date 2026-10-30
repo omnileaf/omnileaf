@@ -83,7 +83,7 @@ export function closestTitle(
   return best === null ? null : { text: best.text, chapterOf: best.chapterOf };
 }
 
-export function slipsAllowed(chars: number): number {
+function slipsAllowed(chars: number): number {
   if (chars <= 4) {
     return 1;
   }
