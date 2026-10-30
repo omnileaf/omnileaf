@@ -11,13 +11,16 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import {
-    READER_BUTTON,
     READER_GLASS,
     READER_ICON_SIZE,
+    readerButton,
+    readerIconSize,
   } from "./reader-bar.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import type { ReaderSettings } from "./reader-settings.svelte.ts";
   import ReadingSettingsContent from "./ReadingSettingsContent.svelte";
   import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
+  import { WINDOWS_FLYOUT } from "./windows-reader-bar.ts";
 
   let {
     isOpen,
@@ -37,6 +40,7 @@
 
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const titleId = $props.id();
+  const chrome = getReaderChrome();
 </script>
 
 {#if isWide.current}
@@ -44,14 +48,17 @@
     <aside
       aria-labelledby={titleId}
       class={cn(
-        READER_GLASS,
+        chrome.isCommandBar ? WINDOWS_FLYOUT : READER_GLASS,
         "absolute inset-e-reader-edge inset-bs-reader-settings-top inset-be-reader-edge flex flex-col inline-reader-settings",
       )}
     >
       <div
         class="flex items-center gap-sm border-be border-border px-lg min-block-reader-top-wide"
       >
-        <SlidersHorizontal size={READER_ICON_SIZE} aria-hidden="true" />
+        <SlidersHorizontal
+          size={readerIconSize(chrome.platform)}
+          aria-hidden="true"
+        />
         <h2 id={titleId} class="flex-1 text-body font-semibold">
           {m.reader_settings()}
         </h2>
@@ -59,10 +66,10 @@
           type="button"
           look="icon"
           aria-label={m.reader_settings_close()}
-          class={READER_BUTTON}
+          class={readerButton(chrome.platform, chrome.width)}
           onclick={onClose}
         >
-          <X size={READER_ICON_SIZE} aria-hidden="true" />
+          <X size={readerIconSize(chrome.platform)} aria-hidden="true" />
         </Button>
       </div>
       <div class="flex-1 overflow-y-auto p-lg">

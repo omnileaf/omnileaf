@@ -18,7 +18,12 @@ export interface QuickSettingLook {
   readonly iconSize: number;
   readonly hasKitIcons: boolean;
   readonly hasChevron: boolean;
+  readonly directionName: string;
+  readonly autoMark: string;
 }
+
+const AUTO_MARK =
+  "rounded-shadcn-control border border-border px-xs text-caption font-medium";
 
 const SEGMENT_LIT = "bg-hover";
 
@@ -32,6 +37,8 @@ const SEGMENT_LOOK: QuickSettingLook = {
   iconSize: 16,
   hasKitIcons: false,
   hasChevron: true,
+  directionName: "truncate",
+  autoMark: AUTO_MARK,
 };
 
 const CAPSULE_LIT = "bg-native-tab-pill";
@@ -46,6 +53,8 @@ const CAPSULE_LOOK: QuickSettingLook = {
   iconSize: 22,
   hasKitIcons: true,
   hasChevron: true,
+  directionName: "truncate",
+  autoMark: AUTO_MARK,
 };
 
 const WINDOWS_LOOK: QuickSettingLook = {
@@ -57,6 +66,8 @@ const WINDOWS_LOOK: QuickSettingLook = {
   iconSize: WINDOWS_ICON_SIZE,
   hasKitIcons: false,
   hasChevron: false,
+  directionName: "text-center",
+  autoMark: "sr-only",
 };
 
 export function quickSettingLook(

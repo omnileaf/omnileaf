@@ -7,6 +7,7 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { contrastOver } from "../../../tests/components/composited-contrast";
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
 import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
@@ -14,6 +15,7 @@ import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
 const DESKTOP = { width: 1280, height: 800 };
 const COMMAND_LABELS = ["Shortcuts", "Bookmark", "Settings", "Full screen"];
 const QUICK_SETTINGS = ["Two pages", "Fit height", "Light"];
+const DIRECTION = /^Left to right/;
 
 async function openReader(
   platform: Platform,
@@ -135,6 +137,28 @@ test("draws the quick settings as 68 wide labelled command buttons in the bar", 
   }
 });
 
+test("draws the direction command the size of the others with its words whole", async () => {
+  await openReader("windows");
+  const direction = page.getByRole("button", { name: DIRECTION }).element();
+  const box = direction.getBoundingClientRect();
+  const words = [...direction.querySelectorAll("span")].filter(
+    (span) => span.textContent === "Left to right" && span.clientWidth > 0,
+  );
+
+  expect([box.width, box.height]).toEqual([68, 64]);
+  expect(words.every((span) => span.scrollWidth <= span.clientWidth)).toBe(
+    true,
+  );
+  expect(words.length).toBeGreaterThan(0);
+});
+
+test("keeps the AUTO mark out of the command's room", async () => {
+  await openReader("windows");
+  const mark = page.getByText("AUTO", { exact: true }).element();
+
+  expect(mark.getBoundingClientRect().height).toBeLessThanOrEqual(1);
+});
+
 test("takes the raised segment frame off the quick settings", async () => {
   await openReader("windows");
   const group = page.getByRole("group", { name: "Quick settings" }).element();
@@ -167,6 +191,97 @@ test("leaves a quick setting that is off on the bar with no fill", async () => {
     getComputedStyle(quickSetting("Two pages"), "::before").backgroundColor,
   ).toBe("rgba(0, 0, 0, 0)");
 });
+
+function tooltipText(): string | undefined {
+  return document
+    .querySelector("[data-tooltip-content]")
+    ?.textContent.replaceAll(/\s+/g, " ")
+    .trim();
+}
+
+test("names Full screen's key in its tooltip and for screen readers", async () => {
+  await openReader("windows");
+  const button = page.getByRole("button", { name: "Full screen" });
+
+  await userEvent.hover(button);
+
+  await expect.poll(() => tooltipText()).toBe("Full screen F");
+  expect(button.element().getAttribute("aria-keyshortcuts")).toBe("F");
+});
+
+test("names the shortcuts key in its tooltip and the back way in Back's", async () => {
+  await openReader("windows");
+
+  await userEvent.hover(
+    page.getByRole("button", { name: "Keyboard shortcuts" }),
+  );
+  await expect.poll(() => tooltipText()).toBe("Keyboard shortcuts ?");
+  await userEvent.unhover(
+    page.getByRole("button", { name: "Keyboard shortcuts" }),
+  );
+
+  const back = page.getByRole("link", { name: /^Back/ });
+  await userEvent.hover(back);
+  await expect.poll(() => tooltipText()).toContain("Esc");
+  expect(back.element().getAttribute("aria-keyshortcuts")).toBe(
+    "Escape Alt+ArrowLeft",
+  );
+});
+
+test("leaves Full screen's key off the other desktops' bar", async () => {
+  await openReader("linux");
+
+  expect(
+    page
+      .getByRole("button", { name: "Full screen" })
+      .element()
+      .getAttribute("aria-keyshortcuts"),
+  ).toBeNull();
+});
+
+const BACKINGS = ["#000000", "#ffffff"] as const;
+const THEMES = ["light", "dark"] as const;
+const TEXT_CONTRAST = 4.5;
+const NON_TEXT_CONTRAST = 3;
+
+for (const theme of THEMES) {
+  for (const backing of BACKINGS) {
+    test(`reads the bar's words at 4.5 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+      await openReader("windows", theme);
+
+      for (const ink of ["on-menu", "on-button-plain"]) {
+        expect(contrastOver(ink, "menu", backing), ink).toBeGreaterThanOrEqual(
+          TEXT_CONTRAST,
+        );
+      }
+    });
+
+    test(`draws the bar's marks at 3 to 1 in the ${theme} chrome over a ${backing} page`, async () => {
+      await openReader("windows", theme);
+
+      for (const mark of [
+        "button-primary",
+        "progress-track",
+        "progress-fill",
+        "switch-off-border",
+        "focus-ring",
+      ]) {
+        expect(
+          contrastOver(mark, "menu", backing),
+          mark,
+        ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
+      }
+    });
+  }
+
+  test(`reads a switched on command at 4.5 to 1 in the ${theme} chrome`, async () => {
+    await openReader("windows", theme);
+
+    expect(
+      contrastOver("on-button-primary", "button-primary", "#000000"),
+    ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+  });
+}
 
 for (const platform of ["linux", "macos", "ios", "android"] as const) {
   test(`draws no command labels on ${platform}`, async () => {

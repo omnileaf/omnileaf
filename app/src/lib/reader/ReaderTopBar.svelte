@@ -36,7 +36,11 @@
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
   import ReaderCommandLabel from "./ReaderCommandLabel.svelte";
   import ReaderIcon from "./ReaderIcon.svelte";
-  import { WINDOWS_BAR, WINDOWS_SEPARATOR } from "./windows-reader-bar.ts";
+  import {
+    WINDOWS_BACK_KEYS,
+    WINDOWS_BAR,
+    WINDOWS_SEPARATOR,
+  } from "./windows-reader-bar.ts";
 
   let {
     seriesHref,
@@ -135,6 +139,7 @@
         {...props}
         href={seriesHref}
         aria-label={backLabel}
+        aria-keyshortcuts={isWindows ? WINDOWS_BACK_KEYS : undefined}
         class={cn(
           readerBackLook(platform, chrome.width),
           floats && "text-native-on-top-bar",
@@ -306,6 +311,7 @@
   >
     <Tooltip
       label={m.reader_keyboard_shortcuts()}
+      keys={isWindows ? ["?"] : []}
       type="button"
       aria-label={m.reader_keyboard_shortcuts()}
       aria-keyshortcuts="?"
@@ -400,8 +406,10 @@
     </Tooltip>
     <Tooltip
       label={m.reader_full_screen()}
+      keys={isWindows ? ["F"] : []}
       type="button"
       aria-label={m.reader_full_screen()}
+      aria-keyshortcuts={isWindows ? "F" : undefined}
       onclick={onFullScreen}
     >
       {#snippet child({ props })}

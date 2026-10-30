@@ -23,6 +23,7 @@
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { type Spread, spreadPosition } from "./spreads.ts";
+  import { WINDOWS_BOTTOM_BAR } from "./windows-reader-bar.ts";
 
   const TIME_ICON_SIZE = 14;
   const SECONDS_IN_A_MINUTE = 60;
@@ -95,15 +96,17 @@
         "flex flex-col items-center gap-sm",
         isShown && "*:pointer-events-auto",
       )
-    : cn(
-        "flex flex-col gap-sm",
-        chrome.spans
-          ? [EDGE_TO_EDGE_BARS, "px-lg pbs-sm pbe-native-reader-bar-end"]
-          : [
-              READER_GLASS,
-              "p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
-            ],
-      )}
+    : chrome.isCommandBar
+      ? WINDOWS_BOTTOM_BAR
+      : cn(
+          "flex flex-col gap-sm",
+          chrome.spans
+            ? [EDGE_TO_EDGE_BARS, "px-lg pbs-sm pbe-native-reader-bar-end"]
+            : [
+                READER_GLASS,
+                "p-sm expanded:justify-center expanded:min-block-reader-top-wide large:py-none",
+              ],
+        )}
   {@attach tracksMouse}
 >
   {#if isPreviewing && floats}
@@ -136,7 +139,9 @@
       aria-label={m.reader_quick_settings()}
       class={floats
         ? cn(READER_CAPSULE, "flex-wrap justify-center px-2xs max-inline-full")
-        : "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"}
+        : chrome.isCommandBar
+          ? "flex flex-wrap items-center justify-center gap-2xs large:hidden"
+          : "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"}
     >
       {@render quickSettings()}
     </div>

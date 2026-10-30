@@ -1265,10 +1265,15 @@
       {/if}
       <div
         class={[
-          "absolute transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
-          chrome.spans
+          "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
+          chrome.isCommandBar
             ? "inset-x-none inset-be-none"
-            : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
+            : [
+                "expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
+                chrome.spans
+                  ? "inset-x-none inset-be-none"
+                  : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
+              ],
           isPanelOpen && "expanded:inset-e-reader-settings-room",
           chrome.floats && "pointer-events-none",
           !controls.isShown && "pointer-events-none opacity-0",
