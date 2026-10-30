@@ -4,6 +4,7 @@ const MACOS_RESOURCE_FORK_FOLDER: &str = "__MACOSX";
 const CURRENT_FOLDER: &str = ".";
 const PARENT_FOLDER: &str = "..";
 const SEPARATORS: [char; 2] = ['/', '\\'];
+const DRIVE_SEPARATOR: char = ':';
 const WINDOWS_SHELL_FILES: [&str; 2] = ["thumbs.db", "desktop.ini"];
 const PAGE_EXTENSIONS: [&str; 8] = ["jpg", "jpeg", "png", "webp", "gif", "avif", "jxl", "bmp"];
 const FINGERPRINTED_EXTENSIONS: [&str; 12] = [
@@ -35,7 +36,17 @@ pub(crate) fn is_fingerprinted_image(path: &str) -> bool {
 }
 
 fn escapes_the_archive(path: &str) -> bool {
-    path.starts_with(SEPARATORS) || path.split(SEPARATORS).any(|part| part == PARENT_FOLDER)
+    path.starts_with(SEPARATORS)
+        || starts_with_a_drive(path)
+        || path.split(SEPARATORS).any(|part| part == PARENT_FOLDER)
+}
+
+fn starts_with_a_drive(path: &str) -> bool {
+    let mut start = path.chars();
+    matches!(
+        (start.next(), start.next()),
+        (Some(letter), Some(DRIVE_SEPARATOR)) if letter.is_ascii_alphabetic()
+    )
 }
 
 fn has_extension(path: &str, extensions: &[&str]) -> bool {

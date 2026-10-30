@@ -4,6 +4,7 @@ use crate::FormatError;
 const ENCRYPTION_RECORD: u64 = 0x01;
 const HASH_RECORD: u64 = 0x02;
 const TIME_RECORD: u64 = 0x03;
+const VERSION_RECORD: u64 = 0x04;
 const REDIRECTION_RECORD: u64 = 0x05;
 const OWNER_RECORD: u64 = 0x06;
 const BLAKE2SP: u64 = 0x00;
@@ -37,7 +38,9 @@ pub(super) fn check_extra_area(
         let kind = record.vint().ok_or_else(malformed)?;
         let read = match kind {
             ENCRYPTION_RECORD => return Err(gate.encrypted()),
-            REDIRECTION_RECORD => return Err(gate.unsupported_entry(name.to_owned())),
+            VERSION_RECORD | REDIRECTION_RECORD => {
+                return Err(gate.unsupported_entry(name.to_owned()));
+            }
             HASH_RECORD => read_hash(&mut record),
             TIME_RECORD => read_times(&mut record),
             OWNER_RECORD => read_owner(&mut record),

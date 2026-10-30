@@ -55,7 +55,7 @@ pub enum FormatError {
     UnsupportedEntry { path: PathBuf, name: String },
     #[error("{} is one part of a multi-volume archive, which this app can't open", path.display())]
     MultiVolume { path: PathBuf },
-    #[error("{} has an entry name longer than the {limit} characters allowed", path.display())]
+    #[error("{} has an entry name longer than the {limit} bytes allowed", path.display())]
     NameTooLong { path: PathBuf, limit: usize },
     #[error("{} has no pages", path.display())]
     NoPages { path: PathBuf },

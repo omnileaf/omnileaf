@@ -32,6 +32,7 @@ const NORMAL_IN_128_MIB: u64 = (3 << 7) | (10 << 10);
 const ENCRYPTION_RECORD: u64 = 0x01;
 const HASH_RECORD: u64 = 0x02;
 const TIME_RECORD: u64 = 0x03;
+const VERSION_RECORD: u64 = 0x04;
 const REDIRECTION_RECORD: u64 = 0x05;
 const OWNER_RECORD: u64 = 0x06;
 const BLAKE2SP: u8 = 0x00;
@@ -510,4 +511,34 @@ fn refuses_a_file_without_a_data_area() {
     let error = listing(&archive(&[entry.bytes()])).unwrap_err();
 
     assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_a_name_holding_a_nul() {
+    let error = listing(&archive(&[Entry::page(b"1\0.png").bytes()])).unwrap_err();
+
+    assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_an_empty_name() {
+    let error = listing(&archive(&[Entry::page(b"").bytes()])).unwrap_err();
+
+    assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_an_entry_carrying_a_version_record() {
+    let version = [vint(NO_FLAGS), vint(2)].concat();
+    let entry = Entry {
+        extra: record(VERSION_RECORD, &version),
+        ..Entry::page(b"1.png")
+    };
+
+    let error = listing(&archive(&[entry.bytes()])).unwrap_err();
+
+    assert!(
+        matches!(error, FormatError::UnsupportedEntry { .. }),
+        "{error:?}"
+    );
 }

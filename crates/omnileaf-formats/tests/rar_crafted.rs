@@ -15,7 +15,7 @@ const MIB: u64 = 1024 * 1024;
 const RAR5_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 const UNCHECKED_CRC: [u8; 4] = [0; 4];
 const THREE_MIB_AS_VINT: [u8; 4] = [0x80, 0x80, 0xC0, 0x01];
-const LONGEST_NAME_CHARS: usize = 2048;
+const LONGEST_NAME_BYTES: usize = 2047;
 const RAR2_UNPACK_VERSION: u8 = 20;
 
 fn entry(name: &str, bytes: &[u8]) -> ArchiveEntry {
@@ -411,9 +411,28 @@ fn refuses_a_rar5_header_above_2_mib_before_reading_it() {
     );
 }
 
+fn name_of_bytes(length: usize) -> String {
+    format!("{}.png", "a".repeat(length - ".png".len()))
+}
+
 #[test]
-fn refuses_an_entry_name_above_2048_characters() {
-    let name = format!("{}.png", "é".repeat(LONGEST_NAME_CHARS));
+fn lists_an_entry_whose_name_is_2047_bytes() {
+    let name = name_of_bytes(LONGEST_NAME_BYTES);
+
+    let names: Vec<String> = FORMATS
+        .into_iter()
+        .map(|format| {
+            let bytes = cbr(&[entry(&name, b"page")], &RarOptions::of(format)).unwrap();
+            listing(&bytes).unwrap().pages.remove(0).name
+        })
+        .collect();
+
+    assert_eq!(names, [name.clone(), name]);
+}
+
+#[test]
+fn refuses_an_entry_name_above_2047_bytes() {
+    let name = name_of_bytes(LONGEST_NAME_BYTES + 1);
 
     let errors: Vec<FormatError> = FORMATS
         .into_iter()
@@ -426,12 +445,31 @@ fn refuses_an_entry_name_above_2048_characters() {
         errors.iter().all(|error| matches!(
             error,
             FormatError::NameTooLong {
-                limit: LONGEST_NAME_CHARS,
+                limit: LONGEST_NAME_BYTES,
                 ..
             }
         )),
         "{errors:?}"
     );
+}
+
+#[test]
+fn lists_no_page_under_a_drive_letter() {
+    let entries = [
+        entry("C:/1.png", b"one"),
+        entry("d:2.png", b"two"),
+        entry("3.png", b"three"),
+    ];
+
+    let names: Vec<Vec<String>> = FORMATS
+        .into_iter()
+        .map(|format| {
+            let listing = listing(&cbr(&entries, &RarOptions::of(format)).unwrap()).unwrap();
+            listing.pages.into_iter().map(|page| page.name).collect()
+        })
+        .collect();
+
+    assert_eq!(names, [vec!["3.png".to_owned()], vec!["3.png".to_owned()]]);
 }
 
 #[test]

@@ -3,7 +3,11 @@ use std::path::Path;
 use super::{RarEntry, RarFormat, RarListing};
 use crate::{FormatError, Limits, Page, book::in_reading_order, entries::is_contained_page};
 
-pub(super) const MAX_NAME_CHARS: usize = 2048;
+/// libarchive refuses a RAR5 entry name longer than 2047 bytes.
+const MAX_NAME_BYTES: usize = 2047;
+const NUL: char = '\0';
+const EMPTY_NAME: &str = "an entry has an empty name";
+const NAME_WITH_NUL: &str = "an entry name holds a NUL";
 
 pub(super) struct FileHeader {
     pub(super) name: String,
@@ -58,12 +62,7 @@ impl<'a> Gate<'a> {
 
     pub(super) fn accept_file(&mut self, header: FileHeader) -> Result<(), FormatError> {
         self.count_member()?;
-        if header.name.chars().count() > MAX_NAME_CHARS {
-            return Err(FormatError::NameTooLong {
-                path: self.path.to_owned(),
-                limit: MAX_NAME_CHARS,
-            });
-        }
+        self.check_name(&header.name)?;
         let index = self.files;
         self.files += 1;
         if header.is_directory {
@@ -92,6 +91,7 @@ impl<'a> Gate<'a> {
 
     pub(super) fn accept_service(&mut self, header: &FileHeader) -> Result<(), FormatError> {
         self.count_member()?;
+        self.check_name(&header.name)?;
         self.add_to_total(header.unpacked_size)?;
         self.extend_run(header)
     }
@@ -165,6 +165,22 @@ impl<'a> Gate<'a> {
             path: self.path.to_owned(),
             message: message.to_owned(),
         }
+    }
+
+    fn check_name(&self, name: &str) -> Result<(), FormatError> {
+        if name.is_empty() {
+            return Err(self.corrupt(EMPTY_NAME));
+        }
+        if name.contains(NUL) {
+            return Err(self.corrupt(NAME_WITH_NUL));
+        }
+        if name.len() > MAX_NAME_BYTES {
+            return Err(FormatError::NameTooLong {
+                path: self.path.to_owned(),
+                limit: MAX_NAME_BYTES,
+            });
+        }
+        Ok(())
     }
 
     fn add_to_total(&mut self, unpacked_size: u64) -> Result<(), FormatError> {

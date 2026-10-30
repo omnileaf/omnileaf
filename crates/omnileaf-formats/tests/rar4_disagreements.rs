@@ -16,6 +16,7 @@ const NO_FLAGS: u16 = 0;
 const HAS_ADDED_SIZE: u16 = 0x8000;
 const MORE_VOLUMES_FOLLOW: u16 = 0x0001;
 const DICTIONARY_BITS_ALL_SET: u16 = 0x00E0;
+const HAS_UNICODE_NAME: u16 = 0x0200;
 const WINDOWS: u8 = 2;
 const UNIX: u8 = 3;
 const UNKNOWN_HOST: u8 = 9;
@@ -279,4 +280,37 @@ fn refuses_an_end_block_announcing_another_volume() {
         matches!(error, FormatError::MultiVolume { .. }),
         "{error:?}"
     );
+}
+
+#[test]
+fn refuses_a_name_holding_a_nul() {
+    let error = listing(&archive(&[Entry::page(b"1\0.png").bytes()])).unwrap_err();
+
+    assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_a_wide_name_decoding_to_a_nul() {
+    let high_byte = 0;
+    let four_low_bytes = 0b00_00_00_00;
+    let name = [
+        &b"a?b.png"[..],
+        &[0, high_byte, four_low_bytes, b'a', 0, b'b', b'.'],
+    ]
+    .concat();
+    let entry = Entry {
+        flags: HAS_ADDED_SIZE | HAS_UNICODE_NAME,
+        ..Entry::page(&name)
+    };
+
+    let error = listing(&archive(&[entry.bytes()])).unwrap_err();
+
+    assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_an_empty_name() {
+    let error = listing(&archive(&[Entry::page(b"").bytes()])).unwrap_err();
+
+    assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
 }
