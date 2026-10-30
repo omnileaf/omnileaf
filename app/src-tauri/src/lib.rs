@@ -40,6 +40,7 @@ mod tree_storage;
 mod version_details;
 mod volume_keys;
 mod wallpaper_colours;
+mod window_backdrop;
 
 use std::{
     error::Error,
@@ -79,6 +80,7 @@ pub fn run() {
         .with(recent_log.clone())
         .init();
     let config = RuntimeConfig::from_environment();
+    let window_backdrop = window_backdrop::of_this_system();
     let commands = commands::builder();
     let app = tauri::Builder::default();
     #[cfg(all(desktop, not(feature = "e2e")))]
@@ -90,7 +92,7 @@ pub fn run() {
         app
     };
     let app = app
-        .manage(Core::new())
+        .manage(Core::new().with_window_backdrop(window_backdrop))
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
         .manage(home_folder::ChosenHome::default())
@@ -104,6 +106,7 @@ pub fn run() {
         .invoke_handler(commands.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
+            window_backdrop::open_windows(app, window_backdrop)?;
             crash_reporting::install(app.handle());
             commands.mount_events(app);
             let launch = match open_library(app, &config?) {

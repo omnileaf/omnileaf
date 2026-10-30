@@ -1,11 +1,14 @@
-//! The raw Win32 reads behind scheduled folder rescans and missing folders, which the app maps to its decisions.
+//! The raw Win32 reads behind scheduled folder rescans, missing folders and the window backdrop, which the app maps to its decisions.
 #![cfg(windows)]
 
 use std::{mem, ptr};
 
 use windows_sys::Win32::Foundation::{
-    CloseHandle, ERROR_CONNECTION_UNAVAIL, ERROR_MORE_DATA, INVALID_HANDLE_VALUE, MAX_PATH,
-    NO_ERROR,
+    CloseHandle, ERROR_CONNECTION_UNAVAIL, ERROR_MORE_DATA, ERROR_SUCCESS, INVALID_HANDLE_VALUE,
+    MAX_PATH, NO_ERROR, S_OK,
+};
+use windows_sys::Win32::Graphics::Dwm::{
+    DWM_SYSTEMBACKDROP_TYPE, DWMWA_SYSTEMBACKDROP_TYPE, DwmGetWindowAttribute,
 };
 use windows_sys::Win32::NetworkManagement::WNet::{
     CONNECT_INTERACTIVE, CONNECT_PROMPT, NETRESOURCEW, RESOURCETYPE_DISK, WNetAddConnection3W,
@@ -21,6 +24,7 @@ use windows_sys::Win32::System::Ioctl::{
     STORAGE_PROPERTY_QUERY, StorageDeviceProperty,
 };
 use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
+use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 
 const QUERY_ONLY: u32 = 0;
 const NO_FLAGS: u32 = 0;
@@ -191,6 +195,51 @@ pub fn connect_share(owner: usize, share: &str) -> u32 {
     }
 }
 
+/// Reads a `REG_DWORD` value from a key under `HKEY_CURRENT_USER`, or `None` when it is missing or holds another type.
+#[must_use]
+#[expect(unsafe_code, reason = "RegGetValueW is only reachable through FFI")]
+pub fn current_user_dword(key: &str, value: &str) -> Option<u32> {
+    let key: Vec<u16> = key.encode_utf16().chain([0]).collect();
+    let value: Vec<u16> = value.encode_utf16().chain([0]).collect();
+    let mut data = 0_u32;
+    let mut size = u32::try_from(mem::size_of::<u32>()).ok()?;
+    // SAFETY: `key` and `value` are NUL-terminated UTF-16 strings, `data` is a live `u32` of `size` bytes the call only writes, and the type out pointer may be null.
+    let answer = unsafe {
+        RegGetValueW(
+            HKEY_CURRENT_USER,
+            key.as_ptr(),
+            value.as_ptr(),
+            RRF_RT_REG_DWORD,
+            ptr::null_mut(),
+            (&raw mut data).cast(),
+            &raw mut size,
+        )
+    };
+    (answer == ERROR_SUCCESS).then_some(data)
+}
+
+/// Asks `DwmGetWindowAttribute` for the `DWMWA_SYSTEMBACKDROP_TYPE` DWM draws behind a window, or `None` when DWM won't say.
+#[must_use]
+#[expect(
+    unsafe_code,
+    reason = "DwmGetWindowAttribute is only reachable through FFI"
+)]
+pub fn system_backdrop_type(window: usize) -> Option<i32> {
+    let mut backdrop: DWM_SYSTEMBACKDROP_TYPE = 0;
+    let size = u32::try_from(mem::size_of::<DWM_SYSTEMBACKDROP_TYPE>()).ok()?;
+    let attribute = u32::try_from(DWMWA_SYSTEMBACKDROP_TYPE).ok()?;
+    // SAFETY: `backdrop` is a live `DWM_SYSTEMBACKDROP_TYPE` of `size` bytes the call only writes, and DWM rejects a handle that names no window.
+    let answer = unsafe {
+        DwmGetWindowAttribute(
+            ptr::with_exposed_provenance_mut(window),
+            attribute,
+            (&raw mut backdrop).cast(),
+            size,
+        )
+    };
+    (answer == S_OK).then_some(backdrop)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +288,34 @@ mod tests {
         let system_drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_owned());
 
         assert_eq!(remote_name(&system_drive), None);
+    }
+
+    #[test]
+    fn reads_a_dword_value_of_the_current_user() {
+        let font_smoothing = current_user_dword(r"Control Panel\Desktop", "FontSmoothingType");
+
+        assert!(matches!(font_smoothing, Some(0..=2)), "{font_smoothing:?}");
+    }
+
+    #[test]
+    fn reads_no_dword_from_a_value_of_another_type() {
+        assert_eq!(
+            current_user_dword(r"Control Panel\Desktop", "WallPaper"),
+            None
+        );
+    }
+
+    #[test]
+    fn reads_no_dword_from_a_key_that_is_not_there() {
+        assert_eq!(
+            current_user_dword(r"Software\Omnileaf\Missing", "Missing"),
+            None
+        );
+    }
+
+    #[test]
+    fn reads_no_backdrop_of_a_window_that_is_not_there() {
+        assert_eq!(system_backdrop_type(0), None);
     }
 
     #[test]
