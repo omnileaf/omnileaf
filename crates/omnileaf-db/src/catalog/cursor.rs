@@ -26,6 +26,7 @@ const UNREAD_COUNT_TAG: u8 = 8;
 const TIME_LEFT_TAG: u8 = 9;
 const WRITER_TAG: u8 = 10;
 const FOLDER_GROUP_TAG: u8 = 11;
+const CHAPTER_TAG: u8 = 12;
 const ID_LENGTH: usize = 16;
 const KEY_LENGTH_PREFIX: usize = size_of::<u32>();
 const MILLIS_LENGTH: usize = size_of::<i64>();
@@ -84,6 +85,9 @@ pub(crate) enum Position {
     FolderGroup {
         root: i64,
         location: Vec<u8>,
+    },
+    Chapter {
+        index_id: i64,
     },
 }
 
@@ -160,6 +164,7 @@ impl Position {
             Self::FolderGroup { root, location } => {
                 [&[FOLDER_GROUP_TAG][..], &root.to_be_bytes(), location].concat()
             }
+            Self::Chapter { index_id } => [&[CHAPTER_TAG][..], &index_id.to_be_bytes()].concat(),
         }
     }
 
@@ -249,6 +254,9 @@ impl Position {
                     location: location.to_vec(),
                 })
             }
+            CHAPTER_TAG => Some(Self::Chapter {
+                index_id: i64::from_be_bytes(rest.try_into().ok()?),
+            }),
             _ => None,
         }
     }
@@ -435,5 +443,31 @@ mod tests {
         let bytes: HashSet<u8> = listings.iter().copied().map(listing_byte).collect();
 
         assert_eq!(bytes.len(), listings.len());
+    }
+
+    #[test]
+    fn reads_back_the_index_row_a_chapter_cursor_stands_at() {
+        for index_id in [0, 1, 2_000, i64::MAX] {
+            let cursor = Cursor(Position::Chapter { index_id });
+
+            let read: Cursor = cursor.to_string().parse().unwrap();
+
+            assert_eq!(read, cursor);
+        }
+    }
+
+    #[test]
+    fn refuses_a_chapter_cursor_cut_short_or_run_long() {
+        let whole = Cursor(Position::Chapter { index_id: 2_000 }).to_string();
+        let cut_short = &whole[..whole.len() - 2];
+        let run_long = format!("{whole}00");
+
+        let refused = [cut_short.parse::<Cursor>(), run_long.parse::<Cursor>()];
+
+        assert!(
+            refused
+                .iter()
+                .all(|read| matches!(read, Err(Error::MalformedCursor)))
+        );
     }
 }

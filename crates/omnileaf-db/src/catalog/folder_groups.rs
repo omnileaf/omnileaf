@@ -111,7 +111,8 @@ pub fn folder_groups(
             | Position::LastUpdated { .. }
             | Position::UnreadCount { .. }
             | Position::TimeLeft { .. }
-            | Position::Writer { .. },
+            | Position::Writer { .. }
+            | Position::Chapter { .. },
         ) => Err(Error::CursorForAnotherList),
     }?;
     Ok(Page::of(rows, request.size))

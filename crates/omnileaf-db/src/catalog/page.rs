@@ -13,7 +13,7 @@ impl PageSize {
         i64::from(self.0) + 1
     }
 
-    fn items(self) -> usize {
+    pub(crate) fn items(self) -> usize {
         usize::from(self.0)
     }
 }

@@ -291,6 +291,14 @@ const fn admitted(filter: &SeriesFilter, stage: ReadingStage) -> Option<i64> {
     }
 }
 
+macro_rules! adult_condition {
+    () => {
+        "(:holds_adult IS NULL
+            OR (series.adult_rated_books > 0
+                AND (:counts_age_ratings OR series.marked_adult = 1)) = :holds_adult)"
+    };
+}
+
 macro_rules! conditions {
     ($tags:literal) => {
         concat!(
@@ -306,9 +314,8 @@ macro_rules! conditions {
             $tags,
             ")
         AND (:holds_bookmarks IS NULL OR (series.bookmarked_books > 0) = :holds_bookmarks)
-        AND (:holds_adult IS NULL
-            OR (series.adult_rated_books > 0
-                AND (:counts_age_ratings OR series.marked_adult = 1)) = :holds_adult)"
+        AND ",
+            $crate::catalog::series_listing::adult_condition!()
         )
     };
 }
@@ -340,6 +347,7 @@ macro_rules! counted_conditions {
     };
 }
 
+pub(crate) use adult_condition;
 pub(crate) use conditions;
 pub(crate) use conditions_of_tagged_candidates;
 pub(crate) use counted_conditions;
@@ -394,6 +402,17 @@ impl FilterParams {
             holds_adult: filter.adult.required(),
             counts_age_ratings: filter.counts_age_ratings,
         }
+    }
+
+    pub(crate) fn hides_adult(&self) -> bool {
+        self.holds_adult == Some(false)
+    }
+
+    pub(crate) fn named_adult(&self) -> [(&'static str, &dyn ToSql); 2] {
+        [
+            (":holds_adult", &self.holds_adult),
+            (":counts_age_ratings", &self.counts_age_ratings),
+        ]
     }
 
     pub(crate) fn named(&self) -> [(&'static str, &dyn ToSql); 12] {
