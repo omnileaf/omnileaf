@@ -1,7 +1,8 @@
 use std::{
     collections::HashMap,
+    fmt,
     fs::File,
-    io::{self, Read, Seek, SeekFrom},
+    io::{self, Read},
     ops::ControlFlow,
     path::{Path, PathBuf},
 };
@@ -20,21 +21,44 @@ use crate::{
 };
 
 const ENDS_EARLY: &str = "libarchive found fewer entries than the headers list";
+const MIB: u64 = 1024 * 1024;
+/// A solid RAR decodes every entry it skips, so this bounds the work one read of a page may cost.
+const MAX_SOLID_SKIP_BYTES: u64 = 1024 * MIB;
 
 type Source = BlockReader<File>;
 
 #[derive(Debug)]
 pub struct RarBook {
     path: PathBuf,
+    file: File,
     source: Source,
     listing: RarListing,
     limits: Limits,
     budget_bytes: usize,
+    skip_limit_bytes: u64,
+    cursor: Option<Cursor>,
+    #[cfg(test)]
+    opens: usize,
+}
+
+struct Cursor {
+    archive: Reader<Source>,
+    next_ordinal: usize,
+}
+
+impl fmt::Debug for Cursor {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Cursor")
+            .field("next_ordinal", &self.next_ordinal)
+            .finish_non_exhaustive()
+    }
 }
 
 impl RarBook {
     pub(crate) fn from_file(file: File, path: &Path, limits: &Limits) -> Result<Self, FormatError> {
-        let (source, listing) = read_listing(file, path, limits)?;
+        let cloned = file.try_clone().map_err(read_failed(path))?;
+        let (source, listing) = read_listing(cloned, path, limits)?;
         if listing.pages.is_empty() {
             return Err(FormatError::NoPages {
                 path: path.to_owned(),
@@ -42,10 +66,15 @@ impl RarBook {
         }
         Ok(Self {
             path: path.to_owned(),
+            file,
             source,
             listing,
             limits: *limits,
             budget_bytes: DEFAULT_LIMIT_BYTES,
+            skip_limit_bytes: MAX_SOLID_SKIP_BYTES,
+            cursor: None,
+            #[cfg(test)]
+            opens: 0,
         })
     }
 
@@ -118,23 +147,24 @@ impl RarBook {
             .enumerate()
             .filter_map(|(page, &position)| Some((listing.entries.get(position)?.index, page)))
             .collect();
-        let limit = self.limits.max_page_bytes;
-        let mut walk = Walk::open(&mut self.source, listing, &self.path, self.budget_bytes)?;
-        let mut unread = pages.len();
-        while unread > 0 {
-            let entry = walk.next_file()?;
-            let Some(&page) = pages.get(&entry.index) else {
-                continue;
-            };
-            let bytes = walk
-                .read_whole(entry, limit)?
-                .ok_or_else(|| page_too_large(&self.path, listing, &self.limits, page))?;
-            unread -= 1;
-            if read(page, bytes).is_break() {
-                break;
+        let (limits, path) = (self.limits, self.path.clone());
+        self.with_walk(0, |walk| {
+            let mut unread = pages.len();
+            while unread > 0 {
+                let entry = walk.next_file()?;
+                let Some(&page) = pages.get(&entry.index) else {
+                    continue;
+                };
+                let bytes = walk
+                    .read_whole(entry, limits.max_page_bytes)?
+                    .ok_or_else(|| page_too_large(&path, walk.listing, &limits, page))?;
+                unread -= 1;
+                if read(page, bytes).is_break() {
+                    break;
+                }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 
     fn read_whole_entry(
@@ -142,9 +172,10 @@ impl RarBook {
         wanted: usize,
         limit: u64,
     ) -> Result<Option<Vec<u8>>, FormatError> {
-        let mut walk = self.walk()?;
-        let entry = walk.find(wanted)?;
-        walk.read_whole(entry, limit)
+        self.with_walk(wanted, |walk| {
+            let entry = walk.find(wanted)?;
+            walk.read_whole(entry, limit)
+        })
     }
 
     fn read_entry<T>(
@@ -152,18 +183,58 @@ impl RarBook {
         wanted: usize,
         read: impl FnOnce(&mut dyn Read) -> io::Result<T>,
     ) -> Result<T, FormatError> {
-        let mut walk = self.walk()?;
-        walk.find(wanted)?;
-        walk.read(read)
+        self.with_walk(wanted, |walk| {
+            walk.find(wanted)?;
+            walk.read(read)
+        })
     }
 
-    fn walk(&mut self) -> Result<Walk<'_>, FormatError> {
-        Walk::open(
-            &mut self.source,
-            &self.listing,
-            &self.path,
-            self.budget_bytes,
-        )
+    /// libarchive reads an archive only forwards, so the reader is kept between reads and opened again only to go back.
+    fn with_walk<T>(
+        &mut self,
+        from: usize,
+        step: impl FnOnce(&mut Walk<'_>) -> Result<T, FormatError>,
+    ) -> Result<T, FormatError> {
+        let outcome = self.walk(from).and_then(|mut walk| step(&mut walk));
+        if outcome.is_err() {
+            self.cursor = None;
+        }
+        outcome
+    }
+
+    fn walk(&mut self, from: usize) -> Result<Walk<'_>, FormatError> {
+        let cursor = match self.cursor.take() {
+            Some(cursor) if cursor.next_ordinal <= from => cursor,
+            _ => self.open_cursor()?,
+        };
+        let is_solid = self.listing.entries.iter().any(|entry| entry.is_solid);
+        let cursor = self.cursor.insert(cursor);
+        Ok(Walk {
+            cursor,
+            listing: &self.listing,
+            path: &self.path,
+            skipped_bytes: 0,
+            skip_limit_bytes: if is_solid {
+                self.skip_limit_bytes
+            } else {
+                u64::MAX
+            },
+        })
+    }
+
+    fn open_cursor(&mut self) -> Result<Cursor, FormatError> {
+        let file = self.file.try_clone().map_err(read_failed(&self.path))?;
+        let source = BlockReader::new(file).map_err(read_failed(&self.path))?;
+        let archive =
+            Reader::open(source, self.budget_bytes).map_err(|error| failed(&self.path, error))?;
+        #[cfg(test)]
+        {
+            self.opens += 1;
+        }
+        Ok(Cursor {
+            archive,
+            next_ordinal: 0,
+        })
     }
 
     fn ordinal_of(&self, index: usize) -> Result<usize, FormatError> {
@@ -183,29 +254,14 @@ impl RarBook {
 }
 
 struct Walk<'a> {
-    archive: Reader<&'a mut Source>,
+    cursor: &'a mut Cursor,
     listing: &'a RarListing,
     path: &'a Path,
-    next_ordinal: usize,
+    skipped_bytes: u64,
+    skip_limit_bytes: u64,
 }
 
 impl<'a> Walk<'a> {
-    fn open(
-        source: &'a mut Source,
-        listing: &'a RarListing,
-        path: &'a Path,
-        budget_bytes: usize,
-    ) -> Result<Self, FormatError> {
-        source.seek(SeekFrom::Start(0)).map_err(read_failed(path))?;
-        let archive = Reader::open(source, budget_bytes).map_err(|error| failed(path, error))?;
-        Ok(Self {
-            archive,
-            listing,
-            path,
-            next_ordinal: 0,
-        })
-    }
-
     /// A solid stream decodes only from its start, so every entry before the wanted one is decoded and dropped on the way.
     fn find(&mut self, wanted: usize) -> Result<&'a RarEntry, FormatError> {
         loop {
@@ -213,18 +269,26 @@ impl<'a> Walk<'a> {
             if entry.index == wanted {
                 return Ok(entry);
             }
+            self.skipped_bytes = self.skipped_bytes.saturating_add(entry.unpacked_size);
+            if self.skipped_bytes > self.skip_limit_bytes {
+                return Err(FormatError::TooMuchToSkip {
+                    path: self.path.to_owned(),
+                    limit: self.skip_limit_bytes,
+                });
+            }
         }
     }
 
     fn next_file(&mut self) -> Result<&'a RarEntry, FormatError> {
         loop {
             let entry = self
+                .cursor
                 .archive
                 .next_entry()
                 .map_err(|error| failed(self.path, error))?
                 .ok_or_else(|| corrupt(self.path, ENDS_EARLY.to_owned()))?;
-            let ordinal = self.next_ordinal;
-            self.next_ordinal += 1;
+            let ordinal = self.cursor.next_ordinal;
+            self.cursor.next_ordinal += 1;
             if let Some(listed) = check_entry(self.listing, ordinal, &entry)
                 .map_err(|message| corrupt(self.path, message))?
             {
@@ -259,13 +323,13 @@ impl<'a> Walk<'a> {
         &mut self,
         read: impl FnOnce(&mut dyn Read) -> io::Result<T>,
     ) -> Result<T, FormatError> {
-        read(&mut Contents(&mut self.archive)).map_err(|error| read_error(self.path, error))
+        read(&mut Contents(&mut self.cursor.archive)).map_err(|error| read_error(self.path, error))
     }
 }
 
-struct Contents<'a, 'b>(&'a mut Reader<&'b mut Source>);
+struct Contents<'a>(&'a mut Reader<Source>);
 
-impl Read for Contents<'_, '_> {
+impl Read for Contents<'_> {
     fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         self.0.read_data(buffer).map_err(io::Error::other)
     }
@@ -395,12 +459,18 @@ fn corrupt(path: &Path, message: String) -> FormatError {
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_testkit::{ArchiveEntry, RarFormat as Format, RarOptions, ScratchFolder, cbr};
+    use omnileaf_testkit::{
+        ArchiveEntry, Packing, RarFormat as Format, RarOptions, ScratchFolder, cbr,
+    };
 
     use super::*;
     use crate::RarFormat;
 
     const SMALL_BUDGET_BYTES: usize = 4 * 1024;
+    const SMALL_SKIP_LIMIT_BYTES: u64 = 16;
+    const PAGE_REPEATS: usize = 20;
+    const START_LENGTH: u64 = 4;
+    const THREE_PAGES: [&str; 3] = ["1.png", "2.png", "3.png"];
 
     fn listed(name: &str, index: usize, unpacked_size: u64) -> RarEntry {
         RarEntry {
@@ -475,18 +545,25 @@ mod tests {
         assert_eq!(refused, mismatches.len());
     }
 
+    fn book(scratch: &ScratchFolder, names: &[&str], options: &RarOptions) -> RarBook {
+        let entries: Vec<ArchiveEntry> = names
+            .iter()
+            .map(|name| ArchiveEntry {
+                name: (*name).to_owned(),
+                bytes: name.as_bytes().repeat(PAGE_REPEATS),
+            })
+            .collect();
+        let archive = cbr(&entries, options).unwrap_or_default();
+        let path = scratch.write("book.cbr", &archive);
+        let file = File::open(&path).unwrap_or_else(|error| panic!("{error}"));
+        RarBook::from_file(file, &path, &Limits::default())
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
     #[test]
     fn refuses_a_page_libarchive_cannot_read_within_its_memory_budget() {
         let scratch = ScratchFolder::new("rar-budget");
-        let entries = [ArchiveEntry {
-            name: "1.png".to_owned(),
-            bytes: b"page".to_vec(),
-        }];
-        let archive = cbr(&entries, &RarOptions::of(Format::RAR5)).unwrap_or_default();
-        let path = scratch.write("book.cbr", &archive);
-        let file = File::open(&path).unwrap_or_else(|error| panic!("{error}"));
-        let mut book = RarBook::from_file(file, &path, &Limits::default())
-            .unwrap_or_else(|error| panic!("{error}"));
+        let mut book = book(&scratch, &["1.png"], &RarOptions::of(Format::RAR5));
         book.budget_bytes = SMALL_BUDGET_BYTES;
 
         let error = book.read_page(0);
@@ -495,5 +572,76 @@ mod tests {
             matches!(error, Err(FormatError::DecoderOutOfMemory { limit, .. }) if limit == SMALL_BUDGET_BYTES as u64),
             "{error:?}"
         );
+    }
+
+    #[test]
+    fn reads_pages_in_archive_order_through_one_reader() {
+        let scratch = ScratchFolder::new("rar-one-reader");
+        for format in [Format::RAR4, Format::RAR5] {
+            let mut book = book(&scratch, &THREE_PAGES, &RarOptions::of(format));
+
+            let starts: Vec<_> = (0..THREE_PAGES.len())
+                .map(|index| book.read_page_start(index, START_LENGTH).is_ok())
+                .collect();
+            let last = book.read_page(2);
+
+            assert_eq!(starts, [true; 3], "{format:?}");
+            assert!(last.is_ok(), "{format:?}: {last:?}");
+            assert_eq!(book.opens, 2, "{format:?}");
+        }
+    }
+
+    #[test]
+    fn reopens_the_archive_to_read_a_page_stored_earlier() {
+        let scratch = ScratchFolder::new("rar-reopen");
+        for format in [Format::RAR4, Format::RAR5] {
+            let mut book = book(&scratch, &THREE_PAGES, &RarOptions::of(format));
+
+            let later = book.read_page(2);
+            let earlier = book.read_page(0);
+
+            assert_eq!(
+                (later.ok(), earlier.ok(), book.opens),
+                (
+                    Some(page_bytes(THREE_PAGES[2])),
+                    Some(page_bytes(THREE_PAGES[0])),
+                    2
+                ),
+                "{format:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn refuses_to_decode_more_than_the_skip_limit_to_reach_a_solid_page() {
+        let scratch = ScratchFolder::new("rar-skip-limit");
+        let solid = RarOptions {
+            packing: Packing::Solid,
+            ..RarOptions::of(Format::RAR5)
+        };
+        let mut book = book(&scratch, &THREE_PAGES, &solid);
+        book.skip_limit_bytes = SMALL_SKIP_LIMIT_BYTES;
+
+        let error = book.read_page(2);
+
+        assert!(
+            matches!(error, Err(FormatError::TooMuchToSkip { limit, .. }) if limit == SMALL_SKIP_LIMIT_BYTES),
+            "{error:?}"
+        );
+    }
+
+    #[test]
+    fn skips_past_the_skip_limit_in_an_archive_that_is_not_solid() {
+        let scratch = ScratchFolder::new("rar-skip-limit-not-solid");
+        let mut book = book(&scratch, &THREE_PAGES, &RarOptions::of(Format::RAR5));
+        book.skip_limit_bytes = SMALL_SKIP_LIMIT_BYTES;
+
+        let page = book.read_page(2);
+
+        assert_eq!(page.ok(), Some(page_bytes(THREE_PAGES[2])));
+    }
+
+    fn page_bytes(name: &str) -> Vec<u8> {
+        name.as_bytes().repeat(PAGE_REPEATS)
     }
 }
