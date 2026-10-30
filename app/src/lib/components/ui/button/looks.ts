@@ -4,6 +4,7 @@ import { hasNativeLook, isPhone } from "#lib/page/platform.ts";
 import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
 
 import { macosButtonClasses } from "./macos-button.ts";
+import { windowsButtonClasses } from "./windows-button.ts";
 
 const FOCUS_RING = "focus-visible:focus-ring";
 
@@ -111,6 +112,9 @@ export function variantClasses(
 ): string {
   if (platform === "macos") {
     return `${macosButtonClasses(variant, size, isIconOnly)} ${FOCUS_RING}`;
+  }
+  if (platform === "windows") {
+    return `${windowsButtonClasses(variant, size, isIconOnly)} ${FOCUS_RING}`;
   }
   if (!hasNativeLook(platform)) {
     return isIconOnly
