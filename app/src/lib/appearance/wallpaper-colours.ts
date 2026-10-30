@@ -7,6 +7,7 @@ import {
 } from "#lib/ipc/bindings.ts";
 
 import type { ColoursChoice } from "./colours.svelte";
+import { BLACK, type Label, labelOn, WHITE } from "./label-on-accent";
 
 export type ColourReaders = Pick<
   typeof commands,
@@ -56,13 +57,28 @@ function wallpaperPropertyOf(theme: Theme, role: keyof ColourRoles): string {
   return `--android-wallpaper-${theme}-${ROLE_NAMES[role]}`;
 }
 
-function accentPropertyOf(theme: Theme): string {
-  return `--windows-accent-${theme}`;
+const WINUI_LABEL = { light: WHITE, dark: BLACK } satisfies Record<
+  Theme,
+  Label
+>;
+
+interface AccentProperties {
+  readonly fill: string;
+  readonly text: string;
+  readonly label: string;
+}
+
+function accentPropertiesOf(theme: Theme): AccentProperties {
+  return {
+    fill: `--windows-accent-${theme}`,
+    text: `--windows-accent-text-${theme}`,
+    label: `--windows-on-accent-${theme}`,
+  };
 }
 
 const SYSTEM_PROPERTIES = THEMES.flatMap((theme) => [
   ...ROLES.map((role) => wallpaperPropertyOf(theme, role)),
-  accentPropertyOf(theme),
+  ...Object.values(accentPropertiesOf(theme)),
 ]);
 
 function hexOf(rgb: number): string {
@@ -80,9 +96,22 @@ function wallpaperProperties(colours: WallpaperColours): SystemColours {
   );
 }
 
+const TEXT_SHADE = {
+  light: "lightText",
+  dark: "darkText",
+} satisfies Record<Theme, keyof AccentColours>;
+
 function accentProperties(accent: AccentColours): SystemColours {
   return new Map(
-    THEMES.map((theme) => [accentPropertyOf(theme), hexOf(accent[theme])]),
+    THEMES.flatMap((theme) => {
+      const { fill, text, label } = accentPropertiesOf(theme);
+      const fillColour = accent[theme];
+      return [
+        [fill, hexOf(fillColour)],
+        [text, hexOf(accent[TEXT_SHADE[theme]])],
+        [label, hexOf(labelOn(fillColour, WINUI_LABEL[theme]))],
+      ];
+    }),
   );
 }
 

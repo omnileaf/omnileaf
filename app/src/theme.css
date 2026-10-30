@@ -572,6 +572,16 @@
   --input-group-radius: var(--radius-windows-control);
 }
 
+[data-platform="windows"][data-colours="wallpaper"],
+[data-platform="windows"][data-colours="wallpaper"] [data-theme="light"] {
+  --windows-accent-ink: var(--windows-accent-text-light);
+}
+
+[data-platform="windows"][data-colours="wallpaper"][data-theme="dark"],
+[data-platform="windows"][data-colours="wallpaper"] [data-theme="dark"] {
+  --windows-accent-ink: var(--windows-accent-text-dark);
+}
+
 [data-platform="linux"],
 [data-platform="linux"] [data-theme] {
   --background: var(--linux-background);

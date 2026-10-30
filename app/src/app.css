@@ -1119,6 +1119,7 @@
   --color-raised: var(--raised);
   --color-bar: var(--background);
   --color-accent: var(--primary);
+  --text-color-accent: var(--windows-accent-ink, var(--primary));
   --color-on-accent: var(--primary-foreground);
   --color-accent-soft: var(--accent);
   --color-on-accent-soft: var(--accent-foreground);

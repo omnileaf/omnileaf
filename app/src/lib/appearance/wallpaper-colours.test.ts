@@ -144,6 +144,19 @@ test("drops the Windows accent when Omnileaf's colours are chosen again", async 
   expect(shown(LIGHT_ACCENT)).toBe("");
 });
 
+test("sets the text shades and labels beside the Windows accent", async () => {
+  await followWallpaperColours("windows", "wallpaper", accenting(BLUE_ACCENT));
+
+  expect(
+    [
+      "--windows-accent-text-light",
+      "--windows-accent-text-dark",
+      "--windows-on-accent-light",
+      "--windows-on-accent-dark",
+    ].map(shown),
+  ).toEqual(["#003e92", "#99ebff", "#ffffff", "#000000"]);
+});
+
 test.each(ELSEWHERE)(
   "never reads the system's colours on %s",
   async (platform) => {

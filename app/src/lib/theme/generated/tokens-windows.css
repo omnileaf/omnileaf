@@ -175,8 +175,10 @@
 :root[data-platform="windows"][data-colours="wallpaper"],
 :root[data-platform="windows"][data-colours="wallpaper"] [data-theme="light"] {
   --native-color-button-primary: var(--windows-accent-light);
+  --native-color-on-button-primary: var(--windows-on-accent-light);
   --native-color-switch-on: var(--windows-accent-light);
   --native-color-switch-on-border: var(--windows-accent-light);
+  --native-color-switch-thumb: var(--windows-on-accent-light);
   --native-color-progress-fill: var(--windows-accent-light);
   --native-color-accent-hover: color-mix(in srgb, var(--windows-accent-light) 90%, transparent);
   --native-color-accent-pressed: color-mix(in srgb, var(--windows-accent-light) 80%, transparent);
@@ -185,8 +187,10 @@
 :root[data-platform="windows"][data-colours="wallpaper"][data-theme="dark"],
 :root[data-platform="windows"][data-colours="wallpaper"] [data-theme="dark"] {
   --native-color-button-primary: var(--windows-accent-dark);
+  --native-color-on-button-primary: var(--windows-on-accent-dark);
   --native-color-switch-on: var(--windows-accent-dark);
   --native-color-switch-on-border: var(--windows-accent-dark);
+  --native-color-switch-thumb: var(--windows-on-accent-dark);
   --native-color-progress-fill: var(--windows-accent-dark);
   --native-color-accent-hover: color-mix(in srgb, var(--windows-accent-dark) 90%, transparent);
   --native-color-accent-pressed: color-mix(in srgb, var(--windows-accent-dark) 80%, transparent);
