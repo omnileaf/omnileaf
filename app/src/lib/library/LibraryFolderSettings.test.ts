@@ -1959,3 +1959,14 @@ test("keeps the looks empty warning under its folder's row on an Android phone",
     )
     .toBeVisible();
 });
+
+test("drops a folder's warning while its removal can still be undone on an iPhone", async () => {
+  const { folders, warning } = await renderFoundEmptyOnIphone();
+
+  folders
+    .getByRole("button", { name: "Remove Sample Comics" })
+    .element()
+    .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+  await expect.element(warning).not.toBeInTheDocument();
+});
