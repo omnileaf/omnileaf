@@ -62,6 +62,7 @@
   --native-tracking-segment: -0.08px;
   --native-shadow-segment-lift: 0 3px 36px rgba(0, 0, 0, 0.05);
   --native-spacing-progress-gap: 0px;
+  --native-spacing-progress-thickness: var(--spacing-progress);
   --native-radius-group: 26px;
   --native-radius-card: 26px;
   --native-spacing-row: 52px;
@@ -142,6 +143,8 @@
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;
   --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
+  --native-color-on-tab-hover: var(--muted-foreground);
+  --native-color-on-tab-disabled: var(--muted-foreground);
   --native-spacing-tab-bar: 62px;
   --native-spacing-tab-bar-inset: 4px;
   --native-spacing-tab-bar-inline: 10px;
@@ -169,6 +172,9 @@
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --native-color-dialog-layer: transparent;
+  --native-color-dialog-edge: var(--dialog-edge);
+  --native-color-dialog-band-edge: var(--border);
   --native-radius-dialog: 34px;
   --native-spacing-dialog: 320px;
   --native-spacing-dialog-text-inline: 14px;
@@ -183,6 +189,11 @@
   --native-spacing-sheet-handle-start: 5px;
   --native-spacing-sheet-handle-area: 10px;
   --native-spacing-sheet-handle-end: 0px;
+  --native-color-menu-edge: var(--menu-edge);
+  --native-color-menu-item-hover: var(--menu-highlight);
+  --native-color-on-menu-disabled: var(--muted-foreground);
+  --native-color-key-ink: var(--key-ink);
+  --native-color-on-surface: var(--foreground);
   --native-radius-menu: 32px;
   --native-radius-menu-item: 999px;
   --native-radius-menu-item-end: 999px;
@@ -192,6 +203,8 @@
   --native-spacing-menu-item-inline: 16px;
   --native-spacing-menu-rule-inline: 16px;
   --native-spacing-menu-rule-block: 10px;
+  --native-shadow-tooltip-lift: var(--tooltip-shadow);
+  --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-radius-notice: 24px;
   --native-radius-notice-tall: 26px;
   --native-spacing-notice: 48px;
@@ -276,6 +289,8 @@
   --native-weight-tab-label: 500;
   --native-tracking-tab-label: 0;
   --native-spacing-tab-min: 0px;
+  --native-spacing-tab-block-start: 0px;
+  --native-spacing-tab-block-end: 0px;
   --native-spacing-tab-indicator: var(--spacing-2xs);
   --native-radius-tab-indicator: 9999px;
   --native-color-tab-indicator: var(--foreground);

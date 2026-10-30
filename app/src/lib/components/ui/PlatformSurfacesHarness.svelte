@@ -15,6 +15,7 @@
     DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "./dropdown-menu/index.ts";
+  import { Kbd } from "./kbd/index.ts";
   import { Switch } from "./switch/index.ts";
   import { Tooltip } from "./tooltip/index.ts";
 </script>
@@ -28,7 +29,14 @@
     <DropdownMenuItem>Mark read</DropdownMenuItem>
     <DropdownMenuItem>Rename</DropdownMenuItem>
     <DropdownMenuSeparator />
-    <DropdownMenuItem tone="danger">Delete</DropdownMenuItem>
+    <DropdownMenuItem tone="danger">
+      Delete
+      <Kbd aria-hidden="true">Del</Kbd>
+    </DropdownMenuItem>
+    <DropdownMenuItem disabled>
+      Share
+      <Kbd aria-hidden="true">Ctrl+S</Kbd>
+    </DropdownMenuItem>
     <DropdownMenuSeparator />
     <DropdownMenuRadioGroup value="grid">
       <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>

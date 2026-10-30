@@ -33,6 +33,8 @@
             : "bg-native-progress-track",
         ]
       : "bg-accent/20",
+    value === null &&
+      "windows:bg-native-progress-idle-track windows:block-native-progress-thickness",
     className,
   )}
   {value}
@@ -43,7 +45,9 @@
     <div
       class={[
         "progress-band rounded-full",
-        isNative ? "bg-native-progress-fill" : "bg-accent",
+        isNative
+          ? "bg-native-progress-fill"
+          : "bg-accent windows:bg-native-progress-fill",
       ]}
     ></div>
   {:else if isNative}

@@ -103,3 +103,31 @@ test("runs Android's loading band in the fill colour on the soft accent track", 
     "rgb(50, 106, 77)",
   );
 });
+
+test.each([
+  { theme: "light", accent: "rgb(47, 111, 79)" },
+  { theme: "dark", accent: "rgb(127, 203, 157)" },
+])(
+  "runs Windows's indeterminate bar as a 3 tall accent band with no track in the $theme theme",
+  async ({ theme, accent }) => {
+    followCorePlatform("windows");
+    document.documentElement.dataset.theme = theme;
+    const screen = await render(Progress, {
+      value: null,
+      "aria-label": "Finding books",
+      class: "block-progress-thin",
+    });
+
+    const bar = screen
+      .getByRole("progressbar", { name: "Finding books" })
+      .element();
+    const band = bar.firstElementChild;
+
+    expect(getComputedStyle(bar).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(bar.getBoundingClientRect().height).toBeCloseTo(3, 0);
+    expect(band && getComputedStyle(band).backgroundColor).toBe(accent);
+    expect(
+      Number.parseFloat(band ? getComputedStyle(band).borderTopLeftRadius : ""),
+    ).toBeGreaterThanOrEqual(1.5);
+  },
+);

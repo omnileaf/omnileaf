@@ -17,6 +17,7 @@ interface DialogButtonLook {
   readonly buttonLooks: readonly ButtonLook[];
   readonly corner: string;
   readonly height: number;
+  readonly weight: string;
   readonly fill: string;
   readonly edge: string;
   readonly bottomEdge: string;
@@ -35,6 +36,7 @@ const LOOKS: readonly DialogButtonLook[] = [
     buttonLooks: OUTLINED_LOOKS,
     corner: "8px",
     height: 36,
+    weight: "500",
     fill: "--background",
     edge: "--input",
     bottomEdge: "--input",
@@ -44,6 +46,7 @@ const LOOKS: readonly DialogButtonLook[] = [
     buttonLooks: ["confirm-cancel"],
     corner: "9999px",
     height: 48,
+    weight: "500",
     fill: "transparent",
     edge: "--android-outline",
     bottomEdge: "--android-outline",
@@ -53,6 +56,7 @@ const LOOKS: readonly DialogButtonLook[] = [
     buttonLooks: ["confirm-cancel"],
     corner: "8px",
     height: 48,
+    weight: "500",
     fill: "--ios-fill",
     edge: "transparent",
     bottomEdge: "transparent",
@@ -62,6 +66,7 @@ const LOOKS: readonly DialogButtonLook[] = [
     buttonLooks: OUTLINED_LOOKS,
     corner: "6px",
     height: 28,
+    weight: "500",
     fill: "--background",
     edge: "--input",
     bottomEdge: "--input",
@@ -71,9 +76,10 @@ const LOOKS: readonly DialogButtonLook[] = [
     buttonLooks: OUTLINED_LOOKS,
     corner: "4px",
     height: 32,
-    fill: "--windows-control",
-    edge: "--windows-stroke",
-    bottomEdge: "--windows-stroke-strong",
+    weight: "400",
+    fill: "rgba(255, 255, 255, 0.7)",
+    edge: "rgba(0, 0, 0, 0.06)",
+    bottomEdge: "rgba(0, 0, 0, 0.16)",
   },
 ];
 
@@ -101,7 +107,7 @@ for (const look of LOOKS) {
 
       expect(style.borderTopLeftRadius).toBe(look.corner);
       expect(button.getBoundingClientRect().height).toBeCloseTo(look.height, 0);
-      expect(style.fontWeight).toBe("500");
+      expect(style.fontWeight).toBe(look.weight);
       expect(style.backgroundColor).toBe(
         resolvedColour(look.fill, "backgroundColor"),
       );

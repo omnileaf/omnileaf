@@ -1,5 +1,16 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+export type AlertAction = "cancel" | "confirm";
+
+export type AlertTone = "danger" | "accent";
+
+const CANCEL_FIRST: readonly AlertAction[] = ["cancel", "confirm"];
+
+const CANCEL_BY_DEFAULT: Readonly<Record<AlertTone, AlertAction>> = {
+  danger: "cancel",
+  accent: "cancel",
+};
+
 export interface AlertLook {
   readonly scrim: string;
   readonly surface: string;
@@ -10,6 +21,8 @@ export interface AlertLook {
   readonly actions: string;
   readonly cancel: string;
   readonly confirm: string;
+  readonly actionOrder: readonly AlertAction[];
+  readonly defaultAction: Readonly<Record<AlertTone, AlertAction>>;
 }
 
 export const TODAYS_ALERT_LOOK: AlertLook = {
@@ -22,6 +35,8 @@ export const TODAYS_ALERT_LOOK: AlertLook = {
   actions: "",
   cancel: "",
   confirm: "",
+  actionOrder: CANCEL_FIRST,
+  defaultAction: CANCEL_BY_DEFAULT,
 };
 
 const IOS_ACTION =
@@ -40,6 +55,31 @@ const IOS_LOOK: AlertLook = {
   actions: "max-medium:mbs-xl",
   cancel: `${IOS_ACTION} max-medium:text-foreground`,
   confirm: `${IOS_ACTION} max-medium:text-danger`,
+  actionOrder: CANCEL_FIRST,
+  defaultAction: CANCEL_BY_DEFAULT,
+};
+
+/** WinUI guidance makes the safe button a ContentDialog's DefaultButton when its action destroys something. */
+const WINDOWS_DEFAULT_BUTTON: Readonly<Record<AlertTone, AlertAction>> = {
+  danger: "cancel",
+  accent: "confirm",
+};
+
+const WINDOWS_LOOK: AlertLook = {
+  scrim: "bg-native-scrim",
+  surface:
+    "gap-md rounded-native-dialog border-native-dialog-edge bg-native-dialog bg-linear-to-b from-native-dialog-layer to-native-dialog-layer p-xl inline-native-dialog shadow-native-dialog-lift",
+  badge: "hidden",
+  title: "text-title font-semibold max-medium:text-title",
+  body: "-mx-xl -mbe-xl gap-md px-xl pbe-none",
+  description: "",
+  actions:
+    "-mx-xl mbs-md gap-sm border-bs border-native-dialog-band-edge bg-native-dialog p-xl",
+  cancel: "",
+  confirm:
+    "bg-native-button-primary text-native-on-button-primary aria-disabled:border-transparent aria-disabled:bg-native-button-primary-disabled aria-disabled:text-native-on-button-primary-disabled",
+  actionOrder: ["confirm", "cancel"],
+  defaultAction: WINDOWS_DEFAULT_BUTTON,
 };
 
 const ALERT_LOOKS = {
@@ -47,8 +87,26 @@ const ALERT_LOOKS = {
   android: TODAYS_ALERT_LOOK,
   linux: TODAYS_ALERT_LOOK,
   macos: TODAYS_ALERT_LOOK,
-  windows: TODAYS_ALERT_LOOK,
+  windows: WINDOWS_LOOK,
 } satisfies Record<Platform, AlertLook>;
+
+export type ConfirmPhoneLook = "sheet" | "dialog";
+
+/** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
+const HAS_BOTTOM_SHEETS = {
+  ios: true,
+  android: true,
+  linux: true,
+  macos: true,
+  windows: false,
+} satisfies Record<Platform, boolean>;
+
+export function opensAsAlert(
+  platform: Platform,
+  phoneLook: ConfirmPhoneLook,
+): boolean {
+  return phoneLook === "dialog" || !HAS_BOTTOM_SHEETS[platform];
+}
 
 export function alertLook(platform: Platform): AlertLook {
   return ALERT_LOOKS[platform];

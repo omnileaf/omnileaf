@@ -112,6 +112,7 @@ const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
   "row-pressed": [],
   "row-selected": ["on-row-selected-muted"],
   "menu-chosen": ["on-menu-chosen"],
+  "menu-item-hover": [],
 };
 
 test("pairs every Highlight fill with HighlightText for the text on it", () => {
@@ -132,15 +133,25 @@ test("pairs every Highlight fill with HighlightText for the text on it", () => {
   }
 });
 
-test("turns the text of a picked or pressed row and a highlighted phone menu item to HighlightText", () => {
+test("turns the text of a picked or pressed row and a highlighted menu item and its accelerator to HighlightText", () => {
   const flat = forcedColors.replace(/\s+/g, " ");
 
   expect(flat).toMatch(
     /\[data-slot="item"\]\[data-picked\],[^{}]*\[data-slot="item"\]:active:not\(\[aria-disabled="true"\]\) \{ color: HighlightText; \}/,
   );
   expect(flat).toMatch(
-    /@media \(width < 600px\) \{[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \{ color: HighlightText; \}/,
+    /\[role\^="menuitem"\]\[data-highlighted\],[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \[data-slot="kbd"\] \{ color: HighlightText; \}/,
   );
+  expect(flat).not.toContain("@media (width < 600px)");
+});
+
+test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and a key hint the contrast theme's way", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-menu-edge")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-menu-disabled")).toBe("GrayText");
+  expect(mapped.get("--native-color-key-ink")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-surface")).toBe("CanvasText");
 });
 
 test("draws Windows's disabled buttons in GrayText and its hyperlink button in LinkText", () => {
@@ -182,6 +193,29 @@ test("edges Windows's buttons in ButtonText and keeps the standard button on But
     "ButtonFace",
   );
   expect(mapped.get("--native-color-on-button-pressed")).toBe("CanvasText");
+});
+
+test("draws Windows's ContentDialog on Canvas with CanvasText edges", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-dialog-layer")).toBe("Canvas");
+  expect(mapped.get("--native-color-dialog-edge")).toBe("CanvasText");
+  expect(mapped.get("--native-color-dialog-band-edge")).toBe("CanvasText");
+});
+
+test("keeps Windows's indeterminate bar trackless under forced colours, as the contrast themes draw it", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.has("--native-color-progress-idle-track")).toBe(false);
+  expect(mapped.get("--native-color-progress-fill")).toBe("Highlight");
+});
+
+test("sets Windows's SelectorBar text and its chosen pill in CanvasText", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-on-tab")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-tab-hover")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-tab-disabled")).toBe("GrayText");
 });
 
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {

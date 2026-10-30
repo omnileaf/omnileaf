@@ -29,12 +29,18 @@ const MACOS_SEGMENTED_LOOK: TabsLook = {
   trigger: `${IOS_SEGMENTED_LOOK.trigger} segment-divider not-aria-selected:hover:bg-native-control-fill-hover`,
 };
 
+const WINDOWS_SELECTOR_BAR_LOOK: TabsLook = {
+  list: "flex items-stretch gap-sm py-xs",
+  trigger:
+    "relative inline-flex items-center gap-sm rounded-native-button border border-transparent px-md pbs-native-tab-block-start pbe-native-tab-block-end text-label font-regular whitespace-nowrap text-native-on-tab transition-control after:absolute after:inset-be-none after:inset-s-1/2 after:-translate-x-1/2 after:rounded-full after:bg-windows-accent after:opacity-0 after:block-windows-indicator after:inline-windows-indicator-length not-disabled:hover:text-native-on-tab-hover not-disabled:active:text-native-on-tab-hover disabled:text-native-on-tab-disabled aria-selected:text-native-on-tab aria-selected:after:opacity-100 focus-visible:focus-ring forced-colors:after:bg-native-on-tab rtl:after:translate-x-1/2",
+};
+
 export const TABS_LOOKS = {
   ios: IOS_SEGMENTED_LOOK,
   android: TODAYS_LOOK,
   linux: SHADCN_LOOK,
   macos: MACOS_SEGMENTED_LOOK,
-  windows: TODAYS_LOOK,
+  windows: WINDOWS_SELECTOR_BAR_LOOK,
 } satisfies Record<Platform, TabsLook>;
 
 export function tabsLook(platform: Platform): TabsLook {

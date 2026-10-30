@@ -6,6 +6,7 @@ import {
   DEFAULT_SCREENSHOT_SHORTCUT,
   keyNames,
   parseKeyCombination,
+  shownKeys,
 } from "./key-combination";
 
 const COMMAND_PLATFORMS: readonly Platform[] = ["macos", "ios"];
@@ -36,6 +37,21 @@ test("leaves Shift out when it isn't held", () => {
     "J",
   ]);
 });
+
+test("shows a Windows shortcut as one Ctrl+Shift+H, as Windows writes accelerators", () => {
+  expect(shownKeys(DEFAULT_SCREENSHOT_SHORTCUT, "windows")).toEqual([
+    "Ctrl+Shift+H",
+  ]);
+});
+
+test.each<Platform>(["linux", "macos"])(
+  "shows each key of the shortcut on its own on %s",
+  (platform) => {
+    expect(shownKeys(DEFAULT_SCREENSHOT_SHORTCUT, platform)).toEqual(
+      keyNames(DEFAULT_SCREENSHOT_SHORTCUT, platform),
+    );
+  },
+);
 
 test("reads a stored combination back", () => {
   const stored = JSON.stringify({ letter: "J", shift: false });

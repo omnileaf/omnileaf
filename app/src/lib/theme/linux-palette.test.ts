@@ -123,7 +123,7 @@ test("leaves macos and windows on the neutral greys", () => {
 
   expect(neutrals).toEqual([
     ["oklch(0.145 0 0)", "oklch(1 0 0 / 0.15)", "oklch(0.5 0.005 286)"],
-    ["oklch(0.145 0 0)", "oklch(1 0 0 / 0.15)", "oklch(0.48 0 0)"],
+    ["oklch(0.145 0 0)", "oklch(1 0 0 / 0.15)", "rgba(0, 0, 0, 0.62)"],
   ]);
   expect(colourOn("macos", "light", "--primary")).toBe("oklch(0.205 0 0)");
 });

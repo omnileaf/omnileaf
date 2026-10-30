@@ -92,6 +92,7 @@
   --color-native-progress-rest: var(--native-color-progress-rest);
   --color-native-progress-idle-track: var(--native-color-progress-idle-track);
   --spacing-native-progress-gap: var(--native-spacing-progress-gap);
+  --spacing-native-progress-thickness: var(--native-spacing-progress-thickness);
   --color-native-grouped-ground: var(--native-color-grouped-ground);
   --color-native-group: var(--native-color-group);
   --radius-native-group: var(--native-radius-group);
@@ -205,6 +206,8 @@
   --color-native-on-jump-current: var(--native-color-on-jump-current);
   --color-native-jump-current-progress-rest: var(--native-color-jump-current-progress-rest);
   --color-native-on-tab: var(--native-color-on-tab);
+  --color-native-on-tab-hover: var(--native-color-on-tab-hover);
+  --color-native-on-tab-disabled: var(--native-color-on-tab-disabled);
   --color-native-on-tab-current: var(--native-color-on-tab-current);
   --color-native-on-tab-pill: var(--native-color-on-tab-pill);
   --spacing-native-tab-bar: var(--native-spacing-tab-bar);
@@ -244,6 +247,9 @@
   --color-native-sheet-group: var(--native-color-sheet-group);
   --color-native-scrim: var(--native-color-scrim);
   --color-native-dialog: var(--native-color-dialog);
+  --color-native-dialog-layer: var(--native-color-dialog-layer);
+  --color-native-dialog-edge: var(--native-color-dialog-edge);
+  --color-native-dialog-band-edge: var(--native-color-dialog-band-edge);
   --radius-native-dialog: var(--native-radius-dialog);
   --spacing-native-dialog: var(--native-spacing-dialog);
   --spacing-native-dialog-text-inline: var(--native-spacing-dialog-text-inline);
@@ -264,6 +270,11 @@
   --color-native-menu-chosen: var(--native-color-menu-chosen);
   --color-native-on-menu-chosen: var(--native-color-on-menu-chosen);
   --color-native-menu-rule: var(--native-color-menu-rule);
+  --color-native-menu-edge: var(--native-color-menu-edge);
+  --color-native-menu-item-hover: var(--native-color-menu-item-hover);
+  --color-native-on-menu-disabled: var(--native-color-on-menu-disabled);
+  --color-native-key-ink: var(--native-color-key-ink);
+  --color-native-on-surface: var(--native-color-on-surface);
   --radius-native-menu: var(--native-radius-menu);
   --radius-native-menu-item: var(--native-radius-menu-item);
   --radius-native-menu-item-end: var(--native-radius-menu-item-end);
@@ -274,6 +285,8 @@
   --spacing-native-menu-rule-inline: var(--native-spacing-menu-rule-inline);
   --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
   --shadow-native-menu-lift: var(--native-shadow-menu-lift);
+  --shadow-native-tooltip-lift: var(--native-shadow-tooltip-lift);
+  --shadow-native-dialog-lift: var(--native-shadow-dialog-lift);
   --color-native-notice: var(--native-color-notice);
   --color-native-on-notice: var(--native-color-on-notice);
   --color-native-notice-action: var(--native-color-notice-action);
@@ -364,6 +377,8 @@
   --font-weight-native-tab-label: var(--native-weight-tab-label);
   --tracking-native-tab-label: var(--native-tracking-tab-label);
   --spacing-native-tab-min: var(--native-spacing-tab-min);
+  --spacing-native-tab-block-start: var(--native-spacing-tab-block-start);
+  --spacing-native-tab-block-end: var(--native-spacing-tab-block-end);
   --spacing-native-tab-indicator: var(--native-spacing-tab-indicator);
   --radius-native-tab-indicator: var(--native-radius-tab-indicator);
   --color-native-tab-indicator: var(--native-color-tab-indicator);

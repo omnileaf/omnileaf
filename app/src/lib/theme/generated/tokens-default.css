@@ -87,6 +87,7 @@
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: color-mix(in oklab, var(--primary) 20%, transparent);
   --native-spacing-progress-gap: 0px;
+  --native-spacing-progress-thickness: var(--spacing-progress);
   --native-color-grouped-ground: var(--background);
   --native-color-group: var(--card);
   --native-radius-group: var(--radius-list);
@@ -200,6 +201,8 @@
   --native-color-on-jump-current: var(--color-accent);
   --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: var(--muted-foreground);
+  --native-color-on-tab-hover: var(--muted-foreground);
+  --native-color-on-tab-disabled: var(--muted-foreground);
   --native-color-on-tab-current: var(--color-accent);
   --native-color-on-tab-pill: var(--color-accent);
   --native-spacing-tab-bar: var(--spacing-floating-bar);
@@ -239,6 +242,9 @@
   --native-color-sheet-group: var(--card);
   --native-color-scrim: var(--overlay);
   --native-color-dialog: var(--dialog-surface);
+  --native-color-dialog-layer: transparent;
+  --native-color-dialog-edge: var(--dialog-edge);
+  --native-color-dialog-band-edge: var(--border);
   --native-radius-dialog: var(--radius-panel);
   --native-spacing-dialog: var(--spacing-dialog);
   --native-spacing-dialog-text-inline: 0px;
@@ -259,6 +265,11 @@
   --native-color-menu-chosen: transparent;
   --native-color-on-menu-chosen: var(--foreground);
   --native-color-menu-rule: var(--menu-edge);
+  --native-color-menu-edge: var(--menu-edge);
+  --native-color-menu-item-hover: var(--menu-highlight);
+  --native-color-on-menu-disabled: var(--muted-foreground);
+  --native-color-key-ink: var(--key-ink);
+  --native-color-on-surface: var(--foreground);
   --native-radius-menu: var(--menu-radius);
   --native-radius-menu-item: var(--radius-menu-item);
   --native-radius-menu-item-end: var(--radius-menu-item);
@@ -269,6 +280,8 @@
   --native-spacing-menu-rule-inline: 0px;
   --native-spacing-menu-rule-block: var(--spacing-xs);
   --native-shadow-menu-lift: var(--menu-shadow);
+  --native-shadow-tooltip-lift: var(--tooltip-shadow);
+  --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-color-notice: var(--card);
   --native-color-on-notice: var(--foreground);
   --native-color-notice-action: var(--primary);
@@ -359,6 +372,8 @@
   --native-weight-tab-label: 500;
   --native-tracking-tab-label: 0;
   --native-spacing-tab-min: 0px;
+  --native-spacing-tab-block-start: 0px;
+  --native-spacing-tab-block-end: 0px;
   --native-spacing-tab-indicator: var(--spacing-2xs);
   --native-radius-tab-indicator: 9999px;
   --native-color-tab-indicator: var(--foreground);

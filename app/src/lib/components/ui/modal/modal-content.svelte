@@ -28,6 +28,7 @@
     phoneHeight = "fit",
     phoneGround = "plain",
     phoneOverlayClass,
+    wideOverlayClass,
     onDismiss,
     children,
     ...restProps
@@ -39,6 +40,7 @@
     phoneHeight?: SheetHeight;
     phoneGround?: SheetGround;
     phoneOverlayClass?: string;
+    wideOverlayClass?: string;
     onDismiss: () => void;
     children: Snippet<[ModalView]>;
   } = $props();
@@ -71,7 +73,12 @@
     {@render children("wide")}
   </SheetContent>
 {:else}
-  <DialogContent bind:ref class={wideClass} {...restProps}>
+  <DialogContent
+    bind:ref
+    class={wideClass}
+    overlayClass={wideOverlayClass}
+    {...restProps}
+  >
     {@render children("wide")}
   </DialogContent>
 {/if}

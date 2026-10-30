@@ -40,9 +40,11 @@
     --native-color-on-segment: CanvasText;
     --native-color-segment-selected: Highlight;
     --native-color-on-segment-selected: HighlightText;
+    --native-color-on-tab: CanvasText;
+    --native-color-on-tab-hover: CanvasText;
+    --native-color-on-tab-disabled: GrayText;
     --native-color-progress-track: ButtonText;
     --native-color-progress-fill: Highlight;
-    --native-color-progress-idle-track: ButtonText;
     --native-color-grouped-ground: Canvas;
     --native-color-group: Canvas;
     --native-color-card: Canvas;
@@ -55,11 +57,19 @@
     --native-color-sheet: Canvas;
     --native-color-sheet-group: Canvas;
     --native-color-dialog: Canvas;
+    --native-color-dialog-layer: Canvas;
+    --native-color-dialog-edge: CanvasText;
+    --native-color-dialog-band-edge: CanvasText;
     --native-color-menu: Canvas;
     --native-color-on-menu: CanvasText;
     --native-color-menu-chosen: Highlight;
     --native-color-on-menu-chosen: HighlightText;
     --native-color-menu-rule: CanvasText;
+    --native-color-menu-edge: CanvasText;
+    --native-color-menu-item-hover: Highlight;
+    --native-color-on-menu-disabled: GrayText;
+    --native-color-key-ink: CanvasText;
+    --native-color-on-surface: CanvasText;
     --native-color-notice: Canvas;
     --native-color-on-notice: CanvasText;
     --native-color-focus-ring: CanvasText;
@@ -83,9 +93,10 @@
     color: HighlightText;
   }
 
-  @media (width < 600px) {
-    :root[data-platform="windows"] [role^="menuitem"][data-highlighted] {
-      color: HighlightText;
-    }
+  :root[data-platform="windows"] [role^="menuitem"][data-highlighted],
+  :root[data-platform="windows"]
+    [role^="menuitem"][data-highlighted]
+    [data-slot="kbd"] {
+    color: HighlightText;
   }
 }

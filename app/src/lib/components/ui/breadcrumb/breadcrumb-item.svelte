@@ -7,7 +7,10 @@
 </script>
 
 <li
-  class={cn("inline-flex items-center min-inline-none", className)}
+  class={cn(
+    "inline-flex items-center min-inline-none windows:*:px-2xs",
+    className,
+  )}
   {...restProps}
 >
   {@render children?.()}

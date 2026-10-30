@@ -4,25 +4,33 @@ type Channels = readonly [red: number, green: number, blue: number];
 
 const OPAQUE = 255;
 
-function paint(token: string): Uint8ClampedArray {
+function paint(colours: readonly string[]): Uint8ClampedArray {
   const context = document.createElement("canvas").getContext("2d");
   if (context === null) {
     throw new Error("The test browser has no 2D canvas");
   }
-  context.fillStyle = resolvedColour(
-    token.startsWith("--") ? token : `--native-color-${token}`,
-    "color",
-  );
-  context.fillRect(0, 0, 1, 1);
+  for (const colour of colours) {
+    context.fillStyle = colour;
+    context.fillRect(0, 0, 1, 1);
+  }
   return context.getImageData(0, 0, 1, 1).data;
 }
 
-function channels(token: string): Channels {
-  const [red = 0, green = 0, blue = 0, alpha] = paint(token);
+function opaqueChannels(colours: readonly string[]): Channels {
+  const [red = 0, green = 0, blue = 0, alpha] = paint(colours);
   if (alpha !== OPAQUE) {
-    throw new Error(`${token} is not an opaque colour`);
+    throw new Error(`${colours.join(" over ")} is not an opaque colour`);
   }
   return [red, green, blue];
+}
+
+function channels(token: string): Channels {
+  return opaqueChannels([
+    resolvedColour(
+      token.startsWith("--") ? token : `--native-color-${token}`,
+      "color",
+    ),
+  ]);
 }
 
 function linear(channel: number): number {
@@ -36,10 +44,18 @@ function relativeLuminance([red, green, blue]: Channels): number {
   return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
 }
 
-export function contrastRatio(ink: string, ground: string): number {
-  const luminances = [
-    relativeLuminance(channels(ink)),
-    relativeLuminance(channels(ground)),
-  ];
+function ratioOf(ink: Channels, ground: Channels): number {
+  const luminances = [relativeLuminance(ink), relativeLuminance(ground)];
   return (Math.max(...luminances) + 0.05) / (Math.min(...luminances) + 0.05);
+}
+
+export function contrastRatio(ink: string, ground: string): number {
+  return ratioOf(channels(ink), channels(ground));
+}
+
+export function drawnContrast(element: Element): number {
+  const style = getComputedStyle(element);
+  const ground = opaqueChannels([style.backgroundColor]);
+  const ink = opaqueChannels([style.backgroundColor, style.color]);
+  return ratioOf(ink, ground);
 }

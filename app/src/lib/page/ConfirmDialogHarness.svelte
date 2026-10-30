@@ -6,7 +6,12 @@
   let {
     phoneLook = "sheet",
     tone = "danger",
-  }: { phoneLook?: "sheet" | "dialog"; tone?: "danger" | "accent" } = $props();
+    isBusy = false,
+  }: {
+    phoneLook?: "sheet" | "dialog";
+    tone?: "danger" | "accent";
+    isBusy?: boolean;
+  } = $props();
 </script>
 
 <ConfirmDialog
@@ -19,6 +24,7 @@
   onCancel={() => {}}
   {phoneLook}
   {tone}
+  {isBusy}
 >
   <p>This removes 1.2 GB. Your library and progress stay.</p>
 </ConfirmDialog>
