@@ -20,6 +20,7 @@ import {
 import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
 import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
+import { usualWindowBackdrop } from "../../src/lib/appearance/window-backdrop.ts";
 import type { ScreenSize } from "../../src/lib/library/library-view.ts";
 import {
   CommandFailure,
@@ -49,6 +50,7 @@ export function fakeAppInfo(platform: Platform): AppInfo {
     platform,
     sourceCode: FAKE_SOURCE_CODE,
     isDevelopmentBuild: false,
+    windowBackdrop: usualWindowBackdrop(platform),
   };
 }
 

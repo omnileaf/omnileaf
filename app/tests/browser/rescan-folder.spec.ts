@@ -519,3 +519,86 @@ test.describe("with a folder whose books couldn't be removed", () => {
     });
   }
 });
+
+test.describe("a folder found empty, on a phone", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...FOLDERS_BACKEND,
+      libraryFolderBookCount: () => 3,
+      rescanLibraryFolder: (id) => ({
+        id,
+        name: SAMPLE_COMICS.name,
+        outcome: { kind: "foundEmpty" },
+      }),
+      removeBooksOfEmptiedFolder: () => ({ kind: "removed", books: 3 }),
+    },
+  });
+
+  function warningOf(page: Page): Locator {
+    return page
+      .getByRole("status")
+      .filter({ hasText: "Sample Comics looks empty" });
+  }
+
+  test("warns above the folders on an iPhone, and removes the books from the warning", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "the iPhone warns above the folders");
+    await rescanSampleComics(page);
+    const warning = warningOf(page);
+    await expect(warning.getByRole("button")).toHaveText([
+      "Remove its books",
+      "Rescan",
+    ]);
+    await expect(
+      page
+        .getByRole("region", { name: "Folders" })
+        .getByRole("status")
+        .filter({ hasText: "looks empty" }),
+    ).toHaveCount(0);
+
+    await warning.getByRole("button", { name: "Remove its books" }).click();
+    const question = page.getByRole("alertdialog", {
+      name: "Remove its books?",
+    });
+    await settle(question);
+    await question.getByRole("button", { name: "Remove 3 books" }).click();
+
+    await expect(
+      page.getByText("Removed 3 books of Sample Comics"),
+    ).toBeVisible();
+    await expect(warning).toHaveCount(0);
+    await expect(sampleComicsRow(page)).toBeFocused();
+  });
+
+  test("warns under the folder's row on an Android phone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android warns under the row");
+    await rescanSampleComics(page);
+
+    await expect(
+      sampleComicsRow(page)
+        .getByRole("status")
+        .getByRole("heading", { name: "Sample Comics looks empty" }),
+    ).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the warning has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await rescanSampleComics(page);
+      await expect(
+        warningOf(page).getByRole("button", { name: "Remove its books" }),
+      ).toBeVisible();
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
+});

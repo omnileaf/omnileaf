@@ -11,9 +11,9 @@
 
   const CHECK_SIZE = 16;
   const NATIVE_CHIP =
-    "border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-auto min-block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
+    "snap-start border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-auto min-block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
   const NATIVE_GROUP =
-    "flex-nowrap gap-sm overflow-x-auto py-sm scrollbar-none";
+    "flex-nowrap snap-x gap-sm overflow-x-auto py-sm scrollbar-none";
 
   const LABELS = {
     everything: m.search_everything,
@@ -34,9 +34,29 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+
+  let row: HTMLElement | undefined = $state();
+
+  function revealSideways(strip: HTMLElement, chip: Element): void {
+    const stripBox = strip.getBoundingClientRect();
+    const chipBox = chip.getBoundingClientRect();
+    if (chipBox.left < stripBox.left) {
+      strip.scrollBy({ left: chipBox.left - stripBox.left });
+    } else if (chipBox.right > stripBox.right) {
+      strip.scrollBy({ left: chipBox.right - stripBox.right });
+    }
+  }
+
+  $effect(() => {
+    const chip = row?.querySelector(`[data-scope="${scope}"]`);
+    if (row !== undefined && chip !== null && chip !== undefined) {
+      revealSideways(row, chip);
+    }
+  });
 </script>
 
 <div
+  bind:this={row}
   role="group"
   aria-label={m.search_scope()}
   class={[
@@ -54,6 +74,7 @@
           onNarrow(choice);
         }
       }
+      data-scope={choice}
       class={isNative ? NATIVE_CHIP : undefined}
     >
       <span class="flex items-center gap-xs">

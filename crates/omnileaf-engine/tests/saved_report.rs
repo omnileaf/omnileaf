@@ -7,7 +7,7 @@ use std::{fs, path::Path};
 
 use omnileaf_engine::{
     AppInfo, BuildProfile, LocalDay, LogStandIns, Platform, ProblemReport, ReportCode,
-    VersionDetails, folder_shown,
+    VersionDetails, WindowBackdrop, folder_shown,
 };
 use omnileaf_testkit::ScratchFolder;
 
@@ -22,6 +22,7 @@ fn report() -> ProblemReport {
                 platform: Platform::Linux,
                 source_code: "repo.example.org/omnileaf".to_owned(),
                 is_development_build: false,
+                window_backdrop: WindowBackdrop::None,
             },
             build: BuildProfile::Release,
             architecture: "x86_64".to_owned(),

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash } from "@lucide/svelte";
-  import { onMount, tick } from "svelte";
+  import { onMount, type Snippet, tick } from "svelte";
 
   import ChangeHomeButton from "#lib/first-launch/ChangeHomeButton.svelte";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
@@ -26,10 +26,15 @@
     type RemoveFolder,
   } from "./library-folders.svelte";
   import LinkedFolders from "./LinkedFolders.svelte";
+  import NativeEmptiedFolderCard from "./NativeEmptiedFolderCard.svelte";
   import RemoveBooksDialog from "./RemoveBooksDialog.svelte";
   import RescanButton from "./RescanButton.svelte";
   import type { RescanFolder } from "./rescan-folder";
-  import { type RemoveFolderBooks, Rescans } from "./rescans.svelte";
+  import {
+    type EmptiedFolder,
+    type RemoveFolderBooks,
+    Rescans,
+  } from "./rescans.svelte";
   import RescanStatus from "./RescanStatus.svelte";
   import UseFoundHomeDialog from "./UseFoundHomeDialog.svelte";
 
@@ -164,6 +169,20 @@
     }
   }
 
+  function removeEmptiedBooks(
+    folder: LibraryFolder,
+    emptied: EmptiedFolder,
+    asker: HTMLButtonElement,
+  ): void {
+    if (emptied === "removalFailed") {
+      void removeBooks(folder, asker);
+    } else {
+      void askToRemoveBooks(folder, asker);
+    }
+  }
+
+  const folderNotice: Snippet<[LibraryFolder]> = emptiedNotice;
+
   async function rescanEmptied(
     folder: LibraryFolder,
     asker: HTMLButtonElement,
@@ -184,6 +203,34 @@
       void homeChange.choose();
     }}
   />
+{/snippet}
+
+{#snippet emptiedNotice(folder: LibraryFolder)}
+  {@const emptied = rescans.emptied(folder)}
+  {#if emptied !== undefined}
+    {@const card = {
+      folder,
+      emptied,
+      isBusy: rescans.isBusy,
+      onRescan: (asker: HTMLButtonElement) => {
+        void rescanEmptied(folder, asker);
+      },
+      onRemove: (asker: HTMLButtonElement) => {
+        removeEmptiedBooks(folder, emptied, asker);
+      },
+    }}
+    {#if isNative}
+      <NativeEmptiedFolderCard {...card} />
+    {:else}
+      <EmptiedFolderCard {...card} />
+    {/if}
+  {/if}
+{/snippet}
+
+{#snippet emptiedNotices(shown: readonly LibraryFolder[])}
+  {#each shown as folder (folder.id)}
+    {@render folderNotice(folder)}
+  {/each}
 {/snippet}
 
 {#snippet rescanButton(folder: LibraryFolder)}
@@ -227,29 +274,11 @@
     {usesStandIns}
     {onShowBooks}
     rowAction={rescanButton}
+    rowNotice={isNative ? undefined : emptiedNotice}
+    listNotice={isNative ? emptiedNotices : undefined}
     isFoundEmpty={(folder: LibraryFolder) =>
       rescans.emptied(folder) !== undefined}
   >
-    {#snippet rowNotice(folder: LibraryFolder)}
-      {@const emptied = rescans.emptied(folder)}
-      {#if emptied !== undefined}
-        <EmptiedFolderCard
-          {folder}
-          {emptied}
-          isBusy={rescans.isBusy}
-          onRescan={(asker: HTMLButtonElement) => {
-            void rescanEmptied(folder, asker);
-          }}
-          onRemove={(asker: HTMLButtonElement) => {
-            if (emptied === "removalFailed") {
-              void removeBooks(folder, asker);
-            } else {
-              void askToRemoveBooks(folder, asker);
-            }
-          }}
-        />
-      {/if}
-    {/snippet}
     {#snippet status()}
       <RescanStatus status={rescans.status} kind="linked" />
     {/snippet}
