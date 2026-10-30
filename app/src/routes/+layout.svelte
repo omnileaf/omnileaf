@@ -162,9 +162,13 @@
     void followWallpaperColours(data.appInfo.platform, colours.choice);
   }
 
+  const rereadsColoursOnFocus = $derived(data.appInfo.platform === "windows");
+
   function followFocus(): void {
     settleScreenshotMode();
-    followColours();
+    if (rereadsColoursOnFocus) {
+      followColours();
+    }
   }
 
   function followVisibility(): void {

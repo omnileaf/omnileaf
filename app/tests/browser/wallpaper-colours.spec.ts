@@ -48,18 +48,23 @@ const ROSE: WallpaperColours = {
 };
 
 let wallpaper: WallpaperColours = BLUE;
+let wallpaperReads = 0;
 
 testOnlyInItsWebview("android");
 
 test.use({
   backend: {
     ...onPlatform("android").backend,
-    wallpaperColours: () => wallpaper,
+    wallpaperColours: () => {
+      wallpaperReads += 1;
+      return wallpaper;
+    },
   },
 });
 
 test.beforeEach(() => {
   wallpaper = BLUE;
+  wallpaperReads = 0;
 });
 
 async function chooseColours(page: Page, choice: string): Promise<void> {
@@ -137,6 +142,20 @@ test.describe("colours from the wallpaper", () => {
     await leaveAndComeBack(page);
 
     await expect.poll(() => lightPrimary(page)).toBe("#8c4a5d");
+  });
+
+  test("reads the wallpaper once when Android brings the app back with focus", async ({
+    page,
+  }) => {
+    await chooseColours(page, "wallpaper");
+    await page.goto("/settings");
+    await expect.poll(() => lightPrimary(page)).toBe("#416189");
+    const readsBefore = wallpaperReads;
+
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await leaveAndComeBack(page);
+
+    await expect.poll(() => wallpaperReads).toBe(readsBefore + 1);
   });
 
   test("draws the tab bar's pill in the wallpaper's colours", async ({
