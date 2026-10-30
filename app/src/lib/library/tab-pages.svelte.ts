@@ -31,7 +31,6 @@ function withinReach(
     : tabs.slice(Math.max(0, at - reach), at + reach + 1);
 }
 
-/** The pages of the chosen tab and the tabs either side of it, kept while they stay beside it so a swipe finds them read. */
 export class TabPages {
   readonly scroll = new TabScroll();
   held = $state.raw<readonly HeldPage[]>([]);
