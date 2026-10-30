@@ -127,7 +127,7 @@ async function readWallpaper(
 async function readAccent(
   readers: ColourReaders,
 ): Promise<SystemColours | null> {
-  const accent = await readers.accentColours();
+  const accent = await readers.accentColours().catch(() => null);
   return accent === null ? null : accentProperties(accent);
 }
 

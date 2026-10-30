@@ -144,6 +144,17 @@ test("drops the Windows accent when Omnileaf's colours are chosen again", async 
   expect(shown(LIGHT_ACCENT)).toBe("");
 });
 
+test("keeps Omnileaf's colours when the accent can't be read", async () => {
+  const rejecting: ColourReaders = {
+    ...reading(null),
+    accentColours: () => Promise.reject(new Error("the window is gone")),
+  };
+
+  await followWallpaperColours("windows", "wallpaper", rejecting);
+
+  expect(root.dataset.colours).toBeUndefined();
+});
+
 test("sets the text shades and labels beside the Windows accent", async () => {
   await followWallpaperColours("windows", "wallpaper", accenting(BLUE_ACCENT));
 
