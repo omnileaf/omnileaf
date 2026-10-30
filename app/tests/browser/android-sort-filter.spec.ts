@@ -473,6 +473,72 @@ test.describe(
       });
     });
 
+    test.describe("the view options sheet", () => {
+      test.use({ backend: backendWith(FEW_CHOICES) });
+
+      async function openView(page: Page): Promise<Locator> {
+        await page.goto("/");
+        await expect(page.getByRole("list", { name: "Series" })).toContainText(
+          LIBRARY[0]?.title ?? "",
+        );
+        await page.getByRole("button", { name: "View options" }).click();
+        const sheet = page.getByRole("dialog", { name: "View options" });
+        await expect(sheet).toBeVisible();
+        await settle(sheet);
+        return sheet;
+      }
+
+      test("sets the title at title large with no badge and says what it holds under it", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const title = sheet.getByRole("heading", { name: "View options" });
+        const note = sheet.getByText("Kept on this phone", { exact: false });
+
+        await expect(title).toHaveCSS("font-size", TITLE_SIZE);
+        await expect(title).toHaveCSS("font-weight", TITLE_WEIGHT);
+        expect((await boxOf(title)).x - (await boxOf(sheet)).x).toBeCloseTo(
+          SHEET_INLINE_PADDING,
+          0,
+        );
+        await expect(note).toHaveCSS("font-size", HEADING_SIZE);
+        await expect(note).toHaveCSS("line-height", HEADING_LINE);
+        await expect(sheet.getByRole("button", { name: "Done" })).toHaveCount(
+          0,
+        );
+      });
+
+      test("heads Layout and Show on covers in the green accent", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+
+        for (const name of ["Layout", "Show on covers"]) {
+          const heading = sheet.getByRole("heading", { name, exact: true });
+          await expect(heading).toHaveCSS("font-size", HEADING_SIZE);
+          await expect(heading).toHaveCSS("font-weight", HEADING_WEIGHT);
+          await expect(heading).toHaveCSS(
+            "color",
+            await tokenColour(page, "--native-color-on-button-plain"),
+          );
+        }
+      });
+
+      test("sets each cover mark as a Material row, padded 16px and 24px, with no rule between", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const row = sheet.getByRole("switch", { name: "Unread count" });
+
+        await expect(row).toHaveCSS("padding-left", "16px");
+        await expect(row).toHaveCSS("padding-right", "24px");
+        await expect(row.locator("xpath=..")).toHaveCSS(
+          "border-top-width",
+          "0px",
+        );
+      });
+    });
+
     test.describe("with more settings than fit", () => {
       test.use({ backend: backendWith(MANY_CHOICES) });
 
