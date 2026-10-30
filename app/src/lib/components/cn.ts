@@ -359,6 +359,8 @@ export const TOKEN_THEME = {
     "native-downloaded-mark",
     "native-hairline",
     "native-icon",
+    "native-icon-button-inset",
+    "native-icon-button-small-inset",
     "native-menu-block",
     "native-menu-inline",
     "native-menu-item",

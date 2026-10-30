@@ -27,6 +27,7 @@
     --native-color-on-button-pressed: CanvasText;
     --native-color-on-button-disabled: GrayText;
     --native-color-on-button-link: LinkText;
+    --native-color-on-button-link-pressed: ActiveText;
     --native-color-accent-hover: Highlight;
     --native-color-accent-pressed: Highlight;
     --native-color-switch-on: Highlight;

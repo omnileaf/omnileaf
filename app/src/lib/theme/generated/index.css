@@ -124,6 +124,7 @@
   --color-native-button-outline-pressed: var(--native-color-button-outline-pressed);
   --color-native-on-button-plain: var(--native-color-on-button-plain);
   --color-native-on-button-link: var(--native-color-on-button-link);
+  --color-native-on-button-link-pressed: var(--native-color-on-button-link-pressed);
   --color-native-on-button-plain-pressed: var(--native-color-on-button-plain-pressed);
   --color-native-on-button-disabled: var(--native-color-on-button-disabled);
   --color-native-button-plain-hover: var(--native-color-button-plain-hover);
@@ -135,6 +136,8 @@
   --spacing-native-button-small: var(--native-spacing-button-small);
   --spacing-native-button-large: var(--native-spacing-button-large);
   --spacing-native-button-small-inline: var(--native-spacing-button-small-inline);
+  --spacing-native-icon-button-inset: var(--native-spacing-icon-button-inset);
+  --spacing-native-icon-button-small-inset: var(--native-spacing-icon-button-small-inset);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);

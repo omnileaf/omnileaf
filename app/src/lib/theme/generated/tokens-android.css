@@ -85,11 +85,14 @@
   --native-color-row-selected: var(--native-color-row-pressed);
   --native-color-on-row-selected-muted: var(--secondary-text);
   --native-color-on-button-link: var(--native-color-on-button-plain);
+  --native-color-on-button-link-pressed: var(--native-color-on-button-plain);
   --native-color-on-button-plain-pressed: var(--native-color-on-button-plain);
   --native-color-on-button-disabled: var(--color-muted-foreground);
   --native-spacing-button-small: 32px;
   --native-spacing-button-large: 56px;
   --native-spacing-button-small-inline: 12px;
+  --native-spacing-icon-button-inset: 0px;
+  --native-spacing-icon-button-small-inset: 0px;
   --native-spacing-button-large-inline: 24px;
   --native-text-button-large: calc(1rem * var(--text-scale));
   --native-leading-button-large: 1.5;

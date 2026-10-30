@@ -19,6 +19,8 @@
   --native-spacing-hairline: 1px;
   --native-spacing-button-small: 24px;
   --native-spacing-button-small-inline: 7px;
+  --native-spacing-icon-button-inset: 7px;
+  --native-spacing-icon-button-small-inset: 3px;
   --native-radius-dialog: 8px;
   --native-radius-sheet: 8px;
   --native-radius-menu: 8px;
@@ -68,6 +70,7 @@
   --native-color-button-outline-edge: #0000000f;
   --native-color-on-button-plain: #000000e4;
   --native-color-on-button-link: #004c2f;
+  --native-color-on-button-link-pressed: #2f6f4f;
   --native-color-on-button-disabled: #00000072;
   --native-color-button-plain-hover: #00000009;
   --native-color-button-plain-pressed: #00000006;
@@ -135,6 +138,7 @@
   --native-color-button-outline-edge: #ffffff12;
   --native-color-on-button-plain: #ffffff;
   --native-color-on-button-link: #abeec6;
+  --native-color-on-button-link-pressed: #7fcb9d;
   --native-color-on-button-disabled: #ffffff87;
   --native-color-button-plain-hover: #ffffff0f;
   --native-color-button-plain-pressed: #ffffff0a;

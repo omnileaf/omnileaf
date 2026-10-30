@@ -14,6 +14,7 @@ const SYSTEM_COLOURS = new Set([
   "ButtonText",
   "GrayText",
   "LinkText",
+  "ActiveText",
 ]);
 
 function selectors(css: string): string[] {
@@ -128,6 +129,14 @@ test("draws Windows's disabled buttons in GrayText and its hyperlink button in L
     "ButtonFace",
   );
   expect(mapped.get("--native-color-on-button-link")).toBe("LinkText");
+});
+
+test("draws Windows's pressed hyperlink button in ActiveText, not on Highlight", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-on-button-link-pressed")).toBe(
+    "ActiveText",
+  );
 });
 
 test("edges Windows's buttons in ButtonText and keeps the standard button on ButtonFace under the pointer", () => {
