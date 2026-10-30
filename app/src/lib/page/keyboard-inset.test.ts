@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { followKeyboard } from "./keyboard-inset";
 
@@ -42,4 +42,17 @@ test("names what the keyboard covers below the visual viewport, and forgets it o
   seen.push(inset());
 
   expect(seen).toEqual(["0px", "336px", "0px", ""]);
+});
+
+test("leaves the inset alone while the keyboard stays where it was", () => {
+  const viewport = new FakeViewport(root.clientHeight - 336);
+  const stop = followKeyboard(viewport, root);
+  const write = vi.spyOn(root.style, "setProperty");
+
+  viewport.moveTo(root.clientHeight - 336, 0);
+  viewport.dispatchEvent(new Event("scroll"));
+  stop();
+
+  expect(write).not.toHaveBeenCalled();
+  write.mockRestore();
 });

@@ -10,9 +10,14 @@ export function followKeyboard(
   viewport: Viewport,
   root: HTMLElement,
 ): () => void {
+  let shown: string | undefined;
   const measure = (): void => {
     const covered = root.clientHeight - viewport.height - viewport.offsetTop;
-    root.style.setProperty(KEYBOARD_INSET, `${String(Math.max(0, covered))}px`);
+    const inset = `${String(Math.max(0, covered))}px`;
+    if (inset !== shown) {
+      shown = inset;
+      root.style.setProperty(KEYBOARD_INSET, inset);
+    }
   };
   measure();
   viewport.addEventListener("resize", measure);
