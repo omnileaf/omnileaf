@@ -133,6 +133,8 @@
   --native-spacing-tab-bar: 64px;
   --native-spacing-tab-bar-inset: 0px;
   --native-spacing-tab-bar-inline: 0px;
+  --native-spacing-toolbar-button: 48px;
+  --native-spacing-bottom-bar-start: 0px;
   --native-spacing-tab-cell: 100%;
   --native-text-tab: calc(0.75rem * var(--text-scale));
   --native-leading-tab: calc(16 / 12);

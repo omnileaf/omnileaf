@@ -194,6 +194,8 @@
   --spacing-native-tab-bar: var(--native-spacing-tab-bar);
   --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
   --spacing-native-tab-bar-inline: var(--native-spacing-tab-bar-inline);
+  --spacing-native-toolbar-button: var(--native-spacing-toolbar-button);
+  --spacing-native-bottom-bar-start: var(--native-spacing-bottom-bar-start);
   --spacing-native-tab-cell: var(--native-spacing-tab-cell);
   --text-native-tab: var(--native-text-tab);
   --leading-native-tab: var(--native-leading-tab);

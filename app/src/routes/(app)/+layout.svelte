@@ -42,7 +42,7 @@
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { isPointer, phoneOf, usesCommandKey } from "#lib/page/platform.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
@@ -50,6 +50,7 @@
   import type { LayoutProps } from "./$types";
 
   const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
+  const SEARCH_ROUTE = "/(app)/search";
 
   let { children, data }: LayoutProps = $props();
 
@@ -100,6 +101,10 @@
   );
 
   const width = new WindowWidth();
+  const isTabBarCollapsed = $derived(
+    page.route.id === SEARCH_ROUTE &&
+      phoneOf(data.appInfo.platform, width.current) === "ios",
+  );
   const wordingContext = $derived({
     usesStandIns: screenshotMode.isOn,
     device: deviceWordOf(data.appInfo.platform, width.current),
@@ -177,6 +182,7 @@
     {#key language.resolved}
       <AppNavigation
         current={sectionOf(page.url.pathname)}
+        isCollapsed={isTabBarCollapsed}
         attention={isPointer(data.appInfo.platform) &&
         needsAttention.problems.length > 0
           ? attention
