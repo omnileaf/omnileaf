@@ -107,7 +107,9 @@ test.describe("Windows notices", () => {
       }) => {
         const warning = await failToAddAFolder(page);
 
-        await expect(warning).toHaveRole("alert");
+        await expect(
+          notifications(page).locator('[aria-live="assertive"]'),
+        ).toContainText(UNREADABLE_TITLE);
         await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
         await expect(surfaceOf(warning)).toHaveCSS(
           "background-color",
@@ -125,25 +127,56 @@ test.describe("Windows notices", () => {
       }) => {
         const notice = await turnOnScreenshotMode(page);
 
-        await expect(notice).toHaveRole("status");
+        await expect(
+          notifications(page).locator('[aria-live="polite"]'),
+        ).toContainText(SCREENSHOT_MODE_ON);
         await expect(surfaceOf(notice)).toHaveCSS(
           "background-color",
           look.informational,
         );
       });
 
-      test("pushes the page down instead of covering it", async ({ page }) => {
-        const heading = page.getByRole("heading", { level: 1 });
-        const before = await boxOf(heading);
+      test("puts the InfoBar under the page header and pushes the content below it down", async ({
+        page,
+      }) => {
+        const header = page.getByRole("main").locator("[data-page-toolbar]");
+        const before = await boxOf(emptyLibrary(page));
 
         const warning = await failToAddAFolder(page);
 
+        const toolbar = await boxOf(header);
         const bar = await boxOf(surfaceOf(warning));
-        const after = await boxOf(heading);
+        const after = await boxOf(emptyLibrary(page));
+        expect(bar.y).toBeGreaterThanOrEqual(toolbar.y + toolbar.height);
         expect(after.y - before.y).toBeCloseTo(
           bar.height + SPACE_UNDER_THE_BAR,
           0,
         );
+      });
+
+      test("keeps the whole InfoBar clear of the toolbar on a page with one", async ({
+        page,
+      }) => {
+        await page.goto("/search");
+        const field = page
+          .getByRole("main")
+          .getByRole("combobox", { name: "Search your library" });
+        await expect(field).toBeVisible();
+        const before = await boxOf(field);
+
+        const notice = await turnOnScreenshotMode(page);
+
+        const toolbar = await boxOf(
+          page.getByRole("main").locator("[data-page-toolbar]"),
+        );
+        const bar = await boxOf(surfaceOf(notice));
+        const after = await boxOf(field);
+        expect(bar.y).toBeGreaterThanOrEqual(toolbar.y + toolbar.height);
+        expect(after.y - before.y).toBeCloseTo(
+          bar.height + SPACE_UNDER_THE_BAR,
+          0,
+        );
+        await expect(surfaceOf(notice)).toBeInViewport({ ratio: 1 });
       });
 
       test("puts the action at the end of the bar, just before the close button", async ({

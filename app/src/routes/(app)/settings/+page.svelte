@@ -11,6 +11,7 @@
   import { languageName } from "#lib/language/language.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import PageHeading from "#lib/page/PageHeading.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
@@ -116,6 +117,7 @@
     {m.settings_title()}
   </div>
   <PageHeading title={m.settings_title()} />
+  <PageNoticeSlot />
   <div class="mbs-lg flex flex-col gap-xl">
     {#if needsAttention.problems.length > 0}
       <NeedsAttentionCard
