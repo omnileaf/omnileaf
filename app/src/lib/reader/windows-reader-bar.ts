@@ -18,7 +18,7 @@ export const WINDOWS_BOTTOM_BAR =
   "flex flex-col gap-xs border-bs border-native-menu-edge bg-native-menu px-lg py-sm text-native-on-menu backdrop-blur-menu";
 
 export const WINDOWS_FLYOUT =
-  "rounded-native-menu border border-native-menu-edge bg-native-menu text-native-on-menu shadow-native-menu-lift backdrop-blur-menu";
+  "max-inline-full rounded-native-menu border border-native-menu-edge bg-native-menu text-native-on-menu shadow-native-menu-lift backdrop-blur-menu";
 
 export const WINDOWS_ICON_BUTTON = `${LAYER} inline-native-command-bar block-native-command-bar`;
 

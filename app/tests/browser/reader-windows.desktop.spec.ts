@@ -188,3 +188,37 @@ for (const [scheme, theme] of Object.entries(THEMES)) {
     });
   });
 }
+
+const NARROW = { width: 700, height: 600 };
+
+test.describe("in a window narrower than the wide layout", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize(NARROW);
+    await openBook(page, THEMES.dark.settings, "dark");
+  });
+
+  test("opens the reading settings as a pane, never a bottom sheet", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Reading settings" }).click();
+
+    await expect(page.getByRole("complementary")).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeHidden();
+  });
+
+  test("opens Jump to a book as a flyout pane on acrylic, never a bottom sheet", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: /Jump to a book/ })
+      .first()
+      .click();
+    const pane = page.getByRole("complementary");
+
+    await expect(pane).toBeVisible();
+    await settle(pane);
+    await expect(pane).toHaveCSS("background-color", THEMES.dark.bar);
+    await expect(pane).toHaveCSS("border-top-left-radius", "8px");
+    await expect(page.getByRole("dialog")).toBeHidden();
+  });
+});

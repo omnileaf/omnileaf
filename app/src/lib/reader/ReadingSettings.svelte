@@ -43,7 +43,7 @@
   const chrome = getReaderChrome();
 </script>
 
-{#if isWide.current}
+{#if isWide.current || chrome.isCommandBar}
   {#if isOpen}
     <aside
       aria-labelledby={titleId}
