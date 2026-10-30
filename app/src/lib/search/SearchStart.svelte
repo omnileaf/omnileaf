@@ -3,8 +3,6 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -20,11 +18,13 @@
   let {
     recent,
     nowMs,
+    isGrouped,
     onRun,
     onClear,
   }: {
     recent: readonly RecentSearch[];
     nowMs: number;
+    isGrouped: boolean;
     onRun: (text: string) => void;
     onClear: () => void;
   } = $props();
@@ -34,10 +34,7 @@
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
   const words = filterWords();
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const look = $derived(startLook(isNative));
+  const look = $derived(startLook(isGrouped));
   const locale = getLocale();
 </script>
 
@@ -93,7 +90,7 @@
   </section>
   <section aria-labelledby={filterId} class={look.filterSection}>
     <h2 id={filterId} class={look.heading}>{m.search_type_to_filter()}</h2>
-    {#if isNative}
+    {#if isGrouped}
       <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
       </p>
@@ -101,13 +98,13 @@
     <ul class={look.filters}>
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
-          <code class={isNative ? NATIVE_WORD : TODAYS_WORD}>
+          <code class={isGrouped ? NATIVE_WORD : TODAYS_WORD}>
             {words[condition]}
           </code>
         </li>
       {/each}
     </ul>
-    {#if !isNative}
+    {#if !isGrouped}
       <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
       </p>

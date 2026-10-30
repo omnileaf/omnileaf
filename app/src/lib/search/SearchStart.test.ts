@@ -30,18 +30,22 @@ async function startOn(
   platform: "ios" | "android",
   size: { width: number; height: number },
   recent: readonly RecentSearch[] = [],
+  isGrouped = platform === "ios" && size === PHONE,
 ) {
   await page.viewport(size.width, size.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   const ground = document.createElement("div");
-  ground.dataset.ground = "grouped";
+  if (isGrouped) {
+    ground.dataset.ground = "grouped";
+  }
   document.body.append(ground);
   await render(SearchStart, {
     target: ground,
     props: {
       recent,
       nowMs: 0,
+      isGrouped,
       onRun: () => undefined,
       onClear: () => undefined,
     },
@@ -191,6 +195,16 @@ test("puts Clear in a 34 point plain button beside the recent searches heading o
 
 test("keeps the recent searches as plain divided rows on an Android phone", async () => {
   await startOn("android", PHONE, RECENT);
+
+  expect(plateOf(rowsOf("Recent searches"))).toEqual({
+    fill: "rgba(0, 0, 0, 0)",
+    corner: "0px",
+  });
+  expect(rowOf("unread manga").titleStart).toBe(28);
+});
+
+test("keeps the plain divided rows on an iPhone when the page leaves the start ungrouped", async () => {
+  await startOn("ios", PHONE, RECENT, false);
 
   expect(plateOf(rowsOf("Recent searches"))).toEqual({
     fill: "rgba(0, 0, 0, 0)",

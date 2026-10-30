@@ -105,9 +105,10 @@
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
   const width = new WindowWidth();
-  const isGroupedStart = $derived(
-    !isLookingFor && phoneOf(data.appInfo.platform, width.current) === "ios",
+  const isIPhone = $derived(
+    phoneOf(data.appInfo.platform, width.current) === "ios",
   );
+  const isGroupedStart = $derived(isIPhone && !isLookingFor);
   /** The search as typed with its edges trimmed, so a space after the words changes nothing. */
   const searchKey = $derived(JSON.stringify(query.search));
   let answeredKey: string | undefined = $state();
@@ -360,6 +361,7 @@
     <SearchStart
       recent={recent.entries}
       nowMs={Date.now()}
+      isGrouped={isIPhone}
       onRun={type}
       onClear={() => {
         recent.clear();
