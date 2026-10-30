@@ -3714,6 +3714,7 @@ name = "omnileaf-libarchive"
 version = "0.0.0"
 dependencies = [
  "cc",
+ "libc",
  "thiserror 2.0.21",
 ]
 

@@ -4,7 +4,7 @@
 )]
 
 use std::{
-    ffi::{CStr, c_int, c_void},
+    ffi::{CStr, c_void},
     io::{self, Read, Seek, SeekFrom},
     ptr::{self, NonNull},
     sync::Arc,
@@ -17,9 +17,6 @@ use crate::{
 };
 
 const READ_BUFFER_BYTES: usize = 64 * 1024;
-const SEEK_SET: c_int = 0;
-const SEEK_CUR: c_int = 1;
-const SEEK_END: c_int = 2;
 const ARCHIVE_ERROR: isize = -1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -45,7 +42,7 @@ struct Source<R> {
 
 pub struct Reader<R> {
     archive: NonNull<ffi::Archive>,
-    source: Box<Source<R>>,
+    source: NonNull<Source<R>>,
     budget: Arc<Budget>,
 }
 
@@ -64,7 +61,7 @@ unsafe extern "C" fn read_callback<R: Read>(
     client_data: *mut c_void,
     out: *mut *const c_void,
 ) -> isize {
-    // SAFETY: `client_data` is the `Source<R>` boxed by `Reader::open`, which outlives the archive.
+    // SAFETY: `client_data` is the `Source<R>` the reader owns, which outlives the archive.
     let source = unsafe { &mut *client_data.cast::<Source<R>>() };
     loop {
         match source.inner.read(&mut source.buffer) {
@@ -95,7 +92,7 @@ unsafe extern "C" fn skip_callback<R: Seek>(
     client_data: *mut c_void,
     request: i64,
 ) -> i64 {
-    // SAFETY: `client_data` is the `Source<R>` boxed by `Reader::open`, which outlives the archive.
+    // SAFETY: `client_data` is the `Source<R>` the reader owns, which outlives the archive.
     let source = unsafe { &mut *client_data.cast::<Source<R>>() };
     let skipped = source
         .inner
@@ -107,36 +104,10 @@ unsafe extern "C" fn skip_callback<R: Seek>(
     }
 }
 
-unsafe extern "C" fn seek_callback<R: Seek>(
-    _archive: *mut ffi::Archive,
-    client_data: *mut c_void,
-    offset: i64,
-    whence: c_int,
-) -> i64 {
-    // SAFETY: `client_data` is the `Source<R>` boxed by `Reader::open`, which outlives the archive.
-    let source = unsafe { &mut *client_data.cast::<Source<R>>() };
-    let target = match whence {
-        SEEK_SET => u64::try_from(offset).map(SeekFrom::Start).ok(),
-        SEEK_CUR => Some(SeekFrom::Current(offset)),
-        SEEK_END => Some(SeekFrom::End(offset)),
-        _ => None,
-    };
-    let Some(target) = target else {
-        return i64::from(ffi::ARCHIVE_FATAL);
-    };
-    match source.inner.seek(target) {
-        Ok(position) => i64::try_from(position).unwrap_or(i64::from(ffi::ARCHIVE_FATAL)),
-        Err(error) => {
-            source.failure = Some(error);
-            i64::from(ffi::ARCHIVE_FATAL)
-        }
-    }
-}
-
 impl<R: Read + Seek> Reader<R> {
     pub fn open(source: R, limit_bytes: usize) -> Result<Self, Error> {
         let budget = Arc::new(Budget::new(limit_bytes));
-        let mut source = Box::new(Source {
+        let source = Box::new(Source {
             inner: source,
             buffer: vec![0; READ_BUFFER_BYTES],
             failure: None,
@@ -147,15 +118,12 @@ impl<R: Read + Seek> Reader<R> {
         let Some(archive) = archive else {
             return Err(exceeded_or(&budget, Error::Unavailable));
         };
-        let client_data = ptr::from_mut(&mut *source).cast::<c_void>();
+        let source = NonNull::from(Box::leak(source));
+        let client_data = source.as_ptr().cast::<c_void>();
         // SAFETY: `archive` is live, and `client_data` stays valid for as long as the archive does.
         let status = unsafe {
             ffi::archive_read_support_format_rar(archive.as_ptr())
                 .min(ffi::archive_read_support_format_rar5(archive.as_ptr()))
-                .min(ffi::archive_read_set_seek_callback(
-                    archive.as_ptr(),
-                    Some(seek_callback::<R>),
-                ))
                 .min(ffi::archive_read_open2(
                     archive.as_ptr(),
                     client_data,
@@ -219,7 +187,9 @@ impl<R: Read + Seek> Reader<R> {
                 limit_bytes: self.budget.limit_bytes(),
             };
         }
-        if let Some(failure) = self.source.failure.take() {
+        // SAFETY: the source lives until `drop`, and libarchive is not inside a callback here.
+        let failure = unsafe { (*self.source.as_ptr()).failure.take() };
+        if let Some(failure) = failure {
             return Error::Source(failure);
         }
         // SAFETY: `archive` is live, and a non-null message is a NUL-terminated string.
@@ -238,8 +208,11 @@ impl<R: Read + Seek> Reader<R> {
 impl<R> Drop for Reader<R> {
     fn drop(&mut self) {
         let _scope = Scope::enter(&self.budget);
-        // SAFETY: `archive` is live, and nothing uses it after this call.
-        unsafe { ffi::archive_read_free(self.archive.as_ptr()) };
+        // SAFETY: `archive` is live and unused after this call, and freeing it ends every callback before the source is dropped.
+        unsafe {
+            ffi::archive_read_free(self.archive.as_ptr());
+            drop(Box::from_raw(self.source.as_ptr()));
+        }
     }
 }
 
