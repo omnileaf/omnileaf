@@ -63,7 +63,9 @@
   }
 </script>
 
-<Card class="relative overflow-hidden px-sm shadow-card-rest">
+<Card
+  class="relative overflow-hidden px-sm shadow-card-rest macos:rounded-none macos:border-0 macos:bg-transparent macos:px-none macos:shadow-none"
+>
   <VirtualTable
     items={books}
     key={(book: SeriesBook) => book.id}
@@ -71,12 +73,14 @@
     columns={COLUMNS}
     {isComplete}
     {onNearEnd}
-    class="table-fixed select-none"
+    class="table-fixed select-none macos:macos-books-table"
   >
     {#snippet head()}
       <TableHeader>
         <tr aria-rowindex={1}>
-          <TableHead class="inline-series-row-check">
+          <TableHead
+            class="inline-series-row-check macos:inline-series-row-check-macos"
+          >
             <Checkbox
               bind:ref={selectAllBox}
               checked={isAllPicked}
@@ -93,16 +97,22 @@
             />
           </TableHead>
           <TableHead>{m.series_column_book()}</TableHead>
-          <TableHead class="inline-series-column-added">
+          <TableHead
+            class="inline-series-column-added macos:inline-series-column-added-macos"
+          >
             {m.series_column_added()}
           </TableHead>
           <TableHead class="inline-series-column-pages">
             {m.series_column_pages()}
           </TableHead>
-          <TableHead class="inline-series-column-progress">
+          <TableHead
+            class="inline-series-column-progress macos:inline-series-column-progress-macos"
+          >
             {m.series_column_progress()}
           </TableHead>
-          <TableHead class="inline-series-row-actions">
+          <TableHead
+            class="inline-series-row-actions macos:inline-series-row-actions-macos"
+          >
             <span class="sr-only">{m.series_column_actions()}</span>
           </TableHead>
         </tr>
@@ -114,9 +124,11 @@
       <TableRow
         aria-rowindex={rowIndex}
         aria-selected={isPicked}
+        data-stripe={rowIndex % 2 === 0}
         class={[
-          "block-book-row-wide",
-          isPicked && "bg-selected-row hover:bg-selected-row",
+          "block-book-row-wide macos:border-0 macos:block-auto",
+          isPicked &&
+            "bg-selected-row hover:bg-selected-row macos:bg-transparent",
         ]}
         onmousedown={keepTextUnselectedOnShift}
       >
@@ -124,7 +136,7 @@
           {#if isPicked}
             <span
               aria-hidden="true"
-              class="absolute inset-s-none inset-bs-none inset-be-none bg-accent inline-selected-edge"
+              class="absolute inset-s-none inset-bs-none inset-be-none bg-accent inline-selected-edge macos:hidden"
             ></span>
           {/if}
           <Checkbox
@@ -148,6 +160,7 @@
                 book.reading.state === "read" && !isPicked
                   ? "text-muted"
                   : "text-foreground",
+                isPicked && "macos:text-inherit",
               ]}
             >
               {book.title}
@@ -174,7 +187,9 @@
             ? "text-foreground"
             : "text-muted"}
         >
-          <span class="flex flex-col gap-xs">
+          <span
+            class="flex flex-col gap-xs macos:flex-row macos:items-center macos:gap-sm"
+          >
             <span
               class={book.reading.state === "started"
                 ? "text-caption"
@@ -182,7 +197,10 @@
             >
               {progressWords(book)}
             </span>
-            <BookProgress {book} class="inline-full" />
+            <BookProgress
+              {book}
+              class="inline-full macos:inline-book-progress-macos"
+            />
           </span>
         </TableCell>
         <TableCell>
