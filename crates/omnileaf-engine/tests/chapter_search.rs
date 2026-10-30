@@ -19,8 +19,8 @@ use std::fs;
 use books::write_book_with;
 use omnileaf_engine::{
     AdultContent, AdultTreatment, ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource,
-    Inclusion, Library, LibraryError, LibraryFilter, LibraryListing, LibrarySearch, SeriesFormat,
-    SpellingSuggestion,
+    Inclusion, Library, LibraryError, LibraryFilter, LibraryListing, LibrarySearch, ReadMark,
+    SeriesFormat, SpellingSuggestion,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -30,9 +30,11 @@ const FORBIDDEN: &str = "Forbidden Tale";
 const LONG_RUN: &str = "Long Run";
 const MANGA: &str = "<ComicInfo><Manga>Yes</Manga></ComicInfo>";
 const RETITLED: &str = "<ComicInfo><Title>Brightwater Ferry</Title></ComicInfo>";
+const FERRY: &str = "<ComicInfo><Title>Crossing Tales</Title></ComicInfo>";
 const RATED_18: &str = "<ComicInfo><AgeRating>R18+</AgeRating></ComicInfo>";
 const LONG_RUN_BOOKS: u32 = 25;
 const CHAPTERS_PER_PAGE: usize = 20;
+const SERIES_ON_A_PAGE: u32 = 50;
 
 struct Shelf {
     library: Library,
@@ -48,6 +50,7 @@ impl Shelf {
             (LANTERNS, "Chapter 02 Dusk", Some(MANGA)),
             (LANTERNS, "Chapter 03 Harbour Gate", Some(MANGA)),
             (HARBOUR, "Chapter 01 Tide", Some(RETITLED)),
+            (HARBOUR, "Chapter 04 Ferry Crossing", Some(FERRY)),
             (FORBIDDEN, "Chapter 01 Moonlit", Some(RATED_18)),
         ];
         for (seed, (series, title, comic_info)) in (1..).zip(books) {
@@ -89,6 +92,36 @@ impl Shelf {
             );
         }
         Self::open(name, comics).await
+    }
+
+    async fn many_series(name: &str) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        for number in 1..=SERIES_ON_A_PAGE + 1 {
+            write_book_with(
+                &comics
+                    .path()
+                    .join(format!("Shelf Series {number:02}"))
+                    .join("v01.cbz"),
+                u64::from(number),
+                None,
+            );
+        }
+        Self::open(name, comics).await
+    }
+
+    async fn finished(&self, series: &str) {
+        let books = self
+            .chapters("chapter")
+            .await
+            .hits
+            .into_iter()
+            .filter(|hit| hit.series_title == series)
+            .map(|hit| hit.book)
+            .collect();
+        self.library
+            .mark_books(books, ReadMark::Read)
+            .await
+            .unwrap();
     }
 
     async fn lost_the_lantern_books(&self) {
@@ -232,14 +265,29 @@ async fn refuses_text_longer_than_a_search_reads_as_a_search_too_long() {
 #[tokio::test]
 async fn finds_only_the_books_of_series_the_filter_lets_through() {
     let shelf = Shelf::scanned("chapter-filter").await;
+    shelf.finished(LANTERNS).await;
+    let only_finished = LibraryFilter {
+        finished: Inclusion::Only,
+        ..every_series()
+    };
     let only_started = LibraryFilter {
         started: Inclusion::Only,
         ..every_series()
     };
 
-    let page = shelf.chapters_through("chapter", only_started).await;
+    let pages = [
+        shelf.chapters_through("dawn", only_finished.clone()).await,
+        shelf.chapters_through("tide", only_finished).await,
+        shelf.chapters_through("dawn", only_started).await,
+    ];
 
-    assert_eq!((page.hits.len(), page.count), (0, Some(0)));
+    assert_eq!(
+        pages
+            .iter()
+            .map(|page| (page.hits.len(), page.count))
+            .collect::<Vec<_>>(),
+        [(1, Some(1)), (0, Some(0)), (1, Some(1))]
+    );
 }
 
 #[tokio::test]
@@ -273,29 +321,35 @@ async fn narrows_the_books_to_the_series_of_the_chosen_format() {
 }
 
 #[tokio::test]
-async fn finds_no_series_by_text_for_the_book_format_and_only_manga_for_the_manga_format() {
+async fn finds_series_by_text_only_in_the_format_chosen_and_none_for_the_book_format() {
     let shelf = Shelf::scanned("series-formats").await;
     let mut series_by_format = Vec::new();
 
-    for format in [SeriesFormat::Manga, SeriesFormat::Book] {
-        let formats = LibraryFilter {
-            formats: vec![format],
-            ..every_series()
-        };
-        let page = shelf
-            .library
-            .search(search("keepers", formats), None)
-            .await
-            .unwrap();
-        series_by_format.push(
-            page.series
-                .into_iter()
-                .map(|series| series.title)
-                .collect::<Vec<_>>(),
-        );
+    for format in [SeriesFormat::Manga, SeriesFormat::Comic, SeriesFormat::Book] {
+        let mut found = Vec::new();
+        for text in ["keepers", "tale"] {
+            let formats = LibraryFilter {
+                formats: vec![format],
+                ..every_series()
+            };
+            let page = shelf
+                .library
+                .search(search(text, formats), None)
+                .await
+                .unwrap();
+            found.extend(page.series.into_iter().map(|series| series.title));
+        }
+        series_by_format.push(found);
     }
 
-    assert_eq!(series_by_format, [vec![LANTERNS.to_owned()], Vec::new()]);
+    assert_eq!(
+        series_by_format,
+        [
+            vec![LANTERNS.to_owned()],
+            vec![FORBIDDEN.to_owned()],
+            Vec::new(),
+        ]
+    );
 }
 
 #[tokio::test]
@@ -380,9 +434,20 @@ async fn leaves_out_the_series_the_filter_hides_as_18_plus() {
         ..every_series()
     };
 
-    let page = shelf.chapters_through("moonlit", hiding_adult).await;
+    let pages = [
+        shelf
+            .chapters_through("moonlit", hiding_adult.clone())
+            .await,
+        shelf.chapters_through("chapter 01", hiding_adult).await,
+    ];
 
-    assert_eq!((page.hits.len(), page.count), (0, Some(0)));
+    assert_eq!(
+        pages
+            .iter()
+            .map(|page| (seen(page).len(), page.count))
+            .collect::<Vec<_>>(),
+        [(0, Some(0)), (2, Some(2))]
+    );
 }
 
 #[tokio::test]
@@ -500,5 +565,93 @@ async fn suggests_no_chapter_title_of_a_18_plus_series_the_library_hides() {
     assert_eq!(
         (shown, hidden),
         (Some(suggestion("moonlit", Some(FORBIDDEN))), None)
+    );
+}
+
+#[tokio::test]
+async fn finds_a_book_once_when_its_file_name_and_its_comic_info_title_both_hold_the_text() {
+    let shelf = Shelf::scanned("chapter-both-titles").await;
+
+    let page = shelf.chapters("crossing").await;
+
+    assert_eq!(
+        (seen(&page), page.count),
+        (
+            vec![(HARBOUR, 2, "Crossing Tales", ChapterTitleSource::ComicInfo)],
+            Some(1)
+        )
+    );
+}
+
+#[tokio::test]
+async fn finds_nothing_in_a_series_whose_folder_went_missing_and_nothing_to_suggest() {
+    let shelf = Shelf::scanned("chapter-missing-folder").await;
+    let before = (
+        shelf.chapters("dawn").await.hits.len(),
+        suggested(&shelf, "dawm").await,
+    );
+    let moved = shelf.comics.path().with_extension("moved");
+    fs::rename(shelf.comics.path(), &moved).unwrap();
+    let folder = shelf
+        .library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .last()
+        .unwrap()
+        .id;
+    shelf.library.rescan_folder(folder, |_| {}).await.unwrap();
+
+    let after = shelf.chapters("dawn").await;
+    let suggestion_after = suggested(&shelf, "dawm").await;
+
+    fs::rename(moved, shelf.comics.path()).unwrap();
+    assert_eq!(before, (1, Some(suggestion("dawn", Some(LANTERNS)))));
+    assert_eq!(
+        (after.hits.len(), after.next, after.count, suggestion_after),
+        (0, None, Some(0), None)
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_cursor_given_out_for_a_list_of_series() {
+    let shelf = Shelf::many_series("chapter-series-cursor").await;
+    let series = shelf
+        .library
+        .search(search("shelf", every_series()), None)
+        .await
+        .unwrap();
+    let series_cursor = String::from(series.next.unwrap());
+
+    let refusal = shelf
+        .library
+        .search_chapters(
+            search("shelf", every_series()),
+            Some(ChapterCursor::try_from(series_cursor).unwrap()),
+        )
+        .await;
+
+    assert!(
+        matches!(refusal, Err(LibraryError::CursorForAnotherList)),
+        "{refusal:?}"
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_cursor_string_that_is_not_one_the_library_gave_out() {
+    let shelf = Shelf::long_run("chapter-tampered-cursor").await;
+    let given = String::from(shelf.chapters("stage").await.next.unwrap());
+    let cut_short = given[..given.len() - 1].to_owned();
+    let run_long = format!("{given}0");
+
+    let refusals = [String::new(), "tampered".to_owned(), cut_short, run_long]
+        .map(|text| ChapterCursor::try_from(text).err());
+
+    assert!(
+        refusals
+            .iter()
+            .all(|refusal| matches!(refusal, Some(omnileaf_db::Error::MalformedCursor))),
+        "{refusals:?}"
     );
 }
