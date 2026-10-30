@@ -92,6 +92,26 @@ jobs:
 
       - if: needs.changes.outputs.native != 'false'
         uses: ./.github/actions/rust-gate
+        with:
+          check-args: --skip "library filter speed" --skip "library search speed"
+
+  rust-library-speed:
+    name: rust gate (linux library speed)
+    needs: changes
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - if: needs.changes.outputs.native != 'false'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: needs.changes.outputs.native != 'false'
+        uses: ./.github/actions/rust-gate
+        with:
+          cache-key: library-speed
+          check-args: --step "library filter speed" --step "library search speed"
 
   rust-windows:
     name: rust gate (windows ${{ matrix.part }})
