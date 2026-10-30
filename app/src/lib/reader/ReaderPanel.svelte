@@ -17,13 +17,16 @@
     EDGE_TO_EDGE_BARS,
     READER_CAPSULE,
     READER_GLASS,
-    READER_ICON_SIZE,
     readerButton,
+    readerIconSize,
   } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { type Spread, spreadPosition } from "./spreads.ts";
-  import { WINDOWS_BOTTOM_BAR } from "./windows-reader-bar.ts";
+  import {
+    WINDOWS_BOTTOM_BAR,
+    WINDOWS_MUTED_INK,
+  } from "./windows-reader-bar.ts";
 
   const TIME_ICON_SIZE = 14;
   const SECONDS_IN_A_MINUTE = 60;
@@ -91,6 +94,7 @@
 </script>
 
 <div
+  data-reader-bar={chrome.isCommandBar ? "bottom" : undefined}
   class={floats
     ? cn(
         "flex flex-col items-center gap-sm",
@@ -169,7 +173,7 @@
           name="play"
           fallback={Play}
           isKit={chrome.isOnPhone}
-          size={READER_ICON_SIZE}
+          size={readerIconSize(chrome.platform)}
         />
       </button>
     {/if}
@@ -196,7 +200,8 @@
   {#if secondsLeft !== undefined}
     <p
       class={cn(
-        "flex items-center justify-center gap-xs text-caption text-reader-muted",
+        "flex items-center justify-center gap-xs text-caption",
+        chrome.isCommandBar ? WINDOWS_MUTED_INK : "text-reader-muted",
         floats && [READER_CAPSULE, "px-md py-2xs"],
       )}
     >

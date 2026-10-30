@@ -16,7 +16,7 @@ function paint(colours: readonly string[]): Uint8ClampedArray {
   return context.getImageData(0, 0, 1, 1).data;
 }
 
-function opaqueChannels(colours: readonly string[]): Channels {
+export function opaqueChannels(colours: readonly string[]): Channels {
   const [red = 0, green = 0, blue = 0, alpha] = paint(colours);
   if (alpha !== OPAQUE) {
     throw new Error(`${colours.join(" over ")} is not an opaque colour`);
@@ -44,7 +44,7 @@ function relativeLuminance([red, green, blue]: Channels): number {
   return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
 }
 
-function ratioOf(ink: Channels, ground: Channels): number {
+export function ratioOf(ink: Channels, ground: Channels): number {
   const luminances = [relativeLuminance(ink), relativeLuminance(ground)];
   return (Math.max(...luminances) + 0.05) / (Math.min(...luminances) + 0.05);
 }

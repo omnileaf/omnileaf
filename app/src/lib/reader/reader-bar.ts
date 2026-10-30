@@ -8,6 +8,7 @@ import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
 
 import {
+  usesCommandBar,
   WINDOWS_COMMAND_BUTTON,
   WINDOWS_ICON_BUTTON,
   WINDOWS_ICON_SIZE,
@@ -57,20 +58,20 @@ export function spansReaderBars(
 }
 
 export function readerIconSize(platform: Platform): number {
-  return platform === "windows" ? WINDOWS_ICON_SIZE : READER_ICON_SIZE;
+  return usesCommandBar(platform) ? WINDOWS_ICON_SIZE : READER_ICON_SIZE;
 }
 
 export function readerCommandButton(
   platform: Platform,
   width: WidthClass,
 ): string {
-  return platform === "windows"
+  return usesCommandBar(platform)
     ? WINDOWS_COMMAND_BUTTON
     : readerButton(platform, width);
 }
 
 export function readerButton(platform: Platform, width: WidthClass): string {
-  if (platform === "windows") {
+  if (usesCommandBar(platform)) {
     return WINDOWS_ICON_BUTTON;
   }
   if (floatsReaderBars(platform, width)) {
@@ -80,7 +81,7 @@ export function readerButton(platform: Platform, width: WidthClass): string {
 }
 
 export function readerBackLook(platform: Platform, width: WidthClass): string {
-  if (platform === "windows") {
+  if (usesCommandBar(platform)) {
     return WINDOWS_ICON_BUTTON;
   }
   return isPhone(platform, width)
