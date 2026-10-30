@@ -2,6 +2,11 @@
 :root[data-platform="windows"] [data-theme] {
   --native-duration-fade: 150ms;
   --native-radius-button: 4px;
+  --native-spacing-button: 32px;
+  --native-spacing-button-inline: 11px;
+  --native-text-button: calc(0.875rem * var(--text-scale));
+  --native-leading-button: calc(1.25 / 0.875);
+  --native-weight-button: 400;
   --native-spacing-switch-length: 40px;
   --native-spacing-switch-thickness: 20px;
   --native-spacing-switch-knob: 12px;
@@ -12,6 +17,8 @@
   --native-spacing-switch-inset-on: 4px;
   --native-radius-card: 8px;
   --native-spacing-hairline: 1px;
+  --native-spacing-button-small: 24px;
+  --native-spacing-button-small-inline: 7px;
   --native-radius-dialog: 8px;
   --native-radius-sheet: 8px;
   --native-radius-menu: 8px;
@@ -23,6 +30,19 @@
   --native-color-on-button-primary: #ffffff;
   --native-color-button-secondary: #ffffffb3;
   --native-color-on-button-secondary: #000000e4;
+  --native-color-button-primary-hover: rgba(47, 111, 79, 0.9);
+  --native-color-button-primary-pressed: rgba(47, 111, 79, 0.88);
+  --native-color-button-secondary-hover: #f9f9f980;
+  --native-color-button-secondary-pressed: #f9f9f94d;
+  --native-color-button-primary-edge: #ffffff14;
+  --native-color-button-primary-edge-bottom: #00000066;
+  --native-color-button-primary-disabled: #00000037;
+  --native-color-on-button-primary-disabled: #ffffff;
+  --native-color-button-secondary-edge-top: #0000000f;
+  --native-color-button-secondary-edge-bottom: #00000029;
+  --native-color-button-secondary-disabled: #f9f9f94d;
+  --native-color-on-button-pressed: #0000009e;
+  --native-color-focus-ring-inner: #ffffffb3;
   --native-color-switch-on: #2f6f4f;
   --native-color-switch-on-border: #2f6f4f;
   --native-color-switch-off: #00000006;
@@ -47,6 +67,8 @@
   --native-color-on-button-outline: #000000e4;
   --native-color-button-outline-edge: #0000000f;
   --native-color-on-button-plain: #000000e4;
+  --native-color-on-button-link: #004c2f;
+  --native-color-on-button-disabled: #00000072;
   --native-color-button-plain-hover: #00000009;
   --native-color-button-plain-pressed: #00000006;
   --native-color-button-destructive: #ffffffb3;
@@ -75,6 +97,19 @@
   --native-color-on-button-primary: #000000;
   --native-color-button-secondary: #ffffff0f;
   --native-color-on-button-secondary: #ffffff;
+  --native-color-button-primary-hover: rgba(127, 203, 157, 0.9);
+  --native-color-button-primary-pressed: rgba(127, 203, 157, 0.8);
+  --native-color-button-secondary-hover: #ffffff15;
+  --native-color-button-secondary-pressed: #ffffff08;
+  --native-color-button-primary-edge: #ffffff14;
+  --native-color-button-primary-edge-bottom: #00000023;
+  --native-color-button-primary-disabled: #ffffff28;
+  --native-color-on-button-primary-disabled: #ffffff87;
+  --native-color-button-secondary-edge-top: #ffffff18;
+  --native-color-button-secondary-edge-bottom: #ffffff12;
+  --native-color-button-secondary-disabled: #ffffff08;
+  --native-color-on-button-pressed: #ffffffc5;
+  --native-color-focus-ring-inner: #000000b3;
   --native-color-switch-on: #7fcb9d;
   --native-color-switch-on-border: #7fcb9d;
   --native-color-switch-off: #00000019;
@@ -99,6 +134,8 @@
   --native-color-on-button-outline: #ffffff;
   --native-color-button-outline-edge: #ffffff12;
   --native-color-on-button-plain: #ffffff;
+  --native-color-on-button-link: #abeec6;
+  --native-color-on-button-disabled: #ffffff87;
   --native-color-button-plain-hover: #ffffff0f;
   --native-color-button-plain-pressed: #ffffff0a;
   --native-color-button-destructive: #ffffff0f;

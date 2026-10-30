@@ -17,6 +17,15 @@
   --native-color-icon-button-fill-hover: var(--color-hover);
   --native-color-icon-button-fill-pressed: var(--color-hover);
   --native-color-icon-button-fill-disabled: var(--color-hover);
+  --native-color-button-primary-edge: transparent;
+  --native-color-button-primary-edge-bottom: transparent;
+  --native-color-button-primary-disabled: var(--primary);
+  --native-color-on-button-primary-disabled: var(--primary-foreground);
+  --native-color-button-secondary-edge-top: transparent;
+  --native-color-button-secondary-edge-bottom: transparent;
+  --native-color-button-secondary-disabled: var(--secondary);
+  --native-color-on-button-pressed: var(--foreground);
+  --native-color-focus-ring-inner: transparent;
   --native-radius-button: 999px;
   --native-radius-button-small: 999px;
   --native-spacing-button: 34px;

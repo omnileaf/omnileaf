@@ -27,6 +27,15 @@
   --native-color-button-primary-pressed: var(--accent);
   --native-color-button-secondary-hover: var(--accent);
   --native-color-button-secondary-pressed: var(--accent);
+  --native-color-button-primary-edge: transparent;
+  --native-color-button-primary-edge-bottom: transparent;
+  --native-color-button-primary-disabled: var(--primary);
+  --native-color-on-button-primary-disabled: var(--primary-foreground);
+  --native-color-button-secondary-edge-top: transparent;
+  --native-color-button-secondary-edge-bottom: transparent;
+  --native-color-button-secondary-disabled: var(--secondary);
+  --native-color-on-button-pressed: var(--foreground);
+  --native-color-focus-ring-inner: transparent;
   --native-radius-button: var(--radius-shadcn-button);
   --native-radius-button-small: var(--radius-shadcn-button);
   --native-spacing-button: var(--spacing-shadcn-button);
