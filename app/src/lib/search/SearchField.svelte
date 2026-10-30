@@ -133,7 +133,9 @@
       {conditions}
       {onRemove}
       look={android.isOn ? "material" : "field"}
-      class="shrink-0 flex-nowrap"
+      class={android.isOn
+        ? "scrollbar-none flex-nowrap overflow-x-auto max-inline-2/3 min-inline-none"
+        : "shrink-0 flex-nowrap"}
     />
   {/if}
   <Input
