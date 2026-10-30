@@ -115,19 +115,20 @@ test("remembers the last review it heard of, even once the relay forgets", () =>
   expect(kept !== undefined && isAnswered(kept)).toBe(true);
 });
 
-test("counts only a published or closed report as answered", () => {
+test("counts only a published, duplicate or closed report as answered", () => {
   const answered = (
     [
       { kind: "received" },
       { kind: "reviewing" },
       { kind: "published", issue: 7 },
+      { kind: "duplicate", issue: 9 },
       { kind: "closed" },
     ] as const
   ).map((lastReview) =>
     isAnswered({ code: "R-7K2M-QX9D", madeAtMs: NOON, lastReview }),
   );
 
-  expect(answered).toEqual([false, false, true, true]);
+  expect(answered).toEqual([false, false, true, true, true]);
 });
 
 test("keeps a report whose stored extras it can't read", () => {

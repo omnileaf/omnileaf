@@ -13,7 +13,11 @@ import type { ShareWay } from "./report-sharing.svelte";
 
 const PREFERENCE_KEY = "omnileaf.yourReports";
 const SHARE_WAYS: readonly ShareWay[] = ["send", "github", "copy", "save"];
-const ANSWERED: readonly ReportReview["kind"][] = ["published", "closed"];
+const ANSWERED: readonly ReportReview["kind"][] = [
+  "published",
+  "duplicate",
+  "closed",
+];
 
 export interface KeptReport {
   readonly code: string;
@@ -44,8 +48,9 @@ function reviewOf(value: unknown): ReportReview | undefined {
     case "unknown":
       return { kind: value.kind };
     case "published":
+    case "duplicate":
       return "issue" in value && typeof value.issue === "number"
-        ? { kind: "published", issue: value.issue }
+        ? { kind: value.kind, issue: value.issue }
         : undefined;
     default:
       return undefined;
