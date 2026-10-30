@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -114,6 +114,32 @@ test("turns the commands that act on picks off while nothing is picked, and keep
     true,
     resolvedColour("--native-color-on-button-disabled", "color"),
   ]);
+});
+
+test("names the commands as one group so the bar keeps its landmark", () => {
+  renderHeader("windows");
+
+  const group = page.getByRole("group", { name: "Selected series" }).element();
+
+  expect(
+    ["Select all", "Categories", "Tags", "Mark as read"].map((name) =>
+      group.contains(command(name)),
+    ),
+  ).toEqual([true, true, true, true]);
+  expect(group.contains(page.getByText("2 selected").element())).toBe(false);
+});
+
+test("shows the Select all shortcut in its tooltip and keeps it announced", async () => {
+  renderHeader("windows");
+
+  await userEvent.hover(command("Select all"));
+
+  const tooltip = page.getByText("Ctrl A", { exact: true });
+  await expect.element(tooltip).toBeVisible();
+  expect(tooltip.element().closest("[data-tooltip-content]")).not.toBeNull();
+  expect(command("Select all").getAttribute("aria-keyshortcuts")).toBe(
+    "Control+A",
+  );
 });
 
 test("puts no command bar on the other desktops", () => {

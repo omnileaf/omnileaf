@@ -121,26 +121,41 @@
         {/if}
       </Button>
     {:else}
-      <Button
-        type="button"
-        look={bar.look}
-        aria-keyshortcuts={selectAllKeys}
-        onclick={onSelectAll}
+      <div
+        role="group"
+        aria-label={m.library_selection_toolbar()}
+        class="flex items-center"
       >
-        <SquareCheck size={ICON_SIZE} aria-hidden="true" class={bar.icon} />
-        <span class={bar.label}>{m.library_select_all()}</span>
-      </Button>
-      {#each actions as { name, icon: Icon, label, act } (name)}
-        <Button
+        <Tooltip
+          label={m.library_select_all()}
+          keys={[m.library_select_all_control()]}
           type="button"
-          look={bar.look}
-          disabled={count === 0}
-          onclick={act}
+          aria-keyshortcuts={selectAllKeys}
+          onclick={onSelectAll}
         >
-          <Icon size={ICON_SIZE} aria-hidden="true" class={bar.icon} />
-          <span class={bar.label}>{label}</span>
-        </Button>
-      {/each}
+          {#snippet child({ props })}
+            <Button {...props} look={bar.look}>
+              <SquareCheck
+                size={ICON_SIZE}
+                aria-hidden="true"
+                class={bar.icon}
+              />
+              <span class={bar.label}>{m.library_select_all()}</span>
+            </Button>
+          {/snippet}
+        </Tooltip>
+        {#each actions as { name, icon: Icon, label, act } (name)}
+          <Button
+            type="button"
+            look={bar.look}
+            disabled={count === 0}
+            onclick={act}
+          >
+            <Icon size={ICON_SIZE} aria-hidden="true" class={bar.icon} />
+            <span class={bar.label}>{label}</span>
+          </Button>
+        {/each}
+      </div>
     {/if}
   {/if}
 </div>
