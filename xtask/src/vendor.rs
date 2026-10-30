@@ -173,33 +173,48 @@ pub(crate) fn check(root: &Path, comparison: Comparison) -> anyhow::Result<Vec<P
     found.extend(pin_problems(&manifest));
     found.extend(problems(&manifest, &vendored, Source::Vendored));
     if comparison == Comparison::WithUpstream {
-        let work = env::temp_dir().join(format!("omnileaf-vendor-check-{}", std::process::id()));
-        found.extend(in_work_folder(&work, |work| {
-            upstream_problems(&manifest, work)
-        })?);
+        let work = WorkFolder::create(
+            env::temp_dir().join(format!("omnileaf-vendor-check-{}", std::process::id())),
+        )?;
+        let upstream = upstream_problems(&manifest, work.path(), download);
+        work.remove()?;
+        found.extend(upstream?);
     }
     Ok(found)
 }
 
-fn in_work_folder<T>(
-    work: &Path,
-    run: impl FnOnce(&Path) -> anyhow::Result<T>,
-) -> anyhow::Result<T> {
-    let outcome = fs::create_dir_all(work)
-        .with_context(|| format!("create {}", work.display()))
-        .and_then(|()| run(work));
-    let removed = fs::remove_dir_all(work).or_else(|error| match error.kind() {
-        io::ErrorKind::NotFound => Ok(()),
-        _ => Err(error),
-    });
-    let outcome = outcome?;
-    removed.with_context(|| format!("remove {}", work.display()))?;
-    Ok(outcome)
+struct WorkFolder {
+    path: PathBuf,
 }
 
-fn upstream_problems(manifest: &Manifest, work: &Path) -> anyhow::Result<Vec<Problem>> {
+impl WorkFolder {
+    fn create(path: PathBuf) -> anyhow::Result<Self> {
+        fs::create_dir_all(&path).with_context(|| format!("create {}", path.display()))?;
+        Ok(Self { path })
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+
+    fn remove(self) -> anyhow::Result<()> {
+        fs::remove_dir_all(&self.path).with_context(|| format!("remove {}", self.path.display()))
+    }
+}
+
+impl Drop for WorkFolder {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+fn upstream_problems(
+    manifest: &Manifest,
+    work: &Path,
+    fetch: impl FnOnce(&str, &Path) -> anyhow::Result<()>,
+) -> anyhow::Result<Vec<Problem>> {
     let tarball = work.join(TARBALL_NAME);
-    download(&manifest.tarball, &tarball)?;
+    fetch(&manifest.tarball, &tarball)?;
     let actual = sha256_hex(&fs::read(&tarball).context("read the downloaded tarball")?);
     if actual != manifest.tarball_sha256 {
         return Ok(vec![Problem::TarballAltered { actual }]);
@@ -225,19 +240,37 @@ fn download(url: &str, to: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn tarball_members(tarball: &Path) -> anyhow::Result<Vec<String>> {
+    let output = Command::new("tar")
+        .arg("-tzf")
+        .arg(tarball)
+        .output()
+        .context("run tar")?;
+    anyhow::ensure!(output.status.success(), "listing the tarball failed");
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::to_owned)
+        .collect())
+}
+
 fn extract(tarball: &Path, manifest: &Manifest, into: &Path) -> anyhow::Result<()> {
+    let members = tarball_members(tarball)?;
+    let present: Vec<String> = manifest
+        .files
+        .iter()
+        .map(|file| format!("{}/{}", manifest.root, file.path))
+        .filter(|member| members.contains(member))
+        .collect();
+    if present.is_empty() {
+        return Ok(());
+    }
     let status = Command::new("tar")
         .arg("-xzf")
         .arg(tarball)
         .arg("-C")
         .arg(into)
         .arg("--strip-components=1")
-        .args(
-            manifest
-                .files
-                .iter()
-                .map(|file| format!("{}/{}", manifest.root, file.path)),
-        )
+        .args(&present)
         .status()
         .context("run tar")?;
     anyhow::ensure!(status.success(), "extracting the listed files failed");
@@ -379,16 +412,17 @@ mod tests {
     }
 
     #[test]
-    fn removes_the_work_folder_when_the_run_fails() {
-        let folder = scratch_folder("work-folder");
+    fn removes_the_work_folder_when_a_check_panics() {
+        let path = scratch_folder("work-folder");
 
-        let result: anyhow::Result<()> = in_work_folder(&folder, |work| {
-            assert!(work.is_dir());
-            anyhow::bail!("download failed")
+        let outcome = std::panic::catch_unwind(|| {
+            let work = WorkFolder::create(path.clone()).unwrap();
+            assert!(work.path().is_dir());
+            panic!("tar crashed");
         });
 
-        assert_eq!(result.unwrap_err().to_string(), "download failed");
-        assert!(!folder.exists());
+        assert!(outcome.is_err());
+        assert!(!path.exists());
     }
 
     fn pinned_manifest() -> Manifest {
@@ -438,20 +472,8 @@ mod tests {
         );
     }
 
-    struct ScratchFolder(PathBuf);
-
-    impl ScratchFolder {
-        fn create(name: &str) -> Self {
-            let path = scratch_folder(name);
-            fs::create_dir_all(&path).unwrap();
-            Self(path)
-        }
-    }
-
-    impl Drop for ScratchFolder {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.0);
-        }
+    fn scratch(name: &str) -> WorkFolder {
+        WorkFolder::create(scratch_folder(name)).unwrap()
     }
 
     fn write_pinned_tree(root: &Path, content: &str) {
@@ -467,10 +489,10 @@ mod tests {
 
     #[test]
     fn checks_the_vendored_tree_against_its_manifest_without_the_network() {
-        let root = ScratchFolder::create("offline-check");
-        write_pinned_tree(&root.0, "abd");
+        let root = scratch("offline-check");
+        write_pinned_tree(root.path(), "abd");
 
-        let found = check(&root.0, Comparison::Offline).unwrap();
+        let found = check(root.path(), Comparison::Offline).unwrap();
 
         assert_eq!(
             found,
@@ -479,5 +501,87 @@ mod tests {
                 path: "libarchive/archive.h".to_owned()
             }]
         );
+    }
+
+    fn tarball_with(work: &Path, files: &[(&str, &str)]) -> Vec<u8> {
+        let source = work.join("source");
+        for (path, content) in files {
+            let path = source.join("sample-1.0").join(path);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, content).unwrap();
+        }
+        let tarball = work.join("built.tar.gz");
+        let status = Command::new("tar")
+            .arg("-czf")
+            .arg(&tarball)
+            .arg("-C")
+            .arg(&source)
+            .arg("sample-1.0")
+            .status()
+            .unwrap();
+        assert!(status.success());
+        fs::read(tarball).unwrap()
+    }
+
+    fn manifest_for(tarball: &[u8], paths: &[&str]) -> Manifest {
+        Manifest {
+            tarball_sha256: sha256_hex(tarball),
+            files: paths
+                .iter()
+                .map(|path| ListedFile {
+                    path: (*path).to_owned(),
+                    sha256: HASH_A.to_owned(),
+                })
+                .collect(),
+            ..sample_manifest()
+        }
+    }
+
+    #[test]
+    fn reports_a_tarball_whose_hash_differs_from_the_manifest() {
+        let work = scratch("altered-tarball");
+        let manifest = sample_manifest();
+
+        let found = upstream_problems(&manifest, work.path(), |_, to| {
+            Ok(fs::write(to, "not the pinned tarball")?)
+        })
+        .unwrap();
+
+        assert_eq!(
+            found,
+            [Problem::TarballAltered {
+                actual: sha256_hex(b"not the pinned tarball")
+            }]
+        );
+    }
+
+    #[test]
+    fn reports_a_listed_file_the_tarball_lacks_as_missing() {
+        let work = scratch("missing-member");
+        let tarball = tarball_with(work.path(), &[("src/reader.c", "abc")]);
+        let manifest = manifest_for(&tarball, &["src/reader.c", "src/writer.c"]);
+
+        let found = upstream_problems(&manifest, work.path(), |_, to| Ok(fs::write(to, &tarball)?))
+            .unwrap();
+
+        assert_eq!(
+            found,
+            [Problem::Missing {
+                source: Source::Tarball,
+                path: "src/writer.c".to_owned()
+            }]
+        );
+    }
+
+    #[test]
+    fn extracts_the_listed_files_that_match_the_tarball() {
+        let work = scratch("matching-member");
+        let tarball = tarball_with(work.path(), &[("src/reader.c", "abc"), ("other.c", "")]);
+        let manifest = manifest_for(&tarball, &["src/reader.c"]);
+
+        let found = upstream_problems(&manifest, work.path(), |_, to| Ok(fs::write(to, &tarball)?))
+            .unwrap();
+
+        assert_eq!(found, []);
     }
 }
