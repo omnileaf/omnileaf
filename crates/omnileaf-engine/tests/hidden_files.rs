@@ -1,3 +1,4 @@
+#![cfg(not(feature = "rar"))]
 #![expect(
     clippy::unwrap_used,
     reason = "each test scans its own generated folder in a scratch library, so a failed set-up should stop the test"

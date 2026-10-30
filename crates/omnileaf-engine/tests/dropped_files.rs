@@ -91,6 +91,35 @@ impl Dropping {
     }
 }
 
+#[cfg(feature = "rar")]
+#[tokio::test]
+async fn counts_a_dropped_cbr_and_rar_among_the_comics_and_refuses_only_the_text() {
+    let dropping = Dropping::new("drop-summary-rar").await;
+    let first = dropping.comic("Loose", "One.cbz", 1);
+    let cbr = dropping.other_file("Two.cbr", b"Rar!");
+    let rar = dropping.other_file("Three.rar", b"Rar!");
+    let text = dropping.other_file("notes.txt", b"hello");
+
+    let summary = dropping
+        .library
+        .inspect_drop(vec![first, cbr, text, rar])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (summary.first.as_deref(), summary.more, summary.refused),
+        (
+            Some("One.cbz"),
+            2,
+            vec![RefusedDrop {
+                name: "notes.txt".to_owned(),
+                reason: RefusalReason::NotAComic
+            }]
+        )
+    );
+}
+
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn names_the_first_file_how_many_more_their_size_and_what_it_refuses() {
     let dropping = Dropping::new("drop-summary").await;

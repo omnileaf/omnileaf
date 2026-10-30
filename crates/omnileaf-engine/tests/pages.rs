@@ -25,6 +25,8 @@ use omnileaf_testkit::{
     INK_OVER_CLEAR_JXL, INK_OVER_PAPER_JXL, Packing, PageShape, cb7, cbz, cut_inside_entry,
     page_jpeg, page_png, strip_jpeg, webp_header_only,
 };
+#[cfg(feature = "rar")]
+use omnileaf_testkit::{RarFormat, RarOptions, cbr};
 use support::{FixedClock, ScratchFolder};
 
 const SEED: u64 = 31;
@@ -104,6 +106,19 @@ impl Reader {
         fs::write(
             series.join(format!("{BOOK}.cb7")),
             cb7(&page_entries(pages), Packing::Solid).unwrap(),
+        )
+        .unwrap();
+        Self::over(name, comics).await
+    }
+
+    #[cfg(feature = "rar")]
+    async fn with_rar(name: &str, pages: &[Vec<u8>], file: &str, format: RarFormat) -> Self {
+        let comics = ScratchFolder::new(&format!("{name}-comics"));
+        let series = comics.path().join(FOLDER).join(SERIES);
+        fs::create_dir_all(&series).unwrap();
+        fs::write(
+            series.join(file),
+            cbr(&page_entries(pages), &RarOptions::of(format)).unwrap(),
         )
         .unwrap();
         Self::over(name, comics).await
@@ -714,6 +729,59 @@ async fn refuses_to_open_a_book_whose_file_cannot_be_read() {
     );
 }
 
+#[cfg(feature = "rar")]
+#[tokio::test]
+async fn serves_every_page_of_a_cbr_and_of_a_rar() {
+    let pages = portrait_pages(SEED);
+    let wanted = page_size(&pages[0]).unwrap();
+    for (name, file, format) in [
+        ("cbr-rar5", format!("{BOOK}.cbr"), RarFormat::RAR5),
+        ("rar-rar4", format!("{BOOK}.rar"), RarFormat::RAR4),
+    ] {
+        let reader = Reader::with_rar(name, &pages, &file, format).await;
+
+        let opened = reader.open(NOTHING_UNDECODABLE).await;
+
+        assert_eq!(opened.pages.len(), pages.len(), "{file}");
+        let served = reader.page(&opened, 0).await;
+        assert_eq!(served_size(&served), wanted, "{file}");
+    }
+}
+
+#[cfg(feature = "rar")]
+#[tokio::test]
+async fn refuses_a_cbr_of_a_rar_version_it_cannot_open_as_unreadable() {
+    let reader = Reader::with_rar(
+        "cbr-unknown-version",
+        &portrait_pages(SEED),
+        &format!("{BOOK}.cbr"),
+        RarFormat::RAR5,
+    )
+    .await;
+    let book = reader.book().await;
+    fs::write(
+        reader
+            .comics
+            .path()
+            .join(FOLDER)
+            .join(SERIES)
+            .join(format!("{BOOK}.cbr")),
+        UNKNOWN_RAR_SIGNATURE,
+    )
+    .unwrap();
+
+    let opened = reader
+        .router
+        .open_book(&reader.library, book, NOTHING_UNDECODABLE)
+        .await;
+
+    assert!(
+        matches!(opened, Err(OpenBookError::Unreadable { .. })),
+        "{opened:?}"
+    );
+}
+
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
     let comics = ScratchFolder::new("unsupported-type-comics");
