@@ -325,6 +325,14 @@ for (const [theme, look] of Object.entries(WINDOWS_MENUS)) {
   });
 }
 
+test("blurs what lies under Windows's menu as acrylic does", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+
+  const menu = await openMenuOn("windows", "light");
+
+  expect(style(menu).backdropFilter).toBe("blur(30px)");
+});
+
 test("insets Windows's menu items 4 from the flyout's sides, 2 apart, with 4 corners", async () => {
   await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
 

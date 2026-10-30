@@ -538,6 +538,7 @@
   --toast-radius: var(--radius-windows-overlay);
   --menu-radius: var(--radius-windows-overlay);
   --menu-shadow: var(--shadow-windows-flyout);
+  --menu-blur: 30px;
   --menu-highlight: var(--windows-subtle);
   --menu-highlight-foreground: var(--popover-foreground);
   --tooltip-surface: var(--native-color-menu);

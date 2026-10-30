@@ -128,6 +128,7 @@ for (const [theme, look] of Object.entries(WINDOWS_TOOLTIPS)) {
     expect(style?.borderTopLeftRadius).toBe("4px");
     expect(style?.boxShadow).toContain(look.lift);
     expect(style?.color).toBe(look.ink);
+    expect(style?.backdropFilter).toBe("blur(30px)");
   });
 }
 
