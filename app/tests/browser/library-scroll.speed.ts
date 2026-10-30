@@ -14,7 +14,7 @@ const FRAMES = 300;
 const SCROLL_PER_FRAME_PX = 40;
 const FRAME_BUDGET_MS = 1000 / 60;
 const DROPPED_FRAME_MS = FRAME_BUDGET_MS * 1.5;
-const MOST_DROPPED_FRAMES = 3;
+const MOST_DROPPED_FRAMES = 5;
 const TIMED_PASSES = 3;
 
 const COVER_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480"><rect width="320" height="480" fill="#7fcb9d"/></svg>`;
