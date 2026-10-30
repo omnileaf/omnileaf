@@ -196,6 +196,7 @@
   --native-spacing-menu-item-inline: 16px;
   --native-spacing-menu-rule-inline: 16px;
   --native-spacing-menu-rule-block: 10px;
+  --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-radius-notice: 24px;
   --native-radius-notice-tall: 26px;
   --native-spacing-notice: 48px;

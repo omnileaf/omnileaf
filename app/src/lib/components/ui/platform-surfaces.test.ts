@@ -61,7 +61,7 @@ const LOOKS: readonly PlatformLook[] = [
     platform: "windows",
     menu: "--native-color-menu",
     menuCorner: "8px",
-    tooltip: "--windows-flyout",
+    tooltip: "--native-color-menu",
     switchOn: "#2f6f4f",
     secondaryText: "--windows-secondary-text",
     font: /^"Segoe UI Variable Text"/,

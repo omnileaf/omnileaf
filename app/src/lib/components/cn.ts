@@ -93,6 +93,7 @@ export const TOKEN_THEME = {
     "native-select-ring-lift",
     "native-series-cover",
     "native-shadow-glass",
+    "native-tooltip-lift",
     "popover",
     "raised",
     "reader-bar",

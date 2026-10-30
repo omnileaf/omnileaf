@@ -273,6 +273,7 @@
   --native-spacing-menu-rule-inline: 0px;
   --native-spacing-menu-rule-block: var(--spacing-xs);
   --native-shadow-menu-lift: var(--menu-shadow);
+  --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-color-notice: var(--card);
   --native-color-on-notice: var(--foreground);
   --native-color-notice-action: var(--primary);

@@ -278,6 +278,7 @@
   --spacing-native-menu-rule-inline: var(--native-spacing-menu-rule-inline);
   --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
   --shadow-native-menu-lift: var(--native-shadow-menu-lift);
+  --shadow-native-tooltip-lift: var(--native-shadow-tooltip-lift);
   --color-native-notice: var(--native-color-notice);
   --color-native-on-notice: var(--native-color-on-notice);
   --color-native-notice-action: var(--native-color-notice-action);

@@ -110,6 +110,7 @@
   --native-color-on-menu-disabled: #00000072;
   --native-color-key-ink: #0000009e;
   --native-shadow-menu-lift: 0 8px 16px #00000024;
+  --native-shadow-tooltip-lift: 0 4px 8px #00000024;
   --native-color-notice: #f6f6f680;
   --native-color-on-notice: #000000e4;
   --native-color-focus-ring: #000000e4;
@@ -196,6 +197,7 @@
   --native-color-on-menu-disabled: #ffffff87;
   --native-color-key-ink: #ffffffc5;
   --native-shadow-menu-lift: 0 8px 16px #00000042;
+  --native-shadow-tooltip-lift: 0 4px 8px #00000042;
   --native-color-notice: #ffffff08;
   --native-color-on-notice: #ffffff;
   --native-color-focus-ring: #ffffff;
