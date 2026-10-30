@@ -9,6 +9,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
+  import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
@@ -54,10 +55,11 @@
     isCollapsed?: boolean;
   } = $props();
 
-  const platformLook = tabBarLook(currentPlatform());
+  const platform = currentPlatform();
+  const platformLook = tabBarLook(platform);
   const look = $derived(isCollapsed ? COLLAPSED_TAB_BAR_LOOK : platformLook);
   const sidebar = getSidebarSetting();
-  const isNarrowPane = new MediaQuery(paneFoldQuery(currentPlatform()));
+  const isNarrowPane = new MediaQuery(paneFoldQuery(platform));
   const isFolded = $derived(sidebar.isHidden || isNarrowPane.current);
 
   const currentIndex = $derived(
@@ -102,16 +104,24 @@
   onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar while-phone-picks:hidden",
-    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-shell-ground desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden windows:desktop-shell:border-e-0",
+    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-shell-ground desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop windows:desktop-shell:border-e-0 sidebar-hidden:inline-sidebar-hidden",
     look.bar,
   ]}
 >
-  <p
-    title={m.app_name()}
-    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop-shell:flex desktop-shell:items-center desktop-shell:px-lg desktop-shell:pbs-none desktop-shell:pbe-none desktop-shell:text-body desktop-shell:font-semibold desktop-shell:tracking-normal desktop-shell:min-block-toolbar sidebar-hidden:hidden"
-  >
-    {m.app_name()}
-  </p>
+  {#if platform === "windows"}
+    <div
+      class="hidden items-center px-xs block-pointer-target desktop-shell:flex"
+    >
+      <PaneToggle />
+    </div>
+  {:else}
+    <p
+      title={m.app_name()}
+      class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop-shell:flex desktop-shell:items-center desktop-shell:px-lg desktop-shell:pbs-none desktop-shell:pbe-none desktop-shell:text-body desktop-shell:font-semibold desktop-shell:tracking-normal desktop-shell:min-block-toolbar sidebar-hidden:hidden"
+    >
+      {m.app_name()}
+    </p>
+  {/if}
   <ul
     class={[
       "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm windows:desktop-shell:px-xs sidebar-hidden:pbs-sm",

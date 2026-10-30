@@ -1,6 +1,6 @@
 import type { ComponentProps } from "svelte";
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -124,4 +124,57 @@ test("marks the current item with a 3 by 16 accent pill on its leading edge", as
     colour: resolvedColour("--color-accent", "backgroundColor"),
   });
   expect(item("Library")).toHaveAttribute("aria-current", "page");
+});
+
+function paneToggle(name = "Hide the sidebar"): Element {
+  return asElement(
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("button", { name })
+      .element(),
+  );
+}
+
+for (const width of [1280, 1007]) {
+  test(`keeps the pane toggle's 40 tall row at the top of Windows' pane in a ${String(width)} wide window`, async () => {
+    await renderOnWindowsAt(width);
+
+    const toggle = asElement(
+      document.querySelector('[aria-keyshortcuts="Control+B"]'),
+    ).getBoundingClientRect();
+    const firstItem = boxOf("Library");
+    const paneTop = pane().top;
+
+    expect({
+      start: Math.round(toggle.left),
+      top: Math.round(toggle.top - paneTop),
+      width: Math.round(toggle.width),
+      height: Math.round(toggle.height),
+    }).toEqual({ start: 4, top: 2, width: 40, height: 36 });
+    expect(firstItem.top - paneTop).toBeGreaterThanOrEqual(40);
+  });
+}
+
+test("folds Windows' pane from its toggle and opens it again", async () => {
+  await renderOnWindowsAt(1280);
+
+  await userEvent.click(paneToggle());
+  const folded = Math.round(pane().width);
+  await userEvent.click(paneToggle("Show the sidebar"));
+
+  expect({ folded, open: Math.round(pane().width) }).toEqual({
+    folded: 48,
+    open: 320,
+  });
+});
+
+test("names the pane toggle's Ctrl+B shortcut in its tooltip and to assistive technology", async () => {
+  await renderOnWindowsAt(1280);
+
+  await userEvent.hover(paneToggle());
+
+  expect(paneToggle()).toHaveAttribute("aria-keyshortcuts", "Control+B");
+  await expect
+    .poll(() => document.querySelector("[data-tooltip-content]")?.textContent)
+    .toMatch(/Hide the sidebar\s*Ctrl\+B/);
 });

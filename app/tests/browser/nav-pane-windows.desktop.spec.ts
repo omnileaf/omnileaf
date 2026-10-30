@@ -60,6 +60,20 @@ test.describe("on Windows", () => {
     expect(await paneWidth(page)).toBe(OPEN_PANE);
   });
 
+  test("holds the window's one pane toggle at the top of the pane", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, WIDE_WINDOW);
+    const toggles = page.getByRole("button", { name: "Hide the sidebar" });
+
+    await expect(toggles).toHaveCount(1);
+    await expect(
+      pane(page).getByRole("button", { name: "Hide the sidebar" }),
+    ).toHaveAttribute("aria-keyshortcuts", "Control+B");
+    await toggles.click();
+    expect(await paneWidth(page)).toBe(COMPACT_PANE);
+  });
+
   for (const width of COMPACT_WINDOWS) {
     test(`folds the pane to 48 of icons in a ${String(width)} wide window and names each in a tooltip`, async ({
       page,
@@ -73,9 +87,7 @@ test.describe("on Windows", () => {
       expect(Math.round((await boxOf(page.getByRole("main"))).x)).toBe(
         COMPACT_PANE,
       );
-      await expect(page.locator("[data-tooltip-content]")).toHaveText(
-        "Browse",
-      );
+      await expect(page.locator("[data-tooltip-content]")).toHaveText("Browse");
     });
   }
 

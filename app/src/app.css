@@ -104,6 +104,15 @@
     }
   }
 }
+@custom-variant compact-pane {
+  @variant windows {
+    @variant desktop-shell {
+      @media (width < 1008px) {
+        @slot;
+      }
+    }
+  }
+}
 @custom-variant sidebar-hidden {
   @variant desktop {
     @variant expanded {
@@ -115,12 +124,8 @@
   @variant narrow-desktop {
     @slot;
   }
-  @variant windows {
-    @variant desktop-shell {
-      @media (width < 1008px) {
-        @slot;
-      }
-    }
+  @variant compact-pane {
+    @slot;
   }
 }
 @custom-variant closed (&[data-state="closed"]);
