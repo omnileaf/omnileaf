@@ -27,6 +27,7 @@
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(platform, width.current));
   const onIosPhone = $derived(platform === "ios" && onPhone);
+  const onAndroidPhone = $derived(platform === "android" && onPhone);
 </script>
 
 <h1 class="sr-only">{m.library_title()}</h1>
@@ -81,7 +82,12 @@
       {/snippet}
     </Tooltip>
     <p
-      class="flex-1 text-title font-semibold in-toolbar:text-body"
+      class={[
+        "flex-1",
+        onAndroidPhone
+          ? "text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title"
+          : "text-title font-semibold in-toolbar:text-body",
+      ]}
       aria-live="polite"
     >
       {m.library_selected_series({ count })}
