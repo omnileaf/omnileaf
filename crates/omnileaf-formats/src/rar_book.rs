@@ -95,7 +95,7 @@ impl RarBook {
             .listing
             .entries
             .iter()
-            .find(|entry| entry.name.eq_ignore_ascii_case(COMIC_INFO_NAME))
+            .rfind(|entry| entry.name.eq_ignore_ascii_case(COMIC_INFO_NAME))
             .map(|entry| entry.index)
         else {
             return Ok(None);
@@ -108,7 +108,6 @@ impl RarBook {
             })
     }
 
-    /// Reads one page, stopping past the size limit in case the archive understates it.
     pub(crate) fn read_page(&mut self, index: usize) -> Result<Vec<u8>, FormatError> {
         let ordinal = self.ordinal_of(index)?;
         let limit = self.limits.max_page_bytes;
@@ -432,6 +431,9 @@ fn failed(path: &Path, error: Error) -> FormatError {
             path: path.to_owned(),
             limit: u64::try_from(limit_bytes).unwrap_or(u64::MAX),
         },
+        Error::Unavailable => FormatError::DecoderUnavailable {
+            path: path.to_owned(),
+        },
         Error::Source(source) => FormatError::Read {
             path: path.to_owned(),
             source,
@@ -570,6 +572,16 @@ mod tests {
 
         assert!(
             matches!(error, Err(FormatError::DecoderOutOfMemory { limit, .. }) if limit == SMALL_BUDGET_BYTES as u64),
+            "{error:?}"
+        );
+    }
+
+    #[test]
+    fn reports_a_decoder_that_could_not_start_apart_from_a_damaged_archive() {
+        let error = failed(Path::new("book.cbr"), Error::Unavailable);
+
+        assert!(
+            matches!(error, FormatError::DecoderUnavailable { .. }),
             "{error:?}"
         );
     }

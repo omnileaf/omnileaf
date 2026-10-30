@@ -390,3 +390,26 @@ fn refuses_the_start_of_a_page_holding_fewer_bytes_than_its_header_declares() {
         );
     }
 }
+
+#[test]
+fn reads_the_last_comic_info_of_a_cbr_holding_two() {
+    let scratch = ScratchFolder::new("cbr-two-comic-infos");
+    let later = "<ComicInfo><Series>Sample Series 02</Series></ComicInfo>";
+    let entries = [
+        entry("ComicInfo.xml", COMIC_INFO.as_bytes().to_vec()),
+        entry("1.png", page(0)),
+        entry("ComicInfo.xml", later.as_bytes().to_vec()),
+    ];
+    for format in FORMATS {
+        let path = scratch.write("book.cbr", &stored(&entries, format));
+        let mut book = open_book(&path).unwrap();
+
+        let comic_info = book.comic_info().unwrap();
+
+        assert_eq!(
+            comic_info,
+            Some(parse_comic_info(later.as_bytes()).unwrap()),
+            "{format:?}"
+        );
+    }
+}

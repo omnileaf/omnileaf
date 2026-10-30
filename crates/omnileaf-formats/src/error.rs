@@ -55,6 +55,8 @@ pub enum FormatError {
     UnsupportedEntry { path: PathBuf, name: String },
     #[error("{} needs more than the {limit} bytes of memory allowed to decode it", path.display())]
     DecoderOutOfMemory { path: PathBuf, limit: u64 },
+    #[error("the decoder for {} could not start", path.display())]
+    DecoderUnavailable { path: PathBuf },
     #[error("{} needs more than {limit} bytes decoded to reach one of its pages", path.display())]
     TooMuchToSkip { path: PathBuf, limit: u64 },
     #[error("{} is one part of a multi-volume archive, which this app can't open", path.display())]
