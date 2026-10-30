@@ -153,7 +153,36 @@ fn interface_style(preference: ThemePreference) -> InterfaceStyle {
     }
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[cfg(any(windows, test))]
+fn window_theme(preference: ThemePreference) -> Option<tauri::Theme> {
+    match preference {
+        ThemePreference::System => None,
+        ThemePreference::Light => Some(tauri::Theme::Light),
+        ThemePreference::Dark => Some(tauri::Theme::Dark),
+    }
+}
+
+#[cfg(windows)]
+#[expect(
+    clippy::unused_async,
+    reason = "only Android and iOS wait for the app to restyle the bars"
+)]
+pub(crate) async fn match_theme(
+    app: &tauri::AppHandle,
+    _theme: Theme,
+    preference: ThemePreference,
+) -> Result<(), crate::ipc_error::IpcError> {
+    use tauri::Manager;
+
+    for window in app.webview_windows().values() {
+        window
+            .set_theme(window_theme(preference))
+            .map_err(|error| crate::ipc_error::IpcError::internal(&error))?;
+    }
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios", windows)))]
 #[expect(
     clippy::unused_async,
     reason = "only Android and iOS wait for the app to restyle the bars"
@@ -274,7 +303,7 @@ mod tests {
 
     use super::{
         BarIcons, PageBackground, StartingTheme, Theme, ThemePreference, WindowBackground,
-        interface_style,
+        interface_style, window_theme,
     };
 
     const THEME_CSS: &str = include_str!("../../src/theme.css");
@@ -448,5 +477,20 @@ mod tests {
         let style = interface_style(ThemePreference::System);
 
         assert_eq!(style, InterfaceStyle::Unspecified);
+    }
+
+    #[test]
+    fn tints_the_window_as_the_app_theme_asks_and_leaves_system_to_windows() {
+        let themes = [
+            ThemePreference::System,
+            ThemePreference::Light,
+            ThemePreference::Dark,
+        ]
+        .map(window_theme);
+
+        assert_eq!(
+            themes,
+            [None, Some(tauri::Theme::Light), Some(tauri::Theme::Dark)]
+        );
     }
 }
