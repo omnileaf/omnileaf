@@ -155,22 +155,18 @@ test("rings focus inside in Canvas and takes no nav-item rule that reaches beyon
   expect(forcedColors).not.toContain("nav li");
 });
 
-test("fills a hovered or pressed command bar button on Highlight with HighlightText over it, and only that button", () => {
+test("writes the command bar's Highlight rules for enabled, unexpanded command buttons only, the hover ones behind the hover media guard", () => {
   const squeezed = (css: string) => css.replace(/\s+/g, "");
   const idle = ':not(:disabled):not([aria-expanded="true"])';
   const buttons = (state: string, part: string) =>
     `:root[data-platform="windows"] [data-command-button]${idle}:${state}${part}`;
+  const fill = (state: string) =>
+    `${buttons(state, "::before")} { background-color: Highlight; } ${buttons(state, "")} { color: HighlightText; }`;
 
   expect(squeezed(forcedColors)).toContain(
-    squeezed(
-      `${buttons("hover", "::before")}, ${buttons("active", "::before")} { background-color: Highlight; }`,
-    ),
+    squeezed(`@media (hover: hover) { ${fill("hover")} }`),
   );
-  expect(squeezed(forcedColors)).toContain(
-    squeezed(
-      `${buttons("hover", "")}, ${buttons("active", "")} { color: HighlightText; }`,
-    ),
-  );
+  expect(squeezed(forcedColors)).toContain(squeezed(fill("active")));
 });
 
 test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and a key hint the contrast theme's way", () => {
