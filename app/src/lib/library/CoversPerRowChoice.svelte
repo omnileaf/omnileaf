@@ -4,6 +4,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
+  import { FILTER_SETTING_LABEL_TYPE } from "./filter-sheet-look";
+
   import CoversPerRowStepper from "./CoversPerRowStepper.svelte";
   import { SCREEN_SIZES, type ScreenSize } from "./library-view";
 
@@ -35,14 +38,20 @@
   } = $props();
 
   const labelId = $props.id();
+  const android = new AndroidPhone();
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
 
-<div class="flex flex-col gap-sm">
+<div class={["flex flex-col gap-sm", android.isOn && "ps-lg pe-xl"]}>
   <div
     class="flex items-center justify-between gap-md ios:max-medium:flex-col ios:max-medium:items-stretch"
   >
-    <p id={labelId} class="text-body font-semibold large:text-small">
+    <p
+      id={labelId}
+      class={android.isOn
+        ? FILTER_SETTING_LABEL_TYPE
+        : "text-body font-semibold large:text-small"}
+    >
       {m.library_covers_per_row()}
     </p>
     <SegmentedControl

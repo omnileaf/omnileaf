@@ -17,3 +17,9 @@ export const ANDROID_FILTER_CHIP = {
   chosen: "border-transparent bg-native-accent-soft text-foreground",
   other: "border-native-button-outline-edge text-muted",
 } as const;
+
+export const ANDROID_VIEW_SETTING = {
+  row: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl",
+  words: "flex-1 min-inline-none",
+  note: "basis-full text-muted",
+} as const;
