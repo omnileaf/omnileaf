@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { goto } from "$app/navigation";
+  import { goto, preloadCode } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
@@ -51,6 +51,7 @@
   import type { LayoutProps } from "./$types";
 
   const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
+  const READER_ROUTE = "/read/[book]";
 
   let { children, data }: LayoutProps = $props();
 
@@ -132,6 +133,7 @@
   }
 
   onMount(() => {
+    preloadCode(READER_ROUTE).catch(reportError);
     const arrival = takeHomeArrival(data.homeArrival);
     if (arrival !== null) {
       void showHomeArrival(arrival);
