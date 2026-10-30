@@ -9,6 +9,8 @@
     LibrarySortBy,
     SmartFilter,
   } from "#lib/ipc/bindings.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
@@ -17,6 +19,8 @@
     languageName,
     READ_STATE_LABELS,
   } from "./filter-labels";
+  import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
+  import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
   import { GROUPED_FOOTNOTE, groupLook } from "./group-look";
   import {
@@ -46,6 +50,9 @@
     hide: m.library_filter_hide,
   } satisfies Record<Inclusion, () => string>;
 
+  const ADULT_INCLUSIONS: readonly Inclusion[] = ["any", "only", "hide"];
+  const BOOKMARK_INCLUSIONS: readonly Inclusion[] = ["any", "only"];
+
   let {
     listing,
     choices,
@@ -58,7 +65,14 @@
     isGrouped?: boolean;
   } = $props();
 
+  const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(currentPlatform(), width.current) === "android",
+  );
   const look = $derived(groupLook(isGrouped));
+  const headingClass = $derived(
+    isAndroidPhone ? ANDROID_FILTER_HEADING : look.heading,
+  );
   const sortByOptions = $derived(
     SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() })),
   );
@@ -104,7 +118,7 @@
 </script>
 
 <section class={["flex flex-col", look.section]}>
-  <h3 class={look.heading}>{m.library_sort()}</h3>
+  <h3 class={headingClass}>{m.library_sort()}</h3>
   {#if isGrouped}
     <div class={look.group}>
       <PickerRow
@@ -150,7 +164,7 @@
   {/if}
 </section>
 <section class={["flex flex-col", isGrouped ? look.section : "pbs-lg"]}>
-  <h3 class={look.heading}>{m.library_filter()}</h3>
+  <h3 class={headingClass}>{m.library_filter()}</h3>
   <div class={look.group}>
     {#if isGrouped}
       <PickerRow
@@ -162,6 +176,16 @@
           if (state !== undefined) {
             onChoose(withReadState(listing, state));
           }
+        }}
+      />
+    {:else if isAndroidPhone}
+      <FilterSetting
+        label={m.library_read_state()}
+        options={READ_STATES}
+        labels={READ_STATE_LABELS}
+        chosen={readStateOf(listing.filter)}
+        onChoose={(state: ReadState) => {
+          onChoose(withReadState(listing, state));
         }}
       />
     {:else}
@@ -222,7 +246,19 @@
         {/if}
       </FilterToggles>
     {/if}
-    {#if choices.ratesAdult}
+    {#if choices.ratesAdult && isAndroidPhone}
+      <FilterSetting
+        isRow
+        label={m.library_filter_adult()}
+        hint={m.library_filter_adult_hint()}
+        options={ADULT_INCLUSIONS}
+        labels={INCLUSION_LABELS}
+        chosen={listing.filter.adult}
+        onChoose={(inclusion: Inclusion) => {
+          include("adult", inclusion);
+        }}
+      />
+    {:else if choices.ratesAdult}
       <SettingChoice
         label={m.library_filter_adult()}
         hint={m.library_filter_adult_hint()}
@@ -233,7 +269,19 @@
         }}
       />
     {/if}
-    {#if choices.keepsBookmarks}
+    {#if choices.keepsBookmarks && isAndroidPhone}
+      <FilterSetting
+        isRow
+        label={m.library_filter_bookmarked()}
+        hint={m.library_filter_bookmarked_hint()}
+        options={BOOKMARK_INCLUSIONS}
+        labels={INCLUSION_LABELS}
+        chosen={listing.filter.bookmarked}
+        onChoose={(inclusion: Inclusion) => {
+          include("bookmarked", inclusion);
+        }}
+      />
+    {:else if choices.keepsBookmarks}
       <SettingChoice
         label={m.library_filter_bookmarked()}
         hint={m.library_filter_bookmarked_hint()}
