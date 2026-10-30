@@ -22,11 +22,8 @@ import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
-import {
-  closestWords,
-  isTooShortToSuggest,
-  slipsAllowed,
-} from "./closest-words.ts";
+import { phrasesOf } from "./chapter-phrases.ts";
+import { closestTitle, isTooShortToSuggest } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
 import {
   isFiledInVolume,
@@ -270,6 +267,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
 }
 
 const PAGE_SIZE = 50;
+const CHAPTERS_PER_PAGE = 20;
 const SAMPLE_SECONDS_PER_PAGE = 8.5;
 const SAMPLE_LEARNED_SECONDS_PER_PAGE = Math.round(SAMPLE_SECONDS_PER_PAGE);
 const QUICK_READ_SECONDS = 30 * 60;
@@ -348,9 +346,10 @@ function offsetFrom(cursor: string | null): number {
 function pageOf<Item>(
   items: readonly Item[],
   cursor: string | null,
+  size = PAGE_SIZE,
 ): { readonly items: Item[]; readonly next: string | null } {
   const start = offsetFrom(cursor);
-  const end = start + PAGE_SIZE;
+  const end = start + size;
   return {
     items: items.slice(start, end),
     next: end < items.length ? String(end) : null,
@@ -382,6 +381,22 @@ function formatOf(series: SampleSeries): SeriesFormat {
     return "comic";
   }
   return MANGA_FORMATS.has(series.format) ? "manga" : "book";
+}
+
+function holdsFormats(
+  chosen: readonly SeriesFormat[],
+  series: SampleSeries,
+): boolean {
+  if (chosen.length === 0) {
+    return true;
+  }
+  const holdsManga = formatOf(series) === "manga";
+  const wantsComic = chosen.includes("comic");
+  const wantsManga = chosen.includes("manga");
+  if (wantsComic && wantsManga) {
+    return true;
+  }
+  return wantsComic ? !holdsManga : wantsManga && holdsManga;
 }
 
 function languageOf(series: SampleSeries): string | null {
@@ -697,6 +712,8 @@ export function sampleBackend(
     !missingFolder.isFound &&
     !missingFolder.isShownAnyway &&
     MISSING_FOLDER_SERIES.has(series.number);
+  const hasBooksToFind = (series: SampleSeries): boolean =>
+    !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
     isBookmarked,
     tagsOf,
@@ -986,6 +1003,17 @@ export function sampleBackend(
       isNew: book.isNew,
       isFileMissing: book.file === "missing",
       ...numberingOf(book.title),
+    };
+  }
+
+  function chapterHit(series: SampleSeries, book: SampleBook, index: number) {
+    return {
+      series: sampleSeriesId(series.number),
+      seriesTitle: titleOf(series),
+      book: bookIdIn(series, index),
+      position: index + 1,
+      title: book.title,
+      matchedIn: "fileName" as const,
     };
   }
 
@@ -1603,33 +1631,47 @@ export function sampleBackend(
       if (isTooShortToSuggest(typed)) {
         return null;
       }
-      const allowed = slipsAllowed(Array.from(typed).length);
-      const titles = shownLibrary().flatMap((series) => [
-        { title: titleOf(series), chapterOf: null },
-        ...series.books.map((book) => ({
-          title: book.title,
-          chapterOf: titleOf(series),
-        })),
-      ]);
-      let best: {
-        slips: number;
-        text: string;
-        chapterOf: string | null;
-      } | null = null;
-      for (const { title, chapterOf } of titles) {
-        const closest = closestWords(typed, title.toLocaleLowerCase());
-        if (
-          closest !== undefined &&
-          closest.slips > 0 &&
-          closest.slips <= allowed &&
-          (best === null || closest.slips < best.slips)
-        ) {
-          best = { slips: closest.slips, text: closest.words, chapterOf };
-        }
+      const listed = shownLibrary().filter(hasBooksToFind);
+      return (
+        closestTitle(
+          typed,
+          listed.map((series) => ({ title: titleOf(series), chapterOf: null })),
+        ) ??
+        closestTitle(
+          typed,
+          listed.flatMap((series) =>
+            booksOf(series).map((book) => ({
+              title: book.title,
+              chapterOf: screenshotMode ? null : titleOf(series),
+            })),
+          ),
+        )
+      );
+    },
+    librarySearchChapters: async (search, after) => {
+      await libraryReady();
+      const phrases = phrasesOf(search.text.toLocaleLowerCase());
+      if (phrases === null) {
+        return { hits: [], next: null, count: 0 };
       }
-      return best === null
-        ? null
-        : { text: best.text, chapterOf: best.chapterOf };
+      const found = shownLibrary()
+        .filter(
+          (series) =>
+            hasBooksToFind(series) &&
+            holdsFormats(search.filter.formats, series) &&
+            passes(series, { ...search.filter, formats: [] }, facts),
+        )
+        .flatMap((series) =>
+          booksOf(series).flatMap((book, index) =>
+            phrases.every((phrase) =>
+              book.title.toLocaleLowerCase().includes(phrase),
+            )
+              ? [chapterHit(series, book, index)]
+              : [],
+          ),
+        );
+      const page = pageOf(found, after, CHAPTERS_PER_PAGE);
+      return { hits: page.items, next: page.next, count: found.length };
     },
     librarySearchCount: async (search) => {
       await libraryReady();
