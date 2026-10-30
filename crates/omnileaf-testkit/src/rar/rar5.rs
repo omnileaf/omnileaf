@@ -1,7 +1,7 @@
 use super::{
     Member, RarEncryption, RarMethod, RarOptions, RarVolume, SMALLEST_RAR5_DICTIONARY_BYTES, crc32,
 };
-use crate::Packing;
+use crate::{FixtureError, Packing};
 
 const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 const MAIN: u64 = 1;
@@ -33,6 +33,8 @@ const KDF_COUNT: u8 = 15;
 const SALT: [u8; 16] = [0; 16];
 const INITIALIZATION_VECTOR: [u8; 16] = [0; 16];
 const VINT_DATA_BITS: u32 = 7;
+const LARGEST_ALGORITHM_VERSION: u8 = 0x3F;
+const LARGEST_DICTIONARY_EXPONENT: u32 = 31;
 const VINT_DATA_MASK: u64 = 0x7F;
 const VINT_CONTINUES: u8 = 0x80;
 
@@ -40,6 +42,37 @@ const VINT_CONTINUES: u8 = 0x80;
 pub(super) struct Compression {
     pub(super) version: u8,
     pub(super) dictionary_bytes: u64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CompressionBits {
+    version: u64,
+    dictionary_exponent: u64,
+}
+
+impl Compression {
+    fn bits(self) -> Result<CompressionBits, FixtureError> {
+        if self.version > LARGEST_ALGORITHM_VERSION {
+            return Err(FixtureError::RarCompressionVersion {
+                version: self.version,
+            });
+        }
+        let multiple = self.dictionary_bytes / SMALLEST_RAR5_DICTIONARY_BYTES;
+        let is_encodable = self
+            .dictionary_bytes
+            .is_multiple_of(SMALLEST_RAR5_DICTIONARY_BYTES)
+            && multiple.is_power_of_two()
+            && multiple.ilog2() <= LARGEST_DICTIONARY_EXPONENT;
+        if !is_encodable {
+            return Err(FixtureError::RarDictionary {
+                bytes: self.dictionary_bytes,
+            });
+        }
+        Ok(CompressionBits {
+            version: u64::from(self.version),
+            dictionary_exponent: u64::from(multiple.ilog2()),
+        })
+    }
 }
 
 struct Block<'a> {
@@ -54,14 +87,15 @@ pub(super) fn archive(
     members: &[Member<'_>],
     options: &RarOptions,
     compression: Compression,
-) -> Vec<u8> {
+) -> Result<Vec<u8>, FixtureError> {
+    let bits = compression.bits()?;
     let mut archive = SIGNATURE.to_vec();
     if options.encryption == RarEncryption::Headers {
         archive.extend(encryption_block().encode());
     }
     archive.extend(main_block(options).encode());
     for member in members {
-        archive.extend(file_block(member, options, compression).encode());
+        archive.extend(file_block(member, options, bits).encode());
     }
     let end_flags = if options.volume.precedes_another() {
         MORE_VOLUMES_FOLLOW
@@ -69,7 +103,7 @@ pub(super) fn archive(
         NO_FLAGS
     };
     archive.extend(simple_block(END, &vint(end_flags)).encode());
-    archive
+    Ok(archive)
 }
 
 fn simple_block<'a>(kind: u64, fields: &[u8]) -> Block<'a> {
@@ -103,18 +137,14 @@ fn main_block<'a>(options: &RarOptions) -> Block<'a> {
     simple_block(MAIN, &fields)
 }
 
-fn file_block<'a>(
-    member: &Member<'a>,
-    options: &RarOptions,
-    compression: Compression,
-) -> Block<'a> {
+fn file_block<'a>(member: &Member<'a>, options: &RarOptions, bits: CompressionBits) -> Block<'a> {
     let (file_flags, attributes, information, data) = if member.is_directory {
         (FILE_IS_DIRECTORY, ATTRIBUTE_DIRECTORY, 0, None)
     } else {
         (
             FILE_HAS_CRC32,
             ATTRIBUTE_ARCHIVE,
-            compression_information(member, options.method, compression),
+            compression_information(member, options.method, bits),
             Some(member.bytes),
         )
     };
@@ -155,23 +185,13 @@ fn file_block<'a>(
     }
 }
 
-fn compression_information(
-    member: &Member<'_>,
-    method: RarMethod,
-    compression: Compression,
-) -> u64 {
+fn compression_information(member: &Member<'_>, method: RarMethod, bits: CompressionBits) -> u64 {
     let method = match method {
         RarMethod::Stored => STORED,
         RarMethod::DeclaredCompressed => NORMAL,
     };
-    let dictionary = (compression.dictionary_bytes / SMALLEST_RAR5_DICTIONARY_BYTES)
-        .checked_ilog2()
-        .map_or(0, u64::from);
     let solid = if member.is_solid { SOLID } else { 0 };
-    u64::from(compression.version)
-        | solid
-        | (method << METHOD_SHIFT)
-        | (dictionary << DICTIONARY_SHIFT)
+    bits.version | solid | (method << METHOD_SHIFT) | (bits.dictionary_exponent << DICTIONARY_SHIFT)
 }
 
 fn encryption_record() -> Vec<u8> {
@@ -237,7 +257,8 @@ fn vint(mut value: u64) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ArchiveEntry, Packing, RarEncryption, RarFormat, RarMethod, RarOptions, RarVolume, cbr,
+        ArchiveEntry, FixtureError, Packing, RarEncryption, RarFormat, RarMethod, RarOptions,
+        RarVolume, cbr,
     };
 
     const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
@@ -256,6 +277,7 @@ mod tests {
     const FILE_IS_DIRECTORY: u64 = 0x0001;
     const FILE_HAS_CRC32: u64 = 0x0004;
     const SOLID: u64 = 0x0040;
+    const KIB: u64 = 1024;
     const ENCRYPTION_RECORD: u64 = 0x01;
 
     struct Header {
@@ -589,8 +611,67 @@ mod tests {
         let error = cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap_err();
 
         assert!(
-            matches!(&error, crate::FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
+            matches!(&error, FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
             "{error:?}"
         );
+    }
+
+    fn compression(compression_version: u8, dictionary_bytes: u64) -> RarOptions {
+        RarOptions {
+            format: RarFormat::Rar5 {
+                compression_version,
+                dictionary_bytes,
+            },
+            ..RarOptions::of(RarFormat::RAR5)
+        }
+    }
+
+    fn compression_information(options: &RarOptions) -> u64 {
+        files(&headers(&cbr(&pages(), options).unwrap()))[1].fields[4]
+    }
+
+    #[test]
+    fn writes_the_widest_compression_version_without_touching_the_solid_bit() {
+        let largest_version = 63;
+
+        let information = compression_information(&compression(largest_version, 128 * KIB));
+
+        assert_eq!(information & (0x3F | SOLID), 63);
+    }
+
+    #[test]
+    fn refuses_a_compression_version_wider_than_six_bits() {
+        let error = cbr(&pages(), &compression(64, 128 * KIB)).unwrap_err();
+
+        assert!(
+            matches!(error, FixtureError::RarCompressionVersion { version: 64 }),
+            "{error:?}"
+        );
+    }
+
+    #[test]
+    fn writes_the_largest_dictionary_the_field_encodes() {
+        let largest_dictionary = (128 * KIB) << 31;
+
+        let information = compression_information(&compression(0, largest_dictionary));
+
+        assert_eq!((information >> 10) & 0x1F, 31);
+    }
+
+    #[test]
+    fn refuses_a_dictionary_the_field_cannot_encode() {
+        let unencodable = [64 * KIB, 192 * KIB, (128 * KIB) << 32];
+
+        let refused: Vec<bool> = unencodable
+            .iter()
+            .map(|&bytes| {
+                matches!(
+                    cbr(&pages(), &compression(0, bytes)),
+                    Err(FixtureError::RarDictionary { bytes: refused }) if refused == bytes
+                )
+            })
+            .collect();
+
+        assert_eq!(refused, [true; 3]);
     }
 }

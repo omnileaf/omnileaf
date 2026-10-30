@@ -108,14 +108,14 @@ pub fn cbr(entries: &[ArchiveEntry], options: &RarOptions) -> Result<Vec<u8>, Fi
         RarFormat::Rar5 {
             compression_version,
             dictionary_bytes,
-        } => Ok(rar5::archive(
+        } => rar5::archive(
             &members,
             options,
             rar5::Compression {
                 version: compression_version,
                 dictionary_bytes,
             },
-        )),
+        ),
     }
 }
 
