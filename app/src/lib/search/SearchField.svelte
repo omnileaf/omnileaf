@@ -97,12 +97,12 @@
 </script>
 
 <InputGroup
-  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target"
+  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide ios:max-medium:gap-native-search-field-gap ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-glass ios:max-medium:shadow-native-shadow-glass ios:max-medium:backdrop-blur-native-glass ios:max-medium:backdrop-saturate-180 ios:max-medium:block-native-toolbar-button ios:max-medium:focus-within:focus-ring android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target"
 >
   <Search
     size={SEARCH_ICON_SIZE}
     aria-hidden="true"
-    class="shrink-0 android:text-muted"
+    class="shrink-0 ios:max-medium:block-native-icon ios:max-medium:inline-native-icon android:text-muted"
   />
   {#if hasTokens}
     <div
@@ -150,7 +150,7 @@
     spellcheck="false"
     value={text}
     class={[
-      "no-search-cancel text-body large:text-search-wide",
+      "no-search-cancel text-body large:text-search-wide ios:max-medium:self-stretch ios:max-medium:text-native-search-field/native-search-field ios:max-medium:font-native-search-field ios:max-medium:tracking-native-search-field",
       hasTokens && "shrink-0 basis-1/2",
     ]}
     oninput={typeIn}

@@ -196,11 +196,17 @@
   --spacing-native-tab-bar-inline: var(--native-spacing-tab-bar-inline);
   --spacing-native-toolbar-button: var(--native-spacing-toolbar-button);
   --spacing-native-bottom-bar-start: var(--native-spacing-bottom-bar-start);
+  --spacing-native-bottom-bar-end: var(--native-spacing-bottom-bar-end);
+  --spacing-native-search-bar-start: var(--native-spacing-search-bar-start);
   --spacing-native-tab-cell: var(--native-spacing-tab-cell);
   --text-native-tab: var(--native-text-tab);
   --leading-native-tab: var(--native-leading-tab);
   --font-weight-native-tab: var(--native-weight-tab);
   --tracking-native-tab: var(--native-tracking-tab);
+  --text-native-search-field: var(--native-text-search-field);
+  --leading-native-search-field: var(--native-leading-search-field);
+  --font-weight-native-search-field: var(--native-weight-search-field);
+  --tracking-native-search-field: var(--native-tracking-search-field);
   --radius-native-cover: var(--native-radius-cover);
   --spacing-native-read-mark: var(--native-spacing-read-mark);
   --color-native-cover-badge: var(--native-color-cover-badge);
@@ -285,6 +291,7 @@
   --tracking-native-notice-label: var(--native-tracking-notice-label);
   --spacing-native-search-token: var(--native-spacing-search-token);
   --spacing-native-search-token-inline: var(--native-spacing-search-token-inline);
+  --spacing-native-search-field-gap: var(--native-spacing-search-field-gap);
   --shadow-native-notice-lift: var(--native-shadow-notice-lift);
   --spacing-native-notice-inline: var(--native-spacing-notice-inline);
   --spacing-native-notice-top: var(--native-spacing-notice-top);

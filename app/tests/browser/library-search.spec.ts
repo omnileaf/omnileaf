@@ -897,6 +897,22 @@ test.describe("on Android", () => {
     await expect(searchField(page)).toHaveAccessibleDescription("");
   });
 
+  test("keeps the field at the top of the page beside the back link", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    const field = await boxOf(searchField(page).locator(".."));
+    const back = await boxOf(
+      page.getByRole("link", { name: "Back to the library" }),
+    );
+
+    expect(field.y).toBeLessThan(viewportOf(page).height / 4);
+    expect(Math.round(back.y + back.height / 2)).toBe(
+      Math.round(field.y + field.height / 2),
+    );
+  });
+
   test("keeps the search start on the page's own ground", async ({ page }) => {
     await page.goto("/search");
     await expect(page.getByText("You can search for")).toBeVisible();
@@ -997,6 +1013,68 @@ test.describe("on an iPhone", () => {
     await searchField(page).fill("market");
 
     await expect(ground).toHaveCount(0);
+  });
+
+  test("floats the field at the bottom beside the Library circle, in place of the back link", async ({
+    page,
+  }) => {
+    const viewport = viewportOf(page);
+    test.skip(
+      viewport.width >= MEDIUM_MIN_WIDTH,
+      "the bottom field is the iPhone's",
+    );
+    await page.goto("/search");
+
+    const field = await boxOf(searchField(page).locator(".."));
+    const circle = await boxOf(page.getByRole("navigation", { name: "Main" }));
+
+    expect({
+      height: field.height,
+      besideCircle: field.x - (circle.x + circle.width),
+      fromEnd: viewport.width - (field.x + field.width),
+      fromBottom: viewport.height - (field.y + field.height),
+      circleFromBottom: viewport.height - (circle.y + circle.height),
+    }).toEqual({
+      height: 48,
+      besideCircle: 8,
+      fromEnd: 16,
+      fromBottom: 12,
+      circleFromBottom: 12,
+    });
+    await expect(
+      page.getByRole("link", { name: "Back to the library" }),
+    ).toHaveCount(0);
+  });
+
+  test("lifts the field and the Library circle 12 above the on-screen keyboard", async ({
+    page,
+  }) => {
+    const KEYBOARD = 336;
+    const viewport = viewportOf(page);
+    test.skip(
+      viewport.width >= MEDIUM_MIN_WIDTH,
+      "the bottom field is the iPhone's",
+    );
+    await page.goto("/search");
+    await expect(searchField(page)).toBeVisible();
+
+    await page.evaluate((covered) => {
+      const visual = window.visualViewport;
+      if (visual === null) {
+        throw new Error("no visual viewport to show the keyboard in");
+      }
+      Object.defineProperty(visual, "height", {
+        value: document.documentElement.clientHeight - covered,
+      });
+      visual.dispatchEvent(new Event("resize"));
+    }, KEYBOARD);
+
+    const field = await boxOf(searchField(page).locator(".."));
+    const circle = await boxOf(page.getByRole("navigation", { name: "Main" }));
+    expect([
+      viewport.height - (field.y + field.height),
+      viewport.height - (circle.y + circle.height),
+    ]).toEqual([KEYBOARD + 12, KEYBOARD + 12]);
   });
 
   function tokens(page: Page): Locator {
