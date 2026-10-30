@@ -202,6 +202,7 @@
   --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: var(--muted-foreground);
   --native-color-on-tab-hover: var(--muted-foreground);
+  --native-color-on-tab-disabled: var(--muted-foreground);
   --native-color-on-tab-current: var(--color-accent);
   --native-color-on-tab-pill: var(--color-accent);
   --native-spacing-tab-bar: var(--spacing-floating-bar);

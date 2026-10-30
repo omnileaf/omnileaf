@@ -148,6 +148,7 @@
   --native-spacing-reader-bar-end: calc(var(--spacing-safe-bottom) + 8px);
   --native-shadow-bar-button-lift: none;
   --native-color-on-tab-hover: var(--muted-foreground);
+  --native-color-on-tab-disabled: var(--muted-foreground);
   --native-spacing-tab-bar: 64px;
   --native-spacing-tab-bar-inset: 0px;
   --native-spacing-tab-bar-inline: 0px;

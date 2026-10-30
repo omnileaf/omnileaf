@@ -102,6 +102,7 @@
   --native-color-top-bar-scrolled-edge: #0000000f;
   --native-color-on-tab: #000000e4;
   --native-color-on-tab-hover: #0000009e;
+  --native-color-on-tab-disabled: #00000072;
   --native-color-sheet: #f3f3f3;
   --native-color-sheet-group: #ffffffb3;
   --native-color-scrim: #0000004d;
@@ -196,6 +197,7 @@
   --native-color-top-bar-scrolled-edge: #ffffff15;
   --native-color-on-tab: #ffffff;
   --native-color-on-tab-hover: #ffffffc5;
+  --native-color-on-tab-disabled: #ffffff87;
   --native-color-sheet: #202020;
   --native-color-sheet-group: #ffffff0d;
   --native-color-scrim: #0000004d;

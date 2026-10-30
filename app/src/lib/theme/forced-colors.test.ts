@@ -215,6 +215,7 @@ test("sets Windows's SelectorBar text and its chosen pill in CanvasText", () => 
 
   expect(mapped.get("--native-color-on-tab")).toBe("CanvasText");
   expect(mapped.get("--native-color-on-tab-hover")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-tab-disabled")).toBe("GrayText");
 });
 
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {

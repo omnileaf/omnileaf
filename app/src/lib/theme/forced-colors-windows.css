@@ -42,6 +42,7 @@
     --native-color-on-segment-selected: HighlightText;
     --native-color-on-tab: CanvasText;
     --native-color-on-tab-hover: CanvasText;
+    --native-color-on-tab-disabled: GrayText;
     --native-color-progress-track: ButtonText;
     --native-color-progress-fill: Highlight;
     --native-color-grouped-ground: Canvas;
