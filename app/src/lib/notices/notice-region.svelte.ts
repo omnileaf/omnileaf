@@ -1,5 +1,3 @@
-import { toast } from "svelte-sonner";
-
 import { focusPageHeading } from "#lib/navigation/page-heading.ts";
 
 import type { Notices } from "./notices";
@@ -16,7 +14,7 @@ export class NoticeRegion {
     this.#notices = notices;
 
     $effect(() => {
-      if (toast.getActiveToasts().length === 0) {
+      if (notices.onScreen.length === 0) {
         this.#isPointerOver = false;
         this.#isFocusWithin = false;
         this.#isTapped = false;

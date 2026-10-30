@@ -1,4 +1,5 @@
 import { CircleCheck, TriangleAlert } from "@lucide/svelte";
+import { toast } from "svelte-sonner";
 import { afterEach, expect, test, vi } from "vitest";
 import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
@@ -386,4 +387,23 @@ test("keeps the toast on Linux even when the page has a notice slot", async () =
     )
     .toBeVisible();
   expect(slot.childElementCount).toBe(0);
+});
+
+test("keeps Windows notices out of sonner's store and forgets each one once it goes", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  placePageWithSlot();
+  const notices = await renderOnWindows();
+  notices.show(READY);
+  notices.show(UNAVAILABLE);
+  await expect.element(infoBarSaying(UNAVAILABLE.title)).toBeVisible();
+  expect(toast.getActiveToasts()).toEqual([]);
+  expect(notices.onScreen).toHaveLength(2);
+
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS);
+  notices.withdraw(UNAVAILABLE);
+
+  await expect
+    .element(infoBarSaying(UNAVAILABLE.title))
+    .not.toBeInTheDocument();
+  expect(notices.onScreen).toEqual([]);
 });

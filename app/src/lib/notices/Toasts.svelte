@@ -81,7 +81,7 @@
 />
 
 {#if platform === "windows"}
-  <WindowsInfoBars {region} />
+  <WindowsInfoBars {notices} {region} />
 {:else}
   <div
     bind:this={region.element}

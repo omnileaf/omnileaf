@@ -1,18 +1,26 @@
 <script lang="ts">
   import { Portal } from "bits-ui";
-  import { toast } from "svelte-sonner";
+  import { getAllContexts } from "svelte";
+  import type { Attachment } from "svelte/attachments";
 
   import { m } from "#lib/paraglide/messages.js";
 
   import type { NoticeRegion } from "./notice-region.svelte";
+  import type { Notices, ShownNotice } from "./notices";
   import { pageNoticeSlot } from "./page-notice-slot.svelte";
 
   const SHOWN_AT_ONCE = 3;
 
-  let { region }: { region: NoticeRegion } = $props();
+  let { notices, region }: { notices: Notices; region: NoticeRegion } =
+    $props();
 
-  const bars = $derived(toast.getActiveToasts().slice(0, SHOWN_AT_ONCE));
+  const context = getAllContexts<Map<unknown, unknown>>();
+  const bars = $derived(notices.onScreen.slice(0, SHOWN_AT_ONCE));
   const slot = $derived(pageNoticeSlot.element);
+
+  function contentOf(bar: ShownNotice): Attachment<HTMLElement> {
+    return (target) => bar.mountInto(target, context);
+  }
 </script>
 
 <Portal to={slot ?? "body"} disabled={slot === undefined}>
@@ -34,14 +42,11 @@
     {#each bars as bar (bar.id)}
       <div
         data-info-bar
-        role={bar.important === true ? "alert" : "status"}
+        role={bar.politeness === "assertive" ? "alert" : "status"}
         aria-atomic="true"
         class="not-group-data-floating/info-bars:mbe-md"
-      >
-        {#if bar.component !== undefined}
-          <bar.component {...bar.componentProps} />
-        {/if}
-      </div>
+        {@attach contentOf(bar)}
+      ></div>
     {/each}
   </section>
 </Portal>
