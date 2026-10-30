@@ -5,10 +5,12 @@
     LibraryView,
     OnCovers,
   } from "#lib/ipc/bindings.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { coverTileLook } from "./cover-tile";
+  import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
   import CoversPerRowChoice from "./CoversPerRowChoice.svelte";
   import DisplayChoice from "./DisplayChoice.svelte";
   import GroupByChoice from "./GroupByChoice.svelte";
@@ -44,7 +46,15 @@
     isGrouped?: boolean;
   } = $props();
 
+  const width = new WindowWidth();
+  const isMaterial = $derived(
+    phoneOf(currentPlatform(), width.current) === "android",
+  );
   const look = $derived(groupLook(isGrouped));
+  const headingClass = $derived(
+    isMaterial ? ANDROID_FILTER_HEADING : look.heading,
+  );
+  const groupClass = $derived(isMaterial ? "flex flex-col" : look.group);
 
   const layoutId = $props.id();
   const pageId = `${layoutId}-page`;
@@ -55,10 +65,10 @@
 </script>
 
 <section aria-labelledby={layoutId} class={["flex flex-col", look.section]}>
-  <h3 id={layoutId} class={look.heading}>
+  <h3 id={layoutId} class={headingClass}>
     {m.library_view_layout()}
   </h3>
-  <div class={look.group}>
+  <div class={groupClass}>
     <div class="py-setting-grid-pad">
       <DisplayChoice
         chosen={view.display}
@@ -92,6 +102,7 @@
     </div>
     {#if hasCategories}
       <ViewSwitchRow
+        {isMaterial}
         label={m.library_category_tabs()}
         description={m.library_category_tabs_hint()}
         isOn={view.showsCategoryTabs}
@@ -102,6 +113,7 @@
     {/if}
     {#if canStackCovers}
       <ViewSwitchRow
+        {isMaterial}
         label={m.library_stack_covers()}
         description={m.library_stack_covers_hint()}
         isOn={view.stacksSeriesCovers}
@@ -117,11 +129,12 @@
   aria-labelledby={pageId}
   class={["flex flex-col", look.section]}
 >
-  <h3 id={pageId} class={[look.heading, !isGrouped && "pbs-xl"]}>
+  <h3 id={pageId} class={[headingClass, !isGrouped && !isMaterial && "pbs-xl"]}>
     {m.library_on_the_page()}
   </h3>
-  <div class={look.group}>
+  <div class={groupClass}>
     <ViewSwitchRow
+      {isMaterial}
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
       isOn={view.showsItemCounts}
@@ -130,6 +143,7 @@
       }}
     />
     <ViewSwitchRow
+      {isMaterial}
       label={m.library_continue_row()}
       description={m.library_continue_row_hint()}
       isOn={view.showsContinueRow}
@@ -141,6 +155,7 @@
 </section>
 <OnCoversChoice
   {isGrouped}
+  {isMaterial}
   onCovers={view.onCovers}
   onChoose={(name: keyof OnCovers, isShown: boolean) => {
     onChoose(withOnCovers(view, name, isShown));

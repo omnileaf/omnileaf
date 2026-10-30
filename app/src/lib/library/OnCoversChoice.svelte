@@ -2,6 +2,7 @@
   import type { OnCovers } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
   import { groupLook } from "./group-look";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
@@ -28,10 +29,12 @@
     onCovers,
     onChoose,
     isGrouped = false,
+    isMaterial = false,
   }: {
     onCovers: OnCovers;
     onChoose: (name: keyof OnCovers, isShown: boolean) => void;
     isGrouped?: boolean;
+    isMaterial?: boolean;
   } = $props();
 
   const look = $derived(groupLook(isGrouped));
@@ -44,12 +47,18 @@
   aria-labelledby={headingId}
   class={["flex flex-col", look.section]}
 >
-  <h3 id={headingId} class={[look.heading, !isGrouped && "pbs-xl"]}>
+  <h3
+    id={headingId}
+    class={isMaterial
+      ? ANDROID_FILTER_HEADING
+      : [look.heading, !isGrouped && "pbs-xl"]}
+  >
     {m.library_on_covers()}
   </h3>
-  <div class={look.group}>
+  <div class={isMaterial ? "flex flex-col" : look.group}>
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
+        {isMaterial}
         label={choice.label()}
         isOn={onCovers[choice.name]}
         onToggle={(isShown: boolean) => {
