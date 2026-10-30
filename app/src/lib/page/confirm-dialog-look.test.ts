@@ -253,17 +253,47 @@ for (const [theme, look] of Object.entries(WINDOWS_DIALOGS)) {
   });
 }
 
-test.each<Platform>(["linux", "windows"])(
-  "lands focus on Cancel when a %s confirmation opens, so Enter never confirms by accident",
-  async (platform) => {
+test.each<{
+  platform: Platform;
+  tone: "danger" | "accent";
+  focused: string;
+  why: string;
+}>([
+  {
+    platform: "windows",
+    tone: "accent",
+    focused: "Delete",
+    why: "Enter takes the accent action, Windows's default button",
+  },
+  {
+    platform: "windows",
+    tone: "danger",
+    focused: "Cancel",
+    why: "Enter stays safe, as WinUI makes Cancel the default for a destructive action",
+  },
+  {
+    platform: "linux",
+    tone: "accent",
+    focused: "Cancel",
+    why: "Linux keeps Cancel focused even where Windows focuses the action",
+  },
+  {
+    platform: "linux",
+    tone: "danger",
+    focused: "Cancel",
+    why: "Enter never confirms by accident",
+  },
+])(
+  "focuses $focused when a $tone $platform confirmation opens, so $why",
+  async ({ platform, tone, focused }) => {
     await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
     document.documentElement.dataset.platform = platform;
     document.documentElement.dataset.theme = "light";
 
-    await render(ConfirmDialogHarness);
+    await render(ConfirmDialogHarness, { tone });
 
     await expect
-      .element(page.getByRole("button", { name: "Cancel" }))
+      .element(page.getByRole("button", { name: focused }))
       .toHaveFocus();
   },
 );

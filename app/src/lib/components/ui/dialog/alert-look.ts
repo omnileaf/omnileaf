@@ -2,7 +2,14 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 
 export type AlertAction = "cancel" | "confirm";
 
+export type AlertTone = "danger" | "accent";
+
 const CANCEL_FIRST: readonly AlertAction[] = ["cancel", "confirm"];
+
+const CANCEL_BY_DEFAULT: Readonly<Record<AlertTone, AlertAction>> = {
+  danger: "cancel",
+  accent: "cancel",
+};
 
 export interface AlertLook {
   readonly scrim: string;
@@ -15,6 +22,7 @@ export interface AlertLook {
   readonly cancel: string;
   readonly confirm: string;
   readonly actionOrder: readonly AlertAction[];
+  readonly defaultAction: Readonly<Record<AlertTone, AlertAction>>;
 }
 
 export const TODAYS_ALERT_LOOK: AlertLook = {
@@ -28,6 +36,7 @@ export const TODAYS_ALERT_LOOK: AlertLook = {
   cancel: "",
   confirm: "",
   actionOrder: CANCEL_FIRST,
+  defaultAction: CANCEL_BY_DEFAULT,
 };
 
 const IOS_ACTION =
@@ -47,6 +56,13 @@ const IOS_LOOK: AlertLook = {
   cancel: `${IOS_ACTION} max-medium:text-foreground`,
   confirm: `${IOS_ACTION} max-medium:text-danger`,
   actionOrder: CANCEL_FIRST,
+  defaultAction: CANCEL_BY_DEFAULT,
+};
+
+/** WinUI guidance makes the safe button a ContentDialog's DefaultButton when its action destroys something. */
+const WINDOWS_DEFAULT_BUTTON: Readonly<Record<AlertTone, AlertAction>> = {
+  danger: "cancel",
+  accent: "confirm",
 };
 
 const WINDOWS_LOOK: AlertLook = {
@@ -63,6 +79,7 @@ const WINDOWS_LOOK: AlertLook = {
   confirm:
     "bg-native-button-primary text-native-on-button-primary aria-disabled:border-transparent aria-disabled:bg-native-button-primary-disabled aria-disabled:text-native-on-button-primary-disabled",
   actionOrder: ["confirm", "cancel"],
+  defaultAction: WINDOWS_DEFAULT_BUTTON,
 };
 
 const ALERT_LOOKS = {

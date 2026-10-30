@@ -5,7 +5,9 @@
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
+    type AlertAction,
     alertLook,
+    type AlertTone,
     type ConfirmPhoneLook,
     opensAsAlert,
     TODAYS_ALERT_LOOK,
@@ -17,17 +19,15 @@
   import HeaderBadge from "./HeaderBadge.svelte";
   import { currentPlatform } from "./platform";
 
-  type ConfirmTone = "danger" | "accent";
-
   const BADGE_LOOKS = {
     danger: "header-danger",
     accent: "header-accent",
-  } as const satisfies Record<ConfirmTone, string>;
+  } as const satisfies Record<AlertTone, string>;
   const CONFIRM_FILLS = {
     danger: "",
     accent:
       "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
-  } as const satisfies Record<ConfirmTone, string>;
+  } as const satisfies Record<AlertTone, string>;
 
   const DIALOG =
     "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
@@ -53,7 +53,7 @@
     onConfirm: () => void;
     onCancel: () => void;
     phoneLook?: ConfirmPhoneLook;
-    tone?: ConfirmTone;
+    tone?: AlertTone;
     isBusy?: boolean;
     children: Snippet;
   } = $props();
@@ -63,11 +63,14 @@
     isAlert ? alertLook(currentPlatform()) : TODAYS_ALERT_LOOK,
   );
 
-  let cancelButton = $state<HTMLButtonElement | null>(null);
+  const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({
+    cancel: null,
+    confirm: null,
+  });
 
-  function focusCancel(event: Event): void {
+  function focusDefaultButton(event: Event): void {
     event.preventDefault();
-    cancelButton?.focus();
+    buttons[alert.defaultAction[tone]]?.focus();
   }
 
   function confirm(): void {
@@ -96,7 +99,7 @@
     phoneOverlayClass={alert.scrim}
     wideOverlayClass={alert.scrim}
     onDismiss={onCancel}
-    onOpenAutoFocus={focusCancel}
+    onOpenAutoFocus={focusDefaultButton}
   >
     <div class="flex items-center gap-md">
       <HeaderBadge {icon} look={BADGE_LOOKS[tone]} class={alert.badge} />
@@ -131,7 +134,7 @@
         {#each alert.actionOrder as action (action)}
           {#if action === "cancel"}
             <Button
-              bind:ref={cancelButton}
+              bind:ref={buttons.cancel}
               type="button"
               look="confirm-cancel"
               class={alert.cancel}
@@ -141,6 +144,7 @@
             </Button>
           {:else}
             <Button
+              bind:ref={buttons.confirm}
               type="button"
               look="confirm-danger"
               class={cn(CONFIRM_FILLS[tone], alert.confirm)}
