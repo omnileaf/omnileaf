@@ -14,12 +14,22 @@ use std::{
     },
 };
 
-pub const DESKTOP_LIMIT_BYTES: usize = 96 * 1024 * 1024;
-pub const MOBILE_LIMIT_BYTES: usize = 64 * 1024 * 1024;
-pub const DEFAULT_LIMIT_BYTES: usize = if cfg!(any(target_os = "android", target_os = "ios")) {
+const IS_MOBILE: bool = cfg!(any(target_os = "android", target_os = "ios"));
+
+pub const DESKTOP_LIMIT_BYTES: usize = 160 * 1024 * 1024;
+pub const MOBILE_LIMIT_BYTES: usize = 96 * 1024 * 1024;
+pub const DEFAULT_LIMIT_BYTES: usize = if IS_MOBILE {
     MOBILE_LIMIT_BYTES
 } else {
     DESKTOP_LIMIT_BYTES
+};
+
+pub const DESKTOP_DICTIONARY_CAP_BYTES: usize = 64 * 1024 * 1024;
+pub const MOBILE_DICTIONARY_CAP_BYTES: usize = 32 * 1024 * 1024;
+pub const DEFAULT_DICTIONARY_CAP_BYTES: usize = if IS_MOBILE {
+    MOBILE_DICTIONARY_CAP_BYTES
+} else {
+    DESKTOP_DICTIONARY_CAP_BYTES
 };
 
 #[repr(C, align(16))]

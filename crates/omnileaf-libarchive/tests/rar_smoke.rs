@@ -6,7 +6,8 @@
 use std::io::Cursor;
 
 use omnileaf_libarchive::{
-    DEFAULT_LIMIT_BYTES, DESKTOP_LIMIT_BYTES, Entry, EntryKind, Error, Reader, version,
+    DEFAULT_LIMIT_BYTES, DESKTOP_DICTIONARY_CAP_BYTES, DESKTOP_LIMIT_BYTES, Entry, EntryKind,
+    Error, MOBILE_DICTIONARY_CAP_BYTES, MOBILE_LIMIT_BYTES, Reader, version,
 };
 
 mod archives {
@@ -16,6 +17,7 @@ mod archives {
     const STORED: usize = 0;
     const FASTEST_METHOD: usize = 1 << 7;
     const DICTIONARY_SIZE_SHIFT: usize = 10;
+    const SMALLEST_DICTIONARY_BYTES: usize = 128 * 1024;
     const RAR4_END_OF_ARCHIVE: [u8; 7] = [0xc4, 0x3d, 0x7b, 0x00, 0x40, 0x07, 0x00];
 
     fn crc32(bytes: &[u8]) -> u32 {
@@ -74,13 +76,14 @@ mod archives {
         archive
     }
 
-    pub(super) fn rar5_with_dictionary(size_step: usize) -> Vec<u8> {
+    pub(super) fn rar5_with_dictionary(dictionary_bytes: usize) -> Vec<u8> {
+        let size_step = (dictionary_bytes / SMALLEST_DICTIONARY_BYTES).trailing_zeros();
         let mut archive = RAR5_SIGNATURE.to_vec();
         archive.extend(rar5_block(1, 0, &vint(0), &[]));
         archive.extend(rar5_file(
             "packed.bin",
             &[0; 8],
-            FASTEST_METHOD | (size_step << DICTIONARY_SIZE_SHIFT),
+            FASTEST_METHOD | (usize::try_from(size_step).unwrap() << DICTIONARY_SIZE_SHIFT),
         ));
         archive.extend(rar5_block(5, 0, &vint(0), &[]));
         archive
@@ -127,8 +130,6 @@ mod archives {
     }
 }
 
-const THIRTY_TWO_MIB: usize = 8;
-const SIXTY_FOUR_MIB: usize = 9;
 const FILES: [(&str, &[u8]); 2] = [("first.txt", b"alpha"), ("folder/second.txt", b"bravo!!")];
 
 fn listing(archive: Vec<u8>) -> Vec<(Entry, Vec<u8>)> {
@@ -212,38 +213,46 @@ fn moves_to_another_thread_with_its_budget() {
     assert_send::<Reader<Cursor<Vec<u8>>>>();
 }
 
-#[test]
-fn refuses_a_dictionary_the_default_budget_cannot_hold() {
-    let mut reader = Reader::open(
-        Cursor::new(archives::rar5_with_dictionary(SIXTY_FOUR_MIB)),
-        DEFAULT_LIMIT_BYTES,
-    )
-    .unwrap();
+fn read_first_entry(dictionary_bytes: usize, limit_bytes: usize) -> Result<usize, Error> {
+    let archive = archives::rar5_with_dictionary(dictionary_bytes);
+    let mut reader = Reader::open(Cursor::new(archive), limit_bytes).unwrap();
     reader.next_entry().unwrap().unwrap();
     let mut content = [0; 8];
-
-    let result = reader.read_data(&mut content);
-
-    assert!(
-        matches!(result, Err(Error::BudgetExceeded { limit_bytes }) if limit_bytes == DEFAULT_LIMIT_BYTES),
-        "{result:?}"
-    );
+    reader.read_data(&mut content)
 }
 
 #[test]
-fn reads_a_dictionary_the_desktop_budget_holds() {
-    let mut reader = Reader::open(
-        Cursor::new(archives::rar5_with_dictionary(THIRTY_TWO_MIB)),
-        DESKTOP_LIMIT_BYTES,
-    )
-    .unwrap();
-    reader.next_entry().unwrap().unwrap();
-    let mut content = [0; 8];
-
-    let result = reader.read_data(&mut content);
+fn reads_the_desktop_dictionary_cap_under_the_desktop_budget() {
+    let result = read_first_entry(DESKTOP_DICTIONARY_CAP_BYTES, DESKTOP_LIMIT_BYTES);
 
     assert!(
         !matches!(result, Err(Error::BudgetExceeded { .. })),
         "{result:?}"
     );
+}
+
+#[test]
+fn refuses_the_desktop_dictionary_cap_under_the_mobile_budget() {
+    let result = read_first_entry(DESKTOP_DICTIONARY_CAP_BYTES, MOBILE_LIMIT_BYTES);
+
+    assert!(
+        matches!(result, Err(Error::BudgetExceeded { limit_bytes }) if limit_bytes == MOBILE_LIMIT_BYTES),
+        "{result:?}"
+    );
+}
+
+#[test]
+fn reads_the_mobile_dictionary_cap_under_the_mobile_budget() {
+    let result = read_first_entry(MOBILE_DICTIONARY_CAP_BYTES, MOBILE_LIMIT_BYTES);
+
+    assert!(
+        !matches!(result, Err(Error::BudgetExceeded { .. })),
+        "{result:?}"
+    );
+}
+
+#[test]
+fn caps_dictionaries_at_64_mib_on_the_desktop_and_32_mib_on_phones() {
+    assert_eq!(DESKTOP_DICTIONARY_CAP_BYTES, 64 * 1024 * 1024);
+    assert_eq!(MOBILE_DICTIONARY_CAP_BYTES, 32 * 1024 * 1024);
 }
