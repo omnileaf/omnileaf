@@ -6,6 +6,10 @@ import type { AppleDevice } from "#lib/library/folder-location.ts";
 import { type NoticeContext, sharedNotice } from "./shared-notice";
 
 const FILE = "omnileaf-report-2026-10-16.txt";
+const SENT = {
+  way: "send",
+  sent: { code: "R-8M4T", statusKey: "c3RhdHVz" },
+} as const;
 
 function context(
   platform: Platform,
@@ -21,7 +25,7 @@ function context(
 }
 
 test("says a sent report's code is kept in Your reports", () => {
-  const notice = sharedNotice({ way: "send" }, context("android"));
+  const notice = sharedNotice(SENT, context("android"));
 
   expect([notice?.title, notice?.body]).toEqual([
     "Report sent",
@@ -30,7 +34,7 @@ test("says a sent report's code is kept in Your reports", () => {
 });
 
 test("offers to copy a sent report's code", () => {
-  const notice = sharedNotice({ way: "send" }, context("linux"));
+  const notice = sharedNotice(SENT, context("linux"));
 
   expect(notice?.action?.label).toBe("Copy code");
 });

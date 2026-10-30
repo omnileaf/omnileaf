@@ -3,7 +3,7 @@ use std::fmt;
 use serde::Serialize;
 use specta::Type;
 
-use crate::{CleanedLog, ProjectLink, ReportCode, VersionDetails, crash_report::issue};
+use crate::{AppInfo, CleanedLog, ProjectLink, ReportCode, VersionDetails, crash_report::issue};
 
 const CODE_LABEL: &str = "Report code:";
 const LOG_HEADING: &str = "Log, names replaced:";
@@ -30,6 +30,16 @@ impl ProblemReport {
     #[must_use]
     pub fn new(code: ReportCode, details: VersionDetails, log: CleanedLog) -> Self {
         Self { code, details, log }
+    }
+
+    #[must_use]
+    pub fn code(&self) -> &ReportCode {
+        &self.code
+    }
+
+    #[must_use]
+    pub fn app(&self) -> &AppInfo {
+        &self.details.app
     }
 
     #[must_use]

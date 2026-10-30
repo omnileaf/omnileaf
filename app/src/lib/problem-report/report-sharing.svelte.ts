@@ -3,6 +3,7 @@ import type {
   IpcError,
   IpcErrorCode,
   SavedProblemReport,
+  SentProblemReport,
 } from "#lib/ipc/bindings.ts";
 import type { LocalDay } from "#lib/history/local-date.ts";
 
@@ -17,7 +18,7 @@ export type ShareBackend = Pick<
 export type ShareWay = "send" | "github" | "copy" | "save";
 
 export type Shared =
-  | { readonly way: "send" }
+  | { readonly way: "send"; readonly sent: SentProblemReport }
   | { readonly way: "github" }
   | { readonly way: "copy" }
   | { readonly way: "save"; readonly saved: SavedProblemReport };
@@ -54,7 +55,10 @@ function replyAddress(typed: string): string | null {
 
 const WAYS = {
   send: async (backend, { replyTo }) =>
-    sharedAs(await backend.sendProblemReport(replyTo), () => ({ way: "send" })),
+    sharedAs(await backend.sendProblemReport(replyTo), (sent) => ({
+      way: "send",
+      sent,
+    })),
   github: async (backend) =>
     sharedAs(await backend.openProblemReportIssue(), () => ({
       way: "github",

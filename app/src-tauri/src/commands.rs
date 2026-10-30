@@ -40,6 +40,7 @@ use crate::{
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
     problem_reporting::{self, ShownProblemReport},
+    report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
@@ -173,6 +174,7 @@ macro_rules! app_commands {
             problem_report,
             copy_problem_report,
             send_problem_report,
+            problem_report_statuses,
             copy_problem_report_code,
             open_problem_report_issue,
             save_problem_report,
@@ -1351,13 +1353,20 @@ async fn copy_problem_report(app: AppHandle) -> Result<(), IpcError> {
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "problem reports have nowhere to be sent yet, so the address for a reply has nowhere to go"
-)]
-fn send_problem_report(reply_to: Option<String>) -> Result<(), IpcError> {
-    Err(IpcError::reports_not_sent())
+async fn send_problem_report(
+    app: AppHandle,
+    reply_to: Option<String>,
+) -> Result<SentProblemReport, IpcError> {
+    report_sending::send(&app, reply_to).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn problem_report_statuses(
+    app: AppHandle,
+    reports: Vec<SentReportKey>,
+) -> Result<Vec<ProblemReportStatus>, IpcError> {
+    report_sending::statuses(&app, reports).await
 }
 
 #[tauri::command]

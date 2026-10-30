@@ -15,7 +15,7 @@ const OCTOBER_16_2026: LocalDay = LocalDay(20_742);
 
 fn report() -> ProblemReport {
     ProblemReport::new(
-        ReportCode::from_random(7),
+        ReportCode::from_random([7, 0, 0, 0, 0]),
         VersionDetails {
             app: AppInfo {
                 version: "1.2.3".to_owned(),

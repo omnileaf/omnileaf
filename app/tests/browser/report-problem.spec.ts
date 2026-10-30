@@ -9,6 +9,7 @@ import {
   expect,
   FAKE_APP_VERSION,
   FAKE_REPORT_CODE,
+  FAKE_STATUS_KEY,
   FAKE_SYSTEM,
   IPAD_USER_AGENT,
   IPHONE_USER_AGENT,
@@ -52,6 +53,15 @@ function shownAlert(page: Page) {
 
 function sendNote(page: Page) {
   return page.getByText("No account needed; the maintainers see it first.");
+}
+
+async function keptReports(page: Page): Promise<unknown> {
+  return page.evaluate(
+    () =>
+      JSON.parse(
+        window.localStorage.getItem("omnileaf.yourReports") ?? "[]",
+      ) as unknown,
+  );
 }
 
 async function keptCodes(page: Page): Promise<string[]> {
@@ -131,13 +141,15 @@ test.describe("with a few lines logged", () => {
 test.describe("sending it to Omnileaf", () => {
   const sentTo: (string | null)[] = [];
   const copiedCodes: string[] = [];
+  const sending: { held?: PromiseWithResolvers<void> } = {};
 
   test.use({
     backend: {
       ...DEFAULT_BACKEND,
-      sendProblemReport: (replyTo) => {
+      sendProblemReport: async (replyTo) => {
         sentTo.push(replyTo);
-        return null;
+        await sending.held?.promise;
+        return { code: FAKE_REPORT_CODE, statusKey: FAKE_STATUS_KEY };
       },
       copyProblemReportCode: (code) => {
         copiedCodes.push(code);
@@ -149,6 +161,7 @@ test.describe("sending it to Omnileaf", () => {
   test.beforeEach(() => {
     sentTo.length = 0;
     copiedCodes.length = 0;
+    delete sending.held;
   });
 
   test("asks for an email only for a reply and needs no account", async ({
@@ -191,7 +204,45 @@ test.describe("sending it to Omnileaf", () => {
       page.getByRole("listitem").filter({ hasText: "Report sent" }),
     ).toContainText(`Code ${FAKE_REPORT_CODE} · kept in Your reports`);
     expect(sentTo).toEqual([REPLY_ADDRESS]);
-    expect(await keptCodes(page)).toEqual([FAKE_REPORT_CODE]);
+    expect(await keptReports(page)).toEqual([
+      expect.objectContaining({
+        code: FAKE_REPORT_CODE,
+        way: "send",
+        statusKey: FAKE_STATUS_KEY,
+      }),
+    ]);
+  });
+
+  test("shows Send to Omnileaf as busy while the report is on its way", async ({
+    page,
+  }) => {
+    sending.held = Promise.withResolvers();
+    await openReport(page);
+
+    await sendButton(page).click();
+
+    await expect(sendButton(page)).toHaveAttribute("aria-busy", "true");
+    sending.held.resolve();
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Report sent" }),
+    ).toBeVisible();
+    await expect(sendButton(page)).not.toHaveAttribute("aria-busy");
+  });
+
+  test("lists the sent report in Your reports as waiting for an answer", async ({
+    page,
+  }) => {
+    await openReport(page);
+    await sendButton(page).click();
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Report sent" }),
+    ).toBeVisible();
+
+    await page.goto("/settings/about/reports");
+
+    await expect(
+      page.getByRole("list", { name: "Your reports" }).getByRole("listitem"),
+    ).toContainText(`Code ${FAKE_REPORT_CODE}`);
   });
 
   test("copies the sent report's code from its notice", async ({ page }) => {
@@ -264,27 +315,71 @@ test.describe("sending it to Omnileaf", () => {
   });
 });
 
-test.describe("when there's nowhere to send it", () => {
+for (const { code, message } of [
+  {
+    code: "relayUnreachable",
+    message: "Couldn't reach Omnileaf. Check your connection and try again.",
+  },
+  {
+    code: "relayRateLimited",
+    message: "Too many reports from this network. Try again in an hour.",
+  },
+  {
+    code: "relayBusy",
+    message: "Omnileaf can't take more reports right now. Try again later.",
+  },
+] as const) {
+  test.describe(`when sending fails with ${code}`, () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        sendProblemReport: () => {
+          throw new CommandFailure({ code, message: "the report wasn't sent" });
+        },
+      },
+    });
+
+    test("says why and keeps no code", async ({ page }) => {
+      await openReport(page);
+
+      await sendButton(page).click();
+
+      await expect(shownAlert(page)).toHaveText(message);
+      await expect(replyField(page)).toHaveAttribute("aria-invalid", "false");
+      expect(await keptCodes(page)).toEqual([]);
+    });
+  });
+}
+
+test.describe("when the email for a reply is refused", () => {
   test.use({
     backend: {
       ...DEFAULT_BACKEND,
       sendProblemReport: () => {
         throw new CommandFailure({
-          code: "reportsNotSent",
-          message: "problem reports have nowhere to be sent yet",
+          code: "replyAddressInvalid",
+          message: "the email address for a reply isn't valid",
         });
       },
     },
   });
 
-  test("says Send to Omnileaf is coming soon and keeps no code", async ({
+  test("marks the email field, says what it needs and keeps no code", async ({
     page,
   }) => {
     await openReport(page);
+    await replyField(page).fill("reader at example");
 
     await sendButton(page).click();
 
-    await expect(shownAlert(page)).toHaveText("Send to Omnileaf · coming soon");
+    await expect(replyField(page)).toHaveAttribute("aria-invalid", "true");
+    await expect(replyField(page)).toHaveAccessibleDescription(
+      "Used only to answer you; never shown in an issue. Enter a whole email address, or leave it empty.",
+    );
+    await expect(replyField(page)).toHaveCSS(
+      "border-top-color",
+      await tokenColour(page, "--color-danger"),
+    );
     expect(await keptCodes(page)).toEqual([]);
   });
 });

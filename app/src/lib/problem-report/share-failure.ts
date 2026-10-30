@@ -1,3 +1,4 @@
+import type { IpcErrorCode } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 import type { ShareFailure, ShareWay } from "./report-sharing.svelte";
@@ -9,8 +10,14 @@ const FAILURES = {
   save: m.report_save_failed,
 } satisfies Record<ShareWay, () => string>;
 
+const SEND_FAILURES: Partial<Record<IpcErrorCode, () => string>> = {
+  relayUnreachable: m.report_send_unreachable,
+  relayRateLimited: m.report_send_rate_limited,
+  relayBusy: m.report_send_busy,
+  replyAddressInvalid: m.report_reply_email_invalid,
+};
+
 export function failureMessage({ way, code }: ShareFailure): string {
-  return code === "reportsNotSent"
-    ? m.reader_coming_soon({ feature: m.report_send() })
-    : FAILURES[way]();
+  const message = way === "send" ? SEND_FAILURES[code] : undefined;
+  return (message ?? FAILURES[way])();
 }

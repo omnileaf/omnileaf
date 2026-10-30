@@ -1,11 +1,17 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
-  import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
+  import {
+    isAnswered,
+    yourReportsForDocument,
+  } from "#lib/problem-report/your-reports.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
@@ -15,6 +21,21 @@
   const yourReports = yourReportsForDocument();
   const timeFormat = getTimeFormatSetting();
   const width = new WindowWidth();
+
+  onMount(() => {
+    void hearReviews();
+  });
+
+  async function hearReviews(): Promise<void> {
+    const keys = yourReports.sentKeys();
+    if (keys.length === 0) {
+      return;
+    }
+    const heard = await commands.problemReportStatuses(keys);
+    if (heard.status === "ok") {
+      yourReports.noteReviews(heard.data);
+    }
+  }
 
   const intro = $derived.by(() => {
     const platform = data.appInfo.platform;
@@ -58,7 +79,9 @@
             >{madeAt.format(report.madeAtMs)}</span
           >
           <span class="text-detail text-muted"
-            >{m.your_reports_code({ code: report.code })}</span
+            >{isAnswered(report)
+              ? m.your_reports_answered({ code: report.code })
+              : m.your_reports_code({ code: report.code })}</span
           >
         </li>
       {/each}
