@@ -1078,7 +1078,7 @@
                   data-pager-page={isChosen ? "chosen" : "beside"}
                   class={isChosen
                     ? "relative"
-                    : "absolute inset-bs-none overflow-clip block-full inline-full"}
+                    : "invisible absolute inset-bs-none overflow-clip block-full inline-full in-data-swiping:visible"}
                   style:inset-inline-start={isChosen
                     ? undefined
                     : `${String(slot.offset * PERCENT)}%`}

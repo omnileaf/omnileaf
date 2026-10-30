@@ -84,6 +84,7 @@ export function swipesBetweenTabs(
       settling?.cancel();
       settling = undefined;
       area.style.translate = "";
+      delete area.dataset.swiping;
       start = undefined;
       isSwiping = false;
       isSettling = false;
@@ -130,6 +131,7 @@ export function swipesBetweenTabs(
         return;
       }
       isSwiping = true;
+      area.dataset.swiping = "";
       const isHeld = !canStep(stepOf(moved.x, start.direction));
       area.style.translate = isHeld ? "" : `${String(moved.x)}px 0`;
     };
