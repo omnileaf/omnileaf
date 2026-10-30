@@ -4,13 +4,16 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
+  import { DOCKED_BAR, DOCKED_ROW } from "#lib/navigation/tab-bar.ts";
   import SelectionToolbar from "#lib/page/SelectionToolbar.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
   import type { LabelsFrom } from "./series-selection";
 
   const ICON_SIZE = 18;
   const PILL_ICON_SIZE = 16;
+  const ANDROID_ICON_SIZE = 24;
 
   let {
     count,
@@ -28,6 +31,7 @@
     onCancel: () => void;
   } = $props();
 
+  const android = new AndroidPhone();
   const actions = $derived([
     ...(keepsLabels
       ? [
@@ -53,7 +57,33 @@
   ]);
 </script>
 
-{#if isPill}
+{#if android.isOn}
+  <div
+    role="group"
+    aria-label={m.library_selection_toolbar()}
+    data-picking-bar
+    class="sticky -inset-be-xl z-tab-bar -mx-page-start -me-page-end shrink-0 bg-bar pbe-safe-bottom {DOCKED_BAR}"
+  >
+    <ul class="flex p-sm {DOCKED_ROW}">
+      {#each actions as { name, icon: Icon, label, act } (name)}
+        <li class="flex-1 min-inline-none">
+          <button
+            type="button"
+            class="group flex flex-col items-center gap-xs text-native-tab/native-tab font-native-tab tracking-native-tab text-muted inline-full min-block-touch-target"
+            onclick={act}
+          >
+            <span
+              class="flex items-center justify-center rounded-full transition-control block-2xl inline-pill group-active:tint-pressed"
+            >
+              <Icon size={ANDROID_ICON_SIZE} aria-hidden="true" />
+            </span>
+            {label}
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </div>
+{:else if isPill}
   <SelectionToolbar
     label={m.library_selection_toolbar()}
     count={m.library_selected_series({ count })}
