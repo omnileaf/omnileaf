@@ -54,14 +54,14 @@
   const ANDROID_TITLE =
     "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
 
-  function rowClass(view: string): string {
-    return android.isOn && view !== "wide"
+  function rowClass(isWide: boolean): string {
+    return android.isOn && !isWide
       ? ANDROID_ROW
       : "flex items-center gap-md py-sm";
   }
 
-  function titleClass(view: string): string {
-    return android.isOn && view !== "wide" ? ANDROID_TITLE : "text-body";
+  function titleClass(isWide: boolean): string {
+    return android.isOn && !isWide ? ANDROID_TITLE : "text-body";
   }
   const tagsShown = $derived([
     ...(labels?.tags ?? []).filter(({ tag }) => !tagsRemoved.includes(tag)),
@@ -216,7 +216,7 @@
           >
             {#each labels?.categories ?? [] as { category, holding } (category.id)}
               {@const choice = choices[category.id] ?? "none"}
-              <label class={rowClass(view)}>
+              <label class={rowClass(view === "wide")}>
                 <Checkbox
                   bind:checked={
                     () => choice === "all",
@@ -230,7 +230,9 @@
                     : category.name}
                 />
                 <span class="flex flex-1 flex-col">
-                  <span class={titleClass(view)}>{category.name}</span>
+                  <span class={titleClass(view === "wide")}
+                    >{category.name}</span
+                  >
                   {#if choice === "some"}
                     <span
                       class={android.isOn && view !== "wide"
@@ -244,7 +246,7 @@
               </label>
             {/each}
             {#each created as name (name)}
-              <label class={rowClass(view)}>
+              <label class={rowClass(view === "wide")}>
                 <Checkbox
                   bind:checked={
                     () => true,
@@ -254,7 +256,9 @@
                   }
                   aria-label={name}
                 />
-                <span class={["flex-1", titleClass(view)]}>{name}</span>
+                <span class={["flex-1", titleClass(view === "wide")]}
+                  >{name}</span
+                >
               </label>
             {/each}
           </div>
