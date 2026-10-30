@@ -95,6 +95,10 @@
     return { kind: "linked", ...folder, isAvailable: true };
   });
 
+  const isLastRowOpen = $derived(
+    beingAdded === undefined && isOpen(shownFolders.at(-1)),
+  );
+
   export function focusRow(folder: LibraryFolder): void {
     rows[folder.id]?.focus();
   }
@@ -239,7 +243,9 @@
               "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
               !isInCard &&
                 "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card windows:focus-visible:rounded-windows-control",
-              isSwipeable && isOpen(shownFolders[index + 1]) && "after:hidden",
+              isSwipeable &&
+                (isOpen(folder) || isOpen(shownFolders[index + 1])) &&
+                "after:hidden",
             ]}
           >
             {#if isSwipeable}
@@ -287,6 +293,7 @@
           class={[
             "relative",
             (shownFolders.length > 0 || beingAdded !== undefined) &&
+              !isLastRowOpen &&
               "before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator",
           ]}
         >

@@ -1763,3 +1763,41 @@ test("keeps Remove as an icon beside Rescan, with no swipe, on an Android phone"
     null,
   );
 });
+
+function mangaTitle(folders: Locator): Element {
+  return folders
+    .getByRole("listitem")
+    .filter({ hasText: MANGA.name })
+    .getByText(MANGA.name, { exact: true })
+    .first()
+    .element();
+}
+
+test("drops the divider under a row swiped open on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+  expect(
+    getComputedStyle(comicsRow(folders).element(), "::after").display,
+  ).toBe("none");
+});
+
+test("drops the divider above Add a folder while the last row is swiped open on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Manga" });
+  await expect.element(remove).toBeInTheDocument();
+
+  swipeAcross(mangaTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+  const addRow = folders
+    .getByRole("button", { name: "Add a folder" })
+    .element().parentElement;
+  expect(
+    getComputedStyle(addRow ?? document.body, "::before").borderTopWidth,
+  ).toBe("0px");
+});
