@@ -34,9 +34,18 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+
+  let row: HTMLElement | undefined = $state();
+
+  $effect(() => {
+    row
+      ?.querySelector(`[data-scope="${scope}"]`)
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
 </script>
 
 <div
+  bind:this={row}
   role="group"
   aria-label={m.search_scope()}
   class={[
@@ -54,6 +63,7 @@
           onNarrow(choice);
         }
       }
+      data-scope={choice}
       class={isNative ? NATIVE_CHIP : undefined}
     >
       <span class="flex items-center gap-xs">
