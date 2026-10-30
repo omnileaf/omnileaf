@@ -533,7 +533,41 @@
         void markBooks(picked, read);
       }}
     />
-    {#if selection.count > 0}
+    {#if selection.count > 0 && platform === "macos"}
+      <Portal to="[data-title-bar-actions]">
+        <div
+          bind:this={toolbar}
+          role="group"
+          aria-label={m.series_selection_toolbar()}
+          class="flex items-center gap-sm"
+        >
+          {#each MARKS as { mark: read, glyph, label } (read)}
+            <Button
+              type="button"
+              variant="plain"
+              iconOnly
+              label={label()}
+              onclick={() => {
+                void mark(read);
+              }}
+            >
+              <Icon name={glyph} />
+            </Button>
+          {/each}
+          <Button
+            type="button"
+            variant="plain"
+            iconOnly
+            label={m.series_bookmark()}
+            onclick={() => {
+              void bookmark();
+            }}
+          >
+            <Icon name="bookmark" />
+          </Button>
+        </div>
+      </Portal>
+    {:else if selection.count > 0}
       <SelectionBar
         count={selection.count}
         onMark={(read: ReadMark) => {
