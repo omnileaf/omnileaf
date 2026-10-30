@@ -6,8 +6,8 @@ CREATE TABLE reports (
   version           TEXT NOT NULL,
   report            TEXT,
   status            TEXT NOT NULL DEFAULT 'received'
-                    CHECK (status IN ('received', 'reviewing', 'published', 'closed')),
-  issue             INTEGER CHECK ((status = 'published') = (issue IS NOT NULL)),
+                    CHECK (status IN ('received', 'reviewing', 'published', 'duplicate', 'closed')),
+  issue             INTEGER CHECK ((status IN ('published', 'duplicate')) = (issue IS NOT NULL)),
   received_at       INTEGER NOT NULL,
   status_changed_at INTEGER NOT NULL
 ) STRICT;

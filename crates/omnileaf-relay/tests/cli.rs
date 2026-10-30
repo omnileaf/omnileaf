@@ -86,6 +86,23 @@ fn publishes_a_report_only_with_its_issue() {
 }
 
 #[test]
+fn marks_a_report_as_a_duplicate_only_with_its_issue() {
+    let folder = ScratchFolder::new("relay-cli-duplicate");
+    let database = database_with_report(&folder);
+
+    let without_issue = relay_command(&database, &["reports", "set-status", CODE, "duplicate"]);
+    let with_issue = relay_command(
+        &database,
+        &["reports", "set-status", CODE, "duplicate", "--issue", "97"],
+    );
+    let listed = relay_command(&database, &["reports", "list", "--status", "duplicate"]);
+
+    assert!(!without_issue.status.success());
+    assert!(with_issue.status.success());
+    assert!(stdout(&listed).contains("duplicate of #97"));
+}
+
+#[test]
 fn refuses_an_issue_for_any_other_status() {
     let folder = ScratchFolder::new("relay-cli-issue");
     let database = database_with_report(&folder);

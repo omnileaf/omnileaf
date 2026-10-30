@@ -182,6 +182,7 @@ impl fmt::Display for ReviewStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Published(issue) => write!(f, "published #{}", issue.get()),
+            Self::Duplicate(issue) => write!(f, "duplicate of #{}", issue.get()),
             Self::Received | Self::Reviewing | Self::Closed => f.write_str(self.kind().as_str()),
         }
     }

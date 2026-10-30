@@ -49,6 +49,9 @@ pub enum ReportStatus {
     Published {
         issue: u64,
     },
+    Duplicate {
+        issue: u64,
+    },
     Closed,
     #[serde(other)]
     Unknown,

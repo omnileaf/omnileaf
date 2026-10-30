@@ -6,7 +6,8 @@ use crate::{
     store::{Store, StoreError},
 };
 
-const REVIEWED_BEFORE: &str = "status IN ('published', 'closed') AND status_changed_at <= ?1";
+const REVIEWED_BEFORE: &str =
+    "status IN ('published', 'duplicate', 'closed') AND status_changed_at <= ?1";
 const UNREVIEWED_SINCE: &str = "status IN ('received', 'reviewing') AND received_at <= ?2";
 
 pub const TEXT_KEPT_AFTER_REVIEW_SECONDS: i64 = 90 * SECONDS_PER_DAY;

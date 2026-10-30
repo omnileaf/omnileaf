@@ -148,6 +148,38 @@ fn keeps_a_published_report_published() {
 }
 
 #[test]
+fn marks_a_received_or_reviewed_report_as_a_duplicate() {
+    let received = status_after(&[TargetStatus::Duplicate(issue(7))]);
+    let reviewed = status_after(&[TargetStatus::Reviewing, TargetStatus::Duplicate(issue(7))]);
+
+    assert_eq!(received, [StatusChange::Changed]);
+    assert_eq!(reviewed, [StatusChange::Changed, StatusChange::Changed]);
+}
+
+#[test]
+fn keeps_a_duplicate_a_duplicate() {
+    let changes = status_after(&[
+        TargetStatus::Duplicate(issue(7)),
+        TargetStatus::Closed,
+        TargetStatus::Reviewing,
+        TargetStatus::Published(issue(8)),
+        TargetStatus::Duplicate(issue(9)),
+    ]);
+
+    let duplicate = ReviewStatus::Duplicate(issue(7));
+    assert_eq!(
+        changes,
+        [
+            StatusChange::Changed,
+            StatusChange::Refused { from: duplicate },
+            StatusChange::Refused { from: duplicate },
+            StatusChange::Refused { from: duplicate },
+            StatusChange::Refused { from: duplicate },
+        ]
+    );
+}
+
+#[test]
 fn refuses_to_review_a_report_twice() {
     let changes = status_after(&[TargetStatus::Reviewing, TargetStatus::Reviewing]);
 

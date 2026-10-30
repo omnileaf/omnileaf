@@ -9,6 +9,7 @@ pub enum StatusKind {
     Received,
     Reviewing,
     Published,
+    Duplicate,
     Closed,
 }
 
@@ -17,6 +18,7 @@ pub enum ReviewStatus {
     Received,
     Reviewing,
     Published(IssueNumber),
+    Duplicate(IssueNumber),
     Closed,
 }
 
@@ -24,6 +26,7 @@ pub enum ReviewStatus {
 pub enum TargetStatus {
     Reviewing,
     Published(IssueNumber),
+    Duplicate(IssueNumber),
     Closed,
 }
 
@@ -45,6 +48,7 @@ impl StatusKind {
             Self::Received => "received",
             Self::Reviewing => "reviewing",
             Self::Published => "published",
+            Self::Duplicate => "duplicate",
             Self::Closed => "closed",
         }
     }
@@ -56,13 +60,14 @@ impl ReviewStatus {
             Self::Received => StatusKind::Received,
             Self::Reviewing => StatusKind::Reviewing,
             Self::Published(_) => StatusKind::Published,
+            Self::Duplicate(_) => StatusKind::Duplicate,
             Self::Closed => StatusKind::Closed,
         }
     }
 
     pub(crate) fn issue(self) -> Option<IssueNumber> {
         match self {
-            Self::Published(issue) => Some(issue),
+            Self::Published(issue) | Self::Duplicate(issue) => Some(issue),
             Self::Received | Self::Reviewing | Self::Closed => None,
         }
     }
@@ -71,11 +76,17 @@ impl ReviewStatus {
     pub fn can_become(self, target: TargetStatus) -> bool {
         match (self, target) {
             (Self::Received, _)
-            | (Self::Reviewing, TargetStatus::Published(_) | TargetStatus::Closed)
+            | (
+                Self::Reviewing,
+                TargetStatus::Published(_) | TargetStatus::Duplicate(_) | TargetStatus::Closed,
+            )
             | (Self::Closed, TargetStatus::Reviewing) => true,
             (Self::Reviewing, TargetStatus::Reviewing)
-            | (Self::Closed, TargetStatus::Published(_) | TargetStatus::Closed)
-            | (Self::Published(_), _) => false,
+            | (
+                Self::Closed,
+                TargetStatus::Published(_) | TargetStatus::Duplicate(_) | TargetStatus::Closed,
+            )
+            | (Self::Published(_) | Self::Duplicate(_), _) => false,
         }
     }
 
@@ -89,6 +100,7 @@ impl ReviewStatus {
             ("received", None) => Ok(Self::Received),
             ("reviewing", None) => Ok(Self::Reviewing),
             ("published", Some(issue)) => Ok(Self::Published(issue)),
+            ("duplicate", Some(issue)) => Ok(Self::Duplicate(issue)),
             ("closed", None) => Ok(Self::Closed),
             _ => Err(rusqlite::Error::InvalidColumnName(format!(
                 "status {text} with issue {number:?}"
@@ -102,6 +114,7 @@ impl From<TargetStatus> for ReviewStatus {
         match target {
             TargetStatus::Reviewing => Self::Reviewing,
             TargetStatus::Published(issue) => Self::Published(issue),
+            TargetStatus::Duplicate(issue) => Self::Duplicate(issue),
             TargetStatus::Closed => Self::Closed,
         }
     }
@@ -113,6 +126,7 @@ impl From<ReviewStatus> for ReportStatus {
             ReviewStatus::Received => Self::Received,
             ReviewStatus::Reviewing => Self::Reviewing,
             ReviewStatus::Published(issue) => Self::Published { issue: issue.get() },
+            ReviewStatus::Duplicate(issue) => Self::Duplicate { issue: issue.get() },
             ReviewStatus::Closed => Self::Closed,
         }
     }

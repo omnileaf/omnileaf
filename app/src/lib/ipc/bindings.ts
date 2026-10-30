@@ -839,7 +839,7 @@ export type RemovalTarget = { kind: "series"; id: string & { readonly __brand: "
 
 export type ReportCode = string;
 
-export type ReportReview = { kind: "received" } | { kind: "reviewing" } | { kind: "published"; issue: number } | { kind: "closed" } | { kind: "unknown" };
+export type ReportReview = { kind: "received" } | { kind: "reviewing" } | { kind: "published"; issue: number } | { kind: "duplicate"; issue: number } | { kind: "closed" } | { kind: "unknown" };
 
 export type RescanOutcome = {
 	kind: "rescanned",

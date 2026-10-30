@@ -44,6 +44,7 @@ pub(crate) enum ReportReview {
     Received,
     Reviewing,
     Published { issue: u32 },
+    Duplicate { issue: u32 },
     Closed,
     Unknown,
 }
@@ -162,6 +163,10 @@ fn review_of(status: ReportStatus) -> ReportReview {
         ReportStatus::Reviewing => ReportReview::Reviewing,
         ReportStatus::Published { issue } => u32::try_from(issue)
             .map_or(ReportReview::Unknown, |issue| ReportReview::Published {
+                issue,
+            }),
+        ReportStatus::Duplicate { issue } => u32::try_from(issue)
+            .map_or(ReportReview::Unknown, |issue| ReportReview::Duplicate {
                 issue,
             }),
         ReportStatus::Closed => ReportReview::Closed,
@@ -291,6 +296,10 @@ mod tests {
             ReportStatus::Published {
                 issue: u64::from(u32::MAX) + 1,
             },
+            ReportStatus::Duplicate { issue: 97 },
+            ReportStatus::Duplicate {
+                issue: u64::from(u32::MAX) + 1,
+            },
         ]
         .map(review_of);
 
@@ -301,6 +310,8 @@ mod tests {
                 ReportReview::Reviewing,
                 ReportReview::Closed,
                 ReportReview::Unknown,
+                ReportReview::Unknown,
+                ReportReview::Duplicate { issue: 97 },
                 ReportReview::Unknown,
             ]
         );
