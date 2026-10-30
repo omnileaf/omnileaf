@@ -53,4 +53,6 @@ runs:
       shell: bash
       env:
         CHECK_ARGS: ${{ inputs.check-args }}
-      run: cargo xtask check --only rust $CHECK_ARGS
+      run: |
+        eval "check_args=($CHECK_ARGS)"
+        cargo xtask check --only rust "${check_args[@]}"
