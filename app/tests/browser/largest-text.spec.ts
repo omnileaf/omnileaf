@@ -37,6 +37,8 @@ const PAGES = [
 const PLATFORMS = ["ios", "android"] as const;
 const GLYPH_OVERSHOOT = 4;
 const IPAD_LANDSCAPE = { width: 1180, height: 820 };
+const PHONE_WIDTHS = [390, 360];
+const PHONE_HEIGHT = 800;
 const DISPLAYS: readonly LibraryDisplay[] = [
   "grid",
   "compact",
@@ -304,6 +306,30 @@ for (const platform of PLATFORMS) {
         [],
       );
       expect(await textSpillingDown(page)).toEqual([]);
+    });
+
+    test.describe("with search results", () => {
+      test.use({
+        backend: {
+          ...onPlatform(platform).backend,
+          librarySearch: () => ({ series: sampleSeries(3), next: null }),
+          librarySearchCount: () => 3,
+        },
+      });
+
+      for (const width of PHONE_WIDTHS) {
+        test(`fits the search page at ${String(width)} points without spilling`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: PHONE_HEIGHT });
+          await page.goto("/search?q=sample");
+          await expect(
+            page.getByRole("listbox", { name: "Series found" }),
+          ).toBeVisible();
+
+          await expectNothingSpills(page);
+        });
+      }
     });
 
     test.describe("on a series' page", () => {
