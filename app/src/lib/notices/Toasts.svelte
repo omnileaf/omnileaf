@@ -13,6 +13,7 @@
   import { NoticeRegion } from "./notice-region.svelte";
   import type { Notices } from "./notices";
   import { setUndoShortcut, undoShortcutOn } from "./undo-shortcut";
+  import WindowsInfoBars from "./WindowsInfoBars.svelte";
 
   type Side = "left" | "right";
   type Edge = "top" | "bottom";
@@ -79,27 +80,31 @@
   onpointerdown={region.forgetTapElsewhere}
 />
 
-<div
-  bind:this={region.element}
-  role="presentation"
-  onfocusin={region.noteFocusArriving}
-  onfocusout={region.noteFocusLeaving}
-  onclickcapture={region.returnFocusFromButton}
-  onpointerdown={region.noteTap}
-  onpointerenter={region.notePointerEntering}
-  onpointerleave={region.notePointerLeaving}
->
-  <Toaster
-    {theme}
-    {position}
-    {swipeDirections}
-    expand={region.isSpread}
-    offset={cornerOffset}
-    mobileOffset={phoneOffset}
-    containerAriaLabel={m.notice_region()}
-    class={isBannerFromTop
-      ? "medium:toast-list-width!"
-      : "max-medium:absolute! medium:toast-list-width!"}
-    toastOptions={{ class: "max-medium:px-native-notice-inline" }}
-  />
-</div>
+{#if platform === "windows"}
+  <WindowsInfoBars {region} />
+{:else}
+  <div
+    bind:this={region.element}
+    role="presentation"
+    onfocusin={region.noteFocusArriving}
+    onfocusout={region.noteFocusLeaving}
+    onclickcapture={region.returnFocusFromButton}
+    onpointerdown={region.noteTap}
+    onpointerenter={region.notePointerEntering}
+    onpointerleave={region.notePointerLeaving}
+  >
+    <Toaster
+      {theme}
+      {position}
+      {swipeDirections}
+      expand={region.isSpread}
+      offset={cornerOffset}
+      mobileOffset={phoneOffset}
+      containerAriaLabel={m.notice_region()}
+      class={isBannerFromTop
+        ? "medium:toast-list-width!"
+        : "max-medium:absolute! medium:toast-list-width!"}
+      toastOptions={{ class: "max-medium:px-native-notice-inline" }}
+    />
+  </div>
+{/if}

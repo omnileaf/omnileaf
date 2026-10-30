@@ -10,6 +10,7 @@ export interface ToastLook {
   readonly body: string;
   readonly action: string;
   readonly warningAction: string;
+  readonly putsWarningActionUnderWords: boolean;
 }
 
 const WARNING_ACTION =
@@ -25,6 +26,7 @@ const TODAYS_LOOK: ToastLook = {
   body: "",
   action: "",
   warningAction: WARNING_ACTION,
+  putsWarningActionUnderWords: true,
 };
 
 const NATIVE_ACTION =
@@ -43,6 +45,7 @@ const NATIVE_LOOK: ToastLook = {
   body: "max-medium:text-native-notice-body max-medium:leading-native-notice-body max-medium:font-native-notice-body max-medium:tracking-native-notice-body max-medium:text-native-on-notice",
   action: NATIVE_ACTION,
   warningAction: `${WARNING_ACTION} ${NATIVE_ACTION}`,
+  putsWarningActionUnderWords: true,
 };
 
 const TOAST_LOOKS = {
@@ -53,7 +56,7 @@ const TOAST_LOOKS = {
   android: { ...NATIVE_LOOK, icon: "max-medium:hidden" },
   linux: TODAYS_LOOK,
   macos: TODAYS_LOOK,
-  windows: TODAYS_LOOK,
+  windows: { ...TODAYS_LOOK, putsWarningActionUnderWords: false },
 } satisfies Record<Platform, ToastLook>;
 
 export function toastLook(platform: Platform): ToastLook {

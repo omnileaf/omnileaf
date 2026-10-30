@@ -517,7 +517,6 @@ function cornerOf(element: Element): number {
 test.each<{ platform: Platform; corner: number }>([
   { platform: "linux", corner: 8 },
   { platform: "macos", corner: 10 },
-  { platform: "windows", corner: 8 },
 ])(
   "rounds a toast's corners by $corner px on $platform",
   async ({ platform, corner }) => {
