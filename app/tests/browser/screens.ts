@@ -320,16 +320,20 @@ function isQuietPhoneReader(page: Page, platform: Platform): boolean {
   return isPhoneSized && (platform === "ios" || platform === "android");
 }
 
+function shownNotice(page: Page): Locator {
+  return page.locator("[data-sonner-toast], [data-info-bar]");
+}
+
 function backOnPageToast(page: Page, platform: Platform): Locator | undefined {
   return isQuietPhoneReader(page, platform)
     ? undefined
-    : page.getByRole("listitem").filter({ hasText: "Back on page 14" });
+    : shownNotice(page).filter({ hasText: "Back on page 14" });
 }
 
 function warningToast(page: Page): Locator {
-  return page
-    .getByRole("listitem")
-    .filter({ hasText: english.library_folder_unreadable_title });
+  return shownNotice(page).filter({
+    hasText: english.library_folder_unreadable_title,
+  });
 }
 
 function crashPrompt(page: Page): Locator {
