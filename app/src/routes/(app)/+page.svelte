@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Channel } from "@tauri-apps/api/core";
   import { CircleAlert, FolderOpen, RefreshCw } from "@lucide/svelte";
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { assertNever } from "#lib/assert-never.ts";
@@ -16,10 +16,10 @@
     type LibraryListing,
     type LibrarySeries,
     type LibraryTab as KeptTab,
+    type LibraryTabId,
     type LibraryView,
     type LibraryWriter,
     type MissingFolder,
-    type SeriesPage,
     type IpcError,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
@@ -47,10 +47,7 @@
     NEW_LIBRARY_LISTING,
     NO_FILTER_CHOICES,
   } from "#lib/library/library-listing.ts";
-  import {
-    librarySeriesList,
-    type ListSeries,
-  } from "#lib/library/library-series.svelte.ts";
+  import type { ListSeries } from "#lib/library/library-series.svelte.ts";
   import {
     ALL_SERIES,
     LibraryTab,
@@ -62,7 +59,7 @@
     showsTabs,
     tabKey,
   } from "#lib/library/library-tabs.ts";
-  import { LibrarySeriesCount } from "#lib/library/library-series-count.svelte.ts";
+  import { TabPages } from "#lib/library/tab-pages.svelte.ts";
   import FastScroll from "#lib/library/FastScroll.svelte";
   import NoMatches from "#lib/library/NoMatches.svelte";
   import SeriesCount from "#lib/library/SeriesCount.svelte";
@@ -82,9 +79,10 @@
   import { Selection } from "#lib/page/selection.svelte.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import ViewOptions from "#lib/library/ViewOptions.svelte";
+  import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { isPointer } from "#lib/page/platform.ts";
+  import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { foldsBarActionsIntoMore } from "#lib/page/top-bar.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
@@ -105,11 +103,8 @@
 
   const TRY_AGAIN_ICON_SIZE = 16;
   const FILTER_PANEL_ID = "library-filter";
-  const NOTHING_NEW: { status: "ok"; data: SeriesPage } = {
-    status: "ok",
-    data: { series: [], next: null },
-  };
-  const NONE_NEW = { status: "ok", data: 0 } as const;
+  const ALL_TAB: LibraryTabId = { kind: "all" };
+  const BESIDE_PHONE_TABS = 1;
 
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
@@ -169,31 +164,15 @@
       ? shownTabs.find(({ id }) => tabKey(id) === tab.chosen)?.id
       : undefined,
   );
-  const chosenCategory = $derived(
-    chosenTab?.kind === "category" ? chosenTab.id : undefined,
-  );
-  const isOnNewChapters = $derived(chosenTab?.kind === "newChapters");
   const chosenTabKey = $derived(
     chosenTab === undefined ? ALL_SERIES : tabKey(chosenTab),
   );
-  const library = librarySeriesList((after) =>
-    isOnNewChapters
-      ? Promise.resolve(NOTHING_NEW)
-      : chosenCategory === undefined
-        ? commands.librarySeries(after, listedBy())
-        : commands.categorySeries(chosenCategory, after, listedBy()),
-  );
-  const seriesCount = new LibrarySeriesCount(
-    () =>
-      isOnNewChapters
-        ? Promise.resolve(NONE_NEW)
-        : chosenCategory === undefined
-          ? commands.librarySeriesCount(listedBy().filter)
-          : commands.categorySeriesCount(chosenCategory, listedBy().filter),
-    (error) => {
-      reportError(error);
-    },
-  );
+  const pages = new TabPages(listedBy, (error) => {
+    reportError(error);
+  });
+  const chosenPage = $derived(pages.of(chosenTab ?? ALL_TAB));
+  const library = $derived(chosenPage.series);
+  const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
   let hiddenSeries = $state(0);
   let unlinking = $state<LibraryFolder | undefined>();
@@ -336,6 +315,11 @@
   let isViewOpen = $state(false);
   let moreTrigger: HTMLElement | null = $state(null);
   const width = new WindowWidth();
+  const pagesBesideChosen = $derived(
+    tabsShown && isPhone(data.appInfo.platform, width.current)
+      ? BESIDE_PHONE_TABS
+      : 0,
+  );
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
@@ -428,28 +412,37 @@
       });
   });
 
-  const listed = $derived(
+  const listingShown = $derived(
     chosenListing === undefined
       ? undefined
-      : {
-          listing: shownListing(chosenListing, screenshotMode.isOn),
-          tab: chosenTab,
-        },
+      : shownListing(chosenListing, screenshotMode.isOn),
+  );
+  const listed = $derived(
+    listingShown === undefined
+      ? undefined
+      : { listing: listingShown, tab: chosenTab },
   );
 
-  $effect(() => {
-    if (listed === undefined) {
+  $effect.pre(() => {
+    if (listingShown === undefined) {
       return;
     }
+    const showing = {
+      basis: listingShown,
+      tabs: shownTabs.map(({ id }) => id),
+      chosen: chosenTab ?? ALL_TAB,
+      reach: pagesBesideChosen,
+    };
     untrack(() => {
-      void library.start();
+      pages.show(showing);
     });
   });
 
   $effect(() => {
     if (listed !== undefined && countsSeries) {
+      const { count } = chosenPage;
       untrack(() => {
-        void seriesCount.load();
+        void count.load();
       });
     }
   });
@@ -588,9 +581,21 @@
     }
   }
 
+  let stopHoldingScroll: (() => void) | undefined;
+
   function chooseTab(chosen: string): void {
+    const main = document.querySelector("main");
+    stopHoldingScroll?.();
+    if (main === null || pagesBesideChosen === 0) {
+      tab.choose(chosen);
+      main?.scrollTo({ top: 0 });
+      return;
+    }
+    pages.scroll.remember(chosenTabKey, main.scrollTop);
     tab.choose(chosen);
-    document.querySelector("main")?.scrollTo({ top: 0 });
+    void tick().then(() => {
+      stopHoldingScroll = holdScrollTop(main, pages.scroll.recall(chosen));
+    });
   }
 
   function selectEverySeries(): void {
@@ -661,6 +666,7 @@
       if (countsSeries) {
         void seriesCount.load();
       }
+      pages.refreshBeside();
     }, reportError);
     return () => {
       stopListening();
