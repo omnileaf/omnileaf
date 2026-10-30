@@ -49,15 +49,16 @@ use tokio::{
 
 use crate::{
     AdultContent, AppLanguage, BookCursor, BookFile, BookId, BookNumber, BookPlace, BookSessions,
-    BooksRemoval, CategoryId, CoversPerRowOutOfRange, CreatorSeries, DetailEdits, FileRemoval,
-    FileType, FolderCursor, FolderGroupCursor, FolderGroupId, FolderGroupPage, FolderId,
-    FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor, HistoryMark, HistoryOf,
-    HistoryPage, HistorySeries, LibraryChanges, LibraryFilter, LibraryFilterChoices, LibraryFolder,
-    LibraryFolderGroup, LibraryListing, LibrarySearch, LibraryTab, LibraryView, LibraryWriter,
-    LocalDay, LogStandIns, MissingFolder, ReadMark, ReadingSummary, ReadingWeek, RemovalPreview,
-    RemovalReport, RemovalTarget, RescanOutcome, ResolvedBookmark, ScanProgress, SeriesBookListing,
-    SeriesBookPage, SeriesCursor, SeriesDetails, SeriesId, SeriesOverview, SeriesPage,
-    SeriesVolume, ShareAddress, ShareLookup, UnreachableShare, UtcOffset, WriterCursor, WriterPage,
+    BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, CoversPerRowOutOfRange, CreatorSeries,
+    DetailEdits, FileRemoval, FileType, FolderCursor, FolderGroupCursor, FolderGroupId,
+    FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
+    HistoryMark, HistoryOf, HistoryPage, HistorySeries, LibraryChanges, LibraryFilter,
+    LibraryFilterChoices, LibraryFolder, LibraryFolderGroup, LibraryListing, LibrarySearch,
+    LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark,
+    ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, RescanOutcome,
+    ResolvedBookmark, ScanProgress, SeriesBookListing, SeriesBookPage, SeriesCursor, SeriesDetails,
+    SeriesId, SeriesOverview, SeriesPage, SeriesVolume, ShareAddress, ShareLookup,
+    UnreachableShare, UtcOffset, WriterCursor, WriterPage,
     adult_content::{AdultSeen, AdultView},
     bookmark_access::{AsRead, Reopened, note_bookmarks_opened},
     describe_error,
@@ -94,6 +95,7 @@ const FOLDERS_PER_PAGE: u16 = 50;
 const WRITERS_PER_PAGE: u16 = 50;
 const FOLDER_GROUPS_PER_PAGE: u16 = 50;
 const SERIES_PER_PAGE: u16 = 50;
+const CHAPTERS_PER_PAGE: u16 = 20;
 const BOOKS_PER_PAGE: u16 = 100;
 const RELATED_SERIES_SHOWN: usize = 12;
 const SESSIONS_PER_PAGE: u16 = 50;
@@ -765,6 +767,30 @@ impl Library {
         Ok(SeriesPage::new(page.0, page.1.setting()))
     }
 
+    pub async fn search_chapters(
+        &self,
+        search: LibrarySearch,
+        after: Option<ChapterCursor>,
+    ) -> Result<ChapterHitPage, LibraryError> {
+        let adult_seen = self.adult_seen();
+        let pace_seen = self.pace_seen();
+        let request = PageRequest {
+            after: after.map(|cursor| cursor.0),
+            size: PageSize::try_from(CHAPTERS_PER_PAGE)?,
+        };
+        let now_ms = self.now_ms();
+        Ok(self
+            .store
+            .database()
+            .read(move |connection| {
+                let adult = adult_seen.view(connection)?;
+                let seconds_per_page = pace_seen.needed_by(connection, &search.filter.smart)?;
+                StoredSearch::parse(&search, now_ms, adult, seconds_per_page)?
+                    .chapters(connection, &request)
+            })
+            .await?)
+    }
+
     pub async fn spelling_suggestion(
         &self,
         text: String,
@@ -774,7 +800,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                spelling_suggestion(connection, &text, adult_seen.hiding(connection)?)
+                spelling_suggestion(connection, &text, adult_seen.view(connection)?)
             })
             .await?)
     }

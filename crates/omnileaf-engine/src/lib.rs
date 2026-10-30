@@ -33,6 +33,7 @@ mod library;
 mod library_book;
 mod library_category;
 mod library_changes;
+mod library_chapter_search;
 mod library_folder;
 mod library_folder_group;
 mod library_labels;
@@ -126,6 +127,7 @@ pub use library_book::{
 };
 pub use library_category::{CategoryId, LibraryCategory};
 pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryChanges};
+pub use library_chapter_search::{ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource};
 pub use library_folder::{
     FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder, home_location,
 };

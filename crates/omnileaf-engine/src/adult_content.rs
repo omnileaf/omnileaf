@@ -107,6 +107,15 @@ impl AdultView {
     }
 }
 
+impl AdultView {
+    pub(crate) const fn hiding_every_hidden_adult_series(self) -> AdultHiding {
+        AdultHiding {
+            leaves_out_adult: self.leaves_out_adult_series(),
+            counts_age_ratings: self.setting.counts_age_ratings,
+        }
+    }
+}
+
 impl From<AdultContent> for AdultView {
     fn from(setting: AdultContent) -> Self {
         Self {
