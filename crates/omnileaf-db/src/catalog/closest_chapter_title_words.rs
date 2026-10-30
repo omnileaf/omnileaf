@@ -1,11 +1,10 @@
 use rusqlite::{Connection, ToSql};
 
-use super::closest_title_words::{any_trigram, nearest_words, quoted, typed_trigrams};
+use super::{
+    closest_title_words::{any_trigram, nearest_words, typed_trigrams},
+    rarest_trigrams::{WINDOW, rarest_trigrams},
+};
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
-
-const MOST_TRIGRAMS: usize = 4;
-const COMMON_AT: usize = 50;
-const WINDOW: usize = MOST_TRIGRAMS * COMMON_AT;
 
 macro_rules! titles_of_shown_books_matching {
     () => {
@@ -45,7 +44,12 @@ pub fn closest_chapter_title(
     hiding: AdultHiding,
 ) -> Result<Option<ChapterSuggestion>, Error> {
     let typed = fold_case(text);
-    let trigrams = rarest_trigrams(connection, &typed_trigrams(&typed), hiding)?;
+    let trigrams = rarest_trigrams(
+        connection,
+        MATCHES_UP_TO_COMMON,
+        &typed_trigrams(&typed),
+        hiding,
+    )?;
     if trigrams.is_empty() {
         return Ok(None);
     }
@@ -64,40 +68,6 @@ pub fn closest_chapter_title(
         })
         .min_by_key(|(slips, _)| *slips)
         .map(|(_, suggestion)| suggestion))
-}
-
-fn rarest_trigrams(
-    connection: &Connection,
-    typed: &[String],
-    hiding: AdultHiding,
-) -> Result<Vec<String>, Error> {
-    let mut probe = connection.prepare(MATCHES_UP_TO_COMMON)?;
-    let [leaves_out, counts] = hiding.params();
-    let mut found = Vec::new();
-    for trigram in typed {
-        let matches: usize = probe.query_row(
-            &[
-                (":query", &quoted(trigram) as &dyn ToSql),
-                (":limit", &COMMON_AT),
-                leaves_out,
-                counts,
-            ][..],
-            |row| row.get(0),
-        )?;
-        if matches > 0 {
-            found.push((matches, trigram));
-        }
-    }
-    let (mut rare, common): (Vec<_>, Vec<_>) = found
-        .into_iter()
-        .partition(|(matches, _)| *matches < COMMON_AT);
-    rare.sort_by_key(|(matches, _)| *matches);
-    let wanted = if rare.is_empty() { common } else { rare };
-    Ok(wanted
-        .into_iter()
-        .take(MOST_TRIGRAMS)
-        .map(|(_, trigram)| trigram.clone())
-        .collect())
 }
 
 fn candidates(

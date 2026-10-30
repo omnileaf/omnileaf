@@ -1,19 +1,31 @@
 use rusqlite::{Connection, ToSql};
 
+use super::rarest_trigrams::{WINDOW, rarest_trigrams};
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 
 const TRIGRAM_CHARS: usize = 3;
-const MOST_CANDIDATES: i64 = 20;
 
-/// The titles sharing the most trigrams with the text, among series holding a book.
+macro_rules! titles_of_shown_series_matching {
+    () => {
+        concat!(
+            "series_fts
+            JOIN series ON series.local_id = series_fts.rowid
+            WHERE series_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
+            crate::adult_content::in_hidden_adult_series!("series")
+        )
+    };
+}
+
+const MATCHES_UP_TO_COMMON: &str = concat!(
+    "SELECT count(*) FROM (SELECT 1 FROM ",
+    titles_of_shown_series_matching!(),
+    " LIMIT :limit)"
+);
+
 const CANDIDATES: &str = concat!(
-    "SELECT series.title FROM series_fts
-    JOIN series ON series.local_id = series_fts.rowid
-    WHERE series_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
-    crate::adult_content::in_hidden_adult_series!("series"),
-    "
-    ORDER BY series_fts.rank
-    LIMIT :limit"
+    "SELECT series.title FROM ",
+    titles_of_shown_series_matching!(),
+    " LIMIT :limit"
 );
 
 /// The words of a title nearest the text by a few typing slips, their letter case folded, for a search that found nothing.
@@ -24,17 +36,24 @@ pub fn closest_title_words(
     hiding: AdultHiding,
 ) -> Result<Option<String>, Error> {
     let typed = fold_case(text);
-    let Some(query) = trigram_query(&typed) else {
+    let trigrams = rarest_trigrams(
+        connection,
+        MATCHES_UP_TO_COMMON,
+        &typed_trigrams(&typed),
+        hiding,
+    )?;
+    if trigrams.is_empty() {
         return Ok(None);
-    };
+    }
     let typed: Vec<char> = typed.chars().collect();
-    let mut candidates = connection.prepare(CANDIDATES)?;
     let [leaves_out, counts] = hiding.params();
-    let titles = candidates
+    let query = any_trigram(&trigrams);
+    let titles = connection
+        .prepare(CANDIDATES)?
         .query_map(
             &[
                 (":query", &query as &dyn ToSql),
-                (":limit", &MOST_CANDIDATES),
+                (":limit", &WINDOW),
                 leaves_out,
                 counts,
             ][..],
@@ -46,12 +65,6 @@ pub fn closest_title_words(
         .filter_map(|title| nearest_words(&typed, title))
         .min_by_key(|(slips, _)| *slips)
         .map(|(_, words)| words))
-}
-
-/// Each run of three characters typed, quoted so FTS5 reads it as itself, any one of which finds a title.
-fn trigram_query(typed: &str) -> Option<String> {
-    let trigrams = typed_trigrams(typed);
-    (!trigrams.is_empty()).then(|| any_trigram(&trigrams))
 }
 
 pub(super) fn typed_trigrams(typed: &str) -> Vec<String> {
@@ -163,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn reads_the_candidates_from_the_title_index_in_rank_order_then_each_series_by_its_key() {
+    fn reads_the_candidates_from_the_title_index_unranked_then_each_series_by_its_key() {
         let scratch = ScratchLibrary::new("closest-title-plan");
 
         let plan = scratch.query_plan(CANDIDATES);
@@ -171,8 +184,25 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SCAN series_fts VIRTUAL TABLE INDEX 32:M1",
+                "SCAN series_fts VIRTUAL TABLE INDEX 0:M1",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+            ]
+        );
+    }
+
+    #[test]
+    fn probes_a_trigram_through_the_title_index_and_each_series_by_its_key() {
+        let scratch = ScratchLibrary::new("closest-title-probe-plan");
+
+        let plan = scratch.query_plan(MATCHES_UP_TO_COMMON);
+
+        assert_eq!(
+            plan,
+            [
+                "CO-ROUTINE (subquery-1)",
+                "SCAN series_fts VIRTUAL TABLE INDEX 0:M1",
+                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
+                "SCAN (subquery-1)",
             ]
         );
     }

@@ -27,6 +27,7 @@ mod page;
 mod page_dimensions;
 mod person_series;
 mod place_in_series;
+mod rarest_trigrams;
 mod related_series;
 mod relocated_roots;
 mod removed_books;
