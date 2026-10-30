@@ -10,6 +10,7 @@
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { RowSwipe } from "#lib/series/row-swipe.svelte.ts";
 
   import AddFolderButton from "./AddFolderButton.svelte";
   import type { CountingLook } from "./counting-look";
@@ -22,6 +23,7 @@
   import { ACTION_ICON_SIZE } from "./icon-size";
   import type { LibraryFolders } from "./library-folders.svelte";
   import RowActionButton from "./RowActionButton.svelte";
+  import SwipeToRemove from "./SwipeToRemove.svelte";
 
   let {
     platform,
@@ -64,8 +66,16 @@
   const isInCard = $derived(addPlacement === "card");
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const isSwipeable = $derived(isNative && isInCard);
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
+  const swipe = new RowSwipe((side) => side === "towardStart");
+
+  const folderRow: Snippet<[LibraryFolder]> = linkedRow;
+
+  function isOpen(folder: LibraryFolder | undefined): boolean {
+    return folder !== undefined && swipe.sideOf(folder.id) !== undefined;
+  }
 
   const pendingRemovals = new SvelteSet<LibraryFolder["id"]>();
   const shownFolders = $derived(
@@ -84,6 +94,10 @@
     }
     return { kind: "linked", ...folder, isAvailable: true };
   });
+
+  const isLastRowOpen = $derived(
+    beingAdded === undefined && isOpen(shownFolders.at(-1)),
+  );
 
   export function focusRow(folder: LibraryFolder): void {
     rows[folder.id]?.focus();
@@ -161,6 +175,33 @@
   }
 </script>
 
+{#snippet linkedRow(folder: LibraryFolder)}
+  <FolderRow
+    {folder}
+    isOwnCard={!isInCard}
+    isFoundEmpty={isFoundEmpty?.(folder) ?? false}
+    detail={rowDetail}
+  >
+    {#snippet location()}
+      {folderLocation(folder, platform)}
+    {/snippet}
+    {#snippet action()}
+      {@render rowAction?.(folder)}
+      {#if !isSwipeable}
+        <RowActionButton
+          label={m.library_remove_folder_label({ name: folder.name })}
+          tooltip={m.library_remove_folder()}
+          onclick={() => {
+            removeWithUndo(folder);
+          }}
+        >
+          <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
+        </RowActionButton>
+      {/if}
+    {/snippet}
+  </FolderRow>
+{/snippet}
+
 <section
   aria-labelledby={headingId}
   class={[!isInCard && "flex flex-col gap-lg"]}
@@ -191,7 +232,7 @@
             "rounded-card border border-border bg-card windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
         ]}
       >
-        {#each shownFolders as folder (folder.id)}
+        {#each shownFolders as folder, index (folder.id)}
           <li
             bind:this={rows[folder.id]}
             tabindex="-1"
@@ -202,30 +243,25 @@
               "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
               !isInCard &&
                 "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card windows:focus-visible:rounded-windows-control",
+              isSwipeable &&
+                (isOpen(folder) || isOpen(shownFolders[index + 1])) &&
+                "after:hidden",
             ]}
           >
-            <FolderRow
-              {folder}
-              isOwnCard={!isInCard}
-              isFoundEmpty={isFoundEmpty?.(folder) ?? false}
-              detail={rowDetail}
-            >
-              {#snippet location()}
-                {folderLocation(folder, platform)}
-              {/snippet}
-              {#snippet action()}
-                {@render rowAction?.(folder)}
-                <RowActionButton
-                  label={m.library_remove_folder_label({ name: folder.name })}
-                  tooltip={m.library_remove_folder()}
-                  onclick={() => {
-                    removeWithUndo(folder);
-                  }}
-                >
-                  <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
-                </RowActionButton>
-              {/snippet}
-            </FolderRow>
+            {#if isSwipeable}
+              <SwipeToRemove
+                {swipe}
+                key={folder.id}
+                label={m.library_remove_folder_label({ name: folder.name })}
+                onRemove={() => {
+                  removeWithUndo(folder);
+                }}
+              >
+                {@render folderRow(folder)}
+              </SwipeToRemove>
+            {:else}
+              {@render folderRow(folder)}
+            {/if}
             {@render rowNotice?.(folder)}
           </li>
         {/each}
@@ -257,6 +293,7 @@
           class={[
             "relative",
             (shownFolders.length > 0 || beingAdded !== undefined) &&
+              !isLastRowOpen &&
               "before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator",
           ]}
         >
