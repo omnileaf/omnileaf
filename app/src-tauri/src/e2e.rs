@@ -7,8 +7,6 @@ use tauri::{WebviewWindow, Wry, ipc::Invoke};
 const PICKED_FOLDER_VARIABLE: &str = "OMNILEAF_E2E_PICKED_FOLDER";
 const CRASH_REPORT_FOLDER_VARIABLE: &str = "OMNILEAF_E2E_CRASH_REPORTS";
 const SINGLE_INSTANCE_VARIABLE: &str = "OMNILEAF_E2E_SINGLE_INSTANCE";
-#[cfg(windows)]
-const TEST_HOOKS: [&str; 1] = ["window_backdrop_type"];
 
 /// Test builds run one app per test beside each other, so the single-instance check applies only where a test asks for it.
 pub(crate) fn wants_single_instance() -> bool {
@@ -56,10 +54,19 @@ pub(crate) fn with_test_hooks(
     }
 }
 
-#[cfg(windows)]
-fn test_hooks() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static {
-    tauri::generate_handler![window_backdrop_type]
+macro_rules! test_hooks {
+    ($($hook:ident),*) => {
+        #[cfg(windows)]
+        const TEST_HOOKS: &[&str] = &[$(stringify!($hook)),*];
+
+        #[cfg(windows)]
+        fn test_hooks() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static {
+            tauri::generate_handler![$($hook),*]
+        }
+    };
 }
+
+test_hooks!(window_backdrop_type);
 
 #[cfg(windows)]
 #[tauri::command]
