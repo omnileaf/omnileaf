@@ -277,6 +277,7 @@ mod tests {
     const FILE_IS_DIRECTORY: u64 = 0x0001;
     const FILE_HAS_CRC32: u64 = 0x0004;
     const SOLID: u64 = 0x0040;
+    const ATTRIBUTE_DIRECTORY: u64 = 0x10;
     const KIB: u64 = 1024;
     const ENCRYPTION_RECORD: u64 = 0x01;
 
@@ -436,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn writes_a_folder_as_a_directory_without_data() {
+    fn writes_a_folder_as_a_directory_with_no_data_or_crc32() {
         let entries = [entry("chapter/", b""), entry("chapter/1.png", b"page")];
 
         let archive = cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap();
@@ -446,10 +447,11 @@ mod tests {
         assert_eq!(
             (
                 folder.name.as_str(),
-                folder.fields[0] & FILE_IS_DIRECTORY,
+                folder.fields[0],
+                folder.fields[2],
                 folder.flags & HAS_DATA
             ),
-            ("chapter", FILE_IS_DIRECTORY, 0)
+            ("chapter", FILE_IS_DIRECTORY, ATTRIBUTE_DIRECTORY, 0)
         );
     }
 
@@ -673,5 +675,165 @@ mod tests {
             .collect();
 
         assert_eq!(refused, [true; 3]);
+    }
+
+    fn spec_header(fields: &[u8], data: &[u8]) -> Vec<u8> {
+        let checked = [&[u8::try_from(fields.len()).unwrap()][..], fields].concat();
+        [&crc32(&checked).to_le_bytes()[..], &checked, data].concat()
+    }
+
+    #[test]
+    fn lays_out_a_one_page_archive_byte_for_byte_as_the_spec_does() {
+        let (main, file, end) = (0x01, 0x02, 0x05);
+        let (no_flags, has_data, has_crc32) = (0x00, 0x02, 0x04);
+        let (archive_attribute, stored_in_128_kib, windows) = (0x20, 0x00, 0x00);
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(&[main, no_flags, no_flags], b""),
+            spec_header(
+                &[
+                    &[file, has_data, 1, has_crc32, 1, archive_attribute][..],
+                    &crc32(b"x").to_le_bytes(),
+                    &[stored_in_128_kib, windows, 1, b'a'],
+                ]
+                .concat(),
+                b"x",
+            ),
+            spec_header(&[end, no_flags, no_flags], b""),
+        ]
+        .concat();
+
+        let archive = cbr(&[entry("a", b"x")], &RarOptions::of(RarFormat::RAR5)).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_solid_middle_volume_of_encrypted_entries_as_the_spec_does() {
+        let (main, file, end) = (0x01, 0x02, 0x05);
+        let (no_flags, has_extra, has_data) = (0x00, 0x01, 0x02);
+        let (from_previous_volume, into_next_volume) = (0x08, 0x10);
+        let (volume, volume_number, solid_archive, more_volumes) = (0x01, 0x02, 0x04, 0x01);
+        let (directory, has_crc32) = (0x01, 0x04);
+        let (archive_attribute, directory_attribute, windows) = (0x20, 0x10, 0x00);
+        let normal_in_256_kib = [0x80, 0x0B];
+        let solid_normal_in_256_kib = [0xC0, 0x0B];
+        let encryption_record = [&[36, 0x01, 0x00, 0x00, 15][..], &[0; 16], &[0; 16]].concat();
+        let file_fields = |flags: u8, data: &[u8], compression: &[u8], name: &[u8]| {
+            [
+                &[file, flags, 37, 1, has_crc32, 1, archive_attribute][..],
+                &crc32(data).to_le_bytes(),
+                compression,
+                &[windows, 3],
+                name,
+                &encryption_record,
+            ]
+            .concat()
+        };
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(
+                &[main, no_flags, volume | volume_number | solid_archive, 1],
+                b"",
+            ),
+            spec_header(
+                &[
+                    file,
+                    no_flags,
+                    directory,
+                    0,
+                    directory_attribute,
+                    0,
+                    windows,
+                    1,
+                    b'd',
+                ],
+                b"",
+            ),
+            spec_header(
+                &file_fields(
+                    has_extra | has_data | from_previous_volume,
+                    b"x",
+                    &normal_in_256_kib,
+                    b"d/a",
+                ),
+                b"x",
+            ),
+            spec_header(
+                &file_fields(
+                    has_extra | has_data | into_next_volume,
+                    b"y",
+                    &solid_normal_in_256_kib,
+                    b"d/b",
+                ),
+                b"y",
+            ),
+            spec_header(&[end, no_flags, more_volumes], b""),
+        ]
+        .concat();
+        let options = RarOptions {
+            format: RarFormat::Rar5 {
+                compression_version: 0,
+                dictionary_bytes: 256 * KIB,
+            },
+            packing: Packing::Solid,
+            method: RarMethod::DeclaredCompressed,
+            encryption: RarEncryption::Entries,
+            volume: RarVolume::Middle,
+            declared_unpacked_size: None,
+        };
+        let entries = [entry("d/", b""), entry("d/a", b"x"), entry("d/b", b"y")];
+
+        let archive = cbr(&entries, &options).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_first_volume_with_encrypted_headers_as_the_spec_does() {
+        let (main, file, encryption, end) = (0x01, 0x02, 0x04, 0x05);
+        let (no_flags, has_data, into_next_volume) = (0x00, 0x02, 0x10);
+        let (volume, more_volumes, has_crc32) = (0x01, 0x01, 0x04);
+        let (aes_256, kdf_count) = (0x00, 15);
+        let (archive_attribute, stored_in_128_kib, windows) = (0x20, 0x00, 0x00);
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(
+                &[
+                    &[encryption, no_flags, aes_256, no_flags, kdf_count][..],
+                    &[0; 16],
+                ]
+                .concat(),
+                b"",
+            ),
+            spec_header(&[main, no_flags, volume], b""),
+            spec_header(
+                &[
+                    &[
+                        file,
+                        has_data | into_next_volume,
+                        1,
+                        has_crc32,
+                        1,
+                        archive_attribute,
+                    ][..],
+                    &crc32(b"x").to_le_bytes(),
+                    &[stored_in_128_kib, windows, 1, b'a'],
+                ]
+                .concat(),
+                b"x",
+            ),
+            spec_header(&[end, no_flags, more_volumes], b""),
+        ]
+        .concat();
+        let options = RarOptions {
+            encryption: RarEncryption::Headers,
+            volume: RarVolume::First,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let archive = cbr(&[entry("a", b"x")], &options).unwrap();
+
+        assert_eq!(archive, expected);
     }
 }

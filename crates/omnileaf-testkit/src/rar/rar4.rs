@@ -164,7 +164,8 @@ fn block(kind: u8, flags: u16, fields: &[u8]) -> Result<Vec<u8>, FixtureError> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ArchiveEntry, Packing, RarEncryption, RarFormat, RarMethod, RarOptions, RarVolume, cbr,
+        ArchiveEntry, FixtureError, Packing, RarEncryption, RarFormat, RarMethod, RarOptions,
+        RarVolume, cbr,
     };
 
     const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x00";
@@ -186,6 +187,9 @@ mod tests {
     const FILE_HAS_UNICODE_NAME: u16 = 0x0200;
     const NAME_LENGTH_AT: usize = 19;
     const NAME_AT: usize = 25;
+    const ATTRIBUTES_AT: usize = 21;
+    const ATTRIBUTE_DIRECTORY: u32 = 0x10;
+    const LONGEST_NAME_BYTES: usize = 65_535 - 7 - 25;
 
     type StoredFile<'a> = (&'a [u8], &'a [u8], u32, u32, u8);
 
@@ -306,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn writes_folders_with_backslashes_and_the_directory_flag() {
+    fn writes_folders_with_backslashes_the_directory_flag_and_attribute() {
         let entries = [entry("chapter/", b""), entry("chapter/1.png", b"page")];
 
         let blocks = blocks(&cbr(&entries, &RarOptions::of(RarFormat::RAR4)).unwrap());
@@ -315,10 +319,16 @@ mod tests {
         assert_eq!(
             (
                 files[0].flags & FILE_IS_DIRECTORY,
+                files[0].u32_at(ATTRIBUTES_AT),
                 files[0].name(),
                 files[1].name()
             ),
-            (FILE_IS_DIRECTORY, &b"chapter"[..], &b"chapter\\1.png"[..])
+            (
+                FILE_IS_DIRECTORY,
+                ATTRIBUTE_DIRECTORY,
+                &b"chapter"[..],
+                &b"chapter\\1.png"[..]
+            )
         );
     }
 
@@ -473,8 +483,176 @@ mod tests {
         let error = cbr(&entries, &RarOptions::of(RarFormat::RAR4)).unwrap_err();
 
         assert!(
-            matches!(&error, crate::FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
+            matches!(&error, FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
             "{error:?}"
         );
+    }
+
+    #[test]
+    fn writes_the_longest_name_a_block_holds() {
+        let name = "a".repeat(LONGEST_NAME_BYTES);
+
+        let blocks = blocks(&cbr(&[entry(&name, b"x")], &RarOptions::of(RarFormat::RAR4)).unwrap());
+
+        assert_eq!(files(&blocks)[0].name(), name.as_bytes());
+    }
+
+    #[test]
+    fn refuses_a_name_one_byte_longer_than_a_block_holds() {
+        let name = "a".repeat(LONGEST_NAME_BYTES + 1);
+
+        let error = cbr(&[entry(&name, b"x")], &RarOptions::of(RarFormat::RAR4)).unwrap_err();
+
+        assert!(matches!(error, FixtureError::RarHeaderTooLong), "{error:?}");
+    }
+
+    fn spec_block(kind: u8, flags: u16, fields: &[u8]) -> Vec<u8> {
+        let size = u16::try_from(7 + fields.len()).unwrap();
+        let checked = [
+            &[kind][..],
+            &flags.to_le_bytes(),
+            &size.to_le_bytes(),
+            fields,
+        ]
+        .concat();
+        let crc16 = u16::try_from(crc32(&checked) & 0xFFFF).unwrap();
+        [&crc16.to_le_bytes()[..], &checked].concat()
+    }
+
+    struct SpecFile<'a> {
+        data: &'a [u8],
+        method: u8,
+        attribute: u32,
+        name: &'a [u8],
+    }
+
+    fn spec_file_fields(file: &SpecFile<'_>) -> Vec<u8> {
+        let (windows, rar3, midnight_1_january_1980) = (2, 29, 0x0021_0000_u32);
+        let size = u32::try_from(file.data.len()).unwrap();
+        [
+            &size.to_le_bytes()[..],
+            &size.to_le_bytes(),
+            &[windows],
+            &crc32(file.data).to_le_bytes(),
+            &midnight_1_january_1980.to_le_bytes(),
+            &[rar3, file.method],
+            &u16::try_from(file.name.len()).unwrap().to_le_bytes(),
+            &file.attribute.to_le_bytes(),
+            file.name,
+        ]
+        .concat()
+    }
+
+    #[test]
+    fn lays_out_a_one_page_archive_byte_for_byte_as_libarchive_reads_it() {
+        let (main, file, end) = (0x73, 0x74, 0x7B);
+        let (no_flags, has_data) = (0x0000, 0x8000);
+        let (stored, archive_attribute) = (0x30, 0x20);
+        let page = SpecFile {
+            data: b"x",
+            method: stored,
+            attribute: archive_attribute,
+            name: b"a",
+        };
+        let expected = [
+            b"Rar!\x1a\x07\x00".to_vec(),
+            spec_block(main, no_flags, &[0; 6]),
+            spec_block(file, has_data, &spec_file_fields(&page)),
+            b"x".to_vec(),
+            spec_block(end, no_flags, &[]),
+        ]
+        .concat();
+
+        let archive = cbr(&[entry("a", b"x")], &RarOptions::of(RarFormat::RAR4)).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_solid_middle_volume_of_encrypted_entries_as_libarchive_reads_it() {
+        let (main, file, end) = (0x73, 0x74, 0x7B);
+        let (volume, solid_archive, more_volumes) = (0x0001, 0x0008, 0x0001);
+        let (has_data, directory, encrypted, solid) = (0x8000, 0x00E0, 0x0004, 0x0010);
+        let (from_previous_volume, into_next_volume) = (0x0001, 0x0002);
+        let (stored, normal, archive_attribute, directory_attribute) = (0x30, 0x33, 0x20, 0x10);
+        let folder = SpecFile {
+            data: b"",
+            method: stored,
+            attribute: directory_attribute,
+            name: b"d",
+        };
+        let first = SpecFile {
+            data: b"x",
+            method: normal,
+            attribute: archive_attribute,
+            name: b"d\\a",
+        };
+        let second = SpecFile {
+            data: b"y",
+            name: b"d\\b",
+            ..first
+        };
+        let expected = [
+            b"Rar!\x1a\x07\x00".to_vec(),
+            spec_block(main, volume | solid_archive, &[0; 6]),
+            spec_block(file, has_data | directory, &spec_file_fields(&folder)),
+            spec_block(
+                file,
+                has_data | encrypted | from_previous_volume,
+                &spec_file_fields(&first),
+            ),
+            b"x".to_vec(),
+            spec_block(
+                file,
+                has_data | encrypted | solid | into_next_volume,
+                &spec_file_fields(&second),
+            ),
+            b"y".to_vec(),
+            spec_block(end, more_volumes, &[]),
+        ]
+        .concat();
+        let options = RarOptions {
+            packing: Packing::Solid,
+            method: RarMethod::DeclaredCompressed,
+            encryption: RarEncryption::Entries,
+            volume: RarVolume::Middle,
+            ..RarOptions::of(RarFormat::RAR4)
+        };
+        let entries = [entry("d/", b""), entry("d/a", b"x"), entry("d/b", b"y")];
+
+        let archive = cbr(&entries, &options).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_first_volume_with_encrypted_headers_as_libarchive_reads_it() {
+        let (main, file, end) = (0x73, 0x74, 0x7B);
+        let (volume, encrypted_headers, first_volume, more_volumes) =
+            (0x0001, 0x0080, 0x0100, 0x0001);
+        let (has_data, into_next_volume, stored, archive_attribute) = (0x8000, 0x0002, 0x30, 0x20);
+        let page = SpecFile {
+            data: b"x",
+            method: stored,
+            attribute: archive_attribute,
+            name: b"a",
+        };
+        let expected = [
+            b"Rar!\x1a\x07\x00".to_vec(),
+            spec_block(main, volume | encrypted_headers | first_volume, &[0; 6]),
+            spec_block(file, has_data | into_next_volume, &spec_file_fields(&page)),
+            b"x".to_vec(),
+            spec_block(end, more_volumes, &[]),
+        ]
+        .concat();
+        let options = RarOptions {
+            encryption: RarEncryption::Headers,
+            volume: RarVolume::First,
+            ..RarOptions::of(RarFormat::RAR4)
+        };
+
+        let archive = cbr(&[entry("a", b"x")], &options).unwrap();
+
+        assert_eq!(archive, expected);
     }
 }
