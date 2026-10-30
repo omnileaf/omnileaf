@@ -48,7 +48,7 @@
     notices: Notices;
     rowAction?: Snippet<[LibraryFolder]>;
     rowDetail?: Snippet<[LibraryFolder]>;
-    rowNotice?: Snippet<[LibraryFolder]>;
+    rowNotice?: Snippet<[LibraryFolder]> | undefined;
     isFoundEmpty?: (folder: LibraryFolder) => boolean;
     status?: Snippet;
     usesStandIns: boolean;
