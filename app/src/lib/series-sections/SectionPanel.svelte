@@ -31,6 +31,7 @@
     books,
     usesStandIns,
     onMark,
+    onPickedCount,
     children,
   }: {
     section: BookSection | undefined;
@@ -42,6 +43,7 @@
     books: ListedBooks | undefined;
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
+    onPickedCount?: ((count: number | undefined) => void) | undefined;
     children: Snippet;
   } = $props();
 
@@ -91,6 +93,7 @@
       }}
       {usesStandIns}
       {onMark}
+      {onPickedCount}
       onLoadAll={() => books.loadAll()}
     />
   {/key}

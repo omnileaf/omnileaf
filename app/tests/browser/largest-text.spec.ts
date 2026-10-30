@@ -287,6 +287,25 @@ for (const platform of PLATFORMS) {
       }
     }
 
+    test("fits every filter typed into the search field without spilling", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+
+      await page
+        .getByRole("main")
+        .getByRole("combobox", { name: "Search your library" })
+        .pressSequentially("unread started finished harbour");
+      await expect(
+        page.getByRole("button", { name: /^Remove the/ }),
+      ).toHaveCount(3);
+
+      expect(await sidewaysOverflow(page, '[data-slot="input-group"]')).toEqual(
+        [],
+      );
+      expect(await textSpillingDown(page)).toEqual([]);
+    });
+
     test.describe("on a series' page", () => {
       const shelf = new FakeShelf([
         { state: "read" },

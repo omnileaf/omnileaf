@@ -900,6 +900,7 @@
   "library_folders_failed": "⟦Çöûļðñ'ţ ļöáð ýöûŕ ƒöļðéŕš. Ţŕý áĝáíñ ļáţéŕ.··················⟧",
   "library_remove_folder": "⟦Ŕéɱöṽé ƒöļðéŕ······⟧",
   "library_remove_folder_label": "⟦Ŕéɱöṽé {name}······⟧",
+  "library_remove_folder_swipe": "⟦Ŕéɱöṽé···⟧",
   "library_remove_folder_title": "⟦Ŕéɱöṽé ţĥíš ƒöļðéŕ?········⟧",
   "library_remove_folder_detail": [
     {

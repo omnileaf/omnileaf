@@ -884,6 +884,19 @@ test.describe("on Android", () => {
     backend: { ...SEARCHING_BACKEND, appInfo: () => fakeAppInfo("android") },
   });
 
+  test("keeps a filter word as a chip under the field, not a token in it", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).pressSequentially("unread market");
+
+    await expect(
+      page.getByRole("button", { name: "Remove the Unread filter" }),
+    ).toBeVisible();
+    await expect(searchField(page)).toHaveAccessibleDescription("");
+  });
+
   test("keeps the search start on the page's own ground", async ({ page }) => {
     await page.goto("/search");
     await expect(page.getByText("You can search for")).toBeVisible();
@@ -985,6 +998,102 @@ test.describe("on an iPhone", () => {
 
     await expect(ground).toHaveCount(0);
   });
+
+  function tokens(page: Page): Locator {
+    return searchField(page)
+      .locator("..")
+      .getByRole("group", { name: "Filters" })
+      .getByRole("button");
+  }
+
+  test("turns a filter word into a token inside the field that drops the filter when pressed", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the token is the iPhone's",
+    );
+    await page.goto("/search");
+
+    await searchField(page).pressSequentially("finished a");
+
+    await expect(searchField(page)).toHaveValue("a");
+    await expect(tokens(page)).toHaveAccessibleName(
+      "Remove the Finished filter",
+    );
+    await expect(page.getByRole("button", { name: /^Remove the/ })).toHaveCount(
+      1,
+    );
+    await expectFound(page, ["Sample Series 04"]);
+
+    await tokens(page).click();
+
+    await expect(searchField(page)).toHaveValue("a");
+    await expect(tokens(page)).toHaveCount(0);
+    await expectFound(
+      page,
+      CATALOG.map(({ series }) => series.title).toSorted(),
+    );
+  });
+
+  test("drops the last token with backspace only once the words are gone", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the token is the iPhone's",
+    );
+    await page.goto("/search");
+    await searchField(page).pressSequentially("unread started a");
+    await searchField(page).evaluate((field: HTMLInputElement) => {
+      field.setSelectionRange(0, 0);
+    });
+
+    await searchField(page).press("Backspace");
+    await expect(tokens(page)).toHaveCount(2);
+    await searchField(page).evaluate((field: HTMLInputElement) => {
+      field.setSelectionRange(field.value.length, field.value.length);
+    });
+    await searchField(page).press("Backspace");
+    await searchField(page).press("Backspace");
+
+    await expect(searchField(page)).toHaveValue("");
+    await expect(tokens(page)).toHaveText(["Unread"]);
+  });
+
+  test("clears the words and the tokens with Clear", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the token is the iPhone's",
+    );
+    await page.goto("/search");
+    await searchField(page).pressSequentially("unread started a");
+
+    await page.getByRole("button", { name: "Clear", exact: true }).click();
+
+    await expect(searchField(page)).toHaveValue("");
+    await expect(tokens(page)).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "You can search for" }),
+    ).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations with a token in the field in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        "the token is the iPhone's",
+      );
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/search");
+      await searchField(page).pressSequentially("unread market");
+      await expect(tokens(page)).toHaveCount(1);
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
 
 test.describe("with a likely spelling for a search that finds nothing", () => {
