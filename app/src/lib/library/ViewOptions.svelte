@@ -9,10 +9,12 @@
   import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
-  import { MEDIUM_QUERY } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { MEDIUM_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
   import ViewChoices from "./ViewChoices.svelte";
   import { viewPanelWidth } from "./view-panel";
 
@@ -44,6 +46,10 @@
   const titleId = $props.id();
   const platform = currentPlatform();
   const isIos = platform === "ios";
+  const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
   const panelWidth = viewPanelWidth(platform);
 
   let direction: "ltr" | "rtl" = $state("ltr");
@@ -136,6 +142,17 @@
           closeLabel={m.library_close()}
           onClose={close}
         />
+      {:else if isAndroidPhone}
+        <div class={ANDROID_FILTER_SHEET.header}>
+          <DialogTitle class={ANDROID_FILTER_SHEET.title}>
+            {m.library_view_options()}
+          </DialogTitle>
+        </div>
+        <Dialog.Description
+          class="{ROW_SUBTITLE_TYPE} ps-lg pe-lg pbe-sm text-muted"
+        >
+          {m.library_view_kept_phone()}
+        </Dialog.Description>
       {:else}
         <div class="flex items-center gap-md px-sheet-inline pbs-sheet-gap">
           <span
@@ -163,10 +180,12 @@
         </div>
       {/if}
       <div
-        class={[
-          "flex flex-col overflow-auto pbs-sheet-gap pbe-sheet-bottom min-block-none",
-          isIos ? "gap-xl" : "px-sheet-inline",
-        ]}
+        class={isAndroidPhone
+          ? "flex flex-col overflow-auto pbe-native-sheet-foot-bottom min-block-none"
+          : [
+              "flex flex-col overflow-auto pbs-sheet-gap pbe-sheet-bottom min-block-none",
+              isIos ? "gap-xl" : "px-sheet-inline",
+            ]}
       >
         <ViewChoices
           {view}

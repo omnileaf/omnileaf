@@ -118,12 +118,12 @@ test("stacks a row's label over its control in the Layout group on an iPhone", a
   expect(control.top).toBeGreaterThanOrEqual(label.bottom);
 });
 
-test("keeps the Done sheet on an Android phone", async () => {
+test("draws the Android phone's sheet with no Done or Close button, left by its handle or scrim", async () => {
   await openOn("android");
 
   await expect
     .element(page.getByRole("button", { name: "Done" }))
-    .toBeInTheDocument();
+    .not.toBeInTheDocument();
   await expect
     .element(page.getByRole("button", { name: "Close" }))
     .not.toBeInTheDocument();
