@@ -364,15 +364,19 @@
   const commandsOnTop = $derived(
     commandBarLook(data.appInfo.platform) !== undefined,
   );
+  function labelPicked(from: LabelsFrom): void {
+    label(selection.picked, from);
+  }
+
+  function markPickedRead(): void {
+    void markRead(selection.picked);
+  }
+
   const actionsOnPicked = $derived(
     selectionActions({
       keepsLabels,
-      onLabels: (from: LabelsFrom) => {
-        label(selection.picked, from);
-      },
-      onMarkRead: () => {
-        void markRead(selection.picked);
-      },
+      onLabels: labelPicked,
+      onMarkRead: markPickedRead,
     }),
   );
   const isDocked = $derived(docksFilter && isFilterOpen);
@@ -1168,12 +1172,8 @@
             count={selection.count}
             isPill={docksFilter}
             {keepsLabels}
-            onLabels={(from: LabelsFrom) => {
-              label(selection.picked, from);
-            }}
-            onMarkRead={() => {
-              void markRead(selection.picked);
-            }}
+            onLabels={labelPicked}
+            onMarkRead={markPickedRead}
             onDelete={() => {
               removing = seriesTargets(selection.picked);
             }}

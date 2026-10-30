@@ -16,8 +16,17 @@ const LIBRARY = sampleSeries(14).map((series, index) => ({
   language: index % 2 === 0 ? "en" : null,
   hasDownloads: index % 3 === 0,
 }));
-const FIRST_TITLE = LIBRARY[0]?.title ?? "";
-const SECOND_TITLE = LIBRARY[1]?.title ?? "";
+
+function titleOf(index: number): string {
+  const series = LIBRARY[index];
+  if (series === undefined) {
+    throw new Error(`the fixture lists no series at ${String(index)}`);
+  }
+  return series.title;
+}
+
+const FIRST_TITLE = titleOf(0);
+const SECOND_TITLE = titleOf(1);
 const COMMAND_WIDTH = 68;
 const COMMAND_HEIGHT = 64;
 const PAGE_MARGIN = 24;
@@ -81,7 +90,7 @@ test.describe("Windows library", () => {
         await expect(command(page, "View options")).toContainText("View");
       });
 
-      test("keeps the title 24 from the pane and the covers 24 from the edge of the page", async ({
+      test("keeps the covers 24 from the edge of the page", async ({
         page,
       }) => {
         const bar = await boxOf(commandBar(page));
@@ -240,7 +249,7 @@ test.describe("Windows library", () => {
       const link = first.locator("[data-pickable-link]");
       await expect(link).toHaveAttribute("aria-checked", "true");
       await settle(link);
-      expect(await edge(link)).toBe("rgb(47, 111, 79)");
+      expect(await edge(link)).toBe(ACCENT.light);
       expect(
         await edge(cell(page, SECOND_TITLE).locator("[data-pickable-link]")),
       ).toBe("rgba(0, 0, 0, 0)");
@@ -351,9 +360,11 @@ test.describe("Windows library", () => {
           COMMAND_HEIGHT,
         ]);
       }
+      const groups = page.getByRole("group", { name: "Selected series" });
+      await expect(groups).toHaveCount(1);
       await expect(
-        page.getByRole("group", { name: "Selected series" }),
-      ).toHaveCount(0);
+        bar.getByRole("group", { name: "Selected series" }),
+      ).toHaveCount(1);
     });
 
     test("has no accessibility violations", async ({ page }) => {
