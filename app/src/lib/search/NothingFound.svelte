@@ -20,8 +20,7 @@
   const NATIVE_TYPE = "text-native-empty/native-empty tracking-native-empty";
   const NATIVE_TITLE = `${NATIVE_TYPE} font-native-empty-title text-foreground`;
   const NATIVE_HINT = `${NATIVE_TYPE} font-native-empty-body`;
-  const NATIVE_SUGGESTION =
-    "text-accent underline underline-offset-2 whitespace-nowrap";
+  const NATIVE_SUGGESTION = "text-accent underline underline-offset-2";
   const SOURCES_ICON_SIZE = 16;
   const SUGGESTION_SPOT = "\u0000";
 

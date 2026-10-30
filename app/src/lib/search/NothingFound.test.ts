@@ -22,13 +22,14 @@ afterEach(() => {
 async function nothingFoundOn(
   platform: "ios" | "linux",
   size: { width: number; height: number },
+  suggestion = "harbour gate",
 ) {
   await page.viewport(size.width, size.height);
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await render(NothingFound, {
     text: "harbor gat",
-    suggestion: { text: "harbour gate", chapterOf: null },
+    suggestion: { text: suggestion, chapterOf: null },
     onSuggest: () => undefined,
   });
 }
@@ -113,4 +114,26 @@ test("keeps the art tile and today's type on an iPad and Linux", async () => {
 
   expect(onIpad).not.toBe("rgba(0, 0, 0, 0)");
   expect(onLinux).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    getComputedStyle(asElement(page.getByRole("heading").element())).fontWeight,
+  ).not.toBe("590");
+});
+
+test("wraps a long suggestion inside the screen on an iPhone", async () => {
+  await nothingFoundOn(
+    "ios",
+    PHONE,
+    "the harbour gate keeper's long winter at the lighthouse",
+  );
+
+  const link = asElement(
+    page
+      .getByRole("button", {
+        name: "the harbour gate keeper's long winter at the lighthouse",
+      })
+      .element(),
+  );
+
+  expect(link.getBoundingClientRect().right).toBeLessThanOrEqual(PHONE.width);
+  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(PHONE.width);
 });
