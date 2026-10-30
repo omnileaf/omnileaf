@@ -6,6 +6,7 @@ use std::{
 
 const SHA256_HEX_LENGTH: usize = 64;
 const HASH_SEPARATOR: &str = "  ";
+const SECURE_SCHEME: &str = "https://";
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ListedFile {
@@ -25,6 +26,9 @@ pub(crate) struct Manifest {
 pub(crate) enum ManifestError {
     MissingField(&'static str),
     UnreadableLine { number: usize },
+    DuplicateField { field: &'static str },
+    DuplicateFile { path: String },
+    InsecureTarball,
 }
 
 impl fmt::Display for ManifestError {
@@ -32,6 +36,9 @@ impl fmt::Display for ManifestError {
         match self {
             Self::MissingField(field) => write!(f, "the manifest has no `{field}` line"),
             Self::UnreadableLine { number } => write!(f, "manifest line {number} is not readable"),
+            Self::DuplicateField { field } => write!(f, "the manifest has two `{field}` lines"),
+            Self::DuplicateFile { path } => write!(f, "the manifest lists {path} twice"),
+            Self::InsecureTarball => write!(f, "the manifest's tarball is not an https address"),
         }
     }
 }
@@ -43,7 +50,7 @@ impl Manifest {
         let mut tarball = None;
         let mut tarball_sha256 = None;
         let mut root = None;
-        let mut files = Vec::new();
+        let mut files: Vec<ListedFile> = Vec::new();
         for (index, line) in text
             .lines()
             .enumerate()
@@ -54,19 +61,30 @@ impl Manifest {
                 if !is_sha256(sha256) || !is_inside_folder(path) {
                     return Err(unreadable);
                 }
+                if files.iter().any(|file| file.path == path) {
+                    return Err(ManifestError::DuplicateFile {
+                        path: path.to_owned(),
+                    });
+                }
                 files.push(ListedFile {
                     path: path.to_owned(),
                     sha256: sha256.to_owned(),
                 });
                 continue;
             }
-            match line.split_once(' ') {
-                Some(("tarball", value)) => tarball = Some(value.to_owned()),
-                Some(("sha256", value)) if is_sha256(value) => {
-                    tarball_sha256 = Some(value.to_owned());
+            let (field, value, slot) = match line.split_once(' ') {
+                Some(("tarball", value)) if value.starts_with(SECURE_SCHEME) => {
+                    ("tarball", value, &mut tarball)
                 }
-                Some(("root", value)) if is_inside_folder(value) => root = Some(value.to_owned()),
+                Some(("tarball", _)) => return Err(ManifestError::InsecureTarball),
+                Some(("sha256", value)) if is_sha256(value) => {
+                    ("sha256", value, &mut tarball_sha256)
+                }
+                Some(("root", value)) if is_inside_folder(value) => ("root", value, &mut root),
                 _ => return Err(unreadable),
+            };
+            if slot.replace(value.to_owned()).is_some() {
+                return Err(ManifestError::DuplicateField { field });
             }
         }
         Ok(Self {
@@ -152,5 +170,37 @@ mod tests {
         let result = Manifest::parse(&text);
 
         assert_eq!(result, Err(ManifestError::UnreadableLine { number: 5 }));
+    }
+
+    #[test]
+    fn rejects_a_field_given_twice() {
+        let text = format!("root sample-0.9\n{}", manifest_text(""));
+
+        let result = Manifest::parse(&text);
+
+        assert_eq!(result, Err(ManifestError::DuplicateField { field: "root" }));
+    }
+
+    #[test]
+    fn rejects_a_file_listed_twice() {
+        let text = manifest_text(&format!("{HASH_A}  src/reader.c\n{HASH_A}  src/reader.c\n"));
+
+        let result = Manifest::parse(&text);
+
+        assert_eq!(
+            result,
+            Err(ManifestError::DuplicateFile {
+                path: "src/reader.c".to_owned()
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_a_tarball_fetched_without_tls() {
+        let text = manifest_text("").replace("https://", "http://");
+
+        let result = Manifest::parse(&text);
+
+        assert_eq!(result, Err(ManifestError::InsecureTarball));
     }
 }
