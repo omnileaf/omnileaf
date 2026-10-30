@@ -800,7 +800,7 @@ impl Library {
             .store
             .database()
             .read(move |connection| {
-                spelling_suggestion(connection, &text, adult_seen.hiding(connection)?)
+                spelling_suggestion(connection, &text, adult_seen.view(connection)?)
             })
             .await?)
     }

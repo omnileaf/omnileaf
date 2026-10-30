@@ -1,10 +1,10 @@
 use omnileaf_db::{
     Connection,
-    adult_content::AdultHiding,
     catalog::{
-        Page, PageRequest, SearchText, SeriesFilter, SeriesListing, SeriesOrder, SeriesSearch,
-        SeriesSort, SeriesSummary, closest_title_words, search_chapters, search_chapters_count,
-        search_count, search_page, series_count, series_page,
+        ChapterSuggestion, Page, PageRequest, SearchText, SeriesFilter, SeriesListing, SeriesOrder,
+        SeriesSearch, SeriesSort, SeriesSummary, closest_chapter_title, closest_title_words,
+        search_chapters, search_chapters_count, search_count, search_page, series_count,
+        series_page,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -33,20 +33,36 @@ pub struct SpellingSuggestion {
     pub chapter_of: Option<String>,
 }
 
+impl SpellingSuggestion {
+    fn of_series(text: String) -> Self {
+        Self {
+            text,
+            chapter_of: None,
+        }
+    }
+
+    fn of_chapter(suggestion: ChapterSuggestion, adult: AdultView) -> Self {
+        Self {
+            text: suggestion.chapter_words,
+            chapter_of: (!adult.in_screenshot_mode()).then_some(suggestion.series_title),
+        }
+    }
+}
+
 pub(crate) fn spelling_suggestion(
     connection: &Connection,
     text: &str,
-    hiding: AdultHiding,
+    adult: AdultView,
 ) -> Result<Option<SpellingSuggestion>, omnileaf_db::Error> {
     if text.chars().count() > usize::from(LibrarySearch::MAX_CHARS) {
         return Ok(None);
     }
-    Ok(
-        closest_title_words(connection, text, hiding)?.map(|text| SpellingSuggestion {
-            text,
-            chapter_of: None,
-        }),
-    )
+    let hiding = adult.hiding();
+    if let Some(series_words) = closest_title_words(connection, text, hiding)? {
+        return Ok(Some(SpellingSuggestion::of_series(series_words)));
+    }
+    Ok(closest_chapter_title(connection, text, hiding)?
+        .map(|chapter| SpellingSuggestion::of_chapter(chapter, adult)))
 }
 
 pub(crate) enum StoredSearch {

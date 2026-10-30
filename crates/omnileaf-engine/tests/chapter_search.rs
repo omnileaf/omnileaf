@@ -19,7 +19,7 @@ use std::fs;
 use books::write_book_with;
 use omnileaf_engine::{
     ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource, Inclusion, Library,
-    LibraryError, LibraryFilter, LibraryListing, LibrarySearch, SeriesFormat,
+    LibraryError, LibraryFilter, LibraryListing, LibrarySearch, SeriesFormat, SpellingSuggestion,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -45,6 +45,7 @@ impl Shelf {
         let books = [
             (LANTERNS, "Chapter 01 Dawn", Some(MANGA)),
             (LANTERNS, "Chapter 02 Dusk", Some(MANGA)),
+            (LANTERNS, "Chapter 03 Harbour Gate", Some(MANGA)),
             (HARBOUR, "Chapter 01 Tide", Some(RETITLED)),
             (FORBIDDEN, "Chapter 01 Moonlit", Some(RATED_18)),
         ];
@@ -90,7 +91,11 @@ impl Shelf {
     }
 
     async fn lost_the_lantern_books(&self) {
-        for title in ["Chapter 01 Dawn", "Chapter 02 Dusk"] {
+        for title in [
+            "Chapter 01 Dawn",
+            "Chapter 02 Dusk",
+            "Chapter 03 Harbour Gate",
+        ] {
             fs::remove_file(
                 self.comics
                     .path()
@@ -393,5 +398,76 @@ async fn finds_nothing_in_a_series_that_lost_all_its_books() {
             .iter()
             .all(|page| page.hits.is_empty() && page.next.is_none() && page.count == Some(0)),
         "{pages:?}"
+    );
+}
+
+fn suggestion(text: &str, chapter_of: Option<&str>) -> SpellingSuggestion {
+    SpellingSuggestion {
+        text: text.to_owned(),
+        chapter_of: chapter_of.map(ToOwned::to_owned),
+    }
+}
+
+async fn suggested(shelf: &Shelf, text: &str) -> Option<SpellingSuggestion> {
+    shelf
+        .library
+        .spelling_suggestion(text.to_owned())
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn suggests_the_closest_words_of_a_chapter_title_with_the_series_holding_it() {
+    let shelf = Shelf::scanned("chapter-spelling").await;
+
+    let found = suggested(&shelf, "brigthwater").await;
+
+    assert_eq!(found, Some(suggestion("brightwater", Some(HARBOUR))));
+}
+
+#[tokio::test]
+async fn suggests_the_title_of_a_series_before_the_title_of_a_chapter() {
+    let shelf = Shelf::scanned("chapter-spelling-series-first").await;
+
+    let found = suggested(&shelf, "harbor gate").await;
+
+    assert_eq!(found, Some(suggestion("harbour gate", None)));
+}
+
+#[tokio::test]
+async fn names_no_series_for_a_chapter_title_while_screenshot_mode_is_on() {
+    let shelf = Shelf::scanned("chapter-spelling-screenshot").await;
+    shelf.library.set_screenshot_mode(true);
+
+    let found = suggested(&shelf, "brigthwater").await;
+
+    assert_eq!(found, Some(suggestion("brightwater", None)));
+}
+
+#[tokio::test]
+async fn suggests_no_chapter_title_of_a_18_plus_series_while_screenshot_mode_is_on() {
+    let shelf = Shelf::scanned("chapter-spelling-adult").await;
+    let before = suggested(&shelf, "moonlitt").await;
+
+    shelf.library.set_screenshot_mode(true);
+    let after = suggested(&shelf, "moonlitt").await;
+
+    assert_eq!(
+        (before, after),
+        (Some(suggestion("moonlit", Some(FORBIDDEN))), None)
+    );
+}
+
+#[tokio::test]
+async fn suggests_no_chapter_title_of_a_series_that_lost_all_its_books() {
+    let shelf = Shelf::scanned("chapter-spelling-no-books").await;
+    let before = suggested(&shelf, "dawm").await;
+    shelf.lost_the_lantern_books().await;
+
+    let after = suggested(&shelf, "dawm").await;
+
+    assert_eq!(
+        (before, after),
+        (Some(suggestion("dawn", Some(LANTERNS))), None)
     );
 }
