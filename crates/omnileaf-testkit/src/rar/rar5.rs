@@ -1,0 +1,839 @@
+use super::{
+    Member, RarEncryption, RarMethod, RarOptions, RarVolume, SMALLEST_RAR5_DICTIONARY_BYTES, crc32,
+};
+use crate::{FixtureError, Packing};
+
+const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const MAIN: u64 = 1;
+const FILE: u64 = 2;
+const ENCRYPTION: u64 = 4;
+const END: u64 = 5;
+const NO_FLAGS: u64 = 0;
+const HAS_EXTRA: u64 = 0x0001;
+const HAS_DATA: u64 = 0x0002;
+const CONTINUES_FROM_PREVIOUS_VOLUME: u64 = 0x0008;
+const CONTINUES_IN_NEXT_VOLUME: u64 = 0x0010;
+const ARCHIVE_IS_VOLUME: u64 = 0x0001;
+const ARCHIVE_HAS_VOLUME_NUMBER: u64 = 0x0002;
+const MORE_VOLUMES_FOLLOW: u64 = 0x0001;
+const ARCHIVE_IS_SOLID: u64 = 0x0004;
+const FILE_IS_DIRECTORY: u64 = 0x0001;
+const FILE_HAS_CRC32: u64 = 0x0004;
+const SOLID: u64 = 0x0040;
+const METHOD_SHIFT: u32 = 7;
+const DICTIONARY_SHIFT: u32 = 10;
+const STORED: u64 = 0;
+const NORMAL: u64 = 3;
+const HOST_WINDOWS: u64 = 0;
+const ATTRIBUTE_ARCHIVE: u64 = 0x20;
+const ATTRIBUTE_DIRECTORY: u64 = 0x10;
+const ENCRYPTION_RECORD: u64 = 0x01;
+const AES_256: u64 = 0;
+const KDF_COUNT: u8 = 15;
+const SALT: [u8; 16] = [0; 16];
+const INITIALIZATION_VECTOR: [u8; 16] = [0; 16];
+const VINT_DATA_BITS: u32 = 7;
+const LARGEST_ALGORITHM_VERSION: u8 = 0x3F;
+const LARGEST_DICTIONARY_EXPONENT: u32 = 31;
+const VINT_DATA_MASK: u64 = 0x7F;
+const VINT_CONTINUES: u8 = 0x80;
+
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Compression {
+    pub(super) version: u8,
+    pub(super) dictionary_bytes: u64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CompressionBits {
+    version: u64,
+    dictionary_exponent: u64,
+}
+
+impl Compression {
+    fn bits(self) -> Result<CompressionBits, FixtureError> {
+        if self.version > LARGEST_ALGORITHM_VERSION {
+            return Err(FixtureError::RarCompressionVersion {
+                version: self.version,
+            });
+        }
+        let multiple = self.dictionary_bytes / SMALLEST_RAR5_DICTIONARY_BYTES;
+        let is_encodable = self
+            .dictionary_bytes
+            .is_multiple_of(SMALLEST_RAR5_DICTIONARY_BYTES)
+            && multiple.is_power_of_two()
+            && multiple.ilog2() <= LARGEST_DICTIONARY_EXPONENT;
+        if !is_encodable {
+            return Err(FixtureError::RarDictionary {
+                bytes: self.dictionary_bytes,
+            });
+        }
+        Ok(CompressionBits {
+            version: u64::from(self.version),
+            dictionary_exponent: u64::from(multiple.ilog2()),
+        })
+    }
+}
+
+struct Block<'a> {
+    kind: u64,
+    flags: u64,
+    fields: Vec<u8>,
+    extra: Vec<u8>,
+    data: Option<&'a [u8]>,
+}
+
+pub(super) fn archive(
+    members: &[Member<'_>],
+    options: &RarOptions,
+    compression: Compression,
+) -> Result<Vec<u8>, FixtureError> {
+    let bits = compression.bits()?;
+    let mut archive = SIGNATURE.to_vec();
+    if options.encryption == RarEncryption::Headers {
+        archive.extend(encryption_block().encode());
+    }
+    archive.extend(main_block(options).encode());
+    for member in members {
+        archive.extend(file_block(member, options, bits).encode());
+    }
+    let end_flags = if options.volume.precedes_another() {
+        MORE_VOLUMES_FOLLOW
+    } else {
+        NO_FLAGS
+    };
+    archive.extend(simple_block(END, &vint(end_flags)).encode());
+    Ok(archive)
+}
+
+fn simple_block<'a>(kind: u64, fields: &[u8]) -> Block<'a> {
+    Block {
+        kind,
+        flags: NO_FLAGS,
+        fields: fields.to_vec(),
+        extra: Vec::new(),
+        data: None,
+    }
+}
+
+fn encryption_block<'a>() -> Block<'a> {
+    let fields = [&vint(AES_256)[..], &vint(NO_FLAGS), &[KDF_COUNT], &SALT].concat();
+    simple_block(ENCRYPTION, &fields)
+}
+
+fn main_block<'a>(options: &RarOptions) -> Block<'a> {
+    let mut archive_flags = NO_FLAGS;
+    if options.volume != RarVolume::Whole {
+        archive_flags |= ARCHIVE_IS_VOLUME;
+    }
+    if options.packing == Packing::Solid {
+        archive_flags |= ARCHIVE_IS_SOLID;
+    }
+    let number = options.volume.number();
+    if number.is_some() {
+        archive_flags |= ARCHIVE_HAS_VOLUME_NUMBER;
+    }
+    let fields = [vint(archive_flags), number.map(vint).unwrap_or_default()].concat();
+    simple_block(MAIN, &fields)
+}
+
+fn file_block<'a>(member: &Member<'a>, options: &RarOptions, bits: CompressionBits) -> Block<'a> {
+    let (file_flags, attributes, information, data) = if member.is_directory {
+        (FILE_IS_DIRECTORY, ATTRIBUTE_DIRECTORY, 0, None)
+    } else {
+        (
+            FILE_HAS_CRC32,
+            ATTRIBUTE_ARCHIVE,
+            compression_information(member, options.method, bits),
+            Some(member.bytes),
+        )
+    };
+    let crc32 = if member.is_directory {
+        Vec::new()
+    } else {
+        member.crc32.to_le_bytes().to_vec()
+    };
+    let fields = [
+        &vint(file_flags)[..],
+        &vint(member.unpacked_size),
+        &vint(attributes),
+        &crc32,
+        &vint(information),
+        &vint(HOST_WINDOWS),
+        &vint(member.name.len() as u64),
+        member.name.as_bytes(),
+    ]
+    .concat();
+    let extra = if options.encryption == RarEncryption::Entries && !member.is_directory {
+        record(ENCRYPTION_RECORD, &encryption_record())
+    } else {
+        Vec::new()
+    };
+    let mut flags = NO_FLAGS;
+    if member.split.from_previous {
+        flags |= CONTINUES_FROM_PREVIOUS_VOLUME;
+    }
+    if member.split.into_next {
+        flags |= CONTINUES_IN_NEXT_VOLUME;
+    }
+    Block {
+        kind: FILE,
+        flags,
+        fields,
+        extra,
+        data,
+    }
+}
+
+fn compression_information(member: &Member<'_>, method: RarMethod, bits: CompressionBits) -> u64 {
+    let method = match method {
+        RarMethod::Stored => STORED,
+        RarMethod::DeclaredCompressed => NORMAL,
+    };
+    let solid = if member.is_solid { SOLID } else { 0 };
+    bits.version | solid | (method << METHOD_SHIFT) | (bits.dictionary_exponent << DICTIONARY_SHIFT)
+}
+
+fn encryption_record() -> Vec<u8> {
+    [
+        &vint(AES_256)[..],
+        &vint(NO_FLAGS),
+        &[KDF_COUNT],
+        &SALT,
+        &INITIALIZATION_VECTOR,
+    ]
+    .concat()
+}
+
+fn record(kind: u64, data: &[u8]) -> Vec<u8> {
+    let typed = [&vint(kind)[..], data].concat();
+    [vint(typed.len() as u64), typed].concat()
+}
+
+impl Block<'_> {
+    fn encode(&self) -> Vec<u8> {
+        let mut flags = self.flags;
+        let mut area_sizes = Vec::new();
+        if !self.extra.is_empty() {
+            flags |= HAS_EXTRA;
+            area_sizes.extend(vint(self.extra.len() as u64));
+        }
+        if let Some(data) = self.data {
+            flags |= HAS_DATA;
+            area_sizes.extend(vint(data.len() as u64));
+        }
+        let body = [
+            &vint(self.kind)[..],
+            &vint(flags),
+            &area_sizes,
+            &self.fields,
+            &self.extra,
+        ]
+        .concat();
+        let checked = [vint(body.len() as u64), body].concat();
+        [
+            &crc32(&checked).to_le_bytes()[..],
+            &checked,
+            self.data.unwrap_or_default(),
+        ]
+        .concat()
+    }
+}
+
+/// RAR5 stores integers as little-endian groups of seven bits, the top bit of each byte flagging that another follows.
+fn vint(mut value: u64) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    loop {
+        let low = u8::try_from(value & VINT_DATA_MASK).unwrap_or_default();
+        value >>= VINT_DATA_BITS;
+        if value == 0 {
+            bytes.push(low);
+            return bytes;
+        }
+        bytes.push(low | VINT_CONTINUES);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        ArchiveEntry, FixtureError, Packing, RarEncryption, RarFormat, RarMethod, RarOptions,
+        RarVolume, cbr,
+    };
+
+    const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+    const MAIN: u64 = 1;
+    const FILE: u64 = 2;
+    const ENCRYPTION: u64 = 4;
+    const END: u64 = 5;
+    const HAS_EXTRA: u64 = 0x0001;
+    const HAS_DATA: u64 = 0x0002;
+    const CONTINUES_FROM_PREVIOUS_VOLUME: u64 = 0x0008;
+    const CONTINUES_IN_NEXT_VOLUME: u64 = 0x0010;
+    const ARCHIVE_IS_VOLUME: u64 = 0x0001;
+    const ARCHIVE_HAS_VOLUME_NUMBER: u64 = 0x0002;
+    const MORE_VOLUMES_FOLLOW: u64 = 0x0001;
+    const ARCHIVE_IS_SOLID: u64 = 0x0004;
+    const FILE_IS_DIRECTORY: u64 = 0x0001;
+    const FILE_HAS_CRC32: u64 = 0x0004;
+    const SOLID: u64 = 0x0040;
+    const ATTRIBUTE_DIRECTORY: u64 = 0x10;
+    const KIB: u64 = 1024;
+    const ENCRYPTION_RECORD: u64 = 0x01;
+
+    struct Header {
+        kind: u64,
+        flags: u64,
+        fields: Vec<u64>,
+        name: String,
+        extra: Vec<u8>,
+        data: Vec<u8>,
+    }
+
+    struct Cursor<'a>(&'a [u8]);
+
+    impl<'a> Cursor<'a> {
+        fn take(&mut self, length: usize) -> &'a [u8] {
+            let (taken, rest) = self.0.split_at(length);
+            self.0 = rest;
+            taken
+        }
+
+        fn vint(&mut self) -> u64 {
+            let mut value = 0;
+            for shift in (0..64).step_by(7) {
+                let byte = self.take(1)[0];
+                value |= u64::from(byte & 0x7F) << shift;
+                if byte & 0x80 == 0 {
+                    break;
+                }
+            }
+            value
+        }
+
+        fn u32(&mut self) -> u32 {
+            u32::from_le_bytes(self.take(4).try_into().unwrap())
+        }
+    }
+
+    fn crc32(bytes: &[u8]) -> u32 {
+        let mut crc = flate2::Crc::new();
+        crc.update(bytes);
+        crc.sum()
+    }
+
+    fn headers(archive: &[u8]) -> Vec<Header> {
+        assert_eq!(&archive[..SIGNATURE.len()], SIGNATURE);
+        let mut cursor = Cursor(&archive[SIGNATURE.len()..]);
+        let mut headers = Vec::new();
+        while !cursor.0.is_empty() {
+            let crc = cursor.u32();
+            let sized_start = cursor.0;
+            let size = usize::try_from(cursor.vint()).unwrap();
+            let size_length = sized_start.len() - cursor.0.len();
+            let body = cursor.take(size);
+            assert_eq!(crc, crc32(&sized_start[..size_length + size]));
+            let mut header = Cursor(body);
+            let kind = header.vint();
+            let flags = header.vint();
+            let extra_length = if flags & HAS_EXTRA == 0 {
+                0
+            } else {
+                usize::try_from(header.vint()).unwrap()
+            };
+            let data_length = if flags & HAS_DATA == 0 {
+                0
+            } else {
+                usize::try_from(header.vint()).unwrap()
+            };
+            let mut fields = Vec::new();
+            let mut name = String::new();
+            if kind == FILE {
+                fields.extend([header.vint(), header.vint(), header.vint()]);
+                let crc = if fields[0] & FILE_HAS_CRC32 == 0 {
+                    0
+                } else {
+                    header.u32()
+                };
+                fields.push(u64::from(crc));
+                fields.extend([header.vint(), header.vint()]);
+                let name_length = usize::try_from(header.vint()).unwrap();
+                name = String::from_utf8(header.take(name_length).to_vec()).unwrap();
+            } else {
+                while header.0.len() > extra_length {
+                    fields.push(header.vint());
+                }
+            }
+            let extra = header.take(extra_length).to_vec();
+            assert!(header.0.is_empty());
+            headers.push(Header {
+                kind,
+                flags,
+                fields,
+                name,
+                extra,
+                data: cursor.take(data_length).to_vec(),
+            });
+        }
+        headers
+    }
+
+    fn entry(name: &str, bytes: &[u8]) -> ArchiveEntry {
+        ArchiveEntry {
+            name: name.to_owned(),
+            bytes: bytes.to_vec(),
+        }
+    }
+
+    fn pages() -> Vec<ArchiveEntry> {
+        vec![entry("2.png", b"second"), entry("1.png", b"first page")]
+    }
+
+    fn files(headers: &[Header]) -> Vec<&Header> {
+        headers
+            .iter()
+            .filter(|header| header.kind == FILE)
+            .collect()
+    }
+
+    #[test]
+    fn writes_a_signature_then_main_file_and_end_headers_whose_crc32_match() {
+        let archive = cbr(&pages(), &RarOptions::of(RarFormat::RAR5)).unwrap();
+
+        let kinds: Vec<u64> = headers(&archive).iter().map(|header| header.kind).collect();
+
+        assert_eq!(kinds, [MAIN, FILE, FILE, END]);
+    }
+
+    #[test]
+    fn stores_each_entry_in_the_given_order_with_its_size_and_crc32() {
+        let archive = cbr(&pages(), &RarOptions::of(RarFormat::RAR5)).unwrap();
+
+        let headers = headers(&archive);
+
+        let stored: Vec<(&str, &[u8], u64, u64)> = files(&headers)
+            .iter()
+            .map(|file| {
+                (
+                    file.name.as_str(),
+                    file.data.as_slice(),
+                    file.fields[1],
+                    file.fields[3],
+                )
+            })
+            .collect();
+        assert_eq!(
+            stored,
+            [
+                ("2.png", &b"second"[..], 6, u64::from(crc32(b"second"))),
+                (
+                    "1.png",
+                    &b"first page"[..],
+                    10,
+                    u64::from(crc32(b"first page"))
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn writes_a_folder_as_a_directory_with_no_data_or_crc32() {
+        let entries = [entry("chapter/", b""), entry("chapter/1.png", b"page")];
+
+        let archive = cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap();
+
+        let headers = headers(&archive);
+        let folder = files(&headers)[0];
+        assert_eq!(
+            (
+                folder.name.as_str(),
+                folder.fields[0],
+                folder.fields[2],
+                folder.flags & HAS_DATA
+            ),
+            ("chapter", FILE_IS_DIRECTORY, ATTRIBUTE_DIRECTORY, 0)
+        );
+    }
+
+    #[test]
+    fn marks_the_archive_and_every_file_after_the_first_solid() {
+        let options = RarOptions {
+            packing: Packing::Solid,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+
+        let solid: Vec<u64> = files(&headers)
+            .iter()
+            .map(|file| file.fields[4] & SOLID)
+            .collect();
+        assert_eq!(
+            (headers[0].fields[0] & ARCHIVE_IS_SOLID, solid),
+            (ARCHIVE_IS_SOLID, vec![0, SOLID])
+        );
+    }
+
+    #[test]
+    fn writes_the_compression_version_method_and_dictionary_it_is_given() {
+        let options = RarOptions {
+            format: RarFormat::Rar5 {
+                compression_version: 1,
+                dictionary_bytes: 128 * 1024 * 1024,
+            },
+            method: RarMethod::DeclaredCompressed,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+
+        let information = files(&headers)[0].fields[4];
+        assert_eq!(
+            (
+                information & 0x3F,
+                (information >> 7) & 0x7,
+                (information >> 10) & 0x1F
+            ),
+            (1, 3, 10)
+        );
+    }
+
+    #[test]
+    fn declares_the_unpacked_size_it_is_given() {
+        let options = RarOptions {
+            declared_unpacked_size: Some(1 << 40),
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+
+        let sizes: Vec<(u64, usize)> = files(&headers)
+            .iter()
+            .map(|file| (file.fields[1], file.data.len()))
+            .collect();
+        assert_eq!(sizes, [(1 << 40, 6), (1 << 40, 10)]);
+    }
+
+    #[test]
+    fn puts_an_encryption_header_before_the_main_header() {
+        let options = RarOptions {
+            encryption: RarEncryption::Headers,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+
+        assert_eq!(
+            headers
+                .iter()
+                .take(2)
+                .map(|header| header.kind)
+                .collect::<Vec<_>>(),
+            [ENCRYPTION, MAIN]
+        );
+    }
+
+    #[test]
+    fn gives_every_encrypted_entry_an_encryption_record() {
+        let options = RarOptions {
+            encryption: RarEncryption::Entries,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+
+        let records: Vec<u64> = files(&headers)
+            .iter()
+            .map(|file| Cursor(&file.extra[1..]).vint())
+            .collect();
+        assert_eq!(records, [ENCRYPTION_RECORD, ENCRYPTION_RECORD]);
+    }
+
+    fn volume_flags(volume: RarVolume) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
+        let options = RarOptions {
+            volume,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+        let split = files(&headers)
+            .iter()
+            .map(|file| file.flags & (CONTINUES_FROM_PREVIOUS_VOLUME | CONTINUES_IN_NEXT_VOLUME))
+            .collect();
+        let end = headers.last().unwrap();
+        assert_eq!(end.kind, END);
+        (headers[0].fields.clone(), split, end.fields.clone())
+    }
+
+    #[test]
+    fn writes_a_first_volume_whose_last_file_continues_in_the_next() {
+        let flags = volume_flags(RarVolume::First);
+
+        assert_eq!(
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME],
+                vec![0, CONTINUES_IN_NEXT_VOLUME],
+                vec![MORE_VOLUMES_FOLLOW]
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_numbered_middle_volume_whose_files_continue_at_both_ends() {
+        let flags = volume_flags(RarVolume::Middle);
+
+        assert_eq!(
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME | ARCHIVE_HAS_VOLUME_NUMBER, 1],
+                vec![CONTINUES_FROM_PREVIOUS_VOLUME, CONTINUES_IN_NEXT_VOLUME],
+                vec![MORE_VOLUMES_FOLLOW]
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_numbered_last_volume_whose_first_file_continues_from_the_previous() {
+        let flags = volume_flags(RarVolume::Last);
+
+        assert_eq!(
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME | ARCHIVE_HAS_VOLUME_NUMBER, 2],
+                vec![CONTINUES_FROM_PREVIOUS_VOLUME, 0],
+                vec![0]
+            )
+        );
+    }
+
+    #[test]
+    fn refuses_a_folder_holding_bytes() {
+        let entries = [entry("chapter/", b"bytes")];
+
+        let error = cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap_err();
+
+        assert!(
+            matches!(&error, FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
+            "{error:?}"
+        );
+    }
+
+    fn compression(compression_version: u8, dictionary_bytes: u64) -> RarOptions {
+        RarOptions {
+            format: RarFormat::Rar5 {
+                compression_version,
+                dictionary_bytes,
+            },
+            ..RarOptions::of(RarFormat::RAR5)
+        }
+    }
+
+    fn compression_information(options: &RarOptions) -> u64 {
+        files(&headers(&cbr(&pages(), options).unwrap()))[1].fields[4]
+    }
+
+    #[test]
+    fn writes_the_widest_compression_version_without_touching_the_solid_bit() {
+        let largest_version = 63;
+
+        let information = compression_information(&compression(largest_version, 128 * KIB));
+
+        assert_eq!(information & (0x3F | SOLID), 63);
+    }
+
+    #[test]
+    fn refuses_a_compression_version_wider_than_six_bits() {
+        let error = cbr(&pages(), &compression(64, 128 * KIB)).unwrap_err();
+
+        assert!(
+            matches!(error, FixtureError::RarCompressionVersion { version: 64 }),
+            "{error:?}"
+        );
+    }
+
+    #[test]
+    fn writes_the_largest_dictionary_the_field_encodes() {
+        let largest_dictionary = (128 * KIB) << 31;
+
+        let information = compression_information(&compression(0, largest_dictionary));
+
+        assert_eq!((information >> 10) & 0x1F, 31);
+    }
+
+    #[test]
+    fn refuses_a_dictionary_the_field_cannot_encode() {
+        let unencodable = [64 * KIB, 192 * KIB, (128 * KIB) << 32];
+
+        let refused: Vec<bool> = unencodable
+            .iter()
+            .map(|&bytes| {
+                matches!(
+                    cbr(&pages(), &compression(0, bytes)),
+                    Err(FixtureError::RarDictionary { bytes: refused }) if refused == bytes
+                )
+            })
+            .collect();
+
+        assert_eq!(refused, [true; 3]);
+    }
+
+    fn spec_header(fields: &[u8], data: &[u8]) -> Vec<u8> {
+        let checked = [&[u8::try_from(fields.len()).unwrap()][..], fields].concat();
+        [&crc32(&checked).to_le_bytes()[..], &checked, data].concat()
+    }
+
+    #[test]
+    fn lays_out_a_one_page_archive_byte_for_byte_as_the_spec_does() {
+        let (main, file, end) = (0x01, 0x02, 0x05);
+        let (no_flags, has_data, has_crc32) = (0x00, 0x02, 0x04);
+        let (archive_attribute, stored_in_128_kib, windows) = (0x20, 0x00, 0x00);
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(&[main, no_flags, no_flags], b""),
+            spec_header(
+                &[
+                    &[file, has_data, 1, has_crc32, 1, archive_attribute][..],
+                    &crc32(b"x").to_le_bytes(),
+                    &[stored_in_128_kib, windows, 1, b'a'],
+                ]
+                .concat(),
+                b"x",
+            ),
+            spec_header(&[end, no_flags, no_flags], b""),
+        ]
+        .concat();
+
+        let archive = cbr(&[entry("a", b"x")], &RarOptions::of(RarFormat::RAR5)).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_solid_middle_volume_of_encrypted_entries_as_the_spec_does() {
+        let (main, file, end) = (0x01, 0x02, 0x05);
+        let (no_flags, has_extra, has_data) = (0x00, 0x01, 0x02);
+        let (from_previous_volume, into_next_volume) = (0x08, 0x10);
+        let (volume, volume_number, solid_archive, more_volumes) = (0x01, 0x02, 0x04, 0x01);
+        let (directory, has_crc32) = (0x01, 0x04);
+        let (archive_attribute, directory_attribute, windows) = (0x20, 0x10, 0x00);
+        let normal_in_256_kib = [0x80, 0x0B];
+        let solid_normal_in_256_kib = [0xC0, 0x0B];
+        let encryption_record = [&[36, 0x01, 0x00, 0x00, 15][..], &[0; 16], &[0; 16]].concat();
+        let file_fields = |flags: u8, data: &[u8], compression: &[u8], name: &[u8]| {
+            [
+                &[file, flags, 37, 1, has_crc32, 1, archive_attribute][..],
+                &crc32(data).to_le_bytes(),
+                compression,
+                &[windows, 3],
+                name,
+                &encryption_record,
+            ]
+            .concat()
+        };
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(
+                &[main, no_flags, volume | volume_number | solid_archive, 1],
+                b"",
+            ),
+            spec_header(
+                &[
+                    file,
+                    no_flags,
+                    directory,
+                    0,
+                    directory_attribute,
+                    0,
+                    windows,
+                    1,
+                    b'd',
+                ],
+                b"",
+            ),
+            spec_header(
+                &file_fields(
+                    has_extra | has_data | from_previous_volume,
+                    b"x",
+                    &normal_in_256_kib,
+                    b"d/a",
+                ),
+                b"x",
+            ),
+            spec_header(
+                &file_fields(
+                    has_extra | has_data | into_next_volume,
+                    b"y",
+                    &solid_normal_in_256_kib,
+                    b"d/b",
+                ),
+                b"y",
+            ),
+            spec_header(&[end, no_flags, more_volumes], b""),
+        ]
+        .concat();
+        let options = RarOptions {
+            format: RarFormat::Rar5 {
+                compression_version: 0,
+                dictionary_bytes: 256 * KIB,
+            },
+            packing: Packing::Solid,
+            method: RarMethod::DeclaredCompressed,
+            encryption: RarEncryption::Entries,
+            volume: RarVolume::Middle,
+            declared_unpacked_size: None,
+        };
+        let entries = [entry("d/", b""), entry("d/a", b"x"), entry("d/b", b"y")];
+
+        let archive = cbr(&entries, &options).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+
+    #[test]
+    fn lays_out_a_first_volume_with_encrypted_headers_as_the_spec_does() {
+        let (main, file, encryption, end) = (0x01, 0x02, 0x04, 0x05);
+        let (no_flags, has_data, into_next_volume) = (0x00, 0x02, 0x10);
+        let (volume, more_volumes, has_crc32) = (0x01, 0x01, 0x04);
+        let (aes_256, kdf_count) = (0x00, 15);
+        let (archive_attribute, stored_in_128_kib, windows) = (0x20, 0x00, 0x00);
+        let expected = [
+            b"Rar!\x1a\x07\x01\x00".to_vec(),
+            spec_header(
+                &[
+                    &[encryption, no_flags, aes_256, no_flags, kdf_count][..],
+                    &[0; 16],
+                ]
+                .concat(),
+                b"",
+            ),
+            spec_header(&[main, no_flags, volume], b""),
+            spec_header(
+                &[
+                    &[
+                        file,
+                        has_data | into_next_volume,
+                        1,
+                        has_crc32,
+                        1,
+                        archive_attribute,
+                    ][..],
+                    &crc32(b"x").to_le_bytes(),
+                    &[stored_in_128_kib, windows, 1, b'a'],
+                ]
+                .concat(),
+                b"x",
+            ),
+            spec_header(&[end, no_flags, more_volumes], b""),
+        ]
+        .concat();
+        let options = RarOptions {
+            encryption: RarEncryption::Headers,
+            volume: RarVolume::First,
+            ..RarOptions::of(RarFormat::RAR5)
+        };
+
+        let archive = cbr(&[entry("a", b"x")], &options).unwrap();
+
+        assert_eq!(archive, expected);
+    }
+}

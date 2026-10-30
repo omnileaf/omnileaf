@@ -6,6 +6,7 @@ mod generated_library;
 mod header_only;
 mod library;
 mod page;
+mod rar;
 mod scratch_folder;
 mod speed_trial;
 mod strip;
@@ -27,6 +28,7 @@ pub use page::{
     DrawnScan, PageShape, full_chroma_scan_jpeg, incompressible_bytes, margined_scan_jpeg,
     page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
 };
+pub use rar::{RarEncryption, RarFormat, RarMethod, RarOptions, RarVolume, cbr};
 pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
 pub use strip::strip_jpeg;

@@ -16,4 +16,12 @@ pub enum FixtureError {
     Archive(#[from] zip::result::ZipError),
     #[error("build a 7z archive")]
     SevenZipArchive(#[from] sevenz_rust2::Error),
+    #[error("write a RAR 4 header longer than its 16-bit size field allows")]
+    RarHeaderTooLong,
+    #[error("write RAR5 compression version {version}, wider than its six bits")]
+    RarCompressionVersion { version: u8 },
+    #[error("write a RAR5 dictionary of {bytes} bytes, which its field can't encode")]
+    RarDictionary { bytes: u64 },
+    #[error("write RAR folder {name} holding bytes")]
+    RarFolderWithBytes { name: String },
 }
