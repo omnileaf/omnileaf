@@ -1,9 +1,8 @@
 use rusqlite::{Connection, ToSql};
 
 use super::{
-    rarest_trigrams::{WINDOW, rarest_trigrams},
+    spelling_candidates::{match_queries, read_window},
     spelling_slips::nearest_words,
-    spelling_trigrams::{any_trigram, typed_trigrams},
 };
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 
@@ -11,7 +10,7 @@ macro_rules! titles_of_shown_series_matching {
     () => {
         concat!(
             "series_fts
-            JOIN series ON series.local_id = series_fts.rowid
+            CROSS JOIN series ON series.local_id = series_fts.rowid
             WHERE series_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
             crate::adult_content::in_hidden_adult_series!("series")
         )
@@ -25,9 +24,9 @@ const MATCHES_UP_TO_COMMON: &str = concat!(
 );
 
 const CANDIDATES: &str = concat!(
-    "SELECT series.title FROM ",
+    "SELECT series.local_id, series.title FROM ",
     titles_of_shown_series_matching!(),
-    " LIMIT :limit"
+    " ORDER BY series_fts.rowid LIMIT :limit"
 );
 
 /// The words of a title nearest the text by a few typing slips, their letter case folded, for a search that found nothing.
@@ -38,35 +37,39 @@ pub fn closest_title_words(
     hiding: AdultHiding,
 ) -> Result<Option<String>, Error> {
     let typed = fold_case(text);
-    let trigrams = rarest_trigrams(
-        connection,
-        MATCHES_UP_TO_COMMON,
-        &typed_trigrams(&typed),
-        hiding,
-    )?;
-    if trigrams.is_empty() {
-        return Ok(None);
-    }
+    let queries = match_queries(connection, MATCHES_UP_TO_COMMON, &typed, hiding)?;
     let typed: Vec<char> = typed.chars().collect();
-    let [leaves_out, counts] = hiding.params();
-    let query = any_trigram(&trigrams);
-    let titles = connection
-        .prepare(CANDIDATES)?
-        .query_map(
-            &[
-                (":query", &query as &dyn ToSql),
-                (":limit", &WINDOW),
-                leaves_out,
-                counts,
-            ][..],
-            |row| row.get::<_, String>(0),
-        )?
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(titles
-        .iter()
-        .filter_map(|title| nearest_words(&typed, title))
-        .min_by_key(|(slips, _)| *slips)
+    Ok(candidates(connection, &queries, hiding)?
+        .into_iter()
+        .filter_map(|(series, title)| {
+            let (slips, words) = nearest_words(&typed, &title)?;
+            Some(((slips, series), words))
+        })
+        .min_by_key(|(nearness, _)| *nearness)
         .map(|(_, words)| words))
+}
+
+fn candidates(
+    connection: &Connection,
+    queries: &[String],
+    hiding: AdultHiding,
+) -> Result<Vec<(i64, String)>, Error> {
+    let [leaves_out, counts] = hiding.params();
+    let mut statement = connection.prepare(CANDIDATES)?;
+    read_window(queries, |query, limit| {
+        let rows = statement
+            .query_map(
+                &[
+                    (":query", &query as &dyn ToSql),
+                    (":limit", &limit),
+                    leaves_out,
+                    counts,
+                ][..],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })
 }
 
 #[cfg(test)]
@@ -75,7 +78,7 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
-    fn reads_the_candidates_from_the_title_index_unranked_then_each_series_by_its_key() {
+    fn reads_the_candidates_from_the_title_index_in_key_order_then_each_series_by_its_key() {
         let scratch = ScratchLibrary::new("closest-title-plan");
 
         let plan = scratch.query_plan(CANDIDATES);
@@ -83,7 +86,7 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SCAN series_fts VIRTUAL TABLE INDEX 0:M1",
+                "SCAN series_fts VIRTUAL TABLE INDEX 64:M1",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
             ]
         );

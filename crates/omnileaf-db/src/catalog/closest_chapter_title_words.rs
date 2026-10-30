@@ -1,9 +1,8 @@
 use rusqlite::{Connection, ToSql};
 
 use super::{
-    rarest_trigrams::{WINDOW, rarest_trigrams},
+    spelling_candidates::{match_queries, read_window},
     spelling_slips::nearest_words,
-    spelling_trigrams::{any_trigram, typed_trigrams},
 };
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 
@@ -11,9 +10,9 @@ macro_rules! titles_of_shown_books_matching {
     () => {
         concat!(
             "book_title_fts
-            JOIN book_title_search ON book_title_search.id = book_title_fts.rowid
-            JOIN book ON book.id = book_title_search.book_id
-            JOIN series ON series.local_id = book.series_local_id
+            CROSS JOIN book_title_search ON book_title_search.id = book_title_fts.rowid
+            CROSS JOIN book ON book.id = book_title_search.book_id
+            CROSS JOIN series ON series.local_id = book.series_local_id
             WHERE book_title_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
             crate::adult_content::in_hidden_adult_series!("series")
         )
@@ -27,9 +26,9 @@ const MATCHES_UP_TO_COMMON: &str = concat!(
 );
 
 const CANDIDATES: &str = concat!(
-    "SELECT book_title_search.title, series.title FROM ",
+    "SELECT book_title_search.id, book_title_search.title, series.title FROM ",
     titles_of_shown_books_matching!(),
-    " LIMIT :limit"
+    " ORDER BY book_title_fts.rowid LIMIT :limit"
 );
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -45,52 +44,45 @@ pub fn closest_chapter_title(
     hiding: AdultHiding,
 ) -> Result<Option<ChapterSuggestion>, Error> {
     let typed = fold_case(text);
-    let trigrams = rarest_trigrams(
-        connection,
-        MATCHES_UP_TO_COMMON,
-        &typed_trigrams(&typed),
-        hiding,
-    )?;
-    if trigrams.is_empty() {
-        return Ok(None);
-    }
+    let queries = match_queries(connection, MATCHES_UP_TO_COMMON, &typed, hiding)?;
     let typed: Vec<char> = typed.chars().collect();
-    Ok(candidates(connection, &trigrams, hiding)?
+    Ok(candidates(connection, &queries, hiding)?
         .into_iter()
-        .filter_map(|(chapter_title, series_title)| {
+        .filter_map(|(book, chapter_title, series_title)| {
             let (slips, chapter_words) = nearest_words(&typed, &chapter_title)?;
             Some((
-                slips,
+                (slips, book),
                 ChapterSuggestion {
                     chapter_words,
                     series_title,
                 },
             ))
         })
-        .min_by_key(|(slips, _)| *slips)
+        .min_by_key(|(nearness, _)| *nearness)
         .map(|(_, suggestion)| suggestion))
 }
 
 fn candidates(
     connection: &Connection,
-    trigrams: &[String],
+    queries: &[String],
     hiding: AdultHiding,
-) -> Result<Vec<(String, String)>, Error> {
+) -> Result<Vec<(i64, String, String)>, Error> {
     let [leaves_out, counts] = hiding.params();
-    let query = any_trigram(trigrams);
-    let rows = connection
-        .prepare(CANDIDATES)?
-        .query_map(
-            &[
-                (":query", &query as &dyn ToSql),
-                (":limit", &WINDOW),
-                leaves_out,
-                counts,
-            ][..],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )?
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(rows)
+    let mut statement = connection.prepare(CANDIDATES)?;
+    read_window(queries, |query, limit| {
+        let rows = statement
+            .query_map(
+                &[
+                    (":query", &query as &dyn ToSql),
+                    (":limit", &limit),
+                    leaves_out,
+                    counts,
+                ][..],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })
 }
 
 #[cfg(test)]
@@ -118,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn reads_the_candidates_from_the_title_index_then_each_book_by_its_key() {
+    fn reads_the_candidates_from_the_title_index_in_key_order_then_each_book_by_its_key() {
         let scratch = ScratchLibrary::new("chapter-title-candidates-plan");
 
         let plan = scratch.query_plan(CANDIDATES);
@@ -126,7 +118,7 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SCAN book_title_fts VIRTUAL TABLE INDEX 0:M1",
+                "SCAN book_title_fts VIRTUAL TABLE INDEX 64:M1",
                 "SEARCH book_title_search USING INTEGER PRIMARY KEY (rowid=?)",
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",

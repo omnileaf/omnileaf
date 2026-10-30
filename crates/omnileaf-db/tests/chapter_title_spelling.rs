@@ -33,6 +33,7 @@ const MARKED_SERIES: &str = "Marked Imprint";
 const LOST_SERIES: &str = "Lost Imprint";
 const PAGES_PER_BOOK: u32 = 10;
 const MORE_BOOKS_THAN_THE_WINDOW_HOLDS: u32 = 300;
+const CROWD_PER_TRIGRAM: u32 = 60;
 const HIDING: AdultHiding = AdultHiding {
     leaves_out_adult: true,
     counts_age_ratings: true,
@@ -510,4 +511,83 @@ async fn suggests_a_distinctive_title_although_a_common_trigram_matches_more_tit
     let suggestion = library.suggestion("harbr gate").await;
 
     assert_eq!(suggestion, Some(suggested("harbor gate", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_a_word_found_in_more_titles_than_the_window_holds_although_a_rarer_trigram_matches_another_title()
+ {
+    let library = Library::open("chapter-spelling-common-and-rare").await;
+    let mut samples = vec![SampleBook::titled(1, "Holmes")];
+    samples.extend(
+        (1..=MORE_BOOKS_THAN_THE_WINDOW_HOLDS)
+            .map(|number| SampleBook::titled(number + 1, &format!("Volume {number:03}"))),
+    );
+    library.record_all(library.root, samples).await;
+
+    let suggestion = library.suggestion("volmue").await;
+
+    assert_eq!(suggestion, Some(suggested("volume", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_the_title_holding_two_of_the_trigrams_typed_although_crowds_of_titles_hold_one_each()
+ {
+    let library = Library::open("chapter-spelling-crowded-trigrams").await;
+    let mut titles: Vec<String> = ["har", "arb", "rbu", "buo", "uor"]
+        .iter()
+        .flat_map(|trigram| {
+            (1..=CROWD_PER_TRIGRAM).map(move |number| format!("{trigram} Zone {number:02}"))
+        })
+        .collect();
+    titles.push("Harbour".to_owned());
+    let samples = (1..)
+        .zip(&titles)
+        .map(|(number, title)| SampleBook::titled(number, title))
+        .collect();
+    library.record_all(library.root, samples).await;
+
+    let suggestion = library.suggestion("harbuor").await;
+
+    assert_eq!(suggestion, Some(suggested("harbour", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_a_title_within_three_slips_of_a_long_text_although_other_titles_hold_its_rarer_trigrams()
+ {
+    let library = Library::open("chapter-spelling-long-text").await;
+    for (number, title) in (1..).zip([
+        "The Lantern Keeper",
+        "Htjelantern Keeper",
+        "Th Elxnter Nkeeper",
+        "The Lantenr Keeepr",
+    ]) {
+        library.record(SampleBook::titled(number, title)).await;
+    }
+
+    let suggestion = library.suggestion("the lanter nkereer").await;
+
+    assert_eq!(suggestion, Some(suggested("the lantern keeper", SERIES)));
+}
+
+#[tokio::test]
+async fn suggests_the_title_added_first_among_equally_near_ones() {
+    let added_first = Library::open("chapter-spelling-tie-first").await;
+    added_first.record(SampleBook::titled(1, "Lantrenx")).await;
+    added_first.record(SampleBook::titled(2, "Lantern")).await;
+    let added_second = Library::open("chapter-spelling-tie-second").await;
+    added_second.record(SampleBook::titled(1, "Lantern")).await;
+    added_second.record(SampleBook::titled(2, "Lantrenx")).await;
+
+    let suggestions = (
+        added_first.suggestion("lantren").await,
+        added_second.suggestion("lantren").await,
+    );
+
+    assert_eq!(
+        suggestions,
+        (
+            Some(suggested("lantrenx", SERIES)),
+            Some(suggested("lantern", SERIES))
+        )
+    );
 }

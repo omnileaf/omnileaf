@@ -1,24 +1,25 @@
-const TRIGRAM_CHARS: usize = 3;
+pub(super) const TRIGRAM_CHARS: usize = 3;
 
 pub(super) fn typed_trigrams(typed: &str) -> Vec<String> {
     let chars: Vec<char> = typed.chars().collect();
-    let mut trigrams: Vec<String> = chars
-        .windows(TRIGRAM_CHARS)
-        .map(|trigram| trigram.iter().collect())
-        .collect();
-    trigrams.sort_unstable();
-    trigrams.dedup();
+    let mut trigrams: Vec<String> = Vec::new();
+    for window in chars.windows(TRIGRAM_CHARS) {
+        let trigram: String = window.iter().collect();
+        if !trigrams.contains(&trigram) {
+            trigrams.push(trigram);
+        }
+    }
     trigrams
 }
 
-pub(super) fn quoted(trigram: &str) -> String {
-    format!("\"{}\"", trigram.replace('"', "\"\""))
+pub(super) fn quoted(text: &str) -> String {
+    format!("\"{}\"", text.replace('"', "\"\""))
 }
 
-pub(super) fn any_trigram(trigrams: &[String]) -> String {
-    trigrams
+pub(super) fn any_of(texts: &[String]) -> String {
+    texts
         .iter()
-        .map(|trigram| quoted(trigram))
+        .map(|text| quoted(text))
         .collect::<Vec<_>>()
         .join(" OR ")
 }
