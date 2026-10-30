@@ -7,6 +7,8 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import DisplayChoice from "./DisplayChoice.svelte";
 
 const DESKTOP = { width: 1280, height: 800 };
@@ -57,10 +59,8 @@ for (const theme of ["light", "dark"] as const) {
     ]).toEqual([
       INDICATOR.height,
       INDICATOR.width,
-      theme === "light" ? "rgb(47, 111, 79)" : "rgb(127, 203, 157)",
-      theme === "light"
-        ? "rgba(255, 255, 255, 0.7)"
-        : "rgba(255, 255, 255, 0.06)",
+      resolvedColour("--native-color-button-primary", "backgroundColor"),
+      resolvedColour("--native-color-segment-selected", "backgroundColor"),
       "rgba(0, 0, 0, 0)",
     ]);
   });

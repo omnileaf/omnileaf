@@ -8,12 +8,15 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
+import {
+  COMMAND_BUTTON as COMMAND,
+  TITLE_TYPE,
+} from "../../../tests/components/windows-metrics";
 
 import LibrarySelectionHeader from "./LibrarySelectionHeader.svelte";
 import { selectionActions } from "./selection-actions.ts";
 
 const DESKTOP = { width: 1280, height: 800 };
-const COMMAND = { width: 68, height: 64 };
 
 function renderHeader(platform: Platform, count = 2) {
   const onSelectAll = vi.fn();
@@ -81,9 +84,9 @@ test("sets the selected count as the page's 28 over 36 semibold Title", () => {
   const style = getComputedStyle(page.getByText("2 selected").element());
 
   expect([style.fontSize, style.lineHeight, style.fontWeight]).toEqual([
-    "28px",
-    "36px",
-    "600",
+    TITLE_TYPE.size,
+    TITLE_TYPE.leading,
+    TITLE_TYPE.weight,
   ]);
 });
 
