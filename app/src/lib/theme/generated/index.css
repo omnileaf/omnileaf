@@ -143,6 +143,13 @@
   --font-weight-native-bar-button: var(--native-weight-bar-button);
   --font-weight-native-bar-title: var(--native-weight-bar-title);
   --tracking-native-bar-title: var(--native-tracking-bar-title);
+  --text-native-title-bar-title: var(--native-text-title-bar-title);
+  --leading-native-title-bar-title: var(--native-leading-title-bar-title);
+  --font-weight-native-title-bar-title: var(--native-weight-title-bar-title);
+  --tracking-native-title-bar-title: var(--native-tracking-title-bar-title);
+  --text-native-title-bar-status: var(--native-text-title-bar-status);
+  --leading-native-title-bar-status: var(--native-leading-title-bar-status);
+  --font-weight-native-title-bar-status: var(--native-weight-title-bar-status);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
   --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
   --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);

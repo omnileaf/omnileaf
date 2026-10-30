@@ -138,6 +138,13 @@
   --native-weight-bar-button: var(--font-weight-medium);
   --native-weight-bar-title: var(--font-weight-semibold);
   --native-tracking-bar-title: 0;
+  --native-text-title-bar-title: var(--text-body);
+  --native-leading-title-bar-title: var(--text-body--line-height);
+  --native-weight-title-bar-title: var(--font-weight-bold);
+  --native-tracking-title-bar-title: 0;
+  --native-text-title-bar-status: var(--text-small);
+  --native-leading-title-bar-status: var(--text-small--line-height);
+  --native-weight-title-bar-status: var(--font-weight-medium);
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;
