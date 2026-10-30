@@ -33,6 +33,7 @@ jobs:
       native: ${{ steps.areas.outputs.native }}
       app: ${{ steps.areas.outputs.app }}
       site: ${{ steps.areas.outputs.site }}
+      vendor: ${{ steps.areas.outputs.vendor }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -150,6 +151,8 @@ jobs:
 
   portable:
     name: portable gate
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -170,6 +173,10 @@ jobs:
 
       - name: Run the gate
         run: cargo xtask check --only portable
+
+      - name: Compare the vendored sources with their upstream tarball
+        if: needs.changes.outputs.vendor != 'false'
+        run: cargo xtask vendor-check --upstream
 
   coverage:
     name: coverage

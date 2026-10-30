@@ -330,6 +330,12 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["xtask", "licences", "--check"],
     },
     Step {
+        name: "vendored sources",
+        group: Group::Portable,
+        program: "cargo",
+        args: &["xtask", "vendor-check"],
+    },
+    Step {
         name: "sync rules",
         group: Group::Portable,
         program: "cargo",
@@ -727,6 +733,7 @@ mod tests {
                 "dependencies",
                 "policy",
                 "licences",
+                "vendored sources",
                 "sync rules",
                 "comment rules",
             ]

@@ -15,7 +15,13 @@ const ALWAYS: &[&str] = &[
 ];
 const RUST_LICENCES: &str = "licences";
 const INTERFACE_BUILD: &str = "interface build";
-const RUST_LICENCE_INPUTS: &[&str] = &["Cargo.lock", "Cargo.toml", "about.toml"];
+const RUST_LICENCE_INPUTS: &[&str] = &[
+    "Cargo.lock",
+    "Cargo.toml",
+    "about.toml",
+    "COPYING",
+    "NOTICE",
+];
 const INTERFACE_DEPENDENCY_INPUTS: &[&str] =
     &["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"];
 
@@ -249,6 +255,21 @@ mod tests {
                 "comment rules"
             ]
         );
+    }
+
+    #[test]
+    fn checks_the_rust_licences_when_a_vendored_licence_notice_changes() {
+        let pushes = [
+            "vendor/libarchive-3.8.10/COPYING",
+            "vendor/libarchive-3.8.10/NOTICE",
+        ];
+
+        let checked: Vec<bool> = pushes
+            .iter()
+            .map(|path| names(Some(&[path])).contains(&"licences"))
+            .collect();
+
+        assert_eq!(checked, [true, true]);
     }
 
     #[test]

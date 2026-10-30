@@ -90,6 +90,7 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
 - `cargo xtask licences --check`, the licence catalogue check below;
+- `cargo xtask vendor-check`, which checks offline that every file under `vendor/` sits in the pinned libarchive folder and matches its `MANIFEST` hash, so vendored files are never edited by hand; CI also runs `cargo xtask vendor-check --upstream`, which downloads the pinned tarball and compares the files with it, on `main` and whenever `vendor/` changes;
 - `cargo xtask lint-sync`, which checks how synced state is written;
 - `cargo xtask lint-comments`, which checks the comments in the code.
 
@@ -150,11 +151,11 @@ CI measures test coverage and shows it in the `coverage` job's summary. Line cov
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;
 - none of the phrases in `policy/forbidden-phrases.txt`.
 
-The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word. Adding an entry to one of those lists is reviewed like any other change.
+The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word, and the third-party sources under `vendor/`. Adding an entry to one of those lists is reviewed like any other change.
 
 ### Licences
 
-Settings › About › Open-source licences lists every package the app ships, from two generated files in `app/src/lib/licences`. `rust.json` comes from [cargo-about](https://github.com/EmbarkStudios/cargo-about), configured in `about.toml`, for the crates the app depends on across its platforms. `javascript.json` comes from the packages that end up in the interface's bundle. `cargo xtask licences --check` fails when `rust.json` is out of date and the interface build fails when `javascript.json` is, so after changing a dependency run `cargo xtask licences`, which needs `cargo install --locked cargo-about@0.9.2`, and commit both files. Keep the licences `about.toml` accepts in step with the ones `deny.toml` allows.
+Settings › About › Open-source licences lists every package the app ships, from two generated files in `app/src/lib/licences`. `rust.json` comes from [cargo-about](https://github.com/EmbarkStudios/cargo-about), configured in `about.toml`, for the crates the app depends on across its platforms. `javascript.json` comes from the packages that end up in the interface's bundle. `cargo xtask licences --check` fails when `rust.json` is out of date and the interface build fails when `javascript.json` is, so after changing a dependency run `cargo xtask licences`, which needs `cargo install --locked cargo-about@0.9.2`, and commit both files. The vendored libarchive is not a crate, so `xtask/src/licence_catalogue.rs` adds its entry from `vendor/libarchive-3.8.10/COPYING` and the `NOTICE` beside it, which gathers the copyright holders and the extra licences of the vendored files. Keep the licences `about.toml` accepts in step with the ones `deny.toml` allows.
 
 ### Fuzzing
 

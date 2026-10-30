@@ -21,3 +21,5 @@
 *.epub binary
 *.pdf binary
 *.wasm binary
+
+vendor/** -text

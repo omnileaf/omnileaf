@@ -6,6 +6,29 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::vendor::LIBARCHIVE_VERSION;
+
+const LIBARCHIVE_LICENCE: &str =
+    "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0 AND Unicode-3.0";
+const LIBARCHIVE_TEXTS: &[(&str, &str)] = &[
+    (
+        "COPYING",
+        include_str!(concat!(
+            "../../vendor/libarchive-",
+            libarchive_version!(),
+            "/COPYING"
+        )),
+    ),
+    (
+        "NOTICE",
+        include_str!(concat!(
+            "../../vendor/libarchive-",
+            libarchive_version!(),
+            "/NOTICE"
+        )),
+    ),
+];
+
 #[derive(Deserialize)]
 struct AboutReport {
     licenses: Vec<AboutLicence>,
@@ -122,6 +145,23 @@ pub(crate) fn catalogue(report: &str) -> Result<Catalogue, CatalogueError> {
     Ok(Catalogue { packages, texts })
 }
 
+pub(crate) fn with_vendored_notices(mut catalogue: Catalogue) -> Catalogue {
+    let texts = LIBARCHIVE_TEXTS
+        .iter()
+        .map(|(name, text)| index_of(&mut catalogue.texts, (*name).to_owned(), text))
+        .collect();
+    catalogue.packages.push(Package {
+        name: "libarchive".to_owned(),
+        version: LIBARCHIVE_VERSION.to_owned(),
+        licence: LIBARCHIVE_LICENCE.to_owned(),
+        texts,
+    });
+    catalogue
+        .packages
+        .sort_by(|a, b| (&a.name, &a.version).cmp(&(&b.name, &b.version)));
+    catalogue
+}
+
 fn index_of(texts: &mut Vec<LicenceText>, licence: String, text: &str) -> usize {
     let text = text.replace("\r\n", "\n");
     if let Some(index) = texts.iter().position(|known| known.text == text) {
@@ -136,7 +176,9 @@ mod tests {
     use proptest::prelude::*;
     use serde_json::{Value, json};
 
-    use super::{Catalogue, CatalogueError, LicenceText, Package, catalogue};
+    use super::{
+        Catalogue, CatalogueError, LicenceText, Package, catalogue, with_vendored_notices,
+    };
 
     fn package(name: &str, version: &str, license: Option<&str>) -> Value {
         json!({ "name": name, "version": version, "license": license })
@@ -297,6 +339,86 @@ mod tests {
         let result = catalogue("{\"licenses\": 3}");
 
         assert!(matches!(result, Err(CatalogueError::Unreadable(_))));
+    }
+
+    fn catalogue_of(names: &[&str]) -> Catalogue {
+        Catalogue {
+            packages: names
+                .iter()
+                .map(|name| sample_package(name, "MIT", &[0]))
+                .collect(),
+            texts: vec![LicenceText {
+                licence: "MIT".to_owned(),
+                text: "MIT text".to_owned(),
+            }],
+        }
+    }
+
+    #[test]
+    fn lists_libarchive_under_every_licence_its_vendored_files_carry() {
+        let catalogue = with_vendored_notices(catalogue_of(&["sample-alpha"]));
+
+        let libarchive = catalogue
+            .packages
+            .iter()
+            .find(|package| package.name == "libarchive")
+            .unwrap();
+        assert_eq!(libarchive.version, "3.8.10");
+        assert_eq!(
+            libarchive.licence,
+            "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0 AND Unicode-3.0"
+        );
+    }
+
+    #[test]
+    fn gives_libarchive_its_copying_file_and_the_notice_of_every_holder() {
+        let catalogue = with_vendored_notices(catalogue_of(&["sample-alpha"]));
+
+        let libarchive = catalogue
+            .packages
+            .iter()
+            .find(|package| package.name == "libarchive")
+            .unwrap();
+        let texts: Vec<&LicenceText> = libarchive
+            .texts
+            .iter()
+            .map(|index| &catalogue.texts[*index])
+            .collect();
+        let names: Vec<&str> = texts.iter().map(|text| text.licence.as_str()).collect();
+        assert_eq!(names, ["COPYING", "NOTICE"]);
+        for holder in [
+            "Tim Kientzle",
+            "Martin Matuska",
+            "Michihiro NAKAJIMA",
+            "Joerg Sonnenberger",
+            "Andres Mejia",
+            "Grzegorz Antoniak",
+            "Thomas Moestl",
+            "Tobias Stoeckmann",
+            "ARJANEN",
+            "Kees Zeelenberg",
+            "The Regents of the University of California",
+            "Damien Miller",
+            "PostgreSQL Global Development Group",
+            "Samuel Neves",
+            "Igor Pavlov",
+            "Unicode, Inc.",
+        ] {
+            assert!(texts[1].text.contains(holder), "{holder}");
+        }
+    }
+
+    #[test]
+    fn keeps_the_crates_texts_and_sorts_libarchive_among_them() {
+        let catalogue = with_vendored_notices(catalogue_of(&["sample-alpha", "aardvark"]));
+
+        let names: Vec<&str> = catalogue
+            .packages
+            .iter()
+            .map(|package| package.name.as_str())
+            .collect();
+        assert_eq!(names, ["aardvark", "libarchive", "sample-alpha"]);
+        assert_eq!(catalogue.texts[0].text, "MIT text");
     }
 
     proptest! {
