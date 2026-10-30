@@ -493,7 +493,7 @@ for (const { platform, weight, token, isTouch } of [
   {
     platform: "android",
     weight: "500",
-    token: "--color-accent",
+    token: "--native-color-on-button-plain",
     isTouch: true,
   },
   {
