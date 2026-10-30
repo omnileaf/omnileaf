@@ -3,6 +3,14 @@
   import { Toggle } from "bits-ui";
   import type { Snippet } from "svelte";
 
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
+
+  import {
+    ANDROID_FILTER_CHIP,
+    FILTER_SETTING_LABEL_TYPE,
+  } from "./filter-sheet-look";
+
   interface ToggleOption {
     readonly value: Value;
     readonly label: string;
@@ -25,10 +33,26 @@
   } = $props();
 
   const id = $props.id();
+  const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(currentPlatform(), width.current) === "android",
+  );
 </script>
 
-<div class="flex flex-col gap-sm py-setting-grid-pad">
-  <p {id} class="text-small font-medium">{label}</p>
+<div
+  class={[
+    "flex flex-col gap-sm py-setting-grid-pad",
+    isAndroidPhone && "ps-lg pe-xl",
+  ]}
+>
+  <p
+    {id}
+    class={isAndroidPhone
+      ? FILTER_SETTING_LABEL_TYPE
+      : "text-small font-medium"}
+  >
+    {label}
+  </p>
   <div role="group" aria-labelledby={id} class="flex flex-wrap gap-sm">
     {#each options as option (option.value)}
       {@const isChosen = chosen.includes(option.value)}
@@ -39,12 +63,17 @@
             onToggle(option.value);
           }
         }
-        class={[
-          "flex shrink-0 items-center gap-xs rounded-control border px-md text-small font-medium whitespace-nowrap block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:block-native-segment touch:touch-target-around",
-          isChosen
-            ? "border-transparent bg-chip ios:max-medium:bg-native-accent-soft ios:max-medium:font-semibold ios:max-medium:text-foreground"
-            : "border-border bg-card hover:bg-hover ios:max-medium:bg-native-button-outline ios:max-medium:hover:bg-native-button-outline",
-        ]}
+        class={isAndroidPhone
+          ? [
+              ANDROID_FILTER_CHIP.chip,
+              isChosen ? ANDROID_FILTER_CHIP.chosen : ANDROID_FILTER_CHIP.other,
+            ]
+          : [
+              "flex shrink-0 items-center gap-xs rounded-control border px-md text-small font-medium whitespace-nowrap block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:block-native-segment touch:touch-target-around",
+              isChosen
+                ? "border-transparent bg-chip ios:max-medium:bg-native-accent-soft ios:max-medium:font-semibold ios:max-medium:text-foreground"
+                : "border-border bg-card hover:bg-hover ios:max-medium:bg-native-button-outline ios:max-medium:hover:bg-native-button-outline",
+            ]}
       >
         {#if isChosen}
           <Check size={CHECK_SIZE} aria-hidden="true" />
