@@ -41,6 +41,8 @@ pub enum FormatError {
         path: PathBuf,
         source: sevenz_rust2::Error,
     },
+    #[error("{} is damaged: {message}", path.display())]
+    CorruptRar { path: PathBuf, message: String },
     #[error("{} is password-protected, which this app can't open", path.display())]
     Encrypted { path: PathBuf },
     #[error("the index of {} is larger than the {limit} bytes allowed", path.display())]
@@ -49,6 +51,10 @@ pub enum FormatError {
     UnsupportedCompression { path: PathBuf, method: String },
     #[error("{} needs a decoding dictionary larger than the {limit} bytes allowed", path.display())]
     DictionaryTooLarge { path: PathBuf, limit: u64 },
+    #[error("{} is one part of a multi-volume archive, which this app can't open", path.display())]
+    MultiVolume { path: PathBuf },
+    #[error("{} has an entry name longer than the {limit} characters allowed", path.display())]
+    NameTooLong { path: PathBuf, limit: usize },
     #[error("{} has no pages", path.display())]
     NoPages { path: PathBuf },
     #[error("{} has {count} entries, more than the {limit} allowed", path.display())]
