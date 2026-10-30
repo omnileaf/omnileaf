@@ -9,7 +9,7 @@ import {
 
 const PREFERENCE_KEY = "omnileaf.colours";
 
-const COLOURS_CHOICES = ["omnileaf", "wallpaper"] as const;
+export const COLOURS_CHOICES = ["omnileaf", "wallpaper"] as const;
 
 export type ColoursChoice = (typeof COLOURS_CHOICES)[number];
 
