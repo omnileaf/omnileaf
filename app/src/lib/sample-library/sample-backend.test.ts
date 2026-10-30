@@ -2461,3 +2461,52 @@ test("suggests no chapter title of an adult series while screenshot mode is on, 
     null,
   ]);
 });
+
+const LIGHTHOUSE_SERIES = "the lighthouse";
+const MANGA_FORMAT = { formats: ["manga"] } satisfies Partial<LibraryFilter>;
+
+async function searchedSeries(
+  backend: FakeBackend,
+  text: string,
+  formats: LibraryFilter["formats"],
+) {
+  const search = { text, filter: { ...EVERY_SERIES, formats } };
+  const page = await backend.librarySearch(null, search);
+  return {
+    titles: page.series.map((series) => series.title).toSorted(),
+    count: await backend.librarySearchCount(search),
+  };
+}
+
+test("finds no series by text for the Book format, as the library holds none of that format yet", async () => {
+  const { backend } = backendFor();
+
+  expect(await searchedSeries(backend, LIGHTHOUSE_SERIES, ["book"])).toEqual({
+    titles: [],
+    count: 0,
+  });
+});
+
+test("finds a series by text for the Comic format when it holds no manga", async () => {
+  const { backend } = backendFor();
+
+  expect(await searchedSeries(backend, LIGHTHOUSE_SERIES, ["comic"])).toEqual({
+    titles: [LONG_TITLE],
+    count: 1,
+  });
+});
+
+test("finds only the series holding manga by text for the Manga format, whatever Book is chosen beside it", async () => {
+  const { backend } = backendFor();
+  const manga = (await titlesFor(MANGA_FORMAT)).toSorted();
+
+  expect([
+    await searchedSeries(backend, "sample series", ["manga"]),
+    await searchedSeries(backend, "sample series", ["manga", "book"]),
+    await searchedSeries(backend, LIGHTHOUSE_SERIES, ["manga"]),
+  ]).toEqual([
+    { titles: manga, count: manga.length },
+    { titles: manga, count: manga.length },
+    { titles: [], count: 0 },
+  ]);
+});

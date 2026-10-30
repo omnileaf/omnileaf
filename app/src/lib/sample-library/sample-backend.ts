@@ -721,6 +721,12 @@ export function sampleBackend(
     hidesAdult,
     isOutOfReach,
   };
+  const passesTextSearch = (
+    series: SampleSeries,
+    filter: LibraryFilter,
+  ): boolean =>
+    holdsFormats(filter.formats, series) &&
+    passes(series, { ...filter, formats: [] }, facts);
 
   function missingFolderOf(kind: Exclude<MissingKind, "none">) {
     const { name, location } = MISSING_FOLDERS[kind];
@@ -1619,8 +1625,13 @@ export function sampleBackend(
     librarySearch: async (after, search) => {
       await libraryReady();
       const text = search.text.trim().toLocaleLowerCase();
-      const found = sorted({ ...listing, filter: search.filter }).filter(
-        (series) => titleOf(series).toLocaleLowerCase().includes(text),
+      const found = sorted({
+        ...listing,
+        filter: { ...search.filter, formats: [] },
+      }).filter(
+        (series) =>
+          holdsFormats(search.filter.formats, series) &&
+          titleOf(series).toLocaleLowerCase().includes(text),
       );
       const page = pageOf(found, after);
       return { series: page.items.map(wireSeries), next: page.next };
@@ -1658,12 +1669,7 @@ export function sampleBackend(
         return { hits: [], next: null, count: 0 };
       }
       const found = shownLibrary()
-        .filter(
-          (series) =>
-            hasBooksToFind(series) &&
-            holdsFormats(search.filter.formats, series) &&
-            passes(series, { ...search.filter, formats: [] }, facts),
-        )
+        .filter((series) => passesTextSearch(series, search.filter))
         .flatMap((series) =>
           booksOf(series).flatMap((book, index) =>
             phrases.every((phrase) =>
@@ -1681,7 +1687,7 @@ export function sampleBackend(
       const text = search.text.trim().toLocaleLowerCase();
       return library.filter(
         (series) =>
-          passes(series, search.filter, facts) &&
+          passesTextSearch(series, search.filter) &&
           titleOf(series).toLocaleLowerCase().includes(text),
       ).length;
     },
