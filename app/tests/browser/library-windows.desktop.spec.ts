@@ -11,7 +11,13 @@ import {
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
-const LIBRARY = sampleSeries(14);
+const LIBRARY = sampleSeries(14).map((series, index) => ({
+  ...series,
+  language: index % 2 === 0 ? "en" : null,
+  hasDownloads: index % 3 === 0,
+}));
+const FIRST_TITLE = LIBRARY[0]?.title ?? "";
+const SECOND_TITLE = LIBRARY[1]?.title ?? "";
 const COMMAND_WIDTH = 68;
 const COMMAND_HEIGHT = 64;
 const PAGE_MARGIN = 24;
@@ -41,7 +47,7 @@ async function openLibrary(page: Page): Promise<void> {
   await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
 }
 
-test.describe("Windows library header", () => {
+test.describe("Windows library", () => {
   testOnlyInItsWebview("windows");
   test.use({
     backend: {
@@ -160,5 +166,138 @@ test.describe("Windows library header", () => {
     );
     expect(layer).toBe(highlight);
     expect(ink).toBe(highlightText);
+  });
+
+  test.describe("tiles", () => {
+    test.beforeEach(async ({ page }) => {
+      await openLibrary(page);
+    });
+
+    function cell(page: Page, title: string): Locator {
+      return page
+        .getByRole("list", { name: "Series" })
+        .getByRole("listitem")
+        .filter({ hasText: title });
+    }
+
+    function edge(link: Locator): Promise<string> {
+      return link.evaluate(
+        (element) => getComputedStyle(element, "::before").borderTopColor,
+      );
+    }
+
+    test("reveals a check box on hover where the language and download tags sit, and lifts the tags off it", async ({
+      page,
+    }) => {
+      const first = cell(page, FIRST_TITLE);
+      const check = first.getByRole("checkbox", {
+        name: `Select ${FIRST_TITLE}`,
+      });
+      const tags = first.locator('[data-slot="cover-tags"]');
+      await expect(check).toHaveCSS("opacity", "0");
+      await expect(tags).toHaveCSS("opacity", "1");
+
+      await first.hover();
+
+      await expect(check).toHaveCSS("opacity", "1");
+      await expect(tags).toHaveCSS("opacity", "0");
+      const checkBox = await boxOf(check);
+      expect([checkBox.width, checkBox.height]).toEqual([20, 20]);
+    });
+
+    test("starts selecting from the check box and rings the picked tile's edge in the accent", async ({
+      page,
+    }) => {
+      const first = cell(page, FIRST_TITLE);
+      await first.hover();
+
+      await first
+        .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
+        .click();
+
+      await expect(
+        page
+          .getByRole("group", { name: "Selected series" })
+          .getByText("1 selected"),
+      ).toBeVisible();
+      const link = first.locator("[data-pickable-link]");
+      await expect(link).toHaveAttribute("aria-checked", "true");
+      await settle(link);
+      expect(await edge(link)).toBe("rgb(47, 111, 79)");
+      expect(
+        await edge(cell(page, SECOND_TITLE).locator("[data-pickable-link]")),
+      ).toBe("rgba(0, 0, 0, 0)");
+    });
+
+    test("rings a tile reached by the keyboard twice, an outer 2 and an inner 1", async ({
+      page,
+    }) => {
+      const link = cell(page, FIRST_TITLE).locator("[data-pickable-link]");
+
+      await link.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+
+      await expect(link).toBeFocused();
+      const [width, shadow] = await link.evaluate((element) => {
+        const ring = getComputedStyle(element, "::before");
+        return [ring.outlineWidth, ring.boxShadow];
+      });
+      expect(width).toBe("2px");
+      expect(shadow).not.toBe("none");
+    });
+
+    test("lights a hovered tile at once when the person asks for less motion", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      const link = cell(page, SECOND_TITLE).locator("[data-pickable-link]");
+
+      await link.hover();
+
+      const [duration, fill] = await link.evaluate((element) => {
+        const box = getComputedStyle(element, "::before");
+        return [box.transitionDuration, box.backgroundColor];
+      });
+      expect(duration).toBe("0s");
+      expect(fill).not.toBe("rgba(0, 0, 0, 0)");
+    });
+
+    test("has no accessibility violations at rest, hovered and selecting", async ({
+      page,
+    }) => {
+      expect(await accessibilityViolations(page)).toEqual([]);
+
+      await cell(page, FIRST_TITLE).hover();
+      expect(await accessibilityViolations(page)).toEqual([]);
+
+      await cell(page, FIRST_TITLE)
+        .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
+        .click();
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+
+    test("draws a picked tile's edge in Highlight under forced colours", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ forcedColors: "active" });
+      const first = cell(page, FIRST_TITLE);
+      await first.hover();
+      await first
+        .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
+        .click();
+      const link = first.locator("[data-pickable-link]");
+      await settle(link);
+
+      const [drawn, highlight] = await link.evaluate((element) => {
+        const probe = document.createElement("div");
+        probe.style.color = "Highlight";
+        document.body.append(probe);
+        const colour = getComputedStyle(probe).color;
+        probe.remove();
+        return [getComputedStyle(element, "::before").borderTopColor, colour];
+      });
+      expect(drawn).toBe(highlight);
+    });
   });
 });
