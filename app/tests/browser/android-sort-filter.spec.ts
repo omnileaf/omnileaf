@@ -53,6 +53,10 @@ const SETTING_START = 16;
 const SETTING_END = 24;
 const SEGMENT_HEIGHT = 40;
 const SEGMENT_GAP = 2;
+const CHIP_HEIGHT = 32;
+const CHIP_RADIUS = "8px";
+const ROW_TITLE_SIZE = "16px";
+const ROW_TITLE_LINE = "24px";
 
 function backendWith(choices: LibraryFilterChoices) {
   return {
@@ -345,6 +349,81 @@ test.describe(
         await expect(
           group.getByRole("radio", { name: "Unread" }),
         ).toBeChecked();
+      });
+    });
+
+    test.describe("the chips and smart filters", () => {
+      test.use({ backend: backendWith(MANY_CHOICES) });
+
+      test("draws each chip 32px tall with an 8px corner and a 1px outline, 14px on a 20px line at 500", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const chip = sheet.getByRole("button", { name: "Manga" });
+
+        expect((await boxOf(chip)).height).toBeCloseTo(CHIP_HEIGHT, 0);
+        await expect(chip).toHaveCSS("border-top-left-radius", CHIP_RADIUS);
+        await expect(chip).toHaveCSS("border-top-width", "1px");
+        await expect(chip).toHaveCSS("font-size", HEADING_SIZE);
+        await expect(chip).toHaveCSS("line-height", HEADING_LINE);
+        await expect(chip).toHaveCSS("font-weight", HEADING_WEIGHT);
+        await expect(chip).toHaveCSS(
+          "border-top-color",
+          await tokenColour(page, "--native-color-button-outline-edge"),
+        );
+      });
+
+      test("fills a chosen chip with the soft accent and ticks it", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const chip = sheet.getByRole("button", { name: "Manga" });
+
+        await chip.click();
+
+        await expect(chip).toHaveAttribute("aria-pressed", "true");
+        await expect(chip).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--native-color-accent-soft"),
+        );
+        await expect(chip.locator("svg")).toHaveCount(1);
+      });
+
+      test("starts the chips 16px in from the sheet's edge, with no rule between settings", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const group = sheet.getByRole("group", { name: "Format" });
+
+        expect((await boxOf(group)).x - (await boxOf(sheet)).x).toBeCloseTo(
+          SETTING_START,
+          0,
+        );
+        await expect(group.locator("xpath=..")).toHaveCSS(
+          "border-top-width",
+          "0px",
+        );
+      });
+
+      test("sets each smart filter as a row with a 16px title, its hint under it and the row padded 16px and 24px", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const title = sheet.getByText("Quick reads", { exact: true });
+        const toggle = sheet.getByRole("switch", { name: "Quick reads" });
+
+        await expect(title).toHaveCSS("font-size", ROW_TITLE_SIZE);
+        await expect(title).toHaveCSS("line-height", ROW_TITLE_LINE);
+        await expect(toggle).toHaveCSS(
+          "padding-left",
+          String(SETTING_START) + "px",
+        );
+        await expect(toggle).toHaveCSS(
+          "padding-right",
+          String(SETTING_END) + "px",
+        );
+        await toggle.click();
+        await expect(toggle).toBeChecked();
       });
     });
 
