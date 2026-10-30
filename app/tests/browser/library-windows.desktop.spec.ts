@@ -131,6 +131,24 @@ test.describe("Windows library", () => {
         await expect(filter).not.toHaveCSS("box-shadow", "none");
       });
 
+      test("opens the view options with segmented choices that raise the chosen segment on an accent pill", async ({
+        page,
+      }) => {
+        await command(page, "View options").click();
+
+        const display = page.getByRole("radiogroup", { name: "Display" });
+        await expect(display).toBeVisible();
+        await expect(display).toHaveCSS("border-top-width", "1px");
+        await expect(display).toHaveCSS("border-top-left-radius", "4px");
+        const pill = await display
+          .getByRole("radio", { name: "Grid" })
+          .evaluate(
+            (element) => getComputedStyle(element, "::after").backgroundColor,
+          );
+        expect(pill).toBe(ACCENT[colorScheme]);
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
@@ -218,11 +236,7 @@ test.describe("Windows library", () => {
         .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
         .click();
 
-      await expect(
-        page
-          .getByRole("group", { name: "Selected series" })
-          .getByText("1 selected"),
-      ).toBeVisible();
+      await expect(page.getByText("1 selected")).toBeVisible();
       const link = first.locator("[data-pickable-link]");
       await expect(link).toHaveAttribute("aria-checked", "true");
       await settle(link);
@@ -312,4 +326,65 @@ test.describe("Windows library", () => {
       expect(drawn).toBe(highlight);
     });
   });
+
+  test.describe("selection bar", () => {
+    test.beforeEach(async ({ page }) => {
+      await openLibrary(page);
+      const first = page
+        .getByRole("list", { name: "Series" })
+        .getByRole("listitem")
+        .first();
+      await first.hover();
+      await first.getByRole("checkbox").click();
+    });
+
+    test("holds the selection's commands in a command bar at the top, with no bar at the bottom", async ({
+      page,
+    }) => {
+      const bar = commandBar(page);
+
+      for (const name of ["Select all", "Mark as read"]) {
+        const box = await boxOf(bar.getByRole("button", { name }));
+        expect([name, box.width >= COMMAND_WIDTH, box.height]).toEqual([
+          name,
+          true,
+          COMMAND_HEIGHT,
+        ]);
+      }
+      await expect(
+        page.getByRole("group", { name: "Selected series" }),
+      ).toHaveCount(0);
+    });
+
+    test("has no accessibility violations", async ({ page }) => {
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  });
+});
+
+test.describe("Windows empty library", () => {
+  testOnlyInItsWebview("windows");
+  test.use({ backend: WINDOWS });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`sets the empty state as a Subtitle over a Body in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/");
+
+      const title = page.getByRole("heading", {
+        name: "Your library is empty",
+      });
+      await expect(title).toBeVisible();
+      await expect(title).toHaveCSS("font-size", "20px");
+      await expect(title).toHaveCSS("line-height", "28px");
+      await expect(title).toHaveCSS("font-weight", "600");
+      await expect(page.getByText("Add a folder of")).toHaveCSS(
+        "font-size",
+        "14px",
+      );
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
