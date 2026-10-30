@@ -15,10 +15,12 @@
     creators,
     from,
     onShowAll,
+    class: type,
   }: {
     creators: readonly SeriesCreator[];
     from: string;
     onShowAll: () => void;
+    class: string;
   } = $props();
 
   const platform = currentPlatform();
@@ -48,7 +50,7 @@
 </script>
 
 {#if credits !== undefined}
-  <p class="text-small text-muted">
+  <p class={["text-muted", type]}>
     {#each lines as { before, names, after }, index (index)}
       {before}<CreatorNames {names} {creators} {from} />{after}
     {/each}

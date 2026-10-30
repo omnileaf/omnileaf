@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { BookOpen, ChevronDown, Eye, EyeOff, Tag } from "@lucide/svelte";
+  import {
+    BookOpen,
+    ChevronDown,
+    ChevronsUpDown,
+    Eye,
+    EyeOff,
+    Tag,
+  } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -20,6 +27,8 @@
   import { SERIES_CONTROL } from "./series-control.ts";
 
   const ICON_SIZE = 16;
+  const MACOS_ICON_SIZE = 13;
+  const MACOS_CHEVRON_SIZE = 11;
 
   interface PhoneLayout {
     readonly row: string;
@@ -66,6 +75,7 @@
       : { ...layout, other: other.variant };
   });
   const isMacos = platform === "macos";
+  const iconSize = isMacos ? MACOS_ICON_SIZE : ICON_SIZE;
   const macosControl = variantClasses("secondary", "regular", false, platform);
   const macosComingSoon = cn(
     macosControl,
@@ -122,21 +132,38 @@
     </Button>
   </div>
 {:else}
-  <div class="flex gap-sm @series-split:flex-col">
+  <div
+    class={[
+      "flex gap-sm @series-split:flex-col",
+      isMacos && "@series-split:gap-series-gap-macos",
+    ]}
+  >
     <ComingSoonControl
       label={m.series_reading_state({ state })}
       class={isMacos
-        ? cn(macosComingSoon, "flex-1 justify-between min-inline-none")
+        ? cn(
+            macosComingSoon,
+            "flex-1 justify-between gap-sm ps-md pe-sm min-inline-none",
+          )
         : cn(
             SERIES_CONTROL,
             "flex-1 justify-between rounded-shadcn-control font-regular text-foreground min-inline-none",
           )}
     >
-      <span class="flex items-center gap-sm min-inline-none">
-        <BookOpen size={ICON_SIZE} aria-hidden="true" />
+      <span
+        class={[
+          "flex items-center min-inline-none",
+          isMacos ? "gap-icon-gap" : "gap-sm",
+        ]}
+      >
+        <BookOpen size={iconSize} aria-hidden="true" />
         <span class="truncate">{state}</span>
       </span>
-      <ChevronDown size={ICON_SIZE} aria-hidden="true" class="opacity-50" />
+      {#if isMacos}
+        <ChevronsUpDown size={MACOS_CHEVRON_SIZE} aria-hidden="true" />
+      {:else}
+        <ChevronDown size={ICON_SIZE} aria-hidden="true" class="opacity-50" />
+      {/if}
     </ComingSoonControl>
     <div class="flex gap-sm">
       <ComingSoonControl
@@ -150,7 +177,7 @@
               "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
             )}
       >
-        <Tag size={ICON_SIZE} aria-hidden="true" />
+        <Tag size={iconSize} aria-hidden="true" />
         {#if isWide}
           {m.series_tags()}
         {/if}
@@ -164,9 +191,9 @@
           onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
         >
           {#if isAllRead}
-            <EyeOff size={ICON_SIZE} aria-hidden="true" />
+            <EyeOff size={MACOS_ICON_SIZE} aria-hidden="true" />
           {:else}
-            <Eye size={ICON_SIZE} aria-hidden="true" />
+            <Eye size={MACOS_ICON_SIZE} aria-hidden="true" />
           {/if}
           {#if isWide}
             {markLabel}
