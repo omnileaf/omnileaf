@@ -6,6 +6,8 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
     alertLook,
+    type ConfirmPhoneLook,
+    opensAsAlert,
     TODAYS_ALERT_LOOK,
   } from "#lib/components/ui/dialog/alert-look.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
@@ -50,16 +52,23 @@
     cancelLabel: string;
     onConfirm: () => void;
     onCancel: () => void;
-    phoneLook?: "sheet" | "dialog";
+    phoneLook?: ConfirmPhoneLook;
     tone?: ConfirmTone;
     isBusy?: boolean;
     children: Snippet;
   } = $props();
 
-  const isAlert = $derived(phoneLook === "dialog");
+  const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook));
   const alert = $derived(
     isAlert ? alertLook(currentPlatform()) : TODAYS_ALERT_LOOK,
   );
+
+  let cancelButton = $state<HTMLButtonElement | null>(null);
+
+  function focusCancel(event: Event): void {
+    event.preventDefault();
+    cancelButton?.focus();
+  }
 
   function confirm(): void {
     if (!isBusy) {
@@ -79,13 +88,14 @@
   }
 >
   <ModalContent
-    wideClass={DIALOG}
+    wideClass={cn(DIALOG, alert.surface)}
     phoneLook={isAlert ? "dialog" : "drawer"}
     phoneClass={isAlert
       ? cn(DIALOG, alert.surface)
       : "gap-lg rounded-ss-confirm-sheet rounded-se-confirm-sheet px-sheet-inline pbe-page-bottom max-block-dialog-limit"}
     phoneOverlayClass={alert.scrim}
     onDismiss={onCancel}
+    onOpenAutoFocus={focusCancel}
   >
     <div class="flex items-center gap-md">
       <HeaderBadge {icon} look={BADGE_LOOKS[tone]} class={alert.badge} />
@@ -111,29 +121,35 @@
       </AlertDialog.Description>
       <div
         class={[
-          "mbs-xs windows:medium:rounded-ee-panel windows:medium:rounded-es-panel windows:medium:border-bs windows:medium:border-windows-stroke windows:medium:bg-windows-mica",
+          "mbs-xs",
           isAlert
             ? cn("grid grid-cols-2 gap-sm", alert.actions)
             : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm",
         ]}
       >
-        <Button
-          type="button"
-          look="confirm-cancel"
-          class={alert.cancel}
-          onclick={onCancel}
-        >
-          {cancelLabel}
-        </Button>
-        <Button
-          type="button"
-          look="confirm-danger"
-          class={cn(CONFIRM_FILLS[tone], alert.confirm)}
-          aria-disabled={isBusy || undefined}
-          onclick={confirm}
-        >
-          {confirmLabel}
-        </Button>
+        {#each alert.actionOrder as action (action)}
+          {#if action === "cancel"}
+            <Button
+              bind:ref={cancelButton}
+              type="button"
+              look="confirm-cancel"
+              class={alert.cancel}
+              onclick={onCancel}
+            >
+              {cancelLabel}
+            </Button>
+          {:else}
+            <Button
+              type="button"
+              look="confirm-danger"
+              class={cn(CONFIRM_FILLS[tone], alert.confirm)}
+              aria-disabled={isBusy || undefined}
+              onclick={confirm}
+            >
+              {confirmLabel}
+            </Button>
+          {/if}
+        {/each}
       </div>
     </div>
   </ModalContent>

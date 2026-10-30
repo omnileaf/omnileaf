@@ -53,9 +53,9 @@ const LOOKS: readonly DialogLook[] = [
   {
     platform: "windows",
     corner: "8px",
-    fill: "--background",
-    edge: "--windows-stroke",
-    shadow: "--shadow-windows-flyout",
+    fill: "rgb(243, 243, 243)",
+    edge: "rgba(117, 117, 117, 0.4)",
+    shadow: "--native-shadow-dialog-lift",
   },
 ];
 
@@ -150,27 +150,137 @@ test("hovers the accent action in the accent's hover, not the danger's", async (
     .toBe(resolvedColour("--color-accent-hover", "backgroundColor"));
 });
 
-test("sets the Windows buttons on a band under a stroke", async () => {
+interface WindowsDialogLook {
+  readonly band: string;
+  readonly layer: string;
+  readonly bandEdge: string;
+  readonly accent: string;
+  readonly busyFill: string;
+}
+
+const WINDOWS_DIALOGS = {
+  light: {
+    band: "rgb(243, 243, 243)",
+    layer: "rgb(255, 255, 255)",
+    bandEdge: "rgba(0, 0, 0, 0.06)",
+    accent: "rgb(47, 111, 79)",
+    busyFill: "rgba(0, 0, 0, 0.216)",
+  },
+  dark: {
+    band: "rgb(32, 32, 32)",
+    layer: "rgba(255, 255, 255, 0.05)",
+    bandEdge: "rgba(0, 0, 0, 0.098)",
+    accent: "rgb(127, 203, 157)",
+    busyFill: "rgba(255, 255, 255, 0.157)",
+  },
+} as const satisfies Record<"light" | "dark", WindowsDialogLook>;
+
+async function openWindowsDialog(
+  theme: string,
+  props: { isBusy?: boolean; tone?: "danger" | "accent" } = {},
+): Promise<HTMLElement> {
   await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "windows";
+  document.documentElement.dataset.theme = theme;
+  await render(ConfirmDialogHarness, props);
+  const dialog = page.getByRole("alertdialog", { name: "Delete downloads?" });
+  await expect.element(dialog).toBeVisible();
+  return dialog.element() as HTMLElement;
+}
+
+function bandOf(dialog: HTMLElement): HTMLElement {
+  const band = dialog
+    .querySelector("button")
+    ?.closest<HTMLElement>("div:has(> button + button)");
+  if (band === null || band === undefined) {
+    throw new Error("the dialog drew no button band");
+  }
+  return band;
+}
+
+for (const [theme, look] of Object.entries(WINDOWS_DIALOGS)) {
+  test(`draws Windows's ContentDialog in the ${theme} theme 448 wide on the layer, 24 in, with a Title-sized heading and no badge`, async () => {
+    const dialog = await openWindowsDialog(theme);
+    const style = getComputedStyle(dialog);
+    const title = page.getByRole("heading", { name: "Delete downloads?" });
+    const badge = dialog.querySelector("[aria-hidden='true']");
+
+    expect(dialog.getBoundingClientRect().width).toBeCloseTo(448, 0);
+    expect(style.paddingTop).toBe("24px");
+    expect(style.paddingInlineStart).toBe("24px");
+    expect(style.backgroundColor).toBe(look.band);
+    expect(style.backgroundImage).toContain(look.layer);
+    expect(getComputedStyle(title.element()).fontSize).toBe("20px");
+    expect(getComputedStyle(title.element()).fontWeight).toBe("600");
+    expect(badge === null ? "none" : getComputedStyle(badge).display).toBe(
+      "none",
+    );
+  });
+
+  test(`sets Windows's dialog buttons on a darker band across the dialog's foot under a stroke in the ${theme} theme`, async () => {
+    const dialog = await openWindowsDialog(theme);
+    const band = bandOf(dialog);
+    const style = getComputedStyle(band);
+    const box = band.getBoundingClientRect();
+    const frame = dialog.getBoundingClientRect();
+    const edge = 1;
+
+    expect(style.backgroundColor).toBe(look.band);
+    expect(style.backgroundImage).toBe("none");
+    expect(style.borderTopWidth).toBe("1px");
+    expect(style.borderTopColor).toBe(look.bandEdge);
+    expect(style.padding).toBe("24px");
+    expect(style.columnGap).toBe("8px");
+    expect(box.left).toBeCloseTo(frame.left + edge, 0);
+    expect(box.right).toBeCloseTo(frame.right - edge, 0);
+    expect(box.bottom).toBeCloseTo(frame.bottom - edge, 0);
+  });
+
+  test(`leads Windows's dialog buttons with the action in the accent, never red, in the ${theme} theme`, async () => {
+    const dialog = await openWindowsDialog(theme);
+    const [first, second] = [...bandOf(dialog).querySelectorAll("button")];
+
+    expect(first?.textContent.trim()).toBe("Delete");
+    expect(second?.textContent.trim()).toBe("Cancel");
+    expect(first && getComputedStyle(first).backgroundColor).toBe(look.accent);
+  });
+
+  test(`fills Windows's busy action with the accent's disabled fill in the ${theme} theme`, async () => {
+    await openWindowsDialog(theme, { isBusy: true });
+    const action = page.getByRole("button", { name: "Delete" }).element();
+
+    expect(getComputedStyle(action).backgroundColor).toBe(look.busyFill);
+  });
+}
+
+test.each<Platform>(["linux", "windows"])(
+  "lands focus on Cancel when a %s confirmation opens, so Enter never confirms by accident",
+  async (platform) => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    document.documentElement.dataset.platform = platform;
+    document.documentElement.dataset.theme = "light";
+
+    await render(ConfirmDialogHarness);
+
+    await expect
+      .element(page.getByRole("button", { name: "Cancel" }))
+      .toHaveFocus();
+  },
+);
+
+test("opens a Windows confirmation as a dialog in a narrow window too, as Windows has no bottom sheets", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
   document.documentElement.dataset.platform = "windows";
   document.documentElement.dataset.theme = "light";
   await render(ConfirmDialogHarness);
+  const dialog = page.getByRole("alertdialog", { name: "Delete downloads?" });
+  await expect.element(dialog).toBeVisible();
 
-  const footer = page
-    .getByRole("button", { name: "Cancel" })
-    .element().parentElement;
-  if (footer === null) {
-    throw new Error("the Cancel button has no footer around it");
-  }
-  const style = getComputedStyle(footer);
+  const box = dialog.element().getBoundingClientRect();
 
-  expect(style.backgroundColor).toBe(
-    resolvedColour("--windows-mica", "backgroundColor"),
-  );
-  expect(style.borderTopWidth).toBe("1px");
-  expect(style.borderTopColor).toBe(
-    resolvedColour("--windows-stroke", "color"),
-  );
+  expect(PHONE.height - box.bottom).toBeGreaterThan(0);
+  expect(getComputedStyle(dialog.element()).borderTopLeftRadius).toBe("8px");
+  expect(getComputedStyle(dialog.element()).borderBottomLeftRadius).toBe("8px");
 });
 
 test("leaves room for the focus ring around the buttons", async () => {
