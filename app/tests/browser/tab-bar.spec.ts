@@ -91,6 +91,33 @@ test.describe("on iOS", () => {
     expect(navigation.height).toBeCloseTo(viewport.height, 0);
   });
 
+  test("shrinks the bar on the search page to a circle at the bottom start leading back to the library", async ({
+    page,
+  }) => {
+    const viewport = viewportOf(page);
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/search");
+    const navigation = page.getByRole("navigation", { name: "Main" });
+
+    await expect(navigation.getByRole("link")).toHaveCount(1);
+    await expect(
+      navigation.getByRole("link", { name: "Back to the library" }),
+    ).not.toHaveAttribute("aria-current");
+    const circle = await navigationBox(page);
+    expect([circle.x, circle.width, circle.height]).toEqual([16, 48, 48]);
+  });
+
+  test("keeps every tab in the rail on the search page on tablets", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
+    await page.goto("/search");
+
+    await expect(
+      page.getByRole("navigation", { name: "Main" }).getByRole("link"),
+    ).toHaveCount(4);
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
     test(`the floating bar has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
@@ -119,6 +146,21 @@ test.describe("on Android", () => {
 
     const bar = await navigationBox(page);
 
+    expect(bar.x).toBe(0);
+    expect(bar.width).toBeCloseTo(viewport.width, 0);
+  });
+
+  test("keeps every tab in the full width bottom bar on the search page", async ({
+    page,
+  }) => {
+    const viewport = viewportOf(page);
+    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
+    await page.goto("/search");
+
+    await expect(
+      page.getByRole("navigation", { name: "Main" }).getByRole("link"),
+    ).toHaveCount(4);
+    const bar = await navigationBox(page);
     expect(bar.x).toBe(0);
     expect(bar.width).toBeCloseTo(viewport.width, 0);
   });

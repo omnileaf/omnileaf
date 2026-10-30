@@ -1,9 +1,12 @@
-import { type Component, createContext } from "svelte";
+import { type Component, createContext, mount, unmount } from "svelte";
+import { SvelteMap } from "svelte/reactivity";
 import { toast } from "svelte-sonner";
 
 import { CircleCheck } from "@lucide/svelte";
 
+import type { Platform } from "#lib/ipc/bindings.ts";
 import type { Glyph } from "#lib/page/glyph.ts";
+import { currentPlatform } from "#lib/page/platform.ts";
 
 import NoticeToast from "./NoticeToast.svelte";
 import { NEW_UNDO_RULES, type UndoRules } from "./undo-setting.svelte";
@@ -12,6 +15,21 @@ import UndoToast from "./UndoToast.svelte";
 export type NoticeTone = "plain" | "warning";
 
 export type Politeness = "polite" | "assertive";
+
+export type NoticeSurface = "toasts" | "infoBars";
+
+export interface ShownNotice {
+  readonly id: string;
+  readonly politeness: Politeness;
+  readonly mountInto: (
+    target: HTMLElement,
+    context: Map<unknown, unknown>,
+  ) => () => void;
+}
+
+export function noticeSurfaceOn(platform: Platform): NoticeSurface {
+  return platform === "windows" ? "infoBars" : "toasts";
+}
 
 export interface NoticeAction {
   readonly label: string;
@@ -58,13 +76,23 @@ let toastsMade = 0;
 export class Notices {
   #isHeld = false;
   readonly #undoRules: () => UndoRules;
+  readonly #surface: NoticeSurface;
+  readonly #shown = new SvelteMap<string, ShownNotice>();
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
   #undoSettling: (Shown & { readonly offer: UndoOffer }) | undefined;
 
-  constructor(undoRules: () => UndoRules = () => NEW_UNDO_RULES) {
+  constructor(
+    undoRules: () => UndoRules = () => NEW_UNDO_RULES,
+    surface: NoticeSurface = noticeSurfaceOn(currentPlatform()),
+  ) {
     this.#undoRules = undoRules;
+    this.#surface = surface;
+  }
+
+  get onScreen(): readonly ShownNotice[] {
+    return [...this.#shown.values()].reverse();
   }
 
   get undoOffer(): UndoOffer | undefined {
@@ -169,7 +197,7 @@ export class Notices {
         }
         isDismissed = true;
         this.#forget(id);
-        toast.dismiss(id);
+        this.#takeAway(id);
       },
       lapse: (windowMs) => {
         const lapse: Lapse = { windowMs, timer: undefined };
@@ -179,15 +207,28 @@ export class Notices {
         }
       },
     };
-    toast.custom(content, {
+    const props = propsFor(handle);
+    this.#shown.set(id, {
       id,
-      duration: Number.POSITIVE_INFINITY,
-      componentProps: propsFor(handle),
-      important: politeness === "assertive",
-      onDismiss: () => {
-        this.#forget(id);
+      politeness,
+      mountInto: (target, context) => {
+        const mounted = mount(content, { target, props, context });
+        return () => {
+          void unmount(mounted);
+        };
       },
     });
+    if (this.#surface === "toasts") {
+      toast.custom(content, {
+        id,
+        duration: Number.POSITIVE_INFINITY,
+        componentProps: props,
+        important: politeness === "assertive",
+        onDismiss: () => {
+          this.#forget(id);
+        },
+      });
+    }
     return { id, toast: handle };
   }
 
@@ -195,11 +236,18 @@ export class Notices {
     clearTimeout(lapse.timer);
     lapse.timer = setTimeout(() => {
       this.#forget(id);
-      toast.dismiss(id);
+      this.#takeAway(id);
     }, lapse.windowMs);
   }
 
+  #takeAway(id: string): void {
+    if (this.#surface === "toasts") {
+      toast.dismiss(id);
+    }
+  }
+
   #forget(id: string): void {
+    this.#shown.delete(id);
     clearTimeout(this.#lapses.get(id)?.timer);
     this.#lapses.delete(id);
     for (const [notice, shown] of this.#noticesShown) {

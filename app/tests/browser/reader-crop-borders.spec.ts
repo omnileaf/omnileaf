@@ -145,11 +145,25 @@ async function scrollPartwayInto(
   number: number,
   share: number,
 ): Promise<void> {
-  await stripPage(page, number).evaluate((image, into) => {
+  await stripPage(page, number).evaluate(async (image, into) => {
     const pageBox = image.parentElement;
     const strip = image.closest("[data-strip]");
-    if (pageBox !== null && strip !== null) {
-      strip.scrollTop = pageBox.offsetTop + pageBox.offsetHeight * into;
+    if (pageBox === null || strip === null) {
+      return;
+    }
+    const seen = new Promise<void>((resolve) => {
+      strip.addEventListener(
+        "scroll",
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+    });
+    const from = strip.scrollTop;
+    strip.scrollTop = pageBox.offsetTop + pageBox.offsetHeight * into;
+    if (strip.scrollTop !== from) {
+      await seen;
     }
   }, share);
 }

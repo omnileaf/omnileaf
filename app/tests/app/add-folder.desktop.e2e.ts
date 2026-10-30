@@ -23,7 +23,7 @@ const REMOVE_SAMPLE_LIBRARY = xpath(
   `//button[@aria-label='Remove ${SAMPLE_LIBRARY.name}']`,
 );
 const DISMISS_REMOVAL_UNDO = xpath(
-  `//li[@data-sonner-toast][.//p[normalize-space()='${SAMPLE_LIBRARY.name} removed']]//button[@aria-label='Dismiss']`,
+  `//*[@data-sonner-toast or @data-info-bar][.//p[normalize-space()='${SAMPLE_LIBRARY.name} removed']]//button[@aria-label='Dismiss']`,
 );
 const FOLDERS_WITHOUT_LINKED_FOLDERS = xpath(
   "//section[.//h2[normalize-space()='Folders']][not(.//li)]",

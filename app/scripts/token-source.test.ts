@@ -351,6 +351,30 @@ test("reads android's wallpaper colours in each theme", () => {
   ]);
 });
 
+test("reads the Windows accent as the system's colours in each theme", () => {
+  const fromAccent = {
+    ...ACCENT,
+    value: {
+      ...ACCENT.value,
+      "windows-light": "#2f6f4f",
+      "windows-dark": "#7fcb9d",
+      "windows-light-colours-wallpaper": "var(--windows-accent-light)",
+      "windows-dark-colours-wallpaper": "var(--windows-accent-dark)",
+    },
+  };
+
+  const [token] = parse(fromAccent).tokens;
+
+  expect(token?.modes).toEqual([
+    {
+      platform: "windows",
+      mode: "colours-wallpaper",
+      light: "var(--windows-accent-light)",
+      dark: "var(--windows-accent-dark)",
+    },
+  ]);
+});
+
 test("names wallpaper colours drawn on ios", () => {
   const borrowed = {
     ...ACCENT,
@@ -362,6 +386,6 @@ test("names wallpaper colours drawn on ios", () => {
   };
 
   expect(() => parse(borrowed)).toThrow(
-    'Token "accent" sets colours-wallpaper on ios, but only android has colours-wallpaper.',
+    'Token "accent" sets colours-wallpaper on ios, but only android and windows have colours-wallpaper.',
   );
 });

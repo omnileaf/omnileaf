@@ -176,6 +176,7 @@ const SAMPLE_LOG = [
 ];
 
 const SAMPLE_REPORT_CODE = "R-8M4T";
+const SAMPLE_STATUS_KEY = "c2FtcGxlLWtleQ";
 const SAMPLE_DOWNLOADS = {
   android: "Downloads",
   ios: "Downloads",
@@ -1239,6 +1240,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     wallpaperColours: () => null,
+    accentColours: () => null,
     captureVolumeKeys: () => null,
     releaseVolumeKeys: () => null,
     libraryFolders: () => ({
@@ -2160,7 +2162,12 @@ export function sampleBackend(
       log: SAMPLE_LOG,
     }),
     copyProblemReport: () => null,
-    sendProblemReport: () => null,
+    sendProblemReport: () => ({
+      code: SAMPLE_REPORT_CODE,
+      statusKey: SAMPLE_STATUS_KEY,
+    }),
+    problemReportStatuses: (reports) =>
+      reports.map(({ code }) => ({ code, review: { kind: "received" } })),
     copyProblemReportCode: () => null,
     openProblemReportIssue: () => null,
     saveProblemReport: () => ({
@@ -2183,6 +2190,7 @@ export function sampleBackend(
     showIconActions: () => null,
     watchIconActions: () => null,
     openSystemSettings: () => null,
+    openColourSettings: () => null,
     panicInCore: () => null,
     crashAndQuit: () => null,
   };

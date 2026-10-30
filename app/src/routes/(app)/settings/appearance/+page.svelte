@@ -1,5 +1,6 @@
 <script lang="ts">
   import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
+  import WindowsAccentChoice from "#lib/appearance/WindowsAccentChoice.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -19,3 +20,6 @@
     {onPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
   {/snippet}
 </ThemeChoice>
+{#if data.appInfo.platform === "windows"}
+  <WindowsAccentChoice class="mbs-pane-gap" />
+{/if}

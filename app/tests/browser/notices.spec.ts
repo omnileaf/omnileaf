@@ -47,7 +47,7 @@ const PHONE_NOTICES: Readonly<
 };
 const LONG_WAIT_MS = 60_000;
 const NARROW_WINDOW = { width: 360, height: 800 };
-const DESKTOP_PLATFORMS = ["linux", "macos", "windows"] as const;
+const TOASTING_DESKTOP_PLATFORMS = ["linux", "macos"] as const;
 
 const FAILS_TO_READ_THE_FOLDER: FakeBackend = {
   ...DEFAULT_BACKEND,
@@ -162,7 +162,7 @@ test("shows the warning in the bottom corner on tablets and desktops", async ({
   expect(viewport.height - (box.y + box.height)).toBe(CORNER_INSET);
 });
 
-for (const platform of DESKTOP_PLATFORMS) {
+for (const platform of TOASTING_DESKTOP_PLATFORMS) {
   test.describe(`in a narrow desktop window on ${platform}`, () => {
     test.use({
       viewport: NARROW_WINDOW,

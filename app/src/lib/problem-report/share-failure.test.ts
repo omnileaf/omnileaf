@@ -2,16 +2,26 @@ import { expect, test } from "vitest";
 
 import { failureMessage } from "./share-failure";
 
-test("says Send to Omnileaf is coming soon while reports have nowhere to go", () => {
-  const message = failureMessage({ way: "send", code: "reportsNotSent" });
+test("says why the report couldn't be sent", () => {
+  const messages = (
+    [
+      "relayUnreachable",
+      "relayRateLimited",
+      "relayBusy",
+      "replyAddressInvalid",
+      "reportRefused",
+      "internal",
+    ] as const
+  ).map((code) => failureMessage({ way: "send", code }));
 
-  expect(message).toBe("Send to Omnileaf · coming soon");
-});
-
-test("says the report couldn't be sent when sending fails", () => {
-  const message = failureMessage({ way: "send", code: "internal" });
-
-  expect(message).toBe("Couldn't send the report. Try again.");
+  expect(messages).toEqual([
+    "Couldn't reach Omnileaf. Check your connection and try again.",
+    "Too many reports from this network. Try again in an hour.",
+    "Omnileaf can't take more reports right now. Try again later.",
+    "Enter a whole email address, or leave it empty.",
+    "Couldn't send the report. Try again.",
+    "Couldn't send the report. Try again.",
+  ]);
 });
 
 test("says what each other way couldn't do", () => {

@@ -37,6 +37,8 @@ pub fn fingerprint_book_with(path: &Path, limits: &Limits) -> Result<Fingerprint
             archive_fingerprint(path, &mut archive, &*file)
         }
         Container::SevenZip(file) => sevenz_book::fingerprint(file, path, limits),
+        #[cfg(feature = "rar")]
+        Container::Rar(file) => crate::rar_book::fingerprint(file, path, limits),
     }
 }
 

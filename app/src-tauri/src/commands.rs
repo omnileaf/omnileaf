@@ -40,6 +40,7 @@ use crate::{
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
     problem_reporting::{self, ShownProblemReport},
+    report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
@@ -49,7 +50,7 @@ use crate::{
     tray::{TrayItemChosen, TrayMenu},
     version_details,
     volume_keys::{self, PageTurn},
-    wallpaper_colours::{self, WallpaperColours},
+    wallpaper_colours::{self, AccentColours, WallpaperColours},
 };
 
 macro_rules! app_commands {
@@ -67,6 +68,7 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             wallpaper_colours,
+            accent_colours,
             capture_volume_keys,
             release_volume_keys,
             library_folders,
@@ -173,6 +175,7 @@ macro_rules! app_commands {
             problem_report,
             copy_problem_report,
             send_problem_report,
+            problem_report_statuses,
             copy_problem_report_code,
             open_problem_report_issue,
             save_problem_report,
@@ -189,6 +192,7 @@ macro_rules! app_commands {
             show_icon_actions,
             watch_icon_actions,
             open_system_settings,
+            open_colour_settings,
             $($development_only),*
         ]
     };
@@ -449,6 +453,12 @@ async fn watch_system_contrast(
 #[specta::specta]
 async fn wallpaper_colours(app: AppHandle) -> Result<Option<WallpaperColours>, IpcError> {
     wallpaper_colours::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+fn accent_colours() -> Option<AccentColours> {
+    wallpaper_colours::read_accent()
 }
 
 #[tauri::command]
@@ -1351,13 +1361,20 @@ async fn copy_problem_report(app: AppHandle) -> Result<(), IpcError> {
 
 #[tauri::command]
 #[specta::specta]
-#[expect(
-    unused_variables,
-    clippy::needless_pass_by_value,
-    reason = "problem reports have nowhere to be sent yet, so the address for a reply has nowhere to go"
-)]
-fn send_problem_report(reply_to: Option<String>) -> Result<(), IpcError> {
-    Err(IpcError::reports_not_sent())
+async fn send_problem_report(
+    app: AppHandle,
+    reply_to: Option<String>,
+) -> Result<SentProblemReport, IpcError> {
+    report_sending::send(&app, reply_to).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn problem_report_statuses(
+    app: AppHandle,
+    reports: Vec<SentReportKey>,
+) -> Result<Vec<ProblemReportStatus>, IpcError> {
+    report_sending::statuses(&app, reports).await
 }
 
 #[tauri::command]
@@ -1451,6 +1468,13 @@ async fn watch_icon_actions(
 #[specta::specta]
 async fn open_system_settings(app: AppHandle) -> Result<(), IpcError> {
     system_settings::open(&app).map_err(|error| IpcError::system_settings_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_colour_settings(app: AppHandle) -> Result<(), IpcError> {
+    system_settings::open_colours(&app)
+        .map_err(|error| IpcError::system_settings_unavailable(&error))
 }
 
 #[tauri::command]

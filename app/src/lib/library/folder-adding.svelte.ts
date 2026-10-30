@@ -78,7 +78,11 @@ const FAILURES = {
   labelsNotKept: ADDING_FAILED,
   detailsNotKept: ADDING_FAILED,
   reportNotSaved: ADDING_FAILED,
-  reportsNotSent: ADDING_FAILED,
+  relayUnreachable: ADDING_FAILED,
+  relayRateLimited: ADDING_FAILED,
+  relayBusy: ADDING_FAILED,
+  replyAddressInvalid: ADDING_FAILED,
+  reportRefused: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 

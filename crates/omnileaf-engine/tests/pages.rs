@@ -43,7 +43,7 @@ const SPREAD: PageDimensions = PageDimensions {
 };
 const NOTHING_UNDECODABLE: Vec<ProbedFormat> = Vec::new();
 const PAGES_LEFT_WHOLE: u32 = 3;
-const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const UNKNOWN_RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x02\x00";
 const SCAN: DrawnScan = DrawnScan {
     width: 400,
     height: 600,
@@ -724,7 +724,7 @@ async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
     fs::write(&file, archive).unwrap();
     let reader = Reader::over("unsupported-type", comics).await;
     let book = reader.book().await;
-    fs::write(&file, RAR_SIGNATURE).unwrap();
+    fs::write(&file, UNKNOWN_RAR_SIGNATURE).unwrap();
 
     let opened = reader
         .router
@@ -771,7 +771,7 @@ async fn refuses_an_archive_put_in_place_of_a_folder_book_with_a_dot_in_its_name
     let reader = Reader::over("unsupported-dotted-folder", comics).await;
     let book = reader.book().await;
     fs::remove_dir_all(&folder_book).unwrap();
-    fs::write(&folder_book, RAR_SIGNATURE).unwrap();
+    fs::write(&folder_book, UNKNOWN_RAR_SIGNATURE).unwrap();
 
     let opened = reader
         .router
@@ -788,7 +788,7 @@ async fn refuses_an_archive_put_in_place_of_a_folder_book_with_a_dot_in_its_name
 async fn refuses_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
     let reader = Reader::with_book("unsupported-inside-cbz").await;
     let book = reader.book().await;
-    fs::write(reader.book_path(), RAR_SIGNATURE).unwrap();
+    fs::write(reader.book_path(), UNKNOWN_RAR_SIGNATURE).unwrap();
 
     let opened = reader
         .router

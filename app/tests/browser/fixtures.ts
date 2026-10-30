@@ -35,6 +35,7 @@ export const FAKE_APP_VERSION = "1.2.3";
 export const FAKE_SOURCE_CODE = "repo.example.org/omnileaf";
 export const FAKE_SYSTEM = "Fedora 43";
 export const FAKE_REPORT_CODE = "R-8M4T";
+export const FAKE_STATUS_KEY = "fake-status-key";
 export const IPHONE_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
 export const IPAD_USER_AGENT =
@@ -226,6 +227,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
   wallpaperColours: () => null,
+  accentColours: () => null,
   captureVolumeKeys: () => null,
   releaseVolumeKeys: () => null,
   copyVersionDetails: () => null,
@@ -237,7 +239,12 @@ export const DEFAULT_BACKEND: FakeBackend = {
     log: [],
   }),
   copyProblemReport: () => null,
-  sendProblemReport: () => null,
+  sendProblemReport: () => ({
+    code: FAKE_REPORT_CODE,
+    statusKey: FAKE_STATUS_KEY,
+  }),
+  problemReportStatuses: (reports) =>
+    reports.map(({ code }) => ({ code, review: { kind: "received" } })),
   copyProblemReportCode: () => null,
   openProblemReportIssue: () => null,
   saveProblemReport: () => ({
@@ -267,6 +274,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   showIconActions: () => null,
   watchIconActions: () => null,
   openSystemSettings: () => null,
+  openColourSettings: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };

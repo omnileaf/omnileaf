@@ -37,6 +37,7 @@
     NARROW_POINTER_QUERY,
     WindowWidth,
   } from "#lib/page/breakpoints.ts";
+  import { followKeyboard } from "#lib/page/keyboard-inset.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { phoneOf } from "#lib/page/platform.ts";
   import { GROUPED_GROUND } from "#lib/page/plates.ts";
@@ -286,6 +287,14 @@
     void libraryView.load();
   });
 
+  $effect(() => {
+    const visual = window.visualViewport;
+    if (isIPhone && visual !== null) {
+      return followKeyboard(visual, document.documentElement);
+    }
+    return undefined;
+  });
+
   onMount(() =>
     listenForLibraryChanges(() => {
       if (isLookingFor) {
@@ -323,14 +332,16 @@
 <div
   data-ground={isGroupedStart ? "grouped" : undefined}
   class={[
-    "flex flex-col gap-search-gap min-block-full",
+    "flex flex-col gap-search-gap min-block-full ios:max-medium:flex-none",
     hasToolbar && "pbs-xl",
     isGroupedStart && GROUPED_GROUND,
   ]}
 >
   <h1 class="sr-only">{m.search_title()}</h1>
   <p role="status" class="sr-only">{announcement}</p>
-  <div class="flex items-center gap-sm large:gap-md">
+  <div
+    class="flex items-center gap-sm large:gap-md ios:max-medium:fixed ios:max-medium:inset-s-native-search-bar-start ios:max-medium:inset-e-native-bottom-bar-end ios:max-medium:inset-be-floating-lift ios:max-medium:z-tab-bar"
+  >
     {#if !hasToolbar}
       <Tooltip label={m.search_back()}>
         {#snippet child({ props })}
@@ -339,7 +350,7 @@
             href={resolve(SECTION_ROUTE_IDS.library)}
             aria-label={m.search_back()}
             data-back-link
-            class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
+            class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed ios:max-medium:hidden"
           >
             <ArrowLeft
               size={BACK_ICON_SIZE}

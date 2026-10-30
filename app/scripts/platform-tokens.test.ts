@@ -329,6 +329,7 @@ test("draws the Windows menu without transparency when the setting is off", () =
     `:root[data-platform="windows"][data-transparency="reduced"],
 :root[data-platform="windows"][data-transparency="reduced"] [data-theme="light"] {
   --native-color-menu: #f9f9f9;
+  --native-color-info-bar-floating: #f9f9f9;
 }
 `,
   );

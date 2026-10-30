@@ -19,13 +19,16 @@ const NavigationWithAppContext = WithAppContext<
   ComponentProps<typeof AppNavigation>
 >;
 
-async function renderOnPhoneInLight(platform: Platform): Promise<void> {
+async function renderOnPhoneInLight(
+  platform: Platform,
+  isCollapsed = false,
+): Promise<void> {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await render(NavigationWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: AppNavigation,
-    pageProps: { current: "library" },
+    pageProps: { current: "library", isCollapsed },
   });
 }
 
@@ -97,6 +100,39 @@ test("sits iOS's current tab on a 54 tall pill inset 4, in the accent", async ()
   expect(getComputedStyle(tab("Library")).color).toBe("rgb(47, 111, 79)");
   expect(getComputedStyle(iconOf("Library")).color).toBe("rgb(47, 111, 79)");
   expect(getComputedStyle(tab("Browse")).color).toBe("rgb(0, 0, 0)");
+});
+
+test("shrinks iOS's collapsed tab bar to a 48 circle at the start holding only a way back to the current tab", async () => {
+  await renderOnPhoneInLight("ios", true);
+
+  const circle = bar().getBoundingClientRect();
+  const icon = asElement(bar().querySelector("a svg")).getBoundingClientRect();
+  const links = page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link")
+    .elements()
+    .filter((link) => link.getClientRects().length > 0);
+
+  expect({
+    width: Math.round(circle.width),
+    height: Math.round(circle.height),
+    start: Math.round(circle.left),
+    links: links.map((link) => [
+      link.getAttribute("aria-label"),
+      link.getAttribute("aria-current"),
+      link.hasAttribute("data-back-link"),
+    ]),
+    iconCentre: Math.round(icon.left + icon.width / 2 - circle.left),
+    isRound:
+      Number.parseFloat(getComputedStyle(bar()).borderTopLeftRadius) >= 24,
+  }).toEqual({
+    width: 48,
+    height: 48,
+    start: 16,
+    links: [["Back to the library", null, true]],
+    iconCentre: 24,
+    isRound: true,
+  });
 });
 
 test("fills iOS's glass tab bar solid under Reduce Transparency", async () => {

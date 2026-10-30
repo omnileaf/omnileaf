@@ -16,11 +16,13 @@
 
   const fieldId = $props.id();
   const hintId = `${fieldId}-hint`;
+  const refusalId = `${fieldId}-refusal`;
   const noteId = `${fieldId}-note`;
 
   const failure = $derived(
     sharing.failure?.way === "send" ? sharing.failure : undefined,
   );
+  const isAddressRefused = $derived(failure?.code === "replyAddressInvalid");
 </script>
 
 <div class="mbs-lg mbe-xs flex flex-col">
@@ -38,16 +40,27 @@
       type="email"
       autocomplete="email"
       placeholder={m.report_reply_email_placeholder()}
-      aria-describedby={hintId}
+      aria-describedby={isAddressRefused ? `${hintId} ${refusalId}` : hintId}
+      aria-invalid={isAddressRefused}
       value={sharing.replyTo}
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         sharing.replyTo = event.currentTarget.value;
       }}
-      class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button focus:border-accent touch:text-body touch:block-touch-target"
+      class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button focus:border-accent aria-invalid:border-danger touch:text-body touch:block-touch-target"
     />
     <p id={hintId} class="text-small text-muted">
       {m.report_reply_email_hint()}
     </p>
+    {#if failure !== undefined && isAddressRefused}
+      <p
+        id={refusalId}
+        role="alert"
+        class="flex items-start gap-xs text-small text-danger"
+      >
+        <CircleAlert size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+        {failureMessage(failure)}
+      </p>
+    {/if}
   </div>
   <div class="mbs-xl flex flex-col gap-sm">
     <Button
@@ -65,7 +78,7 @@
     </p>
   </div>
   <div role="alert">
-    {#if failure !== undefined}
+    {#if failure !== undefined && !isAddressRefused}
       <Alert tone="warning" icon={CircleAlert} class="mbs-md">
         <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>

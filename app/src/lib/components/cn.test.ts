@@ -6,7 +6,7 @@ import { cn, TOKEN_THEME } from "./cn.ts";
 
 function tokenNames(namespace: string): string[] {
   const pattern = new RegExp(
-    `--${namespace}-([a-z0-9-]+?)(?:--[a-z-]+)?:`,
+    `--${namespace}-(?!color-)([a-z0-9-]+?)(?:--[a-z-]+)?:`,
     "g",
   );
   return [

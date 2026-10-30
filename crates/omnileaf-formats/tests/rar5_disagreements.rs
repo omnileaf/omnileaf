@@ -5,7 +5,8 @@
 
 use std::{io::Cursor, path::Path};
 
-use omnileaf_formats::{FormatError, Limits, RarListing};
+use omnileaf_formats::{FormatError, Limits, RarListing, open_book};
+use omnileaf_testkit::ScratchFolder;
 
 const SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 const MARK: u64 = 0;
@@ -553,4 +554,18 @@ fn reports_an_encryption_header_carrying_data_as_encrypted() {
     let error = listing(&bytes).unwrap_err();
 
     assert!(matches!(error, FormatError::Encrypted { .. }), "{error:?}");
+}
+
+#[test]
+fn refuses_to_read_a_page_without_a_crc32() {
+    let scratch = ScratchFolder::new("rar5-no-crc");
+    let path = scratch.write("book.cbr", &archive(&[Entry::page(b"1.png").bytes()]));
+    let mut book = open_book(&path).unwrap();
+
+    let page = book.read_page(0);
+
+    assert!(
+        matches!(page, Err(FormatError::CorruptRar { .. })),
+        "{page:?}"
+    );
 }

@@ -45,9 +45,11 @@ async function showBlueWallpaper(
 ): Promise<void> {
   followCorePlatform("android");
   document.documentElement.dataset.theme = theme;
-  await followWallpaperColours("android", "wallpaper", () =>
-    Promise.resolve({ status: "ok", data: BLUE_WALLPAPER }),
-  );
+  await followWallpaperColours("android", "wallpaper", {
+    wallpaperColours: () =>
+      Promise.resolve({ status: "ok", data: BLUE_WALLPAPER }),
+    accentColours: () => Promise.resolve(null),
+  });
 }
 
 afterEach(async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { IpcError } from "#lib/ipc/bindings.ts";
+import type { IpcError, SentProblemReport } from "#lib/ipc/bindings.ts";
 import type { LocalDay } from "#lib/history/local-date.ts";
 
 import {
@@ -11,10 +11,16 @@ import {
 
 const TODAY: LocalDay = 20_742;
 
-type Sending =
-  { status: "ok"; data: null } | { status: "error"; error: IpcError };
+const SENT: SentProblemReport = {
+  code: "R-7K2M-QX9D",
+  statusKey: "c3RhdHVz",
+};
 
-function sharingWith(sending: Sending = { status: "ok", data: null }) {
+type Sending =
+  | { status: "ok"; data: SentProblemReport }
+  | { status: "error"; error: IpcError };
+
+function sharingWith(sending: Sending = { status: "ok", data: SENT }) {
   const sentTo: (string | null)[] = [];
   const shared: Shared[] = [];
   const unused = () => Promise.reject(new Error("not this way"));
@@ -43,7 +49,10 @@ test("sends the report with the address typed for a reply", async () => {
 
   await sharing.share("send");
 
-  expect([sentTo, shared]).toEqual([["reader@example.org"], [{ way: "send" }]]);
+  expect([sentTo, shared]).toEqual([
+    ["reader@example.org"],
+    [{ way: "send", sent: SENT }],
+  ]);
 });
 
 test("sends no address when none is typed", async () => {
@@ -59,15 +68,15 @@ test("says why sending failed and keeps it from counting as sent", async () => {
   const { sharing, shared } = sharingWith({
     status: "error",
     error: {
-      code: "reportsNotSent",
-      message: "problem reports have nowhere to be sent yet",
+      code: "relayRateLimited",
+      message: "too many reports were sent from this network",
     },
   });
 
   await sharing.share("send");
 
   expect([sharing.failure, shared]).toEqual([
-    { way: "send", code: "reportsNotSent" },
+    { way: "send", code: "relayRateLimited" },
     [],
   ]);
 });

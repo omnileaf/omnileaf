@@ -1,4 +1,7 @@
-import type { WallpaperColours } from "../src/lib/ipc/bindings.ts";
+import type {
+  AccentColours,
+  WallpaperColours,
+} from "../src/lib/ipc/bindings.ts";
 
 export const BLUE_WALLPAPER: WallpaperColours = {
   light: {
@@ -39,4 +42,11 @@ export const BLUE_WALLPAPER: WallpaperColours = {
     inverseOnSurface: 0x535559,
     inversePrimary: 0x4a6080,
   },
+};
+
+export const BLUE_ACCENT: AccentColours = {
+  light: 0x0067c0,
+  dark: 0x4cc2ff,
+  lightText: 0x003e92,
+  darkText: 0x99ebff,
 };

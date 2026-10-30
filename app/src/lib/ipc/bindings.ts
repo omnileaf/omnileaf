@@ -28,6 +28,12 @@ export const commands = {
 	light: ColourRoles,
 	dark: ColourRoles,
 } | null, IpcError>(__TAURI_INVOKE("wallpaper_colours")),
+	accentColours: () => __TAURI_INVOKE<{
+	light: number,
+	dark: number,
+	lightText: number,
+	darkText: number,
+} | null>("accent_colours"),
 	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
 	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
@@ -184,7 +190,8 @@ export const commands = {
 	openProjectLink: (link: ProjectLink) => typedError<null, IpcError>(__TAURI_INVOKE("open_project_link", { link })),
 	problemReport: () => typedError<ProblemReportPreview, IpcError>(__TAURI_INVOKE("problem_report")),
 	copyProblemReport: () => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report")),
-	sendProblemReport: (replyTo: string | null) => typedError<null, IpcError>(__TAURI_INVOKE("send_problem_report", { replyTo })),
+	sendProblemReport: (replyTo: string | null) => typedError<SentProblemReport, IpcError>(__TAURI_INVOKE("send_problem_report", { replyTo })),
+	problemReportStatuses: (reports: SentReportKey[]) => typedError<ProblemReportStatus[], IpcError>(__TAURI_INVOKE("problem_report_statuses", { reports })),
 	copyProblemReportCode: (code: ReportCode) => typedError<null, IpcError>(__TAURI_INVOKE("copy_problem_report_code", { code })),
 	openProblemReportIssue: () => typedError<null, IpcError>(__TAURI_INVOKE("open_problem_report_issue")),
 	saveProblemReport: (today: number) => typedError<SavedProblemReport, IpcError>(__TAURI_INVOKE("save_problem_report", { today })),
@@ -204,6 +211,7 @@ export const commands = {
 	showIconActions: (menu: IconActionsMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_icon_actions", { menu })),
 	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
+	openColourSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_colour_settings")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -226,6 +234,13 @@ export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tabl
 export const SEARCH_MAX_CHARS = 200 as const;
 
 /* Types */
+export type AccentColours = {
+	light: number,
+	dark: number,
+	lightText: number,
+	darkText: number,
+};
+
 /**  How the library treats series that count as 18+, and whether an adult age rating in their details makes them count. */
 export type AdultContent = {
 	treatment: AdultTreatment,
@@ -550,7 +565,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "reportsNotSent" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -759,6 +774,11 @@ export type ProblemReportPreview = {
 	log: string[],
 };
 
+export type ProblemReportStatus = {
+	code: ReportCode,
+	review: ReportReview,
+};
+
 export type ProjectLink = "sourceCode" | "newIssue" | "latestRelease";
 
 export type ReadMark = "read" | "unread";
@@ -833,6 +853,8 @@ export type RemovalTarget = { kind: "series"; id: string & { readonly __brand: "
 
 export type ReportCode = string;
 
+export type ReportReview = { kind: "received" } | { kind: "reviewing" } | { kind: "published"; issue: number } | { kind: "duplicate"; issue: number } | { kind: "closed" } | { kind: "unknown" };
+
 export type RescanOutcome = {
 	kind: "rescanned",
 } & FileChanges | { kind: "unreachable" } | { kind: "foundEmpty" };
@@ -849,6 +871,16 @@ export type ScanProgress = { stage: "adding"; name: string; location: string } |
 export type ScreenOrientation = "followDevice" | 
 /**  Upright on phones and turning with the device on tablets, as the rest of the app is laid out. */
 "portraitOnPhones";
+
+export type SentProblemReport = {
+	code: ReportCode,
+	statusKey: string,
+};
+
+export type SentReportKey = {
+	code: ReportCode,
+	statusKey: string,
+};
 
 export type SeriesBook = {
 	id: string & { readonly __brand: "BookId" },

@@ -27,6 +27,10 @@ const MAX_DICTIONARY_BYTES: u64 = 64 * MIB;
 const MAX_DICTIONARY_BYTES: u64 = 32 * MIB;
 const NO_SIGNATURE: &str = "the file has no RAR signature";
 
+pub(crate) fn is_readable_rar(start: &[u8]) -> bool {
+    start.starts_with(RAR5_SIGNATURE) || start.starts_with(RAR4_SIGNATURE)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RarFormat {
     Rar4,

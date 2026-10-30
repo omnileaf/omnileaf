@@ -162,6 +162,15 @@
     void followWallpaperColours(data.appInfo.platform, colours.choice);
   }
 
+  const rereadsColoursOnFocus = $derived(data.appInfo.platform === "windows");
+
+  function followFocus(): void {
+    settleScreenshotMode();
+    if (rereadsColoursOnFocus) {
+      followColours();
+    }
+  }
+
   function followVisibility(): void {
     settleScreenshotMode();
     if (document.visibilityState === "visible") {
@@ -238,7 +247,7 @@
       screenshotMode.toggle();
     }),
   )}
-  onfocus={settleScreenshotMode}
+  onfocus={followFocus}
   onpageshow={settleScreenshotMode}
   onstorage={(event: StorageEvent) => {
     if (event.key === ANIMATIONS_PREFERENCE_KEY) {

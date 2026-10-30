@@ -11,7 +11,7 @@
   import NavigationIcon from "./NavigationIcon.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
-  import { tabBarLook } from "./tab-bar.ts";
+  import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
   interface Destination {
     readonly section: Section;
@@ -47,12 +47,15 @@
   let {
     current,
     attention,
+    isCollapsed = false,
   }: {
     current: Section;
     attention?: Snippet<[{ isFolded: boolean }]> | undefined;
+    isCollapsed?: boolean;
   } = $props();
 
-  const look = tabBarLook(currentPlatform());
+  const platformLook = tabBarLook(currentPlatform());
+  const look = $derived(isCollapsed ? COLLAPSED_TAB_BAR_LOOK : platformLook);
   const sidebar = getSidebarSetting();
   const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
   const isFolded = $derived(sidebar.isHidden || isNarrowPointer.current);
@@ -126,6 +129,7 @@
     ></li>
     {#each DESTINATIONS as destination (destination.section)}
       {@const isSelected = destination.section === current}
+      {@const isWayBack = isCollapsed && isSelected}
       {@const isArriving = destination.section === arriving}
       {#if destination.isAtSideEnd && attention !== undefined}
         <li class="hidden desktop-shell:mbs-auto desktop-shell:flex">
@@ -136,6 +140,7 @@
         class={[
           "flex-1 min-inline-none medium:flex-none desktop-shell:flex-none",
           look.cell,
+          isCollapsed && !isSelected && "hidden",
           destination.isAtSideEnd &&
             (attention === undefined
               ? "medium:mbs-auto desktop-shell:mbs-auto"
@@ -150,7 +155,9 @@
             <a
               {...props}
               href={resolve(SECTION_ROUTE_IDS[destination.section])}
-              aria-current={isSelected ? "page" : undefined}
+              aria-current={isSelected && !isWayBack ? "page" : undefined}
+              aria-label={isWayBack ? m.search_back() : undefined}
+              data-back-link={isWayBack || undefined}
               class={[
                 "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,
@@ -192,8 +199,11 @@
                   ]}
                 />
               </span>
-              <span class="truncate max-inline-full sidebar-hidden:sr-only"
-                >{destination.label()}</span
+              <span
+                class={[
+                  "truncate max-inline-full sidebar-hidden:sr-only",
+                  isCollapsed && "sr-only",
+                ]}>{destination.label()}</span
               >
             </a>
           {/snippet}
