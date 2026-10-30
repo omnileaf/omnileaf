@@ -71,7 +71,7 @@
   </div>
   <footer
     {@attach makesToastRoom(STEP_TOAST_ROOM)}
-    class="flex shrink-0 flex-row-reverse justify-start gap-sm border-bs border-border px-xl py-lg"
+    class="flex shrink-0 flex-row-reverse flex-wrap justify-start gap-sm border-bs border-border px-xl py-lg"
   >
     {@render actions()}
   </footer>
