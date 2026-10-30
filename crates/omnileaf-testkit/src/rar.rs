@@ -44,8 +44,33 @@ pub enum RarEncryption {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RarVolume {
     Whole,
-    PartOfSet,
-    LastEntryContinues,
+    First,
+    Middle,
+    Last,
+}
+
+impl RarVolume {
+    const fn follows_another(self) -> bool {
+        match self {
+            Self::Middle | Self::Last => true,
+            Self::Whole | Self::First => false,
+        }
+    }
+
+    const fn precedes_another(self) -> bool {
+        match self {
+            Self::First | Self::Middle => true,
+            Self::Whole | Self::Last => false,
+        }
+    }
+
+    const fn number(self) -> Option<u64> {
+        match self {
+            Self::Middle => Some(1),
+            Self::Last => Some(2),
+            Self::Whole | Self::First => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -73,13 +98,11 @@ impl RarOptions {
 }
 
 pub fn cbr(entries: &[ArchiveEntry], options: &RarOptions) -> Result<Vec<u8>, FixtureError> {
-    let last = entries.len().saturating_sub(1);
     let members: Vec<Member<'_>> = entries
         .iter()
-        .enumerate()
-        .map(|(index, entry)| Member::of(entry, options, index == last))
+        .map(|entry| Member::of(entry, options))
         .collect::<Result<_, _>>()?;
-    let members = mark_solid(members, options.packing);
+    let members = mark_split_files(mark_solid(members, options.packing), options.volume);
     match options.format {
         RarFormat::Rar4 { unpack_version } => rar4::archive(&members, options, unpack_version),
         RarFormat::Rar5 {
@@ -96,22 +119,24 @@ pub fn cbr(entries: &[ArchiveEntry], options: &RarOptions) -> Result<Vec<u8>, Fi
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct VolumeSplit {
+    from_previous: bool,
+    into_next: bool,
+}
+
 struct Member<'a> {
     name: &'a str,
     bytes: &'a [u8],
     is_directory: bool,
     is_solid: bool,
-    continues: bool,
+    split: VolumeSplit,
     unpacked_size: u64,
     crc32: u32,
 }
 
 impl<'a> Member<'a> {
-    fn of(
-        entry: &'a ArchiveEntry,
-        options: &RarOptions,
-        is_last: bool,
-    ) -> Result<Self, FixtureError> {
+    fn of(entry: &'a ArchiveEntry, options: &RarOptions) -> Result<Self, FixtureError> {
         let is_directory = entry.name.ends_with(FOLDER_SUFFIX);
         let bytes = entry.bytes.as_slice();
         if is_directory && !bytes.is_empty() {
@@ -129,7 +154,7 @@ impl<'a> Member<'a> {
             bytes,
             is_directory,
             is_solid: false,
-            continues: is_last && options.volume == RarVolume::LastEntryContinues,
+            split: VolumeSplit::default(),
             unpacked_size,
             crc32: crc32(bytes),
         })
@@ -146,6 +171,17 @@ fn mark_solid(members: Vec<Member<'_>>, packing: Packing) -> Vec<Member<'_>> {
             Member { is_solid, ..member }
         })
         .collect()
+}
+
+fn mark_split_files(mut members: Vec<Member<'_>>, volume: RarVolume) -> Vec<Member<'_>> {
+    let is_file = |member: &&mut Member<'_>| !member.is_directory;
+    if let Some(first) = members.iter_mut().find(is_file) {
+        first.split.from_previous = volume.follows_another();
+    }
+    if let Some(last) = members.iter_mut().rev().find(is_file) {
+        last.split.into_next = volume.precedes_another();
+    }
+    members
 }
 
 fn crc32(bytes: &[u8]) -> u32 {

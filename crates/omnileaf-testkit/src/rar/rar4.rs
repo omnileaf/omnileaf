@@ -11,6 +11,9 @@ const MAIN_IS_VOLUME: u16 = 0x0001;
 const MAIN_IS_SOLID: u16 = 0x0008;
 const MAIN_IS_ENCRYPTED: u16 = 0x0080;
 const MAIN_RESERVED: [u8; 6] = [0; 6];
+const MAIN_IS_FIRST_VOLUME: u16 = 0x0100;
+const MORE_VOLUMES_FOLLOW: u16 = 0x0001;
+const FILE_CONTINUES_FROM_PREVIOUS: u16 = 0x0001;
 const FILE_CONTINUES: u16 = 0x0002;
 const FILE_IS_ENCRYPTED: u16 = 0x0004;
 const FILE_IS_SOLID: u16 = 0x0010;
@@ -41,14 +44,22 @@ pub(super) fn archive(
             archive.extend_from_slice(member.bytes);
         }
     }
-    archive.extend(block(END, NO_FLAGS, &[])?);
+    let end_flags = if options.volume.precedes_another() {
+        MORE_VOLUMES_FOLLOW
+    } else {
+        NO_FLAGS
+    };
+    archive.extend(block(END, end_flags, &[])?);
     Ok(archive)
 }
 
 fn main_flags(options: &RarOptions) -> u16 {
     let mut flags = NO_FLAGS;
-    if options.volume == RarVolume::PartOfSet {
+    if options.volume != RarVolume::Whole {
         flags |= MAIN_IS_VOLUME;
+    }
+    if options.volume == RarVolume::First {
+        flags |= MAIN_IS_FIRST_VOLUME;
     }
     if options.packing == Packing::Solid {
         flags |= MAIN_IS_SOLID;
@@ -108,7 +119,10 @@ fn file_flags(member: &Member<'_>, options: &RarOptions) -> u16 {
     if member.is_solid {
         flags |= FILE_IS_SOLID;
     }
-    if member.continues {
+    if member.split.from_previous {
+        flags |= FILE_CONTINUES_FROM_PREVIOUS;
+    }
+    if member.split.into_next {
         flags |= FILE_CONTINUES;
     }
     if options.encryption == RarEncryption::Entries && !member.is_directory {
@@ -161,6 +175,9 @@ mod tests {
     const MAIN_IS_VOLUME: u16 = 0x0001;
     const MAIN_IS_SOLID: u16 = 0x0008;
     const MAIN_IS_ENCRYPTED: u16 = 0x0080;
+    const MAIN_IS_FIRST_VOLUME: u16 = 0x0100;
+    const MORE_VOLUMES_FOLLOW: u16 = 0x0001;
+    const FILE_CONTINUES_FROM_PREVIOUS: u16 = 0x0001;
     const FILE_CONTINUES: u16 = 0x0002;
     const FILE_IS_ENCRYPTED: u16 = 0x0004;
     const FILE_IS_SOLID: u16 = 0x0010;
@@ -396,26 +413,56 @@ mod tests {
         );
     }
 
-    #[test]
-    fn marks_a_volume_and_a_last_entry_continuing_in_the_next_one() {
-        let part_of_set = RarOptions {
-            volume: RarVolume::PartOfSet,
+    fn volume_flags(volume: RarVolume) -> (u16, Vec<u16>, u16) {
+        let options = RarOptions {
+            volume,
             ..RarOptions::of(RarFormat::RAR4)
         };
-        let continues = RarOptions {
-            volume: RarVolume::LastEntryContinues,
-            ..RarOptions::of(RarFormat::RAR4)
-        };
-
-        let main = blocks(&cbr(&pages(), &part_of_set).unwrap())[0].flags;
-        let continuing: Vec<u16> = files(&blocks(&cbr(&pages(), &continues).unwrap()))
+        let blocks = blocks(&cbr(&pages(), &options).unwrap());
+        let split = files(&blocks)
             .iter()
-            .map(|file| file.flags & FILE_CONTINUES)
+            .map(|file| file.flags & (FILE_CONTINUES_FROM_PREVIOUS | FILE_CONTINUES))
             .collect();
+        let end = blocks.last().unwrap();
+        assert_eq!(end.kind, END);
+        (blocks[0].flags, split, end.flags)
+    }
+
+    #[test]
+    fn writes_a_first_volume_whose_last_file_continues_in_the_next() {
+        let flags = volume_flags(RarVolume::First);
 
         assert_eq!(
-            (main & MAIN_IS_VOLUME, continuing),
-            (MAIN_IS_VOLUME, vec![0, FILE_CONTINUES])
+            flags,
+            (
+                MAIN_IS_VOLUME | MAIN_IS_FIRST_VOLUME,
+                vec![0, FILE_CONTINUES],
+                MORE_VOLUMES_FOLLOW
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_middle_volume_whose_files_continue_at_both_ends() {
+        let flags = volume_flags(RarVolume::Middle);
+
+        assert_eq!(
+            flags,
+            (
+                MAIN_IS_VOLUME,
+                vec![FILE_CONTINUES_FROM_PREVIOUS, FILE_CONTINUES],
+                MORE_VOLUMES_FOLLOW
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_last_volume_whose_first_file_continues_from_the_previous() {
+        let flags = volume_flags(RarVolume::Last);
+
+        assert_eq!(
+            flags,
+            (MAIN_IS_VOLUME, vec![FILE_CONTINUES_FROM_PREVIOUS, 0], 0)
         );
     }
 

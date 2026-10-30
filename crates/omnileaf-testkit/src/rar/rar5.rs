@@ -11,8 +11,11 @@ const END: u64 = 5;
 const NO_FLAGS: u64 = 0;
 const HAS_EXTRA: u64 = 0x0001;
 const HAS_DATA: u64 = 0x0002;
+const CONTINUES_FROM_PREVIOUS_VOLUME: u64 = 0x0008;
 const CONTINUES_IN_NEXT_VOLUME: u64 = 0x0010;
 const ARCHIVE_IS_VOLUME: u64 = 0x0001;
+const ARCHIVE_HAS_VOLUME_NUMBER: u64 = 0x0002;
+const MORE_VOLUMES_FOLLOW: u64 = 0x0001;
 const ARCHIVE_IS_SOLID: u64 = 0x0004;
 const FILE_IS_DIRECTORY: u64 = 0x0001;
 const FILE_HAS_CRC32: u64 = 0x0004;
@@ -60,7 +63,12 @@ pub(super) fn archive(
     for member in members {
         archive.extend(file_block(member, options, compression).encode());
     }
-    archive.extend(simple_block(END, &vint(NO_FLAGS)).encode());
+    let end_flags = if options.volume.precedes_another() {
+        MORE_VOLUMES_FOLLOW
+    } else {
+        NO_FLAGS
+    };
+    archive.extend(simple_block(END, &vint(end_flags)).encode());
     archive
 }
 
@@ -81,13 +89,18 @@ fn encryption_block<'a>() -> Block<'a> {
 
 fn main_block<'a>(options: &RarOptions) -> Block<'a> {
     let mut archive_flags = NO_FLAGS;
-    if options.volume == RarVolume::PartOfSet {
+    if options.volume != RarVolume::Whole {
         archive_flags |= ARCHIVE_IS_VOLUME;
     }
     if options.packing == Packing::Solid {
         archive_flags |= ARCHIVE_IS_SOLID;
     }
-    simple_block(MAIN, &vint(archive_flags))
+    let number = options.volume.number();
+    if number.is_some() {
+        archive_flags |= ARCHIVE_HAS_VOLUME_NUMBER;
+    }
+    let fields = [vint(archive_flags), number.map(vint).unwrap_or_default()].concat();
+    simple_block(MAIN, &fields)
 }
 
 fn file_block<'a>(
@@ -126,11 +139,13 @@ fn file_block<'a>(
     } else {
         Vec::new()
     };
-    let flags = if member.continues {
-        CONTINUES_IN_NEXT_VOLUME
-    } else {
-        NO_FLAGS
-    };
+    let mut flags = NO_FLAGS;
+    if member.split.from_previous {
+        flags |= CONTINUES_FROM_PREVIOUS_VOLUME;
+    }
+    if member.split.into_next {
+        flags |= CONTINUES_IN_NEXT_VOLUME;
+    }
     Block {
         kind: FILE,
         flags,
@@ -232,8 +247,11 @@ mod tests {
     const END: u64 = 5;
     const HAS_EXTRA: u64 = 0x0001;
     const HAS_DATA: u64 = 0x0002;
+    const CONTINUES_FROM_PREVIOUS_VOLUME: u64 = 0x0008;
     const CONTINUES_IN_NEXT_VOLUME: u64 = 0x0010;
     const ARCHIVE_IS_VOLUME: u64 = 0x0001;
+    const ARCHIVE_HAS_VOLUME_NUMBER: u64 = 0x0002;
+    const MORE_VOLUMES_FOLLOW: u64 = 0x0001;
     const ARCHIVE_IS_SOLID: u64 = 0x0004;
     const FILE_IS_DIRECTORY: u64 = 0x0001;
     const FILE_HAS_CRC32: u64 = 0x0004;
@@ -507,27 +525,60 @@ mod tests {
         assert_eq!(records, [ENCRYPTION_RECORD, ENCRYPTION_RECORD]);
     }
 
-    #[test]
-    fn marks_a_volume_and_a_last_entry_continuing_in_the_next_one() {
-        let part_of_set = RarOptions {
-            volume: RarVolume::PartOfSet,
+    fn volume_flags(volume: RarVolume) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
+        let options = RarOptions {
+            volume,
             ..RarOptions::of(RarFormat::RAR5)
         };
-        let continues = RarOptions {
-            volume: RarVolume::LastEntryContinues,
-            ..RarOptions::of(RarFormat::RAR5)
-        };
-
-        let volume = headers(&cbr(&pages(), &part_of_set).unwrap());
-        let split = headers(&cbr(&pages(), &continues).unwrap());
-
-        let continuing: Vec<u64> = files(&split)
+        let headers = headers(&cbr(&pages(), &options).unwrap());
+        let split = files(&headers)
             .iter()
-            .map(|file| file.flags & CONTINUES_IN_NEXT_VOLUME)
+            .map(|file| file.flags & (CONTINUES_FROM_PREVIOUS_VOLUME | CONTINUES_IN_NEXT_VOLUME))
             .collect();
+        let end = headers.last().unwrap();
+        assert_eq!(end.kind, END);
+        (headers[0].fields.clone(), split, end.fields.clone())
+    }
+
+    #[test]
+    fn writes_a_first_volume_whose_last_file_continues_in_the_next() {
+        let flags = volume_flags(RarVolume::First);
+
         assert_eq!(
-            (volume[0].fields[0] & ARCHIVE_IS_VOLUME, continuing),
-            (ARCHIVE_IS_VOLUME, vec![0, CONTINUES_IN_NEXT_VOLUME])
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME],
+                vec![0, CONTINUES_IN_NEXT_VOLUME],
+                vec![MORE_VOLUMES_FOLLOW]
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_numbered_middle_volume_whose_files_continue_at_both_ends() {
+        let flags = volume_flags(RarVolume::Middle);
+
+        assert_eq!(
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME | ARCHIVE_HAS_VOLUME_NUMBER, 1],
+                vec![CONTINUES_FROM_PREVIOUS_VOLUME, CONTINUES_IN_NEXT_VOLUME],
+                vec![MORE_VOLUMES_FOLLOW]
+            )
+        );
+    }
+
+    #[test]
+    fn writes_a_numbered_last_volume_whose_first_file_continues_from_the_previous() {
+        let flags = volume_flags(RarVolume::Last);
+
+        assert_eq!(
+            flags,
+            (
+                vec![ARCHIVE_IS_VOLUME | ARCHIVE_HAS_VOLUME_NUMBER, 2],
+                vec![CONTINUES_FROM_PREVIOUS_VOLUME, 0],
+                vec![0]
+            )
         );
     }
 
