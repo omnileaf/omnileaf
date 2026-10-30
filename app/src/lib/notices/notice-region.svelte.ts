@@ -1,3 +1,6 @@
+import type { Attachment } from "svelte/attachments";
+import { on } from "svelte/events";
+
 import { focusPageHeading } from "#lib/navigation/page-heading.ts";
 
 import type { Notices } from "./notices";
@@ -76,6 +79,23 @@ export class NoticeRegion {
 
   notePointerLeaving = (): void => {
     this.#isPointerOver = false;
+  };
+
+  watches: Attachment<HTMLElement> = (element) => {
+    this.element = element;
+    const stops = [
+      on(element, "focusin", this.noteFocusArriving),
+      on(element, "focusout", this.noteFocusLeaving),
+      on(element, "click", this.returnFocusFromButton, { capture: true }),
+      on(element, "pointerdown", this.noteTap),
+      on(element, "pointerenter", this.notePointerEntering),
+      on(element, "pointerleave", this.notePointerLeaving),
+    ];
+    return () => {
+      for (const stop of stops) {
+        stop();
+      }
+    };
   };
 
   undoFromKeyboard = (): void => {

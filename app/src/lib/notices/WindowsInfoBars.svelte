@@ -43,18 +43,12 @@
 
 <Portal to={slot ?? "body"} disabled={slot === undefined}>
   <section
-    bind:this={region.element}
+    {@attach region.watches}
     aria-label={m.notice_region()}
     aria-keyshortcuts={JUMP_KEY}
     tabindex="-1"
     data-floating={slot === undefined || undefined}
     class="group/info-bars flex flex-col focus-visible:focus-ring data-floating:fixed data-floating:inset-x-sm data-floating:inset-bs-native-info-bar-floating-top data-floating:z-notice"
-    onfocusin={region.noteFocusArriving}
-    onfocusout={region.noteFocusLeaving}
-    onclickcapture={region.returnFocusFromButton}
-    onpointerdown={region.noteTap}
-    onpointerenter={region.notePointerEntering}
-    onpointerleave={region.notePointerLeaving}
   >
     {#each POLITENESS_ORDER as politeness (politeness)}
       <div
