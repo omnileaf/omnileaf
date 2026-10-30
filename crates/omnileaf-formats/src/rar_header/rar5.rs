@@ -2,6 +2,7 @@ use std::io::{Read, Seek};
 
 use super::{
     MAX_DICTIONARY_BYTES, MAX_HEADER_BYTES,
+    entry_type::EntryType,
     fields::Fields,
     gate::{FileHeader, Gate},
     rar5_extra::check_extra_area,
@@ -29,10 +30,6 @@ const FILE_HAS_CRC32: u64 = 0x0004;
 const FILE_SIZE_IS_UNKNOWN: u64 = 0x0008;
 const HOST_WINDOWS: u64 = 0;
 const HOST_UNIX: u64 = 1;
-const WINDOWS_DIRECTORY_ATTRIBUTE: u64 = 0x10;
-const UNIX_FILE_TYPE: u64 = 0o170_000;
-const UNIX_DIRECTORY: u64 = 0o040_000;
-const UNIX_REGULAR_FILE: u64 = 0o100_000;
 const ALGORITHM_VERSION: u64 = 0x003F;
 const SOLID: u64 = 0x0040;
 const DICTIONARY_SHIFT: u32 = 10;
@@ -55,13 +52,6 @@ const UNKNOWN_HOST: &str = "an entry comes from an unknown host system";
 const TYPE_DISAGREES: &str = "an entry's attributes disagree with its folder flag";
 const FOLDER_WITH_DATA: &str = "a folder entry declares data";
 const FILE_WITHOUT_DATA: &str = "a file entry has no data area";
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum EntryType {
-    File,
-    Folder,
-    Other,
-}
 
 struct Header<'a> {
     kind: u64,
@@ -280,9 +270,8 @@ fn file_header(
 ) -> Result<FileHeader, FormatError> {
     let entry = entry_header(header, data_offset, gate)?;
     let entry_type = match entry.host {
-        HOST_WINDOWS if entry.attributes & WINDOWS_DIRECTORY_ATTRIBUTE != 0 => EntryType::Folder,
-        HOST_WINDOWS => EntryType::File,
-        HOST_UNIX => unix_entry_type(entry.attributes),
+        HOST_WINDOWS => EntryType::of_windows_attributes(entry.attributes),
+        HOST_UNIX => EntryType::of_unix_mode(entry.attributes),
         _ => return Err(gate.corrupt(UNKNOWN_HOST)),
     };
     let flagged_type = if entry.header.is_directory {
@@ -297,15 +286,6 @@ fn file_header(
         return Err(gate.corrupt(TYPE_DISAGREES));
     }
     Ok(entry.header)
-}
-
-/// libarchive takes a Unix entry's type from the `st_mode` stored as its attributes.
-const fn unix_entry_type(mode: u64) -> EntryType {
-    match mode & UNIX_FILE_TYPE {
-        UNIX_DIRECTORY => EntryType::Folder,
-        UNIX_REGULAR_FILE => EntryType::File,
-        _ => EntryType::Other,
-    }
 }
 
 fn check_compression(compression: u64, gate: &Gate<'_>) -> Result<(), FormatError> {

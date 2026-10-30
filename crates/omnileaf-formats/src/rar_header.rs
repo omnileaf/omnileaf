@@ -1,3 +1,4 @@
+mod entry_type;
 mod fields;
 mod gate;
 mod rar4;

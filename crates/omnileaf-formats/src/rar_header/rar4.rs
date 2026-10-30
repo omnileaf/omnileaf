@@ -1,6 +1,7 @@
 use std::io::{Read, Seek};
 
 use super::{
+    entry_type::EntryType,
     fields::Fields,
     gate::{FileHeader, Gate},
     source::Source,
@@ -25,14 +26,20 @@ const HAS_ADDED_SIZE: u16 = 0x8000;
 const MAIN_IS_VOLUME: u16 = 0x0001;
 const MAIN_IS_ENCRYPTED: u16 = 0x0080;
 const MAIN_IS_FIRST_VOLUME: u16 = 0x0100;
+const END_HAS_NEXT_VOLUME: u16 = 0x0001;
 const FILE_CONTINUES_FROM_PREVIOUS_VOLUME: u16 = 0x0001;
 const FILE_CONTINUES_IN_NEXT_VOLUME: u16 = 0x0002;
 const FILE_IS_ENCRYPTED: u16 = 0x0004;
 const FILE_IS_SOLID: u16 = 0x0010;
-const FILE_DICTIONARY: u16 = 0x00E0;
 const FILE_HAS_LARGE_SIZES: u16 = 0x0100;
 const FILE_HAS_UNICODE_NAME: u16 = 0x0200;
 const STORED: u8 = 0x30;
+const HOST_MS_DOS: u8 = 0;
+const HOST_OS2: u8 = 1;
+const HOST_WINDOWS: u8 = 2;
+const HOST_UNIX: u8 = 3;
+const HOST_MAC_OS: u8 = 4;
+const HOST_BEOS: u8 = 5;
 const RAR3_UNPACK_VERSION: u8 = 29;
 const VERSION_DIGITS: u8 = 10;
 const SOLID_RAR4: &str = "solid RAR 4";
@@ -51,6 +58,9 @@ const SEPARATOR: char = '/';
 
 const MALFORMED_BLOCK: &str = "a RAR 4 block is malformed";
 const BAD_BLOCK_CRC: &str = "a RAR 4 block fails its CRC check";
+const UNKNOWN_HOST: &str = "an entry comes from an unknown host system";
+const FOLDER_WITH_DATA: &str = "a folder entry declares data";
+const CONTINUED_ENTRY: &str = "a file block repeats the name of the file block before it";
 const UNKNOWN_BLOCK: &str = "the archive has a block of an unknown type";
 const SECOND_MAIN_BLOCK: &str = "the archive has a second main block";
 
@@ -72,6 +82,7 @@ pub(super) fn walk<S: Read + Seek>(
     gate: &mut Gate<'_>,
 ) -> Result<(), FormatError> {
     let mut has_main = false;
+    let mut previous_file: Option<String> = None;
     while !source.is_at_end() {
         let prefix = read_prefix(source, gate)?;
         match prefix.kind {
@@ -84,6 +95,10 @@ pub(super) fn walk<S: Read + Seek>(
             FILE => {
                 let fields = read_fields(source, &prefix, FILE_FIELDS_BYTES, gate)?;
                 let header = file_header(prefix.flags, &fields, source.position(), gate)?;
+                if previous_file.as_ref() == Some(&header.name) {
+                    return Err(gate.corrupt(CONTINUED_ENTRY));
+                }
+                previous_file = Some(header.name.clone());
                 let packed_size = header.packed_size;
                 gate.accept_file(header)?;
                 source.skip(packed_size)?;
@@ -100,7 +115,10 @@ pub(super) fn walk<S: Read + Seek>(
                 gate.count_member()?;
             }
             END => {
-                read_fields(source, &prefix, 0, gate)?;
+                check_old_block(source, &prefix, gate)?;
+                if prefix.flags & END_HAS_NEXT_VOLUME != 0 {
+                    return Err(gate.multi_volume());
+                }
                 return Ok(());
             }
             _ => return Err(gate.corrupt(UNKNOWN_BLOCK)),
@@ -152,7 +170,7 @@ fn read_fields<S: Read + Seek>(
     Ok(fields)
 }
 
-/// libarchive checks the blocks RAR 2 wrote with a CRC that spans the data they add as well as the block.
+/// libarchive checks the end block and the blocks RAR 2 wrote with a CRC that spans the data they add as well as the block.
 fn check_old_block<S: Read + Seek>(
     source: &mut Source<'_, S>,
     prefix: &Prefix,
@@ -206,31 +224,35 @@ fn sizes(flags: u16, fields: &mut Fields<'_>) -> Option<Sizes> {
 
 struct FileFields {
     sizes: Sizes,
+    host: u8,
     crc32: u32,
     unpack_version: u8,
     method: u8,
+    attributes: u32,
     name: String,
 }
 
 fn file_fields(flags: u16, bytes: &[u8]) -> Option<FileFields> {
     let mut fields = Fields(bytes);
     let sizes = sizes(flags, &mut fields)?;
-    fields.byte()?;
+    let host = fields.byte()?;
     let crc32 = fields.u32()?;
     fields.u32()?;
     let unpack_version = fields.byte()?;
     let method = fields.byte()?;
     let name_length = usize::from(fields.u16()?);
-    fields.u32()?;
+    let attributes = fields.u32()?;
     if flags & FILE_HAS_LARGE_SIZES != 0 {
         fields.take(HIGH_SIZES_BYTES)?;
     }
     let name = decode_name(flags, fields.take(name_length)?);
     Some(FileFields {
         sizes,
+        host,
         crc32,
         unpack_version,
         method,
+        attributes,
         name,
     })
 }
@@ -248,10 +270,17 @@ fn file_header(
     if flags & (FILE_CONTINUES_FROM_PREVIOUS_VOLUME | FILE_CONTINUES_IN_NEXT_VOLUME) != 0 {
         return Err(gate.multi_volume());
     }
-    let is_directory = flags & FILE_DICTIONARY == FILE_DICTIONARY;
-    if !is_directory {
-        check_method(flags, &file, gate)?;
-    }
+    let is_directory = match entry_type(&file).ok_or_else(|| gate.corrupt(UNKNOWN_HOST))? {
+        EntryType::File => {
+            check_method(flags, &file, gate)?;
+            false
+        }
+        EntryType::Folder if file.sizes.packed > 0 || file.sizes.unpacked > 0 => {
+            return Err(gate.corrupt(FOLDER_WITH_DATA));
+        }
+        EntryType::Folder => true,
+        EntryType::Other => return Err(gate.unsupported_entry(file.name)),
+    };
     Ok(FileHeader {
         name: file.name,
         is_directory,
@@ -263,7 +292,17 @@ fn file_header(
     })
 }
 
-/// libarchive's RAR 4 reader decodes only RAR 3 streams and refuses a solid entry, but copies a stored entry whatever version wrote it.
+/// libarchive types a RAR 4 entry by its host system and attributes, ignoring the dictionary bits RAR sets on a folder.
+fn entry_type(file: &FileFields) -> Option<EntryType> {
+    let attributes = u64::from(file.attributes);
+    match file.host {
+        HOST_MS_DOS | HOST_OS2 | HOST_WINDOWS => Some(EntryType::of_windows_attributes(attributes)),
+        HOST_UNIX | HOST_MAC_OS | HOST_BEOS => Some(EntryType::of_unix_mode(attributes)),
+        _ => None,
+    }
+}
+
+/// libarchive's RAR 4 reader refuses a solid entry and never reads the unpack version, decoding every compressed entry as a RAR 3 stream.
 fn check_method(flags: u16, file: &FileFields, gate: &Gate<'_>) -> Result<(), FormatError> {
     if flags & FILE_IS_SOLID != 0 {
         return Err(gate.unsupported(SOLID_RAR4.to_owned()));

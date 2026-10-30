@@ -30,6 +30,10 @@ name = "rar_crafted"
 required-features = ["rar"]
 
 [[test]]
+name = "rar4_disagreements"
+required-features = ["rar"]
+
+[[test]]
 name = "rar5_disagreements"
 required-features = ["rar"]
 
