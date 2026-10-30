@@ -1,3 +1,5 @@
+import type { WindowBackdrop } from "#lib/ipc/bindings.ts";
+
 const CONTRASTS = ["more", "medium", "high"] as const;
 
 const TRANSPARENCIES = ["reduced"] as const;
@@ -22,6 +24,10 @@ function markRoot(attribute: string, value: string | undefined): void {
 
 export function followContrast(contrast: Contrast | undefined): void {
   markRoot("data-contrast", contrast);
+}
+
+export function followWindowBackdrop(backdrop: WindowBackdrop): void {
+  markRoot("data-backdrop", backdrop);
 }
 
 export function followDisplayModes({

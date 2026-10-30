@@ -1,12 +1,17 @@
 import { afterEach, expect, test } from "vitest";
 
-import { displayModesFrom, followDisplayModes } from "./display-modes";
+import {
+  displayModesFrom,
+  followDisplayModes,
+  followWindowBackdrop,
+} from "./display-modes";
 
 const root = document.documentElement;
 
 afterEach(() => {
   delete root.dataset.contrast;
   delete root.dataset.transparency;
+  delete root.dataset.backdrop;
 });
 
 test("marks the root with the system's contrast and transparency settings", () => {
@@ -32,4 +37,14 @@ test("reads the settings from a page address and ignores values it does not know
   expect(
     displayModesFrom(new URLSearchParams("contrast=max&transparency=on")),
   ).toEqual({ contrast: undefined, transparency: undefined });
+});
+
+test("marks the root with the backdrop the window is drawn on", () => {
+  followWindowBackdrop("mica");
+
+  expect(root.dataset.backdrop).toBe("mica");
+
+  followWindowBackdrop("none");
+
+  expect(root.dataset.backdrop).toBe("none");
 });

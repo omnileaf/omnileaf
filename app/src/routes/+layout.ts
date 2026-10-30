@@ -10,6 +10,7 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
+import { followWindowBackdrop } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";
@@ -25,6 +26,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
     commands.homeArrival(),
   ]);
   followCorePlatform(appInfo.platform);
+  followWindowBackdrop(appInfo.windowBackdrop);
   followSystemTextSize(appInfo.platform);
   followSystemContrast(appInfo.platform);
   if (libraryProblem !== null) {
