@@ -33,6 +33,7 @@
     rowAction,
     rowDetail,
     rowNotice,
+    listNotice,
     isFoundEmpty,
     status,
     usesStandIns,
@@ -48,7 +49,8 @@
     notices: Notices;
     rowAction?: Snippet<[LibraryFolder]>;
     rowDetail?: Snippet<[LibraryFolder]>;
-    rowNotice?: Snippet<[LibraryFolder]>;
+    rowNotice?: Snippet<[LibraryFolder]> | undefined;
+    listNotice?: Snippet<[readonly LibraryFolder[]]> | undefined;
     isFoundEmpty?: (folder: LibraryFolder) => boolean;
     status?: Snippet;
     usesStandIns: boolean;
@@ -201,6 +203,8 @@
     {/snippet}
   </FolderRow>
 {/snippet}
+
+{@render listNotice?.(shownFolders)}
 
 <section
   aria-labelledby={headingId}
