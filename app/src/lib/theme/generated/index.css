@@ -386,6 +386,8 @@
   --color-native-sheet-rule: var(--native-color-sheet-rule);
   --color-native-row-current: var(--native-color-row-current);
   --color-native-on-row-current: var(--native-color-on-row-current);
+  --radius-native-outlined-field: var(--native-radius-outlined-field);
+  --spacing-native-outlined-field: var(--native-spacing-outlined-field);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
   --text-native-empty: var(--native-text-empty);
   --leading-native-empty: var(--native-leading-empty);

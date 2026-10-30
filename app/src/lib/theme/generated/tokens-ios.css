@@ -298,6 +298,8 @@
   --native-color-sheet-rule: var(--border);
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
+  --native-radius-outlined-field: 4px;
+  --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
   --native-text-empty: calc(1.375rem * var(--text-scale));
   --native-leading-empty: calc(28 / 22);
