@@ -43,7 +43,7 @@
     {chosen}
     labelledBy="{id}-label"
     isFullWidth={!isRow}
-    class={isRow && "flex-none"}
+    class={isRow ? "flex-none" : undefined}
     {onChoose}
   />
 </div>
