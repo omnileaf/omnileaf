@@ -8,12 +8,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::vendor::LIBARCHIVE_VERSION;
 
-const LIBARCHIVE_LICENCE: &str = "BSD-2-Clause";
-const LIBARCHIVE_NOTICE: &str = include_str!(concat!(
-    "../../vendor/libarchive-",
-    libarchive_version!(),
-    "/COPYING"
-));
+const LIBARCHIVE_LICENCE: &str = "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0";
+const LIBARCHIVE_TEXTS: &[(&str, &str)] = &[
+    (
+        "COPYING",
+        include_str!(concat!(
+            "../../vendor/libarchive-",
+            libarchive_version!(),
+            "/COPYING"
+        )),
+    ),
+    (
+        "NOTICE",
+        include_str!(concat!(
+            "../../vendor/libarchive-",
+            libarchive_version!(),
+            "/NOTICE"
+        )),
+    ),
+];
 
 #[derive(Deserialize)]
 struct AboutReport {
@@ -132,16 +145,15 @@ pub(crate) fn catalogue(report: &str) -> Result<Catalogue, CatalogueError> {
 }
 
 pub(crate) fn with_vendored_notices(mut catalogue: Catalogue) -> Catalogue {
-    let text = index_of(
-        &mut catalogue.texts,
-        LIBARCHIVE_LICENCE.to_owned(),
-        LIBARCHIVE_NOTICE,
-    );
+    let texts = LIBARCHIVE_TEXTS
+        .iter()
+        .map(|(name, text)| index_of(&mut catalogue.texts, (*name).to_owned(), text))
+        .collect();
     catalogue.packages.push(Package {
         name: "libarchive".to_owned(),
         version: LIBARCHIVE_VERSION.to_owned(),
         licence: LIBARCHIVE_LICENCE.to_owned(),
-        texts: vec![text],
+        texts,
     });
     catalogue
         .packages
@@ -342,7 +354,7 @@ mod tests {
     }
 
     #[test]
-    fn lists_libarchive_with_its_bsd_notice() {
+    fn lists_libarchive_under_every_licence_its_vendored_files_carry() {
         let catalogue = with_vendored_notices(catalogue_of(&["sample-alpha"]));
 
         let libarchive = catalogue
@@ -351,16 +363,47 @@ mod tests {
             .find(|package| package.name == "libarchive")
             .unwrap();
         assert_eq!(libarchive.version, "3.8.10");
-        assert_eq!(libarchive.licence, "BSD-2-Clause");
-        let [index] = libarchive.texts[..] else {
-            panic!("libarchive lists {} texts", libarchive.texts.len());
-        };
-        assert_eq!(catalogue.texts[index].licence, "BSD-2-Clause");
-        assert!(
-            catalogue.texts[index]
-                .text
-                .contains("Redistribution and use in source and binary forms")
+        assert_eq!(
+            libarchive.licence,
+            "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0"
         );
+    }
+
+    #[test]
+    fn gives_libarchive_its_copying_file_and_the_notice_of_every_holder() {
+        let catalogue = with_vendored_notices(catalogue_of(&["sample-alpha"]));
+
+        let libarchive = catalogue
+            .packages
+            .iter()
+            .find(|package| package.name == "libarchive")
+            .unwrap();
+        let texts: Vec<&LicenceText> = libarchive
+            .texts
+            .iter()
+            .map(|index| &catalogue.texts[*index])
+            .collect();
+        let names: Vec<&str> = texts.iter().map(|text| text.licence.as_str()).collect();
+        assert_eq!(names, ["COPYING", "NOTICE"]);
+        for holder in [
+            "Tim Kientzle",
+            "Martin Matuska",
+            "Michihiro NAKAJIMA",
+            "Joerg Sonnenberger",
+            "Andres Mejia",
+            "Grzegorz Antoniak",
+            "Thomas Moestl",
+            "Tobias Stoeckmann",
+            "ARJANEN",
+            "Kees Zeelenberg",
+            "The Regents of the University of California",
+            "Damien Miller",
+            "PostgreSQL Global Development Group",
+            "Samuel Neves",
+            "Igor Pavlov",
+        ] {
+            assert!(texts[1].text.contains(holder), "{holder}");
+        }
     }
 
     #[test]

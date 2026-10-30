@@ -23,6 +23,8 @@ const PINNED_TARBALL: &str = concat!(
     ".tar.gz"
 );
 const MANIFEST_NAME: &str = "MANIFEST";
+const NOTICE_NAME: &str = "NOTICE";
+const OWN_FILES: &[&str] = &[MANIFEST_NAME, NOTICE_NAME];
 const TARBALL_NAME: &str = "pinned.tar.gz";
 const EXTRACTED_FOLDER: &str = "extracted";
 const DOWNLOAD_TIMEOUT_SECONDS: &str = "300";
@@ -277,13 +279,17 @@ fn extract(tarball: &Path, manifest: &Manifest, into: &Path) -> anyhow::Result<(
     Ok(())
 }
 
+fn is_our_own_file(base: &Path, path: &Path) -> bool {
+    OWN_FILES.iter().any(|name| path == base.join(name))
+}
+
 fn read_files(base: &Path, folder: &Path) -> io::Result<BTreeMap<String, Vec<u8>>> {
     let mut files = BTreeMap::new();
     for entry in fs::read_dir(folder)? {
         let path: PathBuf = entry?.path();
         if path.is_dir() {
             files.extend(read_files(base, &path)?);
-        } else if path != base.join(MANIFEST_NAME) {
+        } else if !is_our_own_file(base, &path) {
             let relative = path
                 .strip_prefix(base)
                 .map_err(io::Error::other)?
@@ -581,6 +587,21 @@ mod tests {
 
         let found = upstream_problems(&manifest, work.path(), |_, to| Ok(fs::write(to, &tarball)?))
             .unwrap();
+
+        assert_eq!(found, []);
+    }
+
+    #[test]
+    fn keeps_our_own_notice_out_of_the_manifest_comparison() {
+        let root = scratch("own-notice");
+        write_pinned_tree(root.path(), "abc");
+        fs::write(
+            root.path().join(VENDORED_FOLDER).join(NOTICE_NAME),
+            "notices",
+        )
+        .unwrap();
+
+        let found = check(root.path(), Comparison::Offline).unwrap();
 
         assert_eq!(found, []);
     }
