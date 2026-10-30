@@ -21,6 +21,7 @@ mod icon_actions;
 mod ipc_error;
 mod library_events;
 mod library_problem;
+mod main_window;
 mod omni_protocol;
 mod power_mode;
 mod problem_reporting;
@@ -40,6 +41,7 @@ mod tree_storage;
 mod version_details;
 mod volume_keys;
 mod wallpaper_colours;
+mod window_backdrop;
 
 use std::{
     error::Error,
@@ -79,7 +81,12 @@ pub fn run() {
         .with(recent_log.clone())
         .init();
     let config = RuntimeConfig::from_environment();
+    let window_backdrop = window_backdrop::of_this_system();
     let commands = commands::builder();
+    #[cfg(not(all(windows, feature = "e2e")))]
+    let invoke_handler = commands.invoke_handler();
+    #[cfg(all(windows, feature = "e2e"))]
+    let invoke_handler = e2e::with_test_hooks(commands.invoke_handler());
     let app = tauri::Builder::default();
     #[cfg(all(desktop, not(feature = "e2e")))]
     let app = app.plugin(files_to_open::single_instance());
@@ -90,7 +97,6 @@ pub fn run() {
         app
     };
     let app = app
-        .manage(Core::new())
         .manage(recent_log)
         .manage(problem_reporting::ShownProblemReport::default())
         .manage(home_folder::ChosenHome::default())
@@ -101,9 +107,11 @@ pub fn run() {
                 .open_js_links_on_click(false)
                 .build(),
         )
-        .invoke_handler(commands.invoke_handler())
+        .invoke_handler(invoke_handler)
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
+            let window_backdrop = main_window::open(app, window_backdrop)?;
+            app.manage(Core::new().with_window_backdrop(window_backdrop));
             crash_reporting::install(app.handle());
             commands.mount_events(app);
             let launch = match open_library(app, &config?) {

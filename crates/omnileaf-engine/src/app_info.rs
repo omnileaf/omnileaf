@@ -8,10 +8,18 @@ pub struct AppInfo {
     pub platform: Platform,
     pub source_code: String,
     pub is_development_build: bool,
+    pub window_backdrop: WindowBackdrop,
 }
 
 impl AppInfo {
     pub const NAME: &str = "Omnileaf";
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum WindowBackdrop {
+    Mica,
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]

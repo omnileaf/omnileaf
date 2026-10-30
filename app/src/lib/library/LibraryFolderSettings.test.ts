@@ -1831,3 +1831,197 @@ test("keeps a row in place and square when it is dragged toward its end on an iP
   );
   expect(content?.getAttribute("class")).not.toContain("rounded-full");
 });
+
+async function renderFoundEmptyOnIphone() {
+  serveFolders([HOME, COMICS, MANGA]);
+  await page.viewport(390, 844);
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform("ios");
+  const shown = await renderSettings({
+    platform: "ios",
+    rescanFolder: FOUND_EMPTY,
+  });
+  await shown.folders
+    .getByRole("button", { name: "Rescan Sample Comics" })
+    .click();
+  const warning = page
+    .getByRole("status")
+    .filter({ hasText: "Sample Comics looks empty" });
+  await expect.element(warning).toBeVisible();
+  return { ...shown, warning };
+}
+
+function isBefore(one: Element, other: Element): boolean {
+  return Boolean(
+    one.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+}
+
+test("warns above the folders on an iPhone that a folder found empty looks empty, with Remove its books and Rescan", async () => {
+  const { folders, warning } = await renderFoundEmptyOnIphone();
+
+  expect({
+    isAboveFolders: isBefore(warning.element(), folders.element()),
+    isInFolders: folders.element().contains(warning.element()),
+    actions: warning
+      .getByRole("button")
+      .elements()
+      .map((button) => button.textContent.trim()),
+  }).toEqual({
+    isAboveFolders: true,
+    isInFolders: false,
+    actions: ["Remove its books", "Rescan"],
+  });
+});
+
+test("draws the looks empty warning as a warning card with full-width action rows on an iPhone", async () => {
+  const { warning } = await renderFoundEmptyOnIphone();
+
+  const card = getComputedStyle(warning.element());
+  const title = getComputedStyle(
+    warning
+      .getByRole("heading", { name: "Sample Comics looks empty" })
+      .element(),
+  );
+  const body = getComputedStyle(
+    warning.getByText(/^Its books stay in your library/).element(),
+  );
+  const rescan = warning.getByRole("button", { name: "Rescan", exact: true });
+  const action = getComputedStyle(rescan.element());
+  const cardBox = warning.element().getBoundingClientRect();
+  const actionBox = rescan.element().getBoundingClientRect();
+  const glyph = (
+    rescan.element().querySelector("svg") ?? rescan.element()
+  ).getBoundingClientRect();
+  expect({
+    fill: card.backgroundColor,
+    ink: card.color,
+    radius: card.borderTopLeftRadius,
+    padding: [card.paddingTop, card.paddingInlineStart],
+    title: [title.fontSize, title.lineHeight, title.fontWeight],
+    body: [body.fontSize, body.lineHeight, body.fontWeight],
+    actionInk: action.color,
+    actionType: [action.fontSize, action.lineHeight, action.fontWeight],
+    actionHeight: actionBox.height,
+    actionTextStart: action.paddingInlineStart,
+    actionSpansCard: [actionBox.left, actionBox.right],
+    glyphStart: Math.round((glyph.left - actionBox.left) * 2) / 2,
+    rule: getComputedStyle(rescan.element(), "::after").insetInlineStart,
+  }).toEqual({
+    fill: resolvedColour("--color-warning-soft", "backgroundColor"),
+    ink: resolvedColour("--color-on-warning", "color"),
+    radius: "26px",
+    padding: ["14px", "16px"],
+    title: ["17px", "22px", "600"],
+    body: ["15px", "20px", "400"],
+    actionInk: resolvedColour("--color-accent", "color"),
+    actionType: ["17px", "22px", "400"],
+    actionHeight: 52,
+    actionTextStart: "50px",
+    actionSpansCard: [cardBox.left, cardBox.right],
+    glyphStart: 18.5,
+    rule: "50px",
+  });
+});
+
+test("gives each folder found empty its own named warning on an iPhone", async () => {
+  const { folders } = await renderFoundEmptyOnIphone();
+
+  await folders.getByRole("button", { name: "Rescan Sample Manga" }).click();
+
+  await expect
+    .element(page.getByRole("heading", { name: "Sample Manga looks empty" }))
+    .toBeVisible();
+  expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: /looks empty/ })
+      .elements(),
+  ).toHaveLength(2);
+});
+
+test("keeps the looks empty warning under its folder's row on an Android phone", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  const { folders } = await renderSettings({
+    platform: "android",
+    rescanFolder: FOUND_EMPTY,
+  });
+
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+
+  await expect
+    .element(
+      comicsRow(folders).getByRole("heading", {
+        name: "Sample Comics looks empty",
+      }),
+    )
+    .toBeVisible();
+});
+
+test("drops a folder's warning while its removal can still be undone on an iPhone", async () => {
+  const { folders, warning } = await renderFoundEmptyOnIphone();
+
+  folders
+    .getByRole("button", { name: "Remove Sample Comics" })
+    .element()
+    .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+  await expect.element(warning).not.toBeInTheDocument();
+});
+
+test("heads the looks empty warning at the third level, as on other screens, on an iPhone", async () => {
+  const { warning } = await renderFoundEmptyOnIphone();
+
+  await expect
+    .element(
+      warning.getByRole("heading", {
+        level: 3,
+        name: "Sample Comics looks empty",
+      }),
+    )
+    .toBeVisible();
+});
+
+test("turns the iPhone warning into an alert that tries removing the books again without asking", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("ios");
+  const results = [REMOVAL_FAILED, BOOKS_REMOVED];
+  const removedFrom: FolderId[] = [];
+  const { folders, dialog } = await renderSettings({
+    platform: "ios",
+    rescanFolder: FOUND_EMPTY,
+    removeFolderBooks: (id) => {
+      removedFrom.push(id);
+      return (results.shift() ?? BOOKS_REMOVED)(id);
+    },
+  });
+  await folders.getByRole("button", { name: "Rescan Sample Comics" }).click();
+  await page.getByRole("button", { name: "Remove its books" }).click();
+  await dialog.getByRole("button", { name: "Remove 342 books" }).click();
+  const alert = page
+    .getByRole("alert")
+    .filter({ hasText: "Couldn't remove the books" });
+  await expect
+    .element(
+      alert.getByRole("heading", {
+        level: 3,
+        name: "Couldn't remove the books",
+      }),
+    )
+    .toBeVisible();
+  expect({
+    isAboveFolders: isBefore(alert.element(), folders.element()),
+    icon: alert.element().querySelector("svg")?.getAttribute("class"),
+  }).toEqual({
+    isAboveFolders: true,
+    icon: expect.stringContaining("circle-alert") as unknown,
+  });
+
+  await alert.getByRole("button", { name: "Try again" }).click();
+
+  await expect.poll(() => removedFrom).toEqual([COMICS.id, COMICS.id]);
+  expect(dialog.elements()).toEqual([]);
+});

@@ -24,6 +24,7 @@ const backend: Partial<FakeBackend> = {
     platform: "macos",
     sourceCode: "repo.example.org/omnileaf",
     isDevelopmentBuild: true,
+    windowBackdrop: "none",
   }),
   seriesOverview: () => {
     throw new CommandFailure(MISSING_SERIES);

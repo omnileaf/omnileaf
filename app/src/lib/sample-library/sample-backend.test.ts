@@ -269,6 +269,28 @@ test("answers on the platform asked for", async () => {
   expect(info.platform).toBe("ios");
 });
 
+test("draws the window on Mica as Windows 11 does unless asked not to", async () => {
+  const backdrops = await Promise.all(
+    ["platform=windows", "platform=windows&backdrop=none"].map(
+      async (search) =>
+        (await backendFor(search).backend.appInfo()).windowBackdrop,
+    ),
+  );
+
+  expect(backdrops).toEqual(["mica", "none"]);
+});
+
+test("draws the window solid on other platforms unless asked for Mica", async () => {
+  const backdrops = await Promise.all(
+    ["platform=macos", "platform=linux&backdrop=mica"].map(
+      async (search) =>
+        (await backendFor(search).backend.appInfo()).windowBackdrop,
+    ),
+  );
+
+  expect(backdrops).toEqual(["none", "mica"]);
+});
+
 test("reports a problem with the platform's system and a log in stand-ins", async () => {
   const { backend } = backendFor("platform=ios");
 

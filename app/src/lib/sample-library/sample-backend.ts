@@ -16,6 +16,7 @@ import {
   type SignInOutcome,
   type SmartFilter,
   type SourcedLanguage,
+  type WindowBackdrop,
 } from "#lib/ipc/bindings.ts";
 import { assertNever } from "#lib/assert-never.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
@@ -25,6 +26,7 @@ import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 import { phrasesOf } from "./chapter-phrases.ts";
 import { closestTitle, isTooShortToSuggest } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
+import { usualWindowBackdrop } from "#lib/appearance/window-backdrop.ts";
 import {
   isFiledInVolume,
   isListedIn,
@@ -62,6 +64,7 @@ export interface SampleScenario {
   readonly space: SpaceKind;
   readonly skipped: SkippedKind;
   readonly removal: RemovalKind;
+  readonly backdrop: WindowBackdrop;
 }
 
 export interface SampleEvents {
@@ -106,6 +109,10 @@ const READ_FILE_TYPE = "cbz";
 const UNSUPPORTED_FILE_TYPE = "cbr";
 const FILE_TYPES_NOT_READ_YET: readonly string[] = ["cbr", "rar"];
 const REMOVAL_KINDS = ["clean", "mixed", "failed"] as const;
+const WINDOW_BACKDROPS = [
+  "mica",
+  "none",
+] as const satisfies readonly WindowBackdrop[];
 const PLATFORMS_WITHOUT_TRASH: readonly Platform[] = ["ios", "android"];
 const MIXED_FILE_OUTCOMES = [
   { kind: "trashed" },
@@ -251,8 +258,9 @@ function oneOf<Choice extends string>(
 
 /** Reads the sample library's scenario from a page address, such as `?platform=ios&library=empty`. */
 export function scenarioFrom(search: URLSearchParams): SampleScenario {
+  const platform = oneOf(PLATFORMS, search.get("platform"), "linux");
   return {
-    platform: oneOf(PLATFORMS, search.get("platform"), "linux"),
+    platform,
     library: oneOf(LIBRARY_STATES, search.get("library"), "ready"),
     series: oneOf(SERIES_STATES, search.get("series"), "ready"),
     sixthVolume: oneOf(SIXTH_VOLUME_FILES, search.get("volume6"), "missing"),
@@ -263,6 +271,11 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
     skipped: oneOf(SKIPPED_KINDS, search.get("skipped"), "none"),
     removal: oneOf(REMOVAL_KINDS, search.get("removal"), "clean"),
+    backdrop: oneOf(
+      WINDOW_BACKDROPS,
+      search.get("backdrop"),
+      usualWindowBackdrop(platform),
+    ),
   };
 }
 
@@ -1177,6 +1190,7 @@ export function sampleBackend(
       platform: scenario.platform,
       sourceCode: "repo.example.org/omnileaf",
       isDevelopmentBuild: true,
+      windowBackdrop: scenario.backdrop,
     }),
     libraryProblem: () => null,
     homeArrival: () => null,

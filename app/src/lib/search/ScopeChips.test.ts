@@ -13,8 +13,10 @@ import ScopeChips from "./ScopeChips.svelte";
 const PHONE = { width: 390, height: 800 } as const;
 const NARROW_PHONE = { width: 260, height: 800 } as const;
 const TABLET = { width: 1024, height: 800 } as const;
+const LARGEST_TEXT_PHONE = { width: 360, height: 800 } as const;
 
 afterEach(() => {
+  document.documentElement.style.removeProperty("--text-scale");
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
   document.body.replaceChildren();
@@ -93,4 +95,29 @@ test("keeps the bordered wrapping scopes on an iPad and an Android phone", async
   const onAndroid = getComputedStyle(chip("Everything")).borderTopWidth;
 
   expect([onIpad, onAndroid]).toEqual(["1px", "1px"]);
+});
+
+test("scrolls the chosen scope into view at the largest text on a 360 point iPhone, and again as it changes", async () => {
+  await page.viewport(LARGEST_TEXT_PHONE.width, LARGEST_TEXT_PHONE.height);
+  document.documentElement.dataset.theme = "light";
+  document.documentElement.style.setProperty("--text-scale", "2");
+  followCorePlatform("ios");
+  const screen = await render(ScopeChips, {
+    scope: "book",
+    onNarrow: () => undefined,
+  });
+  const group = page.getByRole("group", { name: "Search in" }).element();
+
+  const isInView = (name: string): boolean => {
+    const row = group.getBoundingClientRect();
+    const box = chip(name).getBoundingClientRect();
+    return box.left >= row.left - 1 && box.right <= row.right + 1;
+  };
+
+  expect(group.scrollWidth).toBeGreaterThan(group.clientWidth);
+  await expect.poll(() => isInView("Books")).toBe(true);
+
+  await screen.rerender({ scope: "everything" });
+
+  await expect.poll(() => isInView("Everything")).toBe(true);
 });

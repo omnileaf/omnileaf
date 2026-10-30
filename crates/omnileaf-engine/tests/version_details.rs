@@ -1,4 +1,4 @@
-use omnileaf_engine::{AppInfo, BuildProfile, Platform, VersionDetails};
+use omnileaf_engine::{AppInfo, BuildProfile, Platform, VersionDetails, WindowBackdrop};
 
 fn details() -> VersionDetails {
     VersionDetails {
@@ -7,6 +7,7 @@ fn details() -> VersionDetails {
             platform: Platform::Ios,
             source_code: "repo.example.org/omnileaf".to_owned(),
             is_development_build: false,
+            window_backdrop: WindowBackdrop::None,
         },
         build: BuildProfile::Release,
         architecture: "aarch64".to_owned(),

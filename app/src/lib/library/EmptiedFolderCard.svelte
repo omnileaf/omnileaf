@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { CircleAlert, FolderSearch } from "@lucide/svelte";
-
   import {
     Alert,
     AlertActions,
@@ -9,38 +7,16 @@
     AlertTitle,
   } from "#lib/components/ui/alert/index.ts";
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
-  import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import {
+    EMPTIED_FOLDER_LOOKS,
+    type EmptiedFolderLook,
+  } from "./emptied-folder-looks";
   import { folderTitle } from "./folder-title";
   import type { EmptiedFolder } from "./rescans.svelte";
 
   type ButtonClick = MouseEvent & { currentTarget: HTMLButtonElement };
-
-  interface Look {
-    readonly role: "status" | "alert";
-    readonly icon: Glyph;
-    readonly title: (inputs: { name: string }) => string;
-    readonly body: (inputs: { name: string }) => string;
-    readonly remove: () => string;
-  }
-
-  const LOOKS = {
-    foundEmpty: {
-      role: "status",
-      icon: FolderSearch,
-      title: m.library_found_empty_title,
-      body: m.library_found_empty_body,
-      remove: m.library_remove_books,
-    },
-    removalFailed: {
-      role: "alert",
-      icon: CircleAlert,
-      title: m.library_remove_books_failed,
-      body: m.library_remove_books_failed_body,
-      remove: m.library_remove_books_try_again,
-    },
-  } satisfies Record<EmptiedFolder, Look>;
 
   let {
     folder,
@@ -57,7 +33,7 @@
   } = $props();
 
   const titleId = $props.id();
-  const look: Look = $derived(LOOKS[emptied]);
+  const look: EmptiedFolderLook = $derived(EMPTIED_FOLDER_LOOKS[emptied]);
   const name = $derived(folderTitle(folder));
 </script>
 

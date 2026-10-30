@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use omnileaf_engine::{
     AppInfo, BuildProfile, LogStandIns, Platform, ProblemReport, ProblemReportPreview, ProjectLink,
-    ReportCode, VersionDetails,
+    ReportCode, VersionDetails, WindowBackdrop,
 };
 use proptest::prelude::*;
 
@@ -22,6 +22,7 @@ fn details() -> VersionDetails {
             platform: Platform::Linux,
             source_code: "repo.example.org/omnileaf".to_owned(),
             is_development_build: false,
+            window_backdrop: WindowBackdrop::None,
         },
         build: BuildProfile::Release,
         architecture: "x86_64".to_owned(),

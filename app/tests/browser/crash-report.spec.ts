@@ -128,6 +128,7 @@ for (const platform of ["android", "linux"] as const) {
           platform,
           sourceCode: "repo.example.org/omnileaf",
           isDevelopmentBuild: false,
+          windowBackdrop: "none",
         }),
         ...fakeCrashReports(calls),
       },
