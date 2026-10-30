@@ -1,5 +1,7 @@
-//! The raw Win32 reads behind scheduled folder rescans, missing folders and the window backdrop, which the app maps to its decisions.
+//! The raw Win32 reads behind scheduled folder rescans, missing folders, the window backdrop and the accent colour, which the app maps to its decisions.
 #![cfg(windows)]
+
+mod registry;
 
 use std::{mem, ptr};
 
@@ -25,6 +27,8 @@ use windows_sys::Win32::System::Ioctl::{
 };
 use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
 use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
+
+pub use registry::user_binary_value;
 
 const QUERY_ONLY: u32 = 0;
 const NO_FLAGS: u32 = 0;
