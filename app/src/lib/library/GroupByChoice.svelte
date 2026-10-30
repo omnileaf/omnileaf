@@ -55,7 +55,9 @@
     describedBy={hintId}
     size="small"
     {onChoose}
-    class={android.isOn ? "flex-none" : "mbs-sm large:mbs-icon-gap"}
+    class={android.isOn
+      ? "flex-none max-inline-full"
+      : "mbs-sm large:mbs-icon-gap"}
   />
   <p
     id={hintId}

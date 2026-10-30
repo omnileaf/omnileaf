@@ -94,7 +94,8 @@ async function settingsGroup(
 const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
-    hasIcons: (platform, width) => platform !== "ios" || width >= COMPACT_BELOW,
+    hasIcons: (platform, width) =>
+      !(platform === "ios" || platform === "android") || width >= COMPACT_BELOW,
     backend: withSeries,
     open: async (page, messages) => {
       await page.goto("/");
