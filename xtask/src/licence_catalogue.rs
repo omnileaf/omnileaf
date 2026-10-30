@@ -6,9 +6,14 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-const LIBARCHIVE_VERSION: &str = "3.8.10";
+use crate::vendor::LIBARCHIVE_VERSION;
+
 const LIBARCHIVE_LICENCE: &str = "BSD-2-Clause";
-const LIBARCHIVE_NOTICE: &str = include_str!("../../vendor/libarchive-3.8.10/COPYING");
+const LIBARCHIVE_NOTICE: &str = include_str!(concat!(
+    "../../vendor/libarchive-",
+    libarchive_version!(),
+    "/COPYING"
+));
 
 #[derive(Deserialize)]
 struct AboutReport {

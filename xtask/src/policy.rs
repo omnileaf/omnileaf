@@ -64,7 +64,7 @@ const RESERVED_SUFFIXES: &[&str] = &[
     ".example.org",
 ];
 const POLICY_DIRECTORY: &str = "policy/";
-const VENDOR_DIRECTORY: &str = "vendor/";
+const VENDORED_DIRECTORY: &str = concat!("vendor/libarchive-", libarchive_version!(), "/");
 const GENERATED_LICENCE_CATALOGUES: &[&str] = &[
     "app/src/lib/licences/rust.json",
     "app/src/lib/licences/javascript.json",
@@ -126,7 +126,7 @@ fn violations_in(file: &RepositoryFile<'_>, policy: &Policy) -> Vec<Violation> {
 
 fn holds_third_party_text(path: &str) -> bool {
     path.starts_with(POLICY_DIRECTORY)
-        || path.starts_with(VENDOR_DIRECTORY)
+        || path.starts_with(VENDORED_DIRECTORY)
         || GENERATED_LICENCE_CATALOGUES.contains(&path)
 }
 
@@ -384,7 +384,7 @@ mod tests {
     fn skips_the_vendored_third_party_sources() {
         let content = ["sample phrase ", &links_to(&["unknown.site"])].concat();
         let files = [RepositoryFile {
-            path: "vendor/library-1.0/src/reader.c",
+            path: "vendor/libarchive-3.8.10/libarchive/archive_read.c",
             bytes: content.as_bytes(),
         }];
         let policy = Policy {
@@ -395,6 +395,25 @@ mod tests {
         let violations = check(&files, &policy);
 
         assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn scans_a_vendor_folder_no_manifest_covers() {
+        let files = [text("vendor/other-1.0/reader.c", "sample phrase")];
+        let policy = Policy {
+            forbidden_phrases: vec!["sample phrase".to_owned()],
+            ..Policy::default()
+        };
+
+        let violations = check(&files, &policy);
+
+        assert_eq!(
+            violations,
+            [Violation::ForbiddenPhrase {
+                path: "vendor/other-1.0/reader.c".to_owned(),
+                phrase: "sample phrase".to_owned()
+            }]
+        );
     }
 
     #[test]

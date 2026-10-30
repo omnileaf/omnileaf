@@ -1,3 +1,9 @@
+macro_rules! libarchive_version {
+    () => {
+        "3.8.10"
+    };
+}
+
 mod android;
 mod apple;
 mod changes;

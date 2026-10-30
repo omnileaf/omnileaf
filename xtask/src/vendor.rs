@@ -10,7 +10,18 @@ use std::{
 use anyhow::Context;
 use sha2::{Digest, Sha256};
 
-const VENDORED_FOLDER: &str = "vendor/libarchive-3.8.10";
+pub(crate) const LIBARCHIVE_VERSION: &str = libarchive_version!();
+const VENDOR_FOLDER: &str = "vendor";
+const VENDORED_FOLDER_NAME: &str = concat!("libarchive-", libarchive_version!());
+pub(crate) const VENDORED_FOLDER: &str = concat!("vendor/libarchive-", libarchive_version!());
+const PINNED_ROOT: &str = VENDORED_FOLDER_NAME;
+const PINNED_TARBALL: &str = concat!(
+    "https://github.com/libarchive/libarchive/releases/download/v",
+    libarchive_version!(),
+    "/libarchive-",
+    libarchive_version!(),
+    ".tar.gz"
+);
 const MANIFEST_NAME: &str = "MANIFEST";
 const TARBALL_NAME: &str = "pinned.tar.gz";
 const EXTRACTED_FOLDER: &str = "extracted";
@@ -66,10 +77,27 @@ impl fmt::Display for Source {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Problem {
-    Missing { source: Source, path: String },
-    Altered { source: Source, path: String },
-    Unlisted { path: String },
-    TarballAltered { actual: String },
+    Missing {
+        source: Source,
+        path: String,
+    },
+    Altered {
+        source: Source,
+        path: String,
+    },
+    Unlisted {
+        path: String,
+    },
+    TarballAltered {
+        actual: String,
+    },
+    PinMismatch {
+        field: &'static str,
+        expected: &'static str,
+    },
+    OutsideVendoredFolder {
+        path: String,
+    },
 }
 
 impl fmt::Display for Problem {
@@ -80,6 +108,15 @@ impl fmt::Display for Problem {
                 write!(f, "{path}: differs from the MANIFEST hash in {source}")
             }
             Self::Unlisted { path } => write!(f, "{path}: vendored but not in the MANIFEST"),
+            Self::PinMismatch { field, expected } => {
+                write!(f, "the MANIFEST's {field} should be {expected}")
+            }
+            Self::OutsideVendoredFolder { path } => {
+                write!(
+                    f,
+                    "{path}: outside {VENDORED_FOLDER}, which the MANIFEST covers"
+                )
+            }
             Self::TarballAltered { actual } => {
                 write!(
                     f,
@@ -174,6 +211,33 @@ pub(crate) fn problems(
     listed.chain(unlisted).collect()
 }
 
+pub(crate) fn pin_problems(manifest: &Manifest) -> Vec<Problem> {
+    [
+        ("tarball", manifest.tarball.as_str(), PINNED_TARBALL),
+        ("root", manifest.root.as_str(), PINNED_ROOT),
+    ]
+    .into_iter()
+    .filter(|(_, found, expected)| found != expected)
+    .map(|(field, _, expected)| Problem::PinMismatch { field, expected })
+    .collect()
+}
+
+pub(crate) fn stray_entries(vendor_entries: &[String]) -> Vec<Problem> {
+    vendor_entries
+        .iter()
+        .filter(|entry| entry.as_str() != VENDORED_FOLDER_NAME)
+        .map(|entry| Problem::OutsideVendoredFolder {
+            path: format!("{VENDOR_FOLDER}/{entry}"),
+        })
+        .collect()
+}
+
+fn vendor_entries(root: &Path) -> io::Result<Vec<String>> {
+    fs::read_dir(root.join(VENDOR_FOLDER))?
+        .map(|entry| Ok(entry?.file_name().to_string_lossy().into_owned()))
+        .collect()
+}
+
 pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Problem>> {
     let folder = root.join(VENDORED_FOLDER);
     let manifest_path = folder.join(MANIFEST_NAME);
@@ -184,7 +248,9 @@ pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Problem>> {
     .with_context(|| format!("read {}", manifest_path.display()))?;
     let vendored = read_files(&folder, &folder)
         .with_context(|| format!("read the files under {}", folder.display()))?;
-    let mut found = problems(&manifest, &vendored, Source::Vendored);
+    let mut found = stray_entries(&vendor_entries(root).context("list the vendor folder")?);
+    found.extend(pin_problems(&manifest));
+    found.extend(problems(&manifest, &vendored, Source::Vendored));
     let work = env::temp_dir().join(format!("omnileaf-vendor-check-{}", std::process::id()));
     let upstream = in_work_folder(&work, |work| upstream_problems(&manifest, work));
     found.extend(upstream?);
@@ -439,5 +505,52 @@ mod tests {
 
         assert_eq!(result.unwrap_err().to_string(), "download failed");
         assert!(!folder.exists());
+    }
+
+    fn pinned_manifest() -> Manifest {
+        Manifest::parse(&format!(
+            "tarball {PINNED_TARBALL}\nsha256 {TARBALL_HASH}\nroot {PINNED_ROOT}\n\n"
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn accepts_a_manifest_for_the_pinned_version() {
+        assert_eq!(pin_problems(&pinned_manifest()), []);
+    }
+
+    #[test]
+    fn reports_a_manifest_for_another_version() {
+        let manifest = Manifest {
+            tarball: PINNED_TARBALL.replace(LIBARCHIVE_VERSION, "3.8.9"),
+            root: "libarchive-3.8.9".to_owned(),
+            ..pinned_manifest()
+        };
+
+        assert_eq!(
+            pin_problems(&manifest),
+            [
+                Problem::PinMismatch {
+                    field: "tarball",
+                    expected: PINNED_TARBALL
+                },
+                Problem::PinMismatch {
+                    field: "root",
+                    expected: PINNED_ROOT
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn reports_anything_in_vendor_beside_the_pinned_folder() {
+        let entries = [VENDORED_FOLDER_NAME.to_owned(), "other-1.0".to_owned()];
+
+        assert_eq!(
+            stray_entries(&entries),
+            [Problem::OutsideVendoredFolder {
+                path: "vendor/other-1.0".to_owned()
+            }]
+        );
     }
 }
