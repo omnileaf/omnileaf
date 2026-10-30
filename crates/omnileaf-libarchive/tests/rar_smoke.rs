@@ -284,3 +284,23 @@ fn refuses_a_source_that_reports_more_bytes_than_it_was_given() {
         result.err()
     );
 }
+
+#[test]
+fn stays_refused_once_the_budget_is_exceeded() {
+    let archive = archives::rar5_with_dictionary(DESKTOP_DICTIONARY_CAP_BYTES);
+    let mut reader = Reader::open(Cursor::new(archive), MOBILE_LIMIT_BYTES).unwrap();
+    reader.next_entry().unwrap().unwrap();
+    let mut content = [0; 8];
+    let first = reader.read_data(&mut content);
+
+    let next = reader.next_entry();
+
+    assert!(
+        matches!(first, Err(Error::BudgetExceeded { .. })),
+        "{first:?}"
+    );
+    assert!(
+        matches!(next, Err(Error::BudgetExceeded { .. })),
+        "{next:?}"
+    );
+}

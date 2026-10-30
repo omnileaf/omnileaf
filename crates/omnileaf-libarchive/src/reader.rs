@@ -142,23 +142,28 @@ impl<R: Read + Seek> Reader<R> {
         if status < ffi::ARCHIVE_OK {
             return Err(reader.error());
         }
+        reader.refuse_if_exceeded()?;
         Ok(reader)
     }
 
     pub fn next_entry(&mut self) -> Result<Option<Entry>, Error> {
+        self.refuse_if_exceeded()?;
         let _scope = Scope::enter(&self.budget);
         let mut entry = ptr::null_mut();
         // SAFETY: `archive` is live and `entry` is a valid out pointer.
         let status =
             unsafe { ffi::archive_read_next_header(self.archive.as_ptr(), &raw mut entry) };
-        match status {
-            ffi::ARCHIVE_OK => Ok(Some(entry_of(entry))),
-            ffi::ARCHIVE_EOF => Ok(None),
-            _ => Err(self.error()),
-        }
+        let entry = match status {
+            ffi::ARCHIVE_OK => Some(entry_of(entry)),
+            ffi::ARCHIVE_EOF => None,
+            _ => return Err(self.error()),
+        };
+        self.refuse_if_exceeded()?;
+        Ok(entry)
     }
 
     pub fn read_data(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
+        self.refuse_if_exceeded()?;
         let _scope = Scope::enter(&self.budget);
         // SAFETY: `archive` is live and `buffer` is writable for its whole length.
         let read = unsafe {
@@ -168,24 +173,34 @@ impl<R: Read + Seek> Reader<R> {
                 buffer.len(),
             )
         };
-        usize::try_from(read).map_err(|_| self.error())
+        let read = usize::try_from(read).map_err(|_| self.error())?;
+        self.refuse_if_exceeded()?;
+        Ok(read)
     }
 
     pub fn skip_data(&mut self) -> Result<(), Error> {
+        self.refuse_if_exceeded()?;
         let _scope = Scope::enter(&self.budget);
         // SAFETY: `archive` is live.
         let status = unsafe { ffi::archive_read_data_skip(self.archive.as_ptr()) };
         if status < ffi::ARCHIVE_OK {
             return Err(self.error());
         }
+        self.refuse_if_exceeded()
+    }
+
+    fn refuse_if_exceeded(&self) -> Result<(), Error> {
+        if self.budget.is_exceeded() {
+            return Err(Error::BudgetExceeded {
+                limit_bytes: self.budget.limit_bytes(),
+            });
+        }
         Ok(())
     }
 
     fn error(&mut self) -> Error {
-        if self.budget.has_refused_a_request() {
-            return Error::BudgetExceeded {
-                limit_bytes: self.budget.limit_bytes(),
-            };
+        if let Err(exceeded) = self.refuse_if_exceeded() {
+            return exceeded;
         }
         // SAFETY: the source lives until `drop`, and libarchive is not inside a callback here.
         let failure = unsafe { (*self.source.as_ptr()).failure.take() };
@@ -220,7 +235,7 @@ impl<R> Drop for Reader<R> {
 unsafe impl<R: Send> Send for Reader<R> {}
 
 fn exceeded_or(budget: &Budget, other: Error) -> Error {
-    if budget.has_refused_a_request() {
+    if budget.is_exceeded() {
         Error::BudgetExceeded {
             limit_bytes: budget.limit_bytes(),
         }

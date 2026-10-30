@@ -41,14 +41,14 @@ struct Header {
 const HEADER_BYTES: usize = size_of::<Header>();
 const BLOCK_ALIGNMENT: usize = align_of::<Header>();
 
-/// libarchive exits the process when a small allocation fails, so small requests may use a reserve beyond the limit.
-const SMALL_REQUEST_BYTES: usize = 1024 * 1024;
-const RESERVE_FOR_SMALL_REQUESTS_BYTES: usize = 8 * 1024 * 1024;
+/// libarchive exits the process when a tiny allocation fails, as it does for error messages and names, so tiny requests may pass the limit into a reserve.
+const TINY_REQUEST_BYTES: usize = 4096;
+const RESERVE_FOR_TINY_REQUESTS_BYTES: usize = 8 * 1024 * 1024;
 
 pub(crate) struct Budget {
     limit_bytes: usize,
     used_bytes: AtomicUsize,
-    refused_a_request: AtomicBool,
+    exceeded: AtomicBool,
 }
 
 impl Budget {
@@ -56,7 +56,7 @@ impl Budget {
         Self {
             limit_bytes,
             used_bytes: AtomicUsize::new(0),
-            refused_a_request: AtomicBool::new(false),
+            exceeded: AtomicBool::new(false),
         }
     }
 
@@ -64,8 +64,8 @@ impl Budget {
         self.limit_bytes
     }
 
-    pub(crate) fn has_refused_a_request(&self) -> bool {
-        self.refused_a_request.load(Ordering::Relaxed)
+    pub(crate) fn is_exceeded(&self) -> bool {
+        self.exceeded.load(Ordering::Relaxed)
     }
 
     #[cfg(test)]
@@ -73,21 +73,28 @@ impl Budget {
         self.used_bytes.load(Ordering::Relaxed)
     }
 
-    fn reserve(&self, bytes: usize) -> bool {
-        let ceiling = if bytes <= SMALL_REQUEST_BYTES {
+    fn ceiling_for(&self, requested_bytes: usize) -> usize {
+        if requested_bytes <= TINY_REQUEST_BYTES {
             self.limit_bytes
-                .saturating_add(RESERVE_FOR_SMALL_REQUESTS_BYTES)
+                .saturating_add(RESERVE_FOR_TINY_REQUESTS_BYTES)
         } else {
             self.limit_bytes
-        };
+        }
+    }
+
+    fn reserve(&self, requested_bytes: usize, added_bytes: usize) -> bool {
+        let ceiling = self.ceiling_for(requested_bytes);
+        let mut passes_the_limit = false;
         let reserved = self
             .used_bytes
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |used| {
-                used.checked_add(bytes).filter(|total| *total <= ceiling)
+                let total = used.checked_add(added_bytes);
+                passes_the_limit = total.is_none_or(|total| total > self.limit_bytes);
+                total.filter(|total| *total <= ceiling)
             })
             .is_ok();
-        if !reserved {
-            self.refused_a_request.store(true, Ordering::Relaxed);
+        if passes_the_limit {
+            self.exceeded.store(true, Ordering::Relaxed);
         }
         reserved
     }
@@ -141,7 +148,7 @@ unsafe fn allocate(size: usize, zeroed: bool) -> *mut c_void {
     let Some(budget) = (unsafe { budget.as_ref() }) else {
         return ptr::null_mut();
     };
-    if !budget.reserve(total_bytes) {
+    if !budget.reserve(size, total_bytes) {
         return ptr::null_mut();
     }
     // SAFETY: `layout` has a non-zero size, since it includes the header.
@@ -234,7 +241,7 @@ pub(crate) unsafe extern "C" fn omni_realloc(block: *mut c_void, size: usize) ->
             return ptr::null_mut();
         };
         let budget = &*budget;
-        if new_bytes > old_bytes && !budget.reserve(new_bytes - old_bytes) {
+        if new_bytes > old_bytes && !budget.reserve(size, new_bytes - old_bytes) {
             return ptr::null_mut();
         }
         let raw = alloc::realloc(header.cast(), old_layout, new_bytes);
@@ -402,36 +409,117 @@ mod tests {
     }
 
     const LARGE_BLOCK_BYTES: usize = 4 * 1024 * 1024;
+    const ONE_MIB: usize = 1024 * 1024;
 
-    #[test]
-    fn serves_small_requests_from_the_reserve_after_the_limit_is_reached() {
-        let budget = Arc::new(Budget::new(LARGE_BLOCK_BYTES));
-        let _scope = Scope::enter(&budget);
+    fn full_budget() -> Arc<Budget> {
+        Arc::new(Budget::new(LARGE_BLOCK_BYTES))
+    }
 
-        // SAFETY: the blocks come from the hooks, are never read, and are freed once.
-        let (refused, small) = unsafe {
-            let filler = omni_malloc(LARGE_BLOCK_BYTES - HEADER_BYTES);
-            let refused = omni_malloc(LARGE_BLOCK_BYTES);
-            let small = omni_malloc(64);
-            omni_free(small);
-            omni_free(filler);
-            (refused, small)
-        };
-
-        assert!(refused.is_null());
-        assert!(!small.is_null());
-        assert!(budget.has_refused_a_request());
+    unsafe fn take_the_whole_limit(budget: &Budget) -> *mut c_void {
+        // SAFETY: the hook only reads the thread's active budget.
+        let filler = unsafe { omni_malloc(budget.limit_bytes() - HEADER_BYTES) };
+        assert!(!filler.is_null());
+        filler
     }
 
     #[test]
-    fn stops_serving_small_requests_once_the_reserve_is_spent() {
+    fn refuses_requests_of_up_to_1_mib_past_the_limit_without_using_the_reserve() {
+        let budget = full_budget();
+        let _scope = Scope::enter(&budget);
+
+        // SAFETY: the blocks come from the hooks, are never read, and are freed once.
+        let served = unsafe {
+            let blocks: Vec<*mut c_void> = (0..16)
+                .map(|_| omni_malloc(ONE_MIB))
+                .take_while(|block| !block.is_null())
+                .collect();
+            let used = budget.used_bytes();
+            for block in &blocks {
+                omni_free(*block);
+            }
+            assert!(used <= LARGE_BLOCK_BYTES);
+            blocks.len()
+        };
+
+        assert_eq!(served, 3);
+        assert!(budget.is_exceeded());
+    }
+
+    #[test]
+    fn serves_tiny_requests_from_the_reserve_once_the_limit_is_reached() {
+        let budget = full_budget();
+        let _scope = Scope::enter(&budget);
+
+        // SAFETY: the blocks come from the hooks, are never read, and are freed once.
+        let (exceeded_before, tiny) = unsafe {
+            let filler = take_the_whole_limit(&budget);
+            let exceeded_before = budget.is_exceeded();
+            let tiny = omni_malloc(64);
+            omni_free(tiny);
+            omni_free(filler);
+            (exceeded_before, tiny)
+        };
+
+        assert!(!exceeded_before);
+        assert!(!tiny.is_null());
+        assert!(budget.is_exceeded());
+    }
+
+    #[test]
+    fn counts_a_request_of_up_to_4_kib_as_tiny() {
+        let budget = full_budget();
+        let _scope = Scope::enter(&budget);
+
+        // SAFETY: the blocks come from the hooks, are never read, and are freed once.
+        let (tiny, larger) = unsafe {
+            let filler = take_the_whole_limit(&budget);
+            let tiny = omni_malloc(TINY_REQUEST_BYTES);
+            let larger = omni_malloc(TINY_REQUEST_BYTES + 1);
+            omni_free(tiny);
+            omni_free(larger);
+            omni_free(filler);
+            (tiny, larger)
+        };
+
+        assert!(!tiny.is_null());
+        assert!(larger.is_null());
+    }
+
+    #[test]
+    fn judges_a_growing_block_by_its_size_rather_than_by_each_step() {
+        let budget = full_budget();
+        let _scope = Scope::enter(&budget);
+
+        // SAFETY: every block comes from the hooks, is never read, and is freed once.
+        let sizes_reached = unsafe {
+            let filler = take_the_whole_limit(&budget);
+            let mut block = omni_malloc(1024);
+            let mut size = 1024;
+            while size < 4 * TINY_REQUEST_BYTES {
+                let grown = omni_realloc(block, size + 1024);
+                if grown.is_null() {
+                    break;
+                }
+                block = grown;
+                size += 1024;
+            }
+            omni_free(block);
+            omni_free(filler);
+            size
+        };
+
+        assert_eq!(sizes_reached, TINY_REQUEST_BYTES);
+    }
+
+    #[test]
+    fn stops_serving_tiny_requests_once_the_reserve_is_spent() {
         let budget = Arc::new(Budget::new(0));
         let _scope = Scope::enter(&budget);
 
         // SAFETY: the blocks come from the hooks, are never read, and are freed once.
         let served = unsafe {
-            let blocks: Vec<*mut c_void> = (0..RESERVE_FOR_SMALL_REQUESTS_BYTES)
-                .map(|_| omni_malloc(SMALL_REQUEST_BYTES - HEADER_BYTES))
+            let blocks: Vec<*mut c_void> = (0..RESERVE_FOR_TINY_REQUESTS_BYTES)
+                .map(|_| omni_malloc(TINY_REQUEST_BYTES))
                 .take_while(|block| !block.is_null())
                 .collect();
             for block in &blocks {
@@ -440,7 +528,10 @@ mod tests {
             blocks.len()
         };
 
-        assert_eq!(served, 8);
+        assert_eq!(
+            served,
+            RESERVE_FOR_TINY_REQUESTS_BYTES / (TINY_REQUEST_BYTES + HEADER_BYTES)
+        );
         assert_eq!(budget.used_bytes(), 0);
     }
 }
