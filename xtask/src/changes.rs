@@ -73,6 +73,7 @@ const RULES: &[(&str, Areas)] = &[
     ("crates/", NATIVE),
     ("xtask/", NATIVE),
     ("fuzz/", NATIVE),
+    ("vendor/", NATIVE),
     (".cargo/", NATIVE),
     ("Cargo.toml", NATIVE),
     ("Cargo.lock", NATIVE),
@@ -150,6 +151,13 @@ mod tests {
         ] {
             assert_eq!(areas(&[path]), NATIVE, "{path}");
         }
+    }
+
+    #[test]
+    fn sends_vendored_sources_to_the_native_jobs() {
+        let changed = areas(&["vendor/libarchive-3.8.10/libarchive/archive_read.c"]);
+
+        assert_eq!(changed, NATIVE);
     }
 
     #[test]

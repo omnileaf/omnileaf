@@ -90,6 +90,7 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
 - `cargo xtask licences --check`, the licence catalogue check below;
+- `cargo xtask vendor-check`, which downloads the pinned libarchive tarball and checks that every file under `vendor/` matches its `MANIFEST` hash and the tarball, so vendored files are never edited by hand;
 - `cargo xtask lint-sync`, which checks how synced state is written;
 - `cargo xtask lint-comments`, which checks the comments in the code.
 
@@ -150,7 +151,7 @@ CI measures test coverage and shows it in the `coverage` job's summary. Line cov
 - links only to hosts in `policy/allowed-hosts.txt`, or to reserved ones such as `example.com` and `*.test`;
 - none of the phrases in `policy/forbidden-phrases.txt`.
 
-The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word. Adding an entry to one of those lists is reviewed like any other change.
+The last two rules skip the generated licence catalogues in `app/src/lib/licences`, which hold third-party licence texts word for word, and the third-party sources under `vendor/`. Adding an entry to one of those lists is reviewed like any other change.
 
 ### Licences
 

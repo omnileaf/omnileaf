@@ -21,6 +21,7 @@ mod process;
 mod sample;
 mod screenshot;
 mod test_device;
+mod vendor;
 mod workspace;
 
 use std::{
@@ -172,6 +173,8 @@ enum Command {
         #[arg(long)]
         device: Option<String>,
     },
+    /// Check that the vendored libarchive files match their MANIFEST and the pinned upstream tarball, which this downloads.
+    VendorCheck,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -271,6 +274,7 @@ fn main() -> anyhow::Result<()> {
         Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
         Command::Sample { platform, kit } => sample::serve(sample::page(kit), platform)?,
         Command::Screenshot { device } => take_screenshot(device.as_deref())?,
+        Command::VendorCheck => check_vendored()?,
     }
     Ok(())
 }
@@ -377,6 +381,11 @@ fn enforce_policy() -> anyhow::Result<()> {
     let rules = workspace::policy(&root).context("read the policy lists")?;
     let violations = check_repository(&root, |files| policy::check(files, &rules))?;
     report(&violations, "policy")
+}
+
+fn check_vendored() -> anyhow::Result<()> {
+    let problems = vendor::check(&workspace::root())?;
+    report(&problems, "vendored source")
 }
 
 fn lint_comments() -> anyhow::Result<()> {
