@@ -430,7 +430,6 @@
   --color-native-tile-pressed: var(--native-color-tile-pressed);
   --color-native-tile-check-fill: var(--native-color-tile-check-fill);
   --color-native-tile-check-edge: var(--native-color-tile-check-edge);
-  --spacing-native-tile-inset: var(--native-spacing-tile-inset);
   --spacing-native-tile-edge: var(--native-spacing-tile-edge);
   --spacing-native-tile-lift: var(--native-spacing-tile-lift);
   --spacing-native-tile-badge: var(--native-spacing-tile-badge);
@@ -438,7 +437,11 @@
   --spacing-native-tile-check-glyph: var(--native-spacing-tile-check-glyph);
   --radius-native-tile: var(--native-radius-tile);
   --radius-native-tile-check: var(--native-radius-tile-check);
+  --spacing-native-tile-mark-inset: var(--native-spacing-tile-mark-inset);
   --spacing-native-tile-corner: var(--native-spacing-tile-corner);
+  --spacing-native-tile-check-target: var(--native-spacing-tile-check-target);
+  --spacing-native-tile-check-bleed: var(--native-spacing-tile-check-bleed);
+  --spacing-native-tile-hit-corner: var(--native-spacing-tile-hit-corner);
 }
 
 @media (prefers-reduced-motion: reduce) {

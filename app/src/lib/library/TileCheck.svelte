@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import { cn } from "#lib/components/cn.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -15,6 +17,16 @@
 
   const selection = seriesSelection();
   const tile = coverTileLook(currentPlatform());
+
+  async function startPicking(event: MouseEvent): Promise<void> {
+    const cell =
+      event.currentTarget instanceof Element
+        ? event.currentTarget.closest("[data-series-id]")
+        : null;
+    selection?.begin(id);
+    await tick();
+    cell?.querySelector<HTMLElement>("[data-pickable-link]")?.focus();
+  }
 </script>
 
 {#if tile.hoverCheck !== undefined && selection !== undefined && !selection.isSelecting && !isVeiled}
@@ -26,12 +38,15 @@
     tabindex="-1"
     data-slot="tile-check"
     class={cn(
-      "absolute flex items-center justify-center opacity-0 transition-control group-focus-within/tile:opacity-100 group-hover/tile:opacity-100",
+      "pointer-events-none absolute flex items-center justify-center opacity-0 transition-control group-focus-within/tile:pointer-events-auto group-focus-within/tile:opacity-100 group-hover/tile:pointer-events-auto group-hover/tile:opacity-100",
       tile.hoverCheck,
-      tile.markOff,
     )}
-    onclick={() => {
-      selection.begin(id);
-    }}
-  ></button>
+    onclick={startPicking}
+  >
+    <span
+      aria-hidden="true"
+      data-slot="tile-check-box"
+      class={cn("border", tile.hoverCheckBox, tile.markOff)}
+    ></span>
+  </button>
 {/if}

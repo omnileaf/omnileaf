@@ -64,7 +64,6 @@
   --native-text-command-label: calc(0.75rem * var(--text-scale));
   --native-leading-command-label: calc(16 / 12);
   --native-weight-command-label: 400;
-  --native-spacing-tile-inset: 6px;
   --native-spacing-tile-edge: 2px;
   --native-spacing-tile-lift: 8px;
   --native-spacing-tile-badge: 16px;
@@ -72,7 +71,11 @@
   --native-spacing-tile-check-glyph: 12px;
   --native-radius-tile: 4px;
   --native-radius-tile-check: 4px;
-  --native-spacing-tile-corner: 9px;
+  --native-spacing-tile-mark-inset: 8px;
+  --native-spacing-tile-corner: calc(var(--native-spacing-tile-mark-inset) + 1px);
+  --native-spacing-tile-check-target: 24px;
+  --native-spacing-tile-check-bleed: calc((var(--native-spacing-tile-check-target) - var(--native-spacing-tile-check)) / 2);
+  --native-spacing-tile-hit-corner: calc(var(--native-spacing-tile-corner) - var(--native-spacing-tile-check-bleed));
 }
 
 :root[data-platform="windows"],

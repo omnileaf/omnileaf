@@ -201,8 +201,11 @@ test.describe("Windows library", () => {
 
       await expect(check).toHaveCSS("opacity", "1");
       await expect(tags).toHaveCSS("opacity", "0");
-      const checkBox = await boxOf(check);
-      expect([checkBox.width, checkBox.height]).toEqual([20, 20]);
+      const target = await boxOf(check);
+      const drawn = await boxOf(check.locator('[data-slot="tile-check-box"]'));
+      expect([target.width, target.height, drawn.width, drawn.height]).toEqual([
+        24, 24, 20, 20,
+      ]);
     });
 
     test("starts selecting from the check box and rings the picked tile's edge in the accent", async ({
@@ -275,6 +278,15 @@ test.describe("Windows library", () => {
         .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
         .click();
       expect(await accessibilityViolations(page)).toEqual([]);
+    });
+
+    test("draws no edge round an idle tile under forced colours", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ forcedColors: "active" });
+      const link = cell(page, SECOND_TITLE).locator("[data-pickable-link]");
+
+      expect(await edge(link)).toBe("rgba(0, 0, 0, 0)");
     });
 
     test("draws a picked tile's edge in Highlight under forced colours", async ({

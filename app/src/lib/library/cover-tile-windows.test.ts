@@ -20,8 +20,8 @@ import {
   contrastRatio,
   drawnContrast,
 } from "../../../tests/components/contrast-ratio";
+import { resolvedColour } from "../../../tests/components/resolved-colour";
 
-import CoverBadges from "./CoverBadges.svelte";
 import type { CoverPath } from "./cover-url";
 import { NEW_LIBRARY_LISTING } from "./library-listing";
 import SelectingCoversHarness from "./SelectingCoversHarness.svelte";
@@ -35,10 +35,11 @@ const ON_COVERS: OnCovers = {
   showsLanguage: true,
 };
 const COVER_EDGE = 1;
+const CLEAR = "rgba(0, 0, 0, 0)";
 const TEXT_CONTRAST = 4.5;
 const GRAPHIC_CONTRAST = 3;
-const LIGHTEST_COVER_UNDER_THE_CHECK = "#c9c9c9";
-const DARKEST_COVER_UNDER_THE_CHECK = "#606060";
+const WORST_COVER_UNDER_THE_CHECK = { light: "#c9c9c9", dark: "#606060" };
+const COVER_GROUND = "--probe-cover-ground";
 
 async function oneSeries(): Promise<LibrarySeries> {
   mockIPC(() => ({
@@ -131,8 +132,13 @@ afterEach(() => {
   clearMocks();
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  document.documentElement.style.removeProperty(COVER_GROUND);
   document.body.replaceChildren();
 });
+
+function accent(): string {
+  return resolvedColour("--native-color-button-primary", "backgroundColor");
+}
 
 function boxOfTile(link: Element): CSSStyleDeclaration {
   return getComputedStyle(link, "::before");
@@ -148,7 +154,7 @@ test("sets the tile as an ItemContainer reaching 8 past the cover, with a 4 corn
     box.borderTopWidth,
     box.borderTopColor,
     box.borderTopLeftRadius,
-  ]).toEqual(["-8px", "-8px", "2px", "rgba(0, 0, 0, 0)", "4px"]);
+  ]).toEqual(["-8px", "-8px", "2px", CLEAR, "4px"]);
 });
 
 test("keeps the cover as wide and as tall as it is on Linux, at rest and while selecting", async () => {
@@ -169,28 +175,28 @@ test("lights the tile under the pointer", async () => {
   await userEvent.hover(link);
 
   await vi.waitFor(() => {
-    expect(boxOfTile(link).backgroundColor).toBe("rgba(0, 0, 0, 0.035)");
+    expect(boxOfTile(link).backgroundColor).toBe(
+      resolvedColour("--native-color-tile-hover", "backgroundColor"),
+    );
   });
 });
 
 test("rings the picked tile's edge in the accent and draws no outline round its cover", async () => {
   const { link, mark } = await pickedTile(true);
 
-  expect(boxOfTile(link).borderTopColor).toBe("rgb(47, 111, 79)");
+  expect(boxOfTile(link).borderTopColor).toBe(accent());
   expect(styleOf(mark.parentElement).outlineStyle).toBe("none");
 });
 
 test("leaves an unpicked tile's edge clear while it is selecting", async () => {
   const { link } = await pickedTile(false);
 
-  expect(boxOfTile(link).borderTopColor).toBe("rgba(0, 0, 0, 0)");
+  expect(boxOfTile(link).borderTopColor).toBe(CLEAR);
 });
 
-test("puts the unread count top left as a 16 tall accent pill in on-accent text", async () => {
-  const { cover } = await tileOn("windows");
-  const series = await oneSeries();
-  await render(CoverBadges, { series, onCovers: ON_COVERS });
-  const unread = page.getByRole("img", { name: "3 unread" }).last().element();
+test("puts the unread count in the cover's top left as a 16 tall accent pill in on-accent text", async () => {
+  const { cover } = await hoverableTile("windows");
+  const unread = page.getByRole("img", { name: "3 unread" }).element();
   const style = styleOf(unread);
 
   expect([
@@ -198,28 +204,34 @@ test("puts the unread count top left as a 16 tall accent pill in on-accent text"
     Number.parseFloat(style.borderTopLeftRadius) >= 8,
     style.backgroundColor,
     style.color,
-  ]).toEqual([16, true, "rgb(47, 111, 79)", "rgb(255, 255, 255)"]);
-  expect(cover).toBeInstanceOf(HTMLElement);
+    gapsAround(unread, cover).top,
+    gapsAround(unread, cover).start,
+  ]).toEqual([
+    16,
+    true,
+    accent(),
+    resolvedColour("--native-color-on-button-primary", "color"),
+    8 + COVER_EDGE,
+    8 + COVER_EDGE,
+  ]);
   expect(drawnContrast(unread)).toBeGreaterThanOrEqual(TEXT_CONTRAST);
 });
 
-test("sets the downloaded tag as a 16 accent dot", async () => {
-  await drawOn("windows", "light");
-  const series = await oneSeries();
-  await render(CoverBadges, { series, onCovers: ON_COVERS });
+test("sets the downloaded tag as a 16 accent dot in the cover's top right", async () => {
+  const { cover } = await hoverableTile("windows");
   const downloaded = page
     .getByRole("img", { name: "Downloaded chapters" })
-    .last()
     .element();
 
   expect([
     downloaded.getBoundingClientRect().height,
     styleOf(downloaded).backgroundColor,
-  ]).toEqual([16, "rgb(47, 111, 79)"]);
+    gapsAround(downloaded, cover).end,
+  ]).toEqual([16, accent(), 8 + COVER_EDGE]);
 });
 
 test("draws the check box as a 20 square with a 4 corner, 8 inside the cover's top right", async () => {
-  const { mark, link } = await pickedTile(false);
+  const { mark } = await pickedTile(false);
   const cover = mark.parentElement as HTMLElement;
   const style = styleOf(mark);
 
@@ -233,14 +245,13 @@ test("draws the check box as a 20 square with a 4 corner, 8 inside the cover's t
     "20px",
     "20px",
     "4px",
-    "rgba(255, 255, 255, 0.79)",
-    "rgb(107, 107, 107)",
+    resolvedColour("--native-color-tile-check-fill", "backgroundColor"),
+    resolvedColour("--native-color-tile-check-edge", "backgroundColor"),
   ]);
   expect(gapsAround(mark, cover)).toMatchObject({
     top: 8 + COVER_EDGE,
     end: 8 + COVER_EDGE,
   });
-  expect(link).toBeInstanceOf(HTMLElement);
 });
 
 test("fills a picked check box with the accent and a 12 tick in on-accent", async () => {
@@ -251,28 +262,24 @@ test("fills a picked check box with the accent and a 12 tick in on-accent", asyn
     styleOf(mark).backgroundColor,
     styleOf(mark).color,
     tick?.getBoundingClientRect().width,
-  ]).toEqual(["rgb(47, 111, 79)", "rgb(255, 255, 255)", 12]);
+  ]).toEqual([
+    accent(),
+    resolvedColour("--native-color-on-button-primary", "color"),
+    12,
+  ]);
 });
 
 for (const theme of ["light", "dark"] as const) {
-  test(`keeps the empty check box's edge 3 to 1 against the lightest and darkest cover under it in the ${theme} theme`, async () => {
+  test(`keeps the empty check box's edge 3 to 1 against the worst cover under it in the ${theme} theme`, async () => {
     await pickedTile(false, theme);
-    const root = document.documentElement;
-    root.style.setProperty("--probe-lightest", LIGHTEST_COVER_UNDER_THE_CHECK);
-    root.style.setProperty("--probe-darkest", DARKEST_COVER_UNDER_THE_CHECK);
-    const edge = "--native-color-tile-check-edge";
-
-    const ratios = [
-      contrastRatio(edge, "--probe-lightest"),
-      contrastRatio(edge, "--probe-darkest"),
-    ];
-
-    expect(Math.max(...ratios)).toBeGreaterThanOrEqual(GRAPHIC_CONTRAST);
-    expect(ratios[theme === "light" ? 0 : 1]).toBeGreaterThanOrEqual(
-      GRAPHIC_CONTRAST,
+    document.documentElement.style.setProperty(
+      COVER_GROUND,
+      WORST_COVER_UNDER_THE_CHECK[theme],
     );
-    root.style.removeProperty("--probe-lightest");
-    root.style.removeProperty("--probe-darkest");
+
+    expect(
+      contrastRatio("--native-color-tile-check-edge", COVER_GROUND),
+    ).toBeGreaterThanOrEqual(GRAPHIC_CONTRAST);
   });
 }
 
@@ -334,17 +341,44 @@ test("keeps the check box out of sight until the pointer is over the tile, and l
   expect(resting).toEqual(["0", "1"]);
 });
 
-test("puts the hover check box where the selecting check box will be", async () => {
+function drawnCheck(): HTMLElement {
+  const box = checkBox()
+    .element()
+    .querySelector('[data-slot="tile-check-box"]');
+  if (!(box instanceof HTMLElement)) {
+    throw new Error("the check box drew no box");
+  }
+  return box;
+}
+
+test("draws the hover check box where the selecting check box will be", async () => {
   const { cell, cover } = await hoverableTile("windows");
   await userEvent.hover(cell);
 
-  const box = checkBox().element();
+  const box = drawnCheck();
 
   expect([
     box.getBoundingClientRect().width,
+    box.getBoundingClientRect().height,
     gapsAround(box, cover).top,
     gapsAround(box, cover).end,
-  ]).toEqual([20, 8 + COVER_EDGE, 8 + COVER_EDGE]);
+  ]).toEqual([20, 20, 8 + COVER_EDGE, 8 + COVER_EDGE]);
+});
+
+test("gives the hover check box a 24 by 24 target with the 20 box drawn in its middle", async () => {
+  const { cell } = await hoverableTile("windows");
+  await userEvent.hover(cell);
+
+  const target = checkBox().element().getBoundingClientRect();
+  const box = drawnCheck().getBoundingClientRect();
+
+  expect([target.width, target.height]).toEqual([24, 24]);
+  expect([
+    box.left - target.left,
+    target.right - box.right,
+    box.top - target.top,
+    target.bottom - box.bottom,
+  ]).toEqual([2, 2, 2, 2]);
 });
 
 test("starts selecting with this tile picked when its check box is clicked", async () => {
@@ -356,6 +390,31 @@ test("starts selecting with this tile picked when its check box is clicked", asy
     true,
     true,
   ]);
+});
+
+test("ignores a touch on the check box's place until the pointer is over the tile", async () => {
+  const { cell } = await hoverableTile("windows");
+
+  const resting = styleOf(checkBox().element()).pointerEvents;
+  await userEvent.hover(cell);
+  await vi.waitFor(() => {
+    expect(styleOf(checkBox().element()).pointerEvents).toBe("auto");
+  });
+
+  expect(resting).toBe("none");
+});
+
+test("keeps the keyboard on the tile when its check box starts the selecting", async () => {
+  const { cell } = await hoverableTile("windows");
+  await userEvent.hover(cell);
+
+  await userEvent.click(checkBox());
+
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(
+      cell.querySelector("[data-pickable-link]"),
+    );
+  });
 });
 
 test("leaves the check box out of the tab order so the arrow keys and Space stay the keyboard's way to pick", async () => {

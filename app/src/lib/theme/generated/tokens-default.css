@@ -425,7 +425,6 @@
   --native-color-tile-pressed: transparent;
   --native-color-tile-check-fill: transparent;
   --native-color-tile-check-edge: transparent;
-  --native-spacing-tile-inset: 0px;
   --native-spacing-tile-edge: 0px;
   --native-spacing-tile-lift: 0px;
   --native-spacing-tile-badge: 0px;
@@ -433,5 +432,9 @@
   --native-spacing-tile-check-glyph: 0px;
   --native-radius-tile: 0px;
   --native-radius-tile-check: 0px;
+  --native-spacing-tile-mark-inset: 0px;
   --native-spacing-tile-corner: 0px;
+  --native-spacing-tile-check-target: 0px;
+  --native-spacing-tile-check-bleed: 0px;
+  --native-spacing-tile-hit-corner: 0px;
 }
