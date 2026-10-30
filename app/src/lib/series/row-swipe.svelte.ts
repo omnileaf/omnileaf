@@ -148,6 +148,19 @@ export class RowSwipe {
     this.isDragging = false;
   }
 
+  reveal(
+    key: string,
+    side: SwipeSide,
+    row: HTMLElement,
+    action: OpenAction = FIXED_ACTION,
+  ): void {
+    this.#revealed = {
+      key,
+      side,
+      offset: revealedOffset(side, directionOf(row), action.revealPx()),
+    };
+  }
+
   close(): void {
     this.#revealed = undefined;
   }

@@ -55,3 +55,25 @@ test("acts on a swipe past half an open row when its action is the fixed one", (
 
   expect(outcome).toEqual({ kind: "act", side: "towardEnd" });
 });
+
+test("opens a row on its action without a swipe, toward its start in left-to-right text", () => {
+  const swipe = new RowSwipe(() => true);
+
+  swipe.reveal("book", "towardStart", narrowRow(), CAPSULE);
+
+  expect({
+    offset: swipe.offsetOf("book"),
+    side: swipe.sideOf("book"),
+    isRevealed: swipe.isRevealed("book"),
+  }).toEqual({ offset: -112, side: "towardStart", isRevealed: true });
+});
+
+test("opens a row on its action toward its start in right-to-left text", () => {
+  const swipe = new RowSwipe(() => true);
+  const target = narrowRow();
+  target.dir = "rtl";
+
+  swipe.reveal("book", "towardStart", target, CAPSULE);
+
+  expect(swipe.offsetOf("book")).toBe(112);
+});
