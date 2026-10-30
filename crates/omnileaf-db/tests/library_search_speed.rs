@@ -83,13 +83,29 @@ const TEXTS: [&str; 17] = [
     "special",
 ];
 
-const MISSPELT_TEXTS: [&str; 5] = [
+const LONG_SPELLING_SERIES: &str = "The Long And Winding Chronicles Of The Lantern Keepers";
+
+const MISSPELT_TEXTS: [&str; 6] = [
     "volmue",
     "chaptr 12",
     "harbor gat",
-    "harbr gate 0500",
+    "harbr gate 5",
     "smaple sereis",
+    "the long and windng chronicels of the lantern",
 ];
+
+const TEXT_CLOSE_TO_NOTHING: &str = "quixotic zebra";
+
+const HIDING_ADULT: AdultHiding = AdultHiding {
+    leaves_out_adult: true,
+    counts_age_ratings: true,
+};
+
+#[derive(Clone, Copy, Debug)]
+enum Arm {
+    Series,
+    Chapter,
+}
 
 /// No filter, and one that lets through a hundredth of the library, so a search reads furthest to fill a page.
 const FILTERS: [SeriesFilter; 2] = [
@@ -239,29 +255,49 @@ async fn time_spellings(database: &Database) -> Vec<String> {
         budget: TimingBudget::from_env(BUDGET),
     };
     let mut over_budget = Vec::new();
-    for text in MISSPELT_TEXTS {
-        let outcome = trial
-            .run(
-                async |_| (),
-                async |()| {
-                    assert!(suggest(database, text).await, "{text:?} found no spelling");
-                },
-            )
-            .await;
-        eprintln!("spelling {text:?}: {outcome}");
-        if !outcome.is_within_budget() {
-            over_budget.push(format!("spelling {text:?}: {outcome}"));
+    for hiding in [AdultHiding::default(), HIDING_ADULT] {
+        assert_spellings_found(database, hiding).await;
+        for text in MISSPELT_TEXTS.into_iter().chain([TEXT_CLOSE_TO_NOTHING]) {
+            for arm in [Arm::Series, Arm::Chapter] {
+                let outcome = trial
+                    .run(
+                        async |_| (),
+                        async |()| {
+                            suggest(database, arm, text, hiding).await;
+                        },
+                    )
+                    .await;
+                let case = format!("spelling {text:?} by {arm:?} while {hiding:?}");
+                eprintln!("{case}: {outcome}");
+                if !outcome.is_within_budget() {
+                    over_budget.push(format!("{case}: {outcome}"));
+                }
+            }
         }
     }
     over_budget
 }
 
-async fn suggest(database: &Database, text: &'static str) -> bool {
+async fn assert_spellings_found(database: &Database, hiding: AdultHiding) {
+    for text in MISSPELT_TEXTS {
+        let found = [
+            suggest(database, Arm::Series, text, hiding).await,
+            suggest(database, Arm::Chapter, text, hiding).await,
+        ];
+        assert!(found.contains(&true), "{text:?} found no spelling");
+    }
+    let found = [
+        suggest(database, Arm::Series, TEXT_CLOSE_TO_NOTHING, hiding).await,
+        suggest(database, Arm::Chapter, TEXT_CLOSE_TO_NOTHING, hiding).await,
+    ];
+    assert_eq!(found, [false, false]);
+}
+
+async fn suggest(database: &Database, arm: Arm, text: &'static str, hiding: AdultHiding) -> bool {
     database
-        .read(move |connection| {
-            let hiding = AdultHiding::default();
-            Ok(closest_title_words(connection, text, hiding)?.is_some()
-                || closest_chapter_title(connection, text, hiding)?.is_some())
+        .read(move |connection| match arm {
+            Arm::Series => Ok(closest_title_words(connection, text, hiding)?.is_some()),
+            Arm::Chapter => Ok(closest_chapter_title(connection, text, hiding)?.is_some()),
         })
         .await
         .unwrap()
@@ -269,6 +305,7 @@ async fn suggest(database: &Database, text: &'static str) -> bool {
 
 async fn add_generated_library(database: &Database) {
     add_long_series(database).await;
+    seed_library(database, &[SeriesSeed::named(LONG_SPELLING_SERIES)]).await;
     add_generated_series(database, &BOOK_TITLES).await;
     database
         .write(|transaction| {
