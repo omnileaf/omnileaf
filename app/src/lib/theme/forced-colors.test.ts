@@ -112,6 +112,7 @@ const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
   "row-pressed": [],
   "row-selected": ["on-row-selected-muted"],
   "menu-chosen": ["on-menu-chosen"],
+  "menu-item-hover": [],
 };
 
 test("pairs every Highlight fill with HighlightText for the text on it", () => {
@@ -132,15 +133,24 @@ test("pairs every Highlight fill with HighlightText for the text on it", () => {
   }
 });
 
-test("turns the text of a picked or pressed row and a highlighted phone menu item to HighlightText", () => {
+test("turns the text of a picked or pressed row and a highlighted menu item and its accelerator to HighlightText", () => {
   const flat = forcedColors.replace(/\s+/g, " ");
 
   expect(flat).toMatch(
     /\[data-slot="item"\]\[data-picked\],[^{}]*\[data-slot="item"\]:active:not\(\[aria-disabled="true"\]\) \{ color: HighlightText; \}/,
   );
   expect(flat).toMatch(
-    /@media \(width < 600px\) \{[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \{ color: HighlightText; \}/,
+    /\[role\^="menuitem"\]\[data-highlighted\],[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \[data-slot="kbd"\] \{ color: HighlightText; \}/,
   );
+  expect(flat).not.toContain("@media (width < 600px)");
+});
+
+test("edges Windows's flyouts in CanvasText and draws a turned-off menu item and a key hint the contrast theme's way", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-menu-edge")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-menu-disabled")).toBe("GrayText");
+  expect(mapped.get("--native-color-key-ink")).toBe("CanvasText");
 });
 
 test("draws Windows's disabled buttons in GrayText and its hyperlink button in LinkText", () => {

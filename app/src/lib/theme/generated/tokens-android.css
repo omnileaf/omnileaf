@@ -188,6 +188,10 @@
   --native-spacing-sheet-handle-start: 22px;
   --native-spacing-sheet-handle-area: 48px;
   --native-spacing-sheet-handle-end: 22px;
+  --native-color-menu-edge: var(--menu-edge);
+  --native-color-menu-item-hover: var(--menu-highlight);
+  --native-color-on-menu-disabled: var(--muted-foreground);
+  --native-color-key-ink: var(--key-ink);
   --native-radius-menu: 16px;
   --native-radius-menu-item: 4px;
   --native-radius-menu-item-end: 12px;

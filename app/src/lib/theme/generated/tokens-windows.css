@@ -24,6 +24,13 @@
   --native-radius-dialog: 8px;
   --native-radius-sheet: 8px;
   --native-radius-menu: 8px;
+  --native-radius-menu-item: 4px;
+  --native-spacing-menu-block: 2px;
+  --native-spacing-menu-inline: 0px;
+  --native-spacing-menu-item: 32px;
+  --native-spacing-menu-item-inline: 11px;
+  --native-spacing-menu-rule-inline: 0px;
+  --native-spacing-menu-rule-block: 1px;
   --native-blur-info-bar-floating: 30px;
   --native-radius-info-bar: 4px;
   --native-radius-info-bar-floating: 8px;
@@ -98,6 +105,11 @@
   --native-color-menu-chosen: #00000009;
   --native-color-on-menu-chosen: #000000e4;
   --native-color-menu-rule: #0000000f;
+  --native-color-menu-edge: #0000000f;
+  --native-color-menu-item-hover: #00000009;
+  --native-color-on-menu-disabled: #00000072;
+  --native-color-key-ink: #0000009e;
+  --native-shadow-menu-lift: 0 8px 16px #00000024;
   --native-color-notice: #f6f6f680;
   --native-color-on-notice: #000000e4;
   --native-color-focus-ring: #000000e4;
@@ -179,6 +191,11 @@
   --native-color-menu-chosen: #ffffff0f;
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: #ffffff15;
+  --native-color-menu-edge: #00000033;
+  --native-color-menu-item-hover: #ffffff0f;
+  --native-color-on-menu-disabled: #ffffff87;
+  --native-color-key-ink: #ffffffc5;
+  --native-shadow-menu-lift: 0 8px 16px #00000042;
   --native-color-notice: #ffffff08;
   --native-color-on-notice: #ffffff;
   --native-color-focus-ring: #ffffff;

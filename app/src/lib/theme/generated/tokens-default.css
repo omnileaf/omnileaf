@@ -259,6 +259,10 @@
   --native-color-menu-chosen: transparent;
   --native-color-on-menu-chosen: var(--foreground);
   --native-color-menu-rule: var(--menu-edge);
+  --native-color-menu-edge: var(--menu-edge);
+  --native-color-menu-item-hover: var(--menu-highlight);
+  --native-color-on-menu-disabled: var(--muted-foreground);
+  --native-color-key-ink: var(--key-ink);
   --native-radius-menu: var(--menu-radius);
   --native-radius-menu-item: var(--radius-menu-item);
   --native-radius-menu-item-end: var(--radius-menu-item);
