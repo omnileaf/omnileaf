@@ -79,6 +79,9 @@ pub(super) fn walk<S: Read + Seek>(
         if header.flags & (DATA_FROM_PREVIOUS_VOLUME | DATA_IN_NEXT_VOLUME) != 0 {
             return Err(gate.multi_volume());
         }
+        if header.kind == ENCRYPTION {
+            return Err(gate.encrypted());
+        }
         let is_entry = matches!(header.kind, FILE | SERVICE);
         if !is_entry && header.has_data() {
             return Err(gate.corrupt(DATA_ON_A_BARE_HEADER));
@@ -86,7 +89,6 @@ pub(super) fn walk<S: Read + Seek>(
         let data_offset = source.position();
         let data_size = header.data_size;
         match header.kind {
-            ENCRYPTION => return Err(gate.encrypted()),
             MAIN if has_main => return Err(gate.corrupt(SECOND_MAIN_HEADER)),
             MAIN => {
                 check_main(header, gate)?;

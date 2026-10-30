@@ -12,6 +12,7 @@ const MARK: u64 = 0;
 const MAIN: u64 = 1;
 const FILE: u64 = 2;
 const SERVICE: u64 = 3;
+const ENCRYPTION: u64 = 4;
 const END: u64 = 5;
 const UNKNOWN: u64 = 6;
 const NO_FLAGS: u64 = 0;
@@ -541,4 +542,15 @@ fn refuses_an_entry_carrying_a_version_record() {
         matches!(error, FormatError::UnsupportedEntry { .. }),
         "{error:?}"
     );
+}
+
+#[test]
+fn reports_an_encryption_header_carrying_data_as_encrypted() {
+    let aes_256_with_salt = [&vint(0)[..], &vint(NO_FLAGS), &[15], &[0; 16]].concat();
+    let encryption = simple(ENCRYPTION, HAS_DATA, &[vint(0), aes_256_with_salt].concat());
+    let bytes = [SIGNATURE.to_vec(), encryption].concat();
+
+    let error = listing(&bytes).unwrap_err();
+
+    assert!(matches!(error, FormatError::Encrypted { .. }), "{error:?}");
 }
