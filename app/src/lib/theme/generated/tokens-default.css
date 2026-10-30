@@ -27,6 +27,15 @@
   --native-color-button-primary-pressed: var(--accent);
   --native-color-button-secondary-hover: var(--accent);
   --native-color-button-secondary-pressed: var(--accent);
+  --native-color-button-primary-edge: transparent;
+  --native-color-button-primary-edge-bottom: transparent;
+  --native-color-button-primary-disabled: var(--primary);
+  --native-color-on-button-primary-disabled: var(--primary-foreground);
+  --native-color-button-secondary-edge-top: transparent;
+  --native-color-button-secondary-edge-bottom: transparent;
+  --native-color-button-secondary-disabled: var(--secondary);
+  --native-color-on-button-pressed: var(--foreground);
+  --native-color-focus-ring-inner: transparent;
   --native-radius-button: var(--radius-shadcn-button);
   --native-radius-button-small: var(--radius-shadcn-button);
   --native-spacing-button: var(--spacing-shadcn-button);
@@ -113,6 +122,7 @@
   --native-color-button-outline-pressed: var(--color-pressed);
   --native-color-on-button-plain: var(--color-accent);
   --native-color-on-button-link: var(--color-accent);
+  --native-color-on-button-link-pressed: var(--color-accent);
   --native-color-on-button-plain-pressed: var(--color-accent);
   --native-color-on-button-disabled: var(--color-muted-foreground);
   --native-color-button-plain-hover: var(--color-hover);
@@ -124,6 +134,8 @@
   --native-spacing-button-small: var(--spacing-shadcn-button);
   --native-spacing-button-large: var(--spacing-shadcn-button);
   --native-spacing-button-small-inline: var(--spacing-lg);
+  --native-spacing-icon-button-inset: 0px;
+  --native-spacing-icon-button-small-inset: 0px;
   --native-spacing-button-large-inline: var(--spacing-lg);
   --native-text-button-large: var(--text-label);
   --native-leading-button-large: var(--text-label--line-height);

@@ -40,7 +40,7 @@ const RINGS: readonly FocusRing[] = [
     platform: "windows",
     width: "2px",
     offset: "1px",
-    colour: "--foreground",
+    colour: "--native-color-focus-ring",
   },
 ];
 

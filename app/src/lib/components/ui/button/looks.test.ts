@@ -199,20 +199,64 @@ const MACOS_ONLY = [
   "font-native-button-large",
 ];
 
+const SHARED_WITH_WINDOWS = new Set(["native-on-button-link"]);
+
+function isMacosOnlyOn(platform: Platform, name: string): boolean {
+  return !(platform === "windows" && SHARED_WITH_WINDOWS.has(name));
+}
+
+const SIZES = ["small", "regular", "large"] as const;
+
 test("keeps macOS's button utilities out of every other platform's variant buttons", () => {
   const others: readonly Platform[] = ["android", "ios", "linux", "windows"];
-  const sizes = ["small", "regular", "large"] as const;
 
   const leaked = others.flatMap((platform) =>
     VARIANTS.flatMap((variant) =>
-      sizes.flatMap((size) =>
+      SIZES.flatMap((size) =>
         [false, true].flatMap((isIconOnly) => {
           const classes = variantClasses(variant, size, isIconOnly, platform);
-          return MACOS_ONLY.filter((name) => classes.includes(name));
+          return MACOS_ONLY.filter(
+            (name) => classes.includes(name) && isMacosOnlyOn(platform, name),
+          );
         }),
       ),
     ),
   );
 
   expect(leaked).toEqual([]);
+});
+
+test("draws Windows's destructive button as its standard button, with nothing red", () => {
+  const looks = SIZES.flatMap((size) =>
+    [false, true].map((isIconOnly) => ({
+      destructive: variantClasses("destructive", size, isIconOnly, "windows"),
+      standard: variantClasses("secondary", size, isIconOnly, "windows"),
+    })),
+  );
+
+  for (const { destructive, standard } of looks) {
+    expect(destructive).toBe(standard);
+    expect(destructive).not.toMatch(/danger|destructive/);
+  }
+});
+
+test("presses Windows's hyperlink button into its own pressed text, never the accent fill's colour", () => {
+  const classes = variantClasses("link", "regular", false, "windows");
+
+  expect(classes).toContain(
+    "not-disabled:not-aria-disabled:active:text-native-on-button-link-pressed",
+  );
+  expect(classes).not.toContain("text-native-button-primary");
+});
+
+test("rings every Windows variant button with the platform's focus ring and its inner line", () => {
+  const unringed = VARIANTS.filter((variant) => {
+    const classes = variantClasses(variant, "regular", false, "windows");
+    return !(
+      classes.includes("focus-visible:focus-ring") &&
+      classes.includes("focus-visible:ring-native-focus-ring-inner")
+    );
+  });
+
+  expect(unringed).toEqual([]);
 });

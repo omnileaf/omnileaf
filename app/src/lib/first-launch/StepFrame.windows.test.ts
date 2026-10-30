@@ -92,3 +92,16 @@ test("reserves the room the footer takes so toasts stay clear of Back and Contin
     0,
   );
 });
+
+test("draws Back as the board's 32px subtle button around a 16px arrow on Windows", async () => {
+  const screen = await renderFrameOnWindows("link");
+
+  const back = screen.getByRole("button", { name: "Back" }).element();
+  const arrow = back.querySelector("svg");
+  const box = back.getBoundingClientRect();
+
+  expect({
+    back: [box.width, box.height],
+    arrow: arrow?.getAttribute("width"),
+  }).toEqual({ back: [32, 32], arrow: "16" });
+});
