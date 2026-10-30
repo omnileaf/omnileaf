@@ -6,7 +6,7 @@ use std::{
 
 use crate::{Details, FormatError, Storage, UnsupportedArchive, error::read_failed};
 
-const SIGNATURE_LENGTH: u64 = 6;
+const SIGNATURE_LENGTH: u64 = 8;
 const ZIP_SIGNATURES: [&[u8]; 2] = [b"PK\x03\x04", b"PK\x05\x06"];
 const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07";
 const SEVEN_ZIP_SIGNATURE: &[u8] = b"7z\xbc\xaf\x27\x1c";
@@ -16,6 +16,8 @@ pub(crate) enum Container {
     Folder,
     Zip(File),
     SevenZip(File),
+    #[cfg(feature = "rar")]
+    Rar(File),
 }
 
 impl Container {
@@ -34,6 +36,10 @@ impl Container {
         }
         if start.starts_with(SEVEN_ZIP_SIGNATURE) {
             return Ok(Self::SevenZip(file));
+        }
+        #[cfg(feature = "rar")]
+        if crate::rar_header::is_readable_rar(&start) {
+            return Ok(Self::Rar(file));
         }
         let path = path.to_owned();
         Err(if start.starts_with(RAR_SIGNATURE) {

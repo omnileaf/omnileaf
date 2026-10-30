@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[features]
+rar = ["omnileaf-formats/rar"]
+
 [dependencies]
 omnileaf-cache.workspace = true
 omnileaf-db.workspace = true

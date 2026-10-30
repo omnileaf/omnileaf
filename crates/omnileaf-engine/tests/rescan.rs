@@ -36,7 +36,7 @@ const SERIES_03: &str = "Sample Series 03";
 const CHANGED_AT: Duration = Duration::from_secs(1_800_000_001);
 const DATABASE_FILE: &str = "library.sqlite";
 const COMIC_INFO: &str = "<ComicInfo><Summary>A sample summary.</Summary></ComicInfo>";
-const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const UNKNOWN_RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x02\x00";
 
 struct Rescanned {
     scanned: Scanned,
@@ -556,7 +556,7 @@ async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
     let folder = Rescanned::new("rescan-not-yet").await;
     fs::write(
         folder.path("Sample Series 01/v03.cbr"),
-        b"Rar!\x1a\x07\x01\x00",
+        b"Rar!\x1a\x07\x02\x00",
     )
     .unwrap();
 
@@ -574,7 +574,11 @@ async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
 #[tokio::test]
 async fn counts_a_new_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
     let folder = Rescanned::new("rescan-cbz-holding-rar").await;
-    fs::write(folder.path("Sample Series 01/v03.cbz"), RAR_SIGNATURE).unwrap();
+    fs::write(
+        folder.path("Sample Series 01/v03.cbz"),
+        UNKNOWN_RAR_SIGNATURE,
+    )
+    .unwrap();
 
     let outcome = folder.changes().await;
 
@@ -598,7 +602,11 @@ fn skipped_cbr_in_series_01(name: &str) -> SkippedType {
 #[tokio::test]
 async fn lists_a_new_file_it_skips_for_a_type_the_app_does_not_read() {
     let folder = Rescanned::new("rescan-skipped").await;
-    fs::write(folder.path("Sample Series 01/v03.cbr"), RAR_SIGNATURE).unwrap();
+    fs::write(
+        folder.path("Sample Series 01/v03.cbr"),
+        UNKNOWN_RAR_SIGNATURE,
+    )
+    .unwrap();
 
     let (rescan, _) = folder.rescan().await;
 
@@ -609,7 +617,7 @@ async fn lists_a_new_file_it_skips_for_a_type_the_app_does_not_read() {
 async fn lists_a_file_it_skips_for_its_type_again_on_every_rescan() {
     let comics = ScratchFolder::new("rescan-skipped-again");
     write_book(&comics.path().join(SERIES_01).join("v01.cbz"), 1);
-    comics.write(&format!("{SERIES_01}/v02.cbr"), RAR_SIGNATURE);
+    comics.write(&format!("{SERIES_01}/v02.cbr"), UNKNOWN_RAR_SIGNATURE);
     let (scanned, _, _) = Scanned::folder("rescan-skipped-again", comics.path()).await;
     let library = &scanned.library;
     library.rescan_folder(scanned.id, |_| {}).await.unwrap();

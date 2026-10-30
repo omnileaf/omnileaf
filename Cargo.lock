@@ -3754,6 +3754,7 @@ name = "omnileaf-formats"
 version = "0.0.0"
 dependencies = [
  "flate2",
+ "omnileaf-libarchive",
  "omnileaf-sync-proto",
  "omnileaf-testkit",
  "proptest",
