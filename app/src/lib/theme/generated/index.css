@@ -109,6 +109,11 @@
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
+  --spacing-native-swipe-action: var(--native-spacing-swipe-action);
+  --spacing-native-swipe-action-inline: var(--native-spacing-swipe-action-inline);
+  --spacing-native-swipe-action-gap: var(--native-spacing-swipe-action-gap);
+  --color-native-swipe-destructive: var(--native-color-swipe-destructive);
+  --color-native-on-swipe-destructive: var(--native-color-on-swipe-destructive);
   --color-native-row-rule: var(--native-color-row-rule);
   --text-native-row-title: var(--native-text-row-title);
   --leading-native-row-title: var(--native-leading-row-title);

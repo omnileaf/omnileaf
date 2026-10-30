@@ -104,6 +104,11 @@
   --native-spacing-row-lead: 0px;
   --native-spacing-group-head-end: 0px;
   --native-spacing-group-head-below: 0px;
+  --native-spacing-swipe-action: 60px;
+  --native-spacing-swipe-action-inline: 14px;
+  --native-spacing-swipe-action-gap: 10px;
+  --native-color-swipe-destructive: var(--color-danger-fill);
+  --native-color-on-swipe-destructive: var(--color-on-danger);
   --native-color-row-rule: var(--border);
   --native-text-row-title: var(--text-body);
   --native-leading-row-title: var(--text-body--line-height);
