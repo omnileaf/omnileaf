@@ -133,6 +133,9 @@ test.describe(
       page,
     }) => {
       const sheet = await openLabels(page);
+      await page.evaluate(() => {
+        (document.activeElement as HTMLElement | null)?.blur();
+      });
       const sheetBox = await boxOf(sheet);
 
       for (const name of ["New category", "Add a tag"]) {
