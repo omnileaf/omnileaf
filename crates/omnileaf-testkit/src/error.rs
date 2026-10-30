@@ -18,4 +18,6 @@ pub enum FixtureError {
     SevenZipArchive(#[from] sevenz_rust2::Error),
     #[error("write a RAR 4 header longer than its 16-bit size field allows")]
     RarHeaderTooLong,
+    #[error("write RAR folder {name} holding bytes")]
+    RarFolderWithBytes { name: String },
 }

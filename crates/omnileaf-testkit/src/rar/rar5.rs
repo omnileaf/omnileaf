@@ -530,4 +530,16 @@ mod tests {
             (ARCHIVE_IS_VOLUME, vec![0, CONTINUES_IN_NEXT_VOLUME])
         );
     }
+
+    #[test]
+    fn refuses_a_folder_holding_bytes() {
+        let entries = [entry("chapter/", b"bytes")];
+
+        let error = cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap_err();
+
+        assert!(
+            matches!(&error, crate::FixtureError::RarFolderWithBytes { name } if name == "chapter/"),
+            "{error:?}"
+        );
+    }
 }

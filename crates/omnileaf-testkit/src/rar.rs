@@ -78,7 +78,7 @@ pub fn cbr(entries: &[ArchiveEntry], options: &RarOptions) -> Result<Vec<u8>, Fi
         .iter()
         .enumerate()
         .map(|(index, entry)| Member::of(entry, options, index == last))
-        .collect();
+        .collect::<Result<_, _>>()?;
     let members = mark_solid(members, options.packing);
     match options.format {
         RarFormat::Rar4 { unpack_version } => rar4::archive(&members, options, unpack_version),
@@ -107,15 +107,24 @@ struct Member<'a> {
 }
 
 impl<'a> Member<'a> {
-    fn of(entry: &'a ArchiveEntry, options: &RarOptions, is_last: bool) -> Self {
+    fn of(
+        entry: &'a ArchiveEntry,
+        options: &RarOptions,
+        is_last: bool,
+    ) -> Result<Self, FixtureError> {
         let is_directory = entry.name.ends_with(FOLDER_SUFFIX);
         let bytes = entry.bytes.as_slice();
+        if is_directory && !bytes.is_empty() {
+            return Err(FixtureError::RarFolderWithBytes {
+                name: entry.name.clone(),
+            });
+        }
         let unpacked_size = if is_directory {
             0
         } else {
             options.declared_unpacked_size.unwrap_or(bytes.len() as u64)
         };
-        Self {
+        Ok(Self {
             name: entry.name.trim_end_matches(FOLDER_SUFFIX),
             bytes,
             is_directory,
@@ -123,7 +132,7 @@ impl<'a> Member<'a> {
             continues: is_last && options.volume == RarVolume::LastEntryContinues,
             unpacked_size,
             crc32: crc32(bytes),
-        }
+        })
     }
 }
 
