@@ -75,6 +75,10 @@ fn reads_and_writes_each_status() {
             },
             StatusReply {
                 code: "R-0000-0003".to_owned(),
+                status: ReportStatus::Duplicate { issue: 97 },
+            },
+            StatusReply {
+                code: "R-0000-0004".to_owned(),
                 status: ReportStatus::Unknown,
             },
         ],
@@ -86,6 +90,10 @@ fn reads_and_writes_each_status() {
     assert_eq!(
         json["reports"][1],
         json!({ "code": "R-0000-0002", "status": "published", "issue": 412 })
+    );
+    assert_eq!(
+        json["reports"][2],
+        json!({ "code": "R-0000-0003", "status": "duplicate", "issue": 97 })
     );
     assert_eq!(
         json["reports"][0],
