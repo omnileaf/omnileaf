@@ -11,6 +11,7 @@
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { CONDITION_LABELS } from "./condition-labels";
   import ConditionChips from "./ConditionChips.svelte";
   import { isComposing } from "./composition";
 
@@ -20,6 +21,7 @@
   let {
     text,
     conditions,
+    hasTokens,
     onType,
     onRemove,
     onEscape,
@@ -30,6 +32,7 @@
   }: {
     text: string;
     conditions: readonly FilterCondition[];
+    hasTokens: boolean;
     onType: (typed: string) => void;
     onRemove: (condition: FilterCondition) => void;
     onEscape: () => void;
@@ -40,6 +43,9 @@
   } = $props();
 
   let input = $state<HTMLInputElement | null>(null);
+  const tokensId = $props.id();
+  const showsTokens = $derived(hasTokens && conditions.length > 0);
+  const canClear = $derived(text !== "" || showsTokens);
 
   onMount(() => {
     input?.setSelectionRange(text.length, text.length);
@@ -58,7 +64,25 @@
     void type(event.currentTarget.value);
   }
 
-  function keyDown(event: KeyboardEvent): void {
+  function isAtStart(field: HTMLInputElement): boolean {
+    return hasTokens
+      ? field.selectionStart === 0 && field.selectionEnd === 0
+      : text === "";
+  }
+
+  function clear(): void {
+    void type("");
+    if (hasTokens) {
+      for (const condition of conditions) {
+        onRemove(condition);
+      }
+    }
+    input?.focus();
+  }
+
+  function keyDown(
+    event: KeyboardEvent & { currentTarget: HTMLInputElement },
+  ): void {
     if (isComposing(event)) {
       return;
     }
@@ -72,7 +96,11 @@
       return;
     }
     const last = conditions.at(-1);
-    if (event.key === "Backspace" && text === "" && last !== undefined) {
+    if (
+      event.key === "Backspace" &&
+      isAtStart(event.currentTarget) &&
+      last !== undefined
+    ) {
       event.preventDefault();
       onRemove(last);
     }
@@ -87,7 +115,18 @@
     aria-hidden="true"
     class="shrink-0 android:text-muted"
   />
-  {#if conditions.length > 0}
+  {#if showsTokens}
+    <span id={tokensId} class="contents">
+      <span class="sr-only">{m.search_conditions()}</span>
+      {#each conditions as condition (condition)}
+        <span
+          class="flex shrink-0 items-center rounded-full bg-native-button-primary px-native-search-token-inline text-native-search-token/native-search-token font-native-search-token tracking-native-search-token text-native-on-button-primary min-block-native-search-token"
+        >
+          {CONDITION_LABELS[condition]()}
+        </span>
+      {/each}
+    </span>
+  {:else if conditions.length > 0}
     <ConditionChips
       {conditions}
       {onRemove}
@@ -105,6 +144,7 @@
     aria-activedescendant={activeId}
     data-arrival-focus
     aria-label={m.search_field()}
+    aria-describedby={showsTokens ? tokensId : undefined}
     placeholder={m.search_field()}
     maxlength={SEARCH_MAX_CHARS}
     autocorrect="off"
@@ -115,15 +155,12 @@
     oninput={typeIn}
     onkeydown={keyDown}
   />
-  {#if text !== ""}
+  {#if canClear}
     <Tooltip
       label={m.search_clear()}
       type="button"
       aria-label={m.search_clear()}
-      onclick={() => {
-        void type("");
-        input?.focus();
-      }}
+      onclick={clear}
     >
       {#snippet child({ props })}
         <Button

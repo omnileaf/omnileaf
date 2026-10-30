@@ -346,6 +346,7 @@
     <SearchField
       text={query.text}
       conditions={query.conditions}
+      hasTokens={isIPhone}
       onType={type}
       onRemove={toggle}
       onEscape={close}
@@ -368,7 +369,7 @@
       }}
     />
   {:else}
-    {#if query.conditions.length > 0}
+    {#if query.conditions.length > 0 && !isIPhone}
       <ConditionChips
         conditions={query.conditions}
         onRemove={toggle}

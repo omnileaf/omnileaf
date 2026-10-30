@@ -884,6 +884,19 @@ test.describe("on Android", () => {
     backend: { ...SEARCHING_BACKEND, appInfo: () => fakeAppInfo("android") },
   });
 
+  test("keeps a filter word as a chip under the field, not a token in it", async ({
+    page,
+  }) => {
+    await page.goto("/search");
+
+    await searchField(page).pressSequentially("unread market");
+
+    await expect(
+      page.getByRole("button", { name: "Remove the Unread filter" }),
+    ).toBeVisible();
+    await expect(searchField(page)).toHaveAccessibleDescription("");
+  });
+
   test("keeps the search start on the page's own ground", async ({ page }) => {
     await page.goto("/search");
     await expect(page.getByText("You can search for")).toBeVisible();
@@ -984,6 +997,55 @@ test.describe("on an iPhone", () => {
     await searchField(page).fill("market");
 
     await expect(ground).toHaveCount(0);
+  });
+
+  test("turns a filter word into a token inside the field, dropped with backspace at its start", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the token is the iPhone's",
+    );
+    await page.goto("/search");
+
+    await searchField(page).pressSequentially("finished a");
+
+    await expect(searchField(page)).toHaveValue("a");
+    await expect(searchField(page)).toHaveAccessibleDescription(
+      "Filters Finished",
+    );
+    await expect(
+      page.getByRole("button", { name: "Remove the Finished filter" }),
+    ).toHaveCount(0);
+    await expectFound(page, ["Sample Series 04"]);
+
+    await searchField(page).evaluate((field: HTMLInputElement) => {
+      field.setSelectionRange(0, 0);
+    });
+    await searchField(page).press("Backspace");
+
+    await expect(searchField(page)).toHaveValue("a");
+    await expect(searchField(page)).toHaveAccessibleDescription("");
+    await expectFound(
+      page,
+      CATALOG.map(({ series }) => series.title).toSorted(),
+    );
+  });
+
+  test("clears the words and the tokens with Clear", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+      "the token is the iPhone's",
+    );
+    await page.goto("/search");
+    await searchField(page).pressSequentially("unread ");
+
+    await page.getByRole("button", { name: "Clear", exact: true }).click();
+
+    await expect(searchField(page)).toHaveAccessibleDescription("");
+    await expect(
+      page.getByRole("heading", { name: "You can search for" }),
+    ).toBeVisible();
   });
 });
 
