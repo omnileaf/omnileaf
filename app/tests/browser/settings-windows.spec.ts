@@ -11,7 +11,6 @@ import {
 } from "./fixtures.ts";
 
 const LAYER_CORNER = "8px";
-const TRANSPARENT = "rgba(0, 0, 0, 0)";
 const INDICATOR = { width: 3, height: 16, offsetFromRowCentre: 0 };
 
 function indicatorOf(link: Locator) {
@@ -46,7 +45,7 @@ test.describe("on Windows", () => {
 
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCSS(
       "background-color",
-      TRANSPARENT,
+      await tokenColour(page, "--windows-mica"),
     );
     await expect(main).toHaveCSS(
       "background-color",
