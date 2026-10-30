@@ -192,7 +192,8 @@ mod tests {
     };
 
     use omnileaf_engine::{
-        AppInfo, CrashReportFile, CrashReportOffers, InterfaceError, Platform, contain_panic,
+        AppInfo, CrashReportFile, CrashReportOffers, InterfaceError, Platform, WindowBackdrop,
+        contain_panic,
     };
 
     use super::{CrashReporting, Reporter, set_panic_hook};
@@ -205,6 +206,7 @@ mod tests {
             platform: Platform::Linux,
             source_code: "repo.example.org/omnileaf".to_owned(),
             is_development_build: true,
+            window_backdrop: WindowBackdrop::None,
         }
     }
 

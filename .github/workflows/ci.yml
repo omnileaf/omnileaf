@@ -728,6 +728,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Turn on transparency effects
+        if: matrix.platform == 'windows' && (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false')
+        run: reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 1 /f
+
       - if: (needs.changes.outputs.native != 'false' || needs.changes.outputs.app != 'false')
         uses: ./.github/actions/app-gate
 
