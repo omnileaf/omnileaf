@@ -38,7 +38,7 @@ const NATIVE_LOOK: MenuLook = {
 const WINDOWS_LOOK: MenuLook = {
   surface:
     "rounded-native-menu border-native-menu-edge bg-native-menu px-native-menu-inline py-native-menu-block text-native-on-menu shadow-native-menu-lift",
-  item: "mx-xs my-2xs gap-md rounded-native-menu-item px-native-menu-item-inline font-regular text-native-on-menu min-block-native-menu-item active:bg-native-row-pressed data-disabled:text-native-on-menu-disabled data-highlighted:bg-native-menu-item-hover data-highlighted:text-native-on-menu [&>[data-slot=kbd]]:ms-auto [&>[data-slot=kbd]]:ps-xl",
+  item: "mx-xs my-2xs gap-md rounded-native-menu-item px-native-menu-item-inline font-regular text-native-on-menu min-block-native-menu-item active:bg-native-row-pressed data-disabled:text-native-on-menu-disabled data-disabled:[&>[data-slot=kbd]]:text-native-on-menu-disabled data-highlighted:bg-native-menu-item-hover data-highlighted:text-native-on-menu [&>[data-slot=kbd]]:ms-auto [&>[data-slot=kbd]]:ps-xl",
   dangerItem: "text-native-on-menu data-highlighted:text-native-on-menu",
   chosenItem: "",
   check: "order-first",

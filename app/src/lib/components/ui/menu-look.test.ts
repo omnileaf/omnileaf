@@ -255,6 +255,7 @@ interface WindowsMenuLook {
   readonly ink: string;
   readonly hover: string;
   readonly muted: string;
+  readonly turnedOff: string;
 }
 
 const WINDOWS_MENUS = {
@@ -265,6 +266,7 @@ const WINDOWS_MENUS = {
     ink: "rgba(0, 0, 0, 0.894)",
     hover: "rgba(0, 0, 0, 0.035)",
     muted: "rgba(0, 0, 0, 0.62)",
+    turnedOff: "rgba(0, 0, 0, 0.447)",
   },
   dark: {
     flyout: "rgba(44, 44, 44, 0.96)",
@@ -273,6 +275,7 @@ const WINDOWS_MENUS = {
     ink: "rgb(255, 255, 255)",
     hover: "rgba(255, 255, 255, 0.06)",
     muted: "rgba(255, 255, 255, 0.773)",
+    turnedOff: "rgba(255, 255, 255, 0.53)",
   },
 } as const satisfies Record<"light" | "dark", WindowsMenuLook>;
 
@@ -322,6 +325,21 @@ for (const [theme, look] of Object.entries(WINDOWS_MENUS)) {
       remove.getBoundingClientRect().right - 11,
       0,
     );
+  });
+}
+
+for (const [theme, look] of Object.entries(WINDOWS_MENUS)) {
+  test(`dims a turned-off Windows menu item and its accelerator alike in the ${theme} theme`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    await openMenuOn("windows", theme);
+    const share = item("Share");
+    const accelerator = share.querySelector("kbd");
+    if (accelerator === null) {
+      throw new Error("the Share item drew no accelerator");
+    }
+
+    expect(style(share).color).toBe(look.turnedOff);
+    expect(style(accelerator).color).toBe(look.turnedOff);
   });
 }
 

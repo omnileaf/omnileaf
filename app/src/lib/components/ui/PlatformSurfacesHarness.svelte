@@ -33,6 +33,10 @@
       Delete
       <Kbd aria-hidden="true">Del</Kbd>
     </DropdownMenuItem>
+    <DropdownMenuItem disabled>
+      Share
+      <Kbd aria-hidden="true">Ctrl+S</Kbd>
+    </DropdownMenuItem>
     <DropdownMenuSeparator />
     <DropdownMenuRadioGroup value="grid">
       <DropdownMenuRadioItem value="grid">Grid</DropdownMenuRadioItem>
