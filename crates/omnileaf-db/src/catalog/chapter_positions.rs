@@ -27,7 +27,6 @@ impl ReadingOrder {
     }
 }
 
-/// Each book's place in the reading order of its series counting from 1, in the order the books are given.
 pub(super) fn places(connection: &Connection, books: &[&ReadingOrder]) -> Result<Vec<u32>, Error> {
     let mut in_reading_order: Vec<(usize, &ReadingOrder)> =
         books.iter().copied().enumerate().collect();
