@@ -83,7 +83,7 @@
     label={m.series_selection_toolbar()}
     count={m.series_selected_books({ count })}
   >
-    {#each MARKS as { mark, icon: Icon, label } (mark)}
+    {#each MARKS as { mark, icon: MarkIcon, label } (mark)}
       <Tooltip
         label={label()}
         type="button"
@@ -98,7 +98,7 @@
             look="bar-icon"
             class="block-pointer-target inline-pointer-target"
           >
-            <Icon size={ICON_SIZE} aria-hidden="true" />
+            <MarkIcon size={ICON_SIZE} aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip>

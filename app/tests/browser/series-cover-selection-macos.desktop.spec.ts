@@ -200,5 +200,10 @@ test.describe("the picked covers in the macOS title bar", () => {
         .getByRole("group", { name: "Selected books" })
         .getByRole("button", { name: "Mark read" }),
     ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(titleBar.getByRole("status")).toBeEmpty();
+    await expect(
+      titleBar.getByRole("group", { name: "Selected books" }),
+    ).toHaveCount(0);
   });
 });
