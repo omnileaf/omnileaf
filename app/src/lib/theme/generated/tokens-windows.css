@@ -58,6 +58,10 @@
   --native-spacing-info-bar-floating-top: 64px;
   --native-spacing-tab-block-start: 10px;
   --native-spacing-tab-block-end: 7px;
+  --native-text-empty: calc(1.25rem * var(--text-scale));
+  --native-leading-empty: calc(28 / 20);
+  --native-tracking-empty: 0;
+  --native-weight-empty-title: 600;
   --native-spacing-command-hover-block: 6px;
   --native-spacing-command-hover-inline: 2px;
   --native-spacing-command-icon: 20px;
