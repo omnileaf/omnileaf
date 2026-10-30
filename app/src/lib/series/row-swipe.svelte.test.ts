@@ -90,3 +90,26 @@ test("lets the next tap through once a swipe ended without a click", () => {
 
   expect(tap.defaultPrevented).toBe(false);
 });
+
+test("keeps a row still while it is dragged toward a side with no action", () => {
+  const swipe = new RowSwipe((side) => side === "towardStart");
+  swipe.pressed(finger("pointerdown", 0), "book", narrowRow());
+
+  swipe.moved(finger("pointermove", 90));
+
+  expect({
+    offset: swipe.offsetOf("book"),
+    side: swipe.sideOf("book"),
+  }).toEqual({ offset: 0, side: undefined });
+});
+
+test("stops an open row at rest when it is dragged past it toward a side with no action", () => {
+  const swipe = new RowSwipe((side) => side === "towardStart");
+  const target = narrowRow();
+  swipeFrom(swipe, target, -60);
+  swipe.pressed(finger("pointerdown", 0), "book", target);
+
+  swipe.moved(finger("pointermove", 200));
+
+  expect(swipe.offsetOf("book")).toBe(0);
+});
