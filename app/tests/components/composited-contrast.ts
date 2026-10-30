@@ -54,7 +54,6 @@ function colourOf(token: string): string {
   );
 }
 
-/** The contrast of `ink` on `ground` where `ground` is translucent and lies over `backing`, such as a page's black or white. */
 export function contrastOver(
   ink: string,
   ground: string,
