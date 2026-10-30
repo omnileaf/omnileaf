@@ -25,11 +25,11 @@ const SOURCES: &[&str] = &[
 ];
 const WINDOWS_SOURCES: &[&str] = &["archive_windows"];
 const ALLOCATOR_HOOKS: &[(&str, &str)] = &[
-    ("malloc", "omni_malloc"),
-    ("calloc", "omni_calloc"),
-    ("realloc", "omni_realloc"),
-    ("free", "omni_free"),
-    ("strdup", "omni_strdup"),
+    ("malloc", "omnileaf_libarchive_malloc"),
+    ("calloc", "omnileaf_libarchive_calloc"),
+    ("realloc", "omnileaf_libarchive_realloc"),
+    ("free", "omnileaf_libarchive_free"),
+    ("strdup", "omnileaf_libarchive_strdup"),
 ];
 
 enum Platform {
@@ -40,14 +40,17 @@ enum Platform {
 }
 
 impl Platform {
-    fn detect() -> Self {
+    fn detect() -> Result<Self, String> {
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
         let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
         match (os.as_str(), target_env.as_str()) {
-            ("macos" | "ios", _) => Self::Apple,
-            ("android", _) => Self::Android,
-            ("windows", "msvc") => Self::Msvc,
-            _ => Self::Unix,
+            ("macos" | "ios", _) => Ok(Self::Apple),
+            ("android", _) => Ok(Self::Android),
+            ("windows", "msvc") => Ok(Self::Msvc),
+            ("windows", other) => Err(format!(
+                "omnileaf-libarchive builds for Windows only with the MSVC toolchain, not `{other}`"
+            )),
+            _ => Ok(Self::Unix),
         }
     }
 
@@ -61,8 +64,8 @@ impl Platform {
     }
 }
 
-fn main() {
-    let platform = Platform::detect();
+fn main() -> Result<(), String> {
+    let platform = Platform::detect()?;
     let vendored = Path::new(VENDORED_FOLDER);
     let mut build = cc::Build::new();
     build
@@ -84,13 +87,16 @@ fn main() {
         Platform::Msvc => {
             build
                 .define("LIBARCHIVE_STATIC", None)
-                .define("_strdup", "omni_strdup")
+                .define("_strdup", "omnileaf_libarchive_strdup")
                 .define("_CRT_SECURE_NO_DEPRECATE", None)
                 .define("_CRT_NONSTDC_NO_DEPRECATE", None);
             sources.extend(WINDOWS_SOURCES);
             println!("cargo::rustc-link-lib=bcrypt");
         }
         Platform::Unix | Platform::Apple => {}
+    }
+    if !matches!(platform, Platform::Msvc) {
+        build.flag("-fvisibility=hidden");
     }
     build.files(
         sources
@@ -100,4 +106,5 @@ fn main() {
     build.compile(LIBRARY_NAME);
     println!("cargo::rerun-if-changed={CONFIG_FOLDER}");
     println!("cargo::rerun-if-changed={VENDORED_FOLDER}");
+    Ok(())
 }

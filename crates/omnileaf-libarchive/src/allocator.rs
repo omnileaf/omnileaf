@@ -179,13 +179,16 @@ unsafe fn header_of(block: *mut c_void) -> *mut Header {
 }
 
 #[unsafe(no_mangle)]
-pub(crate) unsafe extern "C" fn omni_malloc(size: usize) -> *mut c_void {
+pub(crate) unsafe extern "C" fn omnileaf_libarchive_malloc(size: usize) -> *mut c_void {
     // SAFETY: `allocate` only reads the thread's active budget.
     unsafe { allocate(size, false) }
 }
 
 #[unsafe(no_mangle)]
-pub(crate) unsafe extern "C" fn omni_calloc(count: usize, size: usize) -> *mut c_void {
+pub(crate) unsafe extern "C" fn omnileaf_libarchive_calloc(
+    count: usize,
+    size: usize,
+) -> *mut c_void {
     let Some(bytes) = count.checked_mul(size) else {
         return ptr::null_mut();
     };
@@ -194,7 +197,7 @@ pub(crate) unsafe extern "C" fn omni_calloc(count: usize, size: usize) -> *mut c
 }
 
 #[unsafe(no_mangle)]
-pub(crate) unsafe extern "C" fn omni_free(block: *mut c_void) {
+pub(crate) unsafe extern "C" fn omnileaf_libarchive_free(block: *mut c_void) {
     if block.is_null() {
         return;
     }
@@ -217,14 +220,17 @@ pub(crate) unsafe extern "C" fn omni_free(block: *mut c_void) {
     reason = "the layout aligns every block to the header's alignment"
 )]
 #[unsafe(no_mangle)]
-pub(crate) unsafe extern "C" fn omni_realloc(block: *mut c_void, size: usize) -> *mut c_void {
+pub(crate) unsafe extern "C" fn omnileaf_libarchive_realloc(
+    block: *mut c_void,
+    size: usize,
+) -> *mut c_void {
     if block.is_null() {
         // SAFETY: `allocate` only reads the thread's active budget.
         return unsafe { allocate(size, false) };
     }
     if size == 0 {
         // SAFETY: `block` came from this module and is not used after this call.
-        unsafe { omni_free(block) };
+        unsafe { omnileaf_libarchive_free(block) };
         return ptr::null_mut();
     }
     // SAFETY: `block` came from this module, so its header is valid and its budget outlives it.
@@ -263,7 +269,7 @@ pub(crate) unsafe extern "C" fn omni_realloc(block: *mut c_void, size: usize) ->
 }
 
 #[unsafe(no_mangle)]
-pub(crate) unsafe extern "C" fn omni_strdup(text: *const c_char) -> *mut c_char {
+pub(crate) unsafe extern "C" fn omnileaf_libarchive_strdup(text: *const c_char) -> *mut c_char {
     // SAFETY: `text` is a NUL-terminated string, and the copy is as long as it, NUL included.
     unsafe {
         let bytes = CStr::from_ptr(text).to_bytes_with_nul();
@@ -287,8 +293,12 @@ mod tests {
         let _scope = Scope::enter(&budget);
 
         // SAFETY: the hooks take no pointers here, and a refused request returns null.
-        let (hostile, over_budget) =
-            unsafe { (omni_malloc(usize::MAX), omni_malloc(LIMIT_BYTES * 2)) };
+        let (hostile, over_budget) = unsafe {
+            (
+                omnileaf_libarchive_malloc(usize::MAX),
+                omnileaf_libarchive_malloc(LIMIT_BYTES * 2),
+            )
+        };
 
         assert!(hostile.is_null());
         assert!(over_budget.is_null());
@@ -301,7 +311,7 @@ mod tests {
         let _scope = Scope::enter(&budget);
 
         // SAFETY: the hook takes no pointers, and a refused request returns null.
-        let block = unsafe { omni_calloc(usize::MAX / 2, 4) };
+        let block = unsafe { omnileaf_libarchive_calloc(usize::MAX / 2, 4) };
 
         assert!(block.is_null());
     }
@@ -309,7 +319,7 @@ mod tests {
     #[test]
     fn refuses_to_allocate_outside_a_budget() {
         // SAFETY: the hook takes no pointers, and a refused request returns null.
-        let block = unsafe { omni_malloc(16) };
+        let block = unsafe { omnileaf_libarchive_malloc(16) };
 
         assert!(block.is_null());
     }
@@ -319,13 +329,13 @@ mod tests {
         let budget = Arc::new(Budget::new(LIMIT_BYTES));
         let _scope = Scope::enter(&budget);
 
-        // SAFETY: `block` comes from `omni_malloc`, is written within its 64 bytes, and is freed once.
+        // SAFETY: `block` comes from `omnileaf_libarchive_malloc`, is written within its 64 bytes, and is freed once.
         let used_while_held = unsafe {
-            let block = omni_malloc(64).cast::<u8>();
+            let block = omnileaf_libarchive_malloc(64).cast::<u8>();
             assert!(!block.is_null());
             block.write_bytes(7, 64);
             let used = budget.used_bytes();
-            omni_free(block.cast());
+            omnileaf_libarchive_free(block.cast());
             used
         };
 
@@ -338,12 +348,12 @@ mod tests {
         let budget = Arc::new(Budget::new(LIMIT_BYTES));
         let _scope = Scope::enter(&budget);
 
-        // SAFETY: `block` comes from `omni_calloc`, is read within its 32 bytes, and is freed once.
+        // SAFETY: `block` comes from `omnileaf_libarchive_calloc`, is read within its 32 bytes, and is freed once.
         let bytes = unsafe {
-            let block = omni_calloc(8, 4).cast::<u8>();
+            let block = omnileaf_libarchive_calloc(8, 4).cast::<u8>();
             assert!(!block.is_null());
             let bytes = std::slice::from_raw_parts(block, 32).to_vec();
-            omni_free(block.cast());
+            omnileaf_libarchive_free(block.cast());
             bytes
         };
 
@@ -355,14 +365,14 @@ mod tests {
         let budget = Arc::new(Budget::new(LIMIT_BYTES));
         let _scope = Scope::enter(&budget);
 
-        // SAFETY: `block` comes from `omni_malloc`, is read within its first 8 bytes, and is freed once.
+        // SAFETY: `block` comes from `omnileaf_libarchive_malloc`, is read within its first 8 bytes, and is freed once.
         let (grown, kept) = unsafe {
-            let block = omni_malloc(8).cast::<u8>();
+            let block = omnileaf_libarchive_malloc(8).cast::<u8>();
             assert!(!block.is_null());
             block.write_bytes(9, 8);
-            let grown = omni_realloc(block.cast(), LIMIT_BYTES * 2);
+            let grown = omnileaf_libarchive_realloc(block.cast(), LIMIT_BYTES * 2);
             let kept = std::slice::from_raw_parts(block, 8).to_vec();
-            omni_free(block.cast());
+            omnileaf_libarchive_free(block.cast());
             (grown, kept)
         };
 
@@ -378,12 +388,12 @@ mod tests {
 
         // SAFETY: both blocks come from the hooks, are read within their sizes, and are freed once.
         let kept = unsafe {
-            let block = omni_malloc(8).cast::<u8>();
+            let block = omnileaf_libarchive_malloc(8).cast::<u8>();
             block.write_bytes(5, 8);
-            let grown = omni_realloc(block.cast(), 4096).cast::<u8>();
+            let grown = omnileaf_libarchive_realloc(block.cast(), 4096).cast::<u8>();
             assert!(!grown.is_null());
             let kept = std::slice::from_raw_parts(grown, 8).to_vec();
-            omni_free(grown.cast());
+            omnileaf_libarchive_free(grown.cast());
             kept
         };
 
@@ -398,9 +408,9 @@ mod tests {
 
         // SAFETY: the source is NUL-terminated, the copy is read as a C string, and is freed once.
         let copy = unsafe {
-            let copy = omni_strdup(c"UTF-8".as_ptr());
+            let copy = omnileaf_libarchive_strdup(c"UTF-8".as_ptr());
             let text = std::ffi::CStr::from_ptr(copy).to_owned();
-            omni_free(copy.cast());
+            omnileaf_libarchive_free(copy.cast());
             text
         };
 
@@ -417,7 +427,7 @@ mod tests {
 
     unsafe fn take_the_whole_limit(budget: &Budget) -> *mut c_void {
         // SAFETY: the hook only reads the thread's active budget.
-        let filler = unsafe { omni_malloc(budget.limit_bytes() - HEADER_BYTES) };
+        let filler = unsafe { omnileaf_libarchive_malloc(budget.limit_bytes() - HEADER_BYTES) };
         assert!(!filler.is_null());
         filler
     }
@@ -430,12 +440,12 @@ mod tests {
         // SAFETY: the blocks come from the hooks, are never read, and are freed once.
         let served = unsafe {
             let blocks: Vec<*mut c_void> = (0..16)
-                .map(|_| omni_malloc(ONE_MIB))
+                .map(|_| omnileaf_libarchive_malloc(ONE_MIB))
                 .take_while(|block| !block.is_null())
                 .collect();
             let used = budget.used_bytes();
             for block in &blocks {
-                omni_free(*block);
+                omnileaf_libarchive_free(*block);
             }
             assert!(used <= LARGE_BLOCK_BYTES);
             blocks.len()
@@ -454,9 +464,9 @@ mod tests {
         let (exceeded_before, tiny) = unsafe {
             let filler = take_the_whole_limit(&budget);
             let exceeded_before = budget.is_exceeded();
-            let tiny = omni_malloc(64);
-            omni_free(tiny);
-            omni_free(filler);
+            let tiny = omnileaf_libarchive_malloc(64);
+            omnileaf_libarchive_free(tiny);
+            omnileaf_libarchive_free(filler);
             (exceeded_before, tiny)
         };
 
@@ -473,11 +483,11 @@ mod tests {
         // SAFETY: the blocks come from the hooks, are never read, and are freed once.
         let (tiny, larger) = unsafe {
             let filler = take_the_whole_limit(&budget);
-            let tiny = omni_malloc(TINY_REQUEST_BYTES);
-            let larger = omni_malloc(TINY_REQUEST_BYTES + 1);
-            omni_free(tiny);
-            omni_free(larger);
-            omni_free(filler);
+            let tiny = omnileaf_libarchive_malloc(TINY_REQUEST_BYTES);
+            let larger = omnileaf_libarchive_malloc(TINY_REQUEST_BYTES + 1);
+            omnileaf_libarchive_free(tiny);
+            omnileaf_libarchive_free(larger);
+            omnileaf_libarchive_free(filler);
             (tiny, larger)
         };
 
@@ -493,18 +503,18 @@ mod tests {
         // SAFETY: every block comes from the hooks, is never read, and is freed once.
         let sizes_reached = unsafe {
             let filler = take_the_whole_limit(&budget);
-            let mut block = omni_malloc(1024);
+            let mut block = omnileaf_libarchive_malloc(1024);
             let mut size = 1024;
             while size < 4 * TINY_REQUEST_BYTES {
-                let grown = omni_realloc(block, size + 1024);
+                let grown = omnileaf_libarchive_realloc(block, size + 1024);
                 if grown.is_null() {
                     break;
                 }
                 block = grown;
                 size += 1024;
             }
-            omni_free(block);
-            omni_free(filler);
+            omnileaf_libarchive_free(block);
+            omnileaf_libarchive_free(filler);
             size
         };
 
@@ -519,11 +529,11 @@ mod tests {
         // SAFETY: the blocks come from the hooks, are never read, and are freed once.
         let served = unsafe {
             let blocks: Vec<*mut c_void> = (0..RESERVE_FOR_TINY_REQUESTS_BYTES)
-                .map(|_| omni_malloc(TINY_REQUEST_BYTES))
+                .map(|_| omnileaf_libarchive_malloc(TINY_REQUEST_BYTES))
                 .take_while(|block| !block.is_null())
                 .collect();
             for block in &blocks {
-                omni_free(*block);
+                omnileaf_libarchive_free(*block);
             }
             blocks.len()
         };
