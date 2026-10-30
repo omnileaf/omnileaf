@@ -314,3 +314,15 @@ fn refuses_an_empty_name() {
 
     assert!(matches!(error, FormatError::CorruptRar { .. }), "{error:?}");
 }
+
+#[test]
+fn lists_codepage_names_that_differ_only_outside_ascii() {
+    let bytes = archive(&[
+        Entry::page(b"\x8e\xa1.jpg").bytes(),
+        Entry::page(b"\x8e\xa2.jpg").bytes(),
+    ]);
+
+    let entries = listing(&bytes).unwrap().entries;
+
+    assert_eq!(entries.len(), 2);
+}

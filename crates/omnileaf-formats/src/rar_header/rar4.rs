@@ -53,8 +53,10 @@ const COPY_LENGTH: u8 = 0x7F;
 const SHORTEST_COPY: usize = 2;
 const LOW_SIZES_BYTES: usize = 8;
 const HIGH_SIZES_BYTES: usize = 8;
-const WINDOWS_SEPARATOR: char = '\\';
-const SEPARATOR: char = '/';
+const WINDOWS_SEPARATOR: u8 = b'\\';
+const SEPARATOR: u8 = b'/';
+const WINDOWS_SEPARATOR_UNIT: u16 = WINDOWS_SEPARATOR as u16;
+const SEPARATOR_UNIT: u16 = SEPARATOR as u16;
 
 const MALFORMED_BLOCK: &str = "a RAR 4 block is malformed";
 const BAD_BLOCK_CRC: &str = "a RAR 4 block fails its CRC check";
@@ -82,7 +84,7 @@ pub(super) fn walk<S: Read + Seek>(
     gate: &mut Gate<'_>,
 ) -> Result<(), FormatError> {
     let mut has_main = false;
-    let mut previous_file: Option<String> = None;
+    let mut previous_name: Option<Vec<u8>> = None;
     while !source.is_at_end() {
         let prefix = read_prefix(source, gate)?;
         match prefix.kind {
@@ -94,11 +96,12 @@ pub(super) fn walk<S: Read + Seek>(
             }
             FILE => {
                 let fields = read_fields(source, &prefix, FILE_FIELDS_BYTES, gate)?;
-                let header = file_header(prefix.flags, &fields, source.position(), gate)?;
-                if previous_file.as_ref() == Some(&header.name) {
+                let FileBlock { header, name_bytes } =
+                    file_block(prefix.flags, &fields, source.position(), gate)?;
+                if previous_name.as_ref() == Some(&name_bytes) {
                     return Err(gate.corrupt(CONTINUED_ENTRY));
                 }
-                previous_file = Some(header.name.clone());
+                previous_name = Some(name_bytes);
                 let packed_size = header.packed_size;
                 gate.accept_file(header)?;
                 source.skip(packed_size)?;
@@ -229,7 +232,17 @@ struct FileFields {
     unpack_version: u8,
     method: u8,
     attributes: u32,
-    name: String,
+    name: DecodedName,
+}
+
+struct DecodedName {
+    text: String,
+    bytes: Vec<u8>,
+}
+
+struct FileBlock {
+    header: FileHeader,
+    name_bytes: Vec<u8>,
 }
 
 fn file_fields(flags: u16, bytes: &[u8]) -> Option<FileFields> {
@@ -257,12 +270,12 @@ fn file_fields(flags: u16, bytes: &[u8]) -> Option<FileFields> {
     })
 }
 
-fn file_header(
+fn file_block(
     flags: u16,
     bytes: &[u8],
     data_offset: u64,
     gate: &Gate<'_>,
-) -> Result<FileHeader, FormatError> {
+) -> Result<FileBlock, FormatError> {
     let file = file_fields(flags, bytes).ok_or_else(|| gate.corrupt(MALFORMED_BLOCK))?;
     if flags & FILE_IS_ENCRYPTED != 0 {
         return Err(gate.encrypted());
@@ -279,16 +292,20 @@ fn file_header(
             return Err(gate.corrupt(FOLDER_WITH_DATA));
         }
         EntryType::Folder => true,
-        EntryType::Other => return Err(gate.unsupported_entry(file.name)),
+        EntryType::Other => return Err(gate.unsupported_entry(file.name.text)),
     };
-    Ok(FileHeader {
-        name: file.name,
+    let header = FileHeader {
+        name: file.name.text,
         is_directory,
         packed_size: file.sizes.packed,
         unpacked_size: file.sizes.unpacked,
         crc32: Some(file.crc32),
         is_solid: flags & FILE_IS_SOLID != 0,
         data_offset,
+    };
+    Ok(FileBlock {
+        header,
+        name_bytes: file.name.bytes,
     })
 }
 
@@ -318,17 +335,46 @@ fn check_method(flags: u16, file: &FileFields, gate: &Gate<'_>) -> Result<(), Fo
     Ok(())
 }
 
-/// RAR 4 stores a Unicode name as UTF-8 when it holds no NUL, and otherwise as an ASCII name, a NUL and a compressed UTF-16 form.
-fn decode_name(flags: u16, raw: &[u8]) -> String {
-    let name = match raw.iter().position(|&byte| byte == 0) {
-        Some(nul) if flags & FILE_HAS_UNICODE_NAME != 0 => decode_wide_name(raw, nul),
-        _ => String::from_utf8_lossy(raw).into_owned(),
-    };
-    name.replace(WINDOWS_SEPARATOR, &SEPARATOR.to_string())
+/// RAR 4 stores a Unicode name as UTF-8 when it holds no NUL, and otherwise as an ASCII name, a NUL and a compressed UTF-16 form that libarchive compares as UTF-16BE.
+fn decode_name(flags: u16, raw: &[u8]) -> DecodedName {
+    match raw.iter().position(|&byte| byte == 0) {
+        Some(nul) if flags & FILE_HAS_UNICODE_NAME != 0 => {
+            let units: Vec<u16> = decode_wide_name(raw, nul)
+                .into_iter()
+                .map(|unit| {
+                    if unit == WINDOWS_SEPARATOR_UNIT {
+                        SEPARATOR_UNIT
+                    } else {
+                        unit
+                    }
+                })
+                .collect();
+            DecodedName {
+                text: String::from_utf16_lossy(&units),
+                bytes: units.iter().flat_map(|unit| unit.to_be_bytes()).collect(),
+            }
+        }
+        _ => {
+            let bytes: Vec<u8> = raw
+                .iter()
+                .map(|&byte| {
+                    if byte == WINDOWS_SEPARATOR {
+                        SEPARATOR
+                    } else {
+                        byte
+                    }
+                })
+                .collect();
+            DecodedName {
+                text: String::from_utf8_lossy(&bytes).into_owned(),
+                bytes,
+            }
+        }
+    }
 }
 
 /// Follows libarchive's reading of the compressed form: a high byte, then two-bit opcodes, eight to a flag byte, each adding characters.
-fn decode_wide_name(raw: &[u8], nul: usize) -> String {
+fn decode_wide_name(raw: &[u8], nul: usize) -> Vec<u16> {
     let mut encoded = Fields(raw.get(nul + 1..).unwrap_or_default());
     let high_byte = encoded.byte().unwrap_or_default();
     let mut units: Vec<u16> = Vec::new();
@@ -352,7 +398,7 @@ fn decode_wide_name(raw: &[u8], nul: usize) -> String {
         let Some(added) = added else { break };
         units.extend(added.into_iter().take(raw.len() - units.len()));
     }
-    String::from_utf16_lossy(&units)
+    units
 }
 
 fn copied_from_ascii(
@@ -401,6 +447,6 @@ mod tests {
 
         let name = decode_name(FILE_HAS_UNICODE_NAME, &raw);
 
-        assert_eq!(name, "página.png");
+        assert_eq!(name.text, "página.png");
     }
 }
