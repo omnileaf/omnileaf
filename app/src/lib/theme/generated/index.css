@@ -173,6 +173,14 @@
   --text-native-title-bar-status: var(--native-text-title-bar-status);
   --leading-native-title-bar-status: var(--native-leading-title-bar-status);
   --font-weight-native-title-bar-status: var(--native-weight-title-bar-status);
+  --text-native-series-title: var(--native-text-series-title);
+  --leading-native-series-title: var(--native-leading-series-title);
+  --tracking-native-series-title: var(--native-tracking-series-title);
+  --text-native-series-meta: var(--native-text-series-meta);
+  --leading-native-series-meta: var(--native-leading-series-meta);
+  --text-native-series-path: var(--native-text-series-path);
+  --leading-native-series-path: var(--native-leading-series-path);
+  --shadow-native-series-cover: var(--native-shadow-series-cover);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
   --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
   --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);
