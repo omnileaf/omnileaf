@@ -536,7 +536,8 @@
     {#if selection.count > 0 && platform === "macos"}
       <Portal to="[data-title-bar-actions]">
         <div
-          role="toolbar"
+          bind:this={toolbar}
+          role="group"
           aria-label={m.series_selection_toolbar()}
           class="flex items-center gap-sm"
         >

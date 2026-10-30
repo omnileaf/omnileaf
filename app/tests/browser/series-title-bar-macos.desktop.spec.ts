@@ -126,7 +126,7 @@ test.describe("a series' title bar on macOS", () => {
 
     await pick(page, 0);
 
-    const actions = titleBar(page).getByRole("toolbar", {
+    const actions = titleBar(page).getByRole("group", {
       name: "Selected books",
     });
     for (const name of ["Mark read", "Mark unread", "Bookmark"]) {
@@ -134,9 +134,9 @@ test.describe("a series' title bar on macOS", () => {
     }
     await expect(
       page.getByRole("group", { name: "Selected books" }),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
     await expect(
-      page.getByRole("button", { name: /Clear the selection/ }),
+      page.getByRole("button", { name: /clear the selection/i }),
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(actions).toHaveCount(0);
@@ -147,12 +147,32 @@ test.describe("a series' title bar on macOS", () => {
     await pick(page, 1);
 
     await titleBar(page)
-      .getByRole("toolbar", { name: "Selected books" })
+      .getByRole("group", { name: "Selected books" })
       .getByRole("button", { name: "Mark read" })
       .click();
 
     await expect(
       page.getByRole("status").filter({ hasText: "Marked" }),
     ).toHaveText("Marked 1 book read");
+    await expect(
+      titleBar(page).getByRole("group", { name: "Selected books" }),
+    ).toHaveCount(0);
+  });
+
+  test("keeps focus in the books after marking from the keyboard", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await pick(page, 1);
+
+    await titleBar(page)
+      .getByRole("group", { name: "Selected books" })
+      .getByRole("button", { name: "Mark read" })
+      .focus();
+    await page.keyboard.press("Enter");
+
+    await expect(
+      page.getByRole("checkbox", { name: "Select all" }),
+    ).toBeFocused();
   });
 });
