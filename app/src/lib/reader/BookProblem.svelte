@@ -16,8 +16,8 @@
     EmptyMedia,
   } from "#lib/components/ui/empty/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
-  import { actionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { problemActionGroup, problemLook } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -26,7 +26,6 @@
   import type { BookProblem } from "./opened-book.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
 
-  const PROBLEM_ICON_SIZE = 20;
   const BUTTON_ICON_SIZE = 16;
   const SAYINGS = {
     missing: {
@@ -67,9 +66,10 @@
       : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
   const showFile = $derived(showFileLabel(platform));
+  const look = $derived(problemLook(platform));
   const width = new WindowWidth();
   const actions = $derived(
-    actionGroupLook(platform, width.current, TODAYS_PROBLEM_ACTIONS),
+    problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
 </script>
 
@@ -84,13 +84,10 @@
       class="gap-lg max-inline-book-problem expanded:max-inline-book-problem-wide"
     >
       <div class="flex flex-col items-center gap-sm">
-        <EmptyMedia>
-          <saying.icon size={PROBLEM_ICON_SIZE} aria-hidden="true" />
+        <EmptyMedia class={look.media}>
+          <saying.icon size={look.iconSize} aria-hidden="true" />
         </EmptyMedia>
-        <h1
-          tabindex="-1"
-          class="text-group-title font-semibold tracking-tight expanded:text-body"
-        >
+        <h1 tabindex="-1" class={look.bookTitle}>
           {saying.title()}
         </h1>
         <EmptyDescription class="text-small">{saying.body()}</EmptyDescription>

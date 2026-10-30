@@ -4,12 +4,10 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
-  import {
-    type ActionGroupLook,
-    actionGroupLook,
-  } from "#lib/page/action-group.ts";
+  import type { ActionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
+  import { problemActionGroup } from "#lib/page/problem-look.ts";
   import { m } from "#lib/paraglide/messages.js";
   import ProblemScreen from "#lib/problems/ProblemScreen.svelte";
 
@@ -24,7 +22,7 @@
   const isMissing = $derived(page.status === NOT_FOUND);
   const width = new WindowWidth();
   const actions = $derived(
-    actionGroupLook(currentPlatform(), width.current, TODAYS_ACTIONS),
+    problemActionGroup(currentPlatform(), width.current, TODAYS_ACTIONS),
   );
 </script>
 
