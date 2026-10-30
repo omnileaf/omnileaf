@@ -7,6 +7,7 @@ use std::ffi::{c_char, c_int, c_void};
 
 pub(crate) const ARCHIVE_OK: c_int = 0;
 pub(crate) const ARCHIVE_EOF: c_int = 1;
+pub(crate) const ARCHIVE_WARN: c_int = -20;
 
 pub(crate) const AE_IFMT: EntryMode = 0o170_000;
 pub(crate) const AE_IFREG: EntryMode = 0o100_000;
@@ -57,7 +58,9 @@ unsafe extern "C" {
     ) -> isize;
     pub(crate) fn archive_read_data_skip(archive: *mut Archive) -> c_int;
     pub(crate) fn archive_error_string(archive: *mut Archive) -> *const c_char;
+    #[cfg(unix)]
     pub(crate) fn archive_entry_pathname(entry: *mut ArchiveEntry) -> *const c_char;
+    #[cfg(windows)]
     pub(crate) fn archive_entry_pathname_utf8(entry: *mut ArchiveEntry) -> *const c_char;
     pub(crate) fn archive_entry_size(entry: *mut ArchiveEntry) -> i64;
     pub(crate) fn archive_entry_size_is_set(entry: *mut ArchiveEntry) -> c_int;

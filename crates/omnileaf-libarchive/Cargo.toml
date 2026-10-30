@@ -12,6 +12,9 @@ thiserror.workspace = true
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true
 
+[dev-dependencies]
+omnileaf-testkit.workspace = true
+
 [build-dependencies]
 cc.workspace = true
 

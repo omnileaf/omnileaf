@@ -3,6 +3,7 @@
 mod allocator;
 mod error;
 mod ffi;
+mod locale;
 mod reader;
 
 pub use allocator::{
