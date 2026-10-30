@@ -12,12 +12,16 @@ mod books;
 mod scanned;
 mod support;
 
-use std::{fs, path::PathBuf};
+use std::fs;
+#[cfg(not(feature = "rar"))]
+use std::path::PathBuf;
 
 use books::write_book;
+#[cfg(not(feature = "rar"))]
+use omnileaf_engine::FileChanges;
 use omnileaf_engine::{
-    BookFile, BookId, FileChanges, FileType, FolderScan, Library, LibraryError, LibraryListing,
-    RescanOutcome, SeriesBookListing,
+    BookFile, BookId, FileType, FolderScan, Library, LibraryError, LibraryListing, RescanOutcome,
+    SeriesBookListing,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
@@ -28,6 +32,13 @@ const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
 
 struct Hiding {
     scanned: Scanned,
+    #[cfg_attr(
+        feature = "rar",
+        expect(
+            dead_code,
+            reason = "only the tests of RAR files refused as unreadable use it, and the rar feature reads them"
+        )
+    )]
     comics: ScratchFolder,
 }
 
@@ -40,10 +51,12 @@ impl Hiding {
         Self { scanned, comics }
     }
 
+    #[cfg(not(feature = "rar"))]
     fn file(&self, name: &str) -> PathBuf {
         self.comics.path().join(SERIES).join(name)
     }
 
+    #[cfg(not(feature = "rar"))]
     fn write_rar(&self, name: &str) {
         fs::write(self.file(name), RAR_SIGNATURE).unwrap();
     }
@@ -113,6 +126,7 @@ async fn keeps_readable_files_of_a_hidden_type_in_the_library_once_it_rescans() 
     assert_eq!(hiding.scanned.books_in(SERIES), ["v01", "v02"]);
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn stops_counting_unreadable_files_of_a_hidden_type_once_it_rescans() {
     let hiding = Hiding::new("hide-uncounted").await;
@@ -124,6 +138,7 @@ async fn stops_counting_unreadable_files_of_a_hidden_type_once_it_rescans() {
     assert_eq!(outcome, RescanOutcome::Rescanned(FileChanges::default()));
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn removes_a_book_whose_file_of_a_hidden_type_no_longer_opens_once_it_rescans() {
     let hiding = Hiding::new("hide-turned-rar").await;
@@ -142,6 +157,7 @@ async fn removes_a_book_whose_file_of_a_hidden_type_no_longer_opens_once_it_resc
     assert_eq!(hiding.scanned.books_in(SERIES), ["v01"]);
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn rescans_a_folder_left_with_only_hidden_files_rather_than_finding_it_empty() {
     let hiding = Hiding::new("hide-only-hidden-left").await;
@@ -221,6 +237,7 @@ async fn lists_no_file_of_a_hidden_type_among_those_a_scan_skips() {
     assert_eq!(scan.skipped_types, []);
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn counts_unreadable_files_of_a_type_shown_again() {
     let hiding = Hiding::new("hide-undone").await;
@@ -239,6 +256,7 @@ async fn counts_unreadable_files_of_a_type_shown_again() {
     );
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn hides_a_file_type_a_scan_skipped_so_rescans_skip_its_files_no_more() {
     let comics = ScratchFolder::new("hide-skipped-type");

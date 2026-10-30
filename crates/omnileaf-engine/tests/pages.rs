@@ -714,6 +714,7 @@ async fn refuses_to_open_a_book_whose_file_cannot_be_read() {
     );
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn refuses_a_book_whose_file_is_of_a_type_it_cannot_read() {
     let comics = ScratchFolder::new("unsupported-type-comics");
