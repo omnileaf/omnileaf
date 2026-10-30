@@ -1632,6 +1632,9 @@ export function sampleBackend(
         return null;
       }
       const listed = shownLibrary().filter(hasBooksToFind);
+      const chaptersShown = listed.filter(
+        (series) => !(hidesAdult() && isAdult(series)),
+      );
       return (
         closestTitle(
           typed,
@@ -1639,7 +1642,7 @@ export function sampleBackend(
         ) ??
         closestTitle(
           typed,
-          listed.flatMap((series) =>
+          chaptersShown.flatMap((series) =>
             booksOf(series).map((book) => ({
               title: book.title,
               chapterOf: screenshotMode ? null : titleOf(series),

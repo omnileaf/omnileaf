@@ -2412,3 +2412,52 @@ test("suggests no chapter title for a series whose books are none", async () => 
 
   expect(await backend.librarySpellingSuggestion("harbor gat")).toBeNull();
 });
+
+const MARKED_ADULT = {
+  title: null,
+  people: null,
+  tags: null,
+  summary: null,
+  isMarkedAdult: true,
+} as const;
+
+async function markHarbourSeriesAdult(backend: FakeBackend) {
+  for (const series of [11, 19]) {
+    await backend.editSeriesDetails(sampleSeriesId(series), MARKED_ADULT);
+  }
+}
+
+test("suggests no chapter title of an adult series the library hides", async () => {
+  const { backend } = backendFor();
+  await markHarbourSeriesAdult(backend);
+  await backend.setLibraryAdultContent({
+    treatment: "hide",
+    countsAgeRatings: true,
+  });
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toBeNull();
+});
+
+test("suggests a chapter title of an adult series the library shows", async () => {
+  const { backend } = backendFor();
+  await markHarbourSeriesAdult(backend);
+
+  expect(await backend.librarySpellingSuggestion("harbor gat")).toEqual({
+    text: "harbour gate",
+    chapterOf: LONG_TITLE,
+  });
+});
+
+test("suggests no chapter title of an adult series while screenshot mode is on, and one once it is off", async () => {
+  const { backend } = backendFor();
+  await backend.editSeriesDetails(sampleSeriesId(19), MARKED_ADULT);
+  const shown = await backend.librarySpellingSuggestion("arrivl at");
+  await backend.setScreenshotMode(true);
+
+  const hidden = await backend.librarySpellingSuggestion("arrivl at");
+
+  expect([shown, hidden]).toEqual([
+    { text: "arrival at", chapterOf: LONG_TITLE },
+    null,
+  ]);
+});
