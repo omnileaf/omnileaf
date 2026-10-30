@@ -1,7 +1,8 @@
 use omnileaf_engine::WindowBackdrop;
 use tauri::{App, WebviewWindowBuilder, Wry};
 
-const FIRST_WINDOWS_11_BUILD: u32 = 22_000;
+/// Windows 11 builds before 22523 lack `DWMWA_SYSTEMBACKDROP_TYPE`, and Tauri falls back to an undocumented attribute there.
+const FIRST_SYSTEM_BACKDROP_BUILD: u32 = 22_523;
 
 type MainWindowBuilder<'a> = WebviewWindowBuilder<'a, Wry, App>;
 
@@ -20,6 +21,7 @@ enum TransparencyEffects {
     expect(dead_code, reason = "only Windows draws a backdrop behind its windows")
 )]
 impl TransparencyEffects {
+    /// `UISettings.AdvancedEffectsEnabled` reports transparency effects off while `EnableTransparency` is missing.
     fn from_setting(enable_transparency: Option<u32>) -> Self {
         match enable_transparency {
             Some(0) | None => Self::Off,
@@ -33,9 +35,9 @@ impl TransparencyEffects {
     expect(dead_code, reason = "only Windows draws a backdrop behind its windows")
 )]
 fn backdrop_for(windows_build: u32, transparency: TransparencyEffects) -> WindowBackdrop {
-    let is_windows_11 = windows_build >= FIRST_WINDOWS_11_BUILD;
+    let has_system_backdrop = windows_build >= FIRST_SYSTEM_BACKDROP_BUILD;
     match transparency {
-        TransparencyEffects::On if is_windows_11 => WindowBackdrop::Mica,
+        TransparencyEffects::On if has_system_backdrop => WindowBackdrop::Mica,
         TransparencyEffects::On | TransparencyEffects::Off => WindowBackdrop::None,
     }
 }
@@ -112,14 +114,24 @@ mod tests {
 
     const WINDOWS_10_22H2: u32 = 19_045;
     const WINDOWS_11_21H2: u32 = 22_000;
+    const LAST_BUILD_WITHOUT_SYSTEM_BACKDROP: u32 = 22_522;
+    const FIRST_BUILD_WITH_SYSTEM_BACKDROP: u32 = 22_523;
     const WINDOWS_11_24H2: u32 = 26_100;
 
     #[test]
-    fn draws_mica_on_windows_11_with_transparency_effects_on() {
-        let backdrops = [WINDOWS_11_21H2, WINDOWS_11_24H2]
+    fn draws_mica_where_windows_11_has_a_system_backdrop_and_transparency_effects_are_on() {
+        let backdrops = [FIRST_BUILD_WITH_SYSTEM_BACKDROP, WINDOWS_11_24H2]
             .map(|build| backdrop_for(build, TransparencyEffects::On));
 
         assert_eq!(backdrops, [WindowBackdrop::Mica, WindowBackdrop::Mica]);
+    }
+
+    #[test]
+    fn keeps_the_window_solid_on_windows_11_builds_without_a_system_backdrop() {
+        let backdrops = [WINDOWS_11_21H2, LAST_BUILD_WITHOUT_SYSTEM_BACKDROP]
+            .map(|build| backdrop_for(build, TransparencyEffects::On));
+
+        assert_eq!(backdrops, [WindowBackdrop::None, WindowBackdrop::None]);
     }
 
     #[test]

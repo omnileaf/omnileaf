@@ -6,7 +6,7 @@ import { expect, test } from "vitest";
 import { useAppSession } from "./app-session.ts";
 
 const IS_WINDOWS = process.platform === "win32";
-const FIRST_WINDOWS_11_BUILD = 22_000;
+const FIRST_SYSTEM_BACKDROP_BUILD = 22_523;
 const PERSONALIZE_KEY = String.raw`HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`;
 const TRANSPARENCY_ON = /EnableTransparency\s+REG_DWORD\s+0x0*[1-9a-f]/i;
 const DWMSBT_MAINWINDOW = 2;
@@ -33,7 +33,8 @@ test.runIf(IS_WINDOWS)(
   "reports Mica on Windows 11 with transparency effects on and a solid window otherwise",
   async () => {
     const expected =
-      windowsBuild() >= FIRST_WINDOWS_11_BUILD && hasTransparencyEffectsOn()
+      windowsBuild() >= FIRST_SYSTEM_BACKDROP_BUILD &&
+      hasTransparencyEffectsOn()
         ? "mica"
         : "none";
 
