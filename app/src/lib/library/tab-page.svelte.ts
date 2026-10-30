@@ -40,7 +40,6 @@ function countOf(tab: LibraryTabId, listing: LibraryListing): CountSeries {
   }
 }
 
-/** The series one library tab lists, and how many it holds, read for whatever listing is chosen when each read begins; showing another tab keeps the series listed until the new ones are read. */
 export class TabPage {
   readonly series: ReturnType<typeof librarySeriesList>;
   readonly count: LibrarySeriesCount;
@@ -63,6 +62,7 @@ export class TabPage {
 
   showing(tab: LibraryTabId): this {
     this.#tab = tab;
+    this.count.clear();
     return this;
   }
 }

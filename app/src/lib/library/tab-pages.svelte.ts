@@ -31,7 +31,6 @@ function withinReach(
     : tabs.slice(Math.max(0, at - reach), at + reach + 1);
 }
 
-/** The pages of the chosen tab and the tabs either side of it, kept while they stay beside it so a swipe finds them read. */
 export class TabPages {
   readonly scroll = new TabScroll();
   held = $state.raw<readonly HeldPage[]>([]);
@@ -103,6 +102,11 @@ export class TabPages {
   }
 
   #open(tab: LibraryTabId): TabPage {
-    return new TabPage(tab, this.listedBy, this.onFailure);
+    const page: TabPage = new TabPage(tab, this.listedBy, (error) => {
+      if (this.#heldFor(this.#chosen) === page) {
+        this.onFailure(error);
+      }
+    });
+    return page;
   }
 }
