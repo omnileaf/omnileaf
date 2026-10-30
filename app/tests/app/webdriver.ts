@@ -3,6 +3,7 @@ import { isRecord, listOf } from "./json.ts";
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 const STALE_ELEMENT = "stale element reference";
 const UNKNOWN_COMMAND = "unknown command";
+const SCRIPT_TIMEOUT = "script timeout";
 const NATIVE_CONTEXT = "NATIVE_APP";
 const SHOWN_BUTTON =
   /<XCUIElementTypeButton\b[^>]*\bname="([^"]*)"[^>]*\bvisible="true"/g;
@@ -116,6 +117,20 @@ async function send(
   return value;
 }
 
+/** WebView2 can leave a script unanswered past the script timeout while a cold app's page is busy, and a later attempt is answered. */
+async function untilScriptAnswers<T>(
+  attempt: () => Promise<T | undefined>,
+): Promise<T | undefined> {
+  try {
+    return await attempt();
+  } catch (error) {
+    if (error instanceof WebDriverError && error.code === SCRIPT_TIMEOUT) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -198,7 +213,7 @@ export class Session {
   ): Promise<WebElement | undefined> {
     try {
       const id = await pollUntil(
-        () => this.findShown(locator),
+        () => untilScriptAnswers(() => this.findShown(locator)),
         timeoutMs,
         `the element at ${locator.value}`,
       );
@@ -228,10 +243,7 @@ export class Session {
     try {
       await this.run(RELOAD_SCRIPT);
     } catch (error) {
-      if (
-        !(error instanceof WebDriverError) ||
-        error.code !== "script timeout"
-      ) {
+      if (!(error instanceof WebDriverError) || error.code !== SCRIPT_TIMEOUT) {
         throw error;
       }
     }
@@ -366,7 +378,11 @@ export class Session {
     what: string,
   ): Promise<T> {
     try {
-      return await pollUntil(attempt, timeoutMs, what);
+      return await pollUntil(
+        () => untilScriptAnswers(attempt),
+        timeoutMs,
+        what,
+      );
     } catch (error) {
       if (!(error instanceof NotReadyError)) {
         throw error;
