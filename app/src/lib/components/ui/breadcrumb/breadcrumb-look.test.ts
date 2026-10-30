@@ -13,6 +13,8 @@ interface CrumbsDrawn {
   readonly chevron: number;
   readonly chevronSides: string;
   readonly gap: string;
+  readonly linkSides: string;
+  readonly pageSides: string;
 }
 
 async function crumbsOn(platform: Platform): Promise<CrumbsDrawn> {
@@ -36,6 +38,9 @@ async function crumbsOn(platform: Platform): Promise<CrumbsDrawn> {
     chevron: chevron.getBoundingClientRect().width,
     chevronSides: getComputedStyle(separator).marginInline,
     gap: getComputedStyle(list).columnGap,
+    linkSides: getComputedStyle(page.getByRole("link").element()).paddingInline,
+    pageSides: getComputedStyle(page.getByText("Sample Series 04").element())
+      .paddingInline,
   };
 }
 
@@ -44,7 +49,13 @@ afterEach(() => {
 });
 
 test("names the trail and marks the page it ends on, on every platform", async () => {
-  for (const platform of ["linux", "macos", "windows"] as const) {
+  for (const platform of [
+    "android",
+    "ios",
+    "linux",
+    "macos",
+    "windows",
+  ] as const) {
     followCorePlatform(platform);
     const screen = await render(BreadcrumbHarness);
 
@@ -60,14 +71,26 @@ test("names the trail and marks the page it ends on, on every platform", async (
   }
 });
 
-test("parts Windows's BreadcrumbBar with a 12 chevron, 2 each side", async () => {
+test("parts Windows's BreadcrumbBar with a 12 chevron, 2 each side, and pads each part 2 at its sides", async () => {
   const drawn = await crumbsOn("windows");
 
-  expect(drawn).toEqual({ chevron: 12, chevronSides: "2px", gap: "0px" });
+  expect(drawn).toEqual({
+    chevron: 12,
+    chevronSides: "2px",
+    gap: "0px",
+    linkSides: "2px",
+    pageSides: "2px",
+  });
 });
 
-test("keeps today's 14 chevron and roomy gap off Windows", async () => {
+test("keeps today's 14 chevron, roomy gap and unpadded parts off Windows", async () => {
   const drawn = await crumbsOn("linux");
 
-  expect(drawn).toEqual({ chevron: 14, chevronSides: "0px", gap: "10px" });
+  expect(drawn).toEqual({
+    chevron: 14,
+    chevronSides: "0px",
+    gap: "10px",
+    linkSides: "0px",
+    pageSides: "0px",
+  });
 });
