@@ -137,6 +137,19 @@ async function openSearch(page: Page): Promise<void> {
   await expect(searchField(page)).toBeFocused();
 }
 
+async function showKeyboard(page: Page, covered: number): Promise<void> {
+  await page.evaluate((height) => {
+    const visual = window.visualViewport;
+    if (visual === null) {
+      throw new Error("no visual viewport to show the keyboard in");
+    }
+    Object.defineProperty(visual, "height", {
+      value: document.documentElement.clientHeight - height,
+    });
+    visual.dispatchEvent(new Event("resize"));
+  }, covered);
+}
+
 async function columnsOf(list: Locator): Promise<number> {
   return list.evaluate(
     (element) =>
@@ -1058,16 +1071,7 @@ test.describe("on an iPhone", () => {
     await page.goto("/search");
     await expect(searchField(page)).toBeVisible();
 
-    await page.evaluate((covered) => {
-      const visual = window.visualViewport;
-      if (visual === null) {
-        throw new Error("no visual viewport to show the keyboard in");
-      }
-      Object.defineProperty(visual, "height", {
-        value: document.documentElement.clientHeight - covered,
-      });
-      visual.dispatchEvent(new Event("resize"));
-    }, KEYBOARD);
+    await showKeyboard(page, KEYBOARD);
 
     const field = await boxOf(searchField(page).locator(".."));
     const circle = await boxOf(page.getByRole("navigation", { name: "Main" }));
@@ -1076,6 +1080,29 @@ test.describe("on an iPhone", () => {
       viewport.height - (circle.y + circle.height),
     ]).toEqual([KEYBOARD + 12, KEYBOARD + 12]);
   });
+
+  for (const keyboard of [0, 600]) {
+    test(`scrolls the last start row clear of the field with ${String(keyboard)} of keyboard up`, async ({
+      page,
+    }) => {
+      test.skip(
+        viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        "the bottom field is the iPhone's",
+      );
+      await page.goto("/search");
+      const lastRow = page.getByRole("main").getByRole("listitem").last();
+      await expect(lastRow).toBeVisible();
+      await showKeyboard(page, keyboard);
+
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo(0, main.scrollHeight);
+      });
+
+      const row = await boxOf(lastRow);
+      const field = await boxOf(searchField(page).locator(".."));
+      expect(row.y + row.height).toBeLessThanOrEqual(field.y);
+    });
+  }
 
   function tokens(page: Page): Locator {
     return searchField(page)

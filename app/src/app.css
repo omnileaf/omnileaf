@@ -706,7 +706,7 @@
     calc(var(--spacing-keyboard) + var(--spacing-md))
   );
   --spacing-floating-clearance: calc(
-    var(--spacing-floating-bar) + var(--spacing-floating-gap) +
+    var(--spacing-floating-bar) + var(--spacing-floating-lift) +
       var(--spacing-lg)
   );
 

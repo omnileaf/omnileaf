@@ -332,9 +332,8 @@
 <div
   data-ground={isGroupedStart ? "grouped" : undefined}
   class={[
-    "flex flex-col gap-search-gap min-block-full",
+    "flex flex-col gap-search-gap min-block-full ios:max-medium:flex-none",
     hasToolbar && "pbs-xl",
-    "ios:max-medium:pbe-keyboard",
     isGroupedStart && GROUPED_GROUND,
   ]}
 >
