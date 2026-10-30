@@ -176,7 +176,7 @@
 {/snippet}
 
 <div
-  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-sidebar"
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-shell-ground"
 >
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}

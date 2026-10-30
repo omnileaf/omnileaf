@@ -1,6 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { WindowBackdrop } from "../../src/lib/ipc/bindings.ts";
+import type {
+  MissingFolder,
+  WindowBackdrop,
+} from "../../src/lib/ipc/bindings.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -10,6 +14,8 @@ import {
   testOnlyInItsWebview,
   tokenColour,
 } from "./fixtures.ts";
+import { openSortAndFilter } from "./library-controls.ts";
+import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
 const LEAST_TEXT_CONTRAST = 4.5;
@@ -19,11 +25,34 @@ const MICA_FALLBACK = { light: "#f3f3f3", dark: "#202020" } as const;
 
 type ColorScheme = keyof typeof MICA_FALLBACK;
 
-function onWindowsWith(backdrop: WindowBackdrop) {
+const LIBRARY = sampleSeries(12);
+
+const MISSING_FOLDER = {
+  folder: {
+    id: "5a4d1e00-0000-4000-8002-000000000002",
+    kind: "linked",
+    name: "Comics",
+    location: "/media/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "missing" },
+  hiddenSeries: 4,
+  isShownAnyway: false,
+} as MissingFolder;
+
+function onWindowsWith(
+  backdrop: WindowBackdrop,
+  backend: Partial<FakeBackend> = {},
+) {
   return {
     backend: {
       ...DEFAULT_BACKEND,
+      librarySeries: pagedSeries(() => LIBRARY),
+      librarySeriesCount: () => LIBRARY.length,
+      missingLibraryFolders: () => [MISSING_FOLDER],
+      libraryHiddenSeriesCount: () => MISSING_FOLDER.hiddenSeries,
       appInfo: () => ({ ...fakeAppInfo("windows"), windowBackdrop: backdrop }),
+      ...backend,
     },
   };
 }
@@ -36,10 +65,29 @@ function shellOf(page: Page): Locator {
   return navigation(page).locator("..");
 }
 
+function attentionItem(page: Page): Locator {
+  return navigation(page).getByRole("button", { name: /^Needs attention/ });
+}
+
 async function openSettings(page: Page, colorScheme: ColorScheme) {
   await page.emulateMedia({ colorScheme });
   await page.goto("/settings/general");
   await expect(page.getByRole("main")).toBeVisible();
+}
+
+async function openLibrary(page: Page, colorScheme: ColorScheme) {
+  await page.emulateMedia({ colorScheme });
+  await page.goto("/");
+  await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
+}
+
+function ringOfAttentionDot(item: Locator) {
+  return item.evaluate(
+    (button) =>
+      [...button.querySelectorAll("span")]
+        .map((part) => getComputedStyle(part).boxShadow)
+        .find((shadow) => shadow !== "none") ?? "none",
+  );
 }
 
 /** A browser window has no Mica behind it, so the page's own canvas stands in with the colour Mica falls back to. */
@@ -159,11 +207,118 @@ test.describe("on Windows", () => {
         );
       });
 
+      test("keeps the docked Sort and filter pane on its solid pane fill", async ({
+        page,
+      }) => {
+        await openLibrary(page, colorScheme);
+        await openSortAndFilter(page);
+
+        await expect(
+          page.getByRole("complementary", { name: "Sort and filter" }),
+        ).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--windows-mica"),
+        );
+      });
+
+      test("lays Windows' translucent subtle fill under a section the pointer rests on", async ({
+        page,
+      }) => {
+        await openLibrary(page, colorScheme);
+        const settings = navigation(page).getByRole("link", {
+          name: "Settings",
+        });
+
+        await settings.hover();
+
+        await expect(settings).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--windows-subtle"),
+        );
+        const inks = await inkOverFallback(
+          navigation(page),
+          MICA_FALLBACK[colorScheme],
+        );
+        expect(inks.filter(({ ratio }) => ratio < LEAST_TEXT_CONTRAST)).toEqual(
+          [],
+        );
+      });
+
+      test("lays the same translucent fill under the open Needs attention item", async ({
+        page,
+      }) => {
+        await openLibrary(page, colorScheme);
+
+        await attentionItem(page).click();
+
+        await expect(attentionItem(page)).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--windows-subtle"),
+        );
+      });
+
+      test("cuts the attention dot out of the folded pane in Mica's colour", async ({
+        page,
+      }) => {
+        await openLibrary(page, colorScheme);
+        await page.keyboard.press("Control+b");
+
+        expect(await ringOfAttentionDot(attentionItem(page))).toContain(
+          await tokenColour(page, "--windows-mica"),
+        );
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         await openSettings(page, colorScheme);
         await drawMicaFallbackBehind(page, colorScheme);
 
         expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    });
+
+    test.describe(`on Mica with forced colours in the ${colorScheme} theme`, () => {
+      test.use(onWindowsWith("mica"));
+
+      test("paints the pane and the window in the system's Canvas colour", async ({
+        page,
+      }) => {
+        await page.emulateMedia({ forcedColors: "active" });
+        await openSettings(page, colorScheme);
+
+        await expect(navigation(page)).not.toHaveCSS(
+          "background-color",
+          TRANSPARENT,
+        );
+        await expect(shellOf(page)).not.toHaveCSS(
+          "background-color",
+          TRANSPARENT,
+        );
+        await expect(page.locator("body")).not.toHaveCSS(
+          "background-color",
+          TRANSPARENT,
+        );
+      });
+    });
+
+    test.describe(`on Mica before the window takes the app's theme in the ${colorScheme} theme`, () => {
+      test.use(
+        onWindowsWith("mica", {
+          matchSystemBars: () => {
+            throw new CommandFailure({
+              code: "internal",
+              message: "the window keeps the system's theme",
+            });
+          },
+        }),
+      );
+
+      test("keeps the pane solid", async ({ page }) => {
+        await openSettings(page, colorScheme);
+
+        await expect(navigation(page)).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--windows-mica"),
+        );
       });
     });
 
