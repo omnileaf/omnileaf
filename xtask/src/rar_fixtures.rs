@@ -22,6 +22,7 @@ pub(crate) const FIXTURES: &str = "crates/omnileaf-formats/tests/rar_fixtures";
 
 const MANIFEST: &str = "manifest.json";
 const SOURCES_MODIFIED_SECONDS: u64 = 1_767_348_672;
+#[cfg(unix)]
 const SOURCES_MODE: u32 = 0o644;
 const ARCHIVE_EXTENSIONS: [&str; 2] = ["cbr", "rar"];
 const ZONE: (&str, &str) = ("TZ", "UTC");
@@ -196,25 +197,19 @@ fn write_sources<'a>(
     Ok(())
 }
 
+/// RAR stores the Unix mode of each file, which would otherwise follow the umask of whoever made the archive.
 fn fix_attributes(path: &Path) -> io::Result<()> {
     let modified = SystemTime::UNIX_EPOCH + Duration::from_secs(SOURCES_MODIFIED_SECONDS);
     fs::File::options()
         .write(true)
         .open(path)?
         .set_modified(modified)?;
-    fix_mode(path)
-}
+    #[cfg(unix)]
+    {
+        use std::{fs::Permissions, os::unix::fs::PermissionsExt};
 
-/// RAR stores the Unix mode of each file, which would otherwise follow the umask of whoever made the archive.
-#[cfg(unix)]
-fn fix_mode(path: &Path) -> io::Result<()> {
-    use std::{fs::Permissions, os::unix::fs::PermissionsExt};
-
-    fs::set_permissions(path, Permissions::from_mode(SOURCES_MODE))
-}
-
-#[cfg(not(unix))]
-fn fix_mode(_path: &Path) -> io::Result<()> {
+        fs::set_permissions(path, Permissions::from_mode(SOURCES_MODE))?;
+    }
     Ok(())
 }
 
@@ -239,6 +234,7 @@ mod tests {
         maker: Maker,
         arguments: Vec<String>,
         modified: Vec<SystemTime>,
+        #[cfg(unix)]
         modes: Vec<u32>,
     }
 
@@ -282,6 +278,7 @@ mod tests {
                     .iter()
                     .map(fs::Metadata::modified)
                     .collect::<io::Result<_>>()?,
+                #[cfg(unix)]
                 modes: files.iter().map(mode_of).collect(),
             });
             Ok(())
@@ -303,11 +300,6 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         metadata.permissions().mode() & 0o777
-    }
-
-    #[cfg(not(unix))]
-    fn mode_of(_metadata: &fs::Metadata) -> u32 {
-        SOURCES_MODE
     }
 
     fn scratch(name: &str) -> PathBuf {
@@ -397,6 +389,7 @@ mod tests {
         for run in runs.iter() {
             assert!(run.arguments.iter().any(|argument| argument == "-ts-"));
             assert!(run.modified.iter().all(|time| *time == expected));
+            #[cfg(unix)]
             assert!(run.modes.iter().all(|mode| *mode == SOURCES_MODE));
         }
         fs::remove_dir_all(&out).unwrap();
