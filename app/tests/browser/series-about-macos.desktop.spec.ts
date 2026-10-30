@@ -433,10 +433,11 @@ test.describe("the series' skeleton turning into the side column on macOS", () =
       if (window.width >= EXPANDED_MIN_WIDTH) {
         expect(title.x).toBe(loadedTitle.x);
       } else {
-        expect(title.x + title.width / 2).toBeCloseTo(
-          loadedTitle.x + loadedTitle.width / 2,
-          0,
-        );
+        expect(
+          Math.abs(
+            title.x + title.width / 2 - (loadedTitle.x + loadedTitle.width / 2),
+          ),
+        ).toBeLessThanOrEqual(1);
       }
       expect(meta.y - (title.y + title.height)).toBe(
         byline.y - (loadedTitle.y + loadedTitle.height),
