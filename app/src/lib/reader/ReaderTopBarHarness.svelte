@@ -8,20 +8,25 @@
   import LightQuickSetting from "./LightQuickSetting.svelte";
   import { ReaderChrome, setReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderMore from "./ReaderMore.svelte";
+  import type { PageLayout } from "./reader-settings.svelte.ts";
   import ReaderTopBar from "./ReaderTopBar.svelte";
 
   let { platform }: { platform: Platform } = $props();
 
   setReaderChrome(untrack(() => new ReaderChrome(platform)));
 
+  let layout: PageLayout = $state("automatic");
+
   function nothing(): void {}
 </script>
 
 {#snippet quickSettings()}
   <LayoutQuickSettings
-    layout="automatic"
+    {layout}
     fit="screen"
-    onLayout={nothing}
+    onLayout={(chosen: PageLayout) => {
+      layout = chosen;
+    }}
     onFit={nothing}
   />
   <LightQuickSetting

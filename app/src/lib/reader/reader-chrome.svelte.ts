@@ -33,6 +33,10 @@ export class ReaderChrome {
     return floatsReaderBars(this.platform, this.width);
   }
 
+  get isCommandBar(): boolean {
+    return this.platform === "windows";
+  }
+
   get spans(): boolean {
     return spansReaderBars(this.platform, this.width);
   }

@@ -2,6 +2,12 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 
 import { floatsReaderBars } from "./reader-bar.ts";
+import {
+  WINDOWS_COMMAND_BUTTON,
+  WINDOWS_COMMAND_LABEL,
+  WINDOWS_ICON_SIZE,
+  WINDOWS_TOGGLED_ON,
+} from "./windows-reader-bar.ts";
 
 export interface QuickSettingLook {
   readonly button: string;
@@ -11,6 +17,7 @@ export interface QuickSettingLook {
   readonly on: string;
   readonly iconSize: number;
   readonly hasKitIcons: boolean;
+  readonly hasChevron: boolean;
 }
 
 const SEGMENT_LIT = "bg-hover";
@@ -24,6 +31,7 @@ const SEGMENT_LOOK: QuickSettingLook = {
   on: `${SEGMENT_LIT} font-semibold`,
   iconSize: 16,
   hasKitIcons: false,
+  hasChevron: true,
 };
 
 const CAPSULE_LIT = "bg-native-tab-pill";
@@ -37,11 +45,26 @@ const CAPSULE_LOOK: QuickSettingLook = {
   on: CAPSULE_LIT,
   iconSize: 22,
   hasKitIcons: true,
+  hasChevron: true,
+};
+
+const WINDOWS_LOOK: QuickSettingLook = {
+  button: WINDOWS_COMMAND_BUTTON,
+  toggle: "",
+  toggleLabel: WINDOWS_COMMAND_LABEL,
+  lit: WINDOWS_TOGGLED_ON,
+  on: "",
+  iconSize: WINDOWS_ICON_SIZE,
+  hasKitIcons: false,
+  hasChevron: false,
 };
 
 export function quickSettingLook(
   platform: Platform,
   width: WidthClass,
 ): QuickSettingLook {
+  if (platform === "windows") {
+    return WINDOWS_LOOK;
+  }
   return floatsReaderBars(platform, width) ? CAPSULE_LOOK : SEGMENT_LOOK;
 }

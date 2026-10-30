@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -13,6 +13,7 @@ import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
 
 const DESKTOP = { width: 1280, height: 800 };
 const COMMAND_LABELS = ["Shortcuts", "Bookmark", "Settings", "Full screen"];
+const QUICK_SETTINGS = ["Two pages", "Fit height", "Light"];
 
 async function openReader(
   platform: Platform,
@@ -30,6 +31,14 @@ function boxOf(name: string): DOMRect {
     .getByRole("button", { name, exact: true })
     .element()
     .getBoundingClientRect();
+}
+
+function quickSetting(name: string): HTMLElement {
+  const element = page.getByRole("button", { name, exact: true }).element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error(`${name} drew no element`);
+  }
+  return element;
 }
 
 function bar(): HTMLElement {
@@ -110,6 +119,53 @@ test("draws the command bar's ink in the dark chrome too", async () => {
   expect(getComputedStyle(bar()).backgroundColor).toBe(
     "rgba(44, 44, 44, 0.96)",
   );
+});
+
+test("draws the quick settings as 68 wide labelled command buttons in the bar", async () => {
+  await openReader("windows");
+
+  for (const name of QUICK_SETTINGS) {
+    const box = quickSetting(name).getBoundingClientRect();
+
+    expect({ name, width: box.width, height: box.height }).toEqual({
+      name,
+      width: 68,
+      height: 64,
+    });
+  }
+});
+
+test("takes the raised segment frame off the quick settings", async () => {
+  await openReader("windows");
+  const group = page.getByRole("group", { name: "Quick settings" }).element();
+
+  expect(getComputedStyle(group).boxShadow).toBe("none");
+  expect(getComputedStyle(quickSetting("Two pages")).borderTopWidth).toBe(
+    "0px",
+  );
+});
+
+test("fills a switched on quick setting with the accent under its words", async () => {
+  await openReader("windows");
+  const twoPages = quickSetting("Two pages");
+
+  await page.getByRole("button", { name: "Two pages" }).click();
+  await userEvent.unhover(page.getByRole("button", { name: "Two pages" }));
+
+  await expect
+    .poll(() => getComputedStyle(twoPages, "::before").backgroundColor)
+    .toBe(resolvedColour("--native-color-button-primary", "backgroundColor"));
+  await expect
+    .poll(() => getComputedStyle(twoPages).color)
+    .toBe(resolvedColour("--native-color-on-button-primary", "color"));
+});
+
+test("leaves a quick setting that is off on the bar with no fill", async () => {
+  await openReader("windows");
+
+  expect(
+    getComputedStyle(quickSetting("Two pages"), "::before").backgroundColor,
+  ).toBe("rgba(0, 0, 0, 0)");
 });
 
 for (const platform of ["linux", "macos", "ios", "android"] as const) {
