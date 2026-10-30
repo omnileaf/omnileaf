@@ -268,6 +268,28 @@ test.each<Platform>(["linux", "windows"])(
   },
 );
 
+test.each([
+  { theme: "light", width: DESKTOP_WINDOW.width },
+  { theme: "dark", width: DESKTOP_WINDOW.width },
+  { theme: "light", width: PHONE.width },
+])(
+  "dims the window behind a Windows ContentDialog in the smoke layer's black at 30% in the $theme theme at $width wide",
+  async ({ theme, width }) => {
+    await page.viewport(width, DESKTOP_WINDOW.height);
+    document.documentElement.dataset.platform = "windows";
+    document.documentElement.dataset.theme = theme;
+
+    await render(ConfirmDialogHarness);
+    await expect
+      .element(page.getByRole("alertdialog", { name: "Delete downloads?" }))
+      .toBeVisible();
+
+    expect(getComputedStyle(overlay()).backgroundColor).toBe(
+      "rgba(0, 0, 0, 0.3)",
+    );
+  },
+);
+
 test("opens a Windows confirmation as a dialog in a narrow window too, as Windows has no bottom sheets", async () => {
   await page.viewport(PHONE.width, PHONE.height);
   document.documentElement.dataset.platform = "windows";
