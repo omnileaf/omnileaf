@@ -1,20 +1,24 @@
 import { afterEach, expect, test } from "vitest";
 
 import type {
+  AccentColours,
   ColourRoles,
   Platform,
   WallpaperColours,
 } from "#lib/ipc/bindings.ts";
 
 import {
+  type ColourReaders,
   followWallpaperColours,
-  type ReadWallpaperColours,
 } from "./wallpaper-colours";
 
 const root = document.documentElement;
-const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos", "windows"];
+const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos"];
 const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
 const DARK_CONTAINER_LOW = "--android-wallpaper-dark-surface-container-low";
+const LIGHT_ACCENT = "--windows-accent-light";
+const DARK_ACCENT = "--windows-accent-dark";
+const BLUE_ACCENT: AccentColours = { light: 0x0067c0, dark: 0x4cc2ff };
 
 function roles(colour: number): ColourRoles {
   return {
@@ -43,15 +47,27 @@ const BLUE_WALLPAPER: WallpaperColours = {
   dark: { ...roles(0x0c0e12), surfaceContainerLow: 0x111418 },
 };
 
-function reading(colours: WallpaperColours | null): ReadWallpaperColours {
-  return () => Promise.resolve({ status: "ok", data: colours });
+const NO_ACCENT: ColourReaders["accentColours"] = () => Promise.resolve(null);
+
+function reading(colours: WallpaperColours | null): ColourReaders {
+  return {
+    wallpaperColours: () => Promise.resolve({ status: "ok", data: colours }),
+    accentColours: NO_ACCENT,
+  };
 }
 
-const failing: ReadWallpaperColours = () =>
-  Promise.resolve({
-    status: "error",
-    error: { code: "internal", message: "plugin gone" },
-  });
+const failing: ColourReaders = {
+  wallpaperColours: () =>
+    Promise.resolve({
+      status: "error",
+      error: { code: "internal", message: "plugin gone" },
+    }),
+  accentColours: NO_ACCENT,
+};
+
+function accenting(accent: AccentColours | null): ColourReaders {
+  return { ...reading(null), accentColours: () => Promise.resolve(accent) };
+}
 
 function shown(property: string): string {
   return root.style.getPropertyValue(property);
@@ -103,26 +119,69 @@ test("goes back to Omnileaf's colours when they are chosen again", async () => {
   expect(shown(LIGHT_PRIMARY)).toBe("");
 });
 
+test("draws the Windows accent in light and dark once it is read", async () => {
+  await followWallpaperColours("windows", "wallpaper", accenting(BLUE_ACCENT));
+
+  expect(root.dataset.colours).toBe("wallpaper");
+  expect([shown(LIGHT_ACCENT), shown(DARK_ACCENT)]).toEqual([
+    "#0067c0",
+    "#4cc2ff",
+  ]);
+});
+
+test("keeps Omnileaf's colours where Windows has no accent", async () => {
+  await followWallpaperColours("windows", "wallpaper", accenting(null));
+
+  expect(root.dataset.colours).toBeUndefined();
+});
+
+test("drops the Windows accent when Omnileaf's colours are chosen again", async () => {
+  await followWallpaperColours("windows", "wallpaper", accenting(BLUE_ACCENT));
+
+  await followWallpaperColours("windows", "omnileaf", accenting(BLUE_ACCENT));
+
+  expect(root.dataset.colours).toBeUndefined();
+  expect(shown(LIGHT_ACCENT)).toBe("");
+});
+
 test.each(ELSEWHERE)(
-  "never reads wallpaper colours on %s",
+  "never reads the system's colours on %s",
   async (platform) => {
     let isRead = false;
-
-    await followWallpaperColours(platform, "wallpaper", () => {
+    const counting = () => {
       isRead = true;
-      return reading(BLUE_WALLPAPER)();
+    };
+
+    await followWallpaperColours(platform, "wallpaper", {
+      wallpaperColours: () => {
+        counting();
+        return reading(BLUE_WALLPAPER).wallpaperColours();
+      },
+      accentColours: () => {
+        counting();
+        return Promise.resolve(BLUE_ACCENT);
+      },
     });
 
     expect([isRead, root.dataset.colours]).toEqual([false, undefined]);
   },
 );
 
+test("takes no wallpaper colours on Windows", async () => {
+  await followWallpaperColours("windows", "wallpaper", reading(BLUE_WALLPAPER));
+
+  expect([shown(LIGHT_PRIMARY), root.dataset.colours]).toEqual(["", undefined]);
+});
+
 test("keeps the latest choice when an earlier read finishes after it", async () => {
   const { promise: readFinished, resolve: finishRead } =
     Promise.withResolvers<undefined>();
-  const slowRead: ReadWallpaperColours = async () => {
-    await readFinished;
-    return { status: "ok", data: BLUE_WALLPAPER };
+  const slowRead: ColourReaders = {
+    wallpaperColours: async () => {
+      await readFinished;
+      return { status: "ok", data: BLUE_WALLPAPER };
+    },
+    accentColours: NO_ACCENT,
   };
   const following = followWallpaperColours("android", "wallpaper", slowRead);
 
