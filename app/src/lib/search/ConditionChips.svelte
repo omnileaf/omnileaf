@@ -5,12 +5,13 @@
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { ANDROID_FILTER_CHIP_LOOK } from "#lib/library/filter-chip-look.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { CONDITION_LABELS } from "./condition-labels";
 
-  type Look = "row" | "field";
+  type Look = "row" | "field" | "material";
 
   const REMOVE_ICON_SIZE = 12;
 
@@ -22,6 +23,10 @@
     field: {
       chip: "block-search-chip-wide ps-label pe-xs",
       remove: "block-chip-remove-wide inline-chip-remove-wide",
+    },
+    material: {
+      chip: ANDROID_FILTER_CHIP_LOOK.chip,
+      remove: "block-chip-remove inline-chip-remove",
     },
   } satisfies Record<Look, { chip: ClassValue; remove: ClassValue }>;
 
@@ -61,7 +66,9 @@
             {#snippet child({ props: removeProps })}
               <Button {...removeProps} look="icon" class={LOOKS[look].remove}>
                 <X
-                  size={REMOVE_ICON_SIZE}
+                  size={look === "material"
+                    ? ANDROID_FILTER_CHIP_LOOK.removeSize
+                    : REMOVE_ICON_SIZE}
                   strokeWidth={2.5}
                   aria-hidden="true"
                 />
