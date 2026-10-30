@@ -7,7 +7,7 @@ mod support;
 
 use std::{ops::ControlFlow, path::Path};
 
-use omnileaf_formats::{FormatError, Limits, open_book, open_book_with};
+use omnileaf_formats::{FormatError, Limits, UnsupportedArchive, open_book, open_book_with};
 use omnileaf_testkit::{Compression, PageShape, cbz, page_png};
 use support::{ScratchFolder, entry};
 
@@ -193,29 +193,23 @@ fn refuses_a_file_that_is_not_an_archive() {
     );
 }
 
-#[cfg(not(feature = "rar"))]
 #[test]
-fn recognises_rar_archives_it_cannot_open_yet() {
+fn recognises_a_rar_archive_of_a_version_it_cannot_open() {
     let scratch = ScratchFolder::new("not-yet");
-    for (name, signature) in [
-        ("rar4.cbr", b"Rar!\x1a\x07\x00".as_slice()),
-        ("rar5.cbr", b"Rar!\x1a\x07\x01\x00".as_slice()),
-    ] {
-        let path = scratch.write(name, signature);
+    let path = scratch.write("book.cbr", b"Rar!\x1a\x07\x02\x00");
 
-        let error = open_book(&path).unwrap_err();
+    let error = open_book(&path).unwrap_err();
 
-        assert!(
-            matches!(
-                error,
-                FormatError::ArchiveNotSupportedYet {
-                    archive: omnileaf_formats::UnsupportedArchive::Rar,
-                    ..
-                }
-            ),
-            "{name}: {error:?}"
-        );
-    }
+    assert!(
+        matches!(
+            error,
+            FormatError::ArchiveNotSupportedYet {
+                archive: UnsupportedArchive::Rar,
+                ..
+            }
+        ),
+        "{error:?}"
+    );
 }
 
 #[test]

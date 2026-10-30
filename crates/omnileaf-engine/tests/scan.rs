@@ -8,16 +8,14 @@ mod details;
 mod scanned;
 mod support;
 
-use std::fs;
-#[cfg(not(feature = "rar"))]
-use std::path::Path;
+use std::{fs, path::Path};
 
 use books::{write_book, write_book_with, write_page};
 use details::stored_details;
 use omnileaf_db::rusqlite::types::Value;
-use omnileaf_engine::{FileChanges, FolderScan, LibraryError, RescanOutcome, ScanProgress};
-#[cfg(not(feature = "rar"))]
-use omnileaf_engine::{FileType, SkippedType};
+use omnileaf_engine::{
+    FileChanges, FileType, FolderScan, LibraryError, RescanOutcome, ScanProgress, SkippedType,
+};
 use omnileaf_sync_proto::SourceId;
 use omnileaf_testkit::{
     ArchiveEntry, Packing, PageShape, SAMPLE_LIBRARY, SAMPLE_LIBRARY_NAME, cb7, page_png,
@@ -67,8 +65,7 @@ fn owned_pairs(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
         .collect()
 }
 
-const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
-#[cfg(not(feature = "rar"))]
+const UNKNOWN_RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x02\x00";
 const LOCATIONS_LISTED_PER_TYPE: usize = 20;
 
 fn sample_library(name: &str) -> ScratchFolder {
@@ -565,7 +562,6 @@ async fn counts_the_books_it_cannot_read_and_carries_on() {
     assert_eq!((scan.books, scan.unreadable_books), (1, 1));
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn counts_the_rar_books_it_cannot_open_yet_apart_from_damaged_ones() {
     let comics = ScratchFolder::new("scan-not-yet");
@@ -573,7 +569,7 @@ async fn counts_the_rar_books_it_cannot_open_yet_apart_from_damaged_ones() {
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     fs::write(
         comics.path().join("Sample Series 01/v03.cbr"),
-        b"Rar!\x1a\x07\x01\x00",
+        b"Rar!\x1a\x07\x02\x00",
     )
     .unwrap();
 
@@ -585,12 +581,10 @@ async fn counts_the_rar_books_it_cannot_open_yet_apart_from_damaged_ones() {
     );
 }
 
-#[cfg(not(feature = "rar"))]
 fn cbr() -> FileType {
     FileType::try_from("cbr".to_owned()).unwrap()
 }
 
-#[cfg(not(feature = "rar"))]
 fn location_in_series(name: &str) -> String {
     Path::new("Sample Series 01")
         .join(name)
@@ -598,12 +592,11 @@ fn location_in_series(name: &str) -> String {
         .to_string()
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn lists_a_file_it_skips_for_a_type_the_app_does_not_read() {
     let comics = ScratchFolder::new("scan-skipped");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
-    comics.write("Sample Series 01/v02.cbr", RAR_SIGNATURE);
+    comics.write("Sample Series 01/v02.cbr", UNKNOWN_RAR_SIGNATURE);
 
     let (_, scan, _) = Scanned::folder("scan-skipped", comics.path()).await;
 
@@ -617,12 +610,11 @@ async fn lists_a_file_it_skips_for_a_type_the_app_does_not_read() {
     );
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn lists_a_plain_rar_file_among_the_files_it_skips() {
     let comics = ScratchFolder::new("scan-skipped-rar");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
-    comics.write("Sample Series 01/v02.rar", RAR_SIGNATURE);
+    comics.write("Sample Series 01/v02.rar", UNKNOWN_RAR_SIGNATURE);
 
     let (_, scan, _) = Scanned::folder("scan-skipped-rar", comics.path()).await;
 
@@ -642,8 +634,8 @@ async fn lists_a_plain_rar_file_among_the_files_it_skips() {
 #[tokio::test]
 async fn counts_a_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_unreadable() {
     let comics = ScratchFolder::new("scan-skipped-cbz");
-    comics.write("Sample Series 01/v01.cbz", RAR_SIGNATURE);
-    comics.write("Sample Series 01/v02.cb7", RAR_SIGNATURE);
+    comics.write("Sample Series 01/v01.cbz", UNKNOWN_RAR_SIGNATURE);
+    comics.write("Sample Series 01/v02.cb7", UNKNOWN_RAR_SIGNATURE);
 
     let (_, scan, _) = Scanned::folder("scan-skipped-cbz", comics.path()).await;
 
@@ -662,7 +654,7 @@ async fn counts_as_unsupported_exactly_the_files_it_lists_as_skipped() {
     let comics = ScratchFolder::new("scan-skipped-all-listed");
     write_book(&comics.path().join("Sample Series 01/v01.cbz"), 1);
     for name in ["v02.cbr", "v03.rar", "v04.cbz", "v05.cb7"] {
-        comics.write(&format!("Sample Series 01/{name}"), RAR_SIGNATURE);
+        comics.write(&format!("Sample Series 01/{name}"), UNKNOWN_RAR_SIGNATURE);
     }
     comics.write("Sample Series 01/v06.cbr", b"");
 
@@ -690,13 +682,12 @@ async fn counts_a_damaged_file_of_a_type_it_does_not_read_as_unreadable_without_
     );
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn lists_only_the_first_files_of_a_type_it_skips_with_how_many_it_skipped() {
     let comics = ScratchFolder::new("scan-skipped-many");
     let names: Vec<String> = (1..=25).map(|volume| format!("v{volume:02}.cbr")).collect();
     for name in &names {
-        comics.write(&format!("Sample Series 01/{name}"), RAR_SIGNATURE);
+        comics.write(&format!("Sample Series 01/{name}"), UNKNOWN_RAR_SIGNATURE);
     }
 
     let (_, scan, _) = Scanned::folder("scan-skipped-many", comics.path()).await;

@@ -341,16 +341,3 @@ fn refuses_a_cbr_the_header_check_refuses() {
         );
     }
 }
-
-#[test]
-fn reports_an_unknown_rar_version_as_a_rar_it_cannot_open_yet() {
-    let scratch = ScratchFolder::new("cbr-unknown-version");
-    let path = scratch.write("book.cbr", b"Rar!\x1a\x07\x02\x00");
-
-    let error = open_book(&path).unwrap_err();
-
-    assert!(
-        matches!(error, FormatError::ArchiveNotSupportedYet { .. }),
-        "{error:?}"
-    );
-}

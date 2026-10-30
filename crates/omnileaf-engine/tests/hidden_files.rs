@@ -12,33 +12,22 @@ mod books;
 mod scanned;
 mod support;
 
-use std::fs;
-#[cfg(not(feature = "rar"))]
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use books::write_book;
-#[cfg(not(feature = "rar"))]
-use omnileaf_engine::FileChanges;
 use omnileaf_engine::{
-    BookFile, BookId, FileType, FolderScan, Library, LibraryError, LibraryListing, RescanOutcome,
-    SeriesBookListing,
+    BookFile, BookId, FileChanges, FileType, FolderScan, Library, LibraryError, LibraryListing,
+    RescanOutcome, SeriesBookListing,
 };
 use scanned::Scanned;
 use support::ScratchFolder;
 
 const SERIES: &str = "Sample Series 01";
 const SERIES_ADDED_LATER: &str = "Sample Series 02";
-const RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x01\x00";
+const UNKNOWN_RAR_SIGNATURE: &[u8] = b"Rar!\x1a\x07\x02\x00";
 
 struct Hiding {
     scanned: Scanned,
-    #[cfg_attr(
-        feature = "rar",
-        expect(
-            dead_code,
-            reason = "only the tests of RAR files refused as unreadable use it, and the rar feature reads them"
-        )
-    )]
     comics: ScratchFolder,
 }
 
@@ -51,14 +40,12 @@ impl Hiding {
         Self { scanned, comics }
     }
 
-    #[cfg(not(feature = "rar"))]
     fn file(&self, name: &str) -> PathBuf {
         self.comics.path().join(SERIES).join(name)
     }
 
-    #[cfg(not(feature = "rar"))]
     fn write_rar(&self, name: &str) {
-        fs::write(self.file(name), RAR_SIGNATURE).unwrap();
+        fs::write(self.file(name), UNKNOWN_RAR_SIGNATURE).unwrap();
     }
 
     fn library(&self) -> &Library {
@@ -126,7 +113,6 @@ async fn keeps_readable_files_of_a_hidden_type_in_the_library_once_it_rescans() 
     assert_eq!(hiding.scanned.books_in(SERIES), ["v01", "v02"]);
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn stops_counting_unreadable_files_of_a_hidden_type_once_it_rescans() {
     let hiding = Hiding::new("hide-uncounted").await;
@@ -138,7 +124,6 @@ async fn stops_counting_unreadable_files_of_a_hidden_type_once_it_rescans() {
     assert_eq!(outcome, RescanOutcome::Rescanned(FileChanges::default()));
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn removes_a_book_whose_file_of_a_hidden_type_no_longer_opens_once_it_rescans() {
     let hiding = Hiding::new("hide-turned-rar").await;
@@ -157,7 +142,6 @@ async fn removes_a_book_whose_file_of_a_hidden_type_no_longer_opens_once_it_resc
     assert_eq!(hiding.scanned.books_in(SERIES), ["v01"]);
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn rescans_a_folder_left_with_only_hidden_files_rather_than_finding_it_empty() {
     let hiding = Hiding::new("hide-only-hidden-left").await;
@@ -186,7 +170,7 @@ async fn leaves_files_of_a_hidden_type_out_of_a_folder_added_later() {
     write_book(&later.path().join(SERIES_ADDED_LATER).join("v01.cbz"), 3);
     fs::write(
         later.path().join(SERIES_ADDED_LATER).join("v02.cbr"),
-        RAR_SIGNATURE,
+        UNKNOWN_RAR_SIGNATURE,
     )
     .unwrap();
 
@@ -203,7 +187,7 @@ async fn finds_readable_files_of_a_hidden_type_in_a_folder_added_later() {
     write_book(&later.path().join(SERIES_ADDED_LATER).join("v01.cbr"), 3);
     fs::write(
         later.path().join(SERIES_ADDED_LATER).join("v02.cbr"),
-        RAR_SIGNATURE,
+        UNKNOWN_RAR_SIGNATURE,
     )
     .unwrap();
 
@@ -230,14 +214,13 @@ async fn lists_no_file_of_a_hidden_type_among_those_a_scan_skips() {
     let hiding = Hiding::new("hide-skipped").await;
     hiding.hide_like("v02").await;
     let later = ScratchFolder::new("hide-skipped-later");
-    later.write("Sample Series 02/v01.cbr", RAR_SIGNATURE);
+    later.write("Sample Series 02/v01.cbr", UNKNOWN_RAR_SIGNATURE);
 
     let scan = hiding.add_later(&later).await;
 
     assert_eq!(scan.skipped_types, []);
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn counts_unreadable_files_of_a_type_shown_again() {
     let hiding = Hiding::new("hide-undone").await;
@@ -256,12 +239,11 @@ async fn counts_unreadable_files_of_a_type_shown_again() {
     );
 }
 
-#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn hides_a_file_type_a_scan_skipped_so_rescans_skip_its_files_no_more() {
     let comics = ScratchFolder::new("hide-skipped-type");
     write_book(&comics.path().join(SERIES).join("v01.cbz"), 1);
-    comics.write(&format!("{SERIES}/v02.cbr"), RAR_SIGNATURE);
+    comics.write(&format!("{SERIES}/v02.cbr"), UNKNOWN_RAR_SIGNATURE);
     let (scanned, scan, _) = Scanned::folder("hide-skipped-type", comics.path()).await;
     let skipped = scan.skipped_types.first().unwrap().file_type.clone();
 
