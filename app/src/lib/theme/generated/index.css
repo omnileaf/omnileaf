@@ -32,6 +32,15 @@
   --color-native-button-primary-pressed: var(--native-color-button-primary-pressed);
   --color-native-button-secondary-hover: var(--native-color-button-secondary-hover);
   --color-native-button-secondary-pressed: var(--native-color-button-secondary-pressed);
+  --color-native-button-primary-edge: var(--native-color-button-primary-edge);
+  --color-native-button-primary-edge-bottom: var(--native-color-button-primary-edge-bottom);
+  --color-native-button-primary-disabled: var(--native-color-button-primary-disabled);
+  --color-native-on-button-primary-disabled: var(--native-color-on-button-primary-disabled);
+  --color-native-button-secondary-edge-top: var(--native-color-button-secondary-edge-top);
+  --color-native-button-secondary-edge-bottom: var(--native-color-button-secondary-edge-bottom);
+  --color-native-button-secondary-disabled: var(--native-color-button-secondary-disabled);
+  --color-native-on-button-pressed: var(--native-color-on-button-pressed);
+  --color-native-focus-ring-inner: var(--native-color-focus-ring-inner);
   --radius-native-button: var(--native-radius-button);
   --radius-native-button-small: var(--native-radius-button-small);
   --spacing-native-button: var(--native-spacing-button);
@@ -100,6 +109,11 @@
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
+  --spacing-native-swipe-action: var(--native-spacing-swipe-action);
+  --spacing-native-swipe-action-inline: var(--native-spacing-swipe-action-inline);
+  --spacing-native-swipe-action-gap: var(--native-spacing-swipe-action-gap);
+  --color-native-swipe-destructive: var(--native-color-swipe-destructive);
+  --color-native-on-swipe-destructive: var(--native-color-on-swipe-destructive);
   --color-native-row-rule: var(--native-color-row-rule);
   --text-native-row-title: var(--native-text-row-title);
   --leading-native-row-title: var(--native-leading-row-title);
@@ -118,6 +132,7 @@
   --color-native-button-outline-pressed: var(--native-color-button-outline-pressed);
   --color-native-on-button-plain: var(--native-color-on-button-plain);
   --color-native-on-button-link: var(--native-color-on-button-link);
+  --color-native-on-button-link-pressed: var(--native-color-on-button-link-pressed);
   --color-native-on-button-plain-pressed: var(--native-color-on-button-plain-pressed);
   --color-native-on-button-disabled: var(--native-color-on-button-disabled);
   --color-native-button-plain-hover: var(--native-color-button-plain-hover);
@@ -129,6 +144,8 @@
   --spacing-native-button-small: var(--native-spacing-button-small);
   --spacing-native-button-large: var(--native-spacing-button-large);
   --spacing-native-button-small-inline: var(--native-spacing-button-small-inline);
+  --spacing-native-icon-button-inset: var(--native-spacing-icon-button-inset);
+  --spacing-native-icon-button-small-inset: var(--native-spacing-icon-button-small-inset);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
@@ -261,6 +278,8 @@
   --leading-native-notice-label: var(--native-leading-notice-label);
   --font-weight-native-notice-label: var(--native-weight-notice-label);
   --tracking-native-notice-label: var(--native-tracking-notice-label);
+  --spacing-native-search-token: var(--native-spacing-search-token);
+  --spacing-native-search-token-inline: var(--native-spacing-search-token-inline);
   --shadow-native-notice-lift: var(--native-shadow-notice-lift);
   --spacing-native-notice-inline: var(--native-spacing-notice-inline);
   --spacing-native-notice-top: var(--native-spacing-notice-top);

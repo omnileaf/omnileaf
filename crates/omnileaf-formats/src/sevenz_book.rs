@@ -14,18 +14,15 @@ use crate::{
     FormatError, Limits, Page,
     block_reader::BlockReader,
     book::in_reading_order,
-    entries::is_fingerprinted_image,
+    entries::{is_contained_page, is_fingerprinted_image},
     error::read_failed,
     fingerprint::{fingerprint_failed, raw_fingerprint},
-    is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
     sevenz_header::check_header,
 };
 
 const MIB: u64 = 1024 * 1024;
 const SINGLE_THREAD: u32 = 1;
-const PARENT_FOLDER: &str = "..";
-const SEPARATORS: [char; 2] = ['/', '\\'];
 const LZMA_DICTIONARY: Range<usize> = 1..5;
 const LZMA2_LARGEST_DICTIONARY_CODE: u8 = 40;
 const LZMA2_DICTIONARY_SHIFT: u8 = 11;
@@ -345,15 +342,7 @@ fn image_entry(entry: &ArchiveEntry) -> Option<ImageEntry> {
 }
 
 fn is_page(entry: &ArchiveEntry) -> bool {
-    !entry.is_directory
-        && !entry.is_anti_item
-        && !escapes_the_archive(&entry.name)
-        && !is_ignored(&entry.name)
-        && is_page_image(&entry.name)
-}
-
-fn escapes_the_archive(name: &str) -> bool {
-    name.starts_with(SEPARATORS) || name.split(SEPARATORS).any(|part| part == PARENT_FOLDER)
+    !entry.is_directory && !entry.is_anti_item && is_contained_page(&entry.name)
 }
 
 fn check_block(

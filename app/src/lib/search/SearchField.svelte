@@ -10,9 +10,12 @@
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
 
+  import { CONDITION_LABELS } from "./condition-labels";
   import ConditionChips from "./ConditionChips.svelte";
   import { isComposing } from "./composition";
+  import type { FilterPlace } from "./search-look";
 
   const SEARCH_ICON_SIZE = 20;
   const CLEAR_ICON_SIZE = 14;
@@ -20,8 +23,10 @@
   let {
     text,
     conditions,
+    filterPlace,
     onType,
     onRemove,
+    onClear,
     onEscape,
     listId,
     activeId,
@@ -30,8 +35,10 @@
   }: {
     text: string;
     conditions: readonly FilterCondition[];
+    filterPlace: FilterPlace;
     onType: (typed: string) => void;
     onRemove: (condition: FilterCondition) => void;
+    onClear: () => void;
     onEscape: () => void;
     listId: string;
     activeId: string | undefined;
@@ -40,14 +47,16 @@
   } = $props();
 
   let input = $state<HTMLInputElement | null>(null);
+  const hasTokens = $derived(filterPlace === "token" && conditions.length > 0);
+  const canClear = $derived(text !== "" || hasTokens);
 
   onMount(() => {
     input?.setSelectionRange(text.length, text.length);
   });
 
   /** Puts back the text the query kept, since taking a filter word out can leave it as it was before the keystroke. */
-  async function type(typed: string): Promise<void> {
-    onType(typed);
+  async function keepText(change: () => void): Promise<void> {
+    change();
     await tick();
     if (input !== null && input.value !== text) {
       input.value = text;
@@ -55,7 +64,15 @@
   }
 
   function typeIn(event: Event & { currentTarget: HTMLInputElement }): void {
-    void type(event.currentTarget.value);
+    const typed = event.currentTarget.value;
+    void keepText(() => {
+      onType(typed);
+    });
+  }
+
+  function clear(): void {
+    void keepText(onClear);
+    input?.focus();
   }
 
   function keyDown(event: KeyboardEvent): void {
@@ -87,12 +104,33 @@
     aria-hidden="true"
     class="shrink-0 android:text-muted"
   />
-  {#if conditions.length > 0}
+  {#if hasTokens}
+    <div
+      role="group"
+      aria-label={m.search_conditions()}
+      class="flex snap-x scrollbar-none items-center gap-sm overflow-x-auto min-inline-none"
+    >
+      {#each conditions as condition (condition)}
+        <button
+          type="button"
+          aria-label={m.search_remove_condition({
+            condition: CONDITION_LABELS[condition](),
+          })}
+          class="flex shrink-0 snap-start items-center rounded-full bg-native-button-primary px-native-search-token-inline text-native-notice-label/native-notice-label font-native-notice-label tracking-native-notice-label text-native-on-button-primary min-block-native-search-token {ROW_FOCUS_RING} focus-visible:outline-native-on-button-primary"
+          onclick={() => {
+            onRemove(condition);
+          }}
+        >
+          {CONDITION_LABELS[condition]()}
+        </button>
+      {/each}
+    </div>
+  {:else if conditions.length > 0 && filterPlace === "field"}
     <ConditionChips
       {conditions}
       {onRemove}
       look="field"
-      class="hidden shrink-0 flex-nowrap medium:flex"
+      class="shrink-0 flex-nowrap"
     />
   {/if}
   <Input
@@ -111,19 +149,19 @@
     autocapitalize="none"
     spellcheck="false"
     value={text}
-    class="no-search-cancel text-body large:text-search-wide"
+    class={[
+      "no-search-cancel text-body large:text-search-wide",
+      hasTokens && "shrink-0 basis-1/2",
+    ]}
     oninput={typeIn}
     onkeydown={keyDown}
   />
-  {#if text !== ""}
+  {#if canClear}
     <Tooltip
       label={m.search_clear()}
       type="button"
       aria-label={m.search_clear()}
-      onclick={() => {
-        void type("");
-        input?.focus();
-      }}
+      onclick={clear}
     >
       {#snippet child({ props })}
         <Button

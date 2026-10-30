@@ -12,6 +12,9 @@ const SYSTEM_COLOURS = new Set([
   "HighlightText",
   "ButtonFace",
   "ButtonText",
+  "GrayText",
+  "LinkText",
+  "ActiveText",
 ]);
 
 function selectors(css: string): string[] {
@@ -73,6 +76,8 @@ test("uses only system colours, and only for tokens that have a Windows value", 
 
 const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
   "button-primary": ["on-button-primary"],
+  "button-primary-hover": ["on-button-primary"],
+  "button-primary-pressed": ["on-button-primary"],
   "accent-hover": [],
   "accent-pressed": [],
   "switch-on": ["switch-thumb"],
@@ -111,6 +116,47 @@ test("turns the text of a picked or pressed row and a highlighted phone menu ite
   expect(flat).toMatch(
     /@media \(width < 600px\) \{[^{}]*\[role\^="menuitem"\]\[data-highlighted\] \{ color: HighlightText; \}/,
   );
+});
+
+test("draws Windows's disabled buttons in GrayText and its hyperlink button in LinkText", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-on-button-disabled")).toBe("GrayText");
+  expect(mapped.get("--native-color-on-button-primary-disabled")).toBe(
+    "GrayText",
+  );
+  expect(mapped.get("--native-color-button-primary-disabled")).toBe(
+    "ButtonFace",
+  );
+  expect(mapped.get("--native-color-on-button-link")).toBe("LinkText");
+});
+
+test("draws Windows's pressed hyperlink button in ActiveText, not on Highlight", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-on-button-link-pressed")).toBe(
+    "ActiveText",
+  );
+});
+
+test("edges Windows's buttons in ButtonText and keeps the standard button on ButtonFace under the pointer", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  for (const edge of [
+    "button-primary-edge",
+    "button-primary-edge-bottom",
+    "button-secondary-edge-top",
+    "button-secondary-edge-bottom",
+  ]) {
+    expect(mapped.get(`--native-color-${edge}`), edge).toBe("ButtonText");
+  }
+  expect(mapped.get("--native-color-button-secondary-hover")).toBe(
+    "ButtonFace",
+  );
+  expect(mapped.get("--native-color-button-secondary-pressed")).toBe(
+    "ButtonFace",
+  );
+  expect(mapped.get("--native-color-on-button-pressed")).toBe("CanvasText");
 });
 
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {

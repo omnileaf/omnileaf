@@ -29,6 +29,7 @@
   let {
     onMark,
     onLoadAll,
+    onPickedCount,
     tiles,
     ...covers
   }: {
@@ -39,6 +40,7 @@
     usesStandIns: boolean;
     onMark: (books: BookId[], mark: ReadMark) => Promise<boolean>;
     onLoadAll: () => Promise<void>;
+    onPickedCount?: ((count: number | undefined) => void) | undefined;
   } = $props();
 
   const selection = new Selection<BookId>();
@@ -50,6 +52,15 @@
   const platform = currentPlatform();
   let outcome: Outcome = $state({ kind: "none" });
   let area: HTMLElement | undefined = $state();
+  let bar: HTMLElement | undefined = $state();
+
+  $effect(() => {
+    const report = onPickedCount;
+    report?.(selection.count > 0 ? selection.count : undefined);
+    return () => {
+      report?.(undefined);
+    };
+  });
   let focusedBook: string | undefined;
 
   function noteFocusedBook({ target }: FocusEvent): void {
@@ -65,7 +76,7 @@
     return (
       focused === null ||
       focused === document.body ||
-      (area?.contains(focused) ?? false)
+      [area, bar].some((part) => part?.contains(focused) === true)
     );
   }
 
@@ -165,6 +176,7 @@
   </div>
   {#if selection.count > 0}
     <SelectionBar
+      bind:element={bar}
       count={selection.count}
       onMark={(read: ReadMark) => {
         void mark(read);

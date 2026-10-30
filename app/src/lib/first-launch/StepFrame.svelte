@@ -19,6 +19,7 @@
   import { type FirstLaunchStep, numberOf } from "./steps";
 
   const BACK_ICON_SIZE = 24;
+  const SETUP_BACK_ICON_SIZE = 16;
 
   let {
     step,
@@ -50,7 +51,7 @@
           label={m.first_launch_back()}
           onclick={onBack}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} aria-hidden="true" />
+          <ArrowLeft size={SETUP_BACK_ICON_SIZE} aria-hidden="true" />
         </Button>
       {/if}
       <div class="ms-auto">
@@ -70,7 +71,7 @@
   </div>
   <footer
     {@attach makesToastRoom(STEP_TOAST_ROOM)}
-    class="flex shrink-0 flex-row-reverse justify-start gap-sm border-bs border-border px-xl py-lg"
+    class="flex shrink-0 flex-row-reverse flex-wrap justify-start gap-sm border-bs border-border px-xl py-lg"
   >
     {@render actions()}
   </footer>

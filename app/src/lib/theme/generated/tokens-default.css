@@ -27,6 +27,15 @@
   --native-color-button-primary-pressed: var(--accent);
   --native-color-button-secondary-hover: var(--accent);
   --native-color-button-secondary-pressed: var(--accent);
+  --native-color-button-primary-edge: transparent;
+  --native-color-button-primary-edge-bottom: transparent;
+  --native-color-button-primary-disabled: var(--primary);
+  --native-color-on-button-primary-disabled: var(--primary-foreground);
+  --native-color-button-secondary-edge-top: transparent;
+  --native-color-button-secondary-edge-bottom: transparent;
+  --native-color-button-secondary-disabled: var(--secondary);
+  --native-color-on-button-pressed: var(--foreground);
+  --native-color-focus-ring-inner: transparent;
   --native-radius-button: var(--radius-shadcn-button);
   --native-radius-button-small: var(--radius-shadcn-button);
   --native-spacing-button: var(--spacing-shadcn-button);
@@ -95,6 +104,11 @@
   --native-spacing-row-lead: 0px;
   --native-spacing-group-head-end: 0px;
   --native-spacing-group-head-below: 0px;
+  --native-spacing-swipe-action: 60px;
+  --native-spacing-swipe-action-inline: 14px;
+  --native-spacing-swipe-action-gap: 10px;
+  --native-color-swipe-destructive: var(--color-danger-fill);
+  --native-color-on-swipe-destructive: var(--color-on-danger);
   --native-color-row-rule: var(--border);
   --native-text-row-title: var(--text-body);
   --native-leading-row-title: var(--text-body--line-height);
@@ -113,6 +127,7 @@
   --native-color-button-outline-pressed: var(--color-pressed);
   --native-color-on-button-plain: var(--color-accent);
   --native-color-on-button-link: var(--color-accent);
+  --native-color-on-button-link-pressed: var(--color-accent);
   --native-color-on-button-plain-pressed: var(--color-accent);
   --native-color-on-button-disabled: var(--color-muted-foreground);
   --native-color-button-plain-hover: var(--color-hover);
@@ -124,6 +139,8 @@
   --native-spacing-button-small: var(--spacing-shadcn-button);
   --native-spacing-button-large: var(--spacing-shadcn-button);
   --native-spacing-button-small-inline: var(--spacing-lg);
+  --native-spacing-icon-button-inset: 0px;
+  --native-spacing-icon-button-small-inset: 0px;
   --native-spacing-button-large-inline: var(--spacing-lg);
   --native-text-button-large: var(--text-label);
   --native-leading-button-large: var(--text-label--line-height);
@@ -256,6 +273,8 @@
   --native-leading-notice-label: var(--text-label--line-height);
   --native-weight-notice-label: var(--font-weight-medium);
   --native-tracking-notice-label: 0;
+  --native-spacing-search-token: 26px;
+  --native-spacing-search-token-inline: 9px;
   --native-shadow-notice-lift: var(--shadow-toast);
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;

@@ -12,7 +12,7 @@
   }: { title: string | undefined; status: string | undefined } = $props();
 </script>
 
-<div class="flex items-center gap-sm min-inline-none">
+<div class="flex flex-1 items-center gap-sm min-inline-none">
   <Tooltip label={m.series_back_label()} aria-label={m.series_back_label()}>
     {#snippet child({ props })}
       <a
@@ -39,4 +39,5 @@
       >{status ?? ""}</span
     >
   </div>
+  <div data-title-bar-actions class="ms-auto flex items-center"></div>
 </div>

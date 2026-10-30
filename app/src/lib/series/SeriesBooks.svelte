@@ -178,9 +178,10 @@
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
   $effect(() => {
-    onPickedCount?.(selection.count > 0 ? selection.count : undefined);
+    const report = onPickedCount;
+    report?.(selection.count > 0 ? selection.count : undefined);
     return () => {
-      onPickedCount?.(undefined);
+      report?.(undefined);
     };
   });
   const isAllPicked = $derived(
@@ -535,6 +536,7 @@
     />
     {#if selection.count > 0}
       <SelectionBar
+        bind:element={toolbar}
         count={selection.count}
         onMark={(read: ReadMark) => {
           void mark(read);

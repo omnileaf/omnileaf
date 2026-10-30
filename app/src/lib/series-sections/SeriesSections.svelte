@@ -43,6 +43,7 @@
     books,
     usesStandIns,
     onMark,
+    onPickedCount,
     children,
   }: {
     sections: readonly SeriesSection[];
@@ -53,6 +54,7 @@
     books: ListedBooks | undefined;
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
+    onPickedCount?: ((count: number | undefined) => void) | undefined;
     children: Snippet;
   } = $props();
 
@@ -112,6 +114,7 @@
     books: books?.list === staleList ? undefined : books,
     usesStandIns,
     onMark,
+    onPickedCount,
     children,
   });
 
