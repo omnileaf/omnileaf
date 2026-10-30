@@ -66,6 +66,7 @@
   const isInCard = $derived(addPlacement === "card");
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const isSwipeable = $derived(isNative && isInCard);
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
   const swipe = new RowSwipe((side) => side === "towardStart");
@@ -182,7 +183,7 @@
     {/snippet}
     {#snippet action()}
       {@render rowAction?.(folder)}
-      {#if !isNative}
+      {#if !isSwipeable}
         <RowActionButton
           label={m.library_remove_folder_label({ name: folder.name })}
           tooltip={m.library_remove_folder()}
@@ -238,10 +239,10 @@
               "relative focus-visible:rounded-card focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-accent ios:not-last:after:absolute ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator",
               !isInCard &&
                 "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card windows:focus-visible:rounded-windows-control",
-              isNative && isOpen(shownFolders[index + 1]) && "after:hidden",
+              isSwipeable && isOpen(shownFolders[index + 1]) && "after:hidden",
             ]}
           >
-            {#if isNative}
+            {#if isSwipeable}
               <SwipeToRemove
                 {swipe}
                 key={folder.id}
