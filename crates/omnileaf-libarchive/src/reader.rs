@@ -10,6 +10,9 @@ use std::{
     sync::Arc,
 };
 
+#[cfg(target_vendor = "apple")]
+use unicode_normalization::{IsNormalized, UnicodeNormalization, is_nfc_quick};
+
 use crate::{
     Error,
     allocator::{Budget, Scope},
@@ -332,8 +335,23 @@ fn path_of(entry: *mut ffi::ArchiveEntry) -> Result<String, Error> {
         })
 }
 
+/// libarchive decomposes every UTF-8 name it converts on Apple platforms (`archive_string.c`), unlike everywhere else, so names are composed back.
+#[cfg(target_vendor = "apple")]
+fn as_stored(path: String) -> String {
+    if is_nfc_quick(path.chars()) == IsNormalized::Yes {
+        path
+    } else {
+        path.nfc().collect()
+    }
+}
+
+#[cfg(not(target_vendor = "apple"))]
+fn as_stored(path: String) -> String {
+    path
+}
+
 fn entry_of(entry: *mut ffi::ArchiveEntry) -> Result<Entry, Error> {
-    let path = path_of(entry)?;
+    let path = as_stored(path_of(entry)?);
     // SAFETY: `entry` is the live entry libarchive returned for the current header.
     unsafe {
         let size = (ffi::archive_entry_size_is_set(entry) != 0)
