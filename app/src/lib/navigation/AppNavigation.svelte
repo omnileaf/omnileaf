@@ -4,7 +4,7 @@
 
   import { resolve } from "$app/paths";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { NARROW_POINTER_QUERY } from "#lib/page/breakpoints.ts";
+  import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -57,8 +57,8 @@
   const platformLook = tabBarLook(currentPlatform());
   const look = $derived(isCollapsed ? COLLAPSED_TAB_BAR_LOOK : platformLook);
   const sidebar = getSidebarSetting();
-  const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
-  const isFolded = $derived(sidebar.isHidden || isNarrowPointer.current);
+  const isNarrowPane = new MediaQuery(paneFoldQuery(currentPlatform()));
+  const isFolded = $derived(sidebar.isHidden || isNarrowPane.current);
 
   const currentIndex = $derived(
     DESTINATIONS.findIndex(({ section }) => section === current),
@@ -102,7 +102,7 @@
   onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar while-phone-picks:hidden",
-    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-shell-ground desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
+    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-shell-ground desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden windows:desktop-shell:border-e-0",
     look.bar,
   ]}
 >
@@ -114,7 +114,7 @@
   </p>
   <ul
     class={[
-      "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm sidebar-hidden:pbs-sm",
+      "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm windows:desktop-shell:px-xs sidebar-hidden:pbs-sm",
       look.row,
     ]}
   >

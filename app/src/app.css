@@ -115,6 +115,13 @@
   @variant narrow-desktop {
     @slot;
   }
+  @variant windows {
+    @variant desktop-shell {
+      @media (width < 1008px) {
+        @slot;
+      }
+    }
+  }
 }
 @custom-variant closed (&[data-state="closed"]);
 @custom-variant ios-grouped (&:where([data-platform="ios"] [data-ground="grouped"] *));
@@ -1001,6 +1008,8 @@
   }
 
   @variant windows {
+    --spacing-sidebar-desktop: 20rem;
+    --spacing-sidebar-hidden: 3rem;
     --spacing-menu-item-inline: 0.75rem;
     --radius-menu-item: 0.25rem;
     --spacing-checkbox: 1.25rem;
