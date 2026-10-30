@@ -9,7 +9,10 @@ function paint(token: string): Uint8ClampedArray {
   if (context === null) {
     throw new Error("The test browser has no 2D canvas");
   }
-  context.fillStyle = resolvedColour(`--native-color-${token}`, "color");
+  context.fillStyle = resolvedColour(
+    token.startsWith("--") ? token : `--native-color-${token}`,
+    "color",
+  );
   context.fillRect(0, 0, 1, 1);
   return context.getImageData(0, 0, 1, 1).data;
 }

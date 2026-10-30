@@ -28,6 +28,12 @@ export const commands = {
 	light: ColourRoles,
 	dark: ColourRoles,
 } | null, IpcError>(__TAURI_INVOKE("wallpaper_colours")),
+	accentColours: () => __TAURI_INVOKE<{
+	light: number,
+	dark: number,
+	lightText: number,
+	darkText: number,
+} | null>("accent_colours"),
 	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
 	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
 	libraryFolders: (after: string & { readonly __brand: "FolderCursor" } | null) => typedError<FolderPage, IpcError>(__TAURI_INVOKE("library_folders", { after })),
@@ -205,6 +211,7 @@ export const commands = {
 	showIconActions: (menu: IconActionsMenu) => typedError<null, IpcError>(__TAURI_INVOKE("show_icon_actions", { menu })),
 	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
+	openColourSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_colour_settings")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -227,6 +234,13 @@ export const DEFAULT_LIBRARY_VIEW = {"coversPerRow":{"desktop":6,"phone":3,"tabl
 export const SEARCH_MAX_CHARS = 200 as const;
 
 /* Types */
+export type AccentColours = {
+	light: number,
+	dark: number,
+	lightText: number,
+	darkText: number,
+};
+
 /**  How the library treats series that count as 18+, and whether an adult age rating in their details makes them count. */
 export type AdultContent = {
 	treatment: AdultTreatment,

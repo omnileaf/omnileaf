@@ -1240,6 +1240,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     wallpaperColours: () => null,
+    accentColours: () => null,
     captureVolumeKeys: () => null,
     releaseVolumeKeys: () => null,
     libraryFolders: () => ({
@@ -2189,6 +2190,7 @@ export function sampleBackend(
     showIconActions: () => null,
     watchIconActions: () => null,
     openSystemSettings: () => null,
+    openColourSettings: () => null,
     panicInCore: () => null,
     crashAndQuit: () => null,
   };
