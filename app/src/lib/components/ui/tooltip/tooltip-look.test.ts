@@ -52,7 +52,7 @@ const LOOKS: readonly TooltipLook[] = [
     padding: "5px 8px",
     hasArrow: false,
     edge: "1px",
-    keyFill: "var(--muted)",
+    keyFill: "transparent",
   },
 ];
 
