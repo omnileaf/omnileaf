@@ -127,7 +127,6 @@ test.each<[ButtonLook, string[]]>([
 });
 
 const NATIVE_PLATFORMS: readonly Platform[] = ["android", "ios"];
-const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
 
 test.each(NATIVE_PLATFORMS)(
   "draws a dialog's main button on %s's own button",
@@ -139,11 +138,28 @@ test.each(NATIVE_PLATFORMS)(
   },
 );
 
-test.each(DESKTOPS)("keeps today's dialog button on %s", (platform) => {
-  const classes = buttonClasses("dialog-primary", platform);
+test.each<Platform>(["linux", "macos"])(
+  "keeps today's dialog button on %s",
+  (platform) => {
+    const classes = buttonClasses("dialog-primary", platform);
 
-  expect(classes).toBe(BUTTON_LOOKS["dialog-primary"]);
-});
+    expect(classes).toBe(BUTTON_LOOKS["dialog-primary"]);
+  },
+);
+
+test.each<[ButtonLook, ButtonVariant]>([
+  ["dialog-primary", "primary"],
+  ["dialog-secondary", "secondary"],
+  ["confirm-danger", "primary"],
+  ["confirm-cancel", "secondary"],
+])(
+  "draws a dialog's %s button on Windows as its %s button",
+  (look, variant) => {
+    const classes = buttonClasses(look, "windows");
+
+    expect(classes).toBe(variantClasses(variant, "regular", false, "windows"));
+  },
+);
 
 test.each(NATIVE_PLATFORMS)(
   "keeps today's look on %s for a button whose size its caller sets",

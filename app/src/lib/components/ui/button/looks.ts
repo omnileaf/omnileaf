@@ -58,6 +58,13 @@ const NATIVE_VARIANT_OF: Partial<Record<ButtonLook, ButtonVariant>> = {
   "dialog-secondary": "secondary",
 };
 
+const WINDOWS_VARIANT_OF: Partial<Record<ButtonLook, ButtonVariant>> = {
+  "dialog-primary": "primary",
+  "dialog-secondary": "secondary",
+  "confirm-danger": "primary",
+  "confirm-cancel": "secondary",
+};
+
 const NATIVE_BUTTON = `native-target inline-flex items-center justify-center gap-sm rounded-native-button font-native-button transition-control ${FOCUS_RING}`;
 
 const NATIVE_SIZES = {
@@ -135,6 +142,10 @@ export function buttonClasses(
     width?: WidthClass;
   } = {},
 ): string {
+  const windowsVariant = WINDOWS_VARIANT_OF[look];
+  if (platform === "windows" && windowsVariant !== undefined) {
+    return variantClasses(windowsVariant, "regular", false, platform);
+  }
   if (!hasNativeLook(platform)) {
     return BUTTON_LOOKS[look];
   }
