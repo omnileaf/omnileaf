@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import type { AccentColours } from "../../src/lib/ipc/bindings.ts";
+import { BLUE_ACCENT as BLUE } from "../sample-wallpaper.ts";
 import {
   accessibilityViolations,
   expect,
@@ -10,8 +11,12 @@ import {
 } from "./fixtures.ts";
 
 const COLOURS_KEY = "omnileaf.colours";
-const BLUE: AccentColours = { light: 0x0067c0, dark: 0x4cc2ff };
-const PURPLE: AccentColours = { light: 0x744da9, dark: 0xc3a6f0 };
+const PURPLE: AccentColours = {
+  light: 0x744da9,
+  dark: 0xc3a6f0,
+  lightText: 0x4f2f80,
+  darkText: 0xddc8fa,
+};
 const OMNILEAF_GREEN = "rgb(47, 111, 79)";
 const BLUE_LIGHT = "rgb(0, 103, 192)";
 const BLUE_DARK = "rgb(76, 194, 255)";

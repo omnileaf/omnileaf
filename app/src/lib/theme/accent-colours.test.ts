@@ -3,15 +3,15 @@ import { afterEach, expect, test } from "vitest";
 import "../../app.css";
 
 import { followWallpaperColours } from "#lib/appearance/wallpaper-colours.ts";
-import type { AccentColours, Platform } from "#lib/ipc/bindings.ts";
+import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { contrastRatio } from "../../../tests/components/contrast-ratio";
 import { resolvedColour } from "../../../tests/components/resolved-colour";
+import { BLUE_ACCENT } from "../../../tests/sample-wallpaper";
 
 const TEXT_RATIO = 4.5;
 const THEMES = ["light", "dark"] as const;
-const BLUE_ACCENT: AccentColours = { light: 0x0067c0, dark: 0x4cc2ff };
 const BLUE_SHADES = {
   light: "rgb(0, 103, 192)",
   dark: "rgb(76, 194, 255)",

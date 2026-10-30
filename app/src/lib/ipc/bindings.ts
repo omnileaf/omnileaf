@@ -31,6 +31,8 @@ export const commands = {
 	accentColours: () => __TAURI_INVOKE<{
 	light: number,
 	dark: number,
+	lightText: number,
+	darkText: number,
 } | null>("accent_colours"),
 	captureVolumeKeys: (onTurn: Channel<PageTurn>) => typedError<null, IpcError>(__TAURI_INVOKE("capture_volume_keys", { onTurn })),
 	releaseVolumeKeys: () => typedError<null, IpcError>(__TAURI_INVOKE("release_volume_keys")),
@@ -234,6 +236,8 @@ export const SEARCH_MAX_CHARS = 200 as const;
 export type AccentColours = {
 	light: number,
 	dark: number,
+	lightText: number,
+	darkText: number,
 };
 
 /**  How the library treats series that count as 18+, and whether an adult age rating in their details makes them count. */

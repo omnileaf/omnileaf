@@ -33,9 +33,12 @@ pub(crate) struct WallpaperColours {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct AccentColours {
     light: u32,
     dark: u32,
+    light_text: u32,
+    dark_text: u32,
 }
 
 #[cfg(windows)]
@@ -59,19 +62,19 @@ pub(crate) fn read_accent() -> Option<AccentColours> {
 #[cfg(any(test, windows))]
 const PALETTE_ENTRY_BYTES: usize = 4;
 
-/// Windows keeps its accent as eight RGBX shades from `AccentLight3` to a spare, and `WinUI` fills with `AccentDark1` in light theme and `AccentLight2` in dark.
+/// Windows keeps its accent as eight RGBX shades from `AccentLight3` to a spare, and `WinUI` fills with `AccentDark1` and writes with `AccentDark2` in light theme, and uses `AccentLight2` and `AccentLight3` in dark.
 #[cfg(any(test, windows))]
 fn accent_from_palette(palette: &[u8]) -> Option<AccentColours> {
     let (shades, []) = palette.as_chunks::<PALETTE_ENTRY_BYTES>() else {
         return None;
     };
     let [
-        _light_3,
+        light_3,
         light_2,
         _light_1,
         _accent,
         dark_1,
-        _dark_2,
+        dark_2,
         _dark_3,
         _spare,
     ] = shades
@@ -81,6 +84,8 @@ fn accent_from_palette(palette: &[u8]) -> Option<AccentColours> {
     Some(AccentColours {
         light: rgb_of(*dark_1),
         dark: rgb_of(*light_2),
+        light_text: rgb_of(*dark_2),
+        dark_text: rgb_of(*light_3),
     })
 }
 
@@ -171,6 +176,13 @@ mod android {
 mod tests {
     use super::{AccentColours, WallpaperReply, accent_from_palette};
 
+    const BLUE_ACCENT: AccentColours = AccentColours {
+        light: 0x00_67_c0,
+        dark: 0x4c_c2_ff,
+        light_text: 0x00_3e_92,
+        dark_text: 0x99_eb_ff,
+    };
+
     const DEFAULT_BLUE_PALETTE: [u8; 32] = [
         0x99, 0xeb, 0xff, 0x00, 0x4c, 0xc2, 0xff, 0x00, 0x00, 0x91, 0xf8, 0x00, 0x00, 0x78, 0xd4,
         0x00, 0x00, 0x67, 0xc0, 0x00, 0x00, 0x3e, 0x92, 0x00, 0x00, 0x1a, 0x68, 0x00, 0xf7, 0x63,
@@ -224,16 +236,10 @@ mod tests {
     }
 
     #[test]
-    fn takes_accent_dark_1_for_light_and_accent_light_2_for_dark_from_the_palette() {
+    fn takes_the_shades_winui_fills_and_writes_with_from_the_palette() {
         let colours = accent_from_palette(&DEFAULT_BLUE_PALETTE);
 
-        assert_eq!(
-            colours,
-            Some(AccentColours {
-                light: 0x00_67_c0,
-                dark: 0x4c_c2_ff,
-            })
-        );
+        assert_eq!(colours, Some(BLUE_ACCENT));
     }
 
     #[test]
@@ -247,13 +253,7 @@ mod tests {
 
         let colours = accent_from_palette(&palette);
 
-        assert_eq!(
-            colours,
-            Some(AccentColours {
-                light: 0x00_67_c0,
-                dark: 0x4c_c2_ff,
-            })
-        );
+        assert_eq!(colours, Some(BLUE_ACCENT));
     }
 
     #[test]

@@ -11,6 +11,7 @@ import {
   type ColourReaders,
   followWallpaperColours,
 } from "./wallpaper-colours";
+import { BLUE_ACCENT } from "../../../tests/sample-wallpaper";
 
 const root = document.documentElement;
 const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos"];
@@ -18,7 +19,6 @@ const LIGHT_PRIMARY = "--android-wallpaper-light-primary";
 const DARK_CONTAINER_LOW = "--android-wallpaper-dark-surface-container-low";
 const LIGHT_ACCENT = "--windows-accent-light";
 const DARK_ACCENT = "--windows-accent-dark";
-const BLUE_ACCENT: AccentColours = { light: 0x0067c0, dark: 0x4cc2ff };
 
 function roles(colour: number): ColourRoles {
   return {
