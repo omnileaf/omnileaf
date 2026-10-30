@@ -285,4 +285,9 @@
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
+  --native-text-empty: var(--text-title);
+  --native-leading-empty: var(--text-title--line-height);
+  --native-tracking-empty: 0;
+  --native-weight-empty-title: var(--font-weight-semibold);
+  --native-weight-empty-body: var(--font-weight-medium);
 }

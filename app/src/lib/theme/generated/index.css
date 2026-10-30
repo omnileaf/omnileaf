@@ -290,6 +290,11 @@
   --color-native-row-current: var(--native-color-row-current);
   --color-native-on-row-current: var(--native-color-on-row-current);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
+  --text-native-empty: var(--native-text-empty);
+  --leading-native-empty: var(--native-leading-empty);
+  --tracking-native-empty: var(--native-tracking-empty);
+  --font-weight-native-empty-title: var(--native-weight-empty-title);
+  --font-weight-native-empty-body: var(--native-weight-empty-body);
 }
 
 @media (prefers-reduced-motion: reduce) {
