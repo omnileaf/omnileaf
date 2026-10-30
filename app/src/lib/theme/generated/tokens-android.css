@@ -225,6 +225,10 @@
   --native-text-group-footer: calc(0.75rem * var(--text-scale));
   --native-leading-group-footer: calc(16 / 12);
   --native-tracking-group-footer: 0.4px;
+  --native-text-group-heading: var(--text-lead);
+  --native-leading-group-heading: var(--text-lead--line-height);
+  --native-weight-group-heading: var(--font-weight-bold);
+  --native-tracking-group-heading: 0;
   --native-text-notice-title: calc(0.875rem * var(--text-scale));
   --native-leading-notice-title: calc(20 / 14);
   --native-weight-notice-title: 400;

@@ -306,6 +306,10 @@
   --text-native-group-footer: var(--native-text-group-footer);
   --leading-native-group-footer: var(--native-leading-group-footer);
   --tracking-native-group-footer: var(--native-tracking-group-footer);
+  --text-native-group-heading: var(--native-text-group-heading);
+  --leading-native-group-heading: var(--native-leading-group-heading);
+  --font-weight-native-group-heading: var(--native-weight-group-heading);
+  --tracking-native-group-heading: var(--native-tracking-group-heading);
   --text-native-notice-title: var(--native-text-notice-title);
   --leading-native-notice-title: var(--native-leading-notice-title);
   --font-weight-native-notice-title: var(--native-weight-notice-title);

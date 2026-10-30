@@ -301,6 +301,10 @@
   --native-text-group-footer: var(--text-caption);
   --native-leading-group-footer: var(--text-caption--line-height);
   --native-tracking-group-footer: 0;
+  --native-text-group-heading: var(--text-lead);
+  --native-leading-group-heading: var(--text-lead--line-height);
+  --native-weight-group-heading: var(--font-weight-bold);
+  --native-tracking-group-heading: 0;
   --native-text-notice-title: var(--text-label);
   --native-leading-notice-title: var(--text-label--line-height);
   --native-weight-notice-title: var(--font-weight-medium);
