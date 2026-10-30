@@ -32,6 +32,7 @@
     onPickAll,
     onClear,
     onMark,
+    onBookmark,
     selectAllBox = $bindable(null),
   }: {
     books: readonly SeriesBook[];
@@ -43,6 +44,7 @@
     onPickAll: () => void;
     onClear: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
+    onBookmark?: ((books: BookId[]) => void) | undefined;
     selectAllBox?: HTMLElement | null;
   } = $props();
 
@@ -209,6 +211,11 @@
             onMark={(mark: ReadMark) => {
               onMark([book.id], mark);
             }}
+            onBookmark={onBookmark === undefined
+              ? undefined
+              : () => {
+                  onBookmark([book.id]);
+                }}
           />
         </TableCell>
       </TableRow>

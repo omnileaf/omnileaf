@@ -532,6 +532,11 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
+      onBookmark={platform === "macos"
+        ? (picked: BookId[]) => {
+            void bookmarkSelected(picked);
+          }
+        : undefined}
     />
     {#if selection.count > 0 && platform === "macos"}
       <Portal to="[data-title-bar-actions]">
