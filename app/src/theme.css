@@ -561,7 +561,7 @@
   --switch-thumb: var(--windows-secondary-text);
   --switch-thumb-on: var(--primary-foreground);
   --focus-ring-offset: 1px;
-  --focus-ring-color: var(--foreground);
+  --focus-ring-color: var(--native-color-focus-ring);
   --dialog-edge: var(--windows-stroke);
   --dialog-radius: var(--radius-windows-overlay);
   --dialog-shadow: var(--shadow-windows-flyout);
