@@ -218,3 +218,162 @@ test.describe("the series' side column on Linux", () => {
     expect(await rowGapOf(booksColumn(page))).toBe(LINUX.booksGap);
   });
 });
+
+const SKELETON = {
+  cover: { width: 168, height: 252 },
+  title: { width: 210, height: 24 },
+  meta: { width: 140, height: 14 },
+  buttonLift: 6,
+  button: 24,
+  card: 112,
+  cardRadius: "12px",
+  barShare: 0.6,
+  bar: 24,
+  rows: 8,
+  row: 20,
+  rowInset: 8,
+  rowGap: 16,
+  check: 14,
+  textShare: 0.38,
+  text: 12,
+  trailing: 120,
+  radius: "4px",
+};
+const SIDE_PIECES = 4;
+const BOOKS_LEAD_PIECES = 2;
+const ROW_PIECES = 3;
+
+function loading(page: Page): Locator {
+  return page.getByRole("status", { name: "Loading the series" });
+}
+
+function pieces(page: Page): Locator {
+  return loading(page).locator("[data-slot=skeleton]");
+}
+
+async function openLoading(page: Page): Promise<Box[]> {
+  await page.goto(`/series/${SERIES_ID}`);
+  await expect(loading(page)).toBeVisible();
+  const boxes: Box[] = [];
+  for (const piece of await pieces(page).all()) {
+    boxes.push(await roundedBoxOf(piece));
+  }
+  return boxes;
+}
+
+function radiusOf(locator: Locator): Promise<string> {
+  return locator.evaluate(
+    (element) => getComputedStyle(element).borderTopLeftRadius,
+  );
+}
+
+function sizeOf(box: Box | undefined): [number, number] {
+  if (box === undefined) {
+    throw new Error("the skeleton piece is missing");
+  }
+  return [box.width, box.height];
+}
+
+function pick(boxes: Box[], index: number): Box {
+  const box = boxes[index];
+  if (box === undefined) {
+    throw new Error(`no skeleton piece ${String(index)}`);
+  }
+  return box;
+}
+
+test.describe("the series' skeleton on macOS", () => {
+  testOnlyInItsWebview("macos");
+  test.use({
+    platform: "macos",
+    backend: {
+      ...shelf.backend(),
+      seriesOverview: () => new Promise(() => undefined),
+    },
+  });
+
+  test("stands in for the side column's cover, title, line and control", async ({
+    page,
+  }) => {
+    const boxes = await openLoading(page);
+    const [cover, title, meta, button] = boxes;
+
+    expect(sizeOf(cover)).toEqual([
+      SKELETON.cover.width,
+      SKELETON.cover.height,
+    ]);
+    expect(sizeOf(title)).toEqual([
+      SKELETON.title.width,
+      SKELETON.title.height,
+    ]);
+    expect(sizeOf(meta)).toEqual([SKELETON.meta.width, SKELETON.meta.height]);
+    expect(sizeOf(button)).toEqual([MACOS.side, SKELETON.button]);
+    expect(pick(boxes, 1).y - (pick(boxes, 0).y + SKELETON.cover.height)).toBe(
+      MACOS.sideGap,
+    );
+    expect(pick(boxes, 2).y - (pick(boxes, 1).y + SKELETON.title.height)).toBe(
+      MACOS.sideGap,
+    );
+    expect(pick(boxes, 3).y - (pick(boxes, 2).y + SKELETON.meta.height)).toBe(
+      MACOS.sideGap + SKELETON.buttonLift,
+    );
+    expect(await radiusOf(pieces(page).first())).toBe(SKELETON.radius);
+  });
+
+  test("stands in for the card, the toolbar and eight table rows beside it", async ({
+    page,
+  }) => {
+    const boxes = await openLoading(page);
+    const side = pick(boxes, SIDE_PIECES - 1);
+    const card = pick(boxes, SIDE_PIECES);
+    const bar = pick(boxes, SIDE_PIECES + 1);
+    const firstRow = SIDE_PIECES + BOOKS_LEAD_PIECES;
+
+    expect(boxes).toHaveLength(firstRow + SKELETON.rows * ROW_PIECES);
+    expect(card.x - (side.x + side.width)).toBe(MACOS.columnsGap);
+    expect(card.height).toBe(SKELETON.card);
+    expect(await radiusOf(pieces(page).nth(SIDE_PIECES))).toBe(
+      SKELETON.cardRadius,
+    );
+    expect(bar.width).toBe(Math.round(card.width * SKELETON.barShare));
+    expect(bar.height).toBe(SKELETON.bar);
+    expect(bar.y - (card.y + card.height)).toBe(MACOS.sideGap);
+    const rowWidth = card.width - 2 * SKELETON.rowInset;
+    for (let row = 0; row < SKELETON.rows; row += 1) {
+      const at = firstRow + row * ROW_PIECES;
+      const check = pick(boxes, at);
+      const text = pick(boxes, at + 1);
+      const trailing = pick(boxes, at + 2);
+      const rowTop = bar.y + bar.height + MACOS.sideGap + row * SKELETON.row;
+
+      expect(sizeOf(check)).toEqual([SKELETON.check, SKELETON.check]);
+      expect(check.x).toBe(card.x + SKELETON.rowInset);
+      expect(check.y).toBe(rowTop + (SKELETON.row - SKELETON.check) / 2);
+      expect(text.x - (check.x + check.width)).toBe(SKELETON.rowGap);
+      expect(text.width).toBe(Math.round(rowWidth * SKELETON.textShare));
+      expect(text.height).toBe(SKELETON.text);
+      expect(sizeOf(trailing)).toEqual([SKELETON.trailing, SKELETON.text]);
+      expect(trailing.x + trailing.width).toBe(
+        card.x + card.width - SKELETON.rowInset,
+      );
+    }
+  });
+});
+
+test.describe("the series' skeleton on Linux", () => {
+  testOnlyInItsWebview("linux");
+  test.use({
+    platform: "linux",
+    backend: {
+      ...shelf.backend(),
+      seriesOverview: () => new Promise(() => undefined),
+    },
+  });
+
+  test("keeps its own shape", async ({ page }) => {
+    const boxes = await openLoading(page);
+
+    expect(sizeOf(boxes[0])).toEqual([LINUX.cover.width, LINUX.cover.height]);
+    expect(boxes).toHaveLength(12);
+  });
+});

@@ -578,6 +578,13 @@
   --spacing-skeleton-line: 8.75rem;
   --spacing-skeleton-card: 12.5rem;
   --spacing-skeleton-card-wide: 9rem;
+  --spacing-skeleton-title-macos: 13.125rem;
+  --spacing-skeleton-line-macos: 0.875rem;
+  --spacing-skeleton-lift-macos: 0.375rem;
+  --spacing-skeleton-card-macos: 7rem;
+  --spacing-skeleton-row-macos: 1.25rem;
+  --spacing-skeleton-check-macos: 0.875rem;
+  --spacing-skeleton-trailing-macos: 7.5rem;
   --spacing-related-cover: 9rem;
   --spacing-creator-crumb: 22.5rem;
   --spacing-reader-dense: 2.75rem;
@@ -756,6 +763,7 @@
   --radius-result-cover: 0.3125rem;
   --radius-quick-open-cover: 0.1875rem;
   --radius-series-cover: var(--radius-sm);
+  --radius-skeleton-macos: 0.25rem;
   --radius-series-check: 0.375rem;
 
   --radius-history-cover: 0.3125rem;
