@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
@@ -176,3 +176,56 @@ test("draws iOS's tabs as a segmented control, a capsule track with a raised pil
   expect(drawn.chosenWeight).toBe("590");
   expect(drawn.labelSize).toBe("13px");
 });
+
+const WINDOWS_SELECTOR_BARS = {
+  light: {
+    ink: "rgba(0, 0, 0, 0.894)",
+    muted: "rgba(0, 0, 0, 0.62)",
+    accent: "rgb(47, 111, 79)",
+  },
+  dark: {
+    ink: "rgb(255, 255, 255)",
+    muted: "rgba(255, 255, 255, 0.773)",
+    accent: "rgb(127, 203, 157)",
+  },
+} as const;
+
+for (const [theme, look] of Object.entries(WINDOWS_SELECTOR_BARS)) {
+  test(`draws Windows's tabs as a SelectorBar in the ${theme} theme, plain text with a short accent pill under the chosen one`, async () => {
+    document.documentElement.dataset.theme = theme;
+    followCorePlatform("windows");
+    await render(TabsHarness);
+    const list = page.getByRole("tablist").element();
+    const chosen = page.getByRole("tab").nth(0).element();
+    const other = page.getByRole("tab").nth(1).element();
+
+    const pill = getComputedStyle(chosen, "::after");
+
+    expect(getComputedStyle(list).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(list).columnGap).toBe("8px");
+    expect(getComputedStyle(chosen).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(chosen).padding).toBe("10px 12px 7px");
+    expect(getComputedStyle(chosen).fontSize).toBe("14px");
+    expect(getComputedStyle(chosen).fontWeight).toBe("400");
+    expect(getComputedStyle(chosen).color).toBe(look.ink);
+    expect(getComputedStyle(other).color).toBe(look.ink);
+    expect(pill.backgroundColor).toBe(look.accent);
+    expect(pill.width).toBe("16px");
+    expect(pill.height).toBe("3px");
+    expect(pill.opacity).toBe("1");
+    expect(getComputedStyle(other, "::after").opacity).toBe("0");
+  });
+
+  test(`mutes a Windows tab's text under the pointer in the ${theme} theme`, async () => {
+    document.documentElement.dataset.theme = theme;
+    followCorePlatform("windows");
+    await render(TabsHarness);
+    const other = page.getByRole("tab").nth(1);
+
+    await userEvent.hover(other);
+
+    await expect
+      .poll(() => getComputedStyle(other.element()).color)
+      .toBe(look.muted);
+  });
+}
