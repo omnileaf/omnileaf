@@ -302,6 +302,7 @@
   --native-radius-tab-indicator: 3px;
   --native-color-tab-indicator: var(--native-color-on-tab-current);
   --native-color-tab-rule: var(--native-color-menu-rule);
+  --native-color-sheet-rule: var(--native-color-menu-rule);
   --native-color-row-current: var(--native-color-jump-current);
   --native-color-on-row-current: var(--native-color-on-jump-current);
   --native-spacing-sheet-foot-bottom: calc(16px + var(--spacing-safe-bottom));

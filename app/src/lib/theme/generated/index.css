@@ -383,6 +383,7 @@
   --radius-native-tab-indicator: var(--native-radius-tab-indicator);
   --color-native-tab-indicator: var(--native-color-tab-indicator);
   --color-native-tab-rule: var(--native-color-tab-rule);
+  --color-native-sheet-rule: var(--native-color-sheet-rule);
   --color-native-row-current: var(--native-color-row-current);
   --color-native-on-row-current: var(--native-color-on-row-current);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);

@@ -295,6 +295,7 @@
   --native-radius-tab-indicator: 9999px;
   --native-color-tab-indicator: var(--foreground);
   --native-color-tab-rule: var(--border);
+  --native-color-sheet-rule: var(--border);
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
