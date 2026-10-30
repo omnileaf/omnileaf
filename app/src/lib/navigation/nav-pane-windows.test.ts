@@ -315,3 +315,39 @@ test("rings a keyboard-focused pane toggle in Windows' two-tone focus ring", asy
     width: "2px",
   });
 });
+
+function paneToggleElement(): HTMLElement {
+  const toggle = document.querySelector<HTMLElement>(
+    "nav button[aria-keyshortcuts]",
+  );
+  if (toggle === null) {
+    throw new Error("the navigation pane drew no toggle");
+  }
+  return toggle;
+}
+
+for (const width of [1007, 840, 700]) {
+  test(`hides the pane toggle and keeps it out of the tab order in a ${String(width)} wide window`, async () => {
+    await renderOnWindowsAt(width);
+
+    paneToggleElement().focus();
+
+    expect({
+      visibility: getComputedStyle(paneToggleElement()).visibility,
+      isFocused: document.activeElement === paneToggleElement(),
+    }).toEqual({ visibility: "hidden", isFocused: false });
+  });
+}
+
+for (const width of [1008, 1280]) {
+  test(`shows the pane toggle in a ${String(width)} wide window`, async () => {
+    await renderOnWindowsAt(width);
+
+    paneToggleElement().focus();
+
+    expect({
+      visibility: getComputedStyle(paneToggleElement()).visibility,
+      isFocused: document.activeElement === paneToggleElement(),
+    }).toEqual({ visibility: "visible", isFocused: true });
+  });
+}
