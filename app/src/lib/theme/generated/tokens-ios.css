@@ -99,6 +99,9 @@
   --native-spacing-button-small-inline: 10px;
   --native-spacing-icon-button-inset: 0px;
   --native-spacing-icon-button-small-inset: 0px;
+  --native-spacing-command-bar: 0px;
+  --native-spacing-command-button: 0px;
+  --native-spacing-command-button-block: 0px;
   --native-spacing-button-large-inline: 20px;
   --native-text-button-large: calc(1.0625rem * var(--text-scale));
   --native-leading-button-large: calc(1.375 / 1.0625);

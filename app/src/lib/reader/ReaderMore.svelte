@@ -31,7 +31,11 @@
 
   import ComingSoon from "./ComingSoon.svelte";
   import { moreHeading } from "./more-heading.ts";
-  import { READER_ICON_SIZE, readerButton } from "./reader-bar.ts";
+  import {
+    READER_ICON_SIZE,
+    readerButton,
+    readerIconSize,
+  } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
@@ -116,7 +120,7 @@
   });
 </script>
 
-{#if isWide.current || floats}
+{#if isWide.current || floats || platform === "windows"}
   <DropdownMenu bind:open={isMenuOpen} {onOpenChange}>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
@@ -131,7 +135,7 @@
             name="ellipsis"
             fallback={Ellipsis}
             isKit={isOnPhone}
-            size={READER_ICON_SIZE}
+            size={readerIconSize(platform)}
           />
         </Button>
       {/snippet}

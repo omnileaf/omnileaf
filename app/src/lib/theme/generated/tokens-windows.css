@@ -22,6 +22,9 @@
   --native-spacing-button-small-inline: 7px;
   --native-spacing-icon-button-inset: 7px;
   --native-spacing-icon-button-small-inset: 3px;
+  --native-spacing-command-bar: 48px;
+  --native-spacing-command-button: 68px;
+  --native-spacing-command-button-block: 64px;
   --native-radius-dialog: 8px;
   --native-spacing-dialog: 448px;
   --native-radius-sheet: 8px;
