@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour.ts";
@@ -21,9 +22,13 @@ const NavigationWithAppContext = WithAppContext<
 >;
 
 async function renderOnWindowsAt(width: number): Promise<void> {
+  await renderAt(width, "windows");
+}
+
+async function renderAt(width: number, platform: Platform): Promise<void> {
   await page.viewport(width, WINDOW_HEIGHT);
   document.documentElement.dataset.theme = "light";
-  followCorePlatform("windows");
+  followCorePlatform(platform);
   await render(NavigationWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: AppNavigation,
@@ -177,4 +182,46 @@ test("names the pane toggle's Ctrl+B shortcut in its tooltip and to assistive te
   await expect
     .poll(() => document.querySelector("[data-tooltip-content]")?.textContent)
     .toMatch(/Hide the sidebar\s*Ctrl\+B/);
+});
+
+function focusedName(): string | null | undefined {
+  return document.activeElement?.textContent.trim();
+}
+
+test("moves between Windows' pane items with the arrow keys, stopping at either end", async () => {
+  await renderOnWindowsAt(1280);
+  (item("Library") as HTMLElement).focus();
+
+  const visited: (string | null | undefined)[] = [];
+  for (const key of ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown"]) {
+    await userEvent.keyboard(`{${key}}`);
+    visited.push(focusedName());
+  }
+  await userEvent.keyboard("{ArrowUp}");
+
+  expect(visited).toEqual(["Browse", "History", "Settings", "Settings"]);
+  expect(focusedName()).toBe("History");
+});
+
+test("jumps to the first and last of Windows' pane items with Home and End", async () => {
+  await renderOnWindowsAt(1280);
+  (item("Browse") as HTMLElement).focus();
+
+  await userEvent.keyboard("{End}");
+  const last = focusedName();
+  await userEvent.keyboard("{Home}");
+
+  expect({ last, first: focusedName() }).toEqual({
+    last: "Settings",
+    first: "Library",
+  });
+});
+
+test("leaves the arrow keys to the page on other desktops", async () => {
+  await renderAt(1280, "linux");
+  (item("Library") as HTMLElement).focus();
+
+  await userEvent.keyboard("{ArrowDown}");
+
+  expect(focusedName()).toBe("Library");
 });

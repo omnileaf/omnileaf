@@ -9,6 +9,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
+  import { paneArrowKeys } from "./pane-arrow-keys.ts";
   import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
@@ -123,6 +124,7 @@
     </p>
   {/if}
   <ul
+    {@attach platform === "windows" && paneArrowKeys}
     class={[
       "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm windows:desktop-shell:px-xs sidebar-hidden:pbs-sm",
       look.row,
