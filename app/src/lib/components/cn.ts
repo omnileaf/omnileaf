@@ -273,6 +273,7 @@ export const TOKEN_THEME = {
     "edit-dialog",
     "edit-dialog-height",
     "empty-art",
+    "empty-button-macos",
     "empty-icon",
     "empty-lift",
     "entry-tile",
