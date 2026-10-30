@@ -62,7 +62,7 @@
           count: creators.length,
         })}
         class={[
-          "inline font-medium underline-offset-4 hover:underline focus-visible:underline touch:touch-target-around",
+          "touch-target-around font-medium underline-offset-4 hover:underline focus-visible:underline",
           isPhone(platform, width.current)
             ? "text-native-on-button-plain"
             : "text-foreground",
