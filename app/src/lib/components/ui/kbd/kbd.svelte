@@ -4,6 +4,8 @@
 
   import { cn } from "#lib/components/cn.ts";
 
+  import { windowsKeyHint } from "./looks.ts";
+
   let {
     ref = $bindable(null),
     class: className,
@@ -16,7 +18,8 @@
   bind:this={ref}
   data-slot="kbd"
   class={cn(
-    "inline-block shrink-0 rounded-badge bg-chip px-xs py-2xs text-center font-ui text-caption font-medium text-on-key min-inline-key windows:rounded-none windows:bg-transparent windows:p-none windows:font-regular windows:text-native-key-ink windows:min-inline-none",
+    "inline-block shrink-0 rounded-badge bg-chip px-xs py-2xs text-center font-ui text-caption font-medium text-on-key min-inline-key",
+    windowsKeyHint(className),
     className,
   )}
   {...restProps}

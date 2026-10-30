@@ -5,6 +5,7 @@ import { createRawSnippet } from "svelte";
 
 import "../../../../app.css";
 
+import { drawnContrast } from "../../../../../tests/components/contrast-ratio";
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
 
 import Kbd from "./kbd.svelte";
@@ -98,3 +99,27 @@ test("draws a single key as a 20px square at least", async () => {
   expect(box?.height).toBeCloseTo(KEY_HEIGHT, 0);
   expect(box?.width).toBeGreaterThanOrEqual(KEY_MIN_WIDTH);
 });
+
+const AA_TEXT = 4.5;
+
+test.each(["light", "dark"])(
+  "keeps a caller's own fill and ink on a Windows key in the %s theme, so a hint on the accent stays readable",
+  async (theme) => {
+    document.documentElement.dataset.platform = "windows";
+    document.documentElement.dataset.theme = theme;
+    await render(Kbd, {
+      class: "bg-on-accent text-accent",
+      children: key("N"),
+    });
+
+    const chip = page.getByText("N").element().closest("kbd");
+    if (chip === null) {
+      throw new Error("the key drew no kbd");
+    }
+
+    expect(getComputedStyle(chip).backgroundColor).toBe(
+      resolvedColour("--color-on-accent", "backgroundColor"),
+    );
+    expect(drawnContrast(chip)).toBeGreaterThanOrEqual(AA_TEXT);
+  },
+);

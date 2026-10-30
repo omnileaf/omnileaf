@@ -2,9 +2,10 @@
   import { Tooltip as TooltipPrimitive } from "bits-ui";
 
   import { LongPress } from "#lib/components/long-press.ts";
-  import { Kbd } from "#lib/components/ui/kbd/index.ts";
+  import { Kbd, WINDOWS_PLAIN_KEY } from "#lib/components/ui/kbd/index.ts";
 
   const LONG_PRESS_MS = 500;
+  const TOOLTIP_KEY = `bg-tooltip-key text-on-tooltip-key ${WINDOWS_PLAIN_KEY}`;
   const TRIGGER_GAP_PX = 4;
   const SCREEN_EDGE_GAP_PX = 8;
 
@@ -90,7 +91,7 @@
       >
         <span>{label}</span>
         {#each keys ?? [] as key (key)}
-          <Kbd class="bg-tooltip-key text-on-tooltip-key">{key}</Kbd>
+          <Kbd class={TOOLTIP_KEY}>{key}</Kbd>
         {/each}
         <TooltipPrimitive.Arrow
           class="text-tooltip macos:hidden windows:hidden"
