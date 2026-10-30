@@ -77,6 +77,7 @@
     --native-color-nav-item-hover: Highlight;
     --native-color-nav-item-pressed: Highlight;
     --native-color-nav-item-selected: Highlight;
+    --native-color-on-nav-item: HighlightText;
     --native-color-nav-indicator: HighlightText;
     --native-color-info-bar: Canvas;
     --native-color-info-bar-success: Canvas;
@@ -95,15 +96,6 @@
   :root[data-platform="windows"] [data-slot="item"][data-picked],
   :root[data-platform="windows"]
     [data-slot="item"]:active:not([aria-disabled="true"]) {
-    color: HighlightText;
-  }
-
-  :root[data-platform="windows"] nav li [aria-current],
-  :root[data-platform="windows"] nav li [aria-expanded="true"],
-  :root[data-platform="windows"] nav li a:hover,
-  :root[data-platform="windows"] nav li a:active,
-  :root[data-platform="windows"] nav li button:hover,
-  :root[data-platform="windows"] nav li button:active {
     color: HighlightText;
   }
 

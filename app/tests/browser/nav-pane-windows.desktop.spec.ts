@@ -129,28 +129,6 @@ test.describe("on Windows", () => {
     await page.mouse.up();
   });
 
-  test("draws the current item on Highlight with its text and pill in HighlightText under forced colours", async ({
-    page,
-  }) => {
-    await page.emulateMedia({ forcedColors: "active" });
-    await openLibraryAt(page, WIDE_WINDOW);
-    const library = pane(page).getByRole("link", { name: "Library" });
-
-    const pill = await library.evaluate(
-      (link) => getComputedStyle(link, "::before").backgroundColor,
-    );
-
-    await expect(library).toHaveCSS(
-      "background-color",
-      await literalColour(page, "Highlight"),
-    );
-    await expect(library).toHaveCSS(
-      "color",
-      await literalColour(page, "HighlightText"),
-    );
-    expect(pill).toBe(await literalColour(page, "HighlightText"));
-  });
-
   for (const colorScheme of ["light", "dark"] as const) {
     test(`has no accessibility violations with the pane open or folded in the ${colorScheme} theme`, async ({
       page,

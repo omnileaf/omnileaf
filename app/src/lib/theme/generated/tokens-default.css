@@ -91,6 +91,7 @@
   --native-color-nav-item-hover: var(--sidebar-accent);
   --native-color-nav-item-pressed: var(--sidebar-accent);
   --native-color-nav-item-selected: var(--sidebar-selection);
+  --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
   --native-color-grouped-ground: var(--background);
   --native-color-group: var(--card);

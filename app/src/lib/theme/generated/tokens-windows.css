@@ -83,6 +83,7 @@
   --native-color-nav-item-hover: #00000009;
   --native-color-nav-item-pressed: #00000006;
   --native-color-nav-item-selected: #00000009;
+  --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
   --native-color-grouped-ground: #ffffff80;
   --native-color-group: #ffffffb3;
@@ -182,6 +183,7 @@
   --native-color-nav-item-hover: #ffffff0f;
   --native-color-nav-item-pressed: #ffffff0a;
   --native-color-nav-item-selected: #ffffff0f;
+  --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
   --native-color-grouped-ground: #3a3a3a4c;
   --native-color-group: #ffffff0d;

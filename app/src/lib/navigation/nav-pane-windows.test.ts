@@ -264,7 +264,7 @@ for (const theme of ["light", "dark"] as const) {
     const ratios = [
       [
         "text",
-        contrastOver("--sidebar-foreground", selected),
+        contrastOver("on-nav-item", selected),
         LEAST_TEXT_CONTRAST,
       ],
       ["pill", contrastOver("nav-indicator", selected), LEAST_GRAPHIC_CONTRAST],

@@ -175,7 +175,7 @@
                 look.tab,
                 isSelected
                   ? "font-bold text-accent expanded:bg-accent-soft windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-native-nav-indicator windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop-shell:bg-sidebar-selection desktop-shell:font-medium desktop-shell:text-on-sidebar-selection"
-                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent windows:desktop-shell:active:bg-native-nav-item-pressed",
+                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent windows:desktop-shell:active:bg-native-nav-item-pressed windows:desktop-shell:active:text-on-sidebar-accent",
                 isSelected ? look.currentTab : look.otherTab,
               ]}
             >
