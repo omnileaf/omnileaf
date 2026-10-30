@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::vendor::LIBARCHIVE_VERSION;
 
-const LIBARCHIVE_LICENCE: &str = "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0";
+const LIBARCHIVE_LICENCE: &str =
+    "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0 AND Unicode-3.0";
 const LIBARCHIVE_TEXTS: &[(&str, &str)] = &[
     (
         "COPYING",
@@ -365,7 +366,7 @@ mod tests {
         assert_eq!(libarchive.version, "3.8.10");
         assert_eq!(
             libarchive.licence,
-            "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0"
+            "BSD-2-Clause AND BSD-3-Clause AND ISC AND PostgreSQL AND CC0-1.0 AND Unicode-3.0"
         );
     }
 
@@ -401,6 +402,7 @@ mod tests {
             "PostgreSQL Global Development Group",
             "Samuel Neves",
             "Igor Pavlov",
+            "Unicode, Inc.",
         ] {
             assert!(texts[1].text.contains(holder), "{holder}");
         }
