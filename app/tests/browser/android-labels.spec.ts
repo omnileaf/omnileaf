@@ -106,6 +106,29 @@ test.describe(
       }
     });
 
+    test("sets each category as a 16px row with its checkbox at the end and no rule between rows", async ({
+      page,
+    }) => {
+      const sheet = await openLabels(page);
+      const title = sheet.getByText("Reading", { exact: true });
+      const box = sheet.getByRole("checkbox", { name: "Reading" });
+
+      const sheetBox = await boxOf(sheet);
+      const boxBox = await boxOf(box);
+
+      await expect(title).toHaveCSS("font-size", "16px");
+      await expect(title).toHaveCSS("line-height", "24px");
+      expect((await boxOf(title)).x - sheetBox.x).toBeCloseTo(16, 0);
+      expect(
+        sheetBox.x + sheetBox.width - (boxBox.x + boxBox.width),
+      ).toBeLessThanOrEqual(32);
+      expect(boxBox.x).toBeGreaterThan(sheetBox.x + sheetBox.width / 2);
+      await expect(box.locator("xpath=../..")).toHaveCSS(
+        "border-top-width",
+        "0px",
+      );
+    });
+
     test("ends the sheet with one full-width Done button 56px tall, 16px from the foot", async ({
       page,
     }) => {

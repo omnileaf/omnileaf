@@ -49,6 +49,20 @@
 
   const android = new AndroidPhone();
   const count = $derived(series.length);
+  const ANDROID_ROW =
+    "flex min-block-native-row flex-row-reverse items-center justify-between gap-lg py-native-row-block ps-lg pe-xl";
+  const ANDROID_TITLE =
+    "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
+
+  function rowClass(view: string): string {
+    return android.isOn && view !== "wide"
+      ? ANDROID_ROW
+      : "flex items-center gap-md py-sm";
+  }
+
+  function titleClass(view: string): string {
+    return android.isOn && view !== "wide" ? ANDROID_TITLE : "text-body";
+  }
   const tagsShown = $derived([
     ...(labels?.tags ?? []).filter(({ tag }) => !tagsRemoved.includes(tag)),
     ...tagsAdded.map((tag) => ({ tag, holding: count })),
@@ -194,10 +208,15 @@
           >
             {m.library_categories()}
           </h3>
-          <div class="flex flex-col divide-y divide-border">
+          <div
+            class={[
+              "flex flex-col",
+              !(android.isOn && view !== "wide") && "divide-y divide-border",
+            ]}
+          >
             {#each labels?.categories ?? [] as { category, holding } (category.id)}
               {@const choice = choices[category.id] ?? "none"}
-              <label class="flex items-center gap-md py-sm">
+              <label class={rowClass(view)}>
                 <Checkbox
                   bind:checked={
                     () => choice === "all",
@@ -210,10 +229,14 @@
                     ? `${category.name} ${m.library_in_some({ holding, count })}`
                     : category.name}
                 />
-                <span class="flex flex-col">
-                  <span class="text-body">{category.name}</span>
+                <span class="flex flex-1 flex-col">
+                  <span class={titleClass(view)}>{category.name}</span>
                   {#if choice === "some"}
-                    <span class="text-detail text-muted">
+                    <span
+                      class={android.isOn && view !== "wide"
+                        ? `${ROW_SUBTITLE_TYPE} text-muted`
+                        : "text-detail text-muted"}
+                    >
                       {m.library_in_some({ holding, count })}
                     </span>
                   {/if}
@@ -221,7 +244,7 @@
               </label>
             {/each}
             {#each created as name (name)}
-              <label class="flex items-center gap-md py-sm">
+              <label class={rowClass(view)}>
                 <Checkbox
                   bind:checked={
                     () => true,
@@ -231,7 +254,7 @@
                   }
                   aria-label={name}
                 />
-                <span class="text-body">{name}</span>
+                <span class={["flex-1", titleClass(view)]}>{name}</span>
               </label>
             {/each}
           </div>
