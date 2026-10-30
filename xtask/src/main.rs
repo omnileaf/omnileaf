@@ -28,6 +28,7 @@ mod sample;
 mod screenshot;
 mod test_device;
 mod vendor;
+mod vendor_manifest;
 mod workspace;
 
 use std::{
