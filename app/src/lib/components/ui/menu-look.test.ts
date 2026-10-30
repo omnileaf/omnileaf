@@ -245,3 +245,121 @@ test("keeps today's menu on an Android tablet", async () => {
   expect(style(item("Mark read")).borderTopLeftRadius).toBe("0px");
   expect(style(radio("Grid")).backgroundColor).toBe("rgba(0, 0, 0, 0)");
 });
+
+const DESKTOP_WINDOW = { width: 1280, height: 800 };
+
+interface WindowsMenuLook {
+  readonly flyout: string;
+  readonly edge: string;
+  readonly lift: string;
+  readonly ink: string;
+  readonly hover: string;
+  readonly muted: string;
+}
+
+const WINDOWS_MENUS = {
+  light: {
+    flyout: "rgba(252, 252, 252, 0.85)",
+    edge: "rgba(0, 0, 0, 0.06)",
+    lift: "rgba(0, 0, 0, 0.14) 0px 8px 16px 0px",
+    ink: "rgba(0, 0, 0, 0.894)",
+    hover: "rgba(0, 0, 0, 0.035)",
+    muted: "rgba(0, 0, 0, 0.62)",
+  },
+  dark: {
+    flyout: "rgba(44, 44, 44, 0.96)",
+    edge: "rgba(0, 0, 0, 0.2)",
+    lift: "rgba(0, 0, 0, 0.26) 0px 8px 16px 0px",
+    ink: "rgb(255, 255, 255)",
+    hover: "rgba(255, 255, 255, 0.06)",
+    muted: "rgba(255, 255, 255, 0.773)",
+  },
+} as const satisfies Record<"light" | "dark", WindowsMenuLook>;
+
+for (const [theme, look] of Object.entries(WINDOWS_MENUS)) {
+  test(`draws Windows's MenuFlyout in the ${theme} theme on acrylic with an 8 corner, a flyout edge and lift`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+
+    const menu = await openMenuOn("windows", theme);
+
+    expect(style(menu).backgroundColor).toBe(look.flyout);
+    expect(style(menu).borderTopColor).toBe(look.edge);
+    expect(style(menu).borderTopWidth).toBe("1px");
+    expect(style(menu).borderTopLeftRadius).toBe("8px");
+    expect(style(menu).boxShadow).toContain(look.lift);
+    expect(style(item("Mark read")).color).toBe(look.ink);
+  });
+
+  test(`lights a Windows menu item in the ${theme} theme's subtle fill and keeps its words at full strength`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    await openMenuOn("windows", theme);
+
+    await userEvent.hover(page.getByRole("menuitem", { name: "Rename" }));
+
+    await expect
+      .poll(() => style(item("Rename")).backgroundColor)
+      .toBe(look.hover);
+    expect(style(item("Rename")).color).toBe(look.ink);
+  });
+
+  test(`trails a Windows menu item's accelerator in muted caption text in the ${theme} theme`, async () => {
+    await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+    await openMenuOn("windows", theme);
+    const remove = item("Delete");
+    const accelerator = remove.querySelector("kbd");
+    if (accelerator === null) {
+      throw new Error("the Delete item drew no accelerator");
+    }
+
+    const keyStyle = style(accelerator);
+
+    expect(keyStyle.color).toBe(look.muted);
+    expect(keyStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(keyStyle.fontSize).toBe("12px");
+    expect(keyStyle.fontWeight).toBe("400");
+    expect(keyStyle.paddingInlineStart).toBe("24px");
+    expect(accelerator.getBoundingClientRect().right).toBeCloseTo(
+      remove.getBoundingClientRect().right - 11,
+      0,
+    );
+  });
+}
+
+test("insets Windows's menu items 4 from the flyout's sides, 2 apart, with 4 corners", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+
+  const menu = await openMenuOn("windows", "light");
+  const markRead = item("Mark read");
+
+  expect(style(menu).padding).toBe("2px 0px");
+  expect(style(markRead).margin).toBe("2px 4px");
+  expect(style(markRead).paddingInline).toBe("11px");
+  expect(style(markRead).borderTopLeftRadius).toBe("4px");
+  expect(style(markRead).fontSize).toBe("14px");
+  expect(markRead.getBoundingClientRect().height).toBeCloseTo(32, 0);
+});
+
+test("draws a Windows menu's destructive item in plain text, as WinUI's menus have no red", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+
+  await openMenuOn("windows", "light");
+
+  expect(style(item("Delete")).color).toBe(WINDOWS_MENUS.light.ink);
+});
+
+test("runs Windows's menu rules edge to edge, 1 above and below, and leads a chosen item's check", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+
+  const menu = await openMenuOn("windows", "light");
+  const [rule] = rules(menu);
+  const grid = radio("Grid");
+
+  expect(rule && style(rule).marginInline).toBe("0px");
+  expect(rule && style(rule).marginBlock).toBe("1px");
+  expect(rule && style(rule).borderTopColor).toBe(WINDOWS_MENUS.light.edge);
+  expect(checkOf(grid).getBoundingClientRect().left).toBeLessThan(
+    page.getByText("Grid").element().getBoundingClientRect().left,
+  );
+  expect(style(checkOf(radio("List"))).visibility).toBe("hidden");
+  expect(style(grid).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+});

@@ -59,7 +59,7 @@ const LOOKS: readonly PlatformLook[] = [
   },
   {
     platform: "windows",
-    menu: "--windows-flyout",
+    menu: "--native-color-menu",
     menuCorner: "8px",
     tooltip: "--windows-flyout",
     switchOn: "#2f6f4f",

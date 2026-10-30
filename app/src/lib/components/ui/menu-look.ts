@@ -35,6 +35,17 @@ const NATIVE_LOOK: MenuLook = {
   rule: "max-medium:mx-native-menu-rule-inline max-medium:my-native-menu-rule-block max-medium:border-native-menu-rule",
 };
 
+const WINDOWS_LOOK: MenuLook = {
+  surface:
+    "rounded-native-menu border-native-menu-edge bg-native-menu px-native-menu-inline py-native-menu-block text-native-on-menu shadow-native-menu-lift",
+  item: "mx-xs my-2xs gap-md rounded-native-menu-item px-native-menu-item-inline font-regular text-native-on-menu min-block-native-menu-item active:bg-native-row-pressed data-disabled:text-native-on-menu-disabled data-highlighted:bg-native-menu-item-hover data-highlighted:text-native-on-menu [&>[data-slot=kbd]]:ms-auto [&>[data-slot=kbd]]:ps-xl",
+  dangerItem: "text-native-on-menu data-highlighted:text-native-on-menu",
+  chosenItem: "",
+  check: "order-first",
+  uncheckedCheck: "",
+  rule: "mx-native-menu-rule-inline my-native-menu-rule-block border-native-menu-rule",
+};
+
 const MENU_LOOKS = {
   ios: {
     ...NATIVE_LOOK,
@@ -43,7 +54,7 @@ const MENU_LOOKS = {
   android: { ...NATIVE_LOOK, uncheckedCheck: "max-medium:hidden" },
   linux: TODAYS_LOOK,
   macos: TODAYS_LOOK,
-  windows: TODAYS_LOOK,
+  windows: WINDOWS_LOOK,
 } satisfies Record<Platform, MenuLook>;
 
 export function menuLook(platform: Platform): MenuLook {

@@ -39,10 +39,10 @@ const MENUS: readonly MenuLook[] = [
   },
   {
     platform: "windows",
-    menuPadding: "4px",
+    menuPadding: "2px 0px",
     itemHeight: 32,
     itemCorner: "4px",
-    itemInline: "12px",
+    itemInline: "11px",
   },
 ];
 
