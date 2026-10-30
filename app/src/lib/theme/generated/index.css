@@ -206,6 +206,7 @@
   --color-native-on-jump-current: var(--native-color-on-jump-current);
   --color-native-jump-current-progress-rest: var(--native-color-jump-current-progress-rest);
   --color-native-on-tab: var(--native-color-on-tab);
+  --color-native-on-tab-hover: var(--native-color-on-tab-hover);
   --color-native-on-tab-current: var(--native-color-on-tab-current);
   --color-native-on-tab-pill: var(--native-color-on-tab-pill);
   --spacing-native-tab-bar: var(--native-spacing-tab-bar);
@@ -374,6 +375,8 @@
   --font-weight-native-tab-label: var(--native-weight-tab-label);
   --tracking-native-tab-label: var(--native-tracking-tab-label);
   --spacing-native-tab-min: var(--native-spacing-tab-min);
+  --spacing-native-tab-block-start: var(--native-spacing-tab-block-start);
+  --spacing-native-tab-block-end: var(--native-spacing-tab-block-end);
   --spacing-native-tab-indicator: var(--native-spacing-tab-indicator);
   --radius-native-tab-indicator: var(--native-radius-tab-indicator);
   --color-native-tab-indicator: var(--native-color-tab-indicator);

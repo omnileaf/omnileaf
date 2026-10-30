@@ -201,6 +201,7 @@
   --native-color-on-jump-current: var(--color-accent);
   --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: var(--muted-foreground);
+  --native-color-on-tab-hover: var(--muted-foreground);
   --native-color-on-tab-current: var(--color-accent);
   --native-color-on-tab-pill: var(--color-accent);
   --native-spacing-tab-bar: var(--spacing-floating-bar);
@@ -369,6 +370,8 @@
   --native-weight-tab-label: 500;
   --native-tracking-tab-label: 0;
   --native-spacing-tab-min: 0px;
+  --native-spacing-tab-block-start: 0px;
+  --native-spacing-tab-block-end: 0px;
   --native-spacing-tab-indicator: var(--spacing-2xs);
   --native-radius-tab-indicator: 9999px;
   --native-color-tab-indicator: var(--foreground);

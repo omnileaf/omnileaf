@@ -461,6 +461,8 @@ export const TOKEN_THEME = {
     "native-tab-bar",
     "native-tab-bar-inline",
     "native-tab-bar-inset",
+    "native-tab-block-end",
+    "native-tab-block-start",
     "native-tab-cell",
     "native-tab-indicator",
     "native-tab-min",

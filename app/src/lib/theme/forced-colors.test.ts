@@ -209,6 +209,13 @@ test("keeps Windows's indeterminate bar trackless under forced colours, as the c
   expect(mapped.get("--native-color-progress-fill")).toBe("Highlight");
 });
 
+test("sets Windows's SelectorBar text and its chosen pill in CanvasText", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  expect(mapped.get("--native-color-on-tab")).toBe("CanvasText");
+  expect(mapped.get("--native-color-on-tab-hover")).toBe("CanvasText");
+});
+
 test("keeps the plain button's hover and pressed tints off Highlight, which would put CanvasText on it", () => {
   const mapped = new Map(declarations(forcedColors));
 

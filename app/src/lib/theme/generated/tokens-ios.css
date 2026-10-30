@@ -143,6 +143,7 @@
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;
   --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
+  --native-color-on-tab-hover: var(--muted-foreground);
   --native-spacing-tab-bar: 62px;
   --native-spacing-tab-bar-inset: 4px;
   --native-spacing-tab-bar-inline: 10px;
@@ -286,6 +287,8 @@
   --native-weight-tab-label: 500;
   --native-tracking-tab-label: 0;
   --native-spacing-tab-min: 0px;
+  --native-spacing-tab-block-start: 0px;
+  --native-spacing-tab-block-end: 0px;
   --native-spacing-tab-indicator: var(--spacing-2xs);
   --native-radius-tab-indicator: 9999px;
   --native-color-tab-indicator: var(--foreground);
