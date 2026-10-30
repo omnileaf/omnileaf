@@ -9,6 +9,8 @@ pub(crate) use android::plugin;
 const SETTINGS_URL: &str = "x-apple.systempreferences:com.apple.preference.security?Privacy";
 #[cfg(windows)]
 const SETTINGS_URL: &str = "ms-settings:privacy";
+#[cfg(windows)]
+const COLOUR_SETTINGS_URL: &str = "ms-settings:colors";
 /// iOS opens the app's own page of Settings for `UIApplication.openSettingsURLString`.
 #[cfg(target_os = "ios")]
 const SETTINGS_URL: &str = "app-settings:";
@@ -21,6 +23,12 @@ pub(crate) enum SystemSettingsError {
     )]
     #[error("Linux desktops have no one settings app to open")]
     NoSettingsApp,
+    #[cfg_attr(
+        windows,
+        expect(dead_code, reason = "only Windows has a page of colour settings")
+    )]
+    #[error("only Windows has a page of colour settings to open")]
+    NoColourSettings,
     #[cfg(any(target_os = "macos", windows, target_os = "ios"))]
     #[error("open the system's settings")]
     Opener(#[from] tauri_plugin_opener::Error),
@@ -42,6 +50,16 @@ pub(crate) fn open<R: Runtime>(app: &AppHandle<R>) -> Result<(), SystemSettingsE
 #[cfg(target_os = "linux")]
 pub(crate) fn open<R: Runtime>(_app: &AppHandle<R>) -> Result<(), SystemSettingsError> {
     Err(SystemSettingsError::NoSettingsApp)
+}
+
+#[cfg(windows)]
+pub(crate) fn open_colours<R: Runtime>(app: &AppHandle<R>) -> Result<(), SystemSettingsError> {
+    Ok(app.opener().open_url(COLOUR_SETTINGS_URL, None::<&str>)?)
+}
+
+#[cfg(not(windows))]
+pub(crate) fn open_colours<R: Runtime>(_app: &AppHandle<R>) -> Result<(), SystemSettingsError> {
+    Err(SystemSettingsError::NoColourSettings)
 }
 
 #[cfg(target_os = "android")]
@@ -97,5 +115,14 @@ mod tests {
         let opened = open(app.handle());
 
         assert!(matches!(opened, Err(SystemSettingsError::NoSettingsApp)));
+    }
+
+    #[test]
+    fn has_no_colour_settings_to_open_off_windows() {
+        let app = tauri::test::mock_app();
+
+        let opened = open_colours(app.handle());
+
+        assert!(matches!(opened, Err(SystemSettingsError::NoColourSettings)));
     }
 }

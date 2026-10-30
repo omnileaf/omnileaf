@@ -226,6 +226,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
   wallpaperColours: () => null,
+  accentColours: () => null,
   captureVolumeKeys: () => null,
   releaseVolumeKeys: () => null,
   copyVersionDetails: () => null,
@@ -267,6 +268,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   showIconActions: () => null,
   watchIconActions: () => null,
   openSystemSettings: () => null,
+  openColourSettings: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };

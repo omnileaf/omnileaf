@@ -49,7 +49,7 @@ use crate::{
     tray::{TrayItemChosen, TrayMenu},
     version_details,
     volume_keys::{self, PageTurn},
-    wallpaper_colours::{self, WallpaperColours},
+    wallpaper_colours::{self, AccentColours, WallpaperColours},
 };
 
 macro_rules! app_commands {
@@ -67,6 +67,7 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             wallpaper_colours,
+            accent_colours,
             capture_volume_keys,
             release_volume_keys,
             library_folders,
@@ -189,6 +190,7 @@ macro_rules! app_commands {
             show_icon_actions,
             watch_icon_actions,
             open_system_settings,
+            open_colour_settings,
             $($development_only),*
         ]
     };
@@ -449,6 +451,12 @@ async fn watch_system_contrast(
 #[specta::specta]
 async fn wallpaper_colours(app: AppHandle) -> Result<Option<WallpaperColours>, IpcError> {
     wallpaper_colours::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+fn accent_colours() -> Option<AccentColours> {
+    wallpaper_colours::read_accent()
 }
 
 #[tauri::command]
@@ -1451,6 +1459,13 @@ async fn watch_icon_actions(
 #[specta::specta]
 async fn open_system_settings(app: AppHandle) -> Result<(), IpcError> {
     system_settings::open(&app).map_err(|error| IpcError::system_settings_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_colour_settings(app: AppHandle) -> Result<(), IpcError> {
+    system_settings::open_colours(&app)
+        .map_err(|error| IpcError::system_settings_unavailable(&error))
 }
 
 #[tauri::command]
