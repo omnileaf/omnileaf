@@ -582,6 +582,17 @@
   --windows-accent-ink: var(--windows-accent-text-dark);
 }
 
+[data-platform="windows"][data-backdrop="mica"],
+[data-platform="windows"][data-backdrop="mica"] [data-theme] {
+  --sidebar: transparent;
+}
+
+[data-platform="windows"][data-backdrop="mica"] body:has(nav ~ main) {
+  @variant desktop-shell {
+    background-color: transparent;
+  }
+}
+
 [data-platform="linux"],
 [data-platform="linux"] [data-theme] {
   --background: var(--linux-background);
