@@ -22,6 +22,8 @@ const SETTINGS_KEY = "omnileaf.readerSettings.all";
 const COMMAND_BUTTON = { width: 68, height: 64 };
 const MORE_WIDTH = 48;
 const BAR_EDGE = 1;
+const RING_ROOM = 4;
+const NO_FILL = /^rgba\(\d+, \d+, \d+, 0\)$/;
 const SLIDER_HEIGHT = 32;
 const THUMB = 18;
 
@@ -60,13 +62,29 @@ async function openBook(
 }
 
 function bottomBar(page: Page): Locator {
-  return page
-    .getByRole("slider")
-    .locator("xpath=ancestor::div[contains(@class,'flex-col')][1]");
+  return page.locator('[data-reader-bar="bottom"]');
 }
 
 function topBar(page: Page): Locator {
-  return page.locator("main header > div").first();
+  return page.locator('[data-reader-bar="top"]');
+}
+
+async function systemColour(page: Page, keyword: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("span");
+    probe.style.color = name;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  }, keyword);
+}
+
+function layerOf(button: Locator): Promise<{ fill: string; outline: string }> {
+  return button.evaluate((element) => {
+    const layer = getComputedStyle(element, "::before");
+    return { fill: layer.backgroundColor, outline: layer.outlineStyle };
+  });
 }
 
 for (const [scheme, theme] of Object.entries(THEMES)) {
@@ -83,7 +101,7 @@ for (const [scheme, theme] of Object.entries(THEMES)) {
       expect(bar.x).toBe(0);
       expect(bar.y).toBe(0);
       expect(bar.width).toBe(viewportOf(page).width);
-      expect(bar.height).toBe(COMMAND_BUTTON.height + BAR_EDGE);
+      expect(bar.height).toBe(COMMAND_BUTTON.height + RING_ROOM + BAR_EDGE);
       await expect(topBar(page)).toHaveCSS("background-color", theme.bar);
     });
 
@@ -128,7 +146,7 @@ for (const [scheme, theme] of Object.entries(THEMES)) {
       ).toBe(MORE_WIDTH);
     });
 
-    test("keeps a hovered command and a switched on one visible in forced colours", async ({
+    test("paints a switched on command in Highlight and an off one with no fill in forced colours", async ({
       page,
     }) => {
       await page.emulateMedia({
@@ -136,31 +154,54 @@ for (const [scheme, theme] of Object.entries(THEMES)) {
         forcedColors: "active",
       });
       const twoPages = page.getByRole("button", { name: "Two pages" });
-      const settings = page.getByRole("button", { name: "Reading settings" });
+      const fitHeight = page.getByRole("button", { name: "Fit height" });
+      const highlight = await systemColour(page, "Highlight");
+      const highlightText = await systemColour(page, "HighlightText");
 
       await twoPages.click();
+      await page.mouse.move(0, 400);
+
+      await expect
+        .poll(async () => (await layerOf(twoPages)).fill)
+        .toBe(highlight);
+      await expect(twoPages).toHaveCSS("color", highlightText);
+      expect((await layerOf(fitHeight)).fill).toMatch(NO_FILL);
+    });
+
+    test("outlines a hovered command in forced colours, where its tint would vanish", async ({
+      page,
+    }) => {
+      await page.emulateMedia({
+        colorScheme: scheme as "light" | "dark",
+        forcedColors: "active",
+      });
+      const settings = page.getByRole("button", { name: "Reading settings" });
+
+      await page.mouse.move(0, 400);
+      expect((await layerOf(settings)).outline).toBe("none");
       await settings.hover();
 
       await expect
-        .poll(() =>
-          twoPages.evaluate((element) => {
-            const layer = getComputedStyle(element, "::before");
-            const text = getComputedStyle(element).color;
-            return layer.backgroundColor !== text;
-          }),
-        )
-        .toBe(true);
-      await expect
-        .poll(() =>
-          settings.evaluate((element) => {
-            const layer = getComputedStyle(element, "::before");
-            return layer.outlineStyle;
-          }),
-        )
+        .poll(async () => (await layerOf(settings)).outline)
         .toBe("solid");
     });
 
-    test("opens the reading settings as a flyout pane on acrylic with a 4 cornered close button", async ({
+    test("leaves a command that is not available without a hover outline in forced colours", async ({
+      page,
+    }) => {
+      await page.emulateMedia({
+        colorScheme: scheme as "light" | "dark",
+        forcedColors: "active",
+      });
+      const bookmark = page.getByRole("button", { name: "Bookmark this page" });
+
+      await expect(bookmark).toHaveAttribute("aria-disabled", "true");
+      await bookmark.hover();
+
+      expect((await layerOf(bookmark)).outline).toBe("none");
+    });
+
+    test("opens the reading settings as a flyout pane on acrylic with a 48 wide close button", async ({
       page,
     }) => {
       await page.getByRole("button", { name: "Reading settings" }).click();
@@ -220,5 +261,59 @@ test.describe("in a window narrower than the wide layout", () => {
     await expect(pane).toHaveCSS("background-color", THEMES.dark.bar);
     await expect(pane).toHaveCSS("border-top-left-radius", "8px");
     await expect(page.getByRole("dialog")).toBeHidden();
+  });
+
+  test("keeps the pane clear of the bottom bar's controls", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Reading settings" }).click();
+    const pane = page.getByRole("complementary");
+
+    await expect(pane).toBeVisible();
+    await settle(pane);
+
+    const paneEdge = (await boxOf(pane)).x;
+
+    await expect
+      .poll(async () => {
+        const bar = await boxOf(bottomBar(page));
+        return bar.x + bar.width;
+      })
+      .toBeLessThanOrEqual(paneEdge);
+  });
+
+  for (const [name, opener, closer] of [
+    ["reading settings", "Reading settings", "Close reading settings"],
+    ["Jump to a book", /Jump to a book/, "Close Jump to a book"],
+  ] as const) {
+    test(`moves focus into the ${name} pane and gives it back to the opener on Escape`, async ({
+      page,
+    }) => {
+      const button = page.getByRole("button", { name: opener }).first();
+
+      await button.click();
+      const pane = page.getByRole("complementary");
+      await expect(pane).toBeVisible();
+
+      await expect(pane.getByRole("button", { name: closer })).toBeFocused();
+      await page.keyboard.press("Escape");
+
+      await expect(pane).toBeHidden();
+      await expect(button).toBeFocused();
+    });
+  }
+
+  test("leaves the page and bottom bar out of reach while the pane covers the window", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 500, height: 600 });
+    await page.getByRole("button", { name: "Reading settings" }).click();
+    await expect(page.getByRole("complementary")).toBeVisible();
+
+    expect(
+      await bottomBar(page).evaluate(
+        (element) => element.closest("[inert]") !== null,
+      ),
+    ).toBe(true);
   });
 });
