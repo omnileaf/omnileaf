@@ -57,12 +57,13 @@ pub(crate) fn spelling_suggestion(
     if text.chars().count() > usize::from(LibrarySearch::MAX_CHARS) {
         return Ok(None);
     }
-    let hiding = adult.hiding();
-    if let Some(series_words) = closest_title_words(connection, text, hiding)? {
+    if let Some(series_words) = closest_title_words(connection, text, adult.hiding())? {
         return Ok(Some(SpellingSuggestion::of_series(series_words)));
     }
-    Ok(closest_chapter_title(connection, text, hiding)?
-        .map(|chapter| SpellingSuggestion::of_chapter(chapter, adult)))
+    Ok(
+        closest_chapter_title(connection, text, adult.hiding_every_hidden_adult_series())?
+            .map(|chapter| SpellingSuggestion::of_chapter(chapter, adult)),
+    )
 }
 
 pub(crate) enum StoredSearch {

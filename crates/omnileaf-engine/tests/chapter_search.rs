@@ -18,8 +18,9 @@ use std::fs;
 
 use books::write_book_with;
 use omnileaf_engine::{
-    ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource, Inclusion, Library,
-    LibraryError, LibraryFilter, LibraryListing, LibrarySearch, SeriesFormat, SpellingSuggestion,
+    AdultContent, AdultTreatment, ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource,
+    Inclusion, Library, LibraryError, LibraryFilter, LibraryListing, LibrarySearch, SeriesFormat,
+    SpellingSuggestion,
 };
 use support::{FixedClock, ScratchFolder};
 
@@ -469,5 +470,35 @@ async fn suggests_no_chapter_title_of_a_series_that_lost_all_its_books() {
     assert_eq!(
         (before, after),
         (Some(suggestion("dawn", Some(LANTERNS))), None)
+    );
+}
+
+fn adult_content(treatment: AdultTreatment) -> AdultContent {
+    AdultContent {
+        treatment,
+        counts_age_ratings: true,
+    }
+}
+
+#[tokio::test]
+async fn suggests_no_chapter_title_of_a_18_plus_series_the_library_hides() {
+    let shelf = Shelf::scanned("chapter-spelling-hidden").await;
+    shelf
+        .library
+        .set_adult_content(adult_content(AdultTreatment::Show))
+        .await
+        .unwrap();
+    let shown = suggested(&shelf, "moonlitt").await;
+
+    shelf
+        .library
+        .set_adult_content(adult_content(AdultTreatment::Hide))
+        .await
+        .unwrap();
+    let hidden = suggested(&shelf, "moonlitt").await;
+
+    assert_eq!(
+        (shown, hidden),
+        (Some(suggestion("moonlit", Some(FORBIDDEN))), None)
     );
 }
