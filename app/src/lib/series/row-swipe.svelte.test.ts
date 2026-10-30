@@ -77,3 +77,16 @@ test("opens a row on its action toward its start in right-to-left text", () => {
 
   expect(swipe.offsetOf("book")).toBe(112);
 });
+
+test("lets the next tap through once a swipe ended without a click", () => {
+  const swipe = new RowSwipe(() => true);
+  const target = narrowRow();
+  swipeFrom(swipe, target, -60);
+  swipe.pressed(finger("pointerdown", 0), "other", target);
+  swipe.released(CAPSULE);
+  const tap = new MouseEvent("click", { cancelable: true });
+
+  swipe.clicked(tap, "other");
+
+  expect(tap.defaultPrevented).toBe(false);
+});

@@ -85,6 +85,7 @@ export class RowSwipe {
     if (event.pointerType === "mouse") {
       return;
     }
+    this.#isClickSwallowed = false;
     this.#press = {
       key,
       x: event.clientX,
