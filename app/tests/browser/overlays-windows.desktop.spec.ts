@@ -193,6 +193,10 @@ test.describe("Windows overlays", () => {
           );
           await expect(tooltip(page)).toHaveCSS("padding", "6px 9px 8px");
           await expect(tooltip(page)).toHaveCSS("font-size", "12px");
+          await expect(tooltip(page)).toHaveCSS(
+            "backdrop-filter",
+            "blur(30px)",
+          );
         });
 
         test("has no accessibility violations with the ToolTip shown", async ({
@@ -224,6 +228,19 @@ test.describe("Windows overlays", () => {
           await expect(band).toHaveCSS("background-color", look.dialogBand);
           await expect(band).toHaveCSS("border-top-color", look.bandEdge);
           await expect(band).toHaveCSS("padding", "24px");
+        });
+
+        test("dims the window behind the ContentDialog and makes Cancel the default button for a destructive question", async ({
+          page,
+        }) => {
+          const dialog = await openRemoveBooks(page);
+
+          await expect(
+            page.locator("[data-dialog-overlay], [data-alert-dialog-overlay]"),
+          ).toHaveCSS("background-color", "rgba(0, 0, 0, 0.3)");
+          await expect(
+            dialog.getByRole("button", { name: "Cancel" }),
+          ).toBeFocused();
         });
 
         test("has no accessibility violations with the ContentDialog open", async ({
