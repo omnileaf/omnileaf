@@ -178,7 +178,7 @@
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
 
   $effect(() => {
-    onPickedCount?.(isPicking ? selection.count : undefined);
+    onPickedCount?.(selection.count > 0 ? selection.count : undefined);
     return () => {
       onPickedCount?.(undefined);
     };

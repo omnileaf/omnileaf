@@ -11,6 +11,7 @@ import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const WINDOW = { width: 1280, height: 800 };
 const BACK_SIZE = 24;
+const BACK_TO_TITLE_GAP = 8;
 const TITLE_TYPE = {
   fontSize: "13px",
   lineHeight: "16px",
@@ -85,6 +86,11 @@ test.describe("a series' title bar on macOS", () => {
     await openSeries(page);
 
     await expect(titleBar(page).getByText(SERIES_TITLE)).toBeVisible();
+    const back = await boxOf(
+      titleBar(page).getByRole("link", { name: "Back to the library" }),
+    );
+    const title = await boxOf(titleBar(page).locator("[data-title-bar-title]"));
+    expect(title.x - (back.x + back.width)).toBe(BACK_TO_TITLE_GAP);
     expect(await typeOf(page, "[data-title-bar-title]")).toEqual(TITLE_TYPE);
   });
 
