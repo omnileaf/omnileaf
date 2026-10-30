@@ -29,7 +29,6 @@ const CANDIDATES: &str = concat!(
     " ORDER BY series_fts.rowid LIMIT :limit"
 );
 
-/// The words of a title nearest the text by a few typing slips, their letter case folded, for a search that found nothing.
 #[tracing::instrument(skip_all)]
 pub fn closest_title_words(
     connection: &Connection,

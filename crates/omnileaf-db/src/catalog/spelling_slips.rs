@@ -13,7 +13,6 @@ const fn slips_allowed(chars: usize) -> usize {
     }
 }
 
-/// The run of as many words of the title as were typed that takes the fewest slips to reach, with that count.
 fn closest_words(typed: &[char], title: &str) -> Option<(usize, String)> {
     let typed_words = typed.split(|&char| char == ' ').count();
     let words: Vec<&str> = title.split(' ').collect();
@@ -27,7 +26,6 @@ fn closest_words(typed: &[char], title: &str) -> Option<(usize, String)> {
         .min_by_key(|(slips, _)| *slips)
 }
 
-/// Letters added, dropped, changed or swapped with the next, as optimal string alignment counts them.
 fn slips(from: &[char], to: &[char]) -> usize {
     let mut before_last: Vec<usize> = Vec::new();
     let mut last: Vec<usize> = (0..=to.len()).collect();

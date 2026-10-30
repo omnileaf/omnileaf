@@ -16,6 +16,7 @@ mod folder_group_series;
 pub(crate) mod folder_groups;
 mod folder_joins;
 mod folder_series;
+mod fts_terms;
 pub(crate) mod gathering;
 mod hidden_series;
 mod home_root;

@@ -2,7 +2,10 @@ use std::{cmp::Reverse, collections::HashSet};
 
 use rusqlite::{Connection, ToSql};
 
-use super::spelling_trigrams::{TRIGRAM_CHARS, any_of, quoted, typed_trigrams};
+use super::{
+    fts_terms::{any_of, quoted},
+    spelling_trigrams::{TRIGRAM_CHARS, typed_trigrams},
+};
 use crate::{Error, adult_content::AdultHiding};
 
 const COMMON_AT: usize = 50;
