@@ -5146,8 +5146,7 @@ checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
 [[package]]
 name = "tauri"
 version = "2.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c404ecf956ff241bf6b39dd688614724e1bf1f63255abb4fc46d1c40371672ea"
+source = "git+https://github.com/omnileaf/tauri?rev=162277dcecf51ea24345a8a6b344a93215e0b732#9285c8eeb4d8040a38867cfdd646ad27ebe3a3b3"
 dependencies = [
  "anyhow",
  "bytes",

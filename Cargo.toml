@@ -110,3 +110,7 @@ jpeg-encoder.opt-level = 3
 miniz_oxide.opt-level = 3
 omnileaf-imaging.opt-level = 3
 png.opt-level = 3
+
+# Lets the Android activity turn off Tauri's always-on back callback, so Android 16 plays its back-to-home preview; drop once a Tauri release includes https://github.com/omnileaf/tauri/commit/03c1073c191ac0dbfb99b8f5831bfb493a7e4176
+[patch.crates-io]
+tauri = { git = "https://github.com/omnileaf/tauri", rev = "162277dcecf51ea24345a8a6b344a93215e0b732" }
