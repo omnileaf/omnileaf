@@ -66,6 +66,9 @@
   --native-spacing-hairline: 0px;
   --native-spacing-row-rule-start: 0px;
   --native-spacing-row-rule-indent: 0px;
+  --native-spacing-row-lead: 0px;
+  --native-spacing-group-head-end: 0px;
+  --native-spacing-group-head-below: 0px;
   --native-text-row-title: calc(1rem * var(--text-scale));
   --native-leading-row-title: 1.5;
   --native-tracking-row-title: 0.5px;

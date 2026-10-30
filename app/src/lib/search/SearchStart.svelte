@@ -3,16 +3,13 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { filterWords } from "./condition-labels";
-  import { searchLook } from "./search-look";
+  import { startLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
-  const ROW_ICON_SIZE = 16;
   const TODAYS_WORD =
     "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
   const NATIVE_WORD =
@@ -21,11 +18,13 @@
   let {
     recent,
     nowMs,
+    isGrouped,
     onRun,
     onClear,
   }: {
     recent: readonly RecentSearch[];
     nowMs: number;
+    isGrouped: boolean;
     onRun: (text: string) => void;
     onClear: () => void;
   } = $props();
@@ -35,38 +34,37 @@
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
   const words = filterWords();
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const headingClass = $derived(searchLook(isNative).heading);
+  const look = $derived(startLook(isGrouped));
   const locale = getLocale();
 </script>
 
-<div class="flex flex-col gap-section-gap pbs-md large:gap-xl">
+<div class={look.body}>
   {#if recent.length > 0}
-    <section aria-labelledby={recentId} class="flex flex-col gap-xs">
-      <div class="flex items-center justify-between gap-sm">
-        <h2 id={recentId} class={headingClass}>{m.search_recent()}</h2>
-        <Button look="text" onclick={onClear}>
+    <section aria-labelledby={recentId} class={look.section}>
+      <div class={look.head}>
+        <h2 id={recentId} class={look.headingBesideAction}>
+          {m.search_recent()}
+        </h2>
+        <Button {...look.clear} onclick={onClear}>
           {m.search_recent_clear()}
         </Button>
       </div>
-      <ul class="flex flex-col divide-y divide-border">
+      <ul class={look.rows}>
         {#each recent as entry (entry.text)}
           <li>
             <button
               type="button"
-              class="flex items-center gap-md rounded-control py-md text-start transition-control inline-full hover:tint-hover active:tint-pressed"
+              class={look.row}
               onclick={() => {
                 onRun(entry.text);
               }}
             >
-              <RotateCcwClock
-                size={ROW_ICON_SIZE}
-                aria-hidden="true"
-                class="shrink-0 text-muted"
-              />
-              <span class="flex-1 truncate">{entry.text}</span>
+              <span data-slot="item-media" class={look.lead}>
+                <RotateCcwClock size={look.iconSize} aria-hidden="true" />
+              </span>
+              <span data-slot="item-title" class="flex-1 truncate"
+                >{entry.text}</span
+              >
               <span class="text-detail text-muted max-medium:hidden">
                 {searchedWhen(entry.atMs, nowMs, locale)}
               </span>
@@ -76,40 +74,38 @@
       </ul>
     </section>
   {/if}
-  <section aria-labelledby={byId} class="flex flex-col gap-xs">
-    <h2 id={byId} class={headingClass}>{m.search_by()}</h2>
-    <ul class="flex flex-col divide-y divide-border">
-      <li class="flex items-center gap-md py-md">
-        <BookOpen
-          size={ROW_ICON_SIZE}
-          aria-hidden="true"
-          class="shrink-0 text-muted"
-        />
-        <span class="flex-1">{m.search_by_title()}</span>
+  <section aria-labelledby={byId} class={look.section}>
+    <h2 id={byId} class={look.heading}>{m.search_by()}</h2>
+    <ul class={look.rows}>
+      <li class={look.staticRow}>
+        <span data-slot="item-media" class={look.lead}>
+          <BookOpen size={look.iconSize} aria-hidden="true" />
+        </span>
+        <span data-slot="item-title" class="flex-1">{m.search_by_title()}</span>
         <span class="text-detail text-muted max-medium:hidden">
           {m.search_by_title_example()}
         </span>
       </li>
     </ul>
   </section>
-  <section aria-labelledby={filterId} class="flex flex-col gap-sm">
-    <h2 id={filterId} class={headingClass}>{m.search_type_to_filter()}</h2>
-    {#if isNative}
-      <p class="text-detail text-muted">
+  <section aria-labelledby={filterId} class={look.filterSection}>
+    <h2 id={filterId} class={look.heading}>{m.search_type_to_filter()}</h2>
+    {#if isGrouped}
+      <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
       </p>
     {/if}
-    <ul class="flex flex-wrap gap-sm">
+    <ul class={look.filters}>
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
-          <code class={isNative ? NATIVE_WORD : TODAYS_WORD}>
+          <code class={isGrouped ? NATIVE_WORD : TODAYS_WORD}>
             {words[condition]}
           </code>
         </li>
       {/each}
     </ul>
-    {#if !isNative}
-      <p class="text-detail text-muted">
+    {#if !isGrouped}
+      <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
       </p>
     {/if}

@@ -35,8 +35,11 @@
   import {
     EXPANDED_QUERY,
     NARROW_POINTER_QUERY,
+    WindowWidth,
   } from "#lib/page/breakpoints.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { phoneOf } from "#lib/page/platform.ts";
+  import { GROUPED_GROUND } from "#lib/page/plates.ts";
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -101,6 +104,11 @@
   );
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
+  const width = new WindowWidth();
+  const isIPhone = $derived(
+    phoneOf(data.appInfo.platform, width.current) === "ios",
+  );
+  const isGroupedStart = $derived(isIPhone && !isLookingFor);
   /** The search as typed with its edges trimmed, so a space after the words changes nothing. */
   const searchKey = $derived(JSON.stringify(query.search));
   let answeredKey: string | undefined = $state();
@@ -306,9 +314,11 @@
   </PageToolbar>
 {/if}
 <div
+  data-ground={isGroupedStart ? "grouped" : undefined}
   class={[
     "flex flex-col gap-search-gap min-block-full",
     hasToolbar && "pbs-xl",
+    isGroupedStart && GROUPED_GROUND,
   ]}
 >
   <h1 class="sr-only">{m.search_title()}</h1>
@@ -351,6 +361,7 @@
     <SearchStart
       recent={recent.entries}
       nowMs={Date.now()}
+      isGrouped={isIPhone}
       onRun={type}
       onClear={() => {
         recent.clear();
