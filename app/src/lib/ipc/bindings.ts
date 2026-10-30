@@ -60,6 +60,7 @@ export const commands = {
 	writerlessSeries: (after: string & { readonly __brand: "SeriesCursor" } | null, listing: LibraryListing) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("writerless_series", { after, listing })),
 	writerlessSeriesCount: (filter: LibraryFilter) => typedError<number, IpcError>(__TAURI_INVOKE("writerless_series_count", { filter })),
 	librarySearch: (after: string & { readonly __brand: "SeriesCursor" } | null, search: LibrarySearch) => typedError<SeriesPage, IpcError>(__TAURI_INVOKE("library_search", { after, search })),
+	librarySearchChapters: (search: LibrarySearch, after: string & { readonly __brand: "ChapterCursor" } | null) => typedError<ChapterHitPage, IpcError>(__TAURI_INVOKE("library_search_chapters", { search, after })),
 	librarySearchCount: (search: LibrarySearch) => typedError<number, IpcError>(__TAURI_INVOKE("library_search_count", { search })),
 	seriesOverview: (id: string & { readonly __brand: "SeriesId" }) => typedError<SeriesOverview, IpcError>(__TAURI_INVOKE("series_overview", { id })),
 	seriesBooks: (id: string & { readonly __brand: "SeriesId" }, listing: SeriesBookListing, after: string & { readonly __brand: "BookCursor" } | null) => typedError<SeriesBookPage, IpcError>(__TAURI_INVOKE("series_books", { id, listing, after })),
@@ -297,6 +298,23 @@ export type CategoryHeld = {
 	category: LibraryCategory,
 	holding: number,
 };
+
+export type ChapterHit = {
+	series: string & { readonly __brand: "SeriesId" },
+	seriesTitle: string,
+	book: string & { readonly __brand: "BookId" },
+	position: number,
+	title: string,
+	matchedIn: ChapterTitleSource,
+};
+
+export type ChapterHitPage = {
+	hits: ChapterHit[],
+	next: string & { readonly __brand: "ChapterCursor" } | null,
+	count: number | null,
+};
+
+export type ChapterTitleSource = "fileName" | "comicInfo";
 
 export type ChosenHomeFolder = {
 	location: string,
