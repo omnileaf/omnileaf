@@ -61,6 +61,29 @@ mod unix {
 #[cfg(unix)]
 pub(crate) use unix::Utf8Locale;
 
+#[cfg(all(test, unix))]
+mod tests {
+    use super::Utf8Locale;
+
+    fn current_locale() -> libc::locale_t {
+        // SAFETY: a null locale only asks which locale the thread uses.
+        unsafe { libc::uselocale(std::ptr::null_mut()) }
+    }
+
+    #[test]
+    fn gives_the_thread_back_its_own_locale_after_a_call() {
+        let before = current_locale();
+
+        let during = {
+            let _locale = Utf8Locale::enter();
+            current_locale()
+        };
+
+        assert_ne!(during, before);
+        assert_eq!(current_locale(), before);
+    }
+}
+
 /// Windows builds of libarchive convert names through wide strings, so the locale needs no change.
 #[cfg(windows)]
 pub(crate) struct Utf8Locale;

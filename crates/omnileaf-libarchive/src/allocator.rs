@@ -69,7 +69,7 @@ impl Budget {
     }
 
     #[cfg(test)]
-    fn used_bytes(&self) -> usize {
+    pub(crate) fn used_bytes(&self) -> usize {
         self.used_bytes.load(Ordering::Relaxed)
     }
 

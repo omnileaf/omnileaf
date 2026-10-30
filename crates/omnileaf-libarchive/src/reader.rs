@@ -342,3 +342,44 @@ fn entry_of(entry: *mut ffi::ArchiveEntry) -> Result<Entry, Error> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use omnileaf_testkit::{ArchiveEntry, RarFormat, RarOptions, cbr};
+
+    use super::*;
+    use crate::DEFAULT_LIMIT_BYTES;
+
+    fn stored_rar5() -> Vec<u8> {
+        let entries = [ArchiveEntry {
+            name: "page.txt".to_owned(),
+            bytes: b"alpha".to_vec(),
+        }];
+        cbr(&entries, &RarOptions::of(RarFormat::RAR5)).unwrap_or_default()
+    }
+
+    #[test]
+    fn writes_an_error_message_without_allocating_once_the_budget_is_spent() {
+        let reader = Reader::open(Cursor::new(stored_rar5()), DEFAULT_LIMIT_BYTES);
+        let Ok(reader) = reader else {
+            panic!("the archive did not open");
+        };
+        let spent = Arc::new(Budget::new(0));
+        let _scope = Scope::enter(&spent);
+
+        // SAFETY: the archive is live, and the format takes exactly one NUL-terminated string.
+        unsafe {
+            ffi::archive_set_error(
+                reader.archive.as_ptr(),
+                0,
+                c"%s".as_ptr(),
+                c"Can't allocate memory for a filter descriptor".as_ptr(),
+            );
+        }
+
+        assert_eq!(spent.used_bytes(), 0);
+        assert!(!spent.is_exceeded());
+    }
+}
