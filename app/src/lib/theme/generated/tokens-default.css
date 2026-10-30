@@ -168,6 +168,14 @@
   --native-text-title-bar-status: var(--text-small);
   --native-leading-title-bar-status: var(--text-small--line-height);
   --native-weight-title-bar-status: var(--font-weight-medium);
+  --native-text-series-title: var(--text-series-title);
+  --native-leading-series-title: var(--text-series-title--line-height);
+  --native-tracking-series-title: var(--tracking-tight);
+  --native-text-series-meta: var(--text-small);
+  --native-leading-series-meta: var(--text-small--line-height);
+  --native-text-series-path: var(--text-caption);
+  --native-leading-series-path: var(--text-caption--line-height);
+  --native-shadow-series-cover: var(--shadow-series-cover);
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
   --native-spacing-reader-bar-end: 0px;
