@@ -2,7 +2,10 @@ use std::{env, fs, io, path::Path, process::Command};
 
 use anyhow::Context;
 
-use crate::{licence_catalogue::catalogue, process};
+use crate::{
+    licence_catalogue::{catalogue, with_vendored_notices},
+    process,
+};
 
 const APP_MANIFEST: &str = "app/src-tauri/Cargo.toml";
 const ABOUT_CONFIG: &str = "about.toml";
@@ -19,7 +22,8 @@ pub(crate) enum Mode {
 
 pub(crate) fn regenerate(root: &Path, mode: Mode) -> anyhow::Result<()> {
     let report = cargo_about_report(root)?;
-    let catalogue = catalogue(&report).context("list the Rust crates' licences")?;
+    let catalogue =
+        with_vendored_notices(catalogue(&report).context("list the Rust crates' licences")?);
     let generated = format!("{}\n", serde_json::to_string_pretty(&catalogue)?);
     let path = root.join(RUST_CATALOGUE);
     match mode {
