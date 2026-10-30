@@ -7,7 +7,6 @@
     DialogContent,
     DialogTitle,
   } from "#lib/components/ui/dialog/index.ts";
-  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { usesCommandKey } from "#lib/page/platform.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
@@ -19,6 +18,7 @@
     keyNames,
   } from "./key-combination";
   import { recordPress, takenUse, type TakenUse } from "./key-recording";
+  import ShortcutKeys from "./ShortcutKeys.svelte";
 
   type Refusal =
     | { readonly kind: "unusable" }
@@ -140,9 +140,7 @@
         onkeydown={record}
       >
         {#if shown !== undefined}
-          {#each keyNames(shown, platform) as name (name)}
-            <Kbd class="px-sm py-2xs whitespace-nowrap">{name}</Kbd>
-          {/each}
+          <ShortcutKeys combination={shown} {platform} />
         {/if}
       </div>
       {#if refusal !== undefined}

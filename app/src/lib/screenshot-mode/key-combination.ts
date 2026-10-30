@@ -28,6 +28,27 @@ export function keyNames(
   return shift ? [command, m.shortcut_key_shift(), letter] : [command, letter];
 }
 
+const ACCELERATOR_JOINER = "+";
+
+/** Windows writes a shortcut as one accelerator, such as Ctrl+Shift+H. */
+const WRITES_ONE_ACCELERATOR = {
+  android: false,
+  ios: false,
+  linux: false,
+  macos: false,
+  windows: true,
+} satisfies Record<Platform, boolean>;
+
+export function shownKeys(
+  combination: KeyCombination,
+  platform: Platform,
+): readonly string[] {
+  const names = keyNames(combination, platform);
+  return WRITES_ONE_ACCELERATOR[platform]
+    ? [names.join(ACCELERATOR_JOINER)]
+    : names;
+}
+
 function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);

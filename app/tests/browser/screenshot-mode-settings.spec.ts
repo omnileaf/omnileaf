@@ -190,7 +190,7 @@ test("the keyboard shortcut is listed on a computer", async ({ page }) => {
 const SHORTCUT_HINTS = [
   { platform: "macos", keys: ["⌘", "Shift", "H"] },
   { platform: "linux", keys: ["Ctrl", "Shift", "H"] },
-  { platform: "windows", keys: ["Ctrl", "Shift", "H"] },
+  { platform: "windows", keys: ["Ctrl+Shift+H"] },
 ] as const;
 
 for (const { platform, keys } of SHORTCUT_HINTS) {
