@@ -24,13 +24,18 @@ function opaqueChannels(colours: readonly string[]): Channels {
   return [red, green, blue];
 }
 
+function colourOfToken(token: string): string {
+  const property = token.startsWith("--") ? token : `--native-color-${token}`;
+  if (
+    getComputedStyle(document.body).getPropertyValue(property).trim() === ""
+  ) {
+    throw new Error(`${property} is not defined`);
+  }
+  return resolvedColour(property, "color");
+}
+
 function channels(token: string): Channels {
-  return opaqueChannels([
-    resolvedColour(
-      token.startsWith("--") ? token : `--native-color-${token}`,
-      "color",
-    ),
-  ]);
+  return opaqueChannels([colourOfToken(token)]);
 }
 
 function linear(channel: number): number {
@@ -53,19 +58,10 @@ export function contrastRatio(ink: string, ground: string): number {
   return ratioOf(channels(ink), channels(ground));
 }
 
-function resolvedLayers(tokens: readonly string[]): string[] {
-  return tokens.map((token) =>
-    resolvedColour(
-      token.startsWith("--") ? token : `--native-color-${token}`,
-      "color",
-    ),
-  );
-}
-
 export function contrastOver(ink: string, layers: readonly string[]): number {
-  const grounds = resolvedLayers(layers);
+  const grounds = layers.map(colourOfToken);
   return ratioOf(
-    opaqueChannels([...grounds, ...resolvedLayers([ink])]),
+    opaqueChannels([...grounds, colourOfToken(ink)]),
     opaqueChannels(grounds),
   );
 }
