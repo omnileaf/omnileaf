@@ -9,6 +9,7 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { filterWords } from "./condition-labels";
+  import { searchLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
   const ROW_ICON_SIZE = 16;
@@ -37,6 +38,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const headingClass = $derived(searchLook(isNative).heading);
   const locale = getLocale();
 </script>
 
@@ -44,7 +46,7 @@
   {#if recent.length > 0}
     <section aria-labelledby={recentId} class="flex flex-col gap-xs">
       <div class="flex items-center justify-between gap-sm">
-        <h2 id={recentId} class="font-semibold">{m.search_recent()}</h2>
+        <h2 id={recentId} class={headingClass}>{m.search_recent()}</h2>
         <Button look="text" onclick={onClear}>
           {m.search_recent_clear()}
         </Button>
@@ -75,7 +77,7 @@
     </section>
   {/if}
   <section aria-labelledby={byId} class="flex flex-col gap-xs">
-    <h2 id={byId} class="font-semibold">{m.search_by()}</h2>
+    <h2 id={byId} class={headingClass}>{m.search_by()}</h2>
     <ul class="flex flex-col divide-y divide-border">
       <li class="flex items-center gap-md py-md">
         <BookOpen
@@ -91,7 +93,7 @@
     </ul>
   </section>
   <section aria-labelledby={filterId} class="flex flex-col gap-sm">
-    <h2 id={filterId} class="font-semibold">{m.search_type_to_filter()}</h2>
+    <h2 id={filterId} class={headingClass}>{m.search_type_to_filter()}</h2>
     {#if isNative}
       <p class="text-detail text-muted">
         {m.search_filter_example({ unread: words.unread })}

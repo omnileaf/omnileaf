@@ -12,6 +12,7 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { matchedWords } from "./matched-words";
+  import { searchLook } from "./search-look";
 
   let {
     series,
@@ -47,6 +48,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const look = $derived(searchLook(isNative));
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const headingId = $props.id();
@@ -76,7 +78,7 @@
     class="rounded-result-cover inline-result-cover large:box-border large:rounded-cover large:inline-full"
   />
   <div class="flex flex-col gap-2xs min-inline-none">
-    <p class="truncate text-lead font-semibold large:text-small">
+    <p class={look.title}>
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
           <mark class={isNative ? NATIVE_MARK : TODAYS_MARK}>{part.text}</mark>
@@ -86,9 +88,11 @@
       {/each}
     </p>
     {#if hasWords}
-      <p class="text-caption text-muted">{m.search_matched_title()}</p>
+      <p class={look.line}>
+        {m.search_matched_title()}
+      </p>
     {/if}
-    <p class="text-caption text-muted">
+    <p class={look.line}>
       {m.library_series_books({ count: one.bookCount })}
     </p>
   </div>
@@ -98,7 +102,7 @@
   aria-labelledby={headingId}
   class="flex flex-col gap-sm large:gap-label"
 >
-  <h2 id={headingId} class="font-semibold">
+  <h2 id={headingId} class={look.heading}>
     {count === undefined
       ? m.quick_open_series()
       : m.search_series_heading({ count: numbers.format(count) })}
