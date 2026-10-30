@@ -5,10 +5,15 @@ use anyhow::Context;
 use crate::pre_push::changed_files;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each area is a separate yes or no that CI reads as its own output"
+)]
 pub(crate) struct Areas {
     pub(crate) native: bool,
     pub(crate) app: bool,
     pub(crate) site: bool,
+    pub(crate) vendor: bool,
 }
 
 impl Areas {
@@ -16,6 +21,7 @@ impl Areas {
         native: true,
         app: true,
         site: true,
+        vendor: true,
     };
 
     fn union(self, other: Self) -> Self {
@@ -23,14 +29,16 @@ impl Areas {
             native: self.native || other.native,
             app: self.app || other.app,
             site: self.site || other.site,
+            vendor: self.vendor || other.vendor,
         }
     }
 
-    pub(crate) fn outputs(self) -> [String; 3] {
+    pub(crate) fn outputs(self) -> [String; 4] {
         [
             format!("native={}", self.native),
             format!("app={}", self.app),
             format!("site={}", self.site),
+            format!("vendor={}", self.vendor),
         ]
     }
 }
@@ -39,9 +47,16 @@ const NOTHING: Areas = Areas {
     native: false,
     app: false,
     site: false,
+    vendor: false,
 };
+
 const NATIVE: Areas = Areas {
     native: true,
+    ..NOTHING
+};
+const VENDORED: Areas = Areas {
+    native: true,
+    vendor: true,
     ..NOTHING
 };
 const APP: Areas = Areas {
@@ -73,7 +88,7 @@ const RULES: &[(&str, Areas)] = &[
     ("crates/", NATIVE),
     ("xtask/", NATIVE),
     ("fuzz/", NATIVE),
-    ("vendor/", NATIVE),
+    ("vendor/", VENDORED),
     (".cargo/", NATIVE),
     ("Cargo.toml", NATIVE),
     ("Cargo.lock", NATIVE),
@@ -154,10 +169,10 @@ mod tests {
     }
 
     #[test]
-    fn sends_vendored_sources_to_the_native_jobs() {
+    fn sends_vendored_sources_to_the_native_jobs_and_the_upstream_comparison() {
         let changed = areas(&["vendor/libarchive-3.8.10/libarchive/archive_read.c"]);
 
-        assert_eq!(changed, NATIVE);
+        assert_eq!(changed, VENDORED);
     }
 
     #[test]
@@ -236,6 +251,7 @@ mod tests {
                 native: true,
                 app: false,
                 site: true,
+                vendor: false,
             }
         );
     }
@@ -251,6 +267,9 @@ mod tests {
     fn writes_one_github_output_line_per_area() {
         let lines = SITE.outputs();
 
-        assert_eq!(lines, ["native=false", "app=false", "site=true"]);
+        assert_eq!(
+            lines,
+            ["native=false", "app=false", "site=true", "vendor=false"]
+        );
     }
 }

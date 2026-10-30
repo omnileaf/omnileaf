@@ -180,8 +180,12 @@ enum Command {
         #[arg(long)]
         device: Option<String>,
     },
-    /// Check that the vendored libarchive files match their MANIFEST and the pinned upstream tarball, which this downloads.
-    VendorCheck,
+    /// Check that the vendored libarchive files match their MANIFEST, offline unless asked to compare with upstream.
+    VendorCheck {
+        /// Also download the pinned upstream tarball and check the vendored files against it.
+        #[arg(long)]
+        upstream: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -281,7 +285,7 @@ fn main() -> anyhow::Result<()> {
         Command::InstallHooks => pre_push::install_hooks(&workspace::root())?,
         Command::Sample { platform, kit } => sample::serve(sample::page(kit), platform)?,
         Command::Screenshot { device } => take_screenshot(device.as_deref())?,
-        Command::VendorCheck => check_vendored()?,
+        Command::VendorCheck { upstream } => check_vendored(comparison_for(upstream))?,
     }
     Ok(())
 }
@@ -390,8 +394,16 @@ fn enforce_policy() -> anyhow::Result<()> {
     report(&violations, "policy")
 }
 
-fn check_vendored() -> anyhow::Result<()> {
-    let problems = vendor::check(&workspace::root())?;
+fn comparison_for(upstream: bool) -> vendor::Comparison {
+    if upstream {
+        vendor::Comparison::WithUpstream
+    } else {
+        vendor::Comparison::Offline
+    }
+}
+
+fn check_vendored(comparison: vendor::Comparison) -> anyhow::Result<()> {
+    let problems = vendor::check(&workspace::root(), comparison)?;
     report(&problems, "vendored source")
 }
 
@@ -498,5 +510,20 @@ mod tests {
             panic!("parsed a command other than sample");
         };
         assert!(kit);
+    }
+
+    #[test]
+    fn compares_the_vendored_files_with_upstream_only_when_asked() {
+        let offline = Cli::try_parse_from(["xtask", "vendor-check"]).unwrap();
+        let upstream = Cli::try_parse_from(["xtask", "vendor-check", "--upstream"]).unwrap();
+
+        assert!(matches!(
+            offline.command,
+            Command::VendorCheck { upstream: false }
+        ));
+        assert!(matches!(
+            upstream.command,
+            Command::VendorCheck { upstream: true }
+        ));
     }
 }

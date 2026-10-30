@@ -26,6 +26,8 @@ const MANIFEST_NAME: &str = "MANIFEST";
 const TARBALL_NAME: &str = "pinned.tar.gz";
 const EXTRACTED_FOLDER: &str = "extracted";
 const DOWNLOAD_TIMEOUT_SECONDS: &str = "300";
+const CONNECT_TIMEOUT_SECONDS: &str = "30";
+const DOWNLOAD_RETRIES: &str = "3";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Source {
@@ -151,7 +153,13 @@ fn vendor_entries(root: &Path) -> io::Result<Vec<String>> {
         .collect()
 }
 
-pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Problem>> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Comparison {
+    Offline,
+    WithUpstream,
+}
+
+pub(crate) fn check(root: &Path, comparison: Comparison) -> anyhow::Result<Vec<Problem>> {
     let folder = root.join(VENDORED_FOLDER);
     let manifest_path = folder.join(MANIFEST_NAME);
     let manifest = Manifest::parse(
@@ -164,9 +172,12 @@ pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Problem>> {
     let mut found = stray_entries(&vendor_entries(root).context("list the vendor folder")?);
     found.extend(pin_problems(&manifest));
     found.extend(problems(&manifest, &vendored, Source::Vendored));
-    let work = env::temp_dir().join(format!("omnileaf-vendor-check-{}", std::process::id()));
-    let upstream = in_work_folder(&work, |work| upstream_problems(&manifest, work));
-    found.extend(upstream?);
+    if comparison == Comparison::WithUpstream {
+        let work = env::temp_dir().join(format!("omnileaf-vendor-check-{}", std::process::id()));
+        found.extend(in_work_folder(&work, |work| {
+            upstream_problems(&manifest, work)
+        })?);
+    }
     Ok(found)
 }
 
@@ -203,6 +214,8 @@ fn upstream_problems(manifest: &Manifest, work: &Path) -> anyhow::Result<Vec<Pro
 fn download(url: &str, to: &Path) -> anyhow::Result<()> {
     let status = Command::new("curl")
         .args(["--fail", "--silent", "--show-error", "--location"])
+        .args(["--retry", DOWNLOAD_RETRIES, "--retry-all-errors"])
+        .args(["--connect-timeout", CONNECT_TIMEOUT_SECONDS])
         .args(["--max-time", DOWNLOAD_TIMEOUT_SECONDS, "--output"])
         .arg(to)
         .arg(url)
@@ -421,6 +434,49 @@ mod tests {
             stray_entries(&entries),
             [Problem::OutsideVendoredFolder {
                 path: "vendor/other-1.0".to_owned()
+            }]
+        );
+    }
+
+    struct ScratchFolder(PathBuf);
+
+    impl ScratchFolder {
+        fn create(name: &str) -> Self {
+            let path = scratch_folder(name);
+            fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for ScratchFolder {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn write_pinned_tree(root: &Path, content: &str) {
+        let folder = root.join(VENDORED_FOLDER);
+        fs::create_dir_all(folder.join("libarchive")).unwrap();
+        fs::write(folder.join("libarchive/archive.h"), content).unwrap();
+        let manifest = format!(
+            "tarball {PINNED_TARBALL}\nsha256 {TARBALL_HASH}\nroot {PINNED_ROOT}\n\n{}  libarchive/archive.h\n",
+            sha256_hex(b"abc")
+        );
+        fs::write(folder.join(MANIFEST_NAME), manifest).unwrap();
+    }
+
+    #[test]
+    fn checks_the_vendored_tree_against_its_manifest_without_the_network() {
+        let root = ScratchFolder::create("offline-check");
+        write_pinned_tree(&root.0, "abd");
+
+        let found = check(&root.0, Comparison::Offline).unwrap();
+
+        assert_eq!(
+            found,
+            [Problem::Altered {
+                source: Source::Vendored,
+                path: "libarchive/archive.h".to_owned()
             }]
         );
     }

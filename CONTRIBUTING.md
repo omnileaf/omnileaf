@@ -90,7 +90,7 @@ The `portable` group holds the Rust checks whose answer is the same everywhere, 
 - `cargo deny`: every third-party crate must be permissively licensed (or MPL-2.0), come from crates.io, and have no open security advisories;
 - `cargo xtask policy`, the content policy check below;
 - `cargo xtask licences --check`, the licence catalogue check below;
-- `cargo xtask vendor-check`, which downloads the pinned libarchive tarball and checks that every file under `vendor/` matches its `MANIFEST` hash and the tarball, so vendored files are never edited by hand;
+- `cargo xtask vendor-check`, which checks offline that every file under `vendor/` sits in the pinned libarchive folder and matches its `MANIFEST` hash, so vendored files are never edited by hand; CI also runs `cargo xtask vendor-check --upstream`, which downloads the pinned tarball and compares the files with it, on `main` and whenever `vendor/` changes;
 - `cargo xtask lint-sync`, which checks how synced state is written;
 - `cargo xtask lint-comments`, which checks the comments in the code.
 
