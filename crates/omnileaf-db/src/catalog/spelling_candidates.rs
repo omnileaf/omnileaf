@@ -6,28 +6,20 @@ use super::{
     fts_terms::{any_of, quoted},
     spelling_trigrams::{TRIGRAM_CHARS, typed_trigrams},
 };
-use crate::{Error, adult_content::AdultHiding};
+use crate::Error;
 
 const COMMON_AT: usize = 50;
 const WINDOW: usize = 4 * COMMON_AT;
+pub(super) const SCAN: usize = 4 * WINDOW;
 const MOST_PHRASES: usize = 4;
 const FOUR_GRAM_TRIGRAMS: usize = 2;
 
-struct Probe<'connection> {
-    statement: Statement<'connection>,
-    hiding: AdultHiding,
-}
+struct Probe<'connection>(Statement<'connection>);
 
 impl Probe<'_> {
     fn matches_up_to(&mut self, query: &str, limit: usize) -> Result<usize, Error> {
-        let [leaves_out, counts] = self.hiding.params();
-        let matches = self.statement.query_row(
-            &[
-                (":query", &query as &dyn ToSql),
-                (":limit", &limit),
-                leaves_out,
-                counts,
-            ][..],
+        let matches = self.0.query_row(
+            &[(":query", &query as &dyn ToSql), (":limit", &limit)][..],
             |row| row.get(0),
         )?;
         Ok(matches)
@@ -38,12 +30,8 @@ pub(super) fn match_queries(
     connection: &Connection,
     matches_up_to_common: &str,
     typed: &str,
-    hiding: AdultHiding,
 ) -> Result<Vec<String>, Error> {
-    let mut probe = Probe {
-        statement: connection.prepare(matches_up_to_common)?,
-        hiding,
-    };
+    let mut probe = Probe(connection.prepare(matches_up_to_common)?);
     let found = trigrams_found(&mut probe, typed)?;
     if found.is_empty() {
         return Ok(Vec::new());

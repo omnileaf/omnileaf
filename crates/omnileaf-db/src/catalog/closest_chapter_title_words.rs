@@ -1,34 +1,27 @@
 use rusqlite::{Connection, ToSql};
 
 use super::{
-    spelling_candidates::{match_queries, read_window},
+    spelling_candidates::{SCAN, match_queries, read_window},
     spelling_slips::nearest_words,
 };
 use crate::{Error, adult_content::AdultHiding, letter_case::fold_case};
 
-macro_rules! titles_of_shown_books_matching {
-    () => {
-        concat!(
-            "book_title_fts
-            CROSS JOIN book_title_search ON book_title_search.id = book_title_fts.rowid
-            CROSS JOIN book ON book.id = book_title_search.book_id
-            CROSS JOIN series ON series.local_id = book.series_local_id
-            WHERE book_title_fts MATCH :query AND series.reading_stage IS NOT NULL AND NOT ",
-            crate::adult_content::in_hidden_adult_series!("series")
-        )
-    };
-}
-
-const MATCHES_UP_TO_COMMON: &str = concat!(
-    "SELECT count(*) FROM (SELECT 1 FROM ",
-    titles_of_shown_books_matching!(),
-    " LIMIT :limit)"
-);
+const MATCHES_UP_TO_COMMON: &str = "SELECT count(*) FROM (
+    SELECT 1 FROM book_title_fts WHERE book_title_fts MATCH :query LIMIT :limit)";
 
 const CANDIDATES: &str = concat!(
-    "SELECT book_title_search.id, book_title_search.title, series.title FROM ",
-    titles_of_shown_books_matching!(),
-    " ORDER BY book_title_fts.rowid LIMIT :limit"
+    "SELECT book_title_search.id, book_title_search.title, series.title
+    FROM (
+        SELECT rowid FROM book_title_fts WHERE book_title_fts MATCH :query
+        ORDER BY rowid LIMIT :scan
+    ) AS hit
+    CROSS JOIN book_title_search ON book_title_search.id = hit.rowid
+    CROSS JOIN book ON book.id = book_title_search.book_id
+    CROSS JOIN series ON series.local_id = book.series_local_id
+    WHERE series.reading_stage IS NOT NULL AND NOT ",
+    crate::adult_content::in_hidden_adult_series!("series"),
+    "
+    ORDER BY hit.rowid LIMIT :limit"
 );
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -44,7 +37,7 @@ pub fn closest_chapter_title(
     hiding: AdultHiding,
 ) -> Result<Option<ChapterSuggestion>, Error> {
     let typed = fold_case(text);
-    let queries = match_queries(connection, MATCHES_UP_TO_COMMON, &typed, hiding)?;
+    let queries = match_queries(connection, MATCHES_UP_TO_COMMON, &typed)?;
     let typed: Vec<char> = typed.chars().collect();
     Ok(candidates(connection, &queries, hiding)?
         .into_iter()
@@ -77,6 +70,7 @@ fn candidates(
                 .query_map(
                     &[
                         (":query", &query as &dyn ToSql),
+                        (":scan", &SCAN),
                         (":limit", &limit),
                         leaves_out,
                         counts,
@@ -95,7 +89,7 @@ mod tests {
     use crate::scratch::ScratchLibrary;
 
     #[test]
-    fn probes_a_trigram_through_the_title_index_and_each_book_by_its_key() {
+    fn probes_a_trigram_through_the_title_index_alone() {
         let scratch = ScratchLibrary::new("chapter-title-probe-plan");
 
         let plan = scratch.query_plan(MATCHES_UP_TO_COMMON);
@@ -105,16 +99,13 @@ mod tests {
             [
                 "CO-ROUTINE (subquery-1)",
                 "SCAN book_title_fts VIRTUAL TABLE INDEX 0:M1",
-                "SEARCH book_title_search USING INTEGER PRIMARY KEY (rowid=?)",
-                "SEARCH book USING PRIMARY KEY (id=?)",
-                "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
                 "SCAN (subquery-1)",
             ]
         );
     }
 
     #[test]
-    fn reads_the_candidates_from_the_title_index_in_key_order_then_each_book_by_its_key() {
+    fn reads_the_candidates_from_a_bounded_run_of_the_title_index_then_each_book_by_its_key() {
         let scratch = ScratchLibrary::new("chapter-title-candidates-plan");
 
         let plan = scratch.query_plan(CANDIDATES);
@@ -122,7 +113,9 @@ mod tests {
         assert_eq!(
             plan,
             [
+                "CO-ROUTINE hit",
                 "SCAN book_title_fts VIRTUAL TABLE INDEX 64:M1",
+                "SCAN hit",
                 "SEARCH book_title_search USING INTEGER PRIMARY KEY (rowid=?)",
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
