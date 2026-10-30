@@ -3710,6 +3710,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "omnileaf-libarchive"
+version = "0.0.0"
+dependencies = [
+ "cc",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "omnileaf-sync-proto"
 version = "0.0.0"
 dependencies = [
