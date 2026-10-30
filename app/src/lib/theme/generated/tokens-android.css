@@ -345,6 +345,18 @@
   --native-color-fast-scroll-thumb: var(--primary);
   --native-color-fast-scroll-letter: var(--primary);
   --native-color-on-fast-scroll-letter: var(--primary-foreground);
+  --native-color-tile-hover: transparent;
+  --native-color-tile-pressed: transparent;
+  --native-color-tile-check-fill: transparent;
+  --native-color-tile-check-edge: transparent;
+  --native-spacing-tile-inset: 0px;
+  --native-spacing-tile-edge: 0px;
+  --native-spacing-tile-lift: 0px;
+  --native-spacing-tile-badge: 0px;
+  --native-spacing-tile-check: 0px;
+  --native-spacing-tile-check-glyph: 0px;
+  --native-radius-tile: 0px;
+  --native-radius-tile-check: 0px;
 }
 
 :root[data-platform="android"],

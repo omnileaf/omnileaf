@@ -426,6 +426,18 @@
   --color-native-fast-scroll-thumb: var(--native-color-fast-scroll-thumb);
   --color-native-fast-scroll-letter: var(--native-color-fast-scroll-letter);
   --color-native-on-fast-scroll-letter: var(--native-color-on-fast-scroll-letter);
+  --color-native-tile-hover: var(--native-color-tile-hover);
+  --color-native-tile-pressed: var(--native-color-tile-pressed);
+  --color-native-tile-check-fill: var(--native-color-tile-check-fill);
+  --color-native-tile-check-edge: var(--native-color-tile-check-edge);
+  --spacing-native-tile-inset: var(--native-spacing-tile-inset);
+  --spacing-native-tile-edge: var(--native-spacing-tile-edge);
+  --spacing-native-tile-lift: var(--native-spacing-tile-lift);
+  --spacing-native-tile-badge: var(--native-spacing-tile-badge);
+  --spacing-native-tile-check: var(--native-spacing-tile-check);
+  --spacing-native-tile-check-glyph: var(--native-spacing-tile-check-glyph);
+  --radius-native-tile: var(--native-radius-tile);
+  --radius-native-tile-check: var(--native-radius-tile-check);
 }
 
 @media (prefers-reduced-motion: reduce) {
