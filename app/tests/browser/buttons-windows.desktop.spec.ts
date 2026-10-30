@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { FoundLibrary } from "../../src/lib/ipc/bindings.ts";
+
 import {
   accessibilityViolations,
   DEFAULT_BACKEND,
@@ -17,6 +19,9 @@ interface ThemeLook {
   readonly subtleHover: string;
   readonly subtlePressed: string;
   readonly pressedInk: string;
+  readonly standard: string;
+  readonly standardBottomEdge: string;
+  readonly standardPressed: string;
   readonly ring: string;
   readonly innerRing: string;
 }
@@ -30,6 +35,9 @@ const THEMES = {
     subtleHover: "rgba(0, 0, 0, 0.035)",
     subtlePressed: "rgba(0, 0, 0, 0.024)",
     pressedInk: "rgba(0, 0, 0, 0.62)",
+    standard: "rgba(255, 255, 255, 0.7)",
+    standardBottomEdge: "rgba(0, 0, 0, 0.16)",
+    standardPressed: "rgba(249, 249, 249, 0.3)",
     ring: "rgba(0, 0, 0, 0.894)",
     innerRing: "rgba(255, 255, 255, 0.7) 0px 0px 0px 1px",
   },
@@ -41,10 +49,23 @@ const THEMES = {
     subtleHover: "rgba(255, 255, 255, 0.06)",
     subtlePressed: "rgba(255, 255, 255, 0.04)",
     pressedInk: "rgba(255, 255, 255, 0.773)",
+    standard: "rgba(255, 255, 255, 0.06)",
+    standardBottomEdge: "rgba(255, 255, 255, 0.07)",
+    standardPressed: "rgba(255, 255, 255, 0.03)",
     ring: "rgb(255, 255, 255)",
     innerRing: "rgba(0, 0, 0, 0.7) 0px 0px 0px 1px",
   },
 } as const satisfies Record<"light" | "dark", ThemeLook>;
+
+const FOUND: FoundLibrary = {
+  series: 212,
+  books: 38,
+  lastBackupAtMs: Date.UTC(2026, 9, 12, 9),
+};
+
+const START_NEW_LIBRARY = "Start a new library instead";
+
+const ICON_INSET = "7px";
 
 function escapedForPattern(text: string): string {
   return text.replaceAll(/[().]/g, String.raw`\$&`);
@@ -142,9 +163,12 @@ test.describe("Windows buttons", () => {
         await page.getByRole("button", { name: "Get started" }).click();
         const back = page.getByRole("button", { name: "Back" });
 
+        const box = await back.boundingBox();
+
         await expect(back).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-        await expect(back).toHaveCSS("width", "32px");
-        await expect(back).toHaveCSS("height", "32px");
+        await expect(back).toHaveCSS("padding-top", ICON_INSET);
+        await expect(back).toHaveCSS("padding-inline-start", ICON_INSET);
+        expect(box?.width).toBe(box?.height);
         await back.hover();
         await expect(back).toHaveCSS("background-color", look.subtleHover);
         await pressWithoutClicking(page, back);
@@ -172,6 +196,63 @@ test.describe("Windows buttons", () => {
       }) => {
         await page.getByRole("button", { name: "Get started" }).click();
         await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    });
+  }
+});
+
+test.describe("Windows's standard button", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      appInfo: onPlatform("windows").backend.appInfo,
+      firstLaunchFinished: () => false,
+      foundLibrary: () => FOUND,
+    },
+  });
+
+  for (const [colorScheme, look] of Object.entries(THEMES)) {
+    test.describe(`in the ${colorScheme} theme`, () => {
+      test.beforeEach(async ({ page }) => {
+        await page.emulateMedia({
+          colorScheme: colorScheme as "light" | "dark",
+        });
+        await page.goto("/first-launch");
+        await page.getByRole("button", { name: "Get started" }).click();
+      });
+
+      test("draws Start a new library on the control fill, dimming its text when pressed", async ({
+        page,
+      }) => {
+        const standard = page.getByRole("button", { name: START_NEW_LIBRARY });
+
+        await expect(standard).toHaveCSS("background-color", look.standard);
+        await expect(standard).toHaveCSS(
+          "border-bottom-color",
+          look.standardBottomEdge,
+        );
+        await pressWithoutClicking(page, standard);
+        await expect(standard).toHaveCSS(
+          "background-color",
+          look.standardPressed,
+        );
+        await expect(standard).toHaveCSS("color", look.pressedInk);
+        await page.mouse.move(0, 0);
+        await page.mouse.up();
+      });
+
+      test("has no accessibility violations with the standard button at rest and focused", async ({
+        page,
+      }) => {
+        const standard = page.getByRole("button", { name: START_NEW_LIBRARY });
+        await expect(standard).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+
+        await tabTo(page, standard);
 
         expect(await accessibilityViolations(page)).toEqual([]);
       });
