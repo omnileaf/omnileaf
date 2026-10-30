@@ -7,10 +7,12 @@
   let {
     offered,
     chosen,
+    isMaterial = false,
     onToggle,
   }: {
     offered: readonly SmartFilter[];
     chosen: readonly SmartFilter[];
+    isMaterial?: boolean;
     onToggle: (smart: SmartFilter) => void;
   } = $props();
 </script>
@@ -20,6 +22,7 @@
     label={SMART_LABELS[smart]()}
     description={SMART_HINTS[smart]()}
     isOn={chosen.includes(smart)}
+    {isMaterial}
     onToggle={() => {
       onToggle(smart);
     }}
