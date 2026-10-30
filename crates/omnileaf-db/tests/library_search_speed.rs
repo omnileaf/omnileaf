@@ -9,6 +9,7 @@ mod support;
 
 use std::{mem, num::NonZeroUsize, time::Duration};
 
+use library_seed::{SeriesSeed, seed_library};
 use omnileaf_db::{
     Database,
     catalog::{
@@ -43,6 +44,13 @@ const EVERY_TWENTIETH_CREDITED: u32 = 20;
 const EVERY_FIVE_HUNDREDTH_BOOKMARKED: u32 = 500;
 const LONE_TAG: &str = "Lone Tag";
 const SERIES_HOLDING_THE_LONE_TAG: u32 = 7_777;
+
+const LONG_SERIES: &str = "Long Series";
+const LONG_TAG: &str = "Long Tag";
+const LONG_SERIES_ADDED_AT_MS: i64 = 20_000;
+const LONG_SERIES_BOOKS: u32 = 1_500;
+const LONG_SERIES_VOLUMES: u32 = 1_000;
+const SORTS_AFTER_VOLUMES: &str = "Zeta";
 
 const CHAPTER_TEXTS: [&str; 6] = [
     "volume",
@@ -83,9 +91,14 @@ fn chapter_filters() -> Vec<SeriesFilter> {
     vec![
         SeriesFilter::NONE,
         SeriesFilter::NONE.with_finished(Inclusion::Only),
+        SeriesFilter::NONE.with_adult(Inclusion::Hide, true),
         SeriesFilter::NONE.with_tags(vec!["Genre 7".to_owned()]),
         SeriesFilter::NONE.with_bookmarked(Inclusion::Only),
         SeriesFilter::NONE.with_tags(vec![LONE_TAG.to_owned()]),
+        SeriesFilter::NONE.with_tags(vec![LONG_TAG.to_owned()]),
+        SeriesFilter::NONE
+            .with_tags(vec![LONG_TAG.to_owned()])
+            .with_adult(Inclusion::Hide, true),
     ]
 }
 
@@ -178,7 +191,30 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
     assert_eq!(over_budget, Vec::<String>::new());
 }
 
+fn long_series_title(number: u32) -> String {
+    if number <= LONG_SERIES_VOLUMES {
+        format!("Volume {number:04}")
+    } else {
+        format!("{SORTS_AFTER_VOLUMES} Harbor Gate {number:04}")
+    }
+}
+
+async fn add_long_series(database: &Database) {
+    let titles: Vec<String> = (1..=LONG_SERIES_BOOKS).map(long_series_title).collect();
+    let titles: Vec<&str> = titles.iter().map(String::as_str).collect();
+    seed_library(
+        database,
+        &[SeriesSeed {
+            added_at_ms: LONG_SERIES_ADDED_AT_MS,
+            book_titles: &titles,
+            ..SeriesSeed::named(LONG_SERIES)
+        }],
+    )
+    .await;
+}
+
 async fn add_generated_library(database: &Database) {
+    add_long_series(database).await;
     add_generated_series(database, &BOOK_TITLES).await;
     database
         .write(|transaction| {
@@ -228,6 +264,13 @@ async fn add_generated_library(database: &Database) {
                 FROM book JOIN series ON series.local_id = book.series_local_id
                 WHERE series.added_at_ms = ?2",
                 (LONE_TAG, SERIES_HOLDING_THE_LONE_TAG),
+            )?;
+            transaction.execute(
+                "INSERT INTO book_tag (book_id, kind, name)
+                SELECT book.id, 'tag', ?1
+                FROM book JOIN series ON series.local_id = book.series_local_id
+                WHERE series.added_at_ms = ?2",
+                (LONG_TAG, LONG_SERIES_ADDED_AT_MS),
             )?;
             Ok(())
         })
