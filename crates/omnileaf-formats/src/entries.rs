@@ -44,8 +44,9 @@ fn escapes_the_archive(path: &str) -> bool {
 fn starts_with_a_drive(path: &str) -> bool {
     let mut start = path.chars();
     matches!(
-        (start.next(), start.next()),
-        (Some(letter), Some(DRIVE_SEPARATOR)) if letter.is_ascii_alphabetic()
+        (start.next(), start.next(), start.next()),
+        (Some(letter), Some(DRIVE_SEPARATOR), Some(separator))
+            if letter.is_ascii_alphabetic() && SEPARATORS.contains(&separator)
     )
 }
 

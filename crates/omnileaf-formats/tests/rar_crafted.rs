@@ -454,10 +454,11 @@ fn refuses_an_entry_name_above_2047_bytes() {
 }
 
 #[test]
-fn lists_no_page_under_a_drive_letter() {
+fn lists_no_page_under_a_drive_root_but_keeps_a_name_that_only_starts_like_a_drive() {
     let entries = [
         entry("C:/1.png", b"one"),
-        entry("d:2.png", b"two"),
+        entry("D:\\2.png", b"two"),
+        entry("A:b.png", b"colon"),
         entry("3.png", b"three"),
     ];
 
@@ -469,7 +470,8 @@ fn lists_no_page_under_a_drive_letter() {
         })
         .collect();
 
-    assert_eq!(names, [vec!["3.png".to_owned()], vec!["3.png".to_owned()]]);
+    let expected = vec!["3.png".to_owned(), "A:b.png".to_owned()];
+    assert_eq!(names, [expected.clone(), expected]);
 }
 
 #[test]
