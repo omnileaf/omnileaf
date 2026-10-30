@@ -57,6 +57,9 @@ test("maps Windows roles onto CSS system colours the way the contrast themes dra
   expect(mapped.get("--native-color-menu")).toBe("Canvas");
   expect(mapped.get("--native-color-on-menu")).toBe("CanvasText");
   expect(mapped.get("--native-color-accent-hover")).toBe("Highlight");
+  expect(mapped.get("--native-color-info-bar-warning")).toBe("Canvas");
+  expect(mapped.get("--native-color-on-info-bar")).toBe("CanvasText");
+  expect(mapped.get("--native-color-info-bar-edge")).toBe("CanvasText");
 });
 
 test("uses only system colours, and only for tokens that have a Windows value", () => {
