@@ -1,6 +1,9 @@
+import type { Locator } from "@playwright/test";
+
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   onPlatform,
@@ -264,4 +267,111 @@ test.describe("in a narrow window", () => {
       expect(rescan.y).toBeGreaterThanOrEqual(path.y + path.height);
     }
   });
+});
+
+const SHORT_SWIPE_PX = -80;
+
+async function swipeAcross(target: Locator, across: number): Promise<void> {
+  const box = await boxOf(target);
+  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  const at = (moved: number) => ({
+    pointerType: "touch",
+    pointerId: 7,
+    isPrimary: true,
+    clientX: start.x + moved,
+    clientY: start.y,
+  });
+  await target.dispatchEvent("pointerdown", at(0));
+  for (const moved of [across / 4, across / 2, across]) {
+    await target.dispatchEvent("pointermove", at(moved));
+  }
+  await target.dispatchEvent("pointerup", at(across));
+}
+
+async function isUncovered(control: Locator): Promise<boolean> {
+  return control.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const top = document.elementFromPoint(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+    );
+    return top !== null && element.contains(top);
+  });
+}
+
+test.describe("a linked folder's Remove on a phone", { tag: "@native" }, () => {
+  test("hides Remove behind a swipe on an iPhone and removes the folder from it", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "iPhone rows swipe");
+    await page.goto("/settings/library");
+    const folders = page.getByRole("region", { name: "Folders" });
+    const remove = folders.getByRole("button", {
+      name: "Remove Sample Comics",
+    });
+    await expect(remove).toHaveText("Remove");
+    expect(await isUncovered(remove)).toBe(false);
+
+    await swipeAcross(
+      folders.getByText("Sample Comics", { exact: true }).first(),
+      SHORT_SWIPE_PX,
+    );
+    await expect.poll(() => isUncovered(remove)).toBe(true);
+    await remove.click();
+
+    await expect(folders.getByRole("listitem")).toHaveCount(0);
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Sample Comics removed" }),
+    ).toContainText("Its files stay where they are.");
+  });
+
+  test("opens the row on Remove when the keyboard reaches it on an iPhone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "ios", "iPhone rows swipe");
+    await page.goto("/settings/library");
+    const folders = page.getByRole("region", { name: "Folders" });
+    const remove = folders.getByRole("button", {
+      name: "Remove Sample Comics",
+    });
+    await folders.getByRole("button", { name: "Rescan Sample Comics" }).focus();
+
+    await page.keyboard.press("Tab");
+
+    await expect(remove).toBeFocused();
+    await expect.poll(() => isUncovered(remove)).toBe(true);
+  });
+
+  test("keeps Remove as an icon beside Rescan on an Android phone", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android rows don't swipe");
+    await page.goto("/settings/library");
+    const folders = page.getByRole("region", { name: "Folders" });
+    const remove = folders.getByRole("button", {
+      name: "Remove Sample Comics",
+    });
+
+    await expect(remove).toHaveText("");
+    expect(await isUncovered(remove)).toBe(true);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/settings/library");
+      await expect(
+        page.getByRole("region", { name: "Folders" }).getByRole("listitem"),
+      ).toHaveCount(1);
+
+      const violations = await accessibilityViolations(page);
+
+      expect(violations).toEqual([]);
+    });
+  }
 });

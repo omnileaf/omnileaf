@@ -1603,3 +1603,231 @@ test("draws a focus outline on the Add a folder row on an iPhone", async () => {
     "focus-visible:outline-2",
   );
 });
+
+const FULL_SWIPE_SHARE = 0.75;
+const SHORT_SWIPE_PX = -80;
+
+function swipeAcross(target: Element, across: number): void {
+  const box = target.getBoundingClientRect();
+  const at = (moved: number): PointerEventInit => ({
+    pointerType: "touch",
+    pointerId: 7,
+    isPrimary: true,
+    bubbles: true,
+    clientX: box.x + box.width / 2 + moved,
+    clientY: box.y + box.height / 2,
+  });
+  target.dispatchEvent(new PointerEvent("pointerdown", at(0)));
+  for (const moved of [across / 4, across / 2, across]) {
+    target.dispatchEvent(new PointerEvent("pointermove", at(moved)));
+  }
+  target.dispatchEvent(new PointerEvent("pointerup", at(across)));
+}
+
+function isUncovered(control: Locator): boolean {
+  const box = control.element().getBoundingClientRect();
+  const top = document.elementFromPoint(
+    box.x + box.width / 2,
+    box.y + box.height / 2,
+  );
+  return top !== null && control.element().contains(top);
+}
+
+function comicsTitle(folders: Locator): Element {
+  return comicsRow(folders)
+    .getByText(COMICS.name, { exact: true })
+    .first()
+    .element();
+}
+
+test("keeps Remove behind the row until the row is swiped toward its start on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+  expect(isUncovered(remove)).toBe(false);
+
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+  await expect.element(remove).toHaveTextContent("Remove");
+});
+
+test("draws the swiped Remove as a red capsule 10 points past the row and 16 from its end on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+
+  const gapToRow = () =>
+    Math.round(
+      remove.element().getBoundingClientRect().left -
+        (comicsTitle(folders).closest("[data-swiped]")?.getBoundingClientRect()
+          .right ?? 0),
+    );
+  await expect.poll(gapToRow).toBe(10);
+  const row = comicsRow(folders).element().getBoundingClientRect();
+  const action = remove.element().getBoundingClientRect();
+  const style = getComputedStyle(remove.element());
+  expect({
+    end: Math.round(row.right - action.right),
+    fill: style.backgroundColor,
+    ink: style.color,
+    size: style.fontSize,
+    line: style.lineHeight,
+    isCapsule:
+      Number.parseFloat(style.borderTopLeftRadius) >= action.height / 2,
+    paddingInline: style.paddingInlineStart,
+    minInline: style.minInlineSize,
+  }).toEqual({
+    end: 16,
+    fill: resolvedColour("--color-native-swipe-destructive", "backgroundColor"),
+    ink: resolvedColour("--color-native-on-swipe-destructive", "color"),
+    size: "17px",
+    line: "22px",
+    isCapsule: true,
+    paddingInline: "14px",
+    minInline: "60px",
+  });
+});
+
+test("removes a folder from its swiped Remove at once and offers to undo it on an iPhone", async () => {
+  const { folders, notices } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+
+  await remove.click();
+
+  await expect
+    .poll(() => notices.undoOffer?.title)
+    .toBe("Sample Comics removed");
+  await expect
+    .element(folders.getByRole("listitem").filter({ hasText: COMICS.name }))
+    .not.toBeInTheDocument();
+});
+
+test("removes a folder swiped all the way across on an iPhone", async () => {
+  const { folders, notices } = await renderOnIphone();
+  await expect.element(comicsRow(folders)).toBeInTheDocument();
+  const width = comicsRow(folders).element().getBoundingClientRect().width;
+
+  swipeAcross(comicsTitle(folders), -width * FULL_SWIPE_SHARE);
+
+  await expect
+    .poll(() => notices.undoOffer?.title)
+    .toBe("Sample Comics removed");
+});
+
+test("opens the row on Remove when the keyboard reaches it on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+  folders
+    .getByRole("button", { name: "Rescan Sample Comics" })
+    .element()
+    .focus();
+
+  await userEvent.tab();
+
+  await expect.element(remove).toHaveFocus();
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+});
+
+test("closes the row once the keyboard leaves Remove on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+  remove.element().focus();
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+
+  await userEvent.tab();
+
+  await expect.poll(() => isUncovered(remove)).toBe(false);
+});
+
+test("keeps Remove as an icon beside Rescan, with no swipe, on an Android phone", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  const { folders } = await renderSettings({ platform: "android" });
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeVisible();
+
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.element(remove).toHaveTextContent("");
+  expect(isUncovered(remove)).toBe(true);
+  expect(comicsRow(folders).element().querySelector("[data-swiped]")).toBe(
+    null,
+  );
+});
+
+function mangaTitle(folders: Locator): Element {
+  return folders
+    .getByRole("listitem")
+    .filter({ hasText: MANGA.name })
+    .getByText(MANGA.name, { exact: true })
+    .first()
+    .element();
+}
+
+test("drops the divider under a row swiped open on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Comics" });
+  await expect.element(remove).toBeInTheDocument();
+
+  swipeAcross(comicsTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+  expect(
+    getComputedStyle(comicsRow(folders).element(), "::after").display,
+  ).toBe("none");
+});
+
+test("drops the divider above Add a folder while the last row is swiped open on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  const remove = folders.getByRole("button", { name: "Remove Sample Manga" });
+  await expect.element(remove).toBeInTheDocument();
+
+  swipeAcross(mangaTitle(folders), SHORT_SWIPE_PX);
+
+  await expect.poll(() => isUncovered(remove)).toBe(true);
+  const addRow = folders
+    .getByRole("button", { name: "Add a folder" })
+    .element().parentElement;
+  expect(
+    getComputedStyle(addRow ?? document.body, "::before").borderTopWidth,
+  ).toBe("0px");
+});
+
+test("keeps a row in place and square when it is dragged toward its end on an iPhone", async () => {
+  const { folders } = await renderOnIphone();
+  await expect.element(comicsRow(folders)).toBeInTheDocument();
+  const title = comicsTitle(folders);
+  const content = title.closest("[data-swiped]");
+  title.dispatchEvent(
+    new PointerEvent("pointerdown", {
+      pointerType: "touch",
+      bubbles: true,
+      clientX: 100,
+      clientY: 10,
+    }),
+  );
+
+  title.dispatchEvent(
+    new PointerEvent("pointermove", {
+      pointerType: "touch",
+      bubbles: true,
+      clientX: 180,
+      clientY: 10,
+    }),
+  );
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  expect(content?.getBoundingClientRect().left).toBe(
+    comicsRow(folders).element().getBoundingClientRect().left,
+  );
+  expect(content?.getAttribute("class")).not.toContain("rounded-full");
+});

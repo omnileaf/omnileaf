@@ -89,3 +89,5 @@ export const NATIVE_START_LOOK: StartLook = {
 export function startLook(isNative: boolean): StartLook {
   return isNative ? NATIVE_START_LOOK : TODAYS_START_LOOK;
 }
+
+export type FilterPlace = "token" | "field" | "row";

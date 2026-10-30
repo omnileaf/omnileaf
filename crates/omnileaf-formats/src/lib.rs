@@ -9,6 +9,8 @@ mod fingerprint;
 mod folder;
 mod limits;
 mod natural;
+#[cfg(feature = "rar")]
+mod rar_header;
 mod salvaged_zip_book;
 mod sevenz_book;
 mod sevenz_header;
@@ -28,4 +30,6 @@ pub use error::{FormatError, UnsupportedArchive};
 pub use fingerprint::{fingerprint_book, fingerprint_book_with};
 pub use limits::Limits;
 pub use natural::natural_cmp;
+#[cfg(feature = "rar")]
+pub use rar_header::{RarEntry, RarFormat, RarListing};
 pub use storage::{Details, Entry, EntryKind, LocalStorage, Storage};

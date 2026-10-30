@@ -375,3 +375,27 @@ fn fingerprints_a_cb7_with_an_empty_image_like_a_cbz() {
 
     assert_eq!(fingerprint, fingerprint_book(&cbz_path).unwrap());
 }
+
+#[test]
+fn lists_no_cb7_page_under_a_drive_root() {
+    let scratch = ScratchFolder::new("cb7-drive-root");
+    let entries = [
+        entry("C:/1.png", page(0)),
+        entry("D:\\2.png", page(1)),
+        entry("3.png", page(2)),
+    ];
+
+    let path = scratch.write("book.cb7", &cb7(&entries, Packing::PerEntry).unwrap());
+
+    assert_eq!(page_names(&path), ["3.png"]);
+}
+
+#[test]
+fn keeps_a_cb7_page_whose_name_only_starts_like_a_drive() {
+    let scratch = ScratchFolder::new("cb7-drive-like-name");
+    let entries = [entry("A:b.png", page(0)), entry("1.png", page(1))];
+
+    let path = scratch.write("book.cb7", &cb7(&entries, Packing::PerEntry).unwrap());
+
+    assert_eq!(page_names(&path), ["1.png", "A:b.png"]);
+}

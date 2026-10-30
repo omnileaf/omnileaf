@@ -78,6 +78,9 @@
   --native-spacing-row-lead: 0px;
   --native-spacing-group-head-end: 0px;
   --native-spacing-group-head-below: 0px;
+  --native-spacing-swipe-action: 60px;
+  --native-spacing-swipe-action-inline: 14px;
+  --native-spacing-swipe-action-gap: 10px;
   --native-text-row-title: calc(1rem * var(--text-scale));
   --native-leading-row-title: 1.5;
   --native-tracking-row-title: 0.5px;
@@ -194,6 +197,8 @@
   --native-leading-notice-label: calc(20 / 14);
   --native-weight-notice-label: 500;
   --native-tracking-notice-label: 0.1px;
+  --native-spacing-search-token: 26px;
+  --native-spacing-search-token-inline: 9px;
   --native-shadow-notice-lift: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
   --native-spacing-notice-inline: 16px;
   --native-spacing-notice-top: 0px;
@@ -292,6 +297,8 @@
   --native-color-grouped-ground: var(--background);
   --native-color-group: transparent;
   --native-color-card: #eff5ee;
+  --native-color-swipe-destructive: var(--color-danger-fill);
+  --native-color-on-swipe-destructive: var(--color-on-danger);
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #2c352e1a;
   --native-color-button-outline: transparent;
@@ -370,6 +377,8 @@
   --native-color-grouped-ground: var(--background);
   --native-color-group: transparent;
   --native-color-card: #0f1511;
+  --native-color-swipe-destructive: var(--color-danger-fill);
+  --native-color-on-swipe-destructive: var(--color-on-danger);
   --native-color-row-rule: transparent;
   --native-color-row-pressed: #dee8df1a;
   --native-color-button-outline: transparent;

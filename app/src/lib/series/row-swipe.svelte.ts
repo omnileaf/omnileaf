@@ -85,6 +85,7 @@ export class RowSwipe {
     if (event.pointerType === "mouse") {
       return;
     }
+    this.#isClickSwallowed = false;
     this.#press = {
       key,
       x: event.clientX,
@@ -107,8 +108,17 @@ export class RowSwipe {
       return false;
     }
     this.isDragging = true;
-    this.#movedRight = press.base + across;
+    this.#movedRight = this.#heldToSwipeableSides(
+      press.base + across,
+      press.direction,
+    );
     return true;
+  }
+
+  #heldToSwipeableSides(movedRight: number, direction: Direction): number {
+    const travel = travelToward(movedRight, direction);
+    const side: SwipeSide = travel > 0 ? "towardEnd" : "towardStart";
+    return travel === 0 || this.canSwipe(side) ? movedRight : 0;
   }
 
   released(action: OpenAction = FIXED_ACTION): SwipeOutcome {
@@ -146,6 +156,19 @@ export class RowSwipe {
   cancelled(): void {
     this.#press = undefined;
     this.isDragging = false;
+  }
+
+  reveal(
+    key: string,
+    side: SwipeSide,
+    row: HTMLElement,
+    action: OpenAction = FIXED_ACTION,
+  ): void {
+    this.#revealed = {
+      key,
+      side,
+      offset: revealedOffset(side, directionOf(row), action.revealPx()),
+    };
   }
 
   close(): void {

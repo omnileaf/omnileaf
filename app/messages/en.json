@@ -900,6 +900,7 @@
   "library_folders_failed": "Couldn't load your folders. Try again later.",
   "library_remove_folder": "Remove folder",
   "library_remove_folder_label": "Remove {name}",
+  "library_remove_folder_swipe": "Remove",
   "library_remove_folder_title": "Remove this folder?",
   "library_remove_folder_detail": [
     {
