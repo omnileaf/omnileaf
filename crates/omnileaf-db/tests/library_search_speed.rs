@@ -91,6 +91,14 @@ const LATE_CROWD_PER_TRIGRAM: u32 = 60;
 const LATE_NEAR_TITLE: &str = "zxcvbnm";
 
 const ONE_SERIES_IN_TEN_STAYS_VISIBLE: i64 = 10;
+const SERIES_ADDED_BEFORE_THIS_ARE_HIDDEN_MS: i64 = 9_000;
+
+const HIDE_NINE_SERIES_IN_TEN: &str = "UPDATE series SET adult_rated_books = 1, marked_adult = 1
+    WHERE added_at_ms % ?1 != 0";
+const HIDE_THE_FIRST_NINE_TENTHS: &str = "UPDATE series SET adult_rated_books = 1, marked_adult = 1
+    WHERE added_at_ms < ?1";
+
+const TEXTS_AMONG_A_HIDDEN_BLOCK: [&str; 3] = ["volmue", "chaptr 12", "smaple sereis"];
 
 struct Spelling {
     text: &'static str,
@@ -260,15 +268,19 @@ async fn searches_10_000_series_within_10_ms_at_p95() {
         }
     }
 
+    for hiding in [AdultHiding::default(), HIDING_ADULT] {
+        assert_spellings(&database, &SPELLINGS, hiding).await;
+    }
     over_budget.extend(
         time_spellings(
             &database,
-            &SPELLINGS,
+            &SPELLINGS.map(|spelling| spelling.text),
             &[AdultHiding::default(), HIDING_ADULT],
         )
         .await,
     );
     over_budget.extend(time_spellings_among_hidden_series().await);
+    over_budget.extend(time_spellings_behind_a_hidden_block().await);
 
     assert_eq!(over_budget, Vec::<String>::new());
 }
@@ -301,7 +313,7 @@ async fn add_long_series(database: &Database) {
 )]
 async fn time_spellings(
     database: &Database,
-    spellings: &[Spelling],
+    texts: &[&'static str],
     hidings: &[AdultHiding],
 ) -> Vec<String> {
     let trial = SpeedTrial {
@@ -314,10 +326,8 @@ async fn time_spellings(
     };
     let mut over_budget = Vec::new();
     for &hiding in hidings {
-        for spelling in spellings {
-            assert_found_by_the_arms_expected(database, spelling, hiding).await;
+        for &text in texts {
             for arm in [Arm::Series, Arm::Chapter] {
-                let text = spelling.text;
                 let outcome = trial
                     .run(
                         async |_| (),
@@ -337,21 +347,19 @@ async fn time_spellings(
     over_budget
 }
 
-async fn assert_found_by_the_arms_expected(
-    database: &Database,
-    spelling: &Spelling,
-    hiding: AdultHiding,
-) {
-    let found = [
-        suggest(database, Arm::Series, spelling.text, hiding).await,
-        suggest(database, Arm::Chapter, spelling.text, hiding).await,
-    ];
-    assert_eq!(
-        found,
-        [spelling.found_by_series, spelling.found_by_chapter],
-        "{:?} while {hiding:?} found a spelling in the series and the chapter titles",
-        spelling.text
-    );
+async fn assert_spellings(database: &Database, spellings: &[Spelling], hiding: AdultHiding) {
+    for spelling in spellings {
+        let found = [
+            suggest(database, Arm::Series, spelling.text, hiding).await,
+            suggest(database, Arm::Chapter, spelling.text, hiding).await,
+        ];
+        assert_eq!(
+            found,
+            [spelling.found_by_series, spelling.found_by_chapter],
+            "{:?} while {hiding:?} found a spelling in the series and the chapter titles",
+            spelling.text
+        );
+    }
 }
 
 async fn suggest(database: &Database, arm: Arm, text: &'static str, hiding: AdultHiding) -> bool {
@@ -364,22 +372,44 @@ async fn suggest(database: &Database, arm: Arm, text: &'static str, hiding: Adul
         .unwrap()
 }
 
-async fn time_spellings_among_hidden_series() -> Vec<String> {
-    let folder = ScratchFolder::new("search-speed-hidden-series");
+async fn library_hiding_series(
+    name: &str,
+    hide: &'static str,
+    bound: i64,
+) -> (Database, ScratchFolder) {
+    let folder = ScratchFolder::new(name);
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_series(&database, &BOOK_TITLES).await;
     database
-        .write(|transaction| {
-            transaction.execute(
-                "UPDATE series SET adult_rated_books = 1, marked_adult = 1
-                WHERE added_at_ms % ?1 != 0",
-                [ONE_SERIES_IN_TEN_STAYS_VISIBLE],
-            )?;
+        .write(move |transaction| {
+            transaction.execute(hide, [bound])?;
             Ok(())
         })
         .await
         .unwrap();
-    time_spellings(&database, &SPELLINGS_AMONG_HIDDEN_SERIES, &[HIDING_ADULT]).await
+    (database, folder)
+}
+
+async fn time_spellings_among_hidden_series() -> Vec<String> {
+    let (database, _folder) = library_hiding_series(
+        "search-speed-hidden-series",
+        HIDE_NINE_SERIES_IN_TEN,
+        ONE_SERIES_IN_TEN_STAYS_VISIBLE,
+    )
+    .await;
+    assert_spellings(&database, &SPELLINGS_AMONG_HIDDEN_SERIES, HIDING_ADULT).await;
+    let texts = SPELLINGS_AMONG_HIDDEN_SERIES.map(|spelling| spelling.text);
+    time_spellings(&database, &texts, &[HIDING_ADULT]).await
+}
+
+async fn time_spellings_behind_a_hidden_block() -> Vec<String> {
+    let (database, _folder) = library_hiding_series(
+        "search-speed-hidden-block",
+        HIDE_THE_FIRST_NINE_TENTHS,
+        SERIES_ADDED_BEFORE_THIS_ARE_HIDDEN_MS,
+    )
+    .await;
+    time_spellings(&database, &TEXTS_AMONG_A_HIDDEN_BLOCK, &[HIDING_ADULT]).await
 }
 
 async fn add_late_crowd(database: &Database) {
