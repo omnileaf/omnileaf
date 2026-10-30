@@ -341,3 +341,52 @@ fn refuses_a_cbr_the_header_check_refuses() {
         );
     }
 }
+
+fn declaring_every_page_as(unpacked_size: u64, format: RarFormat) -> Vec<u8> {
+    let options = RarOptions {
+        declared_unpacked_size: Some(unpacked_size),
+        ..RarOptions::of(format)
+    };
+    cbr(&three_pages(), &options).unwrap()
+}
+
+#[test]
+fn refuses_a_page_holding_more_or_fewer_bytes_than_its_header_declares() {
+    let scratch = ScratchFolder::new("cbr-declared-size");
+    let declared = [1, 2 * page(0).len() as u64];
+    for format in FORMATS {
+        for unpacked_size in declared {
+            let path = scratch.write("book.cbr", &declaring_every_page_as(unpacked_size, format));
+            let mut book = open_book(&path).unwrap();
+
+            let page = book.read_page(0);
+            let every_page = book.read_every_page(|_, _| ControlFlow::Continue(()));
+
+            assert!(
+                matches!(page, Err(FormatError::CorruptRar { .. })),
+                "{format:?} {unpacked_size}: {page:?}"
+            );
+            assert!(
+                matches!(every_page, Err(FormatError::CorruptRar { .. })),
+                "{format:?} {unpacked_size}: {every_page:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn refuses_the_start_of_a_page_holding_fewer_bytes_than_its_header_declares() {
+    let scratch = ScratchFolder::new("cbr-declared-size-start");
+    for format in FORMATS {
+        let overstated = declaring_every_page_as(2 * page(0).len() as u64, format);
+        let path = scratch.write("book.cbr", &overstated);
+        let mut book = open_book(&path).unwrap();
+
+        let start = book.read_page_start(0, u64::MAX);
+
+        assert!(
+            matches!(start, Err(FormatError::CorruptRar { .. })),
+            "{format:?}: {start:?}"
+        );
+    }
+}

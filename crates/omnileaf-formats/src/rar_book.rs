@@ -92,9 +92,18 @@ impl RarBook {
         index: usize,
         length: u64,
     ) -> Result<Vec<u8>, FormatError> {
-        let ordinal = self.ordinal_of(index)?;
-        let at_most = length.min(self.limits.max_page_bytes);
-        self.read_entry(ordinal, |contents| read_start(contents, at_most))
+        let entry = self.page_entry(index)?;
+        let (ordinal, at_most) = (
+            entry.index,
+            length
+                .min(self.limits.max_page_bytes)
+                .min(entry.unpacked_size),
+        );
+        let start = self.read_entry(ordinal, |contents| read_start(contents, at_most))?;
+        if (start.len() as u64) < at_most {
+            return Err(corrupt(&self.path, different_from_header(ordinal)));
+        }
+        Ok(start)
     }
 
     /// A solid stream decodes only from its start, so one pass reads the pages in the order the archive stores them.
@@ -158,11 +167,14 @@ impl RarBook {
     }
 
     fn ordinal_of(&self, index: usize) -> Result<usize, FormatError> {
+        self.page_entry(index).map(|entry| entry.index)
+    }
+
+    fn page_entry(&self, index: usize) -> Result<&RarEntry, FormatError> {
         self.listing
             .page_entries
             .get(index)
             .and_then(|&position| self.listing.entries.get(position))
-            .map(|entry| entry.index)
             .ok_or_else(|| FormatError::NoSuchPage {
                 path: self.path.clone(),
                 index,
@@ -221,20 +233,26 @@ impl<'a> Walk<'a> {
         }
     }
 
-    /// libarchive checks no stored entry's CRC-32 when its data is read to the end, so the bytes are checked against the header here.
+    /// libarchive checks neither a stored entry's length nor its CRC-32, and verifies no other hash a RAR5 entry may carry instead, so the bytes are checked against the header here.
     fn read_whole(&mut self, entry: &RarEntry, limit: u64) -> Result<Option<Vec<u8>>, FormatError> {
-        let Some(bytes) = self.read(|contents| read_within(contents, limit))? else {
+        if entry.unpacked_size > limit {
             return Ok(None);
-        };
-        let mut crc = Crc::new();
-        crc.update(&bytes);
-        if entry.crc32.is_some_and(|expected| expected != crc.sum()) {
+        }
+        let Some(expected_crc32) = entry.crc32 else {
             return Err(corrupt(
                 self.path,
-                format!("entry {} fails its CRC-32 check", entry.index),
+                format!("entry {} has no CRC-32 to check", entry.index),
             ));
+        };
+        let bytes = self.read(|contents| read_within(contents, entry.unpacked_size))?;
+        match bytes {
+            Some(bytes)
+                if bytes.len() as u64 == entry.unpacked_size && crc32(&bytes) == expected_crc32 =>
+            {
+                Ok(Some(bytes))
+            }
+            _ => Err(corrupt(self.path, different_from_header(entry.index))),
         }
-        Ok(Some(bytes))
     }
 
     fn read<T>(
@@ -356,6 +374,16 @@ fn failed(path: &Path, error: Error) -> FormatError {
         },
         other => corrupt(path, other.to_string()),
     }
+}
+
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut crc = Crc::new();
+    crc.update(bytes);
+    crc.sum()
+}
+
+fn different_from_header(ordinal: usize) -> String {
+    format!("entry {ordinal} holds bytes that differ from its header's size or CRC-32")
 }
 
 fn corrupt(path: &Path, message: String) -> FormatError {
