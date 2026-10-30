@@ -27,7 +27,7 @@
     SortDirection,
   } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
-  import type { PhonePlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -55,6 +55,7 @@
   }[];
   const ICON_SIZE = 16;
 
+  const isMacos = currentPlatform() === "macos";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
   let isSearching = $state(false);
@@ -190,6 +191,36 @@
     >
       <Icon name="search" />
     </Button>
+  {:else if isMacos}
+    <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
+      <span id={showLabelId} class="text-small text-muted">
+        {m.series_show()}
+      </span>
+      <SegmentedControl
+        options={SHOWN_OPTIONS}
+        labels={SHOWN_LABELS}
+        chosen={listing.shown}
+        labelledBy={showLabelId}
+        isFullWidth
+        class="flex-1 min-inline-none"
+        onChoose={chooseShown}
+      />
+    </div>
+    {#if !isWide.current}
+      <Button
+        type="button"
+        variant="secondary"
+        iconOnly
+        label={m.series_find_book()}
+        aria-expanded={isSearching}
+        class="shrink-0"
+        onclick={() => {
+          void reveal();
+        }}
+      >
+        <Icon name="search" />
+      </Button>
+    {/if}
   {:else}
     <ToggleGroup
       aria-label={m.series_show()}
@@ -241,6 +272,44 @@
           >
             <Icon name="arrow-down-up" />
           </Button>
+        {/snippet}
+      </DropdownMenuTrigger>
+    {:else if isMacos}
+      <DropdownMenuTrigger>
+        {#snippet child({ props })}
+          {#if isWide.current}
+            <Button
+              {...props}
+              variant="secondary"
+              aria-label={m.series_sort({ order })}
+              class="ms-auto"
+            >
+              <Icon name="arrow-down-up" />
+              <span class="grid">
+                {#each ORDERS as { direction, label } (direction)}
+                  <span
+                    class={[
+                      "col-start-1 row-start-1",
+                      listing.direction !== direction && "invisible",
+                    ]}
+                  >
+                    {m.series_sort({ order: label() })}
+                  </span>
+                {/each}
+              </span>
+              <Icon name="chevron-down" class="shrink-0" />
+            </Button>
+          {:else}
+            <Button
+              {...props}
+              variant="secondary"
+              iconOnly
+              label={m.series_sort({ order })}
+              class="shrink-0"
+            >
+              <Icon name="arrow-down-up" />
+            </Button>
+          {/if}
         {/snippet}
       </DropdownMenuTrigger>
     {:else}
