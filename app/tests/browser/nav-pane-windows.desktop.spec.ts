@@ -61,6 +61,17 @@ test.describe("on Windows", () => {
     expect(await paneWidth(page)).toBe(OPEN_PANE);
   });
 
+  test("leaves Ctrl B without effect while the pane is compact, so it does not fold the pane later", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, COMPACT_WINDOWS[0] ?? 0);
+
+    await page.keyboard.press("Control+b");
+    await page.setViewportSize({ width: WIDE_WINDOW, height: WINDOW_HEIGHT });
+
+    expect(await paneWidth(page)).toBe(OPEN_PANE);
+  });
+
   test("holds the window's one pane toggle at the top of the pane", async ({
     page,
   }) => {
