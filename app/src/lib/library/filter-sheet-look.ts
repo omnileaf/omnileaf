@@ -19,7 +19,7 @@ export const ANDROID_FILTER_CHIP = {
 } as const;
 
 export const ANDROID_VIEW_SETTING = {
-  row: "flex flex-wrap items-center gap-x-lg gap-y-sm ps-lg pe-xl",
-  words: "flex-1 min-inline-none",
+  row: "flex flex-col gap-sm ps-lg pe-xl",
+  words: "",
   note: "basis-full text-muted",
 } as const;
