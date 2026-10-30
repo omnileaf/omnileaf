@@ -64,6 +64,7 @@ const RESERVED_SUFFIXES: &[&str] = &[
     ".example.org",
 ];
 const POLICY_DIRECTORY: &str = "policy/";
+const VENDOR_DIRECTORY: &str = "vendor/";
 const GENERATED_LICENCE_CATALOGUES: &[&str] = &[
     "app/src/lib/licences/rust.json",
     "app/src/lib/licences/javascript.json",
@@ -124,7 +125,9 @@ fn violations_in(file: &RepositoryFile<'_>, policy: &Policy) -> Vec<Violation> {
 }
 
 fn holds_third_party_text(path: &str) -> bool {
-    path.starts_with(POLICY_DIRECTORY) || GENERATED_LICENCE_CATALOGUES.contains(&path)
+    path.starts_with(POLICY_DIRECTORY)
+        || path.starts_with(VENDOR_DIRECTORY)
+        || GENERATED_LICENCE_CATALOGUES.contains(&path)
 }
 
 fn is_listed(path: &str, entries: &[String]) -> bool {
@@ -367,6 +370,23 @@ mod tests {
     #[test]
     fn skips_the_policy_lists_themselves() {
         let files = [text("policy/forbidden-phrases.txt", "sample phrase")];
+        let policy = Policy {
+            forbidden_phrases: vec!["sample phrase".to_owned()],
+            ..Policy::default()
+        };
+
+        let violations = check(&files, &policy);
+
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn skips_the_vendored_third_party_sources() {
+        let content = ["sample phrase ", &links_to(&["unknown.site"])].concat();
+        let files = [RepositoryFile {
+            path: "vendor/library-1.0/src/reader.c",
+            bytes: content.as_bytes(),
+        }];
         let policy = Policy {
             forbidden_phrases: vec!["sample phrase".to_owned()],
             ..Policy::default()
