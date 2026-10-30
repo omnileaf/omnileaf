@@ -76,10 +76,15 @@ function accentPropertiesOf(theme: Theme): AccentProperties {
   };
 }
 
-const SYSTEM_PROPERTIES = THEMES.flatMap((theme) => [
-  ...ROLES.map((role) => wallpaperPropertyOf(theme, role)),
-  ...Object.values(accentPropertiesOf(theme)),
-]);
+const SYSTEM_PROPERTIES = THEMES.flatMap((theme) => {
+  const { fill, text, label } = accentPropertiesOf(theme);
+  return [
+    ...ROLES.map((role) => wallpaperPropertyOf(theme, role)),
+    fill,
+    text,
+    label,
+  ];
+});
 
 function hexOf(rgb: number): string {
   return `#${rgb.toString(HEX).padStart(HEX_DIGITS, "0")}`;
