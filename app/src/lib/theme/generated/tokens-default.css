@@ -104,6 +104,9 @@
   --native-spacing-row-lead: 0px;
   --native-spacing-group-head-end: 0px;
   --native-spacing-group-head-below: 0px;
+  --native-spacing-alert-block: 14px;
+  --native-spacing-alert-action-start: 50px;
+  --native-spacing-alert-action-icon: 18.5px;
   --native-spacing-swipe-action: 60px;
   --native-spacing-swipe-action-inline: 14px;
   --native-spacing-swipe-action-gap: 10px;
