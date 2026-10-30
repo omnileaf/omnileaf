@@ -128,7 +128,7 @@
         >
           <Keyboard size={ROW_ICON_SIZE} />
         </span>
-        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
+        <span class="flex grow flex-col gap-2xs min-inline-none">
           <span class="font-semibold desktop:text-callout">
             {m.screenshot_mode_shortcut()}
           </span>
