@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
@@ -106,7 +106,9 @@
   );
 
   const width = new WindowWidth();
-  const isPaneCompact = new MediaQuery(paneFoldQuery(data.appInfo.platform));
+  const isPaneCompact = new MediaQuery(
+    paneFoldQuery(untrack(() => data.appInfo.platform)),
+  );
   const isTabBarCollapsed = $derived(
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
