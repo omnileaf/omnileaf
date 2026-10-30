@@ -88,6 +88,36 @@ test.describe(
       await expect(everything.locator("svg")).toHaveCount(0);
     });
 
+    test("heads the results in the green accent at 14px on a 20px line at 500", async ({
+      page,
+    }) => {
+      await openSearch(page);
+      const heading = page.getByRole("heading", { name: /^Series and books/ });
+
+      await expect(heading).toHaveCSS("font-size", "14px");
+      await expect(heading).toHaveCSS("line-height", "20px");
+      await expect(heading).toHaveCSS("font-weight", "500");
+      await expect(heading).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-button-plain"),
+      );
+    });
+
+    test("sets each result's title at 16px on a 24px line in regular weight, with the match a touch heavier and unfilled", async ({
+      page,
+    }) => {
+      await openSearch(page);
+      const row = page.getByRole("option").first();
+      const title = row.locator("p").first();
+      const match = row.locator("mark").first();
+
+      await expect(title).toHaveCSS("font-size", "16px");
+      await expect(title).toHaveCSS("line-height", "24px");
+      await expect(title).toHaveCSS("font-weight", "400");
+      await expect(match).toHaveCSS("font-weight", "500");
+      await expect(match).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    });
+
     test("sets the chips 8px apart in one row that scrolls sideways", async ({
       page,
     }) => {

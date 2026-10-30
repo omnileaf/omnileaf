@@ -7,6 +7,7 @@ import {
   GROUPED_FOOTNOTE_TYPE,
   GROUPED_GROUP_LOOK,
 } from "#lib/library/group-look.ts";
+import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
 import { GROUP_PLATE } from "#lib/page/plates.ts";
 
 export interface SearchLook {
@@ -29,8 +30,16 @@ export const NATIVE_SEARCH_LOOK: SearchLook = {
   line: `${ROW_SUBTITLE_TYPE} text-muted`,
 };
 
-export function searchLook(isNative: boolean): SearchLook {
-  return isNative ? NATIVE_SEARCH_LOOK : TODAYS_SEARCH_LOOK;
+export const ANDROID_SEARCH_LOOK: SearchLook = {
+  ...NATIVE_SEARCH_LOOK,
+  heading: `pbs-md pbe-sm text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`,
+};
+
+export function searchLook(phone: "ios" | "android" | undefined): SearchLook {
+  if (phone === "android") {
+    return ANDROID_SEARCH_LOOK;
+  }
+  return phone === "ios" ? NATIVE_SEARCH_LOOK : TODAYS_SEARCH_LOOK;
 }
 
 export interface StartLook {

@@ -44,11 +44,19 @@
 
   const TODAYS_MARK = "rounded-badge bg-chip text-foreground";
   const NATIVE_MARK = "rounded-none bg-native-accent-soft text-inherit";
+  const ANDROID_MARK = "rounded-none bg-transparent font-medium text-inherit";
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const look = $derived(searchLook(isNative));
+  const phone = $derived(phoneOf(platform, width.current));
+  const look = $derived(searchLook(phone));
+  const markClass = $derived(
+    phone === "android"
+      ? ANDROID_MARK
+      : phone === "ios"
+        ? NATIVE_MARK
+        : TODAYS_MARK,
+  );
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
   const headingId = $props.id();
@@ -81,7 +89,7 @@
     <p class={look.title}>
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
-          <mark class={isNative ? NATIVE_MARK : TODAYS_MARK}>{part.text}</mark>
+          <mark class={markClass}>{part.text}</mark>
         {:else}
           {part.text}
         {/if}
