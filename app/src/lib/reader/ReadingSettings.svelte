@@ -20,6 +20,7 @@
   import type { ReaderSettings } from "./reader-settings.svelte.ts";
   import ReadingSettingsContent from "./ReadingSettingsContent.svelte";
   import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
+  import { holdsFocusFor } from "./pane-focus.ts";
   import { WINDOWS_FLYOUT } from "./windows-reader-bar.ts";
 
   let {
@@ -46,6 +47,7 @@
 {#if isWide.current || chrome.isCommandBar}
   {#if isOpen}
     <aside
+      {@attach chrome.isCommandBar ? holdsFocusFor("settings") : undefined}
       aria-labelledby={titleId}
       class={cn(
         chrome.isCommandBar ? WINDOWS_FLYOUT : READER_GLASS,

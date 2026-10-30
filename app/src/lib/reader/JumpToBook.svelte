@@ -23,6 +23,7 @@
     readerIconSize,
   } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { holdsFocusFor } from "./pane-focus.ts";
   import { WINDOWS_FLYOUT } from "./windows-reader-bar.ts";
 
   let {
@@ -65,6 +66,7 @@
 {#if isWide.current || chrome.isCommandBar}
   {#if isOpen}
     <aside
+      {@attach chrome.isCommandBar ? holdsFocusFor("jump") : undefined}
       aria-labelledby={titleId}
       class={cn(
         chrome.isCommandBar ? WINDOWS_FLYOUT : READER_GLASS,
