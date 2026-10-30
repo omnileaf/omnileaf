@@ -31,12 +31,13 @@ function hasTransparencyEffectsOn(): boolean {
 
 test.runIf(IS_WINDOWS)(
   "reports Mica on Windows 11 with transparency effects on and a solid window otherwise",
-  async () => {
+  async ({ annotate }) => {
     const expected =
       windowsBuild() >= FIRST_SYSTEM_BACKDROP_BUILD &&
       hasTransparencyEffectsOn()
         ? "mica"
         : "none";
+    await annotate(`expects the window backdrop ${expected}`);
 
     const reported = await appSession().run(REPORTED_BACKDROP);
 
