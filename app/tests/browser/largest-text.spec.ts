@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import pseudo from "../../messages/en-XA.json" with { type: "json" };
@@ -39,6 +39,7 @@ const GLYPH_OVERSHOOT = 4;
 const IPAD_LANDSCAPE = { width: 1180, height: 820 };
 const PHONE_WIDTHS = [390, 360];
 const PHONE_HEIGHT = 800;
+const SUBPIXEL = 0.5;
 const DISPLAYS: readonly LibraryDisplay[] = [
   "grid",
   "compact",
@@ -171,6 +172,24 @@ test.skip(
   ({ isMobile }) => !isMobile,
   "the system text size reaches phones and tablets",
 );
+
+function paintedOutside(container: Locator): Promise<string[]> {
+  return container.evaluate((element, overshoot) => {
+    const edge = element.getBoundingClientRect();
+    return [...element.querySelectorAll("*")]
+      .filter((part) => {
+        const box = part.getBoundingClientRect();
+        return (
+          box.width > 0 &&
+          (box.left < edge.left - overshoot ||
+            box.right > edge.right + overshoot ||
+            box.top < edge.top - overshoot ||
+            box.bottom > edge.bottom + overshoot)
+        );
+      })
+      .map((part) => part.outerHTML.slice(0, 120));
+  }, SUBPIXEL);
+}
 
 for (const platform of PLATFORMS) {
   test.describe(`with the largest text on ${platform}`, () => {
@@ -308,6 +327,22 @@ for (const platform of PLATFORMS) {
       expect(await textSpillingDown(page)).toEqual([]);
     });
 
+    test("keeps every tab inside the floating bar on a 360 point iPhone", async ({
+      page,
+    }, testInfo) => {
+      test.skip(platform !== "ios", "the floating bar is the iPhone's");
+      test.skip(
+        testInfo.project.name.endsWith(SWEEPING_SCREEN),
+        "each engine checks a phone width once, from a phone",
+      );
+      await page.setViewportSize({ width: 360, height: PHONE_HEIGHT });
+      await page.goto("/");
+      const bar = page.getByRole("navigation", { name: "Main" });
+      await expect(bar.getByRole("link")).toHaveCount(4);
+
+      expect(await paintedOutside(bar)).toEqual([]);
+    });
+
     test.describe("with search results", () => {
       test.use({
         backend: {
@@ -320,7 +355,11 @@ for (const platform of PLATFORMS) {
       for (const width of PHONE_WIDTHS) {
         test(`fits the search page at ${String(width)} points without spilling`, async ({
           page,
-        }) => {
+        }, testInfo) => {
+          test.skip(
+            testInfo.project.name.endsWith(SWEEPING_SCREEN),
+            "each engine checks a phone width once, from a phone",
+          );
           await page.setViewportSize({ width, height: PHONE_HEIGHT });
           await page.goto("/search?q=sample");
           await expect(
@@ -357,34 +396,61 @@ for (const platform of PLATFORMS) {
             page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
           ).toBeVisible();
           if (isPicking) {
-            const firstBook = page.getByRole("checkbox", {
-              name: `Select ${shelf.titleOf(0)}`,
-            });
-            const more = page.getByRole("button", {
-              name: `More for ${shelf.titleOf(0)}`,
-            });
-            await page
-              .getByRole("heading", { level: 2, name: "3 books" })
-              .scrollIntoViewIfNeeded();
-            await expect(firstBook.or(more).first()).toBeVisible();
-            if (await firstBook.isVisible()) {
-              await firstBook.check();
-            } else {
-              await more.click();
-              await page
-                .getByRole("dialog")
-                .getByRole("button", { name: "Select", exact: true })
-                .or(
-                  page
-                    .getByRole("menu")
-                    .getByRole("menuitem", { name: "Select", exact: true }),
-                )
-                .click();
-            }
+            await pickFirstBook(page);
           }
 
           await expectNothingSpills(page);
         });
+      }
+
+      test("keeps the selection toolbar's actions inside it on a 360 point iPhone", async ({
+        page,
+      }, testInfo) => {
+        test.skip(platform !== "ios", "the floating toolbar is the iPhone's");
+        test.skip(
+          testInfo.project.name.endsWith(SWEEPING_SCREEN),
+          "each engine checks a phone width once, from a phone",
+        );
+        await page.setViewportSize({ width: 360, height: PHONE_HEIGHT });
+        await page.goto(`/series/${SERIES_ID}`);
+        await expect(
+          page.getByRole("heading", { level: 1, name: SERIES_TITLE }),
+        ).toBeVisible();
+
+        await pickFirstBook(page);
+
+        expect(
+          await paintedOutside(
+            page.getByRole("group", { name: "Selected books" }),
+          ),
+        ).toEqual([]);
+      });
+
+      async function pickFirstBook(page: Page): Promise<void> {
+        const firstBook = page.getByRole("checkbox", {
+          name: `Select ${shelf.titleOf(0)}`,
+        });
+        const more = page.getByRole("button", {
+          name: `More for ${shelf.titleOf(0)}`,
+        });
+        await page
+          .getByRole("heading", { level: 2, name: "3 books" })
+          .scrollIntoViewIfNeeded();
+        await expect(firstBook.or(more).first()).toBeVisible();
+        if (await firstBook.isVisible()) {
+          await firstBook.check();
+        } else {
+          await more.click();
+          await page
+            .getByRole("dialog")
+            .getByRole("button", { name: "Select", exact: true })
+            .or(
+              page
+                .getByRole("menu")
+                .getByRole("menuitem", { name: "Select", exact: true }),
+            )
+            .click();
+        }
       }
     });
 
