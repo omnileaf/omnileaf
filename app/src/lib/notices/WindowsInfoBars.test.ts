@@ -1,4 +1,5 @@
 import { CircleCheck, TriangleAlert } from "@lucide/svelte";
+import { flushSync } from "svelte";
 import { toast } from "svelte-sonner";
 import { afterEach, expect, test, vi } from "vitest";
 import { type Locator, page, userEvent } from "vitest/browser";
@@ -66,12 +67,13 @@ const ICON_INKS = {
   error: "--native-color-info-bar-error-icon",
 } as const satisfies Record<InfoBarSeverity, string>;
 
-const cleanups: (() => void)[] = [];
+const cleanups: (() => Promise<void> | void)[] = [];
 
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) {
-    cleanup();
+    await cleanup();
   }
+  await expect.poll(() => document.querySelector("[data-info-bar]")).toBeNull();
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
   await page.viewport(DESKTOP.width, DESKTOP.height);
@@ -105,7 +107,12 @@ async function renderOnWindows(): Promise<Notices> {
   await page.viewport(DESKTOP.width, DESKTOP.height);
   followCorePlatform("windows");
   const notices = new Notices();
-  await render(Toasts, { notices, platform: "windows", theme: "light" });
+  const { unmount } = await render(Toasts, {
+    notices,
+    platform: "windows",
+    theme: "light",
+  });
+  cleanups.unshift(unmount);
   return notices;
 }
 
@@ -464,4 +471,94 @@ test("fills an undo InfoBar with the success tone", async () => {
 
   await expect.element(infoBarSaying("Comics removed")).toBeVisible();
   expect(surfaceOf(barOf("Comics removed")).dataset.severity).toBe("success");
+});
+
+test("puts the InfoBars in the slot under the page header rather than at the top of the page", async () => {
+  const { slot: topSlot } = placePageWithSlot();
+  const main = topSlot.parentElement ?? document.body;
+  const headerSlot = document.createElement("div");
+  const content = document.createElement("p");
+  content.textContent = "Page content";
+  main.append(headerSlot, content);
+  const release = holdsPageNotices(headerSlot);
+  const notices = await renderOnWindows();
+  const before = content.getBoundingClientRect().top;
+
+  notices.show(READY);
+
+  await expect.element(infoBarSaying(READY.title)).toBeVisible();
+  expect(headerSlot.contains(barOf(READY.title))).toBe(true);
+  expect(content.getBoundingClientRect().top).toBeGreaterThan(before);
+
+  if (typeof release === "function") {
+    release();
+  }
+
+  await expect.poll(() => topSlot.contains(barOf(READY.title))).toBe(true);
+});
+
+test("holds an InfoBar while the pointer is over it and lets it lapse once the pointer leaves", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { heading } = placePageWithSlot();
+  const notices = await renderOnWindows();
+  notices.show(READY);
+  await expect.element(infoBarSaying(READY.title)).toBeVisible();
+  await userEvent.hover(infoBarSaying(READY.title));
+
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS);
+
+  await expect.element(infoBarSaying(READY.title)).toBeVisible();
+  await userEvent.hover(heading);
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS);
+  await expect.element(infoBarSaying(READY.title)).not.toBeInTheDocument();
+});
+
+test("holds an InfoBar while focus is in it", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  placePageWithSlot();
+  const notices = await renderOnWindows();
+  notices.show(READY);
+  const close = page.getByRole("button", { name: "Dismiss" });
+  await expect.element(close).toBeVisible();
+  close.element().focus();
+  flushSync();
+
+  vi.advanceTimersByTime(NOTICE_WINDOW_MS);
+
+  await expect.element(infoBarSaying(READY.title)).toBeVisible();
+});
+
+test("undoes with Ctrl+Z from inside an InfoBar and returns focus to where it came from", async () => {
+  const { heading } = placePageWithSlot();
+  const notices = await renderOnWindows();
+  let timesUndone = 0;
+  notices.offerUndo({
+    title: "Comics removed",
+    undo: () => {
+      timesUndone += 1;
+    },
+  });
+  const undo = page.getByRole("button", { name: "Undo" });
+  await expect.element(undo).toBeVisible();
+  heading.focus();
+  undo.element().focus();
+
+  await userEvent.keyboard("{Control>}z{/Control}");
+
+  expect(timesUndone).toBe(1);
+  await expect.element(infoBarSaying("Comics removed")).not.toBeInTheDocument();
+  expect(document.activeElement).toBe(heading);
+});
+
+test("moves floating InfoBars into the page once a page slot appears", async () => {
+  const notices = await renderOnWindows();
+  notices.show(READY);
+  await expect.element(infoBarSaying(READY.title)).toBeVisible();
+  const region = page.getByRole("region", { name: "Notifications" });
+  await expect.element(region).toHaveAttribute("data-floating");
+
+  const { slot } = placePageWithSlot();
+
+  await expect.poll(() => slot.contains(barOf(READY.title))).toBe(true);
+  await expect.element(region).not.toHaveAttribute("data-floating");
 });

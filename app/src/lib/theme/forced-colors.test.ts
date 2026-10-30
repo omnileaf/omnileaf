@@ -57,9 +57,6 @@ test("maps Windows roles onto CSS system colours the way the contrast themes dra
   expect(mapped.get("--native-color-menu")).toBe("Canvas");
   expect(mapped.get("--native-color-on-menu")).toBe("CanvasText");
   expect(mapped.get("--native-color-accent-hover")).toBe("Highlight");
-  expect(mapped.get("--native-color-info-bar-warning")).toBe("Canvas");
-  expect(mapped.get("--native-color-on-info-bar")).toBe("CanvasText");
-  expect(mapped.get("--native-color-info-bar-edge")).toBe("CanvasText");
 });
 
 test("uses only system colours, and only for tokens that have a Windows value", () => {
@@ -75,6 +72,31 @@ test("uses only system colours, and only for tokens that have a Windows value", 
     expect(SYSTEM_COLOURS.has(value)).toBe(true);
     expect(withWindows.has(property)).toBe(true);
   }
+});
+
+const INFO_BAR_COLOURS = {
+  "--native-color-info-bar": "Canvas",
+  "--native-color-info-bar-success": "Canvas",
+  "--native-color-info-bar-warning": "Canvas",
+  "--native-color-info-bar-error": "Canvas",
+  "--native-color-on-info-bar": "CanvasText",
+  "--native-color-info-bar-edge": "CanvasText",
+  "--native-color-info-bar-icon": "CanvasText",
+  "--native-color-info-bar-success-icon": "CanvasText",
+  "--native-color-info-bar-warning-icon": "CanvasText",
+  "--native-color-info-bar-error-icon": "CanvasText",
+  "--native-color-info-bar-floating": "Canvas",
+  "--native-color-info-bar-floating-edge": "CanvasText",
+} as const;
+
+test("draws every InfoBar colour in the contrast theme's canvas and its text", () => {
+  const mapped = new Map(declarations(forcedColors));
+
+  const infoBarColours = Object.fromEntries(
+    Object.keys(INFO_BAR_COLOURS).map((token) => [token, mapped.get(token)]),
+  );
+
+  expect(infoBarColours).toEqual(INFO_BAR_COLOURS);
 });
 
 const FOREGROUNDS_ON_HIGHLIGHT: Readonly<Record<string, readonly string[]>> = {
