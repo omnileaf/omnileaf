@@ -102,6 +102,11 @@ export class TabPages {
   }
 
   #open(tab: LibraryTabId): TabPage {
-    return new TabPage(tab, this.listedBy, this.onFailure);
+    const page: TabPage = new TabPage(tab, this.listedBy, (error) => {
+      if (this.#heldFor(this.#chosen) === page) {
+        this.onFailure(error);
+      }
+    });
+    return page;
   }
 }

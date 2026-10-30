@@ -343,7 +343,9 @@
   let moreTrigger: HTMLElement | null = $state(null);
   const width = new WindowWidth();
   const pagesBesideChosen = $derived(
-    tabsShown && isPhone(data.appInfo.platform, width.current)
+    tabsShown &&
+      groups.length === 0 &&
+      isPhone(data.appInfo.platform, width.current)
       ? BESIDE_PHONE_TABS
       : 0,
   );
@@ -502,7 +504,7 @@
     if (listed !== undefined && countsSeries) {
       const { count } = chosenPage;
       untrack(() => {
-        if (count.count === undefined) {
+        if (count.count === undefined && !count.isLoading) {
           void count.load();
         }
       });
@@ -645,6 +647,7 @@
 
   let pager = $state<HTMLElement | null>(null);
   let stopHoldingScroll: (() => void) | undefined;
+  $effect(() => () => stopHoldingScroll?.());
 
   function coversTopIn(main: HTMLElement): number {
     return pager === null
