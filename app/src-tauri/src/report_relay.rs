@@ -3,6 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use omnileaf_engine::describe_error;
 use omnileaf_relay_proto::{
     Challenge, ChallengeRequest, ErrorBody, ErrorCode, Platform, Proof, ReplyAddress, ReportCode,
     ReportSubmission, StatusKey, StatusLookup, StatusLookups, StatusReplies, StatusReply,
@@ -11,6 +12,7 @@ use omnileaf_relay_proto::{
 };
 use reqwest::{Client, StatusCode, Url};
 use serde::{Serialize, de::DeserializeOwned};
+use tauri::{AppHandle, Manager};
 
 const RELAY_BASE: &str = "https://omnileaf.app/relay/v1/";
 #[cfg(debug_assertions)]
@@ -73,6 +75,17 @@ pub(crate) enum RelayError {
     NotStarted,
     #[error("a report code from an earlier version is too short for the relay")]
     CodeTooShort,
+}
+
+pub(crate) fn install(app: &AppHandle) {
+    match RelayClient::for_this_build() {
+        Ok(relay) => {
+            app.manage(relay);
+        }
+        Err(error) => {
+            tracing::error!(error = %describe_error(&error), "start the problem report relay's client");
+        }
+    }
 }
 
 impl RelayClient {
@@ -308,6 +321,7 @@ mod tests {
                 platform: omnileaf_engine::Platform::Linux,
                 source_code: "repo.example.org/omnileaf".to_owned(),
                 is_development_build: true,
+                window_backdrop: omnileaf_engine::WindowBackdrop::None,
             }),
             LogStandIns::default().clean_log(&[
                 "WARN omnileaf_engine::scan: skip a book\tpath=/home/reader/Comics/Old.cbz"
