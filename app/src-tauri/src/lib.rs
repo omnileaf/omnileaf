@@ -82,6 +82,10 @@ pub fn run() {
     let config = RuntimeConfig::from_environment();
     let window_backdrop = window_backdrop::of_this_system();
     let commands = commands::builder();
+    #[cfg(not(all(windows, feature = "e2e")))]
+    let invoke_handler = commands.invoke_handler();
+    #[cfg(all(windows, feature = "e2e"))]
+    let invoke_handler = e2e::with_test_hooks(commands.invoke_handler());
     let app = tauri::Builder::default();
     #[cfg(all(desktop, not(feature = "e2e")))]
     let app = app.plugin(files_to_open::single_instance());
@@ -103,7 +107,7 @@ pub fn run() {
                 .open_js_links_on_click(false)
                 .build(),
         )
-        .invoke_handler(commands.invoke_handler())
+        .invoke_handler(invoke_handler)
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
             window_backdrop::open_windows(app, window_backdrop)?;
