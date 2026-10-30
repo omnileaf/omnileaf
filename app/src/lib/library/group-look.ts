@@ -19,8 +19,10 @@ export const GROUPED_GROUP_LOOK: GroupLook = {
   group: `flex flex-col divide-y divide-border overflow-hidden px-lg ios-grouped:divide-ios-separator ${GROUP_PLATE}`,
 };
 
-export const GROUPED_FOOTNOTE =
-  "ps-lg text-native-group-footer/native-group-footer tracking-native-group-footer text-muted mbs-sm";
+export const GROUPED_FOOTNOTE_TYPE =
+  "text-native-group-footer/native-group-footer tracking-native-group-footer text-muted";
+
+export const GROUPED_FOOTNOTE = `ps-lg ${GROUPED_FOOTNOTE_TYPE} mbs-sm`;
 
 export function groupLook(isGrouped: boolean): GroupLook {
   return isGrouped ? GROUPED_GROUP_LOOK : PLAIN_GROUP_LOOK;

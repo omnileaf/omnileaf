@@ -2,18 +2,14 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { GROUPED_GROUND } from "#lib/page/plates.ts";
+
   let {
     class: className,
     children,
   }: { class?: ClassValue; children: Snippet } = $props();
 </script>
 
-<div
-  data-ground="grouped"
-  class={[
-    "ios:relative ios:isolate ios:-me-page-end ios:-mbs-page-top ios:flex ios:flex-1 ios:flex-col ios:pe-page-end ios:pbs-page-top ios:max-medium:-ms-page-start ios:max-medium:-mbe-floating-clearance ios:max-medium:ps-page-start ios:max-medium:pbe-floating-clearance ios:medium:-ms-gutter ios:medium:-mbe-page-bottom ios:medium:ps-gutter ios:medium:pbe-page-bottom touch:bg-native-grouped-ground ios:two-pane:-ms-pane ios:two-pane:-me-pane ios:two-pane:ps-pane ios:two-pane:pe-pane",
-    className,
-  ]}
->
+<div data-ground="grouped" class={[GROUPED_GROUND, className]}>
   {@render children()}
 </div>
