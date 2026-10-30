@@ -68,6 +68,13 @@ unsafe extern "C" fn read_callback<R: Read>(
     let source = unsafe { &mut *client_data.cast::<Source<R>>() };
     loop {
         match source.inner.read(&mut source.buffer) {
+            Ok(read) if read > source.buffer.len() => {
+                source.failure = Some(io::Error::other(format!(
+                    "the source reported reading {read} bytes into a {} byte buffer",
+                    source.buffer.len()
+                )));
+                return ARCHIVE_ERROR;
+            }
             Ok(read) => {
                 // SAFETY: libarchive passes a valid out pointer, and the buffer outlives its next call.
                 unsafe { *out = source.buffer.as_ptr().cast() };

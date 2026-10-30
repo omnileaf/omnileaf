@@ -3,7 +3,7 @@
     reason = "the archives are built in memory, so a failed set-up should stop the test"
 )]
 
-use std::io::Cursor;
+use std::io::{self, Cursor, Read, Seek, SeekFrom};
 
 use omnileaf_libarchive::{
     DEFAULT_LIMIT_BYTES, DESKTOP_DICTIONARY_CAP_BYTES, DESKTOP_LIMIT_BYTES, Entry, EntryKind,
@@ -255,4 +255,32 @@ fn reads_the_mobile_dictionary_cap_under_the_mobile_budget() {
 fn caps_dictionaries_at_64_mib_on_the_desktop_and_32_mib_on_phones() {
     assert_eq!(DESKTOP_DICTIONARY_CAP_BYTES, 64 * 1024 * 1024);
     assert_eq!(MOBILE_DICTIONARY_CAP_BYTES, 32 * 1024 * 1024);
+}
+
+struct OverReportingSource(Cursor<Vec<u8>>);
+
+impl Read for OverReportingSource {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        let read = self.0.read(buffer)?;
+        Ok(if read == 0 { 0 } else { buffer.len() * 4 })
+    }
+}
+
+impl Seek for OverReportingSource {
+    fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
+        self.0.seek(position)
+    }
+}
+
+#[test]
+fn refuses_a_source_that_reports_more_bytes_than_it_was_given() {
+    let source = OverReportingSource(Cursor::new(archives::stored_rar5(&FILES)));
+
+    let result = Reader::open(source, DEFAULT_LIMIT_BYTES);
+
+    assert!(
+        matches!(result, Err(Error::Source(_))),
+        "{:?}",
+        result.err()
+    );
 }
