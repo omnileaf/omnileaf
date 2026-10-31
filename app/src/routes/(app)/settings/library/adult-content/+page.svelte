@@ -12,6 +12,7 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
@@ -37,41 +38,45 @@
   });
 </script>
 
-<SectionHeading
-  title={m.adult_content_title()}
-  parent={{ route: "/(app)/settings/library", title: m.library_title() }}
-/>
-{#if content.reading.kind === "read"}
-  {@const chosen = content.reading.value}
-  <div class="mbs-pane-gap flex flex-col gap-pane-gap">
-    <div class="flex flex-col gap-sm">
-      <p class="text-footnote text-muted">{m.adult_content_intro()}</p>
-      <AdultContentChoice
-        chosen={chosen.treatment}
-        {onPointer}
-        onChoose={(treatment: AdultTreatment) => {
-          content.choose({ ...chosen, treatment });
-        }}
-      />
+<GroupedGround>
+  <SectionHeading
+    title={m.adult_content_title()}
+    parent={{ route: "/(app)/settings/library", title: m.library_title() }}
+  />
+  {#if content.reading.kind === "read"}
+    {@const chosen = content.reading.value}
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+      <div class="flex flex-col gap-sm">
+        <p class="text-footnote text-muted">{m.adult_content_intro()}</p>
+        <AdultContentChoice
+          chosen={chosen.treatment}
+          {onPointer}
+          onChoose={(treatment: AdultTreatment) => {
+            content.choose({ ...chosen, treatment });
+          }}
+        />
+      </div>
+      <div class={android.isOn ? "-mx-page-start -me-page-end" : ""}>
+        <SettingSwitch
+          label={m.adult_content_age_ratings()}
+          description={m.adult_content_age_ratings_help()}
+          isOn={chosen.countsAgeRatings}
+          onToggle={() => {
+            content.choose({
+              ...chosen,
+              countsAgeRatings: !chosen.countsAgeRatings,
+            });
+          }}
+          class={android.isOn
+            ? ""
+            : "rounded-card border border-border bg-card"}
+        />
+      </div>
+      {#if android.isOn}
+        <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+          {m.adult_content_footer()}
+        </p>
+      {/if}
     </div>
-    <div class={android.isOn ? "-mx-page-start -me-page-end" : ""}>
-      <SettingSwitch
-        label={m.adult_content_age_ratings()}
-        description={m.adult_content_age_ratings_help()}
-        isOn={chosen.countsAgeRatings}
-        onToggle={() => {
-          content.choose({
-            ...chosen,
-            countsAgeRatings: !chosen.countsAgeRatings,
-          });
-        }}
-        class={android.isOn ? "" : "rounded-card border border-border bg-card"}
-      />
-    </div>
-    {#if android.isOn}
-      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
-        {m.adult_content_footer()}
-      </p>
-    {/if}
-  </div>
-{/if}
+  {/if}
+</GroupedGround>

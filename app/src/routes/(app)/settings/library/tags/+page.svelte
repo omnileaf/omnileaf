@@ -14,6 +14,7 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
@@ -86,114 +87,116 @@
   });
 </script>
 
-<SectionHeading
-  title={m.manage_tags_title()}
-  parent={{ route: "/(app)/settings/library", title: m.library_title() }}
-/>
-<div
-  class={["mbs-pane-gap flex flex-col", android.isOn ? "gap-none" : "gap-sm"]}
->
-  <InputGroup
-    class={android.isOn
-      ? "gap-lg rounded-full bg-android-container-high ps-lg pe-lg text-muted block-native-row"
-      : "gap-sm rounded-control border border-border bg-card px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"}
+<GroupedGround>
+  <SectionHeading
+    title={m.manage_tags_title()}
+    parent={{ route: "/(app)/settings/library", title: m.library_title() }}
+  />
+  <div
+    class={["mbs-pane-gap flex flex-col", android.isOn ? "gap-none" : "gap-sm"]}
   >
-    <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-    <Input
-      type="search"
-      value={found}
-      oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
-        found = event.currentTarget.value;
-      }}
-      aria-label={m.manage_tags_find()}
-      placeholder={m.manage_tags_find()}
-      class="no-search-cancel text-small text-foreground touch:text-body"
-    />
-  </InputGroup>
-  {#if tags.length === 0}
-    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
-      {m.manage_tags_none()}
-    </p>
-  {:else}
-    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
-      {m.manage_tags_intro({ count: tags.length })}
-    </p>
-    <ul
-      id={listId}
-      aria-label={m.manage_tags_list()}
+    <InputGroup
       class={android.isOn
-        ? "-mx-page-start -me-page-end flex flex-col"
-        : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
+        ? "gap-lg rounded-full bg-android-container-high ps-lg pe-lg text-muted block-native-row"
+        : "gap-sm rounded-control border border-border bg-card px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"}
     >
-      {#each shown as tag (tag.name)}
-        <li
-          class={[
-            "flex items-center",
-            android.isOn
-              ? "gap-sm py-sm ps-lg pe-sm min-block-native-row-two"
-              : "gap-sm py-sm ps-list-row pe-sm",
-          ]}
-        >
-          <span
+      <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+      <Input
+        type="search"
+        value={found}
+        oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
+          found = event.currentTarget.value;
+        }}
+        aria-label={m.manage_tags_find()}
+        placeholder={m.manage_tags_find()}
+        class="no-search-cancel text-small text-foreground touch:text-body"
+      />
+    </InputGroup>
+    {#if tags.length === 0}
+      <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
+        {m.manage_tags_none()}
+      </p>
+    {:else}
+      <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
+        {m.manage_tags_intro({ count: tags.length })}
+      </p>
+      <ul
+        id={listId}
+        aria-label={m.manage_tags_list()}
+        class={android.isOn
+          ? "-mx-page-start -me-page-end flex flex-col"
+          : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
+      >
+        {#each shown as tag (tag.name)}
+          <li
             class={[
-              "flex flex-1 flex-col min-inline-none",
-              !android.isOn && "gap-2xs",
+              "flex items-center",
+              android.isOn
+                ? "gap-sm py-sm ps-lg pe-sm min-block-native-row-two"
+                : "gap-sm py-sm ps-list-row pe-sm",
             ]}
           >
             <span
-              class={["truncate", android.isOn ? "text-body" : "font-medium"]}
-              >{tag.name}</span
-            >
-            <span
               class={[
-                "text-muted",
-                android.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+                "flex flex-1 flex-col min-inline-none",
+                !android.isOn && "gap-2xs",
               ]}
             >
-              {m.library_series_count({ count: tag.seriesCount })}
+              <span
+                class={["truncate", android.isOn ? "text-body" : "font-medium"]}
+                >{tag.name}</span
+              >
+              <span
+                class={[
+                  "text-muted",
+                  android.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+                ]}
+              >
+                {m.library_series_count({ count: tag.seriesCount })}
+              </span>
             </span>
-          </span>
-          <Tooltip label={m.manage_tags_rename({ tag: tag.name })}>
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                look="icon"
-                class={ROW_BUTTON}
-                aria-label={m.manage_tags_rename({ tag: tag.name })}
-                onclick={() => {
-                  renaming = tag.name;
-                }}
-              >
-                <Pencil size={ICON_SIZE} aria-hidden="true" />
-              </Button>
-            {/snippet}
-          </Tooltip>
-          <Tooltip label={m.manage_tags_delete({ tag: tag.name })}>
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                look="icon"
-                class={ROW_BUTTON}
-                aria-label={m.manage_tags_delete({ tag: tag.name })}
-                onclick={() => {
-                  void remove(tag.name);
-                }}
-              >
-                <Trash size={ICON_SIZE} aria-hidden="true" />
-              </Button>
-            {/snippet}
-          </Tooltip>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-</div>
-<RenameTagDialog
-  tag={renaming}
-  onRename={(tag: string, to: string) => {
-    void rename(tag, to);
-  }}
-  onClose={() => {
-    renaming = undefined;
-  }}
-/>
+            <Tooltip label={m.manage_tags_rename({ tag: tag.name })}>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  look="icon"
+                  class={ROW_BUTTON}
+                  aria-label={m.manage_tags_rename({ tag: tag.name })}
+                  onclick={() => {
+                    renaming = tag.name;
+                  }}
+                >
+                  <Pencil size={ICON_SIZE} aria-hidden="true" />
+                </Button>
+              {/snippet}
+            </Tooltip>
+            <Tooltip label={m.manage_tags_delete({ tag: tag.name })}>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  look="icon"
+                  class={ROW_BUTTON}
+                  aria-label={m.manage_tags_delete({ tag: tag.name })}
+                  onclick={() => {
+                    void remove(tag.name);
+                  }}
+                >
+                  <Trash size={ICON_SIZE} aria-hidden="true" />
+                </Button>
+              {/snippet}
+            </Tooltip>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+  <RenameTagDialog
+    tag={renaming}
+    onRename={(tag: string, to: string) => {
+      void rename(tag, to);
+    }}
+    onClose={() => {
+      renaming = undefined;
+    }}
+  />
+</GroupedGround>
