@@ -27,7 +27,16 @@
     handlers: MissingFolderActions;
   } = $props();
 
-  const look = toastLook(currentPlatform());
+  const platform = currentPlatform();
+  const look = toastLook(platform);
+  const mainAction =
+    platform === "windows"
+      ? ({ variant: "secondary" } as const)
+      : ({ look: "inverse", class: look.warningAction } as const);
+  const otherAction =
+    platform === "windows"
+      ? ({ variant: "secondary" } as const)
+      : ({ look: "tinted", class: [SECONDARY, look.action] } as const);
 
   const remedy = $derived(remedyOf(missing));
   const wording = $derived(wordingOf(missing, isStillFailing));
@@ -46,8 +55,7 @@
     {#if remedy === "chooseAgain"}
       <Button
         type="button"
-        look="inverse"
-        class={look.warningAction}
+        {...mainAction}
         onclick={() => {
           handlers.find(missing);
         }}
@@ -56,8 +64,7 @@
       </Button>
       <Button
         type="button"
-        look="tinted"
-        class={[SECONDARY, look.action]}
+        {...otherAction}
         onclick={() => {
           handlers.unlink(missing);
         }}
@@ -67,8 +74,7 @@
     {:else if remedy === "signIn"}
       <Button
         type="button"
-        look="inverse"
-        class={look.warningAction}
+        {...mainAction}
         onclick={() => {
           handlers.signIn(missing);
         }}
@@ -78,8 +84,7 @@
     {:else if remedy === "tryAgain"}
       <Button
         type="button"
-        look="inverse"
-        class={look.warningAction}
+        {...mainAction}
         onclick={() => {
           handlers.tryAgain(missing);
         }}
@@ -89,8 +94,7 @@
     {:else}
       <Button
         type="button"
-        look="inverse"
-        class={look.warningAction}
+        {...mainAction}
         onclick={() => {
           handlers.showAnyway(missing);
         }}
@@ -99,8 +103,7 @@
       </Button>
       <Button
         type="button"
-        look="tinted"
-        class={[SECONDARY, look.action]}
+        {...otherAction}
         onclick={() => {
           handlers.find(missing);
         }}
