@@ -71,6 +71,7 @@
     {chosen}
     labelledBy={labelId}
     size="small"
+    hasWindowsLook
     {onChoose}
     class={android.isOn
       ? "flex-none max-inline-full"

@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { X } from "@lucide/svelte";
+  import { SquareCheck, X } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import { isPhone, isPointer, usesCommandKey } from "#lib/page/platform.ts";
   import { foldingBarLook, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  import type { SelectionAction } from "./selection-actions.ts";
 
   const ICON_SIZE = 20;
 
@@ -17,17 +20,23 @@
     count,
     onSelectAll,
     onCancel,
+    actions = [],
   }: {
     platform: Platform;
     count: number;
     onSelectAll: () => void;
     onCancel: () => void;
+    actions?: readonly SelectionAction[];
   } = $props();
 
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(platform, width.current));
   const onIosPhone = $derived(platform === "ios" && onPhone);
   const onAndroidPhone = $derived(platform === "android" && onPhone);
+  const bar = $derived(commandBarLook(platform));
+  const selectAllKeys = $derived(
+    usesCommandKey(platform) ? "Meta+A" : "Control+A",
+  );
 </script>
 
 <h1 class="sr-only">{m.library_title()}</h1>
@@ -86,29 +95,67 @@
         "flex-1",
         onAndroidPhone
           ? "text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title"
-          : "text-title font-semibold in-toolbar:text-body",
+          : (bar?.title ?? "text-title font-semibold in-toolbar:text-body"),
       ]}
       aria-live="polite"
     >
       {m.library_selected_series({ count })}
     </p>
-    <Button
-      type="button"
-      {...onPhone ? { variant: "plain" } : { look: "text" }}
-      aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
-      class={onPhone
-        ? undefined
-        : "flex items-center gap-sm px-xs text-body min-block-touch-target in-toolbar:text-small in-toolbar:min-block-pointer-button"}
-      onclick={onSelectAll}
-    >
-      {m.library_select_all()}
-      {#if isPointer(platform)}
-        <Kbd>
-          {usesCommandKey(platform)
-            ? m.library_select_all_command()
-            : m.library_select_all_control()}
-        </Kbd>
-      {/if}
-    </Button>
+    {#if bar === undefined}
+      <Button
+        type="button"
+        {...onPhone ? { variant: "plain" } : { look: "text" }}
+        aria-keyshortcuts={selectAllKeys}
+        class={onPhone
+          ? undefined
+          : "flex items-center gap-sm px-xs text-body min-block-touch-target in-toolbar:text-small in-toolbar:min-block-pointer-button"}
+        onclick={onSelectAll}
+      >
+        {m.library_select_all()}
+        {#if isPointer(platform)}
+          <Kbd>
+            {usesCommandKey(platform)
+              ? m.library_select_all_command()
+              : m.library_select_all_control()}
+          </Kbd>
+        {/if}
+      </Button>
+    {:else}
+      <div
+        role="group"
+        aria-label={m.library_selection_toolbar()}
+        class="flex items-center"
+      >
+        <Tooltip
+          label={m.library_select_all()}
+          keys={[m.library_select_all_control()]}
+          type="button"
+          aria-keyshortcuts={selectAllKeys}
+          onclick={onSelectAll}
+        >
+          {#snippet child({ props })}
+            <Button {...props} look={bar.look}>
+              <SquareCheck
+                size={ICON_SIZE}
+                aria-hidden="true"
+                class={bar.icon}
+              />
+              <span class={bar.label}>{m.library_select_all()}</span>
+            </Button>
+          {/snippet}
+        </Tooltip>
+        {#each actions as { name, icon: Icon, label, act } (name)}
+          <Button
+            type="button"
+            look={bar.look}
+            disabled={count === 0}
+            onclick={act}
+          >
+            <Icon size={ICON_SIZE} aria-hidden="true" class={bar.icon} />
+            <span class={bar.label}>{label}</span>
+          </Button>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </div>

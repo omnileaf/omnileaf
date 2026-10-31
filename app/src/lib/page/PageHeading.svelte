@@ -1,5 +1,6 @@
 <script lang="ts">
   import { WindowWidth } from "./breakpoints";
+  import { commandBarLook } from "./command-bar-look";
   import { currentPlatform, isPhone } from "./platform";
   import { NATIVE_TOP_BAR } from "./top-bar";
 
@@ -9,15 +10,13 @@
   const TODAYS_TITLE =
     "text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
 
-  const WINDOWS_TITLE =
-    "text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar in-toolbar:truncate";
-
   const platform = currentPlatform();
   const width = new WindowWidth();
 
   function titleLook() {
-    if (platform === "windows") {
-      return WINDOWS_TITLE;
+    const bar = commandBarLook(platform);
+    if (bar !== undefined) {
+      return bar.title;
     }
     if (isPhone(platform, width.current)) {
       return [

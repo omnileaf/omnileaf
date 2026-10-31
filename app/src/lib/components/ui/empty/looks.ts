@@ -18,7 +18,11 @@ const EMPTY_LOOKS = {
     prose: "max-inline-empty leading-relaxed",
   },
   macos: TODAYS_LOOK,
-  windows: TODAYS_LOOK,
+  windows: {
+    title:
+      "text-native-empty/native-empty tracking-native-empty font-native-empty-title",
+    prose: "max-inline-prose",
+  },
 } satisfies Record<Platform, EmptyLook>;
 
 export function emptyLook(platform: Platform): EmptyLook {

@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -7,17 +7,17 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { drawnContrast } from "../../../tests/components/contrast-ratio.ts";
+import { resolvedColour } from "../../../tests/components/resolved-colour.ts";
 import {
-  contrastRatio,
-  drawnContrast,
-} from "../../../tests/components/contrast-ratio.ts";
+  COMMAND_BUTTON,
+  TITLE_TYPE,
+} from "../../../tests/components/windows-metrics.ts";
 
 import LibraryHeaderHarness from "./LibraryHeaderHarness.svelte";
 
 const DESKTOP = { width: 1280, height: 800 };
-const COMMAND_BUTTON = { width: 68, height: 64 };
 const COMMAND_LABEL_SIZE = "12px";
-const TITLE = { size: "28px", leading: "36px", weight: "600" };
 const TEXT_CONTRAST = 4.5;
 const PAGE_MARGIN = 24;
 const RULE = 1;
@@ -38,12 +38,23 @@ function button(name: string): HTMLElement {
   return element;
 }
 
-function contrastOnThePage(inkProperty: string): number {
+function drawnOver(ground: string, ink: string): number {
   const probe = document.createElement("div");
-  probe.style.backgroundColor = "var(--background)";
-  probe.style.color = `var(${inkProperty})`;
+  probe.style.backgroundColor = ground;
+  probe.style.color = ink;
   document.body.append(probe);
   return drawnContrast(probe);
+}
+
+function inkOnTheBar(element: Element): number {
+  const bar = document.querySelector("[data-page-toolbar]");
+  if (bar === null) {
+    throw new Error("the header drew no bar");
+  }
+  return drawnOver(
+    getComputedStyle(bar).backgroundColor,
+    getComputedStyle(element).color,
+  );
 }
 
 function partOf(element: Element, selector: string): Element {
@@ -97,9 +108,9 @@ test("sets the page title as a 28 over 36 semibold Title", async () => {
     page.getByRole("heading", { name: "Library" }).element(),
   );
 
-  expect(title.fontSize).toBe(TITLE.size);
-  expect(title.lineHeight).toBe(TITLE.leading);
-  expect(title.fontWeight).toBe(TITLE.weight);
+  expect(title.fontSize).toBe(TITLE_TYPE.size);
+  expect(title.lineHeight).toBe(TITLE_TYPE.leading);
+  expect(title.fontWeight).toBe(TITLE_TYPE.weight);
 });
 
 test("holds the title and the command bar in a bar as tall as a command button and its rule", async () => {
@@ -134,19 +145,37 @@ test("leaves the other platforms' header controls at their own size", async () =
 });
 
 for (const theme of ["light", "dark"] as const) {
-  test(`reads the title and the command labels at 4.5 to 1 on the page in the ${theme} theme`, async () => {
+  test(`reads the drawn title and command labels at 4.5 to 1 on the bar in the ${theme} theme`, async () => {
     await drawHeader("windows", theme);
+    const drawn = [
+      page.getByRole("heading", { name: "Library" }).element(),
+      page.getByText("Filter", { exact: true }).element(),
+      page.getByText("View", { exact: true }).element(),
+    ];
 
-    expect(
-      contrastOnThePage("--native-color-on-top-bar"),
-    ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+    for (const element of drawn) {
+      expect(inkOnTheBar(element)).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+    }
   });
 
-  test(`reads an open command's label at 4.5 to 1 on the accent in the ${theme} theme`, async () => {
+  test(`reads an open command's drawn label at 4.5 to 1 on its accent fill in the ${theme} theme`, async () => {
     await drawHeader("windows", theme);
+    await page.getByRole("button", { name: "View options" }).click();
 
+    const open = button("View options");
+    const ink = resolvedColour("--native-color-on-button-primary", "color");
+    const fill = resolvedColour(
+      "--native-color-button-primary",
+      "backgroundColor",
+    );
+    await vi.waitFor(() => {
+      expect(getComputedStyle(open, "::before").backgroundColor).toBe(fill);
+      expect(getComputedStyle(open).color).toBe(ink);
+    });
+
+    expect(open.getAttribute("aria-expanded")).toBe("true");
     expect(
-      contrastRatio("on-button-primary", "button-primary"),
+      drawnOver(fill, getComputedStyle(open).color),
     ).toBeGreaterThanOrEqual(TEXT_CONTRAST);
   });
 }

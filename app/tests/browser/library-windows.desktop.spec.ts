@@ -16,8 +16,17 @@ const LIBRARY = sampleSeries(14).map((series, index) => ({
   language: index % 2 === 0 ? "en" : null,
   hasDownloads: index % 3 === 0,
 }));
-const FIRST_TITLE = LIBRARY[0]?.title ?? "";
-const SECOND_TITLE = LIBRARY[1]?.title ?? "";
+
+function titleOf(index: number): string {
+  const series = LIBRARY[index];
+  if (series === undefined) {
+    throw new Error(`the fixture lists no series at ${String(index)}`);
+  }
+  return series.title;
+}
+
+const FIRST_TITLE = titleOf(0);
+const SECOND_TITLE = titleOf(1);
 const COMMAND_WIDTH = 68;
 const COMMAND_HEIGHT = 64;
 const PAGE_MARGIN = 24;
@@ -81,7 +90,7 @@ test.describe("Windows library", () => {
         await expect(command(page, "View options")).toContainText("View");
       });
 
-      test("keeps the title 24 from the pane and the covers 24 from the edge of the page", async ({
+      test("keeps the covers 24 from the edge of the page", async ({
         page,
       }) => {
         const bar = await boxOf(commandBar(page));
@@ -129,6 +138,24 @@ test.describe("Windows library", () => {
         await expect(filter).toBeFocused();
         await expect(filter).toHaveCSS("outline-width", "2px");
         await expect(filter).not.toHaveCSS("box-shadow", "none");
+      });
+
+      test("opens the view options with segmented choices that raise the chosen segment on an accent pill", async ({
+        page,
+      }) => {
+        await command(page, "View options").click();
+
+        const display = page.getByRole("radiogroup", { name: "Display" });
+        await expect(display).toBeVisible();
+        await expect(display).toHaveCSS("border-top-width", "1px");
+        await expect(display).toHaveCSS("border-top-left-radius", "4px");
+        const pill = await display
+          .getByRole("radio", { name: "Grid" })
+          .evaluate(
+            (element) => getComputedStyle(element, "::after").backgroundColor,
+          );
+        expect(pill).toBe(ACCENT[colorScheme]);
+        expect(await accessibilityViolations(page)).toEqual([]);
       });
 
       test("has no accessibility violations", async ({ page }) => {
@@ -218,15 +245,11 @@ test.describe("Windows library", () => {
         .getByRole("checkbox", { name: `Select ${FIRST_TITLE}` })
         .click();
 
-      await expect(
-        page
-          .getByRole("group", { name: "Selected series" })
-          .getByText("1 selected"),
-      ).toBeVisible();
+      await expect(page.getByText("1 selected")).toBeVisible();
       const link = first.locator("[data-pickable-link]");
       await expect(link).toHaveAttribute("aria-checked", "true");
       await settle(link);
-      expect(await edge(link)).toBe("rgb(47, 111, 79)");
+      expect(await edge(link)).toBe(ACCENT.light);
       expect(
         await edge(cell(page, SECOND_TITLE).locator("[data-pickable-link]")),
       ).toBe("rgba(0, 0, 0, 0)");
@@ -312,4 +335,104 @@ test.describe("Windows library", () => {
       expect(drawn).toBe(highlight);
     });
   });
+
+  test.describe("selection bar", () => {
+    test.beforeEach(async ({ page }) => {
+      await openLibrary(page);
+      const first = page
+        .getByRole("list", { name: "Series" })
+        .getByRole("listitem")
+        .first();
+      await first.hover();
+      await first.getByRole("checkbox").click();
+    });
+
+    test("holds the selection's commands in a command bar at the top, with no bar at the bottom", async ({
+      page,
+    }) => {
+      const bar = commandBar(page);
+
+      for (const name of ["Select all", "Mark as read"]) {
+        const box = await boxOf(bar.getByRole("button", { name }));
+        expect([name, box.width >= COMMAND_WIDTH, box.height]).toEqual([
+          name,
+          true,
+          COMMAND_HEIGHT,
+        ]);
+      }
+      const groups = page.getByRole("group", { name: "Selected series" });
+      await expect(groups).toHaveCount(1);
+      await expect(
+        bar.getByRole("group", { name: "Selected series" }),
+      ).toHaveCount(1);
+    });
+
+    test("draws a turned-off command on no Highlight fill under forced colours, even under the pointer", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ forcedColors: "active" });
+      await page
+        .getByRole("list", { name: "Series" })
+        .getByRole("listitem")
+        .first()
+        .locator("[data-pickable-link]")
+        .click();
+      const markRead = command(page, "Mark as read");
+      await expect(markRead).toBeDisabled();
+
+      await markRead.hover({ force: true });
+      await settle(markRead);
+
+      const [layer, ink, highlight, highlightText] = await markRead.evaluate(
+        (element) => {
+          const probe = document.createElement("div");
+          probe.style.cssText =
+            "background-color: Highlight; color: HighlightText";
+          document.body.append(probe);
+          const drawn = getComputedStyle(probe);
+          const values = [
+            getComputedStyle(element, "::before").backgroundColor,
+            getComputedStyle(element).color,
+            drawn.backgroundColor,
+            drawn.color,
+          ];
+          probe.remove();
+          return values;
+        },
+      );
+      expect(layer).not.toBe(highlight);
+      expect(ink).not.toBe(highlightText);
+    });
+
+    test("has no accessibility violations", async ({ page }) => {
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  });
+});
+
+test.describe("Windows empty library", () => {
+  testOnlyInItsWebview("windows");
+  test.use({ backend: WINDOWS });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`sets the empty state as a Subtitle over a Body in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/");
+
+      const title = page.getByRole("heading", {
+        name: "Your library is empty",
+      });
+      await expect(title).toBeVisible();
+      await expect(title).toHaveCSS("font-size", "20px");
+      await expect(title).toHaveCSS("line-height", "28px");
+      await expect(title).toHaveCSS("font-weight", "600");
+      await expect(page.getByText("Add a folder of")).toHaveCSS(
+        "font-size",
+        "14px",
+      );
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
