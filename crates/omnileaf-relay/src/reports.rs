@@ -6,6 +6,7 @@ use rusqlite::{OptionalExtension, Transaction, params};
 
 use crate::{
     clock::UnixTime,
+    problem,
     status::ReviewStatus,
     store::{Store, StoreError},
 };
@@ -119,10 +120,20 @@ fn fingerprint(
 }
 
 fn insert(transaction: &Transaction<'_>, report: &NewReport) -> Result<(), StoreError> {
+    let problem = problem::fingerprint(&report.report);
+    let folded_into = match problem {
+        Some(fingerprint) => issue_of_same_problem(transaction, &fingerprint, report.platform)?,
+        None => None,
+    };
+    let status = if folded_into.is_some() {
+        "duplicate"
+    } else {
+        "received"
+    };
     transaction.execute(
         "INSERT INTO reports (code, status_key_hash, body_hash, platform, version, report,
-                              received_at, status_changed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+                              received_at, status_changed_at, problem, status, issue)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8, ?9, ?10)",
         params![
             report.code.as_str(),
             report.status_key_hash.as_bytes(),
@@ -131,6 +142,9 @@ fn insert(transaction: &Transaction<'_>, report: &NewReport) -> Result<(), Store
             report.version,
             report.report,
             report.received_at.seconds(),
+            problem,
+            status,
+            folded_into,
         ],
     )?;
     if let Some(address) = &report.reply_to {
@@ -140,6 +154,22 @@ fn insert(transaction: &Transaction<'_>, report: &NewReport) -> Result<(), Store
         )?;
     }
     Ok(())
+}
+
+fn issue_of_same_problem(
+    transaction: &Transaction<'_>,
+    problem: &[u8; 32],
+    platform: Platform,
+) -> Result<Option<i64>, StoreError> {
+    Ok(transaction
+        .query_row(
+            "SELECT issue FROM reports
+             WHERE problem = ?1 AND platform = ?2 AND issue IS NOT NULL
+             ORDER BY (status = 'published') DESC, received_at LIMIT 1",
+            params![problem, platform.as_str()],
+            |row| row.get(0),
+        )
+        .optional()?)
 }
 
 fn status_for(

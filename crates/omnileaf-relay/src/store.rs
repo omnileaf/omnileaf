@@ -6,7 +6,7 @@ use std::{
 
 use rusqlite::{Connection, Transaction, TransactionBehavior};
 
-const MIGRATIONS: &[&str] = &[include_str!("schema.sql")];
+const MIGRATIONS: &[&str] = &[include_str!("schema.sql"), include_str!("schema_2.sql")];
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct Store {
