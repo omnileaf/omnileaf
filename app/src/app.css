@@ -104,6 +104,15 @@
     }
   }
 }
+@custom-variant compact-pane {
+  @variant windows {
+    @variant desktop-shell {
+      @media (width < 1008px) {
+        @slot;
+      }
+    }
+  }
+}
 @custom-variant sidebar-hidden {
   @variant desktop {
     @variant expanded {
@@ -113,6 +122,9 @@
     }
   }
   @variant narrow-desktop {
+    @slot;
+  }
+  @variant compact-pane {
     @slot;
   }
 }
@@ -1001,6 +1013,8 @@
   }
 
   @variant windows {
+    --spacing-sidebar-desktop: 20rem;
+    --spacing-sidebar-hidden: 3rem;
     --spacing-menu-item-inline: 0.75rem;
     --radius-menu-item: 0.25rem;
     --spacing-checkbox: 1.25rem;
