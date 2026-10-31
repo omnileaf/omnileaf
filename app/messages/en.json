@@ -48,6 +48,7 @@
   "general_opens_last_book": "Last book",
   "general_opens_last_book_hint": "The reader, where you left it; the library when there's none.",
   "general_time_format": "Time format",
+  "general_dates_and_numbers": "Dates and numbers",
   "general_time_system_12": "Follow the system (12-hour)",
   "general_time_system_24": "Follow the system (24-hour)",
   "general_time_12": "12-hour",

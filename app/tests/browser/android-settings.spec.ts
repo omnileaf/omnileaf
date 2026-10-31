@@ -100,3 +100,83 @@ test.describe(
     });
   },
 );
+
+test.describe("General on an Android phone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's list rows");
+  });
+
+  test("shows Language and Time format as flat rows, a 16px name over its value in 14px", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+    const row = page.getByRole("button", { name: /^Time format/ });
+    const name = row.getByText("Time format", { exact: true });
+    const value = row.getByText(/^Follow the system/);
+
+    await expect(row).toHaveCSS("border-top-width", "0px");
+    expect((await boxOf(row)).height).toBeGreaterThanOrEqual(72);
+    await expect(name).toHaveCSS("font-size", "16px");
+    await expect(name).toHaveCSS("line-height", "24px");
+    await expect(value).toHaveCSS("font-size", "14px");
+    await expect(value).toHaveCSS("line-height", "20px");
+    expect((await boxOf(name)).x - (await boxOf(row)).x).toBeCloseTo(16, 0);
+    await expect(
+      page.getByRole("button", { name: /^Language/ }),
+    ).toHaveAttribute("aria-haspopup", "dialog");
+  });
+
+  test("heads Dates and numbers over the time format in the accent", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+    const heading = page.getByRole("heading", { name: "Dates and numbers" });
+
+    await expect(heading).toHaveCSS("font-size", "14px");
+    await expect(heading).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-plain"),
+    );
+  });
+
+  test("changes the time format in a dialog of radio rows, closing on a choice", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+
+    await page.getByRole("button", { name: /^Time format/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Time format" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveCSS("border-top-left-radius", "28px");
+    await expect(dialog.getByRole("radio")).toHaveCount(3);
+    await dialog.getByRole("radio", { name: "24-hour" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: /^Time format/ }),
+    ).toContainText("24-hour");
+  });
+
+  test("leaves the choice alone on Cancel", async ({ page }) => {
+    await page.goto("/settings/general");
+    await page.getByRole("button", { name: /^Time format/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Time format" });
+
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: /^Time format/ }),
+    ).not.toContainText("24-hour");
+  });
+
+  test("drops the line under Last book but keeps its row spacing", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+
+    await expect(
+      page.getByText("The reader, where you left it", { exact: false }),
+    ).toHaveCount(0);
+  });
+});
