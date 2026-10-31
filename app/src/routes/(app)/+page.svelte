@@ -988,7 +988,9 @@
         />
       {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
-        <LibrarySearchEntry platform={data.appInfo.platform} />
+        {#if !isMac}
+          <LibrarySearchEntry platform={data.appInfo.platform} />
+        {/if}
         <FilterAndSort
           bind:isOpen={isFilterOpen}
           bind:button={filterButton}
@@ -1016,6 +1018,9 @@
           showsButton={!foldsIntoMore}
           returnFocusTo={moreTrigger}
         />
+        {#if isMac}
+          <LibrarySearchEntry platform={data.appInfo.platform} />
+        {/if}
         <LibraryMore
           bind:trigger={moreTrigger}
           folded={foldsIntoMore

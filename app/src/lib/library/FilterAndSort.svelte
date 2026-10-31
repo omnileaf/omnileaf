@@ -61,6 +61,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isIos = platform === "ios";
+  const isMac = platform === "macos";
   const isAndroidPhone = $derived(
     phoneOf(platform, width.current) === "android",
   );
@@ -124,25 +125,31 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        look={bar?.look ?? "header-control"}
-        class={bar === undefined
-          ? [
-              "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
-              isOpen
-                ? "large:bg-accent-soft"
-                : "hover:tint-hover active:tint-pressed",
-            ]
-          : undefined}
+        {...isMac
+          ? { variant: "secondary", iconOnly: true, label: buttonLabel }
+          : { look: bar?.look ?? "header-control" }}
+        class={isMac
+          ? [filtersCount > 0 && "text-accent"]
+          : bar === undefined
+            ? [
+                "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
+                isOpen
+                  ? "large:bg-accent-soft"
+                  : "hover:tint-hover active:tint-pressed",
+              ]
+            : undefined}
       >
         <ListFilter
           size={ICON_SIZE}
           aria-hidden="true"
           class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />
-        <span class={bar?.label ?? "hidden large:inline"}>
-          {m.library_filter()}
-        </span>
-        {#if filtersCount > 0}
+        {#if !isMac}
+          <span class={bar?.label ?? "hidden large:inline"}>
+            {m.library_filter()}
+          </span>
+        {/if}
+        {#if filtersCount > 0 && !isMac}
           <span
             aria-hidden="true"
             class={[

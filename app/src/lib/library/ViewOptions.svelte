@@ -52,6 +52,7 @@
     phoneOf(platform, width.current) === "android",
   );
   const bar = commandBarLook(platform);
+  const isMac = platform === "macos";
   const panelWidth = viewPanelWidth(platform);
 
   let direction: "ltr" | "rtl" = $state("ltr");
@@ -86,24 +87,34 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        look={bar?.look ?? "header-control"}
-        class={bar === undefined
-          ? [
-              "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
-              isOpen
-                ? "large:bg-accent-soft"
-                : "hover:tint-hover active:tint-pressed",
-            ]
-          : undefined}
+        {...isMac
+          ? {
+              variant: "secondary",
+              iconOnly: true,
+              label: m.library_view_options(),
+            }
+          : { look: bar?.look ?? "header-control" }}
+        class={isMac
+          ? undefined
+          : bar === undefined
+            ? [
+                "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
+                isOpen
+                  ? "large:bg-accent-soft"
+                  : "hover:tint-hover active:tint-pressed",
+              ]
+            : undefined}
       >
         <SlidersHorizontal
           size={ICON_SIZE}
           aria-hidden="true"
           class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />
-        <span class={bar?.label ?? "hidden large:inline"}>
-          {m.library_view()}
-        </span>
+        {#if !isMac}
+          <span class={bar?.label ?? "hidden large:inline"}>
+            {m.library_view()}
+          </span>
+        {/if}
       </Button>
     {/snippet}
   </Tooltip>
