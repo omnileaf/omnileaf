@@ -23,6 +23,7 @@
     type LibraryWriter,
     type MissingFolder,
     type IpcError,
+    type RemovalTarget,
   } from "#lib/ipc/bindings.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
@@ -43,6 +44,8 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { MissingFolderNotices } from "#lib/library/missing-folder-notices.ts";
   import RemoveFolderDialog from "#lib/library/RemoveFolderDialog.svelte";
+  import RemoveFromLibraryDialog from "#lib/library/RemoveFromLibraryDialog.svelte";
+  import { noteRemoval, seriesTargets } from "#lib/library/removal-notice.ts";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import {
     filtersOn,
@@ -685,6 +688,31 @@
     }
   }
 
+  let removing = $state<RemovalTarget[] | undefined>();
+  let isRemoving = $state(false);
+
+  async function removeFromLibrary(deleteFiles: boolean): Promise<void> {
+    if (removing === undefined) {
+      return;
+    }
+    const targets = removing;
+    isRemoving = true;
+    const removed = await commands.removeFromLibrary(targets, deleteFiles);
+    isRemoving = false;
+    removing = undefined;
+    if (removed.status !== "ok") {
+      reportError(removed.error);
+      return;
+    }
+    selection.end();
+    noteRemoval(notices, removed.data);
+    void library.load();
+    if (countsSeries) {
+      void seriesCount.load();
+    }
+    pages.refreshBeside();
+  }
+
   async function markRead(series: SeriesId[]): Promise<void> {
     const marked = await commands.markSeriesRead(series);
     if (marked.status !== "ok") {
@@ -812,6 +840,17 @@
 {/snippet}
 
 <svelte:window onkeydown={keyWhileSelecting} />
+
+<RemoveFromLibraryDialog
+  targets={removing}
+  isBusy={isRemoving}
+  onConfirm={(deleteFiles: boolean) => {
+    void removeFromLibrary(deleteFiles);
+  }}
+  onCancel={() => {
+    removing = undefined;
+  }}
+/>
 
 <RemoveFolderDialog
   folder={unlinking}
@@ -1117,6 +1156,9 @@
             }}
             onMarkRead={() => {
               void markRead(selection.picked);
+            }}
+            onDelete={() => {
+              removing = seriesTargets(selection.picked);
             }}
             onCancel={() => {
               selection.end();

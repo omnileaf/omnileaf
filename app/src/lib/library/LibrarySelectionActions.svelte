@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, Folder, Tag } from "@lucide/svelte";
+  import { Eye, Folder, Tag, Trash } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
@@ -21,6 +21,7 @@
     keepsLabels,
     onLabels,
     onMarkRead,
+    onDelete,
     onCancel,
   }: {
     count: number;
@@ -28,6 +29,7 @@
     keepsLabels: boolean;
     onLabels: (from: LabelsFrom) => void;
     onMarkRead: () => void;
+    onDelete: () => void;
     onCancel: () => void;
   } = $props();
 
@@ -54,6 +56,7 @@
         ]
       : []),
     { name: "read", icon: Eye, label: m.library_mark_read(), act: onMarkRead },
+    { name: "delete", icon: Trash, label: m.library_delete(), act: onDelete },
   ]);
 </script>
 
