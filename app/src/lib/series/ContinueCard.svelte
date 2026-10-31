@@ -17,6 +17,7 @@
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
 
@@ -125,7 +126,10 @@
   <Card
     role="region"
     aria-labelledby={titleId}
-    class="flex flex-col gap-lg py-series-card shadow-card-rest expanded:py-xl"
+    class={[
+      "flex flex-col gap-lg py-series-card shadow-card-rest expanded:py-xl",
+      WINDOWS_CARD_PLATE,
+    ]}
   >
     <CardHeader class="px-series-card expanded:px-xl">
       <CardTitle id={titleId} class="text-body expanded:text-title">

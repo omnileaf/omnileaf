@@ -20,7 +20,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const look = $derived.by(() => {
-    if (platform === "macos") {
+    if (platform === "macos" || platform === "windows") {
       return cn(
         variantClasses("primary", "regular", false, platform),
         "max-inline-full",
