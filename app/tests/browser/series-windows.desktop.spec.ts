@@ -85,6 +85,24 @@ test.describe("the series page on Windows", () => {
         await expect(sort).toHaveCSS("background-color", look.standard);
       });
 
+      test("draws the way back and More in a narrow window as square subtle icon buttons", async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 700, height: 800 });
+        const back = page.locator("[data-back-link]");
+        const more = page.getByRole("button", { name: /More/ }).first();
+
+        for (const control of [back, more]) {
+          const box = await boxOf(control);
+          expect(box.width).toBe(box.height);
+          await expect(control).toHaveCSS(
+            "background-color",
+            "rgba(0, 0, 0, 0)",
+          );
+          await expect(control).toHaveCSS("border-top-left-radius", "4px");
+        }
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
