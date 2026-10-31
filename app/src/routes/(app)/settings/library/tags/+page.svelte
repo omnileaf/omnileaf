@@ -17,7 +17,7 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
-  const ANDROID_NOTE = `ps-lg pe-lg pbs-sm pbe-sm text-muted ${ROW_SUBTITLE_TYPE}`;
+  const ANDROID_NOTE = `pbs-sm pbe-sm text-muted ${ROW_SUBTITLE_TYPE}`;
   const ROW_BUTTON =
     "transition-control block-touch-target inline-touch-target hover:bg-hover active:bg-pressed ios:rounded-ios-button desktop:rounded-shadcn-control desktop:block-compact-button desktop:inline-compact-button";
 
@@ -122,7 +122,7 @@
       id={listId}
       aria-label={m.manage_tags_list()}
       class={android.isOn
-        ? "flex flex-col"
+        ? "-mx-page-start -me-page-end flex flex-col"
         : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
     >
       {#each shown as tag (tag.name)}
