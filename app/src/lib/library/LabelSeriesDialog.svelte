@@ -11,6 +11,7 @@
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { ANDROID_FILTER_CHIP_LOOK } from "./filter-chip-look";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { SeriesId } from "#lib/series/series-id.ts";
@@ -49,6 +50,28 @@
 
   const android = new AndroidPhone();
   const count = $derived(series.length);
+  const ANDROID_ROW =
+    "flex min-block-native-row flex-row-reverse items-center justify-between gap-lg py-native-row-block ps-lg pe-xl";
+  const ANDROID_FIELD =
+    "mx-lg mbe-sm mbs-sm rounded-native-outlined-field border border-native-button-outline-edge bg-transparent px-lg text-foreground block-native-outlined-field focus-within:border-accent";
+  const SHARED_FIELD =
+    "gap-sm rounded-control border border-border bg-background px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target";
+  const ANDROID_TITLE =
+    "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
+
+  function fieldClass(isWide: boolean): string {
+    return android.isOn && !isWide ? ANDROID_FIELD : SHARED_FIELD;
+  }
+
+  function rowClass(isWide: boolean): string {
+    return android.isOn && !isWide
+      ? ANDROID_ROW
+      : "flex items-center gap-md py-sm";
+  }
+
+  function titleClass(isWide: boolean): string {
+    return android.isOn && !isWide ? ANDROID_TITLE : "text-body";
+  }
   const tagsShown = $derived([
     ...(labels?.tags ?? []).filter(({ tag }) => !tagsRemoved.includes(tag)),
     ...tagsAdded.map((tag) => ({ tag, holding: count })),
@@ -194,10 +217,15 @@
           >
             {m.library_categories()}
           </h3>
-          <div class="flex flex-col divide-y divide-border">
+          <div
+            class={[
+              "flex flex-col",
+              !(android.isOn && view !== "wide") && "divide-y divide-border",
+            ]}
+          >
             {#each labels?.categories ?? [] as { category, holding } (category.id)}
               {@const choice = choices[category.id] ?? "none"}
-              <label class="flex items-center gap-md py-sm">
+              <label class={rowClass(view === "wide")}>
                 <Checkbox
                   bind:checked={
                     () => choice === "all",
@@ -210,10 +238,16 @@
                     ? `${category.name} ${m.library_in_some({ holding, count })}`
                     : category.name}
                 />
-                <span class="flex flex-col">
-                  <span class="text-body">{category.name}</span>
+                <span class="flex flex-1 flex-col">
+                  <span class={titleClass(view === "wide")}
+                    >{category.name}</span
+                  >
                   {#if choice === "some"}
-                    <span class="text-detail text-muted">
+                    <span
+                      class={android.isOn && view !== "wide"
+                        ? `${ROW_SUBTITLE_TYPE} text-muted`
+                        : "text-detail text-muted"}
+                    >
                       {m.library_in_some({ holding, count })}
                     </span>
                   {/if}
@@ -221,7 +255,7 @@
               </label>
             {/each}
             {#each created as name (name)}
-              <label class="flex items-center gap-md py-sm">
+              <label class={rowClass(view === "wide")}>
                 <Checkbox
                   bind:checked={
                     () => true,
@@ -231,14 +265,16 @@
                   }
                   aria-label={name}
                 />
-                <span class="text-body">{name}</span>
+                <span class={["flex-1", titleClass(view === "wide")]}
+                  >{name}</span
+                >
               </label>
             {/each}
           </div>
-          <InputGroup
-            class="mbs-sm gap-sm rounded-control border border-border bg-background px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"
-          >
-            <Plus size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+          <InputGroup class={["mbs-sm", fieldClass(view === "wide")]}>
+            {#if !(android.isOn && view !== "wide")}
+              <Plus size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+            {/if}
             <Input
               value={newCategory}
               oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
@@ -264,10 +300,10 @@
           >
             {m.library_tags()}
           </h3>
-          <InputGroup
-            class="gap-sm rounded-control border border-border bg-background px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"
-          >
-            <Tag size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+          <InputGroup class={fieldClass(view === "wide")}>
+            {#if !(android.isOn && view !== "wide")}
+              <Tag size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+            {/if}
             <Input
               bind:ref={tagField}
               value={newTag}
@@ -287,15 +323,28 @@
             />
           </InputGroup>
           {#if tagsShown.length > 0}
-            <ul class="flex flex-wrap gap-sm">
+            <ul
+              class={[
+                "flex flex-wrap gap-sm",
+                android.isOn && view !== "wide" && "px-lg",
+              ]}
+            >
               {#each tagsShown as { tag, holding } (tag)}
                 <li
-                  class={[
-                    "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
-                    holding >= count
-                      ? "border-transparent bg-chip"
-                      : "border-border bg-card",
-                  ]}
+                  class={android.isOn && view !== "wide"
+                    ? [
+                        ANDROID_FILTER_CHIP_LOOK.chip,
+                        "flex items-center",
+                        holding >= count
+                          ? "border-transparent bg-native-accent-soft text-foreground"
+                          : "",
+                      ]
+                    : [
+                        "flex items-center gap-2xs rounded-control border ps-sm pe-2xs text-small font-medium block-search-chip",
+                        holding >= count
+                          ? "border-transparent bg-chip"
+                          : "border-border bg-card",
+                      ]}
                 >
                   {holding >= count
                     ? tag
@@ -310,7 +359,9 @@
                     }}
                   >
                     <X
-                      size={REMOVE_ICON_SIZE}
+                      size={android.isOn && view !== "wide"
+                        ? ANDROID_FILTER_CHIP_LOOK.removeSize
+                        : REMOVE_ICON_SIZE}
                       strokeWidth={2.5}
                       aria-hidden="true"
                     />
