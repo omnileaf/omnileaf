@@ -61,7 +61,7 @@ test.describe(
       await expect(words).toHaveCSS("font-weight", "400");
     });
 
-    test("draws the chosen option with a 2px accent ring round an accent dot and the others in grey", async ({
+    test("draws the chosen option with a 2px accent ring round an accent dot and the others in the control edge colour", async ({
       page,
     }) => {
       await page.goto("/settings/general");
@@ -76,12 +76,12 @@ test.describe(
       await expect(chosen).toHaveCSS("border-top-width", "2px");
       await expect(chosen).toHaveCSS(
         "border-top-color",
-        await tokenColour(page, "--primary"),
+        await tokenColour(page, "--radio-edge-on"),
       );
       await expect(other).toHaveCSS("border-top-width", "2px");
       await expect(other).toHaveCSS(
         "border-top-color",
-        await tokenColour(page, "--color-muted"),
+        await tokenColour(page, "--control-edge"),
       );
     });
 
