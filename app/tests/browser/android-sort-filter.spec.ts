@@ -652,6 +652,52 @@ test.describe(
       });
     });
 
+    test.describe("when the filters leave nothing", () => {
+      const leavesNothing = (filter: { tags: readonly string[] }) =>
+        filter.tags.length > 0;
+      test.use({
+        backend: {
+          ...backendWith(MANY_CHOICES),
+          librarySeries: (
+            after: Parameters<ReturnType<typeof pagedSeries>>[0],
+            listing: Parameters<ReturnType<typeof pagedSeries>>[1],
+          ) =>
+            pagedSeries(() => (leavesNothing(listing.filter) ? [] : LIBRARY))(
+              after,
+              listing,
+            ),
+          librarySeriesCount: (filter: { tags: readonly string[] }) =>
+            leavesNothing(filter) ? 0 : LIBRARY.length,
+          libraryListing: () => FILTERED_LISTING,
+        },
+      });
+
+      test("draws it with a 48px muted icon, a 22px title, a 14px line and an outlined Clear all filters button", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        const region = page.getByRole("region", {
+          name: "No series match these filters",
+        });
+        await expect(region).toBeVisible();
+        const title = region.getByRole("heading");
+        const line = region.getByText("leave nothing", { exact: false });
+
+        await expect(title).toHaveCSS("font-size", "22px");
+        await expect(title).toHaveCSS("line-height", "28px");
+        await expect(title).toHaveCSS("font-weight", "400");
+        await expect(line).toHaveCSS("font-size", "14px");
+        await expect(line).toHaveCSS("line-height", "20px");
+        expect((await boxOf(region.locator("svg").first())).width).toBeCloseTo(
+          48,
+          0,
+        );
+        await expect(
+          region.getByRole("button", { name: "Clear all filters" }),
+        ).toBeVisible();
+      });
+    });
+
     test.describe("with more settings than fit", () => {
       test.use({ backend: backendWith(MANY_CHOICES) });
 

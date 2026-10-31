@@ -105,4 +105,22 @@
     [data-slot="kbd"] {
     color: HighlightText;
   }
+
+  :root[data-platform="windows"]
+    [data-command-button]:not(:disabled):not(
+      [aria-expanded="true"]
+    ):hover::before,
+  :root[data-platform="windows"]
+    [data-command-button]:not(:disabled):not(
+      [aria-expanded="true"]
+    ):active::before {
+    background-color: Highlight;
+  }
+
+  :root[data-platform="windows"]
+    [data-command-button]:not(:disabled):not([aria-expanded="true"]):hover,
+  :root[data-platform="windows"]
+    [data-command-button]:not(:disabled):not([aria-expanded="true"]):active {
+    color: HighlightText;
+  }
 }

@@ -9,18 +9,26 @@
   const TODAYS_TITLE =
     "text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
 
+  const WINDOWS_TITLE =
+    "text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar in-toolbar:truncate";
+
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const look = $derived(
-    isPhone(platform, width.current)
-      ? [
-          size === "large"
-            ? NATIVE_TOP_BAR.largeTitle
-            : NATIVE_TOP_BAR.pageTitle,
-          "wrap-anywhere",
-        ]
-      : TODAYS_TITLE,
-  );
+
+  function titleLook() {
+    if (platform === "windows") {
+      return WINDOWS_TITLE;
+    }
+    if (isPhone(platform, width.current)) {
+      return [
+        size === "large" ? NATIVE_TOP_BAR.largeTitle : NATIVE_TOP_BAR.pageTitle,
+        "wrap-anywhere",
+      ];
+    }
+    return TODAYS_TITLE;
+  }
+
+  const look = $derived(titleLook());
 </script>
 
 <h1

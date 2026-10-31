@@ -50,12 +50,13 @@ const DESKTOP_STEPPER_CORNER = "8px";
 const ON_PAGE_14 = { state: "started", page: 14 } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
 const DESKTOP_BUTTON_LOOKS = [
-  { platform: "linux", height: 36, corner: "8px" },
-  { platform: "macos", height: 28, corner: "6px" },
-  { platform: "windows", height: 32, corner: "4px" },
+  { platform: "linux", height: 36, toolbarHeight: 36, corner: "8px" },
+  { platform: "macos", height: 28, toolbarHeight: 28, corner: "6px" },
+  { platform: "windows", height: 32, toolbarHeight: 64, corner: "4px" },
 ] as const satisfies readonly {
   platform: Platform;
   height: number;
+  toolbarHeight: number;
   corner: string;
 }[];
 
@@ -263,7 +264,7 @@ for (const look of DESKTOP_BUTTON_LOOKS) {
       test.skip(viewportOf(page).width < LARGE_MIN_WIDTH, "a desktop window");
     });
 
-    test("sizes Filter and View with the search field and rounds them the platform's way", async ({
+    test("sizes the search field, Filter and View the platform's way and rounds Filter and View", async ({
       page,
     }) => {
       await page.goto("/");
@@ -282,7 +283,11 @@ for (const look of DESKTOP_BUTTON_LOOKS) {
         ),
       );
 
-      expect(heights).toEqual([look.height, look.height, look.height]);
+      expect(heights).toEqual([
+        look.height,
+        look.toolbarHeight,
+        look.toolbarHeight,
+      ]);
       expect([await cornerOf(filter), await cornerOf(view)]).toEqual([
         look.corner,
         look.corner,
