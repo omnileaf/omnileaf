@@ -62,7 +62,6 @@ async function openLabels(page: Page): Promise<void> {
   await settle(page.getByRole("group", { name: "Selected series" }));
   await tap(page.getByRole("button", { name: "Categories" }));
   await expect(sheet(page)).toBeVisible();
-  await settle(sheet(page));
 }
 
 test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
