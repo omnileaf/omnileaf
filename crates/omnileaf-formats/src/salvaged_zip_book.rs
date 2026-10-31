@@ -12,10 +12,9 @@ use crate::{
     FormatError, Limits, Page,
     block_reader::BlockReader,
     book::in_reading_order,
-    entries::is_fingerprinted_image,
+    entries::{is_contained_page, is_fingerprinted_image},
     error::read_failed,
     fingerprint::{fingerprint_failed, raw_fingerprint},
-    is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
     zip_book::{check_page, corrupt},
 };
@@ -58,7 +57,7 @@ impl SalvagedZipBook {
         let mut found = Vec::new();
         let mut total: u64 = 0;
         for survivor in &survivors {
-            if survivor.is_dir || is_ignored(&survivor.name) || !is_page_image(&survivor.name) {
+            if survivor.is_dir || !is_contained_page(&survivor.name) {
                 continue;
             }
             let page = Page {

@@ -126,6 +126,82 @@ test("finds an element the page shows within the time given", async () => {
   expect(await found?.text()).toBe("About Version 1.2.3");
 });
 
+const SCRIPT_TIMED_OUT = {
+  error: "script timeout",
+  message: "Script execution timed out",
+};
+
+function serverTimingOutScriptsAtFirst(timedOut: number): Promise<URL> {
+  let answered = 0;
+  return serve((route, response) => {
+    const isScript =
+      route === "POST /session/slow/elements" ||
+      route === "POST /session/slow/execute/sync";
+    if (route === "POST /session") {
+      reply(response, 200, { sessionId: "slow" });
+    } else if (isScript && answered < timedOut) {
+      answered += 1;
+      reply(response, 500, SCRIPT_TIMED_OUT);
+    } else if (route === "POST /session/slow/elements") {
+      reply(response, 200, [{ [ELEMENT_KEY]: "link" }]);
+    } else if (route === "GET /session/slow/element/link/displayed") {
+      reply(response, 200, true);
+    } else if (route === "GET /session/slow/element/link/text") {
+      reply(response, 200, "Library");
+    } else if (route === "POST /session/slow/execute/sync") {
+      reply(response, 200, true);
+    } else {
+      reply(response, 404, { error: "no such element", message: "" });
+    }
+  });
+}
+
+test("looks for an element again when the page is too busy loading to answer the first look", async () => {
+  const session = await Session.start(
+    await serverTimingOutScriptsAtFirst(2),
+    {},
+  );
+
+  const element = await session.waitFor(xpath("//a"));
+
+  expect(await element.text()).toBe("Library");
+});
+
+test("looks for an element again within the time given when the page was too busy to answer", async () => {
+  const session = await Session.start(
+    await serverTimingOutScriptsAtFirst(1),
+    {},
+  );
+
+  const found = await session.findWithin(xpath("//a"), 1_000);
+
+  expect(await found?.text()).toBe("Library");
+});
+
+test("checks a script's condition again when the page is too busy loading to answer the first check", async () => {
+  const session = await Session.start(
+    await serverTimingOutScriptsAtFirst(2),
+    {},
+  );
+
+  const shown = session.waitUntil("return true;", "the library page");
+
+  await expect(shown).resolves.toBeUndefined();
+});
+
+test("says what it waited for when the page never answers a script", async () => {
+  const session = await Session.start(
+    await serverTimingOutScriptsAtFirst(Number.POSITIVE_INFINITY),
+    {},
+  );
+
+  const wait = session.waitFor(xpath("//a"), 50);
+
+  await expect(wait).rejects.toThrow(
+    "the element at //a was not ready within 50 ms",
+  );
+});
+
 function reloadServer(answers: {
   reload: () => { status: number; value: unknown };
   stalePageChecks: number;

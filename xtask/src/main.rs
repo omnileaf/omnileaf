@@ -24,6 +24,7 @@ mod policy;
 mod port_forward;
 mod pre_push;
 mod process;
+mod rar_fixtures;
 mod sample;
 mod screenshot;
 mod test_device;
@@ -150,6 +151,15 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Make the committed RAR fixtures with RARLAB's `rar`, replacing the earlier ones.
+    RarFixtures {
+        /// RAR 7 or later, which writes the RAR 5 fixtures.
+        #[arg(long)]
+        rar5: PathBuf,
+        /// RAR 6, which writes the RAR 4 fixtures with `-ma4`.
+        #[arg(long)]
+        rar4: PathBuf,
+    },
     /// Check that comments hold no plain notes, warning words or references, and that doc comments stay short and don't restate their item.
     LintComments,
     /// Check that only the write path writes synced state and the projections built from it.
@@ -260,15 +270,7 @@ fn main() -> anyhow::Result<()> {
                 out.display()
             )]);
         }
-        Command::FuzzSeeds => {
-            let corpus = workspace::root().join(fuzz_seeds::CORPUS);
-            let written = fuzz_seeds::generate(&corpus)?;
-            print_lines(&[format!(
-                "wrote {} seeds to {}",
-                written.len(),
-                corpus.display()
-            )]);
-        }
+        Command::FuzzSeeds => write_fuzz_seeds()?,
         Command::Icons => icons::regenerate(&workspace::root())?,
         Command::Licences { check } => {
             let mode = if check {
@@ -278,6 +280,7 @@ fn main() -> anyhow::Result<()> {
             };
             licences::regenerate(&workspace::root(), mode)?;
         }
+        Command::RarFixtures { rar5, rar4 } => write_rar_fixtures(rar5, rar4)?,
         Command::LintComments => lint_comments()?,
         Command::LintSync => lint_sync()?,
         Command::Policy => enforce_policy()?,
@@ -455,6 +458,29 @@ fn print_changed_areas(base: Option<&str>) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn write_fuzz_seeds() -> anyhow::Result<()> {
+    let root = workspace::root();
+    let corpus = root.join(fuzz_seeds::CORPUS);
+    let written = fuzz_seeds::generate(&corpus, &root.join(rar_fixtures::FIXTURES))?;
+    print_lines(&[format!(
+        "wrote {} seeds to {}",
+        written.len(),
+        corpus.display()
+    )]);
+    Ok(())
+}
+
+fn write_rar_fixtures(rar5: PathBuf, rar4: PathBuf) -> anyhow::Result<()> {
+    let out = workspace::root().join(rar_fixtures::FIXTURES);
+    let written = rar_fixtures::generate(&out, &rar_fixtures::InstalledRar { rar5, rar4 })?;
+    print_lines(&[format!(
+        "wrote {} files to {}",
+        written.len(),
+        out.display()
+    )]);
+    Ok(())
+}
+
 #[expect(clippy::print_stdout, reason = "the report is the command's output")]
 fn print_lines(lines: &[impl Display]) {
     for line in lines {
@@ -525,5 +551,15 @@ mod tests {
             upstream.command,
             Command::VendorCheck { upstream: true }
         ));
+    }
+
+    #[test]
+    fn makes_the_rar_fixtures_only_with_both_tools_named() {
+        let both =
+            Cli::try_parse_from(["xtask", "rar-fixtures", "--rar5", "rar7", "--rar4", "rar6"]);
+        let one = Cli::try_parse_from(["xtask", "rar-fixtures", "--rar5", "rar7"]);
+
+        assert!(matches!(both.unwrap().command, Command::RarFixtures { .. }));
+        assert!(one.is_err());
     }
 }

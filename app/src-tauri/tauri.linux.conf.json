@@ -14,6 +14,13 @@
         "description": "Comic book 7-Zip archive",
         "mimeType": "application/x-cb7",
         "role": "Viewer"
+      },
+      {
+        "ext": ["cbr"],
+        "name": "Comic book RAR archive",
+        "description": "Comic book RAR archive",
+        "mimeType": "application/vnd.comicbook-rar",
+        "role": "Viewer"
       }
     ]
   }

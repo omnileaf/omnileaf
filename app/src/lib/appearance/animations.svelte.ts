@@ -7,6 +7,8 @@ import {
   StoredPreference,
 } from "#lib/preferences/stored-preference.ts";
 
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
 export const ANIMATIONS_PREFERENCE_KEY = "omnileaf.animationsStill";
 
 export const ANIMATION_GROUPS = [
@@ -45,6 +47,10 @@ export class AnimationsSetting {
 
   isOn(group: AnimationGroup): boolean {
     return !this.#still.has(group);
+  }
+
+  moves(group: AnimationGroup): boolean {
+    return this.isOn(group) && !window.matchMedia(REDUCED_MOTION).matches;
   }
 
   #storedGroups(): AnimationGroup[] {

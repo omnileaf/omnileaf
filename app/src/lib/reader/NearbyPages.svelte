@@ -4,6 +4,11 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { previewWindow } from "./preview-window.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import {
+    WINDOWS_CURRENT_PAGE_INK,
+    WINDOWS_OTHER_PAGE_INK,
+  } from "./windows-reader-bar.ts";
 
   const WIDE_REACH = { before: 3, after: 7 };
   const PHONE_REACH = { before: 1, after: 4 };
@@ -23,6 +28,15 @@
     onPick: (index: number) => void;
   } = $props();
 
+  const chrome = getReaderChrome();
+  const currentInk = $derived(
+    chrome.isCommandBar ? WINDOWS_CURRENT_PAGE_INK : "font-bold text-on-reader",
+  );
+  const otherInk = $derived(
+    chrome.isCommandBar
+      ? WINDOWS_OTHER_PAGE_INK
+      : "font-medium text-reader-muted",
+  );
   const wide = $derived(previewWindow(shown, pages.length, WIDE_REACH));
   const phone = $derived(previewWindow(shown, pages.length, PHONE_REACH));
   const near = $derived(
@@ -50,7 +64,7 @@
       aria-current={isShown ? "page" : undefined}
       class={[
         "flex flex-1 text-reader-thumbnail max-inline-reader-thumbnail-wide min-inline-none",
-        isShown ? "font-bold text-on-reader" : "font-medium text-reader-muted",
+        isShown ? currentInk : otherInk,
         (index < phone.first || index > phone.last) && "max-expanded:hidden",
       ]}
     >
