@@ -4,11 +4,13 @@ import type { SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
   onPlatform,
   test,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
@@ -565,5 +567,85 @@ test.describe("the 18+ mark on a phone", { tag: "@native" }, () => {
     expect(edges.start).toBeLessThanOrEqual(1);
     expect(edges.end).toBeLessThanOrEqual(1);
     expect(edges.bottom).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("on an iPhone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "ios", "iOS's grouped sheet");
+  });
+
+  test("sets each detail in its own grouped card, its heading above and the file's value below", async ({
+    page,
+  }) => {
+    const shown = await openEditor(page);
+
+    await expect(page.locator('[data-ground="grouped"]')).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-grouped-ground"),
+    );
+    const details = [
+      ["Title", shown.getByRole("textbox", { name: "Title" })],
+      ["People", shown.getByRole("group", { name: "People" })],
+      ["Tags", shown.getByRole("group", { name: "Tags" })],
+      ["Summary", shown.getByRole("textbox", { name: "Summary" })],
+    ] as const;
+    const cardColour = await tokenColour(page, "--native-color-card");
+    for (const [name, control] of details) {
+      const card = control.locator('xpath=ancestor::*[@data-slot="card"]');
+      await expect(card).toHaveCount(1);
+      await expect(card).toHaveCSS("background-color", cardColour);
+      await expect(card.getByText(name, { exact: true })).toHaveCount(0);
+      await expect(card.getByText(/^From the file/)).toHaveCount(0);
+    }
+  });
+
+  test("lets a card be its field, with grey chips and the file's value in footnote type", async ({
+    page,
+  }) => {
+    const shown = await openEditor(page);
+
+    for (const name of ["Title", "Summary"]) {
+      await expect(shown.getByRole("textbox", { name })).toHaveCSS(
+        "border-top-width",
+        "0px",
+      );
+    }
+    await expect(
+      shown.getByRole("button", { name: /^Remove .*Author A/ }),
+    ).toHaveCSS("background-color", await tokenColour(page, "--color-chip"));
+    const footnote = shown.getByText("From the file", { exact: true }).first();
+    const footnoteSize = await footnote.evaluate((note) =>
+      parseFloat(getComputedStyle(note).fontSize),
+    );
+    const bodySize = await shown
+      .getByRole("textbox", { name: "Title" })
+      .evaluate((field) => parseFloat(getComputedStyle(field).fontSize));
+    expect(footnoteSize).toBeLessThan(bodySize);
+  });
+
+  test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
+    page,
+  }) => {
+    const shown = await openEditor(page);
+
+    const save = shown.getByRole("button", { name: "Save" });
+    const close = shown.getByRole("button", { name: "Close" });
+    await expect(save).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-button-primary"),
+    );
+    const [closeBox, titleBox, saveBox] = await Promise.all([
+      boxOf(close),
+      boxOf(shown.getByRole("heading", { name: "Edit details" })),
+      boxOf(save),
+    ]);
+    expect(closeBox.width).toBeCloseTo(closeBox.height, 0);
+    expect(closeBox.x + closeBox.width).toBeLessThan(titleBox.x);
+    expect(titleBox.x + titleBox.width).toBeLessThan(saveBox.x);
+    const middle = titleBox.x + titleBox.width / 2;
+    expect(Math.abs(middle - viewportOf(page).width / 2)).toBeLessThan(
+      closeBox.width,
+    );
   });
 });
