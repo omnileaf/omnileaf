@@ -37,6 +37,13 @@ test.beforeEach(() => {
   applied = undefined;
 });
 
+async function tap(target: Locator): Promise<void> {
+  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
+  await target.dispatchEvent("pointerdown", touch);
+  await target.dispatchEvent("pointerup", touch);
+  await target.dispatchEvent("click");
+}
+
 function sheet(page: Page): Locator {
   return page.getByRole("dialog", { name: "Categories and tags" });
 }
@@ -49,11 +56,11 @@ async function openLabels(page: Page): Promise<void> {
   await page.getByRole("menuitem", { name: "Select series" }).click();
   await settle(list);
   for (const index of [0, 1, 2]) {
-    await list.getByRole("checkbox").nth(index).click();
+    await tap(list.getByRole("checkbox").nth(index));
   }
   await expect(page.getByText("3 selected").first()).toBeVisible();
   await settle(page.getByRole("group", { name: "Selected series" }));
-  await page.getByRole("button", { name: "Categories" }).click();
+  await tap(page.getByRole("button", { name: "Categories" }));
   await expect(sheet(page)).toBeVisible();
   await settle(sheet(page));
 }
@@ -155,12 +162,10 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
   }) => {
     await openLabels(page);
 
-    await sheet(page).getByRole("checkbox", { name: "Comics" }).click();
-    await sheet(page).getByRole("button", { name: "Add Letters" }).click();
-    await sheet(page).getByRole("button", { name: "Remove Sea" }).click();
-    await sheet(page)
-      .getByRole("button", { name: "Done", exact: true })
-      .click();
+    await tap(sheet(page).getByRole("checkbox", { name: "Comics" }));
+    await tap(sheet(page).getByRole("button", { name: "Add Letters" }));
+    await tap(sheet(page).getByRole("button", { name: "Remove Sea" }));
+    await tap(sheet(page).getByRole("button", { name: "Done", exact: true }));
 
     await expect(sheet(page)).toBeHidden();
     expect(applied).toEqual({
@@ -175,9 +180,7 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
   test("closes with Close and applies nothing", async ({ page }) => {
     await openLabels(page);
 
-    await sheet(page)
-      .getByRole("button", { name: "Close", exact: true })
-      .click();
+    await tap(sheet(page).getByRole("button", { name: "Close", exact: true }));
 
     await expect(sheet(page)).toBeHidden();
     expect(applied).toBeUndefined();
