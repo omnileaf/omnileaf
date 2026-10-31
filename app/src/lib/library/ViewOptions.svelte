@@ -12,6 +12,7 @@
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { MEDIUM_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
+  import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
@@ -50,6 +51,7 @@
   const isAndroidPhone = $derived(
     phoneOf(platform, width.current) === "android",
   );
+  const bar = commandBarLook(platform);
   const panelWidth = viewPanelWidth(platform);
 
   let direction: "ltr" | "rtl" = $state("ltr");
@@ -84,20 +86,24 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        look="header-control"
-        class={[
-          "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
-          isOpen
-            ? "large:bg-accent-soft"
-            : "hover:tint-hover active:tint-pressed",
-        ]}
+        look={bar?.look ?? "header-control"}
+        class={bar === undefined
+          ? [
+              "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
+              isOpen
+                ? "large:bg-accent-soft"
+                : "hover:tint-hover active:tint-pressed",
+            ]
+          : undefined}
       >
         <SlidersHorizontal
           size={ICON_SIZE}
           aria-hidden="true"
-          class="large:block-lg large:inline-lg"
+          class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />
-        <span class="hidden large:inline">{m.library_view()}</span>
+        <span class={bar?.label ?? "hidden large:inline"}>
+          {m.library_view()}
+        </span>
       </Button>
     {/snippet}
   </Tooltip>

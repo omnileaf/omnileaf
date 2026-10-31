@@ -11,6 +11,7 @@
     LibraryFilterChoices,
     LibraryListing,
   } from "#lib/ipc/bindings.ts";
+  import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -64,6 +65,7 @@
     phoneOf(platform, width.current) === "android",
   );
   let scrollRules = $state<SheetScrollRules>({ above: false, below: false });
+  const bar = commandBarLook(platform);
   const filtersCount = $derived(filtersOn(listing.filter));
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
   const buttonLabel = $derived(
@@ -122,33 +124,42 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        look="header-control"
-        class={[
-          "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
-          isOpen
-            ? "large:bg-accent-soft"
-            : "hover:tint-hover active:tint-pressed",
-        ]}
+        look={bar?.look ?? "header-control"}
+        class={bar === undefined
+          ? [
+              "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
+              isOpen
+                ? "large:bg-accent-soft"
+                : "hover:tint-hover active:tint-pressed",
+            ]
+          : undefined}
       >
         <ListFilter
           size={ICON_SIZE}
           aria-hidden="true"
-          class="large:block-lg large:inline-lg"
+          class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />
-        <span class="hidden large:inline">{m.library_filter()}</span>
+        <span class={bar?.label ?? "hidden large:inline"}>
+          {m.library_filter()}
+        </span>
         {#if filtersCount > 0}
           <span
             aria-hidden="true"
-            class="absolute inset-e-2xs inset-bs-2xs flex items-center justify-center rounded-full border-2 border-background bg-accent px-2xs text-caption font-bold text-on-accent min-inline-filter-badge large:hidden"
+            class={[
+              "absolute inset-e-2xs inset-bs-2xs flex items-center justify-center rounded-full border-2 border-background bg-accent px-2xs text-caption font-bold text-on-accent min-inline-filter-badge",
+              bar === undefined && "large:hidden",
+            ]}
           >
             {numbers.format(filtersCount)}
           </span>
-          <span
-            aria-hidden="true"
-            class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
-          >
-            {numbers.format(filtersCount)}
-          </span>
+          {#if bar === undefined}
+            <span
+              aria-hidden="true"
+              class="hidden rounded-full bg-accent px-icon-gap text-center text-caption font-bold text-on-accent min-inline-filter-badge large:inline"
+            >
+              {numbers.format(filtersCount)}
+            </span>
+          {/if}
         {/if}
       </Button>
     {/snippet}

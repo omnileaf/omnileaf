@@ -132,6 +132,7 @@
     aria-disabled={isBusy || undefined}
     onclick={click}
     {disabled}
+    data-command-button={look === "command" ? "" : undefined}
     {...restProps}
     children={content}
   />

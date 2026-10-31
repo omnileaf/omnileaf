@@ -1032,6 +1032,7 @@
     --radius-shadcn-button: 0.25rem;
     --spacing-shadcn-button: 2rem;
     --spacing-shadcn-control: 2rem;
+    --spacing-gutter: 1.5rem;
   }
 }
 
@@ -1845,6 +1846,12 @@
       cursor: pointer;
     }
   }
+}
+
+:root[data-platform="windows"] main {
+  --spacing-toolbar: calc(
+    var(--native-spacing-command-button-block) + var(--native-spacing-hairline)
+  );
 }
 
 :root[data-still~="sheets"] [data-sonner-toaster] [data-sonner-toast] {

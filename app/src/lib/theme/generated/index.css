@@ -411,6 +411,12 @@
   --tracking-native-empty: var(--native-tracking-empty);
   --font-weight-native-empty-title: var(--native-weight-empty-title);
   --font-weight-native-empty-body: var(--native-weight-empty-body);
+  --spacing-native-command-hover-block: var(--native-spacing-command-hover-block);
+  --spacing-native-command-hover-inline: var(--native-spacing-command-hover-inline);
+  --spacing-native-command-icon: var(--native-spacing-command-icon);
+  --text-native-command-label: var(--native-text-command-label);
+  --leading-native-command-label: var(--native-leading-command-label);
+  --font-weight-native-command-label: var(--native-weight-command-label);
 }
 
 @media (prefers-reduced-motion: reduce) {
