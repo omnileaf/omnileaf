@@ -7,8 +7,13 @@ import {
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
+import { GROUP_PLATE } from "#lib/page/plates.ts";
 
 export interface CategorySheetLook {
+  readonly isBarred: boolean;
+  readonly ground: "plain" | "grouped";
+  readonly height: "fit" | "large";
+  readonly check: string;
   readonly header: string;
   readonly hasBadge: boolean;
   readonly title: string;
@@ -22,6 +27,7 @@ export interface CategorySheetLook {
 export interface CategoryTabsLook {
   readonly usesMaterialIcons: boolean;
   readonly row: string;
+  readonly strip: string;
   readonly tab: string;
   readonly chosenTab: string;
   readonly otherTab: string;
@@ -30,6 +36,10 @@ export interface CategoryTabsLook {
 }
 
 const SHARED_SHEET: CategorySheetLook = {
+  isBarred: false,
+  ground: "plain",
+  height: "fit",
+  check: "",
   header: "flex items-center gap-md px-sheet-inline pbs-sheet-gap",
   hasBadge: true,
   title: "text-title font-bold",
@@ -43,6 +53,7 @@ const SHARED_SHEET: CategorySheetLook = {
 
 const SHARED_LOOK: CategoryTabsLook = {
   usesMaterialIcons: false,
+  strip: "",
   row: "-ms-gutter -me-page-end flex items-center gap-xs border-be border-border ps-gutter pe-page-end max-medium:-ms-page-start max-medium:ps-page-start desktop:expanded:ps-xl in-toolbar:ps-lg",
   tab: `relative shrink-0 px-md text-small whitespace-nowrap transition-control min-block-touch-target after:absolute after:inset-x-sm after:inset-be-none after:rounded-full after:block-2xs expanded:min-block-pointer-button touch:touch-target-across ${ROW_FOCUS_RING}`,
   chosenTab: "font-semibold text-foreground after:bg-foreground",
@@ -63,6 +74,7 @@ const SHARED_PHONE_LOOK: CategoryTabsLook = {
 
 const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   usesMaterialIcons: true,
+  strip: "",
   row: "-ms-page-start -me-page-end flex items-center border-be border-native-tab-rule",
   tab: `relative shrink-0 px-lg text-native-tab-label/native-tab-label font-native-tab-label tracking-native-tab-label whitespace-nowrap transition-control min-inline-native-tab-min min-block-touch-target active:bg-native-row-pressed ${ROW_FOCUS_RING}`,
   chosenTab:
@@ -71,6 +83,7 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   arrow:
     "mx-xs shrink-0 text-native-on-tab block-touch-target inline-touch-target active:bg-native-row-pressed",
   sheet: {
+    ...SHARED_SHEET,
     header: "flex flex-col px-lg pbe-sm",
     hasBadge: false,
     title:
@@ -83,8 +96,35 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   },
 };
 
+const IOS_CAPSULE =
+  "text-native-button/native-button font-native-button tracking-native-button";
+
+const IOS_PHONE_LOOK: CategoryTabsLook = {
+  usesMaterialIcons: false,
+  strip: "gap-sm",
+  row: "-ms-page-start -me-page-end flex items-center gap-sm ps-page-start pe-sm pbs-sm pbe-sm",
+  tab: `relative shrink-0 rounded-full px-md whitespace-nowrap transition-control block-native-segment touch:touch-target-across ${IOS_CAPSULE} ${ROW_FOCUS_RING}`,
+  chosenTab: "bg-native-accent-soft font-semibold text-foreground",
+  otherTab: "bg-native-button-outline text-foreground",
+  arrow:
+    "flex shrink-0 items-center justify-center rounded-full bg-native-button-outline text-foreground block-native-segment inline-native-segment touch:touch-target-around",
+  sheet: {
+    ...SHARED_SHEET,
+    isBarred: true,
+    ground: "grouped",
+    height: "large",
+    check: "text-accent",
+    header: "",
+    list: `mx-lg flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`,
+    option:
+      "flex items-center gap-md px-lg text-start text-native-row-title/native-row-title transition-control min-block-native-row active:bg-native-row-pressed",
+    foot: "px-lg pbs-lg pbe-sheet-bottom",
+  },
+};
+
 const PHONE_LOOKS: Partial<Record<Platform, CategoryTabsLook>> = {
   android: ANDROID_PHONE_LOOK,
+  ios: IOS_PHONE_LOOK,
 };
 
 export function categoryTabsLook(
