@@ -8,6 +8,9 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { categorySource } from "#lib/library/category-source.svelte.ts";
+  import { tabKey } from "#lib/library/library-tabs.ts";
+
   import NavigationIcon from "./NavigationIcon.svelte";
   import { paneArrowKeys } from "./pane-arrow-keys.ts";
   import PaneToggle from "./PaneToggle.svelte";
@@ -223,4 +226,32 @@
       </li>
     {/each}
   </ul>
+  {#if platform === "macos" && categorySource.tabs.length > 0}
+    <div class="hidden px-sm pbe-md desktop-shell:block">
+      <p class="px-sm pbs-sm text-caption font-semibold text-muted">
+        {m.library_categories()}
+      </p>
+      <ul aria-label={m.library_categories()} class="flex flex-col gap-2xs">
+        {#each categorySource.tabs as tab (tab.id)}
+          {@const key = tabKey(tab.id)}
+          <li>
+            <button
+              type="button"
+              aria-current={categorySource.chosen === key ? "true" : undefined}
+              class={[
+                "flex items-center rounded-sidebar-row px-sm text-start text-small transition-control block-sidebar-row inline-full hover:bg-sidebar-accent",
+                categorySource.chosen === key &&
+                  "bg-sidebar-selection font-medium text-on-sidebar-selection",
+              ]}
+              onclick={() => {
+                categorySource.choose(key);
+              }}
+            >
+              {tab.name}
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </div>
+  {/if}
 </nav>
