@@ -57,8 +57,12 @@ async function openLabels(page: Page): Promise<void> {
   const first = list.getByRole("checkbox").nth(0);
   await first.dispatchEvent("pointerup", touch);
   await first.dispatchEvent("click");
+  await expect(page.getByText("1 selected").first()).toBeVisible();
+  await settle(list);
   await list.getByRole("checkbox").nth(1).click();
   await list.getByRole("checkbox").nth(2).click();
+  await expect(page.getByText("3 selected").first()).toBeVisible();
+  await settle(page.getByRole("group", { name: "Selected series" }));
   await page.getByRole("button", { name: "Categories" }).click();
   await expect(sheet(page)).toBeVisible();
   await settle(sheet(page));
