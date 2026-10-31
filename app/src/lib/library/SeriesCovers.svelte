@@ -122,6 +122,7 @@
   const canHover = new MediaQuery("(hover: hover)");
   const selection = seriesSelection();
   const isSelecting = $derived(selection?.isSelecting === true);
+  const marksPicks = $derived(isSelecting && platform !== "macos");
   const seriesOrder = () => series.map(({ id }) => id);
   const dragSelect =
     selection === undefined
@@ -358,7 +359,7 @@
             {:else}
               <CoverBadges series={one} onCovers={view.onCovers} />
             {/if}
-            {#if isSelecting}
+            {#if marksPicks}
               <SelectionMark
                 isOn={selection?.has(one.id) === true}
                 class={tile.mark}
@@ -442,7 +443,7 @@
         {:else}
           <CoverBadges series={one} onCovers={view.onCovers} />
         {/if}
-        {#if isSelecting}
+        {#if marksPicks}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
             class={tile.compactMark}
@@ -507,7 +508,7 @@
         {:else}
           <CoverBadges series={one} onCovers={view.onCovers} />
         {/if}
-        {#if isSelecting}
+        {#if marksPicks}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
             class={tile.mark}
@@ -543,7 +544,7 @@
       order={seriesOrder}
       class={rowLook.link}
     >
-      {#if isSelecting}
+      {#if marksPicks}
         <span class="relative shrink-0 block-series-check inline-series-check">
           <SelectionMark isOn={selection?.has(one.id) === true} />
         </span>

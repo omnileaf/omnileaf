@@ -96,3 +96,14 @@ test("clears the selection with a click on empty space", async ({ page }) => {
 
   await expect(group(page)).toHaveCount(0);
 });
+
+test("draws no check circle on the covers, keeping the picked ones checked for assistive tech", async ({
+  page,
+}) => {
+  await pickTwo(page);
+
+  await expect(page.locator('[data-slot="selection-mark"]')).toHaveCount(0);
+  await expect(
+    covers(page).getByRole("checkbox", { checked: true }),
+  ).toHaveCount(2);
+});
