@@ -10,6 +10,7 @@ import {
 import { isPhone } from "#lib/page/platform.ts";
 
 import { floatsReaderBars, spansReaderBars } from "./reader-bar.ts";
+import { usesCommandBar } from "./windows-reader-bar.ts";
 
 export class ReaderChrome {
   readonly #width = new WindowWidth();
@@ -31,6 +32,10 @@ export class ReaderChrome {
 
   get floats(): boolean {
     return floatsReaderBars(this.platform, this.width);
+  }
+
+  get isCommandBar(): boolean {
+    return usesCommandBar(this.platform);
   }
 
   get spans(): boolean {

@@ -17,11 +17,14 @@
   import { everyBookIn } from "./every-book.ts";
   import JumpToBookList from "./JumpToBookList.svelte";
   import {
-    READER_BUTTON,
     READER_GLASS,
     READER_ICON_SIZE,
+    readerButton,
+    readerIconSize,
   } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { holdsFocusFor } from "./pane-focus.ts";
+  import { WINDOWS_FLYOUT } from "./windows-reader-bar.ts";
 
   let {
     isOpen,
@@ -60,12 +63,13 @@
   });
 </script>
 
-{#if isWide.current}
+{#if isWide.current || chrome.isCommandBar}
   {#if isOpen}
     <aside
+      {@attach chrome.isCommandBar ? holdsFocusFor("jump") : undefined}
       aria-labelledby={titleId}
       class={cn(
-        READER_GLASS,
+        chrome.isCommandBar ? WINDOWS_FLYOUT : READER_GLASS,
         "absolute inset-e-reader-edge inset-bs-reader-settings-top inset-be-reader-edge flex flex-col inline-reader-settings",
       )}
     >
@@ -73,7 +77,7 @@
         <span
           class="flex shrink-0 items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
         >
-          <List size={READER_ICON_SIZE} aria-hidden="true" />
+          <List size={readerIconSize(chrome.platform)} aria-hidden="true" />
         </span>
         <div class="flex flex-1 flex-col min-inline-none">
           <h2 id={titleId} class="text-body font-semibold">
@@ -87,10 +91,10 @@
           type="button"
           look="icon"
           aria-label={m.reader_jump_close()}
-          class={READER_BUTTON}
+          class={readerButton(chrome.platform, chrome.width)}
           onclick={onClose}
         >
-          <X size={READER_ICON_SIZE} aria-hidden="true" />
+          <X size={readerIconSize(chrome.platform)} aria-hidden="true" />
         </Button>
       </div>
       <div class="flex-1 overflow-y-auto px-lg pbe-lg">

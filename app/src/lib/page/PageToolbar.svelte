@@ -4,6 +4,7 @@
   import { cn } from "#lib/components/cn.ts";
   import SidebarToggle from "#lib/navigation/SidebarToggle.svelte";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
   let { class: className, children }: { class?: string; children: Snippet } =
     $props();
@@ -16,15 +17,17 @@
     className,
   )}
 >
-  <div
-    class="hidden items-center gap-sm desktop:expanded:flex in-toolbar:me-sm"
-  >
-    <SidebarToggle />
-    <span
-      aria-hidden="true"
-      class="me-sm border-s border-border block-toolbar-rule"
-    ></span>
-  </div>
+  {#if currentPlatform() !== "windows"}
+    <div
+      class="hidden items-center gap-sm desktop:expanded:flex in-toolbar:me-sm"
+    >
+      <SidebarToggle />
+      <span
+        aria-hidden="true"
+        class="me-sm border-s border-border block-toolbar-rule"
+      ></span>
+    </div>
+  {/if}
   {@render children()}
 </div>
 <PageNoticeSlot />
