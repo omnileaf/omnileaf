@@ -101,7 +101,7 @@
         barChip(platform, width.current),
       )}
     >
-      <Icon name={backIcon(platform)} class="shrink-0" />
+      <Icon name={backIcon(platform)} class="shrink-0 rtl:-scale-x-100" />
     </a>
     <h1
       tabindex="-1"
