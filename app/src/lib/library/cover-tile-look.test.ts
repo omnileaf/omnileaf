@@ -431,9 +431,10 @@ test("keeps a tablet's tile as it was on iOS and Android", async () => {
   ]);
 });
 
-test("keeps a list row's marks as they were on an iOS phone", async () => {
+test("keeps a list row's marks as they were on an iPad", async () => {
   document.documentElement.dataset.theme = "light";
   followCorePlatform("ios");
+  await page.viewport(TABLET.width, TABLET.height);
   const series = await oneSeries();
 
   const mark = styleOf(await markOf(series, { isOn: true, display: "list" }));

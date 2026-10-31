@@ -38,7 +38,7 @@
     type Reveal,
   } from "#lib/virtual-grid/grid-keys.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
@@ -47,6 +47,7 @@
   import CoverImage from "./CoverImage.svelte";
   import CoverSheets from "./CoverSheets.svelte";
   import DownloadedMark from "./DownloadedMark.svelte";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { listRowLook } from "./list-row-look.ts";
   import DragBox from "./DragBox.svelte";
@@ -108,6 +109,9 @@
   const stack = $derived(view.stacksSeriesCovers ? tile.stack : null);
   const width = new WindowWidth();
   const rowLook = $derived(listRowLook(platform, width.current));
+  const isIosPhone = $derived(
+    platform === "ios" && isPhone(platform, width.current),
+  );
   const coversTrack = $derived(
     fitsToWidth ? "grid-cols-covers-fit" : "grid-cols-covers-per-row",
   );
@@ -551,40 +555,68 @@
           isBlurred={veiled}
           class="rounded-list-cover inline-list-cover"
         />
-        {#if view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
+        {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
           <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
         {/if}
       </span>
-      <span class="flex flex-col gap-xs min-inline-none">
-        <span data-slot="item-title" class={rowLook.title}>
-          {shown.title}
-        </span>
-        <span class="flex flex-wrap items-center gap-sm">
-          <span class={rowLook.meta}>
-            {m.library_series_books({ count: one.bookCount })}
+      {#if isIosPhone}
+        <span class="flex flex-col min-inline-none">
+          <span data-slot="item-title" class={rowLook.title}>
+            {shown.title}
           </span>
-          {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
-            <LanguageBadge language={one.language} class="bg-chip" />
-          {/if}
-          {#if view.onCovers.showsUnreadCount && !veiled}
-            <UnreadCount
-              count={one.unreadCount}
-              isSpelledOut
-              class="px-sm py-2xs text-caption"
+          <span
+            data-slot="item-subtitle"
+            class="flex flex-wrap items-center gap-x-xs {rowLook.meta}"
+          >
+            {m.library_series_books({ count: one.bookCount })}
+            {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
+              <span aria-hidden="true">·</span>
+              {one.language.toUpperCase()}
+            {/if}
+            {#if view.onCovers.showsDownloaded && one.hasDownloads && !veiled}
+              <span aria-hidden="true">·</span>
+              <Icon name="download" class="shrink-0" />
+            {/if}
+            {#if view.onCovers.showsUnreadCount && one.unreadCount > 0 && !veiled}
+              <span aria-hidden="true">·</span>
+              <span class="font-semibold text-native-button-primary">
+                {m.library_unread_count({ count: one.unreadCount })}
+              </span>
+            {/if}
+          </span>
+        </span>
+      {:else}
+        <span class="flex flex-col gap-xs min-inline-none">
+          <span data-slot="item-title" class={rowLook.title}>
+            {shown.title}
+          </span>
+          <span class="flex flex-wrap items-center gap-sm">
+            <span class={rowLook.meta}>
+              {m.library_series_books({ count: one.bookCount })}
+            </span>
+            {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
+              <LanguageBadge language={one.language} class="bg-chip" />
+            {/if}
+            {#if view.onCovers.showsUnreadCount && !veiled}
+              <UnreadCount
+                count={one.unreadCount}
+                isSpelledOut
+                class="px-sm py-2xs text-caption"
+              />
+            {/if}
+          </span>
+          {#if share !== undefined}
+            <Progress
+              aria-label={m.library_books_read({
+                read: one.bookCount - one.unreadCount,
+                count: one.bookCount,
+              })}
+              value={share}
+              class="block-xs inline-list-progress"
             />
           {/if}
         </span>
-        {#if share !== undefined}
-          <Progress
-            aria-label={m.library_books_read({
-              read: one.bookCount - one.unreadCount,
-              count: one.bookCount,
-            })}
-            value={share}
-            class="block-xs inline-list-progress"
-          />
-        {/if}
-      </span>
+      {/if}
     </SeriesLink>
     {#if continues !== undefined && !isSelecting && !veiled}
       <ContinueDisc
