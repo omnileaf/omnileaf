@@ -15,7 +15,9 @@
   import { languageName } from "#lib/language/language.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
+  import ValueLinkRow from "#lib/settings/ValueLinkRow.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingRadios from "#lib/settings/SettingRadios.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -29,6 +31,7 @@
 
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
+  const isIosPhone = $derived(data.appInfo.platform === "ios" && onPhone);
 
   const id = $props.id();
   const hintId = `${id}-hint`;
@@ -57,57 +60,88 @@
 
 <GroupedGround>
   <SectionHeading title={m.general_title()} />
-  <div class="mbs-pane-gap flex flex-col gap-pane-gap">
-    <SettingRadios
-      title={m.general_opens_on()}
-      options={OPENING_PLACES}
-      labels={PLACE_LABELS}
-      hints={{ lastBook: m.general_opens_last_book_hint() }}
-      chosen={opensOn.choice}
-      onChoose={(place: OpeningPlace) => {
-        opensOn.choose(place);
-      }}
-    />
-    <div class="flex flex-col gap-sm">
-      <div class="rounded-list border border-border bg-card">
-        <a
-          href={resolve("/(app)/settings/general/language")}
-          aria-describedby={onPhone ? hintId : undefined}
-          class={[
-            "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
-            "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
-            "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
-          ]}
-        >
-          <span class="flex-1 font-semibold desktop:text-callout">
-            {m.language_label()}
-          </span>
-          <span
-            lang={getLocale()}
-            class="text-callout text-muted touch:medium:text-label desktop:text-label"
-          >
-            {languageName(getLocale())}
-          </span>
-          <ChevronRight
-            size={CHEVRON_SIZE}
-            class="shrink-0 text-muted rtl:-scale-x-100"
-          />
-        </a>
+  {#if isIosPhone}
+    <div class="mbs-pane-gap flex flex-col gap-xl">
+      <div
+        class={`flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`}
+      >
+        <ValueLinkRow
+          route="/(app)/settings/general/opens-on"
+          label={m.general_opens_on()}
+          value={PLACE_LABELS[opensOn.choice]}
+        />
+        <ValueLinkRow
+          route="/(app)/settings/general/language"
+          label={m.language_label()}
+          value={languageName(getLocale())}
+        />
       </div>
-      {#if onPhone}
-        <p id={hintId} class="px-xs text-footnote text-muted">
-          {m.language_phone_hint()}
-        </p>
-      {/if}
+      <div class="flex flex-col gap-sm">
+        <h2 class="ps-lg text-native-row-title/native-row-title text-muted">
+          {m.general_dates_and_numbers()}
+        </h2>
+        <div class={`flex flex-col overflow-hidden ${GROUP_PLATE}`}>
+          <ValueLinkRow
+            route="/(app)/settings/general/time-format"
+            label={m.general_time_format()}
+            value={TIME_FORMAT_LABELS[timeFormat.choice]}
+          />
+        </div>
+      </div>
     </div>
-    <SettingRadios
-      title={m.general_time_format()}
-      options={TIME_FORMATS}
-      labels={TIME_FORMAT_LABELS}
-      chosen={timeFormat.choice}
-      onChoose={(format: TimeFormat) => {
-        timeFormat.choose(format);
-      }}
-    />
-  </div>
+  {:else}
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+      <SettingRadios
+        title={m.general_opens_on()}
+        options={OPENING_PLACES}
+        labels={PLACE_LABELS}
+        hints={{ lastBook: m.general_opens_last_book_hint() }}
+        chosen={opensOn.choice}
+        onChoose={(place: OpeningPlace) => {
+          opensOn.choose(place);
+        }}
+      />
+      <div class="flex flex-col gap-sm">
+        <div class="rounded-list border border-border bg-card">
+          <a
+            href={resolve("/(app)/settings/general/language")}
+            aria-describedby={onPhone ? hintId : undefined}
+            class={[
+              "flex items-center gap-md rounded-list py-xs ps-lg pe-md transition-control min-block-phone-row hover:bg-hover active:bg-pressed",
+              "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
+              "desktop:py-none desktop:ps-list-row desktop:min-block-settings-row",
+            ]}
+          >
+            <span class="flex-1 font-semibold desktop:text-callout">
+              {m.language_label()}
+            </span>
+            <span
+              lang={getLocale()}
+              class="text-callout text-muted touch:medium:text-label desktop:text-label"
+            >
+              {languageName(getLocale())}
+            </span>
+            <ChevronRight
+              size={CHEVRON_SIZE}
+              class="shrink-0 text-muted rtl:-scale-x-100"
+            />
+          </a>
+        </div>
+        {#if onPhone}
+          <p id={hintId} class="px-xs text-footnote text-muted">
+            {m.language_phone_hint()}
+          </p>
+        {/if}
+      </div>
+      <SettingRadios
+        title={m.general_time_format()}
+        options={TIME_FORMATS}
+        labels={TIME_FORMAT_LABELS}
+        chosen={timeFormat.choice}
+        onChoose={(format: TimeFormat) => {
+          timeFormat.choose(format);
+        }}
+      />
+    </div>
+  {/if}
 </GroupedGround>

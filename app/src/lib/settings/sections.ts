@@ -29,6 +29,8 @@ export type SettingsSubPage =
   | "/(app)/settings/about/reports"
   | "/(app)/settings/advanced/animations"
   | "/(app)/settings/general/language"
+  | "/(app)/settings/general/opens-on"
+  | "/(app)/settings/general/time-format"
   | "/(app)/settings/library/adult-content"
   | "/(app)/settings/library/tags"
   | "/(app)/settings/library/tabs"
