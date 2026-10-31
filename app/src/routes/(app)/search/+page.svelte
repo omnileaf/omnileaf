@@ -111,11 +111,14 @@
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const isGroupedStart = $derived(isIPhone && !isLookingFor);
+  const isAndroidPhone = $derived(
+    phoneOf(data.appInfo.platform, width.current) === "android",
+  );
   const filterPlace: FilterPlace = $derived.by(() => {
     if (isIPhone) {
       return "token";
     }
-    return width.current === "compact" ? "row" : "field";
+    return width.current === "compact" && !isAndroidPhone ? "row" : "field";
   });
   /** The search as typed with its edges trimmed, so a space after the words changes nothing. */
   const searchKey = $derived(JSON.stringify(query.search));

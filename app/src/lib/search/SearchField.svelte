@@ -8,6 +8,7 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import type { FilterCondition } from "#lib/library/library-listing.ts";
   import { FLOATING_GLASS } from "#lib/navigation/tab-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -47,6 +48,7 @@
     onKey: (event: KeyboardEvent) => boolean;
   } = $props();
 
+  const android = new AndroidPhone();
   let input = $state<HTMLInputElement | null>(null);
   const hasTokens = $derived(filterPlace === "token" && conditions.length > 0);
   const canClear = $derived(text !== "" || hasTokens);
@@ -130,8 +132,10 @@
     <ConditionChips
       {conditions}
       {onRemove}
-      look="field"
-      class="shrink-0 flex-nowrap"
+      look={android.isOn ? "material" : "field"}
+      class={android.isOn
+        ? "scrollbar-none flex-nowrap overflow-x-auto max-inline-2/3 min-inline-none"
+        : "shrink-0 flex-nowrap"}
     />
   {/if}
   <Input

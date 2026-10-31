@@ -20,8 +20,8 @@ export const NATIVE_FILTER_CHIP_LOOK: FilterChipLook = {
 };
 
 export const ANDROID_FILTER_CHIP_LOOK: FilterChipLook = {
-  chip: `rounded-native-segment border border-native-button-outline-edge ps-md pe-sm text-muted ${NATIVE_TYPE} block-native-button-small`,
-  more: `shrink-0 justify-center rounded-native-segment border border-native-button-outline-edge px-md text-muted ${NATIVE_TYPE} block-native-button-small touch:touch-target-around`,
+  chip: `rounded-native-segment border border-native-button-outline-edge ps-md pe-sm text-muted ${NATIVE_TYPE} block-auto min-block-native-button-small`,
+  more: `shrink-0 justify-center rounded-native-segment border border-native-button-outline-edge px-md text-muted ${NATIVE_TYPE} block-auto min-block-native-button-small touch:touch-target-around`,
   removeSize: 18,
 };
 

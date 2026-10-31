@@ -67,6 +67,55 @@ test.describe(
       );
     });
 
+    test("turns a typed filter into a 32px outlined chip inside the field, with an 18px cross that removes it", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      const field = page
+        .getByRole("main")
+        .getByRole("combobox", { name: "Search your library" });
+      await field.fill("unread sample");
+      const inField = field.locator("xpath=..");
+      const chip = inField.getByRole("listitem").filter({ hasText: "Unread" });
+
+      const chipBox = await boxOf(chip);
+      const fieldBox = await boxOf(inField);
+      const remove = chip.getByRole("button", {
+        name: "Remove the Unread filter",
+      });
+
+      expect(chipBox.height).toBeCloseTo(CHIP_HEIGHT, 0);
+      expect(chipBox.y).toBeGreaterThanOrEqual(fieldBox.y);
+      expect(chipBox.y + chipBox.height).toBeLessThanOrEqual(
+        fieldBox.y + fieldBox.height,
+      );
+      await expect(chip).toHaveCSS("border-top-left-radius", CHIP_RADIUS);
+      await expect(chip).toHaveCSS(
+        "border-top-color",
+        await tokenColour(page, "--native-color-button-outline-edge"),
+      );
+      expect((await boxOf(remove.locator("svg"))).width).toBeCloseTo(18, 0);
+
+      await remove.click();
+
+      await expect(chip).toHaveCount(0);
+    });
+
+    test("centres each scope's label between the chip's top and bottom", async ({
+      page,
+    }) => {
+      const chips = await openSearch(page);
+      const chip = chips.getByRole("button", { name: "Manga" });
+
+      const chipBox = await boxOf(chip);
+      const labelBox = await boxOf(chip.locator("span").first());
+
+      expect(labelBox.y + labelBox.height / 2).toBeCloseTo(
+        chipBox.y + chipBox.height / 2,
+        0,
+      );
+    });
+
     test("fills the chosen scope with the soft accent and ticks it, leaving the others outlined", async ({
       page,
     }) => {
