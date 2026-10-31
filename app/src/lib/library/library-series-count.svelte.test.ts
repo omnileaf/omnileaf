@@ -96,3 +96,33 @@ test("holds no number while the next count is pending", async () => {
   answer({ status: "ok", data: 3 });
   await next;
 });
+
+test("forgets the number it holds once cleared", async () => {
+  const series = new LibrarySeriesCount(
+    () => Promise.resolve({ status: "ok", data: 24 }),
+    ignoreFailure,
+  );
+  await series.load();
+
+  series.clear();
+
+  expect(series.count).toBeUndefined();
+});
+
+test("drops the answer of a count started before it was cleared", async () => {
+  const answers: ((result: CountResult) => void)[] = [];
+  const series = new LibrarySeriesCount(
+    () =>
+      new Promise((resolve) => {
+        answers.push(resolve);
+      }),
+    ignoreFailure,
+  );
+  const counting = series.load();
+  series.clear();
+
+  answers[0]?.({ status: "ok", data: 24 });
+  await counting;
+
+  expect(series.count).toBeUndefined();
+});

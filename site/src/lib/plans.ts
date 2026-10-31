@@ -11,7 +11,7 @@ export const PLANS: readonly Plan[] = [
     status: "in-development",
     title: "Your own files",
     summary:
-      "Comic archives such as CBZ and CB7, and folders of images. CBR and EPUB follow.",
+      "Comic archives such as CBZ, CB7 and CBR, and folders of images. EPUB follows.",
   },
   {
     status: "planned",

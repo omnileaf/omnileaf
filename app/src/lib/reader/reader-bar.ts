@@ -7,6 +7,13 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
 
+import {
+  usesCommandBar,
+  WINDOWS_COMMAND_BUTTON,
+  WINDOWS_ICON_BUTTON,
+  WINDOWS_ICON_SIZE,
+} from "./windows-reader-bar.ts";
+
 const FLOATS_READER_BARS = {
   android: false,
   ios: true,
@@ -50,7 +57,23 @@ export function spansReaderBars(
   return isPhone(platform, width) && !FLOATS_READER_BARS[platform];
 }
 
+export function readerIconSize(platform: Platform): number {
+  return usesCommandBar(platform) ? WINDOWS_ICON_SIZE : READER_ICON_SIZE;
+}
+
+export function readerCommandButton(
+  platform: Platform,
+  width: WidthClass,
+): string {
+  return usesCommandBar(platform)
+    ? WINDOWS_COMMAND_BUTTON
+    : readerButton(platform, width);
+}
+
 export function readerButton(platform: Platform, width: WidthClass): string {
+  if (usesCommandBar(platform)) {
+    return WINDOWS_ICON_BUTTON;
+  }
   if (floatsReaderBars(platform, width)) {
     return CAPSULE_BUTTON;
   }
@@ -58,6 +81,9 @@ export function readerButton(platform: Platform, width: WidthClass): string {
 }
 
 export function readerBackLook(platform: Platform, width: WidthClass): string {
+  if (usesCommandBar(platform)) {
+    return WINDOWS_ICON_BUTTON;
+  }
   return isPhone(platform, width)
     ? buttonClasses("header-control", platform, { width })
     : READER_BUTTON;

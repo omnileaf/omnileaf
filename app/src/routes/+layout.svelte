@@ -39,6 +39,7 @@
     undoSettingForDocument,
   } from "#lib/notices/undo-setting.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { followWindowBackdropOnceThemed } from "#lib/page/display-modes.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -182,9 +183,12 @@
   }
 
   $effect(() => {
-    void commands.matchSystemBars(
-      systemBarsTheme(themeSetting.resolved, bookPresence.isOpen),
-      themeSetting.preference,
+    void followWindowBackdropOnceThemed(
+      data.appInfo.windowBackdrop,
+      commands.matchSystemBars(
+        systemBarsTheme(themeSetting.resolved, bookPresence.isOpen),
+        themeSetting.preference,
+      ),
     );
   });
 

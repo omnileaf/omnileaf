@@ -93,6 +93,11 @@
   --color-native-progress-idle-track: var(--native-color-progress-idle-track);
   --spacing-native-progress-gap: var(--native-spacing-progress-gap);
   --spacing-native-progress-thickness: var(--native-spacing-progress-thickness);
+  --color-native-nav-item-hover: var(--native-color-nav-item-hover);
+  --color-native-nav-item-pressed: var(--native-color-nav-item-pressed);
+  --color-native-nav-item-selected: var(--native-color-nav-item-selected);
+  --color-native-on-nav-item: var(--native-color-on-nav-item);
+  --color-native-nav-indicator: var(--native-color-nav-indicator);
   --color-native-grouped-ground: var(--native-color-grouped-ground);
   --color-native-group: var(--native-color-group);
   --radius-native-group: var(--native-radius-group);
@@ -150,6 +155,14 @@
   --spacing-native-button-small-inline: var(--native-spacing-button-small-inline);
   --spacing-native-icon-button-inset: var(--native-spacing-icon-button-inset);
   --spacing-native-icon-button-small-inset: var(--native-spacing-icon-button-small-inset);
+  --spacing-native-command-bar: var(--native-spacing-command-bar);
+  --spacing-native-command-button: var(--native-spacing-command-button);
+  --spacing-native-command-button-block: var(--native-spacing-command-button-block);
+  --spacing-native-slider: var(--native-spacing-slider);
+  --spacing-native-slider-track: var(--native-spacing-slider-track);
+  --spacing-native-slider-thumb: var(--native-spacing-slider-thumb);
+  --spacing-native-slider-thumb-core: var(--native-spacing-slider-thumb-core);
+  --spacing-native-slider-thumb-core-hover: var(--native-spacing-slider-thumb-core-hover);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
@@ -306,6 +319,10 @@
   --text-native-group-footer: var(--native-text-group-footer);
   --leading-native-group-footer: var(--native-leading-group-footer);
   --tracking-native-group-footer: var(--native-tracking-group-footer);
+  --text-native-group-heading: var(--native-text-group-heading);
+  --leading-native-group-heading: var(--native-leading-group-heading);
+  --font-weight-native-group-heading: var(--native-weight-group-heading);
+  --tracking-native-group-heading: var(--native-tracking-group-heading);
   --text-native-notice-title: var(--native-text-notice-title);
   --leading-native-notice-title: var(--native-leading-notice-title);
   --font-weight-native-notice-title: var(--native-weight-notice-title);
