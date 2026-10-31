@@ -414,6 +414,7 @@
   "library_no_matches_many": "⟦{filters} ţöĝéţĥéŕ ļéáṽé ñöţĥíñĝ. Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.·························⟧",
   "library_no_matches_unchanged": "⟦Ýöûŕ ļíƀŕáŕý ĥášñ'ţ çĥáñĝéð.············⟧",
   "library_clear_all_filters": "⟦Çļéáŕ áļļ ƒíļţéŕš·······⟧",
+  "library_selected_of": "⟦{count} öƒ {total} šéļéçţéð···········⟧",
   "library_selected_series": "⟦{count} šéļéçţéð·······⟧",
   "library_select_all": "⟦Šéļéçţ áļļ····⟧",
   "library_select_all_control": "⟦Çţŕļ Á···⟧",

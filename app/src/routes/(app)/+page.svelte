@@ -77,6 +77,7 @@
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
+  import MacSelectionActions from "#lib/library/MacSelectionActions.svelte";
   import IosLabelSeriesSheet from "#lib/library/IosLabelSeriesSheet.svelte";
   import IosSelectionActions from "#lib/library/IosSelectionActions.svelte";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
@@ -360,6 +361,7 @@
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const isIos = $derived(data.appInfo.platform === "ios");
+  const isMac = $derived(data.appInfo.platform === "macos");
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
@@ -768,6 +770,19 @@
     }
   }
 
+  const KEEPS_SELECTION = "a, button, input, [role], [data-series-id], dialog";
+
+  function clearOnEmptySpace(event: MouseEvent): void {
+    if (
+      isMac &&
+      selection.isSelecting &&
+      event.target instanceof Element &&
+      event.target.closest(KEEPS_SELECTION) === null
+    ) {
+      selection.end();
+    }
+  }
+
   function tabBeside(step: 1 | -1): string | undefined {
     const order = shownTabs.map(({ id }) => tabKey(id));
     return order[order.indexOf(chosenTabKey) + step];
@@ -859,13 +874,20 @@
   />
 {/snippet}
 
+{#snippet pickedCount()}
+  {m.library_selected_of({
+    count: selection.count,
+    total: seriesCount.count ?? selection.count,
+  })}
+{/snippet}
+
 {#snippet shownCount()}
   {#if seriesCount.count !== undefined}
     <SeriesCount count={seriesCount.count} hidden={hiddenSeries} />
   {/if}
 {/snippet}
 
-<svelte:window onkeydown={keyWhileSelecting} />
+<svelte:window onkeydown={keyWhileSelecting} onclick={clearOnEmptySpace} />
 
 <RemoveFromLibraryDialog
   targets={removing}
@@ -934,7 +956,7 @@
   onError={reportError}
 />
 
-{#if selection.isSelecting}
+{#if selection.isSelecting && !isMac}
   <LibrarySelectionHeader
     platform={data.appInfo.platform}
     count={selection.count}
@@ -950,11 +972,21 @@
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
     attention={showsAttentionDot ? attentionDot : undefined}
-    count={showsItemCounts && seriesCount.count !== undefined
-      ? shownCount
-      : undefined}
+    count={isMac && selection.isSelecting
+      ? pickedCount
+      : showsItemCounts && seriesCount.count !== undefined
+        ? shownCount
+        : undefined}
   >
     {#snippet actions()}
+      {#if isMac && selection.isSelecting && selection.count > 0}
+        <MacSelectionActions
+          actions={actionsOnPicked}
+          onDelete={() => {
+            removing = seriesTargets(selection.picked);
+          }}
+        />
+      {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
         <LibrarySearchEntry platform={data.appInfo.platform} />
         <FilterAndSort
@@ -1182,7 +1214,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && selection.count > 0 && !commandsOnTop}
+        {#if selection.isSelecting && selection.count > 0 && !commandsOnTop && !isMac}
           {#if isIos}
             <IosSelectionActions
               {keepsLabels}
