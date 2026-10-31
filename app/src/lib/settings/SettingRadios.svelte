@@ -3,6 +3,9 @@
     RadioGroup,
     RadioGroupItem,
   } from "#lib/components/ui/radio-group/index.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+
+  import { radiosLook } from "./radios-look";
 
   let {
     title,
@@ -21,19 +24,18 @@
   } = $props();
 
   const id = $props.id();
+  const android = new AndroidPhone();
+  const look = $derived(radiosLook(android.isOn));
 </script>
 
-<section
-  aria-labelledby="{id}-title"
-  class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
->
-  <h2 id="{id}-title" class="font-semibold">{title}</h2>
+<section aria-labelledby="{id}-title" class={look.section}>
+  <h2 id="{id}-title" class={look.heading}>{title}</h2>
   <RadioGroup
     {options}
     {chosen}
     {onChoose}
     aria-labelledby="{id}-title"
-    class="flex flex-col divide-y divide-border"
+    class={look.group}
   >
     {#each options as option (option)}
       {@const isChosen = chosen === option}
@@ -42,14 +44,12 @@
         value={option}
         aria-labelledby="{id}-{option}-label"
         aria-describedby={hint === undefined ? undefined : `${id}-${option}`}
-        class="flex items-start gap-md rounded-control py-sm text-start transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed touch:min-block-touch-target"
+        class={look.row}
       >
         <span
           aria-hidden="true"
-          class={[
-            "mbs-2xs flex shrink-0 items-center justify-center rounded-full border block-radio inline-radio android:border-2",
-            isChosen ? "border-radio-edge-on" : "border-control-edge",
-          ]}
+          data-radio-mark
+          class={[look.mark, isChosen ? look.markOn : look.markOff]}
         >
           {#if isChosen}
             <span
@@ -57,12 +57,12 @@
             ></span>
           {/if}
         </span>
-        <span class="flex flex-col gap-2xs">
-          <span id="{id}-{option}-label" class="font-medium">
+        <span class={look.words}>
+          <span id="{id}-{option}-label" class={look.label}>
             {labels[option]}
           </span>
           {#if hint !== undefined}
-            <span id="{id}-{option}" class="text-footnote text-muted">
+            <span id="{id}-{option}" class={look.hint}>
               {hint}
             </span>
           {/if}
