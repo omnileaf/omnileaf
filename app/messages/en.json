@@ -878,6 +878,7 @@
   ],
   "your_reports_code": "Code {code}",
   "your_reports_answered": "Answered · code {code}",
+  "your_reports_already_reported": "Already reported · code {code}",
   "your_reports_none": "No reports yet.",
   "about_licences": "Open-source licences",
   "about_licences_hint": "The packages Omnileaf is built with",

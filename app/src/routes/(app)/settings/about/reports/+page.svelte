@@ -10,6 +10,7 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
   import {
     isAnswered,
+    type KeptReport,
     yourReportsForDocument,
   } from "#lib/problem-report/your-reports.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -35,6 +36,15 @@
     if (heard.status === "ok") {
       yourReports.noteReviews(heard.data);
     }
+  }
+
+  function reportLine(report: KeptReport): string {
+    if (report.lastReview?.kind === "duplicate") {
+      return m.your_reports_already_reported({ code: report.code });
+    }
+    return isAnswered(report)
+      ? m.your_reports_answered({ code: report.code })
+      : m.your_reports_code({ code: report.code });
   }
 
   const intro = $derived.by(() => {
@@ -79,9 +89,7 @@
             >{madeAt.format(report.madeAtMs)}</span
           >
           <span class="text-detail text-muted"
-            >{isAnswered(report)
-              ? m.your_reports_answered({ code: report.code })
-              : m.your_reports_code({ code: report.code })}</span
+            >{reportLine(report)}</span
           >
         </li>
       {/each}
