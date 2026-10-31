@@ -2,11 +2,13 @@
   import { Pencil, Search, Trash } from "@lucide/svelte";
   import { onMount } from "svelte";
 
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { commands, type LibraryTag } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import RenameTagDialog from "#lib/library/RenameTagDialog.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -15,9 +17,11 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
+  const ANDROID_NOTE = `pbs-sm pbe-sm text-muted ${ROW_SUBTITLE_TYPE}`;
   const ROW_BUTTON =
     "transition-control block-touch-target inline-touch-target hover:bg-hover active:bg-pressed ios:rounded-ios-button desktop:rounded-shadcn-control desktop:block-compact-button desktop:inline-compact-button";
 
+  const android = new AndroidPhone();
   const notices = getNotices();
   const locale = getLocale();
   let tags = $state<readonly LibraryTag[]>([]);
@@ -86,9 +90,13 @@
   title={m.manage_tags_title()}
   parent={{ route: "/(app)/settings/library", title: m.library_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
+<div
+  class={["mbs-pane-gap flex flex-col", android.isOn ? "gap-none" : "gap-sm"]}
+>
   <InputGroup
-    class="gap-sm rounded-control border border-border bg-card px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"
+    class={android.isOn
+      ? "gap-lg rounded-full bg-android-container-high ps-lg pe-lg text-muted block-native-row"
+      : "gap-sm rounded-control border border-border bg-card px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"}
   >
     <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
     <Input
@@ -103,21 +111,45 @@
     />
   </InputGroup>
   {#if tags.length === 0}
-    <p class="text-footnote text-muted">{m.manage_tags_none()}</p>
+    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
+      {m.manage_tags_none()}
+    </p>
   {:else}
-    <p class="text-footnote text-muted">
+    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
       {m.manage_tags_intro({ count: tags.length })}
     </p>
     <ul
       id={listId}
       aria-label={m.manage_tags_list()}
-      class="flex flex-col divide-y divide-border rounded-card border border-border bg-card"
+      class={android.isOn
+        ? "-mx-page-start -me-page-end flex flex-col"
+        : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
     >
       {#each shown as tag (tag.name)}
-        <li class="flex items-center gap-sm py-sm ps-list-row pe-sm">
-          <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-            <span class="truncate font-medium">{tag.name}</span>
-            <span class="text-detail text-muted">
+        <li
+          class={[
+            "flex items-center",
+            android.isOn
+              ? "gap-sm py-sm ps-lg pe-sm min-block-native-row-two"
+              : "gap-sm py-sm ps-list-row pe-sm",
+          ]}
+        >
+          <span
+            class={[
+              "flex flex-1 flex-col min-inline-none",
+              !android.isOn && "gap-2xs",
+            ]}
+          >
+            <span
+              class={["truncate", android.isOn ? "text-body" : "font-medium"]}
+              >{tag.name}</span
+            >
+            <span
+              class={[
+                "text-muted",
+                android.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+              ]}
+            >
               {m.library_series_count({ count: tag.seriesCount })}
             </span>
           </span>
