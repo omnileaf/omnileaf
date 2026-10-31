@@ -69,6 +69,21 @@ fn opens_the_pages_before_the_point_an_archive_is_cut_short() {
 }
 
 #[test]
+fn leaves_out_the_salvaged_entries_whose_names_leave_the_archive() {
+    let scratch = ScratchFolder::new("salvage-containment");
+    let entries = [
+        "../x.png", "/x.png", "C:/x.png", "A:b.png", "1.png", "2.png",
+    ]
+    .map(|name| entry(name, page_png(SEED, 0, PageShape::Portrait).unwrap()));
+    let archive = cbz(&entries, Compression::Deflated).unwrap();
+    let path = scratch.write("book.cbz", &cut_inside_entry(&archive, 5).unwrap());
+
+    let book = salvage(&path).unwrap();
+
+    assert_eq!(page_names(&book), ["1.png", "A:b.png"]);
+}
+
+#[test]
 fn reads_each_page_that_survives_back_exactly() {
     let scratch = ScratchFolder::new("salvage-read");
     let entries = pages();

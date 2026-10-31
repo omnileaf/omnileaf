@@ -73,6 +73,12 @@
     --native-color-notice: Canvas;
     --native-color-on-notice: CanvasText;
     --native-color-focus-ring: CanvasText;
+    --native-color-focus-ring-inner: Canvas;
+    --native-color-nav-item-hover: Highlight;
+    --native-color-nav-item-pressed: Highlight;
+    --native-color-nav-item-selected: Highlight;
+    --native-color-on-nav-item: HighlightText;
+    --native-color-nav-indicator: HighlightText;
     --native-color-info-bar: Canvas;
     --native-color-info-bar-success: Canvas;
     --native-color-info-bar-warning: Canvas;

@@ -12,7 +12,8 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4.13"
-omnileaf-formats = { path = "../crates/omnileaf-formats" }
+omnileaf-formats = { path = "../crates/omnileaf-formats", features = ["rar"] }
+omnileaf-testkit = { path = "../crates/omnileaf-testkit" }
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -59,6 +60,13 @@ bench = false
 [[bin]]
 name = "read_cb7"
 path = "fuzz_targets/read_cb7.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_rar"
+path = "fuzz_targets/read_rar.rs"
 test = false
 doc = false
 bench = false
