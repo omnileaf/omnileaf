@@ -32,6 +32,7 @@ const SENT_REPORTS = [
   { code: "R-0000-0003", review: { kind: "published", issue: 412 } },
   { code: "R-0000-0004", review: { kind: "closed" } },
   { code: "R-0000-0005", review: { kind: "unknown" } },
+  { code: "R-0000-0009", review: { kind: "duplicate", issue: 301 } },
 ] as const;
 
 async function keepSentReports(
@@ -113,7 +114,7 @@ test.describe("with sent reports the maintainers have looked at", () => {
     await keepSentReports(page);
   });
 
-  test("says Answered only beside the reports that were answered", async ({
+  test("says Answered beside the reports that were answered and Already reported beside a duplicate", async ({
     page,
   }) => {
     await page.goto(REPORTS_PAGE);
@@ -125,9 +126,12 @@ test.describe("with sent reports the maintainers have looked at", () => {
     await expect(rows.nth(0)).toContainText("Code R-0000-0001");
     await expect(rows.nth(1)).toContainText("Code R-0000-0002");
     await expect(rows.nth(4)).toContainText("Code R-0000-0005");
-    await expect(rows.nth(5)).toContainText("Code R-0000-0006");
-    await expect(rows.nth(6)).toContainText("Code R-0000-0007");
-    await expect(rows.nth(7)).toContainText("Code R-0000-0008");
+    await expect(rows.nth(5)).toContainText(
+      "Already reported · code R-0000-0009",
+    );
+    await expect(rows.nth(6)).toContainText("Code R-0000-0006");
+    await expect(rows.nth(7)).toContainText("Code R-0000-0007");
+    await expect(rows.nth(8)).toContainText("Code R-0000-0008");
     expect(asked).toEqual([SENT_REPORTS.map(({ code }) => code)]);
   });
 });
