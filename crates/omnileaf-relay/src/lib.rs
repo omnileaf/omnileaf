@@ -4,6 +4,7 @@ mod client_ip;
 mod clock;
 mod http;
 mod inert_text;
+mod problem;
 mod rate_limit;
 mod reports;
 mod retention;

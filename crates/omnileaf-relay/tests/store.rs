@@ -53,7 +53,7 @@ fn creates_its_schema_in_an_empty_file() {
         .unwrap()
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 1);
+    assert_eq!(version, 2);
 }
 
 #[test]
@@ -208,4 +208,110 @@ fn says_when_a_code_has_no_report() {
 #[test]
 fn refuses_issue_number_zero() {
     assert_eq!(IssueNumber::new(0), None);
+}
+
+const OTHER_CODE: &str = "R-2QX9-7F3K";
+
+fn report_logging(code: &str, lines: &[&str]) -> support::Draft {
+    let log = lines.join("\n");
+    draft(code).with_report(format!(
+        "Report code: {code}\nOmnileaf 0.1.0 on Android\nLog, names replaced:\n{log}\n"
+    ))
+}
+
+fn status_of(store: &Store, code_text: &str) -> ReviewStatus {
+    store
+        .show(&code(code_text), omnileaf_relay::ReplyAddressView::Hidden)
+        .unwrap()
+        .unwrap()
+        .listed
+        .status
+}
+
+fn publish(store: &Store, code_text: &str, number: u64) {
+    store
+        .set_status(
+            &code(code_text),
+            TargetStatus::Published(issue(number)),
+            START,
+        )
+        .unwrap();
+}
+
+#[test]
+fn folds_a_report_into_the_issue_an_earlier_report_with_the_same_problem_became() {
+    let store = Store::open_in_memory().unwrap();
+    let first = report_logging(
+        CODE,
+        &["WARN omnileaf_engine::scan: skip a book path=<path> after 12 tries"],
+    );
+    store.take_in(&first.as_new_report(START), CAPS).unwrap();
+    publish(&store, CODE, 412);
+
+    let later = report_logging(
+        OTHER_CODE,
+        &[
+            "INFO omnileaf_engine::scan: started",
+            "WARN omnileaf_engine::scan: skip a book path=<path> after 31 tries",
+        ],
+    );
+    let intake = store.take_in(&later.as_new_report(START), CAPS).unwrap();
+
+    assert_eq!(intake, Intake::Inserted);
+    assert_eq!(
+        status_of(&store, OTHER_CODE),
+        ReviewStatus::Duplicate(issue(412))
+    );
+}
+
+#[test]
+fn keeps_a_report_with_a_different_problem_as_received() {
+    let store = Store::open_in_memory().unwrap();
+    let first = report_logging(CODE, &["WARN omnileaf_engine::scan: skip a book"]);
+    store.take_in(&first.as_new_report(START), CAPS).unwrap();
+    publish(&store, CODE, 412);
+
+    let later = report_logging(OTHER_CODE, &["ERROR omnileaf_db::catalog: disk full"]);
+    store.take_in(&later.as_new_report(START), CAPS).unwrap();
+
+    assert_eq!(status_of(&store, OTHER_CODE), ReviewStatus::Received);
+}
+
+#[test]
+fn keeps_a_report_as_received_while_the_earlier_one_has_no_issue() {
+    let store = Store::open_in_memory().unwrap();
+    let first = report_logging(CODE, &["WARN omnileaf_engine::scan: skip a book"]);
+    store.take_in(&first.as_new_report(START), CAPS).unwrap();
+
+    let later = report_logging(OTHER_CODE, &["WARN omnileaf_engine::scan: skip a book"]);
+    store.take_in(&later.as_new_report(START), CAPS).unwrap();
+
+    assert_eq!(status_of(&store, OTHER_CODE), ReviewStatus::Received);
+}
+
+#[test]
+fn keeps_a_report_with_nothing_but_info_lines_as_received() {
+    let store = Store::open_in_memory().unwrap();
+    let first = report_logging(CODE, &["INFO omnileaf_engine::scan: started"]);
+    store.take_in(&first.as_new_report(START), CAPS).unwrap();
+    publish(&store, CODE, 412);
+
+    let later = report_logging(OTHER_CODE, &["INFO omnileaf_engine::scan: started"]);
+    store.take_in(&later.as_new_report(START), CAPS).unwrap();
+
+    assert_eq!(status_of(&store, OTHER_CODE), ReviewStatus::Received);
+}
+
+#[test]
+fn keeps_the_same_problem_on_another_platform_as_received() {
+    let store = Store::open_in_memory().unwrap();
+    let first = report_logging(CODE, &["WARN omnileaf_engine::scan: skip a book"]);
+    store.take_in(&first.as_new_report(START), CAPS).unwrap();
+    publish(&store, CODE, 412);
+
+    let mut later = report_logging(OTHER_CODE, &["WARN omnileaf_engine::scan: skip a book"]);
+    later.platform = omnileaf_relay_proto::Platform::Linux;
+    store.take_in(&later.as_new_report(START), CAPS).unwrap();
+
+    assert_eq!(status_of(&store, OTHER_CODE), ReviewStatus::Received);
 }
