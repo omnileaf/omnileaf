@@ -9,11 +9,13 @@
 
   let {
     keepsLabels,
+    isSpread,
     onLabels,
     onMarkRead,
     onDelete,
   }: {
     keepsLabels: boolean;
+    isSpread: boolean;
     onLabels: (from: LabelsFrom) => void;
     onMarkRead: () => void;
     onDelete: () => void;
@@ -48,7 +50,10 @@
   <div
     role="group"
     aria-label={m.library_selection_toolbar()}
-    class="fixed inset-x-lg inset-be-floating-gap z-tab-bar flex items-center justify-between"
+    class={[
+      "fixed inset-x-lg inset-be-floating-gap z-tab-bar flex items-center",
+      isSpread ? "justify-between" : "justify-center gap-md",
+    ]}
   >
     {#each actions as { name, label, act } (name)}
       <Button

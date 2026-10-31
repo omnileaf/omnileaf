@@ -358,6 +358,7 @@
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
+  const isIos = $derived(data.appInfo.platform === "ios");
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
@@ -1172,9 +1173,10 @@
           </div>
         </div>
         {#if selection.isSelecting && selection.count > 0 && !commandsOnTop}
-          {#if isIosPhone}
+          {#if isIos}
             <IosSelectionActions
               {keepsLabels}
+              isSpread={isIosPhone}
               onLabels={labelPicked}
               onMarkRead={markPickedRead}
               onDelete={() => {
