@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BookmarkPlus, Eye, EyeOff, X } from "@lucide/svelte";
+  import { BookmarkPlus, Eye, EyeOff, Trash, X } from "@lucide/svelte";
   import { Portal } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
 
@@ -28,12 +28,14 @@
     count,
     onMark,
     onBookmark,
+    onDelete,
     onClear,
     element = $bindable(),
   }: {
     count: number;
     onMark: (mark: ReadMark) => void;
     onBookmark?: (() => void) | undefined;
+    onDelete?: (() => void) | undefined;
     onClear: () => void;
     element?: HTMLElement | undefined;
   } = $props();
@@ -74,6 +76,17 @@
           onclick={onBookmark}
         >
           <Icon name="bookmark" />
+        </Button>
+      {/if}
+      {#if onDelete !== undefined}
+        <Button
+          type="button"
+          variant="plain"
+          iconOnly
+          label={m.library_delete()}
+          onclick={onDelete}
+        >
+          <Icon name="trash" />
         </Button>
       {/if}
     </div>
@@ -117,6 +130,24 @@
             class="block-pointer-target inline-pointer-target"
           >
             <BookmarkPlus size={ICON_SIZE} aria-hidden="true" />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
+    {#if onDelete !== undefined}
+      <Tooltip
+        label={m.library_delete()}
+        type="button"
+        aria-label={m.library_delete()}
+        onclick={onDelete}
+      >
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            look="bar-icon"
+            class="block-pointer-target inline-pointer-target"
+          >
+            <Trash size={ICON_SIZE} aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip>

@@ -10,6 +10,8 @@
     commands,
     type Platform,
     type ReadMark,
+    type RemovalReport,
+    type RemovalTarget,
     type SeriesBook,
     type SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
@@ -168,6 +170,19 @@
     }
     readAgain();
     return true;
+  }
+
+  async function removeBooks(
+    targets: RemovalTarget[],
+    deleteFiles: boolean,
+  ): Promise<RemovalReport | undefined> {
+    const removed = await commands.removeFromLibrary(targets, deleteFiles);
+    if (removed.status === "error") {
+      reportError(removed.error);
+      return undefined;
+    }
+    readAgain();
+    return removed.data;
   }
 
   async function bookmarkSelected(
@@ -488,6 +503,7 @@
                   onLoadAll={() => books.loadAll()}
                   onMark={mark}
                   onBookmark={bookmarkSelected}
+                  onRemove={removeBooks}
                   platform={data.appInfo.platform}
                   onPickedCount={(count: number | undefined) => {
                     pickedCount = count;

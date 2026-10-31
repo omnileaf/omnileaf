@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BookmarkPlus, Eye, EyeOff, List, X } from "@lucide/svelte";
+  import { BookmarkPlus, Eye, EyeOff, List, Trash, X } from "@lucide/svelte";
   import { Portal } from "bits-ui";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
@@ -13,9 +13,13 @@
   import type {
     Platform,
     ReadMark,
+    RemovalReport,
+    RemovalTarget,
     SeriesBook,
     SeriesBookListing,
   } from "#lib/ipc/bindings.ts";
+  import RemoveFromLibraryDialog from "#lib/library/RemoveFromLibraryDialog.svelte";
+  import { noteRemoval } from "#lib/library/removal-notice.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
@@ -113,6 +117,7 @@
     onLoadAll,
     onMark,
     onBookmark,
+    onRemove,
     platform,
     onPickedCount,
   }: {
@@ -130,6 +135,10 @@
     onBookmark: (
       books: BookId[],
     ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
+    onRemove: (
+      targets: RemovalTarget[],
+      deleteFiles: boolean,
+    ) => Promise<RemovalReport | undefined>;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
   } = $props();
@@ -276,6 +285,28 @@
 
   async function mark(read: ReadMark): Promise<void> {
     if (await markBooks(selection.picked, read)) {
+      await end();
+    }
+  }
+
+  let removing = $state<RemovalTarget[] | undefined>();
+  let isRemoving = $state(false);
+
+  function askToRemove(): void {
+    removing = selection.picked.map((id) => ({ kind: "book", id }));
+  }
+
+  async function remove(deleteFiles: boolean): Promise<void> {
+    if (removing === undefined) {
+      return;
+    }
+    const targets = removing;
+    isRemoving = true;
+    const report = await onRemove(targets, deleteFiles);
+    isRemoving = false;
+    removing = undefined;
+    if (report !== undefined) {
+      noteRemoval(notices, report);
       await end();
     }
   }
@@ -549,6 +580,7 @@
         onBookmark={() => {
           void bookmark();
         }}
+        onDelete={askToRemove}
         onClear={() => {
           void end();
         }}
@@ -609,6 +641,21 @@
                 {/if}
               </Button>
             {/each}
+            <Button
+              type="button"
+              variant="plain"
+              {...phone.isIconOnly
+                ? { iconOnly: true, label: m.library_delete() }
+                : {}}
+              disabled={selection.count === 0}
+              class={phone.action}
+              onclick={askToRemove}
+            >
+              <Icon name="trash" />
+              {#if !phone.isIconOnly}
+                {m.library_delete()}
+              {/if}
+            </Button>
           </div>
         </div>
       </Portal>
@@ -625,7 +672,7 @@
       <Card
         role="group"
         aria-label={m.series_selection_toolbar()}
-        class="sticky inset-be-lg grid grid-cols-3 gap-2xs p-xs shadow-popover"
+        class="sticky inset-be-lg grid grid-cols-4 gap-2xs p-xs shadow-popover"
       >
         {#each MARKS as { mark: read, icon: MarkIcon, label } (read)}
           <Button
@@ -651,9 +698,28 @@
           <BookmarkPlus size={ACTION_ICON_SIZE} aria-hidden="true" />
           {m.series_bookmark()}
         </Button>
+        <Button
+          type="button"
+          look="bar-icon"
+          class="flex-col text-caption font-semibold wrap-anywhere min-block-selection-action"
+          onclick={askToRemove}
+        >
+          <Trash size={ACTION_ICON_SIZE} aria-hidden="true" />
+          {m.library_delete()}
+        </Button>
       </Card>
     {/if}
   {/if}
+  <RemoveFromLibraryDialog
+    targets={removing}
+    isBusy={isRemoving}
+    onConfirm={(deleteFiles: boolean) => {
+      void remove(deleteFiles);
+    }}
+    onCancel={() => {
+      removing = undefined;
+    }}
+  />
   <p
     role="status"
     class={outcome.kind === "failed" ? "text-body text-danger" : "sr-only"}

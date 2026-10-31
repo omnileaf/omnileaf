@@ -291,9 +291,10 @@ test.describe(
 
       await expect(navigation(page)).toBeHidden();
       const actions = selectedBooks(page).getByRole("button");
-      await expect(actions).toHaveCount(2);
+      await expect(actions).toHaveCount(3);
       await expect(actions.first()).toHaveAccessibleName("Mark read");
-      await expect(actions.last()).toHaveAccessibleName("Mark unread");
+      await expect(actions.nth(1)).toHaveAccessibleName("Mark unread");
+      await expect(actions.last()).toHaveAccessibleName("Delete");
       await expect(actions.first()).toHaveText(
         platform === "ios" ? "" : "Mark read",
       );
