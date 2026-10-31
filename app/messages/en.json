@@ -507,6 +507,7 @@
   "adult_content_hide_help": "Left out of the library, its counts and search.",
   "adult_content_age_ratings": "Use age ratings from book details",
   "adult_content_age_ratings_help": "Off: only series you mark 18+ by hand count.",
+  "adult_content_footer": "First launch offers the same choice. It applies straight away.",
   "library_no_series": "No series",
   "app_version": "Version {version}",
   "library_add_folder": "Add a folder",

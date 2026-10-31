@@ -9,6 +9,7 @@
   import AdultContentChoice from "#lib/library/AdultContentChoice.svelte";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -28,6 +29,7 @@
       reportError(error);
     },
   );
+  const android = new AndroidPhone();
   const onPointer = $derived(isPointer(data.appInfo.platform));
 
   onMount(() => {
@@ -52,17 +54,24 @@
         }}
       />
     </div>
-    <SettingSwitch
-      label={m.adult_content_age_ratings()}
-      description={m.adult_content_age_ratings_help()}
-      isOn={chosen.countsAgeRatings}
-      onToggle={() => {
-        content.choose({
-          ...chosen,
-          countsAgeRatings: !chosen.countsAgeRatings,
-        });
-      }}
-      class="rounded-card border border-border bg-card"
-    />
+    <div class={android.isOn ? "-mx-page-start -me-page-end" : ""}>
+      <SettingSwitch
+        label={m.adult_content_age_ratings()}
+        description={m.adult_content_age_ratings_help()}
+        isOn={chosen.countsAgeRatings}
+        onToggle={() => {
+          content.choose({
+            ...chosen,
+            countsAgeRatings: !chosen.countsAgeRatings,
+          });
+        }}
+        class={android.isOn ? "" : "rounded-card border border-border bg-card"}
+      />
+    </div>
+    {#if android.isOn}
+      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+        {m.adult_content_footer()}
+      </p>
+    {/if}
   </div>
 {/if}
