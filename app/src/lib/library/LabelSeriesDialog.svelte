@@ -10,9 +10,16 @@
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { SeriesId } from "#lib/series/series-id.ts";
+
+  import { AndroidPhone } from "./android-phone.svelte";
+  import {
+    ANDROID_FILTER_HEADING,
+    ANDROID_FILTER_SHEET,
+  } from "./filter-sheet-look";
 
   type Choice = "all" | "some" | "none";
 
@@ -40,6 +47,7 @@
   let newTag = $state("");
   let tagField = $state<HTMLInputElement | null>(null);
 
+  const android = new AndroidPhone();
   const count = $derived(series.length);
   const tagsShown = $derived([
     ...(labels?.tags ?? []).filter(({ tag }) => !tagsRemoved.includes(tag)),
@@ -148,23 +156,44 @@
     {#snippet children(view)}
       <div
         class={[
-          "flex flex-1 flex-col gap-md overflow-y-auto min-block-none",
-          view === "wide" ? "p-lg" : "px-sheet-inline pbs-md",
+          "flex flex-1 flex-col overflow-y-auto min-block-none",
+          view !== "wide" && android.isOn
+            ? "gap-sm"
+            : ["gap-md", view === "wide" ? "p-lg" : "px-sheet-inline pbs-md"],
         ]}
       >
-        <div class="flex items-start gap-md">
-          <HeaderBadge icon={Tags} look="header-accent" />
-          <div class="flex flex-col gap-2xs">
-            <DialogTitle class="text-title font-bold">
+        {#if view !== "wide" && android.isOn}
+          <div class={ANDROID_FILTER_SHEET.header}>
+            <DialogTitle class={ANDROID_FILTER_SHEET.title}>
               {m.library_labels_title()}
             </DialogTitle>
-            <Dialog.Description class="text-detail text-muted">
-              {m.library_labels_for({ count })}
-            </Dialog.Description>
           </div>
-        </div>
+          <Dialog.Description
+            class="{ROW_SUBTITLE_TYPE} ps-lg pe-lg pbe-sm text-muted"
+          >
+            {m.library_labels_for({ count })}
+          </Dialog.Description>
+        {:else}
+          <div class="flex items-start gap-md">
+            <HeaderBadge icon={Tags} look="header-accent" />
+            <div class="flex flex-col gap-2xs">
+              <DialogTitle class="text-title font-bold">
+                {m.library_labels_title()}
+              </DialogTitle>
+              <Dialog.Description class="text-detail text-muted">
+                {m.library_labels_for({ count })}
+              </Dialog.Description>
+            </div>
+          </div>
+        {/if}
         <section class="flex flex-col">
-          <h3 class="text-small font-semibold">{m.library_categories()}</h3>
+          <h3
+            class={android.isOn && view !== "wide"
+              ? ANDROID_FILTER_HEADING
+              : "text-small font-semibold"}
+          >
+            {m.library_categories()}
+          </h3>
           <div class="flex flex-col divide-y divide-border">
             {#each labels?.categories ?? [] as { category, holding } (category.id)}
               {@const choice = choices[category.id] ?? "none"}
@@ -228,7 +257,13 @@
           </InputGroup>
         </section>
         <section class="flex flex-col gap-sm">
-          <h3 class="text-small font-semibold">{m.library_tags()}</h3>
+          <h3
+            class={android.isOn && view !== "wide"
+              ? ANDROID_FILTER_HEADING
+              : "text-small font-semibold"}
+          >
+            {m.library_tags()}
+          </h3>
           <InputGroup
             class="gap-sm rounded-control border border-border bg-background px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target"
           >
@@ -312,7 +347,9 @@
           "flex gap-sm",
           view === "wide"
             ? "px-lg pbe-lg"
-            : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom",
+            : android.isOn
+              ? ANDROID_FILTER_SHEET.foot
+              : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom",
         ]}
       >
         {#if view === "wide"}
@@ -329,8 +366,10 @@
         {/if}
         <Button
           type="button"
-          look="dialog-primary"
-          class="flex-1"
+          {...view !== "wide" && android.isOn
+            ? { variant: "primary", size: "large" }
+            : { look: "dialog-primary" }}
+          class={view !== "wide" && android.isOn ? "inline-full" : "flex-1"}
           onclick={() => {
             void apply();
           }}
