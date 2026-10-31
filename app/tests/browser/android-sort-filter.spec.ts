@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { LibraryFilterChoices } from "../../src/lib/ipc/bindings.ts";
+import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -57,6 +58,16 @@ const CHIP_HEIGHT = 32;
 const CHIP_RADIUS = "8px";
 const ROW_TITLE_SIZE = "16px";
 const ROW_TITLE_LINE = "24px";
+const REMOVE_ICON_SIZE = 18;
+const CHIPS_ROW_START = 16;
+const FILTERED_LISTING = {
+  ...NEW_LIBRARY_LISTING,
+  filter: {
+    ...NEW_LIBRARY_LISTING.filter,
+    formats: ["manga" as const],
+    tags: ["Sea"],
+  },
+};
 
 function backendWith(choices: LibraryFilterChoices) {
   return {
@@ -424,6 +435,70 @@ test.describe(
         );
         await toggle.click();
         await expect(toggle).toBeChecked();
+      });
+    });
+
+    test.describe("the filters in use", () => {
+      test.use({
+        backend: {
+          ...backendWith(MANY_CHOICES),
+          libraryListing: () => FILTERED_LISTING,
+        },
+      });
+
+      async function openLibrary(page: Page): Promise<Locator> {
+        await page.goto("/");
+        await expect(page.getByRole("list", { name: "Series" })).toContainText(
+          LIBRARY[0]?.title ?? "",
+        );
+        return page.getByRole("list", { name: "Filters in use" });
+      }
+
+      test("draws each filter as a 32px chip with an 8px corner and a 1px outline, 16px in from the edge", async ({
+        page,
+      }) => {
+        const chips = await openLibrary(page);
+        const chip = chips.getByRole("listitem").first();
+
+        const chipBox = await boxOf(chip);
+
+        expect(chipBox.height).toBeCloseTo(CHIP_HEIGHT, 0);
+        expect(chipBox.x).toBeCloseTo(CHIPS_ROW_START, 0);
+        await expect(chip).toHaveCSS("border-top-left-radius", CHIP_RADIUS);
+        await expect(chip).toHaveCSS("border-top-width", "1px");
+        await expect(chip).toHaveCSS(
+          "border-top-color",
+          await tokenColour(page, "--native-color-button-outline-edge"),
+        );
+      });
+
+      test("ends each chip with an 18px cross that removes the filter", async ({
+        page,
+      }) => {
+        const chips = await openLibrary(page);
+        const remove = chips.getByRole("button", { name: /^Remove / }).first();
+
+        const icon = await boxOf(remove.locator("svg"));
+        await remove.click();
+
+        expect(icon.width).toBeCloseTo(REMOVE_ICON_SIZE, 0);
+        await expect(chips.getByRole("listitem")).toHaveCount(1);
+      });
+
+      test("sets Clear all as a plain button at the end of the line", async ({
+        page,
+      }) => {
+        await openLibrary(page);
+        const clear = page.getByRole("button", { name: "Clear all" });
+
+        await expect(clear).toHaveCSS(
+          "color",
+          await tokenColour(page, "--native-color-on-button-plain"),
+        );
+        const box = await boxOf(clear);
+        expect(box.x + box.width).toBeGreaterThan(
+          (page.viewportSize()?.width ?? 0) - 24,
+        );
       });
     });
 

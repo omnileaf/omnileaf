@@ -10,8 +10,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const look = $derived(filterChipLook(isNative));
+  const phone = $derived(phoneOf(platform, width.current));
+  const isNative = $derived(phone === "ios");
+  const look = $derived(filterChipLook(phone));
 
   let {
     chips,
@@ -57,7 +58,9 @@
   }
 </script>
 
-<div class="flex items-center gap-sm pbs-md">
+<div
+  class={["flex items-center gap-sm", phone === "android" ? "py-sm" : "pbs-md"]}
+>
   <div bind:clientWidth={available} class="relative flex-1 min-inline-none">
     <ul
       aria-label={m.library_filters_in_use()}
@@ -67,6 +70,7 @@
         <FilterChipItem
           label={chip.label}
           chipClass={look.chip}
+          removeSize={look.removeSize}
           onRemove={() => {
             onRemove(chip.id);
           }}
@@ -96,6 +100,7 @@
           <FilterChipItem
             label={chip.label}
             chipClass={look.chip}
+            removeSize={look.removeSize}
             onRemove={() => {}}
           />
         {/each}
@@ -105,7 +110,7 @@
       </ul>
     {/key}
   </div>
-  {#if isNative}
+  {#if isNative || phone === "android"}
     <Button
       type="button"
       variant="plain"
