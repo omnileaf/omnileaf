@@ -1,6 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
@@ -9,6 +15,12 @@ const LIBRARY = sampleSeries(9);
 test.use({
   backend: {
     ...DEFAULT_BACKEND,
+    seriesLabels: () => ({
+      keepsLabels: true,
+      categories: [],
+      tags: [],
+      suggestedTags: [],
+    }),
     librarySeries: () => ({ series: LIBRARY, next: null }),
     librarySeriesCount: () => LIBRARY.length,
   },
@@ -41,6 +53,28 @@ test.describe(
   () => {
     test.beforeEach(({ platform }) => {
       test.skip(platform !== "android", "Android's Material top bar");
+    });
+
+    test("takes the navigation bar's place with Categories, Tags and Mark as read while choosing", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+        LIBRARY.length,
+      );
+      const nav = page.getByRole("navigation", { name: "Main" });
+      const navBox = await boxOf(nav);
+
+      await startSelecting(page);
+
+      await expect(nav).toBeHidden();
+      const bar = page.getByRole("group", { name: "Selected series" });
+      const barBox = await boxOf(bar);
+      expect(barBox.height).toBeCloseTo(navBox.height, 0);
+      expect(barBox.y + barBox.height).toBeCloseTo(viewportOf(page).height, 0);
+      for (const name of ["Categories", "Tags", "Mark as read"]) {
+        await expect(bar.getByRole("button", { name })).toBeVisible();
+      }
     });
 
     test("sets the count at title large, 22px on a 28px line in regular weight", async ({
