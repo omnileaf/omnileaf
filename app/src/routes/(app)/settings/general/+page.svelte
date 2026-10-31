@@ -119,7 +119,9 @@
           value={languageName(
             language.choice === "system" ? getLocale() : language.choice,
           )}
-          valueLang={language.choice === "system" ? getLocale() : language.choice}
+          valueLang={language.choice === "system"
+            ? getLocale()
+            : language.choice}
           choices={LANGUAGE_CHOICES.map((choice) => ({
             value: choice,
             label:
