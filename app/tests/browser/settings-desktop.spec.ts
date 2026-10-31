@@ -26,8 +26,8 @@ const SECTIONS_IN_ORDER = [
 ];
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
+const GLASS_CIRCLE = 44;
 const STATUS_BAR_GAP = 8;
-const IOS_BACK_LINK_TEXT = "17px";
 const SECTIONS_TITLE_TEXT = "12px";
 const SEMIBOLD = "600";
 
@@ -240,7 +240,7 @@ test.describe("on an iOS phone", () => {
   testOnlyInItsWebview("ios");
   test.use(onPlatform("ios"));
 
-  test("leads a section back to settings with a 17px chevron and label", async ({
+  test("leads a section back to settings with a glass circle and no label", async ({
     page,
   }) => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
@@ -248,10 +248,9 @@ test.describe("on an iOS phone", () => {
 
     const back = page.getByRole("link", { name: "Back to Settings" });
 
-    await expect(back).toHaveText("Settings");
-    await expect(back).toHaveCSS("font-size", IOS_BACK_LINK_TEXT);
-    await expect(back).toHaveCSS("font-weight", "500");
-    expect((await boxOf(back)).height).toBe(TOUCH_TARGET);
+    await expect(back).toHaveText("");
+    expect((await boxOf(back)).height).toBe(GLASS_CIRCLE);
+    expect((await boxOf(back)).width).toBe(GLASS_CIRCLE);
   });
 });
 
@@ -271,7 +270,7 @@ for (const platform of ["android", "ios", "linux"] as const) {
         document.documentElement.dir = "rtl";
       });
 
-      const icon = back.locator("svg:visible");
+      const icon = back.locator("svg:visible, [data-icon]");
 
       await expect(icon).toHaveCSS("scale", "-1 1");
     });

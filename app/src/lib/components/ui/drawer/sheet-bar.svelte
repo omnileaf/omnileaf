@@ -1,5 +1,6 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
+  import { Dialog } from "bits-ui";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
@@ -8,14 +9,20 @@
 
   let {
     title,
+    titleId,
+    description,
     closeLabel,
     actionLabel,
+    isActionPrimary = false,
     onClose,
     onAction,
   }: {
     title: string;
+    titleId?: string;
+    description?: string;
     closeLabel: string;
     actionLabel?: string;
+    isActionPrimary?: boolean;
     onClose: () => void;
     onAction?: () => void;
   } = $props();
@@ -32,16 +39,30 @@
   >
     <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
   </Button>
-  <DialogTitle
-    class="col-start-2 row-start-1 text-center text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere"
-  >
-    {title}
-  </DialogTitle>
+  <div class="col-start-2 row-start-1 flex flex-col items-center text-center">
+    <DialogTitle
+      {...titleId === undefined ? {} : { id: titleId }}
+      class="text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere"
+    >
+      {title}
+    </DialogTitle>
+    {#if description !== undefined}
+      <Dialog.Description
+        class="text-native-group-footer/native-group-footer text-muted"
+      >
+        {description}
+      </Dialog.Description>
+    {/if}
+  </div>
   {#if actionLabel !== undefined}
     <Button
       type="button"
       look="header-control"
-      class="col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none"
+      class={[
+        "col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none",
+        isActionPrimary &&
+          "bg-native-button-primary text-native-on-button-primary shadow-none",
+      ]}
       onclick={onAction}
     >
       {actionLabel}
