@@ -94,7 +94,8 @@
       {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
         <span
           class={[
-            "col-start-1 row-start-1 truncate",
+            "col-start-1 row-start-1",
+            look.directionName,
             reading.direction !== shown && "invisible",
           ]}
           aria-hidden={reading.direction !== shown}
@@ -104,10 +105,7 @@
       {/each}
     </span>
     <span
-      class={[
-        "rounded-shadcn-control border border-border px-xs text-caption font-medium",
-        !isAutomatic && "invisible",
-      ]}
+      class={[look.autoMark, !isAutomatic && "invisible"]}
       aria-hidden={!isAutomatic}
     >
       {m.reader_direction_auto()}

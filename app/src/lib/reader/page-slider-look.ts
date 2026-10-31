@@ -1,4 +1,7 @@
+import { WINDOWS_SLIDER_THUMB } from "#lib/components/ui/slider/windows-slider.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
+
+import { usesCommandBar } from "./windows-reader-bar.ts";
 
 export interface PageSliderLook {
   readonly root: string;
@@ -21,10 +24,9 @@ const WINDOWS_LOOK: PageSliderLook = {
   track:
     "absolute inset-none my-auto overflow-hidden rounded-full bg-native-progress-track block-native-slider-track",
   fill: "absolute inset-y-none inset-s-none bg-native-progress-fill reader-progress-fill",
-  thumb:
-    "absolute inset-y-none reader-progress-thumb my-auto flex items-center justify-center rounded-full border border-native-switch-off-border bg-native-menu [--reader-thumb:var(--spacing-native-slider-thumb)] before:rounded-full before:bg-native-progress-fill before:block-native-slider-thumb-core before:inline-native-slider-thumb-core group-hover/slider:before:block-native-slider-thumb-core-hover group-hover/slider:before:inline-native-slider-thumb-core-hover group-has-focus-visible/slider:focus-ring group-has-focus-visible/slider:ring-1 group-has-focus-visible/slider:ring-native-focus-ring-inner",
+  thumb: `absolute inset-y-none reader-progress-thumb my-auto rounded-full border [--reader-thumb:var(--spacing-native-slider-thumb)] ${WINDOWS_SLIDER_THUMB} group-has-focus-visible/slider:focus-ring group-has-focus-visible/slider:ring-1 group-has-focus-visible/slider:ring-native-focus-ring-inner`,
 };
 
 export function pageSliderLook(platform: Platform): PageSliderLook {
-  return platform === "windows" ? WINDOWS_LOOK : TODAYS_LOOK;
+  return usesCommandBar(platform) ? WINDOWS_LOOK : TODAYS_LOOK;
 }
