@@ -88,9 +88,7 @@
           <span class="font-medium expanded:font-semibold"
             >{madeAt.format(report.madeAtMs)}</span
           >
-          <span class="text-detail text-muted"
-            >{reportLine(report)}</span
-          >
+          <span class="text-detail text-muted">{reportLine(report)}</span>
         </li>
       {/each}
     </ul>
