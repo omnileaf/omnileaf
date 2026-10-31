@@ -1,0 +1,190 @@
+import type { Locator, Page } from "@playwright/test";
+
+import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { sampleSeries } from "./series-catalog.ts";
+
+const HELD_MS = 800;
+const LIBRARY = sampleSeries(9);
+const PICKED = 3;
+
+let applied: unknown;
+
+test.use({
+  backend: {
+    ...DEFAULT_BACKEND,
+    seriesLabels: () => ({
+      keepsLabels: true,
+      categories: [
+        { category: { id: "c1", name: "Reading" }, holding: PICKED },
+        { category: { id: "c2", name: "Manga" }, holding: 2 },
+        { category: { id: "c3", name: "Comics" }, holding: 0 },
+      ],
+      tags: [
+        { tag: "Sea", holding: PICKED },
+        { tag: "Seinen", holding: 2 },
+      ],
+      suggestedTags: ["Slice of life", "Letters"],
+    }),
+    labelSeries: (_series, changes) => {
+      applied = changes;
+      return null;
+    },
+    librarySeries: () => ({ series: LIBRARY, next: null }),
+    librarySeriesCount: () => LIBRARY.length,
+  },
+});
+
+test.beforeEach(() => {
+  applied = undefined;
+});
+
+function sheet(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Categories and tags" });
+}
+
+async function openLabels(page: Page): Promise<void> {
+  await page.goto("/");
+  const list = page.getByRole("list", { name: "Series" });
+  await expect(list.getByRole("listitem")).toHaveCount(LIBRARY.length);
+  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
+  await list
+    .getByRole("listitem")
+    .nth(0)
+    .getByRole("link")
+    .first()
+    .dispatchEvent("pointerdown", touch);
+  await page.waitForTimeout(HELD_MS);
+  const first = list.getByRole("checkbox").nth(0);
+  await first.dispatchEvent("pointerup", touch);
+  await first.dispatchEvent("click");
+  await list.getByRole("checkbox").nth(1).click();
+  await list.getByRole("checkbox").nth(2).click();
+  await page.getByRole("button", { name: "Categories" }).click();
+  await expect(sheet(page)).toBeVisible();
+}
+
+test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "ios", "iOS's sheet");
+  });
+
+  test("puts Close, the title and a filled Done in the sheet's bar", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    const bar = await Promise.all(
+      ["Close", "Done"].map(async (name) =>
+        boxOf(sheet(page).getByRole("button", { name, exact: true })),
+      ),
+    );
+    const title = await boxOf(
+      sheet(page).getByRole("heading", { name: "Categories and tags" }),
+    );
+    const [close, done] = bar;
+    expect(close?.x).toBeLessThan(title.x);
+    expect(title.x).toBeLessThan(done?.x ?? 0);
+    await expect(
+      sheet(page).getByRole("button", { name: "Done", exact: true }),
+    ).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(sheet(page).getByRole("button", { name: "Done" })).toHaveCount(
+      1,
+    );
+  });
+
+  test("marks a category some of the series hold with a dash and says how many", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    await expect(sheet(page).getByText("2 of the 3 are in it")).toBeVisible();
+    await expect(
+      sheet(page).getByRole("checkbox", { name: /^Manga/ }),
+    ).toHaveAttribute("aria-checked", "mixed");
+  });
+
+  test("fills the chosen and dashed circles in Done's green and sets the suggestions in ink", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    const done = await sheet(page)
+      .getByRole("button", { name: "Done", exact: true })
+      .evaluate((button) => getComputedStyle(button).backgroundColor);
+    const ink = await page.evaluate(
+      () => getComputedStyle(document.body).color,
+    );
+    for (const name of ["Reading", /^Manga/]) {
+      await expect(sheet(page).getByRole("checkbox", { name })).toHaveCSS(
+        "background-color",
+        done,
+      );
+    }
+    await expect(
+      sheet(page).getByRole("button", { name: "Add Letters" }),
+    ).toHaveCSS("color", ink);
+  });
+
+  test("sets the categories in one grouped card with New category as its last row", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    const { readingTop, addingTop, width } = await sheet(page).evaluate(
+      (root) => {
+        const top = (selector: string): number =>
+          root.querySelector(selector)?.getBoundingClientRect().top ?? NaN;
+        return {
+          readingTop: top('[role="checkbox"]'),
+          addingTop: top('input[placeholder="New category"]'),
+          width:
+            root.querySelector('[role="checkbox"]')?.getBoundingClientRect()
+              .width ?? NaN,
+        };
+      },
+    );
+    expect(addingTop).toBeGreaterThan(readingTop);
+    expect(width).toBeCloseTo(22, 0);
+    const isRound = await sheet(page)
+      .getByRole("checkbox", { name: "Reading" })
+      .evaluate(
+        (box) =>
+          parseFloat(getComputedStyle(box).borderTopLeftRadius) >=
+          box.clientWidth / 2,
+      );
+    expect(isRound).toBe(true);
+  });
+
+  test("applies the choices, a new tag and a removed tag when Done is tapped", async ({
+    page,
+  }) => {
+    await openLabels(page);
+
+    await sheet(page).getByRole("checkbox", { name: "Comics" }).click();
+    await sheet(page).getByRole("button", { name: "Add Letters" }).click();
+    await sheet(page).getByRole("button", { name: "Remove Sea" }).click();
+    await sheet(page)
+      .getByRole("button", { name: "Done", exact: true })
+      .click();
+
+    await expect(sheet(page)).toBeHidden();
+    expect(applied).toEqual({
+      categoriesAdded: ["c3"],
+      categoriesRemoved: [],
+      categoriesCreated: [],
+      tagsAdded: ["Letters"],
+      tagsRemoved: ["Sea"],
+    });
+  });
+
+  test("closes with Close and applies nothing", async ({ page }) => {
+    await openLabels(page);
+
+    await sheet(page)
+      .getByRole("button", { name: "Close", exact: true })
+      .click();
+
+    await expect(sheet(page)).toBeHidden();
+    expect(applied).toBeUndefined();
+  });
+});
