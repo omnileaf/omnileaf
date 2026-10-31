@@ -12,13 +12,22 @@
     TIME_FORMATS,
     type TimeFormat,
   } from "#lib/general/time-format.svelte.ts";
-  import { languageName } from "#lib/language/language.ts";
+  import {
+    LANGUAGE_CHOICES,
+    type LanguageChoice,
+    languageName,
+    systemLanguage,
+  } from "#lib/language/language.ts";
+  import { getLanguageSetting } from "#lib/language/language.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import ValueLinkRow from "#lib/settings/ValueLinkRow.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
   import SettingRadios from "#lib/settings/SettingRadios.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -36,6 +45,9 @@
   const id = $props.id();
   const hintId = `${id}-hint`;
 
+  const android = new AndroidPhone();
+  const language = getLanguageSetting();
+  const dateHeading = radiosLook(true).heading;
   const opensOn = getOpensOnSetting();
   const timeFormat = getTimeFormatSetting();
 
@@ -87,6 +99,59 @@
             value={TIME_FORMAT_LABELS[timeFormat.choice]}
           />
         </div>
+      </div>
+    </div>
+  {:else if android.isOn}
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+      <SettingRadios
+        title={m.general_opens_on()}
+        options={OPENING_PLACES}
+        labels={PLACE_LABELS}
+        hints={{}}
+        chosen={opensOn.choice}
+        onChoose={(place: OpeningPlace) => {
+          opensOn.choose(place);
+        }}
+      />
+      <div class="flex flex-col">
+        <SettingChoiceRow
+          title={m.language_label()}
+          value={languageName(
+            language.choice === "system" ? getLocale() : language.choice,
+          )}
+          valueLang={language.choice === "system"
+            ? getLocale()
+            : language.choice}
+          choices={LANGUAGE_CHOICES.map((choice) => ({
+            value: choice,
+            label:
+              choice === "system"
+                ? m.language_use_system()
+                : languageName(choice),
+            lang: choice === "system" ? undefined : choice,
+            hint:
+              choice === "system" ? languageName(systemLanguage()) : undefined,
+          }))}
+          chosen={language.choice}
+          onChoose={(choice: LanguageChoice) => {
+            language.choose(choice);
+          }}
+        />
+        <div class="-mx-page-start -me-page-end">
+          <h2 class={dateHeading}>{m.general_dates_and_numbers()}</h2>
+        </div>
+        <SettingChoiceRow
+          title={m.general_time_format()}
+          value={TIME_FORMAT_LABELS[timeFormat.choice]}
+          choices={TIME_FORMATS.map((format) => ({
+            value: format,
+            label: TIME_FORMAT_LABELS[format],
+          }))}
+          chosen={timeFormat.choice}
+          onChoose={(format: TimeFormat) => {
+            timeFormat.choose(format);
+          }}
+        />
       </div>
     </div>
   {:else}

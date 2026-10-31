@@ -13,7 +13,6 @@ import {
 } from "./fixtures.ts";
 
 const PHONE_HINT = "Omnileaf uses your phone's language unless you pick one.";
-const PHONE_ROW_HEIGHT = 56;
 const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
 
@@ -81,14 +80,20 @@ test.describe("on an Android phone", () => {
   testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
-  test("explains the system language under a 56px row", async ({ page }) => {
+  test("offers the system language in a choice dialog from a two-line row", async ({
+    page,
+  }) => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
     await page.goto("/settings/general");
 
-    const row = await boxOf(languageRow(page));
+    const row = page.getByRole("button", { name: /^Language/ });
 
-    expect(row.height).toBe(PHONE_ROW_HEIGHT);
-    await expect(languageRow(page)).toHaveAccessibleDescription(PHONE_HINT);
+    expect((await boxOf(row)).height).toBeGreaterThanOrEqual(72);
+    await row.click();
+    const dialog = page.getByRole("dialog", { name: "Language" });
+    await expect(
+      dialog.getByRole("radio", { name: /Use the system language/ }),
+    ).toBeChecked();
   });
 });
 
