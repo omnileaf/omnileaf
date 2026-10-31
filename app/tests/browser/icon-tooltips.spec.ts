@@ -245,9 +245,9 @@ const ICON_ACTIONS: readonly IconAction[] = [
         .getByRole("region", { name: "Your library is empty" })
         .getByRole("button", { name: "Add a folder" })
         .click();
-      return page
-        .getByRole("region", { name: "Notifications F6" })
-        .getByRole("button", { name: "Dismiss" });
+      const notices = page.getByRole("region", { name: "Notifications F6" });
+      await settle(notices);
+      return notices.getByRole("button", { name: "Dismiss" });
     },
     label: "Dismiss",
   },
