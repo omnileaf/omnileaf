@@ -9,6 +9,8 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook } from "#lib/library/series-look.ts";
   import { resolvedPathOf } from "#lib/navigation/app-path.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { getNotices, type UndoOffer } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -32,6 +34,10 @@
   let { data }: PageProps = $props();
 
   const notices = getNotices();
+  const width = new WindowWidth();
+  const isIosPhone = $derived(
+    phoneOf(currentPlatform(), width.current) === "ios",
+  );
 
   let series = $state<EditedSeries | undefined>();
   let editing = $state<DetailsBeingEdited | undefined>();
@@ -117,28 +123,50 @@
   }
 </script>
 
-<div class="flex flex-1 flex-col bg-background min-block-none">
+<div
+  data-ground={isIosPhone ? "grouped" : undefined}
+  class={[
+    "flex flex-1 flex-col min-block-none",
+    isIosPhone ? "bg-native-grouped-ground" : "bg-background",
+  ]}
+>
   <header
     class="flex shrink-0 items-center gap-xs ps-safe-start pe-safe-end pbs-safe-top"
   >
-    <div class="flex flex-1 items-center gap-xs p-sm min-block-row">
+    <div
+      class={[
+        "flex flex-1 items-center gap-xs p-sm min-block-row",
+        isIosPhone && "gap-sm px-lg py-md",
+      ]}
+    >
       <Button
         type="button"
-        look="icon"
+        look={isIosPhone ? "header-control" : "icon"}
         aria-label={m.edit_details_close()}
-        class="relative block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"
+        class={isIosPhone
+          ? "ios:backdrop-blur-none"
+          : "relative block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"}
         onclick={backToSeries}
       >
         <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
       </Button>
-      <h1 class="flex-1 text-bar-title" tabindex="-1">
+      <h1
+        class={[
+          "flex-1 text-bar-title",
+          isIosPhone &&
+            "text-center text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title",
+        ]}
+        tabindex="-1"
+      >
         {m.series_edit_details()}
       </h1>
       <Button
         type="button"
-        look="filled"
+        look={isIosPhone ? "header-control" : "filled"}
         disabled={editing === undefined}
-        class="rounded-full px-lg font-semibold min-block-touch-target"
+        class={isIosPhone
+          ? "bg-native-button-primary px-md text-native-on-button-primary shadow-none ios:backdrop-blur-none"
+          : "rounded-full px-lg font-semibold min-block-touch-target"}
         onclick={() => {
           void save();
         }}
@@ -156,6 +184,7 @@
             details={editing.details}
             countsAgeRatings={editing.countsAgeRatings}
             draft={editing.draft}
+            isGrouped={isIosPhone}
             onDraft={(draft: DetailDraft) => {
               if (editing !== undefined) {
                 editing.draft = draft;

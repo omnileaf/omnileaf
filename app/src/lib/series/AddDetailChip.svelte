@@ -1,14 +1,22 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
 
-  import { DETAIL_CHIP } from "./detail-chip.ts";
+  import { DETAIL_CHIP, GROUPED_DETAIL_CHIP } from "./detail-chip.ts";
 
   const ICON_SIZE = 16;
 
-  let { label, onAdd }: { label: string; onAdd: (name: string) => void } =
-    $props();
+  let {
+    label,
+    isGrouped = false,
+    onAdd,
+  }: {
+    label: string;
+    isGrouped?: boolean;
+    onAdd: (name: string) => void;
+  } = $props();
 
   let isTyping = $state(false);
   let typed = $state("");
@@ -53,7 +61,7 @@
 {:else}
   <button
     type="button"
-    class={[DETAIL_CHIP, "pe-md"]}
+    class={cn(DETAIL_CHIP, "pe-md", isGrouped && GROUPED_DETAIL_CHIP)}
     onclick={() => {
       isTyping = true;
     }}
