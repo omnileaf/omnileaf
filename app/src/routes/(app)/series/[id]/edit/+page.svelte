@@ -38,6 +38,9 @@
   const isIosPhone = $derived(
     phoneOf(currentPlatform(), width.current) === "ios",
   );
+  const isAndroidPhone = $derived(
+    phoneOf(currentPlatform(), width.current) === "android",
+  );
 
   let series = $state<EditedSeries | undefined>();
   let editing = $state<DetailsBeingEdited | undefined>();
@@ -166,7 +169,9 @@
         disabled={editing === undefined}
         class={isIosPhone
           ? "bg-native-button-primary px-md text-native-on-button-primary shadow-none ios:backdrop-blur-none"
-          : "rounded-full px-lg font-semibold min-block-touch-target"}
+          : isAndroidPhone
+            ? "rounded-full bg-transparent px-md text-native-button/native-button font-native-button tracking-native-button text-native-on-button-plain shadow-none min-block-touch-target hover:bg-native-button-plain-hover active:bg-native-button-plain-pressed"
+            : "rounded-full px-lg font-semibold min-block-touch-target"}
         onclick={() => {
           void save();
         }}
