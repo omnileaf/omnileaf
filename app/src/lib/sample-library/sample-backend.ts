@@ -26,7 +26,6 @@ import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
 import { phrasesOf } from "./chapter-phrases.ts";
 import { closestTitle, isTooShortToSuggest } from "./closest-words.ts";
 import { isShownBy } from "#lib/series/books-shown.ts";
-import { usualWindowBackdrop } from "#lib/appearance/window-backdrop.ts";
 import {
   isFiledInVolume,
   isListedIn,
@@ -272,11 +271,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
     skipped: oneOf(SKIPPED_KINDS, search.get("skipped"), "none"),
     removal: oneOf(REMOVAL_KINDS, search.get("removal"), "clean"),
-    backdrop: oneOf(
-      WINDOW_BACKDROPS,
-      search.get("backdrop"),
-      usualWindowBackdrop(platform),
-    ),
+    backdrop: oneOf(WINDOW_BACKDROPS, search.get("backdrop"), "none"),
   };
 }
 

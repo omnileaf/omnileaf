@@ -104,6 +104,15 @@
     }
   }
 }
+@custom-variant compact-pane {
+  @variant windows {
+    @variant desktop-shell {
+      @variant max-pane {
+        @slot;
+      }
+    }
+  }
+}
 @custom-variant sidebar-hidden {
   @variant desktop {
     @variant expanded {
@@ -113,6 +122,9 @@
     }
   }
   @variant narrow-desktop {
+    @slot;
+  }
+  @variant compact-pane {
     @slot;
   }
 }
@@ -157,6 +169,7 @@
 
   --breakpoint-medium: 600px;
   --breakpoint-expanded: 840px;
+  --breakpoint-pane: 1008px;
   --breakpoint-large: 1200px;
 
   --font-display: Georgia, serif;
@@ -1001,6 +1014,8 @@
   }
 
   @variant windows {
+    --spacing-sidebar-desktop: 20rem;
+    --spacing-sidebar-hidden: 3rem;
     --spacing-menu-item-inline: 0.75rem;
     --radius-menu-item: 0.25rem;
     --spacing-checkbox: 1.25rem;
@@ -1115,6 +1130,7 @@
   --color-muted: var(--secondary-text);
   --color-sidebar-ink: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-shell-ground: var(--shell-ground, var(--sidebar));
   --color-sidebar-edge: var(--sidebar-border);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-on-sidebar-accent: var(--sidebar-accent-foreground);

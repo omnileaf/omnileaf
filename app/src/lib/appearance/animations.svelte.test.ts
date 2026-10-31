@@ -1,6 +1,16 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { AnimationsSetting } from "./animations.svelte";
+
+function asksToReduceMotion(reduces: boolean): void {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) => ({ matches: reduces, media: query }) as MediaQueryList,
+  );
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function memoryStore() {
   const values = new Map<string, string>();
@@ -53,4 +63,20 @@ test("follows a change another window made to the stored groups", () => {
   here.reread();
 
   expect(here.isOn("navigation")).toBe(false);
+});
+
+test("moves a group in script only while it is on and the system does not ask for less motion", () => {
+  const setting = new AnimationsSetting(memoryStore());
+  asksToReduceMotion(false);
+  const moving = setting.moves("navigation");
+  setting.turn("navigation", false);
+  const heldStill = setting.moves("navigation");
+  setting.turn("navigation", true);
+  asksToReduceMotion(true);
+
+  expect([moving, heldStill, setting.moves("navigation")]).toEqual([
+    true,
+    false,
+    false,
+  ]);
 });

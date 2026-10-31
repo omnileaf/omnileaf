@@ -7,13 +7,12 @@
   import type { SeriesNeighbour } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { READER_ICON_SIZE, readerButton } from "./reader-bar.ts";
+  import { readerButton, readerIconSize } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
   type Step = "previous" | "next";
 
-  const ICON_SIZE = READER_ICON_SIZE;
   const STEPS = {
     previous: {
       label: m.reader_previous_chapter,
@@ -45,12 +44,16 @@
     aria-label={shape.unavailable()}
   >
     {#snippet child({ props })}
-      <Button {...props} look="icon" class={[look, "opacity-40"]}>
+      <Button
+        {...props}
+        look="icon"
+        class={[look, !chrome.isCommandBar && "opacity-40"]}
+      >
         <ReaderIcon
           name={shape.kitIcon}
           fallback={shape.icon}
           isKit={chrome.isOnPhone}
-          size={ICON_SIZE}
+          size={readerIconSize(chrome.platform)}
         />
       </Button>
     {/snippet}
@@ -70,7 +73,7 @@
           name={shape.kitIcon}
           fallback={shape.icon}
           isKit={chrome.isOnPhone}
-          size={ICON_SIZE}
+          size={readerIconSize(chrome.platform)}
         />
       </a>
     {/snippet}

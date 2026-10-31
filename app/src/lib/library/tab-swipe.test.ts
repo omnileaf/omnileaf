@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isAcross, tabSwipedTo } from "./tab-swipe";
+import { isAcross, settlesAt, tabSwipedTo } from "./tab-swipe";
 
 const WIDTH = 400;
 
@@ -35,4 +35,15 @@ test("takes a drag as a swipe across only once it runs mostly sideways", () => {
   expect(isAcross({ x: 12, y: 3 })).toBe(true);
   expect(isAcross({ x: 12, y: 10 })).toBe(false);
   expect(isAcross({ x: 4, y: 0 })).toBe(false);
+});
+
+test("settles a committed swipe a whole width on, in the direction it was dragged", () => {
+  expect([
+    settlesAt({ moved: -120, width: WIDTH, step: 1 }),
+    settlesAt({ moved: 120, width: WIDTH, step: -1 }),
+  ]).toEqual([-WIDTH, WIDTH]);
+});
+
+test("settles a swipe that does not commit back where it began", () => {
+  expect(settlesAt({ moved: -40, width: WIDTH, step: 0 })).toBe(0);
 });

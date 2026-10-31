@@ -184,7 +184,7 @@ fn mark_split_files(mut members: Vec<Member<'_>>, volume: RarVolume) -> Vec<Memb
     members
 }
 
-fn crc32(bytes: &[u8]) -> u32 {
+pub(crate) fn crc32(bytes: &[u8]) -> u32 {
     let mut crc = flate2::Crc::new();
     crc.update(bytes);
     crc.sum()

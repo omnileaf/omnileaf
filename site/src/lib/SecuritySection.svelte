@@ -16,10 +16,10 @@
         Security
       </h2>
       <p class="m-0 text-lead max-inline-prose">
-        Omnileaf opens comic and book archives such as CBZ and CB7 files, with
-        CBR (RAR) support in development. These files can come from untrusted
-        sources, so we treat archive parsing and extraction as a
-        security-sensitive area and test it accordingly.
+        Omnileaf opens comic and book archives such as CBZ, CB7, CBR and RAR
+        files. These files can come from untrusted sources, so we treat archive
+        parsing and extraction as a security-sensitive area and test it
+        accordingly.
       </p>
       <div class="flex flex-col gap-3">
         <h3 class="m-0 text-lead font-semibold">Our focus</h3>
