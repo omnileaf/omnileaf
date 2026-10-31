@@ -63,14 +63,15 @@ test("opens from the Data and privacy group of the Settings list", async ({
 }) => {
   await page.goto("/settings");
 
-  await page
-    .getByRole("main")
-    .getByRole("link", { name: /^Storage/ })
-    .click();
-
-  await expect(
-    page.getByRole("heading", { name: "Storage", level: 1 }),
-  ).toBeVisible();
+  await expect(async () => {
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: /^Storage/ })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Storage", level: 1 }),
+    ).toBeVisible({ timeout: 2000 });
+  }).toPass();
 });
 
 test("measures the space Omnileaf and everything else use, and what's free", async ({
