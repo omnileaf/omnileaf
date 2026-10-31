@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { boxOf, DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
@@ -61,6 +61,7 @@ async function openLabels(page: Page): Promise<void> {
   await list.getByRole("checkbox").nth(2).click();
   await page.getByRole("button", { name: "Categories" }).click();
   await expect(sheet(page)).toBeVisible();
+  await settle(sheet(page));
 }
 
 test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
