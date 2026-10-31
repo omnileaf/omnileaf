@@ -24,6 +24,7 @@
     readonly size?: Size;
     readonly isFullWidth?: boolean;
     readonly isSetupRow?: boolean;
+    readonly hasWindowsLook?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
@@ -96,6 +97,7 @@
     size = "regular",
     isFullWidth = false,
     isSetupRow = false,
+    hasWindowsLook = false,
     onChoose,
     onFit,
     class: className,
@@ -110,7 +112,8 @@
   const isMacosSmall = $derived(isMacos && size === "small");
   const usesNativeTokens = isNative || isMacos;
   const isWindows = $derived(
-    platform === "windows" && size === "regular" && isSetupRow,
+    platform === "windows" &&
+      (hasWindowsLook || (size === "regular" && isSetupRow)),
   );
   const face = $derived.by(() => {
     if (isWindows) {

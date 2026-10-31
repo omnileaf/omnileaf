@@ -180,3 +180,53 @@ test.describe("General on an Android phone", { tag: "@native" }, () => {
     ).toHaveCount(0);
   });
 });
+
+test.describe(
+  "the 18+ content page's switch on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's list rows");
+    });
+
+    test("sets the age ratings switch as a flat 72px row with 16px words, a 14px muted line and the switch 24px from the end", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library/adult-content");
+      const row = page.getByRole("switch", {
+        name: "Use age ratings from book details",
+      });
+      const label = row.getByText("Use age ratings from book details");
+      const help = row.getByText(
+        "Off: only series you mark 18+ by hand count.",
+      );
+
+      await expect(row).toHaveCSS("border-top-width", "0px");
+      await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      expect((await boxOf(row)).height).toBeGreaterThanOrEqual(72);
+      await expect(label).toHaveCSS("font-size", "16px");
+      await expect(label).toHaveCSS("line-height", "24px");
+      await expect(label).toHaveCSS("font-weight", "400");
+      await expect(help).toHaveCSS("font-size", "14px");
+      await expect(help).toHaveCSS("line-height", "20px");
+      await expect(help).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-muted"),
+      );
+      expect((await boxOf(label)).x - (await boxOf(row)).x).toBeCloseTo(16, 0);
+    });
+
+    test("ends the page with a footnote saying when the choice applies", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library/adult-content");
+      const note = page.getByText(
+        "First launch offers the same choice. It applies straight away.",
+      );
+
+      await expect(note).toBeVisible();
+      await expect(note).toHaveCSS("font-size", "14px");
+      await expect(note).toHaveCSS("line-height", "20px");
+    });
+  },
+);

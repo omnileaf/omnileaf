@@ -60,6 +60,7 @@
       chosen={view.fitsCoversToWidth ? "auto" : "choose"}
       labelledBy={labelId}
       size="small"
+      hasWindowsLook
       onChoose={(choice: Choice) => {
         onFit(choice === "auto");
       }}

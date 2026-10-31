@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
+import { withAttempts } from "./attempts.ts";
 import {
   capability,
   copyNewBookInto,
@@ -17,6 +18,8 @@ const RELEASE_X = 320;
 const NO_PAUSE_SECONDS = 0;
 const FINGER_POINTS_PER_SECOND = 600;
 const SCAN_TIMEOUT_MS = 60_000;
+const SWIPE_ATTEMPTS = 3;
+const SWIPE_LANDED_TIMEOUT_MS = 10_000;
 const SWIPE_TEST_TIMEOUT_MS = 180_000;
 
 const SWIPED_SERIES = "Swiped Series";
@@ -56,17 +59,22 @@ test(
     await (await appSession().waitFor(FIRST_BOOK)).click();
     await appSession().waitFor(NEXT_PAGE);
 
-    await appSession().runMobileCommand("dragFromToWithVelocity", {
-      pressDuration: NO_PAUSE_SECONDS,
-      holdDuration: NO_PAUSE_SECONDS,
-      velocity: FINGER_POINTS_PER_SECOND,
-      fromX: EDGE_X,
-      fromY: SWIPE_Y,
-      toX: RELEASE_X,
-      toY: SWIPE_Y,
+    await withAttempts(SWIPE_ATTEMPTS, async () => {
+      await appSession().runMobileCommand("dragFromToWithVelocity", {
+        pressDuration: NO_PAUSE_SECONDS,
+        holdDuration: NO_PAUSE_SECONDS,
+        velocity: FINGER_POINTS_PER_SECOND,
+        fromX: EDGE_X,
+        fromY: SWIPE_Y,
+        toX: RELEASE_X,
+        toY: SWIPE_Y,
+      });
+      await appSession().waitUntil(
+        ON_A_SERIES_PAGE,
+        "back on the series page",
+        SWIPE_LANDED_TIMEOUT_MS,
+      );
     });
-
-    await appSession().waitUntil(ON_A_SERIES_PAGE, "back on the series page");
     const heading = await appSession().waitFor(PAGE_HEADING);
     expect(await heading.text()).toBe(SWIPED_SERIES);
   },

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eye, Folder, Tag, Trash } from "@lucide/svelte";
+  import { Trash } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
@@ -9,6 +9,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
+  import { selectionActions } from "./selection-actions.ts";
   import type { LabelsFrom } from "./series-selection";
 
   const ICON_SIZE = 18;
@@ -35,27 +36,7 @@
 
   const android = new AndroidPhone();
   const actions = $derived([
-    ...(keepsLabels
-      ? [
-          {
-            name: "categories",
-            icon: Folder,
-            label: m.library_categories(),
-            act: () => {
-              onLabels("categories");
-            },
-          },
-          {
-            name: "tags",
-            icon: Tag,
-            label: m.library_tags(),
-            act: () => {
-              onLabels("tags");
-            },
-          },
-        ]
-      : []),
-    { name: "read", icon: Eye, label: m.library_mark_read(), act: onMarkRead },
+    ...selectionActions({ keepsLabels, onLabels, onMarkRead }),
     { name: "delete", icon: Trash, label: m.library_delete(), act: onDelete },
   ]);
 </script>

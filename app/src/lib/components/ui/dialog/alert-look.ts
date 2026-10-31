@@ -82,9 +82,29 @@ const WINDOWS_LOOK: AlertLook = {
   defaultAction: WINDOWS_DEFAULT_BUTTON,
 };
 
+const ANDROID_TEXT_BUTTON =
+  "max-medium:bg-transparent max-medium:px-md max-medium:text-native-on-button-plain max-medium:shadow-none max-medium:hover:bg-native-button-plain-hover max-medium:active:bg-native-button-plain-pressed";
+
+const ANDROID_LOOK: AlertLook = {
+  scrim: "max-medium:bg-native-scrim",
+  surface:
+    "max-medium:gap-none max-medium:rounded-native-dialog max-medium:border-none max-medium:p-xl",
+  badge: "max-medium:hidden",
+  title:
+    "max-medium:pbe-lg max-medium:text-native-large-title/native-large-title max-medium:font-native-large-title max-medium:tracking-native-large-title",
+  body: "max-medium:gap-xl",
+  description:
+    "max-medium:text-muted max-medium:text-native-row-subtitle/native-row-subtitle",
+  actions: "max-medium:flex max-medium:justify-end max-medium:gap-sm",
+  cancel: ANDROID_TEXT_BUTTON,
+  confirm: ANDROID_TEXT_BUTTON,
+  actionOrder: CANCEL_FIRST,
+  defaultAction: CANCEL_BY_DEFAULT,
+};
+
 const ALERT_LOOKS = {
   ios: IOS_LOOK,
-  android: TODAYS_ALERT_LOOK,
+  android: ANDROID_LOOK,
   linux: TODAYS_ALERT_LOOK,
   macos: TODAYS_ALERT_LOOK,
   windows: WINDOWS_LOOK,

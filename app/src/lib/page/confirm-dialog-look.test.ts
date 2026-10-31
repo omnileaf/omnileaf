@@ -386,11 +386,12 @@ test("keeps today's alert on an iPad", async () => {
   expect(getComputedStyle(alert).borderTopLeftRadius).toBe("10px");
 });
 
-test("keeps today's alert and dim on an Android phone", async () => {
+test("draws the Material alert on an Android phone, 28px round on the scrim", async () => {
   const alert = await openAlertOn("android", PHONE);
 
-  expect(getComputedStyle(alert).borderTopLeftRadius).not.toBe("34px");
+  expect(getComputedStyle(alert).borderTopLeftRadius).toBe("28px");
+  expect(getComputedStyle(alert).paddingLeft).toBe("24px");
   expect(getComputedStyle(overlay()).backgroundColor).toBe(
-    resolvedColour("--overlay", "backgroundColor"),
+    resolvedColour("--native-color-scrim", "backgroundColor"),
   );
 });
