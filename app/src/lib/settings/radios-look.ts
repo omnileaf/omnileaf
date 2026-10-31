@@ -34,9 +34,9 @@ const ANDROID_PHONE_LOOK: RadiosLook = {
   group: "flex flex-col",
   row: `flex items-center gap-lg py-2xs ps-lg pe-xl text-start text-body transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed min-block-touch-target`,
   mark: "flex shrink-0 items-center justify-center rounded-full border-2 block-radio inline-radio",
-  markOn: "border-accent",
-  markOff: "border-muted",
-  words: "flex flex-col",
+  markOn: "border-radio-edge-on",
+  markOff: "border-control-edge",
+  words: "flex flex-col break-words min-inline-none",
   label: "",
   hint: `text-muted ${ROW_SUBTITLE_TYPE}`,
 };
