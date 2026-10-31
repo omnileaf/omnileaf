@@ -532,6 +532,77 @@ test.describe("with an Android folder on a network share", () => {
     expect(asked).toEqual([]);
   });
 
+  test.describe("drawn as Android's sheet", () => {
+    async function openSheet(page: Page): Promise<Locator> {
+      test.skip(
+        viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+        "the bottom sheet is the phone's",
+      );
+      await page.goto("/");
+      await notice(page, "Omnileaf can’t open Manga")
+        .getByRole("button", { name: "Choose it again" })
+        .click();
+      const sheet = page.getByRole("dialog", { name: "Choose Manga again" });
+      await expect(sheet).toBeVisible();
+      await settle(sheet);
+      return sheet;
+    }
+
+    test("sets the title at title large with no badge and the lead under it at 14px", async ({
+      page,
+    }) => {
+      const sheet = await openSheet(page);
+      const title = sheet.getByRole("heading", { name: "Choose Manga again" });
+      const lead = sheet.getByText("Android’s folder picker opens next.");
+
+      await expect(title).toHaveCSS("font-size", "22px");
+      await expect(title).toHaveCSS("line-height", "28px");
+      await expect(title).toHaveCSS("font-weight", "400");
+      expect((await boxOf(title)).x - (await boxOf(sheet)).x).toBeCloseTo(
+        16,
+        0,
+      );
+      await expect(lead).toHaveCSS("font-size", "14px");
+      await expect(lead).toHaveCSS("line-height", "20px");
+    });
+
+    test("numbers the steps in 24px soft-accent circles beside 16px text", async ({
+      page,
+    }) => {
+      const sheet = await openSheet(page);
+      const first = sheet.getByRole("listitem").first();
+      const number = first.locator("span").first();
+      const words = first.locator("span").nth(1);
+
+      const box = await boxOf(number);
+
+      expect(box.width).toBeCloseTo(24, 0);
+      expect(box.height).toBeCloseTo(24, 0);
+      expect(box.x - (await boxOf(sheet)).x).toBeCloseTo(16, 0);
+      await expect(words).toHaveCSS("font-size", "16px");
+      await expect(words).toHaveCSS("line-height", "24px");
+    });
+
+    test("stacks Continue and Not now as two 56px full-width buttons 8px apart, 16px from the foot", async ({
+      page,
+    }) => {
+      const sheet = await openSheet(page);
+      const sheetBox = await boxOf(sheet);
+      const go = await boxOf(sheet.getByRole("button", { name: "Continue" }));
+      const not = await boxOf(sheet.getByRole("button", { name: "Not now" }));
+
+      expect(go.height).toBeCloseTo(56, 0);
+      expect(not.height).toBeCloseTo(56, 0);
+      expect(go.x - sheetBox.x).toBeCloseTo(16, 0);
+      expect(go.width).toBeCloseTo(sheetBox.width - 32, 0);
+      expect(not.y - (go.y + go.height)).toBeCloseTo(8, 0);
+      expect(sheetBox.y + sheetBox.height - (not.y + not.height)).toBeCloseTo(
+        16,
+        0,
+      );
+    });
+  });
+
   test("says the folder is back once chosen again", async ({ page }) => {
     relocated = "rescanned";
     await page.goto("/");
