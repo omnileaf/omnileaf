@@ -132,6 +132,21 @@
   "missing_mount_title": "Mount {name}’s share again",
   "missing_mount_body": "{share} is mounted by your system, so there’s no sign-in for Omnileaf to open. Mount it again, then choose Try again. Your reading progress is safe.",
   "missing_share_body": "It’s on the network share {server}, which may want you to sign in again. Your reading progress is safe.",
+  "missing_shown_body": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series from it is shown, but can’t be opened until it’s back. Your reading progress is safe.",
+        "countPlural=other": "{formattedCount} series from it are shown, but can’t be opened until it’s back. Your reading progress is safe."
+      }
+    }
+  ],
+  "missing_hide_again": "Hide them again",
   "missing_show_anyway": "Show them anyway",
   "missing_find_folder": "Find the folder",
   "missing_choose_again": "Choose it again",

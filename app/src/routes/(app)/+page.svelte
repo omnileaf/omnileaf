@@ -42,7 +42,14 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
-  import { MissingFolderNotices } from "#lib/library/missing-folder-notices.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
+  import {
+    dismissForThisVisit,
+    isDismissedThisVisit,
+    type MissingFolderActions,
+    MissingFolderNotices,
+  } from "#lib/library/missing-folder-notices.ts";
   import RemoveFolderDialog from "#lib/library/RemoveFolderDialog.svelte";
   import RemoveFromLibraryDialog from "#lib/library/RemoveFromLibraryDialog.svelte";
   import { noteRemoval, seriesTargets } from "#lib/library/removal-notice.ts";
@@ -209,10 +216,18 @@
   const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
   let hiddenSeries = $state(0);
+  const androidPhone = new AndroidPhone();
+  let missingFolders = $state<readonly MissingFolder[]>([]);
+  let stillFailing = $state<readonly string[]>([]);
+  const cardedFolders = $derived(
+    androidPhone.isOn
+      ? missingFolders.filter(({ folder }) => !isDismissedThisVisit(folder.id))
+      : [],
+  );
   let unlinking = $state<LibraryFolder | undefined>();
   let choosingAgain = $state<MissingFolder | undefined>();
   let unlinkingBooks = $state<number | undefined>();
-  const folderNotices = new MissingFolderNotices(notices, {
+  const folderHandlers: MissingFolderActions = {
     showAnyway: ({ folder }) => {
       void commands
         .showMissingLibraryFolder(folder.id, true)
@@ -237,7 +252,12 @@
       void signInTo(missing);
     },
     tryAgain: readAgain,
-  });
+  };
+  const folderNotices = new MissingFolderNotices(
+    notices,
+    folderHandlers,
+    () => androidPhone.isOn,
+  );
 
   async function relocate(missing: MissingFolder): Promise<void> {
     const relocated = await commands.relocateLibraryFolder(
@@ -252,8 +272,10 @@
     ) {
       if (relocated.data.outcome.kind === "unreachable") {
         folderNotices.stillFailing(missing);
+        stillFailing = [...stillFailing, missing.folder.id];
       } else {
         folderNotices.back(missing);
+        stillFailing = stillFailing.filter((id) => id !== missing.folder.id);
       }
     }
     await loadMissingFolders();
@@ -274,6 +296,7 @@
         return;
       case "failed":
         folderNotices.stillFailing(missing);
+        stillFailing = [...stillFailing, missing.folder.id];
         return;
       default:
         assertNever(signedIn.data);
@@ -301,6 +324,7 @@
       commands.libraryHiddenSeriesCount(),
     ]);
     if (missing.status === "ok") {
+      missingFolders = missing.data;
       folderNotices.show(missing.data);
     }
     hiddenSeries = hidden.status === "ok" ? hidden.data : 0;
@@ -1095,6 +1119,25 @@
         </Button>
       </EmptyState>
     {:else}
+      {#each cardedFolders as card (card.folder.id)}
+        <div class="mbs-sm">
+          <MissingFolderCard
+            missing={card}
+            isStillFailing={stillFailing.includes(card.folder.id)}
+            handlers={folderHandlers}
+            onHide={({ folder }: MissingFolder) => {
+              void commands
+                .showMissingLibraryFolder(folder.id, false)
+                .then(reportingErrors)
+                .then(loadMissingFolders);
+            }}
+            onDismiss={({ folder }: MissingFolder) => {
+              dismissForThisVisit(folder.id);
+              missingFolders = [...missingFolders];
+            }}
+          />
+        </div>
+      {/each}
       <FolderNotice
         class="mbs-sm"
         {adding}

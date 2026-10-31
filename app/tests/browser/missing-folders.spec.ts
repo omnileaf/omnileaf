@@ -90,7 +90,12 @@ function backendMissing(folder: MissingFolder): FakeBackend {
 function notice(page: Page, title: string): Locator {
   return page
     .getByRole("listitem")
-    .filter({ has: page.getByText(title, { exact: true }) });
+    .filter({ has: page.getByText(title, { exact: true }) })
+    .or(
+      page
+        .getByRole("status")
+        .filter({ has: page.getByText(title, { exact: true }) }),
+    );
 }
 
 async function findTheFolder(page: Page): Promise<Locator> {

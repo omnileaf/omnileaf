@@ -18,6 +18,14 @@ export interface MissingFolderActions {
 
 const dismissedThisVisit = new Set<string>();
 
+export function dismissForThisVisit(id: string): void {
+  dismissedThisVisit.add(id);
+}
+
+export function isDismissedThisVisit(id: string): boolean {
+  return dismissedThisVisit.has(id);
+}
+
 function placeOf({ folder, problem }: MissingFolder): string {
   switch (problem.kind) {
     case "needsSignIn":
@@ -41,6 +49,7 @@ export class MissingFolderNotices {
   constructor(
     private readonly notices: Notices,
     private readonly handlers: MissingFolderActions,
+    private readonly isInline: () => boolean = () => false,
   ) {}
 
   show(missing: readonly MissingFolder[]): void {
@@ -91,6 +100,9 @@ export class MissingFolderNotices {
   }
 
   #present(missing: MissingFolder): void {
+    if (this.isInline()) {
+      return;
+    }
     const { id } = missing.folder;
     const toast = this.notices.present(
       MissingFolderToast,
