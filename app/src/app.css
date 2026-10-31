@@ -1514,6 +1514,10 @@
   }
 }
 
+@utility grid-cols-mac-list {
+  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem 4.5rem 8rem 2.5rem;
+}
+
 @utility grid-cols-setting-row {
   grid-template-columns: 6.75rem minmax(0, 1fr);
 }

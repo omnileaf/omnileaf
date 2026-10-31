@@ -3,6 +3,10 @@
   "library_title": "Library",
   "library_empty": "Your library is empty",
   "library_empty_body": "Add a folder of comics, manga or books. Omnileaf reads it where it is.",
+  "library_list_books": "Books",
+  "library_list_unread": "Unread",
+  "library_list_language": "Language",
+  "library_list_progress": "Progress",
   "library_series_list": "Series",
   "library_series_books": [
     {
