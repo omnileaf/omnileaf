@@ -77,6 +77,7 @@
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
+  import IosSelectionActions from "#lib/library/IosSelectionActions.svelte";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
   import { selectionActions } from "#lib/library/selection-actions.ts";
@@ -90,7 +91,7 @@
   import { holdScrollTop } from "#lib/navigation/hold-scroll.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { isPhone, isPointer } from "#lib/page/platform.ts";
+  import { isPhone, isPointer, phoneOf } from "#lib/page/platform.ts";
   import { foldsBarActionsIntoMore } from "#lib/page/top-bar.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { commandBarLook } from "#lib/page/command-bar-look.ts";
@@ -353,6 +354,9 @@
       isPhone(data.appInfo.platform, width.current)
       ? BESIDE_PHONE_TABS
       : 0,
+  );
+  const isIosPhone = $derived(
+    phoneOf(data.appInfo.platform, width.current) === "ios",
   );
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
@@ -1168,19 +1172,30 @@
           </div>
         </div>
         {#if selection.isSelecting && selection.count > 0 && !commandsOnTop}
-          <LibrarySelectionActions
-            count={selection.count}
-            isPill={docksFilter}
-            {keepsLabels}
-            onLabels={labelPicked}
-            onMarkRead={markPickedRead}
-            onDelete={() => {
-              removing = seriesTargets(selection.picked);
-            }}
-            onCancel={() => {
-              selection.end();
-            }}
-          />
+          {#if isIosPhone}
+            <IosSelectionActions
+              {keepsLabels}
+              onLabels={labelPicked}
+              onMarkRead={markPickedRead}
+              onDelete={() => {
+                removing = seriesTargets(selection.picked);
+              }}
+            />
+          {:else}
+            <LibrarySelectionActions
+              count={selection.count}
+              isPill={docksFilter}
+              {keepsLabels}
+              onLabels={labelPicked}
+              onMarkRead={markPickedRead}
+              onDelete={() => {
+                removing = seriesTargets(selection.picked);
+              }}
+              onCancel={() => {
+                selection.end();
+              }}
+            />
+          {/if}
         {/if}
       {/if}
     {/if}

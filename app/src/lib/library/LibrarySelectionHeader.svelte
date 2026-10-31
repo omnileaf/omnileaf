@@ -42,6 +42,7 @@
 <h1 class="sr-only">{m.library_title()}</h1>
 <div
   data-page-toolbar
+  data-picking-bar={onIosPhone || undefined}
   class="sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center gap-sm bg-background ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar"
 >
   {#if onIosPhone}
@@ -49,7 +50,7 @@
       type="button"
       look="header-control"
       aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
-      class="px-md"
+      class="px-md whitespace-nowrap text-foreground inline-auto min-inline-native-target"
       onclick={onSelectAll}
     >
       {m.library_select_all()}
@@ -65,7 +66,7 @@
       type="button"
       look="header-control"
       aria-keyshortcuts="Escape"
-      class="bg-native-button-primary px-md text-native-on-button-primary shadow-none ios:backdrop-blur-none"
+      class="bg-native-button-primary px-md whitespace-nowrap text-native-on-button-primary shadow-none inline-auto min-inline-native-target ios:backdrop-blur-none"
       onclick={onCancel}
     >
       {m.library_selection_done()}
