@@ -3,6 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { Toggle } from "#lib/components/ui/toggle/index.ts";
+  import { ANDROID_FILTER_CHIP } from "#lib/library/filter-sheet-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -33,7 +34,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const phone = $derived(phoneOf(platform, width.current));
+  const isNative = $derived(phone === "ios");
+  const isMaterial = $derived(phone === "android");
 
   let row: HTMLElement | undefined = $state();
 
@@ -61,7 +64,7 @@
   aria-label={m.search_scope()}
   class={[
     "flex shrink-0",
-    isNative ? NATIVE_GROUP : "flex-wrap gap-x-icon-gap gap-y-lg",
+    isNative || isMaterial ? NATIVE_GROUP : "flex-wrap gap-x-icon-gap gap-y-lg",
     className,
   ]}
 >
@@ -75,7 +78,20 @@
         }
       }
       data-scope={choice}
-      class={isNative ? NATIVE_CHIP : undefined}
+      class={isMaterial
+        ? [
+            ANDROID_FILTER_CHIP.chip,
+            "snap-start",
+            isChosen
+              ? [
+                  ANDROID_FILTER_CHIP.chosen,
+                  "aria-pressed:border-transparent aria-pressed:bg-native-accent-soft aria-pressed:font-native-button",
+                ]
+              : ANDROID_FILTER_CHIP.other,
+          ]
+        : isNative
+          ? NATIVE_CHIP
+          : undefined}
     >
       <span class="flex items-center gap-xs">
         {#if isChosen}
