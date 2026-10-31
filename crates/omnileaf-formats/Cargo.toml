@@ -24,6 +24,7 @@ omnileaf-testkit.workspace = true
 proptest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 
 [[test]]
@@ -40,6 +41,10 @@ required-features = ["rar"]
 
 [[test]]
 name = "rar5_disagreements"
+required-features = ["rar"]
+
+[[test]]
+name = "rar_made_by_rar"
 required-features = ["rar"]
 
 [lints]
