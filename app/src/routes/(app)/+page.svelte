@@ -77,6 +77,7 @@
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
+  import IosLabelSeriesSheet from "#lib/library/IosLabelSeriesSheet.svelte";
   import IosSelectionActions from "#lib/library/IosSelectionActions.svelte";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
@@ -905,12 +906,21 @@
   }}
 />
 
-<LabelSeriesDialog
-  bind:isOpen={isLabelling}
-  series={labelled}
-  startsAtTags={labelsFrom === "tags"}
-  onError={reportError}
-/>
+{#if isIosPhone}
+  <IosLabelSeriesSheet
+    bind:isOpen={isLabelling}
+    series={labelled}
+    startsAtTags={labelsFrom === "tags"}
+    onError={reportError}
+  />
+{:else}
+  <LabelSeriesDialog
+    bind:isOpen={isLabelling}
+    series={labelled}
+    startsAtTags={labelsFrom === "tags"}
+    onError={reportError}
+  />
+{/if}
 
 <EditDetailsDialog
   series={editedSeries}
