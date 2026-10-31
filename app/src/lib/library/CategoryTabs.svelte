@@ -9,7 +9,7 @@
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
-  import { DrawerContent } from "#lib/components/ui/drawer/index.ts";
+  import { DrawerContent, SheetBar } from "#lib/components/ui/drawer/index.ts";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -193,7 +193,10 @@
     tabindex="-1"
     aria-label={m.library_categories()}
     onkeydown={moveWithArrows}
-    class="isolate flex flex-1 scrollbar-none overflow-x-auto min-inline-none medium:overflow-x-hidden"
+    class={[
+      "isolate flex flex-1 scrollbar-none overflow-x-auto min-inline-none medium:overflow-x-hidden",
+      look.strip,
+    ]}
   >
     {#each tabs as tab (tab.id)}
       {@const isChosen = tab.id === chosen}
@@ -266,33 +269,54 @@
         isSheetOpen = true;
       }}
     >
-      <CategoryGlyph name="chevron-down" isMaterial={look.usesMaterialIcons} />
+      <span class={look.arrowFace}>
+        <CategoryGlyph
+          name="chevron-down"
+          isMaterial={look.usesMaterialIcons}
+        />
+      </span>
     </Button>
     <Dialog.Root bind:open={isSheetOpen}>
       <DrawerContent
         onDismiss={() => {
           isSheetOpen = false;
         }}
+        height={look.sheet.height}
+        ground={look.sheet.ground}
         aria-labelledby={titleId}
       >
-        <div class={look.sheet.header}>
-          {#if look.sheet.hasBadge}
-            <span
-              aria-hidden="true"
-              class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
-            >
-              <LibraryGlyph size={SHEET_ICON_SIZE} />
-            </span>
-          {/if}
-          <div class="flex flex-col">
-            <DialogTitle id={titleId} class={look.sheet.title}>
-              {m.library_categories()}
-            </DialogTitle>
-            <Dialog.Description class={look.sheet.description}>
-              {m.library_categories_every_description()}
-            </Dialog.Description>
+        {#if look.sheet.isBarred}
+          <SheetBar
+            title={m.library_categories()}
+            {titleId}
+            description={m.library_categories_every_description()}
+            closeLabel={m.library_close()}
+            actionLabel={m.library_categories_edit_short()}
+            onClose={() => {
+              isSheetOpen = false;
+            }}
+            onAction={openSettings}
+          />
+        {:else}
+          <div class={look.sheet.header}>
+            {#if look.sheet.hasBadge}
+              <span
+                aria-hidden="true"
+                class="flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense"
+              >
+                <LibraryGlyph size={SHEET_ICON_SIZE} />
+              </span>
+            {/if}
+            <div class="flex flex-col">
+              <DialogTitle id={titleId} class={look.sheet.title}>
+                {m.library_categories()}
+              </DialogTitle>
+              <Dialog.Description class={look.sheet.description}>
+                {m.library_categories_every_description()}
+              </Dialog.Description>
+            </div>
           </div>
-        </div>
+        {/if}
         <div
           role="radiogroup"
           aria-labelledby={titleId}
@@ -312,31 +336,38 @@
             >
               <span data-slot="item-title" class="flex-1">{tab.name}</span>
               {#if isChosen}
-                <CategoryGlyph
-                  name="check"
-                  isMaterial={look.usesMaterialIcons}
-                />
+                <span class={look.sheet.check}>
+                  <CategoryGlyph
+                    name="check"
+                    isMaterial={look.usesMaterialIcons}
+                  />
+                </span>
               {/if}
             </button>
           {/each}
         </div>
         <div class={look.sheet.foot}>
-          <Button
-            type="button"
-            {...editPhone === undefined
-              ? { look: "outline" }
-              : { variant: editPhone.variant, size: editPhone.size }}
-            class={[
-              "flex flex-1 items-center justify-center gap-sm",
-              editPhone === undefined
-                ? "rounded-full text-body min-block-touch-target"
-                : editPhone.fit,
-            ]}
-            onclick={openSettings}
-          >
-            <CategoryGlyph name="pencil" isMaterial={look.usesMaterialIcons} />
-            {m.library_categories_edit_short()}
-          </Button>
+          {#if !look.sheet.isBarred}
+            <Button
+              type="button"
+              {...editPhone === undefined
+                ? { look: "outline" }
+                : { variant: editPhone.variant, size: editPhone.size }}
+              class={[
+                "flex flex-1 items-center justify-center gap-sm",
+                editPhone === undefined
+                  ? "rounded-full text-body min-block-touch-target"
+                  : editPhone.fit,
+              ]}
+              onclick={openSettings}
+            >
+              <CategoryGlyph
+                name="pencil"
+                isMaterial={look.usesMaterialIcons}
+              />
+              {m.library_categories_edit_short()}
+            </Button>
+          {/if}
           <Button
             type="button"
             {...newPhone === undefined

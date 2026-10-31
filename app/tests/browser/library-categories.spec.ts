@@ -650,12 +650,9 @@ test.describe("opening on a chosen tab", () => {
 });
 
 test.describe("every category on a phone", { tag: "@native" }, () => {
-  const ROW_TITLE_SIZE = { ios: "17px", android: "16px" } as const;
-  const RULE = {
-    ios: { colour: "rgba(60, 60, 67, 0.12)", height: "1px" },
-    android: { colour: "rgba(0, 0, 0, 0)", height: "0px" },
-  } as const;
-  const SHEET_BUTTON = { ios: 50, android: 40 } as const;
+  const ROW_TITLE_SIZE = "16px";
+  const RULE = { colour: "rgba(0, 0, 0, 0)", height: "0px" } as const;
+  const SHEET_BUTTON = 40;
 
   test.use({ backend: backendWith(CATEGORIES) });
 
@@ -671,10 +668,7 @@ test.describe("every category on a phone", { tag: "@native" }, () => {
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    test.skip(platform !== "android", "an iPhone's sheet is grouped rows");
 
     const sheet = await openEveryCategory(page);
     const look = await sheet
@@ -691,18 +685,18 @@ test.describe("every category on a phone", { tag: "@native" }, () => {
         };
       });
 
-    expect(look.titleSize).toBe(ROW_TITLE_SIZE[platform]);
-    expect(look.rule).toEqual(RULE[platform]);
+    expect(look.titleSize).toBe(ROW_TITLE_SIZE);
+    expect(look.rule).toEqual(RULE);
   });
 
   test("sets Edit and New category as the phone's own buttons", async ({
     page,
     platform,
   }) => {
-    if (platform !== "ios" && platform !== "android") {
-      test.skip();
-      return;
-    }
+    test.skip(
+      platform !== "android",
+      "an iPhone's Edit sits in the sheet's bar",
+    );
 
     const sheet = await openEveryCategory(page);
     const edit = await boxOf(sheet.getByRole("button", { name: "Edit" }));
@@ -710,8 +704,8 @@ test.describe("every category on a phone", { tag: "@native" }, () => {
       sheet.getByRole("button", { name: "New category" }),
     );
 
-    expect(edit.height).toBeCloseTo(SHEET_BUTTON[platform], 0);
-    expect(made.height).toBeCloseTo(SHEET_BUTTON[platform], 0);
+    expect(edit.height).toBeCloseTo(SHEET_BUTTON, 0);
+    expect(made.height).toBeCloseTo(SHEET_BUTTON, 0);
   });
 });
 
