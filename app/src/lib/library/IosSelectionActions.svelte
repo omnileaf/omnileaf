@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Trash } from "@lucide/svelte";
   import { Portal } from "bits-ui";
 
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -17,6 +18,8 @@
     onMarkRead: () => void;
     onDelete: () => void;
   } = $props();
+
+  const ICON_SIZE = 20;
 
   const actions = $derived([
     ...(keepsLabels
@@ -38,7 +41,6 @@
         ]
       : []),
     { name: "read", label: m.library_mark_read(), act: onMarkRead },
-    { name: "delete", label: m.library_delete(), act: onDelete },
   ]);
 </script>
 
@@ -58,5 +60,15 @@
         {label}
       </Button>
     {/each}
+    <Button
+      type="button"
+      look="header-control"
+      iconOnly
+      label={m.library_delete()}
+      class="text-foreground block-native-toolbar-button inline-native-toolbar-button"
+      onclick={onDelete}
+    >
+      <Trash size={ICON_SIZE} aria-hidden="true" />
+    </Button>
   </div>
 </Portal>

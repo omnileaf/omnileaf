@@ -4,6 +4,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -11,7 +12,7 @@ import { sampleSeries } from "./series-catalog.ts";
 
 const HELD_MS = 800;
 const LIBRARY = sampleSeries(9);
-const CAPSULE_NAMES = ["Categories", "Tags", "Mark as read", "Delete"] as const;
+const CAPSULE_NAMES = ["Categories", "Tags", "Mark as read"] as const;
 
 test.use({
   backend: {
@@ -78,13 +79,13 @@ test.describe("selecting series on an iPhone", { tag: "@native" }, () => {
       );
       expect(isClipped, name).toBe(false);
     }
-    const [categories, tags, markRead, remove] = boxes;
+    const [categories, tags, markRead] = boxes;
+    const remove = await boxOf(capsule(page, "Delete"));
     expect(categories?.x).toBeLessThan(tags?.x ?? 0);
     expect(tags?.x).toBeLessThan(markRead?.x ?? 0);
-    expect((markRead?.x ?? 0) + (markRead?.width ?? 0)).toBeLessThan(
-      remove?.x ?? 0,
-    );
-    expect((remove?.x ?? 0) + (remove?.width ?? 0)).toBeGreaterThan(
+    expect((markRead?.x ?? 0) + (markRead?.width ?? 0)).toBeLessThan(remove.x);
+    expect(remove.width).toBeCloseTo(remove.height, 0);
+    expect(remove.x + remove.width).toBeGreaterThan(
       viewportOf(page).width - 24,
     );
   });
@@ -136,6 +137,7 @@ test.describe("selecting series on an iPhone", { tag: "@native" }, () => {
 
   test("brings the tab bar back when the selection ends", async ({ page }) => {
     await startSelecting(page);
+    await settle(page.getByRole("main"));
 
     await page.getByRole("button", { name: "Done" }).click();
 
