@@ -229,7 +229,7 @@
                 <Button
                   {...props}
                   look="icon"
-                  class={android.isOn
+                  class={android.isOn || ios.isOn
                     ? "block-touch-target inline-touch-target"
                     : ""}
                   aria-label={m.library_tabs_more({ tab: tab.name })}
