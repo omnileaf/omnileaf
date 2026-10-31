@@ -19,6 +19,8 @@
     max > 0 && value !== null ? 100 - (100 * value) / max : 0,
   );
   const isNative = hasNativeLook(currentPlatform());
+  const WINDOWS_DETERMINATE =
+    "windows:relative windows:isolate windows:items-center windows:bg-transparent windows:block-native-progress-thickness windows:before:absolute windows:before:z-behind windows:before:content-[''] windows:before:bg-native-progress-track windows:before:block-native-hairline windows:before:inline-full";
 </script>
 
 <ProgressPrimitive.Root
@@ -33,8 +35,9 @@
             : "bg-native-progress-track",
         ]
       : "bg-accent/20",
-    value === null &&
-      "windows:bg-native-progress-idle-track windows:block-native-progress-thickness",
+    value === null
+      ? "windows:bg-native-progress-idle-track windows:block-native-progress-thickness"
+      : WINDOWS_DETERMINATE,
     className,
   )}
   {value}
@@ -62,7 +65,7 @@
     {/if}
   {:else}
     <div
-      class="flex-1 bg-accent motion-loading:transition-transform motion-loading:duration-slide motion-loading:ease-emphasized"
+      class="flex-1 bg-accent windows:rounded-full windows:bg-native-progress-fill windows:block-native-progress-thickness motion-loading:transition-transform motion-loading:duration-slide motion-loading:ease-emphasized"
       style:translate="-{unfilledShare}%"
     ></div>
   {/if}

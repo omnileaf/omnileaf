@@ -12,6 +12,7 @@
   import { resolve } from "$app/paths";
   import type { ResolvedPathname } from "$app/types";
   import { cn } from "#lib/components/cn.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
@@ -44,7 +45,7 @@
   } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
-  import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { GROUP_PLATE, WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookId } from "#lib/reader/opened-book.ts";
   import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
@@ -53,6 +54,7 @@
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import ReadingStats from "./ReadingStats.svelte";
+  import UpNextLink from "./UpNextLink.svelte";
   import { getSkipUpNextSetting } from "./skip-up-next.svelte.ts";
 
   const CHECK_SIZE = 20;
@@ -77,6 +79,22 @@
     main: cn(PRIMARY, "inline-full expanded:flex-1"),
     other: cn(SECONDARY, "inline-full expanded:flex-1"),
   } satisfies ActionGroupLook;
+  const WINDOWS_ACTION_FIT = "inline-full min-inline-none expanded:flex-1";
+  const WINDOWS_CARD_ACTIONS = {
+    group: CARD_ACTIONS.group,
+    main: cn(
+      variantClasses("primary", "regular", false, "windows"),
+      WINDOWS_ACTION_FIT,
+    ),
+    other: cn(
+      variantClasses("secondary", "regular", false, "windows"),
+      WINDOWS_ACTION_FIT,
+    ),
+  } satisfies ActionGroupLook;
+  const TODAYS_SWITCH_FOCUS =
+    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent";
+  const WINDOWS_SWITCH_FOCUS =
+    "focus-visible:focus-ring focus-visible:ring-1 focus-visible:ring-native-focus-ring-inner";
   const PHONE_CARD_ACTION_GROUP =
     "flex flex-col px-lg ios:gap-md android:gap-lg";
   const ACROSS_THE_CARD = "inline-full text-center";
@@ -101,11 +119,18 @@
 
   const skipUpNext = getSkipUpNextSetting();
   const platform = currentPlatform();
+  const isWindows = platform === "windows";
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
   const centresHead = $derived(isOnPhone && platform === "ios");
   const actions = $derived(
-    acrossTheCard(actionGroupLook(platform, width.current, CARD_ACTIONS)),
+    acrossTheCard(
+      actionGroupLook(
+        platform,
+        width.current,
+        isWindows ? WINDOWS_CARD_ACTIONS : CARD_ACTIONS,
+      ),
+    ),
   );
   const actionLabel = $derived(
     isOnPhone ? "min-inline-none wrap-anywhere" : "truncate",
@@ -189,7 +214,7 @@
       </BreadcrumbItem>
     </Breadcrumb>
   </nav>
-  <div class="flex flex-1 flex-col overflow-y-auto px-lg py-xl">
+  <div class="flex flex-1 flex-col overflow-y-auto px-lg py-xl windows:px-xl">
     <section
       aria-labelledby="{id}-heading"
       class="pointer-events-auto m-auto flex flex-col gap-lg inline-full max-inline-up-next"
@@ -248,7 +273,12 @@
       {#if stats !== undefined}
         <ReadingStats {title} {...stats} {isOnPhone} />
       {/if}
-      <Card class="flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl">
+      <Card
+        class={[
+          "flex flex-col gap-lg py-lg expanded:gap-xl expanded:py-xl",
+          WINDOWS_CARD_PLATE,
+        ]}
+      >
         {#if next !== null && nextHref !== undefined}
           <CardHeader class="px-lg expanded:px-xl">
             <CardTitle
@@ -265,7 +295,7 @@
                 "aspect-cover shrink-0 overflow-hidden bg-chip inline-up-next-cover expanded:inline-up-next-cover-wide",
                 isOnPhone
                   ? "flex items-center justify-center rounded-native-cover text-muted"
-                  : "rounded-cover",
+                  : "rounded-cover windows:rounded-windows-control",
               ]}
             >
               {#if next.cover !== null}
@@ -296,7 +326,17 @@
             </span>
           </CardContent>
           <CardFooter class={actions.group}>
-            <a href={nextHref} data-sveltekit-replacestate class={actions.main}>
+            <UpNextLink
+              href={nextHref}
+              replaceState
+              class={actions.main}
+              hint={{
+                label: m.reader_read_next({ title: next.title }),
+                keys: [nextKey],
+                shortcut:
+                  direction === "rightToLeft" ? "ArrowLeft" : "ArrowRight",
+              }}
+            >
               <Play
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
@@ -305,25 +345,37 @@
               <span class={actionLabel}
                 >{m.reader_read_next({ title: next.title })}</span
               >
-              <Kbd
-                aria-hidden="true"
-                class="hidden border-transparent bg-on-accent text-accent desktop:inline"
-                >{nextKey}</Kbd
-              >
-            </a>
-            <a href={seriesHref} class={actions.other}>
+              {#if !isWindows}
+                <Kbd
+                  aria-hidden="true"
+                  class="hidden border-transparent bg-on-accent text-accent desktop:inline"
+                  >{nextKey}</Kbd
+                >
+              {/if}
+            </UpNextLink>
+            <UpNextLink
+              href={seriesHref}
+              class={actions.other}
+              hint={{
+                label: m.reader_back_to_the_series(),
+                keys: [m.reader_key_esc()],
+                shortcut: "Escape",
+              }}
+            >
               <ArrowLeft
                 size={BUTTON_ICON_SIZE}
                 aria-hidden="true"
                 class="shrink-0"
               />
               <span class={actionLabel}>{m.reader_back_to_the_series()}</span>
-              <Kbd
-                aria-hidden="true"
-                class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
-                >{m.reader_key_esc()}</Kbd
-              >
-            </a>
+              {#if !isWindows}
+                <Kbd
+                  aria-hidden="true"
+                  class="hidden border-transparent bg-transparent px-none font-medium text-muted desktop:inline"
+                  >{m.reader_key_esc()}</Kbd
+                >
+              {/if}
+            </UpNextLink>
           </CardFooter>
         {:else}
           <CardHeader class="px-lg expanded:px-xl">
@@ -384,7 +436,10 @@
           }
           aria-labelledby="{id}-skip"
           aria-describedby="{id}-skip-help"
-          class="flex items-start gap-md text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          class={[
+            "flex items-start gap-md text-start",
+            isWindows ? WINDOWS_SWITCH_FOCUS : TODAYS_SWITCH_FOCUS,
+          ]}
         >
           <span class="flex flex-1 flex-col gap-2xs">
             <span
