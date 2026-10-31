@@ -596,6 +596,47 @@ test.describe(
         expect(group.y).toBeLessThan(words.y + words.height);
       });
 
+      test("draws the Covers per row stepper as two 40px soft-accent circles round a 16px count, at the end of its row", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        await sheet.getByRole("radio", { name: "Choose" }).click();
+        const group = sheet.getByRole("group", {
+          name: "Covers per row, chosen",
+        });
+        const fewer = group.getByRole("button", {
+          name: "Fewer covers per row",
+        });
+        const more = group.getByRole("button", { name: "More covers per row" });
+        const count = group.locator("output");
+
+        const sheetBox = await boxOf(sheet);
+        const groupBox = await boxOf(group);
+        const fewerBox = await boxOf(fewer);
+        const moreBox = await boxOf(more);
+
+        expect(fewerBox.width).toBeCloseTo(40, 0);
+        expect(fewerBox.height).toBeCloseTo(40, 0);
+        expect(moreBox.x - (fewerBox.x + fewerBox.width)).toBeGreaterThan(8);
+        expect(
+          sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+        ).toBeCloseTo(SETTING_END, 0);
+        await expect(fewer).toHaveCSS(
+          "border-top-left-radius",
+          "3.35544e+07px",
+        );
+        await expect(fewer).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--native-color-accent-soft"),
+        );
+        await expect(count).toHaveCSS("font-size", "16px");
+        await expect(count).toHaveCSS("line-height", "24px");
+        await expect(count).toHaveCSS("font-weight", "500");
+
+        await more.click();
+        await expect(more).toBeDisabled();
+      });
+
       test("sets each cover mark as a Material row, padded 16px and 24px, with no rule between", async ({
         page,
       }) => {
