@@ -3,12 +3,17 @@
 
   import { Card } from "#lib/components/ui/card/index.ts";
 
-  let { isGrouped, children }: { isGrouped: boolean; children: Snippet } =
-    $props();
+  let {
+    isGrouped,
+    isRelative = false,
+    children,
+  }: { isGrouped: boolean; isRelative?: boolean; children: Snippet } = $props();
 </script>
 
 {#if isGrouped}
   <Card class="px-lg py-md">{@render children()}</Card>
+{:else if isRelative}
+  <div class="relative">{@render children()}</div>
 {:else}
   {@render children()}
 {/if}

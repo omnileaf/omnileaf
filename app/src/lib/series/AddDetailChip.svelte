@@ -4,17 +4,23 @@
   import { cn } from "#lib/components/cn.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
 
-  import { DETAIL_CHIP, GROUPED_DETAIL_CHIP } from "./detail-chip.ts";
+  import {
+    ANDROID_DETAIL_CHIP,
+    DETAIL_CHIP,
+    GROUPED_DETAIL_CHIP,
+  } from "./detail-chip.ts";
 
   const ICON_SIZE = 16;
 
   let {
     label,
     isGrouped = false,
+    isAndroid = false,
     onAdd,
   }: {
     label: string;
     isGrouped?: boolean;
+    isAndroid?: boolean;
     onAdd: (name: string) => void;
   } = $props();
 
@@ -61,7 +67,12 @@
 {:else}
   <button
     type="button"
-    class={cn(DETAIL_CHIP, "pe-md", isGrouped && GROUPED_DETAIL_CHIP)}
+    class={cn(
+      DETAIL_CHIP,
+      "pe-md",
+      isGrouped && GROUPED_DETAIL_CHIP,
+      isAndroid && ANDROID_DETAIL_CHIP,
+    )}
     onclick={() => {
       isTyping = true;
     }}

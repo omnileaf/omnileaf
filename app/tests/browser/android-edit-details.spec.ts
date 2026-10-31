@@ -11,8 +11,8 @@ import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 const DETAILS = {
   title: { fromFile: SERIES_TITLE, source: "folderName", edited: null },
   people: { fromFile: [], edited: null },
-  tags: { fromFile: [], edited: null },
-  summary: { fromFile: "", edited: null },
+  tags: { fromFile: ["Seinen", "Sea"], edited: null },
+  summary: { fromFile: "A lighthouse keeper's apprentice.", edited: null },
   year: null,
   language: null,
   isMarkedAdult: false,
@@ -70,5 +70,50 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
     await expect(title).toHaveCSS("line-height", "28px");
     await expect(title).toHaveCSS("font-weight", "400");
     expect(await boxOf(close)).toMatchObject({ width: 48, height: 48 });
+  });
+
+  test("sets the fields on the page with no card and no rules between them", async ({
+    page,
+  }) => {
+    await open(page);
+
+    await expect(page.locator("main section").first()).toHaveCSS(
+      "border-top-width",
+      "0px",
+    );
+  });
+
+  test("draws Title and Summary as outlined boxes with a 4px corner and the label sitting on the top edge", async ({
+    page,
+  }) => {
+    await open(page);
+
+    for (const name of ["Title", "Summary"]) {
+      const box = page.getByRole("textbox", { name });
+      const label = page.locator("label", {
+        hasText: new RegExp(`^${name}$`),
+      });
+      const boxTop = (await boxOf(box)).y;
+      const labelBox = await boxOf(label);
+
+      await expect(box).toHaveCSS("border-top-left-radius", "4px");
+      expect(Math.abs(labelBox.y + labelBox.height / 2 - boxTop)).toBeLessThan(
+        3,
+      );
+      await expect(label).toHaveCSS("font-size", "12px");
+    }
+  });
+
+  test("draws each tag as a 32px chip with an 8px corner and an 18px cross", async ({
+    page,
+  }) => {
+    await open(page);
+    const chip = page
+      .getByRole("group", { name: "Tags" })
+      .getByRole("button", { name: "Remove Seinen" });
+
+    expect((await boxOf(chip)).height).toBeCloseTo(32, 0);
+    await expect(chip).toHaveCSS("border-top-left-radius", "8px");
+    expect((await boxOf(chip.locator("svg"))).width).toBeCloseTo(18, 0);
   });
 });

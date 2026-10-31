@@ -190,6 +190,7 @@
             countsAgeRatings={editing.countsAgeRatings}
             draft={editing.draft}
             isGrouped={isIosPhone}
+            isAndroid={isAndroidPhone}
             onDraft={(draft: DetailDraft) => {
               if (editing !== undefined) {
                 editing.draft = draft;

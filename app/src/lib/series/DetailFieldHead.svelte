@@ -12,6 +12,7 @@
     labelFor,
     labelId,
     isEdited,
+    isAndroid = false,
     useFileLabel,
     onUseFile,
   }: {
@@ -19,6 +20,7 @@
     labelFor?: string;
     labelId?: string;
     isEdited: boolean;
+    isAndroid?: boolean;
     useFileLabel: string;
     onUseFile: () => void;
   } = $props();
@@ -27,6 +29,8 @@
 <div class="flex items-center gap-sm min-block-field-head">
   {#if labelFor === undefined}
     <p id={labelId} class="flex-1 text-label font-medium">{label}</p>
+  {:else if isAndroid}
+    <span class="flex-1"></span>
   {:else}
     <label for={labelFor} class="flex-1 text-label font-medium">{label}</label>
   {/if}

@@ -24,7 +24,12 @@
     useFileLabel,
   } from "./detail-wording.ts";
   import AddDetailChip from "./AddDetailChip.svelte";
-  import { DETAIL_CHIP, GROUPED_DETAIL_CHIP } from "./detail-chip.ts";
+  import {
+    ANDROID_CHIP_CROSS_SIZE,
+    ANDROID_DETAIL_CHIP,
+    DETAIL_CHIP,
+    GROUPED_DETAIL_CHIP,
+  } from "./detail-chip.ts";
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
@@ -35,12 +40,18 @@
   const GROUPED_FIELD = "flex flex-col gap-sm";
   const FROM_FILE = "text-label text-foreground/80";
   const GROUPED_FIELD_BOX = "border-0 bg-transparent p-none";
+  const ANDROID_FROM_FILE = "ps-lg text-caption text-muted";
+  const ANDROID_OUTLINED_BOX =
+    "rounded-native-outlined-field border border-native-button-outline-edge bg-transparent px-lg pbs-lg shadow-none";
+  const FLOATING_LABEL =
+    "absolute inset-bs-0 ms-md -translate-y-1/2 bg-background px-xs text-caption text-muted";
 
   let {
     details,
     countsAgeRatings,
     draft,
     isGrouped = false,
+    isAndroid = false,
     onDraft,
     offerUndo,
   }: {
@@ -48,14 +59,24 @@
     countsAgeRatings: boolean;
     draft: DetailDraft;
     isGrouped?: boolean;
+    isAndroid?: boolean;
     onDraft: (draft: DetailDraft) => void;
     offerUndo: (offer: UndoOffer) => void;
   } = $props();
 
   const id = $props.id();
   const fromFileClass = $derived(
-    isGrouped ? ["ps-lg", GROUPED_FOOTNOTE_TYPE] : FROM_FILE,
+    isGrouped
+      ? ["ps-lg", GROUPED_FOOTNOTE_TYPE]
+      : isAndroid
+        ? ANDROID_FROM_FILE
+        : FROM_FILE,
   );
+  const fieldClass = $derived(isGrouped || isAndroid ? GROUPED_FIELD : FIELD);
+  const chipExtras = $derived(
+    cn(isGrouped && GROUPED_DETAIL_CHIP, isAndroid && ANDROID_DETAIL_CHIP),
+  );
+  const crossSize = $derived(isAndroid ? ANDROID_CHIP_CROSS_SIZE : ICON_SIZE);
   let isShowingEveryone = $state(false);
 
   const edited = $derived({
@@ -126,19 +147,27 @@
 <section
   class={isGrouped
     ? "flex flex-col gap-xl"
-    : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"}
+    : isAndroid
+      ? "flex flex-col gap-xl"
+      : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"}
 >
-  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
+  <div class={fieldClass}>
     <DetailFieldHead
       label={m.edit_details_title()}
       labelFor="{id}-title"
       isEdited={edited.title}
+      {isAndroid}
       useFileLabel={useFileLabel("title")}
       onUseFile={() => {
         useFile("title");
       }}
     />
-    <DetailBox {isGrouped}>
+    <DetailBox {isGrouped} isRelative={isAndroid}>
+      {#if isAndroid}
+        <label for="{id}-title" class={FLOATING_LABEL}>
+          {m.edit_details_title()}
+        </label>
+      {/if}
       <Textarea
         id="{id}-title"
         rows={1}
@@ -151,16 +180,18 @@
         class={[
           "text-body min-block-title-field touch:min-block-touch-target",
           isGrouped && GROUPED_FIELD_BOX,
+          isAndroid && ANDROID_OUTLINED_BOX,
         ]}
       />
     </DetailBox>
     <p id="{id}-title-file" class={fromFileClass}>{fromFile.title}</p>
   </div>
-  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
+  <div class={fieldClass}>
     <DetailFieldHead
       label={m.edit_details_people()}
       labelId="{id}-people"
       isEdited={edited.people}
+      {isAndroid}
       useFileLabel={useFileLabel("people")}
       onUseFile={() => {
         useFile("people");
@@ -176,19 +207,19 @@
           <button
             type="button"
             aria-label={removePersonLabel(person)}
-            class={cn(DETAIL_CHIP, "pe-sm", isGrouped && GROUPED_DETAIL_CHIP)}
+            class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
             onclick={() => {
               removePerson(index);
             }}
           >
             {personLabel(person)}
-            <X size={ICON_SIZE} aria-hidden="true" />
+            <X size={crossSize} aria-hidden="true" />
           </button>
         {/each}
         {#if peopleShown.length < draft.people.length}
           <button
             type="button"
-            class={cn(DETAIL_CHIP, "pe-md", isGrouped && GROUPED_DETAIL_CHIP)}
+            class={cn(DETAIL_CHIP, "pe-md", chipExtras)}
             onclick={() => {
               isShowingEveryone = true;
             }}
@@ -198,6 +229,7 @@
         {/if}
         <AddDetailChip
           {isGrouped}
+          {isAndroid}
           label={m.edit_details_add_person()}
           onAdd={(name: string) => {
             onDraft({
@@ -212,11 +244,12 @@
       <p class={fromFileClass}>{fromFile.people}</p>
     {/if}
   </div>
-  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
+  <div class={fieldClass}>
     <DetailFieldHead
       label={m.edit_details_tags()}
       labelId="{id}-tags"
       isEdited={edited.tags}
+      {isAndroid}
       useFileLabel={useFileLabel("tags")}
       onUseFile={() => {
         useFile("tags");
@@ -232,17 +265,18 @@
           <button
             type="button"
             aria-label={m.edit_details_remove_named({ name: tag })}
-            class={cn(DETAIL_CHIP, "pe-sm", isGrouped && GROUPED_DETAIL_CHIP)}
+            class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
             onclick={() => {
               removeTag(tag);
             }}
           >
             {tag}
-            <X size={ICON_SIZE} aria-hidden="true" />
+            <X size={crossSize} aria-hidden="true" />
           </button>
         {/each}
         <AddDetailChip
           {isGrouped}
+          {isAndroid}
           label={m.edit_details_add_tag()}
           onAdd={(tag: string) => {
             if (!draft.tags.includes(tag)) {
@@ -256,17 +290,23 @@
       <p class={fromFileClass}>{fromFile.tags}</p>
     {/if}
   </div>
-  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
+  <div class={fieldClass}>
     <DetailFieldHead
       label={m.edit_details_summary()}
       labelFor="{id}-summary"
       isEdited={edited.summary}
+      {isAndroid}
       useFileLabel={useFileLabel("summary")}
       onUseFile={() => {
         useFile("summary");
       }}
     />
-    <DetailBox {isGrouped}>
+    <DetailBox {isGrouped} isRelative={isAndroid}>
+      {#if isAndroid}
+        <label for="{id}-summary" class={FLOATING_LABEL}>
+          {m.edit_details_summary()}
+        </label>
+      {/if}
       <Textarea
         id="{id}-summary"
         rows={3}
@@ -278,7 +318,11 @@
         aria-describedby={fromFile.summary === undefined
           ? undefined
           : `${id}-summary-file`}
-        class={["text-body", isGrouped && GROUPED_FIELD_BOX]}
+        class={[
+          "text-body",
+          isGrouped && GROUPED_FIELD_BOX,
+          isAndroid && ANDROID_OUTLINED_BOX,
+        ]}
       />
     </DetailBox>
     {#if fromFile.summary !== undefined}
