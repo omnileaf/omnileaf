@@ -28,6 +28,7 @@
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import ActiveFilters from "#lib/library/ActiveFilters.svelte";
   import AddFolderButton from "#lib/library/AddFolderButton.svelte";
+  import { categorySource } from "#lib/library/category-source.svelte.ts";
   import CategoryTabs from "#lib/library/CategoryTabs.svelte";
   import ChooseShareAgainSheet from "#lib/library/ChooseShareAgainSheet.svelte";
   import { type CoverUrl, coverUrl } from "#lib/library/cover-url.ts";
@@ -712,6 +713,17 @@
           main.scrollTop;
   }
 
+  $effect(() => {
+    if (isMac && tabsShown) {
+      categorySource.publish(shownTabs, chosenTabKey, chooseTab);
+    } else {
+      categorySource.clear();
+    }
+    return () => {
+      categorySource.clear();
+    };
+  });
+
   function chooseTab(chosen: string): void {
     const main = document.querySelector("main");
     stopHoldingScroll?.();
@@ -1012,7 +1024,9 @@
         />
       {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
-        <LibrarySearchEntry platform={data.appInfo.platform} />
+        {#if !isMac}
+          <LibrarySearchEntry platform={data.appInfo.platform} />
+        {/if}
         <FilterAndSort
           bind:isOpen={isFilterOpen}
           bind:button={filterButton}
@@ -1040,6 +1054,9 @@
           showsButton={!foldsIntoMore}
           returnFocusTo={moreTrigger}
         />
+        {#if isMac}
+          <LibrarySearchEntry platform={data.appInfo.platform} />
+        {/if}
         <LibraryMore
           bind:trigger={moreTrigger}
           folded={foldsIntoMore
@@ -1067,7 +1084,7 @@
   bind:offsetHeight={headHeight}
   class="desktop-shell:sticky desktop-shell:inset-bs-under-toolbar desktop-shell:z-series-bar desktop-shell:-ms-gutter desktop-shell:-me-page-end desktop-shell:bg-background desktop-shell:ps-gutter desktop-shell:pe-page-end"
 >
-  {#if hasBooks && tabsShown && !selection.isSelecting}
+  {#if hasBooks && tabsShown && !selection.isSelecting && !isMac}
     <CategoryTabs
       arranged={shownTabs}
       chosen={chosenTabKey}
