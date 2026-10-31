@@ -12,12 +12,15 @@
     LibraryListing,
   } from "#lib/ipc/bindings.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
   import FilterChoices from "./FilterChoices.svelte";
   import { filtersOn, NEW_LIBRARY_LISTING } from "./library-listing";
+  import { type SheetScrollRules, scrollRulesOf } from "./sheet-scroll-rules";
 
   const ICON_SIZE = 16;
   const CLOSE_ICON_SIZE = 18;
@@ -54,7 +57,13 @@
       ? m.library_view_done()
       : m.library_show_series({ count: matching }),
   );
-  const isIos = currentPlatform() === "ios";
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const isIos = platform === "ios";
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
+  let scrollRules = $state<SheetScrollRules>({ above: false, below: false });
   const filtersCount = $derived(filtersOn(listing.filter));
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
   const buttonLabel = $derived(
@@ -74,6 +83,23 @@
 
   function close(): void {
     isOpen = false;
+  }
+
+  function followsScroll(body: HTMLElement): () => void {
+    const follow = () => {
+      scrollRules = scrollRulesOf(body);
+    };
+    const observer = new ResizeObserver(follow);
+    observer.observe(body);
+    for (const child of body.children) {
+      observer.observe(child);
+    }
+    body.addEventListener("scroll", follow, { passive: true });
+    follow();
+    return () => {
+      observer.disconnect();
+      body.removeEventListener("scroll", follow);
+    };
   }
 
   function focusButton(event: Event): void {
@@ -190,7 +216,27 @@
             </p>
           </div>
         {:else}
-          {#if isIos}
+          {#if isAndroidPhone}
+            <div
+              class={[
+                ANDROID_FILTER_SHEET.header,
+                scrollRules.above && ANDROID_FILTER_SHEET.rule,
+              ]}
+            >
+              <DialogTitle id={titleId} class={ANDROID_FILTER_SHEET.title}>
+                {m.library_filter_and_sort()}
+              </DialogTitle>
+              <Button
+                type="button"
+                variant="plain"
+                onclick={() => {
+                  onChoose(NEW_LIBRARY_LISTING);
+                }}
+              >
+                {m.library_reset()}
+              </Button>
+            </div>
+          {:else if isIos}
             <SheetBar
               title={m.library_filter_and_sort()}
               closeLabel={m.library_close()}
@@ -219,24 +265,33 @@
             </div>
           {/if}
           <div
-            class={[
-              "flex flex-1 flex-col overflow-y-auto pbs-sm pbe-lg min-block-none",
-              isIos ? "gap-xl" : "px-sheet-inline",
-            ]}
+            {@attach followsScroll}
+            data-sheet-body
+            class={isAndroidPhone
+              ? ANDROID_FILTER_SHEET.body
+              : [
+                  "flex flex-1 flex-col overflow-y-auto pbs-sm pbe-lg min-block-none",
+                  isIos ? "gap-xl" : "px-sheet-inline",
+                ]}
           >
             <FilterChoices {listing} {choices} {onChoose} isGrouped={isIos} />
           </div>
           <div
-            class={isIos
-              ? "px-lg pbs-sm pbe-sheet-bottom"
-              : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"}
+            class={isAndroidPhone
+              ? [
+                  ANDROID_FILTER_SHEET.foot,
+                  scrollRules.below && ANDROID_FILTER_SHEET.rule,
+                ]
+              : isIos
+                ? "px-lg pbs-sm pbe-sheet-bottom"
+                : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom"}
           >
             <p role="status" class="sr-only">
               {#if matching !== undefined}
                 {m.library_series_match({ count: matching })}
               {/if}
             </p>
-            {#if isIos}
+            {#if isIos || isAndroidPhone}
               <Button
                 type="button"
                 variant="primary"
