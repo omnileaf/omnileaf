@@ -131,3 +131,40 @@ test.each([
     ).toBeGreaterThanOrEqual(1.5);
   },
 );
+
+test.each([
+  { theme: "light", accent: "rgb(47, 111, 79)", track: "rgba(0, 0, 0, 0.447)" },
+  {
+    theme: "dark",
+    accent: "rgb(127, 203, 157)",
+    track: "rgba(255, 255, 255, 0.545)",
+  },
+])(
+  "draws Windows's determinate bar as a 3 tall accent fill over a 1 tall track in the $theme theme",
+  async ({ theme, accent, track }) => {
+    followCorePlatform("windows");
+    const bar = await renderBar(32);
+    document.documentElement.dataset.theme = theme;
+
+    const [fill] = [...bar.children];
+    const trackLine = getComputedStyle(bar, "::before");
+
+    expect(bar.getBoundingClientRect().height).toBeCloseTo(3, 0);
+    expect(getComputedStyle(bar).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(trackLine.height).toBe("1px");
+    expect(trackLine.backgroundColor).toBe(track);
+    expect(fill && getComputedStyle(fill).backgroundColor).toBe(accent);
+    expect(fill?.getBoundingClientRect().height).toBeCloseTo(3, 0);
+    expect(
+      Number.parseFloat(fill ? getComputedStyle(fill).borderTopLeftRadius : ""),
+    ).toBeGreaterThanOrEqual(1.5);
+  },
+);
+
+test("keeps the other desktop platforms' bar as it was", async () => {
+  followCorePlatform("macos");
+  const bar = await renderBar(32);
+
+  expect(bar.getBoundingClientRect().height).toBeCloseTo(8, 0);
+  expect(getComputedStyle(bar, "::before").content).toBe("none");
+});
