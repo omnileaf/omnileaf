@@ -493,6 +493,7 @@
   "manage_tags_deleted": "{tag} deleted",
   "manage_tags_tag": "Tag",
   "manage_tags_rename_action": "Rename",
+  "manage_tags_delete_action": "Delete",
   "library_adult_mark": "18+",
   "library_tap_to_show": "Tap to show",
   "library_click_to_show": "Click to show",
