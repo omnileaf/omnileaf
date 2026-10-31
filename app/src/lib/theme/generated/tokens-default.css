@@ -153,6 +153,11 @@
   --native-spacing-command-bar: 0px;
   --native-spacing-command-button: 0px;
   --native-spacing-command-button-block: 0px;
+  --native-spacing-slider: 0px;
+  --native-spacing-slider-track: 0px;
+  --native-spacing-slider-thumb: 0px;
+  --native-spacing-slider-thumb-core: 0px;
+  --native-spacing-slider-thumb-core-hover: 0px;
   --native-spacing-button-large-inline: var(--spacing-lg);
   --native-text-button-large: var(--text-label);
   --native-leading-button-large: var(--text-label--line-height);
