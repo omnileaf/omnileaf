@@ -12,9 +12,9 @@ use crate::{
     FormatError, Limits, Page,
     block_reader::BlockReader,
     book::in_reading_order,
+    entries::is_contained_page,
     error::read_failed,
     fingerprint::archive_fingerprint,
-    is_ignored, is_page_image,
     limits::{COMIC_INFO_LIMIT, COMIC_INFO_NAME, read_start, read_within},
 };
 
@@ -39,7 +39,7 @@ impl ZipBook {
                 .by_index_raw(index)
                 .map_err(|source| corrupt(path, source))?;
             let name = entry.name().map_err(|source| corrupt(path, source))?;
-            if entry.is_dir() || is_ignored(&name) || !is_page_image(&name) {
+            if entry.is_dir() || !is_contained_page(&name) {
                 continue;
             }
             let page = Page {

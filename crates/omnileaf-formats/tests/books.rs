@@ -41,6 +41,18 @@ fn every_page_read(path: &Path) -> Vec<(usize, Vec<u8>)> {
 }
 
 #[test]
+fn leaves_out_the_cbz_entries_whose_names_leave_the_archive() {
+    let scratch = ScratchFolder::new("cbz-containment");
+    let entries =
+        ["../x.png", "/x.png", "C:/x.png", "A:b.png", "1.png"].map(|name| entry(name, page(0)));
+    let path = scratch.write("book.cbz", &cbz(&entries, Compression::Stored).unwrap());
+
+    let names = page_names(&path);
+
+    assert_eq!(names, ["1.png", "A:b.png"]);
+}
+
+#[test]
 fn lists_an_archives_pages_in_reading_order() {
     let scratch = ScratchFolder::new("order");
     let archive = cbz(
