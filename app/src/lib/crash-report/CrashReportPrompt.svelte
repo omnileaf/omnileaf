@@ -209,7 +209,7 @@
           {#if isWindows}
             <div
               class={cn(
-                "order-last -mbe-xl grid grid-cols-3",
+                "order-last -mbe-xl grid grid-cols-1 medium:grid-cols-3",
                 alert.actions,
                 "mbs-none",
               )}
