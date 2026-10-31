@@ -3,9 +3,15 @@
   import { AlertDialog } from "bits-ui";
 
   import {
+    alertLook,
+    CONTENT_DIALOG_PANEL,
+    TODAYS_ALERT_LOOK,
+  } from "#lib/components/ui/dialog/alert-look.ts";
+  import {
     DialogContent,
     DialogTitle,
   } from "#lib/components/ui/dialog/index.ts";
+  import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
     CopyButton,
@@ -15,6 +21,7 @@
 
   import type { CrashOrigin } from "#lib/ipc/bindings.ts";
   import { lastShown } from "#lib/page/last-shown.svelte.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import AlwaysSendChoice from "./AlwaysSendChoice.svelte";
@@ -27,11 +34,15 @@
   let { reporting, look }: { reporting: CrashReporting; look: PromptLook } =
     $props();
 
+  const isWindows = currentPlatform() === "windows";
+  const alert = isWindows ? alertLook("windows") : TODAYS_ALERT_LOOK;
+
   const LOOKS = {
     phone:
       "inset-none overflow-auto bg-background block-dvh inline-full max-block-full",
-    dialog:
-      "inset-none m-auto overflow-auto rounded-panel border border-dialog-edge bg-dialog p-dialog-inset shadow-dialog block-fit inline-full max-block-dialog-limit max-inline-crash-report",
+    dialog: isWindows
+      ? cn(CONTENT_DIALOG_PANEL, alert.surface, "overflow-auto")
+      : "inset-none m-auto overflow-auto rounded-panel border border-dialog-edge bg-dialog p-dialog-inset shadow-dialog block-fit inline-full max-block-dialog-limit max-inline-crash-report",
   } satisfies Record<PromptLook, string>;
 
   const PHONE_BADGE_ICON_SIZE = 20;
@@ -92,6 +103,7 @@
   <DialogContent
     bind:ref={content}
     class={["text-foreground fade-motion", LOOKS[look]]}
+    overlayClass={alert.scrim}
     interactOutsideBehavior="ignore"
     onOpenAutoFocus={startAsking}
   >
@@ -174,14 +186,17 @@
             <span
               aria-hidden="true"
               data-prompt-badge
-              class="flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-dialog-badge inline-dialog-badge"
+              class={cn(
+                "flex shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent block-dialog-badge inline-dialog-badge",
+                alert.badge,
+              )}
             >
               <Bug size={DIALOG_BADGE_ICON_SIZE} />
             </span>
             <DialogTitle
               tabindex={-1}
               data-prompt-title
-              class="text-dialog-title font-bold"
+              class={cn("text-dialog-title font-bold", alert.title)}
             >
               {TITLES[offer.origin]()}
             </DialogTitle>
@@ -191,20 +206,42 @@
           </AlertDialog.Description>
           <ReportDetails details={offer.details} />
           <AlwaysSendChoice bind:checked={alwaysSend} {look} />
-          <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
-            <CopyButton
-              copying={reporting.copying}
-              look="crash-dialog-copy"
-              class="me-auto"
-              labels={copyLabels()}
-            />
-            <Button type="button" look="dialog-secondary" onclick={decline}>
-              {m.crash_report_decline()}
-            </Button>
-            <Button type="button" look="dialog-primary" onClickPromise={send}>
-              {m.crash_report_send()}
-            </Button>
-          </div>
+          {#if isWindows}
+            <div
+              class={cn(
+                "order-last -mbe-xl grid grid-cols-3",
+                alert.actions,
+                "mbs-none",
+              )}
+            >
+              <Button type="button" look="dialog-primary" onClickPromise={send}>
+                {m.crash_report_send()}
+              </Button>
+              <CopyButton
+                copying={reporting.copying}
+                look="dialog-secondary"
+                labels={copyLabels()}
+              />
+              <Button type="button" look="dialog-secondary" onclick={decline}>
+                {m.crash_report_decline()}
+              </Button>
+            </div>
+          {:else}
+            <div class="mbs-xs flex flex-wrap items-center justify-end gap-sm">
+              <CopyButton
+                copying={reporting.copying}
+                look="crash-dialog-copy"
+                class="me-auto"
+                labels={copyLabels()}
+              />
+              <Button type="button" look="dialog-secondary" onclick={decline}>
+                {m.crash_report_decline()}
+              </Button>
+              <Button type="button" look="dialog-primary" onClickPromise={send}>
+                {m.crash_report_send()}
+              </Button>
+            </div>
+          {/if}
           <ReportFailures {reporting} />
         </div>
       {/if}

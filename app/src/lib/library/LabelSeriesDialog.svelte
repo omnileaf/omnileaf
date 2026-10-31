@@ -6,6 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
+  import { alertLook } from "#lib/components/ui/dialog/alert-look.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
@@ -13,6 +14,7 @@
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { ANDROID_FILTER_CHIP_LOOK } from "./filter-chip-look";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { SeriesId } from "#lib/series/series-id.ts";
 
@@ -49,6 +51,7 @@
   let tagField = $state<HTMLInputElement | null>(null);
 
   const android = new AndroidPhone();
+  const actionOrder = alertLook(currentPlatform()).actionOrder;
   const count = $derived(series.length);
   const ANDROID_ROW =
     "flex min-block-native-row flex-row-reverse items-center justify-between gap-lg py-native-row-block ps-lg pe-xl";
@@ -403,30 +406,35 @@
               : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom",
         ]}
       >
-        {#if view === "wide"}
-          <Button
-            type="button"
-            look="dialog-secondary"
-            class="flex-1"
-            onclick={() => {
-              isOpen = false;
-            }}
-          >
-            {m.library_cancel()}
-          </Button>
-        {/if}
-        <Button
-          type="button"
-          {...view !== "wide" && android.isOn
-            ? { variant: "primary", size: "large" }
-            : { look: "dialog-primary" }}
-          class={view !== "wide" && android.isOn ? "inline-full" : "flex-1"}
-          onclick={() => {
-            void apply();
-          }}
-        >
-          {m.library_labels_done()}
-        </Button>
+        {#each actionOrder as action (action)}
+          {#if action === "cancel"}
+            {#if view === "wide"}
+              <Button
+                type="button"
+                look="dialog-secondary"
+                class="flex-1"
+                onclick={() => {
+                  isOpen = false;
+                }}
+              >
+                {m.library_cancel()}
+              </Button>
+            {/if}
+          {:else}
+            <Button
+              type="button"
+              {...view !== "wide" && android.isOn
+                ? { variant: "primary", size: "large" }
+                : { look: "dialog-primary" }}
+              class={view !== "wide" && android.isOn ? "inline-full" : "flex-1"}
+              onclick={() => {
+                void apply();
+              }}
+            >
+              {m.library_labels_done()}
+            </Button>
+          {/if}
+        {/each}
       </div>
     {/snippet}
   </ModalContent>

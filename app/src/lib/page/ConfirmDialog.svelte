@@ -8,6 +8,7 @@
     type AlertAction,
     alertLook,
     type AlertTone,
+    CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
     opensAsAlert,
     TODAYS_ALERT_LOOK,
@@ -28,9 +29,6 @@
     accent:
       "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed",
   } as const satisfies Record<AlertTone, string>;
-
-  const DIALOG =
-    "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
 
   let {
     isOpen,
@@ -91,10 +89,10 @@
   }
 >
   <ModalContent
-    wideClass={cn(DIALOG, alert.surface)}
+    wideClass={cn(CONTENT_DIALOG_PANEL, alert.surface)}
     phoneLook={isAlert ? "dialog" : "drawer"}
     phoneClass={isAlert
-      ? cn(DIALOG, alert.surface)
+      ? cn(CONTENT_DIALOG_PANEL, alert.surface)
       : "gap-lg rounded-ss-confirm-sheet rounded-se-confirm-sheet px-sheet-inline pbe-page-bottom max-block-dialog-limit"}
     phoneOverlayClass={alert.scrim}
     wideOverlayClass={alert.scrim}

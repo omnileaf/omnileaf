@@ -25,6 +25,9 @@ export interface AlertLook {
   readonly defaultAction: Readonly<Record<AlertTone, AlertAction>>;
 }
 
+export const CONTENT_DIALOG_PANEL =
+  "inset-none m-auto flex flex-col gap-lg overflow-hidden rounded-panel border border-dialog-edge bg-dialog px-sheet-inline py-sheet-inline text-foreground fade-motion shadow-dialog block-fit inline-dialog max-block-dialog-limit max-inline-dialog-limit";
+
 export const TODAYS_ALERT_LOOK: AlertLook = {
   scrim: "",
   surface: "",
