@@ -17,12 +17,18 @@ const CHIP_LINE = "20px";
 const CHIP_WEIGHT = "500";
 const SCOPE_GAP = 8;
 
+const NOTHING = "nothing-here";
+
 test.use({
   backend: {
     ...DEFAULT_BACKEND,
     librarySeries: () => ({ series: CATALOG, next: null }),
-    librarySearch: () => ({ series: CATALOG, next: null }),
-    librarySearchCount: () => CATALOG.length,
+    librarySearch: (_after, search) => ({
+      series: search.text.includes(NOTHING) ? [] : CATALOG,
+      next: null,
+    }),
+    librarySearchCount: (search) =>
+      search.text.includes(NOTHING) ? 0 : CATALOG.length,
   },
 });
 
@@ -99,6 +105,31 @@ test.describe(
       await remove.click();
 
       await expect(chip).toHaveCount(0);
+    });
+
+    test("draws nothing found with a 48px muted search icon, a 22px title and 14px lines", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      await page
+        .getByRole("main")
+        .getByRole("combobox", { name: "Search your library" })
+        .fill(NOTHING);
+      const title = page.getByRole("heading", { name: /^Nothing matches/ });
+      await expect(title).toBeVisible();
+
+      await expect(title).toHaveCSS("font-size", "22px");
+      await expect(title).toHaveCSS("line-height", "28px");
+      await expect(title).toHaveCSS("font-weight", "400");
+      const hint = page.getByText("Check the spelling", { exact: false });
+      await expect(hint).toHaveCSS("font-size", "14px");
+      await expect(hint).toHaveCSS("line-height", "20px");
+      const icon = page.locator("[data-slot=empty-media] svg");
+      expect((await boxOf(icon)).width).toBeCloseTo(48, 0);
+      await expect(page.getByText("Coming with Browse.")).toHaveCSS(
+        "font-size",
+        "14px",
+      );
     });
 
     test("centres each scope's label between the chip's top and bottom", async ({

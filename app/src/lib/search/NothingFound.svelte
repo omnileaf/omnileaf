@@ -8,6 +8,7 @@
     EmptyMedia,
     EmptyTitle,
   } from "#lib/components/ui/empty/index.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { SpellingSuggestion } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -17,9 +18,13 @@
 
   const ART_ICON_SIZE = 28;
   const NATIVE_ART_ICON_SIZE = 41;
+  const ANDROID_ART_ICON_SIZE = 48;
   const NATIVE_TYPE = "text-native-empty/native-empty tracking-native-empty";
   const NATIVE_TITLE = `${NATIVE_TYPE} font-native-empty-title text-foreground`;
   const NATIVE_HINT = `${NATIVE_TYPE} font-native-empty-body`;
+  const ANDROID_TITLE =
+    "text-native-empty/native-empty tracking-native-empty font-normal text-foreground";
+  const ANDROID_HINT = `${ROW_SUBTITLE_TYPE} text-muted`;
   const NATIVE_SUGGESTION = "text-accent underline underline-offset-2";
   const SOURCES_ICON_SIZE = 16;
   const SUGGESTION_SPOT = "\u0000";
@@ -37,7 +42,9 @@
   const titleId = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const phone = $derived(phoneOf(platform, width.current));
+  const isNative = $derived(phone === "ios");
+  const isMaterial = $derived(phone === "android");
   const [beforeSuggestion, afterSuggestion] = $derived(
     m
       .search_did_you_mean({ suggestion: SUGGESTION_SPOT })
@@ -50,23 +57,36 @@
   class="flex-1 justify-center px-2xl pbe-nothing-found-lift"
 >
   <EmptyMedia
-    class={isNative ? "bg-transparent text-accent block-auto inline-auto" : ""}
+    class={isNative
+      ? "bg-transparent text-accent block-auto inline-auto"
+      : isMaterial
+        ? "bg-transparent text-muted block-auto inline-auto"
+        : ""}
   >
     {#if isNative}
       <Search size={NATIVE_ART_ICON_SIZE} aria-hidden="true" />
+    {:else if isMaterial}
+      <Search size={ANDROID_ART_ICON_SIZE} aria-hidden="true" />
     {:else}
       <ZoomOut size={ART_ICON_SIZE} aria-hidden="true" />
     {/if}
   </EmptyMedia>
   <EmptyTitle
     id={titleId}
-    class={isNative ? NATIVE_TITLE : "large:text-heading"}
+    class={isNative
+      ? NATIVE_TITLE
+      : isMaterial
+        ? ANDROID_TITLE
+        : "large:text-heading"}
   >
     {nothingFoundTitle(text)}
   </EmptyTitle>
   {#if text !== ""}
     <EmptyDescription
-      class={["max-inline-nothing-found", isNative ? NATIVE_HINT : "text-lead"]}
+      class={[
+        "max-inline-nothing-found",
+        isNative ? NATIVE_HINT : isMaterial ? ANDROID_HINT : "text-lead",
+      ]}
     >
       {#if suggestion === null}
         {m.search_nothing_hint()}
@@ -75,7 +95,7 @@
           type="button"
           class={[
             "rounded-control focus-visible:outline-2 focus-visible:outline-accent",
-            isNative
+            isNative || isMaterial
               ? NATIVE_SUGGESTION
               : "font-medium text-foreground underline underline-offset-2 hover:text-accent",
           ]}
@@ -98,7 +118,9 @@
         <Compass size={SOURCES_ICON_SIZE} aria-hidden="true" />
         {m.search_your_sources()}
       </Button>
-      <p class="text-detail text-muted">{m.search_sources_coming()}</p>
+      <p class={isMaterial ? ANDROID_HINT : "text-detail text-muted"}>
+        {m.search_sources_coming()}
+      </p>
     </div>
   {/if}
 </Empty>
