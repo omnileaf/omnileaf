@@ -7,6 +7,7 @@ mod header_only;
 mod library;
 mod page;
 mod rar;
+mod rar_checksums;
 mod scratch_folder;
 mod speed_trial;
 mod strip;
@@ -29,6 +30,7 @@ pub use page::{
     page_jpeg, page_png, page_webp, subsampled_scan_jpeg,
 };
 pub use rar::{RarEncryption, RarFormat, RarMethod, RarOptions, RarVolume, cbr};
+pub use rar_checksums::refresh_rar_header_checksums;
 pub use scratch_folder::ScratchFolder;
 pub use speed_trial::{Pass, Sampling, SpeedTrial, Statistic, TIMED_PASSES, TrialOutcome};
 pub use strip::strip_jpeg;
