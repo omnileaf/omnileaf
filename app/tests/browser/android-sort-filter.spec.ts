@@ -45,6 +45,14 @@ const FIELD_LABEL_SIZE = "12px";
 const FIELD_LABEL_LINE = "16px";
 const ORDER_BUTTON_SIZE = 40;
 const SORT_ROW_GAP = 8;
+const HEADING_SIZE = "14px";
+const HEADING_LINE = "20px";
+const HEADING_WEIGHT = "500";
+const HEADING_TOP = 12;
+const SETTING_START = 16;
+const SETTING_END = 24;
+const SEGMENT_HEIGHT = 40;
+const SEGMENT_GAP = 2;
 
 function backendWith(choices: LibraryFilterChoices) {
   return {
@@ -213,6 +221,130 @@ test.describe(
         await order.click();
 
         await expect(order).not.toHaveAttribute("aria-label", before ?? "");
+      });
+    });
+
+    test.describe("the filter settings", () => {
+      test.use({ backend: backendWith(MANY_CHOICES) });
+
+      test("heads Sort and Filter at 14px on a 20px line at 500 in the accent, 12px under the section above", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+
+        for (const name of ["Sort", "Filter"]) {
+          const heading = sheet.getByRole("heading", { name, exact: true });
+          await expect(heading).toHaveCSS("font-size", HEADING_SIZE);
+          await expect(heading).toHaveCSS("line-height", HEADING_LINE);
+          await expect(heading).toHaveCSS("font-weight", HEADING_WEIGHT);
+          await expect(heading).toHaveCSS(
+            "color",
+            await tokenColour(page, "--native-color-on-button-plain"),
+          );
+          await expect(heading).toHaveCSS(
+            "padding-top",
+            String(HEADING_TOP) + "px",
+          );
+          await expect(heading).toHaveCSS(
+            "padding-left",
+            String(SETTING_START) + "px",
+          );
+        }
+      });
+
+      test("sets Read state as a label over a full-width group of 40px segments 2px apart, the chosen one filled", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const label = sheet.getByText("Read state", { exact: true });
+        const group = sheet.getByRole("radiogroup", { name: "Read state" });
+        const any = group.getByRole("radio", { name: "Any" });
+        const unread = group.getByRole("radio", { name: "Unread" });
+
+        const sheetBox = await boxOf(sheet);
+        const groupBox = await boxOf(group);
+        const anyBox = await boxOf(any);
+        const unreadBox = await boxOf(unread);
+
+        await expect(label).toHaveCSS("font-size", HEADING_SIZE);
+        await expect(label).toHaveCSS("font-weight", HEADING_WEIGHT);
+        expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+        ).toBeCloseTo(SETTING_END, 0);
+        expect(anyBox.height).toBeCloseTo(SEGMENT_HEIGHT, 0);
+        expect(unreadBox.x - (anyBox.x + anyBox.width)).toBeCloseTo(
+          SEGMENT_GAP,
+          0,
+        );
+        await expect(any).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--native-color-segment-selected"),
+        );
+        await expect(unread).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--native-color-segment-fill"),
+        );
+      });
+
+      test("sets 18+ with its words at the start and its group at the end of one row", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const sheetBox = await boxOf(sheet);
+        const words = await boxOf(sheet.getByText("18+", { exact: true }));
+        const group = await boxOf(
+          sheet.getByRole("radiogroup", { name: "18+" }),
+        );
+        const hint = sheet.getByText("Adult age rating, or marked by hand.");
+
+        expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (group.x + group.width),
+        ).toBeCloseTo(SETTING_END, 0);
+        const hintBox = await boxOf(hint);
+        expect(group.y).toBeLessThan(hintBox.y + hintBox.height);
+        await expect(hint).toHaveCSS("font-size", HEADING_SIZE);
+        await expect(hint).toHaveCSS("font-weight", "400");
+      });
+
+      test("keeps every 18+ and Bookmarked segment whole and inside the sheet at twice the text size on a narrow phone", async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 320, height: 800 });
+        const sheet = await openSheet(page);
+        await page.addStyleTag({
+          content: ":root { --text-scale: 2 !important; }",
+        });
+        await settle(sheet);
+
+        for (const name of ["18+", "Bookmarked"]) {
+          const group = sheet.getByRole("radiogroup", { name });
+          await group.scrollIntoViewIfNeeded();
+          const spill = await group.evaluate((track) => {
+            const box = track.getBoundingClientRect();
+            const cut = [...track.querySelectorAll("[role=radio]")].filter(
+              (segment) => segment.scrollWidth > segment.clientWidth,
+            ).length;
+            return {
+              cut,
+              over: box.right - document.documentElement.clientWidth,
+            };
+          });
+          expect(spill.cut).toBe(0);
+          expect(spill.over).toBeLessThanOrEqual(0);
+        }
+      });
+
+      test("chooses a read state from its segment", async ({ page }) => {
+        const sheet = await openSheet(page);
+        const group = sheet.getByRole("radiogroup", { name: "Read state" });
+
+        await group.getByRole("radio", { name: "Unread" }).click();
+
+        await expect(
+          group.getByRole("radio", { name: "Unread" }),
+        ).toBeChecked();
       });
     });
 
