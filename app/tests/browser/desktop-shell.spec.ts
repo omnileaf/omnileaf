@@ -181,7 +181,7 @@ test.describe("on Windows", () => {
     await expect(library).toHaveCSS("border-radius", WINDOWS_ITEM_CORNER);
     await expect(library).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--windows-subtle"),
+      await tokenColour(page, "--native-color-nav-item-selected"),
     );
     await expect(library).toHaveCSS(
       "color",
