@@ -28,13 +28,20 @@
     EDGE_TO_EDGE_BARS,
     READER_CAPSULE,
     READER_GLASS,
-    READER_ICON_SIZE,
     readerBackLook,
-    readerButton,
+    readerCommandButton,
+    readerIconSize,
   } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
+  import ReaderCommandLabel from "./ReaderCommandLabel.svelte";
   import ReaderIcon from "./ReaderIcon.svelte";
+  import {
+    WINDOWS_BACK_KEYS,
+    WINDOWS_BAR,
+    WINDOWS_OPEN_FILL,
+    WINDOWS_SEPARATOR,
+  } from "./windows-reader-bar.ts";
 
   let {
     seriesHref,
@@ -86,7 +93,9 @@
   const chrome = getReaderChrome();
   const isOnPhone = $derived(chrome.isOnPhone);
   const floats = $derived(chrome.floats);
-  const button = $derived(readerButton(platform, chrome.width));
+  const commandButton = $derived(readerCommandButton(platform, chrome.width));
+  const iconSize = $derived(readerIconSize(platform));
+  const isWindows = $derived(chrome.isCommandBar);
   const jumpLabel = $derived(
     m.reader_jump_from_series_book({
       series: seriesTitle,
@@ -98,20 +107,23 @@
 </script>
 
 <div
+  data-reader-bar={isWindows ? "top" : undefined}
   class={floats
     ? "relative isolate flex items-center gap-sm before:pointer-events-none before:absolute before:-inset-x-reader-bar-inline before:-inset-bs-reader-bar-top before:-inset-be-reader-scrim-fade before:z-behind before:reader-top-scrim before:backdrop-blur-ios"
-    : cn(
-        "flex items-center",
-        chrome.spans
-          ? [
-              EDGE_TO_EDGE_BARS,
-              "box-content gap-sm px-xs pbs-safe-top min-block-native-top-bar",
-            ]
-          : [
-              READER_GLASS,
-              "gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
-            ],
-      )}
+    : isWindows
+      ? WINDOWS_BAR
+      : cn(
+          "flex items-center",
+          chrome.spans
+            ? [
+                EDGE_TO_EDGE_BARS,
+                "box-content gap-sm px-xs pbs-safe-top min-block-native-top-bar",
+              ]
+            : [
+                READER_GLASS,
+                "gap-2xs p-icon-gap min-block-reader-top expanded:gap-xs expanded:px-sm expanded:py-none expanded:min-block-reader-top-wide",
+              ],
+        )}
 >
   <Tooltip
     label={backLabel}
@@ -129,6 +141,7 @@
         {...props}
         href={seriesHref}
         aria-label={backLabel}
+        aria-keyshortcuts={isWindows ? WINDOWS_BACK_KEYS : undefined}
         class={cn(
           readerBackLook(platform, chrome.width),
           floats && "text-native-on-top-bar",
@@ -218,6 +231,7 @@
         aria-haspopup="dialog"
         aria-expanded={isJumpOpen}
         aria-keyshortcuts="G"
+        data-pane={isWindows ? "jump" : undefined}
         class="absolute inset-none z-behind rounded-shadcn-control transition-control hover:bg-hover active:bg-pressed"
         onclick={onJump}
       ></button>
@@ -251,6 +265,7 @@
             aria-label={m.reader_jump_from_book({ title: bookTitle })}
             aria-expanded={isJumpOpen}
             aria-keyshortcuts="G"
+            data-pane={isWindows ? "jump" : undefined}
             onclick={onJump}
           >
             {#snippet child({ props })}
@@ -280,14 +295,18 @@
     <div
       role="group"
       aria-label={m.reader_quick_settings()}
-      class="hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised large:flex"
+      class={isWindows
+        ? "hidden shrink-0 items-center gap-2xs large:flex"
+        : "hidden shrink-0 items-stretch rounded-shadcn-control shadow-raised large:flex"}
     >
       {@render quickSettings()}
     </div>
   {/if}
   <span
     aria-hidden="true"
-    class="mx-xs hidden shrink-0 border-s border-border block-lg large:block"
+    class={isWindows
+      ? WINDOWS_SEPARATOR
+      : "mx-xs hidden shrink-0 border-s border-border block-lg large:block"}
   ></span>
   <div
     role={floats ? "group" : undefined}
@@ -296,6 +315,7 @@
   >
     <Tooltip
       label={m.reader_keyboard_shortcuts()}
+      keys={isWindows ? ["?"] : []}
       type="button"
       aria-label={m.reader_keyboard_shortcuts()}
       aria-keyshortcuts="?"
@@ -307,26 +327,33 @@
           {...props}
           look="icon"
           class={cn(
-            button,
+            commandButton,
             "max-expanded:hidden",
-            areShortcutsOpen && "bg-hover",
+            areShortcutsOpen && !isWindows && "bg-hover",
+            isWindows && WINDOWS_OPEN_FILL,
           )}
         >
-          <Keyboard size={READER_ICON_SIZE} aria-hidden="true" />
+          <Keyboard size={iconSize} aria-hidden="true" />
+          <ReaderCommandLabel label={m.reader_command_shortcuts()} />
         </Button>
       {/snippet}
     </Tooltip>
     {#if bookmark === null}
       <ComingSoon
         label={m.reader_bookmark()}
-        class={cn(button, "text-muted hover:bg-transparent")}
+        class={cn(
+          commandButton,
+          "text-muted",
+          !isWindows && "hover:bg-transparent",
+        )}
       >
         <ReaderIcon
           name="bookmark"
           fallback={Bookmark}
           isKit={isOnPhone}
-          size={READER_ICON_SIZE}
+          size={iconSize}
         />
+        <ReaderCommandLabel label={m.reader_command_bookmark()} />
       </ComingSoon>
     {:else}
       <Tooltip
@@ -340,15 +367,19 @@
           <Button
             {...props}
             look="icon"
-            class={cn(button, bookmark.isPressed && !isOnPhone && "bg-hover")}
+            class={cn(
+              commandButton,
+              bookmark.isPressed && !isOnPhone && !isWindows && "bg-hover",
+            )}
           >
             <ReaderIcon
               name={bookmark.isPressed ? "bookmark-filled" : "bookmark"}
               fallback={Bookmark}
               isKit={isOnPhone}
-              size={READER_ICON_SIZE}
+              size={iconSize}
               isFilled={bookmark.isPressed}
             />
+            <ReaderCommandLabel label={m.reader_command_bookmark()} />
           </Button>
         {/snippet}
       </Tooltip>
@@ -358,36 +389,48 @@
       type="button"
       aria-label={m.reader_settings()}
       aria-expanded={isSettingsOpen}
+      data-pane={isWindows ? "settings" : undefined}
       onclick={onSettings}
     >
       {#snippet child({ props })}
         <Button
           {...props}
           look="icon"
-          class={cn(button, isSettingsOpen && !isOnPhone && "bg-hover")}
+          class={cn(
+            commandButton,
+            isSettingsOpen && !isOnPhone && !isWindows && "bg-hover",
+            isWindows && WINDOWS_OPEN_FILL,
+          )}
         >
           <ReaderIcon
             name="sliders-horizontal"
             fallback={SlidersHorizontal}
             isKit={isOnPhone}
-            size={READER_ICON_SIZE}
+            size={iconSize}
           />
+          <ReaderCommandLabel label={m.reader_command_settings()} />
         </Button>
       {/snippet}
     </Tooltip>
     <Tooltip
       label={m.reader_full_screen()}
+      keys={isWindows ? ["F"] : []}
       type="button"
       aria-label={m.reader_full_screen()}
+      aria-keyshortcuts={isWindows ? "F" : undefined}
       onclick={onFullScreen}
     >
       {#snippet child({ props })}
         <Button
           {...props}
           look="icon"
-          class={cn(button, "hidden expanded:flex ios:hidden android:hidden")}
+          class={cn(
+            commandButton,
+            "hidden expanded:flex ios:hidden android:hidden",
+          )}
         >
-          <Maximize size={READER_ICON_SIZE} aria-hidden="true" />
+          <Maximize size={iconSize} aria-hidden="true" />
+          <ReaderCommandLabel label={m.reader_full_screen()} />
         </Button>
       {/snippet}
     </Tooltip>

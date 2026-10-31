@@ -117,12 +117,12 @@ test("shows the first page cropped within the budget from the click that opens t
     timings.push(await openTheBookTimed(page));
   }
 
-  test.info().annotations.push({
-    type: "cropped first page",
-    description: `median ${median(timings).toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`,
-  });
+  const description = `median ${median(timings).toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`;
+  test.info().annotations.push({ type: "cropped first page", description });
   await expect(
     page.locator('img[alt="Page 1"]:not([aria-hidden])'),
   ).toHaveAttribute("src", /\/0\/cropped$/);
-  expect(median(timings)).toBeLessThanOrEqual(CROPPED_FIRST_PAGE_BUDGET_MS);
+  expect(median(timings), description).toBeLessThanOrEqual(
+    CROPPED_FIRST_PAGE_BUDGET_MS,
+  );
 });

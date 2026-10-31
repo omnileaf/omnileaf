@@ -36,7 +36,6 @@
   const ICON_SIZE = 16;
   const SHEET_ICON_SIZE = 18;
   const SETTINGS_ROUTE = "/(app)/settings/library/tabs";
-  const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
   let {
     arranged,
@@ -134,7 +133,8 @@
     if (onPhone) {
       strip.scrollBy({
         left: stepToCentre(strip, tab),
-        behavior: isChange && movesSmoothly() ? "smooth" : "auto",
+        behavior:
+          isChange && animations.moves("navigation") ? "smooth" : "auto",
       });
     } else if (isFirst) {
       strip.scrollBy({ left: stepIntoView(strip, tab) });
@@ -143,13 +143,6 @@
       tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
   });
-
-  function movesSmoothly(): boolean {
-    return (
-      animations.isOn("navigation") &&
-      !window.matchMedia(REDUCED_MOTION).matches
-    );
-  }
 
   function stepToCentre(within: HTMLElement, tab: HTMLElement): number {
     const shown = within.getBoundingClientRect();

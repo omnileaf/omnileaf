@@ -5,6 +5,8 @@
 
 mod books;
 mod details;
+#[cfg(feature = "rar")]
+mod rar_books;
 mod scanned;
 mod support;
 
@@ -23,10 +25,15 @@ use omnileaf_db::{
     store::{ReadingState, Store, reading_state},
 };
 use omnileaf_engine::{
-    FileChanges, FileType, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
-    SkippedType,
+    FileChanges, FolderRescan, Library, LibraryFolder, RescanOutcome, ScanProgress,
 };
+#[cfg(not(feature = "rar"))]
+use omnileaf_engine::{FileType, SkippedType};
 use omnileaf_sync_proto::{BookId, SeriesId, norm};
+#[cfg(feature = "rar")]
+use omnileaf_testkit::RarFormat;
+#[cfg(feature = "rar")]
+use rar_books::write_rar_book;
 use scanned::{Scanned, owned, whole_page};
 use support::{FixedClock, ScratchFolder};
 
@@ -551,6 +558,58 @@ async fn keeps_a_book_whose_file_can_no_longer_be_read() {
     assert_eq!(folder.scanned.books_in(SERIES_01), ["v01", "v02"]);
 }
 
+#[cfg(feature = "rar")]
+#[tokio::test]
+async fn counts_a_new_cbr_and_rar_as_books() {
+    let folder = Rescanned::new("rescan-rar").await;
+    write_rar_book(
+        &folder.path("Sample Series 01/v03.cbr"),
+        13,
+        RarFormat::RAR5,
+    );
+    write_rar_book(
+        &folder.path("Sample Series 01/v04.rar"),
+        14,
+        RarFormat::RAR4,
+    );
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            added: 2,
+            ..FileChanges::default()
+        })
+    );
+    assert_eq!(
+        folder.scanned.books_in(SERIES_01),
+        ["v01", "v02", "v03", "v04"]
+    );
+}
+
+#[cfg(feature = "rar")]
+#[tokio::test]
+async fn counts_a_new_cbr_of_a_rar_version_it_cannot_open_as_unreadable() {
+    let folder = Rescanned::new("rescan-rar-unknown-version").await;
+    fs::write(
+        folder.path("Sample Series 01/v03.cbr"),
+        UNKNOWN_RAR_SIGNATURE,
+    )
+    .unwrap();
+
+    let outcome = folder.changes().await;
+
+    assert_eq!(
+        outcome,
+        rescanned(FileChanges {
+            unreadable_books: 1,
+            ..FileChanges::default()
+        })
+    );
+}
+
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn counts_a_new_book_it_cannot_open_yet_apart_from_damaged_ones() {
     let folder = Rescanned::new("rescan-not-yet").await;
@@ -591,6 +650,7 @@ async fn counts_a_new_file_of_a_type_it_reads_holding_an_archive_it_cannot_as_un
     );
 }
 
+#[cfg(not(feature = "rar"))]
 fn skipped_cbr_in_series_01(name: &str) -> SkippedType {
     SkippedType {
         file_type: FileType::try_from("cbr".to_owned()).unwrap(),
@@ -599,6 +659,7 @@ fn skipped_cbr_in_series_01(name: &str) -> SkippedType {
     }
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn lists_a_new_file_it_skips_for_a_type_the_app_does_not_read() {
     let folder = Rescanned::new("rescan-skipped").await;
@@ -613,6 +674,7 @@ async fn lists_a_new_file_it_skips_for_a_type_the_app_does_not_read() {
     assert_eq!(rescan.skipped_types, [skipped_cbr_in_series_01("v03.cbr")]);
 }
 
+#[cfg(not(feature = "rar"))]
 #[tokio::test]
 async fn lists_a_file_it_skips_for_its_type_again_on_every_rescan() {
     let comics = ScratchFolder::new("rescan-skipped-again");
