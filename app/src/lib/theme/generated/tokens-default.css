@@ -412,4 +412,13 @@
   --native-text-command-label: calc(0.75rem * var(--text-scale));
   --native-leading-command-label: calc(16 / 12);
   --native-weight-command-label: 400;
+  --native-spacing-fast-scroll-thumb: 0.375rem;
+  --native-spacing-fast-scroll-thumb-grabbed: 0.375rem;
+  --native-spacing-fast-scroll-thumb-length: 2.75rem;
+  --native-spacing-fast-scroll-letter: 2.75rem;
+  --native-spacing-fast-scroll-letter-lift: 0px;
+  --native-radius-fast-scroll-letter: 999px;
+  --native-color-fast-scroll-thumb: var(--muted);
+  --native-color-fast-scroll-letter: var(--foreground);
+  --native-color-on-fast-scroll-letter: var(--card);
 }

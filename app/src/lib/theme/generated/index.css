@@ -417,6 +417,15 @@
   --text-native-command-label: var(--native-text-command-label);
   --leading-native-command-label: var(--native-leading-command-label);
   --font-weight-native-command-label: var(--native-weight-command-label);
+  --spacing-native-fast-scroll-thumb: var(--native-spacing-fast-scroll-thumb);
+  --spacing-native-fast-scroll-thumb-grabbed: var(--native-spacing-fast-scroll-thumb-grabbed);
+  --spacing-native-fast-scroll-thumb-length: var(--native-spacing-fast-scroll-thumb-length);
+  --spacing-native-fast-scroll-letter: var(--native-spacing-fast-scroll-letter);
+  --spacing-native-fast-scroll-letter-lift: var(--native-spacing-fast-scroll-letter-lift);
+  --radius-native-fast-scroll-letter: var(--native-radius-fast-scroll-letter);
+  --color-native-fast-scroll-thumb: var(--native-color-fast-scroll-thumb);
+  --color-native-fast-scroll-letter: var(--native-color-fast-scroll-letter);
+  --color-native-on-fast-scroll-letter: var(--native-color-on-fast-scroll-letter);
 }
 
 @media (prefers-reduced-motion: reduce) {

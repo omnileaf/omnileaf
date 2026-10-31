@@ -1,7 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const SERIES_PER_LETTER = 100;
@@ -77,3 +83,64 @@ test.describe("with a few series", () => {
     await expect(handle(page)).toHaveCount(0);
   });
 });
+
+test.describe(
+  "the fast-scroll handle on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: backendWith(THOUSANDS) });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's fast scroller");
+    });
+
+    test("draws an 8px wide, 48px tall accent thumb that widens to 12px while held", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await expect(handle(page)).toBeVisible();
+      const thumb = handle(page).locator("span");
+      const accent = await tokenColour(page, "--primary");
+
+      await expect(thumb).toHaveCSS("background-color", accent);
+      expect(await boxOf(thumb)).toMatchObject({ width: 8, height: 48 });
+
+      const box = await boxOf(handle(page));
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2, box.y + 200, { steps: 4 });
+
+      expect((await boxOf(thumb)).width).toBe(12);
+      await page.mouse.up();
+    });
+
+    test("shows the letter in a 64px accent bubble with a square corner at its foot, lifted above the thumb", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await expect(handle(page)).toBeVisible();
+      const box = await boxOf(handle(page));
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2, box.y + 300, { steps: 6 });
+      const letter = page.locator("[data-fast-scroll-letter]");
+      await expect(letter).toBeVisible();
+
+      const bubble = await boxOf(letter);
+      const thumb = await boxOf(handle(page).locator("span"));
+      expect(bubble).toMatchObject({ width: 64, height: 64 });
+      expect(bubble.y + bubble.height).toBeCloseTo(
+        thumb.y + thumb.height / 2,
+        0,
+      );
+      await expect(letter).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--primary"),
+      );
+      await expect(letter).toHaveCSS("border-bottom-right-radius", "0px");
+      await expect(letter).toHaveCSS("border-top-left-radius", "32px");
+      await expect(letter).toHaveCSS("font-size", "24px");
+      await page.mouse.up();
+    });
+  },
+);
