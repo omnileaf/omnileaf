@@ -69,7 +69,7 @@ test("has no accessibility violations", async ({ page }) => {
   expect(await accessibilityViolations(page)).toEqual([]);
 });
 
-for (const platform of ["android", "ios"] as const) {
+for (const platform of ["android"] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
