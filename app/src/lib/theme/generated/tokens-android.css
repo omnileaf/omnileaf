@@ -322,6 +322,8 @@
   --native-color-sheet-rule: var(--native-color-menu-rule);
   --native-color-row-current: var(--native-color-jump-current);
   --native-color-on-row-current: var(--native-color-on-jump-current);
+  --native-radius-outlined-field: 4px;
+  --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: calc(16px + var(--spacing-safe-bottom));
   --native-text-empty: calc(1.375rem * var(--text-scale));
   --native-leading-empty: calc(28 / 22);
