@@ -5,14 +5,28 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
+import { contrastOver } from "../../../tests/components/contrast-ratio.ts";
 import { resolvedColour } from "../../../tests/components/resolved-colour.ts";
 import { screenshotModeTurned } from "../../../tests/components/screenshot-mode.ts";
 import WithAppContext from "../../../tests/components/WithAppContext.svelte";
 import AppNavigation from "./AppNavigation.svelte";
 
 const WINDOW_HEIGHT = 800;
+const LEAST_TEXT_CONTRAST = 4.5;
+const LEAST_GRAPHIC_CONTRAST = 3;
+const PANE_GROUND = "--windows-mica";
+const KIT_FILLS = {
+  light: { hover: "rgba(0, 0, 0, 0.035)", selected: "rgba(0, 0, 0, 0.035)" },
+  dark: {
+    hover: "rgba(255, 255, 255, 0.06)",
+    selected: "rgba(255, 255, 255, 0.06)",
+  },
+} as const;
+
+type Theme = keyof typeof KIT_FILLS;
 const OPEN_PANE_WIDTHS = [1280, 1008];
 const COMPACT_PANE_WIDTHS = [1007, 840, 700];
 
@@ -21,9 +35,17 @@ const NavigationWithAppContext = WithAppContext<
 >;
 
 async function renderOnWindowsAt(width: number): Promise<void> {
+  await renderAt(width, "windows");
+}
+
+async function renderAt(
+  width: number,
+  platform: Platform,
+  theme: Theme = "light",
+): Promise<void> {
   await page.viewport(width, WINDOW_HEIGHT);
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("windows");
+  document.documentElement.dataset.theme = theme;
+  followCorePlatform(platform);
   await render(NavigationWithAppContext, {
     screenshotMode: screenshotModeTurned("off"),
     page: AppNavigation,
@@ -126,13 +148,15 @@ test("marks the current item with a 3 by 16 accent pill on its leading edge", as
   expect(item("Library")).toHaveAttribute("aria-current", "page");
 });
 
-function paneToggle(name = "Hide the sidebar"): Element {
-  return asElement(
-    page
-      .getByRole("navigation", { name: "Main" })
-      .getByRole("button", { name })
-      .element(),
-  );
+function paneToggle(name = "Hide the sidebar"): HTMLElement {
+  const toggle = page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("button", { name })
+    .element();
+  if (!(toggle instanceof HTMLElement)) {
+    throw new Error("the navigation pane drew no toggle");
+  }
+  return toggle;
 }
 
 for (const width of [1280, 1007]) {
@@ -178,3 +202,152 @@ test("names the pane toggle's Ctrl+B shortcut in its tooltip and to assistive te
     .poll(() => document.querySelector("[data-tooltip-content]")?.textContent)
     .toMatch(/Hide the sidebar\s*Ctrl\+B/);
 });
+
+function focusedName(): string | null | undefined {
+  return document.activeElement?.textContent.trim();
+}
+
+test("moves between Windows' pane items with the arrow keys, stopping at either end", async () => {
+  await renderOnWindowsAt(1280);
+  (item("Library") as HTMLElement).focus();
+
+  const visited: (string | null | undefined)[] = [];
+  for (const key of ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown"]) {
+    await userEvent.keyboard(`{${key}}`);
+    visited.push(focusedName());
+  }
+  await userEvent.keyboard("{ArrowUp}");
+
+  expect(visited).toEqual(["Browse", "History", "Settings", "Settings"]);
+  expect(focusedName()).toBe("History");
+});
+
+test("jumps to the first and last of Windows' pane items with Home and End", async () => {
+  await renderOnWindowsAt(1280);
+  (item("Browse") as HTMLElement).focus();
+
+  await userEvent.keyboard("{End}");
+  const last = focusedName();
+  await userEvent.keyboard("{Home}");
+
+  expect({ last, first: focusedName() }).toEqual({
+    last: "Settings",
+    first: "Library",
+  });
+});
+
+test("leaves the arrow keys to the page on other desktops", async () => {
+  await renderAt(1280, "linux");
+  (item("Library") as HTMLElement).focus();
+
+  await userEvent.keyboard("{ArrowDown}");
+
+  expect(focusedName()).toBe("Library");
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`fills Windows' current and hovered items with the kit's subtle fill in the ${theme} theme`, async () => {
+    await renderAt(1280, "windows", theme);
+
+    await userEvent.hover(item("Browse"));
+
+    await expect
+      .poll(() => ({
+        selected: getComputedStyle(item("Library")).backgroundColor,
+        hover: getComputedStyle(item("Browse")).backgroundColor,
+      }))
+      .toEqual(KIT_FILLS[theme]);
+  });
+
+  test(`keeps Windows' pane text at 4.5:1 and its pill and focus ring at 3:1 in the ${theme} theme`, async () => {
+    await renderAt(1280, "windows", theme);
+    const selected = [PANE_GROUND, "nav-item-selected"];
+
+    const ratios = [
+      ["text", contrastOver("on-nav-item", selected), LEAST_TEXT_CONTRAST],
+      ["pill", contrastOver("nav-indicator", selected), LEAST_GRAPHIC_CONTRAST],
+      [
+        "ring",
+        contrastOver("focus-ring", [PANE_GROUND]),
+        LEAST_GRAPHIC_CONTRAST,
+      ],
+      [
+        "ring on the current item",
+        contrastOver("focus-ring", selected),
+        LEAST_GRAPHIC_CONTRAST,
+      ],
+    ] as const;
+
+    expect(ratios.filter(([, ratio, least]) => ratio < least)).toEqual([]);
+  });
+}
+
+test("rings a keyboard-focused item in Windows' two-tone focus ring", async () => {
+  await renderOnWindowsAt(1280);
+
+  (item("Browse") as HTMLElement).focus({ focusVisible: true });
+  const style = getComputedStyle(item("Browse"));
+
+  expect({
+    outline: style.outlineColor,
+    width: style.outlineWidth,
+    inner: style.boxShadow.includes(
+      resolvedColour("--native-color-focus-ring-inner", "color"),
+    ),
+  }).toEqual({
+    outline: resolvedColour("--native-color-focus-ring", "outlineColor"),
+    width: "2px",
+    inner: true,
+  });
+});
+
+test("rings a keyboard-focused pane toggle in Windows' two-tone focus ring", async () => {
+  await renderOnWindowsAt(1280);
+
+  paneToggle().focus({ focusVisible: true });
+  const style = getComputedStyle(paneToggle());
+
+  expect({
+    outline: style.outlineColor,
+    width: style.outlineWidth,
+  }).toEqual({
+    outline: resolvedColour("--native-color-focus-ring", "outlineColor"),
+    width: "2px",
+  });
+});
+
+function paneToggleElement(): HTMLElement {
+  const toggle = document.querySelector<HTMLElement>(
+    "nav button[aria-keyshortcuts]",
+  );
+  if (toggle === null) {
+    throw new Error("the navigation pane drew no toggle");
+  }
+  return toggle;
+}
+
+for (const width of [1007, 840, 700]) {
+  test(`hides the pane toggle and keeps it out of the tab order in a ${String(width)} wide window`, async () => {
+    await renderOnWindowsAt(width);
+
+    paneToggleElement().focus();
+
+    expect({
+      visibility: getComputedStyle(paneToggleElement()).visibility,
+      isFocused: document.activeElement === paneToggleElement(),
+    }).toEqual({ visibility: "hidden", isFocused: false });
+  });
+}
+
+for (const width of [1008, 1280]) {
+  test(`shows the pane toggle in a ${String(width)} wide window`, async () => {
+    await renderOnWindowsAt(width);
+
+    paneToggleElement().focus();
+
+    expect({
+      visibility: getComputedStyle(paneToggleElement()).visibility,
+      isFocused: document.activeElement === paneToggleElement(),
+    }).toEqual({ visibility: "visible", isFocused: true });
+  });
+}

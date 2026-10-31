@@ -545,10 +545,10 @@
   --tooltip-foreground: var(--native-color-on-menu);
   --tooltip-edge: var(--native-color-menu-edge);
   --tooltip-radius: var(--radius-windows-control);
-  --sidebar-accent: var(--windows-subtle);
-  --sidebar-accent-foreground: var(--sidebar-foreground);
-  --sidebar-selection: var(--windows-subtle);
-  --sidebar-selection-foreground: var(--sidebar-foreground);
+  --sidebar-accent: var(--native-color-nav-item-hover);
+  --sidebar-accent-foreground: var(--native-color-on-nav-item);
+  --sidebar-selection: var(--native-color-nav-item-selected);
+  --sidebar-selection-foreground: var(--native-color-on-nav-item);
   --sidebar-row-height: 2.25rem;
   --sidebar-row-radius: var(--radius-windows-control);
   --tooltip-shadow: var(--native-shadow-tooltip-lift);

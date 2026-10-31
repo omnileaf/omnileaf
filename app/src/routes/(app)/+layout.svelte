@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { goto, preloadCode } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -16,6 +17,10 @@
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import {
+    isPaneToggledBy,
+    PANE_SHORTCUT,
+  } from "#lib/navigation/pane-shortcut.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
@@ -42,7 +47,7 @@
   } from "#lib/storage/storage-check.svelte.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { paneFoldQuery, WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPointer, phoneOf, usesCommandKey } from "#lib/page/platform.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
@@ -102,6 +107,9 @@
   );
 
   const width = new WindowWidth();
+  const isPaneCompact = new MediaQuery(
+    paneFoldQuery(untrack(() => data.appInfo.platform)),
+  );
   const isTabBarCollapsed = $derived(
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
@@ -158,12 +166,18 @@
   })}
   {@attach shortcut(...keyboardOnlyShortcuts)}
   {@attach shortcut({
-    key: "b",
+    key: PANE_SHORTCUT.letter.toLowerCase(),
     command: data.appInfo.platform,
-    shift: false,
+    shift: PANE_SHORTCUT.shift,
     inTextFields: true,
     run: () => {
-      sidebar.toggle();
+      if (
+        isPaneToggledBy(data.appInfo.platform, {
+          isCompact: isPaneCompact.current,
+        })
+      ) {
+        sidebar.toggle();
+      }
     },
   })}
 />

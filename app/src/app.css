@@ -107,7 +107,7 @@
 @custom-variant compact-pane {
   @variant windows {
     @variant desktop-shell {
-      @media (width < 1008px) {
+      @variant max-pane {
         @slot;
       }
     }
@@ -169,6 +169,7 @@
 
   --breakpoint-medium: 600px;
   --breakpoint-expanded: 840px;
+  --breakpoint-pane: 1008px;
   --breakpoint-large: 1200px;
 
   --font-display: Georgia, serif;

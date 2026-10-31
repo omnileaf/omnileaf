@@ -8,6 +8,7 @@ import {
   fakeAppInfo,
   test,
   testOnlyInItsWebview,
+  tokenColour,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
@@ -60,6 +61,17 @@ test.describe("on Windows", () => {
     expect(await paneWidth(page)).toBe(OPEN_PANE);
   });
 
+  test("leaves Ctrl B without effect while the pane is compact, so it does not fold the pane later", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, COMPACT_WINDOWS[0] ?? 0);
+
+    await page.keyboard.press("Control+b");
+    await page.setViewportSize({ width: WIDE_WINDOW, height: WINDOW_HEIGHT });
+
+    expect(await paneWidth(page)).toBe(OPEN_PANE);
+  });
+
   test("holds the window's one pane toggle at the top of the pane", async ({
     page,
   }) => {
@@ -72,6 +84,22 @@ test.describe("on Windows", () => {
     ).toHaveAttribute("aria-keyshortcuts", "Control+B");
     await toggles.click();
     expect(await paneWidth(page)).toBe(COMPACT_PANE);
+  });
+
+  test("walks the pane with the arrow keys and opens a section with Enter", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, WIDE_WINDOW);
+    const history = pane(page).getByRole("link", { name: "History" });
+    await pane(page).getByRole("link", { name: "Library" }).focus();
+
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(history).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/history$/);
+    await expect(history).toHaveAttribute("aria-current", "page");
   });
 
   for (const width of COMPACT_WINDOWS) {
@@ -90,6 +118,26 @@ test.describe("on Windows", () => {
       await expect(page.locator("[data-tooltip-content]")).toHaveText("Browse");
     });
   }
+
+  test("lays the kit's pressed fill under an item while it is pressed", async ({
+    page,
+  }) => {
+    await openLibraryAt(page, WIDE_WINDOW);
+    const browse = pane(page).getByRole("link", { name: "Browse" });
+    const centre = await boxOf(browse);
+
+    await page.mouse.move(
+      centre.x + centre.width / 2,
+      centre.y + centre.height / 2,
+    );
+    await page.mouse.down();
+
+    await expect(browse).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-nav-item-pressed"),
+    );
+    await page.mouse.up();
+  });
 
   for (const colorScheme of ["light", "dark"] as const) {
     test(`has no accessibility violations with the pane open or folded in the ${colorScheme} theme`, async ({
