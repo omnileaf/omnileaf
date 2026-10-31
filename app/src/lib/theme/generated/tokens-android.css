@@ -193,7 +193,7 @@
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);
   --native-color-dialog-band-edge: var(--border);
-  --native-radius-dialog: var(--radius-panel);
+  --native-radius-dialog: 28px;
   --native-spacing-dialog: var(--spacing-dialog);
   --native-spacing-dialog-text-inline: 0px;
   --native-spacing-dialog-text-gap: var(--spacing-lg);
