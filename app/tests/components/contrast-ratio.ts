@@ -72,3 +72,11 @@ export function drawnContrast(element: Element): number {
   const ink = opaqueChannels([style.backgroundColor, style.color]);
   return ratioOf(ink, ground);
 }
+
+export function compositedContrast(
+  element: Element,
+  grounds: readonly string[],
+): number {
+  const { color } = getComputedStyle(element);
+  return ratioOf(opaqueChannels([...grounds, color]), opaqueChannels(grounds));
+}

@@ -17,7 +17,7 @@
 <p
   data-slot="alert-description"
   class={cn(
-    "col-start-2 text-label",
+    "col-start-2 text-label windows:font-regular",
     ALERT_TONES[tone()].description,
     className,
   )}

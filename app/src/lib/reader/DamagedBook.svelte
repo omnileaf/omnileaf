@@ -13,8 +13,8 @@
     AlertTitle,
   } from "#lib/components/ui/alert/index.ts";
   import type { BookDamage, OpenedBook, Platform } from "#lib/ipc/bindings.ts";
-  import { actionGroupLook } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { problemActionGroup } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -45,7 +45,7 @@
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));
   const actions = $derived(
-    actionGroupLook(platform, width.current, TODAYS_PROBLEM_ACTIONS),
+    problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
 </script>
 

@@ -2,6 +2,8 @@
   import type { HTMLButtonAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
   import { ALERT_TONES, getAlertTone } from "./tones.ts";
 
@@ -19,13 +21,20 @@
   }: HTMLButtonAttributes & { emphasis: "strong" | "quiet" } = $props();
 
   const tone = getAlertTone();
+  const platform = currentPlatform();
 </script>
 
 <button
   type="button"
   class={cn(
-    BUTTON,
-    emphasis === "strong" ? [ALERT_TONES[tone()].strongAction, STRONG] : QUIET,
+    platform === "windows"
+      ? variantClasses("secondary", "regular", false, platform)
+      : [
+          BUTTON,
+          emphasis === "strong"
+            ? [ALERT_TONES[tone()].strongAction, STRONG]
+            : QUIET,
+        ],
     className,
   )}
   {...restProps}

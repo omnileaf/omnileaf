@@ -5,8 +5,10 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { reportLook } from "./report-look.ts";
   import type { ReportSharing } from "./report-sharing.svelte";
   import { failureMessage } from "./share-failure";
 
@@ -14,6 +16,7 @@
 
   let { sharing }: { sharing: ReportSharing } = $props();
 
+  const look = reportLook(currentPlatform());
   const fieldId = $props.id();
   const hintId = `${fieldId}-hint`;
   const refusalId = `${fieldId}-refusal`;
@@ -46,7 +49,7 @@
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         sharing.replyTo = event.currentTarget.value;
       }}
-      class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button focus:border-accent aria-invalid:border-danger touch:text-body touch:block-touch-target"
+      class={look.field}
     />
     <p id={hintId} class="text-small text-muted">
       {m.report_reply_email_hint()}
@@ -65,9 +68,8 @@
   <div class="mbs-xl flex flex-col gap-sm">
     <Button
       type="button"
-      look="primary"
+      {...look.send}
       aria-describedby={noteId}
-      class="flex items-center justify-center gap-sm rounded-shadcn-button px-lg text-body font-medium min-block-shadcn-button expanded:self-start ios:rounded-ios-button ios:font-semibold ios:min-block-ios-control macos:shadow-raised linux:shadow-raised desktop:px-md desktop:text-label"
       onClickPromise={() => sharing.share("send")}
     >
       <Send size={ICON_SIZE} aria-hidden="true" />

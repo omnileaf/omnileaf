@@ -257,15 +257,14 @@ test.describe("on Windows", () => {
         );
       });
 
-      test("cuts the attention dot out of the folded pane in Mica's colour", async ({
+      test("draws the folded pane's attention count as an info badge and no dot", async ({
         page,
       }) => {
         await openLibrary(page, colorScheme);
         await page.keyboard.press("Control+b");
 
-        expect(await ringOfAttentionDot(attentionItem(page))).toContain(
-          await tokenColour(page, "--windows-mica"),
-        );
+        expect(await ringOfAttentionDot(attentionItem(page))).toBe("none");
+        await expect(attentionItem(page)).toContainText(/\d/);
       });
 
       test("has no accessibility violations", async ({ page }) => {

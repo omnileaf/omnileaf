@@ -9,14 +9,18 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+
+  import { attentionLook } from "./attention-look.ts";
 
   const ICON_SIZE = 18;
   const CHEVRON_SIZE = 18;
 
   let { count, onOpen }: { count: number; onOpen: () => void } = $props();
 
+  const look = attentionLook(currentPlatform());
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 </script>
 
@@ -41,11 +45,7 @@
             {m.attention_things_to_fix({ count })}
           </ItemDescription>
         </ItemContent>
-        <Badge
-          look="count"
-          aria-hidden="true"
-          class="shrink-0 px-sm py-2xs text-caption"
-        >
+        <Badge look="count" aria-hidden="true" class={["shrink-0", look.badge]}>
           {numbers.format(count)}
         </Badge>
         <ChevronRight
