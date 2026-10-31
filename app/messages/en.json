@@ -2606,5 +2606,104 @@
         "countPlural=other": "{formattedCount} files can't be read here"
       }
     }
-  ]
+  ],
+  "library_delete": "Delete",
+  "remove_title": "Remove from your library?",
+  "remove_series_summary": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series leaves your library.",
+        "countPlural=other": "{formattedCount} series leave your library."
+      }
+    }
+  ],
+  "remove_books_summary": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book leaves your library.",
+        "countPlural=other": "{formattedCount} books leave your library."
+      }
+    }
+  ],
+  "remove_kept_note": "Your reading progress, bookmarks and edits are kept, and come back if you add it again.",
+  "remove_also_delete_files": "Also delete the files from disk",
+  "remove_files_summary": [
+    {
+      "declarations": [
+        "input files",
+        "input folders",
+        "local filesPlural = files: plural",
+        "local foldersPlural = folders: plural",
+        "local formattedFiles = files: number",
+        "local formattedFolders = folders: number"
+      ],
+      "selectors": ["filesPlural", "foldersPlural"],
+      "match": {
+        "filesPlural=one, foldersPlural=*": "{formattedFiles} file in {formattedFolders} folder",
+        "filesPlural=other, foldersPlural=one": "{formattedFiles} files in {formattedFolders} folder",
+        "filesPlural=other, foldersPlural=other": "{formattedFiles} files in {formattedFolders} folders"
+      }
+    }
+  ],
+  "remove_files_to_trash": "Moves {summary} to the trash.",
+  "remove_files_deleted": "Deletes {summary} from this device.",
+  "remove_confirm": "Remove",
+  "remove_confirm_files": "Delete files",
+  "remove_cancel": "Cancel",
+  "remove_removed_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} series removed from your library",
+        "countPlural=other": "{formattedCount} series removed from your library"
+      }
+    }
+  ],
+  "remove_removed_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} book removed from your library",
+        "countPlural=other": "{formattedCount} books removed from your library"
+      }
+    }
+  ],
+  "remove_failed_title": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} file couldn't be deleted",
+        "countPlural=other": "{formattedCount} files couldn't be deleted"
+      }
+    }
+  ],
+  "remove_failed_body": "Still on disk: {names}",
+  "remove_failed": "Couldn't remove them. Try again."
 }
