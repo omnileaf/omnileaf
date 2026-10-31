@@ -9,6 +9,7 @@
     type LibraryCategory,
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     ALL_SERIES,
@@ -28,6 +29,7 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
+  const android = new AndroidPhone();
 
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
   let categories = $state<readonly LibraryCategory[]>([]);
@@ -139,7 +141,11 @@
   parent={{ route: "/(app)/settings/library", title: m.library_title() }}
 />
 <div class="mbs-pane-gap flex flex-col gap-sm">
-  <p class="text-footnote text-muted">
+  <p
+    class={android.isOn
+      ? "text-native-row-subtitle/native-row-subtitle text-muted"
+      : "text-footnote text-muted"}
+  >
     <span class="desktop:hidden">{m.library_tabs_intro()}</span>
     <span class="hidden desktop:inline">{m.library_tabs_intro_keys()}</span>
   </p>
