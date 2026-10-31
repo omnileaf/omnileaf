@@ -30,14 +30,22 @@ test.each(SCREENS)(
   },
 );
 
+const OWN_LOOKS = new Set([...PHONES, "Windows desktop"]);
+
 test.each(SCREENS)(
-  "keeps today's reader buttons on the $screen unless it is a phone",
+  "keeps today's reader buttons on the $screen unless it has a look of its own",
   ({ platform, width, screen }) => {
     expect(readerButton(platform, width) === READER_BUTTON).toBe(
-      !PHONES.has(screen),
+      !OWN_LOOKS.has(screen),
     );
   },
 );
+
+test("draws Windows's reader buttons as command bar buttons whatever the window's width", () => {
+  for (const width of ["compact", "medium", "expanded"] as const) {
+    expect(readerButton("windows", width)).not.toBe(READER_BUTTON);
+  }
+});
 
 test("draws the iPhone's and the Android phone's reader buttons each their own way", () => {
   expect(readerButton("ios", "compact")).not.toBe(

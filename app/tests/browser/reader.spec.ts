@@ -1641,6 +1641,32 @@ test.describe("while Screenshot mode is on", () => {
     expect(asked).toEqual([]);
   });
 
+  test("blanks both pages of a two-page spread to grey panels, without reading either", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "omnileaf.readerSettings.all",
+        JSON.stringify({ layout: "two", fit: "width" }),
+      );
+    });
+    const asked = await servePages(page);
+    await page.goto(`/read/${BOOK_ID}`);
+    await expect(shownPage(page, 1)).toBeVisible();
+
+    await page.keyboard.press("ArrowRight");
+
+    for (const number of [2, 3]) {
+      await expect(shownPage(page, number)).toBeVisible();
+      await expect(
+        shownPage(page, number).getByText(
+          `Page ${String(number)} of ${String(PAGE_COUNT)}`,
+        ),
+      ).toBeVisible();
+    }
+    expect(asked).toEqual([]);
+  });
+
   test("shows the pages themselves once blank pages are turned off", async ({
     page,
   }) => {

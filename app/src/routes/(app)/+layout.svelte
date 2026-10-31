@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
 
-  import { goto } from "$app/navigation";
+  import { goto, preloadCode } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
@@ -16,6 +17,10 @@
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import {
+    isPaneToggledBy,
+    PANE_SHORTCUT,
+  } from "#lib/navigation/pane-shortcut.ts";
   import { sectionOf } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
@@ -42,7 +47,7 @@
   } from "#lib/storage/storage-check.svelte.ts";
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { paneFoldQuery, WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPointer, phoneOf, usesCommandKey } from "#lib/page/platform.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
@@ -51,6 +56,7 @@
   import type { LayoutProps } from "./$types";
 
   const EDIT_DETAILS_ROUTE = "/(app)/series/[id]/edit";
+  const READER_ROUTE = "/read/[book]";
 
   let { children, data }: LayoutProps = $props();
 
@@ -101,6 +107,9 @@
   );
 
   const width = new WindowWidth();
+  const isPaneCompact = new MediaQuery(
+    paneFoldQuery(untrack(() => data.appInfo.platform)),
+  );
   const isTabBarCollapsed = $derived(
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
@@ -132,6 +141,7 @@
   }
 
   onMount(() => {
+    preloadCode(READER_ROUTE).catch(reportError);
     const arrival = takeHomeArrival(data.homeArrival);
     if (arrival !== null) {
       void showHomeArrival(arrival);
@@ -156,12 +166,18 @@
   })}
   {@attach shortcut(...keyboardOnlyShortcuts)}
   {@attach shortcut({
-    key: "b",
+    key: PANE_SHORTCUT.letter.toLowerCase(),
     command: data.appInfo.platform,
-    shift: false,
+    shift: PANE_SHORTCUT.shift,
     inTextFields: true,
     run: () => {
-      sidebar.toggle();
+      if (
+        isPaneToggledBy(data.appInfo.platform, {
+          isCompact: isPaneCompact.current,
+        })
+      ) {
+        sidebar.toggle();
+      }
     },
   })}
 />
@@ -176,7 +192,7 @@
 {/snippet}
 
 <div
-  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-sidebar"
+  class="flex flex-col-reverse overflow-x-clip block-dvh medium:flex-row desktop-shell:flex-row windows:desktop-shell:bg-shell-ground"
 >
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
