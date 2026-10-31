@@ -553,6 +553,49 @@ test.describe(
         }
       });
 
+      for (const name of ["Display", "Group by"]) {
+        test(`sets ${name} with its words over a group the width of the row, no icons`, async ({
+          page,
+        }) => {
+          const sheet = await openView(page);
+          const sheetBox = await boxOf(sheet);
+          const words = await boxOf(sheet.getByText(name, { exact: true }));
+          const group = sheet.getByRole("radiogroup", { name, exact: true });
+          const groupBox = await boxOf(group);
+
+          expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+          expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+          expect(
+            sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+          ).toBeCloseTo(SETTING_END, 0);
+          expect(groupBox.y).toBeGreaterThanOrEqual(words.y + words.height);
+          await expect(group.locator("svg")).toHaveCount(0);
+          await expect(sheet.getByText(name, { exact: true })).toHaveCSS(
+            "font-weight",
+            HEADING_WEIGHT,
+          );
+        });
+      }
+
+      test("sets Covers per row with its words at the start and its group at the end of one row", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const sheetBox = await boxOf(sheet);
+        const words = await boxOf(
+          sheet.getByText("Covers per row", { exact: true }),
+        );
+        const group = await boxOf(
+          sheet.getByRole("radiogroup", { name: "Covers per row" }),
+        );
+
+        expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (group.x + group.width),
+        ).toBeCloseTo(SETTING_END, 0);
+        expect(group.y).toBeLessThan(words.y + words.height);
+      });
+
       test("sets each cover mark as a Material row, padded 16px and 24px, with no rule between", async ({
         page,
       }) => {

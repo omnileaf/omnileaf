@@ -14,6 +14,12 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
+  import {
+    ANDROID_VIEW_SETTING,
+    FILTER_SETTING_LABEL_TYPE,
+  } from "./filter-sheet-look";
+
   const DISPLAYS: readonly LibraryDisplay[] = [
     "grid",
     "compact",
@@ -44,12 +50,18 @@
   const id = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
-  const showsIcons = $derived(phoneOf(platform, width.current) !== "ios");
+  const android = new AndroidPhone();
+  const showsIcons = $derived(phoneOf(platform, width.current) === undefined);
   const labelId = `${id}-label`;
 </script>
 
-<div>
-  <p id={labelId} class="text-body font-medium large:text-small">
+<div class={android.isOn ? ANDROID_VIEW_SETTING.row : ""}>
+  <p
+    id={labelId}
+    class={android.isOn
+      ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
+      : "text-body font-medium large:text-small"}
+  >
     {m.library_view_display()}
   </p>
   <SegmentedControl
@@ -60,6 +72,8 @@
     labelledBy={labelId}
     size="small"
     {onChoose}
-    class="mbs-sm large:mbs-icon-gap"
+    class={android.isOn
+      ? "flex-none max-inline-full"
+      : "mbs-sm large:mbs-icon-gap"}
   />
 </div>
