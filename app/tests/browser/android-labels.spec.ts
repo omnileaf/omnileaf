@@ -129,6 +129,54 @@ test.describe(
       );
     });
 
+    test("draws the New category and Add a tag fields as 56px outlined boxes with a 4px corner, 16px in from the edge", async ({
+      page,
+    }) => {
+      const sheet = await openLabels(page);
+      await page.evaluate(() => {
+        (document.activeElement as HTMLElement | null)?.blur();
+      });
+      const sheetBox = await boxOf(sheet);
+
+      for (const name of ["New category", "Add a tag"]) {
+        const field = sheet.getByRole("textbox", { name });
+        const group = field.locator("xpath=..");
+        const box = await boxOf(group);
+
+        expect(box.height).toBeCloseTo(56, 0);
+        expect(box.x - sheetBox.x).toBeCloseTo(16, 0);
+        await expect(group).toHaveCSS("border-top-left-radius", "4px");
+        await expect(group).toHaveCSS(
+          "border-top-color",
+          await tokenColour(page, "--native-color-button-outline-edge"),
+        );
+      }
+    });
+
+    test("draws each tag as a 32px chip with an 8px corner, the one on every series filled with the soft accent", async ({
+      page,
+    }) => {
+      const sheet = await openLabels(page);
+      const sea = sheet
+        .getByRole("listitem")
+        .filter({ hasText: "Sea" })
+        .first();
+
+      expect((await boxOf(sea)).height).toBeCloseTo(32, 0);
+      await expect(sea).toHaveCSS("border-top-left-radius", "8px");
+      await expect(sea).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-accent-soft"),
+      );
+      expect(
+        (
+          await boxOf(
+            sea.getByRole("button", { name: "Remove Sea" }).locator("svg"),
+          )
+        ).width,
+      ).toBeCloseTo(18, 0);
+    });
+
     test("ends the sheet with one full-width Done button 56px tall, 16px from the foot", async ({
       page,
     }) => {
