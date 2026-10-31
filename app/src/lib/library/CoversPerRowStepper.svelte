@@ -10,9 +10,15 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
   import type { ScreenSize } from "./library-view";
 
   const ICON_SIZE = 18;
+  const ANDROID_ICON_SIZE = 24;
+  const ANDROID_STEP =
+    "relative flex items-center justify-center rounded-full bg-native-accent-soft text-foreground transition-control block-native-button inline-native-button before:absolute before:-inset-xs before:content-[''] enabled:active:rounded-native-segment disabled:opacity-40";
+  const ANDROID_COUNT =
+    "text-center tabular-nums text-native-button-large/native-button-large font-native-button-large tracking-native-button-large min-inline-xl";
 
   const RANGE_LABELS = {
     phone: m.library_covers_per_row_range_phone,
@@ -43,6 +49,7 @@
       Math.min(COVERS_PER_ROW[size].most, mostThatFit ?? Number.MAX_VALUE),
     ),
   );
+  const android = new AndroidPhone();
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
   const coversThatFit = $derived(
     drawn !== undefined && drawn < count ? drawn : undefined,
@@ -63,31 +70,39 @@
       <div
         role="group"
         aria-label={m.library_covers_per_row_chosen()}
-        class="flex items-center rounded-field border border-border large:rounded-small-control"
+        class={android.isOn
+          ? "flex items-center gap-sm"
+          : "flex items-center rounded-field border border-border large:rounded-small-control"}
       >
         <NumberFieldStep
           direction="down"
           label={m.library_fewer_covers_per_row()}
-          class="flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"
+          class={android.isOn
+            ? ANDROID_STEP
+            : "flex items-center justify-center rounded-s-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-s-small-control large:block-stepper large:inline-stepper"}
         >
           <Minus
-            size={ICON_SIZE}
+            size={android.isOn ? ANDROID_ICON_SIZE : ICON_SIZE}
             aria-hidden="true"
             class="large:block-lg large:inline-lg"
           />
         </NumberFieldStep>
         <output
-          class="text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"
+          class={android.isOn
+            ? ANDROID_COUNT
+            : "text-center text-count font-bold min-inline-stepper-value large:text-small large:min-inline-xl"}
         >
           {numbers.format(count)}
         </output>
         <NumberFieldStep
           direction="up"
           label={m.library_more_covers_per_row()}
-          class="flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"
+          class={android.isOn
+            ? ANDROID_STEP
+            : "flex items-center justify-center rounded-e-field transition-control block-touch-target inline-touch-target enabled:hover:bg-hover enabled:active:bg-pressed disabled:opacity-60 large:rounded-e-small-control large:block-stepper large:inline-stepper"}
         >
           <Plus
-            size={ICON_SIZE}
+            size={android.isOn ? ANDROID_ICON_SIZE : ICON_SIZE}
             aria-hidden="true"
             class="large:block-lg large:inline-lg"
           />
