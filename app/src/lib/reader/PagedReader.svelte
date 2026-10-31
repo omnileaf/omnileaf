@@ -1185,10 +1185,15 @@
     {:else}
       <header
         class={[
-          "absolute transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
-          chrome.spans
+          "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
+          chrome.isCommandBar
             ? "inset-x-none inset-bs-none"
-            : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
+            : [
+                "expanded:inset-x-lg expanded:inset-bs-md",
+                chrome.spans
+                  ? "inset-x-none inset-bs-none"
+                  : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
+              ],
           !controls.isShown && "pointer-events-none opacity-0",
         ]}
         {...controlEvents}

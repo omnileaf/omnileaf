@@ -112,11 +112,13 @@
     >
       {m.reader_direction_auto()}
     </span>
-    <ChevronDown
-      size={look.iconSize}
-      aria-hidden="true"
-      class="hidden shrink-0 opacity-50 expanded:block"
-    />
+    {#if look.hasChevron}
+      <ChevronDown
+        size={look.iconSize}
+        aria-hidden="true"
+        class="hidden shrink-0 opacity-50 expanded:block"
+      />
+    {/if}
   </DropdownMenu.Trigger>
   <DropdownMenuContent to="main" aria-label={m.reader_direction()}>
     <p class="px-sm py-icon-gap text-caption font-medium text-muted">

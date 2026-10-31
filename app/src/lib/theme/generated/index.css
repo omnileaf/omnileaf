@@ -155,6 +155,9 @@
   --spacing-native-button-small-inline: var(--native-spacing-button-small-inline);
   --spacing-native-icon-button-inset: var(--native-spacing-icon-button-inset);
   --spacing-native-icon-button-small-inset: var(--native-spacing-icon-button-small-inset);
+  --spacing-native-command-bar: var(--native-spacing-command-bar);
+  --spacing-native-command-button: var(--native-spacing-command-button);
+  --spacing-native-command-button-block: var(--native-spacing-command-button-block);
   --spacing-native-button-large-inline: var(--native-spacing-button-large-inline);
   --text-native-button-large: var(--native-text-button-large);
   --leading-native-button-large: var(--native-leading-button-large);
