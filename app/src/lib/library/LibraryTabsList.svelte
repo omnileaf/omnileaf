@@ -7,6 +7,7 @@
     Eye,
     EyeOff,
     GripVertical,
+    Menu,
   } from "@lucide/svelte";
   import { tick } from "svelte";
 
@@ -21,9 +22,11 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
+  import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte.ts";
+  import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
   import { moved, shownAs } from "./tab-order.ts";
 
@@ -46,6 +49,7 @@
   } = $props();
 
   const android = new AndroidPhone();
+  const ios = new IosPhone();
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
   let announcement = $state("");
@@ -144,7 +148,9 @@
   aria-label={m.library_tabs_title()}
   class={android.isOn
     ? "-mx-page-start -me-page-end flex flex-col"
-    : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
+    : ios.isOn
+      ? `flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`
+      : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
 >
   {#each listed as tab, at (tabKey(tab.id))}
     {@const key = tabKey(tab.id)}
@@ -154,7 +160,9 @@
         "flex items-center",
         android.isOn
           ? "gap-xs ps-xs pe-md min-block-native-row-two"
-          : "gap-sm py-sm ps-xs pe-sm",
+          : ios.isOn
+            ? "gap-sm ps-lg pe-xs min-block-native-row"
+            : "gap-sm py-sm ps-xs pe-sm",
         drag?.key === key &&
           "relative z-drag-box rounded-card bg-card shadow-dialog",
       ]}
@@ -163,7 +171,10 @@
         type="button"
         data-tab-handle={key}
         aria-label={m.library_tabs_move({ tab: tab.name })}
-        class="flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted block-pointer-button inline-pointer-button focus-visible:outline-2 focus-visible:outline-accent touch:block-touch-target touch:inline-touch-target"
+        class={[
+          "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted block-pointer-button inline-pointer-button focus-visible:outline-2 focus-visible:outline-accent touch:block-touch-target touch:inline-touch-target",
+          ios.isOn && "order-last",
+        ]}
         onkeydown={(event) => {
           moveWithKeys(event, at);
         }}
@@ -174,7 +185,11 @@
         onpointerup={drop}
         onpointercancel={drop}
       >
-        <GripVertical size={ICON_SIZE} aria-hidden="true" />
+        {#if ios.isOn}
+          <Menu size={ICON_SIZE} aria-hidden="true" />
+        {:else}
+          <GripVertical size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </button>
       <span
         class={[
@@ -182,8 +197,11 @@
           android.isOn ? "ps-xs" : "gap-2xs",
         ]}
       >
-        <span class={["truncate", android.isOn ? "text-body" : "font-medium"]}
-          >{tab.name}</span
+        <span
+          class={[
+            "truncate",
+            android.isOn || ios.isOn ? "text-body" : "font-medium",
+          ]}>{tab.name}</span
         >
         <span
           class={[
