@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
+  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
 
   let {
     label,
     description,
     isOn,
+    isMaterial = false,
     onToggle,
   }: {
     label: string;
     description?: string;
     isOn: boolean;
+    isMaterial?: boolean;
     onToggle: (isOn: boolean) => void;
   } = $props();
 
@@ -22,18 +24,27 @@
   aria-labelledby="{id}-label"
   aria-describedby={description === undefined ? undefined : `${id}-description`}
   class={[
-    "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row",
+    isMaterial
+      ? ITEM_LOOKS["row-static"]
+      : "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row",
     ROW_FOCUS_RING,
   ]}
 >
   <span class="flex flex-1 flex-col gap-2xs">
-    <span id="{id}-label" class="text-body font-medium large:text-small">
+    <span
+      id="{id}-label"
+      data-slot={isMaterial ? "item-title" : undefined}
+      class={isMaterial ? undefined : "text-body font-medium large:text-small"}
+    >
       {label}
     </span>
     {#if description !== undefined}
       <span
         id="{id}-description"
-        class="text-small text-muted large:text-caption"
+        data-slot={isMaterial ? "item-description" : undefined}
+        class={isMaterial
+          ? "text-muted"
+          : "text-small text-muted large:text-caption"}
       >
         {description}
       </span>

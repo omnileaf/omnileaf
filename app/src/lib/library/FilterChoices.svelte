@@ -2,6 +2,7 @@
   import { Plus } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import type {
     Inclusion,
     LibraryFilterChoices,
@@ -19,7 +20,10 @@
     languageName,
     READ_STATE_LABELS,
   } from "./filter-labels";
-  import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
+  import {
+    ANDROID_FILTER_CHIP,
+    ANDROID_FILTER_HEADING,
+  } from "./filter-sheet-look";
   import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
   import { GROUPED_FOOTNOTE, groupLook } from "./group-look";
@@ -163,9 +167,14 @@
     />
   {/if}
 </section>
-<section class={["flex flex-col", isGrouped ? look.section : "pbs-lg"]}>
+<section
+  class={[
+    "flex flex-col",
+    isGrouped ? look.section : !isAndroidPhone && "pbs-lg",
+  ]}
+>
   <h3 class={headingClass}>{m.library_filter()}</h3>
-  <div class={look.group}>
+  <div class={isAndroidPhone ? "flex flex-col" : look.group}>
     {#if isGrouped}
       <PickerRow
         label={m.library_read_state()}
@@ -235,7 +244,13 @@
           <Button
             type="button"
             look="outline"
-            class="flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"
+            class={isAndroidPhone
+              ? [
+                  ANDROID_FILTER_CHIP.chip,
+                  ANDROID_FILTER_CHIP.other,
+                  "text-native-on-button-plain",
+                ]
+              : "flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"}
             onclick={() => {
               showsEveryTag = true;
             }}
@@ -292,7 +307,27 @@
         }}
       />
     {/if}
-    {#if !isGrouped && choices.smart.length > 0}
+    {#if isAndroidPhone && choices.smart.length > 0}
+      <div class="flex flex-col">
+        <h3 class={ANDROID_FILTER_HEADING}>{m.library_smart_filters()}</h3>
+        <p class="{ROW_SUBTITLE_TYPE} ps-lg pe-xl pbe-sm text-muted">
+          {m.library_smart_filters_hint()}
+        </p>
+        <SmartFilterRows
+          isMaterial
+          offered={choices.smart}
+          chosen={listing.filter.smart}
+          onToggle={(smart: SmartFilter) => {
+            toggle("smart", smart);
+          }}
+        />
+        {#if !choices.smart.includes("readyToCleanUp")}
+          <p class="{ROW_SUBTITLE_TYPE} ps-lg pe-xl pbs-sm pbe-lg text-muted">
+            {m.library_smart_clean_up_waits()}
+          </p>
+        {/if}
+      </div>
+    {:else if !isGrouped && choices.smart.length > 0}
       <div class="flex flex-col">
         <div class="flex flex-col gap-2xs pbs-setting-grid-pad">
           <p class="text-small font-semibold">{m.library_smart_filters()}</p>
