@@ -29,7 +29,11 @@
 {/if}
 {#if !isSelecting && (language !== undefined || showsDownloads)}
   <span
-    class="absolute inset-e-badge-inset inset-bs-badge-inset flex items-center gap-2xs medium:inset-e-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-e-sm large:inset-bs-sm"
+    data-slot="cover-tags"
+    class={[
+      "absolute inset-e-badge-inset inset-bs-badge-inset flex items-center gap-2xs medium:inset-e-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-e-sm large:inset-bs-sm",
+      tile.tags,
+    ]}
   >
     {#if language !== undefined}
       <LanguageBadge

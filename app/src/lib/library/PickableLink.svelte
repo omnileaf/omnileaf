@@ -9,6 +9,8 @@
   import { isReleaseOfHold, noteHeld } from "./held-pick";
 
   const LONG_PRESS_MS = 500;
+  const FOCUS_RING =
+    "rounded-cover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
   let {
     id,
@@ -17,6 +19,7 @@
     selection,
     order,
     class: className,
+    focusRing = FOCUS_RING,
     children,
     onpointerdown,
     onpointerup,
@@ -32,12 +35,11 @@
     selection: Selection<Id> | undefined;
     order: () => readonly Id[];
     class?: ClassValue;
+    focusRing?: string | undefined;
     children: Snippet;
   } = $props();
 
   const longPress = new LongPress(LONG_PRESS_MS);
-  const FOCUS_RING =
-    "rounded-cover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   let element: HTMLElement | undefined = $state();
 
   async function startPickingFromKeys(event: KeyboardEvent): Promise<void> {
@@ -79,7 +81,7 @@
     role="checkbox"
     aria-checked={selection.has(id)}
     aria-label={title}
-    class={["text-start inline-full", FOCUS_RING, className]}
+    class={["text-start inline-full", focusRing, className]}
     onclick={pick}
   >
     {@render children()}
@@ -90,7 +92,7 @@
     bind:this={element}
     data-pickable-link
     {href}
-    class={[FOCUS_RING, className]}
+    class={[focusRing, className]}
     onpointerdown={(event) => {
       onpointerdown?.(event);
       longPress.pointerWentDown();
