@@ -306,9 +306,38 @@ test.describe(
         expect(
           sheetBox.x + sheetBox.width - (group.x + group.width),
         ).toBeCloseTo(SETTING_END, 0);
-        expect(group.y).toBeLessThan(words.y + words.height);
+        const hintBox = await boxOf(hint);
+        expect(group.y).toBeLessThan(hintBox.y + hintBox.height);
         await expect(hint).toHaveCSS("font-size", HEADING_SIZE);
         await expect(hint).toHaveCSS("font-weight", "400");
+      });
+
+      test("keeps every 18+ and Bookmarked segment whole and inside the sheet at twice the text size on a narrow phone", async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 320, height: 800 });
+        const sheet = await openSheet(page);
+        await page.addStyleTag({
+          content: ":root { --text-scale: 2 !important; }",
+        });
+        await settle(sheet);
+
+        for (const name of ["18+", "Bookmarked"]) {
+          const group = sheet.getByRole("radiogroup", { name });
+          await group.scrollIntoViewIfNeeded();
+          const spill = await group.evaluate((track) => {
+            const box = track.getBoundingClientRect();
+            const cut = [...track.querySelectorAll("[role=radio]")].filter(
+              (segment) => segment.scrollWidth > segment.clientWidth,
+            ).length;
+            return {
+              cut,
+              over: box.right - document.documentElement.clientWidth,
+            };
+          });
+          expect(spill.cut).toBe(0);
+          expect(spill.over).toBeLessThanOrEqual(0);
+        }
       });
 
       test("chooses a read state from its segment", async ({ page }) => {

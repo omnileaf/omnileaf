@@ -1,3 +1,5 @@
+import type { WindowBackdrop } from "#lib/ipc/bindings.ts";
+
 const CONTRASTS = ["more", "medium", "high"] as const;
 
 const TRANSPARENCIES = ["reduced"] as const;
@@ -22,6 +24,19 @@ function markRoot(attribute: string, value: string | undefined): void {
 
 export function followContrast(contrast: Contrast | undefined): void {
   markRoot("data-contrast", contrast);
+}
+
+export interface ThemeMatch {
+  readonly status: "ok" | "error";
+}
+
+/** Windows draws Mica in the window's own theme, so the shell stays solid until the window takes the app's theme. */
+export async function followWindowBackdropOnceThemed(
+  backdrop: WindowBackdrop,
+  themed: Promise<ThemeMatch>,
+): Promise<void> {
+  const { status } = await themed;
+  markRoot("data-backdrop", status === "ok" ? backdrop : "none");
 }
 
 export function followDisplayModes({
