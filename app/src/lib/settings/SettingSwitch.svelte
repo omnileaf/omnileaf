@@ -3,6 +3,7 @@
 
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
@@ -27,9 +28,13 @@
   const ROW =
     "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target";
 
+  const ANDROID_ROW =
+    "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body inline-full min-block-[4.5rem]";
+
   const id = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
+  const android = new AndroidPhone();
   const togglesFromSwitchAlone = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
@@ -55,12 +60,12 @@
       ? undefined
       : `${id}-description`}
     class={[
-      ROW,
+      android.isOn ? ANDROID_ROW : ROW,
       "hover:tint-hover active:tint-pressed",
       ROW_FOCUS_RING,
       className,
     ]}
   >
-    <SettingWords {id} {label} {description} />
+    <SettingWords {id} {label} {description} isAndroidPhone={android.isOn} />
   </Switch>
 {/if}

@@ -9,6 +9,7 @@
   import AdultContentChoice from "#lib/library/AdultContentChoice.svelte";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -28,6 +29,7 @@
       reportError(error);
     },
   );
+  const android = new AndroidPhone();
   const onPointer = $derived(isPointer(data.appInfo.platform));
 
   onMount(() => {
@@ -62,7 +64,14 @@
           countsAgeRatings: !chosen.countsAgeRatings,
         });
       }}
-      class="rounded-card border border-border bg-card"
+      class={android.isOn ? "" : "rounded-card border border-border bg-card"}
     />
+    {#if android.isOn}
+      <p
+        class="ps-lg pe-xl text-native-row-subtitle/native-row-subtitle text-muted"
+      >
+        {m.adult_content_footer()}
+      </p>
+    {/if}
   </div>
 {/if}
