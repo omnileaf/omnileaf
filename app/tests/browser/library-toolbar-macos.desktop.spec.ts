@@ -54,3 +54,16 @@ test("sets the search field at the trailing end, after the two buttons", async (
   expect(filter.x).toBeLessThan(view.x);
   expect(view.x).toBeLessThan(search.x);
 });
+
+test("sets what the covers show as checkboxes, as Finder's view options do", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "View options", exact: true }).click();
+  const options = page.getByRole("dialog", { name: "View options" });
+  await expect(options).toBeVisible();
+
+  await expect(options.getByRole("switch")).toHaveCount(0);
+  for (const name of ["Unread count", "Downloaded", "Language"]) {
+    await expect(options.getByRole("checkbox", { name })).toBeVisible();
+  }
+});

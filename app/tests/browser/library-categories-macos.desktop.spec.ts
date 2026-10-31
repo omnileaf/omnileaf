@@ -79,6 +79,25 @@ test.describe("with two categories", () => {
   });
 });
 
+test.describe("with two categories in the view options", () => {
+  test.use({ backend: backendWith(CATEGORIES) });
+
+  test("offers Categories in the sidebar as a checkbox, not category tabs", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "View options", exact: true })
+      .click();
+    const options = page.getByRole("dialog", { name: "View options" });
+
+    await expect(
+      options.getByRole("checkbox", { name: /Categories in the sidebar/ }),
+    ).toBeVisible();
+    await expect(options.getByText("Category tabs")).toHaveCount(0);
+  });
+});
+
 test.describe("with one category", () => {
   test.use({ backend: backendWith([CATEGORIES[0] as LibraryCategory]) });
 
