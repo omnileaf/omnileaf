@@ -3,7 +3,6 @@ import type { Locator, Page } from "@playwright/test";
 import { boxOf, DEFAULT_BACKEND, expect, settle, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
-const HELD_MS = 800;
 const LIBRARY = sampleSeries(9);
 const PICKED = 3;
 
@@ -46,21 +45,12 @@ async function openLabels(page: Page): Promise<void> {
   await page.goto("/");
   const list = page.getByRole("list", { name: "Series" });
   await expect(list.getByRole("listitem")).toHaveCount(LIBRARY.length);
-  const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
-  await list
-    .getByRole("listitem")
-    .nth(0)
-    .getByRole("link")
-    .first()
-    .dispatchEvent("pointerdown", touch);
-  await page.waitForTimeout(HELD_MS);
-  const first = list.getByRole("checkbox").nth(0);
-  await first.dispatchEvent("pointerup", touch);
-  await first.dispatchEvent("click");
-  await expect(page.getByText("1 selected").first()).toBeVisible();
+  await page.getByRole("button", { name: "More for the library" }).click();
+  await page.getByRole("menuitem", { name: "Select series" }).click();
   await settle(list);
-  await list.getByRole("checkbox").nth(1).click();
-  await list.getByRole("checkbox").nth(2).click();
+  for (const index of [0, 1, 2]) {
+    await list.getByRole("checkbox").nth(index).click();
+  }
   await expect(page.getByText("3 selected").first()).toBeVisible();
   await settle(page.getByRole("group", { name: "Selected series" }));
   await page.getByRole("button", { name: "Categories" }).click();
