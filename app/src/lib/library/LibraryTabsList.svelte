@@ -164,7 +164,9 @@
             ? "gap-sm ps-lg pe-xs min-block-native-row"
             : "gap-sm py-sm ps-xs pe-sm",
         drag?.key === key &&
-          "relative z-drag-box rounded-card bg-card shadow-dialog",
+          (android.isOn
+            ? "-translate-y-native-drag-lift relative z-drag-box scale-102 rounded-native-segment bg-android-container-high shadow-dialog"
+            : "relative z-drag-box rounded-card bg-card shadow-dialog"),
       ]}
     >
       <button

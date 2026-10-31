@@ -442,6 +442,7 @@
   --spacing-native-tile-check-target: var(--native-spacing-tile-check-target);
   --spacing-native-tile-check-bleed: var(--native-spacing-tile-check-bleed);
   --spacing-native-tile-hit-corner: var(--native-spacing-tile-hit-corner);
+  --spacing-native-drag-lift: var(--native-spacing-drag-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {
