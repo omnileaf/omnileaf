@@ -56,6 +56,13 @@ async function swipeAcross(target: Locator, across: number): Promise<void> {
   await target.dispatchEvent("pointerup", at(across));
 }
 
+async function tap(target: Locator): Promise<void> {
+  const touch = { pointerType: "touch", pointerId: 9, isPrimary: true };
+  await target.dispatchEvent("pointerdown", touch);
+  await target.dispatchEvent("pointerup", touch);
+  await target.dispatchEvent("click");
+}
+
 async function isUncovered(control: Locator): Promise<boolean> {
   return control.evaluate((element) => {
     const box = element.getBoundingClientRect();
@@ -110,9 +117,9 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
   }) => {
     await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
 
-    await rowOf(page, "Seinen")
-      .getByRole("button", { name: "Delete Seinen" })
-      .click();
+    await tap(
+      rowOf(page, "Seinen").getByRole("button", { name: "Delete Seinen" }),
+    );
 
     await expect(rowOf(page, "Seinen")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
