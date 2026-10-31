@@ -4,7 +4,6 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
-  settle,
   test,
   viewportOf,
 } from "./fixtures.ts";
@@ -135,11 +134,12 @@ test.describe("selecting series on an iPhone", { tag: "@native" }, () => {
     );
   });
 
-  test("brings the tab bar back when the selection ends", async ({ page }) => {
+  test("brings the tab bar back when Escape ends the selection", async ({
+    page,
+  }) => {
     await startSelecting(page);
-    await settle(page.getByRole("main"));
 
-    await page.getByRole("button", { name: "Done" }).click();
+    await page.keyboard.press("Escape");
 
     await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
     await expect(capsule(page, "Tags")).toBeHidden();
