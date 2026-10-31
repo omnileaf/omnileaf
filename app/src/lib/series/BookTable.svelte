@@ -132,7 +132,7 @@
         aria-selected={isPicked}
         data-stripe={rowIndex % 2 === 0}
         class={[
-          "block-book-row-wide macos:border-0 macos:block-auto",
+          "block-book-row-wide macos:border-0 macos:block-auto windows:border-native-row-rule",
           isPicked &&
             "bg-selected-row hover:bg-selected-row macos:bg-transparent",
         ]}

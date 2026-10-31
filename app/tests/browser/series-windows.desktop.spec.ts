@@ -103,6 +103,17 @@ test.describe("the series page on Windows", () => {
         }
       });
 
+      test("rules the book rows with the list rule colour", async ({
+        page,
+      }) => {
+        const row = page.getByRole("row").nth(1);
+
+        await expect(row).toHaveCSS(
+          "border-bottom-color",
+          await colourOf(page, "var(--native-color-row-rule)"),
+        );
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
