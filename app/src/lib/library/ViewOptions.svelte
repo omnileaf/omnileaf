@@ -90,12 +90,13 @@
         {...isMac
           ? {
               variant: "secondary",
+              size: "large",
               iconOnly: true,
               label: m.library_view_options(),
             }
           : { look: bar?.look ?? "header-control" }}
         class={isMac
-          ? undefined
+          ? "rounded-native-button"
           : bar === undefined
             ? [
                 "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",

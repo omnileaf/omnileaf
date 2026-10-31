@@ -126,10 +126,15 @@
       <Button
         {...props}
         {...isMac
-          ? { variant: "secondary", iconOnly: true, label: buttonLabel }
+          ? {
+              variant: "secondary",
+              size: "large",
+              iconOnly: true,
+              label: buttonLabel,
+            }
           : { look: bar?.look ?? "header-control" }}
         class={isMac
-          ? [filtersCount > 0 && "text-accent"]
+          ? ["rounded-native-button", filtersCount > 0 && "text-accent"]
           : bar === undefined
             ? [
                 "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",

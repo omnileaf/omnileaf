@@ -247,7 +247,7 @@
                 categorySource.choose(key);
               }}
             >
-              {tab.name}
+              <span class="truncate">{tab.name}</span>
             </button>
           </li>
         {/each}
