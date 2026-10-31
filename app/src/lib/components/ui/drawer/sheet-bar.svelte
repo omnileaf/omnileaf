@@ -10,12 +10,14 @@
     title,
     closeLabel,
     actionLabel,
+    isActionPrimary = false,
     onClose,
     onAction,
   }: {
     title: string;
     closeLabel: string;
     actionLabel?: string;
+    isActionPrimary?: boolean;
     onClose: () => void;
     onAction?: () => void;
   } = $props();
@@ -41,7 +43,11 @@
     <Button
       type="button"
       look="header-control"
-      class="col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none"
+      class={[
+        "col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none",
+        isActionPrimary &&
+          "bg-native-button-primary text-native-on-button-primary shadow-none",
+      ]}
       onclick={onAction}
     >
       {actionLabel}
