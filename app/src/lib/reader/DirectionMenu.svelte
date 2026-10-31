@@ -94,7 +94,8 @@
       {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
         <span
           class={[
-            "col-start-1 row-start-1 truncate",
+            "col-start-1 row-start-1",
+            look.directionName,
             reading.direction !== shown && "invisible",
           ]}
           aria-hidden={reading.direction !== shown}
@@ -104,19 +105,18 @@
       {/each}
     </span>
     <span
-      class={[
-        "rounded-shadcn-control border border-border px-xs text-caption font-medium",
-        !isAutomatic && "invisible",
-      ]}
+      class={[look.autoMark, !isAutomatic && "invisible"]}
       aria-hidden={!isAutomatic}
     >
       {m.reader_direction_auto()}
     </span>
-    <ChevronDown
-      size={look.iconSize}
-      aria-hidden="true"
-      class="hidden shrink-0 opacity-50 expanded:block"
-    />
+    {#if look.hasChevron}
+      <ChevronDown
+        size={look.iconSize}
+        aria-hidden="true"
+        class="hidden shrink-0 opacity-50 expanded:block"
+      />
+    {/if}
   </DropdownMenu.Trigger>
   <DropdownMenuContent to="main" aria-label={m.reader_direction()}>
     <p class="px-sm py-icon-gap text-caption font-medium text-muted">

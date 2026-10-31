@@ -41,7 +41,21 @@ export function tabSwipedTo({
   return stepOf(moved, direction);
 }
 
+export function settlesAt({
+  moved,
+  width,
+  step,
+}: {
+  moved: number;
+  width: number;
+  step: -1 | 0 | 1;
+}): number {
+  return step === 0 ? 0 : Math.sign(moved) * width;
+}
+
 const EDGE_PX = 24;
+const SETTLE_MS = 200;
+const LATE_FRAME_FACTOR = 2;
 
 interface SwipeStart {
   readonly x: number;
@@ -59,18 +73,54 @@ function isAtEdge(x: number): boolean {
 export function swipesBetweenTabs(
   onSwipe: (step: 1 | -1) => void,
   canStep: (step: 1 | -1) => boolean,
+  settlesSmoothly: () => boolean = () => false,
 ): (area: HTMLElement) => () => void {
   return (area) => {
     let start: SwipeStart | undefined;
     let isSwiping = false;
+    let isSettling = false;
+    let settling: Animation | undefined;
 
     const reset = () => {
+      settling?.cancel();
+      settling = undefined;
       area.style.translate = "";
+      delete area.dataset.swiping;
       start = undefined;
       isSwiping = false;
+      isSettling = false;
+    };
+    const settle = (from: number, to: number): Promise<boolean> => {
+      isSettling = true;
+      start = undefined;
+      const toOffset = `${String(to)}px 0`;
+      settling = area.animate(
+        [{ translate: `${String(from)}px 0` }, { translate: toOffset }],
+        { duration: SETTLE_MS, easing: "ease-out" },
+      );
+      area.style.translate = toOffset;
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          resolve(true);
+        }, SETTLE_MS * LATE_FRAME_FACTOR);
+        void settling?.finished.then(
+          () => {
+            clearTimeout(timer);
+            resolve(true);
+          },
+          () => {
+            clearTimeout(timer);
+            resolve(false);
+          },
+        );
+      });
     };
     const down = (event: PointerEvent) => {
-      if (event.pointerType !== "touch" || isAtEdge(event.clientX)) {
+      if (
+        isSettling ||
+        event.pointerType !== "touch" ||
+        isAtEdge(event.clientX)
+      ) {
         return;
       }
       start = {
@@ -93,6 +143,7 @@ export function swipesBetweenTabs(
         return;
       }
       isSwiping = true;
+      area.dataset.swiping = "";
       const isHeld = !canStep(stepOf(moved.x, start.direction));
       area.style.translate = isHeld ? "" : `${String(moved.x)}px 0`;
     };
@@ -109,10 +160,26 @@ export function swipesBetweenTabs(
             direction: start.direction,
           })
         : 0;
-      reset();
-      if (step !== 0 && canStep(step)) {
-        onSwipe(step);
+      const committed = step !== 0 && canStep(step) ? step : 0;
+      const finish = () => {
+        reset();
+        if (committed !== 0) {
+          onSwipe(committed);
+        }
+      };
+      const isDragged = area.style.translate !== "";
+      if (!isSwiping || !isDragged || !settlesSmoothly()) {
+        finish();
+        return;
       }
+      const width = area.clientWidth;
+      void settle(moved, settlesAt({ moved, width, step: committed })).then(
+        (isFinished) => {
+          if (isFinished) {
+            finish();
+          }
+        },
+      );
     };
 
     area.addEventListener("pointerdown", down);

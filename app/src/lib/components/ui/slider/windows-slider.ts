@@ -1,0 +1,2 @@
+export const WINDOWS_SLIDER_THUMB =
+  "windows:flex windows:items-center windows:justify-center windows:border-native-switch-off-border windows:bg-native-menu windows:shadow-none windows:block-native-slider-thumb windows:inline-native-slider-thumb windows:before:rounded-full windows:before:bg-native-progress-fill windows:before:block-native-slider-thumb-core windows:before:inline-native-slider-thumb-core windows:group-hover/slider:before:block-native-slider-thumb-core-hover windows:group-hover/slider:before:inline-native-slider-thumb-core-hover";

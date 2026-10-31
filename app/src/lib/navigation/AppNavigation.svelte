@@ -4,11 +4,13 @@
 
   import { resolve } from "$app/paths";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { NARROW_POINTER_QUERY } from "#lib/page/breakpoints.ts";
+  import { paneFoldQuery } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import NavigationIcon from "./NavigationIcon.svelte";
+  import { paneArrowKeys } from "./pane-arrow-keys.ts";
+  import PaneToggle from "./PaneToggle.svelte";
   import { type Section, SECTION_ROUTE_IDS } from "./sections";
   import { getSidebarSetting } from "./sidebar.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
@@ -54,11 +56,12 @@
     isCollapsed?: boolean;
   } = $props();
 
-  const platformLook = tabBarLook(currentPlatform());
+  const platform = currentPlatform();
+  const platformLook = tabBarLook(platform);
   const look = $derived(isCollapsed ? COLLAPSED_TAB_BAR_LOOK : platformLook);
   const sidebar = getSidebarSetting();
-  const isNarrowPointer = new MediaQuery(NARROW_POINTER_QUERY);
-  const isFolded = $derived(sidebar.isHidden || isNarrowPointer.current);
+  const isNarrowPane = new MediaQuery(paneFoldQuery(platform));
+  const isFolded = $derived(sidebar.isHidden || isNarrowPane.current);
 
   const currentIndex = $derived(
     DESTINATIONS.findIndex(({ section }) => section === current),
@@ -102,19 +105,28 @@
   onanimationend={endArrivalOnceStill}
   class={[
     "shrink-0 border-bs border-border bg-bar ps-safe-start pbe-safe-bottom medium:flex medium:flex-col medium:border-e medium:border-bs-0 medium:pbs-safe-top medium:inline-rail expanded:inline-sidebar while-phone-picks:hidden",
-    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-sidebar desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop sidebar-hidden:inline-sidebar-hidden",
+    "desktop-shell:flex desktop-shell:flex-col desktop-shell:border-e desktop-shell:border-bs-0 desktop-shell:border-sidebar-edge desktop-shell:bg-shell-ground desktop-shell:pbs-safe-top desktop-shell:inline-sidebar-desktop windows:desktop-shell:border-e-0 sidebar-hidden:inline-sidebar-hidden",
     look.bar,
   ]}
 >
-  <p
-    title={m.app_name()}
-    class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop-shell:flex desktop-shell:items-center desktop-shell:px-lg desktop-shell:pbs-none desktop-shell:pbe-none desktop-shell:text-body desktop-shell:font-semibold desktop-shell:tracking-normal desktop-shell:min-block-toolbar sidebar-hidden:hidden"
-  >
-    {m.app_name()}
-  </p>
+  {#if platform === "windows"}
+    <div
+      class="hidden items-center px-xs block-pointer-target desktop-shell:flex"
+    >
+      <PaneToggle />
+    </div>
+  {:else}
+    <p
+      title={m.app_name()}
+      class="hidden truncate px-xl pbs-xl pbe-xl text-brand font-bold tracking-tight expanded:block desktop-shell:flex desktop-shell:items-center desktop-shell:px-lg desktop-shell:pbs-none desktop-shell:pbe-none desktop-shell:text-body desktop-shell:font-semibold desktop-shell:tracking-normal desktop-shell:min-block-toolbar sidebar-hidden:hidden"
+    >
+      {m.app_name()}
+    </p>
+  {/if}
   <ul
+    {@attach platform === "windows" && paneArrowKeys}
     class={[
-      "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm sidebar-hidden:pbs-sm",
+      "flex p-sm medium:flex-1 medium:flex-col medium:gap-md medium:pbs-lg medium:pbe-2xl expanded:gap-xs expanded:px-md expanded:pbs-none expanded:pbe-xl desktop-shell:flex-1 desktop-shell:flex-col desktop-shell:gap-xs desktop-shell:p-sm windows:desktop-shell:px-xs sidebar-hidden:pbs-sm",
       look.row,
     ]}
   >
@@ -159,11 +171,11 @@
               aria-label={isWayBack ? m.search_back() : undefined}
               data-back-link={isWayBack || undefined}
               class={[
-                "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
+                "group relative flex flex-col items-center gap-xs text-caption transition-control min-block-touch-target medium:py-2xs expanded:flex-row expanded:gap-md expanded:rounded-row expanded:px-md expanded:text-label windows:focus-visible:ring-1 windows:focus-visible:ring-native-focus-ring-inner windows:focus-visible:focus-ring desktop-shell:flex-row desktop-shell:gap-sm desktop-shell:rounded-sidebar-row desktop-shell:px-sm desktop-shell:py-none desktop-shell:block-sidebar-row desktop-shell:min-block-sidebar-row sidebar-hidden:justify-center sidebar-hidden:px-none",
                 look.tab,
                 isSelected
-                  ? "font-bold text-accent expanded:bg-accent-soft windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-accent windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop-shell:bg-sidebar-selection desktop-shell:font-medium desktop-shell:text-on-sidebar-selection"
-                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent",
+                  ? "font-bold text-accent expanded:bg-accent-soft windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-native-nav-indicator windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop-shell:bg-sidebar-selection desktop-shell:font-medium desktop-shell:text-on-sidebar-selection"
+                  : "font-medium text-muted expanded:text-sidebar-ink expanded:hover:tint-hover expanded:active:tint-pressed desktop-shell:font-regular desktop-shell:hover:bg-sidebar-accent desktop-shell:hover:text-on-sidebar-accent windows:desktop-shell:active:bg-native-nav-item-pressed windows:desktop-shell:active:text-on-sidebar-accent",
                 isSelected ? look.currentTab : look.otherTab,
               ]}
             >

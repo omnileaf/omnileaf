@@ -31,7 +31,7 @@
     isRow ? "flex-wrap items-center gap-x-lg" : "flex-col",
   ]}
 >
-  <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+  <div class={["flex flex-1 flex-col gap-2xs", "min-inline-none"]}>
     <span id="{id}-label" class={FILTER_SETTING_LABEL_TYPE}>{label}</span>
     {#if hint !== undefined}
       <span class="{ROW_SUBTITLE_TYPE} text-muted">{hint}</span>
@@ -43,7 +43,7 @@
     {chosen}
     labelledBy="{id}-label"
     isFullWidth={!isRow}
-    class={isRow ? "flex-none" : ""}
+    class={isRow ? "flex-2 min-inline-none" : ""}
     {onChoose}
   />
 </div>
