@@ -336,6 +336,15 @@
   --native-text-command-label: calc(0.75rem * var(--text-scale));
   --native-leading-command-label: calc(16 / 12);
   --native-weight-command-label: 400;
+  --native-spacing-fast-scroll-thumb: 8px;
+  --native-spacing-fast-scroll-thumb-grabbed: 12px;
+  --native-spacing-fast-scroll-thumb-length: 48px;
+  --native-spacing-fast-scroll-letter: 64px;
+  --native-spacing-fast-scroll-letter-lift: -40px;
+  --native-radius-fast-scroll-letter: 32px 32px 0 32px;
+  --native-color-fast-scroll-thumb: var(--primary);
+  --native-color-fast-scroll-letter: var(--primary);
+  --native-color-on-fast-scroll-letter: var(--primary-foreground);
 }
 
 :root[data-platform="android"],

@@ -132,7 +132,7 @@
     bind:this={handle}
     data-fast-scroll-handle
     aria-hidden="true"
-    class="fixed z-series-bar flex cursor-grab touch-none justify-end block-fast-scroll-thumb-length inline-fast-scroll-hit"
+    class="fixed z-series-bar flex cursor-grab touch-none justify-end block-native-fast-scroll-thumb-length inline-fast-scroll-hit"
     style:inset-block-start="{handleTop}px"
     style:inset-inline-end="{frame.end + EDGE_GAP_PX}px"
     onpointerdown={grab}
@@ -141,14 +141,19 @@
     onpointercancel={drop}
   >
     <span
-      class="rounded-full bg-muted block-fast-scroll-thumb-length inline-fast-scroll-thumb"
+      class={[
+        "rounded-full bg-native-fast-scroll-thumb block-native-fast-scroll-thumb-length",
+        grabbedAt === undefined
+          ? "inline-native-fast-scroll-thumb"
+          : "inline-native-fast-scroll-thumb-grabbed",
+      ]}
     ></span>
   </div>
   {#if grabbedAt !== undefined && letter !== undefined}
     <span
       data-fast-scroll-letter
       aria-hidden="true"
-      class="fixed z-series-bar flex items-center justify-center rounded-full bg-foreground text-title font-bold text-card block-fast-scroll-letter inline-fast-scroll-letter"
+      class="fixed z-series-bar mbs-native-fast-scroll-letter-lift flex items-center justify-center rounded-native-fast-scroll-letter bg-native-fast-scroll-letter text-title font-bold text-native-on-fast-scroll-letter block-native-fast-scroll-letter inline-native-fast-scroll-letter android:text-native-large-title/native-large-title android:font-native-large-title android:tracking-native-large-title"
       style:inset-block-start="{handleTop}px"
       style:inset-inline-end="calc({frame.end + EDGE_GAP_PX}px +
       var(--spacing-fast-scroll-hit))"
