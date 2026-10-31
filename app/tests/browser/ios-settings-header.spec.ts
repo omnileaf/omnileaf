@@ -61,4 +61,20 @@ test.describe("a pushed Settings page on an iPhone", { tag: "@native" }, () => {
 
     await expect(page).toHaveURL(/\/settings\/library$/);
   });
+
+  for (const route of [
+    "library/tabs",
+    "library/tags",
+    "library/adult-content",
+    "general",
+  ]) {
+    test(`lays /settings/${route} on the grouped ground`, async ({ page }) => {
+      await page.goto(`/settings/${route}`);
+
+      await expect(page.locator('[data-ground="grouped"]')).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-grouped-ground"),
+      );
+    });
+  }
 });

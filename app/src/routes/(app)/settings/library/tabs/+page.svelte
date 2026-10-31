@@ -26,6 +26,7 @@
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
@@ -136,76 +137,78 @@
   });
 </script>
 
-<SectionHeading
-  title={m.library_tabs_title()}
-  parent={{ route: "/(app)/settings/library", title: m.library_title() }}
-/>
-<div class="mbs-pane-gap flex flex-col gap-sm">
-  <p
-    class={android.isOn
-      ? "text-native-row-subtitle/native-row-subtitle text-muted"
-      : "text-footnote text-muted"}
-  >
-    <span class="desktop:hidden">{m.library_tabs_intro()}</span>
-    <span class="hidden desktop:inline">{m.library_tabs_intro_keys()}</span>
-  </p>
-  <LibraryTabsList
-    tabs={arranged}
-    {detailOf}
-    onArrange={(next: readonly ArrangedTab[]) => {
-      void arrange(next);
-    }}
+<GroupedGround>
+  <SectionHeading
+    title={m.library_tabs_title()}
+    parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
-  {#if keepsLabels}
-    <div class="mbs-sm flex flex-wrap gap-sm">
-      <Button
-        type="button"
-        look="outline"
-        class="flex items-center gap-xs rounded-full px-md font-medium min-block-pointer-button touch:min-block-touch-target"
-        onclick={() => {
-          isNaming = true;
+  <div class="mbs-pane-gap flex flex-col gap-sm">
+    <p
+      class={android.isOn
+        ? "text-native-row-subtitle/native-row-subtitle text-muted"
+        : "text-footnote text-muted"}
+    >
+      <span class="desktop:hidden">{m.library_tabs_intro()}</span>
+      <span class="hidden desktop:inline">{m.library_tabs_intro_keys()}</span>
+    </p>
+    <LibraryTabsList
+      tabs={arranged}
+      {detailOf}
+      onArrange={(next: readonly ArrangedTab[]) => {
+        void arrange(next);
+      }}
+    />
+    {#if keepsLabels}
+      <div class="mbs-sm flex flex-wrap gap-sm">
+        <Button
+          type="button"
+          look="outline"
+          class="flex items-center gap-xs rounded-full px-md font-medium min-block-pointer-button touch:min-block-touch-target"
+          onclick={() => {
+            isNaming = true;
+          }}
+        >
+          <Plus size={ICON_SIZE} aria-hidden="true" />
+          {m.library_tabs_new_category()}
+        </Button>
+      </div>
+    {/if}
+  </div>
+  <section
+    class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
+  >
+    <div
+      class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
+    >
+      <span id={opensOnLabelId} class="text-small font-medium">
+        {m.library_opens_on()}
+      </span>
+      <NativeSelect
+        aria-labelledby={opensOnLabelId}
+        value={shownOpensOn}
+        class="desktop:medium:inline-setting-control"
+        fieldClass="touch:text-body touch:block-touch-target"
+        onchange={({
+          currentTarget: { value },
+        }: Event & { currentTarget: HTMLSelectElement }) => {
+          opensOn.choose(value);
         }}
       >
-        <Plus size={ICON_SIZE} aria-hidden="true" />
-        {m.library_tabs_new_category()}
-      </Button>
+        <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
+        {#each openable as { key, name } (key)}
+          <option value={key}>{name}</option>
+        {/each}
+      </NativeSelect>
     </div>
-  {/if}
-</div>
-<section
-  class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
->
-  <div
-    class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
-  >
-    <span id={opensOnLabelId} class="text-small font-medium">
-      {m.library_opens_on()}
-    </span>
-    <NativeSelect
-      aria-labelledby={opensOnLabelId}
-      value={shownOpensOn}
-      class="desktop:medium:inline-setting-control"
-      fieldClass="touch:text-body touch:block-touch-target"
-      onchange={({
-        currentTarget: { value },
-      }: Event & { currentTarget: HTMLSelectElement }) => {
-        opensOn.choose(value);
-      }}
-    >
-      <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
-      {#each openable as { key, name } (key)}
-        <option value={key}>{name}</option>
-      {/each}
-    </NativeSelect>
-  </div>
-  <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
-</section>
-<NewCategoryDialog
-  isOpen={isNaming}
-  onAdd={(name: string) => {
-    void addCategory(name);
-  }}
-  onClose={() => {
-    isNaming = false;
-  }}
-/>
+    <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
+  </section>
+  <NewCategoryDialog
+    isOpen={isNaming}
+    onAdd={(name: string) => {
+      void addCategory(name);
+    }}
+    onClose={() => {
+      isNaming = false;
+    }}
+  />
+</GroupedGround>
