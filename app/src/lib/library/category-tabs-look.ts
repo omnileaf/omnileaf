@@ -32,6 +32,7 @@ export interface CategoryTabsLook {
   readonly chosenTab: string;
   readonly otherTab: string;
   readonly arrow: string;
+  readonly arrowFace: string;
   readonly sheet: CategorySheetLook;
 }
 
@@ -60,6 +61,7 @@ const SHARED_LOOK: CategoryTabsLook = {
   otherTab: "font-medium text-muted hover:text-foreground",
   arrow:
     "shrink-0 block-touch-target inline-touch-target hover:bg-hover active:bg-pressed",
+  arrowFace: "",
   sheet: SHARED_SHEET,
 };
 
@@ -82,6 +84,7 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   otherTab: "text-native-on-tab",
   arrow:
     "mx-xs shrink-0 text-native-on-tab block-touch-target inline-touch-target active:bg-native-row-pressed",
+  arrowFace: "",
   sheet: {
     ...SHARED_SHEET,
     header: "flex flex-col px-lg pbe-sm",
@@ -103,11 +106,13 @@ const IOS_PHONE_LOOK: CategoryTabsLook = {
   usesMaterialIcons: false,
   strip: "gap-sm",
   row: "-ms-page-start -me-page-end flex items-center gap-sm ps-page-start pe-sm pbs-sm pbe-sm",
-  tab: `relative shrink-0 rounded-full px-md whitespace-nowrap transition-control block-native-segment touch:touch-target-across ${IOS_CAPSULE} ${ROW_FOCUS_RING}`,
+  tab: `relative shrink-0 rounded-full px-md whitespace-nowrap transition-control block-native-segment touch:touch-target-around ${IOS_CAPSULE} ${ROW_FOCUS_RING}`,
   chosenTab: "bg-native-accent-soft font-semibold text-foreground",
   otherTab: "bg-native-button-outline text-foreground",
   arrow:
-    "flex shrink-0 items-center justify-center rounded-full bg-native-button-outline text-foreground block-native-segment inline-native-segment touch:touch-target-around",
+    "flex shrink-0 items-center justify-center text-foreground block-touch-target inline-touch-target",
+  arrowFace:
+    "flex items-center justify-center rounded-full bg-native-button-outline block-native-segment inline-native-segment",
   sheet: {
     ...SHARED_SHEET,
     isBarred: true,

@@ -78,17 +78,22 @@ test.describe("the category tabs on an iPhone", { tag: "@native" }, () => {
     expect(isRound).toBe(true);
   });
 
-  test("puts the chevron in a round button after the capsules", async ({
+  test("draws the chevron as a round 28px face inside a 44px target", async ({
     page,
   }) => {
     const chevron = page.getByRole("button", { name: "Every category" });
+    const face = chevron.locator("span").first();
 
-    await expect(chevron).toHaveCSS(
+    const target = await boxOf(chevron);
+    expect(target.width).toBeGreaterThanOrEqual(BAR_BUTTON_PX);
+    expect(target.height).toBeGreaterThanOrEqual(BAR_BUTTON_PX);
+    await expect(face).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-button-outline"),
     );
-    const box = await boxOf(chevron);
-    expect(box.width).toBeCloseTo(box.height, 0);
+    const drawn = await boxOf(face);
+    expect(drawn.width).toBeCloseTo(TAB_HEIGHT_PX, 0);
+    expect(drawn.height).toBeCloseTo(TAB_HEIGHT_PX, 0);
   });
 
   test("lists every tab in a grouped sheet, with Edit in its bar and the chosen one ticked", async ({

@@ -269,7 +269,12 @@
         isSheetOpen = true;
       }}
     >
-      <CategoryGlyph name="chevron-down" isMaterial={look.usesMaterialIcons} />
+      <span class={look.arrowFace}>
+        <CategoryGlyph
+          name="chevron-down"
+          isMaterial={look.usesMaterialIcons}
+        />
+      </span>
     </Button>
     <Dialog.Root bind:open={isSheetOpen}>
       <DrawerContent
