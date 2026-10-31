@@ -74,6 +74,17 @@ test.describe("the series page on Windows", () => {
         await expect(card).toHaveCSS("box-shadow", NO_SHADOW);
       });
 
+      test("draws Show as a segmented control and Sort as a standard button", async ({
+        page,
+      }) => {
+        const chosen = page.getByRole("radio", { name: "All" });
+        const sort = page.getByRole("button", { name: /^Sort/ });
+
+        await expect(chosen).toHaveCSS("border-top-left-radius", "4px");
+        expect((await boxOf(sort)).height).toBe(BUTTON_HEIGHT);
+        await expect(sort).toHaveCSS("background-color", look.standard);
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
