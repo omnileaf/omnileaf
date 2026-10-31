@@ -1,6 +1,8 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
 
+  import { cn } from "#lib/components/cn.ts";
+  import { GROUPED_FOOTNOTE_TYPE } from "#lib/library/group-look.ts";
   import { Textarea } from "#lib/components/ui/textarea/index.ts";
   import type { SeriesDetails } from "#lib/ipc/bindings.ts";
   import type { UndoOffer } from "#lib/notices/notices.ts";
@@ -22,30 +24,38 @@
     useFileLabel,
   } from "./detail-wording.ts";
   import AddDetailChip from "./AddDetailChip.svelte";
-  import { DETAIL_CHIP } from "./detail-chip.ts";
+  import { DETAIL_CHIP, GROUPED_DETAIL_CHIP } from "./detail-chip.ts";
+  import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
 
   const PEOPLE_SHOWN_FIRST = 8;
   const ICON_SIZE = 16;
   const FIELD = "flex flex-col gap-sm py-md";
+  const GROUPED_FIELD = "flex flex-col gap-sm";
   const FROM_FILE = "text-label text-foreground/80";
+  const GROUPED_FIELD_BOX = "border-0 bg-transparent p-none";
 
   let {
     details,
     countsAgeRatings,
     draft,
+    isGrouped = false,
     onDraft,
     offerUndo,
   }: {
     details: SeriesDetails;
     countsAgeRatings: boolean;
     draft: DetailDraft;
+    isGrouped?: boolean;
     onDraft: (draft: DetailDraft) => void;
     offerUndo: (offer: UndoOffer) => void;
   } = $props();
 
   const id = $props.id();
+  const fromFileClass = $derived(
+    isGrouped ? ["ps-lg", GROUPED_FOOTNOTE_TYPE] : FROM_FILE,
+  );
   let isShowingEveryone = $state(false);
 
   const edited = $derived({
@@ -114,9 +124,11 @@
 </script>
 
 <section
-  class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"
+  class={isGrouped
+    ? "flex flex-col gap-xl"
+    : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"}
 >
-  <div class={FIELD}>
+  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
     <DetailFieldHead
       label={m.edit_details_title()}
       labelFor="{id}-title"
@@ -126,20 +138,25 @@
         useFile("title");
       }}
     />
-    <Textarea
-      id="{id}-title"
-      rows={1}
-      value={draft.title}
-      oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
-        onDraft({ ...draft, title: event.currentTarget.value });
-      }}
-      placeholder={details.title.fromFile}
-      aria-describedby="{id}-title-file"
-      class="text-body min-block-title-field touch:min-block-touch-target"
-    />
-    <p id="{id}-title-file" class={FROM_FILE}>{fromFile.title}</p>
+    <DetailBox {isGrouped}>
+      <Textarea
+        id="{id}-title"
+        rows={1}
+        value={draft.title}
+        oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
+          onDraft({ ...draft, title: event.currentTarget.value });
+        }}
+        placeholder={details.title.fromFile}
+        aria-describedby="{id}-title-file"
+        class={[
+          "text-body min-block-title-field touch:min-block-touch-target",
+          isGrouped && GROUPED_FIELD_BOX,
+        ]}
+      />
+    </DetailBox>
+    <p id="{id}-title-file" class={fromFileClass}>{fromFile.title}</p>
   </div>
-  <div class={FIELD}>
+  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
     <DetailFieldHead
       label={m.edit_details_people()}
       labelId="{id}-people"
@@ -149,50 +166,53 @@
         useFile("people");
       }}
     />
-    <div
-      role="group"
-      aria-labelledby="{id}-people"
-      class="flex flex-wrap items-center gap-sm"
-    >
-      {#each peopleShown as person, index (`${String(index)}·${person.name}`)}
-        <button
-          type="button"
-          aria-label={removePersonLabel(person)}
-          class={[DETAIL_CHIP, "pe-sm"]}
-          onclick={() => {
-            removePerson(index);
+    <DetailBox {isGrouped}>
+      <div
+        role="group"
+        aria-labelledby="{id}-people"
+        class="flex flex-wrap items-center gap-sm"
+      >
+        {#each peopleShown as person, index (`${String(index)}·${person.name}`)}
+          <button
+            type="button"
+            aria-label={removePersonLabel(person)}
+            class={cn(DETAIL_CHIP, "pe-sm", isGrouped && GROUPED_DETAIL_CHIP)}
+            onclick={() => {
+              removePerson(index);
+            }}
+          >
+            {personLabel(person)}
+            <X size={ICON_SIZE} aria-hidden="true" />
+          </button>
+        {/each}
+        {#if peopleShown.length < draft.people.length}
+          <button
+            type="button"
+            class={cn(DETAIL_CHIP, "pe-md", isGrouped && GROUPED_DETAIL_CHIP)}
+            onclick={() => {
+              isShowingEveryone = true;
+            }}
+          >
+            {m.edit_details_show_all({ count: draft.people.length })}
+          </button>
+        {/if}
+        <AddDetailChip
+          {isGrouped}
+          label={m.edit_details_add_person()}
+          onAdd={(name: string) => {
+            onDraft({
+              ...draft,
+              people: [...draft.people, { name, role: null }],
+            });
           }}
-        >
-          {personLabel(person)}
-          <X size={ICON_SIZE} aria-hidden="true" />
-        </button>
-      {/each}
-      {#if peopleShown.length < draft.people.length}
-        <button
-          type="button"
-          class={[DETAIL_CHIP, "pe-md"]}
-          onclick={() => {
-            isShowingEveryone = true;
-          }}
-        >
-          {m.edit_details_show_all({ count: draft.people.length })}
-        </button>
-      {/if}
-      <AddDetailChip
-        label={m.edit_details_add_person()}
-        onAdd={(name: string) => {
-          onDraft({
-            ...draft,
-            people: [...draft.people, { name, role: null }],
-          });
-        }}
-      />
-    </div>
+        />
+      </div>
+    </DetailBox>
     {#if fromFile.people !== undefined}
-      <p class={FROM_FILE}>{fromFile.people}</p>
+      <p class={fromFileClass}>{fromFile.people}</p>
     {/if}
   </div>
-  <div class={FIELD}>
+  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
     <DetailFieldHead
       label={m.edit_details_tags()}
       labelId="{id}-tags"
@@ -202,38 +222,41 @@
         useFile("tags");
       }}
     />
-    <div
-      role="group"
-      aria-labelledby="{id}-tags"
-      class="flex flex-wrap items-center gap-sm"
-    >
-      {#each draft.tags as tag (tag)}
-        <button
-          type="button"
-          aria-label={m.edit_details_remove_named({ name: tag })}
-          class={[DETAIL_CHIP, "pe-sm"]}
-          onclick={() => {
-            removeTag(tag);
+    <DetailBox {isGrouped}>
+      <div
+        role="group"
+        aria-labelledby="{id}-tags"
+        class="flex flex-wrap items-center gap-sm"
+      >
+        {#each draft.tags as tag (tag)}
+          <button
+            type="button"
+            aria-label={m.edit_details_remove_named({ name: tag })}
+            class={cn(DETAIL_CHIP, "pe-sm", isGrouped && GROUPED_DETAIL_CHIP)}
+            onclick={() => {
+              removeTag(tag);
+            }}
+          >
+            {tag}
+            <X size={ICON_SIZE} aria-hidden="true" />
+          </button>
+        {/each}
+        <AddDetailChip
+          {isGrouped}
+          label={m.edit_details_add_tag()}
+          onAdd={(tag: string) => {
+            if (!draft.tags.includes(tag)) {
+              onDraft({ ...draft, tags: [...draft.tags, tag] });
+            }
           }}
-        >
-          {tag}
-          <X size={ICON_SIZE} aria-hidden="true" />
-        </button>
-      {/each}
-      <AddDetailChip
-        label={m.edit_details_add_tag()}
-        onAdd={(tag: string) => {
-          if (!draft.tags.includes(tag)) {
-            onDraft({ ...draft, tags: [...draft.tags, tag] });
-          }
-        }}
-      />
-    </div>
+        />
+      </div>
+    </DetailBox>
     {#if fromFile.tags !== undefined}
-      <p class={FROM_FILE}>{fromFile.tags}</p>
+      <p class={fromFileClass}>{fromFile.tags}</p>
     {/if}
   </div>
-  <div class={FIELD}>
+  <div class={isGrouped ? GROUPED_FIELD : FIELD}>
     <DetailFieldHead
       label={m.edit_details_summary()}
       labelFor="{id}-summary"
@@ -243,36 +266,40 @@
         useFile("summary");
       }}
     />
-    <Textarea
-      id="{id}-summary"
-      rows={3}
-      value={draft.summary}
-      placeholder={details.summary.fromFile ?? undefined}
-      oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
-        onDraft({ ...draft, summary: event.currentTarget.value });
-      }}
-      aria-describedby={fromFile.summary === undefined
-        ? undefined
-        : `${id}-summary-file`}
-      class="text-body"
-    />
+    <DetailBox {isGrouped}>
+      <Textarea
+        id="{id}-summary"
+        rows={3}
+        value={draft.summary}
+        placeholder={details.summary.fromFile ?? undefined}
+        oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
+          onDraft({ ...draft, summary: event.currentTarget.value });
+        }}
+        aria-describedby={fromFile.summary === undefined
+          ? undefined
+          : `${id}-summary-file`}
+        class={["text-body", isGrouped && GROUPED_FIELD_BOX]}
+      />
+    </DetailBox>
     {#if fromFile.summary !== undefined}
-      <p id="{id}-summary-file" class={FROM_FILE}>{fromFile.summary}</p>
+      <p id="{id}-summary-file" class={fromFileClass}>{fromFile.summary}</p>
     {/if}
   </div>
-  {#if details.isRatedAdult && countsAgeRatings}
-    <LockedAdultMark />
-  {:else}
-    <SettingSwitch
-      label={m.edit_details_mark_adult()}
-      description={details.isRatedAdult
-        ? m.edit_details_mark_adult_ratings_off()
-        : m.edit_details_mark_adult_note()}
-      isOn={draft.isMarkedAdult}
-      onToggle={() => {
-        onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
-      }}
-      class="-mx-lg -mbe-xs inline-auto"
-    />
-  {/if}
+  <DetailBox {isGrouped}>
+    {#if details.isRatedAdult && countsAgeRatings}
+      <LockedAdultMark />
+    {:else}
+      <SettingSwitch
+        label={m.edit_details_mark_adult()}
+        description={details.isRatedAdult
+          ? m.edit_details_mark_adult_ratings_off()
+          : m.edit_details_mark_adult_note()}
+        isOn={draft.isMarkedAdult}
+        onToggle={() => {
+          onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
+        }}
+        class="-mx-lg -mbe-xs inline-auto"
+      />
+    {/if}
+  </DetailBox>
 </section>

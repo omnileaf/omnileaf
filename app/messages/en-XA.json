@@ -450,6 +450,7 @@
   "library_open_series": "⟦Öþéñ šéŕíéš·····⟧",
   "library_labels_menu": "⟦Çáţéĝöŕíéš áñð ţáĝš…········⟧",
   "library_select": "⟦Šéļéçţ···⟧",
+  "library_select_cover": "⟦Šéļéçţ {title}······⟧",
   "library_more": "⟦Ṁöŕé ƒöŕ ţĥé ļíƀŕáŕý········⟧",
   "library_select_series": "⟦Šéļéçţ šéŕíéš······⟧",
   "library_edit_categories": "⟦Éðíţ çáţéĝöŕíéš······⟧",
@@ -2606,5 +2607,104 @@
         "countPlural=other": "⟦{formattedCount} ƒíļéš çáñ'ţ ƀé ŕéáð ĥéŕé·················⟧"
       }
     }
-  ]
+  ],
+  "library_delete": "⟦Ðéļéţé···⟧",
+  "remove_title": "⟦Ŕéɱöṽé ƒŕöɱ ýöûŕ ļíƀŕáŕý?··········⟧",
+  "remove_series_summary": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ļéáṽéš ýöûŕ ļíƀŕáŕý.··················⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ļéáṽé ýöûŕ ļíƀŕáŕý.··················⟧"
+      }
+    }
+  ],
+  "remove_books_summary": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ļéáṽéš ýöûŕ ļíƀŕáŕý.·················⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ļéáṽé ýöûŕ ļíƀŕáŕý.·················⟧"
+      }
+    }
+  ],
+  "remove_kept_note": "⟦Ýöûŕ ŕéáðíñĝ þŕöĝŕéšš, ƀööķɱáŕķš áñð éðíţš áŕé ķéþţ, áñð çöɱé ƀáçķ íƒ ýöû áðð íţ áĝáíñ.···································⟧",
+  "remove_also_delete_files": "⟦Áļšö ðéļéţé ţĥé ƒíļéš ƒŕöɱ ðíšķ·············⟧",
+  "remove_files_summary": [
+    {
+      "declarations": [
+        "input files",
+        "input folders",
+        "local filesPlural = files: plural",
+        "local foldersPlural = folders: plural",
+        "local formattedFiles = files: number",
+        "local formattedFolders = folders: number"
+      ],
+      "selectors": ["filesPlural", "foldersPlural"],
+      "match": {
+        "filesPlural=one, foldersPlural=*": "⟦{formattedFiles} ƒíļé íñ {formattedFolders} ƒöļðéŕ····················⟧",
+        "filesPlural=other, foldersPlural=one": "⟦{formattedFiles} ƒíļéš íñ {formattedFolders} ƒöļðéŕ·····················⟧",
+        "filesPlural=other, foldersPlural=other": "⟦{formattedFiles} ƒíļéš íñ {formattedFolders} ƒöļðéŕš·····················⟧"
+      }
+    }
+  ],
+  "remove_files_to_trash": "⟦Ṁöṽéš {summary} ţö ţĥé ţŕášĥ.············⟧",
+  "remove_files_deleted": "⟦Ðéļéţéš {summary} ƒŕöɱ ţĥíš ðéṽíçé.··············⟧",
+  "remove_confirm": "⟦Ŕéɱöṽé···⟧",
+  "remove_confirm_files": "⟦Ðéļéţé ƒíļéš·····⟧",
+  "remove_cancel": "⟦Çáñçéļ···⟧",
+  "remove_removed_series": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šéŕíéš ŕéɱöṽéð ƒŕöɱ ýöûŕ ļíƀŕáŕý····················⟧",
+        "countPlural=other": "⟦{formattedCount} šéŕíéš ŕéɱöṽéð ƒŕöɱ ýöûŕ ļíƀŕáŕý····················⟧"
+      }
+    }
+  ],
+  "remove_removed_books": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƀööķ ŕéɱöṽéð ƒŕöɱ ýöûŕ ļíƀŕáŕý···················⟧",
+        "countPlural=other": "⟦{formattedCount} ƀööķš ŕéɱöṽéð ƒŕöɱ ýöûŕ ļíƀŕáŕý····················⟧"
+      }
+    }
+  ],
+  "remove_failed_title": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ƒíļé çöûļðñ'ţ ƀé ðéļéţéð·················⟧",
+        "countPlural=other": "⟦{formattedCount} ƒíļéš çöûļðñ'ţ ƀé ðéļéţéð·················⟧"
+      }
+    }
+  ],
+  "remove_failed_body": "⟦Šţíļļ öñ ðíšķ: {names}·········⟧",
+  "remove_failed": "⟦Çöûļðñ'ţ ŕéɱöṽé ţĥéɱ. Ţŕý áĝáíñ.·············⟧"
 }

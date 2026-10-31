@@ -64,6 +64,18 @@
   --native-text-command-label: calc(0.75rem * var(--text-scale));
   --native-leading-command-label: calc(16 / 12);
   --native-weight-command-label: 400;
+  --native-spacing-tile-edge: 2px;
+  --native-spacing-tile-lift: 8px;
+  --native-spacing-tile-badge: 16px;
+  --native-spacing-tile-check: 20px;
+  --native-spacing-tile-check-glyph: 12px;
+  --native-radius-tile: 4px;
+  --native-radius-tile-check: 4px;
+  --native-spacing-tile-mark-inset: 8px;
+  --native-spacing-tile-corner: calc(var(--native-spacing-tile-mark-inset) + 1px);
+  --native-spacing-tile-check-target: 24px;
+  --native-spacing-tile-check-bleed: calc((var(--native-spacing-tile-check-target) - var(--native-spacing-tile-check)) / 2);
+  --native-spacing-tile-hit-corner: calc(var(--native-spacing-tile-corner) - var(--native-spacing-tile-check-bleed));
 }
 
 :root[data-platform="windows"],
@@ -164,6 +176,10 @@
   --native-shadow-info-bar-floating-lift: 0 0.5rem 1rem #00000024;
   --native-color-accent-hover: rgba(47, 111, 79, 0.9);
   --native-color-accent-pressed: rgba(47, 111, 79, 0.8);
+  --native-color-tile-hover: #00000009;
+  --native-color-tile-pressed: #00000006;
+  --native-color-tile-check-fill: #ffffffc9;
+  --native-color-tile-check-edge: #6b6b6b;
 }
 
 :root[data-platform="windows"][data-theme="dark"],
@@ -264,6 +280,10 @@
   --native-shadow-info-bar-floating-lift: 0 0.5rem 1rem #00000042;
   --native-color-accent-hover: rgba(127, 203, 157, 0.9);
   --native-color-accent-pressed: rgba(127, 203, 157, 0.8);
+  --native-color-tile-hover: #ffffff0f;
+  --native-color-tile-pressed: #ffffff0a;
+  --native-color-tile-check-fill: #1c1c1cb3;
+  --native-color-tile-check-edge: #c0c0c0;
 }
 
 :root[data-platform="windows"][data-transparency="reduced"],

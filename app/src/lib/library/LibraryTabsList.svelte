@@ -3,6 +3,7 @@
     ArrowDown,
     ArrowUp,
     Ellipsis,
+    EllipsisVertical,
     Eye,
     EyeOff,
     GripVertical,
@@ -18,9 +19,11 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
   import { moved, shownAs } from "./tab-order.ts";
 
@@ -42,6 +45,7 @@
     onArrange: (tabs: readonly ArrangedTab[]) => void;
   } = $props();
 
+  const android = new AndroidPhone();
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
   let announcement = $state("");
@@ -138,14 +142,19 @@
 <ul
   bind:this={list}
   aria-label={m.library_tabs_title()}
-  class="flex flex-col divide-y divide-border rounded-card border border-border bg-card"
+  class={android.isOn
+    ? "-mx-page-start -me-page-end flex flex-col"
+    : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}
 >
   {#each listed as tab, at (tabKey(tab.id))}
     {@const key = tabKey(tab.id)}
     <li
       data-tab-row
       class={[
-        "flex items-center gap-sm py-sm ps-xs pe-sm",
+        "flex items-center",
+        android.isOn
+          ? "gap-xs ps-xs pe-md min-block-native-row-two"
+          : "gap-sm py-sm ps-xs pe-sm",
         drag?.key === key &&
           "relative z-drag-box rounded-card bg-card shadow-dialog",
       ]}
@@ -167,9 +176,21 @@
       >
         <GripVertical size={ICON_SIZE} aria-hidden="true" />
       </button>
-      <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-        <span class="truncate font-medium">{tab.name}</span>
-        <span class="text-detail text-muted">{detailOf(tab)}</span>
+      <span
+        class={[
+          "flex flex-1 flex-col min-inline-none",
+          android.isOn ? "ps-xs" : "gap-2xs",
+        ]}
+      >
+        <span class={["truncate", android.isOn ? "text-body" : "font-medium"]}
+          >{tab.name}</span
+        >
+        <span
+          class={[
+            "text-muted",
+            android.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+          ]}>{detailOf(tab)}</span
+        >
       </span>
       {#if tab.isHidden}
         <span
@@ -190,9 +211,16 @@
                 <Button
                   {...props}
                   look="icon"
+                  class={android.isOn
+                    ? "block-touch-target inline-touch-target"
+                    : ""}
                   aria-label={m.library_tabs_more({ tab: tab.name })}
                 >
-                  <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+                  {#if android.isOn}
+                    <EllipsisVertical size={ICON_SIZE} aria-hidden="true" />
+                  {:else}
+                    <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+                  {/if}
                 </Button>
               {/snippet}
             </Tooltip>
