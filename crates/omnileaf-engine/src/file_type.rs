@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 const READ_BOOK_TYPES: [&str; 2] = ["cbz", "cb7"];
-const BOOK_TYPES_NOT_READ_YET: [&str; 2] = ["cbr", "rar"];
+const RAR_BOOK_TYPES: [&str; 2] = ["cbr", "rar"];
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type)]
 #[serde(try_from = "String", into = "String")]
@@ -28,11 +28,15 @@ impl FileType {
     }
 
     pub(crate) fn is_read(&self) -> bool {
-        READ_BOOK_TYPES.contains(&self.0.as_str())
+        READ_BOOK_TYPES.contains(&self.0.as_str()) || (cfg!(feature = "rar") && self.is_rar_book())
     }
 
     pub(crate) fn is_book(&self) -> bool {
-        self.is_read() || BOOK_TYPES_NOT_READ_YET.contains(&self.0.as_str())
+        self.is_read() || self.is_rar_book()
+    }
+
+    fn is_rar_book(&self) -> bool {
+        RAR_BOOK_TYPES.contains(&self.0.as_str())
     }
 
     pub(crate) fn can_be_hidden(&self) -> bool {
@@ -111,12 +115,14 @@ mod tests {
         assert_eq!(found, None);
     }
 
+    const READS_RAR: bool = cfg!(feature = "rar");
+
     #[test]
-    fn reads_cbz_and_cb7_files_but_not_cbr_or_rar_ones_yet() {
+    fn reads_cbz_and_cb7_files_and_cbr_and_rar_ones_only_when_built_with_rar() {
         let read = ["v01.cbz", "v01.cb7", "v01.cbr", "v01.rar"]
             .map(|name| type_of(name).is_some_and(|found| found.is_read()));
 
-        assert_eq!(read, [true, true, false, false]);
+        assert_eq!(read, [true, true, READS_RAR, READS_RAR]);
     }
 
     #[test]
@@ -124,7 +130,7 @@ mod tests {
         let hideable = ["v01.cbz", "v01.cb7", "v01.cbr", "v01.rar", "notes.txt"]
             .map(|name| type_of(name).is_some_and(|found| found.can_be_hidden()));
 
-        assert_eq!(hideable, [false, false, true, true, false]);
+        assert_eq!(hideable, [false, false, !READS_RAR, !READS_RAR, false]);
     }
 
     #[test]

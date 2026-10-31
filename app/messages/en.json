@@ -2042,6 +2042,9 @@
   "reader_bookmark_failed": "Couldn't keep the bookmark",
   "reader_bookmark_failed_body": "Try again in a moment.",
   "reader_settings": "Reading settings",
+  "reader_command_settings": "Settings",
+  "reader_command_shortcuts": "Shortcuts",
+  "reader_command_bookmark": "Bookmark",
   "reader_settings_close": "Close reading settings",
   "reader_settings_done": "Done",
   "reader_back_on_page": [

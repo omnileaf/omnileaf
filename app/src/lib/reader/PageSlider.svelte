@@ -3,6 +3,8 @@
 
   import { m } from "#lib/paraglide/messages.js";
 
+  import { pageSliderLook } from "#lib/reader/page-slider-look.ts";
+  import { getReaderChrome } from "#lib/reader/reader-chrome.svelte.ts";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
 
   const DIR_ATTRIBUTES = {
@@ -45,6 +47,7 @@
     return kept;
   }
 
+  const look = pageSliderLook(getReaderChrome().platform);
   const progress = $derived(count > 1 ? shown / (count - 1) : 0);
 </script>
 
@@ -63,23 +66,16 @@
     onValueCommit={() => {
       onDrag(false);
     }}
-    class="relative flex-1 rounded-full block-reader-dense has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent desktop:expanded:block-lg"
+    class={look.root}
     style={`--progress: ${String(progress)}`}
     onpointerdown={() => {
       onDrag(true);
     }}
   >
-    <div
-      class="absolute inset-none my-auto overflow-hidden rounded-full bg-chip block-slider-track"
-    >
-      <div
-        class="absolute inset-y-none inset-s-none bg-accent reader-progress-fill"
-      ></div>
+    <div class={look.track}>
+      <div class={look.fill}></div>
     </div>
-    <div
-      data-progress-thumb
-      class="absolute inset-y-none reader-progress-thumb my-auto rounded-full border border-accent bg-background shadow-card-rest"
-    ></div>
+    <div data-progress-thumb class={look.thumb}></div>
     <Slider.Thumb index={0}>
       {#snippet child({ props })}
         <input

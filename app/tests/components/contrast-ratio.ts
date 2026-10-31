@@ -16,7 +16,7 @@ function paint(colours: readonly string[]): Uint8ClampedArray {
   return context.getImageData(0, 0, 1, 1).data;
 }
 
-function opaqueChannels(colours: readonly string[]): Channels {
+export function opaqueChannels(colours: readonly string[]): Channels {
   const [red = 0, green = 0, blue = 0, alpha] = paint(colours);
   if (alpha !== OPAQUE) {
     throw new Error(`${colours.join(" over ")} is not an opaque colour`);
@@ -24,13 +24,18 @@ function opaqueChannels(colours: readonly string[]): Channels {
   return [red, green, blue];
 }
 
+function colourOfToken(token: string): string {
+  const property = token.startsWith("--") ? token : `--native-color-${token}`;
+  if (
+    getComputedStyle(document.body).getPropertyValue(property).trim() === ""
+  ) {
+    throw new Error(`${property} is not defined`);
+  }
+  return resolvedColour(property, "color");
+}
+
 function channels(token: string): Channels {
-  return opaqueChannels([
-    resolvedColour(
-      token.startsWith("--") ? token : `--native-color-${token}`,
-      "color",
-    ),
-  ]);
+  return opaqueChannels([colourOfToken(token)]);
 }
 
 function linear(channel: number): number {
@@ -44,13 +49,21 @@ function relativeLuminance([red, green, blue]: Channels): number {
   return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
 }
 
-function ratioOf(ink: Channels, ground: Channels): number {
+export function ratioOf(ink: Channels, ground: Channels): number {
   const luminances = [relativeLuminance(ink), relativeLuminance(ground)];
   return (Math.max(...luminances) + 0.05) / (Math.min(...luminances) + 0.05);
 }
 
 export function contrastRatio(ink: string, ground: string): number {
   return ratioOf(channels(ink), channels(ground));
+}
+
+export function contrastOver(ink: string, layers: readonly string[]): number {
+  const grounds = layers.map(colourOfToken);
+  return ratioOf(
+    opaqueChannels([...grounds, colourOfToken(ink)]),
+    opaqueChannels(grounds),
+  );
 }
 
 export function drawnContrast(element: Element): number {

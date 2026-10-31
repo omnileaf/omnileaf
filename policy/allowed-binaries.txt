@@ -2,3 +2,4 @@ app/src-tauri/icons/
 app/src-tauri/gen/android/app/src/main/res/
 app/src-tauri/gen/android/gradle/wrapper/gradle-wrapper.jar
 app/src-tauri/gen/apple/Assets.xcassets/
+crates/omnileaf-formats/tests/rar_fixtures/

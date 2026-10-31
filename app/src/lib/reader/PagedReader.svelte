@@ -270,6 +270,14 @@
   let areShortcutsOpen = $state(false);
   let isJumpOpen = $state(false);
   const isPanelOpen = $derived(isSettingsOpen || isJumpOpen);
+  const panelRoom = $derived(
+    chrome.isCommandBar
+      ? "medium:inset-e-reader-settings-room"
+      : "expanded:inset-e-reader-settings-room",
+  );
+  const coversPage = $derived(
+    isPanelOpen && chrome.isCommandBar && chrome.width === "compact",
+  );
   let zoom = $state(1);
   const ZOOM_STEP = 1.25;
   const ZOOM_MOST = 4;
@@ -1098,10 +1106,8 @@
       <OpenedOutsideLibrary {platform} />
     {/if}
     <div
-      class={[
-        "absolute inset-none",
-        isPanelOpen && "expanded:inset-e-reader-settings-room",
-      ]}
+      inert={coversPage}
+      class={["absolute inset-none", isPanelOpen && panelRoom]}
     >
       {#if cropped !== undefined}
         {#key cropped.crop}
@@ -1185,10 +1191,15 @@
     {:else}
       <header
         class={[
-          "absolute transition-all expanded:inset-x-lg expanded:inset-bs-md motion-reader:duration-fade motion-reader:ease-out",
-          chrome.spans
+          "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
+          chrome.isCommandBar
             ? "inset-x-none inset-bs-none"
-            : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
+            : [
+                "expanded:inset-x-lg expanded:inset-bs-md",
+                chrome.spans
+                  ? "inset-x-none inset-bs-none"
+                  : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
+              ],
           !controls.isShown && "pointer-events-none opacity-0",
         ]}
         {...controlEvents}
@@ -1260,14 +1271,20 @@
       {/if}
       <div
         class={[
-          "absolute transition-all expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock motion-reader:duration-fade motion-reader:ease-out",
-          chrome.spans
+          "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
+          chrome.isCommandBar
             ? "inset-x-none inset-be-none"
-            : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
-          isPanelOpen && "expanded:inset-e-reader-settings-room",
+            : [
+                "expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-dock",
+                chrome.spans
+                  ? "inset-x-none inset-be-none"
+                  : "inset-x-reader-bar-inline inset-be-reader-bar-bottom",
+              ],
+          isPanelOpen && panelRoom,
           chrome.floats && "pointer-events-none",
           !controls.isShown && "pointer-events-none opacity-0",
         ]}
+        inert={coversPage}
         {...controlEvents}
         {@attach makesToastRoom}
       >
