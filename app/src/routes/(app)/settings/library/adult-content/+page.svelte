@@ -54,22 +54,22 @@
         }}
       />
     </div>
-    <SettingSwitch
-      label={m.adult_content_age_ratings()}
-      description={m.adult_content_age_ratings_help()}
-      isOn={chosen.countsAgeRatings}
-      onToggle={() => {
-        content.choose({
-          ...chosen,
-          countsAgeRatings: !chosen.countsAgeRatings,
-        });
-      }}
-      class={android.isOn ? "" : "rounded-card border border-border bg-card"}
-    />
+    <div class={android.isOn ? "-mx-page-start -me-page-end" : ""}>
+      <SettingSwitch
+        label={m.adult_content_age_ratings()}
+        description={m.adult_content_age_ratings_help()}
+        isOn={chosen.countsAgeRatings}
+        onToggle={() => {
+          content.choose({
+            ...chosen,
+            countsAgeRatings: !chosen.countsAgeRatings,
+          });
+        }}
+        class={android.isOn ? "" : "rounded-card border border-border bg-card"}
+      />
+    </div>
     {#if android.isOn}
-      <p
-        class="ps-lg pe-xl text-native-row-subtitle/native-row-subtitle text-muted"
-      >
+      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
         {m.adult_content_footer()}
       </p>
     {/if}
