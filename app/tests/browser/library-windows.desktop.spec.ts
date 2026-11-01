@@ -15,6 +15,7 @@ const LIBRARY = sampleSeries(14).map((series, index) => ({
   ...series,
   language: index % 2 === 0 ? "en" : null,
   hasDownloads: index % 3 === 0,
+  isConnected: true,
 }));
 
 function titleOf(index: number): string {

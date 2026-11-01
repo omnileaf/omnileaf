@@ -38,6 +38,7 @@ function series(
     cover: null,
     language: null,
     hasDownloads: false,
+    isConnected: true,
     isAdult: false,
     continuesFrom: null,
   };

@@ -24,6 +24,7 @@ const SERIES: readonly WireSeries[] = Array.from({ length: 7 }, (_, index) => ({
   cover: index === 6 ? null : `thumb/v1/${BOOK}/${String(index + 1)}/1`,
   language: null,
   hasDownloads: false,
+  isConnected: true,
   isAdult: false,
   continuesFrom: null,
 }));

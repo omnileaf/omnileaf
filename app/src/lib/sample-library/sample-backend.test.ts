@@ -1288,6 +1288,37 @@ test("shows the series of a missing folder once asked", async () => {
   ]).toEqual([true, 0]);
 });
 
+async function connectionOfSeriesThree(backend: FakeBackend) {
+  const page = await backend.librarySeries(null, NEWEST_FIRST);
+  return page.series.find((series) => series.title === "Sample Series 03")
+    ?.isConnected;
+}
+
+test("lists the series of a missing folder shown anyway as not connected", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const [missing] = await backend.missingLibraryFolders();
+  const hidden = await connectionOfSeriesThree(backend);
+
+  await backend.showMissingLibraryFolder(missing?.folder.id ?? "", true);
+
+  expect([hidden, await connectionOfSeriesThree(backend)]).toEqual([
+    undefined,
+    false,
+  ]);
+});
+
+test("lists the series of a folder found again as connected", async () => {
+  const { backend } = backendFor("?missing=folder");
+  const [missing] = await backend.missingLibraryFolders();
+  await backend.showMissingLibraryFolder(missing?.folder.id ?? "", true);
+
+  await backend.relocateLibraryFolder(missing?.folder.id ?? "", {
+    send: () => Promise.resolve(),
+  });
+
+  expect(await connectionOfSeriesThree(backend)).toBe(true);
+});
+
 test("finds a missing folder again where it went", async () => {
   const { backend } = backendFor("?missing=folder");
   const [missing] = await backend.missingLibraryFolders();

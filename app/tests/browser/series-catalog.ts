@@ -17,6 +17,7 @@ export function sampleSeries(count: number, from = 1): WireSeries[] {
       cover: null,
       language: null,
       hasDownloads: false,
+      isConnected: true,
       isAdult: false,
       continuesFrom: null,
     };

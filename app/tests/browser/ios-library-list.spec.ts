@@ -11,6 +11,7 @@ const LIBRARY = sampleSeries(4).map((series, index) => ({
   unreadCount: index === 0 ? 3 : 0,
   language: index < 2 ? "ja" : null,
   hasDownloads: index === 0,
+  isConnected: true,
 }));
 const VIEW: LibraryView = {
   ...DEFAULT_LIBRARY_VIEW,
