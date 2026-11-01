@@ -155,12 +155,14 @@
       </div>
     </div>
   {:else}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
       <SettingRadios
         title={m.general_opens_on()}
         options={OPENING_PLACES}
         labels={PLACE_LABELS}
-        hints={{ lastBook: m.general_opens_last_book_hint() }}
+        hints={data.appInfo.platform === "macos"
+          ? {}
+          : { lastBook: m.general_opens_last_book_hint() }}
         chosen={opensOn.choice}
         onChoose={(place: OpeningPlace) => {
           opensOn.choose(place);

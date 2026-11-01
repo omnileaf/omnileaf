@@ -45,9 +45,13 @@
   />
   {#if content.reading.kind === "read"}
     {@const chosen = content.reading.value}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
-      <div class="flex flex-col gap-sm">
-        <p class="text-footnote text-muted">{m.adult_content_intro()}</p>
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
+      <div class="flex flex-col gap-sm macos:gap-lg">
+        <p
+          class="text-footnote text-muted macos:text-native-button/native-button"
+        >
+          {m.adult_content_intro()}
+        </p>
         <AdultContentChoice
           chosen={chosen.treatment}
           {onPointer}
