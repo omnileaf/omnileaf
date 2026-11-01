@@ -728,6 +728,8 @@ export function sampleBackend(
     !missingFolder.isFound &&
     !missingFolder.isShownAnyway &&
     MISSING_FOLDER_SERIES.has(series.number);
+  const isConnected = (series: SampleSeries): boolean =>
+    missingFolder.isFound || !MISSING_FOLDER_SERIES.has(series.number);
   const hasBooksToFind = (series: SampleSeries): boolean =>
     !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
@@ -812,6 +814,7 @@ export function sampleBackend(
       cover: coverOf(series),
       language: languageOf(series),
       hasDownloads: SERIES_WITH_DOWNLOADS.has(series.number),
+      isConnected: isConnected(series),
       continuesFrom: continuesFrom(series),
       isAdult: isAdult(series),
     };

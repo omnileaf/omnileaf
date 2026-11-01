@@ -26,6 +26,7 @@ const FIRST: WireSeries = {
   cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
   language: null,
   hasDownloads: false,
+  isConnected: true,
   isAdult: false,
   continuesFrom: null,
 };
@@ -37,6 +38,7 @@ const SECOND: WireSeries = {
   cover: null,
   language: null,
   hasDownloads: false,
+  isConnected: true,
   isAdult: false,
   continuesFrom: null,
 };
@@ -57,6 +59,7 @@ function sampleSeries(count: number): WireSeries[] {
     cover: null,
     language: null,
     hasDownloads: false,
+    isConnected: true,
     isAdult: false,
     continuesFrom: null,
   }));

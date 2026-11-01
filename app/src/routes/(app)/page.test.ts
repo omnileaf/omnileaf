@@ -35,6 +35,7 @@ const SAMPLE_SERIES: WireSeries = {
   cover: COVER,
   language: null,
   hasDownloads: false,
+  isConnected: true,
   isAdult: false,
   continuesFrom: null,
 };

@@ -65,6 +65,7 @@ const COVERS_BACKEND: FakeBackend = {
       cover: `thumb/v1/0190a3e4-0000-8000-8000-000000000001/${String(index + 1)}/1`,
       language: index === 0 ? "ja" : null,
       hasDownloads: index === 0,
+      isConnected: true,
       continuesFrom: index === 0 ? FIRST_BOOK : null,
     })),
   ),

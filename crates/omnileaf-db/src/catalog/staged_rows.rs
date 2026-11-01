@@ -7,6 +7,7 @@ use crate::{
         cover::stored_cover,
         cursor::Position,
         gathering::stages_holding_matches,
+        series_connection::note_connections,
         series_listing::{FilterParams, SeriesFilter},
         series_page::SeriesSummary,
         stored_id::{stored_id, stored_optional_id},
@@ -248,7 +249,9 @@ impl<P> Listing<P> {
         let rows = statement.query_map(params.as_slice(), |row| {
             Ok((summary(row)?, (self.sort_position)(row)?))
         })?;
-        Ok(rows.collect::<Result<_, _>>()?)
+        let mut rows: Vec<(SeriesSummary, P)> = rows.collect::<Result<_, _>>()?;
+        note_connections(read.connection, rows.iter_mut().map(|(series, _)| series))?;
+        Ok(rows)
     }
 }
 
@@ -264,6 +267,7 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<SeriesSummary> {
         language: row.get("language")?,
         is_rated_adult: row.get("is_rated_adult")?,
         is_marked_adult: row.get("is_marked_adult")?,
+        is_connected: true,
     })
 }
 

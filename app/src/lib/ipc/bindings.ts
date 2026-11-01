@@ -662,6 +662,7 @@ export type LibrarySeries = {
 	hasDownloads: boolean,
 	continuesFrom: string & { readonly __brand: "BookId" } | null,
 	isAdult: boolean,
+	isConnected: boolean,
 };
 
 export type LibrarySort = {

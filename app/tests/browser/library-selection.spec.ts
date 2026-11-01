@@ -21,6 +21,7 @@ const LIBRARY = sampleSeries(6).map((series, index) => ({
   unreadCount: index % 3,
   language: "ja",
   hasDownloads: true,
+  isConnected: true,
 }));
 
 let catalog: WireSeries[] = [...LIBRARY];

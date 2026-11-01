@@ -66,6 +66,7 @@ async function oneSeries(): Promise<LibrarySeries> {
         cover: "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1",
         language: "ja",
         hasDownloads: true,
+        isConnected: true,
       },
     ],
     next: null,

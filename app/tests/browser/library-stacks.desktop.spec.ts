@@ -22,6 +22,7 @@ function series(number: number, bookCount: number): WireSeries {
     cover: null,
     language: null,
     hasDownloads: false,
+    isConnected: true,
     isAdult: false,
     continuesFrom: null,
   };

@@ -111,6 +111,22 @@ impl Shelf {
         page.items.into_iter().map(|series| series.title).collect()
     }
 
+    async fn connections(&self) -> Vec<(String, bool)> {
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(50).unwrap(),
+        };
+        let page = self
+            .database
+            .read(move |connection| series_page(connection, &A_TO_Z, &request))
+            .await
+            .unwrap();
+        page.items
+            .into_iter()
+            .map(|series| (series.title, series.is_connected))
+            .collect()
+    }
+
     async fn hidden(&self, root: Option<RootId>) -> u32 {
         self.database
             .read(move |connection| hidden_series_count(connection, root))
@@ -208,5 +224,94 @@ async fn hides_them_again_when_the_folder_comes_back_and_goes_missing_once_more(
             3,
             vec!["Lantern Market".to_owned(), "Sea Stories".to_owned()]
         )
+    );
+}
+
+fn connection(title: &str, is_connected: bool) -> (String, bool) {
+    (title.to_owned(), is_connected)
+}
+
+#[tokio::test]
+async fn lists_every_series_as_connected_while_every_folder_is_there() {
+    let shelf = Shelf::open("connected-all").await;
+
+    assert_eq!(
+        shelf.connections().await,
+        [
+            connection("Harbour Gate", true),
+            connection("Lantern Market", true),
+            connection("Sea Stories", true),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_the_series_of_a_missing_folder_shown_anyway_as_not_connected() {
+    let shelf = Shelf::open("connected-shown").await;
+    shelf.go_missing(shelf.comics).await;
+
+    shelf.show_anyway(shelf.comics, true).await;
+
+    assert_eq!(
+        shelf.connections().await,
+        [
+            connection("Harbour Gate", false),
+            connection("Lantern Market", true),
+            connection("Sea Stories", true),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_a_series_split_across_two_missing_folders_as_not_connected() {
+    let shelf = Shelf::open("connected-both-missing").await;
+    shelf.go_missing(shelf.comics).await;
+    shelf.go_missing(shelf.manga).await;
+
+    shelf.show_anyway(shelf.comics, true).await;
+    shelf.show_anyway(shelf.manga, true).await;
+
+    assert_eq!(
+        shelf.connections().await,
+        [
+            connection("Harbour Gate", false),
+            connection("Lantern Market", false),
+            connection("Sea Stories", false),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn lists_a_series_as_connected_again_when_its_folder_comes_back() {
+    let shelf = Shelf::open("connected-back").await;
+    shelf.go_missing(shelf.comics).await;
+    shelf.show_anyway(shelf.comics, true).await;
+
+    shelf.come_back(shelf.comics).await;
+
+    assert_eq!(
+        shelf.connections().await,
+        [
+            connection("Harbour Gate", true),
+            connection("Lantern Market", true),
+            connection("Sea Stories", true),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn leaves_the_series_of_a_hidden_missing_folder_out_of_the_listing() {
+    let shelf = Shelf::open("connected-hidden").await;
+    shelf.go_missing(shelf.comics).await;
+    shelf.show_anyway(shelf.comics, true).await;
+
+    shelf.show_anyway(shelf.comics, false).await;
+
+    assert_eq!(
+        shelf.connections().await,
+        [
+            connection("Lantern Market", true),
+            connection("Sea Stories", true),
+        ]
     );
 }
