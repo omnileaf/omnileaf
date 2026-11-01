@@ -203,16 +203,16 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws iOS's tile with glass badges and edit-mode select circles", async () => {
+test("draws iOS's tile with a red count badge, a glass download mark and edit-mode select circles", async () => {
   const { emptyMark, ...look } = await lookOn("ios", "light");
 
   expect(look).toEqual({
     cover: { corner: "6px" },
     badge: {
       height: 20,
-      corner: "6px",
-      fill: "rgba(255, 255, 255, 0.78)",
-      label: "rgb(0, 0, 0)",
+      corner: "3.35544e+07px",
+      fill: "rgb(155, 44, 44)",
+      label: "rgb(255, 255, 255)",
     },
     downloaded: { size: 20, fill: "rgba(255, 255, 255, 0.78)" },
     mark: {
@@ -308,7 +308,7 @@ test("keeps Android's check box in the cover's top end", async () => {
   expect(gapsAround(mark)).toMatchObject({ top: 5, end: 5 });
 });
 
-test("darkens iOS's glass badges in the dark theme", async () => {
+test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
   const look = await lookOn("ios", "dark");
 
   expect([
@@ -317,8 +317,8 @@ test("darkens iOS's glass badges in the dark theme", async () => {
     look.mark.fill,
     look.mark.tick,
   ]).toEqual([
-    "rgba(44, 44, 46, 0.72)",
-    "rgb(255, 255, 255)",
+    "rgb(240, 140, 140)",
+    "rgb(42, 14, 14)",
     "rgb(127, 203, 157)",
     "rgb(15, 36, 24)",
   ]);
