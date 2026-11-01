@@ -63,7 +63,7 @@ class FakeHome {
         },
         move: () => {
           this.asked.move += 1;
-          return Promise.resolve(this.#acted);
+          return Promise.resolve(restarting(this.#acted));
         },
       },
       () => this.notices,
@@ -93,6 +93,12 @@ function failed(code: IpcErrorCode): {
 
 function done(): ActAnswer {
   return { status: "ok", data: null };
+}
+
+function restarting(acted: ActAnswer): Answer<"move"> {
+  return acted.status === "ok"
+    ? { status: "ok", data: { kind: "restarting" } }
+    : acted;
 }
 
 test("stays idle when the chooser is cancelled", async () => {
