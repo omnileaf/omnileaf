@@ -127,3 +127,17 @@ test("picks only the books given, keeping what it picked before when asked", () 
     [at(1), at(3)],
   ]);
 });
+
+test("chooses one book alone, dropping the others, and shift-click then extends from it", () => {
+  const selection = new Selection<string>();
+  selection.begin(at(0));
+  selection.toggle(at(1));
+
+  selection.chooseOnly(at(3));
+  selection.extendTo(at(5), BOOKS);
+
+  expect([selection.isSelecting, selection.picked]).toEqual([
+    true,
+    [at(3), at(4), at(5)],
+  ]);
+});

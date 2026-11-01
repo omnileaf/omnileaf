@@ -47,7 +47,10 @@ async function pickTwo(page: Page): Promise<void> {
     .getByRole("link")
     .first()
     .click({ modifiers: ["Meta"] });
-  await covers(page).getByRole("checkbox").nth(1).click();
+  await covers(page)
+    .getByRole("checkbox")
+    .nth(1)
+    .click({ modifiers: ["Meta"] });
 }
 
 test("keeps the Library heading and says how many of the series are selected", async ({

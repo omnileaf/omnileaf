@@ -2,6 +2,7 @@
   import type { ComponentProps } from "svelte";
 
   import { resolve } from "$app/paths";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import type { SeriesId } from "#lib/series/series-id.ts";
 
   import PickableLink from "./PickableLink.svelte";
@@ -21,4 +22,5 @@
   {id}
   href={resolve("/(app)/series/[id]", { id })}
   selection={seriesSelection()}
+  picksOnClick={currentPlatform() === "macos"}
 />

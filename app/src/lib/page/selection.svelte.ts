@@ -25,6 +25,13 @@ export class Selection<Id> {
     }
   }
 
+  chooseOnly(item: Id): void {
+    this.isSelecting = true;
+    this.#picked.clear();
+    this.#picked.add(item);
+    this.#anchor = item;
+  }
+
   toggle(item: Id): void {
     if (!this.#picked.delete(item)) {
       this.#picked.add(item);

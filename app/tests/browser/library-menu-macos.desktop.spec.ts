@@ -86,7 +86,10 @@ async function pickFirstTwo(page: Page): Promise<void> {
     .getByRole("link")
     .nth(0)
     .click({ modifiers: ["Meta"] });
-  await covers(page).getByRole("checkbox").nth(1).click();
+  await covers(page)
+    .getByRole("checkbox")
+    .nth(1)
+    .click({ modifiers: ["Meta"] });
 }
 
 async function namesIn(menu: Locator): Promise<string[]> {
