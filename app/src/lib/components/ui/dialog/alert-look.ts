@@ -70,7 +70,7 @@ const IOS_ACTION_SHEET_ACTION = `${IOS_ACTION} ${IOS_ROW_TEXT} max-medium:px-lg 
 const IOS_ACTION_SHEET_LOOK: AlertLook = {
   scrim: IOS_LOOK.scrim,
   surface:
-    "max-medium:inline-native-action-sheet max-medium:mbe-native-action-sheet-bottom max-medium:gap-none max-medium:border-none max-medium:p-native-action-sheet-inset max-medium:rounded-native-dialog max-medium:bg-native-dialog max-medium:backdrop-blur-glass max-medium:backdrop-saturate-180",
+    "max-medium:inline-native-action-sheet max-medium:max-inline-full max-medium:mbe-native-action-sheet-bottom max-medium:gap-none max-medium:border-none max-medium:p-native-action-sheet-inset max-medium:rounded-native-dialog max-medium:bg-native-dialog max-medium:backdrop-blur-glass max-medium:backdrop-saturate-180",
   badge: IOS_LOOK.badge,
   title: `${IOS_ROW_TEXT} max-medium:pbs-sm max-medium:px-sm max-medium:font-semibold`,
   body: IOS_LOOK.body,

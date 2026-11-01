@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Trash } from "@lucide/svelte";
 
+  import type { IosPhoneConfirmLook } from "#lib/components/ui/dialog/alert-look.ts";
+
   import ConfirmDialog from "./ConfirmDialog.svelte";
 
   let {
@@ -12,7 +14,7 @@
     phoneLook?: "sheet" | "dialog";
     tone?: "danger" | "accent";
     isBusy?: boolean;
-    iosPhoneLook?: "actionSheet" | undefined;
+    iosPhoneLook?: IosPhoneConfirmLook | undefined;
   } = $props();
 </script>
 

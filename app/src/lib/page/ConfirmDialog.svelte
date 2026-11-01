@@ -17,6 +17,8 @@
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
 
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
+
   import type { Glyph } from "./glyph";
   import HeaderBadge from "./HeaderBadge.svelte";
   import { currentPlatform } from "./platform";
@@ -59,11 +61,15 @@
     children: Snippet;
   } = $props();
 
+  const iosPhone = new IosPhone();
+  const sheetLook = $derived(
+    iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
+  );
   const isAlert = $derived(
-    opensAsAlert(currentPlatform(), phoneLook, iosPhoneLook),
+    opensAsAlert(currentPlatform(), phoneLook, sheetLook),
   );
   const alert = $derived(
-    isAlert ? alertLook(currentPlatform(), iosPhoneLook) : TODAYS_ALERT_LOOK,
+    isAlert ? alertLook(currentPlatform(), sheetLook) : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({

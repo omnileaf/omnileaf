@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import type { IosPhoneConfirmLook } from "#lib/components/ui/dialog/alert-look.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
@@ -11,13 +12,18 @@ import ConfirmDialogHarness from "./ConfirmDialogHarness.svelte";
 
 const PHONE = { width: 390, height: 844 } as const;
 const TABLET = { width: 820, height: 1180 } as const;
+const NARROW_PHONE = { width: 320, height: 568 } as const;
+const SHEET_SIDE_MARGIN = 16;
 
 type Screen = { readonly width: number; readonly height: number };
 
 async function openOn(
   platform: Platform,
   screen: Screen,
-  props: { iosPhoneLook?: "actionSheet" } = {},
+  props: {
+    iosPhoneLook?: IosPhoneConfirmLook;
+    tone?: "danger" | "accent";
+  } = {},
 ) {
   await page.viewport(screen.width, screen.height);
   document.documentElement.dataset.platform = platform;
@@ -136,6 +142,49 @@ test.each<Platform>(["android", "linux", "macos", "windows"])(
     ).toEqual(askedOrder);
   },
 );
+
+function buttonOrder(dialog: HTMLElement): string[] {
+  return [...dialog.querySelectorAll("button")].map((button) =>
+    button.textContent.trim(),
+  );
+}
+
+test("keeps the sheet 16 clear of both edges on the narrowest iPhone", async () => {
+  const { dialog } = await openOn("ios", NARROW_PHONE, {
+    iosPhoneLook: "actionSheet",
+  });
+  const box = dialog.getBoundingClientRect();
+
+  expect(box.left).toBeCloseTo(SHEET_SIDE_MARGIN, 0);
+  expect(NARROW_PHONE.width - box.right).toBeCloseTo(SHEET_SIDE_MARGIN, 0);
+});
+
+test("keeps Cancel first in the tab order on an iPad", async () => {
+  const asked = await openOn("ios", TABLET, { iosPhoneLook: "actionSheet" });
+  const askedOrder = buttonOrder(asked.dialog);
+  const askedClasses = asked.dialog.className;
+  await asked.rendered.unmount();
+
+  const plain = await openOn("ios", TABLET);
+
+  expect(askedOrder).toEqual(["Cancel", "Delete"]);
+  expect(askedClasses).toBe(plain.dialog.className);
+});
+
+test("keeps an accent confirmation's look on an iPhone when asked for an action sheet", async () => {
+  const asked = await openOn("ios", PHONE, {
+    iosPhoneLook: "actionSheet",
+    tone: "accent",
+  });
+  const askedClasses = asked.dialog.className;
+  const askedOrder = buttonOrder(asked.dialog);
+  await asked.rendered.unmount();
+
+  const plain = await openOn("ios", PHONE, { tone: "accent" });
+
+  expect(plain.dialog.className).toBe(askedClasses);
+  expect(buttonOrder(plain.dialog)).toEqual(askedOrder);
+});
 
 test("keeps today's dialog on an iPad when asked for an action sheet", async () => {
   const { dialog } = await openOn("ios", TABLET, {
