@@ -493,6 +493,7 @@ export const TOKEN_THEME = {
     "native-row",
     "native-row-add-lead",
     "native-row-block",
+    "native-row-chip",
     "native-row-chips-end",
     "native-row-end",
     "native-row-gap",

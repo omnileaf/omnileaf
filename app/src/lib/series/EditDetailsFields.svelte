@@ -48,7 +48,10 @@
   import LockedAdultMark from "./LockedAdultMark.svelte";
   import SheetSwitchRow from "./SheetSwitchRow.svelte";
   import {
+    SHEET_CHIP_CROSS,
+    SHEET_CHIP_CROSS_SIZE,
     SHEET_CHIP_ROW,
+    SHEET_DETAIL_CHIP,
     SHEET_FIELD_CARD,
     SHEET_LIST_CARD,
     SHEET_SUMMARY_TEXT,
@@ -134,7 +137,7 @@
   );
   const chipExtras = $derived(
     cn(
-      isGrouped && GROUPED_DETAIL_CHIP,
+      isSheet ? SHEET_DETAIL_CHIP : isGrouped && GROUPED_DETAIL_CHIP,
       isAndroid && ANDROID_DETAIL_CHIP,
       isMacos && MACOS_DETAIL_CHIP,
     ),
@@ -143,13 +146,17 @@
     isSheet ? SHEET_CHIP_ROW : isMacos ? MACOS_CHIPS : CHIPS,
   );
   const crossSize = $derived(
-    isAndroid
-      ? ANDROID_CHIP_CROSS_SIZE
-      : isMacos
-        ? MACOS_CHIP_CROSS_SIZE
-        : ICON_SIZE,
+    isSheet
+      ? SHEET_CHIP_CROSS_SIZE
+      : isAndroid
+        ? ANDROID_CHIP_CROSS_SIZE
+        : isMacos
+          ? MACOS_CHIP_CROSS_SIZE
+          : ICON_SIZE,
   );
-  const crossClass = $derived(isMacos ? MACOS_CHIP_CROSS : undefined);
+  const crossClass = $derived(
+    isSheet ? SHEET_CHIP_CROSS : isMacos ? MACOS_CHIP_CROSS : undefined,
+  );
   const adultMark: Snippet = markAdult;
   const isAdultLocked = $derived(details.isRatedAdult && countsAgeRatings);
   const adultNote = $derived(
