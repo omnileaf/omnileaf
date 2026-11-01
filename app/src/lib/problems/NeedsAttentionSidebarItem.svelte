@@ -5,9 +5,11 @@
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
+  import { attentionLook } from "./attention-look.ts";
   import type { Problem } from "./needs-attention.svelte";
   import NeedsAttentionList from "./NeedsAttentionList.svelte";
   import type { WordingContext } from "./problem-wording";
@@ -27,6 +29,7 @@
   } = $props();
 
   const titleId = $props.id();
+  const look = attentionLook(currentPlatform());
   const count = $derived(problems.length);
   const numbers = $derived(new Intl.NumberFormat(getLocale()));
 
@@ -66,17 +69,16 @@
           size={ICON_SIZE}
           class="block-sidebar-icon inline-sidebar-icon"
         />
-        <span
-          class="absolute -inset-e-2xs -inset-be-2xs hidden rounded-full bg-accent ring-2 ring-sidebar block-active-dot inline-active-dot sidebar-hidden:block"
-        ></span>
+        {#if look.hasFoldedDot}
+          <span
+            class="absolute -inset-e-2xs -inset-be-2xs hidden rounded-full bg-accent ring-2 ring-sidebar block-active-dot inline-active-dot sidebar-hidden:block"
+          ></span>
+        {/if}
       </span>
       <span class="flex-1 truncate text-start sidebar-hidden:sr-only"
         >{m.attention_title()}</span
       >
-      <Badge
-        look="count"
-        class="px-sm py-2xs text-caption sidebar-hidden:hidden"
-      >
+      <Badge look="count" class={look.sidebarBadge}>
         {numbers.format(count)}
       </Badge>
     </button>
@@ -89,10 +91,13 @@
     side={document.documentElement.dir === "rtl" ? "left" : "right"}
     align="end"
     aria-labelledby={titleId}
-    class="flex flex-col gap-sm p-lg inline-attention-popover max-inline-full"
+    class={[
+      "flex flex-col inline-attention-popover max-inline-full",
+      look.flyout,
+    ]}
     onCloseAutoFocus={focusButton}
   >
-    <h2 id={titleId} class="text-label font-semibold">
+    <h2 id={titleId} class={look.flyoutHeading}>
       {m.attention_title()}
     </h2>
     <NeedsAttentionList

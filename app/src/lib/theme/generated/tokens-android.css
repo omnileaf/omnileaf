@@ -361,6 +361,7 @@
   --native-spacing-tile-check-target: 0px;
   --native-spacing-tile-check-bleed: 0px;
   --native-spacing-tile-hit-corner: 0px;
+  --native-spacing-drag-lift: 6px;
 }
 
 :root[data-platform="android"],

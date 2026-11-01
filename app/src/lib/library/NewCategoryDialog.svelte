@@ -5,6 +5,7 @@
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
+  import DialogActionPair from "#lib/page/DialogActionPair.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   let {
@@ -74,22 +75,28 @@
           class="flex-none rounded-shadcn-control border border-field bg-input-fill px-md text-label shadow-raised block-pointer-button touch:text-body touch:block-touch-target"
         />
         <div class="flex gap-sm">
-          <Button
-            type="button"
-            look="dialog-secondary"
-            class="flex-1"
-            onclick={onClose}
-          >
-            {m.library_cancel()}
-          </Button>
-          <Button
-            type="button"
-            look="dialog-primary"
-            class="flex-1"
-            onclick={add}
-          >
-            {m.library_tabs_add()}
-          </Button>
+          <DialogActionPair>
+            {#snippet cancel()}
+              <Button
+                type="button"
+                look="dialog-secondary"
+                class="flex-1"
+                onclick={onClose}
+              >
+                {m.library_cancel()}
+              </Button>
+            {/snippet}
+            {#snippet confirm()}
+              <Button
+                type="button"
+                look="dialog-primary"
+                class="flex-1"
+                onclick={add}
+              >
+                {m.library_tabs_add()}
+              </Button>
+            {/snippet}
+          </DialogActionPair>
         </div>
       </div>
     {/snippet}

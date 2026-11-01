@@ -35,6 +35,7 @@
     <div class="pointer-events-auto">
       <ToastCard
         tone="plain"
+        severity="success"
         title={offer.title}
         action={{ label: m.undo_action(), run: undo }}
         onDismiss={onDone}

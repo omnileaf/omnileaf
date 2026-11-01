@@ -15,7 +15,7 @@
   this={level === undefined ? "p" : `h${String(level)}`}
   data-slot="alert-title"
   class={cn(
-    "col-start-2 text-label font-medium touch:max-medium:text-callout",
+    "col-start-2 text-label font-medium windows:font-semibold touch:max-medium:text-callout",
     className,
   )}
   {...restProps}

@@ -230,6 +230,8 @@
   "library_categories_every": "Every category",
   "library_categories_every_description": "Every tab in your library.",
   "library_view_layout": "Layout",
+  "library_category_sidebar": "Categories in the sidebar",
+  "library_category_sidebar_hint": "Your categories as a list in the sidebar.",
   "library_category_tabs": "Category tabs",
   "library_category_tabs_hint": "Your categories as tabs above the library.",
   "library_stack_covers": "Stack series covers",
@@ -2489,6 +2491,7 @@
     }
   ],
   "attention_find": "Find it",
+  "attention_close": "Close",
   "attention_count_label": [
     {
       "declarations": [

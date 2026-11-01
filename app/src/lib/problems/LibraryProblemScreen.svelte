@@ -4,6 +4,8 @@
   import type { LinkOpening } from "#lib/about/link-opening.svelte.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { LibraryProblem, ProjectLink } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+  import { problemLook } from "#lib/page/problem-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import ProblemScreen from "./ProblemScreen.svelte";
@@ -41,8 +43,7 @@
 {#snippet openProjectPage()}
   <Button
     type="button"
-    look="filled"
-    class="flex items-center justify-center rounded-full px-xl font-bold min-block-touch-target medium:rounded-control"
+    {...problemLook(currentPlatform()).button}
     onclick={() => {
       void opening.open(screen.link);
     }}

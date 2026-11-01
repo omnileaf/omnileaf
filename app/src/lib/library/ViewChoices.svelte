@@ -30,6 +30,8 @@
     withStackedCovers,
   } from "./library-view";
 
+  const isMac = currentPlatform() === "macos";
+
   let {
     view,
     coversDrawn,
@@ -103,8 +105,10 @@
     {#if hasCategories}
       <ViewSwitchRow
         {isMaterial}
-        label={m.library_category_tabs()}
-        description={m.library_category_tabs_hint()}
+        label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
+        description={isMac
+          ? m.library_category_sidebar_hint()
+          : m.library_category_tabs_hint()}
         isOn={view.showsCategoryTabs}
         onToggle={(isShown: boolean) => {
           onChoose(withCategoryTabs(view, isShown));

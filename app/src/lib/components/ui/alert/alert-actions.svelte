@@ -12,7 +12,10 @@
 
 <div
   data-slot="alert-actions"
-  class={cn("col-start-2 mbs-sm flex flex-wrap gap-sm", className)}
+  class={cn(
+    "col-start-2 mbs-sm flex flex-wrap gap-sm windows:mbs-md windows:mbe-xs",
+    className,
+  )}
   {...restProps}
 >
   {@render children?.()}
