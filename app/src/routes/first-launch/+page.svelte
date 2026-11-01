@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TriangleAlert } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -34,15 +35,20 @@
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
   import { FolderAdding } from "#lib/library/folder-adding.svelte.ts";
+  import { folderTitle } from "#lib/library/folder-title.ts";
   import {
     homeArrivalNotice,
     takeHomeArrival,
   } from "#lib/library/home-arrival.ts";
   import { HomeFolderChange } from "#lib/library/home-folder-change.svelte.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import { readMovedHome } from "#lib/library/read-moved-home.ts";
+  import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
+  import { Rescans } from "#lib/library/rescans.svelte.ts";
   import { SECTION_ROUTE_IDS } from "#lib/navigation/sections.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   import type { PageProps } from "./$types";
 
@@ -80,6 +86,10 @@
     () => pickerQuestion.ask(),
   );
 
+  const rescans = new Rescans(
+    rescanFolderWithProgress,
+    commands.removeBooksOfEmptiedFolder,
+  );
   const homeChange = new HomeFolderChange(
     {
       choose: commands.chooseHomeFolder,
@@ -87,6 +97,7 @@
       move: commands.moveHomeFolder,
     },
     () => notices,
+    readMovedHomeBooks,
   );
   const foundLibrary = $derived(homeChange.found?.library ?? data.foundLibrary);
 
@@ -131,6 +142,19 @@
     );
     if (notice !== undefined) {
       notices.show(notice);
+    }
+  }
+
+  async function readMovedHomeBooks(moved: LibraryFolder["id"]): Promise<void> {
+    await readMovedHome(folders, rescans, moved);
+    if (rescans.status.kind === "failed") {
+      notices.show({
+        tone: "warning",
+        icon: TriangleAlert,
+        title: m.library_rescan_failed({
+          name: folderTitle(rescans.status.folder),
+        }),
+      });
     }
   }
 
@@ -270,7 +294,7 @@
           folders={folders.list}
           found={foundLibrary}
           chosenLocation={homeChange.found?.location}
-          isBusy={homeChange.isBusy}
+          isBusy={homeChange.isBusy || rescans.isBusy}
           onBack={back}
           onStartNew={startNewLibrary}
           onUse={useLibrary}
@@ -282,7 +306,7 @@
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
-          isChanging={homeChange.isBusy}
+          isChanging={homeChange.isBusy || rescans.isBusy}
           onBack={back}
           onNext={next}
           onChange={() => {

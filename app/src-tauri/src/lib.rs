@@ -24,6 +24,7 @@ mod library_events;
 mod library_problem;
 mod main_window;
 mod omni_protocol;
+mod open_with;
 mod power_mode;
 mod problem_reporting;
 mod put_away;
@@ -154,7 +155,8 @@ pub fn run() {
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
         .plugin(icon_actions::plugin())
-        .plugin(volume_keys::plugin());
+        .plugin(volume_keys::plugin())
+        .plugin(open_with::plugin());
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())

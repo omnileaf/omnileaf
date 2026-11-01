@@ -40,6 +40,7 @@ use crate::{
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
+    open_with,
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
@@ -119,6 +120,7 @@ macro_rules! app_commands {
             open_book,
             file_to_open,
             queue_document_to_open,
+            watch_open_with,
             inspect_drop,
             drop_files,
             cropped_page_paths,
@@ -902,6 +904,12 @@ async fn file_to_open(
         return Ok(None);
     };
     Ok(Some(file.open(&library).await?))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn watch_open_with(app: AppHandle, on_handed: Channel<String>) -> Result<(), IpcError> {
+    open_with::watch(&app, on_handed).await
 }
 
 /// Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`.

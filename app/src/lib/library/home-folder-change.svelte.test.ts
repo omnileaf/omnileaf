@@ -1,10 +1,12 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type {
   ChosenHomeFolder,
   FoundLibrary,
   HomeChoice,
+  HomeMoved,
   IpcErrorCode,
+  LibraryFolder,
 } from "#lib/ipc/bindings.ts";
 import { type Notice, Notices } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -14,7 +16,8 @@ import {
   HomeFolderChange,
 } from "./home-folder-change.svelte";
 
-const CHOSEN = "/media/Sample Library";
+const CHOSEN = "Internal storage › Sample Library";
+const MOVED_TO = "5a4d1e00-0000-4000-8002-000000000009" as LibraryFolder["id"];
 const FOUND: FoundLibrary = {
   series: 3,
   books: 7,
@@ -39,14 +42,22 @@ class RecordingNotices extends Notices {
 
 class FakeHome {
   readonly asked = { choose: 0, use: 0, move: 0 };
+  readonly read: LibraryFolder["id"][] = [];
+  reading: () => Promise<void> = () => Promise.resolve();
   readonly notices = new RecordingNotices();
   readonly change: HomeFolderChange;
   #chosen: ChooseAnswer[];
   #acted: ActAnswer;
+  #moved: Answer<"move"> | undefined;
 
-  constructor(chosen: ChooseAnswer[], acted: ActAnswer = done()) {
+  constructor(
+    chosen: ChooseAnswer[],
+    acted: ActAnswer = done(),
+    moved?: Answer<"move">,
+  ) {
     this.#chosen = chosen;
     this.#acted = acted;
+    this.#moved = moved;
     this.change = new HomeFolderChange(
       {
         choose: () => {
@@ -63,10 +74,14 @@ class FakeHome {
         },
         move: () => {
           this.asked.move += 1;
-          return Promise.resolve(restarting(this.#acted));
+          return Promise.resolve(this.#moved ?? restarting(this.#acted));
         },
       },
       () => this.notices,
+      (folder) => {
+        this.read.push(folder);
+        return this.reading();
+      },
     );
   }
 
@@ -93,6 +108,11 @@ function failed(code: IpcErrorCode): {
 
 function done(): ActAnswer {
   return { status: "ok", data: null };
+}
+
+function moved(folder: LibraryFolder["id"]): Answer<"move"> {
+  const data: HomeMoved = { kind: "moved", folder };
+  return { status: "ok", data };
 }
 
 function restarting(acted: ActAnswer): Answer<"move"> {
@@ -323,4 +343,122 @@ test("finds no library while choosing from no library", async () => {
   await choosing;
 
   expect(foundWhileChoosing).toBeUndefined();
+});
+
+test("returns to idle once a move lands without a restart", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+
+  await home.change.choose();
+
+  expect([home.change.change.kind, home.change.isBusy, home.titles]).toEqual([
+    "idle",
+    false,
+    [],
+  ]);
+});
+
+test("reads the books of the folder the library moved to", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+
+  await home.change.choose();
+
+  expect(home.read).toEqual([MOVED_TO]);
+});
+
+test("stays busy until the books of the folder the library moved to are read", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+  let finishReading = () => {};
+  const reading = new Promise<void>((resolve) => {
+    finishReading = resolve;
+  });
+  home.reading = () => reading;
+
+  const choosing = home.change.choose();
+  await vi.waitFor(() => {
+    expect(home.read).toEqual([MOVED_TO]);
+  });
+  const busyWhileReading = home.change.isBusy;
+  finishReading();
+  await choosing;
+
+  expect([busyWhileReading, home.change.isBusy]).toEqual([true, false]);
+});
+
+test("goes back to idle when reading the books of the moved folder fails", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+  home.reading = () => Promise.reject(new Error("the folder couldn't be read"));
+
+  await home.change.choose().catch(() => {});
+
+  expect(home.change.change.kind).toBe("idle");
+});
+
+test("reads no books while the app is restarting after a move", async () => {
+  const home = new FakeHome([chose({ kind: "empty" })]);
+
+  await home.change.choose();
+
+  expect(home.read).toEqual([]);
+});
+
+test.each([
+  { name: "cancelled", answer: cancelled() },
+  { name: "the current folder", answer: chose({ kind: "current" }) },
+])("moves nothing and reads nothing when $name", async ({ answer }) => {
+  const home = new FakeHome([answer]);
+
+  await home.change.choose();
+
+  expect([home.asked.move, home.read]).toEqual([0, []]);
+});
+
+test("warns that the folder can't be read when moving into it fails, and reads nothing", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    failed("folderUnreadable"),
+  );
+
+  await home.change.choose();
+
+  expect([
+    home.change.change.kind,
+    home.titles,
+    home.notices.shown[0]?.action?.label,
+    home.read,
+  ]).toEqual([
+    "idle",
+    [m.library_folder_unreadable_title()],
+    m.library_choose_another_folder(),
+    [],
+  ]);
+});
+
+test("lets the folder be chosen again after an Android move", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" }), chose({ kind: "current" })],
+    done(),
+    moved(MOVED_TO),
+  );
+  await home.change.choose();
+
+  await home.change.choose();
+
+  expect(home.asked.choose).toBe(2);
 });

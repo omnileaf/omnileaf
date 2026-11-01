@@ -767,19 +767,20 @@ test.describe("changing the home folder on a desktop", () => {
   }
 });
 
-test.describe("the home folder on android, which can't move yet", () => {
+test.describe("the home folder on android, which moves through the picker", () => {
   testOnlyInItsWebview("android");
   test.use({ backend: changingHomeOn("android") });
 
-  test("offers no Change and says nothing about moving it", async ({
+  test("makes the Home folder row the only control, with no Change button and not the desktop note", async ({
     page,
   }) => {
     await goTo(page, HOME_HEADING, "android");
+    const controls = page
+      .getByRole("region", { name: "Home folder" })
+      .getByRole("button");
 
-    await expect(
-      page.getByRole("region", { name: "Home folder" }).getByRole("button"),
-    ).toHaveCount(0);
-    await expect(page.getByText(DESKTOP_HOME_LEAD)).toHaveCount(0);
+    await expect(controls).toHaveCount(1);
+    await expect(controls).toHaveAccessibleName("Home folder");
     await expect(page.getByText(DESKTOP_HOME_NOTE)).toHaveCount(0);
   });
 });

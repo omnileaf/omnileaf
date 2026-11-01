@@ -66,3 +66,15 @@ const HAS_NATIVE_LOOK = {
 export function hasNativeLook(platform: Platform): boolean {
   return HAS_NATIVE_LOOK[platform];
 }
+
+const OPENS_HANDED_FILES = {
+  android: true,
+  ios: false,
+  linux: true,
+  macos: true,
+  windows: true,
+} satisfies Record<Platform, boolean>;
+
+export function opensHandedFiles(platform: Platform): boolean {
+  return OPENS_HANDED_FILES[platform];
+}
