@@ -8,4 +8,5 @@ export interface SeriesMenuActions {
   readonly onEditDetails: (series: LibrarySeries) => void;
   readonly onSelect: (series: LibrarySeries) => void;
   readonly onShowInFolder: (series: LibrarySeries) => void;
+  readonly onRemove?: ((series: LibrarySeries) => void) | undefined;
 }
