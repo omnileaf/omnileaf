@@ -225,6 +225,8 @@
   --native-spacing-tab-bar-inline: var(--spacing-xs);
   --native-spacing-toolbar-button: var(--spacing-touch-target);
   --native-spacing-inspector: var(--spacing-docked-panel);
+  --native-spacing-inspector-title: var(--spacing-toolbar);
+  --native-spacing-inspector-section: var(--spacing-lg);
   --native-text-inspector-label: var(--text-small);
   --native-leading-inspector-label: var(--text-small--line-height);
   --native-weight-inspector-label: var(--font-weight-medium);
