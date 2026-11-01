@@ -303,41 +303,37 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   });
 });
 
-test.describe(
-  "Report a problem on an Android phone",
-  { tag: "@native" },
-  () => {
-    test.beforeEach(({ platform }) => {
-      test.skip(platform !== "android", "Android's fields and buttons");
-    });
+test.describe("Storage on an Android phone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's list rows");
+  });
 
-    test("draws the reply email as a 56px outlined field with a 4px corner, flat on the page", async ({
-      page,
-    }) => {
-      await page.goto("/settings/about/report");
-      const field = page.getByRole("textbox", {
-        name: "Email for a reply (optional)",
-      });
+  test("sets the cache rows flat, a 16px name over a 14px line", async ({
+    page,
+  }) => {
+    await page.goto("/settings/storage");
+    const name = page.getByText("Cached pages", { exact: true });
+    const line = page.getByText(/^1\.2 GB/);
 
-      expect((await boxOf(field)).height).toBeCloseTo(56, 0);
-      await expect(field).toHaveCSS("border-top-left-radius", "4px");
-      await expect(field).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-      await expect(field.locator("xpath=..").first()).toHaveCSS(
-        "background-color",
-        "rgba(0, 0, 0, 0)",
-      );
-    });
+    await expect(name).toHaveCSS("font-size", "16px");
+    await expect(name).toHaveCSS("font-weight", "400");
+    await expect(line).toHaveCSS("font-size", "14px");
+    await expect(line).toHaveCSS("line-height", "20px");
+    await expect(name.locator("xpath=ancestor::section[1]")).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
+    );
+  });
 
-    test("fills Send to Omnileaf in the accent, full width", async ({
-      page,
-    }) => {
-      await page.goto("/settings/about/report");
-      const send = page.getByRole("button", { name: "Send to Omnileaf" });
+  test("draws Clear as a tonal button in the soft accent", async ({ page }) => {
+    await page.goto("/settings/storage");
+    const clear = page.getByRole("button", { name: "Clear cached pages" });
 
-      await expect(send).toHaveCSS(
-        "background-color",
-        await tokenColour(page, "--native-color-button-primary"),
-      );
-    });
-  },
-);
+    await expect(clear).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-accent-soft"),
+    );
+    await expect(clear).toHaveCSS("border-top-width", "0px");
+    await expect(clear).toHaveCSS("font-size", "14px");
+  });
+});
