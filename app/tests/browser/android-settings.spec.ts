@@ -352,3 +352,35 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
     );
   });
 });
+
+test.describe("Advanced on an Android phone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's list rows");
+  });
+
+  test("heads Undo in the accent and runs its rows edge to edge, flat", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    const heading = page.getByRole("heading", { name: "Undo", exact: true });
+    const row = page.getByRole("switch", { name: /^Offer Undo/ });
+
+    await expect(heading).toHaveCSS("font-size", "14px");
+    await expect(heading).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-plain"),
+    );
+    expect((await boxOf(row)).x).toBeLessThanOrEqual(1);
+    await expect(row).toHaveCSS("border-top-width", "0px");
+  });
+
+  test("sets Keep Undo for as a row with its value under its name", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    const row = page.getByRole("button", { name: /^Keep Undo for/ });
+
+    await expect(row).toContainText(/\d+ seconds/);
+    await expect(row).toHaveAttribute("aria-haspopup", "dialog");
+  });
+});

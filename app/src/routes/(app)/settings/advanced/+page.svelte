@@ -9,9 +9,11 @@
   import { CrashTests } from "#lib/crash-tests/crash-tests.ts";
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSelect from "#lib/settings/SettingSelect.svelte";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
@@ -46,6 +48,8 @@
         });
   });
   const undoHeadingId = $props.id();
+  const android = new AndroidPhone();
+  const androidHeading = `-mx-page-start -me-page-end ${radiosLook(true).heading}`;
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
   );
@@ -66,11 +70,17 @@
   <section
     aria-labelledby={undoHeadingId}
     class={[
-      "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card",
+      "flex flex-col rounded-card border border-border bg-card",
+      !android.isOn && "divide-y divide-border overflow-hidden",
       GROUP_PLATE,
     ]}
   >
-    <h2 id={undoHeadingId} class="px-lg pbs-md pbe-xs text-small font-semibold">
+    <h2
+      id={undoHeadingId}
+      class={android.isOn
+        ? androidHeading
+        : "px-lg pbs-md pbe-xs text-small font-semibold"}
+    >
       {m.advanced_undo()}
     </h2>
     <SettingSwitch
@@ -114,7 +124,7 @@
     onToggle={() => {
       scheduledRescans.turn(!isCheckingFolders);
     }}
-    class="rounded-card border border-border bg-card"
+    class={android.isOn ? "" : "rounded-card border border-border bg-card"}
   />
   {#if data.appInfo.isDevelopmentBuild}
     <div
