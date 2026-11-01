@@ -104,6 +104,7 @@
   --native-spacing-row-end: var(--spacing-md);
   --native-spacing-row-gap: var(--spacing-md);
   --native-spacing-row-block: var(--spacing-sm);
+  --native-spacing-list-cover: var(--spacing-list-cover);
   --native-spacing-hairline: 1px;
   --native-spacing-row-rule-start: 0px;
   --native-spacing-row-rule-indent: 0px;

@@ -109,6 +109,7 @@
   --spacing-native-row-end: var(--native-spacing-row-end);
   --spacing-native-row-gap: var(--native-spacing-row-gap);
   --spacing-native-row-block: var(--native-spacing-row-block);
+  --spacing-native-list-cover: var(--native-spacing-list-cover);
   --spacing-native-hairline: var(--native-spacing-hairline);
   --spacing-native-row-rule-start: var(--native-spacing-row-rule-start);
   --spacing-native-row-rule-indent: var(--native-spacing-row-rule-indent);

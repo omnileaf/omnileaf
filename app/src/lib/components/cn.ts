@@ -412,6 +412,7 @@ export const TOKEN_THEME = {
     "native-info-bar-words-block",
     "native-large-title-above",
     "native-large-title-below",
+    "native-list-cover",
     "native-menu-block",
     "native-menu-inline",
     "native-menu-item",

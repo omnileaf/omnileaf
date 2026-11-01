@@ -78,6 +78,7 @@
   --native-spacing-row-end: 24px;
   --native-spacing-row-gap: 16px;
   --native-spacing-row-block: 8px;
+  --native-spacing-list-cover: var(--spacing-list-cover);
   --native-spacing-hairline: 0px;
   --native-spacing-row-rule-start: 0px;
   --native-spacing-row-rule-indent: 0px;
