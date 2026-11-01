@@ -184,7 +184,14 @@
   {#if overview.bookCount > 0 && overview.tags.length > 0}
     <ul aria-label={m.series_tags()} class="flex flex-wrap gap-icon-gap">
       {#each overview.tags as tag (tag)}
-        <li><Badge look="outline">{tag}</Badge></li>
+        <li>
+          <Badge
+            look="outline"
+            class="windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted"
+          >
+            {tag}
+          </Badge>
+        </li>
       {/each}
     </ul>
   {/if}
