@@ -988,6 +988,7 @@
 
 <EditDetailsDialog
   series={editedSeries}
+  platform={data.appInfo.platform}
   {coverUrl}
   onClose={() => {
     editedSeries = undefined;

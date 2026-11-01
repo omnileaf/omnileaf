@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { SeriesDetails } from "../../src/lib/ipc/bindings.ts";
+import type { Platform, SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
@@ -9,6 +9,7 @@ import {
   expect,
   EXPANDED_MIN_WIDTH,
   onPlatform,
+  settle,
   test,
   tokenColour,
   viewportOf,
@@ -97,14 +98,33 @@ function isWide(page: Page): boolean {
   return viewportOf(page).width >= EXPANDED_MIN_WIDTH;
 }
 
-function editor(page: Page): Locator {
-  return isWide(page)
+function editor(page: Page, platform?: Platform): Locator {
+  return isWide(page) || platform === "ios"
     ? page.getByRole("dialog", { name: "Edit details" })
     : page.getByRole("main");
 }
 
 function discardConfirm(page: Page): Locator {
   return page.getByRole("alertdialog", { name: "Discard your changes?" });
+}
+
+async function tap(target: Locator): Promise<void> {
+  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
+  await target.dispatchEvent("pointerdown", touch);
+  await target.dispatchEvent("pointerup", touch);
+  await target.dispatchEvent("click");
+}
+
+async function lengthOf(page: Page, token: `--${string}`): Promise<number> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.blockSize = `var(${name})`;
+    probe.style.position = "absolute";
+    document.body.append(probe);
+    const length = probe.getBoundingClientRect().height;
+    probe.remove();
+    return length;
+  }, token);
 }
 
 function seriesMenuButton(page: Page): Locator {
@@ -114,19 +134,22 @@ function seriesMenuButton(page: Page): Locator {
   });
 }
 
-async function openEditor(page: Page): Promise<Locator> {
+async function askForEditor(page: Page): Promise<void> {
+  await page.goto(`/series/${SERIES_ID}`);
   if (isWide(page)) {
-    await page.goto(`/series/${SERIES_ID}`);
     await page
       .getByRole("region", { name: "Details" })
       .getByRole("button", { name: "Edit details" })
       .click();
   } else {
-    await page.goto(`/series/${SERIES_ID}`);
     await seriesMenuButton(page).click();
     await page.getByRole("menuitem", { name: "Edit details…" }).click();
   }
-  const shown = editor(page);
+}
+
+async function openEditor(page: Page, platform?: Platform): Promise<Locator> {
+  await askForEditor(page);
+  const shown = editor(page, platform);
   await expect(shown.getByRole("textbox", { name: "Title" })).toBeVisible();
   return shown;
 }
@@ -533,14 +556,16 @@ test.describe("the 18+ mark on a phone", { tag: "@native" }, () => {
       test.skip();
       return;
     }
-    const shown = await openEditor(page);
+    const shown = await openEditor(page, platform);
     const mark = shown.getByRole("switch", { name: "Mark as 18+" });
 
-    await shown.getByText("Mark as 18+", { exact: true }).click();
-
     if (platform === "ios") {
+      await settle(shown);
+      await tap(shown.getByText("Mark as 18+", { exact: true }));
       await expect(mark).not.toBeChecked();
-      await mark.click();
+      await tap(mark);
+    } else {
+      await shown.getByText("Mark as 18+", { exact: true }).click();
     }
     await expect(mark).toBeChecked();
   });
@@ -550,7 +575,7 @@ test.describe("the 18+ mark on a phone", { tag: "@native" }, () => {
     platform,
   }) => {
     test.skip(platform !== "android", "an iPhone row draws no pressed fill");
-    const shown = await openEditor(page);
+    const shown = await openEditor(page, platform);
     const row = shown.getByRole("switch", { name: "Mark as 18+" });
 
     const edges = await row.evaluate((element) => {
@@ -577,12 +602,13 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
 
   test("sets each detail in its own grouped card, its heading above and the file's value below", async ({
     page,
+    platform,
   }) => {
-    const shown = await openEditor(page);
+    const shown = await openEditor(page, platform);
 
-    await expect(page.locator('[data-ground="grouped"]')).toHaveCSS(
+    await expect(shown).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--native-color-grouped-ground"),
+      await tokenColour(page, "--native-color-grouped-sheet"),
     );
     const details = [
       ["Title", shown.getByRole("textbox", { name: "Title" })],
@@ -591,6 +617,9 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
       ["Summary", shown.getByRole("textbox", { name: "Summary" })],
     ] as const;
     const cardColour = await tokenColour(page, "--native-color-card");
+    expect(cardColour).not.toBe(
+      await tokenColour(page, "--native-color-grouped-sheet"),
+    );
     for (const [name, control] of details) {
       const card = control.locator('xpath=ancestor::*[@data-slot="card"]');
       await expect(card).toHaveCount(1);
@@ -602,8 +631,9 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
 
   test("lets a card be its field, with grey chips and the file's value in footnote type", async ({
     page,
+    platform,
   }) => {
-    const shown = await openEditor(page);
+    const shown = await openEditor(page, platform);
 
     for (const name of ["Title", "Summary"]) {
       await expect(shown.getByRole("textbox", { name })).toHaveCSS(
@@ -626,8 +656,9 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
 
   test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
     page,
+    platform,
   }) => {
-    const shown = await openEditor(page);
+    const shown = await openEditor(page, platform);
 
     const save = shown.getByRole("button", { name: "Save" });
     const close = shown.getByRole("button", { name: "Close" });
@@ -647,5 +678,210 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     expect(Math.abs(middle - viewportOf(page).width / 2)).toBeLessThan(
       closeBox.width,
     );
+  });
+
+  test("opens as a large sheet over the series page", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await settle(shown);
+    const sheet = await boxOf(shown);
+    expect(
+      Math.abs(
+        sheet.height - (await lengthOf(page, "--native-spacing-sheet-large")),
+      ),
+    ).toBeLessThanOrEqual(1);
+    expect(sheet.y + sheet.height).toBeCloseTo(viewportOf(page).height, 0);
+  });
+
+  test("sets the footnote a section's gap above the first detail", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+
+    await settle(shown);
+    const footnote = await boxOf(
+      shown.getByText(
+        "Your changes show only in Omnileaf; the files stay as they are.",
+      ),
+    );
+    const title = await boxOf(shown.locator("section").first());
+    expect(title.y - (footnote.y + footnote.height)).toBeCloseTo(
+      await lengthOf(page, "--spacing-xl"),
+      0,
+    );
+  });
+
+  test("names the series to a screen reader behind the footnote", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+
+    await expect(shown).toHaveAccessibleDescription(
+      new RegExp(`${SERIES_TITLE}.*Your changes show only in Omnileaf`),
+    );
+  });
+
+  test("says in a footnote that the changes stay in Omnileaf, with no Cancel in a footer", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+
+    await expect(
+      shown.getByText(
+        "Your changes show only in Omnileaf; the files stay as they are.",
+      ),
+    ).toBeVisible();
+    await expect(shown.getByRole("button", { name: "Cancel" })).toHaveCount(0);
+  });
+
+  test("closes the sheet from Close when nothing changed", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+
+    await tap(shown.getByRole("button", { name: "Close" }));
+
+    await expect(shown).toHaveAttribute("data-state", "closed");
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+  });
+
+  test("asks before closing with unsaved changes, and Keep editing stays on the sheet", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+    await shown.getByRole("textbox", { name: "Title" }).fill(TYPED_TITLE);
+
+    await tap(shown.getByRole("button", { name: "Close" }));
+    await expect(discardConfirm(page)).toBeVisible();
+    await tap(
+      discardConfirm(page).getByRole("button", { name: "Keep editing" }),
+    );
+
+    await expect(shown).toHaveAttribute("data-state", "open");
+    await expect(shown.getByRole("textbox", { name: "Title" })).toHaveValue(
+      TYPED_TITLE,
+    );
+  });
+
+  test("saves from the bar and closes the sheet onto the series page", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+    await shown.getByRole("textbox", { name: "Title" }).fill(TYPED_TITLE);
+
+    await tap(shown.getByRole("button", { name: "Save" }));
+
+    await expect(shown).toHaveAttribute("data-state", "closed");
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    expect(sent).toHaveLength(1);
+  });
+});
+
+test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
+  test("keeps Edit details as its own page, not a sheet", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android's page");
+
+    await openEditor(page, platform);
+
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}/edit$`));
+    await expect(
+      page.getByRole("dialog", { name: "Edit details" }),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe(
+  "Edit details while the file's details load on an iPhone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "ios", "iOS's sheet bar");
+    });
+
+    test.use({
+      backend: {
+        ...EDITING_BACKEND,
+        seriesDetails: () => new Promise(() => undefined),
+      },
+    });
+
+    test("greys out Save until the details arrive", async ({
+      page,
+      platform,
+    }) => {
+      await askForEditor(page);
+      const shown = editor(page, platform);
+
+      const save = shown.getByRole("button", { name: "Save" });
+      await expect(save).toBeDisabled();
+      await expect(save).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-button-disabled"),
+      );
+      await expect(save).not.toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-button-primary"),
+      );
+    });
+  },
+);
+
+test.describe(
+  "Edit details opened straight to its page on an iPhone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "ios", "iOS's page");
+    });
+
+    test("sets the page on the grouped ground with Save as a filled pill", async ({
+      page,
+    }) => {
+      await page.goto(`/series/${SERIES_ID}/edit`);
+
+      await expect(page.getByRole("textbox", { name: "Title" })).toBeVisible();
+      await expect(page.locator('[data-ground="grouped"]')).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-grouped-ground"),
+      );
+      await expect(page.getByRole("button", { name: "Save" })).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-button-primary"),
+      );
+    });
+  },
+);
+
+test.describe("Edit details on a wide iOS window", () => {
+  test.use({
+    backend: {
+      ...EDITING_BACKEND,
+      appInfo: onPlatform("ios").backend.appInfo,
+    },
+  });
+
+  test("keeps the dialog with Cancel and Save in a footer", async ({
+    page,
+  }) => {
+    test.skip(!isWide(page), "a phone opens the sheet");
+
+    const shown = await openEditor(page);
+
+    await expect(shown).not.toHaveAttribute("data-ground", "grouped");
+    await expect(shown.getByRole("button", { name: "Cancel" })).toBeVisible();
+    await expect(shown.getByRole("button", { name: "Save" })).toBeVisible();
   });
 });

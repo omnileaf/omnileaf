@@ -27,9 +27,10 @@
     listenForReadingSaved,
   } from "#lib/library/library-changes.ts";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { phoneOf } from "#lib/page/platform.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import RelatedSeries from "#lib/series/RelatedSeries.svelte";
@@ -91,6 +92,10 @@
 
   const screenshotMode = getScreenshotMode();
   const isWide = new MediaQuery(EXPANDED_QUERY);
+  const width = new WindowWidth();
+  const editsInSheet = $derived(
+    isWide.current || phoneOf(data.appInfo.platform, width.current) === "ios",
+  );
   const hasToolbar = $derived(
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
@@ -340,7 +345,7 @@
   }
 
   function editDetailsFromMenu(): void {
-    if (isWide.current) {
+    if (editsInSheet) {
       editDetails();
     } else {
       void goto(resolve("/(app)/series/[id]/edit", { id: data.id }));
@@ -564,6 +569,7 @@
 
 <EditDetailsDialog
   series={editedSeries}
+  platform={data.appInfo.platform}
   {coverUrl}
   onClose={() => {
     editedSeries = undefined;
