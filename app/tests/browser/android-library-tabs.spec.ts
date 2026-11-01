@@ -108,6 +108,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
 
     await expect(dialog).toBeHidden();
     await expect(row).toContainText("Reading");
+  });
 
   test("lifts the row a little off the page while it is dragged, then sets it down", async ({
     page,
