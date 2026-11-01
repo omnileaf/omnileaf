@@ -8,6 +8,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import ChangeHomeButton from "./ChangeHomeButton.svelte";
+  import ChangeHomeRow from "./ChangeHomeRow.svelte";
   import HomeCard, { type HomeFact } from "./HomeCard.svelte";
   import StepBadge from "./StepBadge.svelte";
   import StepButton from "./StepButton.svelte";
@@ -59,17 +60,23 @@
     },
   ];
 
-  const isInFiles = $derived(platform === "ios");
-  const canChange = $derived(isPointer(platform));
+  const LEADS = {
+    android: m.first_launch_home_body_android,
+    ios: m.first_launch_home_body_ios,
+    linux: m.first_launch_home_body_desktop,
+    macos: m.first_launch_home_body_desktop,
+    windows: m.first_launch_home_body_desktop,
+  } satisfies Record<Platform, () => string>;
+  const NOTES = {
+    android: m.first_launch_home_note_android,
+    ios: undefined,
+    linux: m.first_launch_home_note_desktop,
+    macos: m.first_launch_home_note_desktop,
+    windows: m.first_launch_home_note_desktop,
+  } satisfies Record<Platform, (() => string) | undefined>;
 
-  function leadText(): string {
-    if (isInFiles) {
-      return m.first_launch_home_body_ios();
-    }
-    return canChange
-      ? m.first_launch_home_body_desktop()
-      : m.first_launch_home_body();
-  }
+  const isInFiles = $derived(platform === "ios");
+  const note = $derived(NOTES[platform]);
 </script>
 
 <StepFrame step="home" {onBack}>
@@ -79,7 +86,7 @@
     {/snippet}
     {isInFiles ? m.first_launch_home_title_ios() : m.first_launch_home_title()}
     {#snippet lead()}
-      {leadText()}
+      {LEADS[platform]()}
     {/snippet}
   </StepHeader>
   {#if folders.kind === "loaded" && folders.home !== undefined}
@@ -90,15 +97,22 @@
       location={folderLocation(folders.home, platform)}
       facts={isInFiles ? IN_FILES : IN_A_FOLDER}
     >
-      {#snippet change()}
-        {#if canChange}
+      {#snippet change(titleId, pathId)}
+        {#if isPointer(platform)}
           <ChangeHomeButton {platform} isBusy={isChanging} onclick={onChange} />
+        {:else if platform === "android"}
+          <ChangeHomeRow
+            {titleId}
+            {pathId}
+            isBusy={isChanging}
+            onclick={onChange}
+          />
         {/if}
       {/snippet}
     </HomeCard>
-    {#if canChange}
+    {#if note !== undefined}
       <p class="px-xs text-footnote text-muted">
-        {m.first_launch_home_note_desktop()}
+        {note()}
       </p>
     {/if}
   {/if}

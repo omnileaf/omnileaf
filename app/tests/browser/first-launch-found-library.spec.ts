@@ -412,6 +412,10 @@ test.describe("a library already in the home folder on an android phone", () => 
   testOnlyInItsWebview("android");
   test.use({ backend: foundOn("android") });
 
+  test.beforeEach(() => {
+    asked.reset();
+  });
+
   test("makes the whole Home folder row the Change control", async ({
     page,
   }) => {
@@ -460,17 +464,18 @@ test.describe("a library already in the home folder on an android phone", () => 
     ).toBeVisible();
   });
 
-  test("says changing the home folder is coming soon", async ({ page }) => {
+  test("opens the folder picker from the Home folder row", async ({ page }) => {
+    asked.chosen.push({
+      location: HOME_LOCATION,
+      choice: { kind: "current" },
+    });
     await goToTheHomeFolder(page);
 
-    await expectComingSoon(
-      page,
-      homeCard(page).getByRole("button", {
-        name: ANDROID_CHANGE_ROW,
-        exact: true,
-      }),
-      "Change",
-    );
+    await homeCard(page)
+      .getByRole("button", { name: ANDROID_CHANGE_ROW, exact: true })
+      .click();
+
+    await expect.poll(() => asked.chosen.length).toBe(0);
   });
 
   test("stacks Use this library 6px over Start a new library instead", async ({
