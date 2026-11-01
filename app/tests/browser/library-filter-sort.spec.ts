@@ -903,7 +903,7 @@ for (const platform of ["android", "ios"] as const) {
         name: "Order: A to Z. Change to Z to A",
       });
       const direction = await boxOf(order);
-      if (platform === "android" && isPhone(page)) {
+      if (isPhone(page)) {
         const reach = (TOUCH_TARGET - direction.height) / 2 - 1;
         const edge = await order.evaluate((button, corner) => {
           const { left, top } = button.getBoundingClientRect();
