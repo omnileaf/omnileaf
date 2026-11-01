@@ -63,6 +63,7 @@
   confirmLabel={deleteFiles ? m.remove_confirm_files() : m.remove_confirm()}
   cancelLabel={m.remove_cancel()}
   {isBusy}
+  iosPhoneLook="actionSheet"
   onConfirm={() => {
     onConfirm(deleteFiles);
   }}
