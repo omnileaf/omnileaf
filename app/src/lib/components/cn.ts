@@ -565,6 +565,8 @@ export const TOKEN_THEME = {
     "native-toolbar-button",
     "native-top-bar",
     "native-top-bar-lift",
+    "native-top-tab",
+    "native-top-tab-bar",
     "none",
     "nothing-found",
     "nothing-found-lift",

@@ -21,12 +21,13 @@
     isPaneToggledBy,
     PANE_SHORTCUT,
   } from "#lib/navigation/pane-shortcut.ts";
-  import { sectionOf } from "#lib/navigation/sections.ts";
+  import { isSectionRoot, sectionOf } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
     sidebarSettingForDocument,
   } from "#lib/navigation/sidebar.svelte.ts";
   import SwipeableMain from "#lib/navigation/SwipeableMain.svelte";
+  import TopTabBar from "#lib/navigation/TopTabBar.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
   import { fixProblem } from "#lib/problems/fix-problem.ts";
@@ -48,7 +49,12 @@
   import { QuickOpenState } from "#lib/search/quick-open-state.svelte.ts";
   import { shownBackLink } from "#lib/navigation/back-link.ts";
   import { paneFoldQuery, WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPointer, phoneOf, usesCommandKey } from "#lib/page/platform.ts";
+  import {
+    hasTopTabBar,
+    isPointer,
+    phoneOf,
+    usesCommandKey,
+  } from "#lib/page/platform.ts";
   import { deviceWordOf } from "#lib/storage/device.ts";
   import LowSpaceNotice from "#lib/storage/LowSpaceNotice.svelte";
   import { type Shortcut, shortcut } from "#lib/shortcut.ts";
@@ -196,14 +202,20 @@
 >
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
-      <AppNavigation
-        current={sectionOf(page.url.pathname)}
-        isCollapsed={isTabBarCollapsed}
-        attention={isPointer(data.appInfo.platform) &&
-        needsAttention.problems.length > 0
-          ? attention
-          : undefined}
-      />
+      {#if hasTopTabBar(data.appInfo.platform, width.current)}
+        {#if isSectionRoot(page.route.id)}
+          <TopTabBar current={sectionOf(page.url.pathname)} />
+        {/if}
+      {:else}
+        <AppNavigation
+          current={sectionOf(page.url.pathname)}
+          isCollapsed={isTabBarCollapsed}
+          attention={isPointer(data.appInfo.platform) &&
+          needsAttention.problems.length > 0
+            ? attention
+            : undefined}
+        />
+      {/if}
     {/key}
   {/if}
   <SwipeableMain

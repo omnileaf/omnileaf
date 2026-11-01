@@ -2,7 +2,7 @@
   import { WindowWidth } from "./breakpoints";
   import { commandBarLook } from "./command-bar-look";
   import { currentPlatform, isPhone } from "./platform";
-  import { NATIVE_TOP_BAR } from "./top-bar";
+  import { hasLargeTitle, NATIVE_TOP_BAR } from "./top-bar";
 
   let { title, size = "page" }: { title: string; size?: "page" | "large" } =
     $props();
@@ -18,7 +18,8 @@
     if (bar !== undefined) {
       return bar.title;
     }
-    if (isPhone(platform, width.current)) {
+    const isLarge = size === "large" && hasLargeTitle(platform, width.current);
+    if (isPhone(platform, width.current) || isLarge) {
       return [
         size === "large" ? NATIVE_TOP_BAR.largeTitle : NATIVE_TOP_BAR.pageTitle,
         "wrap-anywhere",

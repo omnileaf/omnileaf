@@ -2,7 +2,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { IconName } from "#lib/icons/names.ts";
 
 import type { WidthClass } from "./breakpoints";
-import { isPhone } from "./platform";
+import { hasTopTabBar, isPhone } from "./platform";
 
 export const NATIVE_TOP_BAR = {
   pageTitle:
@@ -34,7 +34,7 @@ export function backIcon(platform: Platform): IconName {
 }
 
 export function hasLargeTitle(platform: Platform, width: WidthClass): boolean {
-  return isPhone(platform, width);
+  return isPhone(platform, width) || hasTopTabBar(platform, width);
 }
 
 export function foldsBarActionsIntoMore(platform: Platform): boolean {

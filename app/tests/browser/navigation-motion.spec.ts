@@ -186,8 +186,12 @@ function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
   });
 }
 
-function testCrossfadingTheFill(): void {
+function testCrossfadingTheFill(iconsBelowWidth = Infinity): void {
   test("crossfades the selected icon's fill", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= iconsBelowWidth,
+      "the top tab bar has no icons",
+    );
     await page.goto("/history");
 
     const icon = await motionIn(tab(page, "History").locator("svg"));
@@ -195,7 +199,7 @@ function testCrossfadingTheFill(): void {
     expect(icon.transitions).toEqual([FADE]);
   });
 
-  test("fades the icons without restarting their transitions every frame", async ({
+  test("fades the tabs without restarting their transitions every frame", async ({
     page,
   }) => {
     await page.goto("/");
@@ -342,7 +346,9 @@ test.describe("on iOS", () => {
 
   testTurningTheScreen();
 
-  test("only fades the rail's and sidebar's highlight", async ({ page }) => {
+  test("only fades the highlight of the rail, sidebar and top tab bar", async ({
+    page,
+  }) => {
     test.skip(
       viewportOf(page).width < MEDIUM_MIN_WIDTH,
       "tablets and desktops only",
@@ -354,8 +360,35 @@ test.describe("on iOS", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
+  test("dims a pressed top tab at once instead of fading it", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "tablets and desktops only",
+    );
+    await page.goto("/");
+    const link = tab(page, "History");
+    const { x, y, width, height } = await boxOf(link);
+
+    await page.mouse.move(x + width / 2, y + height / 2);
+    await page.mouse.down();
+    const fadingProperties = await link.evaluate((element) =>
+      element
+        .getAnimations()
+        .flatMap((animation) =>
+          animation instanceof CSSTransition
+            ? [animation.transitionProperty]
+            : [],
+        ),
+    );
+    await page.mouse.up();
+
+    expect(fadingProperties).not.toContain("opacity");
+  });
+
   testMovingIcons({ belowWidth: MEDIUM_MIN_WIDTH, where: "phones" });
-  testCrossfadingTheFill();
+  testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();
 });
 

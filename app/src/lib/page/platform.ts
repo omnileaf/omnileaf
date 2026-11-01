@@ -18,6 +18,10 @@ export function isPhone(platform: Platform, width: WidthClass): boolean {
   return !isPointer(platform) && width === "compact";
 }
 
+export function hasTopTabBar(platform: Platform, width: WidthClass): boolean {
+  return platform === "ios" && width !== "compact";
+}
+
 export type PhonePlatform = Extract<Platform, "android" | "ios">;
 
 export function phoneOf(

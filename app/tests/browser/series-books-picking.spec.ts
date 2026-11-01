@@ -953,14 +953,16 @@ test.describe(
       await expect(page.getByRole("menu")).toHaveCount(0);
     });
 
-    test("keeps today's picking on a tablet", async ({ page }) => {
+    test("keeps today's picking on a tablet", async ({ page, platform }) => {
       await page.setViewportSize(TABLET);
       await openSeries(page);
 
       await startPickingFrom(page, 1);
 
       await expect(page.locator("[data-picking-bar]")).toHaveCount(0);
-      await expect(navigation(page)).toBeVisible();
+      await expect(navigation(page)).toBeVisible({
+        visible: platform !== "ios",
+      });
     });
   },
 );

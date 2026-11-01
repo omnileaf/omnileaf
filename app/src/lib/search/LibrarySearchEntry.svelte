@@ -54,7 +54,7 @@
       href={resolve(SEARCH_ROUTE_ID)}
       aria-label={m.search_open()}
       class={[
-        "flex items-center justify-center rounded-full transition-control hover:tint-hover active:tint-pressed large:hidden",
+        "flex items-center justify-center rounded-full transition-control hover:tint-hover active:tint-pressed search-field:hidden",
         isPhone(platform, width.current)
           ? NATIVE_TOP_BAR.barButton
           : "block-touch-target inline-touch-target",
@@ -65,7 +65,7 @@
   {/snippet}
 </Tooltip>
 <InputGroup
-  class="hidden gap-sm rounded-input-group border border-input-group-edge bg-input-group px-md text-muted block-shadcn-control inline-library-search focus-within:border-accent large:flex macos:shadow-raised windows:border-be-windows-stroke-strong linux:shadow-raised in-toolbar:inline-library-search-toolbar"
+  class="hidden gap-sm rounded-input-group border border-input-group-edge bg-input-group px-md text-muted block-shadcn-control inline-library-search focus-within:border-accent macos:shadow-raised windows:border-be-windows-stroke-strong linux:shadow-raised in-toolbar:inline-library-search-toolbar search-field:flex"
 >
   <Search size={FIELD_ICON_SIZE} aria-hidden="true" class="shrink-0" />
   <Input

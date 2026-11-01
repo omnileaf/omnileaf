@@ -72,6 +72,27 @@ test.describe("selecting series on an iPad", () => {
     await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
   });
 
+  test("holds the tab bar between Select all and Done on their row", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "iPads only");
+    await startSelecting(page);
+
+    const [selectAll, bar, done] = await Promise.all([
+      boxOf(page.getByRole("button", { name: "Select all" })),
+      boxOf(page.getByRole("navigation", { name: "Main" })),
+      boxOf(page.getByRole("button", { name: "Done" })),
+    ]);
+
+    expect(bar.x).toBeGreaterThan(selectAll.x + selectAll.width);
+    expect(done.x).toBeGreaterThan(bar.x + bar.width);
+    expect(bar.y + bar.height / 2).toBeCloseTo(
+      selectAll.y + selectAll.height / 2,
+      0,
+    );
+    expect(bar.x + bar.width / 2).toBeCloseTo(viewportOf(page).width / 2, 0);
+  });
+
   test("sets Select all and Done on one row with the count under them, and Done ends the selection", async ({
     page,
   }) => {

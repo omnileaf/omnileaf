@@ -57,7 +57,7 @@
             {...props}
             look="header-control"
             aria-label={m.library_more()}
-            class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target desktop-shell:hidden"
+            class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target ios:medium:block-native-target ios:medium:inline-native-target desktop-shell:hidden"
           >
             <Ellipsis size={ICON_SIZE} aria-hidden="true" />
           </Button>

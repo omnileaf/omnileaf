@@ -78,19 +78,6 @@ test.describe("on iOS", () => {
     expect(clearance).toBeGreaterThanOrEqual(viewport.height - bar.y);
   });
 
-  test("keeps the rail and sidebar on tablets and desktops", async ({
-    page,
-  }) => {
-    const viewport = viewportOf(page);
-    test.skip(viewport.width < MEDIUM_MIN_WIDTH, "tablets and desktops only");
-    await page.goto("/");
-
-    const navigation = await navigationBox(page);
-
-    expect(navigation.x).toBe(0);
-    expect(navigation.height).toBeCloseTo(viewport.height, 0);
-  });
-
   test("shrinks the bar on the search page to a circle at the bottom start leading back to the library", async ({
     page,
   }) => {
@@ -105,17 +92,6 @@ test.describe("on iOS", () => {
     ).not.toHaveAttribute("aria-current");
     const circle = await navigationBox(page);
     expect([circle.x, circle.width, circle.height]).toEqual([16, 48, 48]);
-  });
-
-  test("keeps every tab in the rail on the search page on tablets", async ({
-    page,
-  }) => {
-    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "tablets only");
-    await page.goto("/search");
-
-    await expect(
-      page.getByRole("navigation", { name: "Main" }).getByRole("link"),
-    ).toHaveCount(4);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

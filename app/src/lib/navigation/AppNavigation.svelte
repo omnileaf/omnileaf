@@ -11,6 +11,7 @@
   import { categorySource } from "#lib/library/category-source.svelte.ts";
   import { tabKey } from "#lib/library/library-tabs.ts";
 
+  import { DESTINATIONS, SIDE_END_SECTION } from "./destinations";
   import NavigationIcon from "./NavigationIcon.svelte";
   import { paneArrowKeys } from "./pane-arrow-keys.ts";
   import PaneToggle from "./PaneToggle.svelte";
@@ -18,36 +19,7 @@
   import { getSidebarSetting } from "./sidebar.svelte.ts";
   import { COLLAPSED_TAB_BAR_LOOK, tabBarLook } from "./tab-bar.ts";
 
-  interface Destination {
-    readonly section: Section;
-    readonly label: () => string;
-    readonly isAtSideEnd: boolean;
-  }
-
   const ICON_SIZE = 22;
-
-  const DESTINATIONS: readonly Destination[] = [
-    {
-      section: "library",
-      label: m.library_title,
-      isAtSideEnd: false,
-    },
-    {
-      section: "browse",
-      label: m.browse_title,
-      isAtSideEnd: false,
-    },
-    {
-      section: "history",
-      label: m.history_title,
-      isAtSideEnd: false,
-    },
-    {
-      section: "settings",
-      label: m.settings_title,
-      isAtSideEnd: true,
-    },
-  ];
 
   let {
     current,
@@ -146,7 +118,8 @@
       {@const isSelected = destination.section === current}
       {@const isWayBack = isCollapsed && isSelected}
       {@const isArriving = destination.section === arriving}
-      {#if destination.isAtSideEnd && attention !== undefined}
+      {@const isAtSideEnd = destination.section === SIDE_END_SECTION}
+      {#if isAtSideEnd && attention !== undefined}
         <li class="hidden desktop-shell:mbs-auto desktop-shell:flex">
           {@render attention({ isFolded })}
         </li>
@@ -156,7 +129,7 @@
           "flex-1 min-inline-none medium:flex-none desktop-shell:flex-none",
           look.cell,
           isCollapsed && !isSelected && "hidden",
-          destination.isAtSideEnd &&
+          isAtSideEnd &&
             (attention === undefined
               ? "medium:mbs-auto desktop-shell:mbs-auto"
               : "medium:mbs-auto desktop-shell:mbs-none"),

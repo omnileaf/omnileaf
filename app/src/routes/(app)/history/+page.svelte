@@ -202,7 +202,7 @@
         {...props}
         look="icon"
         aria-label={m.history_search()}
-        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:hidden"
+        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed search-field:hidden"
         onclick={() => {
           void startSearching();
         }}
@@ -216,7 +216,7 @@
     text={matching}
     {platform}
     look="field"
-    class="hidden inline-library-search large:flex"
+    class="hidden inline-library-search search-field:flex"
     onFind={find}
   />
   <Tooltip label={m.history_clear()}>
@@ -238,7 +238,7 @@
 
 {#if isSearching}
   <h1 class="sr-only">{m.history_title()}</h1>
-  <div class="flex items-center gap-sm large:hidden">
+  <div class="flex items-center gap-sm search-field:hidden">
     <Tooltip label={m.history_back()}>
       {#snippet child({ props })}
         <Button
