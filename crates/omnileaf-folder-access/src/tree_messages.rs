@@ -77,7 +77,7 @@ impl<'de> Deserialize<'de> for PickedTree {
             &picked.document_id,
             picked.storage_name.as_deref(),
         );
-        AndroidTree::new(picked.uri, folder_name(&picked.name), place)
+        AndroidTree::new(picked.uri, one_name(&picked.name), place)
             .map(Self)
             .map_err(D::Error::custom)
     }
@@ -154,8 +154,8 @@ pub(crate) fn refusal_kind(code: Option<&str>) -> io::ErrorKind {
     }
 }
 
-/// A documents provider may name a folder anything, path separators and dot names included.
-fn folder_name(provided: &str) -> String {
+/// A documents provider may name a folder or file anything, path separators and dot names included.
+pub(crate) fn one_name(provided: &str) -> String {
     let name = provided.replace(NAME_SEPARATORS, SEPARATOR_STAND_IN);
     match name.as_str() {
         "" | "." | ".." => SEPARATOR_STAND_IN.repeat(name.len().max(1)),
