@@ -109,6 +109,36 @@ test("draws no check circle on the covers, keeping the picked ones checked for a
 });
 
 const HIGHLIGHT_SHARE_OF_COVER_WIDTH = 1 / 16;
+const FINDER_HIGHLIGHT = {
+  light: "color-mix(in srgb, rgba(0, 0, 0, 0.85) 12%, transparent)",
+  dark: "color-mix(in srgb, rgba(255, 255, 255, 0.85) 12%, transparent)",
+};
+
+async function resolvedColour(page: Page, colour: string): Promise<string> {
+  return page.evaluate((value) => {
+    const probe = document.createElement("div");
+    probe.style.color = value;
+    document.body.append(probe);
+    const resolved = getComputedStyle(probe).color;
+    probe.remove();
+    return resolved;
+  }, colour);
+}
+
+async function pixelOf(page: Page, colour: string): Promise<number[]> {
+  return page.evaluate((value) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.fillStyle = value;
+    context.fillRect(0, 0, 1, 1);
+    return [...context.getImageData(0, 0, 1, 1).data];
+  }, colour);
+}
 const WHOLE_PIXEL_OUTLINE = 1;
 
 function pickedCover(page: Page, index: number): Locator {
@@ -145,8 +175,20 @@ test("sits a picked cover on a grey highlight a sixteenth of its width wide", as
   expect(
     Math.abs(outline.width - width * HIGHLIGHT_SHARE_OF_COVER_WIDTH),
   ).toBeLessThan(WHOLE_PIXEL_OUTLINE);
-  expect(outline.color).not.toBe("rgba(0, 0, 0, 0)");
 });
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`draws the highlight as Finder's ${scheme} grey`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await pickTwo(page);
+
+    const outline = await outlineOf(pickedCover(page, 0));
+
+    expect(await pixelOf(page, outline.color)).toEqual(
+      await pixelOf(page, FINDER_HIGHLIGHT[scheme]),
+    );
+  });
+}
 
 test("leaves a cover that is not picked without a highlight", async ({
   page,
@@ -166,10 +208,23 @@ test("draws the picked cover's title on an accent pill and the others plain", as
   const picked = pickedTitle(page, 0);
   const plain = pickedTitle(page, 2);
 
-  await expect(picked).toHaveCSS("background-color", "rgb(47, 111, 79)");
-  await expect(picked).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(picked).toHaveCSS(
+    "background-color",
+    await resolvedColour(page, "var(--color-accent)"),
+  );
+  await expect(picked).toHaveCSS(
+    "color",
+    await resolvedColour(page, "var(--color-on-accent)"),
+  );
   await expect(picked).toHaveCSS("border-radius", "4px");
-  await expect(plain).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(plain).not.toHaveCSS(
+    "background-color",
+    await resolvedColour(page, "var(--color-accent)"),
+  );
+  await expect(plain).toHaveCSS(
+    "background-color",
+    await resolvedColour(page, "transparent"),
+  );
 });
 
 test("lets the highlight go with the selection", async ({ page }) => {

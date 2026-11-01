@@ -152,7 +152,7 @@
   --native-color-notice-action: rgba(0, 0, 0, 0.03);
   --native-color-on-notice-action: #2f6f4f;
   --native-color-focus-ring: #2f6f4f80;
-  --native-color-tile-picked: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --native-color-tile-picked: color-mix(in srgb, rgba(0, 0, 0, 0.85) 12%, transparent);
 }
 
 :root[data-platform="macos"][data-theme="dark"],
@@ -238,7 +238,7 @@
   --native-color-notice-action: rgba(255, 255, 255, 0.03);
   --native-color-on-notice-action: #7fcb9d;
   --native-color-focus-ring: #2e7d5580;
-  --native-color-tile-picked: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --native-color-tile-picked: color-mix(in srgb, rgba(255, 255, 255, 0.85) 12%, transparent);
 }
 
 :root[data-platform="macos"][data-contrast="more"],
@@ -294,6 +294,7 @@
   --native-color-on-notice: #000000;
   --native-color-on-notice-action: #1f5a3c;
   --native-color-focus-ring: #1f5a3c;
+  --native-color-tile-picked: color-mix(in srgb, #000000 12%, transparent);
 }
 
 :root[data-platform="macos"][data-contrast="more"][data-theme="dark"],
@@ -349,4 +350,5 @@
   --native-color-on-notice: #ffffff;
   --native-color-on-notice-action: #a8e0bd;
   --native-color-focus-ring: #a8e0bd;
+  --native-color-tile-picked: color-mix(in srgb, #ffffff 12%, transparent);
 }
