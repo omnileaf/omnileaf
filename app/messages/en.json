@@ -1954,6 +1954,7 @@
   "edit_details_mark_adult_rated": "Rated 18+ in the file. To change that, turn off Use age ratings from book details in {link}.",
   "edit_details_settings_library": "Settings › Library",
   "edit_details_mark_adult_ratings_off": "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this switch counts.",
+  "edit_details_mark_adult_ratings_off_box": "The file rates it Adults Only 18+, but Use age ratings from book details is off in Settings › Library, so only this box counts.",
   "edit_details_title_back": "Title back to the file’s",
   "edit_details_people_back": "People back to the file’s",
   "edit_details_tags_back": "Tags back to the file’s",

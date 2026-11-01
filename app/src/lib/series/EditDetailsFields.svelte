@@ -28,6 +28,7 @@
     useFileLabel,
   } from "./detail-wording.ts";
   import AddDetailChip from "./AddDetailChip.svelte";
+  import AdultMarkCheckbox from "./AdultMarkCheckbox.svelte";
   import {
     ANDROID_CHIP_CROSS_SIZE,
     ANDROID_DETAIL_CHIP,
@@ -37,6 +38,11 @@
     MACOS_CHIP_CROSS_SIZE,
     MACOS_DETAIL_CHIP,
   } from "./detail-chip.ts";
+  import {
+    MACOS_DETAIL_NOTE,
+    MACOS_ONE_LINE_FIELD,
+    MACOS_TALL_FIELD,
+  } from "./detail-field.ts";
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
@@ -51,11 +57,8 @@
   const FIELD = "flex flex-col gap-sm py-md";
   const GROUPED_FIELD = "flex flex-col gap-sm";
   const MACOS_FIELD = "grid grid-cols-detail-row items-start gap-x-sm gap-y-xs";
-  const MACOS_FROM_FILE =
-    "col-start-2 text-native-sheet-text leading-native-sheet-text text-muted";
+  const MACOS_FROM_FILE = `col-start-2 ${MACOS_DETAIL_NOTE}`;
   const MACOS_CHIPS = "col-start-2 flex flex-wrap gap-native-detail-chip-gap";
-  const MACOS_TEXT = "col-start-2 text-native-button leading-native-button";
-  const MACOS_TITLE_FIELD = `${MACOS_TEXT} min-block-native-button py-2xs`;
   const MACOS_ADULT_ROW = "grid grid-cols-detail-row gap-x-sm";
   const CHIPS = "flex flex-wrap items-center gap-sm";
   const FROM_FILE = "text-label text-foreground/80";
@@ -140,6 +143,17 @@
   );
   const crossClass = $derived(isMacos ? MACOS_CHIP_CROSS : undefined);
   const adultMark: Snippet = markAdult;
+  const isAdultLocked = $derived(details.isRatedAdult && countsAgeRatings);
+  const adultNote = $derived(
+    !details.isRatedAdult
+      ? m.edit_details_mark_adult_note()
+      : isMacos
+        ? m.edit_details_mark_adult_ratings_off_box()
+        : m.edit_details_mark_adult_ratings_off(),
+  );
+  const toggleAdult = (): void => {
+    onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
+  };
   let isShowingEveryone = $state(false);
 
   const edited = $derived({
@@ -208,19 +222,15 @@
 </script>
 
 {#snippet markAdult()}
-  {#if details.isRatedAdult && countsAgeRatings}
+  {#if isAdultLocked}
     <LockedAdultMark />
   {:else}
     <SettingSwitch
       label={m.edit_details_mark_adult()}
-      description={details.isRatedAdult
-        ? m.edit_details_mark_adult_ratings_off()
-        : m.edit_details_mark_adult_note()}
+      description={adultNote}
       isOn={draft.isMarkedAdult}
-      onToggle={() => {
-        onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
-      }}
-      class={isMacos ? "px-none" : "-mx-lg -mbe-xs inline-auto"}
+      onToggle={toggleAdult}
+      class="-mx-lg -mbe-xs inline-auto"
     />
   {/if}
 {/snippet}
@@ -257,7 +267,7 @@
         class={[
           !isSheet &&
             (isMacos
-              ? MACOS_TITLE_FIELD
+              ? MACOS_ONE_LINE_FIELD
               : "text-body min-block-title-field touch:min-block-touch-target"),
           titleTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
@@ -400,7 +410,7 @@
           ? undefined
           : `${id}-summary-file`}
         class={[
-          !isSheet && (isMacos ? MACOS_TEXT : "text-body"),
+          !isSheet && (isMacos ? MACOS_TALL_FIELD : "text-body"),
           summaryTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
@@ -412,7 +422,12 @@
   </div>
   {#if isMacos}
     <div class={MACOS_ADULT_ROW}>
-      <div class="col-start-2">{@render adultMark()}</div>
+      <AdultMarkCheckbox
+        isOn={isAdultLocked || draft.isMarkedAdult}
+        isLocked={isAdultLocked}
+        note={adultNote}
+        onToggle={toggleAdult}
+      />
     </div>
   {:else}
     <DetailBox {isGrouped}>{@render adultMark()}</DetailBox>

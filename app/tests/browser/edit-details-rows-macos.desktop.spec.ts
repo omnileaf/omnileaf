@@ -266,7 +266,7 @@ test.describe("Edit details rows on macOS", () => {
     await expect(summary).toHaveCSS("font-size", MACOS.control.fontSize);
   });
 
-  test("lines the Mark as 18+ row up under the fields without bleeding into the sheet", async ({
+  test("lines the Mark as 18+ checkbox up under the fields without bleeding into the sheet", async ({
     page,
   }) => {
     const sheet = await openEditor(page);
@@ -275,12 +275,10 @@ test.describe("Edit details rows on macOS", () => {
       rowOf(sheet.getByRole("textbox", { name: "Title" })),
     );
     const adult = await boxOf(
-      sheet.getByRole("switch", { name: /Mark as 18\+/u }),
+      sheet.getByRole("checkbox", { name: /Mark as 18\+/u }),
     );
-    const words = await boxOf(sheet.getByText("Mark as 18+", { exact: true }));
 
     expect(adult.x).toBeCloseTo(field.x, 0);
-    expect(words.x).toBeCloseTo(field.x, 0);
     expect(adult.x + adult.width).toBeLessThanOrEqual(row.x + row.width);
   });
 

@@ -9,8 +9,8 @@
     ANDROID_DETAIL_CHIP,
     DETAIL_CHIP,
     GROUPED_DETAIL_CHIP,
-    MACOS_TYPING_CHIP,
   } from "./detail-chip.ts";
+  import { MACOS_TYPING_FIELD } from "./detail-field.ts";
 
   const ICON_SIZE = 16;
   const MACOS_ICON_SIZE = 12;
@@ -56,7 +56,7 @@
     }}
     aria-label={label}
     placeholder={label}
-    class={isMacos ? MACOS_TYPING_CHIP : TYPING_CHIP}
+    class={isMacos ? MACOS_TYPING_FIELD : TYPING_CHIP}
     {@attach focusOnShow}
     onkeydown={(event: KeyboardEvent) => {
       if (event.key === "Enter") {
