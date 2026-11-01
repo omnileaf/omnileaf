@@ -70,7 +70,7 @@ const ANDROID_LOOK: AttentionLook = {
     "line-clamp-2 text-native-row-subtitle/native-row-subtitle text-muted",
   fix: { variant: "secondary", class: "max-inline-1/2" },
   badge:
-    "inline-flex items-center justify-center rounded-full bg-danger px-2xs text-caption font-semibold text-white block-lg min-inline-lg",
+    "inline-flex items-center justify-center rounded-full bg-danger-fill px-2xs text-caption font-semibold text-on-danger block-lg min-inline-lg",
   hasFoldedDot: false,
 };
 

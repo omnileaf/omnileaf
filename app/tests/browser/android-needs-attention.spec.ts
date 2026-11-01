@@ -51,7 +51,11 @@ test.describe("Needs attention on an Android phone", { tag: "@native" }, () => {
     expect((await boxOf(button)).x).toBeLessThan((await boxOf(search)).x);
     await expect(badge).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--color-danger"),
+      await tokenColour(page, "--color-danger-fill"),
+    );
+    await expect(badge).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-on-danger"),
     );
   });
 
