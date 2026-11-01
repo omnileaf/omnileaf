@@ -489,6 +489,7 @@
   --spacing-native-tile-picked: var(--native-spacing-tile-picked);
   --radius-native-tile-picked-title: var(--native-radius-tile-picked-title);
   --radius-native-search-hit: var(--native-radius-search-hit);
+  --radius-native-table-row: var(--native-radius-table-row);
   --text-native-sheet-title: var(--native-text-sheet-title);
   --leading-native-sheet-title: var(--native-leading-sheet-title);
   --font-weight-native-sheet-title: var(--native-weight-sheet-title);

@@ -52,6 +52,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import LanguageBadge from "./LanguageBadge.svelte";
   import { listRowLook } from "./list-row-look.ts";
+  import { type MacTableRowLook, macTableRowLook } from "./mac-table-row.ts";
   import DragBox from "./DragBox.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
@@ -131,6 +132,24 @@
     new Map(series.map((one, index) => [one.id, index])),
   );
   const seriesOrder = () => series.map(({ id }) => id);
+
+  function isPickedAt(index: number): boolean {
+    const neighbour = series[index];
+    return neighbour !== undefined && selection?.has(neighbour.id) === true;
+  }
+
+  function tableRowLook(one: LibrarySeries): MacTableRowLook {
+    const index = rowNumbers.get(one.id) ?? 0;
+    return macTableRowLook(
+      {
+        isPicked: isPickedAt(index),
+        isAbovePicked: isPickedAt(index - 1),
+        isBelowPicked: isPickedAt(index + 1),
+      },
+      index % 2 === 1,
+    );
+  }
+
   const dragSelect =
     selection === undefined
       ? undefined
@@ -572,11 +591,12 @@
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
   {#if isMacTable}
+    {@const tableRow = tableRowLook(one)}
     <div
       data-series-id={one.id}
       class={[
         "grid grid-cols-mac-list items-center gap-md px-md min-block-list-cover",
-        (rowNumbers.get(one.id) ?? 0) % 2 === 1 && "bg-hover",
+        tableRow.row,
       ]}
     >
       <SeriesLink
@@ -594,18 +614,18 @@
         />
         <span data-slot="item-title" class="truncate">{shown.title}</span>
       </SeriesLink>
-      <span data-list-cell="books" class="text-muted">{one.bookCount}</span>
-      <span data-list-cell="unread" class="text-muted">
+      <span data-list-cell="books" class={tableRow.cell}>{one.bookCount}</span>
+      <span data-list-cell="unread" class={tableRow.cell}>
         {view.onCovers.showsUnreadCount && one.unreadCount > 0
           ? one.unreadCount
           : ""}
       </span>
-      <span data-list-cell="language" class="text-muted">
+      <span data-list-cell="language" class={tableRow.cell}>
         {view.onCovers.showsLanguage && one.language !== null
           ? one.language.toUpperCase()
           : ""}
       </span>
-      <span data-list-cell="progress">
+      <span data-list-cell="progress" class={tableRow.progress}>
         {#if share !== undefined && view.onCovers.showsReadingProgress}
           <Progress
             aria-label={m.library_books_read({

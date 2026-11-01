@@ -87,6 +87,7 @@
   --native-spacing-tile-picked: calc(100cqi / 16);
   --native-radius-tile-picked-title: 4px;
   --native-radius-search-hit: 3px;
+  --native-radius-table-row: 8px;
   --native-text-sheet-title: calc(0.8125rem * var(--text-scale));
   --native-leading-sheet-title: calc(16 / 13);
   --native-weight-sheet-title: 700;

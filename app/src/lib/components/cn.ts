@@ -178,6 +178,7 @@ export const TOKEN_THEME = {
     "native-select",
     "native-sheet",
     "native-tab-indicator",
+    "native-table-row",
     "native-tile",
     "native-tile-check",
     "native-tile-picked-title",

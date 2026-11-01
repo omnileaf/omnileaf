@@ -395,6 +395,7 @@
   --native-spacing-tile-picked: 0px;
   --native-radius-tile-picked-title: 0px;
   --native-radius-search-hit: 0px;
+  --native-radius-table-row: 0px;
   --native-text-sheet-title: var(--text-title);
   --native-leading-sheet-title: var(--text-title--line-height);
   --native-weight-sheet-title: var(--font-weight-bold);
