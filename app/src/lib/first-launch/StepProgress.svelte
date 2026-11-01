@@ -19,7 +19,8 @@
   const share = $derived((100 * position.number) / position.count);
   const platform = currentPlatform();
   const isBar = usesSetupPages(platform) || platform === "android";
-  const fill = platform === "android" ? "bg-accent" : "bg-windows-accent";
+  const fill =
+    platform === "android" ? "bg-native-button-primary" : "bg-windows-accent";
 </script>
 
 <div
@@ -31,11 +32,16 @@
   aria-valuetext={count}
   class={[
     "flex items-center min-inline-none",
-    isBar ? "gap-md" : "flex-1 gap-sm",
+    isBar ? ["gap-md", platform === "android" && "flex-1"] : "flex-1 gap-sm",
   ]}
 >
   {#if isBar}
-    <span class="relative block block-setup-bar-height inline-setup-bar">
+    <span
+      class={[
+        "relative block block-setup-bar-height",
+        platform === "android" ? "flex-1" : "inline-setup-bar",
+      ]}
+    >
       <span
         class="absolute inset-x-none inset-bs-px rounded-full bg-border block-px"
       ></span>
