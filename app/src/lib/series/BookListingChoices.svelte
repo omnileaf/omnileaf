@@ -144,7 +144,7 @@
 <div class="flex flex-wrap items-center gap-sm">
   <InputGroup
     class={[
-      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full",
+      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
       !isSearching && "max-expanded:hidden",
     ]}
   >
@@ -279,7 +279,7 @@
     {:else if isNativeDesktop}
       <DropdownMenuTrigger>
         {#snippet child({ props })}
-          {#if isWide.current}
+          {#if isWide.current && platform === "macos"}
             <Button
               {...props}
               variant="secondary"

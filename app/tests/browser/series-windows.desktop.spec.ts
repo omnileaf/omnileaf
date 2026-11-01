@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   accessibilityViolations,
   boxOf,
+  DEFAULT_BACKEND,
   expect,
   testOnlyInItsWebview,
   test,
@@ -74,14 +75,16 @@ test.describe("the series page on Windows", () => {
         await expect(card).toHaveCSS("box-shadow", NO_SHADOW);
       });
 
-      test("draws Show as a segmented control and Sort as a standard button", async ({
+      test("draws Show as a segmented control and Sort as an icon button named by its order", async ({
         page,
       }) => {
         const chosen = page.getByRole("radio", { name: "All" });
         const sort = page.getByRole("button", { name: /^Sort/ });
 
         await expect(chosen).toHaveCSS("border-top-left-radius", "4px");
-        expect((await boxOf(sort)).height).toBe(BUTTON_HEIGHT);
+        const sortBox = await boxOf(sort);
+        expect(sortBox.width).toBe(sortBox.height);
+        await expect(sort).toHaveAttribute("aria-label", "Sort: In order");
         await expect(sort).toHaveCSS("background-color", look.standard);
       });
 
@@ -114,9 +117,123 @@ test.describe("the series page on Windows", () => {
         );
       });
 
+      test("swaps Find, Show and Sort for a command bar with the count while books are picked", async ({
+        page,
+      }) => {
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeVisible();
+        await page
+          .getByRole("checkbox", { name: /^Select Sample/ })
+          .first()
+          .check();
+        const bar = page.getByRole("group", { name: "Selected books" });
+
+        await expect(bar).toContainText("1");
+        await expect(
+          bar.getByRole("button", { name: "Mark read" }),
+        ).toBeVisible();
+        await expect(
+          bar.getByRole("button", { name: "Bookmark" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeHidden();
+        await expect(page.getByRole("button", { name: /^Sort/ })).toBeHidden();
+        await bar.getByRole("button", { name: "See more" }).click();
+        await expect(
+          page.getByRole("menuitem", { name: "Delete" }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await bar.getByRole("button", { name: /clear the selection/ }).click();
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeVisible();
+      });
+
+      test("lists a book's menu with Enter and Del trailing, and Delete in plain text", async ({
+        page,
+      }) => {
+        await page
+          .getByRole("button", { name: /^More for Sample Series 04 v02/ })
+          .click();
+        const menu = page.getByRole("menu");
+
+        await expect(menu.getByRole("menuitem").first()).toContainText("Enter");
+        const remove = menu.getByRole("menuitem", { name: /^Delete/ });
+        await expect(remove).toContainText("Del");
+        await expect(remove).not.toHaveCSS("color", "rgb(196, 43, 28)");
+      });
+
+      test("fills the search box and underlines it in the accent colour while it has focus", async ({
+        page,
+      }) => {
+        const field = page.getByRole("searchbox", { name: "Find a book" });
+        const box = field.locator("..");
+
+        await expect(box).toHaveCSS("border-top-left-radius", "4px");
+        await expect(box).toHaveCSS("border-bottom-width", "1px");
+        await field.focus();
+        await expect(box).toHaveCSS("border-bottom-width", "2px");
+        await expect(box).toHaveCSS("border-bottom-color", look.accent);
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
     });
   }
+});
+
+test.describe("a series without books on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    viewport: WINDOW,
+    platform: "windows",
+    backend: { ...DEFAULT_BACKEND, ...new FakeShelf([]).backend() },
+  });
+
+  test("puts Rescan first as the accent button and Show in File Explorer beside it", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    const buttons = page
+      .getByRole("main")
+      .getByRole("button", { name: /^(Show in|Rescan)/ });
+
+    await expect(buttons).toHaveText([
+      "Rescan the folder",
+      "Show in File Explorer",
+    ]);
+    await expect(buttons.first()).toHaveCSS(
+      "background-color",
+      THEMES.light.accent,
+    );
+  });
+});
+
+test.describe("a series that is still loading on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    viewport: WINDOW,
+    platform: "windows",
+    backend: {
+      ...DEFAULT_BACKEND,
+      seriesOverview: () => new Promise(() => undefined),
+    },
+  });
+
+  test("runs an indeterminate bar over plain fills that do not pulse", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    const bar = page.getByRole("progressbar", { name: "Loading the series" });
+    const fill = page
+      .getByRole("status", { name: "Loading the series" })
+      .locator("[data-slot=skeleton]")
+      .first();
+
+    await expect(bar).toBeVisible();
+    await expect(fill).toHaveCSS("animation-name", "none");
+  });
 });

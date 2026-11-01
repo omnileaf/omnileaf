@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "#lib/components/cn.ts";
+  import { Progress } from "#lib/components/ui/progress/index.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -15,8 +16,16 @@
   const MACOS_ROWS = 8;
 
   const isMacos = currentPlatform() === "macos";
+  const isWindows = currentPlatform() === "windows";
 </script>
 
+{#if isWindows}
+  <Progress
+    value={null}
+    aria-label={m.series_loading()}
+    class="mbe-md inline-full"
+  />
+{/if}
 <div
   role="status"
   aria-label={m.series_loading()}

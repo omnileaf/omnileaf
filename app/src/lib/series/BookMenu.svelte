@@ -6,6 +6,7 @@
     EyeOff,
     ListChecks,
     Play,
+    Trash,
   } from "@lucide/svelte";
 
   import { goto } from "$app/navigation";
@@ -15,11 +16,14 @@
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { moreHeading } from "#lib/reader/more-heading.ts";
 
@@ -35,6 +39,7 @@
     isContext = false,
     onMark,
     onBookmark,
+    onDelete,
     onSelect,
   }: {
     book: SeriesBook;
@@ -43,9 +48,11 @@
     isContext?: boolean;
     onMark: (mark: ReadMark) => void;
     onBookmark?: (() => void) | undefined;
+    onDelete?: (() => void) | undefined;
     onSelect?: () => void;
   } = $props();
 
+  const hasAccelerators = currentPlatform() === "windows";
   const headingId = $props.id();
   const naming = $derived(
     isContext
@@ -138,9 +145,14 @@
       }}
     >
       <Play size={ICON_SIZE} aria-hidden="true" />
-      {actions.read === "continue"
-        ? m.series_continue_reading()
-        : m.series_start_reading()}
+      <span class="flex-1">
+        {actions.read === "continue"
+          ? m.series_continue_reading()
+          : m.series_start_reading()}
+      </span>
+      {#if hasAccelerators}
+        <Kbd aria-hidden="true">{m.series_enter_key()}</Kbd>
+      {/if}
     </DropdownMenuItem>
     <DropdownMenuItem
       onSelect={() => {
@@ -169,6 +181,14 @@
       >
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
         {m.series_select()}
+      </DropdownMenuItem>
+    {/if}
+    {#if hasAccelerators && onDelete !== undefined}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onDelete}>
+        <Trash size={ICON_SIZE} aria-hidden="true" />
+        <span class="flex-1">{m.library_delete()}</span>
+        <Kbd aria-hidden="true">{m.series_delete_key()}</Kbd>
       </DropdownMenuItem>
     {/if}
   </DropdownMenuContent>

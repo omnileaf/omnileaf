@@ -41,6 +41,7 @@
   import { SERIES_CONTROL } from "./series-control.ts";
   import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
+  import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
@@ -292,8 +293,12 @@
   let removing = $state<RemovalTarget[] | undefined>();
   let isRemoving = $state(false);
 
+  function askToRemoveBooks(ids: readonly BookId[]): void {
+    removing = ids.map((id) => ({ kind: "book", id }));
+  }
+
   function askToRemove(): void {
-    removing = selection.picked.map((id) => ({ kind: "book", id }));
+    askToRemoveBooks(selection.picked);
   }
 
   async function remove(deleteFiles: boolean): Promise<void> {
@@ -489,21 +494,38 @@
       </Button>
     {/if}
   </div>
-  <BookListingChoices
-    phone={phonePlatform}
-    {listing}
-    onChoose={onListing}
-    {search}
-    onSearch={(typed: string) => {
-      search = typed;
-      if (!isComplete) {
-        void onLoadAll();
-      }
-    }}
-    onShownCrowded={(isCrowded: boolean) => {
-      isShownCrowded = isCrowded;
-    }}
-  />
+  {#if platform === "windows" && selection.count > 0}
+    <WindowsSelectionBar
+      bind:element={toolbar}
+      count={selection.count}
+      onMark={(read: ReadMark) => {
+        void mark(read);
+      }}
+      onBookmark={() => {
+        void bookmark();
+      }}
+      onDelete={askToRemove}
+      onClear={() => {
+        void end();
+      }}
+    />
+  {:else}
+    <BookListingChoices
+      phone={phonePlatform}
+      {listing}
+      onChoose={onListing}
+      {search}
+      onSearch={(typed: string) => {
+        search = typed;
+        if (!isComplete) {
+          void onLoadAll();
+        }
+      }}
+      onShownCrowded={(isCrowded: boolean) => {
+        isShownCrowded = isCrowded;
+      }}
+    />
+  {/if}
   {#if isComplete && shownBooks.length === 0}
     <Card
       class={[
@@ -564,13 +586,18 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
-      onBookmark={platform === "macos"
+      onBookmark={platform === "macos" || platform === "windows"
         ? (picked: BookId[]) => {
             void bookmarkSelected(picked);
           }
         : undefined}
+      onDelete={platform === "windows"
+        ? (picked: BookId[]) => {
+            askToRemoveBooks(picked);
+          }
+        : undefined}
     />
-    {#if selection.count > 0}
+    {#if selection.count > 0 && platform !== "windows"}
       <SelectionBar
         bind:element={toolbar}
         count={selection.count}
