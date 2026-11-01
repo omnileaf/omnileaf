@@ -28,6 +28,7 @@
   import LinkedFolders from "./LinkedFolders.svelte";
   import NativeEmptiedFolderCard from "./NativeEmptiedFolderCard.svelte";
   import RemoveBooksDialog from "./RemoveBooksDialog.svelte";
+  import { readMovedHome } from "./read-moved-home";
   import RescanButton from "./RescanButton.svelte";
   import type { RescanFolder } from "./rescan-folder";
   import {
@@ -91,6 +92,7 @@
       move: () => homeCommands.move(),
     },
     () => notices,
+    (moved) => readMovedHome(folders, rescans, moved),
   );
   let changeHomeButton: HTMLButtonElement | null = $state(null);
 

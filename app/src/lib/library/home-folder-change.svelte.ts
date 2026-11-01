@@ -6,6 +6,7 @@ import type {
   commands,
   FoundLibrary,
   IpcErrorCode,
+  LibraryFolder,
 } from "#lib/ipc/bindings.ts";
 import type { Notice, Notices } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
@@ -21,6 +22,8 @@ export interface HomeCommands {
   readonly use: typeof commands.useFoundLibrary;
   readonly move: typeof commands.moveHomeFolder;
 }
+
+export type ReadMovedHome = (folder: LibraryFolder["id"]) => Promise<void>;
 
 export interface FoundHome {
   readonly location: string;
@@ -79,6 +82,7 @@ export class HomeFolderChange {
   constructor(
     private readonly homeCommands: HomeCommands,
     private readonly notices: () => Notices,
+    private readonly readMovedHome: ReadMovedHome,
   ) {}
 
   get isBusy(): boolean {
@@ -165,7 +169,18 @@ export class HomeFolderChange {
     const result = await this.homeCommands.move();
     if (result.status === "error") {
       this.change = IDLE;
-      this.#warn(CHANGE_FAILED);
+      this.#warn(failureWarning(result.error.code));
+      return;
+    }
+    switch (result.data.kind) {
+      case "restarting":
+        return;
+      case "moved":
+        this.change = IDLE;
+        void this.readMovedHome(result.data.folder);
+        return;
+      default:
+        assertNever(result.data);
     }
   }
 
