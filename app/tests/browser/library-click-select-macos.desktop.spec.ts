@@ -107,6 +107,45 @@ test.describe("covers", () => {
     await expect(cover(page, 2)).toBeChecked();
   });
 
+  test("adds the focused cover with Space and takes it off with a second Space", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await cover(page, 1).click();
+
+    await cover(page, 3).focus();
+    await page.keyboard.press("Space");
+    await expect(picked(page)).toHaveCount(2);
+    await page.keyboard.press("Space");
+
+    await expect(picked(page)).toHaveCount(1);
+    await expect(cover(page, 1)).toBeChecked();
+  });
+
+  test("ends the selection with Escape", async ({ page }) => {
+    await openLibrary(page);
+    await cover(page, 2).click();
+
+    await page.keyboard.press("Escape");
+
+    await expect(picked(page)).toHaveCount(0);
+    await expect(page.getByText("1 of 8 selected")).toBeHidden();
+  });
+
+  test("opens the series when its link is activated without a pointer", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+
+    await cover(page, 4).evaluate((link) => {
+      if (link instanceof HTMLElement) {
+        link.click();
+      }
+    });
+
+    await expect(page).toHaveURL(seriesUrl(4));
+  });
+
   test("opens the series on a double click", async ({ page }) => {
     await openLibrary(page);
 

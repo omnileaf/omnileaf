@@ -44,6 +44,13 @@
 
   const longPress = new LongPress(LONG_PRESS_MS);
   let element: HTMLElement | undefined = $state();
+  const choosesOnClick = $derived(picksOnClick && selection !== undefined);
+
+  function isPlainPointerClick(event: MouseEvent): boolean {
+    return (
+      event.detail > 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey
+    );
+  }
 
   async function startPickingFromKeys(event: KeyboardEvent): Promise<void> {
     if (event.key !== " " || selection === undefined) {
@@ -60,14 +67,22 @@
   }
 
   function opensOnReturn(event: KeyboardEvent): void {
-    if (picksOnClick && event.key === "Enter") {
+    if (
+      choosesOnClick &&
+      event.key === "Enter" &&
+      !event.repeat &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey
+    ) {
       event.preventDefault();
       open();
     }
   }
 
   function opensOnDoubleClick(): void {
-    if (picksOnClick) {
+    if (choosesOnClick) {
       open();
     }
   }
@@ -78,18 +93,23 @@
     }
     if (event.shiftKey) {
       selection?.extendTo(id, order());
-    } else if (picksOnClick && !event.metaKey && !event.ctrlKey) {
+    } else if (choosesOnClick && isPlainPointerClick(event)) {
       selection?.chooseOnly(id);
     } else {
       selection?.toggle(id);
     }
-    if (picksOnClick) {
+    if (choosesOnClick) {
       element?.focus();
     }
   }
 
   async function chooseFromClick(event: MouseEvent): Promise<void> {
-    if (!picksOnClick || selection === undefined || event.defaultPrevented) {
+    if (
+      !choosesOnClick ||
+      selection === undefined ||
+      event.defaultPrevented ||
+      !isPlainPointerClick(event)
+    ) {
       return;
     }
     event.preventDefault();
