@@ -10,6 +10,7 @@ use std::{
 use flate2::Crc;
 use omnileaf_libarchive::{DEFAULT_LIMIT_BYTES, Entry, EntryKind, Error, Reader};
 use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+use unicode_normalization::UnicodeNormalization;
 
 use crate::{
     FormatError, Limits, Page, RarEntry, RarListing,
@@ -334,6 +335,10 @@ impl Read for Contents<'_> {
     }
 }
 
+fn same_name(found: &str, listed: &str) -> bool {
+    found == listed || found.nfc().eq(listed.nfc())
+}
+
 fn check_entry<'a>(
     listing: &'a RarListing,
     ordinal: usize,
@@ -348,7 +353,7 @@ fn check_entry<'a>(
         (EntryKind::Directory, None) => Ok(None),
         (EntryKind::File, Some(listed))
             if !found.is_encrypted
-                && found.path == listed.name
+                && same_name(&found.path, &listed.name)
                 && found.size == Some(listed.unpacked_size) =>
         {
             Ok(Some(listed))
@@ -516,6 +521,22 @@ mod tests {
         );
 
         assert_eq!(folder, Ok(None));
+        assert_eq!(file, Ok(listing.entries.first()));
+    }
+
+    #[test]
+    fn accepts_a_name_libarchive_composed_that_the_header_stores_decomposed() {
+        const DECOMPOSED: &str = "cafe\u{301}/1.png";
+        const COMPOSED: &str = "caf\u{e9}/1.png";
+        let listing = RarListing {
+            format: RarFormat::Rar5,
+            entries: vec![listed(DECOMPOSED, 1, 8)],
+            pages: Vec::new(),
+            page_entries: Vec::new(),
+        };
+
+        let file = check_entry(&listing, 1, &found(COMPOSED, Some(8), EntryKind::File));
+
         assert_eq!(file, Ok(listing.entries.first()));
     }
 
