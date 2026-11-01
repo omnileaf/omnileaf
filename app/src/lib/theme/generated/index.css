@@ -233,6 +233,8 @@
   --spacing-native-inspector: var(--native-spacing-inspector);
   --spacing-native-inspector-title: var(--native-spacing-inspector-title);
   --spacing-native-inspector-section: var(--native-spacing-inspector-section);
+  --spacing-native-inspector-chip-inline: var(--native-spacing-inspector-chip-inline);
+  --spacing-native-inspector-chip-gap: var(--native-spacing-inspector-chip-gap);
   --text-native-inspector-label: var(--native-text-inspector-label);
   --leading-native-inspector-label: var(--native-leading-inspector-label);
   --font-weight-native-inspector-label: var(--native-weight-inspector-label);

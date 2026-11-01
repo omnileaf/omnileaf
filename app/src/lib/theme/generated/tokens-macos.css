@@ -64,6 +64,8 @@
   --native-spacing-inspector: 280px;
   --native-spacing-inspector-title: 52px;
   --native-spacing-inspector-section: 14px;
+  --native-spacing-inspector-chip-inline: 10px;
+  --native-spacing-inspector-chip-gap: 6px;
   --native-text-inspector-label: calc(0.8125rem * var(--text-scale));
   --native-leading-inspector-label: calc(16 / 13);
   --native-weight-inspector-label: 510;

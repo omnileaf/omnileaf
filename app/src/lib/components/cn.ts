@@ -416,6 +416,8 @@ export const TOKEN_THEME = {
     "native-info-bar-stacked-indent",
     "native-info-bar-words-block",
     "native-inspector",
+    "native-inspector-chip-gap",
+    "native-inspector-chip-inline",
     "native-inspector-section",
     "native-inspector-title",
     "native-large-title-above",
