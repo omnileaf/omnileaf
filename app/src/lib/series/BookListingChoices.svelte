@@ -279,7 +279,7 @@
     {:else if isNativeDesktop}
       <DropdownMenuTrigger>
         {#snippet child({ props })}
-          {#if isWide.current}
+          {#if isWide.current && platform === "macos"}
             <Button
               {...props}
               variant="secondary"
