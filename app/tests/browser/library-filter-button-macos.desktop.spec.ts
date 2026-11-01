@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   DEFAULT_BACKEND,
   expect,
+  settle,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -85,14 +86,18 @@ for (const platform of ["windows", "linux"] as const) {
       page,
     }) => {
       await filterButton(page).click();
+      await page.mouse.move(0, 0);
+      await settle(filterButton(page));
+      const unfiltered = await inkOf(filterButton(page));
+
       await page.getByRole("button", { name: "Manga" }).click();
       await page.mouse.move(0, 0);
 
-      const button = page.getByRole("button", { name: /^Sort and filter/ });
+      const button = filterButton(page, "Sort and filter, 1 filter on");
 
-      await expect
-        .poll(() => inkOf(button))
-        .not.toBe(await tokenColour(page, "--native-color-on-button-link"));
+      await expect(button).toBeVisible();
+      await settle(button);
+      expect(await inkOf(button)).toBe(unfiltered);
     });
   });
 }
