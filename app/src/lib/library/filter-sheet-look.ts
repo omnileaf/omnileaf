@@ -33,6 +33,7 @@ export const MAC_INSPECTOR = {
     "text-native-inspector-label/native-inspector-label font-native-inspector-label",
   section:
     "gap-sm py-native-inspector-section border-be border-native-row-rule last:border-be-0",
+  group: "flex flex-col gap-sm",
   select: {
     fieldClass:
       "rounded-native-button border-0 bg-native-button-secondary ps-md text-native-button/native-button font-native-button block-native-button macos:shadow-none",
@@ -43,9 +44,10 @@ export const MAC_INSPECTOR = {
 
 export const MAC_INSPECTOR_CHIP = {
   group: "flex flex-wrap gap-native-inspector-chip-gap",
-  chip: "flex shrink-0 items-center gap-xs rounded-native-button px-native-inspector-chip-inline text-native-button/native-button font-native-button tracking-native-button whitespace-nowrap transition-control min-block-native-button",
-  checkSize: 12,
-  chosen: "bg-native-accent-soft text-native-on-button-link",
+  chip: "flex shrink-0 items-center gap-xs rounded-native-button px-native-inspector-chip-inline text-native-button/native-button font-native-button tracking-native-button whitespace-nowrap inset-ring inset-ring-native-control-stroke transition-control min-block-native-button",
+  iconSize: 12,
+  chosen:
+    "bg-native-accent-soft text-native-on-button-link active:inset-shadow-[0_0_0_100px_var(--color-native-row-rule)]",
   other:
     "bg-native-button-secondary text-native-on-button-secondary hover:bg-native-control-fill-hover active:bg-native-control-fill-pressed",
 } as const;

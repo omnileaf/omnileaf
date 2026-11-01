@@ -42,12 +42,25 @@
     phoneOf(currentPlatform(), width.current) === "android",
   );
 
-  const TODAYS_CHIP =
+  const DEFAULT_CHIP =
     "flex shrink-0 items-center gap-xs rounded-control border px-md text-small font-medium whitespace-nowrap block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:block-native-segment touch:touch-target-around";
-  const TODAYS_CHIP_CHOSEN =
+  const DEFAULT_CHIP_CHOSEN =
     "border-transparent bg-chip ios:max-medium:bg-native-accent-soft ios:max-medium:font-semibold ios:max-medium:text-foreground";
-  const TODAYS_CHIP_OTHER =
+  const DEFAULT_CHIP_OTHER =
     "border-border bg-card hover:bg-hover ios:max-medium:bg-native-button-outline ios:max-medium:hover:bg-native-button-outline";
+
+  function labelClassOf(): string {
+    if (isInspector) {
+      return MAC_INSPECTOR.label;
+    }
+    return isAndroidPhone
+      ? FILTER_SETTING_LABEL_TYPE
+      : "text-small font-medium";
+  }
+
+  function groupClassOf(): string {
+    return isInspector ? MAC_INSPECTOR_CHIP.group : "flex flex-wrap gap-sm";
+  }
 
   function chipClassOf(isChosen: boolean): string[] {
     if (isInspector) {
@@ -62,7 +75,7 @@
         isChosen ? ANDROID_FILTER_CHIP.chosen : ANDROID_FILTER_CHIP.other,
       ];
     }
-    return [TODAYS_CHIP, isChosen ? TODAYS_CHIP_CHOSEN : TODAYS_CHIP_OTHER];
+    return [DEFAULT_CHIP, isChosen ? DEFAULT_CHIP_CHOSEN : DEFAULT_CHIP_OTHER];
   }
 </script>
 
@@ -73,21 +86,10 @@
     isAndroidPhone && "ps-lg pe-xl",
   ]}
 >
-  <p
-    {id}
-    class={isInspector
-      ? MAC_INSPECTOR.label
-      : isAndroidPhone
-        ? FILTER_SETTING_LABEL_TYPE
-        : "text-small font-medium"}
-  >
+  <p {id} class={labelClassOf()}>
     {label}
   </p>
-  <div
-    role="group"
-    aria-labelledby={id}
-    class={isInspector ? MAC_INSPECTOR_CHIP.group : "flex flex-wrap gap-sm"}
-  >
+  <div role="group" aria-labelledby={id} class={groupClassOf()}>
     {#each options as option (option.value)}
       {@const isChosen = chosen.includes(option.value)}
       <Toggle.Root
@@ -101,7 +103,7 @@
       >
         {#if isChosen}
           <Check
-            size={isInspector ? MAC_INSPECTOR_CHIP.checkSize : CHECK_SIZE}
+            size={isInspector ? MAC_INSPECTOR_CHIP.iconSize : CHECK_SIZE}
             aria-hidden="true"
           />
         {/if}
