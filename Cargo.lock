@@ -3633,7 +3633,7 @@ version = "0.0.0"
 dependencies = [
  "axum",
  "dispatch2",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "gtk",
  "objc2-foundation",
  "omnileaf-db",
@@ -3814,7 +3814,7 @@ dependencies = [
  "axum",
  "blake3",
  "clap",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "omnileaf-relay-proto",
  "omnileaf-testkit",
  "rusqlite",
