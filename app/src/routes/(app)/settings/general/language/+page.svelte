@@ -14,8 +14,10 @@
   } from "#lib/language/language.ts";
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone } from "#lib/page/platform.ts";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -31,6 +33,8 @@
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(data.appInfo.platform, width.current));
 
+  const android = new AndroidPhone();
+  const look = $derived(radiosLook(android.isOn));
   const system = systemLanguage();
   const systemName = languageName(system);
   const id = $props.id();
@@ -66,10 +70,12 @@
     }}
     aria-label={m.language_label()}
     aria-describedby={onPhone ? footnoteId : undefined}
-    class={[
-      "flex flex-col divide-y divide-border rounded-list border border-border bg-card",
-      GROUP_PLATE,
-    ]}
+    class={android.isOn
+      ? "-mx-page-start -me-page-end flex flex-col"
+      : [
+          "flex flex-col divide-y divide-border rounded-list border border-border bg-card",
+          GROUP_PLATE,
+        ]}
   >
     {#each LANGUAGE_CHOICES as choice (choice)}
       {@const isChosen = language.choice === choice}
@@ -78,15 +84,30 @@
         value={choice}
         aria-labelledby={choice === "system" ? systemTitleId : undefined}
         aria-describedby={choice === "system" ? systemNameId : undefined}
-        class={[
-          "flex items-center gap-md py-xs ps-lg pe-list-row text-start transition-control inline-full min-block-phone-row first:rounded-ss-list first:rounded-se-list last:rounded-ee-list last:rounded-es-list hover:bg-hover focus-visible:-outline-offset-2 active:bg-pressed",
-          "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
-          "desktop:py-none desktop:ps-list-row desktop:text-callout desktop:min-block-settings-row",
-          isChosen ? "font-semibold" : "font-medium",
-        ]}
+        class={android.isOn
+          ? look.row
+          : [
+              "flex items-center gap-md py-xs ps-lg pe-list-row text-start transition-control inline-full min-block-phone-row first:rounded-ss-list first:rounded-se-list last:rounded-ee-list last:rounded-es-list hover:bg-hover focus-visible:-outline-offset-2 active:bg-pressed",
+              "touch:medium:py-none touch:medium:ps-list-row touch:medium:min-block-touch-target",
+              "desktop:py-none desktop:ps-list-row desktop:text-callout desktop:min-block-settings-row",
+              isChosen ? "font-semibold" : "font-medium",
+            ]}
       >
+        {#if android.isOn}
+          <span
+            aria-hidden="true"
+            data-radio-mark
+            class={[look.mark, isChosen ? look.markOn : look.markOff]}
+          >
+            {#if isChosen}
+              <span
+                class="rounded-full bg-accent block-radio-dot inline-radio-dot"
+              ></span>
+            {/if}
+          </span>
+        {/if}
         {#if choice === "system"}
-          <span class="flex flex-1 flex-col gap-2xs">
+          <span class={["flex flex-1 flex-col", !android.isOn && "gap-2xs"]}>
             <span id={systemTitleId}>{m.language_use_system()}</span>
             <span
               id={systemNameId}
@@ -97,7 +118,7 @@
         {:else}
           <span lang={choice} class="flex-1">{languageName(choice)}</span>
         {/if}
-        {#if isChosen}
+        {#if isChosen && !android.isOn}
           <Check
             size={onPhone ? PHONE_CHECK_SIZE : CHECK_SIZE}
             strokeWidth={CHECK_STROKE}

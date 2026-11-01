@@ -19,10 +19,8 @@ const INTRO =
   "Each language is shown in its own name. It changes straight away.";
 const INTRO_GAP = 8;
 const FOOTNOTE = "More languages arrive as people translate Omnileaf.";
-const PHONE_ROW_HEIGHT = 56;
 const TOUCH_ROW_HEIGHT = 48;
 const POINTER_ROW_HEIGHT = 44;
-const PHONE_CHECK_SIZE = 22;
 const CHECK_SIZE = 20;
 const SHORT_VIEWPORT_HEIGHT = 240;
 const PSEUDO_LOCALE_MARK = "⟦";
@@ -217,7 +215,7 @@ test.describe("on an Android phone", () => {
   testOnlyInItsWebview("android");
   test.use(onPlatform("android"));
 
-  test("lists every option in one group of 56px rows over a footnote", async ({
+  test("lists every option in one group of radio rows over a footnote", async ({
     page,
   }) => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
@@ -225,12 +223,14 @@ test.describe("on an Android phone", () => {
 
     const system = await boxOf(option(page, SYSTEM_OPTION));
     const english = await boxOf(option(page, "English"));
-    const check = await boxOf(option(page, SYSTEM_OPTION).locator("svg"));
+    const mark = await boxOf(
+      option(page, SYSTEM_OPTION).locator("[data-radio-mark]"),
+    );
 
-    expect(english.height).toBe(PHONE_ROW_HEIGHT);
-    expect(system.height).toBeGreaterThanOrEqual(PHONE_ROW_HEIGHT);
+    expect(english.height).toBeGreaterThanOrEqual(48);
+    expect(system.height).toBeGreaterThanOrEqual(english.height);
     expect(english.y).toBe(system.y + system.height);
-    expect(check.width).toBe(PHONE_CHECK_SIZE);
+    expect(mark.width).toBe(20);
     await expect(page.getByText(FOOTNOTE)).toBeVisible();
   });
 
