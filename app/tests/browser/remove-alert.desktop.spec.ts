@@ -22,6 +22,8 @@ const ALERT_TEXT_SIZE = "11px";
 const ALERT_BUTTON_HEIGHT = 28;
 const ALERT_BUTTON_GAP = 6;
 const ALERT_BUTTON_WIDTH = ALERT_WIDTH - 2 * ALERT_PADDING_INLINE;
+const ALERT_ACTIONS_MARGIN = 16;
+const NARROW_WINDOW_WIDTH = 480;
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
 
 let removed: boolean[] = [];
@@ -146,7 +148,7 @@ test.describe("the Remove from library alert on a Mac", () => {
     );
   });
 
-  test("fills Remove in the accent and not in red, Cancel in the control fill", async ({
+  test("fills Remove in the accent and Cancel in the control fill", async ({
     page,
   }) => {
     const dialog = await openFromMenu(page);
@@ -160,6 +162,20 @@ test.describe("the Remove from library alert on a Mac", () => {
     await expect(dialog.getByRole("button", { name: "Cancel" })).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-control-fill-hover"),
+    );
+  });
+
+  test("leaves 16px between the checkbox and the buttons", async ({ page }) => {
+    const dialog = await openFromMenu(page);
+
+    const accessory = await boxOf(dialog.locator("label"));
+    const remove = await boxOf(
+      dialog.getByRole("button", { name: "Remove", exact: true }),
+    );
+
+    expect(remove.y - (accessory.y + accessory.height)).toBeCloseTo(
+      ALERT_ACTIONS_MARGIN,
+      0,
     );
   });
 
@@ -223,5 +239,27 @@ test.describe("the Remove from library alert on a Mac", () => {
 
     await expect(dialog).toBeHidden();
     expect(removed).toEqual([]);
+  });
+});
+
+test.describe("the Remove from library alert in a narrow Mac window", () => {
+  test.use({
+    platform: "macos",
+    viewport: { width: NARROW_WINDOW_WIDTH, height: 800 },
+  });
+
+  test("keeps the title at 13px and the message at 11px", async ({ page }) => {
+    const dialog = await openFromMenu(page);
+
+    await expect(
+      dialog.getByRole("heading", { name: "Remove from your library?" }),
+    ).toHaveCSS("font-size", ALERT_TITLE_SIZE);
+    await expect(dialog.getByText("1 series leaves your library.")).toHaveCSS(
+      "font-size",
+      ALERT_TEXT_SIZE,
+    );
+    await expect(
+      dialog.getByText(/reading progress, bookmarks and edits are kept/),
+    ).toHaveCSS("font-size", ALERT_TEXT_SIZE);
   });
 });

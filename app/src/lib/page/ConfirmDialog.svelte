@@ -143,12 +143,13 @@
         {@render children()}
       </AlertDialog.Description>
       <div
-        class={[
+        class={cn(
           "mbs-xs",
           isAlert
-            ? cn("grid grid-cols-2 gap-sm", alert.actions)
+            ? "grid grid-cols-2 gap-sm"
             : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm",
-        ]}
+          alert.actions,
+        )}
       >
         {#each alert.actionOrder as action (action)}
           {#if action === "cancel"}
