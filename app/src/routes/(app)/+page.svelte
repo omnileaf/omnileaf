@@ -107,6 +107,7 @@
   import { phoneAction } from "#lib/page/action-group.ts";
   import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import { getNeedsAttention } from "#lib/problems/needs-attention.svelte.ts";
+  import NeedsAttentionBarButton from "#lib/problems/NeedsAttentionBarButton.svelte";
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
@@ -395,6 +396,7 @@
   const isIosPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
+  const showsAttentionInBar = $derived(isIosPhone || androidPhone.isOn);
   const isIos = $derived(data.appInfo.platform === "ios");
   const isMac = $derived(data.appInfo.platform === "macos");
   const docksFilter = $derived(
@@ -1041,7 +1043,7 @@
     platform={data.appInfo.platform}
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
-    attention={showsAttentionDot && !androidPhone.isOn
+    attention={showsAttentionDot && !showsAttentionInBar
       ? attentionDot
       : undefined}
     count={isMac && selection.isSelecting
@@ -1060,7 +1062,15 @@
         />
       {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
-        {#if showsAttentionDot && androidPhone.isOn}
+        {#if showsAttentionDot && isIosPhone}
+          <NeedsAttentionBarButton
+            count={needsAttention.problems.length}
+            isOpen={needsAttention.isShown}
+            onOpen={() => {
+              needsAttention.show();
+            }}
+          />
+        {:else if showsAttentionDot && androidPhone.isOn}
           <NeedsAttentionDot
             count={needsAttention.problems.length}
             isOpen={needsAttention.isShown}
