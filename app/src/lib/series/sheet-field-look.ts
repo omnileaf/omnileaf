@@ -15,5 +15,9 @@ export const SHEET_FIELD_UNDO_ICON_SIZE = 18;
 export const SHEET_FIELD_CARD =
   "flex flex-col justify-center border-0 px-lg py-none min-block-native-row";
 
-export const SHEET_FIELD_TEXT =
-  "border-0 bg-transparent px-none py-native-field-block text-native-row-title/native-row-title tracking-native-row-title min-block-none touch:text-native-row-title/native-row-title";
+const SHEET_FIELD_TEXT =
+  "border-0 bg-transparent px-none text-native-row-title/native-row-title tracking-native-row-title min-block-none touch:text-native-row-title/native-row-title";
+
+export const SHEET_TITLE_TEXT = `${SHEET_FIELD_TEXT} py-native-title-field-block`;
+
+export const SHEET_SUMMARY_TEXT = `${SHEET_FIELD_TEXT} py-native-field-block`;

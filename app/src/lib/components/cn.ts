@@ -519,6 +519,7 @@ export const TOKEN_THEME = {
     "native-tile-lift",
     "native-tile-mark-inset",
     "native-tile-picked",
+    "native-title-field-block",
     "native-toolbar-button",
     "native-top-bar",
     "native-top-bar-lift",

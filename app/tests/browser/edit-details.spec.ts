@@ -736,10 +736,9 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
       await tokenColour(page, "--native-color-card"),
     );
     await expect(titleCard).toHaveCSS("border-top-width", "0px");
-    expect((await boxOf(titleCard)).height).toBeCloseTo(
-      await lengthOf(page, "--native-spacing-row"),
-      0,
-    );
+    const rowHeight = await lengthOf(page, "--native-spacing-row");
+    expect((await boxOf(titleCard)).height).toBeCloseTo(rowHeight, 0);
+    expect((await boxOf(title)).height).toBeCloseTo(rowHeight, 0);
     await expect(shown.getByRole("textbox", { name: "Summary" })).toHaveCSS(
       "padding-top",
       `${String(await lengthOf(page, "--native-spacing-field-block"))}px`,

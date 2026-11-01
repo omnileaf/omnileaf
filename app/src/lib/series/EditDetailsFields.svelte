@@ -36,7 +36,11 @@
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
-  import { SHEET_FIELD_CARD, SHEET_FIELD_TEXT } from "./sheet-field-look.ts";
+  import {
+    SHEET_FIELD_CARD,
+    SHEET_SUMMARY_TEXT,
+    SHEET_TITLE_TEXT,
+  } from "./sheet-field-look.ts";
 
   const PEOPLE_SHOWN_FIRST = 8;
   const ICON_SIZE = 16;
@@ -84,8 +88,11 @@
     isSheet ? "flex flex-col" : isGrouped || isAndroid ? GROUPED_FIELD : FIELD,
   );
   const fieldCardClass = $derived(isSheet ? SHEET_FIELD_CARD : undefined);
-  const fieldTextClass = $derived(
-    isSheet ? SHEET_FIELD_TEXT : isGrouped && GROUPED_FIELD_BOX,
+  const titleTextClass = $derived(
+    isSheet ? SHEET_TITLE_TEXT : isGrouped && GROUPED_FIELD_BOX,
+  );
+  const summaryTextClass = $derived(
+    isSheet ? SHEET_SUMMARY_TEXT : isGrouped && GROUPED_FIELD_BOX,
   );
   const chipExtras = $derived(
     cn(isGrouped && GROUPED_DETAIL_CHIP, isAndroid && ANDROID_DETAIL_CHIP),
@@ -195,7 +202,7 @@
         class={[
           !isSheet &&
             "text-body min-block-title-field touch:min-block-touch-target",
-          fieldTextClass,
+          titleTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
       />
@@ -339,7 +346,7 @@
           : `${id}-summary-file`}
         class={[
           !isSheet && "text-body",
-          fieldTextClass,
+          summaryTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
       />
