@@ -82,6 +82,13 @@
   --native-weight-inspector-label: 510;
   --native-spacing-read-mark: 1.125rem;
   --native-radius-dialog: 34px;
+  --native-spacing-dialog: 260px;
+  --native-spacing-dialog-text-inline: 6px;
+  --native-spacing-dialog-text-gap: 10px;
+  --native-spacing-dialog-top: 20px;
+  --native-spacing-dialog-icon: 54px;
+  --native-spacing-dialog-actions-gap: 6px;
+  --native-spacing-dialog-accessory-gap: 6px;
   --native-radius-sheet: 16px;
   --native-radius-menu: 12px;
   --native-spacing-search-scope-gap: 6px;
@@ -214,6 +221,7 @@
   --native-color-menu-chosen: #0064e1;
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: rgba(0, 0, 0, 0.1);
+  --native-shadow-dialog-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(255, 255, 255, 0.95), 0 18px 48px rgba(0, 0, 0, 0.25);
   --native-color-notice: rgba(217, 217, 217, 0.73);
   --native-color-on-notice: rgba(0, 0, 0, 0.85);
   --native-color-notice-action: rgba(0, 0, 0, 0.03);
@@ -310,6 +318,7 @@
   --native-color-menu-chosen: #0059d1;
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: rgba(255, 255, 255, 0.1);
+  --native-shadow-dialog-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.2), 0 18px 48px rgba(0, 0, 0, 0.45);
   --native-color-notice: rgba(72, 72, 76, 0.82);
   --native-color-on-notice: rgba(255, 255, 255, 0.85);
   --native-color-notice-action: rgba(255, 255, 255, 0.03);
