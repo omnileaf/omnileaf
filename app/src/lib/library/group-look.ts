@@ -12,10 +12,12 @@ export const PLAIN_GROUP_LOOK: GroupLook = {
   group: "flex flex-col divide-y divide-border",
 };
 
+export const GROUPED_HEADING_TYPE =
+  "text-native-row-title/native-row-title tracking-native-row-title font-native-group-header text-muted";
+
 export const GROUPED_GROUP_LOOK: GroupLook = {
   section: "px-lg",
-  heading:
-    "ps-lg text-native-row-title/native-row-title tracking-native-row-title font-native-group-header text-muted mbe-sm",
+  heading: `ps-lg ${GROUPED_HEADING_TYPE} mbe-sm`,
   group: `flex flex-col divide-y divide-border overflow-hidden px-lg ios-grouped:divide-ios-separator ${GROUP_PLATE}`,
 };
 
