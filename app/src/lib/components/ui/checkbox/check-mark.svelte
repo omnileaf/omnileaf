@@ -8,4 +8,12 @@
   const STROKE = 3;
 </script>
 
-<Check size={SIZE} strokeWidth={STROKE} aria-hidden="true" class={className} />
+<Check
+  size={SIZE}
+  strokeWidth={STROKE}
+  aria-hidden="true"
+  class={[
+    "macos:block-native-checkbox-glyph macos:inline-native-checkbox-glyph",
+    className,
+  ]}
+/>

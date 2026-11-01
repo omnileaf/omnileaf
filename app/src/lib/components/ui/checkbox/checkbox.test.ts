@@ -43,8 +43,8 @@ const LOOKS: readonly CheckboxLook[] = [
   {
     platform: "macos",
     size: 16,
-    corner: "4px",
-    edgeWidth: "1px",
+    corner: "5px",
+    edgeWidth: "0px",
     edge: "--input",
   },
   {
