@@ -51,7 +51,7 @@
   import DownloadedMark from "./DownloadedMark.svelte";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import LanguageBadge from "./LanguageBadge.svelte";
-  import { listRowLook } from "./list-row-look.ts";
+  import { listRowLook, CONTENT_BOX_COVER } from "./list-row-look.ts";
   import DragBox from "./DragBox.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
@@ -560,7 +560,7 @@
           cover={shown.cover}
           {coverUrl}
           isBlurred={isVeiled(one)}
-          class="rounded-list-cover inline-list-cover"
+          class={CONTENT_BOX_COVER}
         />
         <span data-slot="item-title" class="truncate">{shown.title}</span>
       </SeriesLink>
@@ -622,7 +622,7 @@
             cover={shown.cover}
             {coverUrl}
             isBlurred={veiled}
-            class="rounded-list-cover inline-list-cover"
+            class={rowLook.cover}
           />
           {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
             <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />

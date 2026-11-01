@@ -84,6 +84,24 @@ test.describe("the library's list view on a phone", { tag: "@native" }, () => {
     }
   });
 
+  test("keeps the android row's cover and height", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "android's own list row");
+    await page.goto("/");
+    const row = rows(page).first().locator("[data-series-id]");
+    await expect(row).toBeVisible();
+
+    const coverBox = await row
+      .locator("[data-slot='list-cover']")
+      .boundingBox();
+    const rowBox = await row.boundingBox();
+
+    expect(coverBox).toMatchObject({ width: 54, height: 80 });
+    expect(rowBox?.height).toBe(100);
+  });
+
   test("keeps today's ruled rows on a tablet", async ({ page }) => {
     await page.setViewportSize(TABLET);
 

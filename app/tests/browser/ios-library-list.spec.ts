@@ -63,6 +63,17 @@ test.describe("the library as a list on an iPhone", { tag: "@native" }, () => {
     await expect(row.getByRole("progressbar")).toHaveCount(0);
   });
 
+  test("draws each cover 48 by 72 and each row 92 high", async ({ page }) => {
+    const row = page.locator("[data-series-id]").first();
+    const cover = row.locator("[data-slot='list-cover']");
+
+    const coverBox = await cover.boundingBox();
+    const rowBox = await row.boundingBox();
+
+    expect(coverBox).toMatchObject({ width: 48, height: 72 });
+    expect(rowBox?.height).toBe(92);
+  });
+
   test("leaves out what a series has none of", async ({ page }) => {
     const row = page.locator("[data-series-id]").nth(3);
 
