@@ -165,6 +165,19 @@ test.describe("the series page on Windows", () => {
         await expect(remove).not.toHaveCSS("color", "rgb(196, 43, 28)");
       });
 
+      test("fills the search box and underlines it in the accent colour while it has focus", async ({
+        page,
+      }) => {
+        const field = page.getByRole("searchbox", { name: "Find a book" });
+        const box = field.locator("..");
+
+        await expect(box).toHaveCSS("border-top-left-radius", "4px");
+        await expect(box).toHaveCSS("border-bottom-width", "1px");
+        await field.focus();
+        await expect(box).toHaveCSS("border-bottom-width", "2px");
+        await expect(box).toHaveCSS("border-bottom-color", look.accent);
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
