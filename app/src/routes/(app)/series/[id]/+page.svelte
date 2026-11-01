@@ -347,6 +347,14 @@
     }
   }
 
+  function showBookInFolder(book: SeriesBook["id"]): void {
+    void commands.showBookInFolder(book).then((shown) => {
+      if (shown.status === "error") {
+        reportError(shown.error);
+      }
+    });
+  }
+
   function showInFolder(): void {
     if (foundId === undefined) {
       return;
@@ -504,6 +512,7 @@
                   onMark={mark}
                   onBookmark={bookmarkSelected}
                   onRemove={removeBooks}
+                  onShowInFolder={showBookInFolder}
                   platform={data.appInfo.platform}
                   onPickedCount={(count: number | undefined) => {
                     pickedCount = count;

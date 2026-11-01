@@ -3,6 +3,7 @@
     Bookmark,
     Ellipsis,
     Eye,
+    FolderOpen,
     EyeOff,
     ListChecks,
     Play,
@@ -24,6 +25,7 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
+  import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { moreHeading } from "#lib/reader/more-heading.ts";
 
@@ -40,6 +42,7 @@
     onMark,
     onBookmark,
     onDelete,
+    onShowInFolder,
     onSelect,
   }: {
     book: SeriesBook;
@@ -49,6 +52,7 @@
     onMark: (mark: ReadMark) => void;
     onBookmark?: (() => void) | undefined;
     onDelete?: (() => void) | undefined;
+    onShowInFolder?: (() => void) | undefined;
     onSelect?: () => void;
   } = $props();
 
@@ -183,8 +187,14 @@
         {m.series_select()}
       </DropdownMenuItem>
     {/if}
-    {#if hasAccelerators && onDelete !== undefined}
+    {#if hasAccelerators && onShowInFolder !== undefined}
       <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onShowInFolder}>
+        <FolderOpen size={ICON_SIZE} aria-hidden="true" />
+        {showFileLabel("windows")}
+      </DropdownMenuItem>
+    {/if}
+    {#if hasAccelerators && onDelete !== undefined}
       <DropdownMenuItem onSelect={onDelete}>
         <Trash size={ICON_SIZE} aria-hidden="true" />
         <span class="flex-1">{m.library_delete()}</span>

@@ -35,6 +35,7 @@
     onMark,
     onBookmark,
     onDelete,
+    onShowInFolder,
     selectAllBox = $bindable(null),
   }: {
     books: readonly SeriesBook[];
@@ -48,6 +49,7 @@
     onMark: (books: BookId[], mark: ReadMark) => void;
     onBookmark?: ((books: BookId[]) => void) | undefined;
     onDelete?: ((books: BookId[]) => void) | undefined;
+    onShowInFolder?: ((book: BookId) => void) | undefined;
     selectAllBox?: HTMLElement | null;
   } = $props();
 
@@ -221,6 +223,11 @@
               ? undefined
               : () => {
                   onBookmark([book.id]);
+                }}
+            onShowInFolder={onShowInFolder === undefined
+              ? undefined
+              : () => {
+                  onShowInFolder(book.id);
                 }}
             onDelete={onDelete === undefined
               ? undefined

@@ -163,6 +163,9 @@ test.describe("the series page on Windows", () => {
         const remove = menu.getByRole("menuitem", { name: /^Delete/ });
         await expect(remove).toContainText("Del");
         await expect(remove).not.toHaveCSS("color", "rgb(196, 43, 28)");
+        await expect(
+          menu.getByRole("menuitem", { name: "Show in File Explorer" }),
+        ).toBeVisible();
       });
 
       test("fills the search box and underlines it in the accent colour while it has focus", async ({
