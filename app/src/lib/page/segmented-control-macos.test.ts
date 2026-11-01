@@ -97,7 +97,7 @@ test("fills the chosen segment with the accent and its on-accent ink on macOS", 
   const style = getComputedStyle(segment("Dark"));
 
   expect({ fill: style.backgroundColor, ink: style.color }).toEqual({
-    fill: resolvedColour("--color-accent", "backgroundColor"),
+    fill: resolvedColour("--native-color-button-primary", "backgroundColor"),
     ink: resolvedColour("--color-on-accent", "color"),
   });
 });
