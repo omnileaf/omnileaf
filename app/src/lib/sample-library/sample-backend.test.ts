@@ -1614,6 +1614,97 @@ test("finds its own series and books already in the home folder when asked, last
   });
 });
 
+const PICKED_HOME = "Internal storage › Folder";
+
+test.each(["android", "linux", "ios"])(
+  "cancels choosing a home folder on %s unless asked otherwise",
+  async (platform) => {
+    const { backend } = backendFor(`?platform=${platform}`);
+
+    expect(await backend.chooseHomeFolder()).toBeNull();
+  },
+);
+
+test("offers an empty folder for the home folder on Android when asked to", async () => {
+  const { backend } = backendFor("?platform=android&homepick=empty");
+
+  expect(await backend.chooseHomeFolder()).toEqual({
+    location: PICKED_HOME,
+    choice: { kind: "empty" },
+  });
+});
+
+test("offers the current home folder again on Android when asked to", async () => {
+  const { backend } = backendFor("?platform=android&homepick=current");
+
+  expect(await backend.chooseHomeFolder()).toEqual({
+    location: PICKED_HOME,
+    choice: { kind: "current" },
+  });
+});
+
+test("can't read the folder picked for the home folder on Android when asked to", async () => {
+  const { backend } = backendFor("?platform=android&homepick=unreadable");
+
+  const choosing = (async () => backend.chooseHomeFolder())();
+
+  await expect(choosing).rejects.toMatchObject({
+    error: { code: "folderUnreadable" },
+  });
+});
+
+test("keeps choosing a home folder cancelled off Android, whatever is asked", async () => {
+  const { backend } = backendFor("?platform=linux&homepick=empty");
+
+  expect(await backend.chooseHomeFolder()).toBeNull();
+});
+
+test("moves the home folder on Android without restarting", async () => {
+  const { backend } = backendFor("?platform=android&homepick=empty");
+  await backend.chooseHomeFolder();
+
+  const moved = await backend.moveHomeFolder();
+
+  expect(moved.kind).toBe("moved");
+});
+
+test("lists the moved folder as the home folder at the place it was picked", async () => {
+  const { backend } = backendFor("?platform=android&homepick=empty");
+  await backend.chooseHomeFolder();
+  const moved = await backend.moveHomeFolder();
+
+  const { folders } = await backend.libraryFolders(null);
+
+  expect(
+    folders
+      .filter((folder) => folder.kind === "home")
+      .map((folder) => [folder.id, folder.location]),
+  ).toEqual([[moved.kind === "moved" && moved.folder, PICKED_HOME]]);
+});
+
+test("keeps the home folder where it was until a move lands", async () => {
+  const { backend } = backendFor("?platform=android&homepick=empty");
+  await backend.chooseHomeFolder();
+
+  const { folders } = await backend.libraryFolders(null);
+
+  expect(folders.find((folder) => folder.kind === "home")?.location).toBe(
+    "/data/user/0/app.omnileaf",
+  );
+});
+
+test("restarts after moving the home folder on a desktop", async () => {
+  const { backend } = backendFor("?platform=linux");
+
+  expect(await backend.moveHomeFolder()).toEqual({ kind: "restarting" });
+});
+
+test("ignores an unknown home folder pick", () => {
+  expect(scenarioFrom(new URLSearchParams("homepick=sideways")).homePick).toBe(
+    "cancel",
+  );
+});
+
 test("uses its storage as the Storage board draws it, with room to spare", async () => {
   const { backend } = backendFor();
 
