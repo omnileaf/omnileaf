@@ -486,8 +486,8 @@
   --input-group-radius: var(--radius-ios-cell);
 }
 
-[data-platform="ios"][data-theme="dark"],
-[data-platform="ios"] [data-theme="dark"] {
+:root[data-platform="ios"][data-theme="dark"],
+:root[data-platform="ios"] [data-theme="dark"] {
   --background: var(--native-color-window);
   --foreground: var(--native-color-on-surface);
 }
