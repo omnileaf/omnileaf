@@ -11,6 +11,8 @@
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
+
   import { folderLocation } from "./folder-location";
   import type { FolderList } from "./library-folders.svelte";
 
@@ -37,6 +39,7 @@
   const headingId = $props.id();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const android = new AndroidPhone();
 </script>
 
 <section aria-labelledby={headingId} class={className}>
@@ -44,8 +47,10 @@
     {@const home = folders.home}
     <div
       class={[
-        "flex flex-wrap items-center gap-md rounded-card border border-border bg-card px-lg py-md",
-        CARD_PLATE,
+        "flex flex-wrap items-center gap-md px-lg py-md",
+        android.isOn
+          ? "-mx-page-start -me-page-end"
+          : ["rounded-card border border-border bg-card", CARD_PLATE],
       ]}
     >
       <div
@@ -65,12 +70,17 @@
             id={headingId}
             class={isNative
               ? NATIVE_TITLE
-              : "text-body font-medium desktop:font-semibold"}
+              : [
+                  "text-body",
+                  android.isOn
+                    ? "font-regular"
+                    : "font-medium desktop:font-semibold",
+                ]}
           >
             {m.library_settings_home_folder()}
           </h2>
           <code
-            class={isNative
+            class={isNative || android.isOn
               ? NATIVE_PLACE
               : "font-mono text-detail wrap-anywhere text-muted"}
           >
