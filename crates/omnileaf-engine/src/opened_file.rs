@@ -7,14 +7,15 @@ use omnileaf_db::{
     catalog::{BookFileId, BookReading, BookToRead, RootLocator},
     store::ReadingState,
 };
-use omnileaf_formats::{FormatError, Limits, open_book_in};
+use omnileaf_formats::{FormatError, Limits, Storage, open_book_in};
 use omnileaf_sync_proto::{BookId as StoredBookId, SeriesId as StoredSeriesId};
 use serde::Serialize;
 use specta::Type;
 use tokio::task::spawn_blocking;
 
 use crate::{
-    BookId, FileType, FolderScan, Library, LibraryError, ScanProgress, library_layout::folder_name,
+    BookId, FileType, FolderScan, Library, LibraryError, ScanProgress,
+    file_in_storage::FileInStorage, library_layout::folder_name,
 };
 
 /// A book the reader opened from a file outside the library, which the library doesn't list.
@@ -22,9 +23,10 @@ pub(crate) type OpenedFiles = std::sync::Mutex<std::collections::HashMap<StoredB
 
 #[derive(Clone, Debug)]
 pub(crate) struct OpenedFile {
+    storage: Arc<dyn Storage>,
     title: String,
     series_title: String,
-    folder: PathBuf,
+    folder: Option<PathBuf>,
     file_name: PathBuf,
     page_count: u32,
 }
@@ -58,12 +60,22 @@ pub enum OpenFileError {
 
 impl Library {
     /// Finds the library's book for a file with the same pages, or keeps the file to read without adding it.
-    #[tracing::instrument(skip_all, fields(path = %path.display()))]
     pub async fn open_file(&self, path: PathBuf) -> Result<FileToRead, OpenFileError> {
-        let storage = Arc::clone(&self.local_storage);
+        self.open_file_in(Arc::clone(&self.local_storage), path)
+            .await
+    }
+
+    /// Reads a file from `storage` the same way, for a file only that storage can reach.
+    #[tracing::instrument(skip_all, fields(path = %path.display()))]
+    pub async fn open_file_in(
+        &self,
+        storage: Arc<dyn Storage>,
+        path: PathBuf,
+    ) -> Result<FileToRead, OpenFileError> {
         let read_path = path.clone();
+        let reading_storage = Arc::clone(&storage);
         let read = spawn_blocking(move || {
-            let mut book = open_book_in(storage, &read_path, &Limits::default())?;
+            let mut book = open_book_in(reading_storage, &read_path, &Limits::default())?;
             let fingerprint = book.fingerprint()?;
             let pages = book.pages().len();
             Ok::<_, FormatError>((StoredBookId::local(&fingerprint), pages))
@@ -89,13 +101,18 @@ impl Library {
                 is_in_library: true,
             });
         }
-        let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
+        let folder = path
+            .parent()
+            .filter(|folder| !folder.as_os_str().is_empty())
+            .map(Path::to_path_buf);
         let file_name = PathBuf::from(path.file_name().unwrap_or_default());
+        let title = path
+            .file_stem()
+            .map_or_else(String::new, |stem| stem.to_string_lossy().into_owned());
         let opened = OpenedFile {
-            title: path
-                .file_stem()
-                .map_or_else(String::new, |stem| stem.to_string_lossy().into_owned()),
-            series_title: folder_name(&folder),
+            storage,
+            series_title: folder.as_deref().map_or_else(|| title.clone(), folder_name),
+            title,
             folder,
             file_name,
             page_count: u32::try_from(pages).unwrap_or(u32::MAX),
@@ -110,7 +127,7 @@ impl Library {
         })
     }
 
-    /// Fails with [`LibraryError::BookNotFound`] for a book that wasn't opened from outside the library, and so has no folder to add.
+    /// Fails with [`LibraryError::BookNotFound`] for a book with no folder outside the library to add, such as one the library holds or a document handed over by Android.
     pub async fn add_opened_book_folder(
         &self,
         book: BookId,
@@ -121,7 +138,7 @@ impl Library {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(&book.0)
-            .map(|opened| opened.folder.clone())
+            .and_then(|opened| opened.folder.clone())
             .ok_or(LibraryError::BookNotFound { id: book })?;
         self.add_folder(folder, on_progress).await
     }
@@ -141,10 +158,27 @@ impl Library {
             series_title: opened.series_title,
             file: BookFileId::UNSTORED,
             rev: 0,
-            root: RootLocator::Path(opened.folder),
+            root: RootLocator::Path(opened.folder.unwrap_or_default()),
             location: opened.file_name,
             reading,
             page_count: Some(opened.page_count),
+        })
+    }
+
+    pub(crate) fn opened_file_in_storage(&self, book: StoredBookId) -> Option<FileInStorage> {
+        let opened = self
+            .opened_files
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&book)
+            .cloned()?;
+        let path = opened.folder.map_or_else(
+            || opened.file_name.clone(),
+            |folder| folder.join(&opened.file_name),
+        );
+        Some(FileInStorage {
+            storage: opened.storage,
+            path,
         })
     }
 
