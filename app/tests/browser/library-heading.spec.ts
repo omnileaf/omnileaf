@@ -830,13 +830,13 @@ for (const platform of ["ios", "linux"] as const) {
 
 test.describe("the heading after the library empties", () => {
   let holdsSeries = true;
-  const filled = backendFor("android", "filled");
+  const filledWithBarControls = backendFor("android", "filled");
   test.use({
     backend: {
-      ...filled,
+      ...filledWithBarControls,
       librarySeries: (after, listing) =>
         holdsSeries
-          ? filled.librarySeries(after, listing)
+          ? filledWithBarControls.librarySeries(after, listing)
           : { series: [], next: null },
       librarySeriesCount: () => (holdsSeries ? SERIES_COUNT : 0),
     },
@@ -851,7 +851,7 @@ test.describe("the heading after the library empties", () => {
   }, testInfo) => {
     test.skip(
       !testInfo.project.name.endsWith("phone"),
-      "the screen ios sweeps from",
+      "the screen the phone projects sweep",
     );
     await page.addInitScript(() => {
       localStorage.setItem("omnileaf.language", "en-XA");
@@ -875,7 +875,7 @@ test.describe("the heading after the library empties", () => {
   }, testInfo) => {
     test.skip(
       !testInfo.project.name.endsWith("phone"),
-      "the screen ios sweeps from",
+      "the screen the phone projects sweep",
     );
     await page.addInitScript((css) => {
       localStorage.setItem("omnileaf.language", "en-XA");

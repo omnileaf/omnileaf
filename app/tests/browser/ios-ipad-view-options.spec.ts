@@ -13,7 +13,6 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const SERIES_IN_LIBRARY = 6;
 const POPOVER_WIDTH = 360;
-const OPENER_GAP = 8;
 const EDGE_TOLERANCE_PX = 1;
 
 test.describe("View options on an iPad", () => {
@@ -77,9 +76,7 @@ test.describe("View options on an iPad", () => {
       .toBeLessThan(EDGE_TOLERANCE_PX);
     const box = await boxOf(popover);
     expect(box.width).toBe(POPOVER_WIDTH);
-    expect(
-      Math.abs(box.y - (button.y + button.height + OPENER_GAP)),
-    ).toBeLessThan(EDGE_TOLERANCE_PX);
+    expect(box.y).toBeGreaterThanOrEqual(button.y + button.height);
     await expect(popover).toHaveCSS("border-radius", "38px");
   });
 

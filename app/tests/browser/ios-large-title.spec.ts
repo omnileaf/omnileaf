@@ -121,7 +121,7 @@ test("opens Sort and filter and View options from More on an iPhone", async ({
 }) => {
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-    "iPads keep their own buttons",
+    "the title bar is an iPhone's",
   );
   await page.goto("/");
   const more = page
