@@ -82,7 +82,7 @@ export const MACOS_SEARCH_LOOK: SearchLook = {
   grid: "covers-gap-cover-row covers-row-gap-xl",
   coversFit: "grid-cols-4 large:grid-cols-covers-fit",
   coversPerRow: "grid-cols-4 large:grid-cols-covers-per-row",
-  cover: "box-border rounded-cover inline-full",
+  cover: "box-border! rounded-cover inline-full",
   result:
     "flex cursor-default select-none flex-col items-stretch gap-sm min-inline-none",
   selectedCover: ACCENT_COVER_RING,
