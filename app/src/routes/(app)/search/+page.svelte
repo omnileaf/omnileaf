@@ -217,6 +217,23 @@
     void goto(resolve("/(app)/series/[id]", { id: series.id }));
   }
 
+  function focusField(): void {
+    document
+      .querySelector<HTMLElement>(
+        `[role="combobox"][aria-controls="${listId}"]`,
+      )
+      ?.focus();
+  }
+
+  function select(series: LibrarySeries): void {
+    if (!isAnswered) {
+      return;
+    }
+    activeKey = series.id;
+    drawnKey = series.id;
+    focusField();
+  }
+
   function choose(series: LibrarySeries): void {
     if (!isAnswered) {
       return;
@@ -472,6 +489,7 @@
         {listId}
         activeKey={activeSeries?.id}
         onOpen={choose}
+        onSelect={select}
         words={query.search.text}
         view={libraryView.reading.kind === "read"
           ? libraryView.reading.value

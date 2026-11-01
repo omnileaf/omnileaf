@@ -10,6 +10,7 @@
     readonly id: string;
     readonly activeKey: string | undefined;
     readonly onChoose: (item: Item) => void;
+    readonly onActivate?: ((item: Item) => void) | undefined;
   }
 
   let {
@@ -230,6 +231,16 @@
           ? undefined
           : () => {
               listbox.onChoose(item);
+            }}
+        ondblclick={listbox?.onActivate === undefined
+          ? undefined
+          : () => {
+              listbox.onActivate?.(item);
+            }}
+        onmousedown={listbox?.onActivate === undefined
+          ? undefined
+          : (event) => {
+              event.preventDefault();
             }}
         aria-posinset={shown.start + offset + 1}
         aria-setsize={setSize}

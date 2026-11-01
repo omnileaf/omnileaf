@@ -1,5 +1,7 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 
+import { ACCENT_COVER_RING, ACCENT_TITLE } from "./accent-selection-look.ts";
+
 export interface CoverStackLook {
   readonly room: string;
   readonly farSheet: string;
@@ -153,11 +155,10 @@ const WINDOWS_TILE: CoverTileLook = {
 
 const MACOS_TILE: CoverTileLook = {
   ...TODAYS_LOOK,
-  menuTargetRing: "outline-3 outline-offset-2 outline-accent",
+  menuTargetRing: ACCENT_COVER_RING,
   pickedRing:
     "outline-(length:--native-spacing-tile-picked) outline-native-tile-picked outline-offset-0",
-  pickedTitle:
-    "-mx-xs w-fit rounded-native-tile-picked-title bg-accent px-xs text-on-accent",
+  pickedTitle: ACCENT_TITLE,
 };
 
 const COVER_TILE_LOOKS = {
