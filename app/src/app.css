@@ -1328,6 +1328,16 @@
   }
 }
 
+@utility transition-tint {
+  transition-property: color, background-color;
+  transition-timing-function: var(--ease-out);
+  transition-duration: 0s;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition-duration: var(--transition-duration-fade);
+  }
+}
+
 @utility focus-ring {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -1485,6 +1495,17 @@
         var(--native-spacing-row-rule-indent)
     );
   }
+}
+
+@utility inline-top-tab-bar {
+  inline-size: fit-content;
+  max-inline-size: calc(
+    100% - 2 *
+      (
+        var(--spacing-page-end) + 2 * var(--native-spacing-target) +
+          var(--spacing-md)
+      )
+  );
 }
 
 @utility native-target {

@@ -360,6 +360,33 @@ test.describe("on iOS", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
+  test("dims a pressed top tab at once instead of fading it", async ({
+    page,
+  }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "tablets and desktops only",
+    );
+    await page.goto("/");
+    const link = tab(page, "History");
+    const { x, y, width, height } = await boxOf(link);
+
+    await page.mouse.move(x + width / 2, y + height / 2);
+    await page.mouse.down();
+    const fadingProperties = await link.evaluate((element) =>
+      element
+        .getAnimations()
+        .flatMap((animation) =>
+          animation instanceof CSSTransition
+            ? [animation.transitionProperty]
+            : [],
+        ),
+    );
+    await page.mouse.up();
+
+    expect(fadingProperties).not.toContain("opacity");
+  });
+
   testMovingIcons({ belowWidth: MEDIUM_MIN_WIDTH, where: "phones" });
   testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();
