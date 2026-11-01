@@ -897,7 +897,7 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
 
     await tap(shown.getByRole("button", { name: "Close" }));
 
-    await expect(shown).toHaveAttribute("data-state", "closed");
+    await expect(shown).toBeHidden();
     await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
   });
 

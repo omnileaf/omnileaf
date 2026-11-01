@@ -9,6 +9,11 @@ export interface CoverStackLook {
   readonly continueAt: string;
 }
 
+export interface NotConnectedLook {
+  readonly dim: string;
+  readonly mark: string;
+}
+
 export interface CoverTileLook {
   readonly cell: string;
   readonly link: string;
@@ -30,6 +35,7 @@ export interface CoverTileLook {
   readonly markOn: string;
   readonly markOff: string;
   readonly tick: string;
+  readonly notConnected: NotConnectedLook | undefined;
 }
 
 const MENU_TARGET_RING = "outline-2 outline-offset-2 outline-border";
@@ -77,6 +83,7 @@ const TODAYS_LOOK: CoverTileLook = {
   markOn: "",
   markOff: "",
   tick: "",
+  notConnected: undefined,
 };
 
 const NATIVE_BADGE =
@@ -106,6 +113,7 @@ const NATIVE_TILE = {
     "max-medium:border-native-cover-accent max-medium:bg-native-cover-accent max-medium:text-native-on-cover-accent",
   markOff:
     "max-medium:border-native-select-ring max-medium:bg-transparent max-medium:shadow-native-select-ring-lift",
+  notConnected: undefined,
 };
 
 const NATIVE_DOWNLOADED =
@@ -166,6 +174,11 @@ const MACOS_TILE: CoverTileLook = {
   pickedTitle: ACCENT_TITLE,
 };
 
+const ANDROID_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-38",
+  mark: "inline-flex items-center gap-2xs rounded-android-xs bg-card px-xs py-2xs text-caption whitespace-nowrap text-foreground",
+};
+
 const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
@@ -177,6 +190,7 @@ const COVER_TILE_LOOKS = {
   },
   android: {
     ...NATIVE_TILE,
+    notConnected: ANDROID_NOT_CONNECTED,
     unread: `${BADGE_GEOMETRY} ${NATIVE_BADGE}`,
     badge: NATIVE_BADGE,
     downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,

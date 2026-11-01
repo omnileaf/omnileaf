@@ -56,6 +56,9 @@
   import DragBox from "./DragBox.svelte";
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
+  import { isNotConnected } from "./not-connected";
+  import NotConnectedDim from "./NotConnectedDim.svelte";
+  import NotConnectedMark from "./NotConnectedMark.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import { MENU_ICON_SIZE, type SeriesMenuActions } from "./series-menu";
   import PickedSeriesMenu from "./PickedSeriesMenu.svelte";
@@ -131,7 +134,11 @@
   const rowNumbers = $derived(
     new Map(series.map((one, index) => [one.id, index])),
   );
-  const seriesOrder = () => series.map(({ id }) => id);
+  const isAway = (one: LibrarySeries): boolean => isNotConnected(one, platform);
+  const dimmed = (one: LibrarySeries): string =>
+    isAway(one) ? (tile.notConnected?.dim ?? "") : "";
+  const seriesOrder = () =>
+    series.filter((one) => !isAway(one)).map(({ id }) => id);
 
   function isPickedAt(index: number): boolean {
     const neighbour = series[index];
@@ -155,8 +162,10 @@
       ? undefined
       : new DragSelect(selection, {
           cells: "[data-series-id]",
-          idOf: (cell) =>
-            series.find(({ id }) => id === cell.dataset.seriesId)?.id,
+          idOf: (cell) => {
+            const one = series.find(({ id }) => id === cell.dataset.seriesId);
+            return one === undefined || isAway(one) ? undefined : one.id;
+          },
         });
 
   const revealed = new SvelteSet<SeriesId>();
@@ -373,6 +382,7 @@
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
+  {@const away = isAway(one)}
   <div
     class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
@@ -387,6 +397,7 @@
           {...props}
           {...revealing(one, shown.title)}
           id={one.id}
+          isOpenable={!away}
           title={shown.title}
           order={seriesOrder}
           focusRing={tile.focusRing}
@@ -404,13 +415,20 @@
               pickedRing(one),
             ]}
           >
-            <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
-            {#if veiled}
-              <AdultVeil onPointer={canHover.current} />
-            {:else}
-              <CoverBadges series={one} onCovers={view.onCovers} />
+            <NotConnectedDim isOn={away}>
+              <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+              {#if veiled}
+                <AdultVeil onPointer={canHover.current} />
+              {:else}
+                <CoverBadges series={one} onCovers={view.onCovers} />
+              {/if}
+            </NotConnectedDim>
+            {#if away}
+              <NotConnectedMark
+                class="absolute inset-s-xs inset-be-xs max-inline-full"
+              />
             {/if}
-            {#if marksPicks}
+            {#if marksPicks && !away}
               <SelectionMark
                 isOn={selection?.has(one.id) === true}
                 class={tile.mark}
@@ -427,7 +445,7 @@
                 count: one.bookCount,
               })}
               value={share}
-              class="block-xs"
+              class={["block-xs", dimmed(one)]}
             />
           {/if}
           <div class="min-inline-none">
@@ -453,8 +471,8 @@
         </SeriesLink>
       {/snippet}
     </Tooltip>
-    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
-    {#if continues !== undefined && !isSelecting && !veiled}
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled || away} />
+    {#if continues !== undefined && !isSelecting && !veiled && !away}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -472,6 +490,7 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
+  {@const away = isAway(one)}
   <div
     class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
@@ -479,6 +498,7 @@
     <SeriesLink
       {...revealing(one, shown.title)}
       id={one.id}
+      isOpenable={!away}
       title={shown.title}
       order={seriesOrder}
       focusRing={tile.focusRing}
@@ -492,13 +512,15 @@
           pickedRing(one),
         ]}
       >
-        <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
-        {#if veiled}
-          <AdultVeil onPointer={canHover.current} showsHint={false} />
-        {:else}
-          <CoverBadges series={one} onCovers={view.onCovers} />
-        {/if}
-        {#if marksPicks}
+        <NotConnectedDim isOn={away}>
+          <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+          {#if veiled}
+            <AdultVeil onPointer={canHover.current} showsHint={false} />
+          {:else}
+            <CoverBadges series={one} onCovers={view.onCovers} />
+          {/if}
+        </NotConnectedDim>
+        {#if marksPicks && !away}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
             class={tile.compactMark}
@@ -510,6 +532,11 @@
         <div
           class="absolute inset-x-none inset-be-none bg-linear-to-t from-band from-55% to-transparent px-band pbs-band-fade pbe-sm medium:px-band-wide medium:pbe-band-wide @max-cover-title:bg-none @max-cover-title-wide:px-band"
         >
+          {#if away}
+            <NotConnectedMark
+              class="absolute inset-s-xs inset-e-xs inset-bs-none inline-fit"
+            />
+          {/if}
           <p
             class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
           >
@@ -518,8 +545,8 @@
         </div>
       </div>
     </SeriesLink>
-    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
-    {#if continues !== undefined && !isSelecting && !veiled}
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled || away} />
+    {#if continues !== undefined && !isSelecting && !veiled && !away}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -536,6 +563,7 @@
   {@const shown = lookOf(one)}
   {@const continues = continuedBook(one)}
   {@const veiled = isVeiled(one)}
+  {@const away = isAway(one)}
   <div
     class={["@container relative wrap-normal min-inline-none", tile.cell]}
     data-series-id={one.id}
@@ -543,6 +571,7 @@
     <SeriesLink
       {...revealing(one, shown.title)}
       id={one.id}
+      isOpenable={!away}
       title={shown.title}
       order={seriesOrder}
       focusRing={tile.focusRing}
@@ -557,13 +586,20 @@
           pickedRing(one),
         ]}
       >
-        <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
-        {#if veiled}
-          <AdultVeil onPointer={canHover.current} />
-        {:else}
-          <CoverBadges series={one} onCovers={view.onCovers} />
+        <NotConnectedDim isOn={away}>
+          <CoverImage cover={shown.cover} {coverUrl} isBlurred={veiled} />
+          {#if veiled}
+            <AdultVeil onPointer={canHover.current} />
+          {:else}
+            <CoverBadges series={one} onCovers={view.onCovers} />
+          {/if}
+        </NotConnectedDim>
+        {#if away}
+          <NotConnectedMark
+            class="absolute inset-s-xs inset-be-xs max-inline-full"
+          />
         {/if}
-        {#if marksPicks}
+        {#if marksPicks && !away}
           <SelectionMark
             isOn={selection?.has(one.id) === true}
             class={tile.mark}
@@ -575,8 +611,8 @@
         <p class="sr-only">{shown.title}</p>
       </div>
     </SeriesLink>
-    <TileCheck id={one.id} title={shown.title} isVeiled={veiled} />
-    {#if continues !== undefined && !isSelecting && !veiled}
+    <TileCheck id={one.id} title={shown.title} isVeiled={veiled || away} />
+    {#if continues !== undefined && !isSelecting && !veiled && !away}
       <ContinueDisc
         book={continues}
         series={shown.title}
@@ -652,15 +688,17 @@
     {@const share = readShare(one)}
     {@const continues = continuedBook(one)}
     {@const veiled = isVeiled(one)}
+    {@const away = isAway(one)}
     <div class={rowLook.row} data-series-id={one.id}>
       <SeriesLink
         {...revealing(one, shown.title)}
         id={one.id}
+        isOpenable={!away}
         title={shown.title}
         order={seriesOrder}
         class={rowLook.link}
       >
-        {#if isSelecting}
+        {#if isSelecting && !away}
           <span
             class="relative shrink-0 block-series-check inline-series-check"
           >
@@ -672,7 +710,7 @@
             cover={shown.cover}
             {coverUrl}
             isBlurred={veiled}
-            class={rowLook.cover}
+            class={[rowLook.cover, dimmed(one)]}
           />
           {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
             <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
@@ -720,8 +758,11 @@
                 <UnreadCount
                   count={one.unreadCount}
                   isSpelledOut
-                  class="px-sm py-2xs text-caption"
+                  class={["px-sm py-2xs text-caption", dimmed(one)]}
                 />
+              {/if}
+              {#if away}
+                <NotConnectedMark />
               {/if}
             </span>
             {#if share !== undefined}
@@ -731,13 +772,13 @@
                   count: one.bookCount,
                 })}
                 value={share}
-                class="block-xs inline-list-progress"
+                class={["block-xs inline-list-progress", dimmed(one)]}
               />
             {/if}
           </span>
         {/if}
       </SeriesLink>
-      {#if continues !== undefined && !isSelecting && !veiled}
+      {#if continues !== undefined && !isSelecting && !veiled && !away}
         <ContinueDisc
           book={continues}
           series={shown.title}

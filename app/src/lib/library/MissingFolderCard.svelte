@@ -49,7 +49,6 @@
     isStillFailing,
     handlers,
     onHide,
-    shownOrder: "hideFirst",
   })}
   <div role="status">
     <Alert tone="warning" icon={TriangleAlert} class="rounded-card">

@@ -32,7 +32,6 @@
       isStillFailing,
       handlers,
       onHide,
-      shownOrder: "findFirst",
     }),
   );
 </script>

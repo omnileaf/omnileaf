@@ -206,7 +206,7 @@ test.describe("with a folder that isn't there", () => {
       await expect(find).toHaveCSS("font-weight", "500");
     });
 
-    test("lists Show them anyway before Find the folder, then Hide them again before it once shown", async ({
+    test("lists Show them anyway before Find the folder, then Find the folder before Hide them again once shown", async ({
       page,
     }) => {
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
@@ -222,7 +222,7 @@ test.describe("with a folder that isn't there", () => {
 
       const hide = card.getByRole("button", { name: "Hide them again" });
       await expect(hide).toBeVisible();
-      expect((await boxOf(hide)).x).toBeLessThan((await boxOf(find)).x);
+      expect((await boxOf(find)).x).toBeLessThan((await boxOf(hide)).x);
     });
   });
 
