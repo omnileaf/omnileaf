@@ -830,7 +830,7 @@ for (const platform of ["ios", "linux"] as const) {
 
 test.describe("the heading after the library empties", () => {
   let holdsSeries = true;
-  const filled = backendFor("ios", "filled");
+  const filled = backendFor("android", "filled");
   test.use({
     backend: {
       ...filled,

@@ -37,11 +37,8 @@ export function hasLargeTitle(platform: Platform, width: WidthClass): boolean {
   return isPhone(platform, width);
 }
 
-export function foldsBarActionsIntoMore(
-  platform: Platform,
-  width: WidthClass,
-): boolean {
-  return platform === "ios" && isPhone(platform, width);
+export function foldsBarActionsIntoMore(platform: Platform): boolean {
+  return platform === "ios";
 }
 
 export interface FoldingBarLook {
