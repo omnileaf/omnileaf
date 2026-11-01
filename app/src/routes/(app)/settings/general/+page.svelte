@@ -21,7 +21,7 @@
   import { getLanguageSetting } from "#lib/language/language.svelte.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import ValueLinkRow from "#lib/settings/ValueLinkRow.svelte";
@@ -48,6 +48,7 @@
   const android = new AndroidPhone();
   const language = getLanguageSetting();
   const dateHeading = radiosLook(true).heading;
+  const showsRadioHints = currentPlatform() !== "macos";
   const opensOn = getOpensOnSetting();
   const timeFormat = getTimeFormatSetting();
 
@@ -155,12 +156,13 @@
       </div>
     </div>
   {:else}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
       <SettingRadios
         title={m.general_opens_on()}
         options={OPENING_PLACES}
         labels={PLACE_LABELS}
         hints={{ lastBook: m.general_opens_last_book_hint() }}
+        hintsAreShown={showsRadioHints}
         chosen={opensOn.choice}
         onChoose={(place: OpeningPlace) => {
           opensOn.choose(place);

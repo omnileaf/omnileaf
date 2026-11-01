@@ -491,4 +491,17 @@
   --native-spacing-detail-chip-inline: var(--spacing-md);
   --native-spacing-status-badge: 18px;
   --native-spacing-status-badge-inline: var(--spacing-sm);
+  --native-spacing-group-inset: 0px;
+  --native-spacing-radio-stack: 0px;
+  --native-spacing-radio-words-gap: 0.75rem;
+  --native-spacing-settings-page: 45rem;
+  --native-text-list-sub: var(--text-caption);
+  --native-leading-list-sub: var(--text-caption--line-height);
+  --native-tracking-list-sub: 0;
+  --native-color-radio-field: var(--background);
+  --native-shadow-radio-rim: none;
+  --native-shadow-radio-pressed-on: none;
+  --native-spacing-list-footer-gap: 0px;
+  --native-spacing-radio-focus-ring: var(--focus-ring-width);
+  --native-spacing-radio-dot: 0.5rem;
 }

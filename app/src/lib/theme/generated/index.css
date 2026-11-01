@@ -496,6 +496,19 @@
   --spacing-native-detail-chip-inline: var(--native-spacing-detail-chip-inline);
   --spacing-native-status-badge: var(--native-spacing-status-badge);
   --spacing-native-status-badge-inline: var(--native-spacing-status-badge-inline);
+  --spacing-native-group-inset: var(--native-spacing-group-inset);
+  --spacing-native-radio-stack: var(--native-spacing-radio-stack);
+  --spacing-native-radio-words-gap: var(--native-spacing-radio-words-gap);
+  --spacing-native-settings-page: var(--native-spacing-settings-page);
+  --text-native-list-sub: var(--native-text-list-sub);
+  --leading-native-list-sub: var(--native-leading-list-sub);
+  --tracking-native-list-sub: var(--native-tracking-list-sub);
+  --color-native-radio-field: var(--native-color-radio-field);
+  --shadow-native-radio-rim: var(--native-shadow-radio-rim);
+  --shadow-native-radio-pressed-on: var(--native-shadow-radio-pressed-on);
+  --spacing-native-list-footer-gap: var(--native-spacing-list-footer-gap);
+  --spacing-native-radio-focus-ring: var(--native-spacing-radio-focus-ring);
+  --spacing-native-radio-dot: var(--native-spacing-radio-dot);
 }
 
 @media (prefers-reduced-motion: reduce) {

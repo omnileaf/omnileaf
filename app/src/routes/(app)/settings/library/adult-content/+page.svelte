@@ -10,7 +10,7 @@
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { StoredChoice } from "#lib/library/stored-choice.svelte.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
-  import { isPointer } from "#lib/page/platform.ts";
+  import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -31,6 +31,11 @@
     },
   );
   const android = new AndroidPhone();
+  const isMacos = currentPlatform() === "macos";
+  const CARD = "rounded-card border border-border bg-card";
+  const MACOS_PLATE =
+    "rounded-native-group bg-native-group px-native-group-inset";
+  const plate = $derived(android.isOn ? "" : isMacos ? MACOS_PLATE : CARD);
   const onPointer = $derived(isPointer(data.appInfo.platform));
 
   onMount(() => {
@@ -45,9 +50,13 @@
   />
   {#if content.reading.kind === "read"}
     {@const chosen = content.reading.value}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
-      <div class="flex flex-col gap-sm">
-        <p class="text-footnote text-muted">{m.adult_content_intro()}</p>
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
+      <div class="flex flex-col gap-sm macos:gap-lg">
+        <p
+          class="text-footnote text-muted macos:text-native-button/native-button"
+        >
+          {m.adult_content_intro()}
+        </p>
         <AdultContentChoice
           chosen={chosen.treatment}
           {onPointer}
@@ -68,10 +77,15 @@
               countsAgeRatings: !chosen.countsAgeRatings,
             });
           }}
-          class={android.isOn
-            ? ""
-            : "rounded-card border border-border bg-card"}
+          class={plate}
         />
+        {#if isMacos}
+          <p
+            class="mbs-native-list-footer-gap px-sm text-native-list-sub/native-list-sub tracking-native-list-sub text-muted"
+          >
+            {m.adult_content_footer()}
+          </p>
+        {/if}
       </div>
       {#if android.isOn}
         <p class="text-native-row-subtitle/native-row-subtitle text-muted">

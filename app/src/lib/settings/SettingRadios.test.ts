@@ -45,14 +45,6 @@ const LOOKS: readonly RadioLook[] = [
     edgeOn: "--input",
   },
   {
-    platform: "macos",
-    size: 16,
-    dot: 8,
-    edgeWidth: "1px",
-    edgeOff: "--input",
-    edgeOn: "--input",
-  },
-  {
     platform: "windows",
     size: 16,
     dot: 8,
@@ -71,6 +63,22 @@ function ringOf(name: string): HTMLElement {
     throw new Error(`the ${name} radio has no ring`);
   }
   return ring;
+}
+
+function dotOf(ring: HTMLElement): Element {
+  if (ring.firstElementChild === null) {
+    throw new Error("the chosen radio has no dot");
+  }
+  return ring.firstElementChild;
+}
+
+function resolvedShadow(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.boxShadow = `var(${token})`;
+  document.body.append(probe);
+  const shadow = getComputedStyle(probe).boxShadow;
+  probe.remove();
+  return shadow;
 }
 
 afterEach(() => {
@@ -105,3 +113,38 @@ for (const look of LOOKS) {
     );
   });
 }
+
+test("draws the macos radio as a 16px field with a rim and a 4.8px dot in the accent", async () => {
+  document.documentElement.dataset.platform = "macos";
+  document.documentElement.dataset.theme = "light";
+  await render(SettingRadios, {
+    title: "Time format",
+    options: ["clock", "words"],
+    labels: { clock: "Clock", words: "Words" },
+    chosen: "clock",
+    onChoose: () => undefined,
+  });
+
+  const chosen = ringOf("Clock");
+  const other = ringOf("Words");
+
+  expect(chosen.getBoundingClientRect().width).toBeCloseTo(16, 0);
+  expect(chosen.firstElementChild?.getBoundingClientRect().width).toBeCloseTo(
+    4.8,
+    1,
+  );
+  expect(getComputedStyle(chosen).borderTopWidth).toBe("0px");
+  expect(getComputedStyle(chosen).backgroundColor).toBe(
+    resolvedColour("--color-accent", "color"),
+  );
+  expect(getComputedStyle(dotOf(chosen)).backgroundColor).toBe(
+    resolvedColour("--color-on-accent", "color"),
+  );
+  expect(getComputedStyle(other).borderTopWidth).toBe("0px");
+  expect(getComputedStyle(other).backgroundColor).toBe(
+    resolvedColour("--native-color-radio-field", "color"),
+  );
+  expect(getComputedStyle(other).boxShadow).toContain(
+    resolvedShadow("--native-shadow-radio-rim"),
+  );
+});

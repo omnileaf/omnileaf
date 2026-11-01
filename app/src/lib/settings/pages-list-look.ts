@@ -9,6 +9,7 @@ export interface PagesListLook {
   readonly rowOpen: string;
   readonly rowIdle: string;
   readonly icon: string;
+  readonly page: string;
 }
 
 const TODAYS_LOOK: PagesListLook = {
@@ -24,6 +25,7 @@ const TODAYS_LOOK: PagesListLook = {
   rowIdle:
     "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
   icon: "shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon",
+  page: "two-pane:max-inline-section",
 };
 
 const MACOS_LOOK: PagesListLook = {
@@ -37,6 +39,7 @@ const MACOS_LOOK: PagesListLook = {
   rowIdle:
     "active:bg-native-button-primary active:text-native-on-button-primary",
   icon: "shrink-0 text-native-on-button-link group-active:text-native-on-button-primary",
+  page: "two-pane:max-inline-native-settings-page",
 };
 
 export function pagesListLook(platform: Platform): PagesListLook {
