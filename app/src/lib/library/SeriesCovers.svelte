@@ -123,6 +123,10 @@
   const selection = seriesSelection();
   const isSelecting = $derived(selection?.isSelecting === true);
   const marksPicks = $derived(isSelecting && platform !== "macos");
+  const isMacTable = $derived(platform === "macos" && view.display === "list");
+  const rowNumbers = $derived(
+    new Map(series.map((one, index) => [one.id, index])),
+  );
   const seriesOrder = () => series.map(({ id }) => id);
   const dragSelect =
     selection === undefined
@@ -535,98 +539,161 @@
   {@const shown = lookOf(one)}
   {@const share = readShare(one)}
   {@const continues = continuedBook(one)}
-  {@const veiled = isVeiled(one)}
-  <div class={rowLook.row} data-series-id={one.id}>
-    <SeriesLink
-      {...revealing(one, shown.title)}
-      id={one.id}
-      title={shown.title}
-      order={seriesOrder}
-      class={rowLook.link}
+  {#if isMacTable}
+    <div
+      data-series-id={one.id}
+      class={[
+        "grid grid-cols-mac-list items-center gap-md px-md min-block-list-cover",
+        (rowNumbers.get(one.id) ?? 0) % 2 === 1 && "bg-hover",
+      ]}
     >
-      {#if marksPicks}
-        <span class="relative shrink-0 block-series-check inline-series-check">
-          <SelectionMark isOn={selection?.has(one.id) === true} />
-        </span>
-      {/if}
-      <span class="relative shrink-0">
+      <SeriesLink
+        {...revealing(one, shown.title)}
+        id={one.id}
+        title={shown.title}
+        order={seriesOrder}
+        class="flex items-center gap-md py-xs min-inline-none"
+      >
         <ListCover
           cover={shown.cover}
           {coverUrl}
-          isBlurred={veiled}
+          isBlurred={isVeiled(one)}
           class="rounded-list-cover inline-list-cover"
         />
-        {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
-          <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
+        <span data-slot="item-title" class="truncate">{shown.title}</span>
+      </SeriesLink>
+      <span data-list-cell="books" class="text-muted">{one.bookCount}</span>
+      <span data-list-cell="unread" class="text-muted">
+        {view.onCovers.showsUnreadCount && one.unreadCount > 0
+          ? one.unreadCount
+          : ""}
+      </span>
+      <span data-list-cell="language" class="text-muted">
+        {view.onCovers.showsLanguage && one.language !== null
+          ? one.language.toUpperCase()
+          : ""}
+      </span>
+      <span data-list-cell="progress">
+        {#if share !== undefined && view.onCovers.showsReadingProgress}
+          <Progress
+            aria-label={m.library_books_read({
+              read: one.bookCount - one.unreadCount,
+              count: one.bookCount,
+            })}
+            value={share}
+            class="block-xs"
+          />
         {/if}
       </span>
-      {#if isIosPhone}
-        <span class="flex flex-col min-inline-none">
-          <span data-slot="item-title" class={rowLook.title}>
-            {shown.title}
-          </span>
-          <span
-            data-slot="item-subtitle"
-            class="flex flex-wrap items-center gap-x-xs {rowLook.meta}"
-          >
-            {m.library_series_books({ count: one.bookCount })}
-            {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
-              <span aria-hidden="true">·</span>
-              {one.language.toUpperCase()}
-            {/if}
-            {#if view.onCovers.showsDownloaded && one.hasDownloads && !veiled}
-              <span aria-hidden="true">·</span>
-              <Icon name="download" class="shrink-0" />
-            {/if}
-            {#if view.onCovers.showsUnreadCount && one.unreadCount > 0 && !veiled}
-              <span aria-hidden="true">·</span>
-              <span class="font-semibold text-native-button-primary">
-                {m.library_unread_count({ count: one.unreadCount })}
-              </span>
-            {/if}
-          </span>
-        </span>
+      {#if continues !== undefined && !isSelecting}
+        <ContinueDisc
+          book={continues}
+          series={shown.title}
+          class="shrink-0 bg-transparent text-foreground shadow-none hover:bg-hover"
+        />
       {:else}
-        <span class="flex flex-col gap-xs min-inline-none">
-          <span data-slot="item-title" class={rowLook.title}>
-            {shown.title}
+        <span></span>
+      {/if}
+    </div>
+  {:else}
+    {@const shown = lookOf(one)}
+    {@const share = readShare(one)}
+    {@const continues = continuedBook(one)}
+    {@const veiled = isVeiled(one)}
+    <div class={rowLook.row} data-series-id={one.id}>
+      <SeriesLink
+        {...revealing(one, shown.title)}
+        id={one.id}
+        title={shown.title}
+        order={seriesOrder}
+        class={rowLook.link}
+      >
+        {#if isSelecting}
+          <span
+            class="relative shrink-0 block-series-check inline-series-check"
+          >
+            <SelectionMark isOn={selection?.has(one.id) === true} />
           </span>
-          <span class="flex flex-wrap items-center gap-sm">
-            <span class={rowLook.meta}>
-              {m.library_series_books({ count: one.bookCount })}
+        {/if}
+        <span class="relative shrink-0">
+          <ListCover
+            cover={shown.cover}
+            {coverUrl}
+            isBlurred={veiled}
+            class="rounded-list-cover inline-list-cover"
+          />
+          {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
+            <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
+          {/if}
+        </span>
+        {#if isIosPhone}
+          <span class="flex flex-col min-inline-none">
+            <span data-slot="item-title" class={rowLook.title}>
+              {shown.title}
             </span>
-            {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
-              <LanguageBadge language={one.language} class="bg-chip" />
-            {/if}
-            {#if view.onCovers.showsUnreadCount && !veiled}
-              <UnreadCount
-                count={one.unreadCount}
-                isSpelledOut
-                class="px-sm py-2xs text-caption"
+            <span
+              data-slot="item-subtitle"
+              class="flex flex-wrap items-center gap-x-xs {rowLook.meta}"
+            >
+              {m.library_series_books({ count: one.bookCount })}
+              {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
+                <span aria-hidden="true">·</span>
+                {one.language.toUpperCase()}
+              {/if}
+              {#if view.onCovers.showsDownloaded && one.hasDownloads && !veiled}
+                <span aria-hidden="true">·</span>
+                <Icon name="download" class="shrink-0" />
+              {/if}
+              {#if view.onCovers.showsUnreadCount && one.unreadCount > 0 && !veiled}
+                <span aria-hidden="true">·</span>
+                <span class="font-semibold text-native-button-primary">
+                  {m.library_unread_count({ count: one.unreadCount })}
+                </span>
+              {/if}
+            </span>
+          </span>
+        {:else}
+          <span class="flex flex-col gap-xs min-inline-none">
+            <span data-slot="item-title" class={rowLook.title}>
+              {shown.title}
+            </span>
+            <span class="flex flex-wrap items-center gap-sm">
+              <span class={rowLook.meta}>
+                {m.library_series_books({ count: one.bookCount })}
+              </span>
+              {#if view.onCovers.showsLanguage && one.language !== null && !veiled}
+                <LanguageBadge language={one.language} class="bg-chip" />
+              {/if}
+              {#if view.onCovers.showsUnreadCount && !veiled}
+                <UnreadCount
+                  count={one.unreadCount}
+                  isSpelledOut
+                  class="px-sm py-2xs text-caption"
+                />
+              {/if}
+            </span>
+            {#if share !== undefined}
+              <Progress
+                aria-label={m.library_books_read({
+                  read: one.bookCount - one.unreadCount,
+                  count: one.bookCount,
+                })}
+                value={share}
+                class="block-xs inline-list-progress"
               />
             {/if}
           </span>
-          {#if share !== undefined}
-            <Progress
-              aria-label={m.library_books_read({
-                read: one.bookCount - one.unreadCount,
-                count: one.bookCount,
-              })}
-              value={share}
-              class="block-xs inline-list-progress"
-            />
-          {/if}
-        </span>
+        {/if}
+      </SeriesLink>
+      {#if continues !== undefined && !isSelecting && !veiled}
+        <ContinueDisc
+          book={continues}
+          series={shown.title}
+          class="shrink-0 bg-transparent text-foreground shadow-none hover:bg-hover"
+        />
       {/if}
-    </SeriesLink>
-    {#if continues !== undefined && !isSelecting && !veiled}
-      <ContinueDisc
-        book={continues}
-        series={shown.title}
-        class="shrink-0 bg-transparent text-foreground shadow-none hover:bg-hover"
-      />
-    {/if}
-  </div>
+    </div>
+  {/if}
 {/snippet}
 
 {#if onMostThatFit !== undefined && view.display !== "list"}
@@ -649,6 +716,19 @@
     onkeydown={onCoverKeys}
   >
     <div class="relative" {@attach dragSelect?.attach}>
+      {#if isMacTable}
+        <div
+          aria-hidden="true"
+          class="grid grid-cols-mac-list gap-md border-be border-border px-md py-xs text-caption font-semibold text-muted"
+        >
+          <span data-list-column></span>
+          <span data-list-column>{m.library_list_books()}</span>
+          <span data-list-column>{m.library_list_unread()}</span>
+          <span data-list-column>{m.library_list_language()}</span>
+          <span data-list-column>{m.library_list_progress()}</span>
+          <span></span>
+        </div>
+      {/if}
       <VirtualGrid
         items={series}
         key={(one: LibrarySeries) => one.id}
