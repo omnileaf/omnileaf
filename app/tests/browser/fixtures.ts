@@ -188,6 +188,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   relocateLibraryFolder: () => null,
   signInToLibraryFolder: () => "cancelled",
   showSeriesInFolder: () => null,
+  showBookInFolder: () => null,
   setLibraryTabs: () => null,
   libraryTags: () => [],
   renameLibraryTag: () => null,

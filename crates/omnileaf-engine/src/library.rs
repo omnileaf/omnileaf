@@ -1500,12 +1500,16 @@ impl Library {
                     .map_or(Ok(None), |book| book_to_read(connection, book.id))
             })
             .await?;
-        Ok(first.and_then(|book| match book.root {
-            RootLocator::AndroidTree(_) => None,
-            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
-                Some(root_folder(&book.root).join(book.location))
-            }
-        }))
+        Ok(first.as_ref().and_then(file_to_show))
+    }
+
+    /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
+    pub async fn book_in_folder(&self, book: BookId) -> Result<Option<PathBuf>, LibraryError> {
+        Ok(self
+            .stored_book_to_read(book.0)
+            .await?
+            .as_ref()
+            .and_then(file_to_show))
     }
 
     pub async fn book_file_name(&self, book: BookId) -> Result<Option<BookFile>, LibraryError> {
@@ -2412,6 +2416,15 @@ impl From<omnileaf_db::Error> for LibraryError {
             omnileaf_db::Error::SearchTooLong { chars, max } => Self::SearchTooLong { chars, max },
             omnileaf_db::Error::CursorForAnotherList => Self::CursorForAnotherList,
             other => Self::Database(other),
+        }
+    }
+}
+
+fn file_to_show(book: &BookToRead) -> Option<PathBuf> {
+    match book.root {
+        RootLocator::AndroidTree(_) => None,
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => {
+            Some(root_folder(&book.root).join(&book.location))
         }
     }
 }

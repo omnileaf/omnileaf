@@ -1309,6 +1309,7 @@ export function sampleBackend(
       return null;
     },
     showSeriesInFolder: () => null,
+    showBookInFolder: () => null,
     signInToLibraryFolder: () => {
       if (scenario.signIn === "signedIn") {
         missingFolder.isFound = true;

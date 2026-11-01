@@ -159,6 +159,7 @@ export const commands = {
 } | null, IpcError>(__TAURI_INVOKE("relocate_library_folder", { id, onProgress })),
 	signInToLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<SignInOutcome, IpcError>(__TAURI_INVOKE("sign_in_to_library_folder", { id })),
 	showSeriesInFolder: (series: string & { readonly __brand: "SeriesId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_series_in_folder", { series })),
+	showBookInFolder: (book: string & { readonly __brand: "BookId" }) => typedError<null, IpcError>(__TAURI_INVOKE("show_book_in_folder", { book })),
 	removeLibraryFolder: (id: string & { readonly __brand: "FolderId" }) => typedError<null, IpcError>(__TAURI_INVOKE("remove_library_folder", { id })),
 	previewRemoval: (targets: RemovalTarget[]) => typedError<RemovalPreview, IpcError>(__TAURI_INVOKE("preview_removal", { targets })),
 	removeFromLibrary: (targets: RemovalTarget[], deleteFiles: boolean) => typedError<RemovalReport, IpcError>(__TAURI_INVOKE("remove_from_library", { targets, deleteFiles })),
