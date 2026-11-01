@@ -11,9 +11,10 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { MAC_INSPECTOR } from "./filter-sheet-look";
+  import { DOCKED_PANEL, MAC_INSPECTOR_PANEL } from "./filter-sheet-look";
   import FilterChoices from "./FilterChoices.svelte";
   import { NEW_LIBRARY_LISTING } from "./library-listing";
+  import { scrollRulesOf } from "./sheet-scroll-rules";
 
   const CLOSE_ICON_SIZE = 16;
 
@@ -37,6 +38,18 @@
 
   const titleId = $props.id();
   const isMac = currentPlatform() === "macos";
+  const look = isMac ? MAC_INSPECTOR_PANEL : DOCKED_PANEL;
+  let isScrolled = $state(false);
+
+  function followsScroll(body: HTMLElement): () => void {
+    const follow = () => {
+      isScrolled = scrollRulesOf(body).above;
+    };
+    body.addEventListener("scroll", follow, { passive: true });
+    return () => {
+      body.removeEventListener("scroll", follow);
+    };
+  }
 
   function focusOnArrival(heading: HTMLElement): void {
     heading.focus();
@@ -61,17 +74,11 @@
   aria-labelledby={titleId}
   data-macos-inspector={isMac ? "" : undefined}
   style:--docked-head="{headHeight}px"
-  class={isMac
-    ? "fixed inset-y-none inset-e-none z-series-bar flex flex-col border-s border-border bg-background inline-native-inspector"
-    : "sticky inset-bs-docked-top flex flex-col self-start border-s border-sidebar-edge bg-sidebar block-docked-fill"}
+  class={look.aside}
   {@attach closesOnEscape}
 >
-  <div
-    class={isMac
-      ? "flex items-center px-lg min-block-toolbar"
-      : "flex items-center gap-md ps-lg pe-sm pbs-lg pbe-sm"}
-  >
-    {#if !isMac}
+  <div class={[look.head, isScrolled && look.headRule]}>
+    {#if look.hasBadgeAndClose}
       <HeaderBadge
         icon={ListFilter}
         look="header-accent"
@@ -82,14 +89,11 @@
       {@attach focusOnArrival}
       id={titleId}
       tabindex="-1"
-      class={[
-        "flex-1 outline-none",
-        isMac ? MAC_INSPECTOR.heading : "text-body font-semibold",
-      ]}
+      class={["flex-1 outline-none", look.title]}
     >
       {m.library_filter_and_sort()}
     </h2>
-    {#if !isMac}
+    {#if look.hasBadgeAndClose}
       <Tooltip
         label={m.library_close_filter_and_sort()}
         aria-label={m.library_close_filter_and_sort()}
@@ -107,28 +111,21 @@
       </Tooltip>
     {/if}
   </div>
-  <div class="flex flex-1 flex-col overflow-y-auto px-lg pbe-lg min-block-none">
-    <FilterChoices {listing} {choices} {onChoose} />
-  </div>
   <div
-    class={[
-      "flex items-center gap-sm border-bs border-border pbs-md pbe-md",
-      isMac ? "px-lg" : "ps-lg pe-sm",
-    ]}
+    {@attach followsScroll}
+    class="flex flex-1 flex-col overflow-y-auto px-lg pbe-lg min-block-none"
   >
-    <p role="status" class="flex-1 text-small">
+    <FilterChoices {listing} {choices} {onChoose} isInspector={isMac} />
+  </div>
+  <div class={["flex items-center gap-sm border-bs border-border", look.foot]}>
+    <p role="status" class={look.count}>
       {#if matching !== undefined}
         {m.library_series_match({ count: matching })}
       {/if}
     </p>
     <Button
       type="button"
-      {...isMac
-        ? { variant: "secondary", size: "small" }
-        : {
-            look: "text",
-            class: "rounded-badge px-sm text-small block-panel-button",
-          }}
+      {...look.reset}
       onclick={() => {
         onChoose(NEW_LIBRARY_LISTING);
       }}

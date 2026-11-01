@@ -63,26 +63,39 @@
     choices,
     onChoose,
     isGrouped = false,
+    isInspector = false,
   }: {
     listing: LibraryListing;
     choices: LibraryFilterChoices;
     onChoose: (listing: LibraryListing) => void;
     isGrouped?: boolean;
+    isInspector?: boolean;
   } = $props();
 
   const width = new WindowWidth();
   const isAndroidPhone = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
-  const isMac = currentPlatform() === "macos";
   const look = $derived(groupLook(isGrouped));
-  const headingClass = $derived(
-    isAndroidPhone
-      ? ANDROID_FILTER_HEADING
-      : isMac
-        ? MAC_INSPECTOR.heading
-        : look.heading,
-  );
+
+  function headingClassOf(): string {
+    if (isAndroidPhone) {
+      return ANDROID_FILTER_HEADING;
+    }
+    return isInspector ? MAC_INSPECTOR.heading : look.heading;
+  }
+
+  function sectionClassOf(isFilter: boolean): string | false {
+    if (isInspector) {
+      return MAC_INSPECTOR.section;
+    }
+    if (isGrouped) {
+      return look.section;
+    }
+    return isFilter && !isAndroidPhone && "pbs-lg";
+  }
+
+  const headingClass = $derived(headingClassOf());
   const sortByOptions = $derived(
     SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() })),
   );
@@ -127,7 +140,7 @@
   }
 </script>
 
-<section class={["flex flex-col", look.section]}>
+<section class={["flex flex-col", sectionClassOf(false)]}>
   <h3 class={headingClass}>{m.library_sort()}</h3>
   {#if isGrouped}
     <div class={look.group}>
@@ -164,6 +177,7 @@
   {:else}
     <SortSelect
       sort={listing.sort}
+      {isInspector}
       onSortBy={(by: LibrarySortBy) => {
         onChoose(sortedBy(listing, by));
       }}
@@ -173,12 +187,7 @@
     />
   {/if}
 </section>
-<section
-  class={[
-    "flex flex-col",
-    isGrouped ? look.section : !isAndroidPhone && "pbs-lg",
-  ]}
->
+<section class={["flex flex-col", sectionClassOf(true)]}>
   <h3 class={headingClass}>{m.library_filter()}</h3>
   <div class={isAndroidPhone ? "flex flex-col" : look.group}>
     {#if isGrouped}
@@ -206,6 +215,7 @@
     {:else}
       <ReadStateChoice
         filter={listing.filter}
+        {isInspector}
         onChoose={(state: ReadState) => {
           onChoose(withReadState(listing, state));
         }}

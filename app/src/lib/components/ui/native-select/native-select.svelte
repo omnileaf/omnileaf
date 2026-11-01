@@ -11,10 +11,14 @@
     ref = $bindable(null),
     class: className,
     fieldClass,
+    icon: Icon = ChevronDown,
+    iconSize = ICON_SIZE,
     children,
     ...restProps
   }: WithElementRef<HTMLSelectAttributes, HTMLSelectElement> & {
     fieldClass?: string;
+    icon?: typeof ChevronDown;
+    iconSize?: number;
   } = $props();
 </script>
 
@@ -29,8 +33,8 @@
   >
     {@render children?.()}
   </select>
-  <ChevronDown
-    size={ICON_SIZE}
+  <Icon
+    size={iconSize}
     aria-hidden="true"
     class="pointer-events-none absolute inset-e-pill-inline text-muted"
   />

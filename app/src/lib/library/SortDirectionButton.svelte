@@ -16,6 +16,7 @@
 
   const ICON_SIZE = 14;
   const MATERIAL_ICON_SIZE = 24;
+  const INSPECTOR_ICON_SIZE = 13;
 
   let {
     sort,
@@ -23,28 +24,42 @@
     onReverse,
   }: {
     sort: LibrarySort;
-    look: keyof typeof LOOKS;
+    look: keyof typeof LOOKS | "inspector";
     onReverse: () => void;
   } = $props();
 
   const wording = $derived(directionWording(sort));
 </script>
 
-<Button
-  type="button"
-  look="outline"
-  aria-label={wording.change()}
-  class={["flex shrink-0 items-center gap-xs", LOOKS[look]]}
-  onclick={onReverse}
->
-  <span class={look === "icon" || look === "material" ? "sr-only" : undefined}>
-    {wording.label()}
-  </span>
-  {#if look === "material"}
-    <ArrowDownUp size={MATERIAL_ICON_SIZE} aria-hidden="true" />
-  {:else if sort.direction === "ascending"}
-    <ArrowUp size={ICON_SIZE} aria-hidden="true" />
-  {:else}
-    <ArrowDown size={ICON_SIZE} aria-hidden="true" />
-  {/if}
-</Button>
+{#if look === "inspector"}
+  <Button
+    type="button"
+    variant="secondary"
+    iconOnly
+    label={wording.change()}
+    onclick={onReverse}
+  >
+    <ArrowDownUp size={INSPECTOR_ICON_SIZE} aria-hidden="true" />
+  </Button>
+{:else}
+  <Button
+    type="button"
+    look="outline"
+    aria-label={wording.change()}
+    class={["flex shrink-0 items-center gap-xs", LOOKS[look]]}
+    onclick={onReverse}
+  >
+    <span
+      class={look === "icon" || look === "material" ? "sr-only" : undefined}
+    >
+      {wording.label()}
+    </span>
+    {#if look === "material"}
+      <ArrowDownUp size={MATERIAL_ICON_SIZE} aria-hidden="true" />
+    {:else if sort.direction === "ascending"}
+      <ArrowUp size={ICON_SIZE} aria-hidden="true" />
+    {:else}
+      <ArrowDown size={ICON_SIZE} aria-hidden="true" />
+    {/if}
+  </Button>
+{/if}
