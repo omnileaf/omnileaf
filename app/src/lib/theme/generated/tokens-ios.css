@@ -141,6 +141,7 @@
   --native-text-bar-title: calc(1.0625rem * var(--text-scale));
   --native-leading-bar-title: calc(22 / 17);
   --native-weight-bar-button: 510;
+  --native-weight-bar-badge: 590;
   --native-weight-bar-title: 600;
   --native-tracking-bar-title: -0.43px;
   --native-text-title-bar-title: calc(1.0625rem * var(--text-scale));
@@ -424,6 +425,8 @@
   --native-spacing-list-footer-gap: 0px;
   --native-spacing-radio-focus-ring: var(--focus-ring-width);
   --native-spacing-radio-dot: 0.5rem;
+  --native-spacing-bar-badge: 20px;
+  --native-spacing-bar-badge-inline: 6px;
 }
 
 :root[data-platform="ios"],
@@ -480,6 +483,8 @@
   --native-color-top-bar-scrolled-edge: rgba(60, 60, 67, 0.12);
   --native-color-bar-button: var(--native-color-tab-bar);
   --native-color-on-bar-button: #2f6f4f;
+  --native-color-bar-badge: #9b2c2c;
+  --native-color-on-bar-badge: #ffffff;
   --native-color-tab-bar: rgba(255, 255, 255, 0.7);
   --native-color-tab-pill: rgba(0, 0, 0, 0.075);
   --native-color-accent-soft: #ddebe2;
@@ -571,6 +576,8 @@
   --native-color-top-bar-scrolled-edge: rgba(84, 84, 88, 0.5);
   --native-color-bar-button: var(--native-color-tab-bar);
   --native-color-on-bar-button: #7fcb9d;
+  --native-color-bar-badge: #f08c8c;
+  --native-color-on-bar-badge: #2a0e0e;
   --native-color-tab-bar: rgba(153, 153, 153, 0.17);
   --native-color-tab-pill: rgba(255, 255, 255, 0.14);
   --native-color-accent-soft: #243a2c;
