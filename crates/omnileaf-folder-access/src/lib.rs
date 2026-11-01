@@ -12,6 +12,7 @@ mod ios;
 )]
 mod place;
 mod reply;
+mod streamed_copy;
 #[cfg_attr(
     not(any(target_os = "android", test)),
     expect(dead_code, reason = "only the Android plugin sends and answers these")
