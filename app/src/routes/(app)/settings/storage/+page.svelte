@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -19,10 +20,13 @@
     computer: m.storage_on_this_computer,
   } satisfies Record<DeviceWord, () => string>;
   const CARD = ["rounded-card border border-border bg-card", CARD_PLATE];
+  const FLAT_CARD = "rounded-card";
 
   let { data }: PageProps = $props();
 
   const storage = getStorageCheck();
+  const android = new AndroidPhone();
+  const card = $derived(android.isOn ? FLAT_CARD : CARD);
   const width = new WindowWidth();
   const meterHeadingId = $props.id();
 
@@ -40,14 +44,14 @@
   <div class="mbs-pane-gap flex flex-col gap-pane-gap">
     <section
       aria-labelledby={meterHeadingId}
-      class={["flex flex-col gap-sm p-lg", CARD]}
+      class={["flex flex-col gap-sm p-lg", card]}
     >
       <h2 id={meterHeadingId} class="text-label font-semibold">
         {deviceName}
       </h2>
       <StorageMeter used={storage.use} />
     </section>
-    <section class={["flex flex-col overflow-hidden", CARD]}>
+    <section class={["flex flex-col overflow-hidden", card]}>
       <div class="flex flex-col divide-y divide-border">
         <CacheRow
           title={m.storage_cached_pages()}
