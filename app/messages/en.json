@@ -2638,6 +2638,7 @@
     }
   ],
   "library_delete": "Delete",
+  "library_remove_from_library": "Remove from library",
   "remove_title": "Remove from your library?",
   "remove_series_summary": [
     {

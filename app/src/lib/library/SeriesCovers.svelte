@@ -7,6 +7,7 @@
     Play,
     SquareCheck,
     Tags,
+    Trash,
   } from "@lucide/svelte";
   import { ContextMenu } from "bits-ui";
   import type { Snippet } from "svelte";
@@ -39,6 +40,7 @@
   } from "#lib/virtual-grid/grid-keys.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { showFolderLabel } from "#lib/page/show-file.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import CoverBadges from "./CoverBadges.svelte";
@@ -816,8 +818,22 @@
         }}
       >
         <FolderOpen size={MENU_ICON_SIZE} aria-hidden="true" />
-        {m.series_show_in_folder()}
+        {platform === "windows"
+          ? showFolderLabel(platform)
+          : m.series_show_in_folder()}
       </ContextMenuItem>
+      {#if menu.onRemove !== undefined}
+        {@const remove = menu.onRemove}
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => {
+            remove(target);
+          }}
+        >
+          <Trash size={MENU_ICON_SIZE} aria-hidden="true" />
+          {m.library_remove_from_library()}
+        </ContextMenuItem>
+      {/if}
     </ContextMenuContent>
   {/if}
 </ContextMenu.Root>

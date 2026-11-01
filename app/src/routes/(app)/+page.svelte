@@ -463,6 +463,12 @@
         selection.begin(one.id);
       },
       onShowInFolder: showInFolder,
+      onRemove:
+        data.appInfo.platform === "windows"
+          ? (one: LibrarySeries) => {
+              removing = seriesTargets([one.id]);
+            }
+          : undefined,
     },
   });
   const loaded = $derived(
