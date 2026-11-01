@@ -19,9 +19,7 @@
     onChoose: (state: ReadState) => void;
   } = $props();
 
-  const usesSelect = $derived(
-    currentPlatform() === "windows" || isInspector,
-  );
+  const usesSelect = $derived(currentPlatform() === "windows" || isInspector);
   const labelId = $props.id();
 
   function isReadState(value: string): value is ReadState {
