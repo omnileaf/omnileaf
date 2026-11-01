@@ -410,6 +410,8 @@ export const TOKEN_THEME = {
     "native-info-bar-stacked-end",
     "native-info-bar-stacked-indent",
     "native-info-bar-words-block",
+    "native-large-title-above",
+    "native-large-title-below",
     "native-menu-block",
     "native-menu-inline",
     "native-menu-item",
