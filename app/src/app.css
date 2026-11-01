@@ -128,6 +128,13 @@
     @slot;
   }
 }
+@custom-variant search-field {
+  @variant large {
+    &:where(:not([data-platform="ios"] *)) {
+      @slot;
+    }
+  }
+}
 @custom-variant closed (&[data-state="closed"]);
 @custom-variant ios-grouped (&:where([data-platform="ios"] [data-ground="grouped"] *));
 @custom-variant grouped (&:where([data-platform="ios"] [data-ground="grouped"] *, [data-platform="android"], [data-platform="android"] *));
@@ -806,6 +813,7 @@
   --z-index-series-band: -1;
   --z-index-series-bar: 1;
   --z-index-tab-bar: 1;
+  --z-index-top-tab-bar: 2;
   --z-index-touch-target: 1;
   --z-index-drag-box: 5;
   --z-index-notice: 10;

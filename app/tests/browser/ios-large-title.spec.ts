@@ -24,7 +24,7 @@ test("sets the library's large title under its buttons on an iPhone, folding it 
 }) => {
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-    "iPads keep the title beside its buttons",
+    "iPads leave the bar row to the tab bar",
   );
   await page.goto("/");
   const bar = page.locator("[data-title-bar]");
@@ -41,14 +41,21 @@ test("sets the library's large title under its buttons on an iPhone, folding it 
   await expect(barTitle).toHaveCSS("opacity", "1");
 });
 
-test("keeps the title beside its buttons on a wide iPad", async ({ page }) => {
+test("sets the title under the tab bar and the buttons on a wide iPad", async ({
+  page,
+}) => {
   test.skip(
     viewportOf(page).width < EXPANDED_MIN_WIDTH,
     "iPhones set a large title under the buttons",
   );
   await page.goto("/");
 
-  await expect(page.locator("[data-title-bar]")).toHaveCount(0);
+  const bar = await boxOf(page.getByRole("navigation", { name: "Main" }));
+  const title = await boxOf(
+    page.getByRole("heading", { level: 1, name: "Library" }),
+  );
+
+  expect(title.y).toBeGreaterThanOrEqual(bar.y + bar.height);
 });
 
 /** Headless WebKit takes seconds to draw each row of blurred iOS unread badges, long enough to miss the frame a resize waits for on CI. */
@@ -77,7 +84,7 @@ test.describe("with a few series", () => {
     await page.setViewportSize({ width: 390, height: 900 });
     await expect(page.locator("[data-title-bar]")).toBeVisible();
     await page.setViewportSize({ width: EXPANDED_MIN_WIDTH, height: 900 });
-    await expect(page.locator("[data-title-bar]")).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
 
     expect(errors).toEqual([]);
   });
@@ -88,7 +95,7 @@ test("keeps the folded title clear of Search and More, two glass circles 12 apar
 }) => {
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-    "iPads keep the title beside its buttons",
+    "iPads leave the bar row to the tab bar",
   );
   await page.goto("/");
   const bar = page.locator("[data-title-bar]");
@@ -151,7 +158,7 @@ test("draws each of History's bar buttons on its own glass circle on an iPhone",
 }) => {
   test.skip(
     viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-    "iPads keep the title beside its buttons",
+    "iPads leave the bar row to the tab bar",
   );
   await page.goto("/history");
   const buttons = page

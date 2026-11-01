@@ -5,7 +5,7 @@
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageHeading from "#lib/page/PageHeading.svelte";
-  import { isPhone } from "#lib/page/platform.ts";
+  import { hasTopTabBar, isPhone } from "#lib/page/platform.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import {
     foldingBarLook,
@@ -42,6 +42,9 @@
   );
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
+  const isTitleFoldedIntoBar = $derived(
+    isTitleUnderBar && !hasTopTabBar(platform, width.current),
+  );
 
   $effect(() => {
     const heading = header?.querySelector("h1");
@@ -150,7 +153,7 @@
         leading === undefined && "flex-1",
         foldingBar.title,
         NATIVE_TOP_BAR.barTitle,
-        isTitleUnderBar ? "opacity-100" : "opacity-0",
+        isTitleFoldedIntoBar ? "opacity-100" : "opacity-0",
       ]}
     >
       {title}

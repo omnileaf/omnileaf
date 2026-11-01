@@ -183,6 +183,8 @@
   --native-spacing-tab-bar: 64px;
   --native-spacing-tab-bar-inset: 0px;
   --native-spacing-tab-bar-inline: 0px;
+  --native-spacing-top-tab-bar: 44px;
+  --native-spacing-top-tab: 75px;
   --native-spacing-toolbar-button: 48px;
   --native-spacing-inspector: var(--spacing-docked-panel);
   --native-spacing-inspector-title: var(--spacing-toolbar);

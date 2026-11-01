@@ -197,6 +197,22 @@ test("keeps today's page title on an iPad", async () => {
   expect(classes).not.toContain("native");
 });
 
+test("sets a large page title on an iPad when asked for one", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  onPlatformInLight("ios");
+  await render(PageHeading, { title: "Library", size: "large" });
+
+  expect(heading().className).toContain("text-native-large-title");
+});
+
+test("keeps today's page title on an Android tablet when asked for a large one", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  onPlatformInLight("android");
+  await render(PageHeading, { title: "Library", size: "large" });
+
+  expect(heading().className).toContain("text-page-title");
+});
+
 test("keeps today's regular weight page title on an Android tablet", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   onPlatformInLight("android");

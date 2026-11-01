@@ -186,8 +186,12 @@ function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
   });
 }
 
-function testCrossfadingTheFill(): void {
+function testCrossfadingTheFill(iconsBelowWidth = Infinity): void {
   test("crossfades the selected icon's fill", async ({ page }) => {
+    test.skip(
+      viewportOf(page).width >= iconsBelowWidth,
+      "the top tab bar has no icons",
+    );
     await page.goto("/history");
 
     const icon = await motionIn(tab(page, "History").locator("svg"));
@@ -355,7 +359,7 @@ test.describe("on iOS", () => {
   });
 
   testMovingIcons({ belowWidth: MEDIUM_MIN_WIDTH, where: "phones" });
-  testCrossfadingTheFill();
+  testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();
 });
 
