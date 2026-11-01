@@ -85,6 +85,7 @@
         <CoversPerRowChoice
           {view}
           labelClass={look.itemLabel}
+          footnoteClass={look.footnote}
           drawn={coversInARow}
           {mostThatFit}
           onFit={(fitsToWidth: boolean) => {
@@ -99,6 +100,7 @@
     <div class={look.choice}>
       <GroupByChoice
         labelClass={look.itemLabel}
+        footnoteClass={look.footnote}
         chosen={view.groupBy}
         onChoose={(grouping: LibraryGrouping) => {
           onChoose(withGroupBy(view, grouping));

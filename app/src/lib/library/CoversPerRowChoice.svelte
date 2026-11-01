@@ -30,6 +30,7 @@
     onFit,
     onCount,
     labelClass,
+    footnoteClass,
   }: {
     view: LibraryView;
     drawn: number | undefined;
@@ -37,6 +38,7 @@
     onFit: (fitsToWidth: boolean) => void;
     onCount: (size: ScreenSize, count: number) => void;
     labelClass?: string | undefined;
+    footnoteClass?: string | undefined;
   } = $props();
 
   const labelId = $props.id();
@@ -46,7 +48,7 @@
 
 <div class={["flex flex-col gap-sm", android.isOn && "ps-lg pe-xl"]}>
   <div
-    class="flex items-center justify-between gap-md ios:max-medium:flex-col ios:max-medium:items-stretch"
+    class="flex items-center justify-between gap-md ios:flex-col ios:items-stretch ios:medium:gap-sm"
   >
     <p
       id={labelId}
@@ -70,7 +72,7 @@
   </div>
   {#if view.fitsCoversToWidth}
     {#if drawn !== undefined}
-      <p class="text-small text-muted">
+      <p class={footnoteClass ?? "text-small text-muted"}>
         {m.library_covers_fit_width({ count: numbers.format(drawn) })}
       </p>
     {/if}
