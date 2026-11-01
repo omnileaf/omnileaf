@@ -77,20 +77,26 @@
     </div>
     <code
       id={pathId}
-      class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
+      class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap android:max-medium:rounded-none android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:px-none android:max-medium:text-native-row-subtitle/native-row-subtitle android:max-medium:text-muted"
       >{location}</code
     >
     <dl
-      class="grid grid-cols-details divide-y divide-border border-bs border-border"
+      class="grid grid-cols-details divide-y divide-border border-bs border-border android:max-medium:flex android:max-medium:flex-col"
     >
       {#each facts as fact (fact.term)}
         <div
-          class="col-span-2 grid grid-cols-subgrid gap-x-lg px-home-card py-home-path"
+          class="col-span-2 grid grid-cols-subgrid gap-x-lg px-home-card py-home-path android:max-medium:flex android:max-medium:flex-col android:max-medium:py-sm"
         >
-          <dt class="text-footnote text-muted min-inline-home-term">
+          <dt
+            class="text-footnote text-muted min-inline-home-term android:max-medium:text-body android:max-medium:text-foreground"
+          >
             {fact.term}
           </dt>
-          <dd class="text-small">{fact.detail}</dd>
+          <dd
+            class="text-small android:max-medium:text-native-row-subtitle/native-row-subtitle android:max-medium:text-muted"
+          >
+            {fact.detail}
+          </dd>
         </div>
       {/each}
     </dl>
