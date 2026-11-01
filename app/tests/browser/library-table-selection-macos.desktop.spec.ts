@@ -133,6 +133,19 @@ test("fills a selected row's progress bar in the colour on the accent so it show
   ).toHaveCSS("background-color", onAccent);
 });
 
+test("tints a selected row's progress track with the colour on the accent so the unread part shows", async ({
+  page,
+}) => {
+  const tint = await colourOf(
+    page,
+    "color-mix(in oklab, var(--color-on-accent) 20%, transparent)",
+  );
+
+  await expect(
+    row(page, 4).locator("[data-list-cell='progress'] [role='progressbar']"),
+  ).toHaveCSS("background-color", tint);
+});
+
 test("lets the accent go with the selection", async ({ page }) => {
   const accent = await colourOf(page, "var(--color-accent)");
 
