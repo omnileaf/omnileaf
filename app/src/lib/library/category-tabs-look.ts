@@ -4,6 +4,7 @@ import {
   ROW_FOCUS_RING,
   ROW_SUBTITLE_TYPE,
 } from "#lib/components/ui/item/looks.ts";
+import { WINDOWS_SELECTOR_BAR_LOOK } from "#lib/components/ui/tabs/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { isPhone } from "#lib/page/platform.ts";
@@ -63,6 +64,14 @@ const SHARED_LOOK: CategoryTabsLook = {
     "shrink-0 block-touch-target inline-touch-target hover:bg-hover active:bg-pressed",
   arrowFace: "",
   sheet: SHARED_SHEET,
+};
+
+const WINDOWS_LOOK: CategoryTabsLook = {
+  ...SHARED_LOOK,
+  row: "-ms-gutter -me-page-end flex items-center gap-xs ps-gutter pe-page-end max-medium:-ms-page-start max-medium:ps-page-start in-toolbar:ps-lg",
+  tab: WINDOWS_SELECTOR_BAR_LOOK.trigger,
+  chosenTab: "",
+  otherTab: "",
 };
 
 const SHARED_PHONE_LOOK: CategoryTabsLook = {
@@ -137,7 +146,7 @@ export function categoryTabsLook(
   width: WidthClass,
 ): CategoryTabsLook {
   if (!isPhone(platform, width)) {
-    return SHARED_LOOK;
+    return platform === "windows" ? WINDOWS_LOOK : SHARED_LOOK;
   }
   return PHONE_LOOKS[platform] ?? SHARED_PHONE_LOOK;
 }

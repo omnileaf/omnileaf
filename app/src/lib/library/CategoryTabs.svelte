@@ -226,7 +226,7 @@
           <Button
             {...props}
             look="bar-icon"
-            class="shrink-0 gap-sm px-md text-small font-medium min-block-pointer-button"
+            class="shrink-0 gap-sm px-md text-small font-medium min-block-pointer-button windows:text-label windows:font-regular"
           >
             {m.library_categories_more()}
             <ChevronDown size={ICON_SIZE} aria-hidden="true" />
