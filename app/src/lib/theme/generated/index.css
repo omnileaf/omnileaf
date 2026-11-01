@@ -314,6 +314,8 @@
   --spacing-native-menu-rule-inline: var(--native-spacing-menu-rule-inline);
   --spacing-native-menu-rule-block: var(--native-spacing-menu-rule-block);
   --shadow-native-menu-lift: var(--native-shadow-menu-lift);
+  --shadow-native-popover-lift: var(--native-shadow-popover-lift);
+  --color-native-popover: var(--native-color-popover);
   --shadow-native-tooltip-lift: var(--native-shadow-tooltip-lift);
   --shadow-native-dialog-lift: var(--native-shadow-dialog-lift);
   --color-native-notice: var(--native-color-notice);
@@ -422,6 +424,9 @@
   --radius-native-outlined-field: var(--native-radius-outlined-field);
   --spacing-native-outlined-field: var(--native-spacing-outlined-field);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
+  --spacing-native-popover-top: var(--native-spacing-popover-top);
+  --spacing-native-popover-bottom: var(--native-spacing-popover-bottom);
+  --spacing-native-popover-gap: var(--native-spacing-popover-gap);
   --text-native-empty: var(--native-text-empty);
   --leading-native-empty: var(--native-leading-empty);
   --tracking-native-empty: var(--native-tracking-empty);

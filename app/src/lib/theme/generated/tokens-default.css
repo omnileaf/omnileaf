@@ -309,6 +309,8 @@
   --native-spacing-menu-rule-inline: 0px;
   --native-spacing-menu-rule-block: var(--spacing-xs);
   --native-shadow-menu-lift: var(--menu-shadow);
+  --native-shadow-popover-lift: var(--shadow-popover);
+  --native-color-popover: var(--popover-surface);
   --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-color-notice: var(--card);
@@ -417,6 +419,9 @@
   --native-radius-outlined-field: 4px;
   --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
+  --native-spacing-popover-top: var(--spacing-lg);
+  --native-spacing-popover-bottom: var(--spacing-panel-inline);
+  --native-spacing-popover-gap: var(--spacing-md);
   --native-text-empty: var(--text-title);
   --native-leading-empty: var(--text-title--line-height);
   --native-tracking-empty: 0;
