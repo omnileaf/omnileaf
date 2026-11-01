@@ -504,6 +504,10 @@
   --tracking-native-list-sub: var(--native-tracking-list-sub);
   --color-native-radio-field: var(--native-color-radio-field);
   --shadow-native-radio-rim: var(--native-shadow-radio-rim);
+  --shadow-native-radio-pressed-on: var(--native-shadow-radio-pressed-on);
+  --spacing-native-list-footer-gap: var(--native-spacing-list-footer-gap);
+  --spacing-native-radio-focus-ring: var(--native-spacing-radio-focus-ring);
+  --spacing-native-radio-dot: var(--native-spacing-radio-dot);
 }
 
 @media (prefers-reduced-motion: reduce) {

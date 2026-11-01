@@ -1,4 +1,5 @@
 import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+import type { Platform } from "#lib/ipc/bindings.ts";
 import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
 
 export interface RadiosLook {
@@ -47,17 +48,18 @@ const ANDROID_PHONE_LOOK: RadiosLook = {
   hint: `text-muted ${ROW_SUBTITLE_TYPE}`,
 };
 
-export const MACOS_RADIOS_LOOK: RadiosLook = {
+const MACOS_RADIOS_LOOK: RadiosLook = {
   section: "flex flex-col gap-xs",
   heading:
     "px-sm text-native-list-sub/native-list-sub font-native-button-large tracking-native-list-sub text-muted",
   group:
     "flex flex-col items-start gap-native-radio-stack rounded-native-group bg-native-group px-native-group-inset py-md",
-  row: "flex items-start gap-native-radio-words-gap text-start text-native-button/native-button font-native-button",
-  mark: "flex shrink-0 items-center justify-center rounded-full block-radio inline-radio",
-  markOn: "bg-accent",
-  markOff: "bg-native-radio-field shadow-native-radio-rim",
-  dot: "rounded-full bg-on-accent block-radio-dot inline-radio-dot",
+  row: "group flex items-start gap-native-radio-words-gap text-start text-native-button/native-button font-native-button focus-visible:outline-0",
+  mark: "flex shrink-0 items-center justify-center rounded-full block-radio inline-radio group-focus-visible:outline-(length:--spacing-native-radio-focus-ring) group-focus-visible:outline-native-focus-ring",
+  markOn: "bg-accent group-active:shadow-native-radio-pressed-on",
+  markOff:
+    "bg-native-radio-field shadow-native-radio-rim group-active:bg-native-control-fill-pressed",
+  dot: "rounded-full bg-on-accent block-native-radio-dot inline-native-radio-dot",
   words: "flex flex-col",
   label: "",
   hint: "text-native-list-sub/native-list-sub font-regular tracking-native-list-sub text-muted",
@@ -65,4 +67,11 @@ export const MACOS_RADIOS_LOOK: RadiosLook = {
 
 export function radiosLook(isAndroidPhone: boolean): RadiosLook {
   return isAndroidPhone ? ANDROID_PHONE_LOOK : TODAYS_LOOK;
+}
+
+export function radiosLookFor(
+  platform: Platform,
+  isAndroidPhone: boolean,
+): RadiosLook {
+  return platform === "macos" ? MACOS_RADIOS_LOOK : radiosLook(isAndroidPhone);
 }

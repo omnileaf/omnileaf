@@ -499,4 +499,8 @@
   --native-tracking-list-sub: 0;
   --native-color-radio-field: var(--background);
   --native-shadow-radio-rim: none;
+  --native-shadow-radio-pressed-on: none;
+  --native-spacing-list-footer-gap: 0px;
+  --native-spacing-radio-focus-ring: var(--focus-ring-width);
+  --native-spacing-radio-dot: 0.5rem;
 }

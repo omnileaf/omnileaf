@@ -65,6 +65,22 @@ function ringOf(name: string): HTMLElement {
   return ring;
 }
 
+function dotOf(ring: HTMLElement): Element {
+  if (ring.firstElementChild === null) {
+    throw new Error("the chosen radio has no dot");
+  }
+  return ring.firstElementChild;
+}
+
+function resolvedShadow(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.boxShadow = `var(${token})`;
+  document.body.append(probe);
+  const shadow = getComputedStyle(probe).boxShadow;
+  probe.remove();
+  return shadow;
+}
+
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
@@ -121,8 +137,14 @@ test("draws the macos radio as a 16px field with a rim and a 4.8px dot in the ac
   expect(getComputedStyle(chosen).backgroundColor).toBe(
     resolvedColour("--color-accent", "color"),
   );
+  expect(getComputedStyle(dotOf(chosen)).backgroundColor).toBe(
+    resolvedColour("--color-on-accent", "color"),
+  );
   expect(getComputedStyle(other).borderTopWidth).toBe("0px");
   expect(getComputedStyle(other).backgroundColor).toBe(
     resolvedColour("--native-color-radio-field", "color"),
+  );
+  expect(getComputedStyle(other).boxShadow).toContain(
+    resolvedShadow("--native-shadow-radio-rim"),
   );
 });

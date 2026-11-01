@@ -7,13 +7,14 @@
 
   import { currentPlatform } from "#lib/page/platform.ts";
 
-  import { MACOS_RADIOS_LOOK, radiosLook } from "./radios-look";
+  import { radiosLookFor } from "./radios-look";
 
   let {
     title,
     options,
     labels,
     hints = {},
+    hintsAreShown = true,
     chosen,
     onChoose,
   }: {
@@ -21,6 +22,7 @@
     options: readonly Option[];
     labels: Record<Option, string>;
     hints?: Partial<Record<Option, string>>;
+    hintsAreShown?: boolean;
     chosen: Option;
     onChoose: (option: Option) => void;
   } = $props();
@@ -28,9 +30,7 @@
   const id = $props.id();
   const android = new AndroidPhone();
   const platform = currentPlatform();
-  const look = $derived(
-    platform === "macos" ? MACOS_RADIOS_LOOK : radiosLook(android.isOn),
-  );
+  const look = $derived(radiosLookFor(platform, android.isOn));
 </script>
 
 <section aria-labelledby="{id}-title" class={look.section}>
@@ -65,7 +65,10 @@
             {labels[option]}
           </span>
           {#if hint !== undefined}
-            <span id="{id}-{option}" class={look.hint}>
+            <span
+              id="{id}-{option}"
+              class={[look.hint, !hintsAreShown && "sr-only"]}
+            >
               {hint}
             </span>
           {/if}

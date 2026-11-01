@@ -107,6 +107,10 @@
   --native-text-list-sub: calc(0.6875rem * var(--text-scale));
   --native-leading-list-sub: calc(14 / 11);
   --native-tracking-list-sub: 0.06px;
+  --native-shadow-radio-pressed-on: inset 0 0 0 8px var(--native-color-control-fill-hover);
+  --native-spacing-list-footer-gap: 6px;
+  --native-spacing-radio-focus-ring: 3.5px;
+  --native-spacing-radio-dot: 4.8px;
 }
 
 :root[data-platform="macos"],
@@ -352,6 +356,7 @@
   --native-color-tile-picked: color-mix(in srgb, #000000 12%, transparent);
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(0, 0, 0, 0.75), inset 0 0 0 1px #ffffff;
   --native-shadow-radio-rim: inset 0 0 0 1px #585858, 0 0.5px 1px rgba(0, 0, 0, 0.12);
+  --native-spacing-radio-focus-ring: 2.5px;
 }
 
 :root[data-platform="macos"][data-contrast="more"][data-theme="dark"],
@@ -413,4 +418,5 @@
   --native-color-tile-picked: color-mix(in srgb, #ffffff 12%, transparent);
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.57), 0 0 0 1px rgba(0, 0, 0, 0.78), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   --native-shadow-radio-rim: inset 0 0 0 1px #afafaf, 0 0.5px 1px rgba(0, 0, 0, 0.12);
+  --native-spacing-radio-focus-ring: 2.5px;
 }

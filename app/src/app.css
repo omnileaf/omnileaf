@@ -1277,7 +1277,6 @@
 :root {
   @variant macos {
     --spacing-pane: 1.5rem;
-    --spacing-radio-dot: 4.8px;
   }
 }
 
