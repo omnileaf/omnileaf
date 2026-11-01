@@ -30,11 +30,11 @@ export const MAC_INSPECTOR = {
   heading:
     "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title",
   label:
-    "text-native-inspector-label/native-inspector-label font-native-inspector-label",
+    "text-native-inspector-label/native-inspector-label font-native-inspector-label tracking-native-inspector-label",
   section:
     "gap-sm py-native-inspector-section border-be border-native-row-rule last:border-be-0",
   group: "flex flex-col gap-sm",
-  note: "text-native-inspector-note/native-inspector-note text-muted",
+  note: "text-native-inspector-note/native-inspector-note tracking-native-inspector-note text-muted",
   select: {
     fieldClass:
       "rounded-native-button border-0 bg-native-button-secondary ps-md text-native-button/native-button font-native-button block-native-button macos:shadow-none",
