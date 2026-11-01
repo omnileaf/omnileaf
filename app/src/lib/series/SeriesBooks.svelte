@@ -119,6 +119,7 @@
     onMark,
     onBookmark,
     onRemove,
+    onShowInFolder,
     platform,
     onPickedCount,
   }: {
@@ -140,6 +141,7 @@
       targets: RemovalTarget[],
       deleteFiles: boolean,
     ) => Promise<RemovalReport | undefined>;
+    onShowInFolder: (book: BookId) => void;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
   } = $props();
@@ -591,6 +593,7 @@
             void bookmarkSelected(picked);
           }
         : undefined}
+      onShowInFolder={platform === "windows" ? onShowInFolder : undefined}
       onDelete={platform === "windows"
         ? (picked: BookId[]) => {
             askToRemoveBooks(picked);
