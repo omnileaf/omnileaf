@@ -107,7 +107,7 @@
     </div>
     {#if hasCategories}
       <ViewSwitchRow
-        {isMaterial}
+        usesItemRow={isMaterial}
         titleClass={look.rowTitle}
         label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
         description={isMac
@@ -121,7 +121,7 @@
     {/if}
     {#if canStackCovers}
       <ViewSwitchRow
-        {isMaterial}
+        usesItemRow={isMaterial}
         titleClass={look.rowTitle}
         label={m.library_stack_covers()}
         description={m.library_stack_covers_hint()}
@@ -146,7 +146,7 @@
   </h3>
   <div class={groupClass}>
     <ViewSwitchRow
-      {isMaterial}
+      usesItemRow={isMaterial}
       titleClass={look.rowTitle}
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
@@ -156,7 +156,7 @@
       }}
     />
     <ViewSwitchRow
-      {isMaterial}
+      usesItemRow={isMaterial}
       titleClass={look.rowTitle}
       label={m.library_continue_row()}
       description={m.library_continue_row_hint()}

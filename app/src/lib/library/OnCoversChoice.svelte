@@ -56,7 +56,7 @@
   <div class={isMaterial ? "flex flex-col" : look.group}>
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
-        {isMaterial}
+        usesItemRow={isMaterial}
         titleClass={look.rowTitle}
         label={choice.label()}
         isOn={onCovers[choice.name]}
