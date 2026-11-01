@@ -91,16 +91,22 @@ test("sets each segment in 13 point medium type with 10 point sides on macOS", a
   }).toEqual({ size: "13px", weight: "510", side: "10px", radius: "6px" });
 });
 
-test("fills the chosen segment with the accent and its on-accent ink on macOS", async () => {
+test("fills the chosen segment with the accent green on macOS", async () => {
   await renderOnMac();
 
-  const style = getComputedStyle(segment("Dark"));
-
-  expect({ fill: style.backgroundColor, ink: style.color }).toEqual({
-    fill: resolvedColour("--native-color-button-primary", "backgroundColor"),
-    ink: resolvedColour("--color-on-accent", "color"),
-  });
+  expect(getComputedStyle(segment("Dark")).backgroundColor).toBe(
+    resolvedColour("--native-color-button-primary", "backgroundColor"),
+  );
 });
+
+test.each(["light", "dark"] as const)(
+  "sets the chosen segment's ink in white on macOS in %s",
+  async (theme) => {
+    await renderOnMac(theme);
+
+    expect(getComputedStyle(segment("Dark")).color).toBe("rgb(255, 255, 255)");
+  },
+);
 
 test("hides the dividers beside the chosen segment on macOS", async () => {
   await renderOnMac();
