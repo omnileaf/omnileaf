@@ -35,13 +35,6 @@ const LOOKS: readonly FieldLook[] = [
     edge: "transparent",
   },
   {
-    platform: "ios",
-    corner: "10px",
-    height: 36,
-    fill: "--ios-fill",
-    edge: "transparent",
-  },
-  {
     platform: "macos",
     corner: "6px",
     height: 28,
@@ -85,6 +78,19 @@ for (const look of LOOKS) {
     expect(style.borderTopColor).toBe(resolvedColour(look.edge, "color"));
   });
 }
+
+test("leaves iOS with the search button alone, as its tab bar sits at the top", async () => {
+  await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
+  document.documentElement.dataset.platform = "ios";
+  await render(LibrarySearchEntry, { platform: "ios" });
+
+  await expect
+    .element(page.getByRole("link", { name: "Search" }))
+    .toBeVisible();
+  expect(
+    page.getByRole("searchbox", { name: "Search the library" }).query(),
+  ).toBeNull();
+});
 
 test("fills the field faintly in the dark theme, as shadcn does", async () => {
   await page.viewport(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
