@@ -58,3 +58,14 @@ test("rings the right-clicked cover in the neutral border colour", async ({
   await expect(ring).toHaveCSS("outline-width", "2px");
   await expect(ring).toHaveCSS("outline-offset", "2px");
 });
+
+test("opens the series on a plain click instead of selecting it", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(covers(page).getByRole("listitem")).toHaveCount(LIBRARY.length);
+
+  await covers(page).getByRole("link").nth(1).click();
+
+  await expect(page).toHaveURL(new RegExp(`/series/${LIBRARY[1]?.id ?? ""}$`));
+});

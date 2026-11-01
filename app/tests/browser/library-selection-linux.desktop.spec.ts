@@ -53,3 +53,14 @@ test("has no Remove from library in a series' menu", async ({ page }) => {
     page.getByRole("menuitem", { name: /Remove from library/ }),
   ).toHaveCount(0);
 });
+
+test("opens the series on a plain click instead of selecting it", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(covers(page).getByRole("listitem")).toHaveCount(LIBRARY.length);
+
+  await covers(page).getByRole("link").nth(1).click();
+
+  await expect(page).toHaveURL(new RegExp(`/series/${LIBRARY[1]?.id ?? ""}$`));
+});

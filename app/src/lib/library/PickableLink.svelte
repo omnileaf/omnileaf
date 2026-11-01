@@ -2,6 +2,7 @@
   import { type Snippet, tick } from "svelte";
   import type { ClassValue, HTMLAnchorAttributes } from "svelte/elements";
 
+  import { goto } from "$app/navigation";
   import type { ResolvedPathname } from "$app/types";
   import { LongPress } from "#lib/components/long-press.ts";
   import type { Selection } from "#lib/page/selection.svelte.ts";
@@ -20,6 +21,7 @@
     order,
     class: className,
     focusRing = FOCUS_RING,
+    picksOnClick = false,
     children,
     onpointerdown,
     onpointerup,
@@ -36,6 +38,7 @@
     order: () => readonly Id[];
     class?: ClassValue;
     focusRing?: string | undefined;
+    picksOnClick?: boolean;
     children: Snippet;
   } = $props();
 
@@ -52,15 +55,44 @@
     element?.focus();
   }
 
+  function open(): void {
+    void goto(href);
+  }
+
+  function opensOnReturn(event: KeyboardEvent): void {
+    if (picksOnClick && event.key === "Enter") {
+      event.preventDefault();
+      open();
+    }
+  }
+
+  function opensOnDoubleClick(): void {
+    if (picksOnClick) {
+      open();
+    }
+  }
+
   function pick(event: MouseEvent): void {
     if (isReleaseOfHold(id, event)) {
       return;
     }
     if (event.shiftKey) {
       selection?.extendTo(id, order());
+    } else if (picksOnClick && !event.metaKey && !event.ctrlKey) {
+      selection?.chooseOnly(id);
     } else {
       selection?.toggle(id);
     }
+    if (picksOnClick) {
+      element?.focus();
+    }
+  }
+
+  async function chooseFromClick(event: MouseEvent): Promise<void> {
+    event.preventDefault();
+    selection?.chooseOnly(id);
+    await tick();
+    element?.focus();
   }
 
   function startPicking(event: MouseEvent): void {
@@ -83,6 +115,8 @@
     aria-label={title}
     class={["text-start inline-full", focusRing, className]}
     onclick={pick}
+    ondblclick={opensOnDoubleClick}
+    onkeydown={opensOnReturn}
   >
     {@render children()}
   </button>
@@ -113,8 +147,10 @@
       onpointerleave?.(event);
       longPress.released();
     }}
+    ondblclick={opensOnDoubleClick}
     onkeydown={(event) => {
       onkeydown?.(event);
+      opensOnReturn(event);
       void startPickingFromKeys(event);
     }}
     onclick={(event) => {
@@ -127,6 +163,9 @@
         return;
       }
       onclick?.(event);
+      if (picksOnClick && selection !== undefined && !event.defaultPrevented) {
+        void chooseFromClick(event);
+      }
     }}
   >
     {@render children()}
