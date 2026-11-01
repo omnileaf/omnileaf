@@ -11,6 +11,7 @@
 
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -40,10 +41,11 @@
   const ROW =
     "flex flex-wrap items-center gap-md py-sm ps-lg pe-md min-block-phone-row touch:medium:ps-list-row desktop:ps-list-row desktop:min-block-settings-row";
   const TILE =
-    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile";
+    "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted";
 
   let { data }: PageProps = $props();
 
+  const android = new AndroidPhone();
   const notices = getNotices();
   const settingsLabel = $derived(systemSettingsLabel(data.appInfo.platform));
   const rows: readonly PermissionRow[] = $derived([
@@ -107,13 +109,25 @@
           <row.icon size={ICON_SIZE} />
         </span>
         <span class="flex grow basis-permission-reason flex-col gap-2xs">
-          <span class="font-semibold desktop:text-callout">{row.label}</span>
-          <span class="text-detail text-muted">{row.description}</span>
+          <span
+            class="font-semibold android:max-medium:font-regular desktop:text-callout"
+            >{row.label}</span
+          >
+          <span
+            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+            >{row.description}</span
+          >
         </span>
         {#if row.state !== undefined}
-          <Badge look="outline" class="shrink-0 bg-card">
-            {STATE_LABELS[row.state]()}
-          </Badge>
+          {#if android.isOn}
+            <span data-slot="state" class="shrink-0 text-caption text-muted"
+              >{STATE_LABELS[row.state]()}</span
+            >
+          {:else}
+            <Badge look="outline" class="shrink-0 bg-card">
+              {STATE_LABELS[row.state]()}
+            </Badge>
+          {/if}
         {/if}
       </li>
     {/each}
@@ -131,10 +145,14 @@
             <Settings size={ICON_SIZE} />
           </span>
           <span class="flex grow basis-permission-reason flex-col gap-2xs">
-            <span class="font-semibold desktop:text-callout">
+            <span
+              class="font-semibold android:max-medium:font-regular desktop:text-callout"
+            >
               {settingsLabel}
             </span>
-            <span class="text-detail text-muted">
+            <span
+              class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+            >
               {m.permissions_open_help()}
             </span>
           </span>
