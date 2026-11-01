@@ -44,6 +44,7 @@
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
   import {
     dismissForThisVisit,
@@ -223,10 +224,11 @@
   const notices = getNotices();
   let hiddenSeries = $state(0);
   const androidPhone = new AndroidPhone();
+  const folderCardsPhone = new FolderCardsPhone();
   let missingFolders = $state<readonly MissingFolder[]>([]);
   let stillFailing = $state<readonly string[]>([]);
   const cardedFolders = $derived(
-    androidPhone.showsFolderCards
+    folderCardsPhone.isOn
       ? missingFolders.filter(({ folder }) => !isDismissedThisVisit(folder.id))
       : [],
   );
@@ -262,7 +264,7 @@
   const folderNotices = new MissingFolderNotices(
     notices,
     folderHandlers,
-    () => androidPhone.showsFolderCards,
+    () => folderCardsPhone.isOn,
   );
 
   async function relocate(missing: MissingFolder): Promise<void> {

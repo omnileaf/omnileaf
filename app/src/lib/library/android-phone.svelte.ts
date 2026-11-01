@@ -8,8 +8,4 @@ export class AndroidPhone {
   get isOn(): boolean {
     return phoneOf(this.#platform, this.#width.current) === "android";
   }
-
-  get showsFolderCards(): boolean {
-    return phoneOf(this.#platform, this.#width.current) !== undefined;
-  }
 }
