@@ -104,6 +104,8 @@ export const commands = {
 	book: string & { readonly __brand: "BookId" },
 	isInLibrary: boolean,
 } | null, IpcError>(__TAURI_INVOKE("file_to_open")),
+	/**  Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`. */
+	queueDocumentToOpen: (uri: string) => typedError<null, IpcError>(__TAURI_INVOKE("queue_document_to_open", { uri })),
 	/**  Says what dragging these paths over the window would hold, from the paths alone. */
 	inspectDrop: (paths: string[]) => typedError<DropSummary, IpcError>(__TAURI_INVOKE("inspect_drop", { paths })),
 	dropFiles: (paths: string[], mode: DropMode) => typedError<DropOutcome, IpcError>(__TAURI_INVOKE("drop_files", { paths, mode })),

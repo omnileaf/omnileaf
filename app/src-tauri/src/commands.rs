@@ -29,6 +29,7 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    document_handover,
     file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
     folder_picker::pick_folder,
@@ -117,6 +118,7 @@ macro_rules! app_commands {
             mark_series_read,
             open_book,
             file_to_open,
+            queue_document_to_open,
             inspect_drop,
             drop_files,
             cropped_page_paths,
@@ -896,10 +898,17 @@ async fn file_to_open(
     library: State<'_, Library>,
     files: State<'_, FilesToOpen>,
 ) -> Result<Option<FileToRead>, IpcError> {
-    let Some(path) = files.next() else {
+    let Some(file) = files.next() else {
         return Ok(None);
     };
-    Ok(Some(library.open_file(path).await?))
+    Ok(Some(file.open(&library).await?))
+}
+
+/// Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`.
+#[tauri::command]
+#[specta::specta]
+async fn queue_document_to_open(app: AppHandle, uri: String) -> Result<(), IpcError> {
+    document_handover::queue(&app, uri).await
 }
 
 /// Says what dragging these paths over the window would hold, from the paths alone.

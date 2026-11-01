@@ -1793,6 +1793,12 @@ export function sampleBackend(
           peopleOf(series).find(({ name }) => name === creator)?.role ?? null,
       })),
     fileToOpen: () => null,
+    queueDocumentToOpen: () => {
+      throw failure(
+        "bookUnreadable",
+        "the sample library opens no documents from outside it",
+      );
+    },
     inspectDrop: (paths) => {
       const names = paths.map((path) => path.split(/[\\/]/u).at(-1) ?? path);
       const usable = names.filter(
