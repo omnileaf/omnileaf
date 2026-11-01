@@ -176,8 +176,11 @@ export class HomeFolderChange {
       case "restarting":
         return;
       case "moved":
-        this.change = IDLE;
-        void this.readMovedHome(result.data.folder);
+        try {
+          await this.readMovedHome(result.data.folder);
+        } finally {
+          this.change = IDLE;
+        }
         return;
       default:
         assertNever(result.data);
