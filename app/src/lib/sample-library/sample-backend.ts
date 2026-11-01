@@ -2131,7 +2131,7 @@ export function sampleBackend(
         : null,
     chooseHomeFolder: () => null,
     useFoundLibrary: () => null,
-    moveHomeFolder: () => null,
+    moveHomeFolder: () => ({ kind: "restarting" }),
     firstLaunchFinished: () => hasFinishedFirstLaunch,
     finishFirstLaunch: () => {
       hasFinishedFirstLaunch = true;
