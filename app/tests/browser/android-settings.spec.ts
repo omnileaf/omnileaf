@@ -273,19 +273,10 @@ test.describe(
   },
 );
 
-test.describe("Advanced on an Android phone", { tag: "@native" }, () => {
-
 test.describe("Screenshot mode on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's list rows");
   });
-
-  test("heads Undo in the accent and runs its rows edge to edge, flat", async ({
-    page,
-  }) => {
-    await page.goto("/settings/advanced");
-    const heading = page.getByRole("heading", { name: "Undo", exact: true });
-    const row = page.getByRole("switch", { name: /^Offer Undo/ });
 
   test("holds the main switch in a filled soft-accent pill", async ({
     page,
@@ -332,6 +323,28 @@ test.describe("Screenshot mode on an Android phone", { tag: "@native" }, () => {
       "color",
       await tokenColour(page, "--native-color-on-button-plain"),
     );
+    await expect(name).toHaveCSS("font-size", "16px");
+    await expect(name).toHaveCSS("font-weight", "400");
+  });
+});
+
+test.describe("Advanced on an Android phone", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's list rows");
+  });
+
+  test("heads Undo in the accent and runs its rows edge to edge, flat", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    const heading = page.getByRole("heading", { name: "Undo", exact: true });
+    const row = page.getByRole("switch", { name: /^Offer Undo/ });
+
+    await expect(heading).toHaveCSS("font-size", "14px");
+    await expect(heading).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-plain"),
+    );
     expect((await boxOf(row)).x).toBeLessThanOrEqual(1);
     await expect(row).toHaveCSS("border-top-width", "0px");
   });
@@ -344,8 +357,5 @@ test.describe("Screenshot mode on an Android phone", { tag: "@native" }, () => {
 
     await expect(row).toContainText(/\d+ seconds/);
     await expect(row).toHaveAttribute("aria-haspopup", "dialog");
-
-    await expect(name).toHaveCSS("font-size", "16px");
-    await expect(name).toHaveCSS("font-weight", "400");
   });
 });
