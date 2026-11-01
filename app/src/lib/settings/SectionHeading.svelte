@@ -21,7 +21,7 @@
 
   import { barChip } from "#lib/series/series-chip.ts";
 
-  import { showsSectionsBeside } from "./panes";
+  import { showsSectionsBeside } from "./panes.ts";
   import type { ParentPage } from "./sections";
 
   let {
@@ -36,6 +36,11 @@
   const SETTINGS_ROUTE = "/(app)/settings";
   const CRUMB_LINK =
     "block truncate text-muted transition-control min-inline-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent";
+
+  const BAR =
+    "hidden items-center gap-sm desktop:two-pane:-mx-pane desktop:two-pane:-mbs-page-top desktop:two-pane:flex";
+  const TODAYS_BAR = `${BAR} border-be border-border desktop:two-pane:mbe-xl desktop:two-pane:px-pane desktop:two-pane:min-block-toolbar`;
+  const TITLE_BAR = `${BAR} bg-native-top-bar-scrolled shadow-native-titlebar-rule desktop:two-pane:pe-pane desktop:two-pane:ps-native-titlebar-start desktop:two-pane:min-block-native-titlebar`;
 
   const TODAYS_TITLE =
     "text-bar-title font-bold tracking-tight touch:medium:max-expanded:text-page-title";
@@ -58,12 +63,7 @@
   );
 </script>
 
-<div
-  class={[
-    "hidden items-center gap-sm border-be border-border desktop:two-pane:-mx-pane desktop:two-pane:-mbs-page-top desktop:two-pane:flex desktop:two-pane:px-pane desktop:two-pane:min-block-toolbar",
-    !hasTitleBar && "desktop:two-pane:mbe-xl",
-  ]}
->
+<div class={hasTitleBar ? TITLE_BAR : TODAYS_BAR}>
   {#if isNested}
     <Tooltip label={backLabel}>
       {#snippet child({ props })}
