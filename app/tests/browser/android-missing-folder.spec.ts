@@ -20,7 +20,7 @@ let asked: string[] = [];
 
 function listed() {
   return missing.some((one) => one.isShownAnyway)
-    ? [CONNECTED[0], ...AWAY, ...CONNECTED.slice(1)]
+    ? [...CONNECTED.slice(0, 1), ...AWAY, ...CONNECTED.slice(1)]
     : CONNECTED;
 }
 
