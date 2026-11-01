@@ -1,6 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { Card } from "#lib/components/ui/card/index.ts";
+  import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import {
     TableCell,
@@ -66,7 +67,10 @@
 </script>
 
 <Card
-  class="relative overflow-hidden px-sm shadow-card-rest macos:rounded-none macos:border-0 macos:bg-transparent macos:px-none macos:shadow-none"
+  class={[
+    "relative overflow-hidden px-sm shadow-card-rest macos:rounded-none macos:border-0 macos:bg-transparent macos:px-none macos:shadow-none",
+    WINDOWS_CARD_PLATE,
+  ]}
 >
   <VirtualTable
     items={books}
@@ -128,7 +132,7 @@
         aria-selected={isPicked}
         data-stripe={rowIndex % 2 === 0}
         class={[
-          "block-book-row-wide macos:border-0 macos:block-auto",
+          "block-book-row-wide macos:border-0 macos:block-auto windows:border-native-row-rule",
           isPicked &&
             "bg-selected-row hover:bg-selected-row macos:bg-transparent",
         ]}

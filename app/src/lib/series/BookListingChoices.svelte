@@ -55,7 +55,8 @@
   }[];
   const ICON_SIZE = 16;
 
-  const isMacos = currentPlatform() === "macos";
+  const platform = currentPlatform();
+  const isNativeDesktop = platform === "macos" || platform === "windows";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
   let isSearching = $state(false);
@@ -191,7 +192,7 @@
     >
       <Icon name="search" />
     </Button>
-  {:else if isMacos}
+  {:else if isNativeDesktop}
     <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
       <span id={showLabelId} class="text-small text-muted">
         {m.series_show()}
@@ -202,6 +203,7 @@
         chosen={listing.shown}
         labelledBy={showLabelId}
         isFullWidth
+        hasWindowsLook
         class="flex-1 min-inline-none"
         onChoose={chooseShown}
       />
@@ -274,7 +276,7 @@
           </Button>
         {/snippet}
       </DropdownMenuTrigger>
-    {:else if isMacos}
+    {:else if isNativeDesktop}
       <DropdownMenuTrigger>
         {#snippet child({ props })}
           {#if isWide.current}

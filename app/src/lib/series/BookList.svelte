@@ -5,6 +5,7 @@
   import { LongPress } from "#lib/components/long-press.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
+  import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { Checkbox } from "#lib/components/ui/checkbox/index.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
@@ -405,7 +406,7 @@
 />
 
 {#if phone === undefined}
-  <Card class="overflow-hidden shadow-card-rest">
+  <Card class={["overflow-hidden shadow-card-rest", WINDOWS_CARD_PLATE]}>
     <VirtualGrid
       {...grid}
       class="grid-cols-1"
