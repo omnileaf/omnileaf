@@ -654,6 +654,98 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     expect(footnoteSize).toBeLessThan(bodySize);
   });
 
+  test("heads each detail with its name, and says Edited in plain footnote type beside it", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const heading = shown.getByText("Title", { exact: true });
+    const status = shown.getByText("Edited", { exact: true });
+    await expect(status).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const [headingBox, statusBox, headingSize, statusSize] = await Promise.all([
+      boxOf(heading),
+      boxOf(status),
+      heading.evaluate((name) => parseFloat(getComputedStyle(name).fontSize)),
+      status.evaluate((name) => parseFloat(getComputedStyle(name).fontSize)),
+    ]);
+    expect(statusSize).toBeLessThan(headingSize);
+    expect(headingBox.x + headingBox.width).toBeLessThan(statusBox.x);
+    expect(
+      Math.abs(
+        headingBox.y +
+          headingBox.height / 2 -
+          (statusBox.y + statusBox.height / 2),
+      ),
+    ).toBeLessThan(2);
+  });
+
+  test("undoes an edit from a plain icon-only button in the section head", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const undo = shown.getByRole("button", { name: "Use the file’s title" });
+    await expect(undo).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(undo).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-plain"),
+    );
+    await expect(undo.locator("svg")).toHaveCSS("width", "18px");
+    const [undoBox, statusBox] = await Promise.all([
+      boxOf(undo),
+      boxOf(shown.getByText("Edited", { exact: true })),
+    ]);
+    expect(undoBox.height).toBeCloseTo(
+      await lengthOf(page, "--native-spacing-button"),
+      0,
+    );
+    expect(statusBox.x + statusBox.width).toBeLessThan(undoBox.x);
+  });
+
+  test("sets the title as one raised row and the summary with the field's block padding", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const title = shown.getByRole("textbox", { name: "Title" });
+    const titleCard = title.locator('xpath=ancestor::*[@data-slot="card"]');
+    await expect(titleCard).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-card"),
+    );
+    await expect(titleCard).toHaveCSS("border-top-width", "0px");
+    expect((await boxOf(titleCard)).height).toBeCloseTo(
+      await lengthOf(page, "--native-spacing-row"),
+      0,
+    );
+    await expect(shown.getByRole("textbox", { name: "Summary" })).toHaveCSS(
+      "padding-top",
+      `${String(await lengthOf(page, "--native-spacing-field-block"))}px`,
+    );
+  });
+
   test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
     page,
     platform,
@@ -845,6 +937,31 @@ test.describe(
   () => {
     test.beforeEach(({ platform }) => {
       test.skip(platform !== "ios", "iOS's page");
+    });
+
+    test("keeps the Edited badge and the heading inside the page's card", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: TYPED_TITLE,
+        },
+      };
+      await page.goto(`/series/${SERIES_ID}/edit`);
+
+      await expect(page.getByText("Edited", { exact: true })).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--color-chip"),
+      );
+      const titleCard = page
+        .getByRole("textbox", { name: "Title" })
+        .locator('xpath=ancestor::*[@data-slot="card"]');
+      expect((await boxOf(titleCard)).height).toBeGreaterThan(
+        await lengthOf(page, "--native-spacing-row"),
+      );
     });
 
     test("sets the page on the grouped ground with Save as a filled pill", async ({

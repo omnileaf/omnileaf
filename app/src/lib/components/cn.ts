@@ -401,6 +401,7 @@ export const TOKEN_THEME = {
     "native-fast-scroll-thumb",
     "native-fast-scroll-thumb-grabbed",
     "native-fast-scroll-thumb-length",
+    "native-field-block",
     "native-group-head-below",
     "native-group-head-end",
     "native-hairline",
