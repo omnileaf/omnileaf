@@ -64,7 +64,7 @@
       class={[
         "col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none",
         isActionPrimary &&
-          "bg-native-button-primary text-native-on-button-primary shadow-none",
+          "bg-native-button-primary text-native-on-button-primary shadow-none ios:disabled:bg-native-bar-button ios:disabled:text-native-on-button-disabled",
       ]}
       onclick={onAction}
     >
