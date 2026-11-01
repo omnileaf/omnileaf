@@ -113,6 +113,11 @@
   --native-spacing-radio-words-gap: 6px;
   --native-spacing-group-row: 42px;
   --native-spacing-settings-page: 640px;
+  --native-spacing-group-row-text: 6px;
+  --native-spacing-group-select-end: calc(15px + 10px + 3px);
+  --native-spacing-group-select-inset: 3px;
+  --native-spacing-group-select-circle: 16px;
+  --native-tracking-list-title: -0.08px;
   --native-text-list-sub: calc(0.6875rem * var(--text-scale));
   --native-leading-list-sub: calc(14 / 11);
   --native-tracking-list-sub: 0.06px;

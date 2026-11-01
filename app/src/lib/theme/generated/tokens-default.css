@@ -516,6 +516,11 @@
   --native-spacing-group-row: 0px;
   --native-color-group-row-pressed: transparent;
   --native-spacing-settings-page: 45rem;
+  --native-spacing-group-row-text: 0px;
+  --native-spacing-group-select-end: 0px;
+  --native-spacing-group-select-inset: 0px;
+  --native-spacing-group-select-circle: 0px;
+  --native-tracking-list-title: 0;
   --native-text-list-sub: var(--text-caption);
   --native-leading-list-sub: var(--text-caption--line-height);
   --native-tracking-list-sub: 0;
