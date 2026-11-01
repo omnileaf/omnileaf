@@ -274,6 +274,8 @@ test.describe(
 );
 
 test.describe("Storage on an Android phone", { tag: "@native" }, () => {
+
+test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's list rows");
   });
@@ -284,6 +286,18 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     await page.goto("/settings/storage");
     const name = page.getByText("Cached pages", { exact: true });
     const line = page.getByText(/^1\.2 GB/);
+
+  test("draws each permission with a bare icon, a 16px name over a 14px line and its state as plain text", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/permissions");
+    const row = page
+      .getByRole("list", { name: "Permissions" })
+      .getByRole("listitem")
+      .filter({ hasText: "Notifications" });
+    const name = row.getByText("Notifications", { exact: true });
+    const line = row.getByText(/^For finished downloads/);
+    const state = row.locator("[data-slot=state]");
 
     await expect(name).toHaveCSS("font-size", "16px");
     await expect(name).toHaveCSS("font-weight", "400");
@@ -305,5 +319,13 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     );
     await expect(clear).toHaveCSS("border-top-width", "0px");
     await expect(clear).toHaveCSS("font-size", "14px");
+  });
+
+    await expect(state).toHaveCSS("border-top-width", "0px");
+    await expect(state).toHaveCSS("font-size", "12px");
+    await expect(row.locator("svg").first().locator("xpath=..")).toHaveCSS(
+      "border-top-width",
+      "0px",
+    );
   });
 });
