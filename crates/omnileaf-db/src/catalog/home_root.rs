@@ -65,8 +65,9 @@ pub fn set_home_root(
         (None, None) => Ok(RootId(
             transaction
                 .prepare(
-                    "INSERT INTO library_root (kind, locator_kind, location, bookmark, added_at_ms)
-                     VALUES (?1, ?2, ?3, ?4, ?5)
+                    "INSERT INTO library_root
+                         (kind, locator_kind, location, bookmark, tree_name, tree_place, added_at_ms)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
                      RETURNING id",
                 )?
                 .query_row(
@@ -75,6 +76,8 @@ pub fn set_home_root(
                         stored.kind,
                         &stored.location,
                         stored.bookmark,
+                        stored.tree_name(),
+                        stored.tree_place(),
                         added_at_ms,
                     ),
                     |row| row.get(0),
