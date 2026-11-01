@@ -67,8 +67,8 @@
       ? undefined
       : { ...layout, other: other.variant };
   });
-  const isMacos = platform === "macos";
-  const markButton = isMacos
+  const isNativeButton = platform === "macos" || platform === "windows";
+  const markButton = isNativeButton
     ? { variant: "secondary" as const, class: "@series-split:flex-1" }
     : {
         look: "outline" as const,
@@ -77,9 +77,9 @@
           "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",
         ),
       };
-  const macosControl = variantClasses("secondary", "regular", false, platform);
-  const macosComingSoon = cn(
-    macosControl,
+  const nativeControl = variantClasses("secondary", "regular", false, platform);
+  const nativeComingSoon = cn(
+    nativeControl,
     "text-native-on-button-disabled aria-disabled:pointer-events-auto",
   );
   const isAllRead = $derived(overview.readCount === overview.bookCount);
@@ -138,9 +138,9 @@
   >
     <ComingSoonControl
       label={m.series_reading_state({ state })}
-      class={isMacos
+      class={isNativeButton
         ? cn(
-            macosComingSoon,
+            nativeComingSoon,
             "flex-1 justify-between gap-sm ps-md pe-sm min-inline-none",
           )
         : cn(
@@ -154,8 +154,10 @@
         <BookOpen aria-hidden="true" class={ICON} />
         <span class="truncate">{state}</span>
       </span>
-      {#if isMacos}
+      {#if platform === "macos"}
         <Icon name="chevrons-up-down" class={CHEVRON} />
+      {:else if platform === "windows"}
+        <ChevronDown aria-hidden="true" class={CHEVRON} />
       {:else}
         <ChevronDown aria-hidden="true" class={cn(CHEVRON, "opacity-50")} />
       {/if}
@@ -165,8 +167,8 @@
         label={isWide
           ? m.series_tags()
           : m.series_tags_for({ title: overview.title })}
-        class={isMacos
-          ? cn(macosComingSoon, "@series-split:flex-1")
+        class={isNativeButton
+          ? cn(nativeComingSoon, "@series-split:flex-1")
           : cn(
               SERIES_CONTROL,
               "inline-touch-target max-expanded:px-none expanded:inline-auto @series-split:flex-1",

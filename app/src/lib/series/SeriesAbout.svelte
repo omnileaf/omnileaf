@@ -42,6 +42,7 @@
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -191,7 +192,10 @@
     <Card
       role="region"
       aria-label={m.series_details()}
-      class="flex flex-col gap-md py-lg shadow-card-rest"
+      class={[
+        "flex flex-col gap-md py-lg shadow-card-rest",
+        WINDOWS_CARD_PLATE,
+      ]}
     >
       <CardHeader class="px-lg">
         <CardTitle class="text-title">{m.series_details()}</CardTitle>
@@ -255,7 +259,7 @@
         </div>
       {/if}
       <CollapsibleContent>
-        <Card class="p-lg shadow-card-rest">
+        <Card class={["p-lg shadow-card-rest", WINDOWS_CARD_PLATE]}>
           <SeriesDetailsList {overview} bind:ref={details} />
         </Card>
       </CollapsibleContent>
