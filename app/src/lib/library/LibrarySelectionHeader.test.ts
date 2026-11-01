@@ -130,14 +130,76 @@ test("keeps the cancel button and no Done on an Android phone", async () => {
     .not.toBeInTheDocument();
 });
 
-test("keeps the cancel button and no Done on an iPad", async () => {
+test("puts Select all and Done on one row with the count under them on an iPad", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  const { onSelectAll, onCancel } = renderHeader("ios");
+
+  const selectAll = page.getByRole("button", { name: "Select all" });
+  const done = page.getByRole("button", { name: "Done" });
+  const left = selectAll.element().getBoundingClientRect();
+  const right = done.element().getBoundingClientRect();
+  const count = page.getByText("3 selected").element().getBoundingClientRect();
+
+  expect(right.left).toBeGreaterThan(left.right);
+  expect(right.top).toBe(left.top);
+  expect(count.top).toBeGreaterThanOrEqual(left.bottom);
+  expect(count.left).toBe(left.left);
+  await expect
+    .element(page.getByRole("button", { name: "Cancel selecting" }))
+    .not.toBeInTheDocument();
+
+  await selectAll.click();
+  await done.click();
+  expect({
+    selectAll: onSelectAll.mock.calls.length,
+    done: onCancel.mock.calls.length,
+  }).toEqual({ selectAll: 1, done: 1 });
+});
+
+test("sets the count at title large on an iPad", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   renderHeader("ios");
+  const style = getComputedStyle(page.getByText("3 selected").element());
 
-  expect(
-    getComputedStyle(page.getByRole("button", { name: "Select all" }).element())
-      .backgroundColor,
-  ).toBe("rgba(0, 0, 0, 0)");
+  expect({
+    size: style.fontSize,
+    line: style.lineHeight,
+    weight: style.fontWeight,
+    align: style.textAlign,
+  }).toEqual({ size: "34px", line: "41px", weight: "700", align: "start" });
+});
+
+test("draws Select all as a glass bar button and Done on the primary fill on an iPad", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  renderHeader("ios");
+  const selectAll = getComputedStyle(
+    page.getByRole("button", { name: "Select all" }).element(),
+  );
+  const done = getComputedStyle(
+    page.getByRole("button", { name: "Done" }).element(),
+  );
+
+  expect({
+    selectAllFill: selectAll.backgroundColor,
+    doneFill: done.backgroundColor,
+    doneInk: done.color,
+  }).toEqual({
+    selectAllFill: resolvedColour(
+      "--color-native-bar-button",
+      "backgroundColor",
+    ),
+    doneFill: resolvedColour(
+      "--color-native-button-primary",
+      "backgroundColor",
+    ),
+    doneInk: resolvedColour("--color-native-on-button-primary", "color"),
+  });
+});
+
+test("keeps the cancel button and no Done on an Android tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  renderHeader("android");
+
   await expect
     .element(page.getByRole("button", { name: "Cancel selecting" }))
     .toBeInTheDocument();

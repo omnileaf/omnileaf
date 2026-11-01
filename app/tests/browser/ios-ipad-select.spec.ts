@@ -71,4 +71,29 @@ test.describe("selecting series on an iPad", () => {
     }
     await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
   });
+
+  test("sets Select all and Done on one row with the count under them, and Done ends the selection", async ({
+    page,
+  }) => {
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "iPads only");
+    await startSelecting(page);
+
+    const done = page.getByRole("button", { name: "Done" });
+    const [first, last, below] = await Promise.all([
+      boxOf(page.getByRole("button", { name: "Select all" })),
+      boxOf(done),
+      boxOf(page.getByText("1 selected").first()),
+    ]);
+
+    expect(last.x).toBeGreaterThan(first.x + first.width);
+    expect(last.y).toBeCloseTo(first.y, 0);
+    expect(below.y).toBeGreaterThanOrEqual(first.y + first.height);
+    await expect(
+      page.getByRole("button", { name: "Cancel selecting" }),
+    ).toBeHidden();
+
+    await done.dispatchEvent("click");
+
+    await expect(page.getByText("1 selected")).toBeHidden();
+  });
 });
