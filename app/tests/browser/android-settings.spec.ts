@@ -274,6 +274,8 @@ test.describe(
 );
 
 test.describe("About on an Android phone", { tag: "@native" }, () => {
+
+test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's list rows");
   });
@@ -288,10 +290,29 @@ test.describe("About on an Android phone", { tag: "@native" }, () => {
     const name = row.getByText("Open-source licences", { exact: true });
     const line = row.getByText(/^The packages/);
 
+  test("draws each permission with a bare icon, a 16px name over a 14px line and its state as plain text", async ({
+    page,
+  }) => {
+    await page.goto("/settings/privacy/permissions");
+    const row = page
+      .getByRole("list", { name: "Permissions" })
+      .getByRole("listitem")
+      .filter({ hasText: "Notifications" });
+    const name = row.getByText("Notifications", { exact: true });
+    const line = row.getByText(/^For finished downloads/);
+    const state = row.locator("[data-slot=state]");
+
     await expect(name).toHaveCSS("font-size", "16px");
     await expect(name).toHaveCSS("font-weight", "400");
     await expect(line).toHaveCSS("font-size", "14px");
     await expect(line).toHaveCSS("line-height", "20px");
     await expect(row.locator("svg:visible")).toHaveCount(1);
+
+    await expect(state).toHaveCSS("border-top-width", "0px");
+    await expect(state).toHaveCSS("font-size", "12px");
+    await expect(row.locator("svg").first().locator("xpath=..")).toHaveCSS(
+      "border-top-width",
+      "0px",
+    );
   });
 });
