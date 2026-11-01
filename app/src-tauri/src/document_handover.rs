@@ -19,7 +19,11 @@ pub(crate) async fn queue(app: &AppHandle, uri: String) -> Result<(), IpcError> 
 
     let uri = DocumentUri::parse(uri).map_err(|error| IpcError::document_unreadable(&error))?;
     let access = app.state::<FolderAccess<tauri::Wry>>().inner().clone();
-    let copies = app.state::<HandedDocumentCopies>().0.clone();
+    let copies = app
+        .try_state::<HandedDocumentCopies>()
+        .ok_or_else(|| IpcError::internal(&std::io::Error::from(std::io::ErrorKind::NotFound)))?
+        .0
+        .clone();
     let document =
         tauri::async_runtime::spawn_blocking(move || access.open_handed_document(&uri, copies))
             .await
