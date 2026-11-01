@@ -101,6 +101,24 @@ impl Shelf {
     }
 }
 
+impl Shelf {
+    async fn connections(&self) -> Vec<(String, bool)> {
+        let page = self
+            .scanned
+            .library
+            .series(LibraryListing::default(), None)
+            .await
+            .unwrap();
+        let mut listed: Vec<(String, bool)> = page
+            .series
+            .into_iter()
+            .map(|series| (series.title, series.is_connected))
+            .collect();
+        listed.sort();
+        listed
+    }
+}
+
 #[tokio::test]
 async fn lists_a_folder_gone_missing_with_the_series_it_hides() {
     let shelf = Shelf::new("missing-listed").await;
@@ -314,4 +332,67 @@ async fn finds_a_moved_folder_where_it_went() {
         ),
         (true, 0, vec![SERIES_01.to_owned(), SERIES_02.to_owned()])
     );
+}
+
+#[tokio::test]
+async fn lists_the_series_of_a_missing_folder_shown_anyway_as_not_connected() {
+    let shelf = Shelf::new("missing-not-connected").await;
+    shelf.move_away().await;
+
+    shelf
+        .scanned
+        .library
+        .show_missing_folder(shelf.scanned.id, true)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        shelf.connections().await,
+        [(SERIES_01.to_owned(), false), (SERIES_02.to_owned(), false)]
+    );
+}
+
+#[tokio::test]
+async fn lists_them_as_connected_when_the_folder_is_found_where_it_moved() {
+    let shelf = Shelf::new("missing-reconnected").await;
+    let moved = shelf.move_away().await;
+    shelf
+        .scanned
+        .library
+        .show_missing_folder(shelf.scanned.id, true)
+        .await
+        .unwrap();
+
+    shelf
+        .scanned
+        .library
+        .relocate_folder(shelf.scanned.id, moved, |_| {})
+        .await
+        .unwrap();
+
+    assert_eq!(
+        shelf.connections().await,
+        [(SERIES_01.to_owned(), true), (SERIES_02.to_owned(), true)]
+    );
+}
+
+#[tokio::test]
+async fn lists_a_series_of_a_hidden_missing_folder_nowhere() {
+    let shelf = Shelf::new("missing-hidden-again").await;
+    shelf.move_away().await;
+    shelf
+        .scanned
+        .library
+        .show_missing_folder(shelf.scanned.id, true)
+        .await
+        .unwrap();
+
+    shelf
+        .scanned
+        .library
+        .show_missing_folder(shelf.scanned.id, false)
+        .await
+        .unwrap();
+
+    assert_eq!(shelf.connections().await, Vec::<(String, bool)>::new());
 }

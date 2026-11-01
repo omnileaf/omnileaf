@@ -19,6 +19,7 @@ pub struct LibrarySeries {
     pub has_downloads: bool,
     pub continues_from: Option<BookId>,
     pub is_adult: bool,
+    pub is_connected: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
@@ -49,6 +50,7 @@ impl LibrarySeries {
             has_downloads: false,
             continues_from: series.continues_from.map(BookId),
             is_adult: adult.counts_as_adult(series.is_rated_adult, series.is_marked_adult),
+            is_connected: series.is_connected,
         }
     }
 }
