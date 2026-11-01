@@ -109,7 +109,11 @@
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
-  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import {
+    EXPANDED_QUERY,
+    MAC_INSPECTOR_QUERY,
+    WindowWidth,
+  } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -373,9 +377,7 @@
 
   let isCountWanted = $state(false);
   const isExpanded = new MediaQuery(EXPANDED_QUERY);
-  const docksFilter = $derived(
-    isExpanded.current && deviceKindOf(data.appInfo.platform) === "desktop",
-  );
+  const fitsInspector = new MediaQuery(MAC_INSPECTOR_QUERY);
   let isFilterOpen = $state(false);
   let filterButton: HTMLElement | null = $state(null);
   let isViewOpen = $state(false);
@@ -393,6 +395,10 @@
   );
   const isIos = $derived(data.appInfo.platform === "ios");
   const isMac = $derived(data.appInfo.platform === "macos");
+  const docksFilter = $derived(
+    (isMac ? fitsInspector.current : isExpanded.current) &&
+      deviceKindOf(data.appInfo.platform) === "desktop",
+  );
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
