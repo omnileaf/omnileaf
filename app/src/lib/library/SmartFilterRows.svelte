@@ -8,11 +8,13 @@
     offered,
     chosen,
     isMaterial = false,
+    isInspector = false,
     onToggle,
   }: {
     offered: readonly SmartFilter[];
     chosen: readonly SmartFilter[];
     isMaterial?: boolean;
+    isInspector?: boolean;
     onToggle: (smart: SmartFilter) => void;
   } = $props();
 </script>
@@ -23,6 +25,7 @@
     description={SMART_HINTS[smart]()}
     isOn={chosen.includes(smart)}
     {isMaterial}
+    {isInspector}
     onToggle={() => {
       onToggle(smart);
     }}

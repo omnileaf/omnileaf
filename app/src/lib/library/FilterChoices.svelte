@@ -25,6 +25,7 @@
     ANDROID_FILTER_HEADING,
     MAC_INSPECTOR,
     MAC_INSPECTOR_CHIP,
+    MAC_INSPECTOR_SMART,
   } from "./filter-sheet-look";
   import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
@@ -42,6 +43,7 @@
     withInclusion,
     withReadState,
   } from "./library-listing";
+  import InspectorInclusionChoice from "./InspectorInclusionChoice.svelte";
   import SmartFilterRows from "./SmartFilterRows.svelte";
   import PickerRow from "./PickerRow.svelte";
   import ReadStateChoice from "./ReadStateChoice.svelte";
@@ -311,6 +313,17 @@
           include("adult", inclusion);
         }}
       />
+    {:else if choices.ratesAdult && isInspector}
+      <InspectorInclusionChoice
+        label={m.library_filter_adult()}
+        hint={m.library_filter_adult_hint()}
+        options={ADULT_INCLUSIONS}
+        labels={INCLUSION_LABELS}
+        chosen={listing.filter.adult}
+        onChoose={(inclusion: Inclusion) => {
+          include("adult", inclusion);
+        }}
+      />
     {:else if choices.ratesAdult}
       <SettingChoice
         label={m.library_filter_adult()}
@@ -325,6 +338,17 @@
     {#if choices.keepsBookmarks && isAndroidPhone}
       <FilterSetting
         isRow
+        label={m.library_filter_bookmarked()}
+        hint={m.library_filter_bookmarked_hint()}
+        options={BOOKMARK_INCLUSIONS}
+        labels={INCLUSION_LABELS}
+        chosen={listing.filter.bookmarked}
+        onChoose={(inclusion: Inclusion) => {
+          include("bookmarked", inclusion);
+        }}
+      />
+    {:else if choices.keepsBookmarks && isInspector}
+      <InspectorInclusionChoice
         label={m.library_filter_bookmarked()}
         hint={m.library_filter_bookmarked_hint()}
         options={BOOKMARK_INCLUSIONS}
@@ -365,7 +389,7 @@
           </p>
         {/if}
       </div>
-    {:else if !isGrouped && choices.smart.length > 0}
+    {:else if !isGrouped && !isInspector && choices.smart.length > 0}
       <div class="flex flex-col">
         <div class="flex flex-col gap-2xs pbs-setting-grid-pad">
           <p class="text-small font-semibold">{m.library_smart_filters()}</p>
@@ -393,6 +417,25 @@
     {/if}
   </div>
 </section>
+{#if isInspector && choices.smart.length > 0}
+  <section class={["flex flex-col", MAC_INSPECTOR.section]}>
+    <h3 class={headingClass}>{m.library_smart_filters()}</h3>
+    <p class={MAC_INSPECTOR.note}>{m.library_smart_filters_hint()}</p>
+    <div class={MAC_INSPECTOR_SMART.group}>
+      <SmartFilterRows
+        isInspector
+        offered={choices.smart}
+        chosen={listing.filter.smart}
+        onToggle={(smart: SmartFilter) => {
+          toggle("smart", smart);
+        }}
+      />
+    </div>
+    {#if !choices.smart.includes("readyToCleanUp")}
+      <p class={MAC_INSPECTOR.note}>{m.library_smart_clean_up_waits()}</p>
+    {/if}
+  </section>
+{/if}
 {#if isGrouped && choices.smart.length > 0}
   <section class={["flex flex-col", look.section]}>
     <h3 class={look.heading}>{m.library_smart_filters()}</h3>
