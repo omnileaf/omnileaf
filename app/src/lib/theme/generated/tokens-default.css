@@ -476,11 +476,14 @@
   --native-color-tile-picked: transparent;
   --native-spacing-tile-picked: 0px;
   --native-radius-tile-picked-title: 0px;
+  --native-radius-search-hit: 0px;
   --native-text-sheet-title: var(--text-title);
   --native-leading-sheet-title: var(--text-title--line-height);
   --native-weight-sheet-title: var(--font-weight-bold);
   --native-text-sheet-text: var(--text-label);
   --native-leading-sheet-text: var(--text-label--line-height);
+  --native-tracking-sheet-text: 0;
+  --native-tracking-search-title: 0;
   --native-spacing-sheet-top: var(--spacing-sheet-top);
   --native-spacing-sheet-limit: var(--spacing-edit-dialog-height);
   --native-shadow-sheet-lift: var(--dialog-shadow);

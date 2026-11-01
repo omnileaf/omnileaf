@@ -86,11 +86,14 @@
   --native-spacing-search-scope-chip-inline: 20px;
   --native-spacing-tile-picked: calc(100cqi / 16);
   --native-radius-tile-picked-title: 4px;
+  --native-radius-search-hit: 3px;
   --native-text-sheet-title: calc(0.8125rem * var(--text-scale));
   --native-leading-sheet-title: calc(16 / 13);
   --native-weight-sheet-title: 700;
   --native-text-sheet-text: calc(0.6875rem * var(--text-scale));
   --native-leading-sheet-text: calc(14 / 11);
+  --native-tracking-sheet-text: 0.06px;
+  --native-tracking-search-title: -0.08px;
   --native-spacing-sheet-top: calc(var(--spacing-toolbar) + 12px);
   --native-spacing-sheet-limit: min(700px, calc(100% - var(--native-spacing-sheet-top) - 0.75rem));
   --native-spacing-detail-label: 99px;
