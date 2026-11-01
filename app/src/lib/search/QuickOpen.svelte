@@ -309,6 +309,7 @@
 >
   <DialogContent
     aria-label={m.quick_open_title()}
+    overlayClass={platform === "macos" ? "bg-transparent" : undefined}
     class="inset-none inset-bs-quick-open-top mx-auto flex flex-col overflow-hidden rounded-dialog border border-border bg-card text-foreground fade-motion shadow-dialog block-fit inline-quick-open max-block-dialog-limit max-inline-full"
   >
     <Command.Root
@@ -397,8 +398,16 @@
       class="flex items-center gap-lg border-bs border-border px-lg text-caption text-muted block-key-hints"
     >
       <span>{m.search_key_move()}</span>
-      <span>{m.search_key_open()}</span>
-      <span>{m.search_key_next_group()}</span>
+      <span
+        >{platform === "macos"
+          ? m.search_key_open_mac()
+          : m.search_key_open()}</span
+      >
+      <span>
+        {platform === "macos"
+          ? m.search_key_next_group_mac()
+          : m.search_key_next_group()}
+      </span>
       <span class="ms-auto">
         {m.quick_open_anywhere({ shortcut: quickOpenShortcutLabel(platform) })}
       </span>

@@ -16,6 +16,7 @@
     type ShownCover,
     standInLook,
   } from "#lib/library/series-look.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
@@ -107,6 +108,7 @@
         };
     }
   });
+  const isMac = currentPlatform() === "macos";
 </script>
 
 <Command.Item
@@ -114,7 +116,10 @@
   value={choiceKey(choice)}
   class={[
     "flex cursor-default items-center gap-md rounded-field px-option-inline py-xs min-block-quick-open-option",
-    isActive && "bg-accent-soft",
+    isActive &&
+      (isMac
+        ? "bg-native-menu-item-hover text-native-on-menu"
+        : "bg-accent-soft"),
   ]}
   onSelect={onChoose}
 >
@@ -141,8 +146,12 @@
   {#if isActive}
     <span aria-hidden="true" class="shrink-0 text-caption text-foreground">
       {continuesReading(choice)
-        ? m.quick_open_enter_continues()
-        : m.search_key_open()}
+        ? isMac
+          ? m.quick_open_enter_continues_mac()
+          : m.quick_open_enter_continues()
+        : isMac
+          ? m.search_key_open_mac()
+          : m.search_key_open()}
     </span>
   {/if}
 </Command.Item>
