@@ -471,12 +471,12 @@
   --spacing-native-sheet-limit: var(--native-spacing-sheet-limit);
   --shadow-native-sheet-lift: var(--native-shadow-sheet-lift);
   --spacing-native-detail-label: var(--native-spacing-detail-label);
+  --spacing-native-detail-label-tall: var(--native-spacing-detail-label-tall);
   --spacing-native-detail-end: var(--native-spacing-detail-end);
   --spacing-native-detail-chip-gap: var(--native-spacing-detail-chip-gap);
   --spacing-native-detail-chip-inline: var(--native-spacing-detail-chip-inline);
   --spacing-native-status-badge: var(--native-spacing-status-badge);
   --spacing-native-status-badge-inline: var(--native-spacing-status-badge-inline);
-  --radius-native-status-badge: var(--native-radius-status-badge);
 }
 
 @media (prefers-reduced-motion: reduce) {

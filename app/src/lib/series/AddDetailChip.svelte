@@ -9,10 +9,13 @@
     ANDROID_DETAIL_CHIP,
     DETAIL_CHIP,
     GROUPED_DETAIL_CHIP,
+    MACOS_TYPING_CHIP,
   } from "./detail-chip.ts";
 
   const ICON_SIZE = 16;
   const MACOS_ICON_SIZE = 12;
+  const TYPING_CHIP =
+    "flex-none rounded-shadcn-control border border-accent bg-transparent px-md text-label min-block-detail-chip touch:text-body";
 
   let {
     label,
@@ -53,7 +56,7 @@
     }}
     aria-label={label}
     placeholder={label}
-    class="flex-none rounded-shadcn-control border border-accent bg-transparent px-md text-label min-block-detail-chip touch:text-body"
+    class={isMacos ? MACOS_TYPING_CHIP : TYPING_CHIP}
     {@attach focusOnShow}
     onkeydown={(event: KeyboardEvent) => {
       if (event.key === "Enter") {

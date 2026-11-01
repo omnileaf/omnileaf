@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Undo2 } from "@lucide/svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
@@ -21,7 +22,9 @@
   const UNDO =
     "flex items-center justify-center rounded-full text-accent transition-control block-pointer-button inline-pointer-button hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent active:bg-pressed touch:block-touch-target touch:inline-touch-target";
   const MACOS_LABEL =
-    "col-start-1 row-start-1 text-end text-native-button leading-native-button font-native-button text-foreground pbs-xs";
+    "col-start-1 row-start-1 text-end text-native-button leading-native-button font-native-button text-foreground";
+  const MACOS_LABEL_ONE_LINE = "pbs-xs";
+  const MACOS_LABEL_TALL = "pbs-native-detail-label-tall";
   const MACOS_END =
     "col-start-3 row-start-1 flex items-center justify-end gap-xs min-block-native-button";
   const MACOS_UNDO = variantClasses("plain", "regular", true, "macos");
@@ -34,6 +37,7 @@
     isAndroid = false,
     isSheet = false,
     isMacos = false,
+    isTallField = false,
     useFileLabel,
     onUseFile,
   }: {
@@ -44,9 +48,14 @@
     isAndroid?: boolean;
     isSheet?: boolean;
     isMacos?: boolean;
+    isTallField?: boolean;
     useFileLabel: string;
     onUseFile: () => void;
   } = $props();
+
+  const macosLabel = $derived(
+    cn(MACOS_LABEL, isTallField ? MACOS_LABEL_TALL : MACOS_LABEL_ONE_LINE),
+  );
 </script>
 
 <div
@@ -56,7 +65,7 @@
     <svelte:element
       this={isSheet ? "h3" : "p"}
       id={labelId}
-      class={isSheet ? SHEET_FIELD_HEADING : isMacos ? MACOS_LABEL : LABEL}
+      class={isSheet ? SHEET_FIELD_HEADING : isMacos ? macosLabel : LABEL}
     >
       {label}
     </svelte:element>
@@ -67,7 +76,7 @@
       <label for={labelFor}>{label}</label>
     </h3>
   {:else}
-    <label for={labelFor} class={isMacos ? MACOS_LABEL : LABEL}>{label}</label>
+    <label for={labelFor} class={isMacos ? macosLabel : LABEL}>{label}</label>
   {/if}
   {#if isEdited && isSheet}
     <span class={SHEET_FIELD_STATUS}>{m.edit_details_edited()}</span>

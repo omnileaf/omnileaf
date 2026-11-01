@@ -12,7 +12,7 @@ export const BADGE_LOOKS = {
   outline:
     "inline-flex items-center rounded-label-badge border border-border px-sm py-2xs text-caption font-medium",
   status:
-    "inline-flex shrink-0 items-center rounded-native-status-badge bg-native-button-secondary text-native-button-small leading-none font-native-button text-muted block-native-status-badge px-native-status-badge-inline",
+    "inline-flex shrink-0 items-center rounded-native-button-small bg-native-button-secondary text-native-button-small leading-none font-native-button text-muted block-native-status-badge px-native-status-badge-inline",
   "header-accent": `${HEADER} bg-accent-soft text-accent`,
   "header-danger": `${HEADER} bg-danger-soft text-danger`,
 } satisfies Record<string, string>;

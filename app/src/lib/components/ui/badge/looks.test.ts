@@ -23,7 +23,7 @@ test.each<[BadgeLook, string[]]>([
   [
     "status",
     [
-      "rounded-native-status-badge",
+      "rounded-native-button-small",
       "bg-native-button-secondary",
       "text-muted",
       "block-native-status-badge",

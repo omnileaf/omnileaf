@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  literalColour,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -47,7 +48,11 @@ const MACOS = {
   badge: { height: 18, corner: "5px", inline: "6px", fontSize: "11px" },
   undo: { size: 24, icon: 13 },
   buttonWeight: "510",
+  control: { height: 24, fontSize: "13px" },
+  labelInset: { oneLine: "4px", multiline: "6px" },
 };
+
+const NARROW_WINDOW = { width: 500, height: 800 };
 
 test.use({
   viewport: WINDOW,
@@ -65,8 +70,13 @@ function editor(page: Page): Locator {
   return page.getByRole("dialog", { name: "Edit details" });
 }
 
-async function openEditor(page: Page): Promise<Locator> {
+async function openEditor(page: Page, contrast?: "more"): Promise<Locator> {
   await page.goto(`/series/${SERIES_ID}`);
+  if (contrast !== undefined) {
+    await page.evaluate((value) => {
+      document.documentElement.setAttribute("data-contrast", value);
+    }, contrast);
+  }
   await page
     .getByRole("region", { name: "Details" })
     .getByRole("button", { name: "Edit details" })
@@ -79,6 +89,16 @@ async function openEditor(page: Page): Promise<Locator> {
 
 function rowOf(control: Locator): Locator {
   return control.locator("xpath=..");
+}
+
+async function focusRing(page: Page, control: Locator): Promise<string[]> {
+  await control.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  return control.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return [style.outlineStyle, style.outlineWidth, style.outlineOffset];
+  });
 }
 
 test.describe("Edit details rows on macOS", () => {
@@ -125,10 +145,13 @@ test.describe("Edit details rows on macOS", () => {
       MACOS.rowGap,
       0,
     );
-    await expect(title.locator("xpath=..")).toHaveCSS(
-      "border-top-width",
-      "0px",
+    const section = rowOf(title);
+    await expect(section).toHaveCSS(
+      "background-color",
+      await literalColour(page, "transparent"),
     );
+    await expect(section).toHaveCSS("border-top-left-radius", "0px");
+    await expect(section).toHaveCSS("padding-left", "0px");
   });
 
   test("draws Edited as a grey 18 tall tag beside a 24 plain Undo button", async ({
@@ -152,7 +175,10 @@ test.describe("Edit details rows on macOS", () => {
       MACOS.undo.icon,
       0,
     );
-    await expect(undo).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(undo).toHaveCSS(
+      "background-color",
+      await literalColour(page, "transparent"),
+    );
     await expect(badge).toHaveCSS("border-top-left-radius", MACOS.badge.corner);
     await expect(badge).toHaveCSS("padding-left", MACOS.badge.inline);
     await expect(badge).toHaveCSS("font-size", MACOS.badge.fontSize);
@@ -210,6 +236,122 @@ test.describe("Edit details rows on macOS", () => {
     await expect(addPerson).toHaveCSS("font-size", MACOS.addButton.fontSize);
     await expect(addPerson).toHaveCSS("background-color", fill);
   });
+
+  test("sets the label 6 down for a tall field and 4 for the one line title", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+
+    await expect(sheet.getByText("Title", { exact: true })).toHaveCSS(
+      "padding-top",
+      MACOS.labelInset.oneLine,
+    );
+    await expect(sheet.getByText("Summary", { exact: true })).toHaveCSS(
+      "padding-top",
+      MACOS.labelInset.multiline,
+    );
+  });
+
+  test("draws the title as a 24 tall line of 13 point text and the summary in 13 point text", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+    const title = sheet.getByRole("textbox", { name: "Title" });
+    const summary = sheet.getByRole("textbox", { name: "Summary" });
+
+    const titleBox = await boxOf(title);
+
+    expect(titleBox.height).toBeCloseTo(MACOS.control.height, 0);
+    await expect(title).toHaveCSS("font-size", MACOS.control.fontSize);
+    await expect(summary).toHaveCSS("font-size", MACOS.control.fontSize);
+  });
+
+  test("lines the Mark as 18+ row up under the fields without bleeding into the sheet", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+    const field = await boxOf(sheet.getByRole("textbox", { name: "Title" }));
+    const row = await boxOf(
+      rowOf(sheet.getByRole("textbox", { name: "Title" })),
+    );
+    const adult = await boxOf(
+      sheet.getByRole("switch", { name: /Mark as 18\+/u }),
+    );
+    const words = await boxOf(sheet.getByText("Mark as 18+", { exact: true }));
+
+    expect(adult.x).toBeCloseTo(field.x, 0);
+    expect(words.x).toBeCloseTo(field.x, 0);
+    expect(adult.x + adult.width).toBeLessThanOrEqual(row.x + row.width);
+  });
+
+  test("keeps the typing field as tall as the chips", async ({ page }) => {
+    const sheet = await openEditor(page);
+    const chip = await boxOf(sheet.getByRole("button", { name: "Remove Sea" }));
+
+    await sheet.getByRole("button", { name: "Add a tag" }).click();
+    const typing = sheet.getByRole("textbox", { name: "Add a tag" });
+    const typingBox = await boxOf(typing);
+
+    expect(typingBox.height).toBeCloseTo(chip.height, 0);
+    await expect(typing).toHaveCSS("font-size", MACOS.control.fontSize);
+  });
+
+  test("draws the keyboard focus ring on a chip the way it does on the Add button", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+
+    const chipRing = await focusRing(
+      page,
+      sheet.getByRole("button", { name: "Remove Seinen" }),
+    );
+    const addRing = await focusRing(
+      page,
+      sheet.getByRole("button", { name: "Add a tag" }),
+    );
+
+    expect(chipRing).toEqual(addRing);
+  });
+
+  test("lays the fields out label above field in a narrow window", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+    await page.setViewportSize(NARROW_WINDOW);
+    const label = sheet.getByText("Title", { exact: true });
+    const field = sheet.getByRole("textbox", { name: "Title" });
+
+    await expect
+      .poll(async () => {
+        const labelBox = await boxOf(label);
+        const fieldBox = await boxOf(field);
+        return labelBox.y + labelBox.height <= fieldBox.y;
+      })
+      .toBe(true);
+    expect((await boxOf(label)).width).toBeGreaterThan(MACOS.labelColumn);
+  });
+
+  for (const [name, colorScheme, contrast] of [
+    ["dark", "dark", undefined],
+    ["Increase contrast", "light", "more"],
+    ["dark with Increase contrast", "dark", "more"],
+  ] as const) {
+    test(`fills Edited and the chips from the ${name} tokens`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const sheet = await openEditor(page, contrast);
+      const fill = await tokenColour(page, "--native-color-button-secondary");
+
+      await expect(sheet.getByText("Edited").first()).toHaveCSS(
+        "background-color",
+        fill,
+      );
+      await expect(
+        sheet.getByRole("button", { name: "Remove Seinen" }),
+      ).toHaveCSS("background-color", fill);
+    });
+  }
 });
 
 for (const platform of ["linux", "windows", "android", "ios"] as const) {
@@ -229,6 +371,27 @@ for (const platform of ["linux", "windows", "android", "ios"] as const) {
         sheet.getByRole("button", { name: "Remove Seinen" }),
       ).toHaveCSS("border-top-width", "1px");
       await expect(rowOf(rowOf(title))).toHaveCSS("border-top-width", "1px");
+    });
+
+    test("keeps Edited as the chip coloured tag, the plain Undo and the outlined Add chip", async ({
+      page,
+    }) => {
+      const sheet = await openEditor(page);
+      const badge = sheet.getByText("Edited").first();
+      const undo = sheet.getByRole("button", { name: "Use the file’s title" });
+
+      const badgeBox = await boxOf(badge);
+
+      expect(badgeBox.height).not.toBeCloseTo(MACOS.badge.height, 0);
+      await expect(badge).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--color-chip"),
+      );
+      await expect(badge).not.toHaveCSS("font-size", MACOS.badge.fontSize);
+      await expect(undo).not.toHaveCSS("width", `${String(MACOS.undo.size)}px`);
+      await expect(
+        sheet.getByRole("button", { name: "Add a person" }),
+      ).toHaveCSS("border-top-width", "1px");
     });
   });
 }
