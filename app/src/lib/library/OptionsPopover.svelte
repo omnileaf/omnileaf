@@ -23,8 +23,10 @@
   } = $props();
 
   const titleId = $props.id();
+  const titleRow: Snippet = heading;
 
   let direction: "ltr" | "rtl" = $state("ltr");
+  let content: HTMLElement | null = $state(null);
 
   $effect.pre(() => {
     if (isOpen && opener !== null) {
@@ -32,31 +34,48 @@
     }
   });
 
+  function keepFocusOffAction(event: Event): void {
+    if (action === undefined) {
+      return;
+    }
+    event.preventDefault();
+    content?.focus();
+  }
+
   function focusOpener(event: Event): void {
     event.preventDefault();
     opener?.focus();
   }
 </script>
 
+{#snippet heading()}
+  <h2 id={titleId} class={panel.title}>{title}</h2>
+{/snippet}
+
 <Popover.Root bind:open={isOpen}>
   <PopoverContent
+    bind:ref={content}
+    tabindex={-1}
     customAnchor={opener}
     dir={direction}
     align="end"
     aria-labelledby={titleId}
     class={[
-      "flex flex-col overflow-auto max-block-full",
+      "flex flex-col overflow-auto outline-none max-block-(--bits-popover-content-available-height)",
       panel.surface,
       panel.width,
     ]}
+    onOpenAutoFocus={keepFocusOffAction}
     onCloseAutoFocus={focusOpener}
   >
-    <div class="flex items-center justify-between">
-      <h2 id={titleId} class={panel.title}>{title}</h2>
-      {#if action}
+    {#if action}
+      <div class="flex items-center justify-between">
+        {@render titleRow()}
         {@render action()}
-      {/if}
-    </div>
+      </div>
+    {:else}
+      {@render titleRow()}
+    {/if}
     {@render children()}
   </PopoverContent>
 </Popover.Root>

@@ -356,6 +356,10 @@ for (const platform of ["android", "linux", "macos", "windows"] as const) {
     ]).toEqual(["16px", "18px", "18px", "18px"]);
     expect(style.rowGap).toBe("12px");
     expect(
+      boxOf(page.getByRole("heading", { name: "View options" }).element())
+        .width,
+    ).toBe(popover.clientWidth - 36);
+    expect(
       textOf(page.getByRole("heading", { name: "View options" }).element()),
     ).toEqual(["17px", "700", "normal"]);
     expect(

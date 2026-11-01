@@ -18,6 +18,9 @@ const PHONE = { width: 390, height: 844 };
 const WIDE = { width: 1280, height: 800 };
 const TABLET = { width: 820, height: 1180 };
 const IPAD_LANDSCAPE = { width: 1180, height: 820 };
+const SHORT_IPAD = { width: 1180, height: 600 };
+const IPHONE_LANDSCAPE = { width: 932, height: 430 };
+const TITLE_INSET = 16;
 const MORE_BUTTON = { right: 20, top: 24, size: 44 };
 const LARGE_DETENT = 0.92;
 
@@ -75,10 +78,17 @@ function addMoreButton(): HTMLButtonElement {
   return more;
 }
 
+const MANY_CHOICES: LibraryFilterChoices = {
+  ...GROUPED_CHOICES,
+  languages: ["ja", "en"],
+  tags: Array.from({ length: 40 }, (_, index) => `tag ${String(index)}`),
+};
+
 async function openFromMoreOn(
   platform: Platform,
   size: { width: number; height: number },
   onChoose: (listing: LibraryListing) => void = () => undefined,
+  choices: LibraryFilterChoices = GROUPED_CHOICES,
 ) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
@@ -86,7 +96,7 @@ async function openFromMoreOn(
   const returnFocusTo = addMoreButton();
   await render(FilterAndSort, {
     listing: NEW_LIBRARY_LISTING,
-    choices: GROUPED_CHOICES,
+    choices,
     matching: 24,
     docks: false,
     panelId: "filters",
@@ -96,6 +106,15 @@ async function openFromMoreOn(
     onOpen: () => undefined,
     returnFocusTo,
   });
+}
+
+function popoverFillToken(): string {
+  const probe = document.createElement("div");
+  probe.style.backgroundColor = "var(--native-color-popover)";
+  document.body.append(probe);
+  const fill = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return fill;
 }
 
 function boxOf(element: Element): DOMRect {
@@ -384,7 +403,7 @@ test("draws the iPad's Sort and filter popover on the same glass as View options
 
   expect(style.borderRadius).toBe("38px");
   expect(style.borderTopWidth).toBe("0px");
-  expect(style.backgroundColor).toBe("rgba(255, 255, 255, 0.85)");
+  expect(style.backgroundColor).toBe(popoverFillToken());
   expect(style.backdropFilter).toContain("blur(30px)");
   expect([style.paddingTop, style.paddingBottom]).toEqual(["20px", "6px"]);
 });
@@ -402,9 +421,47 @@ test("sets the iPad popover's title as a 17 semibold headline with Reset at its 
   expect(boxOf(reset.element()).left).toBeGreaterThan(
     boxOf(title.element()).right,
   );
-  expect(boxOf(reset.element()).right).toBeLessThanOrEqual(
-    boxOf(page.getByRole("dialog").element()).right,
+  const dialog = boxOf(page.getByRole("dialog").element());
+
+  expect(dialog.right - boxOf(reset.element()).right).toBe(TITLE_INSET);
+  expect(
+    boxOf(title.element()).left +
+      parseFloat(getComputedStyle(title.element()).paddingLeft) -
+      dialog.left,
+  ).toBe(TITLE_INSET);
+});
+
+test("keeps the iPad popover inside a short screen and scrolls its long content", async () => {
+  await openFromMoreOn("ios", SHORT_IPAD, undefined, MANY_CHOICES);
+
+  const popover = page.getByRole("dialog").element();
+  const more = boxOf(
+    page.getByRole("button", { name: "More for the library" }).element(),
   );
+
+  await expect.poll(() => Math.round(boxOf(popover).right)).toBe(more.right);
+  expect(boxOf(popover).bottom).toBeLessThanOrEqual(SHORT_IPAD.height);
+  expect(popover.scrollHeight).toBeGreaterThan(popover.clientHeight);
+});
+
+test("does not put the keyboard focus on Reset when the iPad popover opens", async () => {
+  await openFromMoreOn("ios", TABLET);
+
+  const popover = page.getByRole("dialog").element();
+
+  await expect.poll(() => popover.contains(document.activeElement)).toBe(true);
+  expect(document.activeElement).not.toBe(
+    page.getByRole("button", { name: "Reset" }).element(),
+  );
+});
+
+test("keeps the full height side panel on an iPhone turned sideways", async () => {
+  await openFromMoreOn("ios", IPHONE_LANDSCAPE);
+
+  const panel = boxOf(page.getByRole("dialog").element());
+
+  expect(Math.round(panel.height)).toBe(IPHONE_LANDSCAPE.height);
+  expect(panel.width).not.toBe(360);
 });
 
 test("resets the listing from the iPad popover's Reset button", async () => {

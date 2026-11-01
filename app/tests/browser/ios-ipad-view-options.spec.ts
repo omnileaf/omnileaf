@@ -1,5 +1,7 @@
 import type { Page } from "@playwright/test";
 
+import type { LibraryFilterChoices } from "../../src/lib/ipc/bindings.ts";
+
 import {
   boxOf,
   expect,
@@ -14,6 +16,15 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 const SERIES_IN_LIBRARY = 6;
 const POPOVER_WIDTH = 360;
 const EDGE_TOLERANCE_PX = 1;
+const SHORT_VIEWPORT_HEIGHT = 560;
+const MANY_CHOICES: LibraryFilterChoices = {
+  formats: ["comic", "manga", "book"],
+  languages: ["ja", "en", "fr", "de"],
+  tags: Array.from({ length: 30 }, (_, index) => `Tag ${String(index)}`),
+  ratesAdult: true,
+  keepsBookmarks: true,
+  smart: ["quickReads", "forgotten", "duplicates"],
+};
 
 test.describe("View options on an iPad", () => {
   testOnlyInItsWebview("ios");
@@ -23,6 +34,7 @@ test.describe("View options on an iPad", () => {
       ...onPlatform("ios").backend,
       librarySeries: pagedSeries(() => sampleSeries(SERIES_IN_LIBRARY)),
       librarySeriesCount: () => SERIES_IN_LIBRARY,
+      libraryFilterChoices: () => MANY_CHOICES,
     },
   });
 
@@ -133,5 +145,28 @@ test.describe("View options on an iPad", () => {
       page.getByRole("dialog", { name: "Sort and filter" }),
     ).toHaveCount(0);
     await expect(more(page)).toBeFocused();
+  });
+
+  test("keeps a tall Sort and filter popover on a short screen and scrolls it to its last group", async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: viewportOf(page).width,
+      height: SHORT_VIEWPORT_HEIGHT,
+    });
+    await more(page).click();
+    await page.getByRole("menuitem", { name: "Sort and filter" }).click();
+    const popover = page.getByRole("dialog", { name: "Sort and filter" });
+    await expect(popover).toBeVisible();
+
+    await expect
+      .poll(async () => {
+        const box = await boxOf(popover);
+        return box.y + box.height;
+      })
+      .toBeLessThanOrEqual(SHORT_VIEWPORT_HEIGHT);
+    const lastGroup = popover.getByText("Smart filters", { exact: true });
+    await lastGroup.scrollIntoViewIfNeeded();
+    await expect(lastGroup).toBeInViewport();
   });
 });
