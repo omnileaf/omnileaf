@@ -107,3 +107,78 @@ test("draws no check circle on the covers, keeping the picked ones checked for a
     covers(page).getByRole("checkbox", { checked: true }),
   ).toHaveCount(2);
 });
+
+const HIGHLIGHT_SHARE_OF_COVER_WIDTH = 1 / 16;
+const WHOLE_PIXEL_OUTLINE = 1;
+
+function pickedCover(page: Page, index: number): Locator {
+  return covers(page).getByRole("checkbox").nth(index).locator("> div").first();
+}
+
+function pickedTitle(page: Page, index: number): Locator {
+  return covers(page).getByRole("checkbox").nth(index).locator("p").first();
+}
+
+async function outlineOf(cover: Locator) {
+  return cover.evaluate((element) => {
+    const { outlineWidth, outlineStyle, outlineColor, outlineOffset } =
+      getComputedStyle(element);
+    return {
+      width: outlineStyle === "none" ? 0 : parseFloat(outlineWidth),
+      style: outlineStyle,
+      color: outlineColor,
+      offset: parseFloat(outlineOffset),
+    };
+  });
+}
+
+test("sits a picked cover on a grey highlight a sixteenth of its width wide", async ({
+  page,
+}) => {
+  await pickTwo(page);
+
+  const outline = await outlineOf(pickedCover(page, 0));
+  const { width } = await boxOf(pickedCover(page, 0));
+
+  expect(outline.style).toBe("solid");
+  expect(outline.offset).toBe(0);
+  expect(
+    Math.abs(outline.width - width * HIGHLIGHT_SHARE_OF_COVER_WIDTH),
+  ).toBeLessThan(WHOLE_PIXEL_OUTLINE);
+  expect(outline.color).not.toBe("rgba(0, 0, 0, 0)");
+});
+
+test("leaves a cover that is not picked without a highlight", async ({
+  page,
+}) => {
+  await pickTwo(page);
+
+  const outline = await outlineOf(pickedCover(page, 2));
+
+  expect(outline.width).toBe(0);
+});
+
+test("draws the picked cover's title on an accent pill and the others plain", async ({
+  page,
+}) => {
+  await pickTwo(page);
+
+  const picked = pickedTitle(page, 0);
+  const plain = pickedTitle(page, 2);
+
+  await expect(picked).toHaveCSS("background-color", "rgb(47, 111, 79)");
+  await expect(picked).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(picked).toHaveCSS("border-radius", "4px");
+  await expect(plain).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+});
+
+test("lets the highlight go with the selection", async ({ page }) => {
+  await pickTwo(page);
+
+  await page.keyboard.press("Escape");
+
+  const outline = await outlineOf(
+    covers(page).getByRole("link").nth(0).locator("> div").first(),
+  );
+  expect(outline.width).toBe(0);
+});

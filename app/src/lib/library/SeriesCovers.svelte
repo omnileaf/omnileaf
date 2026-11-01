@@ -171,6 +171,10 @@
       : "";
   }
 
+  function pickedTitle(one: LibrarySeries): ClassValue {
+    return selection?.has(one.id) === true ? tile.pickedTitle : "";
+  }
+
   /** Opens the menu from the keyboard ourselves, since WebKit sends no contextmenu event for Shift F10 or the Menu key. */
   function openMenuFromKeys(event: KeyboardEvent): void {
     const isMenuKey =
@@ -388,7 +392,11 @@
           <div class="min-inline-none">
             <p
               {@attach notesCutOff(one.id)}
-              class={["line-clamp-2 font-medium wrap-break-word", look.title]}
+              class={[
+                "line-clamp-2 font-medium wrap-break-word",
+                look.title,
+                pickedTitle(one),
+              ]}
             >
               {shown.title}
             </p>

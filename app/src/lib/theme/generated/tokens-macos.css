@@ -65,6 +65,8 @@
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;
   --native-radius-menu: 12px;
+  --native-spacing-tile-picked: calc(100cqi / 16);
+  --native-radius-tile-picked-title: 4px;
 }
 
 :root[data-platform="macos"],
@@ -150,6 +152,7 @@
   --native-color-notice-action: rgba(0, 0, 0, 0.03);
   --native-color-on-notice-action: #2f6f4f;
   --native-color-focus-ring: #2f6f4f80;
+  --native-color-tile-picked: color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 :root[data-platform="macos"][data-theme="dark"],
@@ -235,6 +238,7 @@
   --native-color-notice-action: rgba(255, 255, 255, 0.03);
   --native-color-on-notice-action: #7fcb9d;
   --native-color-focus-ring: #2e7d5580;
+  --native-color-tile-picked: color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 :root[data-platform="macos"][data-contrast="more"],

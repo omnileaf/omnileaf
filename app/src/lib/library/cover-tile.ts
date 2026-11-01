@@ -15,6 +15,7 @@ export interface CoverTileLook {
   readonly hoverCheckBox: string;
   readonly focusRing: string | undefined;
   readonly pickedRing: string;
+  readonly pickedTitle: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
   readonly unread: string;
@@ -58,6 +59,7 @@ const TODAYS_LOOK: CoverTileLook = {
   hoverCheckBox: "",
   focusRing: undefined,
   pickedRing: PICKED_COVER_RING,
+  pickedTitle: "",
   stack: null,
   cover: "",
   unread: BADGE_GEOMETRY,
@@ -88,6 +90,7 @@ const NATIVE_TILE = {
   focusRing: undefined,
   tick: "",
   pickedRing: PICKED_COVER_RING,
+  pickedTitle: "",
   stack: null,
   cover: "max-medium:rounded-native-cover",
   mark: NATIVE_SELECT_MARK,
@@ -143,6 +146,14 @@ const WINDOWS_TILE: CoverTileLook = {
   tick: "block-native-tile-check-glyph inline-native-tile-check-glyph",
 };
 
+const MACOS_TILE: CoverTileLook = {
+  ...TODAYS_LOOK,
+  pickedRing:
+    "outline-(length:--native-spacing-tile-picked) outline-native-tile-picked outline-offset-0",
+  pickedTitle:
+    "-mx-xs w-fit rounded-native-tile-picked-title bg-native-button-primary px-xs text-native-on-button-primary",
+};
+
 const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
@@ -160,7 +171,7 @@ const COVER_TILE_LOOKS = {
     downloadedIcon: "max-medium:hidden",
   },
   linux: { ...TODAYS_LOOK, stack: LINUX_STACK, unread: LINUX_BADGE },
-  macos: TODAYS_LOOK,
+  macos: MACOS_TILE,
   windows: WINDOWS_TILE,
 } satisfies Record<Platform, CoverTileLook>;
 
