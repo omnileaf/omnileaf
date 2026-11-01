@@ -16,6 +16,9 @@ import { NEW_LIBRARY_LISTING } from "./library-listing";
 
 const PHONE = { width: 390, height: 844 };
 const WIDE = { width: 1280, height: 800 };
+const TABLET = { width: 820, height: 1180 };
+const IPAD_LANDSCAPE = { width: 1180, height: 820 };
+const MORE_BUTTON = { right: 20, top: 24, size: 44 };
 const LARGE_DETENT = 0.92;
 
 const CHOICES: LibraryFilterChoices = {
@@ -55,6 +58,43 @@ async function openSheetOn(
     showsButton: false,
     onChoose,
     onOpen: () => undefined,
+  });
+}
+
+function addMoreButton(): HTMLButtonElement {
+  const more = document.createElement("button");
+  more.setAttribute("aria-label", "More for the library");
+  Object.assign(more.style, {
+    position: "fixed",
+    top: `${String(MORE_BUTTON.top)}px`,
+    right: `${String(MORE_BUTTON.right)}px`,
+    width: `${String(MORE_BUTTON.size)}px`,
+    height: `${String(MORE_BUTTON.size)}px`,
+  });
+  document.body.append(more);
+  return more;
+}
+
+async function openFromMoreOn(
+  platform: Platform,
+  size: { width: number; height: number },
+  onChoose: (listing: LibraryListing) => void = () => undefined,
+) {
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  await page.viewport(size.width, size.height);
+  const returnFocusTo = addMoreButton();
+  await render(FilterAndSort, {
+    listing: NEW_LIBRARY_LISTING,
+    choices: GROUPED_CHOICES,
+    matching: 24,
+    docks: false,
+    panelId: "filters",
+    isOpen: true,
+    showsButton: false,
+    onChoose,
+    onOpen: () => undefined,
+    returnFocusTo,
   });
 }
 
@@ -130,28 +170,6 @@ test("keeps the sort and filter sheet as it was on an Android phone", async () =
   expect(show.height).not.toBe(50);
 });
 
-test("keeps the side panel on a wide iOS window", async () => {
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("ios");
-  await page.viewport(WIDE.width, WIDE.height);
-  await render(FilterAndSort, {
-    listing: NEW_LIBRARY_LISTING,
-    choices: CHOICES,
-    matching: 24,
-    docks: false,
-    panelId: "filters",
-    isOpen: true,
-    showsButton: false,
-    onChoose: () => undefined,
-    onOpen: () => undefined,
-  });
-
-  const panel = boxOf(page.getByRole("dialog").element());
-
-  expect(panel.width).toBeLessThan(WIDE.width / 2);
-  expect(Math.round(panel.height)).toBe(WIDE.height);
-});
-
 function groupAfter(heading: string): HTMLElement {
   const title = page.getByRole("heading", { name: heading, exact: true });
   const group = title.element().nextElementSibling;
@@ -213,32 +231,6 @@ test("puts the smart filters hint under its group as a footer on an iPhone", asy
       group.left,
   ).toBe(16);
   expect(getComputedStyle(hint.element()).fontSize).toBe("13px");
-});
-
-test("keeps the unframed sections on an iPad", async () => {
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("ios");
-  await page.viewport(820, 1180);
-  await render(FilterAndSort, {
-    listing: NEW_LIBRARY_LISTING,
-    choices: GROUPED_CHOICES,
-    matching: 24,
-    docks: false,
-    panelId: "filters",
-    isOpen: true,
-    showsButton: false,
-    onChoose: () => undefined,
-    onOpen: () => undefined,
-  });
-
-  const sheet = page.getByRole("dialog").element();
-
-  expect(sheet.getAttribute("data-ground")).toBeNull();
-  const heading = page.getByRole("heading", { name: "Filter", exact: true });
-
-  expect(getComputedStyle(groupAfter("Filter")).borderRadius).not.toBe("26px");
-  expect(getComputedStyle(heading.element()).fontWeight).toBe("600");
-  expect(getComputedStyle(heading.element()).paddingLeft).toBe("0px");
 });
 
 test("lists Sort by and Order as picker rows with their value and a chevron on an iPhone", async () => {
@@ -321,30 +313,6 @@ test("puts the time left note under the Sort group as a footer on an iPhone", as
   expect(note.top - group.bottom).toBe(8);
 });
 
-test("keeps the sort select and direction button on an iPad", async () => {
-  document.documentElement.dataset.theme = "light";
-  followCorePlatform("ios");
-  await page.viewport(820, 1180);
-  await render(FilterAndSort, {
-    listing: NEW_LIBRARY_LISTING,
-    choices: GROUPED_CHOICES,
-    matching: 24,
-    docks: false,
-    panelId: "filters",
-    isOpen: true,
-    showsButton: false,
-    onChoose: () => undefined,
-    onOpen: () => undefined,
-  });
-
-  await expect
-    .element(page.getByRole("combobox", { name: "Order" }))
-    .not.toBeInTheDocument();
-  await expect
-    .element(page.getByRole("button", { name: /^Order:/ }))
-    .toBeInTheDocument();
-});
-
 test("draws a focus ring on the picker row whose select has the keyboard focus on an iPhone", async () => {
   await openSheetOn("ios", GROUPED_CHOICES);
   const select = page.getByRole("combobox", { name: "Sort by" }).element();
@@ -385,3 +353,109 @@ test("draws More tags as a native capsule beside the tag chips on an iPhone", as
     14,
   );
 });
+
+test.each([
+  ["portrait", TABLET],
+  ["landscape", IPAD_LANDSCAPE],
+])(
+  "opens Sort and filter on an iPad in %s as a popover under More, lined up with its right edge",
+  async (_, size) => {
+    await openFromMoreOn("ios", size);
+
+    const popover = page.getByRole("dialog", { name: "Sort and filter" });
+    const more = boxOf(
+      page.getByRole("button", { name: "More for the library" }).element(),
+    );
+
+    expect(boxOf(popover.element()).width).toBe(360);
+    await expect
+      .poll(() => Math.round(boxOf(popover.element()).right))
+      .toBe(more.right);
+    await expect
+      .poll(() => Math.round(boxOf(popover.element()).top))
+      .toBeGreaterThanOrEqual(more.bottom);
+  },
+);
+
+test("draws the iPad's Sort and filter popover on the same glass as View options", async () => {
+  await openFromMoreOn("ios", TABLET);
+
+  const style = getComputedStyle(page.getByRole("dialog").element());
+
+  expect(style.borderRadius).toBe("38px");
+  expect(style.borderTopWidth).toBe("0px");
+  expect(style.backgroundColor).toBe("rgba(255, 255, 255, 0.85)");
+  expect(style.backdropFilter).toContain("blur(30px)");
+  expect([style.paddingTop, style.paddingBottom]).toEqual(["20px", "6px"]);
+});
+
+test("sets the iPad popover's title as a 17 semibold headline with Reset at its end", async () => {
+  await openFromMoreOn("ios", TABLET);
+
+  const title = page.getByRole("heading", { name: "Sort and filter" });
+  const reset = page.getByRole("button", { name: "Reset" });
+
+  expect([
+    getComputedStyle(title.element()).fontSize,
+    getComputedStyle(title.element()).fontWeight,
+  ]).toEqual(["17px", "600"]);
+  expect(boxOf(reset.element()).left).toBeGreaterThan(
+    boxOf(title.element()).right,
+  );
+  expect(boxOf(reset.element()).right).toBeLessThanOrEqual(
+    boxOf(page.getByRole("dialog").element()).right,
+  );
+});
+
+test("resets the listing from the iPad popover's Reset button", async () => {
+  const chosen: LibraryListing[] = [];
+  await openFromMoreOn("ios", TABLET, (listing) => chosen.push(listing));
+
+  await userEvent.click(page.getByRole("button", { name: "Reset" }));
+
+  expect(chosen).toEqual([NEW_LIBRARY_LISTING]);
+});
+
+test("lists Sort by, Order and Read state as picker rows in divided groups in the iPad popover", async () => {
+  await openFromMoreOn("ios", TABLET);
+
+  for (const name of ["Sort by", "Order", "Read state"]) {
+    await expect
+      .element(page.getByRole("combobox", { name }))
+      .toBeInTheDocument();
+  }
+  const heading = getComputedStyle(
+    page.getByRole("heading", { name: "Sort", exact: true }).element(),
+  );
+  const group = getComputedStyle(groupAfter("Sort"));
+
+  expect([heading.fontSize, heading.fontWeight]).toEqual(["13px", "590"]);
+  expect(group.borderRadius).toBe("0px");
+  expect(group.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+});
+
+test("leaves out the iPhone's Close button and match count button in the iPad popover", async () => {
+  await openFromMoreOn("ios", TABLET);
+
+  await expect
+    .element(page.getByRole("button", { name: "Close" }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(page.getByRole("button", { name: "Show 24 series" }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(page.getByRole("status"))
+    .toHaveTextContent("24 series match");
+});
+
+test.each<Platform>(["macos", "windows", "android", "linux"])(
+  "keeps the side panel on a wide %s window",
+  async (platform) => {
+    await openFromMoreOn(platform, WIDE);
+
+    const panel = boxOf(page.getByRole("dialog").element());
+
+    expect(panel.width).toBeLessThan(WIDE.width / 2);
+    expect(Math.round(panel.height)).toBe(WIDE.height);
+  },
+);

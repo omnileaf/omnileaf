@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ListFilter, X } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
+  import { MediaQuery } from "svelte/reactivity";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
@@ -13,7 +14,7 @@
   } from "#lib/ipc/bindings.ts";
   import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { MEDIUM_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -21,7 +22,9 @@
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
   import FilterChoices from "./FilterChoices.svelte";
   import { filtersOn, NEW_LIBRARY_LISTING } from "./library-listing";
+  import OptionsPopover from "./OptionsPopover.svelte";
   import { type SheetScrollRules, scrollRulesOf } from "./sheet-scroll-rules";
+  import { viewPanelLook } from "./view-panel";
 
   const ICON_SIZE = 16;
   const CLOSE_ICON_SIZE = 18;
@@ -61,6 +64,10 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isIos = platform === "ios";
+  const isWide = new MediaQuery(MEDIUM_QUERY);
+  const opensAsPopover = $derived(isIos && isWide.current);
+  const panel = viewPanelLook(platform);
+  const opener = $derived(showsButton ? button : returnFocusTo);
   const isMac = platform === "macos";
   const isAndroidPhone = $derived(
     phoneOf(platform, width.current) === "android",
@@ -178,7 +185,39 @@
   </Tooltip>
 {/if}
 
-{#if !docks}
+{#if !docks && opensAsPopover}
+  <OptionsPopover
+    bind:isOpen
+    {opener}
+    title={m.library_filter_and_sort()}
+    {panel}
+  >
+    {#snippet action()}
+      <Button
+        type="button"
+        variant="plain"
+        class="me-lg"
+        onclick={() => {
+          onChoose(NEW_LIBRARY_LISTING);
+        }}
+      >
+        {m.library_reset()}
+      </Button>
+    {/snippet}
+    <FilterChoices
+      {listing}
+      {choices}
+      {onChoose}
+      isGrouped
+      groups={panel.groups}
+    />
+    <p role="status" class="sr-only">
+      {#if matching !== undefined}
+        {m.library_series_match({ count: matching })}
+      {/if}
+    </p>
+  </OptionsPopover>
+{:else if !docks}
   <Dialog.Root bind:open={isOpen}>
     <ModalContent
       wideLook="sheet"

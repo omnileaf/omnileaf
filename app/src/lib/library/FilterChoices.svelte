@@ -28,7 +28,7 @@
   } from "./filter-sheet-look";
   import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
-  import { GROUPED_FOOTNOTE, groupLook } from "./group-look";
+  import { GROUPED_FOOTNOTE, type GroupLook, groupLook } from "./group-look";
   import {
     type ChosenFrom,
     type IncludedBy,
@@ -64,12 +64,14 @@
     choices,
     onChoose,
     isGrouped = false,
+    groups,
     isInspector = false,
   }: {
     listing: LibraryListing;
     choices: LibraryFilterChoices;
     onChoose: (listing: LibraryListing) => void;
     isGrouped?: boolean;
+    groups?: GroupLook | undefined;
     isInspector?: boolean;
   } = $props();
 
@@ -77,7 +79,7 @@
   const isAndroidPhone = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
-  const look = $derived(groupLook(isGrouped));
+  const look = $derived(groups ?? groupLook(isGrouped));
 
   function headingClassOf(): string {
     if (isAndroidPhone) {

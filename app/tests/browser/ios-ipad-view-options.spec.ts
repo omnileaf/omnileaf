@@ -95,12 +95,43 @@ test.describe("View options on an iPad", () => {
     await expect(more(page)).toBeFocused();
   });
 
-  test("still opens Sort and filter from More", async ({ page }) => {
+  test("opens Sort and filter as a popover under More, lined up with its right edge", async ({
+    page,
+  }) => {
     await more(page).click();
     await page.getByRole("menuitem", { name: "Sort and filter" }).click();
+    const popover = page.getByRole("dialog", { name: "Sort and filter" });
+    await expect(popover).toBeVisible();
 
+    const button = await boxOf(more(page));
+    await expect
+      .poll(async () =>
+        Math.abs(
+          (await boxOf(popover)).x + POPOVER_WIDTH - (button.x + button.width),
+        ),
+      )
+      .toBeLessThan(EDGE_TOLERANCE_PX);
+    const box = await boxOf(popover);
+    expect(box.width).toBe(POPOVER_WIDTH);
+    expect(box.y).toBeGreaterThanOrEqual(button.y + button.height);
+    await expect(popover).toHaveCSS("border-radius", "38px");
+    await expect(popover.getByRole("button", { name: "Reset" })).toBeVisible();
+  });
+
+  test("returns focus to More when Sort and filter closes", async ({
+    page,
+  }) => {
+    await more(page).click();
+    await page.getByRole("menuitem", { name: "Sort and filter" }).click();
     await expect(
       page.getByRole("dialog", { name: "Sort and filter" }),
     ).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    await expect(
+      page.getByRole("dialog", { name: "Sort and filter" }),
+    ).toHaveCount(0);
+    await expect(more(page)).toBeFocused();
   });
 });
