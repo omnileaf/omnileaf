@@ -15,6 +15,7 @@
   --native-shadow-shadow-glass: none;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);
+  --native-color-control-stroke: transparent;
   --native-color-icon-button-fill: var(--color-hover);
   --native-color-icon-button-fill-hover: var(--color-hover);
   --native-color-icon-button-fill-pressed: var(--color-hover);

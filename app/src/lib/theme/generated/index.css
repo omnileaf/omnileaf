@@ -23,6 +23,7 @@
   --color-native-button-secondary: var(--native-color-button-secondary);
   --color-native-control-fill-hover: var(--native-color-control-fill-hover);
   --color-native-control-fill-pressed: var(--native-color-control-fill-pressed);
+  --color-native-control-stroke: var(--native-color-control-stroke);
   --color-native-icon-button-fill: var(--native-color-icon-button-fill);
   --color-native-icon-button-fill-hover: var(--native-color-icon-button-fill-hover);
   --color-native-icon-button-fill-pressed: var(--native-color-icon-button-fill-pressed);
