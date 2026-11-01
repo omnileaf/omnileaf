@@ -130,6 +130,7 @@ pub use library_changes::{LIBRARY_CHANGES_GATHERED_FOR, LibraryChanged, LibraryC
 pub use library_chapter_search::{ChapterCursor, ChapterHit, ChapterHitPage, ChapterTitleSource};
 pub use library_folder::{
     FolderCursor, FolderId, FolderKind, FolderPage, LibraryFolder, home_location,
+    home_tree_location,
 };
 pub use library_folder_group::{
     FolderGroupCursor, FolderGroupId, FolderGroupPage, LibraryFolderGroup,
