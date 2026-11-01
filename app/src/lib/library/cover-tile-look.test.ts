@@ -42,6 +42,8 @@ interface TileLook {
     readonly corner: string;
     readonly fill: string;
     readonly label: string;
+    readonly weight: string;
+    readonly numerals: string;
   };
   readonly downloaded: { readonly size: number; readonly fill: string };
   readonly mark: {
@@ -154,6 +156,8 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
       corner: styleOf(unread).borderTopLeftRadius,
       fill: styleOf(unread).backgroundColor,
       label: styleOf(unread).color,
+      weight: styleOf(unread).fontWeight,
+      numerals: styleOf(unread).fontVariantNumeric,
     },
     downloaded: {
       size: downloaded.getBoundingClientRect().height,
@@ -203,16 +207,19 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws iOS's tile with glass badges and edit-mode select circles", async () => {
+test("draws iOS's tile with a red count badge, a glass download mark and edit-mode select circles", async () => {
   const { emptyMark, ...look } = await lookOn("ios", "light");
+  const { corner, ...badge } = look.badge;
 
-  expect(look).toEqual({
+  expect(Number.parseFloat(corner)).toBeGreaterThanOrEqual(badge.height / 2);
+  expect({ ...look, badge }).toEqual({
     cover: { corner: "6px" },
     badge: {
       height: 20,
-      corner: "6px",
-      fill: "rgba(255, 255, 255, 0.78)",
-      label: "rgb(0, 0, 0)",
+      fill: "rgb(155, 44, 44)",
+      label: "rgb(255, 255, 255)",
+      weight: "590",
+      numerals: "tabular-nums",
     },
     downloaded: { size: 20, fill: "rgba(255, 255, 255, 0.78)" },
     mark: {
@@ -308,7 +315,7 @@ test("keeps Android's check box in the cover's top end", async () => {
   expect(gapsAround(mark)).toMatchObject({ top: 5, end: 5 });
 });
 
-test("darkens iOS's glass badges in the dark theme", async () => {
+test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
   const look = await lookOn("ios", "dark");
 
   expect([
@@ -317,8 +324,8 @@ test("darkens iOS's glass badges in the dark theme", async () => {
     look.mark.fill,
     look.mark.tick,
   ]).toEqual([
-    "rgba(44, 44, 46, 0.72)",
-    "rgb(255, 255, 255)",
+    "rgb(240, 140, 140)",
+    "rgb(42, 14, 14)",
     "rgb(127, 203, 157)",
     "rgb(15, 36, 24)",
   ]);
@@ -334,6 +341,8 @@ test("draws Android's tile with a download dot and a material check box", async 
       corner: "8px",
       fill: "rgb(208, 232, 215)",
       label: "rgb(65, 87, 73)",
+      weight: "500",
+      numerals: "normal",
     },
     downloaded: { size: 6, fill: "rgb(50, 106, 77)" },
     mark: {

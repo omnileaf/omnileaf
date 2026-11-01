@@ -40,7 +40,7 @@ const NATIVE_TABS = {
 };
 
 export const FLOATING_GLASS =
-  "ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:inset-ring ios:max-medium:inset-ring-glass-edge ios:max-medium:bg-native-tab-bar ios:max-medium:shadow-floating ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160";
+  "ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-tab-bar ios:max-medium:shadow-native-shadow-glass ios:max-medium:backdrop-blur-glass ios:max-medium:backdrop-saturate-160";
 
 export const FLOATING_BAR = `${FLOATING_GLASS} max-medium:fixed max-medium:z-tab-bar max-medium:inset-be-floating-gap max-medium:inset-x-lg max-medium:mx-auto max-medium:inline-auto max-medium:max-inline-fit max-medium:py-native-tab-bar-inset max-medium:px-native-tab-bar-inline max-medium:block-native-tab-bar`;
 

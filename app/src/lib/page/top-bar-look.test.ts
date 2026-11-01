@@ -110,7 +110,7 @@ test("folds iOS's title into a 17 semibold inline title beside 44 glass circles"
   expect(title.fontWeight).toBe("600");
   expect(backLink().getBoundingClientRect().height).toBeCloseTo(44, 0);
   expect(back.backgroundColor).toBe("rgba(255, 255, 255, 0.7)");
-  expect(back.color).toBe("rgb(47, 111, 79)");
+  expect(back.color).toBe("rgb(0, 0, 0)");
 });
 
 test("draws iOS's scrolled bar over a hairline in the separator colour", async () => {
