@@ -9,6 +9,7 @@
   import { phoneOf } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { RowSwipe } from "#lib/series/row-swipe.svelte.ts";
 
@@ -16,6 +17,7 @@
   import type { CountingLook } from "./counting-look";
   import type { FolderAdding } from "./folder-adding.svelte";
   import FolderCounting from "./FolderCounting.svelte";
+  import { AndroidPhone } from "./android-phone.svelte";
   import { folderLocation } from "./folder-location";
   import { folderTitle, type ShownFolder } from "./folder-title";
   import FolderNotice from "./FolderNotice.svelte";
@@ -68,6 +70,8 @@
   const isInCard = $derived(addPlacement === "card");
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
+  const android = new AndroidPhone();
+  const androidHeading = radiosLook(true).heading;
   const isSwipeable = $derived(isNative && isInCard);
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
@@ -212,10 +216,12 @@
 >
   <div
     class={isInCard
-      ? [
-          "flex flex-col overflow-hidden rounded-card border border-border bg-card",
-          GROUP_PLATE,
-        ]
+      ? android.isOn
+        ? "-mx-page-start -me-page-end flex flex-col overflow-hidden"
+        : [
+            "flex flex-col overflow-hidden rounded-card border border-border bg-card",
+            GROUP_PLATE,
+          ]
       : "contents"}
   >
     <h2
@@ -223,7 +229,9 @@
       tabindex="-1"
       bind:this={foldersHeading}
       class={isInCard
-        ? "px-lg pbs-md pbe-xs text-small font-semibold"
+        ? android.isOn
+          ? androidHeading
+          : "px-lg pbs-md pbe-xs text-small font-semibold"
         : "sr-only"}
     >
       {m.library_settings_folders()}
@@ -231,7 +239,7 @@
     {#if shownFolders.length > 0 || beingAdded !== undefined}
       <ul
         class={[
-          "divide-y divide-border ios:divide-y-0",
+          !android.isOn && "divide-y divide-border ios:divide-y-0",
           !isInCard &&
             "rounded-card border border-border bg-card windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
         ]}
