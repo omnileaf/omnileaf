@@ -14,10 +14,31 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { folderTitle, type ShownFolder } from "./folder-title";
+  import { AndroidPhone } from "./android-phone.svelte";
   import { ICON_SIZE } from "./icon-size";
 
   const SEPARATOR = " · ";
-  const NATIVE_ICON_SIZE = 22;
+
+  const LOOKS = {
+    android: {
+      iconSize: 20,
+      title: "text-native-row-title/native-row-title font-regular",
+      description: "text-native-row-subtitle/native-row-subtitle wrap-anywhere",
+      detail: "text-native-row-subtitle/native-row-subtitle text-muted",
+    },
+    ios: {
+      iconSize: 22,
+      title: "truncate",
+      description: "truncate",
+      detail: "text-footnote text-muted",
+    },
+    standard: {
+      iconSize: ICON_SIZE,
+      title: "truncate text-body font-medium",
+      description: "truncate text-detail",
+      detail: "text-footnote text-muted",
+    },
+  } as const;
 
   let {
     folder,
@@ -38,7 +59,14 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
-  const iconSize = $derived(isNative ? NATIVE_ICON_SIZE : ICON_SIZE);
+  const android = new AndroidPhone();
+  const look = $derived(
+    android.isOn && isOwnCard
+      ? LOOKS.android
+      : isNative
+        ? LOOKS.ios
+        : LOOKS.standard,
+  );
 
   const status = $derived.by((): string | undefined => {
     if (isFoundEmpty) {
@@ -53,25 +81,25 @@
   class={[isOwnCard && "windows:py-md windows:pe-lg"]}
 >
   <ItemMedia
-    class={isNative
-      ? "text-accent"
-      : [
-          "rounded-control block-icon-tile inline-icon-tile",
-          folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
-          isOwnCard && "windows:bg-transparent",
-        ]}
+    class={look === LOOKS.android
+      ? "self-start"
+      : isNative
+        ? "text-accent"
+        : [
+            "rounded-control block-icon-tile inline-icon-tile",
+            folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
+            isOwnCard && "windows:bg-transparent",
+          ]}
   >
     {#if folder.kind === "home"}
-      <House size={iconSize} aria-hidden="true" />
+      <House size={look.iconSize} aria-hidden="true" />
     {:else}
-      <Folder size={iconSize} aria-hidden="true" />
+      <Folder size={look.iconSize} aria-hidden="true" />
     {/if}
   </ItemMedia>
   <ItemContent>
-    <ItemTitle class={isNative ? "truncate" : "truncate text-body font-medium"}
-      >{folderTitle(folder)}</ItemTitle
-    >
-    <ItemDescription class={isNative ? "truncate" : "truncate text-detail"}>
+    <ItemTitle class={look.title}>{folderTitle(folder)}</ItemTitle>
+    <ItemDescription class={look.description}>
       {#if status !== undefined}<span>{status}</span>{SEPARATOR}{/if}
       {#if location === undefined}
         {folder.location}
@@ -80,7 +108,7 @@
       {/if}
     </ItemDescription>
     {#if detail !== undefined}
-      <div class="text-footnote text-muted">{@render detail(folder)}</div>
+      <div class={look.detail}>{@render detail(folder)}</div>
     {/if}
   </ItemContent>
   {@render action?.()}

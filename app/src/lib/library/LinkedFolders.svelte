@@ -239,9 +239,10 @@
     {#if shownFolders.length > 0 || beingAdded !== undefined}
       <ul
         class={[
-          !android.isOn && "divide-y divide-border ios:divide-y-0",
+          (!android.isOn || !isInCard) &&
+            "divide-y divide-border ios:divide-y-0",
           !isInCard &&
-            "rounded-card border border-border bg-card windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
+            "rounded-card border border-border bg-card android:max-medium:bg-transparent windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
         ]}
       >
         {#each shownFolders as folder, index (folder.id)}
@@ -289,7 +290,11 @@
                 {folderLocation(beingAdded, platform)}
               {/snippet}
               {#snippet detail()}
-                <FolderCounting outcome={adding.outcome} look={countingLook} />
+                <FolderCounting
+                  outcome={adding.outcome}
+                  look={countingLook}
+                  inList={android.isOn && !isInCard}
+                />
               {/snippet}
             </FolderRow>
           </li>
