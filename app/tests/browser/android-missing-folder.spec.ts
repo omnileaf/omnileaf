@@ -89,6 +89,14 @@ test.describe(
         await expect(button).toHaveCSS("border-top-width", "0px");
       }
       await expect(card.getByRole("button", { name: "Dismiss" })).toBeVisible();
+      const show = await boxOf(
+        card.getByRole("button", { name: "Show them anyway" }),
+      );
+      const find = await boxOf(
+        card.getByRole("button", { name: "Find the folder" }),
+      );
+      expect(show.y).toBeCloseTo(find.y, 0);
+      expect(find.x).toBeGreaterThan(show.x + show.width - 1);
     });
 
     test("says the series are shown but can't be opened once they are shown anyway, offering to hide them again", async ({
