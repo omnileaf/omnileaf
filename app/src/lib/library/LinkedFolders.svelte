@@ -300,7 +300,7 @@
       <p class="px-lg pbe-xs text-body">{m.library_folders_none()}</p>
     {/if}
     {#if isInCard}
-      {#if isNative}
+      {#if isNative || android.isOn}
         <div
           class={[
             "relative",
