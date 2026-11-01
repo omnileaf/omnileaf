@@ -10,6 +10,7 @@
     BreadcrumbSeparator,
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { cn } from "#lib/components/cn.ts";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
@@ -20,6 +21,7 @@
 
   import { barChip } from "#lib/series/series-chip.ts";
 
+  import { showsSectionsBeside } from "./panes";
   import type { ParentPage } from "./sections";
 
   let {
@@ -51,10 +53,16 @@
 
   const backLabel = $derived(m.back_to({ page: parent.title }));
   const isNested = $derived(parent.route !== SETTINGS_ROUTE);
+  const hasTitleBar = $derived(
+    platform === "macos" && showsSectionsBeside(width.current),
+  );
 </script>
 
 <div
-  class="hidden items-center gap-sm border-be border-border desktop:two-pane:-mx-pane desktop:two-pane:-mbs-page-top desktop:two-pane:mbe-xl desktop:two-pane:flex desktop:two-pane:px-pane desktop:two-pane:min-block-toolbar"
+  class={[
+    "hidden items-center gap-sm border-be border-border desktop:two-pane:-mx-pane desktop:two-pane:-mbs-page-top desktop:two-pane:flex desktop:two-pane:px-pane desktop:two-pane:min-block-toolbar",
+    !hasTitleBar && "desktop:two-pane:mbe-xl",
+  ]}
 >
   {#if isNested}
     <Tooltip label={backLabel}>
@@ -64,30 +72,45 @@
           href={resolve(parent.route)}
           data-crumb-back
           aria-label={backLabel}
-          class="flex shrink-0 items-center justify-center rounded-shadcn-control text-foreground transition-control block-reader-dense inline-reader-dense hover:bg-hover active:bg-pressed"
+          class={hasTitleBar
+            ? variantClasses("plain", "regular", true, "macos")
+            : "flex shrink-0 items-center justify-center rounded-shadcn-control text-foreground transition-control block-reader-dense inline-reader-dense hover:bg-hover active:bg-pressed"}
         >
-          <ArrowLeft size={POINTER_CHEVRON_SIZE} class="rtl:-scale-x-100" />
+          {#if hasTitleBar}
+            <Icon name={backIcon("macos")} class="rtl:-scale-x-100" />
+          {:else}
+            <ArrowLeft size={POINTER_CHEVRON_SIZE} class="rtl:-scale-x-100" />
+          {/if}
         </a>
       {/snippet}
     </Tooltip>
   {/if}
-  <Breadcrumb aria-label={m.settings_breadcrumb()} class="text-small">
-    <BreadcrumbItem>
-      <a href={resolve(SETTINGS_ROUTE)} class={CRUMB_LINK}
-        >{m.settings_title()}</a
-      >
-    </BreadcrumbItem>
-    <BreadcrumbSeparator class="text-muted" />
-    {#if isNested}
+  {#if hasTitleBar}
+    <h1
+      tabindex="-1"
+      class="truncate text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title text-foreground"
+    >
+      {title}
+    </h1>
+  {:else}
+    <Breadcrumb aria-label={m.settings_breadcrumb()} class="text-small">
       <BreadcrumbItem>
-        <a href={resolve(parent.route)} class={CRUMB_LINK}>{parent.title}</a>
+        <a href={resolve(SETTINGS_ROUTE)} class={CRUMB_LINK}
+          >{m.settings_title()}</a
+        >
       </BreadcrumbItem>
       <BreadcrumbSeparator class="text-muted" />
-    {/if}
-    <BreadcrumbItem class="min-inline-none">
-      <BreadcrumbPage>{title}</BreadcrumbPage>
-    </BreadcrumbItem>
-  </Breadcrumb>
+      {#if isNested}
+        <BreadcrumbItem>
+          <a href={resolve(parent.route)} class={CRUMB_LINK}>{parent.title}</a>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator class="text-muted" />
+      {/if}
+      <BreadcrumbItem class="min-inline-none">
+        <BreadcrumbPage>{title}</BreadcrumbPage>
+      </BreadcrumbItem>
+    </Breadcrumb>
+  {/if}
 </div>
 
 {#if isIosPhone}
@@ -110,7 +133,7 @@
       {title}
     </h1>
   </header>
-{:else}
+{:else if !hasTitleBar}
   <header
     class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:flex-row android:max-medium:items-center android:max-medium:gap-xs touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
   >
