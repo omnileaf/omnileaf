@@ -188,6 +188,7 @@
   --native-text-bar-title: var(--text-body);
   --native-leading-bar-title: var(--text-body--line-height);
   --native-weight-bar-button: var(--font-weight-medium);
+  --native-weight-bar-badge: var(--font-weight-semibold);
   --native-weight-bar-title: var(--font-weight-semibold);
   --native-tracking-bar-title: 0;
   --native-text-title-bar-title: var(--text-body);
@@ -224,6 +225,8 @@
   --native-color-top-bar-scrolled-edge: var(--border);
   --native-color-bar-button: var(--card);
   --native-color-on-bar-button: var(--foreground);
+  --native-color-bar-badge: var(--color-danger-fill);
+  --native-color-on-bar-badge: var(--color-on-danger);
   --native-color-tab-bar: var(--bar);
   --native-color-tab-pill: var(--glass-pill);
   --native-color-accent-soft: var(--chip);
@@ -511,4 +514,7 @@
   --native-spacing-list-footer-gap: 0px;
   --native-spacing-radio-focus-ring: var(--focus-ring-width);
   --native-spacing-radio-dot: 0.5rem;
+  --native-spacing-bar-badge: 20px;
+  --native-spacing-bar-badge-inline: 6px;
+  --native-spacing-bar-badge-offset: 5px;
 }

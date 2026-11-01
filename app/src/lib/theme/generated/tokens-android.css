@@ -146,6 +146,7 @@
   --native-text-bar-title: calc(1.375rem * var(--text-scale));
   --native-leading-bar-title: calc(28 / 22);
   --native-weight-bar-button: 500;
+  --native-weight-bar-badge: var(--font-weight-semibold);
   --native-weight-bar-title: 400;
   --native-tracking-bar-title: 0;
   --native-text-title-bar-title: calc(1.375rem * var(--text-scale));
@@ -435,6 +436,9 @@
   --native-spacing-list-footer-gap: 0px;
   --native-spacing-radio-focus-ring: var(--focus-ring-width);
   --native-spacing-radio-dot: 0.5rem;
+  --native-spacing-bar-badge: 20px;
+  --native-spacing-bar-badge-inline: 6px;
+  --native-spacing-bar-badge-offset: 5px;
 }
 
 :root[data-platform="android"],
@@ -486,6 +490,8 @@
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
   --native-color-on-bar-button: #191d1a;
+  --native-color-bar-badge: var(--color-danger-fill);
+  --native-color-on-bar-badge: var(--color-on-danger);
   --native-color-tab-bar: #e9f0e8;
   --native-color-tab-pill: #d0e8d7;
   --native-color-accent-soft: #d0e8d7;
@@ -566,6 +572,8 @@
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
   --native-color-on-bar-button: #e0e3df;
+  --native-color-bar-badge: var(--color-danger-fill);
+  --native-color-on-bar-badge: var(--color-on-danger);
   --native-color-tab-bar: #141b17;
   --native-color-tab-pill: #2b4033;
   --native-color-accent-soft: #2b4033;

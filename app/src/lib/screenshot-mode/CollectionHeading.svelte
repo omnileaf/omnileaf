@@ -20,12 +20,20 @@
     readonly showsLabel: boolean;
     readonly count?: Snippet | undefined;
     readonly attention?: Snippet | undefined;
+    readonly leading?: Snippet | undefined;
     readonly actions?: Snippet;
     readonly platform: Platform;
   }
 
-  let { title, showsLabel, count, attention, actions, platform }: Props =
-    $props();
+  let {
+    title,
+    showsLabel,
+    count,
+    attention,
+    leading,
+    actions,
+    platform,
+  }: Props = $props();
 
   const width = new WindowWidth();
   const foldingBar = $derived(foldingBarLook(platform));
@@ -126,13 +134,20 @@
       "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
       NATIVE_TOP_BAR.edge,
       foldingBar.row,
+      leading !== undefined && "grid grid-cols-folding-bar-leading",
       isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
   >
+    {#if leading !== undefined}
+      <div class="flex items-center justify-self-start">
+        {@render leading()}
+      </div>
+    {/if}
     <span
       aria-hidden="true"
       class={[
-        "pointer-events-none flex-1 truncate min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        "pointer-events-none truncate min-inline-none motion-safe:transition-opacity motion-safe:duration-fade",
+        leading === undefined && "flex-1",
         foldingBar.title,
         NATIVE_TOP_BAR.barTitle,
         isTitleUnderBar ? "opacity-100" : "opacity-0",
@@ -140,7 +155,12 @@
     >
       {title}
     </span>
-    <div class={NATIVE_TOP_BAR.barButtonRow}>
+    <div
+      class={[
+        NATIVE_TOP_BAR.barButtonRow,
+        leading !== undefined && "justify-self-end",
+      ]}
+    >
       {@render actions()}
     </div>
   </div>

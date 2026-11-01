@@ -193,6 +193,7 @@
   --text-native-bar-title: var(--native-text-bar-title);
   --leading-native-bar-title: var(--native-leading-bar-title);
   --font-weight-native-bar-button: var(--native-weight-bar-button);
+  --font-weight-native-bar-badge: var(--native-weight-bar-badge);
   --font-weight-native-bar-title: var(--native-weight-bar-title);
   --tracking-native-bar-title: var(--native-tracking-bar-title);
   --text-native-title-bar-title: var(--native-text-title-bar-title);
@@ -229,6 +230,8 @@
   --color-native-top-bar-scrolled-edge: var(--native-color-top-bar-scrolled-edge);
   --color-native-bar-button: var(--native-color-bar-button);
   --color-native-on-bar-button: var(--native-color-on-bar-button);
+  --color-native-bar-badge: var(--native-color-bar-badge);
+  --color-native-on-bar-badge: var(--native-color-on-bar-badge);
   --color-native-tab-bar: var(--native-color-tab-bar);
   --color-native-tab-pill: var(--native-color-tab-pill);
   --color-native-accent-soft: var(--native-color-accent-soft);
@@ -516,6 +519,9 @@
   --spacing-native-list-footer-gap: var(--native-spacing-list-footer-gap);
   --spacing-native-radio-focus-ring: var(--native-spacing-radio-focus-ring);
   --spacing-native-radio-dot: var(--native-spacing-radio-dot);
+  --spacing-native-bar-badge: var(--native-spacing-bar-badge);
+  --spacing-native-bar-badge-inline: var(--native-spacing-bar-badge-inline);
+  --spacing-native-bar-badge-offset: var(--native-spacing-bar-badge-offset);
 }
 
 @media (prefers-reduced-motion: reduce) {
