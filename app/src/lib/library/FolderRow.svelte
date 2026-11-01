@@ -82,7 +82,7 @@
 >
   <ItemMedia
     class={look === LOOKS.android
-      ? "self-start"
+      ? "self-start pbs-2xs"
       : isNative
         ? "text-accent"
         : [
