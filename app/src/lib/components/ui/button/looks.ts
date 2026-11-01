@@ -20,7 +20,7 @@ const SHADCN_BUTTON =
 const OUTLINED =
   "border border-button-outline-edge bg-button-outline windows:border-be-windows-stroke-strong";
 
-const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
+const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control not-disabled:active:opacity-50 ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
 
 export const BUTTON_LOOKS = {
   text: `font-medium text-foreground android:text-accent ios:font-semibold ${FOCUS_RING}`,
@@ -144,6 +144,11 @@ export function buttonClasses(
     width?: WidthClass;
   } = {},
 ): string {
+  if (look === "bar-button") {
+    return platform === "ios"
+      ? NATIVE_HEADER_CONTROL
+      : BUTTON_LOOKS["header-control"];
+  }
   const windowsVariant = WINDOWS_VARIANT_OF[look];
   if (platform === "windows" && windowsVariant !== undefined) {
     return variantClasses(windowsVariant, "regular", false, platform);

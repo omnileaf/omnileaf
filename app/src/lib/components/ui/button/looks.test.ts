@@ -95,7 +95,12 @@ test.each<[ButtonLook, string[]]>([
   ],
   [
     "bar-button",
-    ["rounded-full", "bg-native-bar-button", "inline-native-target"],
+    [
+      "rounded-full",
+      "bg-native-bar-button",
+      "inline-native-target",
+      "not-disabled:active:opacity-50",
+    ],
   ],
   [
     "row-action",
@@ -279,4 +284,20 @@ test("rings every Windows variant button with the platform's focus ring and its 
   });
 
   expect(unringed).toEqual([]);
+});
+
+test.each<Platform>(["android", "macos", "windows", "linux"])(
+  "keeps the bar-button look off the iOS glass capsule on %s",
+  (platform) => {
+    const classes = buttonClasses("bar-button", platform).split(" ");
+
+    expect(classes).not.toContain("bg-native-bar-button");
+    expect(classes).not.toContain("ios:backdrop-blur-ios");
+  },
+);
+
+test("draws the bar-button look as the glass capsule on iOS", () => {
+  expect(buttonClasses("bar-button", "ios").split(" ")).toContain(
+    "bg-native-bar-button",
+  );
 });
