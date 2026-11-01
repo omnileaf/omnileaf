@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowLeft } from "@lucide/svelte";
-  import { onMount, untrack } from "svelte";
+  import { onMount, type Snippet, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { goto } from "$app/navigation";
@@ -110,6 +110,10 @@
 
   const isLookingFor = $derived(hasSomethingToFind(query.search));
   const width = new WindowWidth();
+  const field: Snippet = searchField;
+  const isMacToolbar = $derived(
+    hasToolbar && data.appInfo.platform === "macos",
+  );
   const isIPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
   );
@@ -311,7 +315,31 @@
   );
 </script>
 
-{#if hasToolbar && data.appInfo.platform === "macos"}
+{#snippet searchField()}
+  <SearchField
+    text={query.text}
+    conditions={query.conditions}
+    {filterPlace}
+    onType={type}
+    onRemove={toggle}
+    onClear={() => {
+      if (filterPlace === "token") {
+        query.startOver("");
+      } else {
+        query.type("");
+      }
+    }}
+    onEscape={close}
+    {listId}
+    activeId={activeSeries === undefined || drawnKey !== activeSeries.id
+      ? undefined
+      : optionId(listId, activeSeries.id)}
+    hasChoices={shown.length > 0}
+    onKey={navigate}
+  />
+{/snippet}
+
+{#if isMacToolbar}
   <PageToolbar>
     <Tooltip label={m.search_back()} aria-label={m.search_back()}>
       {#snippet child({ props })}
@@ -330,6 +358,7 @@
     >
       {m.search_title()}
     </span>
+    {@render field()}
   </PageToolbar>
 {:else if hasToolbar}
   <PageToolbar>
@@ -359,56 +388,38 @@
   data-ground={isGroupedStart ? "grouped" : undefined}
   class={[
     "flex flex-col gap-search-gap min-block-full ios:max-medium:flex-none",
-    hasToolbar && "pbs-xl",
+    hasToolbar && !(isMacToolbar && isLookingFor) && "pbs-xl",
     isGroupedStart && GROUPED_GROUND,
   ]}
 >
   <h1 class="sr-only">{m.search_title()}</h1>
   <p role="status" class="sr-only">{announcement}</p>
-  <div
-    class="flex items-center gap-sm large:gap-md ios:max-medium:fixed ios:max-medium:inset-s-native-search-bar-start ios:max-medium:inset-e-native-bottom-bar-end ios:max-medium:inset-be-floating-lift ios:max-medium:z-tab-bar"
-  >
-    {#if !hasToolbar}
-      <Tooltip label={m.search_back()}>
-        {#snippet child({ props })}
-          <a
-            {...props}
-            href={resolve(SECTION_ROUTE_IDS.library)}
-            aria-label={m.search_back()}
-            data-back-link
-            class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed ios:max-medium:hidden"
-          >
-            <ArrowLeft
-              size={BACK_ICON_SIZE}
-              aria-hidden="true"
-              class="rtl:-scale-x-100"
-            />
-          </a>
-        {/snippet}
-      </Tooltip>
-    {/if}
-    <SearchField
-      text={query.text}
-      conditions={query.conditions}
-      {filterPlace}
-      onType={type}
-      onRemove={toggle}
-      onClear={() => {
-        if (filterPlace === "token") {
-          query.startOver("");
-        } else {
-          query.type("");
-        }
-      }}
-      onEscape={close}
-      {listId}
-      activeId={activeSeries === undefined || drawnKey !== activeSeries.id
-        ? undefined
-        : optionId(listId, activeSeries.id)}
-      hasChoices={shown.length > 0}
-      onKey={navigate}
-    />
-  </div>
+  {#if !isMacToolbar}
+    <div
+      class="flex items-center gap-sm large:gap-md ios:max-medium:fixed ios:max-medium:inset-s-native-search-bar-start ios:max-medium:inset-e-native-bottom-bar-end ios:max-medium:inset-be-floating-lift ios:max-medium:z-tab-bar"
+    >
+      {#if !hasToolbar}
+        <Tooltip label={m.search_back()}>
+          {#snippet child({ props })}
+            <a
+              {...props}
+              href={resolve(SECTION_ROUTE_IDS.library)}
+              aria-label={m.search_back()}
+              data-back-link
+              class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed ios:max-medium:hidden"
+            >
+              <ArrowLeft
+                size={BACK_ICON_SIZE}
+                aria-hidden="true"
+                class="rtl:-scale-x-100"
+              />
+            </a>
+          {/snippet}
+        </Tooltip>
+      {/if}
+      {@render field()}
+    </div>
+  {/if}
   {#if !isLookingFor}
     <SearchStart
       recent={recent.entries}

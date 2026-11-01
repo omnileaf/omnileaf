@@ -13,6 +13,10 @@
   const CHECK_SIZE = 16;
   const NATIVE_CHIP =
     "snap-start border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-auto min-block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
+  const MAC_BAR =
+    "-ms-gutter -me-page-end flex-wrap items-center gap-native-search-scope-gap border-be border-border px-native-search-scope-bar-inline py-native-search-scope-bar-block";
+  const MAC_CHIP =
+    "border-0 bg-transparent px-native-search-scope-chip-inline text-muted hover:bg-native-control-fill-hover aria-pressed:bg-native-control-fill-pressed aria-pressed:text-foreground aria-pressed:font-native-segment-selected";
   const NATIVE_GROUP =
     "flex-nowrap snap-x gap-sm overflow-x-auto py-sm scrollbar-none";
 
@@ -29,7 +33,7 @@
   }: {
     scope: SearchScope;
     onNarrow: (scope: SearchScope) => void;
-    class?: ClassValue;
+    class?: ClassValue | undefined;
   } = $props();
 
   const platform = currentPlatform();
@@ -37,6 +41,7 @@
   const phone = $derived(phoneOf(platform, width.current));
   const isNative = $derived(phone === "ios");
   const isMaterial = $derived(phone === "android");
+  const isMac = platform === "macos";
 
   let row: HTMLElement | undefined = $state();
 
@@ -64,10 +69,17 @@
   aria-label={m.search_scope()}
   class={[
     "flex shrink-0",
-    isNative || isMaterial ? NATIVE_GROUP : "flex-wrap gap-x-icon-gap gap-y-lg",
+    isMac
+      ? MAC_BAR
+      : isNative || isMaterial
+        ? NATIVE_GROUP
+        : "flex-wrap gap-x-icon-gap gap-y-lg",
     className,
   ]}
 >
+  {#if isMac}
+    <span aria-hidden="true" class="me-xs text-muted">{m.search_scope()}</span>
+  {/if}
   {#each SEARCH_SCOPES as choice (choice)}
     {@const isChosen = scope === choice}
     <Toggle
@@ -91,10 +103,12 @@
           ]
         : isNative
           ? NATIVE_CHIP
-          : undefined}
+          : isMac
+            ? MAC_CHIP
+            : undefined}
     >
       <span class="flex items-center gap-xs">
-        {#if isChosen}
+        {#if isChosen && !isMac}
           <Check size={CHECK_SIZE} aria-hidden="true" />
         {/if}
         {LABELS[choice]()}

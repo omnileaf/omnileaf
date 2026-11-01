@@ -266,6 +266,10 @@
   --native-leading-group-heading: var(--text-lead--line-height);
   --native-weight-group-heading: var(--font-weight-bold);
   --native-tracking-group-heading: 0;
+  --native-spacing-search-scope-gap: var(--spacing-sm);
+  --native-spacing-search-scope-bar-block: var(--spacing-sm);
+  --native-spacing-search-scope-bar-inline: var(--spacing-lg);
+  --native-spacing-search-scope-chip-inline: var(--spacing-lg);
   --native-text-notice-title: calc(0.875rem * var(--text-scale));
   --native-leading-notice-title: calc(20 / 14);
   --native-weight-notice-title: 400;

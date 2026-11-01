@@ -260,6 +260,10 @@
   --native-leading-group-heading: calc(25 / 20);
   --native-weight-group-heading: 590;
   --native-tracking-group-heading: -0.45px;
+  --native-spacing-search-scope-gap: var(--spacing-sm);
+  --native-spacing-search-scope-bar-block: var(--spacing-sm);
+  --native-spacing-search-scope-bar-inline: var(--spacing-lg);
+  --native-spacing-search-scope-chip-inline: var(--spacing-lg);
   --native-text-notice-title: calc(0.9375rem * var(--text-scale));
   --native-leading-notice-title: calc(20 / 15);
   --native-weight-notice-title: 590;

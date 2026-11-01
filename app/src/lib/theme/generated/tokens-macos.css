@@ -80,6 +80,10 @@
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;
   --native-radius-menu: 12px;
+  --native-spacing-search-scope-gap: 6px;
+  --native-spacing-search-scope-bar-block: 8px;
+  --native-spacing-search-scope-bar-inline: 20px;
+  --native-spacing-search-scope-chip-inline: 20px;
   --native-spacing-tile-picked: calc(100cqi / 16);
   --native-radius-tile-picked-title: 4px;
   --native-text-sheet-title: calc(0.8125rem * var(--text-scale));
