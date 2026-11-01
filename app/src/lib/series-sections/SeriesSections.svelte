@@ -17,7 +17,7 @@
     SeriesSection,
     SortDirection,
   } from "#lib/ipc/bindings.ts";
-  import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
+  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -33,6 +33,7 @@
   import type { ListedBooks } from "./listed-books";
   import SectionListingChoices from "./SectionListingChoices.svelte";
   import SectionPanel from "./SectionPanel.svelte";
+  import { sectionTabsLook } from "./section-tabs-look";
 
   let {
     sections,
@@ -64,6 +65,8 @@
     platform: currentPlatform(),
     isWide: isWide.current,
   });
+  const width = new WindowWidth();
+  const tabsLook = $derived(sectionTabsLook(screen.platform, width.current));
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
@@ -139,11 +142,8 @@
     }}
     class="flex flex-col gap-lg"
   >
-    <div class="flex flex-wrap items-center gap-sm">
-      <TabsList
-        aria-label={m.series_sections()}
-        class="flex-wrap max-inline-full"
-      >
+    <div class={tabsLook.row}>
+      <TabsList aria-label={m.series_sections()} class={tabsLook.list}>
         {#each tabs as tab (tab.section)}
           {@const words = tabWords(tab)}
           <TabsTrigger
