@@ -52,7 +52,7 @@
       }}
     />
     <AlertDescription>{body}</AlertDescription>
-    <AlertActions class="-ms-md">
+    <AlertActions class="col-span-2 -ms-md">
       {#if remedy === "chooseAgain"}
         <AlertButton
           emphasis="quiet"
