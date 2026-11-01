@@ -205,6 +205,25 @@ test.describe("with a folder that isn't there", () => {
       await expect(find).toHaveCSS("font-size", "14px");
       await expect(find).toHaveCSS("font-weight", "500");
     });
+
+    test("lists Show them anyway before Find the folder, then Hide them again before it once shown", async ({
+      page,
+    }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+      await page.goto("/");
+      const card = notice(page, "Comics isn’t there");
+      await settle(card);
+
+      const first = card.getByRole("button", { name: "Show them anyway" });
+      const find = card.getByRole("button", { name: "Find the folder" });
+      expect((await boxOf(first)).x).toBeLessThan((await boxOf(find)).x);
+
+      await first.click();
+
+      const hide = card.getByRole("button", { name: "Hide them again" });
+      await expect(hide).toBeVisible();
+      expect((await boxOf(hide)).x).toBeLessThan((await boxOf(find)).x);
+    });
   });
 
   test("stays dismissed while the app stays open", async ({ page }) => {
