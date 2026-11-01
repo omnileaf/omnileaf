@@ -672,6 +672,9 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     const heading = shown.getByText("Title", { exact: true });
     const status = shown.getByText("Edited", { exact: true });
     await expect(status).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const mutedColour = await tokenColour(page, "--color-muted");
+    await expect(status).toHaveCSS("color", mutedColour);
+    await expect(heading).toHaveCSS("color", mutedColour);
     const [headingBox, statusBox, headingSize, statusSize] = await Promise.all([
       boxOf(heading),
       boxOf(status),
@@ -780,6 +783,7 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     await expect(shown.getByRole("textbox", { name: "Title" })).toHaveValue(
       TYPED_TITLE,
     );
+    await expect(notice.getByText("Title back to the file’s")).toBeHidden();
   });
 
   test("names each detail with a heading", async ({ page, platform }) => {
@@ -941,6 +945,28 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
       page.getByRole("dialog", { name: "Edit details" }),
     ).toHaveCount(0);
   });
+
+  test("keeps the Edited badge and the plain heading on its page", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android's page");
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+
+    await expect(shown.getByText("Edited", { exact: true })).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-chip"),
+    );
+    await expect(shown.getByRole("heading", { level: 3 })).toHaveCount(0);
+  });
 });
 
 test.describe(
@@ -1048,5 +1074,28 @@ test.describe("Edit details on a wide iOS window", () => {
     await expect(shown).not.toHaveAttribute("data-ground", "grouped");
     await expect(shown.getByRole("button", { name: "Cancel" })).toBeVisible();
     await expect(shown.getByRole("button", { name: "Save" })).toBeVisible();
+  });
+
+  test("keeps the Edited badge, the Tooltip undo and the sticky notice in the dialog body", async ({
+    page,
+  }) => {
+    test.skip(!isWide(page), "a phone opens the sheet");
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page);
+
+    await expect(shown.getByText("Edited", { exact: true })).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-chip"),
+    );
+    await expect(shown.getByRole("heading", { level: 3 })).toHaveCount(0);
+    await shown.getByRole("button", { name: "Use the file’s title" }).click();
+    await expect(shown.getByRole("status")).toHaveCSS("position", "sticky");
   });
 });
