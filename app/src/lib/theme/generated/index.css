@@ -97,6 +97,14 @@
   --color-native-nav-item-hover: var(--native-color-nav-item-hover);
   --color-native-nav-item-pressed: var(--native-color-nav-item-pressed);
   --color-native-nav-item-selected: var(--native-color-nav-item-selected);
+  --spacing-native-settings-sidebar: var(--native-spacing-settings-sidebar);
+  --spacing-native-sidebar-item: var(--native-spacing-sidebar-item);
+  --spacing-native-sidebar-item-start: var(--native-spacing-sidebar-item-start);
+  --spacing-native-sidebar-item-end: var(--native-spacing-sidebar-item-end);
+  --spacing-native-sidebar-pad: var(--native-spacing-sidebar-pad);
+  --spacing-native-titlebar: var(--native-spacing-titlebar);
+  --spacing-native-titlebar-start: var(--native-spacing-titlebar-start);
+  --shadow-native-titlebar-rule: var(--native-shadow-titlebar-rule);
   --color-native-on-nav-item: var(--native-color-on-nav-item);
   --color-native-nav-indicator: var(--native-color-nav-indicator);
   --color-native-grouped-ground: var(--native-color-grouped-ground);

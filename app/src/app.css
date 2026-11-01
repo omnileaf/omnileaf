@@ -1275,6 +1275,12 @@
 }
 
 :root {
+  @variant macos {
+    --spacing-pane: 1.5rem;
+  }
+}
+
+:root {
   --safe-area-left: max(
     env(safe-area-inset-left),
     var(--system-inset-left, 0px)

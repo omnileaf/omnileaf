@@ -5,6 +5,7 @@ import {
   CONTROLS,
   DESKTOP,
   destination,
+  SETTINGS_SECTION,
   THEME_OPTION,
   WITH_THE_PICKER_OPEN,
 } from "./controls.ts";
@@ -89,7 +90,9 @@ test.describe("with a pointer", () => {
   test.use({ backend: DESKTOP });
   test.skip(({ isMobile }) => isMobile, "pointer screens only");
 
-  for (const { name, path, find } of CONTROLS) {
+  for (const { name, path, find } of CONTROLS.filter(
+    (control) => control !== SETTINGS_SECTION,
+  )) {
     test(`tints ${name} while the pointer is over it`, async ({ page }) => {
       await page.goto(path);
       const control = find(page);
@@ -100,6 +103,22 @@ test.describe("with a pointer", () => {
       expect(await paintOf(control)).not.toBe(resting);
     });
   }
+
+  test.describe("on Windows", () => {
+    test.use(onPlatform("windows"));
+
+    test(`tints ${SETTINGS_SECTION.name} while the pointer is over it`, async ({
+      page,
+    }) => {
+      await page.goto(SETTINGS_SECTION.path);
+      const control = SETTINGS_SECTION.find(page);
+      const resting = await paintOf(control);
+
+      await control.hover();
+
+      expect(await paintOf(control)).not.toBe(resting);
+    });
+  });
 
   for (const { name, path, find } of PRESSABLE_CONTROLS) {
     test(`deepens the tint while ${name} is pressed`, async ({ page }) => {

@@ -1,7 +1,9 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { pagesListLook } from "#lib/settings/pages-list-look.ts";
   import { SETTINGS_SECTIONS, sectionCurrent } from "#lib/settings/sections.ts";
 
   import type { LayoutProps } from "./$types";
@@ -9,24 +11,21 @@
   let { children }: LayoutProps = $props();
 
   const ICON_SIZE = 18;
+
+  const look = pagesListLook(currentPlatform());
 </script>
 
 <div
   class="flex flex-1 flex-col two-pane:-mx-gutter two-pane:-mbs-page-top two-pane:-mbe-page-bottom two-pane:flex-row"
 >
-  <div
-    class="hidden shrink-0 flex-col gap-lg border-e border-border px-md pbs-page-top pbe-xl two-pane:flex two-pane:inline-fit two-pane:max-inline-settings-list-widest two-pane:min-inline-settings-list"
-  >
-    <p
-      class="mbe-xs px-md text-page-title font-bold tracking-tight desktop:mbe-none desktop:px-sm desktop:text-caption desktop:font-semibold desktop:tracking-normal desktop:text-muted"
-    >
-      {m.settings_title()}
-    </p>
-    <nav
-      aria-label={m.settings_sections_label()}
-      class="flex flex-col gap-lg desktop:-mbs-md desktop:gap-2xs"
-    >
-      <ul class="flex flex-col gap-2xs">
+  <div class={look.sidebar}>
+    {#if look.caption !== undefined}
+      <p class={look.caption}>
+        {m.settings_title()}
+      </p>
+    {/if}
+    <nav aria-label={m.settings_sections_label()} class={look.nav}>
+      <ul class={look.list}>
         {#each SETTINGS_SECTIONS as section (section.route)}
           {@const current = sectionCurrent(
             page.url.pathname,
@@ -37,16 +36,11 @@
               href={resolve(section.route)}
               aria-current={current}
               class={[
-                "relative flex items-center gap-md rounded-row px-md text-label transition-control min-block-touch-target desktop:gap-sm desktop:rounded-sidebar-row desktop:px-sm desktop:text-small desktop:min-block-sidebar-row",
-                current !== undefined
-                  ? "bg-accent-soft font-bold text-accent windows:before:absolute windows:before:inset-y-none windows:before:inset-s-none windows:before:my-auto windows:before:rounded-full windows:before:bg-native-nav-indicator windows:before:block-windows-indicator-length windows:before:inline-windows-indicator desktop:bg-sidebar-accent desktop:font-medium desktop:text-on-sidebar-accent"
-                  : "font-medium text-sidebar-ink hover:bg-hover active:bg-pressed desktop:font-regular",
+                look.row,
+                current !== undefined ? look.rowOpen : look.rowIdle,
               ]}
             >
-              <section.icon
-                size={ICON_SIZE}
-                class="shrink-0 desktop:block-sidebar-icon desktop:inline-sidebar-icon"
-              />
+              <section.icon size={ICON_SIZE} class={look.icon} />
               <span
                 data-label={section.label()}
                 class="room-for-bold-label min-inline-none"

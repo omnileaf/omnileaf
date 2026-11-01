@@ -31,6 +31,13 @@
   --native-weight-segment-selected: 510;
   --native-tracking-segment: 0;
   --native-shadow-segment-lift: none;
+  --native-spacing-settings-sidebar: 240px;
+  --native-spacing-sidebar-item: 32px;
+  --native-spacing-sidebar-item-start: 6px;
+  --native-spacing-sidebar-item-end: 10px;
+  --native-spacing-sidebar-pad: 10px;
+  --native-spacing-titlebar: 52px;
+  --native-spacing-titlebar-start: 18px;
   --native-radius-group: 12px;
   --native-radius-card: 12px;
   --native-spacing-hairline: 0.5px;
@@ -126,6 +133,8 @@
   --native-color-progress-track: rgba(0, 0, 0, 0.08);
   --native-color-progress-fill: #2f6f4f;
   --native-color-progress-idle-track: rgba(0, 0, 0, 0.08);
+  --native-shadow-titlebar-rule: inset 0 -0.67px 0 rgba(0, 0, 0, 0.05);
+  --native-color-nav-indicator: rgba(0, 0, 0, 0.056);
   --native-color-grouped-ground: #fff;
   --native-color-group: rgba(0, 0, 0, 0.03);
   --native-color-card: rgba(0, 0, 0, 0.03);
@@ -214,6 +223,8 @@
   --native-color-progress-track: rgba(255, 255, 255, 0.07);
   --native-color-progress-fill: #43a673;
   --native-color-progress-idle-track: rgba(255, 255, 255, 0.07);
+  --native-shadow-titlebar-rule: inset 0 -0.67px 0 rgba(255, 255, 255, 0.1);
+  --native-color-nav-indicator: rgba(255, 255, 255, 0.056);
   --native-color-grouped-ground: #1e1e1e;
   --native-color-group: rgba(255, 255, 255, 0.03);
   --native-color-card: rgba(255, 255, 255, 0.03);
@@ -289,6 +300,8 @@
   --native-color-progress-track: rgba(0, 0, 0, 0.17);
   --native-color-progress-fill: #1f5a3c;
   --native-color-progress-idle-track: rgba(0, 0, 0, 0.17);
+  --native-shadow-titlebar-rule: inset 0 -0.67px 0 rgba(0, 0, 0, 0.15);
+  --native-color-nav-indicator: rgba(0, 0, 0, 0.13);
   --native-color-row-rule: rgba(0, 0, 0, 0.15);
   --native-color-row-selected: rgba(0, 0, 0, 0.13);
   --native-color-on-row-selected-muted: #3e3e3e;
@@ -347,6 +360,8 @@
   --native-color-progress-track: rgba(255, 255, 255, 0.18);
   --native-color-progress-fill: #43a673;
   --native-color-progress-idle-track: rgba(255, 255, 255, 0.18);
+  --native-shadow-titlebar-rule: inset 0 -0.67px 0 rgba(255, 255, 255, 0.1);
+  --native-color-nav-indicator: rgba(255, 255, 255, 0.14);
   --native-color-row-rule: rgba(255, 255, 255, 0.15);
   --native-color-row-selected: rgba(255, 255, 255, 0.14);
   --native-color-on-row-selected-muted: #bcbcbc;
