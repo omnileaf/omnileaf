@@ -11,8 +11,10 @@ import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 const WINDOW = { width: 1280, height: 800 };
 
 let shelf = new FakeShelf([]);
+let shownInFolder: string[] = [];
 
 test.beforeEach(() => {
+  shownInFolder = [];
   shelf = new FakeShelf(
     Array.from({ length: 4 }, () => ({ state: "notStarted" }) as const),
   );
@@ -27,6 +29,15 @@ test.use({
       shelf.backend().seriesBooks(id, listing, after),
     bookmarkPages: (book, pages, isBookmarked) =>
       shelf.backend().bookmarkPages(book, pages, isBookmarked),
+    showBookInFolder: (book) => {
+      shownInFolder = [...shownInFolder, book];
+      return null;
+    },
+    previewRemoval: (targets) => ({
+      books: targets.length,
+      files: targets.length,
+      folders: 1,
+    }),
   },
 });
 
@@ -74,6 +85,40 @@ test.describe("a book's row menu on macOS", () => {
       page.getByRole("menuitem", { name: "Mark read", exact: true }),
     ).toBeVisible();
     await expect(bookmarkItem(page)).toHaveCount(0);
+  });
+
+  test("ends with Show in Finder, then Delete in plain text", async ({
+    page,
+  }) => {
+    await openMenuOf(page, 1);
+    const items = page.getByRole("menu").getByRole("menuitem");
+
+    await expect(items).toHaveText([
+      /^\s*(Continue|Start) reading/,
+      /^\s*Mark read/,
+      /^\s*Bookmark/,
+      /^\s*Show in Finder/,
+      /^\s*Delete/,
+    ]);
+    await expect(items.last()).not.toHaveCSS("color", "rgb(196, 43, 28)");
+  });
+
+  test("shows the book in Finder", async ({ page }) => {
+    await openMenuOf(page, 1);
+
+    await page.getByRole("menuitem", { name: "Show in Finder" }).click();
+
+    await expect.poll(() => shownInFolder).toEqual([shelf.idOf(1)]);
+  });
+
+  test("asks before removing the book from the library", async ({ page }) => {
+    await openMenuOf(page, 1);
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+
+    await expect(
+      page.getByRole("alertdialog", { name: "Remove from your library?" }),
+    ).toBeVisible();
   });
 });
 
