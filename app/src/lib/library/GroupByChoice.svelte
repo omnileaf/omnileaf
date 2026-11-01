@@ -28,16 +28,23 @@
     chosen,
     onChoose,
     labelClass,
+    footnoteClass,
   }: {
     chosen: LibraryGrouping;
     onChoose: (grouping: LibraryGrouping) => void;
     labelClass?: string | undefined;
+    footnoteClass?: string | undefined;
   } = $props();
 
   const id = $props.id();
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
   const android = new AndroidPhone();
+  const hintClass = $derived(
+    footnoteClass === undefined
+      ? "mbs-xs text-small text-muted large:text-caption"
+      : ["mbs-sm", footnoteClass],
+  );
 </script>
 
 <div class={android.isOn ? ANDROID_VIEW_SETTING.row : ""}>
@@ -66,7 +73,7 @@
     id={hintId}
     class={android.isOn
       ? [ANDROID_VIEW_SETTING.note, ROW_SUBTITLE_TYPE]
-      : "mbs-xs text-small text-muted large:text-caption"}
+      : hintClass}
   >
     {m.library_group_creator_hint()}
   </p>

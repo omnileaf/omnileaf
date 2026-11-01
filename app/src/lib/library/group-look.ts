@@ -9,6 +9,7 @@ export interface GroupLook {
   readonly followingHeading: string;
   readonly pageHeading: string;
   readonly itemLabel: string | undefined;
+  readonly footnote: string | undefined;
   readonly rowTitle: string | undefined;
 }
 
@@ -24,6 +25,7 @@ export const PLAIN_GROUP_LOOK: GroupLook = {
   followingHeading: "pbs-xl",
   pageHeading: `${PLAIN_HEADING} pbs-xl`,
   itemLabel: undefined,
+  footnote: undefined,
   rowTitle: undefined,
 };
 
@@ -43,8 +45,12 @@ export const GROUPED_GROUP_LOOK: GroupLook = {
   followingHeading: "",
   pageHeading: GROUPED_HEADING,
   itemLabel: undefined,
+  footnote: undefined,
   rowTitle: undefined,
 };
+
+export const GROUPED_FOOTNOTE_TYPE =
+  "text-native-group-footer/native-group-footer tracking-native-group-footer text-muted";
 
 export const POPOVER_GROUP_LOOK: GroupLook = {
   section: "gap-native-popover-gap",
@@ -57,12 +63,10 @@ export const POPOVER_GROUP_LOOK: GroupLook = {
   pageHeading: "sr-only",
   itemLabel:
     "text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle font-normal",
+  footnote: GROUPED_FOOTNOTE_TYPE,
   rowTitle:
     "text-native-row-title/native-row-title tracking-native-row-title font-native-row-title",
 };
-
-export const GROUPED_FOOTNOTE_TYPE =
-  "text-native-group-footer/native-group-footer tracking-native-group-footer text-muted";
 
 export const GROUPED_FOOTNOTE = `ps-lg ${GROUPED_FOOTNOTE_TYPE} mbs-sm`;
 
