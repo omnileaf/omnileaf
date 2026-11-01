@@ -2,6 +2,8 @@ import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
 
+import { LIST_HEADING } from "./grouped-rows-look";
+
 export interface RadiosLook {
   readonly section: string;
   readonly heading: string;
@@ -50,8 +52,7 @@ const ANDROID_PHONE_LOOK: RadiosLook = {
 
 const MACOS_RADIOS_LOOK: RadiosLook = {
   section: "flex flex-col gap-xs",
-  heading:
-    "px-sm text-native-list-sub/native-list-sub font-native-button-large tracking-native-list-sub text-muted",
+  heading: LIST_HEADING,
   group:
     "flex flex-col items-start gap-native-radio-stack rounded-native-group bg-native-group px-native-group-inset py-md",
   row: "group flex items-start gap-native-radio-words-gap text-start text-native-button/native-button font-native-button focus-visible:outline-0",
