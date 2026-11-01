@@ -527,7 +527,10 @@ for (const { platform, weight, token, isTouch } of [
 
       const look =
         platform === "ios" && !isPhone(page)
-          ? ({ weight: "600", token: "--color-foreground" } as const)
+          ? ({
+              weight: "400",
+              token: "--native-color-on-button-plain",
+            } as const)
           : platform === "android" && isPhone(page)
             ? ({ weight, token: "--native-color-on-button-plain" } as const)
             : { weight, token };
@@ -888,7 +891,7 @@ for (const platform of ["android", "ios"] as const) {
       );
       expect(select.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
 
-      if (platform === "ios" && isPhone(page)) {
+      if (platform === "ios") {
         const order = await boxOf(
           panel.getByRole("combobox", { name: "Order" }),
         );
@@ -900,7 +903,7 @@ for (const platform of ["android", "ios"] as const) {
         name: "Order: A to Z. Change to Z to A",
       });
       const direction = await boxOf(order);
-      if (platform === "android" && isPhone(page)) {
+      if (isPhone(page)) {
         const reach = (TOUCH_TARGET - direction.height) / 2 - 1;
         const edge = await order.evaluate((button, corner) => {
           const { left, top } = button.getBoundingClientRect();
