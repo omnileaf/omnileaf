@@ -59,7 +59,8 @@ export const MAC_INSPECTOR_SMART = {
   row: "flex items-center gap-md text-start inline-full min-block-native-inspector-row border-be border-native-row-rule last:border-be-0",
   words: "flex flex-1 flex-col py-sm",
   title: MAC_INSPECTOR.label,
-  description: MAC_INSPECTOR.note,
+  description:
+    "text-native-inspector-note/native-inspector-note tracking-native-list-sub text-muted",
 } as const;
 
 export const MAC_INSPECTOR_PANEL = {

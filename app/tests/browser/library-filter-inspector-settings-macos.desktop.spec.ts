@@ -19,7 +19,12 @@ const LABEL_NOTE_GAP = 8;
 const SMART_ROW_HEIGHT = 52;
 const GROUP_RADIUS = "12px";
 const GROUP_INLINE_PADDING = "10px";
-const SIDE_BY_SIDE_ROW = 160;
+const WHITE = "rgb(255, 255, 255)";
+const ACCENT_LIGHT = "rgb(47, 111, 79)";
+const ACCENT_DARK = "rgb(46, 125, 85)";
+const ROW_NOTE_TRACKING = "0.06px";
+const SEGMENT_TRANSPARENT = "rgba(0, 0, 0, 0)";
+const CENTRE_TOLERANCE = 1;
 
 testOnlyInItsWebview("macos");
 test.use({ platform: "macos", viewport: WINDOW });
@@ -118,17 +123,73 @@ test("filters the library when 18+ is set to Only and counts it on the toolbar b
   ).toBeVisible();
 });
 
-test("fills the chosen segment in the accent colour", async ({ page }) => {
+for (const [scheme, accent] of [
+  ["light", ACCENT_LIGHT],
+  ["dark", ACCENT_DARK],
+] as const) {
+  test.describe(`in ${scheme}`, () => {
+    test.use({ colorScheme: scheme });
+
+    test("fills the chosen segment in the accent green with white ink", async ({
+      page,
+    }) => {
+      const inspector = await openInspector(page);
+      const group = inspector.getByRole("radiogroup", { name: "Bookmarked" });
+
+      const style = await drawn(group.getByRole("radio", { name: "Any" }), [
+        "background-color",
+        "color",
+      ]);
+
+      expect(style).toEqual({ "background-color": accent, color: WHITE });
+    });
+
+    test("moves the accent fill to the segment chosen next", async ({
+      page,
+    }) => {
+      const inspector = await openInspector(page);
+      const group = inspector.getByRole("radiogroup", { name: "Bookmarked" });
+
+      const only = group.getByRole("radio", { name: "Only" });
+      const any = group.getByRole("radio", { name: "Any" });
+      await only.click();
+
+      await expect(only).toBeChecked();
+      await expect(only).toHaveCSS("background-color", accent);
+      await expect(only).toHaveCSS("color", WHITE);
+      await expect(any).toHaveCSS("background-color", SEGMENT_TRANSPARENT);
+    });
+  });
+}
+
+test("chooses the next segment of 18+ with the arrow keys", async ({
+  page,
+}) => {
   const inspector = await openInspector(page);
-  const group = inspector.getByRole("radiogroup", { name: "Bookmarked" });
+  const group = inspector.getByRole("radiogroup", { name: "18+", exact: true });
 
-  const style = await drawn(group.getByRole("radio", { name: "Any" }), [
-    "background-color",
-  ]);
+  await group.getByRole("radio", { name: "Any" }).focus();
+  await page.keyboard.press("ArrowRight");
 
-  expect(style["background-color"]).toBe(
-    await tokenColour(page, "--native-color-button-primary"),
-  );
+  await expect(group.getByRole("radio", { name: "Only" })).toBeChecked();
+  await page.keyboard.press("ArrowRight");
+  await expect(group.getByRole("radio", { name: "Hide" })).toBeChecked();
+});
+
+test("hides the adult series once 18+ is set to Hide and counts it on the toolbar button", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+  const hide = inspector
+    .getByRole("radiogroup", { name: "18+", exact: true })
+    .getByRole("radio", { name: "Hide" });
+
+  await hide.click();
+
+  await expect(hide).toBeChecked();
+  await expect(
+    filterButton(page, "Sort and filter, 1 filter on"),
+  ).toBeVisible();
 });
 
 function smartSectionOf(inspector: Locator): Locator {
@@ -167,8 +228,23 @@ test("draws each smart filter as a grouped list row of at least 52px with a swit
     );
   }
   const toggle = await boxOf(forgotten.locator("span[aria-hidden]"));
-  expect(toggle.x + toggle.width).toBeLessThanOrEqual(row.x + row.width);
-  expect(toggle.x).toBeGreaterThan(row.x + SIDE_BY_SIDE_ROW);
+  const title = await boxOf(inspector.getByText("Forgotten", { exact: true }));
+  expect(toggle.x + toggle.width).toBe(row.x + row.width);
+  expect(title.x).toBe(row.x);
+  expect(title.x + title.width).toBeLessThan(toggle.x);
+  expect(
+    Math.abs(toggle.y + toggle.height / 2 - (row.y + row.height / 2)),
+  ).toBeLessThanOrEqual(CENTRE_TOLERANCE);
+});
+
+test("tracks the smart filter row notes at 0.06px as a list row's second line", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+
+  await expect(
+    inspector.getByText("Not opened in 3 months.", { exact: true }),
+  ).toHaveCSS("letter-spacing", ROW_NOTE_TRACKING);
 });
 
 test("plates the smart filter rows in a rounded group with a rule between rows", async ({
@@ -220,19 +296,117 @@ test("turns a smart filter on from anywhere on its row", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("keeps the inspector inside the window with the smart filters scrolled to", async ({
+test("keeps the last smart filter above the match count and Reset once scrolled to", async ({
   page,
 }) => {
   const inspector = await openInspector(page);
 
   await inspector.getByRole("switch").last().scrollIntoViewIfNeeded();
 
-  const box = await boxOf(inspector);
   const last = await boxOf(inspector.getByRole("switch").last());
-  expect(last.y + last.height).toBeLessThanOrEqual(
-    Math.min(box.y + box.height, viewportOf(page).height),
-  );
+  const reset = await boxOf(inspector.getByRole("button", { name: "Reset" }));
+  expect(last.y + last.height).toBeLessThanOrEqual(reset.y);
+  expect(reset.y + reset.height).toBeLessThanOrEqual(viewportOf(page).height);
 });
+
+test.describe("while Ready to clean up is offered", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: LIBRARY, next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryFilterChoices: () => ({
+        formats: ["comic"],
+        languages: [],
+        tags: [],
+        ratesAdult: true,
+        keepsBookmarks: true,
+        smart: ["readyToCleanUp", "quickReads"],
+      }),
+    },
+  });
+
+  test("sets Ready to clean up as a row and leaves out the trailing note", async ({
+    page,
+  }) => {
+    const inspector = await openInspector(page);
+
+    await expect(
+      inspector.getByRole("switch", { name: "Ready to clean up" }),
+    ).toBeVisible();
+    await expect(
+      inspector.getByText("appears once you have downloads."),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("while no smart filter is offered", () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: LIBRARY, next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryFilterChoices: () => ({
+        formats: ["comic"],
+        languages: [],
+        tags: [],
+        ratesAdult: true,
+        keepsBookmarks: true,
+        smart: [],
+      }),
+    },
+  });
+
+  test("leaves out the Smart filters section and its notes", async ({
+    page,
+  }) => {
+    const inspector = await openInspector(page);
+
+    await expect(
+      inspector.getByRole("heading", { name: "Smart filters" }),
+    ).toHaveCount(0);
+    await expect(inspector.getByRole("switch")).toHaveCount(0);
+    await expect(
+      inspector.getByText("appears once you have downloads."),
+    ).toHaveCount(0);
+  });
+});
+
+for (const [offered, left, ratesAdult, keepsBookmarks] of [
+  ["18+", "Bookmarked", true, false],
+  ["Bookmarked", "18+", false, true],
+] as const) {
+  test.describe(`while only ${offered} is offered`, () => {
+    test.use({
+      backend: {
+        ...DEFAULT_BACKEND,
+        librarySeries: () => ({ series: LIBRARY, next: null }),
+        librarySeriesCount: () => LIBRARY.length,
+        libraryFilterChoices: () => ({
+          formats: ["comic"],
+          languages: [],
+          tags: [],
+          ratesAdult,
+          keepsBookmarks,
+          smart: ["quickReads"],
+        }),
+      },
+    });
+
+    test(`sets ${offered} as a segmented control and leaves ${left} out`, async ({
+      page,
+    }) => {
+      const inspector = await openInspector(page);
+
+      await expect(
+        inspector.getByRole("radiogroup", { name: offered, exact: true }),
+      ).toBeVisible();
+      await expect(
+        inspector.getByRole("radiogroup", { name: left, exact: true }),
+      ).toHaveCount(0);
+    });
+  });
+}
 
 for (const platform of ["windows", "linux"] as const) {
   test.describe(`keeping its look on ${platform}`, () => {
