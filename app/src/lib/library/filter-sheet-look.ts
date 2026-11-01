@@ -34,6 +34,7 @@ export const MAC_INSPECTOR = {
   section:
     "gap-sm py-native-inspector-section border-be border-native-row-rule last:border-be-0",
   group: "flex flex-col gap-sm",
+  note: "text-native-inspector-note/native-inspector-note text-muted",
   select: {
     fieldClass:
       "rounded-native-button border-0 bg-native-button-secondary ps-md text-native-button/native-button font-native-button block-native-button macos:shadow-none",
@@ -50,6 +51,16 @@ export const MAC_INSPECTOR_CHIP = {
     "bg-native-accent-soft text-native-on-button-link active:inset-shadow-[0_0_0_100px_var(--color-native-row-rule)]",
   other:
     "bg-native-button-secondary text-native-on-button-secondary hover:bg-native-control-fill-hover active:bg-native-control-fill-pressed",
+} as const;
+
+export const MAC_INSPECTOR_SMART = {
+  group:
+    "flex flex-col overflow-hidden rounded-native-group bg-native-group px-native-inspector-group-inline",
+  row: "flex items-center gap-md text-start inline-full min-block-native-inspector-row border-be border-native-row-rule last:border-be-0",
+  words: "flex flex-1 flex-col py-sm",
+  title: MAC_INSPECTOR.label,
+  description:
+    "text-native-inspector-note/native-inspector-note tracking-native-list-sub text-muted",
 } as const;
 
 export const MAC_INSPECTOR_PANEL = {

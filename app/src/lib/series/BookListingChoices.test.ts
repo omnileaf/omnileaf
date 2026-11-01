@@ -57,7 +57,7 @@ test("draws Show as macOS's 24 point segmented control with a visible label", as
 
   expect(group.getBoundingClientRect().height).toBe(24);
   expect(chosen.backgroundColor).toBe(
-    resolvedColour("--color-accent", "backgroundColor"),
+    resolvedColour("--native-color-button-primary", "backgroundColor"),
   );
   await expect.element(page.getByText("Show", { exact: true })).toBeVisible();
 });

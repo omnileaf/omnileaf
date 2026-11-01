@@ -4,11 +4,14 @@
   import { Switch } from "#lib/components/ui/switch/index.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
+  import { MAC_INSPECTOR_SMART } from "./filter-sheet-look";
+
   let {
     label,
     description,
     isOn,
     isMaterial = false,
+    isInspector = false,
     titleClass,
     onToggle,
   }: {
@@ -16,14 +19,34 @@
     description?: string;
     isOn: boolean;
     isMaterial?: boolean;
+    isInspector?: boolean;
     titleClass?: string | undefined;
     onToggle: (isOn: boolean) => void;
   } = $props();
 
   const id = $props.id();
-  const isCheckbox = currentPlatform() === "macos";
+  const isMac = currentPlatform() === "macos";
+  const isCheckbox = $derived(isMac && !isInspector);
   const titleType = $derived(
-    titleClass ?? "text-body font-medium large:text-small",
+    isInspector
+      ? MAC_INSPECTOR_SMART.title
+      : (titleClass ?? "text-body font-medium large:text-small"),
+  );
+  const rowType = $derived.by(() => {
+    if (isInspector) {
+      return MAC_INSPECTOR_SMART.row;
+    }
+    return isMaterial
+      ? ITEM_LOOKS["row-static"]
+      : "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row";
+  });
+  const wordsType = $derived(
+    isInspector ? MAC_INSPECTOR_SMART.words : "flex flex-1 flex-col gap-2xs",
+  );
+  const descriptionType = $derived(
+    isInspector
+      ? MAC_INSPECTOR_SMART.description
+      : "text-small text-muted large:text-caption",
   );
 </script>
 
@@ -69,14 +92,9 @@
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[
-      isMaterial
-        ? ITEM_LOOKS["row-static"]
-        : "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row",
-      ROW_FOCUS_RING,
-    ]}
+    class={[rowType, ROW_FOCUS_RING]}
   >
-    <span class="flex flex-1 flex-col gap-2xs">
+    <span class={wordsType}>
       <span
         id="{id}-label"
         data-slot={isMaterial ? "item-title" : undefined}
@@ -88,9 +106,7 @@
         <span
           id="{id}-description"
           data-slot={isMaterial ? "item-description" : undefined}
-          class={isMaterial
-            ? "text-muted"
-            : "text-small text-muted large:text-caption"}
+          class={isMaterial ? "text-muted" : descriptionType}
         >
           {description}
         </span>

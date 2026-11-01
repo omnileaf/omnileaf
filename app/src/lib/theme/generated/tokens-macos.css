@@ -73,6 +73,10 @@
   --native-spacing-inspector-section: 14px;
   --native-spacing-inspector-chip-inline: 10px;
   --native-spacing-inspector-chip-gap: 6px;
+  --native-spacing-inspector-row: 52px;
+  --native-spacing-inspector-group-inline: 10px;
+  --native-text-inspector-note: calc(0.6875rem * var(--text-scale));
+  --native-leading-inspector-note: calc(14 / 11);
   --native-text-inspector-label: calc(0.8125rem * var(--text-scale));
   --native-leading-inspector-label: calc(16 / 13);
   --native-weight-inspector-label: 510;
@@ -149,8 +153,8 @@
   --native-color-switch-thumb-off: oklch(1 0 0);
   --native-color-segmented-track: rgba(0, 0, 0, 0.10);
   --native-color-on-segment: rgba(0, 0, 0, 0.85);
-  --native-color-segment-selected: var(--color-accent);
-  --native-color-on-segment-selected: var(--color-on-accent);
+  --native-color-segment-selected: var(--native-color-button-primary);
+  --native-color-on-segment-selected: var(--native-color-on-button-primary);
   --native-color-progress-track: rgba(0, 0, 0, 0.08);
   --native-color-progress-fill: #2f6f4f;
   --native-color-progress-idle-track: rgba(0, 0, 0, 0.08);
@@ -244,8 +248,8 @@
   --native-color-switch-thumb-off: #e1e1e1;
   --native-color-segmented-track: rgba(255, 255, 255, 0.09);
   --native-color-on-segment: rgba(255, 255, 255, 0.85);
-  --native-color-segment-selected: var(--color-accent);
-  --native-color-on-segment-selected: var(--color-on-accent);
+  --native-color-segment-selected: var(--native-color-button-primary);
+  --native-color-on-segment-selected: var(--native-color-on-button-primary);
   --native-color-progress-track: rgba(255, 255, 255, 0.07);
   --native-color-progress-fill: #43a673;
   --native-color-progress-idle-track: rgba(255, 255, 255, 0.07);

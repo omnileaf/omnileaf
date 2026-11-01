@@ -27,6 +27,9 @@ const BELOW_SIDEBAR = 800;
 const BAR_TO_CONTENT = 20;
 const START_OF_ROW_TEXT = "6px";
 const END_OF_ROW_TEXT = "10px";
+const WHITE = "rgb(255, 255, 255)";
+const ACCENT_LIGHT = "rgb(47, 111, 79)";
+const ACCENT_DARK = "rgb(46, 125, 85)";
 
 function pages(page: Page) {
   return page.getByRole("navigation", { name: "Settings sections" });
@@ -312,6 +315,28 @@ test.describe("at the narrowest width that shows the sidebar", () => {
     expect(group.x - (sidebar.x + sidebar.width)).toBe(SIDE_PADDING);
   });
 });
+
+for (const [scheme, accent] of [
+  ["light", ACCENT_LIGHT],
+  ["dark", ACCENT_DARK],
+] as const) {
+  test.describe(`a settings choice in ${scheme}`, () => {
+    test.use({ colorScheme: scheme });
+
+    test("fills the chosen segment in the accent green with white ink", async ({
+      page,
+    }) => {
+      await page.goto("/settings/appearance");
+
+      const chosen = page.getByRole("radiogroup").first().getByRole("radio", {
+        checked: true,
+      });
+
+      await expect(chosen).toHaveCSS("background-color", accent);
+      await expect(chosen).toHaveCSS("color", WHITE);
+    });
+  });
+}
 
 test.describe("on Windows", () => {
   test.use({ platform: "windows" });
