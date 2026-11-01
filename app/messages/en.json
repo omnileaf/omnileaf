@@ -2456,6 +2456,7 @@
   "reader_unsupported_title": "Omnileaf can't open this file",
   "reader_unsupported_body": "{file} is a {type} file, which this version can't open yet. The file stays where it is.",
   "reader_unsupported_body_unnamed": "This version can't open files like this one yet. The file stays where it is.",
+  "reader_opening_handed": "Opening this book",
   "reader_opened_from_files": "Opened from Files",
   "reader_opened_from_finder": "Opened from Finder",
   "reader_opened_from_file_explorer": "Opened from File Explorer",
