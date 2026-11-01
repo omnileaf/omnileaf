@@ -134,7 +134,10 @@
             }
           : { look: bar?.look ?? "header-control" }}
         class={isMac
-          ? ["rounded-native-button", filtersCount > 0 && "text-accent"]
+          ? [
+              "rounded-native-button",
+              filtersCount > 0 && "text-native-on-button-link",
+            ]
           : bar === undefined
             ? [
                 "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
