@@ -41,6 +41,7 @@
   import { SERIES_CONTROL } from "./series-control.ts";
   import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
+  import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
 
   type BookId = SeriesBook["id"];
 
@@ -489,21 +490,38 @@
       </Button>
     {/if}
   </div>
-  <BookListingChoices
-    phone={phonePlatform}
-    {listing}
-    onChoose={onListing}
-    {search}
-    onSearch={(typed: string) => {
-      search = typed;
-      if (!isComplete) {
-        void onLoadAll();
-      }
-    }}
-    onShownCrowded={(isCrowded: boolean) => {
-      isShownCrowded = isCrowded;
-    }}
-  />
+  {#if platform === "windows" && selection.count > 0}
+    <WindowsSelectionBar
+      bind:element={toolbar}
+      count={selection.count}
+      onMark={(read: ReadMark) => {
+        void mark(read);
+      }}
+      onBookmark={() => {
+        void bookmark();
+      }}
+      onDelete={askToRemove}
+      onClear={() => {
+        void end();
+      }}
+    />
+  {:else}
+    <BookListingChoices
+      phone={phonePlatform}
+      {listing}
+      onChoose={onListing}
+      {search}
+      onSearch={(typed: string) => {
+        search = typed;
+        if (!isComplete) {
+          void onLoadAll();
+        }
+      }}
+      onShownCrowded={(isCrowded: boolean) => {
+        isShownCrowded = isCrowded;
+      }}
+    />
+  {/if}
   {#if isComplete && shownBooks.length === 0}
     <Card
       class={[
@@ -570,7 +588,7 @@
           }
         : undefined}
     />
-    {#if selection.count > 0}
+    {#if selection.count > 0 && platform !== "windows"}
       <SelectionBar
         bind:element={toolbar}
         count={selection.count}

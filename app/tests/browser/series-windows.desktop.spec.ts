@@ -117,6 +117,40 @@ test.describe("the series page on Windows", () => {
         );
       });
 
+      test("swaps Find, Show and Sort for a command bar with the count while books are picked", async ({
+        page,
+      }) => {
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeVisible();
+        await page
+          .getByRole("checkbox", { name: /^Select Sample/ })
+          .first()
+          .check();
+        const bar = page.getByRole("group", { name: "Selected books" });
+
+        await expect(bar).toContainText("1");
+        await expect(
+          bar.getByRole("button", { name: "Mark read" }),
+        ).toBeVisible();
+        await expect(
+          bar.getByRole("button", { name: "Bookmark" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeHidden();
+        await expect(page.getByRole("button", { name: /^Sort/ })).toBeHidden();
+        await bar.getByRole("button", { name: "See more" }).click();
+        await expect(
+          page.getByRole("menuitem", { name: "Delete" }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await bar.getByRole("button", { name: /clear the selection/ }).click();
+        await expect(
+          page.getByRole("searchbox", { name: "Find a book" }),
+        ).toBeVisible();
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });
