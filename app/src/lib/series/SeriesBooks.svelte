@@ -161,6 +161,9 @@
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const width = new WindowWidth();
   const phonePlatform = $derived(phoneOf(platform, width.current));
+  const hasFileCommands = $derived(
+    platform === "windows" || platform === "macos",
+  );
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
@@ -588,13 +591,13 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
-      onBookmark={platform === "macos" || platform === "windows"
+      onBookmark={hasFileCommands
         ? (picked: BookId[]) => {
             void bookmarkSelected(picked);
           }
         : undefined}
-      onShowInFolder={platform === "windows" ? onShowInFolder : undefined}
-      onDelete={platform === "windows"
+      onShowInFolder={hasFileCommands ? onShowInFolder : undefined}
+      onDelete={hasFileCommands
         ? (picked: BookId[]) => {
             askToRemoveBooks(picked);
           }

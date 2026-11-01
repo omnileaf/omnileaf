@@ -187,18 +187,20 @@
         {m.series_select()}
       </DropdownMenuItem>
     {/if}
-    {#if hasAccelerators && onShowInFolder !== undefined}
+    {#if onShowInFolder !== undefined}
       <DropdownMenuSeparator />
       <DropdownMenuItem onSelect={onShowInFolder}>
         <FolderOpen size={ICON_SIZE} aria-hidden="true" />
-        {showFileLabel("windows")}
+        {showFileLabel(currentPlatform())}
       </DropdownMenuItem>
     {/if}
-    {#if hasAccelerators && onDelete !== undefined}
+    {#if onDelete !== undefined}
       <DropdownMenuItem onSelect={onDelete}>
         <Trash size={ICON_SIZE} aria-hidden="true" />
         <span class="flex-1">{m.library_delete()}</span>
-        <Kbd aria-hidden="true">{m.series_delete_key()}</Kbd>
+        {#if hasAccelerators}
+          <Kbd aria-hidden="true">{m.series_delete_key()}</Kbd>
+        {/if}
       </DropdownMenuItem>
     {/if}
   </DropdownMenuContent>
