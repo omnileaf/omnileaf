@@ -239,6 +239,26 @@ test.describe(
       expect(await sidewaysOverflow(page)).toEqual([]);
     });
 
+    test("lists the folder being counted first, above the folders already linked", async ({
+      page,
+    }) => {
+      await startCounting(page);
+      const rows = page
+        .getByRole("region", { name: "Folders" })
+        .getByRole("listitem");
+
+      await expect(rows.first()).toContainText(COMICS.name);
+      await expect(rows.last()).toContainText(MANGA.name);
+    });
+
+    test("shows no finding toast while the folder is counted", async ({
+      page,
+    }) => {
+      await startCounting(page);
+
+      await expect(page.getByText("Finding books")).toHaveCount(0);
+    });
+
     test("counts a folder in its own row with a small indicator, over the folders already linked", async ({
       page,
     }) => {
