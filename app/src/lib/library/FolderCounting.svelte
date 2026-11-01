@@ -5,6 +5,7 @@
 
   import type { CountingLook } from "./counting-look";
   import type { FolderOutcome } from "./folder-adding.svelte";
+  import type { RescanStatus } from "./rescans.svelte";
   import { scanFill } from "./scan-count.svelte";
   import type { ScanStep } from "./scan-step";
 
@@ -17,7 +18,7 @@
     look = "words",
     inList = false,
   }: {
-    outcome: FolderOutcome;
+    outcome: FolderOutcome | RescanStatus;
     look?: CountingLook;
     inList?: boolean;
   } = $props();
