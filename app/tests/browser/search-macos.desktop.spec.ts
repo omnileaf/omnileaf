@@ -1,4 +1,5 @@
 import {
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   test,
@@ -88,4 +89,26 @@ test("narrows the search to the scope picked", async ({ page }) => {
     "aria-pressed",
     "true",
   );
+});
+
+test("keeps room to type in the toolbar field beside several filter words", async ({
+  page,
+}) => {
+  await page.goto("/search");
+  const field = page.getByRole("combobox", { name: "Search your library" });
+
+  await field.pressSequentially("unread started finished sample");
+
+  expect((await boxOf(field)).width).toBeGreaterThan(60);
+});
+
+test("keeps the field in the toolbar in a narrow window", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 800 });
+  await page.goto("/search");
+
+  await expect(
+    page
+      .locator("[data-page-toolbar]")
+      .getByRole("combobox", { name: "Search your library" }),
+  ).toBeVisible();
 });

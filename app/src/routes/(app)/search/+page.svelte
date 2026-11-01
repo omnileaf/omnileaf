@@ -439,7 +439,6 @@
       />
     {/if}
     <ScopeChips
-      class={isMacToolbar ? "-ms-gutter -me-page-end" : undefined}
       scope={query.scope}
       onNarrow={(scope: SearchScope) => {
         query.narrowTo(scope);
