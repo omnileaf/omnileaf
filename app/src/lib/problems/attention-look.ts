@@ -60,8 +60,22 @@ const WINDOWS_LOOK: AttentionLook = {
   hasFoldedDot: false,
 };
 
+const ANDROID_LOOK: AttentionLook = {
+  ...TODAYS_LOOK,
+  list: "flex flex-col",
+  row: "gap-lg py-sm min-block-native-row-two",
+  icon: "text-muted",
+  title: "text-body font-regular",
+  detail:
+    "line-clamp-2 text-native-row-subtitle/native-row-subtitle text-muted",
+  fix: { variant: "secondary", class: "max-inline-1/2" },
+  badge:
+    "inline-flex items-center justify-center rounded-full bg-danger-fill px-2xs text-caption font-semibold text-on-danger block-lg min-inline-lg",
+  hasFoldedDot: false,
+};
+
 const ATTENTION_LOOKS = {
-  android: TODAYS_LOOK,
+  android: ANDROID_LOOK,
   ios: TODAYS_LOOK,
   linux: TODAYS_LOOK,
   macos: TODAYS_LOOK,

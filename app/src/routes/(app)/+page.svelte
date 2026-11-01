@@ -1013,7 +1013,9 @@
     platform={data.appInfo.platform}
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
-    attention={showsAttentionDot ? attentionDot : undefined}
+    attention={showsAttentionDot && !androidPhone.isOn
+      ? attentionDot
+      : undefined}
     count={isMac && selection.isSelecting
       ? pickedCount
       : showsItemCounts && seriesCount.count !== undefined
@@ -1030,6 +1032,15 @@
         />
       {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
+        {#if showsAttentionDot && androidPhone.isOn}
+          <NeedsAttentionDot
+            count={needsAttention.problems.length}
+            isOpen={needsAttention.isShown}
+            onOpen={() => {
+              needsAttention.show();
+            }}
+          />
+        {/if}
         {#if !isMac}
           <LibrarySearchEntry platform={data.appInfo.platform} />
         {/if}
