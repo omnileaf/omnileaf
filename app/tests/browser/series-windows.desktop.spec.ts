@@ -198,3 +198,29 @@ test.describe("a series without books on Windows", () => {
     );
   });
 });
+
+test.describe("a series that is still loading on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    viewport: WINDOW,
+    platform: "windows",
+    backend: {
+      ...DEFAULT_BACKEND,
+      seriesOverview: () => new Promise(() => undefined),
+    },
+  });
+
+  test("runs an indeterminate bar over plain fills that do not pulse", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    const bar = page.getByRole("progressbar", { name: "Loading the series" });
+    const fill = page
+      .getByRole("status", { name: "Loading the series" })
+      .locator("[data-slot=skeleton]")
+      .first();
+
+    await expect(bar).toBeVisible();
+    await expect(fill).toHaveCSS("animation-name", "none");
+  });
+});
