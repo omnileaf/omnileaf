@@ -45,23 +45,12 @@ const WIDE_LOOK: EditDetailsLook = {
 };
 
 export const PHONE_EDIT_DETAILS_LOOK: EditDetailsLook = {
+  ...WIDE_LOOK,
   panel: "inset-bs-sheet-top block-auto",
-  overlay: "",
   header: "flex flex-col gap-2xs px-sheet-inline pbs-md",
-  hasBadge: true,
-  title: "text-title font-bold",
-  subtitle: "text-label text-muted",
   body: "flex-1 overflow-y-auto min-block-none px-sheet-inline",
   actions:
     "flex justify-end gap-sm border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom",
-  cancel: {
-    look: "outline",
-    class: `rounded-control font-medium ${DEFAULT_BUTTON}`,
-  },
-  save: {
-    look: "filled",
-    class: `rounded-control font-semibold ${DEFAULT_BUTTON}`,
-  },
 };
 
 const MACOS_LOOK: EditDetailsLook = {
@@ -71,10 +60,9 @@ const MACOS_LOOK: EditDetailsLook = {
   header: "flex flex-col gap-md",
   hasBadge: false,
   title:
-    "text-native-sheet-title leading-native-sheet-title font-native-sheet-title tracking-native-sheet-title",
-  subtitle:
-    "text-native-sheet-text leading-native-sheet-text tracking-native-sheet-text",
-  body: "-mx-sheet-inline flex-1 overflow-y-auto px-sheet-inline min-block-none",
+    "text-native-sheet-title leading-native-sheet-title font-native-sheet-title",
+  subtitle: "text-native-sheet-text leading-native-sheet-text text-foreground",
+  body: "-mx-sheet-inline flex-1 overflow-y-auto px-sheet-inline py-2xs min-block-none",
   actions: "flex justify-end gap-sm mbs-sheet-inline",
   cancel: { variant: "secondary" },
   save: { variant: "primary" },
