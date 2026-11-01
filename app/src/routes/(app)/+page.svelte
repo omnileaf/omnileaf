@@ -419,6 +419,7 @@
     }),
   );
   const isDocked = $derived(docksFilter && isFilterOpen);
+  const isGridBesidePanel = $derived(isDocked && !isMac);
 
   function closeFilterPanel(): void {
     isFilterOpen = false;
@@ -1139,14 +1140,14 @@
   {/if}
 </div>
 <div
-  class={isDocked
+  class={isGridBesidePanel
     ? "-me-page-end -mbe-page-bottom grid grid-cols-docked-panel"
     : "flex flex-1 flex-col"}
 >
   <div
     class={[
       "flex flex-1 flex-col",
-      isDocked && "pe-page-end pbe-page-bottom min-inline-none",
+      isGridBesidePanel && "pe-page-end pbe-page-bottom min-inline-none",
     ]}
   >
     {#if isEmpty}

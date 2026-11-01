@@ -8,6 +8,7 @@
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { MAC_INSPECTOR } from "./filter-sheet-look";
   import { GROUPED_FOOTNOTE_TYPE } from "./group-look";
   import { SORTS } from "./library-listing";
   import { SORT_LABELS } from "./sort-labels";
@@ -30,6 +31,7 @@
   );
   const labelId = $props.id();
   const footnoteId = `${labelId}-footnote`;
+  const isMac = platform === "macos";
   const isTimedSort = $derived(sort.by === "timeLeft");
 
   function isSort(value: string): value is LibrarySortBy {
@@ -78,12 +80,20 @@
   </div>
 {:else}
   <div
-    class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
+    class={isMac
+      ? "flex flex-col gap-sm"
+      : "grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"}
   >
-    <span id={labelId} class="text-small font-medium">
+    <span
+      id={labelId}
+      class={isMac ? MAC_INSPECTOR.label : "text-small font-medium"}
+    >
       {m.library_sort_by()}
     </span>
-    <ButtonGroup aria-labelledby={labelId} class="inline-setting-control">
+    <ButtonGroup
+      aria-labelledby={labelId}
+      class={isMac ? "inline-full" : "inline-setting-control"}
+    >
       <NativeSelect
         aria-labelledby={labelId}
         aria-describedby={isTimedSort ? footnoteId : undefined}

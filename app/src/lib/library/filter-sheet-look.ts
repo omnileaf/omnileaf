@@ -23,3 +23,10 @@ export const ANDROID_VIEW_SETTING = {
   words: "",
   note: "basis-full text-muted",
 } as const;
+
+export const MAC_INSPECTOR = {
+  heading:
+    "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title",
+  label:
+    "text-native-inspector-label/native-inspector-label font-native-inspector-label",
+} as const;

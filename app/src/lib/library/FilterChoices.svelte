@@ -23,6 +23,7 @@
   import {
     ANDROID_FILTER_CHIP,
     ANDROID_FILTER_HEADING,
+    MAC_INSPECTOR,
   } from "./filter-sheet-look";
   import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
@@ -73,9 +74,14 @@
   const isAndroidPhone = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
+  const isMac = currentPlatform() === "macos";
   const look = $derived(groupLook(isGrouped));
   const headingClass = $derived(
-    isAndroidPhone ? ANDROID_FILTER_HEADING : look.heading,
+    isAndroidPhone
+      ? ANDROID_FILTER_HEADING
+      : isMac
+        ? MAC_INSPECTOR.heading
+        : look.heading,
   );
   const sortByOptions = $derived(
     SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() })),
