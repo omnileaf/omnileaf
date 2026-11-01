@@ -60,8 +60,15 @@ const WINDOWS_LOOK: AttentionLook = {
   hasFoldedDot: false,
 };
 
+const ANDROID_LOOK: AttentionLook = {
+  ...TODAYS_LOOK,
+  badge:
+    "inline-flex items-center justify-center rounded-full bg-danger px-2xs text-caption font-semibold text-white block-lg min-inline-lg",
+  hasFoldedDot: false,
+};
+
 const ATTENTION_LOOKS = {
-  android: TODAYS_LOOK,
+  android: ANDROID_LOOK,
   ios: TODAYS_LOOK,
   linux: TODAYS_LOOK,
   macos: TODAYS_LOOK,
