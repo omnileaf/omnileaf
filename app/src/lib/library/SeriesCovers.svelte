@@ -652,7 +652,7 @@
             cover={shown.cover}
             {coverUrl}
             isBlurred={veiled}
-            class="rounded-list-cover inline-list-cover"
+            class={rowLook.cover}
           />
           {#if !isIosPhone && view.onCovers.showsDownloaded && one.hasDownloads && !isSelecting && !veiled}
             <DownloadedMark class="absolute inset-e-xs inset-bs-xs" />
