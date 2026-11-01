@@ -61,7 +61,11 @@
   {@attach closesOnEscape}
 >
   <div class="flex items-center gap-md ps-lg pe-sm pbs-lg pbe-sm">
-    <HeaderBadge icon={ListFilter} look="header-accent" />
+    <HeaderBadge
+      icon={ListFilter}
+      look="header-accent"
+      class="windows:hidden"
+    />
     <h2
       {@attach focusOnArrival}
       id={titleId}
