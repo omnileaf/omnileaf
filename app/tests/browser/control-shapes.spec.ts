@@ -476,6 +476,10 @@ test.describe("on an Android phone", () => {
   test("draws the Folders card's Add a folder as a slim 44px pill", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "an Android phone draws it as a list row",
+    );
     await page.goto("/settings/library");
     const button = addFolderInFolders(page);
 

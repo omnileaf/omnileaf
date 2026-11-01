@@ -39,7 +39,7 @@
       "gap-sm rounded-full border border-accent px-lg text-accent inline-full min-block-touch-button touch:font-bold ios:rounded-ios-button desktop:rounded-control desktop:text-label desktop:min-block-pointer-button",
     "drop-area":
       "gap-sm rounded-control border-accent px-lg text-label transition-control min-block-pointer-target enabled:hover:tint-hover enabled:active:tint-pressed windows:rounded-shadcn-button windows:border-button-outline-edge windows:bg-button-outline windows:font-medium windows:border-be-windows-stroke-strong windows:min-block-shadcn-button",
-    "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full`,
+    "list-row": `${ROW_FOCUS_RING} justify-start gap-native-row-gap ps-native-row-start pe-native-row-end text-accent text-native-row-title/native-row-title font-native-row-title tracking-native-row-title min-block-native-row inline-full android:max-medium:rounded-none android:max-medium:text-foreground`,
   } satisfies Record<Placement, string>;
 
   const ICON_SIZE = 16;
@@ -83,7 +83,12 @@
       class={[
         "inline-flex shrink-0 items-center justify-center disabled:opacity-60",
         phone === undefined
-          ? ["font-semibold", PLACEMENTS[placement]]
+          ? [
+              placement === "list-row"
+                ? "android:max-medium:font-regular"
+                : "font-semibold",
+              PLACEMENTS[placement],
+            ]
           : phone.fit,
       ]}
     >

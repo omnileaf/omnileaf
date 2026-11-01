@@ -413,6 +413,10 @@ for (const { platform, buttonHeight } of [
     test(`puts a ${String(buttonHeight)}px Add a folder across the foot of the Folders card`, async ({
       page,
     }) => {
+      test.skip(
+        platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "an Android phone draws it as a list row",
+      );
       await page.goto("/settings/library");
       const folders = page.getByRole("region", { name: "Folders" });
 
