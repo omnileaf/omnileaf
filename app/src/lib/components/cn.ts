@@ -373,6 +373,7 @@ export const TOKEN_THEME = {
     "native-alert-action-icon",
     "native-alert-action-start",
     "native-alert-block",
+    "native-alert-dismiss-inset",
     "native-book-progress",
     "native-bottom-bar-end",
     "native-bottom-bar-start",

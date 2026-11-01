@@ -226,7 +226,7 @@
   let missingFolders = $state<readonly MissingFolder[]>([]);
   let stillFailing = $state<readonly string[]>([]);
   const cardedFolders = $derived(
-    androidPhone.isOn
+    androidPhone.showsFolderCards
       ? missingFolders.filter(({ folder }) => !isDismissedThisVisit(folder.id))
       : [],
   );
@@ -262,7 +262,7 @@
   const folderNotices = new MissingFolderNotices(
     notices,
     folderHandlers,
-    () => androidPhone.isOn,
+    () => androidPhone.showsFolderCards,
   );
 
   async function relocate(missing: MissingFolder): Promise<void> {
@@ -1212,7 +1212,7 @@
       </EmptyState>
     {:else}
       {#each cardedFolders as card (card.folder.id)}
-        <div class="mbs-sm">
+        <div class="mbs-sm ios:mbs-none">
           <MissingFolderCard
             missing={card}
             isStillFailing={stillFailing.includes(card.folder.id)}

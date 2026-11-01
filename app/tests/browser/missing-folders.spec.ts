@@ -25,7 +25,6 @@ const LIBRARY = sampleSeries(12);
 const FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 const POINTER_ACTION_HEIGHT = 24;
 const ANDROID_ACTION_HEIGHT = 40;
-const IOS_ACTION_HEIGHT = 36;
 const ACTION_EDGE_SHARE = 45;
 const NAS_MANGA = { server: "nas", name: "nas/manga" };
 const GVFS_MANGA = "/run/user/1000/gvfs/smb-share:server=nas,share=manga";
@@ -205,29 +204,6 @@ test.describe("with a folder that isn't there", () => {
       expect(height).toBe(ANDROID_ACTION_HEIGHT);
       await expect(find).toHaveCSS("font-size", "14px");
       await expect(find).toHaveCSS("font-weight", "500");
-    });
-  });
-
-  test.describe("on an iPhone", () => {
-    testOnlyInItsWebview("ios");
-    test.use({
-      backend: {
-        ...backendMissing(folder),
-        appInfo: onPlatform("ios").backend.appInfo,
-      },
-    });
-
-    test("draws Find the folder as the banner's 36px capsule in 15px semibold type", async ({
-      page,
-    }) => {
-      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
-      const find = await findTheFolder(page);
-
-      const height = (await boxOf(find)).height;
-
-      expect(height).toBe(IOS_ACTION_HEIGHT);
-      await expect(find).toHaveCSS("font-size", "15px");
-      await expect(find).toHaveCSS("font-weight", "590");
     });
   });
 
