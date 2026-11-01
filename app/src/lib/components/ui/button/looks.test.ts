@@ -94,6 +94,10 @@ test.each<[ButtonLook, string[]]>([
     ["rounded-full", "large:rounded-shadcn-button", "large:border"],
   ],
   [
+    "bar-button",
+    ["rounded-full", "bg-native-bar-button", "inline-native-target"],
+  ],
+  [
     "row-action",
     [
       "isolate",

@@ -20,6 +20,8 @@ const SHADCN_BUTTON =
 const OUTLINED =
   "border border-button-outline-edge bg-button-outline windows:border-be-windows-stroke-strong";
 
+const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
+
 export const BUTTON_LOOKS = {
   text: `font-medium text-foreground android:text-accent ios:font-semibold ${FOCUS_RING}`,
   quiet: `font-semibold text-accent transition-control not-disabled:hover:bg-hover not-disabled:active:bg-pressed ${FOCUS_RING}`,
@@ -29,6 +31,7 @@ export const BUTTON_LOOKS = {
   tinted: `transition-control not-disabled:hover:tint-hover not-disabled:active:tint-pressed ${FOCUS_RING}`,
   icon: `flex items-center justify-center rounded-full ${FOCUS_RING}`,
   "header-control": `flex items-center justify-center gap-sm rounded-full transition-control large:rounded-shadcn-button large:border large:border-button-outline-edge large:bg-button-outline large:text-small large:font-medium large:block-shadcn-control windows:large:border-be-windows-stroke-strong linux:large:shadow-raised macos:large:shadow-raised ${FOCUS_RING}`,
+  "bar-button": NATIVE_HEADER_CONTROL,
   chip: `rounded-full border border-border bg-card font-semibold hover:bg-hover ${FOCUS_RING}`,
   command: `relative isolate flex shrink-0 flex-col items-center justify-center gap-2xs rounded-native-button px-xs text-native-on-top-bar transition-control min-block-native-command-button-block min-inline-native-command-button before:absolute before:z-behind before:rounded-native-button before:transition-control before:inset-x-native-command-hover-inline before:inset-y-native-command-hover-block not-disabled:not-aria-expanded:hover:before:bg-native-button-plain-hover not-disabled:not-aria-expanded:active:before:bg-native-button-plain-pressed disabled:text-native-on-button-disabled aria-expanded:text-native-on-button-primary aria-expanded:before:bg-native-button-primary focus-visible:ring-1 focus-visible:ring-native-focus-ring-inner ${FOCUS_RING}`,
   "bar-icon": `flex items-center justify-center gap-xs rounded-control text-foreground transition-control not-disabled:hover:bg-hover not-disabled:active:bg-pressed ${FOCUS_RING}`,
@@ -107,8 +110,6 @@ const DESKTOP_VARIANTS = {
   link: BUTTON_LOOKS.quiet,
   destructive: `${DIALOG_BUTTON} bg-danger-fill text-on-danger not-disabled:hover:bg-danger-hover not-disabled:active:bg-danger-pressed ${FOCUS_RING}`,
 } satisfies Record<ButtonVariant, string>;
-
-const NATIVE_HEADER_CONTROL = `flex items-center justify-center gap-sm transition-control ${NATIVE_TOP_BAR.barButton} ${FOCUS_RING}`;
 
 const DESKTOP_ICON_ONLY = "px-none block-shadcn-button inline-shadcn-button";
 
