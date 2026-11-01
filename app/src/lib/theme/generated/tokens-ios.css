@@ -427,6 +427,7 @@
   --native-spacing-radio-dot: 0.5rem;
   --native-spacing-bar-badge: 20px;
   --native-spacing-bar-badge-inline: 6px;
+  --native-spacing-bar-badge-offset: 5px;
 }
 
 :root[data-platform="ios"],

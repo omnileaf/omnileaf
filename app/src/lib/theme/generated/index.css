@@ -521,6 +521,7 @@
   --spacing-native-radio-dot: var(--native-spacing-radio-dot);
   --spacing-native-bar-badge: var(--native-spacing-bar-badge);
   --spacing-native-bar-badge-inline: var(--native-spacing-bar-badge-inline);
+  --spacing-native-bar-badge-offset: var(--native-spacing-bar-badge-offset);
 }
 
 @media (prefers-reduced-motion: reduce) {

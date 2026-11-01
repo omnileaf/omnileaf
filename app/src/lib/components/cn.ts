@@ -385,6 +385,7 @@ export const TOKEN_THEME = {
     "native-alert-dismiss-inset",
     "native-bar-badge",
     "native-bar-badge-inline",
+    "native-bar-badge-offset",
     "native-book-progress",
     "native-bottom-bar-end",
     "native-bottom-bar-start",
