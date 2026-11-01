@@ -25,6 +25,7 @@
     activeKey,
     onRevealReady,
     onOpen,
+    onSelect,
     words,
     view,
   }: {
@@ -38,24 +39,19 @@
     activeKey: string | undefined;
     onRevealReady?: ((reveal: Reveal) => void) | undefined;
     onOpen: (series: LibrarySeries) => void;
+    onSelect: (series: LibrarySeries) => void;
     words: string;
     view: LibraryView | undefined;
   } = $props();
 
-  const TODAYS_MARK = "rounded-badge bg-chip text-foreground";
-  const NATIVE_MARK = "rounded-none bg-native-accent-soft text-inherit";
-  const ANDROID_MARK = "rounded-none bg-transparent font-medium text-inherit";
-
   const platform = currentPlatform();
   const width = new WindowWidth();
   const phone = $derived(phoneOf(platform, width.current));
-  const look = $derived(searchLook(phone));
-  const markClass = $derived(
-    phone === "android"
-      ? ANDROID_MARK
-      : phone === "ios"
-        ? NATIVE_MARK
-        : TODAYS_MARK,
+  const look = $derived(searchLook(platform, phone));
+  const listbox = $derived(
+    look.selectsOnClick
+      ? { id: listId, activeKey, onChoose: onSelect, onActivate: onOpen }
+      : { id: listId, activeKey, onChoose: onOpen },
   );
   const lookOf = $derived(usesStandIns ? standInLook : realLook);
 
@@ -65,8 +61,8 @@
   const hasWords = $derived(words.trim() !== "");
   const coversTrack = $derived(
     view === undefined || view.fitsCoversToWidth
-      ? "large:grid-cols-covers-fit"
-      : "large:grid-cols-covers-per-row",
+      ? look.coversFit
+      : look.coversPerRow,
   );
   const coversPerRow = $derived(
     view === undefined
@@ -80,16 +76,17 @@
 
 {#snippet found(one: LibrarySeries)}
   {@const shown = lookOf(one)}
+  {@const isChosen = one.id === activeKey}
   <ListCover
     cover={shown.cover}
     {coverUrl}
-    class="rounded-result-cover inline-result-cover large:box-border large:rounded-cover large:inline-full"
+    class={[look.cover, isChosen && look.selectedCover]}
   />
   <div class="flex flex-col gap-2xs min-inline-none">
-    <p class={look.title}>
+    <p class={[look.title, isChosen && look.selectedTitle]}>
       {#each matchedWords(shown.title, words, locale) as part, index (index)}
         {#if part.isMatch}
-          <mark class={markClass}>{part.text}</mark>
+          <mark class={look.mark}>{part.text}</mark>
         {:else}
           {part.text}
         {/if}
@@ -106,10 +103,7 @@
   </div>
 {/snippet}
 
-<section
-  aria-labelledby={headingId}
-  class="flex flex-col gap-sm large:gap-label"
->
+<section aria-labelledby={headingId} class={look.section}>
   <h2 id={headingId} class={look.heading}>
     {count === undefined
       ? m.quick_open_series()
@@ -122,13 +116,10 @@
     label={m.search_results()}
     {isComplete}
     {onNearEnd}
-    class={[
-      "grid-cols-1 gap-sm large:covers-gap-xl large:covers-row-gap-cover-row-wide",
-      coversTrack,
-    ]}
+    class={[look.grid, coversTrack]}
     {...coversPerRow === undefined ? {} : { style: coversPerRow }}
-    itemClass="flex cursor-default items-center gap-md rounded-card min-inline-none aria-selected:bg-accent-soft large:flex-col large:items-stretch large:gap-sm large:rounded-cover large:aria-selected:bg-transparent large:aria-selected:outline-2 large:aria-selected:outline-offset-4 large:aria-selected:outline-accent"
+    itemClass={look.result}
     cell={found}
-    listbox={{ id: listId, activeKey, onChoose: onOpen }}
+    {listbox}
   />
 </section>

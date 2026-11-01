@@ -326,3 +326,65 @@ test("leaves the size unknown when told a total smaller than the items that have
     .element(list.getByRole("listitem").first())
     .toHaveAttribute("aria-setsize", "-1");
 });
+
+async function renderListbox(listbox: {
+  onChoose: (item: Sample) => void;
+  onActivate?: (item: Sample) => void;
+}) {
+  const screen = await render(VirtualGrid<Sample>, {
+    items: samples(4),
+    key: (sample: Sample) => sample.id,
+    label: LABEL,
+    isComplete: true,
+    cell,
+    class: "grid-cols-4 gap-lg",
+    listbox: { id: "samples", activeKey: undefined, ...listbox },
+  });
+  const options = screen.getByRole("option");
+  await expect.element(options.first()).toBeVisible();
+  return options;
+}
+
+function mouseDownOn(option: Element): MouseEvent {
+  const press = new MouseEvent("mousedown", {
+    bubbles: true,
+    cancelable: true,
+  });
+  option.dispatchEvent(press);
+  return press;
+}
+
+test("chooses an item on a click and activates it on a double click", async () => {
+  const onChoose = vi.fn();
+  const onActivate = vi.fn();
+  const options = await renderListbox({ onChoose, onActivate });
+
+  await options.nth(1).dblClick();
+
+  expect(onChoose.mock.calls.map(([sample]) => (sample as Sample).id)).toEqual([
+    "1",
+    "1",
+  ]);
+  expect(
+    onActivate.mock.calls.map(([sample]) => (sample as Sample).id),
+  ).toEqual(["1"]);
+});
+
+test("keeps focus where it was when an item is pressed, once items can be activated", async () => {
+  const options = await renderListbox({
+    onChoose: () => undefined,
+    onActivate: () => undefined,
+  });
+
+  const press = mouseDownOn(options.nth(0).element());
+
+  expect(press.defaultPrevented).toBe(true);
+});
+
+test("leaves the press of an item alone when items cannot be activated", async () => {
+  const options = await renderListbox({ onChoose: () => undefined });
+
+  const press = mouseDownOn(options.nth(0).element());
+
+  expect(press.defaultPrevented).toBe(false);
+});
