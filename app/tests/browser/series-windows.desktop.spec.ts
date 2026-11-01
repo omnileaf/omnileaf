@@ -151,6 +151,20 @@ test.describe("the series page on Windows", () => {
         ).toBeVisible();
       });
 
+      test("lists a book's menu with Enter and Del trailing, and Delete in plain text", async ({
+        page,
+      }) => {
+        await page
+          .getByRole("button", { name: /^More for Sample Series 04 v02/ })
+          .click();
+        const menu = page.getByRole("menu");
+
+        await expect(menu.getByRole("menuitem").first()).toContainText("Enter");
+        const remove = menu.getByRole("menuitem", { name: /^Delete/ });
+        await expect(remove).toContainText("Del");
+        await expect(remove).not.toHaveCSS("color", "rgb(196, 43, 28)");
+      });
+
       test("has no accessibility violations", async ({ page }) => {
         expect(await accessibilityViolations(page)).toEqual([]);
       });

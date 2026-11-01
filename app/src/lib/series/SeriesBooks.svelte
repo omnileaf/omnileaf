@@ -293,8 +293,12 @@
   let removing = $state<RemovalTarget[] | undefined>();
   let isRemoving = $state(false);
 
+  function askToRemoveBooks(ids: readonly BookId[]): void {
+    removing = ids.map((id) => ({ kind: "book", id }));
+  }
+
   function askToRemove(): void {
-    removing = selection.picked.map((id) => ({ kind: "book", id }));
+    askToRemoveBooks(selection.picked);
   }
 
   async function remove(deleteFiles: boolean): Promise<void> {
@@ -582,9 +586,14 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
-      onBookmark={platform === "macos"
+      onBookmark={platform === "macos" || platform === "windows"
         ? (picked: BookId[]) => {
             void bookmarkSelected(picked);
+          }
+        : undefined}
+      onDelete={platform === "windows"
+        ? (picked: BookId[]) => {
+            askToRemoveBooks(picked);
           }
         : undefined}
     />

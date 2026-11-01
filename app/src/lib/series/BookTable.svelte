@@ -34,6 +34,7 @@
     onClear,
     onMark,
     onBookmark,
+    onDelete,
     selectAllBox = $bindable(null),
   }: {
     books: readonly SeriesBook[];
@@ -46,6 +47,7 @@
     onClear: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
     onBookmark?: ((books: BookId[]) => void) | undefined;
+    onDelete?: ((books: BookId[]) => void) | undefined;
     selectAllBox?: HTMLElement | null;
   } = $props();
 
@@ -219,6 +221,11 @@
               ? undefined
               : () => {
                   onBookmark([book.id]);
+                }}
+            onDelete={onDelete === undefined
+              ? undefined
+              : () => {
+                  onDelete([book.id]);
                 }}
           />
         </TableCell>

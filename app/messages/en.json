@@ -1870,6 +1870,8 @@
   "series_selection_see_more": "See more",
   "series_clear_selection_with_key": "{key}, clear the selection",
   "series_escape_key": "Esc",
+  "series_enter_key": "Enter",
+  "series_delete_key": "Del",
   "series_column_actions": "Actions",
   "series_book_more": "More for {title}",
   "series_book_more_short": "More",
