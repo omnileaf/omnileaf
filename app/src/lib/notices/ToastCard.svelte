@@ -52,6 +52,7 @@
     shortcut,
     children,
     actions,
+    isDismissable = true,
     onDismiss,
   }: {
     tone: NoticeTone;
@@ -63,6 +64,7 @@
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
     children?: Snippet;
     actions?: Snippet | undefined;
+    isDismissable?: boolean;
     onDismiss: () => void;
   } = $props();
 
@@ -83,6 +85,7 @@
     {shortcut}
     {children}
     {actions}
+    {isDismissable}
     {onDismiss}
   />
 {:else}
@@ -144,21 +147,23 @@
         {shortcut.label}
       </Kbd>
     {/if}
-    <Tooltip
-      label={m.notice_dismiss()}
-      aria-label={m.notice_dismiss()}
-      onclick={onDismiss}
-    >
-      {#snippet child({ props })}
-        <Button
-          {...props}
-          look="dismiss"
-          class="-my-sm shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
-        >
-          <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
-        </Button>
-      {/snippet}
-    </Tooltip>
+    {#if isDismissable}
+      <Tooltip
+        label={m.notice_dismiss()}
+        aria-label={m.notice_dismiss()}
+        onclick={onDismiss}
+      >
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            look="dismiss"
+            class="-my-sm shrink-0 block-touch-target inline-touch-target before:block-pointer-target before:inline-pointer-target desktop:my-none desktop:block-dismiss desktop:inline-dismiss"
+          >
+            <X aria-hidden="true" size={DISMISS_ICON_SIZE} class="relative" />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
     {#if actions !== undefined}
       <div class="flex basis-full flex-wrap justify-end gap-sm pe-sm">
         {@render actions()}

@@ -46,9 +46,13 @@
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
+  import SheetSwitchRow from "./SheetSwitchRow.svelte";
   import {
+    SHEET_CHIP_ROW,
     SHEET_FIELD_CARD,
+    SHEET_LIST_CARD,
     SHEET_SUMMARY_TEXT,
+    SHEET_SWITCH_CARD,
     SHEET_TITLE_TEXT,
   } from "./sheet-field-look.ts";
 
@@ -113,6 +117,8 @@
           : FIELD,
   );
   const fieldCardClass = $derived(isSheet ? SHEET_FIELD_CARD : undefined);
+  const listCardClass = $derived(isSheet ? SHEET_LIST_CARD : undefined);
+  const switchCardClass = $derived(isSheet ? SHEET_SWITCH_CARD : undefined);
   const titleTextClass = $derived(
     isSheet ? SHEET_TITLE_TEXT : isGrouped && GROUPED_FIELD_BOX,
   );
@@ -133,7 +139,9 @@
       isMacos && MACOS_DETAIL_CHIP,
     ),
   );
-  const chipsClass = $derived(isMacos ? MACOS_CHIPS : CHIPS);
+  const chipsClass = $derived(
+    isSheet ? SHEET_CHIP_ROW : isMacos ? MACOS_CHIPS : CHIPS,
+  );
   const crossSize = $derived(
     isAndroid
       ? ANDROID_CHIP_CROSS_SIZE
@@ -157,6 +165,7 @@
   const toggleAdult = (): void => {
     setAdult(!draft.isMarkedAdult);
   };
+  const adder: Snippet<[string, (name: string) => void]> = addDetail;
   let isShowingEveryone = $state(false);
 
   const edited = $derived({
@@ -219,14 +228,35 @@
     });
   }
 
+  function addPerson(name: string): void {
+    onDraft({ ...draft, people: [...draft.people, { name, role: null }] });
+  }
+
+  function addTag(tag: string): void {
+    if (!draft.tags.includes(tag)) {
+      onDraft({ ...draft, tags: [...draft.tags, tag] });
+    }
+  }
+
   function removeTag(tag: string): void {
     onDraft({ ...draft, tags: draft.tags.filter((kept) => kept !== tag) });
   }
 </script>
 
+{#snippet addDetail(label: string, onAdd: (name: string) => void)}
+  <AddDetailChip {isGrouped} {isAndroid} {isMacos} {isSheet} {label} {onAdd} />
+{/snippet}
+
 {#snippet markAdult()}
   {#if isAdultLocked}
-    <LockedAdultMark />
+    <LockedAdultMark {isSheet} />
+  {:else if isSheet}
+    <SheetSwitchRow
+      label={m.edit_details_mark_adult()}
+      description={adultNote}
+      isOn={draft.isMarkedAdult}
+      onToggle={toggleAdult}
+    />
   {:else}
     <SettingSwitch
       label={m.edit_details_mark_adult()}
@@ -292,45 +322,41 @@
         useFile("people");
       }}
     />
-    <DetailBox {isGrouped}>
-      <div role="group" aria-labelledby="{id}-people" class={chipsClass}>
-        {#each peopleShown as person, index (`${String(index)}·${person.name}`)}
-          <button
-            type="button"
-            aria-label={removePersonLabel(person)}
-            class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
-            onclick={() => {
-              removePerson(index);
-            }}
-          >
-            {personLabel(person)}
-            <X size={crossSize} class={crossClass} aria-hidden="true" />
-          </button>
-        {/each}
-        {#if peopleShown.length < draft.people.length}
-          <button
-            type="button"
-            class={cn(DETAIL_CHIP, "pe-md", chipExtras)}
-            onclick={() => {
-              isShowingEveryone = true;
-            }}
-          >
-            {m.edit_details_show_all({ count: draft.people.length })}
-          </button>
-        {/if}
-        <AddDetailChip
-          {isGrouped}
-          {isAndroid}
-          {isMacos}
-          label={m.edit_details_add_person()}
-          onAdd={(name: string) => {
-            onDraft({
-              ...draft,
-              people: [...draft.people, { name, role: null }],
-            });
-          }}
-        />
-      </div>
+    <DetailBox {isGrouped} cardClass={listCardClass}>
+      {#if !isSheet || peopleShown.length > 0}
+        <div role="group" aria-labelledby="{id}-people" class={chipsClass}>
+          {#each peopleShown as person, index (`${String(index)}·${person.name}`)}
+            <button
+              type="button"
+              aria-label={removePersonLabel(person)}
+              class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
+              onclick={() => {
+                removePerson(index);
+              }}
+            >
+              {personLabel(person)}
+              <X size={crossSize} class={crossClass} aria-hidden="true" />
+            </button>
+          {/each}
+          {#if peopleShown.length < draft.people.length}
+            <button
+              type="button"
+              class={cn(DETAIL_CHIP, "pe-md", chipExtras)}
+              onclick={() => {
+                isShowingEveryone = true;
+              }}
+            >
+              {m.edit_details_show_all({ count: draft.people.length })}
+            </button>
+          {/if}
+          {#if !isSheet}
+            {@render adder(m.edit_details_add_person(), addPerson)}
+          {/if}
+        </div>
+      {/if}
+      {#if isSheet}
+        {@render adder(m.edit_details_add_person(), addPerson)}
+      {/if}
     </DetailBox>
     {#if fromFile.people !== undefined}
       <p class={fromFileClass}>{fromFile.people}</p>
@@ -349,33 +375,30 @@
         useFile("tags");
       }}
     />
-    <DetailBox {isGrouped}>
-      <div role="group" aria-labelledby="{id}-tags" class={chipsClass}>
-        {#each draft.tags as tag (tag)}
-          <button
-            type="button"
-            aria-label={m.edit_details_remove_named({ name: tag })}
-            class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
-            onclick={() => {
-              removeTag(tag);
-            }}
-          >
-            {tag}
-            <X size={crossSize} class={crossClass} aria-hidden="true" />
-          </button>
-        {/each}
-        <AddDetailChip
-          {isGrouped}
-          {isAndroid}
-          {isMacos}
-          label={m.edit_details_add_tag()}
-          onAdd={(tag: string) => {
-            if (!draft.tags.includes(tag)) {
-              onDraft({ ...draft, tags: [...draft.tags, tag] });
-            }
-          }}
-        />
-      </div>
+    <DetailBox {isGrouped} cardClass={listCardClass}>
+      {#if !isSheet || draft.tags.length > 0}
+        <div role="group" aria-labelledby="{id}-tags" class={chipsClass}>
+          {#each draft.tags as tag (tag)}
+            <button
+              type="button"
+              aria-label={m.edit_details_remove_named({ name: tag })}
+              class={cn(DETAIL_CHIP, "pe-sm", chipExtras)}
+              onclick={() => {
+                removeTag(tag);
+              }}
+            >
+              {tag}
+              <X size={crossSize} class={crossClass} aria-hidden="true" />
+            </button>
+          {/each}
+          {#if !isSheet}
+            {@render adder(m.edit_details_add_tag(), addTag)}
+          {/if}
+        </div>
+      {/if}
+      {#if isSheet}
+        {@render adder(m.edit_details_add_tag(), addTag)}
+      {/if}
     </DetailBox>
     {#if fromFile.tags !== undefined}
       <p class={fromFileClass}>{fromFile.tags}</p>
@@ -433,6 +456,8 @@
       />
     </div>
   {:else}
-    <DetailBox {isGrouped}>{@render adultMark()}</DetailBox>
+    <DetailBox {isGrouped} cardClass={switchCardClass}>
+      {@render adultMark()}
+    </DetailBox>
   {/if}
 </section>

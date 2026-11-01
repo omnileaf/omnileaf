@@ -8,9 +8,11 @@ import {
   DEFAULT_BACKEND,
   expect,
   EXPANDED_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   onPlatform,
   settle,
   test,
+  testOnlyInItsWebview,
   tokenColour,
   viewportOf,
 } from "./fixtures.ts";
@@ -256,6 +258,7 @@ test("puts the title back to the file's, with Undo", async ({ page }) => {
   await shown.getByRole("button", { name: "Use the file’s title" }).click();
   await expect(title).toHaveValue(FILE_TITLE);
   await expect(page.getByText("Title back to the file’s")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
   await page.getByRole("button", { name: "Undo" }).click();
 
   await expect(title).toHaveValue(TYPED_TITLE);
@@ -925,7 +928,7 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
 
     await tap(shown.getByRole("button", { name: "Save" }));
 
-    await expect(shown).toHaveAttribute("data-state", "closed");
+    await expect(shown).not.toHaveAttribute("data-state", "open");
     await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
     expect(sent).toHaveLength(1);
   });
@@ -1099,3 +1102,287 @@ test.describe("Edit details on a wide iOS window", () => {
     await expect(shown.getByRole("status")).toHaveCSS("position", "sticky");
   });
 });
+
+test.describe(
+  "on an iPhone, people and tags as list rows",
+  { tag: "@native" },
+  () => {
+    testOnlyInItsWebview("ios");
+    test.use({ platform: "ios" });
+
+    test.beforeEach(({ page }) => {
+      test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+    });
+
+    test("sets the chips in one stacked row over an Add a person row of the same group", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const chips = shown.getByRole("group", { name: "People" });
+      const group = chips.locator('xpath=ancestor::*[@data-slot="card"]');
+      const add = shown.getByRole("button", { name: "Add a person" });
+      await expect(chips.getByRole("button")).toHaveText([
+        "Story · Author A",
+        "Art · Author C",
+      ]);
+      await expect(
+        group.getByRole("button", { name: "Add a person" }),
+      ).toHaveCount(1);
+      const [chipsBox, addBox, groupBox] = await Promise.all([
+        boxOf(chips),
+        boxOf(add),
+        boxOf(group),
+      ]);
+      expect(addBox.y).toBeGreaterThanOrEqual(chipsBox.y + chipsBox.height);
+      expect(addBox.width).toBeCloseTo(groupBox.width, 0);
+      expect(addBox.height).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row"),
+        0,
+      );
+    });
+
+    test("draws the Add row's plus and label in the accent, the plus in a 22px column", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const add = shown.getByRole("button", { name: "Add a tag" });
+      await expect(add).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-button-plain"),
+      );
+      const column = await boxOf(add.locator("svg").locator("xpath=.."));
+      const start = (await boxOf(add)).x;
+      expect(column.width).toBeCloseTo(22, 0);
+      expect(column.x - start).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-start"),
+        0,
+      );
+    });
+
+    test("rules the Add row off from the chips with a hairline inset from the row's start", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const add = shown.getByRole("button", { name: "Add a person" });
+      const rule = await add.evaluate((row) => {
+        const after = getComputedStyle(row, "::after");
+        return {
+          content: after.content,
+          position: after.position,
+          height: after.height,
+          start: after.insetInlineStart,
+          fill: after.backgroundColor,
+        };
+      });
+
+      expect(rule.content).not.toBe("none");
+      expect(rule.position).toBe("absolute");
+      expect(rule.height).toBe(
+        `${String(await lengthOf(page, "--native-spacing-hairline"))}px`,
+      );
+      expect(rule.start).toBe(
+        `${String(await lengthOf(page, "--native-spacing-row-rule-start"))}px`,
+      );
+      expect(rule.fill).toBe(
+        await tokenColour(page, "--native-color-row-rule"),
+      );
+    });
+
+    test("leaves no empty band above the Add row once the tags are all removed", async ({
+      page,
+    }) => {
+      details = { ...FROM_FILES, tags: { fromFile: [], edited: null } };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const add = shown.getByRole("button", { name: "Add a tag" });
+      const card = add.locator('xpath=ancestor::*[@data-slot="card"]');
+      await expect(shown.getByRole("group", { name: "Tags" })).toHaveCount(0);
+      expect((await boxOf(add)).y).toBeCloseTo((await boxOf(card)).y, 0);
+    });
+
+    test("keeps the Add row's text field in the row, its rule drawn and no pressed fill", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      await tap(shown.getByRole("button", { name: "Add a person" }));
+      const field = shown.getByRole("textbox", { name: "Add a person" });
+      const row = field.locator("xpath=..");
+      const [fieldBox, rowBox] = await Promise.all([boxOf(field), boxOf(row)]);
+      await page.mouse.move(
+        fieldBox.x + fieldBox.width / 2,
+        fieldBox.y + fieldBox.height / 2,
+      );
+      await page.mouse.down();
+
+      expect(
+        rowBox.x + rowBox.width - (fieldBox.x + fieldBox.width),
+      ).toBeCloseTo(await lengthOf(page, "--native-spacing-row-end"), 0);
+      await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      expect(
+        await row.evaluate(
+          (element) => getComputedStyle(element, "::after").height,
+        ),
+      ).toBe(`${String(await lengthOf(page, "--native-spacing-hairline"))}px`);
+      await page.mouse.up();
+      await field.press("Escape");
+      await expect(
+        shown.getByRole("button", { name: "Add a person" }),
+      ).toBeVisible();
+    });
+
+    test("adds a tag from the Add a tag row", async ({ page }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      await tap(shown.getByRole("button", { name: "Add a tag" }));
+      await shown.getByRole("textbox", { name: "Add a tag" }).fill("Harbour");
+      await shown.getByRole("textbox", { name: "Add a tag" }).press("Enter");
+
+      await expect(
+        shown.getByRole("group", { name: "Tags" }).getByRole("button"),
+      ).toHaveText(["Seinen", "Sea", "Harbour"]);
+      await expect(
+        shown.getByRole("button", { name: "Add a tag" }),
+      ).toBeVisible();
+    });
+
+    test("shows the first eight people, then Show all 12, with the Add row below", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        people: {
+          fromFile: Array.from({ length: 12 }, (_, index) => ({
+            name: `Author ${String(index + 1)}`,
+            role: "story",
+          })),
+          edited: null,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const people = shown.getByRole("group", { name: "People" });
+      await expect(
+        people.getByRole("button", { name: /^Remove/u }),
+      ).toHaveCount(8);
+      await expect(
+        people.getByRole("button", { name: "Show all 12" }),
+      ).toBeVisible();
+      await tap(people.getByRole("button", { name: "Show all 12" }));
+
+      await expect(
+        people.getByRole("button", { name: /^Remove/u }),
+      ).toHaveCount(12);
+      await expect(
+        shown.getByRole("button", { name: "Add a person" }),
+      ).toBeVisible();
+    });
+
+    test("sets Mark as 18+ as a list row with a regular title and its switch at the end", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const mark = shown.getByRole("switch", { name: "Mark as 18+" });
+      const row = mark.locator('xpath=ancestor::*[@data-slot="card"]');
+      const title = shown.getByText("Mark as 18+", { exact: true });
+      await expect(title).toHaveCSS("font-weight", "400");
+      const [rowBox, titleBox, markBox] = await Promise.all([
+        boxOf(row),
+        boxOf(title),
+        boxOf(mark),
+      ]);
+      expect(rowBox.height).toBeGreaterThanOrEqual(
+        (await lengthOf(page, "--native-spacing-row-two")) - 1,
+      );
+      expect(titleBox.x - rowBox.x).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-start"),
+        0,
+      );
+      expect(rowBox.x + rowBox.width - (markBox.x + markBox.width)).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-end"),
+        0,
+      );
+    });
+
+    test("offers only Undo in the notice, with no dismiss button of its own", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: TYPED_TITLE,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      await tap(shown.getByRole("button", { name: "Use the file’s title" }));
+
+      await expect(shown.getByRole("status").getByRole("button")).toHaveText([
+        "Undo",
+      ]);
+    });
+
+    test("sets the locked 18+ mark as the same list row, its link kept", async ({
+      page,
+    }) => {
+      details = { ...FROM_FILES, isRatedAdult: true };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const mark = shown.getByRole("switch", { name: "Mark as 18+" });
+      const row = mark.locator('xpath=ancestor::*[@data-slot="card"]');
+      const title = shown.getByText("Mark as 18+", { exact: true });
+      await expect(mark).toBeDisabled();
+      await expect(title).toHaveCSS("font-weight", "400");
+      await expect(
+        shown.getByRole("link", { name: "Settings › Library" }),
+      ).toBeVisible();
+      const [rowBox, titleBox] = await Promise.all([boxOf(row), boxOf(title)]);
+      expect(titleBox.x - rowBox.x).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-start"),
+        0,
+      );
+      expect(rowBox.height).toBeGreaterThanOrEqual(
+        (await lengthOf(page, "--native-spacing-row-two")) - 1,
+      );
+    });
+  },
+);
+
+test.describe(
+  "people and tags off the iPhone sheet",
+  { tag: "@native" },
+  () => {
+    test("keep their Add chip inside the chip group", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform === "ios", "an iPhone sets list rows");
+      const shown = await openEditor(page, platform);
+
+      for (const [name, add] of [
+        ["People", "Add a person"],
+        ["Tags", "Add a tag"],
+      ] as const) {
+        await expect(
+          shown.getByRole("group", { name }).getByRole("button", { name: add }),
+        ).toHaveCount(1);
+      }
+    });
+  },
+);
