@@ -90,6 +90,26 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     );
   });
 
+  test("sets where the library opens as a two-line row that opens a choice dialog", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const row = page.getByRole("button", { name: /^The library opens on/ });
+
+    await expect(row).toContainText("The tab used last");
+    await expect(row).toHaveAttribute("aria-haspopup", "dialog");
+    await expect(
+      page.getByText("If it would open on New chapters", { exact: false }),
+    ).toBeVisible();
+    await row.click();
+    const dialog = page.getByRole("dialog", { name: "The library opens on" });
+    await expect(dialog.getByRole("radio")).toHaveCount(4);
+    await dialog.getByRole("radio", { name: "Reading" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(row).toContainText("Reading");
+  });
+
   test("lifts the row a little off the page while it is dragged, then sets it down", async ({
     page,
   }) => {

@@ -24,6 +24,7 @@
     tabKey,
   } from "#lib/library/library-tabs.ts";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
+  import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
@@ -50,6 +51,13 @@
       openable.some(({ key }) => key === opensOn.choice)
       ? opensOn.choice
       : ALL_SERIES,
+  );
+
+  const opensOnLabel = $derived(
+    shownOpensOn === OPENS_ON_LAST_TAB
+      ? m.library_opens_on_last()
+      : (openable.find(({ key }) => key === shownOpensOn)?.name ??
+          m.library_opens_on_last()),
   );
 
   function detailOf(tab: ArrangedTab): string {
@@ -174,34 +182,54 @@
       </div>
     {/if}
   </div>
-  <section
-    class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
-  >
-    <div
-      class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
-    >
-      <span id={opensOnLabelId} class="text-small font-medium">
-        {m.library_opens_on()}
-      </span>
-      <NativeSelect
-        aria-labelledby={opensOnLabelId}
-        value={shownOpensOn}
-        class="desktop:medium:inline-setting-control"
-        fieldClass="touch:text-body touch:block-touch-target"
-        onchange={({
-          currentTarget: { value },
-        }: Event & { currentTarget: HTMLSelectElement }) => {
-          opensOn.choose(value);
+  {#if android.isOn}
+    <div class="mbs-lg flex flex-col">
+      <SettingChoiceRow
+        title={m.library_opens_on()}
+        value={opensOnLabel}
+        choices={[
+          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
+          ...openable.map(({ key, name }) => ({ value: key, label: name })),
+        ]}
+        chosen={shownOpensOn}
+        onChoose={(choice: string) => {
+          opensOn.choose(choice);
         }}
-      >
-        <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
-        {#each openable as { key, name } (key)}
-          <option value={key}>{name}</option>
-        {/each}
-      </NativeSelect>
+      />
+      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+        {m.library_opens_on_help()}
+      </p>
     </div>
-    <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
-  </section>
+  {:else}
+    <section
+      class="mbs-lg flex flex-col gap-sm rounded-card border border-border bg-card p-md"
+    >
+      <div
+        class="flex flex-col gap-sm desktop:medium:grid desktop:medium:grid-cols-setting-grid desktop:medium:items-center desktop:medium:gap-x-md"
+      >
+        <span id={opensOnLabelId} class="text-small font-medium">
+          {m.library_opens_on()}
+        </span>
+        <NativeSelect
+          aria-labelledby={opensOnLabelId}
+          value={shownOpensOn}
+          class="desktop:medium:inline-setting-control"
+          fieldClass="touch:text-body touch:block-touch-target"
+          onchange={({
+            currentTarget: { value },
+          }: Event & { currentTarget: HTMLSelectElement }) => {
+            opensOn.choose(value);
+          }}
+        >
+          <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
+          {#each openable as { key, name } (key)}
+            <option value={key}>{name}</option>
+          {/each}
+        </NativeSelect>
+      </div>
+      <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
+    </section>
+  {/if}
   <NewCategoryDialog
     isOpen={isNaming}
     onAdd={(name: string) => {
