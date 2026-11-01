@@ -23,6 +23,7 @@
   --color-native-button-secondary: var(--native-color-button-secondary);
   --color-native-control-fill-hover: var(--native-color-control-fill-hover);
   --color-native-control-fill-pressed: var(--native-color-control-fill-pressed);
+  --color-native-control-stroke: var(--native-color-control-stroke);
   --color-native-icon-button-fill: var(--native-color-icon-button-fill);
   --color-native-icon-button-fill-hover: var(--native-color-icon-button-fill-hover);
   --color-native-icon-button-fill-pressed: var(--native-color-icon-button-fill-pressed);
@@ -233,6 +234,8 @@
   --spacing-native-inspector: var(--native-spacing-inspector);
   --spacing-native-inspector-title: var(--native-spacing-inspector-title);
   --spacing-native-inspector-section: var(--native-spacing-inspector-section);
+  --spacing-native-inspector-chip-inline: var(--native-spacing-inspector-chip-inline);
+  --spacing-native-inspector-chip-gap: var(--native-spacing-inspector-chip-gap);
   --text-native-inspector-label: var(--native-text-inspector-label);
   --leading-native-inspector-label: var(--native-leading-inspector-label);
   --font-weight-native-inspector-label: var(--native-weight-inspector-label);

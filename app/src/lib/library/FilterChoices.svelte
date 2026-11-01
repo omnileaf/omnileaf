@@ -24,6 +24,7 @@
     ANDROID_FILTER_CHIP,
     ANDROID_FILTER_HEADING,
     MAC_INSPECTOR,
+    MAC_INSPECTOR_CHIP,
   } from "./filter-sheet-look";
   import FilterSetting from "./FilterSetting.svelte";
   import FilterToggles from "./FilterToggles.svelte";
@@ -93,6 +94,27 @@
       return look.section;
     }
     return isFilter && !isAndroidPhone && "pbs-lg";
+  }
+
+  function filterGroupClassOf(): string {
+    if (isInspector) {
+      return MAC_INSPECTOR.group;
+    }
+    return isAndroidPhone ? "flex flex-col" : look.group;
+  }
+
+  function moreTagsClassOf(): string | string[] {
+    if (isInspector) {
+      return "px-native-inspector-chip-inline";
+    }
+    if (isAndroidPhone) {
+      return [
+        ANDROID_FILTER_CHIP.chip,
+        ANDROID_FILTER_CHIP.other,
+        "text-native-on-button-plain",
+      ];
+    }
+    return "flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around";
   }
 
   const headingClass = $derived(headingClassOf());
@@ -189,7 +211,7 @@
 </section>
 <section class={["flex flex-col", sectionClassOf(true)]}>
   <h3 class={headingClass}>{m.library_filter()}</h3>
-  <div class={isAndroidPhone ? "flex flex-col" : look.group}>
+  <div class={filterGroupClassOf()}>
     {#if isGrouped}
       <PickerRow
         label={m.library_read_state()}
@@ -229,6 +251,7 @@
           label: FORMAT_LABELS[format](),
         }))}
         chosen={listing.filter.formats}
+        {isInspector}
         onToggle={(format: string) => {
           toggle("formats", format);
         }}
@@ -242,6 +265,7 @@
           label: languageName(language),
         }))}
         chosen={listing.filter.languages}
+        {isInspector}
         onToggle={(language: string) => {
           toggle("languages", language);
         }}
@@ -252,6 +276,7 @@
         label={m.library_filter_tags()}
         options={tagsShown.map((tag) => ({ value: tag, label: tag }))}
         chosen={listing.filter.tags}
+        {isInspector}
         onToggle={(tag: string) => {
           toggle("tags", tag);
         }}
@@ -259,19 +284,16 @@
         {#if tagsShown.length < choices.tags.length}
           <Button
             type="button"
-            look="outline"
-            class={isAndroidPhone
-              ? [
-                  ANDROID_FILTER_CHIP.chip,
-                  ANDROID_FILTER_CHIP.other,
-                  "text-native-on-button-plain",
-                ]
-              : "flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"}
+            {...isInspector ? { variant: "secondary" } : { look: "outline" }}
+            class={moreTagsClassOf()}
             onclick={() => {
               showsEveryTag = true;
             }}
           >
-            <Plus size={PLUS_SIZE} aria-hidden="true" />
+            <Plus
+              size={isInspector ? MAC_INSPECTOR_CHIP.iconSize : PLUS_SIZE}
+              aria-hidden="true"
+            />
             {m.library_more_tags()}
           </Button>
         {/if}

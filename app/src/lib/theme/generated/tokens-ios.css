@@ -13,6 +13,7 @@
   --native-blur-glass: 30px;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);
+  --native-color-control-stroke: transparent;
   --native-color-icon-button-fill: var(--color-hover);
   --native-color-icon-button-fill-hover: var(--color-hover);
   --native-color-icon-button-fill-pressed: var(--color-hover);
@@ -168,6 +169,8 @@
   --native-spacing-inspector: var(--spacing-docked-panel);
   --native-spacing-inspector-title: var(--spacing-toolbar);
   --native-spacing-inspector-section: var(--spacing-lg);
+  --native-spacing-inspector-chip-inline: var(--spacing-md);
+  --native-spacing-inspector-chip-gap: var(--spacing-sm);
   --native-text-inspector-label: var(--text-small);
   --native-leading-inspector-label: var(--text-small--line-height);
   --native-weight-inspector-label: var(--font-weight-medium);
