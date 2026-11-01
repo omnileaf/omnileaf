@@ -15,6 +15,7 @@ export interface CoverTileLook {
   readonly hoverCheckBox: string;
   readonly focusRing: string | undefined;
   readonly pickedRing: string;
+  readonly menuTargetRing: string;
   readonly pickedTitle: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
@@ -28,6 +29,8 @@ export interface CoverTileLook {
   readonly markOff: string;
   readonly tick: string;
 }
+
+const MENU_TARGET_RING = "outline-2 outline-offset-2 outline-border";
 
 export const PICKED_COVER_RING =
   "outline-2 outline-offset-2 outline-foreground";
@@ -59,6 +62,7 @@ const TODAYS_LOOK: CoverTileLook = {
   hoverCheckBox: "",
   focusRing: undefined,
   pickedRing: PICKED_COVER_RING,
+  menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   stack: null,
   cover: "",
@@ -90,6 +94,7 @@ const NATIVE_TILE = {
   focusRing: undefined,
   tick: "",
   pickedRing: PICKED_COVER_RING,
+  menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   stack: null,
   cover: "max-medium:rounded-native-cover",
@@ -148,10 +153,11 @@ const WINDOWS_TILE: CoverTileLook = {
 
 const MACOS_TILE: CoverTileLook = {
   ...TODAYS_LOOK,
+  menuTargetRing: "outline-3 outline-offset-2 outline-accent",
   pickedRing:
     "outline-(length:--native-spacing-tile-picked) outline-native-tile-picked outline-offset-0",
   pickedTitle:
-    "-mx-xs w-fit rounded-native-tile-picked-title bg-native-button-primary px-xs text-native-on-button-primary",
+    "-mx-xs w-fit rounded-native-tile-picked-title bg-accent px-xs text-on-accent",
 };
 
 const COVER_TILE_LOOKS = {
