@@ -84,11 +84,17 @@
       ]}
     >
       {#each yourReports.reports as report (report.code)}
-        <li class="flex flex-col gap-2xs px-lg py-md min-block-touch-target">
-          <span class="font-medium expanded:font-semibold"
+        <li
+          class="flex flex-col gap-2xs px-lg py-md min-block-touch-target android:max-medium:justify-center android:max-medium:gap-none android:max-medium:min-block-native-row-two"
+        >
+          <span
+            class="font-medium expanded:font-semibold android:max-medium:text-body android:max-medium:font-regular"
             >{madeAt.format(report.madeAtMs)}</span
           >
-          <span class="text-detail text-muted">{reportLine(report)}</span>
+          <span
+            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+            >{reportLine(report)}</span
+          >
         </li>
       {/each}
     </ul>
