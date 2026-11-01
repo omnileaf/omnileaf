@@ -65,6 +65,20 @@ test.describe("the tab bar on an iPad", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
+  test("rings a tab inside its capsule when the keyboard reaches it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const library = mainBar(page).getByRole("link", { name: "Library" });
+
+    await page.keyboard.press("Tab");
+    await library.focus();
+
+    await expect(library).toBeFocused();
+    await expect(library).toHaveCSS("outline-style", "solid");
+    await expect(library).toHaveCSS("outline-offset", "-5px");
+  });
+
   test("holds the library's Search and More on the bar's row at the trailing end, with the large title under", async ({
     page,
   }) => {

@@ -20,7 +20,7 @@
           href={resolve(SECTION_ROUTE_IDS[section])}
           aria-current={isSelected ? "page" : undefined}
           class={[
-            "flex flex-1 items-center justify-center rounded-full px-lg text-native-button/native-button font-native-bar-button tracking-native-button transition-control min-inline-none active:opacity-50",
+            "flex flex-1 items-center justify-center rounded-full px-lg text-native-button/native-button font-native-bar-button tracking-native-button transition-control min-inline-none focus-visible:focus-ring focus-visible:-outline-offset-5 active:opacity-50",
             isSelected
               ? "bg-native-tab-pill text-native-on-tab-pill"
               : "text-native-on-tab",
