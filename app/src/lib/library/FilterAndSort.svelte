@@ -194,7 +194,11 @@
           <div
             class="flex items-center gap-md ps-filter-panel-inline pe-lg pbs-filter-panel-top pbe-filter-panel-title-gap"
           >
-            <HeaderBadge icon={ListFilter} look="header-accent" />
+            <HeaderBadge
+              icon={ListFilter}
+              look="header-accent"
+              class="windows:hidden"
+            />
             <DialogTitle class="flex-1 text-panel-title font-bold">
               {m.library_filter_and_sort()}
             </DialogTitle>
