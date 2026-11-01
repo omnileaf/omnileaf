@@ -274,6 +274,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   showTrayMenu: () => null,
   showIconActions: () => null,
   watchIconActions: () => null,
+  watchOpenWith: () => null,
   openSystemSettings: () => null,
   openColourSettings: () => null,
   panicInCore: () => null,
