@@ -56,7 +56,7 @@
   import { DragSelect } from "./drag-select.svelte";
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
-  import type { SeriesMenuActions } from "./series-menu";
+  import { MENU_ICON_SIZE, type SeriesMenuActions } from "./series-menu";
   import PickedSeriesMenu from "./PickedSeriesMenu.svelte";
   import SelectionMark from "./SelectionMark.svelte";
   import TileCheck from "./TileCheck.svelte";
@@ -159,7 +159,6 @@
       : {};
   }
 
-  const MENU_ICON_SIZE = 16;
   const namesFolderApp = platform === "windows" || platform === "macos";
   const showInFolderLabel = namesFolderApp
     ? showFolderLabel(platform)
@@ -183,9 +182,7 @@
     if (selection?.has(one.id) === true) {
       return tile.pickedRing;
     }
-    return isMenuOpen && menuSeries?.id === one.id
-      ? "outline-2 outline-offset-2 outline-border"
-      : "";
+    return isMenuOpen && menuSeries?.id === one.id ? tile.menuTargetRing : "";
   }
 
   function pickedTitle(one: LibrarySeries): ClassValue {
@@ -257,6 +254,14 @@
         : null;
     const id = cell?.getAttribute("data-series-id");
     menuSeries = series.find((one) => one.id === id);
+    if (
+      platform === "macos" &&
+      menuSeries !== undefined &&
+      selection?.isSelecting === true &&
+      !selection.has(menuSeries.id)
+    ) {
+      selection.pickOnly([menuSeries.id]);
+    }
   }
   const cutOffTitles = new SvelteSet<string>();
 
@@ -829,7 +834,7 @@
           {m.edit_details_menu()}
         </ContextMenuItem>
       {/if}
-      {#if !isSelecting}
+      {#if platform !== "macos"}
         <ContextMenuItem
           onSelect={() => {
             menu.onSelect(target);
@@ -867,6 +872,7 @@
     <PickedSeriesMenu
       actions={pickedMenu}
       count={selection.count}
+      canLabel={menu?.canLabel === true}
       {showInFolderLabel}
     />
   {/if}

@@ -14,6 +14,7 @@ const BOOK = "0190a3e4-0000-8000-8000-0000000b0001";
 
 let shownInFolder: string[] = [];
 let removed: string[][] = [];
+let markedRead: string[][] = [];
 
 testOnlyInItsWebview("macos");
 test.use({
@@ -29,6 +30,16 @@ test.use({
       next: null,
     }),
     librarySeriesCount: () => LIBRARY.length,
+    seriesLabels: () => ({
+      keepsLabels: true,
+      categories: [],
+      tags: [],
+      suggestedTags: [],
+    }),
+    markSeriesRead: (series) => {
+      markedRead = [...markedRead, series];
+      return [];
+    },
     showSeriesInFolder: (series) => {
       shownInFolder = [...shownInFolder, series];
       return null;
@@ -48,6 +59,7 @@ test.use({
 test.beforeEach(() => {
   shownInFolder = [];
   removed = [];
+  markedRead = [];
 });
 
 function covers(page: Page): Locator {
@@ -93,6 +105,41 @@ test("ends a series' menu with Show in Finder and Remove from library", async ({
     "Show in Finder",
     "Remove from library…",
   ]);
+});
+
+test("leaves Select out of a series' menu, since a click already selects", async ({
+  page,
+}) => {
+  await openLibrary(page);
+
+  const menu = await rightClick(page, 1);
+
+  expect(await namesIn(menu)).not.toContain("Select");
+});
+
+test("rings the right-clicked cover in the accent", async ({ page }) => {
+  await openLibrary(page);
+
+  await rightClick(page, 1);
+
+  const ring = await covers(page)
+    .getByRole("link")
+    .nth(1)
+    .locator("> div")
+    .first()
+    .evaluate((cover) => {
+      const { outlineColor, outlineWidth, outlineOffset } =
+        getComputedStyle(cover);
+      const probe = document.createElement("div");
+      probe.style.color = "var(--color-accent)";
+      document.body.append(probe);
+      const accent = getComputedStyle(probe).color;
+      probe.remove();
+      return { outlineColor, outlineWidth, outlineOffset, accent };
+    });
+  expect(ring.outlineColor).toBe(ring.accent);
+  expect(ring.outlineWidth).toBe("3px");
+  expect(ring.outlineOffset).toBe("2px");
 });
 
 test("offers no Rename or Share", async ({ page }) => {
@@ -144,7 +191,7 @@ test("asks before removing the series from the library", async ({ page }) => {
 });
 
 test.describe("with several series selected", () => {
-  test("is Show in Finder then Remove 2 series from library", async ({
+  test("is Mark as read, Categories and tags, Show in Finder then Remove 2 series from library", async ({
     page,
   }) => {
     await openLibrary(page);
@@ -153,9 +200,35 @@ test.describe("with several series selected", () => {
     const menu = await rightClick(page, 0);
 
     expect(await namesIn(menu)).toEqual([
+      "Mark as read",
+      "Categories and tags…",
       "Show in Finder",
       "Remove 2 series from library…",
     ]);
+  });
+
+  test("marks every selected series as read", async ({ page }) => {
+    await openLibrary(page);
+    await pickFirstTwo(page);
+    const menu = await rightClick(page, 1);
+
+    await menu.getByRole("menuitem", { name: "Mark as read" }).click();
+
+    await expect
+      .poll(() => markedRead)
+      .toEqual([[LIBRARY[0]?.id, LIBRARY[1]?.id]]);
+  });
+
+  test("opens Categories and tags for the selection", async ({ page }) => {
+    await openLibrary(page);
+    await pickFirstTwo(page);
+    const menu = await rightClick(page, 1);
+
+    await menu.getByRole("menuitem", { name: "Categories and tags…" }).click();
+
+    await expect(
+      page.getByRole("dialog", { name: "Categories and tags" }),
+    ).toBeVisible();
   });
 
   test("shows every selected series in Finder", async ({ page }) => {
@@ -188,7 +261,7 @@ test.describe("with several series selected", () => {
       .toEqual([[LIBRARY[0]?.id, LIBRARY[1]?.id]]);
   });
 
-  test("is the single series' menu without Select on a cover that is not selected", async ({
+  test("selects only the cover right-clicked when it was not selected, as Finder does", async ({
     page,
   }) => {
     await openLibrary(page);
@@ -196,9 +269,20 @@ test.describe("with several series selected", () => {
 
     const menu = await rightClick(page, 3);
 
-    const names = await namesIn(menu);
-    expect(names.slice(-2)).toEqual(["Show in Finder", "Remove from library…"]);
-    expect(names).not.toContain("Select");
+    expect((await namesIn(menu)).slice(-2)).toEqual([
+      "Show in Finder",
+      "Remove from library…",
+    ]);
+    await expect(
+      covers(page).getByRole("checkbox", { checked: true }),
+    ).toHaveCount(1);
+    await expect(covers(page).getByRole("checkbox").nth(3)).toBeChecked();
+    await menu.getByRole("menuitem", { name: "Remove from library…" }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Remove", exact: true })
+      .click();
+    await expect.poll(() => removed).toEqual([[LIBRARY[3]?.id]]);
   });
 
   test("keeps the selection when the menu is dismissed", async ({ page }) => {

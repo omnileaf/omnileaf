@@ -477,6 +477,10 @@
           : undefined,
       picked: isMac
         ? {
+            onMarkRead: markPickedRead,
+            onLabel: () => {
+              labelPicked("categories");
+            },
             onShowInFolder: showPickedInFolder,
             onRemove: () => {
               removing = seriesTargets(selection.picked);
