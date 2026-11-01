@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   accessibilityViolations,
   boxOf,
+  DEFAULT_BACKEND,
   expect,
   testOnlyInItsWebview,
   test,
@@ -121,4 +122,31 @@ test.describe("the series page on Windows", () => {
       });
     });
   }
+});
+
+test.describe("a series without books on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    viewport: WINDOW,
+    platform: "windows",
+    backend: { ...DEFAULT_BACKEND, ...new FakeShelf([]).backend() },
+  });
+
+  test("puts Rescan first as the accent button and Show in File Explorer beside it", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    const buttons = page
+      .getByRole("main")
+      .getByRole("button", { name: /^(Show in|Rescan)/ });
+
+    await expect(buttons).toHaveText([
+      "Rescan the folder",
+      "Show in File Explorer",
+    ]);
+    await expect(buttons.first()).toHaveCSS(
+      "background-color",
+      THEMES.light.accent,
+    );
+  });
 });

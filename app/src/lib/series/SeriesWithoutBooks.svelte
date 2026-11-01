@@ -23,6 +23,11 @@
     onShowFolder: () => void;
   } = $props();
 
+  const nativeOrder = $derived(
+    platform === "windows"
+      ? (["rescan", "show"] as const)
+      : (["show", "rescan"] as const),
+  );
   const showFolder = $derived(
     TOUCH.includes(platform)
       ? m.series_show_folder()
@@ -36,26 +41,31 @@
     title={m.series_no_books()}
     body={m.series_no_books_body()}
   >
-    {#if platform === "macos"}
+    {#if platform === "macos" || platform === "windows"}
       <div class="mbs-empty-button-macos flex flex-wrap justify-center gap-sm">
-        <Button
-          type="button"
-          variant="secondary"
-          size="large"
-          onclick={onShowFolder}
-        >
-          <FolderOpen size={ICON_SIZE} aria-hidden="true" />
-          {showFolderLabel(platform)}
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="large"
-          onClickPromise={onRescan}
-        >
-          <RefreshCw size={ICON_SIZE} aria-hidden="true" />
-          {m.series_rescan()}
-        </Button>
+        {#each nativeOrder as action (action)}
+          {#if action === "rescan"}
+            <Button
+              type="button"
+              variant="primary"
+              size="large"
+              onClickPromise={onRescan}
+            >
+              <RefreshCw size={ICON_SIZE} aria-hidden="true" />
+              {m.series_rescan()}
+            </Button>
+          {:else}
+            <Button
+              type="button"
+              variant="secondary"
+              size="large"
+              onclick={onShowFolder}
+            >
+              <FolderOpen size={ICON_SIZE} aria-hidden="true" />
+              {showFolderLabel(platform)}
+            </Button>
+          {/if}
+        {/each}
       </div>
     {:else}
       <div class="mbs-lg flex flex-wrap justify-center gap-sm">
