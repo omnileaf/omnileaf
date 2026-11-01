@@ -1,15 +1,44 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
 
-const TODAYS_WIDTH = "inline-view-panel";
+import {
+  type GroupLook,
+  PLAIN_GROUP_LOOK,
+  POPOVER_GROUP_LOOK,
+} from "./group-look";
 
-const VIEW_PANEL_WIDTHS = {
-  linux: "inline-view-panel-wide",
-  macos: TODAYS_WIDTH,
-  windows: TODAYS_WIDTH,
-  ios: TODAYS_WIDTH,
-  android: TODAYS_WIDTH,
-} satisfies Record<Platform, string>;
+export interface ViewPanelLook {
+  readonly width: string;
+  readonly surface: string;
+  readonly title: string;
+  readonly groups: GroupLook;
+}
 
-export function viewPanelWidth(platform: Platform): string {
-  return VIEW_PANEL_WIDTHS[platform];
+const PANEL_SPACING =
+  "gap-native-popover-gap pbs-native-popover-top pbe-native-popover-bottom";
+
+const TODAYS_LOOK: ViewPanelLook = {
+  width: "inline-view-panel",
+  surface: `${PANEL_SPACING} px-panel-inline`,
+  title: "text-panel-title font-bold",
+  groups: PLAIN_GROUP_LOOK,
+};
+
+const IPAD_LOOK: ViewPanelLook = {
+  ...TODAYS_LOOK,
+  surface: `${PANEL_SPACING} rounded-native-sheet border-0 bg-native-popover shadow-native-popover-lift backdrop-blur-native-glass backdrop-saturate-180`,
+  title:
+    "px-lg text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title",
+  groups: POPOVER_GROUP_LOOK,
+};
+
+const VIEW_PANEL_LOOKS = {
+  linux: { ...TODAYS_LOOK, width: "inline-view-panel-wide" },
+  macos: TODAYS_LOOK,
+  windows: TODAYS_LOOK,
+  ios: IPAD_LOOK,
+  android: TODAYS_LOOK,
+} satisfies Record<Platform, ViewPanelLook>;
+
+export function viewPanelLook(platform: Platform): ViewPanelLook {
+  return VIEW_PANEL_LOOKS[platform];
 }

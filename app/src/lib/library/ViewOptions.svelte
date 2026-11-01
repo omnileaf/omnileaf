@@ -16,8 +16,9 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
+  import { groupLook } from "./group-look";
   import ViewChoices from "./ViewChoices.svelte";
-  import { viewPanelWidth } from "./view-panel";
+  import { viewPanelLook } from "./view-panel";
 
   const ICON_SIZE = 16;
 
@@ -53,14 +54,18 @@
   );
   const bar = commandBarLook(platform);
   const isMac = platform === "macos";
-  const panelWidth = viewPanelWidth(platform);
+  const panel = viewPanelLook(platform);
+  const opener = $derived(showsButton ? button : returnFocusTo);
 
   let direction: "ltr" | "rtl" = $state("ltr");
 
-  function open(): void {
-    if (button !== null) {
-      direction = getComputedStyle(button).direction === "rtl" ? "rtl" : "ltr";
+  $effect.pre(() => {
+    if (isOpen && opener !== null) {
+      direction = getComputedStyle(opener).direction === "rtl" ? "rtl" : "ltr";
     }
+  });
+
+  function open(): void {
     isOpen = true;
   }
 
@@ -70,7 +75,7 @@
 
   function focusButton(event: Event): void {
     event.preventDefault();
-    (showsButton ? button : returnFocusTo)?.focus();
+    opener?.focus();
   }
 </script>
 
@@ -124,17 +129,18 @@
 {#if isWide.current}
   <Popover.Root bind:open={isOpen}>
     <PopoverContent
-      customAnchor={button}
+      customAnchor={opener}
       dir={direction}
       align="end"
       aria-labelledby={titleId}
       class={[
-        "flex flex-col gap-md overflow-auto px-panel-inline pbs-lg pbe-panel-inline max-block-full",
-        panelWidth,
+        "flex flex-col overflow-auto max-block-full",
+        panel.surface,
+        panel.width,
       ]}
       onCloseAutoFocus={focusButton}
     >
-      <h2 id={titleId} class="text-panel-title font-bold">
+      <h2 id={titleId} class={panel.title}>
         {m.library_view_options()}
       </h2>
       <ViewChoices
@@ -143,6 +149,7 @@
         {mostThatFit}
         {hasCategories}
         {onChoose}
+        look={panel.groups}
       />
     </PopoverContent>
   </Popover.Root>
@@ -211,7 +218,7 @@
           {mostThatFit}
           {hasCategories}
           {onChoose}
-          isGrouped={isIos}
+          look={groupLook(isIos)}
         />
       </div>
     </DrawerContent>

@@ -10,12 +10,29 @@ import { followCorePlatform } from "#lib/page/platform.ts";
 import ViewOptions from "./ViewOptions.svelte";
 
 const PHONE = { width: 390, height: 844 };
+const TABLET = { width: 820, height: 1180 };
 const LARGE_DETENT = 0.92;
+const MORE_BUTTON = { right: 20, top: 24, size: 44 };
+
+function addMoreButton(): HTMLButtonElement {
+  const more = document.createElement("button");
+  more.setAttribute("aria-label", "More for the library");
+  Object.assign(more.style, {
+    position: "fixed",
+    top: `${String(MORE_BUTTON.top)}px`,
+    right: `${String(MORE_BUTTON.right)}px`,
+    width: `${String(MORE_BUTTON.size)}px`,
+    height: `${String(MORE_BUTTON.size)}px`,
+  });
+  document.body.append(more);
+  return more;
+}
 
 async function openOn(platform: Platform, size = PHONE) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await page.viewport(size.width, size.height);
+  const returnFocusTo = size === PHONE ? null : addMoreButton();
   await render(ViewOptions, {
     view: DEFAULT_LIBRARY_VIEW,
     coversDrawn: 3,
@@ -24,6 +41,7 @@ async function openOn(platform: Platform, size = PHONE) {
     onChoose: () => undefined,
     isOpen: true,
     showsButton: false,
+    returnFocusTo,
   });
 }
 
@@ -143,3 +161,82 @@ test("draws the Display choices as labels alone in one row on an iPhone", async 
   expect(display.querySelectorAll("svg")).toHaveLength(0);
   expect(new Set(tops).size).toBe(1);
 });
+
+test("opens View options on an iPad as a popover under the More button, lined up with its right edge", async () => {
+  await openOn("ios", TABLET);
+
+  const popover = page.getByRole("dialog").element();
+  const more = boxOf(
+    page.getByRole("button", { name: "More for the library" }).element(),
+  );
+
+  expect(boxOf(popover).width).toBe(360);
+  await expect.poll(() => Math.round(boxOf(popover).right)).toBe(more.right);
+  await expect.poll(() => Math.round(boxOf(popover).top)).toBe(more.bottom + 8);
+});
+
+test("draws the iPad's View options popover on a 38 radius glass fill with a deep shadow and no edge", async () => {
+  await openOn("ios", TABLET);
+
+  const style = getComputedStyle(page.getByRole("dialog").element());
+
+  expect(style.borderRadius).toBe("38px");
+  expect(style.borderTopWidth).toBe("0px");
+  expect(style.backgroundColor).toBe("rgba(255, 255, 255, 0.85)");
+  expect(style.backdropFilter).toContain("blur(30px)");
+  expect(style.backdropFilter).toContain("saturate(1.8)");
+  expect(style.boxShadow).toContain("0px 8px 48px");
+});
+
+test("pads the iPad's View options popover 20 above and 6 below, with 16 beside its words", async () => {
+  await openOn("ios", TABLET);
+
+  const popover = page.getByRole("dialog").element();
+  const style = getComputedStyle(popover);
+  const title = page.getByRole("heading", { name: "View options" });
+
+  expect([style.paddingTop, style.paddingBottom]).toEqual(["20px", "6px"]);
+  expect([style.paddingLeft, style.paddingRight]).toEqual(["0px", "0px"]);
+  expect(style.rowGap).toBe("14px");
+  expect(
+    boxOf(title.element()).left +
+      parseFloat(getComputedStyle(title.element()).paddingLeft) -
+      boxOf(popover).left,
+  ).toBe(16);
+});
+
+test("sets the iPad popover's title as a 17 semibold headline and its sections as 13 footnotes", async () => {
+  await openOn("ios", TABLET);
+
+  const title = getComputedStyle(
+    page.getByRole("heading", { name: "View options" }).element(),
+  );
+  const section = getComputedStyle(
+    page.getByRole("heading", { name: "Layout", exact: true }).element(),
+  );
+
+  expect([title.fontSize, title.fontWeight]).toEqual(["17px", "600"]);
+  expect([section.fontSize, section.fontWeight]).toEqual(["13px", "590"]);
+});
+
+test("keeps the iPad popover's switch rows inside it, padded 16 at their end", async () => {
+  await openOn("ios", TABLET);
+
+  const popover = boxOf(page.getByRole("dialog").element());
+  const unread = page.getByRole("switch", { name: "Unread count" }).element();
+
+  expect(boxOf(unread).right).toBeLessThanOrEqual(popover.right);
+  expect(getComputedStyle(unread).paddingRight).toBe("16px");
+});
+
+for (const platform of ["android", "linux", "macos", "windows"] as const) {
+  test(`keeps ${platform}'s View options popover on its own surface at a tablet's width`, async () => {
+    await openOn(platform, TABLET);
+
+    const style = getComputedStyle(page.getByRole("dialog").element());
+
+    expect(style.borderRadius).not.toBe("38px");
+    expect(style.borderTopWidth).toBe("1px");
+    expect(style.backgroundColor).not.toBe("rgba(255, 255, 255, 0.85)");
+  });
+}
