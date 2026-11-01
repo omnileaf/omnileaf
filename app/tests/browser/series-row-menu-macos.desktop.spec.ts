@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import {
   DEFAULT_BACKEND,
@@ -100,7 +100,9 @@ test.describe("a book's row menu on macOS", () => {
       /^\s*Show in Finder/,
       /^\s*Delete/,
     ]);
-    await expect(items.last()).not.toHaveCSS("color", "rgb(196, 43, 28)");
+    const colourOf = (item: Locator) =>
+      item.evaluate((element) => getComputedStyle(element).color);
+    expect(await colourOf(items.last())).toBe(await colourOf(items.first()));
   });
 
   test("shows the book in Finder", async ({ page }) => {
