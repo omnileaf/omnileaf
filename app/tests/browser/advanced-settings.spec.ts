@@ -488,9 +488,16 @@ test.describe("Undo", () => {
     await page.goto("/settings/advanced");
 
     await page.getByRole("switch", { name: "Offer Undo" }).click();
-    await page
-      .getByRole("combobox", { name: "Keep Undo for" })
-      .selectOption({ label: "30 seconds" });
+    const select = page.getByRole("combobox", { name: "Keep Undo for" });
+    if (await select.isVisible()) {
+      await select.selectOption({ label: "30 seconds" });
+    } else {
+      await page.getByRole("button", { name: /^Keep Undo for/ }).click();
+      await page
+        .getByRole("dialog", { name: "Keep Undo for" })
+        .getByRole("radio", { name: "30 seconds" })
+        .click();
+    }
     await page
       .getByRole("switch", { name: "Hold it while hovered or focused" })
       .click();
@@ -499,9 +506,14 @@ test.describe("Undo", () => {
     await expect(
       page.getByRole("switch", { name: "Offer Undo" }),
     ).not.toBeChecked();
-    await expect(
-      page.getByRole("combobox", { name: "Keep Undo for" }),
-    ).toHaveValue("30");
+    const reloaded = page.getByRole("combobox", { name: "Keep Undo for" });
+    if (await reloaded.isVisible()) {
+      await expect(reloaded).toHaveValue("30");
+    } else {
+      await expect(
+        page.getByRole("button", { name: /^Keep Undo for/ }),
+      ).toContainText("30 seconds");
+    }
     await expect(
       page.getByRole("switch", { name: "Hold it while hovered or focused" }),
     ).not.toBeChecked();

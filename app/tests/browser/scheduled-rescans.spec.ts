@@ -100,8 +100,15 @@ for (const platform of ["ios", "android", "linux"] as const) {
       const row = await boxOf(rowOfSwitch);
       const pane = await boxOf(rowOfSwitch.locator(".."));
 
-      expect(row.x).toBeCloseTo(pane.x, 0);
-      expect(row.width).toBeCloseTo(pane.width, 0);
+      const runsPastThePane =
+        platform === "android" && viewportOf(page).width <= PHONE_MAX_WIDTH;
+      if (runsPastThePane) {
+        expect(row.x).toBeLessThanOrEqual(pane.x);
+        expect(row.width).toBeGreaterThanOrEqual(pane.width);
+      } else {
+        expect(row.x).toBeCloseTo(pane.x, 0);
+        expect(row.width).toBeCloseTo(pane.width, 0);
+      }
       expect(row.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
     });
   });

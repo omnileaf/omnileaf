@@ -15,6 +15,7 @@
     readonly isOn: boolean;
     readonly onToggle: () => void;
     readonly class?: ClassValue;
+    readonly bleeds?: boolean;
   }
 
   let {
@@ -23,13 +24,16 @@
     isOn,
     onToggle,
     class: className,
+    bleeds = false,
   }: Props = $props();
 
   const ROW =
     "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target";
 
   const ANDROID_ROW =
-    "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body inline-full min-block-[4.5rem]";
+    "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row-two";
+
+  const ANDROID_BLEED = "-mx-page-start -me-page-end";
 
   const id = $props.id();
   const platform = currentPlatform();
@@ -60,7 +64,9 @@
       ? undefined
       : `${id}-description`}
     class={[
-      android.isOn ? ANDROID_ROW : ROW,
+      android.isOn
+        ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full"]
+        : ROW,
       "hover:tint-hover active:tint-pressed",
       ROW_FOCUS_RING,
       className,

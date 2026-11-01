@@ -59,10 +59,11 @@
 <div class="mbs-pane-gap flex flex-col gap-lg">
   <p class="text-body text-muted desktop:text-label">{m.animations_intro()}</p>
   <div
-    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+    class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:max-medium:divide-y-0 android:max-medium:overflow-visible android:max-medium:border-0 android:max-medium:bg-transparent"
   >
     {#each groups as { group, label, description } (group)}
       <SettingSwitch
+        bleeds
         {label}
         {description}
         isOn={animations.isOn(group)}
