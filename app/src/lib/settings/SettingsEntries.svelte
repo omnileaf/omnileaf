@@ -42,19 +42,20 @@
       >
         <span
           aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-transparent android:max-medium:bg-transparent android:max-medium:text-muted"
         >
           <entry.icon size={ICON_SIZE} />
         </span>
         <span
           class="flex flex-1 flex-col gap-2xs min-inline-none desktop:gap-xs"
         >
-          <span class="font-semibold desktop:text-label desktop:font-medium"
+          <span
+            class="font-semibold android:max-medium:font-regular desktop:text-label desktop:font-medium"
             >{entry.label}</span
           >
           {#if entry.summary !== undefined}
             <span
-              class="text-detail text-muted group-hover:text-foreground desktop:text-label"
+              class="text-detail text-muted group-hover:text-foreground android:max-medium:text-native-row-subtitle/native-row-subtitle desktop:text-label"
               >{entry.summary}</span
             >
           {/if}
@@ -62,7 +63,7 @@
         <ChevronRight
           size={CHEVRON_SIZE}
           aria-hidden="true"
-          class="shrink-0 text-muted rtl:-scale-x-100"
+          class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
         />
       </a>
     </li>

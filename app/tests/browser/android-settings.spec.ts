@@ -230,3 +230,45 @@ test.describe(
     });
   },
 );
+
+test.describe(
+  "the Settings list on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's list rows");
+    });
+
+    test("draws each entry's icon bare, with no circle behind it and no chevron at the end", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page
+        .getByRole("main")
+        .getByRole("link", { name: /^General/ });
+      const icon = row.locator("svg").first();
+
+      await expect(icon.locator("xpath=..")).toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+      await expect(row.locator("svg:visible")).toHaveCount(1);
+    });
+
+    test("sets each name at 16px and its line under it at 14px, both in regular weight", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page
+        .getByRole("main")
+        .getByRole("link", { name: /^General/ });
+      const name = row.getByText("General", { exact: true });
+      const line = row.getByText(/^English/);
+
+      await expect(name).toHaveCSS("font-size", "16px");
+      await expect(name).toHaveCSS("font-weight", "400");
+      await expect(line).toHaveCSS("font-size", "14px");
+      await expect(line).toHaveCSS("line-height", "20px");
+    });
+  },
+);
