@@ -41,6 +41,15 @@ export const MAC_INSPECTOR = {
   },
 } as const;
 
+export const MAC_INSPECTOR_CHIP = {
+  group: "flex flex-wrap gap-native-inspector-chip-gap",
+  chip: "flex shrink-0 items-center gap-xs rounded-native-button px-native-inspector-chip-inline text-native-button/native-button font-native-button tracking-native-button whitespace-nowrap transition-control min-block-native-button",
+  checkSize: 12,
+  chosen: "bg-native-accent-soft text-native-on-button-link",
+  other:
+    "bg-native-button-secondary text-native-on-button-secondary hover:bg-native-control-fill-hover active:bg-native-control-fill-pressed",
+} as const;
+
 export const MAC_INSPECTOR_PANEL = {
   aside:
     "fixed inset-y-none inset-e-none z-series-bar flex flex-col border-s border-native-top-bar-scrolled-edge bg-background inline-native-inspector",

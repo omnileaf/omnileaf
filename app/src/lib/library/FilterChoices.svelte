@@ -229,6 +229,7 @@
           label: FORMAT_LABELS[format](),
         }))}
         chosen={listing.filter.formats}
+        {isInspector}
         onToggle={(format: string) => {
           toggle("formats", format);
         }}
@@ -242,6 +243,7 @@
           label: languageName(language),
         }))}
         chosen={listing.filter.languages}
+        {isInspector}
         onToggle={(language: string) => {
           toggle("languages", language);
         }}
@@ -252,6 +254,7 @@
         label={m.library_filter_tags()}
         options={tagsShown.map((tag) => ({ value: tag, label: tag }))}
         chosen={listing.filter.tags}
+        {isInspector}
         onToggle={(tag: string) => {
           toggle("tags", tag);
         }}
@@ -259,14 +262,16 @@
         {#if tagsShown.length < choices.tags.length}
           <Button
             type="button"
-            look="outline"
-            class={isAndroidPhone
-              ? [
-                  ANDROID_FILTER_CHIP.chip,
-                  ANDROID_FILTER_CHIP.other,
-                  "text-native-on-button-plain",
-                ]
-              : "flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"}
+            {...isInspector ? { variant: "secondary" } : { look: "outline" }}
+            class={isInspector
+              ? "px-native-inspector-chip-inline"
+              : isAndroidPhone
+                ? [
+                    ANDROID_FILTER_CHIP.chip,
+                    ANDROID_FILTER_CHIP.other,
+                    "text-native-on-button-plain",
+                  ]
+                : "flex items-center gap-xs rounded-control px-md text-small font-medium block-search-chip ios:max-medium:rounded-full ios:max-medium:border-0 ios:max-medium:bg-native-button-outline ios:max-medium:block-native-segment touch:touch-target-around"}
             onclick={() => {
               showsEveryTag = true;
             }}

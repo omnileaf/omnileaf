@@ -24,6 +24,10 @@ const FOOTER_PADDING_BOTTOM = 16;
 const NARROWEST_DOCKED_WIDTH = 1000;
 const TOOLBAR_HEIGHT = 56;
 const SHEET_WINDOW = { width: NARROWEST_DOCKED_WIDTH - 1, height: 800 };
+const CHIP_HEIGHT = 24;
+const CHIP_PADDING = "10px";
+const CHIP_GAP = 6;
+const CHIP_CHECK_SIZE = 12;
 const SHORT_WINDOW = { width: 1280, height: 300 };
 
 testOnlyInItsWebview("macos");
@@ -34,6 +38,14 @@ test.use({
     ...DEFAULT_BACKEND,
     librarySeries: () => ({ series: LIBRARY, next: null }),
     librarySeriesCount: () => LIBRARY.length,
+    libraryFilterChoices: () => ({
+      formats: ["comic", "manga", "book"],
+      languages: ["ja", "en"],
+      tags: ["Slice of life", "Seinen", "Sea", "Letters"],
+      ratesAdult: false,
+      keepsBookmarks: false,
+      smart: [],
+    }),
   },
 });
 
@@ -246,6 +258,95 @@ test("draws the sort order as a 24px button level with the pop-up", async ({
   expect(order.width).toBe(POP_UP_HEIGHT);
 });
 
+function chipsOf(inspector: Locator, name: string): Locator {
+  return inspector.getByRole("group", { name, exact: true });
+}
+
+test("draws the Format chips as flat 24px control-fill buttons in the button type", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+
+  for (const chip of await chipsOf(inspector, "Format")
+    .getByRole("button")
+    .all()) {
+    const box = await boxOf(chip);
+    const style = await drawn(chip, [
+      "background-color",
+      "border-top-width",
+      "border-top-left-radius",
+      "padding-left",
+      "font-size",
+      "font-weight",
+    ]);
+    expect(box.height).toBe(CHIP_HEIGHT);
+    expect(style).toEqual({
+      "background-color": "rgba(0, 0, 0, 0.08)",
+      "border-top-width": "0px",
+      "border-top-left-radius": "6px",
+      "padding-left": CHIP_PADDING,
+      "font-size": "13px",
+      "font-weight": "510",
+    });
+  }
+});
+
+test("sets a chosen chip in the accent tint with a 12px check", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+  const japanese = chipsOf(inspector, "Language").getByRole("button", {
+    name: "Japanese",
+  });
+
+  await japanese.click();
+
+  await expect(japanese).toHaveAttribute("aria-pressed", "true");
+  await settle(japanese);
+  const style = await drawn(japanese, ["background-color", "color"]);
+  expect(style).toEqual({
+    "background-color": "rgb(221, 235, 226)",
+    color: "rgb(47, 111, 79)",
+  });
+  const check = await boxOf(japanese.locator("svg"));
+  expect(check.width).toBe(CHIP_CHECK_SIZE);
+});
+
+test("spaces the chips 6px apart and sets the label 8px over them", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+
+  const label = await boxOf(inspector.getByText("Format", { exact: true }));
+  const first = await boxOf(
+    chipsOf(inspector, "Format").getByRole("button").first(),
+  );
+  const second = await boxOf(
+    chipsOf(inspector, "Format").getByRole("button").nth(1),
+  );
+  expect(second.x - (first.x + first.width)).toBe(CHIP_GAP);
+  expect(first.y - (label.y + label.height)).toBe(SECTION_GAP);
+});
+
+test("draws More tags as a chip like the tags and reveals the rest", async ({
+  page,
+}) => {
+  const inspector = await openInspector(page);
+  const more = inspector.getByRole("button", { name: "More tags" });
+
+  const box = await boxOf(more);
+  const style = await drawn(more, ["background-color", "padding-left"]);
+  expect(box.height).toBe(CHIP_HEIGHT);
+  expect(style).toEqual({
+    "background-color": "rgba(0, 0, 0, 0.08)",
+    "padding-left": CHIP_PADDING,
+  });
+  await more.click();
+  await expect(
+    chipsOf(inspector, "Tags").getByRole("button", { name: "Letters" }),
+  ).toBeVisible();
+});
+
 test("sets the match count in 13px body type", async ({ page }) => {
   const inspector = await openInspector(page);
 
@@ -338,6 +439,14 @@ test.describe("in a window too narrow to dock the inspector", () => {
 for (const platform of ["windows", "linux"] as const) {
   test.describe(`keeping its look on ${platform}`, () => {
     test.use({ platform });
+
+    test("keeps the bordered chips", async ({ page }) => {
+      const panel = await openInspector(page);
+
+      const chip = chipsOf(panel, "Format").getByRole("button").first();
+      const style = await drawn(chip, ["border-top-width"]);
+      expect(style["border-top-width"]).toBe("1px");
+    });
 
     test("keeps the Sort by label beside its pop-up", async ({ page }) => {
       const panel = await openInspector(page);
