@@ -1,14 +1,13 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import {
   DEFAULT_BACKEND,
   expect,
   fakeAppInfo,
-  literalColour,
-  MEDIUM_MIN_WIDTH,
+  settle,
   test,
-  viewportOf,
+  tokenColour,
 } from "./fixtures.ts";
 import { openSortAndFilter } from "./library-controls.ts";
 import { sampleSeries } from "./series-catalog.ts";
@@ -34,6 +33,12 @@ async function openLibrary(page: Page): Promise<void> {
   await expect(page.getByText(FIRST_TITLE, { exact: true })).toBeVisible();
 }
 
+function sortAndFilter(page: Page): Locator {
+  return page
+    .getByRole("dialog", { name: "Sort and filter" })
+    .or(page.getByRole("complementary", { name: "Sort and filter" }));
+}
+
 test.describe("iOS in dark", () => {
   test.use({ colorScheme: "dark", ...showing("ios") });
 
@@ -47,52 +52,93 @@ test.describe("iOS in dark", () => {
     );
   });
 
-  test("sets the sort and filter sheet's title in white", async ({ page }) => {
-    test.skip(
-      viewportOf(page).width >= MEDIUM_MIN_WIDTH,
-      "iPads open it as a popover",
-    );
+  test("sets the sort and filter title in white", async ({ page }) => {
     await openLibrary(page);
 
     await openSortAndFilter(page);
+    await settle(sortAndFilter(page));
 
     await expect(
-      page.getByRole("heading", { name: "Sort and filter" }),
+      sortAndFilter(page).getByRole("heading", { name: "Sort and filter" }),
     ).toHaveCSS("color", WHITE);
+    await page.keyboard.press("Escape");
+    await expect(sortAndFilter(page)).toBeHidden();
+  });
+
+  for (const [setting, value] of [
+    ["contrast", "more"],
+    ["transparency", "reduced"],
+  ] as const) {
+    test(`keeps black and white with ${setting} set to ${value}`, async ({
+      page,
+    }) => {
+      await openLibrary(page);
+
+      await page.evaluate(
+        ([name, setTo]) => {
+          document.documentElement.dataset[name] = setTo;
+        },
+        [setting, value] as const,
+      );
+
+      await expect(page.locator("body")).toHaveCSS("background-color", BLACK);
+      await expect(page.getByText(FIRST_TITLE, { exact: true })).toHaveCSS(
+        "color",
+        WHITE,
+      );
+    });
+  }
+
+  test("sets a dark region inside the page on black too", async ({ page }) => {
+    await openLibrary(page);
+
+    const ground = await page.evaluate(() => {
+      const region = document.createElement("div");
+      region.dataset.theme = "dark";
+      region.style.backgroundColor = "var(--background)";
+      document.body.append(region);
+      const painted = getComputedStyle(region).backgroundColor;
+      region.remove();
+      return painted;
+    });
+
+    expect(ground).toBe(BLACK);
   });
 });
 
 test.describe("other looks in dark", () => {
-  test.describe("on Android", () => {
-    test.use({ colorScheme: "dark", ...showing("android") });
+  for (const platform of ["android", "macos", "windows", "linux"] as const) {
+    test.describe(`on ${platform}`, () => {
+      test.use({ colorScheme: "dark", ...showing(platform) });
 
-    test("keeps the library on its own dark ground", async ({ page }) => {
-      await openLibrary(page);
+      test("keeps the library's own dark ground and ink", async ({ page }) => {
+        await openLibrary(page);
 
-      await expect(page.locator("body")).toHaveCSS(
-        "background-color",
-        await literalColour(page, "oklch(0.145 0 0)"),
-      );
-      await expect(page.getByText(FIRST_TITLE, { exact: true })).toHaveCSS(
-        "color",
-        await literalColour(page, "oklch(0.985 0 0)"),
-      );
+        await expect(page.getByText(FIRST_TITLE, { exact: true })).toHaveCSS(
+          "color",
+          await tokenColour(page, "--foreground", "dark"),
+        );
+        await expect(page.locator("body")).toHaveCSS(
+          "background-color",
+          await tokenColour(page, "--background", "dark"),
+        );
+      });
     });
-  });
+  }
 
   test.describe("on iOS in light", () => {
     test.use({ colorScheme: "light", ...showing("ios") });
 
-    test("keeps the library on white with its own ink", async ({ page }) => {
+    test("keeps the library on its light ground and ink", async ({ page }) => {
       await openLibrary(page);
 
       await expect(page.locator("body")).toHaveCSS(
         "background-color",
-        await literalColour(page, "oklch(1 0 0)"),
+        await tokenColour(page, "--background", "light"),
       );
       await expect(page.getByText(FIRST_TITLE, { exact: true })).toHaveCSS(
         "color",
-        await literalColour(page, "oklch(0.145 0 0)"),
+        await tokenColour(page, "--foreground", "light"),
       );
     });
   });
