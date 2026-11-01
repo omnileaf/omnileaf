@@ -11,10 +11,12 @@
     CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
     type IosPhoneConfirmLook,
+    type MacConfirmLook,
     opensAsAlert,
     TODAYS_ALERT_LOOK,
   } from "#lib/components/ui/dialog/alert-look.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
+  import AppIcon from "#lib/first-launch/AppIcon.svelte";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
 
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
@@ -43,6 +45,7 @@
     onCancel,
     phoneLook = "sheet",
     iosPhoneLook,
+    macLook,
     tone = "danger",
     isBusy = false,
     children,
@@ -56,6 +59,7 @@
     onCancel: () => void;
     phoneLook?: ConfirmPhoneLook;
     iosPhoneLook?: IosPhoneConfirmLook | undefined;
+    macLook?: MacConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
     children: Snippet;
@@ -66,10 +70,12 @@
     iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
   );
   const isAlert = $derived(
-    opensAsAlert(currentPlatform(), phoneLook, sheetLook),
+    opensAsAlert(currentPlatform(), phoneLook, sheetLook, macLook),
   );
   const alert = $derived(
-    isAlert ? alertLook(currentPlatform(), sheetLook) : TODAYS_ALERT_LOOK,
+    isAlert
+      ? alertLook(currentPlatform(), sheetLook, macLook)
+      : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({
@@ -110,8 +116,12 @@
     onDismiss={onCancel}
     onOpenAutoFocus={focusDefaultButton}
   >
-    <div class="flex items-center gap-md">
-      <HeaderBadge {icon} look={BADGE_LOOKS[tone]} class={alert.badge} />
+    <div class={cn("flex items-center gap-md", alert.header)}>
+      {#if alert.showsAppIcon}
+        <AppIcon class={alert.badge} />
+      {:else}
+        <HeaderBadge {icon} look={BADGE_LOOKS[tone]} class={alert.badge} />
+      {/if}
       <DialogTitle
         class={cn(
           "text-dialog-title font-bold max-medium:text-sheet-title",
@@ -145,7 +155,7 @@
             <Button
               bind:ref={buttons.cancel}
               type="button"
-              look="confirm-cancel"
+              {...alert.buttons.cancel}
               class={alert.cancel}
               onclick={onCancel}
             >
@@ -155,7 +165,7 @@
             <Button
               bind:ref={buttons.confirm}
               type="button"
-              look="confirm-danger"
+              {...alert.buttons.confirm}
               class={cn(CONFIRM_FILLS[tone], alert.confirm)}
               aria-disabled={isBusy || undefined}
               onclick={confirm}
