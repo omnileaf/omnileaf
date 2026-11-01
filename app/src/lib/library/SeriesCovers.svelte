@@ -137,7 +137,8 @@
   const isAway = (one: LibrarySeries): boolean => isNotConnected(one, platform);
   const dimmed = (one: LibrarySeries): string =>
     isAway(one) ? (tile.notConnected?.dim ?? "") : "";
-  const seriesOrder = () => series.map(({ id }) => id);
+  const seriesOrder = () =>
+    series.filter((one) => !isAway(one)).map(({ id }) => id);
 
   function isPickedAt(index: number): boolean {
     const neighbour = series[index];

@@ -20,7 +20,7 @@ let asked: string[] = [];
 
 function listed() {
   return missing.some((one) => one.isShownAnyway)
-    ? [...AWAY, ...CONNECTED]
+    ? [CONNECTED[0], ...AWAY, ...CONNECTED.slice(1)]
     : CONNECTED;
 }
 
@@ -160,6 +160,7 @@ test.describe(
     test.describe("once they are shown anyway", () => {
       const AWAY_TITLE = AWAY[0]?.title ?? "";
       const CONNECTED_TITLE = CONNECTED[0]?.title ?? "";
+      const LAST_CONNECTED_TITLE = CONNECTED.at(-1)?.title ?? "";
       const NOT_CONNECTED_OPACITY = "0.38";
 
       test.beforeEach(() => {
@@ -227,6 +228,27 @@ test.describe(
         await expect(group).toHaveAttribute("aria-disabled", "true");
         await group.click({ force: true });
         await expect(page).toHaveURL(/\/$/);
+      });
+
+      test("cannot be picked by a range from one series to another past them", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        const link = tileOf(page, CONNECTED_TITLE).getByRole("link");
+        const touch = { pointerType: "touch", pointerId: 3, isPrimary: true };
+        await link.dispatchEvent("pointerdown", touch);
+        await page.waitForTimeout(LONG_PRESS_MS);
+        await page
+          .getByRole("checkbox", { name: CONNECTED_TITLE })
+          .dispatchEvent("pointerup", touch);
+
+        await page
+          .getByRole("checkbox", { name: LAST_CONNECTED_TITLE })
+          .click({ modifiers: ["Shift"] });
+
+        await expect(
+          page.getByText(`${String(CONNECTED.length)} selected`).first(),
+        ).toBeVisible();
       });
 
       test("cannot be picked, by a long press or Select all", async ({
