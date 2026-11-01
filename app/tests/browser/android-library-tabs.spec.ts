@@ -89,4 +89,24 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
       (await boxOf(list)).y + (await boxOf(list)).height,
     );
   });
+
+  test("lifts the row a little off the page while it is dragged, then sets it down", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+    const handle = row.getByRole("button", { name: /^Move Reading/ });
+    const box = await boxOf(handle);
+
+    await expect(row).toHaveCSS("scale", "none");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 20);
+
+    await expect(row).toHaveCSS("scale", "1.02");
+    await expect(row).toHaveCSS("translate", "0px -6px");
+    await expect(row).not.toHaveCSS("box-shadow", "none");
+    await page.mouse.up();
+    await expect(row).toHaveCSS("scale", "none");
+  });
 });

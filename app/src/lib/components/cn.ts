@@ -390,6 +390,7 @@ export const TOKEN_THEME = {
     "native-dialog-text-gap",
     "native-dialog-text-inline",
     "native-downloaded-mark",
+    "native-drag-lift",
     "native-fast-scroll-letter",
     "native-fast-scroll-letter-lift",
     "native-fast-scroll-thumb",
