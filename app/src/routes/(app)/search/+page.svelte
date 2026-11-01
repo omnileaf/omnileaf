@@ -39,6 +39,9 @@
   } from "#lib/page/breakpoints.ts";
   import { followKeyboard } from "#lib/page/keyboard-inset.ts";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
+  import { variantClasses } from "#lib/components/ui/button/looks.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { backIcon } from "#lib/page/top-bar.ts";
   import { phoneOf } from "#lib/page/platform.ts";
   import { GROUPED_GROUND } from "#lib/page/plates.ts";
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
@@ -308,7 +311,27 @@
   );
 </script>
 
-{#if hasToolbar}
+{#if hasToolbar && data.appInfo.platform === "macos"}
+  <PageToolbar>
+    <Tooltip label={m.search_back()} aria-label={m.search_back()}>
+      {#snippet child({ props })}
+        <a
+          {...props}
+          href={resolve(SECTION_ROUTE_IDS.library)}
+          data-back-link
+          class={variantClasses("plain", "regular", true, "macos")}
+        >
+          <Icon name={backIcon("macos")} />
+        </a>
+      {/snippet}
+    </Tooltip>
+    <span
+      class="truncate ps-sm text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title text-foreground"
+    >
+      {m.search_title()}
+    </span>
+  </PageToolbar>
+{:else if hasToolbar}
   <PageToolbar>
     <Breadcrumb
       aria-label={m.series_breadcrumb()}

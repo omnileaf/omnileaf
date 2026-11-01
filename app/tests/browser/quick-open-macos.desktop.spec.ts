@@ -68,3 +68,18 @@ test("writes the search page's key line with the Mac's keys too", async ({
   await expect(page.getByText("↩ to open")).toBeVisible();
   await expect(page.getByText("Enter to open")).toHaveCount(0);
 });
+
+test("leads the search page with Back and the title Search, not a breadcrumb", async ({
+  page,
+}) => {
+  await page.keyboard.press("Escape");
+  await page.goto("/search");
+
+  await expect(
+    page.getByRole("link", { name: "Back to the library" }),
+  ).toBeVisible();
+  await expect(page.locator("[data-page-toolbar]")).toContainText("Search");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toHaveCount(0);
+});
