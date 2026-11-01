@@ -42,20 +42,21 @@
     : "flex items-center gap-sm min-block-field-head"}
 >
   {#if labelFor === undefined}
-    <p
+    <svelte:element
+      this={isSheet ? "h3" : "p"}
       id={labelId}
       class={isSheet ? SHEET_FIELD_HEADING : "flex-1 text-label font-medium"}
     >
       {label}
-    </p>
+    </svelte:element>
   {:else if isAndroid}
     <span class="flex-1"></span>
+  {:else if isSheet}
+    <h3 class={SHEET_FIELD_HEADING}>
+      <label for={labelFor}>{label}</label>
+    </h3>
   {:else}
-    <label
-      for={labelFor}
-      class={isSheet ? SHEET_FIELD_HEADING : "flex-1 text-label font-medium"}
-      >{label}</label
-    >
+    <label for={labelFor} class="flex-1 text-label font-medium">{label}</label>
   {/if}
   {#if isEdited && isSheet}
     <span class={SHEET_FIELD_STATUS}>{m.edit_details_edited()}</span>

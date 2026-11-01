@@ -782,6 +782,18 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     );
   });
 
+  test("names each detail with a heading", async ({ page, platform }) => {
+    const shown = await openEditor(page, platform);
+
+    for (const name of ["Title", "People", "Tags", "Summary"]) {
+      await expect(
+        shown.getByRole("heading", { name, level: 3 }),
+      ).toBeVisible();
+    }
+    await expect(shown.getByRole("textbox", { name: "Title" })).toBeVisible();
+    await expect(shown.getByRole("textbox", { name: "Summary" })).toBeVisible();
+  });
+
   test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
     page,
     platform,
