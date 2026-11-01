@@ -84,6 +84,7 @@
       {m.advanced_undo()}
     </h2>
     <SettingSwitch
+      bleeds
       label={m.advanced_offer_undo()}
       description={m.advanced_offer_undo_help()}
       isOn={undo.rules.isOffered}
@@ -108,6 +109,7 @@
       }}
     />
     <SettingSwitch
+      bleeds
       label={m.advanced_hold_undo()}
       isOn={undo.rules.holdsWhileHoveredOrFocused}
       onToggle={() => {
@@ -118,6 +120,7 @@
     />
   </section>
   <SettingSwitch
+    bleeds
     label={m.advanced_scheduled_rescans()}
     description={m.advanced_scheduled_rescans_help()}
     isOn={isCheckingFolders}

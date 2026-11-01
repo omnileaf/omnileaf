@@ -33,6 +33,7 @@
     "flex flex-col overflow-hidden rounded-card border border-border bg-card",
     GROUP_PLATE,
   ];
+  const FLAT_CARD = "flex flex-col";
 
   let { data }: PageProps = $props();
 
@@ -76,8 +77,9 @@
 <div class="mbs-pane-gap flex flex-col gap-xl">
   <div class="flex flex-col gap-sm">
     <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
-    <div class={[CARD, !android.isOn && "divide-y divide-border"]}>
+    <div class={android.isOn ? FLAT_CARD : [CARD, "divide-y divide-border"]}>
       <SettingSwitch
+        bleeds
         label={m.screenshot_mode_title()}
         description={screenshotModeSummary(
           screenshotMode.activity,
@@ -109,6 +111,7 @@
       />
       {#each SWITCHED_OPTIONS as option (option)}
         <SettingSwitch
+          bleeds
           label={OPTION_TEXT[option].label()}
           description={OPTION_TEXT[option].help()}
           isOn={screenshotMode.options[option]}

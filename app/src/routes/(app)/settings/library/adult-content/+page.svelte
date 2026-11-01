@@ -58,6 +58,7 @@
       </div>
       <div>
         <SettingSwitch
+          bleeds
           label={m.adult_content_age_ratings()}
           description={m.adult_content_age_ratings_help()}
           isOn={chosen.countsAgeRatings}
