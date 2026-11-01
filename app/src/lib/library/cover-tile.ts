@@ -111,9 +111,12 @@ const NATIVE_TILE = {
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
 
-const IOS_BADGE = `${NATIVE_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:backdrop-blur-ios max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+const IOS_BADGE_SHAPE =
+  "max-medium:flex max-medium:items-center max-medium:py-none max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge";
 
-const IOS_COUNT_BADGE = `${BADGE_GEOMETRY} max-medium:flex max-medium:items-center max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:py-none max-medium:text-native-on-bar-badge max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+const IOS_BADGE = `${NATIVE_BADGE} ${IOS_BADGE_SHAPE} max-medium:backdrop-blur-ios`;
+
+const IOS_COUNT_BADGE = `${BADGE_GEOMETRY} ${IOS_BADGE_SHAPE} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:font-native-bar-badge max-medium:tabular-nums`;
 
 const IOS_SELECT_STYLE = `${NATIVE_SELECT_SIZE} max-medium:border-0 max-medium:inset-ring-(length:--native-spacing-select-edge) max-medium:inset-ring-native-select-ring max-medium:shadow-native-shadow-glass max-medium:backdrop-blur-native-glass`;
 

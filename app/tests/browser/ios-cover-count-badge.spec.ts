@@ -22,6 +22,8 @@ const IOS_BADGE = {
   dark: { fill: "rgb(240, 140, 140)", label: "rgb(42, 14, 14)" },
 };
 
+const BOARD_BADGE_WEIGHT = "590";
+
 function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
   return {
     backend: {
@@ -59,6 +61,13 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(badge).toHaveCSS("color", IOS_BADGE[scheme].label);
     });
 
+    test("sets its count in semibold tabular numerals", async ({ page }) => {
+      const badge = await openLibrary(page);
+
+      await expect(badge).toHaveCSS("font-weight", BOARD_BADGE_WEIGHT);
+      await expect(badge).toHaveCSS("font-variant-numeric", "tabular-nums");
+    });
+
     test("rounds into a capsule 20 high with no blur behind it", async ({
       page,
     }) => {
@@ -73,6 +82,27 @@ for (const scheme of ["light", "dark"] as const) {
       );
       expect(corner).toBeGreaterThanOrEqual(BADGE_HEIGHT_PX / 2);
       await expect(badge).toHaveCSS("backdrop-filter", "none");
+    });
+  });
+
+  test.describe(`the cover count badge on an iPad in ${scheme}`, () => {
+    test.use({ colorScheme: scheme, ...showing("ios") });
+
+    test("keeps the accent badge", async ({ page }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "iPhones draw the red badge",
+      );
+      const badge = await openLibrary(page);
+
+      await expect(badge).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--color-accent"),
+      );
+      await expect(badge).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-on-accent"),
+      );
     });
   });
 
