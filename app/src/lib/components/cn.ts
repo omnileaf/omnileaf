@@ -966,6 +966,8 @@ export const TOKEN_THEME = {
     "native-first-launch-title",
     "native-group-footer",
     "native-group-heading",
+    "native-inspector-label",
+    "native-inspector-note",
     "native-large-title",
     "native-list-sub",
     "native-list-title",
