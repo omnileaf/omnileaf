@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -11,6 +12,13 @@
     GROUPED_DETAIL_CHIP,
   } from "./detail-chip.ts";
   import { MACOS_TYPING_FIELD } from "./detail-field.ts";
+  import {
+    SHEET_ADD_ROW,
+    SHEET_ADD_ROW_FIELD,
+    SHEET_ADD_ROW_ICON_SIZE,
+    SHEET_ADD_ROW_LEAD,
+    SHEET_ADD_ROW_TYPING,
+  } from "./sheet-field-look.ts";
 
   const ICON_SIZE = 16;
   const MACOS_ICON_SIZE = 12;
@@ -22,15 +30,19 @@
     isGrouped = false,
     isAndroid = false,
     isMacos = false,
+    isSheet = false,
     onAdd,
   }: {
     label: string;
     isGrouped?: boolean;
     isAndroid?: boolean;
     isMacos?: boolean;
+    isSheet?: boolean;
     onAdd: (name: string) => void;
   } = $props();
 
+  const typing: Snippet<[string]> = typingInput;
+  const plusColumn: Snippet = plusColumnIcon;
   let isTyping = $state(false);
   let typed = $state("");
 
@@ -48,7 +60,7 @@
   }
 </script>
 
-{#if isTyping}
+{#snippet typingInput(className: string)}
   <Input
     value={typed}
     oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
@@ -56,7 +68,7 @@
     }}
     aria-label={label}
     placeholder={label}
-    class={isMacos ? MACOS_TYPING_FIELD : TYPING_CHIP}
+    class={className}
     {@attach focusOnShow}
     onkeydown={(event: KeyboardEvent) => {
       if (event.key === "Enter") {
@@ -71,6 +83,32 @@
     }}
     onblur={add}
   />
+{/snippet}
+
+{#snippet plusColumnIcon()}
+  <span class={SHEET_ADD_ROW_LEAD}>
+    <Plus size={SHEET_ADD_ROW_ICON_SIZE} aria-hidden="true" />
+  </span>
+{/snippet}
+
+{#if isSheet && isTyping}
+  <div class={SHEET_ADD_ROW_TYPING}>
+    {@render plusColumn()}
+    {@render typing(SHEET_ADD_ROW_FIELD)}
+  </div>
+{:else if isSheet}
+  <button
+    type="button"
+    class={SHEET_ADD_ROW}
+    onclick={() => {
+      isTyping = true;
+    }}
+  >
+    {@render plusColumn()}
+    {label}
+  </button>
+{:else if isTyping}
+  {@render typing(isMacos ? MACOS_TYPING_FIELD : TYPING_CHIP)}
 {:else if isMacos}
   <Button
     type="button"
