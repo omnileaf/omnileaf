@@ -249,6 +249,10 @@
   --native-spacing-inspector-section: var(--spacing-lg);
   --native-spacing-inspector-chip-inline: var(--spacing-md);
   --native-spacing-inspector-chip-gap: var(--spacing-sm);
+  --native-spacing-inspector-row: var(--spacing-setting-grid-row);
+  --native-spacing-inspector-group-inline: var(--spacing-lg);
+  --native-text-inspector-note: var(--text-detail);
+  --native-leading-inspector-note: var(--text-detail--line-height);
   --native-text-inspector-label: var(--text-small);
   --native-leading-inspector-label: var(--text-small--line-height);
   --native-weight-inspector-label: var(--font-weight-medium);

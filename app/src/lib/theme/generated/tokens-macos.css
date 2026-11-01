@@ -73,6 +73,10 @@
   --native-spacing-inspector-section: 14px;
   --native-spacing-inspector-chip-inline: 10px;
   --native-spacing-inspector-chip-gap: 6px;
+  --native-spacing-inspector-row: 52px;
+  --native-spacing-inspector-group-inline: 10px;
+  --native-text-inspector-note: calc(0.6875rem * var(--text-scale));
+  --native-leading-inspector-note: calc(14 / 11);
   --native-text-inspector-label: calc(0.8125rem * var(--text-scale));
   --native-leading-inspector-label: calc(16 / 13);
   --native-weight-inspector-label: 510;
