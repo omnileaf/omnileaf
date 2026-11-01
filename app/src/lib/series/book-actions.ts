@@ -1,4 +1,4 @@
-import type { BookReading, ReadMark } from "#lib/ipc/bindings.ts";
+import type { BookReading, Platform, ReadMark } from "#lib/ipc/bindings.ts";
 
 export interface BookActions {
   readonly read: "start" | "continue";
@@ -14,4 +14,8 @@ export function bookActions(reading: BookReading): BookActions {
     case "read":
       return { read: "start", mark: "unread" };
   }
+}
+
+export function hasRowDelete(platform: Platform): boolean {
+  return platform !== "ios";
 }

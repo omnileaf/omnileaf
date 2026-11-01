@@ -973,6 +973,7 @@ test.describe("in the table on wide screens", () => {
     await expect(page.getByRole("menuitem")).toHaveText([
       "Start reading",
       "Mark unread",
+      "Delete",
     ]);
     await page.getByRole("menuitem", { name: "Start reading" }).click();
     await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(0)}$`));
@@ -1028,6 +1029,7 @@ test.describe("in the list on narrower screens", () => {
     await expect(sheet(page, 3).getByRole("button")).toHaveText([
       "Mark read",
       "Select",
+      "Delete",
     ]);
   });
 

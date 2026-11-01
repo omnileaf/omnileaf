@@ -6,6 +6,7 @@
     EyeOff,
     ListChecks,
     Play,
+    Trash,
   } from "@lucide/svelte";
   import { Dialog } from "bits-ui";
 
@@ -31,13 +32,18 @@
     isOnPhone,
     onMark,
     onSelect,
+    onDelete,
   }: {
     book: SeriesBook;
     isOnPhone: boolean;
     onMark: (mark: ReadMark) => void;
     onSelect: () => void;
+    onDelete?: (() => void) | undefined;
   } = $props();
 
+  const deleteTone = $derived(
+    isOnPhone ? "text-native-on-button-destructive" : "text-danger",
+  );
   const action = $derived(
     isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
   );
@@ -151,6 +157,21 @@
         <ListChecks size={ICON_SIZE} aria-hidden="true" />
         <span data-slot="item-title">{m.series_select()}</span>
       </Button>
+      {#if onDelete !== undefined}
+        <hr class="my-xs border-border" />
+        <Button
+          type="button"
+          look="row"
+          class={[action, deleteTone]}
+          onclick={() => {
+            close();
+            onDelete();
+          }}
+        >
+          <Trash size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{m.library_delete()}</span>
+        </Button>
+      {/if}
     </div>
   </DrawerContent>
 </Dialog.Root>

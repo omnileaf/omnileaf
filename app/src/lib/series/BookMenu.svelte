@@ -23,7 +23,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import type { Platform, ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -33,6 +33,14 @@
   import { bookSummary } from "./book-reading";
 
   const ICON_SIZE = 16;
+
+  const DELETE_TONES = {
+    ios: "plain",
+    android: "plain",
+    linux: "danger",
+    macos: "plain",
+    windows: "plain",
+  } as const satisfies Record<Platform, "plain" | "danger">;
 
   let {
     book,
@@ -195,7 +203,13 @@
       </DropdownMenuItem>
     {/if}
     {#if onDelete !== undefined}
-      <DropdownMenuItem onSelect={onDelete}>
+      {#if onShowInFolder === undefined}
+        <DropdownMenuSeparator />
+      {/if}
+      <DropdownMenuItem
+        tone={DELETE_TONES[currentPlatform()]}
+        onSelect={onDelete}
+      >
         <Trash size={ICON_SIZE} aria-hidden="true" />
         <span class="flex-1">{m.library_delete()}</span>
         {#if hasAccelerators}

@@ -71,6 +71,7 @@
     onStartPicking,
     onPickedNone,
     onMark,
+    onDelete,
     onSwiped,
   }: {
     phone: PhonePlatform | undefined;
@@ -83,6 +84,7 @@
     onStartPicking: (book: SeriesBook) => void;
     onPickedNone: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
+    onDelete?: ((book: BookId) => void) | undefined;
     onSwiped: (
       book: SeriesBook,
       mark: ReadMark,
@@ -389,6 +391,11 @@
             onSelect={() => {
               onStartPicking(book);
             }}
+            onDelete={onDelete === undefined
+              ? undefined
+              : () => {
+                  onDelete(book.id);
+                }}
           />
         {/if}
       </div>

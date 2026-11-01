@@ -35,6 +35,7 @@
 
   import BookList from "./BookList.svelte";
   import BookListingChoices from "./BookListingChoices.svelte";
+  import { hasRowDelete } from "./book-actions";
   import { booksMatching } from "./book-search";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
@@ -164,6 +165,7 @@
   const hasFileCommands = $derived(
     platform === "windows" || platform === "macos",
   );
+  const isRowDeletable = $derived(hasRowDelete(platform));
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
@@ -597,7 +599,7 @@
           }
         : undefined}
       onShowInFolder={hasFileCommands ? onShowInFolder : undefined}
-      onDelete={hasFileCommands
+      onDelete={isRowDeletable
         ? (picked: BookId[]) => {
             askToRemoveBooks(picked);
           }
@@ -639,6 +641,11 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
+      onDelete={isRowDeletable
+        ? (book: BookId) => {
+            askToRemoveBooks([book]);
+          }
+        : undefined}
       onSwiped={(
         book: SeriesBook,
         read: ReadMark,
