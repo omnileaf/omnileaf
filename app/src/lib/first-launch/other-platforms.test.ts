@@ -18,7 +18,7 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-test.each(["linux", "macos", "ios", "android"] as const)(
+test.each(["linux", "macos", "ios"] as const)(
   "keeps the first launch's dots and card layout on %s",
   async (platform) => {
     await page.viewport(1280, 800);
@@ -41,6 +41,22 @@ test.each(["linux", "macos", "ios", "android"] as const)(
     );
   },
 );
+
+test("fills the first launch's progress bar in the accent on android", async () => {
+  await page.viewport(1280, 800);
+  document.documentElement.dataset.platform = "android";
+  document.documentElement.dataset.theme = "light";
+  const screen = await render(StepFrame, {
+    step: "link",
+    onBack: () => undefined,
+    children: nothing,
+    actions: action,
+  });
+
+  const progress = screen.getByRole("progressbar").element();
+
+  expect(progress.querySelector("[data-fill]")).not.toBeNull();
+});
 
 test("keeps the 18+ covers choice as a heading over a full-width control on Linux", async () => {
   document.documentElement.dataset.platform = "linux";
