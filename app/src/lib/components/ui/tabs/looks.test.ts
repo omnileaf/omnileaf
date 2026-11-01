@@ -155,7 +155,10 @@ test("draws macOS's tabs as a segmented control, a recessed track with the accen
     listFill: "rgba(0, 0, 0, 0.1)",
     listIsHugged: false,
     triggerCorner: "6px",
-    chosenFill: resolvedColour("--color-accent", "backgroundColor"),
+    chosenFill: resolvedColour(
+      "--native-color-button-primary",
+      "backgroundColor",
+    ),
     chosenWeight: "510",
     otherFill: "rgba(0, 0, 0, 0)",
     otherWeight: "510",
