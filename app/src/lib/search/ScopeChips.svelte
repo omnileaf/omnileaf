@@ -14,7 +14,7 @@
   const NATIVE_CHIP =
     "snap-start border-0 bg-native-button-outline text-native-button/native-button font-native-button tracking-native-button block-auto min-block-native-segment touch:touch-target-around aria-pressed:bg-native-accent-soft aria-pressed:font-native-segment-selected";
   const MAC_BAR =
-    "-ms-gutter -me-page-end items-center gap-native-search-scope-gap border-be border-border px-native-search-scope-bar-inline py-native-search-scope-bar-block";
+    "-ms-gutter -me-page-end flex-wrap items-center gap-native-search-scope-gap border-be border-border px-native-search-scope-bar-inline py-native-search-scope-bar-block";
   const MAC_CHIP =
     "border-0 bg-transparent px-native-search-scope-chip-inline text-muted hover:bg-native-control-fill-hover aria-pressed:bg-native-control-fill-pressed aria-pressed:text-foreground aria-pressed:font-native-segment-selected";
   const NATIVE_GROUP =
