@@ -29,12 +29,7 @@
 </script>
 
 <div class="mbs-lg mbe-xs flex flex-col">
-  <div
-    class={[
-      "flex flex-col gap-sm rounded-card border border-border bg-card px-lg py-field-card-block",
-      CARD_PLATE,
-    ]}
-  >
+  <div class={["flex flex-col gap-sm", look.card, look.isPlated && CARD_PLATE]}>
     <label for={fieldId} class="text-label font-medium">
       {m.report_reply_email()}
     </label>
