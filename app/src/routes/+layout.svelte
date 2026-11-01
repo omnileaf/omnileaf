@@ -40,7 +40,7 @@
   } from "#lib/notices/undo-setting.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { followWindowBackdropOnceThemed } from "#lib/page/display-modes.ts";
-  import { isPhone, isPointer } from "#lib/page/platform.ts";
+  import { isPhone, isPointer, opensHandedFiles } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     BookPresence,
@@ -283,8 +283,10 @@
   {#if data.libraryProblem === null && isPointer(data.appInfo.platform)}
     <TrayMenuSync />
   {/if}
-  {#if data.libraryProblem === null && !data.isFirstLaunch && isPointer(data.appInfo.platform)}
+  {#if data.libraryProblem === null && !data.isFirstLaunch && opensHandedFiles(data.appInfo.platform)}
     <FileOpenSync />
+  {/if}
+  {#if data.libraryProblem === null && !data.isFirstLaunch && isPointer(data.appInfo.platform)}
     <FileDropSync />
   {/if}
   {#if data.libraryProblem === null && !data.isFirstLaunch && !isPointer(data.appInfo.platform)}
