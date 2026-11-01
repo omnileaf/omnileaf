@@ -13,6 +13,7 @@
   import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
+  import { LIST_LINE, LIST_PLATE } from "#lib/settings/grouped-rows-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
@@ -33,9 +34,7 @@
   const android = new AndroidPhone();
   const isMacos = currentPlatform() === "macos";
   const CARD = "rounded-card border border-border bg-card";
-  const MACOS_PLATE =
-    "rounded-native-group bg-native-group px-native-group-inset";
-  const plate = $derived(android.isOn ? "" : isMacos ? MACOS_PLATE : CARD);
+  const plate = $derived(android.isOn ? "" : isMacos ? LIST_PLATE : CARD);
   const onPointer = $derived(isPointer(data.appInfo.platform));
 
   onMount(() => {
@@ -77,12 +76,11 @@
               countsAgeRatings: !chosen.countsAgeRatings,
             });
           }}
+          grouped={isMacos}
           class={plate}
         />
         {#if isMacos}
-          <p
-            class="mbs-native-list-footer-gap px-sm text-native-list-sub/native-list-sub tracking-native-list-sub text-muted"
-          >
+          <p class={["mbs-native-list-footer-gap px-sm", LIST_LINE]}>
             {m.adult_content_footer()}
           </p>
         {/if}

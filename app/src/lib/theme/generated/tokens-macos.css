@@ -111,7 +111,13 @@
   --native-spacing-group-inset: 10px;
   --native-spacing-radio-stack: 10px;
   --native-spacing-radio-words-gap: 6px;
+  --native-spacing-group-row: 42px;
   --native-spacing-settings-page: 640px;
+  --native-spacing-group-row-text: 6px;
+  --native-spacing-group-select-end: calc(15px + 10px + 3px);
+  --native-spacing-group-select-inset: 3px;
+  --native-spacing-group-select-circle: 16px;
+  --native-tracking-list-title: -0.08px;
   --native-text-list-sub: calc(0.6875rem * var(--text-scale));
   --native-leading-list-sub: calc(14 / 11);
   --native-tracking-list-sub: 0.06px;
@@ -215,6 +221,7 @@
   --native-color-focus-ring: #2f6f4f80;
   --native-color-tile-picked: color-mix(in srgb, rgba(0, 0, 0, 0.85) 12%, transparent);
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.30), 0 0 1px rgba(0, 0, 0, 0.8);
+  --native-color-group-row-pressed: rgba(0, 0, 0, 0.03);
   --native-color-radio-field: #ffffff;
   --native-shadow-radio-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.05), 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-color-field-fill: #ffffff;
@@ -310,6 +317,7 @@
   --native-color-focus-ring: #2e7d5580;
   --native-color-tile-picked: color-mix(in srgb, rgba(255, 255, 255, 0.85) 12%, transparent);
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.57), 0 0 1px rgba(0, 0, 0, 0.8), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --native-color-group-row-pressed: rgba(255, 255, 255, 0.05);
   --native-color-radio-field: #1e1e1e;
   --native-shadow-radio-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-color-field-fill: #1e1e1e;

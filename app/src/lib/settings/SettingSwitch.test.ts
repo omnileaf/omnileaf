@@ -2,6 +2,8 @@ import { afterEach, expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
+import "../../app.css";
+
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SettingSwitch from "./SettingSwitch.svelte";
@@ -80,4 +82,80 @@ test("toggles from its switch alone on an iPhone, not from its words", async () 
   await expect
     .element(screen.getByRole("switch", { name: LABEL }))
     .toHaveAccessibleDescription(DESCRIPTION);
+});
+
+async function renderOn(
+  platform: Parameters<typeof followCorePlatform>[0],
+  width: number,
+  grouped: boolean,
+): Promise<void> {
+  await page.viewport(width, PHONE.height);
+  followCorePlatform(platform);
+  await render(SettingSwitch, {
+    label: LABEL,
+    description: DESCRIPTION,
+    isOn: false,
+    onToggle: () => undefined,
+    grouped,
+  });
+}
+
+function wordsOf(text: string): HTMLElement {
+  const words = page.getByText(text, { exact: true }).element().parentElement;
+  if (words === null) {
+    throw new Error(`${text} has no words wrapper`);
+  }
+  return words;
+}
+
+test("keeps the Android phone row's padding, gap and plain label", async () => {
+  await renderOn("android", PHONE.width, false);
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(row.paddingTop).toBe("8px");
+  expect(row.paddingLeft).toBe("16px");
+  expect(row.paddingRight).toBe("24px");
+  expect(row.columnGap).toBe("16px");
+  expect(getComputedStyle(wordsOf(LABEL)).paddingTop).toBe("0px");
+  expect(getComputedStyle(page.getByText(LABEL).element()).fontWeight).toBe(
+    "400",
+  );
+});
+
+test("keeps the iPhone row's padding, gap and medium label", async () => {
+  await renderOn("ios", PHONE.width, false);
+
+  const row = getComputedStyle(wordsOf(LABEL).parentElement ?? document.body);
+
+  expect(row.paddingTop).toBe("12px");
+  expect(row.paddingLeft).toBe("16px");
+  expect(row.columnGap).toBe("12px");
+  expect(getComputedStyle(page.getByText(LABEL).element()).fontWeight).toBe(
+    "500",
+  );
+});
+
+test("keeps the desktop row's padding, gap and medium label", async () => {
+  await renderOn("windows", 700, false);
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(row.paddingTop).toBe("12px");
+  expect(row.paddingLeft).toBe("16px");
+  expect(row.columnGap).toBe("12px");
+  expect(getComputedStyle(wordsOf(LABEL)).paddingTop).toBe("0px");
+});
+
+test("draws a grouped row on the Mac 42px tall with 6px above and below its words", async () => {
+  await renderOn("macos", 1280, true);
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+  const label = getComputedStyle(page.getByText(LABEL).element());
+
+  expect(row.minHeight).toBe("42px");
+  expect(row.paddingTop).toBe("0px");
+  expect(getComputedStyle(wordsOf(LABEL)).paddingTop).toBe("6px");
+  expect(label.fontWeight).toBe("510");
+  expect(label.letterSpacing).toBe("-0.08px");
 });

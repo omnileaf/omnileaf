@@ -24,6 +24,8 @@
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
+  import GroupedLinkRow from "#lib/settings/GroupedLinkRow.svelte";
+  import GroupedSelectRow from "#lib/settings/GroupedSelectRow.svelte";
   import ValueLinkRow from "#lib/settings/ValueLinkRow.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
@@ -48,7 +50,7 @@
   const android = new AndroidPhone();
   const language = getLanguageSetting();
   const dateHeading = radiosLook(true).heading;
-  const showsRadioHints = currentPlatform() !== "macos";
+  const isMacos = currentPlatform() === "macos";
   const opensOn = getOpensOnSetting();
   const timeFormat = getTimeFormatSetting();
 
@@ -69,6 +71,10 @@
     twelveHour: m.general_time_12(),
     twentyFourHour: m.general_time_24(),
   } satisfies Record<TimeFormat, string>;
+  const TIME_FORMAT_CHOICES = TIME_FORMATS.map((format) => ({
+    value: format,
+    label: TIME_FORMAT_LABELS[format],
+  }));
 </script>
 
 <GroupedGround>
@@ -144,10 +150,7 @@
         <SettingChoiceRow
           title={m.general_time_format()}
           value={TIME_FORMAT_LABELS[timeFormat.choice]}
-          choices={TIME_FORMATS.map((format) => ({
-            value: format,
-            label: TIME_FORMAT_LABELS[format],
-          }))}
+          choices={TIME_FORMAT_CHOICES}
           chosen={timeFormat.choice}
           onChoose={(format: TimeFormat) => {
             timeFormat.choose(format);
@@ -155,14 +158,42 @@
         />
       </div>
     </div>
-  {:else}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
+  {:else if isMacos}
+    <div class="mbs-pane-gap flex flex-col gap-lg">
       <SettingRadios
         title={m.general_opens_on()}
         options={OPENING_PLACES}
         labels={PLACE_LABELS}
         hints={{ lastBook: m.general_opens_last_book_hint() }}
-        hintsAreShown={showsRadioHints}
+        hintsAreShown={false}
+        chosen={opensOn.choice}
+        onChoose={(place: OpeningPlace) => {
+          opensOn.choose(place);
+        }}
+      />
+      <GroupedLinkRow
+        route="/(app)/settings/general/language"
+        label={m.language_label()}
+        value={languageName(getLocale())}
+        valueLang={getLocale()}
+      />
+      <GroupedSelectRow
+        heading={m.general_dates_and_numbers()}
+        label={m.general_time_format()}
+        options={TIME_FORMAT_CHOICES}
+        value={timeFormat.choice}
+        onChoose={(format: TimeFormat) => {
+          timeFormat.choose(format);
+        }}
+      />
+    </div>
+  {:else}
+    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+      <SettingRadios
+        title={m.general_opens_on()}
+        options={OPENING_PLACES}
+        labels={PLACE_LABELS}
+        hints={{ lastBook: m.general_opens_last_book_hint() }}
         chosen={opensOn.choice}
         onChoose={(place: OpeningPlace) => {
           opensOn.choose(place);
