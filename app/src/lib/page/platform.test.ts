@@ -7,6 +7,7 @@ import {
   currentPlatform,
   followCorePlatform,
   hasNativeLook,
+  hasTopTabBar,
   isPhone,
   opensHandedFiles,
   phoneOf,
@@ -117,3 +118,23 @@ test.each(["android", ...DESKTOPS] as const)(
 test("opens no files handed to the app on iOS", () => {
   expect(opensHandedFiles("ios")).toBe(false);
 });
+
+test.each(["medium", "expanded"] as const)(
+  "puts the tab bar at the top on an iOS screen at %s width",
+  (width) => {
+    expect(hasTopTabBar("ios", width)).toBe(true);
+  },
+);
+
+test("keeps the tab bar at the bottom on a compact iOS screen", () => {
+  expect(hasTopTabBar("ios", "compact")).toBe(false);
+});
+
+test.each(OTHERS.concat(["macos"]))(
+  "never puts the tab bar at the top on %s",
+  (platform) => {
+    for (const width of WIDTHS) {
+      expect(hasTopTabBar(platform, width)).toBe(false);
+    }
+  },
+);
