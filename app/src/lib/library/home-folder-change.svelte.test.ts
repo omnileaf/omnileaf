@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type {
   ChosenHomeFolder,
@@ -43,6 +43,7 @@ class RecordingNotices extends Notices {
 class FakeHome {
   readonly asked = { choose: 0, use: 0, move: 0 };
   readonly read: LibraryFolder["id"][] = [];
+  reading: () => Promise<void> = () => Promise.resolve();
   readonly notices = new RecordingNotices();
   readonly change: HomeFolderChange;
   #chosen: ChooseAnswer[];
@@ -79,7 +80,7 @@ class FakeHome {
       () => this.notices,
       (folder) => {
         this.read.push(folder);
-        return Promise.resolve();
+        return this.reading();
       },
     );
   }
@@ -370,6 +371,42 @@ test("reads the books of the folder the library moved to", async () => {
   await home.change.choose();
 
   expect(home.read).toEqual([MOVED_TO]);
+});
+
+test("stays busy until the books of the folder the library moved to are read", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+  let finishReading = () => {};
+  const reading = new Promise<void>((resolve) => {
+    finishReading = resolve;
+  });
+  home.reading = () => reading;
+
+  const choosing = home.change.choose();
+  await vi.waitFor(() => {
+    expect(home.read).toEqual([MOVED_TO]);
+  });
+  const busyWhileReading = home.change.isBusy;
+  finishReading();
+  await choosing;
+
+  expect([busyWhileReading, home.change.isBusy]).toEqual([true, false]);
+});
+
+test("goes back to idle when reading the books of the moved folder fails", async () => {
+  const home = new FakeHome(
+    [chose({ kind: "empty" })],
+    done(),
+    moved(MOVED_TO),
+  );
+  home.reading = () => Promise.reject(new Error("the folder couldn't be read"));
+
+  await home.change.choose().catch(() => {});
+
+  expect(home.change.change.kind).toBe("idle");
 });
 
 test("reads no books while the app is restarting after a move", async () => {

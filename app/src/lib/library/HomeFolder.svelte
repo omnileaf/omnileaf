@@ -26,7 +26,7 @@
   }: {
     folders: FolderList;
     platform: Platform;
-    change?: Snippet | undefined;
+    change?: Snippet<[titleId: string, pathId: string]> | undefined;
     rowAction?: Snippet<[LibraryFolder]>;
     class?: ClassValue;
     children?: Snippet;
@@ -37,6 +37,7 @@
     "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
   const NATIVE_PLACE = `font-ui ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
   const headingId = $props.id();
+  const pathId = `${headingId}-path`;
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const android = new AndroidPhone();
@@ -55,8 +56,10 @@
     >
       <div
         class={[
-          "flex flex-1 items-center gap-md min-inline-none",
-          change !== undefined && "max-medium:basis-full",
+          "relative flex flex-1 items-center gap-md min-inline-none",
+          change !== undefined &&
+            platform !== "android" &&
+            "max-medium:basis-full",
         ]}
       >
         <span
@@ -80,6 +83,7 @@
             {m.library_settings_home_folder()}
           </h2>
           <code
+            id={pathId}
             class={isNative || android.isOn
               ? NATIVE_PLACE
               : "font-mono text-detail wrap-anywhere text-muted"}
@@ -87,9 +91,14 @@
             {folderLocation(home, platform)}
           </code>
         </div>
+        {#if platform === "android"}
+          {@render change?.(headingId, pathId)}
+        {/if}
       </div>
       <div class="ms-auto flex shrink-0 items-center gap-md">
-        {@render change?.()}
+        {#if platform !== "android"}
+          {@render change?.(headingId, pathId)}
+        {/if}
         {@render rowAction?.(home)}
       </div>
     </div>
