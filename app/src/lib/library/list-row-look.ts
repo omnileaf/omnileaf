@@ -14,23 +14,19 @@ export interface ListRowLook {
 const LINK =
   "flex flex-1 items-center gap-md py-list-row-block min-inline-none wrap-normal";
 
-export const CONTENT_BOX_COVER =
-  "rounded-list-cover box-content inline-list-cover";
+const COVER = "rounded-list-cover inline-list-cover";
 
 const TODAY: ListRowLook = {
   row: "flex items-center gap-xs border-be border-border",
-  cover: CONTENT_BOX_COVER,
+  cover: COVER,
   link: `${LINK} rounded-control`,
   title: "line-clamp-2 font-medium wrap-break-word",
   meta: "text-detail text-muted",
 };
 
-const RULED_ROW =
-  "relative flex items-center gap-xs after:absolute after:inset-e-none after:inset-be-none after:bg-native-row-rule after:block-native-hairline";
-
 const PHONE: ListRowLook = {
-  row: `${RULED_ROW} after:inset-s-[calc(var(--spacing-list-cover)+2px+var(--spacing-md))]`,
-  cover: CONTENT_BOX_COVER,
+  row: "relative flex items-center gap-xs after:absolute after:inset-e-none after:inset-be-none after:inset-s-[calc(var(--spacing-native-list-cover)+var(--spacing-md))] after:bg-native-row-rule after:block-native-hairline",
+  cover: COVER,
   link: `${LINK} transition-control active:bg-native-row-selected active:[--secondary-text:var(--native-color-on-row-selected-muted)]`,
   title:
     "line-clamp-2 wrap-break-word text-native-row-title leading-native-row-title font-native-row-title tracking-native-row-title",
@@ -39,8 +35,7 @@ const PHONE: ListRowLook = {
 
 const IOS_PHONE: ListRowLook = {
   ...PHONE,
-  row: `${RULED_ROW} after:inset-s-[calc(var(--spacing-native-list-cover)+var(--spacing-md))]`,
-  cover: "rounded-list-cover box-border inline-native-list-cover",
+  cover: "rounded-list-cover box-border! inline-native-list-cover",
 };
 
 export function listRowLook(
