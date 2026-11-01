@@ -147,7 +147,7 @@ test.describe("confirmations on an iPhone", { tag: "@native" }, () => {
 
     await tap(sheet.getByRole("button", { name: "Remove" }));
 
-    await expect(sheet).toHaveAttribute("data-state", "closed");
+    await expect(sheet).toBeHidden();
     expect(removed).toEqual([false]);
   });
 
@@ -161,7 +161,7 @@ test.describe("confirmations on an iPhone", { tag: "@native" }, () => {
 
     await tap(sheet.getByRole("button", { name: "Delete files" }));
 
-    await expect(sheet).toHaveAttribute("data-state", "closed");
+    await expect(sheet).toBeHidden();
     expect(removed).toEqual([true]);
   });
 
@@ -170,7 +170,7 @@ test.describe("confirmations on an iPhone", { tag: "@native" }, () => {
 
     await tap(sheet.getByRole("button", { name: "Cancel" }));
 
-    await expect(sheet).toHaveAttribute("data-state", "closed");
+    await expect(sheet).toBeHidden();
     expect(removed).toEqual([]);
   });
 
