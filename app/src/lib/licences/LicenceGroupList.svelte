@@ -4,9 +4,11 @@
 
   import { resolve } from "$app/paths";
   import { type AboutLook, ROW_ICON_SIZES } from "#lib/about/look.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
 
   import type { LicenceGroup } from "./licences";
 
@@ -20,6 +22,8 @@
   let { group, look }: { group: LicenceGroup; look: AboutLook } = $props();
 
   const headingId = $props.id();
+  const android = new AndroidPhone();
+  const androidHeading = radiosLook(true).heading;
 
   let isExpanded = $state(false);
   const links: HTMLAnchorElement[] = $state([]);
@@ -46,7 +50,9 @@
   <h2
     id={headingId}
     translate="no"
-    class="px-lg pbs-md pbe-xs text-small font-semibold"
+    class={android.isOn
+      ? androidHeading
+      : "px-lg pbs-md pbe-xs text-small font-semibold"}
   >
     {group.name}
   </h2>
@@ -63,12 +69,17 @@
             ROWS[look],
           ]}
         >
-          <span class="flex-1 truncate font-medium">
+          <span
+            class={[
+              "flex-1 truncate",
+              android.isOn ? "font-regular" : "font-medium",
+            ]}
+          >
             <bdi translate="no">{licensed.name}</bdi>
           </span>
           <ChevronRight
             size={ROW_ICON_SIZES[look]}
-            class="shrink-0 text-muted rtl:-scale-x-100"
+            class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
           />
         </a>
       </li>
