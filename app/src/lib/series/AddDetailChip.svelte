@@ -2,6 +2,7 @@
   import { Plus } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
 
   import {
@@ -11,16 +12,19 @@
   } from "./detail-chip.ts";
 
   const ICON_SIZE = 16;
+  const MACOS_ICON_SIZE = 12;
 
   let {
     label,
     isGrouped = false,
     isAndroid = false,
+    isMacos = false,
     onAdd,
   }: {
     label: string;
     isGrouped?: boolean;
     isAndroid?: boolean;
+    isMacos?: boolean;
     onAdd: (name: string) => void;
   } = $props();
 
@@ -64,6 +68,18 @@
     }}
     onblur={add}
   />
+{:else if isMacos}
+  <Button
+    type="button"
+    variant="secondary"
+    size="small"
+    onclick={() => {
+      isTyping = true;
+    }}
+  >
+    <Plus size={MACOS_ICON_SIZE} aria-hidden="true" />
+    {label}
+  </Button>
 {:else}
   <button
     type="button"

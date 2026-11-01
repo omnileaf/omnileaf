@@ -114,6 +114,7 @@
       draft={editing.draft}
       {isGrouped}
       isSheet={isGrouped}
+      isMacos={platform === "macos"}
       onDraft={(draft: DetailDraft) => {
         if (editing !== undefined) {
           editing.draft = draft;
