@@ -1455,6 +1455,33 @@ test.describe(
       ]);
     });
 
+    test("starts the notice's words at its edge with no icon before them", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: TYPED_TITLE,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      await tap(shown.getByRole("button", { name: "Use the file’s title" }));
+
+      const notice = shown.getByRole("status");
+      const words = notice.getByText("Title back to the file’s");
+      await expect(words).toBeVisible();
+      await expect(notice.locator("svg")).toHaveCount(0);
+      const card = notice.getByText("Undo").locator("xpath=../..");
+      expect((await boxOf(words)).x - (await boxOf(card)).x).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-notice-start"),
+        0,
+      );
+    });
+
     test("sets the locked 18+ mark as the same list row, its link kept", async ({
       page,
     }) => {
@@ -1486,6 +1513,15 @@ test.describe(
   "people and tags off the iPhone sheet",
   { tag: "@native" },
   () => {
+    test("keep the chips' outline", async ({ page, platform }) => {
+      test.skip(platform === "ios", "an iPhone sets its own chips");
+      const shown = await openEditor(page, platform);
+
+      await expect(
+        shown.getByRole("button", { name: "Remove Seinen" }),
+      ).toHaveCSS("border-top-width", "1px");
+    });
+
     test("keep their Add chip inside the chip group", async ({
       page,
       platform,

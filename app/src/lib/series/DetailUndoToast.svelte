@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Undo2 } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import { UNDO_WINDOW_MS, type UndoOffer } from "#lib/notices/notices.ts";
   import ToastCard, { TOAST_ICON_SIZE } from "#lib/notices/ToastCard.svelte";
@@ -15,6 +16,7 @@
     onDone: () => void;
   } = $props();
 
+  const undoIcon: Snippet = icon;
   let offeredUndo: (() => void) | undefined;
 
   $effect(() => {
@@ -34,6 +36,10 @@
   }
 </script>
 
+{#snippet icon()}
+  <Undo2 size={TOAST_ICON_SIZE} class="text-muted" />
+{/snippet}
+
 <div
   role="status"
   class={isOverBar
@@ -45,15 +51,12 @@
       <ToastCard
         tone="plain"
         severity="success"
+        icon={isOverBar ? undefined : undoIcon}
         title={offer.title}
         action={{ label: m.undo_action(), run: undo }}
         isDismissable={!isOverBar}
         onDismiss={onDone}
-      >
-        {#snippet icon()}
-          <Undo2 size={TOAST_ICON_SIZE} class="text-muted" />
-        {/snippet}
-      </ToastCard>
+      />
     </div>
   {/if}
 </div>
