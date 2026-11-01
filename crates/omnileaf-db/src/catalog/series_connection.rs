@@ -16,8 +16,7 @@ const IS_NOT_CONNECTED: &str = "SELECT
         SELECT 1 FROM series
         JOIN book ON book.series_local_id = series.local_id
         JOIN book_file ON book_file.book_id = book.id
-        JOIN library_root ON library_root.id = book_file.root_id
-        WHERE series.id = ?1 AND library_root.unavailable_since_ms IS NOT NULL
+        WHERE series.id = ?1
     )";
 
 /// Marks the listed series whose every book file sits in a missing folder, which only a folder shown anyway lets into a listing.
@@ -67,18 +66,20 @@ mod tests {
 
         let plan = scratch.query_plan(IS_NOT_CONNECTED);
 
-        let walk = [
-            "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-            "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
-            "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
-            "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
-        ];
-        let expected: Vec<&str> = ["SCAN CONSTANT ROW", "SCALAR SUBQUERY 1"]
-            .into_iter()
-            .chain(walk)
-            .chain(["SCALAR SUBQUERY 2"])
-            .chain(walk)
-            .collect();
-        assert_eq!(plan, expected);
+        assert_eq!(
+            plan,
+            [
+                "SCAN CONSTANT ROW",
+                "SCALAR SUBQUERY 1",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
+                "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
+                "SCALAR SUBQUERY 2",
+                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
+                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
+                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
+            ]
+        );
     }
 }
