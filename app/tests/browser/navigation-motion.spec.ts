@@ -199,7 +199,7 @@ function testCrossfadingTheFill(iconsBelowWidth = Infinity): void {
     expect(icon.transitions).toEqual([FADE]);
   });
 
-  test("fades the icons without restarting their transitions every frame", async ({
+  test("fades the tabs without restarting their transitions every frame", async ({
     page,
   }) => {
     await page.goto("/");
@@ -346,7 +346,9 @@ test.describe("on iOS", () => {
 
   testTurningTheScreen();
 
-  test("only fades the rail's and sidebar's highlight", async ({ page }) => {
+  test("only fades the highlight of the rail, sidebar and top tab bar", async ({
+    page,
+  }) => {
     test.skip(
       viewportOf(page).width < MEDIUM_MIN_WIDTH,
       "tablets and desktops only",

@@ -14,7 +14,6 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(9);
 const TAB_BAR_HEIGHT_PX = 44;
-const TOP_BAND_PX = 120;
 const SAME_ROW_TOLERANCE_PX = 2;
 const MANY_SERIES = 40;
 const SCROLLED_PX = 600;
@@ -42,9 +41,15 @@ test.describe("the tab bar on an iPad", () => {
   }) => {
     await page.goto("/");
 
-    const bar = await boxOf(mainBar(page));
+    const [bar, main] = await Promise.all([
+      boxOf(mainBar(page)),
+      boxOf(page.getByRole("main")),
+    ]);
+    const pageTop = await page
+      .getByRole("main")
+      .evaluate((element) => parseFloat(getComputedStyle(element).paddingTop));
 
-    expect(bar.y).toBeLessThan(TOP_BAND_PX);
+    expect(bar.y).toBeCloseTo(main.y + pageTop, 0);
     expect(bar.height).toBeCloseTo(TAB_BAR_HEIGHT_PX, 0);
     expect(bar.x + bar.width / 2).toBeCloseTo(viewportOf(page).width / 2, 0);
     await expect(mainBar(page).getByRole("link")).toHaveCount(4);
