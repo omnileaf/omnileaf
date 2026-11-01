@@ -288,6 +288,10 @@
   --native-spacing-dialog-text-inline: 0px;
   --native-spacing-dialog-text-gap: var(--spacing-lg);
   --native-spacing-dialog-button: var(--spacing-touch-button);
+  --native-spacing-action-sheet: var(--spacing-dialog);
+  --native-spacing-action-sheet-inset: 0px;
+  --native-spacing-action-sheet-bottom: 0px;
+  --native-weight-action-sheet-action: var(--font-weight-semibold);
   --native-spacing-action-group: 100%;
   --native-color-sheet-handle: var(--sheet-handle);
   --native-radius-sheet: var(--radius-bottom-sheet);

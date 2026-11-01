@@ -10,11 +10,14 @@
     type AlertTone,
     CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
+    type IosPhoneConfirmLook,
     opensAsAlert,
     TODAYS_ALERT_LOOK,
   } from "#lib/components/ui/dialog/alert-look.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
+
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
 
   import type { Glyph } from "./glyph";
   import HeaderBadge from "./HeaderBadge.svelte";
@@ -39,6 +42,7 @@
     onConfirm,
     onCancel,
     phoneLook = "sheet",
+    iosPhoneLook,
     tone = "danger",
     isBusy = false,
     children,
@@ -51,14 +55,21 @@
     onConfirm: () => void;
     onCancel: () => void;
     phoneLook?: ConfirmPhoneLook;
+    iosPhoneLook?: IosPhoneConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
     children: Snippet;
   } = $props();
 
-  const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook));
+  const iosPhone = new IosPhone();
+  const sheetLook = $derived(
+    iosPhone.isOn && tone === "danger" ? iosPhoneLook : undefined,
+  );
+  const isAlert = $derived(
+    opensAsAlert(currentPlatform(), phoneLook, sheetLook),
+  );
   const alert = $derived(
-    isAlert ? alertLook(currentPlatform()) : TODAYS_ALERT_LOOK,
+    isAlert ? alertLook(currentPlatform(), sheetLook) : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({

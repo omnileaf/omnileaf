@@ -62,6 +62,26 @@ const IOS_LOOK: AlertLook = {
   defaultAction: CANCEL_BY_DEFAULT,
 };
 
+const IOS_ROW_TEXT =
+  "max-medium:text-native-row-title/native-row-title max-medium:tracking-native-row-title";
+
+const IOS_ACTION_SHEET_ACTION = `${IOS_ACTION} ${IOS_ROW_TEXT} max-medium:px-lg max-medium:font-native-action-sheet-action`;
+
+const IOS_ACTION_SHEET_LOOK: AlertLook = {
+  scrim: IOS_LOOK.scrim,
+  surface:
+    "max-medium:inline-native-action-sheet max-medium:max-inline-full max-medium:mbe-native-action-sheet-bottom max-medium:gap-none max-medium:border-none max-medium:p-native-action-sheet-inset max-medium:rounded-native-dialog max-medium:bg-native-dialog max-medium:backdrop-blur-glass max-medium:backdrop-saturate-180",
+  badge: IOS_LOOK.badge,
+  title: `${IOS_ROW_TEXT} max-medium:pbs-sm max-medium:px-sm max-medium:font-semibold`,
+  body: IOS_LOOK.body,
+  description: `${IOS_ROW_TEXT} max-medium:pbs-native-dialog-text-gap max-medium:px-sm`,
+  actions: "max-medium:mbs-xl max-medium:flex max-medium:flex-col",
+  cancel: `${IOS_ACTION_SHEET_ACTION} max-medium:mbs-sm max-medium:text-foreground medium:order-first`,
+  confirm: `${IOS_ACTION_SHEET_ACTION} max-medium:text-native-on-button-destructive`,
+  actionOrder: ["confirm", "cancel"],
+  defaultAction: CANCEL_BY_DEFAULT,
+};
+
 /** WinUI guidance makes the safe button a ContentDialog's DefaultButton when its action destroys something. */
 const WINDOWS_DEFAULT_BUTTON: Readonly<Record<AlertTone, AlertAction>> = {
   danger: "cancel",
@@ -115,6 +135,15 @@ const ALERT_LOOKS = {
 
 export type ConfirmPhoneLook = "sheet" | "dialog";
 
+export type IosPhoneConfirmLook = "actionSheet";
+
+function isIosActionSheet(
+  platform: Platform,
+  iosPhoneLook: IosPhoneConfirmLook | undefined,
+): boolean {
+  return platform === "ios" && iosPhoneLook === "actionSheet";
+}
+
 /** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
 const HAS_BOTTOM_SHEETS = {
   ios: true,
@@ -127,10 +156,20 @@ const HAS_BOTTOM_SHEETS = {
 export function opensAsAlert(
   platform: Platform,
   phoneLook: ConfirmPhoneLook,
+  iosPhoneLook?: IosPhoneConfirmLook,
 ): boolean {
-  return phoneLook === "dialog" || !HAS_BOTTOM_SHEETS[platform];
+  return (
+    phoneLook === "dialog" ||
+    !HAS_BOTTOM_SHEETS[platform] ||
+    isIosActionSheet(platform, iosPhoneLook)
+  );
 }
 
-export function alertLook(platform: Platform): AlertLook {
-  return ALERT_LOOKS[platform];
+export function alertLook(
+  platform: Platform,
+  iosPhoneLook?: IosPhoneConfirmLook,
+): AlertLook {
+  return isIosActionSheet(platform, iosPhoneLook)
+    ? IOS_ACTION_SHEET_LOOK
+    : ALERT_LOOKS[platform];
 }
