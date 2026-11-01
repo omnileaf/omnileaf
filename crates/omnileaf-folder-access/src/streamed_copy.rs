@@ -33,7 +33,7 @@ impl StreamedCopies {
         }
     }
 
-    fn copy(&self, streamed: File) -> io::Result<File> {
+    pub(crate) fn copy(&self, streamed: File) -> io::Result<File> {
         let mut copy = self.unnamed_copy()?;
         let copied = io::copy(&mut streamed.take(self.limit.saturating_add(1)), &mut copy)?;
         if copied > self.limit {
