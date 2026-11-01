@@ -3,7 +3,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { ANDROID_FILTER_HEADING } from "./filter-sheet-look";
-  import { groupLook } from "./group-look";
+  import { type GroupLook, PLAIN_GROUP_LOOK } from "./group-look";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
 
   interface Choice {
@@ -28,16 +28,14 @@
   let {
     onCovers,
     onChoose,
-    isGrouped = false,
+    look = PLAIN_GROUP_LOOK,
     isMaterial = false,
   }: {
     onCovers: OnCovers;
     onChoose: (name: keyof OnCovers, isShown: boolean) => void;
-    isGrouped?: boolean;
+    look?: GroupLook;
     isMaterial?: boolean;
   } = $props();
-
-  const look = $derived(groupLook(isGrouped));
 
   const headingId = $props.id();
 </script>
@@ -51,7 +49,7 @@
     id={headingId}
     class={isMaterial
       ? ANDROID_FILTER_HEADING
-      : [look.heading, !isGrouped && "pbs-xl"]}
+      : [look.heading, look.followingHeading]}
   >
     {m.library_on_covers()}
   </h3>
@@ -59,6 +57,7 @@
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={choice.label()}
         isOn={onCovers[choice.name]}
         onToggle={(isShown: boolean) => {

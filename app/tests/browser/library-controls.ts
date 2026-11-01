@@ -6,14 +6,13 @@ import { expect } from "./fixtures.ts";
 type Messages = typeof english;
 
 export async function foldsIntoMore(page: Page): Promise<boolean> {
-  const main = page.getByRole("main");
-  await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("heading", { level: 1 }),
+  ).toBeVisible();
   const platform = await page.evaluate(
     () => document.documentElement.dataset.platform,
   );
-  return (
-    platform === "ios" && (await main.locator("[data-title-bar]").count()) > 0
-  );
+  return platform === "ios";
 }
 
 export async function openLibraryMore(
@@ -22,7 +21,6 @@ export async function openLibraryMore(
 ): Promise<void> {
   await page
     .getByRole("main")
-    .locator("[data-title-bar]")
     .getByRole("button", { name: messages.library_more })
     .click();
 }

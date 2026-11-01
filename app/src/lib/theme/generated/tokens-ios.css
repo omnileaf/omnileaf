@@ -240,6 +240,7 @@
   --native-spacing-menu-item-inline: 16px;
   --native-spacing-menu-rule-inline: 16px;
   --native-spacing-menu-rule-block: 10px;
+  --native-blur-popover: 30px;
   --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-radius-notice: 24px;
@@ -346,6 +347,9 @@
   --native-radius-outlined-field: 4px;
   --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
+  --native-spacing-popover-top: 1.25rem;
+  --native-spacing-popover-bottom: 0.375rem;
+  --native-spacing-popover-gap: 0.875rem;
   --native-text-empty: calc(1.375rem * var(--text-scale));
   --native-leading-empty: calc(28 / 22);
   --native-tracking-empty: 0;
@@ -482,6 +486,8 @@
   --native-color-on-menu-chosen: #000000;
   --native-color-menu-rule: rgba(60, 60, 67, 0.12);
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.25);
+  --native-shadow-popover-lift: 0 8px 48px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(60, 60, 67, 0.12);
+  --native-color-popover: rgba(255, 255, 255, 0.85);
   --native-color-notice: rgba(248, 248, 250, 0.85);
   --native-color-on-notice: #000000;
   --native-color-notice-action: #ffffff;
@@ -569,6 +575,8 @@
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: rgba(84, 84, 88, 0.5);
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.45);
+  --native-shadow-popover-lift: 0 8px 48px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(84, 84, 88, 0.5);
+  --native-color-popover: rgba(26, 26, 26, 0.8);
   --native-color-notice: rgba(26, 26, 26, 0.8);
   --native-color-on-notice: #ffffff;
   --native-color-notice-action: #1c1c1e;
@@ -609,6 +617,7 @@
   --native-color-sheet-group: #ffffff;
   --native-color-dialog: #f3f3f5;
   --native-color-menu: #f6f6f9;
+  --native-color-popover: rgba(255, 255, 255, 0.94);
   --native-color-notice: #f6f6f9;
   --native-color-on-notice-action: #245a40;
   --native-color-focus-ring: #245a40;
@@ -646,6 +655,7 @@
   --native-color-sheet-group: #363638;
   --native-color-dialog: #0d0d0e;
   --native-color-menu: #0e0e0e;
+  --native-color-popover: #0e0e0e;
   --native-color-notice: #0e0e0e;
   --native-color-on-notice-action: #a8e0bf;
   --native-color-focus-ring: #a8e0bf;
@@ -658,6 +668,8 @@
   --native-color-cover-badge: #f2f2f3;
   --native-color-dialog: #f2f2f2;
   --native-color-menu: #f2f2f3;
+  --native-color-popover: #f2f2f3;
+  --native-blur-popover: 0px;
   --native-color-notice: #f2f2f3;
 }
 
@@ -668,5 +680,7 @@
   --native-color-cover-badge: #141414;
   --native-color-dialog: #141414;
   --native-color-menu: #141414;
+  --native-color-popover: #141414;
+  --native-blur-popover: 0px;
   --native-color-notice: #141414;
 }

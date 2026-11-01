@@ -29,12 +29,14 @@
     mostThatFit,
     onFit,
     onCount,
+    labelClass,
   }: {
     view: LibraryView;
     drawn: number | undefined;
     mostThatFit: number | undefined;
     onFit: (fitsToWidth: boolean) => void;
     onCount: (size: ScreenSize, count: number) => void;
+    labelClass?: string | undefined;
   } = $props();
 
   const labelId = $props.id();
@@ -50,7 +52,7 @@
       id={labelId}
       class={android.isOn
         ? FILTER_SETTING_LABEL_TYPE
-        : "text-body font-semibold large:text-small"}
+        : (labelClass ?? "text-body font-semibold large:text-small")}
     >
       {m.library_covers_per_row()}
     </p>

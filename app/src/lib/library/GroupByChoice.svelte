@@ -27,9 +27,11 @@
   let {
     chosen,
     onChoose,
+    labelClass,
   }: {
     chosen: LibraryGrouping;
     onChoose: (grouping: LibraryGrouping) => void;
+    labelClass?: string | undefined;
   } = $props();
 
   const id = $props.id();
@@ -43,7 +45,7 @@
     id={labelId}
     class={android.isOn
       ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
-      : "text-body font-medium large:text-small"}
+      : (labelClass ?? "text-body font-medium large:text-small")}
   >
     {m.library_group_by()}
   </p>

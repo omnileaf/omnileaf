@@ -405,7 +405,7 @@
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
   const foldsIntoMore = $derived(
-    foldsBarActionsIntoMore(data.appInfo.platform, width.current),
+    foldsBarActionsIntoMore(data.appInfo.platform),
   );
   let headHeight = $state(0);
   const commandsOnTop = $derived(

@@ -15,7 +15,7 @@
   import DisplayChoice from "./DisplayChoice.svelte";
   import GroupByChoice from "./GroupByChoice.svelte";
   import OnCoversChoice from "./OnCoversChoice.svelte";
-  import { groupLook } from "./group-look";
+  import { type GroupLook, PLAIN_GROUP_LOOK } from "./group-look";
   import ViewSwitchRow from "./ViewSwitchRow.svelte";
   import {
     type ScreenSize,
@@ -38,25 +38,25 @@
     mostThatFit,
     hasCategories,
     onChoose,
-    isGrouped = false,
+    look = PLAIN_GROUP_LOOK,
   }: {
     view: LibraryView;
     coversDrawn: number | undefined;
     mostThatFit: number | undefined;
     hasCategories: boolean;
     onChoose: (view: LibraryView) => void;
-    isGrouped?: boolean;
+    look?: GroupLook;
   } = $props();
 
   const width = new WindowWidth();
   const isMaterial = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
-  const look = $derived(groupLook(isGrouped));
   const headingClass = $derived(
     isMaterial ? ANDROID_FILTER_HEADING : look.heading,
   );
   const groupClass = $derived(isMaterial ? "flex flex-col" : look.group);
+  const choicesClass = $derived(isMaterial ? "flex flex-col" : look.choices);
 
   const layoutId = $props.id();
   const pageId = `${layoutId}-page`;
@@ -70,9 +70,10 @@
   <h3 id={layoutId} class={headingClass}>
     {m.library_view_layout()}
   </h3>
-  <div class={groupClass}>
-    <div class="py-setting-grid-pad">
+  <div class={choicesClass}>
+    <div class={look.choice}>
       <DisplayChoice
+        labelClass={look.itemLabel}
         chosen={view.display}
         onChoose={(display: LibraryDisplay) => {
           onChoose(withDisplay(view, display));
@@ -80,9 +81,10 @@
       />
     </div>
     {#if view.display !== "list"}
-      <div class="py-setting-grid-pad">
+      <div class={look.choice}>
         <CoversPerRowChoice
           {view}
+          labelClass={look.itemLabel}
           drawn={coversInARow}
           {mostThatFit}
           onFit={(fitsToWidth: boolean) => {
@@ -94,8 +96,9 @@
         />
       </div>
     {/if}
-    <div class="py-setting-grid-pad">
+    <div class={look.choice}>
       <GroupByChoice
+        labelClass={look.itemLabel}
         chosen={view.groupBy}
         onChoose={(grouping: LibraryGrouping) => {
           onChoose(withGroupBy(view, grouping));
@@ -105,6 +108,7 @@
     {#if hasCategories}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
         description={isMac
           ? m.library_category_sidebar_hint()
@@ -118,6 +122,7 @@
     {#if canStackCovers}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={m.library_stack_covers()}
         description={m.library_stack_covers_hint()}
         isOn={view.stacksSeriesCovers}
@@ -133,12 +138,16 @@
   aria-labelledby={pageId}
   class={["flex flex-col", look.section]}
 >
-  <h3 id={pageId} class={[headingClass, !isGrouped && !isMaterial && "pbs-xl"]}>
+  <h3
+    id={pageId}
+    class={isMaterial ? ANDROID_FILTER_HEADING : look.pageHeading}
+  >
     {m.library_on_the_page()}
   </h3>
   <div class={groupClass}>
     <ViewSwitchRow
       {isMaterial}
+      titleClass={look.rowTitle}
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
       isOn={view.showsItemCounts}
@@ -148,6 +157,7 @@
     />
     <ViewSwitchRow
       {isMaterial}
+      titleClass={look.rowTitle}
       label={m.library_continue_row()}
       description={m.library_continue_row_hint()}
       isOn={view.showsContinueRow}
@@ -158,7 +168,7 @@
   </div>
 </section>
 <OnCoversChoice
-  {isGrouped}
+  {look}
   {isMaterial}
   onCovers={view.onCovers}
   onChoose={(name: keyof OnCovers, isShown: boolean) => {
