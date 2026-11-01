@@ -8,6 +8,7 @@ import {
   followCorePlatform,
   hasNativeLook,
   isPhone,
+  opensHandedFiles,
   phoneOf,
   usesCommandKey,
 } from "./platform";
@@ -105,3 +106,14 @@ test.each(DESKTOPS)(
     expect(hasNativeLook(platform)).toBe(false);
   },
 );
+
+test.each(["android", ...DESKTOPS] as const)(
+  "opens the files %s hands to the app",
+  (platform) => {
+    expect(opensHandedFiles(platform)).toBe(true);
+  },
+);
+
+test("opens no files handed to the app on iOS", () => {
+  expect(opensHandedFiles("ios")).toBe(false);
+});

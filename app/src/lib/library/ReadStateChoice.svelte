@@ -6,14 +6,20 @@
   import SettingChoice from "#lib/reader/SettingChoice.svelte";
 
   import { READ_STATE_LABELS } from "./filter-labels";
+  import { MAC_INSPECTOR } from "./filter-sheet-look";
   import { READ_STATES, type ReadState, readStateOf } from "./library-listing";
 
   let {
     filter,
+    isInspector = false,
     onChoose,
-  }: { filter: LibraryFilter; onChoose: (state: ReadState) => void } = $props();
+  }: {
+    filter: LibraryFilter;
+    isInspector?: boolean;
+    onChoose: (state: ReadState) => void;
+  } = $props();
 
-  const isWindows = currentPlatform() === "windows";
+  const usesSelect = $derived(currentPlatform() === "windows" || isInspector);
   const labelId = $props.id();
 
   function isReadState(value: string): value is ReadState {
@@ -29,12 +35,15 @@
   }
 </script>
 
-{#if isWindows}
+{#if usesSelect}
   <div class="flex flex-col gap-sm">
-    <span id={labelId} class="text-small">{m.library_read_state()}</span>
+    <span id={labelId} class={isInspector ? MAC_INSPECTOR.label : "text-small"}>
+      {m.library_read_state()}
+    </span>
     <NativeSelect
       aria-labelledby={labelId}
       value={readStateOf(filter)}
+      {...isInspector ? MAC_INSPECTOR.select : {}}
       onchange={chooseState}
     >
       {#each READ_STATES as state (state)}

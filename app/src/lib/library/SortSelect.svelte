@@ -8,6 +8,7 @@
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { MAC_INSPECTOR } from "./filter-sheet-look";
   import { GROUPED_FOOTNOTE_TYPE } from "./group-look";
   import { SORTS } from "./library-listing";
   import { SORT_LABELS } from "./sort-labels";
@@ -15,10 +16,12 @@
 
   let {
     sort,
+    isInspector = false,
     onSortBy,
     onReverse,
   }: {
     sort: LibrarySort;
+    isInspector?: boolean;
     onSortBy: (by: LibrarySortBy) => void;
     onReverse: () => void;
   } = $props();
@@ -78,25 +81,39 @@
   </div>
 {:else}
   <div
-    class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
+    class={isInspector
+      ? "flex flex-col gap-sm"
+      : "grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"}
   >
-    <span id={labelId} class="text-small font-medium">
+    <span
+      id={labelId}
+      class={isInspector ? MAC_INSPECTOR.label : "text-small font-medium"}
+    >
       {m.library_sort_by()}
     </span>
-    <ButtonGroup aria-labelledby={labelId} class="inline-setting-control">
+    <ButtonGroup
+      aria-labelledby={labelId}
+      class={isInspector ? "gap-sm inline-full" : "inline-setting-control"}
+    >
       <NativeSelect
         aria-labelledby={labelId}
         aria-describedby={isTimedSort ? footnoteId : undefined}
         value={sort.by}
         class="flex-1 min-inline-none"
-        fieldClass="touch:text-body touch:block-touch-target"
+        {...isInspector
+          ? MAC_INSPECTOR.select
+          : { fieldClass: "touch:text-body touch:block-touch-target" }}
         onchange={chooseSort}
       >
         {#each SORTS as by (by)}
           <option value={by}>{SORT_LABELS[by]()}</option>
         {/each}
       </NativeSelect>
-      <SortDirectionButton {sort} look="icon" {onReverse} />
+      <SortDirectionButton
+        {sort}
+        look={isInspector ? "inspector" : "icon"}
+        {onReverse}
+      />
     </ButtonGroup>
   </div>
 {/if}

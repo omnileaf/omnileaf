@@ -44,6 +44,7 @@
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
   import {
     dismissForThisVisit,
@@ -109,7 +110,11 @@
   import NeedsAttentionDot from "#lib/problems/NeedsAttentionDot.svelte";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { deviceKindOf } from "#lib/first-launch/device.ts";
-  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import {
+    EXPANDED_QUERY,
+    MAC_INSPECTOR_QUERY,
+    WindowWidth,
+  } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -219,10 +224,11 @@
   const notices = getNotices();
   let hiddenSeries = $state(0);
   const androidPhone = new AndroidPhone();
+  const folderCardsPhone = new FolderCardsPhone();
   let missingFolders = $state<readonly MissingFolder[]>([]);
   let stillFailing = $state<readonly string[]>([]);
   const cardedFolders = $derived(
-    androidPhone.isOn
+    folderCardsPhone.isOn
       ? missingFolders.filter(({ folder }) => !isDismissedThisVisit(folder.id))
       : [],
   );
@@ -258,7 +264,7 @@
   const folderNotices = new MissingFolderNotices(
     notices,
     folderHandlers,
-    () => androidPhone.isOn,
+    () => folderCardsPhone.isOn,
   );
 
   async function relocate(missing: MissingFolder): Promise<void> {
@@ -336,6 +342,12 @@
     void commands.showSeriesInFolder(series.id).then(reportingErrors);
   }
 
+  function showPickedInFolder(): void {
+    for (const id of selection.picked) {
+      void commands.showSeriesInFolder(id).then(reportingErrors);
+    }
+  }
+
   async function unlink(folder: LibraryFolder): Promise<void> {
     unlinking = undefined;
     const removed = await commands.removeLibraryFolder(folder.id);
@@ -367,9 +379,7 @@
 
   let isCountWanted = $state(false);
   const isExpanded = new MediaQuery(EXPANDED_QUERY);
-  const docksFilter = $derived(
-    isExpanded.current && deviceKindOf(data.appInfo.platform) === "desktop",
-  );
+  const fitsInspector = new MediaQuery(MAC_INSPECTOR_QUERY);
   let isFilterOpen = $state(false);
   let filterButton: HTMLElement | null = $state(null);
   let isViewOpen = $state(false);
@@ -387,6 +397,10 @@
   );
   const isIos = $derived(data.appInfo.platform === "ios");
   const isMac = $derived(data.appInfo.platform === "macos");
+  const docksFilter = $derived(
+    (isMac ? fitsInspector.current : isExpanded.current) &&
+      deviceKindOf(data.appInfo.platform) === "desktop",
+  );
   const tryAgainPhone = $derived(
     phoneAction(data.appInfo.platform, width.current, "other"),
   );
@@ -413,6 +427,7 @@
     }),
   );
   const isDocked = $derived(docksFilter && isFilterOpen);
+  const isGridBesidePanel = $derived(isDocked && !isMac);
 
   function closeFilterPanel(): void {
     isFilterOpen = false;
@@ -464,11 +479,23 @@
       },
       onShowInFolder: showInFolder,
       onRemove:
-        data.appInfo.platform === "windows"
+        data.appInfo.platform === "windows" || isMac
           ? (one: LibrarySeries) => {
               removing = seriesTargets([one.id]);
             }
           : undefined,
+      picked: isMac
+        ? {
+            onMarkRead: markPickedRead,
+            onLabel: () => {
+              labelPicked("categories");
+            },
+            onShowInFolder: showPickedInFolder,
+            onRemove: () => {
+              removing = seriesTargets(selection.picked);
+            },
+          }
+        : undefined,
     },
   });
   const loaded = $derived(
@@ -988,6 +1015,7 @@
 
 <EditDetailsDialog
   series={editedSeries}
+  platform={data.appInfo.platform}
   {coverUrl}
   onClose={() => {
     editedSeries = undefined;
@@ -1120,14 +1148,14 @@
   {/if}
 </div>
 <div
-  class={isDocked
+  class={isGridBesidePanel
     ? "-me-page-end -mbe-page-bottom grid grid-cols-docked-panel"
     : "flex flex-1 flex-col"}
 >
   <div
     class={[
       "flex flex-1 flex-col",
-      isDocked && "pe-page-end pbe-page-bottom min-inline-none",
+      isGridBesidePanel && "pe-page-end pbe-page-bottom min-inline-none",
     ]}
   >
     {#if isEmpty}
@@ -1186,7 +1214,7 @@
       </EmptyState>
     {:else}
       {#each cardedFolders as card (card.folder.id)}
-        <div class="mbs-sm">
+        <div class="mbs-sm ios:mbs-none">
           <MissingFolderCard
             missing={card}
             isStillFailing={stillFailing.includes(card.folder.id)}

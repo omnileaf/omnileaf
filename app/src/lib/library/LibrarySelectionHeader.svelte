@@ -1,5 +1,6 @@
 <script lang="ts">
   import { SquareCheck, X } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
@@ -32,29 +33,51 @@
   const width = new WindowWidth();
   const onPhone = $derived(isPhone(platform, width.current));
   const onIosPhone = $derived(platform === "ios" && onPhone);
+  const onIosTablet = $derived(platform === "ios" && !onPhone);
   const onAndroidPhone = $derived(platform === "android" && onPhone);
+  const selectAll: Snippet = selectAllButton;
+  const done: Snippet = doneButton;
   const bar = $derived(commandBarLook(platform));
   const selectAllKeys = $derived(
     usesCommandKey(platform) ? "Meta+A" : "Control+A",
   );
 </script>
 
+{#snippet selectAllButton()}
+  <Button
+    type="button"
+    look="bar-button"
+    aria-keyshortcuts={selectAllKeys}
+    class="px-md whitespace-nowrap text-foreground inline-auto min-inline-native-target"
+    onclick={onSelectAll}
+  >
+    {m.library_select_all()}
+  </Button>
+{/snippet}
+
+{#snippet doneButton()}
+  <Button
+    type="button"
+    look="bar-button"
+    aria-keyshortcuts="Escape"
+    class="bg-native-button-primary px-md whitespace-nowrap text-native-on-button-primary shadow-none inline-auto min-inline-native-target ios:backdrop-blur-none"
+    onclick={onCancel}
+  >
+    {m.library_selection_done()}
+  </Button>
+{/snippet}
+
 <h1 class="sr-only">{m.library_title()}</h1>
 <div
   data-page-toolbar
   data-picking-bar={onIosPhone || undefined}
-  class="sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center gap-sm bg-background ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar"
+  class={[
+    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center bg-background ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar",
+    onIosTablet ? "flex-wrap justify-between" : "gap-sm",
+  ]}
 >
   {#if onIosPhone}
-    <Button
-      type="button"
-      look="header-control"
-      aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
-      class="px-md whitespace-nowrap text-foreground inline-auto min-inline-native-target"
-      onclick={onSelectAll}
-    >
-      {m.library_select_all()}
-    </Button>
+    {@render selectAll()}
     <p
       class="flex-1 truncate min-inline-none {foldingBarLook(platform)
         .title} {NATIVE_TOP_BAR.barTitle}"
@@ -62,15 +85,18 @@
     >
       {m.library_selected_series({ count })}
     </p>
-    <Button
-      type="button"
-      look="header-control"
-      aria-keyshortcuts="Escape"
-      class="bg-native-button-primary px-md whitespace-nowrap text-native-on-button-primary shadow-none inline-auto min-inline-native-target ios:backdrop-blur-none"
-      onclick={onCancel}
+    {@render done()}
+  {:else if onIosTablet}
+    {@render selectAll()}
+    <p
+      class="order-last pbs-native-large-title-above pbe-native-large-title-below inline-full {NATIVE_TOP_BAR.largeTitle}"
+      aria-live="polite"
     >
-      {m.library_selection_done()}
-    </Button>
+      <span class="truncate min-inline-none">
+        {m.library_selected_series({ count })}
+      </span>
+    </p>
+    {@render done()}
   {:else}
     <Tooltip
       label={m.library_cancel_selecting()}

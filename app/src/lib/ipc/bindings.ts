@@ -104,6 +104,9 @@ export const commands = {
 	book: string & { readonly __brand: "BookId" },
 	isInLibrary: boolean,
 } | null, IpcError>(__TAURI_INVOKE("file_to_open")),
+	/**  Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`. */
+	queueDocumentToOpen: (uri: string) => typedError<null, IpcError>(__TAURI_INVOKE("queue_document_to_open", { uri })),
+	watchOpenWith: (onHanded: Channel<string>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_open_with", { onHanded })),
 	/**  Says what dragging these paths over the window would hold, from the paths alone. */
 	inspectDrop: (paths: string[]) => typedError<DropSummary, IpcError>(__TAURI_INVOKE("inspect_drop", { paths })),
 	dropFiles: (paths: string[], mode: DropMode) => typedError<DropOutcome, IpcError>(__TAURI_INVOKE("drop_files", { paths, mode })),
@@ -178,7 +181,7 @@ export const commands = {
 	choice: HomeChoice,
 } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
 	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
-	moveHomeFolder: () => typedError<null, IpcError>(__TAURI_INVOKE("move_home_folder")),
+	moveHomeFolder: () => typedError<HomeMoved, IpcError>(__TAURI_INVOKE("move_home_folder")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -543,6 +546,8 @@ export type HistorySeries = {
 export type HomeArrival = "moved" | "moveFailed";
 
 export type HomeChoice = { kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" };
+
+export type HomeMoved = { kind: "restarting" } | { kind: "moved"; folder: string & { readonly __brand: "FolderId" } };
 
 export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
 

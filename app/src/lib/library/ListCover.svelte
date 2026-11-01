@@ -19,6 +19,7 @@
 </script>
 
 <span
+  data-slot="list-cover"
   class={[
     "relative box-content block aspect-cover shrink-0 overflow-hidden border border-cover-edge bg-chip",
     look,

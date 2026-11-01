@@ -84,11 +84,51 @@ test.describe("the library's list view on a phone", { tag: "@native" }, () => {
     }
   });
 
+  test("keeps the android row's cover and height", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.goto("/");
+    const row = rows(page).first().locator("[data-series-id]");
+    await expect(row).toBeVisible();
+
+    const coverBox = await row
+      .locator("[data-slot='list-cover']")
+      .boundingBox();
+    const rowBox = await row.boundingBox();
+
+    expect(coverBox).toMatchObject({ width: 54, height: 80 });
+    expect(rowBox?.height).toBe(100);
+  });
+
   test("keeps today's ruled rows on a tablet", async ({ page }) => {
     await page.setViewportSize(TABLET);
 
     const look = await secondRowLook(page);
 
     expect(look.edgeWidth).toBe("1px");
+  });
+
+  test("keeps the tablet row's cover at its content width plus its edge", async ({
+    page,
+  }) => {
+    await page.setViewportSize(TABLET);
+    await page.goto("/");
+    const cover = rows(page)
+      .first()
+      .locator("[data-series-id] [data-slot='list-cover']");
+    await expect(cover).toBeVisible();
+
+    const box = await cover.boundingBox();
+    const sizing = await cover.evaluate(
+      (element) => getComputedStyle(element).boxSizing,
+    );
+
+    expect(sizing).toBe("content-box");
+    expect(box?.width).toBe(54);
   });
 });

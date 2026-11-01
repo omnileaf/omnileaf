@@ -2,7 +2,6 @@
   import { RefreshCw, Trash } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -12,6 +11,7 @@
     type EmptiedFolderLook,
   } from "./emptied-folder-looks";
   import { folderTitle } from "./folder-title";
+  import { NATIVE_ALERT_ROW } from "./native-alert-row";
   import type { EmptiedFolder } from "./rescans.svelte";
 
   const ICON_SIZE = 22;
@@ -44,10 +44,7 @@
   <button
     type="button"
     disabled={isBusy}
-    class={[
-      "relative flex items-center py-native-row-block ps-native-alert-action-start pe-native-row-end text-start text-native-row-title/native-row-title font-native-row-title tracking-native-row-title text-accent inline-full min-block-native-row after:absolute after:inset-s-native-alert-action-start after:inset-e-none after:inset-bs-none after:border-bs after:border-native-row-rule last:rounded-b-native-group enabled:active:bg-native-row-pressed disabled:opacity-60",
-      ROW_FOCUS_RING,
-    ]}
+    class={NATIVE_ALERT_ROW}
     onclick={(event) => {
       onAsk(event.currentTarget);
     }}

@@ -2,25 +2,32 @@
   import { Plus } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
 
   import {
     ANDROID_DETAIL_CHIP,
     DETAIL_CHIP,
     GROUPED_DETAIL_CHIP,
+    MACOS_TYPING_CHIP,
   } from "./detail-chip.ts";
 
   const ICON_SIZE = 16;
+  const MACOS_ICON_SIZE = 12;
+  const TYPING_CHIP =
+    "flex-none rounded-shadcn-control border border-accent bg-transparent px-md text-label min-block-detail-chip touch:text-body";
 
   let {
     label,
     isGrouped = false,
     isAndroid = false,
+    isMacos = false,
     onAdd,
   }: {
     label: string;
     isGrouped?: boolean;
     isAndroid?: boolean;
+    isMacos?: boolean;
     onAdd: (name: string) => void;
   } = $props();
 
@@ -49,7 +56,7 @@
     }}
     aria-label={label}
     placeholder={label}
-    class="flex-none rounded-shadcn-control border border-accent bg-transparent px-md text-label min-block-detail-chip touch:text-body"
+    class={isMacos ? MACOS_TYPING_CHIP : TYPING_CHIP}
     {@attach focusOnShow}
     onkeydown={(event: KeyboardEvent) => {
       if (event.key === "Enter") {
@@ -64,6 +71,18 @@
     }}
     onblur={add}
   />
+{:else if isMacos}
+  <Button
+    type="button"
+    variant="secondary"
+    size="small"
+    onclick={() => {
+      isTyping = true;
+    }}
+  >
+    <Plus size={MACOS_ICON_SIZE} aria-hidden="true" />
+    {label}
+  </Button>
 {:else}
   <button
     type="button"

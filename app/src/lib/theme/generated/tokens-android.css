@@ -15,6 +15,7 @@
   --native-shadow-shadow-glass: none;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);
+  --native-color-control-stroke: transparent;
   --native-color-icon-button-fill: var(--color-hover);
   --native-color-icon-button-fill-hover: var(--color-hover);
   --native-color-icon-button-fill-pressed: var(--color-hover);
@@ -78,15 +79,20 @@
   --native-spacing-row-end: 24px;
   --native-spacing-row-gap: 16px;
   --native-spacing-row-block: 8px;
+  --native-spacing-list-cover: calc(var(--spacing-list-cover) + 2px);
   --native-spacing-hairline: 0px;
   --native-spacing-row-rule-start: 0px;
   --native-spacing-row-rule-indent: 0px;
   --native-spacing-row-lead: 0px;
   --native-spacing-group-head-end: 0px;
   --native-spacing-group-head-below: 0px;
+  --native-spacing-sheet-notice-top: 0px;
+  --native-spacing-field-block: var(--spacing-sm);
+  --native-spacing-title-field-block: var(--spacing-sm);
   --native-spacing-alert-block: 14px;
   --native-spacing-alert-action-start: 50px;
   --native-spacing-alert-action-icon: 18.5px;
+  --native-spacing-alert-dismiss-inset: 6px;
   --native-spacing-swipe-action: 60px;
   --native-spacing-swipe-action-inline: 14px;
   --native-spacing-swipe-action-gap: 10px;
@@ -158,6 +164,8 @@
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 64px;
   --native-spacing-top-bar-lift: var(--spacing-title-gap);
+  --native-spacing-large-title-above: 0px;
+  --native-spacing-large-title-below: 0px;
   --native-spacing-reader-bar-end: calc(var(--spacing-safe-bottom) + 8px);
   --native-shadow-bar-button-lift: none;
   --native-color-on-tab-hover: var(--muted-foreground);
@@ -166,6 +174,14 @@
   --native-spacing-tab-bar-inset: 0px;
   --native-spacing-tab-bar-inline: 0px;
   --native-spacing-toolbar-button: 48px;
+  --native-spacing-inspector: var(--spacing-docked-panel);
+  --native-spacing-inspector-title: var(--spacing-toolbar);
+  --native-spacing-inspector-section: var(--spacing-lg);
+  --native-spacing-inspector-chip-inline: var(--spacing-md);
+  --native-spacing-inspector-chip-gap: var(--spacing-sm);
+  --native-text-inspector-label: var(--text-small);
+  --native-leading-inspector-label: var(--text-small--line-height);
+  --native-weight-inspector-label: var(--font-weight-medium);
   --native-spacing-bottom-bar-start: 0px;
   --native-spacing-bottom-bar-end: 0px;
   --native-spacing-search-bar-start: 0px;
@@ -366,6 +382,24 @@
   --native-spacing-tile-check-bleed: 0px;
   --native-spacing-tile-hit-corner: 0px;
   --native-spacing-drag-lift: 6px;
+  --native-color-tile-picked: transparent;
+  --native-spacing-tile-picked: 0px;
+  --native-radius-tile-picked-title: 0px;
+  --native-text-sheet-title: var(--text-title);
+  --native-leading-sheet-title: var(--text-title--line-height);
+  --native-weight-sheet-title: var(--font-weight-bold);
+  --native-text-sheet-text: var(--text-label);
+  --native-leading-sheet-text: var(--text-label--line-height);
+  --native-spacing-sheet-top: var(--spacing-sheet-top);
+  --native-spacing-sheet-limit: var(--spacing-edit-dialog-height);
+  --native-shadow-sheet-lift: var(--dialog-shadow);
+  --native-spacing-detail-label: 99px;
+  --native-spacing-detail-label-tall: var(--spacing-xs);
+  --native-spacing-detail-end: 96px;
+  --native-spacing-detail-chip-gap: var(--spacing-sm);
+  --native-spacing-detail-chip-inline: var(--spacing-md);
+  --native-spacing-status-badge: 18px;
+  --native-spacing-status-badge-inline: var(--spacing-sm);
 }
 
 :root[data-platform="android"],

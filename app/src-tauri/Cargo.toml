@@ -22,6 +22,7 @@ tauri-build.workspace = true
 getrandom.workspace = true
 omnileaf-edge-swipe.workspace = true
 omnileaf-engine.workspace = true
+omnileaf-formats.workspace = true
 omnileaf-icon-actions.workspace = true
 omnileaf-relay-proto.workspace = true
 os_info.workspace = true
@@ -80,7 +81,6 @@ rustix.workspace = true
 [dev-dependencies]
 axum.workspace = true
 omnileaf-db.workspace = true
-omnileaf-formats.workspace = true
 omnileaf-relay.workspace = true
 omnileaf-system-bars.workspace = true
 omnileaf-testkit.workspace = true

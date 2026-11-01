@@ -23,6 +23,7 @@
   --color-native-button-secondary: var(--native-color-button-secondary);
   --color-native-control-fill-hover: var(--native-color-control-fill-hover);
   --color-native-control-fill-pressed: var(--native-color-control-fill-pressed);
+  --color-native-control-stroke: var(--native-color-control-stroke);
   --color-native-icon-button-fill: var(--native-color-icon-button-fill);
   --color-native-icon-button-fill-hover: var(--native-color-icon-button-fill-hover);
   --color-native-icon-button-fill-pressed: var(--native-color-icon-button-fill-pressed);
@@ -109,15 +110,20 @@
   --spacing-native-row-end: var(--native-spacing-row-end);
   --spacing-native-row-gap: var(--native-spacing-row-gap);
   --spacing-native-row-block: var(--native-spacing-row-block);
+  --spacing-native-list-cover: var(--native-spacing-list-cover);
   --spacing-native-hairline: var(--native-spacing-hairline);
   --spacing-native-row-rule-start: var(--native-spacing-row-rule-start);
   --spacing-native-row-rule-indent: var(--native-spacing-row-rule-indent);
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
+  --spacing-native-sheet-notice-top: var(--native-spacing-sheet-notice-top);
+  --spacing-native-field-block: var(--native-spacing-field-block);
+  --spacing-native-title-field-block: var(--native-spacing-title-field-block);
   --spacing-native-alert-block: var(--native-spacing-alert-block);
   --spacing-native-alert-action-start: var(--native-spacing-alert-action-start);
   --spacing-native-alert-action-icon: var(--native-spacing-alert-action-icon);
+  --spacing-native-alert-dismiss-inset: var(--native-spacing-alert-dismiss-inset);
   --spacing-native-swipe-action: var(--native-spacing-swipe-action);
   --spacing-native-swipe-action-inline: var(--native-spacing-swipe-action-inline);
   --spacing-native-swipe-action-gap: var(--native-spacing-swipe-action-gap);
@@ -205,6 +211,8 @@
   --spacing-native-series-chevron: var(--native-spacing-series-chevron);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
   --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
+  --spacing-native-large-title-above: var(--native-spacing-large-title-above);
+  --spacing-native-large-title-below: var(--native-spacing-large-title-below);
   --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);
   --shadow-native-bar-button-lift: var(--native-shadow-bar-button-lift);
   --color-native-on-top-bar: var(--native-color-on-top-bar);
@@ -227,6 +235,14 @@
   --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
   --spacing-native-tab-bar-inline: var(--native-spacing-tab-bar-inline);
   --spacing-native-toolbar-button: var(--native-spacing-toolbar-button);
+  --spacing-native-inspector: var(--native-spacing-inspector);
+  --spacing-native-inspector-title: var(--native-spacing-inspector-title);
+  --spacing-native-inspector-section: var(--native-spacing-inspector-section);
+  --spacing-native-inspector-chip-inline: var(--native-spacing-inspector-chip-inline);
+  --spacing-native-inspector-chip-gap: var(--native-spacing-inspector-chip-gap);
+  --text-native-inspector-label: var(--native-text-inspector-label);
+  --leading-native-inspector-label: var(--native-leading-inspector-label);
+  --font-weight-native-inspector-label: var(--native-weight-inspector-label);
   --spacing-native-bottom-bar-start: var(--native-spacing-bottom-bar-start);
   --spacing-native-bottom-bar-end: var(--native-spacing-bottom-bar-end);
   --spacing-native-search-bar-start: var(--native-spacing-search-bar-start);
@@ -447,6 +463,24 @@
   --spacing-native-tile-check-bleed: var(--native-spacing-tile-check-bleed);
   --spacing-native-tile-hit-corner: var(--native-spacing-tile-hit-corner);
   --spacing-native-drag-lift: var(--native-spacing-drag-lift);
+  --color-native-tile-picked: var(--native-color-tile-picked);
+  --spacing-native-tile-picked: var(--native-spacing-tile-picked);
+  --radius-native-tile-picked-title: var(--native-radius-tile-picked-title);
+  --text-native-sheet-title: var(--native-text-sheet-title);
+  --leading-native-sheet-title: var(--native-leading-sheet-title);
+  --font-weight-native-sheet-title: var(--native-weight-sheet-title);
+  --text-native-sheet-text: var(--native-text-sheet-text);
+  --leading-native-sheet-text: var(--native-leading-sheet-text);
+  --spacing-native-sheet-top: var(--native-spacing-sheet-top);
+  --spacing-native-sheet-limit: var(--native-spacing-sheet-limit);
+  --shadow-native-sheet-lift: var(--native-shadow-sheet-lift);
+  --spacing-native-detail-label: var(--native-spacing-detail-label);
+  --spacing-native-detail-label-tall: var(--native-spacing-detail-label-tall);
+  --spacing-native-detail-end: var(--native-spacing-detail-end);
+  --spacing-native-detail-chip-gap: var(--native-spacing-detail-chip-gap);
+  --spacing-native-detail-chip-inline: var(--native-spacing-detail-chip-inline);
+  --spacing-native-status-badge: var(--native-spacing-status-badge);
+  --spacing-native-status-badge-inline: var(--native-spacing-status-badge-inline);
 }
 
 @media (prefers-reduced-motion: reduce) {

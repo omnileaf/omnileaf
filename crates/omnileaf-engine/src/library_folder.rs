@@ -65,6 +65,11 @@ pub fn home_location(home: &Path) -> String {
     folder_location(&RootLocator::Path(home.to_path_buf()))
 }
 
+#[must_use]
+pub fn home_tree_location(tree: &AndroidTree) -> String {
+    tree_location(tree)
+}
+
 pub(crate) fn folder_location(locator: &RootLocator) -> String {
     match locator {
         RootLocator::Path(path) | RootLocator::AppleBookmark { path, .. } => {

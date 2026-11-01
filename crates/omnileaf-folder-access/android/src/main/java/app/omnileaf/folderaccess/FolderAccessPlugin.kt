@@ -44,6 +44,11 @@ public class DocumentArgs {
 }
 
 @InvokeArg
+public class HandedArgs {
+    public lateinit var uri: String
+}
+
+@InvokeArg
 public class GrantArgs {
     public lateinit var uri: String
 }
@@ -57,6 +62,7 @@ public class FolderAccessPlugin
     ) : Plugin(activity) {
         private val scope = CoroutineScope(SupervisorJob() + dispatcher)
         private val trees = DocumentTrees(activity)
+        private val handedDocuments = HandedDocuments(activity)
         private var isPicking = false
 
         @Command
@@ -68,9 +74,11 @@ public class FolderAccessPlugin
             try {
                 startActivityForResult(invoke, folderPickerIntent(), FOLDER_PICKED)
             } catch (error: ActivityNotFoundException) {
-                pickerFailed(invoke, error)
+                isPicking = false
+                rejectPicker(invoke, error)
             } catch (error: IllegalStateException) {
-                pickerFailed(invoke, error)
+                isPicking = false
+                rejectPicker(invoke, error)
             }
         }
 
@@ -111,6 +119,18 @@ public class FolderAccessPlugin
         }
 
         @Command
+        public fun openHandedDocument(invoke: Invoke) {
+            val args = invoke.parseArgs(HandedArgs::class.java)
+            answer(invoke) {
+                val handed =
+                    withinBound(OPENING_BOUND, discard = { it.descriptor.close() }) { signal ->
+                        handedDocuments.open(args.uri.toUri(), signal)
+                    }
+                handOver(handed.descriptor).put("name", handed.name)
+            }
+        }
+
+        @Command
         public fun deleteDocument(invoke: Invoke) {
             val args = invoke.parseArgs(DocumentArgs::class.java)
             val document = requireNotNull(args.document) { "delete a document without naming it" }
@@ -132,14 +152,6 @@ public class FolderAccessPlugin
                 trees.release(args.uri.toUri())
                 null
             }
-        }
-
-        private fun pickerFailed(
-            invoke: Invoke,
-            error: RuntimeException,
-        ) {
-            isPicking = false
-            invoke.reject(error.message ?: error.toString())
         }
 
         private suspend fun <T : Any> withinBound(
@@ -170,6 +182,13 @@ public class FolderAccessPlugin
             }
         }
     }
+
+private fun rejectPicker(
+    invoke: Invoke,
+    error: RuntimeException,
+) {
+    invoke.reject(error.message ?: error.toString())
+}
 
 /** A picker grants a tree only the access its intent asks for, so it is asked for write access beside read. */
 private fun folderPickerIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(READ_WRITE_GRANT)

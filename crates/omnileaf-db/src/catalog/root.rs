@@ -271,11 +271,11 @@ pub(crate) struct StoredLocation<'a> {
 }
 
 impl StoredLocation<'_> {
-    fn tree_name(&self) -> Option<&str> {
+    pub(crate) fn tree_name(&self) -> Option<&str> {
         self.tree.map(AndroidTree::name)
     }
 
-    fn tree_place(&self) -> Option<&str> {
+    pub(crate) fn tree_place(&self) -> Option<&str> {
         self.tree.map(AndroidTree::place)
     }
 }

@@ -83,6 +83,15 @@ impl IpcError {
         }
     }
 
+    #[cfg(any(target_os = "android", test))]
+    pub(crate) fn document_unreadable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "read a document handed to the app");
+        Self {
+            code: IpcErrorCode::BookUnreadable,
+            message: "the document could not be read",
+        }
+    }
+
     pub(crate) fn clipboard_unavailable(error: &dyn Error) -> Self {
         tracing::warn!(error = %describe_error(error), "copy the version details");
         Self {
@@ -462,6 +471,15 @@ mod tests {
                 IpcErrorCode::Internal,
             ]
         );
+    }
+
+    #[test]
+    fn tells_the_interface_a_handed_document_could_not_be_read() {
+        let refused = io::Error::from(io::ErrorKind::PermissionDenied);
+
+        let error = IpcError::document_unreadable(&refused);
+
+        assert_eq!(error.code, IpcErrorCode::BookUnreadable);
     }
 
     #[test]

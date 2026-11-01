@@ -29,16 +29,18 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    document_handover,
     file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
-    home_folder::{self, ChosenHome, ChosenHomeFolder},
+    home_folder::{self, ChosenHome, ChosenHomeFolder, HomeMoved},
     icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
     library_problem::{LibraryAtLaunch, LibraryProblem},
+    open_with,
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
@@ -117,6 +119,8 @@ macro_rules! app_commands {
             mark_series_read,
             open_book,
             file_to_open,
+            queue_document_to_open,
+            watch_open_with,
             inspect_drop,
             drop_files,
             cropped_page_paths,
@@ -896,10 +900,23 @@ async fn file_to_open(
     library: State<'_, Library>,
     files: State<'_, FilesToOpen>,
 ) -> Result<Option<FileToRead>, IpcError> {
-    let Some(path) = files.next() else {
+    let Some(file) = files.next() else {
         return Ok(None);
     };
-    Ok(Some(library.open_file(path).await?))
+    Ok(Some(file.open(&library).await?))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn watch_open_with(app: AppHandle, on_handed: Channel<String>) -> Result<(), IpcError> {
+    open_with::watch(&app, on_handed).await
+}
+
+/// Takes the one `content://` document an Android request handed to the app, to open with the next `file_to_open`.
+#[tauri::command]
+#[specta::specta]
+async fn queue_document_to_open(app: AppHandle, uri: String) -> Result<(), IpcError> {
+    document_handover::queue(&app, uri).await
 }
 
 /// Says what dragging these paths over the window would hold, from the paths alone.
@@ -1203,18 +1220,27 @@ fn found_library(library: State<'_, Library>) -> Option<FoundLibrary> {
 async fn choose_home_folder(
     window: Window,
     app: AppHandle,
+    library: State<'_, Library>,
 ) -> Result<Option<ChosenHomeFolder>, IpcError> {
-    let Some(setting) = home_folder::setting(&app) else {
+    let setting = home_folder::setting(&app);
+    if setting.is_none() && !cfg!(target_os = "android") {
         return Ok(None);
-    };
+    }
     let picked = off_the_runtime(move || pick_folder(&window)).await?;
-    let Some(RootLocator::Path(folder)) = picked else {
-        return Ok(None);
-    };
-    let choice = setting.choose(&folder).await?;
-    let chosen = ChosenHomeFolder::new(&folder, choice);
-    app.state::<ChosenHome>().remember(folder);
-    Ok(Some(chosen))
+    match (picked, setting) {
+        (Some(RootLocator::Path(folder)), Some(setting)) => {
+            let choice = setting.choose(&folder).await?;
+            let chosen = ChosenHomeFolder::new(&folder, choice);
+            app.state::<ChosenHome>().remember(folder);
+            Ok(Some(chosen))
+        }
+        (Some(RootLocator::AndroidTree(tree)), _) => {
+            home_folder::choose_tree(&library, &app.state::<ChosenHome>(), tree)
+                .await
+                .map(Some)
+        }
+        _ => Ok(None),
+    }
 }
 
 #[tauri::command]
@@ -1228,11 +1254,17 @@ async fn use_found_library(app: AppHandle) -> Result<(), IpcError> {
 
 #[tauri::command]
 #[specta::specta]
-async fn move_home_folder(app: AppHandle) -> Result<(), IpcError> {
+async fn move_home_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+) -> Result<HomeMoved, IpcError> {
+    if app.state::<ChosenHome>().tree().is_some() {
+        return home_folder::move_to_chosen_tree(&library, &app.state::<ChosenHome>()).await;
+    }
     let (setting, chosen) = home_folder::chosen(&app)?;
     setting.move_to(&chosen).await?;
     app.request_restart();
-    Ok(())
+    Ok(HomeMoved::Restarting)
 }
 
 #[tauri::command]

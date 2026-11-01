@@ -60,6 +60,7 @@ export interface SampleScenario {
   readonly signIn: SignInOutcome;
   readonly launch: LaunchKind;
   readonly home: HomeKind;
+  readonly homePick: HomePick;
   readonly space: SpaceKind;
   readonly skipped: SkippedKind;
   readonly removal: RemovalKind;
@@ -189,6 +190,9 @@ type LaunchKind = (typeof LAUNCH_KINDS)[number];
 const HOME_KINDS = ["empty", "library"] as const;
 
 type HomeKind = (typeof HOME_KINDS)[number];
+const HOME_PICKS = ["cancel", "empty", "current", "unreadable"] as const;
+
+type HomePick = (typeof HOME_PICKS)[number];
 const LAST_BACKUP_MS = Date.UTC(2026, 9, 12, 9);
 const SPACE_KINDS = ["plenty", "low"] as const;
 
@@ -268,6 +272,7 @@ export function scenarioFrom(search: URLSearchParams): SampleScenario {
     signIn: oneOf(SIGN_IN_OUTCOMES, search.get("signin"), "signedIn"),
     launch: oneOf(LAUNCH_KINDS, search.get("launch"), "returning"),
     home: oneOf(HOME_KINDS, search.get("home"), "empty"),
+    homePick: oneOf(HOME_PICKS, search.get("homepick"), "cancel"),
     space: oneOf(SPACE_KINDS, search.get("space"), "plenty"),
     skipped: oneOf(SKIPPED_KINDS, search.get("skipped"), "none"),
     removal: oneOf(REMOVAL_KINDS, search.get("removal"), "clean"),
@@ -295,6 +300,7 @@ const HOME_FOLDER_LOCATIONS = {
   windows: "C:\\Users\\Reader\\AppData\\Roaming\\app.omnileaf",
   linux: "~/.local/share/app.omnileaf",
 } as const satisfies Record<Platform, string>;
+const ANDROID_PICKED_HOME = "Internal storage › Folder";
 const SAMPLE_FOLDERS_HOLDING_BOOKS = 1;
 const LIBRARY_FOLDER_NAME = "Sample Comics";
 const LIBRARY_FOLDER_LOCATION = "/media/Sample Comics";
@@ -621,6 +627,7 @@ export function sampleBackend(
   let view: LibraryView = DEFAULT_LIBRARY_VIEW;
   let isFullScreen = false;
   let hasFinishedFirstLaunch = scenario.launch === "returning";
+  let homeLocation: string = HOME_FOLDER_LOCATIONS[scenario.platform];
   const bookmarks = new Map<string, Set<number>>();
   const readingBeforeMarked = new Map<string, SampleReading>();
   const hiddenTypes = new Set<string>();
@@ -1244,7 +1251,7 @@ export function sampleBackend(
           id: HOME_FOLDER_ID,
           kind: "home",
           name: "Omnileaf",
-          location: HOME_FOLDER_LOCATIONS[scenario.platform],
+          location: homeLocation,
           isAvailable: true,
         },
         ...(library.length === 0
@@ -1793,6 +1800,12 @@ export function sampleBackend(
           peopleOf(series).find(({ name }) => name === creator)?.role ?? null,
       })),
     fileToOpen: () => null,
+    queueDocumentToOpen: () => {
+      throw failure(
+        "bookUnreadable",
+        "the sample library opens no documents from outside it",
+      );
+    },
     inspectDrop: (paths) => {
       const names = paths.map((path) => path.split(/[\\/]/u).at(-1) ?? path);
       const usable = names.filter(
@@ -2129,9 +2142,36 @@ export function sampleBackend(
             lastBackupAtMs: LAST_BACKUP_MS,
           }
         : null,
-    chooseHomeFolder: () => null,
+    chooseHomeFolder: () => {
+      if (scenario.platform !== "android") {
+        return null;
+      }
+      switch (scenario.homePick) {
+        case "cancel":
+          return null;
+        case "unreadable":
+          throw failure(
+            "folderUnreadable",
+            "the sample library can't list the folder picked",
+          );
+        case "current":
+        case "empty":
+          return {
+            location: ANDROID_PICKED_HOME,
+            choice: { kind: scenario.homePick },
+          };
+        default:
+          return assertNever(scenario.homePick);
+      }
+    },
     useFoundLibrary: () => null,
-    moveHomeFolder: () => null,
+    moveHomeFolder: () => {
+      if (scenario.platform !== "android") {
+        return { kind: "restarting" };
+      }
+      homeLocation = ANDROID_PICKED_HOME;
+      return { kind: "moved", folder: HOME_FOLDER_ID };
+    },
     firstLaunchFinished: () => hasFinishedFirstLaunch,
     finishFirstLaunch: () => {
       hasFinishedFirstLaunch = true;
@@ -2185,6 +2225,7 @@ export function sampleBackend(
     showTrayMenu: () => null,
     showIconActions: () => null,
     watchIconActions: () => null,
+    watchOpenWith: () => null,
     openSystemSettings: () => null,
     openColourSettings: () => null,
     panicInCore: () => null,

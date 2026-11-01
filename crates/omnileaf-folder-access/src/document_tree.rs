@@ -2,23 +2,19 @@ use std::{
     collections::BTreeMap,
     ffi::OsStr,
     fmt,
-    fs::{self, File, OpenOptions},
-    io::{self, Read, Seek, SeekFrom},
+    fs::File,
+    io,
     path::{Component, Path, PathBuf},
-    process,
-    sync::{
-        Mutex, MutexGuard, PoisonError,
-        atomic::{AtomicU64, Ordering},
-    },
+    sync::{Mutex, MutexGuard, PoisonError},
     time::{Duration, SystemTime},
 };
 
 use omnileaf_engine::{AndroidTree, TreeUri};
-use omnileaf_formats::{Details, Entry, EntryKind, Limits, Storage};
+use omnileaf_formats::{Details, Entry, EntryKind, Storage};
+
+use crate::streamed_copy::StreamedCopies;
 
 const FOLDER_LISTINGS_KEPT: usize = 1024;
-
-static COPIES_MADE: AtomicU64 = AtomicU64::new(0);
 
 /// A documents provider's view of the folders and files under the trees it granted.
 pub trait Documents: fmt::Debug + Send + Sync {
@@ -45,8 +41,7 @@ pub struct DocumentTree<D> {
     documents: D,
     tree: TreeUri,
     root: PathBuf,
-    copies: PathBuf,
-    copy_limit: u64,
+    copies: StreamedCopies,
     listings: Mutex<BTreeMap<PathBuf, Vec<Document>>>,
 }
 
@@ -81,8 +76,7 @@ impl<D: Documents> DocumentTree<D> {
             documents,
             tree: tree.uri().clone(),
             root: PathBuf::from(tree.name()),
-            copies,
-            copy_limit: Limits::default().max_total_bytes,
+            copies: StreamedCopies::new(copies),
             listings: Mutex::default(),
         }
     }
@@ -184,48 +178,7 @@ impl<D: Documents> DocumentTree<D> {
 
     fn open_document(&self, document: &Document) -> io::Result<File> {
         let file = self.documents.open(&self.tree, &document.id)?;
-        if file.metadata().is_ok_and(|metadata| metadata.is_file()) {
-            Ok(file)
-        } else {
-            self.copy(file)
-        }
-    }
-
-    fn copy(&self, streamed: File) -> io::Result<File> {
-        let mut copy = self.unnamed_copy()?;
-        let copied = io::copy(
-            &mut streamed.take(self.copy_limit.saturating_add(1)),
-            &mut copy,
-        )?;
-        if copied > self.copy_limit {
-            return Err(io::Error::new(
-                io::ErrorKind::FileTooLarge,
-                format!("streamed document is over {} bytes", self.copy_limit),
-            ));
-        }
-        copy.seek(SeekFrom::Start(0))?;
-        Ok(copy)
-    }
-
-    fn unnamed_copy(&self) -> io::Result<File> {
-        fs::create_dir_all(&self.copies)?;
-        loop {
-            let serial = COPIES_MADE.fetch_add(1, Ordering::Relaxed);
-            let path = self.copies.join(format!("{}-{serial}", process::id()));
-            let created = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create_new(true)
-                .open(&path);
-            match created {
-                Ok(copy) => {
-                    fs::remove_file(&path)?;
-                    return Ok(copy);
-                }
-                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
-                Err(error) => return Err(error),
-            }
-        }
+        self.copies.seekable(file)
     }
 }
 
@@ -316,6 +269,9 @@ mod tests {
         },
         thread,
     };
+
+    #[cfg(unix)]
+    use std::io::{Seek, SeekFrom};
 
     use omnileaf_testkit::ScratchFolder;
 
@@ -640,33 +596,6 @@ mod tests {
 
         assert_eq!(read_all(file), b"ook");
         assert_eq!(fs::read_dir(fixture.copies.path()).unwrap().count(), 0);
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn copies_a_streamed_document_past_a_copy_left_behind() {
-        let fixture = Fixture::new();
-        fixture.write("a.cbz", BOOK);
-        fixture.documents.is_streaming.store(true, Ordering::SeqCst);
-        let left_behind = format!("{}-{}", process::id(), COPIES_MADE.load(Ordering::SeqCst));
-        fixture.copies.write(&left_behind, b"");
-
-        let file = fixture.tree.open(&in_tree("a.cbz")).unwrap();
-
-        assert_eq!(read_all(file), BOOK);
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn refuses_a_streamed_document_larger_than_the_limit() {
-        let mut fixture = Fixture::new();
-        fixture.write("a.cbz", BOOK);
-        fixture.documents.is_streaming.store(true, Ordering::SeqCst);
-        fixture.tree.copy_limit = 3;
-
-        let opened = fixture.tree.open(&in_tree("a.cbz"));
-
-        assert_eq!(opened.unwrap_err().kind(), io::ErrorKind::FileTooLarge);
     }
 
     #[test]

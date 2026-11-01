@@ -1,5 +1,11 @@
-use std::{collections::VecDeque, path::PathBuf, sync::Mutex};
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
+use omnileaf_engine::{FileToRead, Library, OpenFileError};
+use omnileaf_formats::Storage;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
@@ -8,15 +14,34 @@ use tauri_specta::Event;
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Type, Event)]
 pub(crate) struct FileOpenRequested;
 
+#[derive(Debug)]
+pub(crate) enum HandedFile {
+    Path(PathBuf),
+    Document {
+        storage: Arc<dyn Storage>,
+        path: PathBuf,
+    },
+}
+
 #[derive(Default)]
-pub(crate) struct FilesToOpen(Mutex<VecDeque<PathBuf>>);
+pub(crate) struct FilesToOpen(Mutex<VecDeque<HandedFile>>);
+
+impl HandedFile {
+    pub(crate) async fn open(self, library: &Library) -> Result<FileToRead, OpenFileError> {
+        match self {
+            Self::Path(path) => library.open_file(path).await,
+            Self::Document { storage, path } => library.open_file_in(storage, path).await,
+        }
+    }
+}
 
 impl FilesToOpen {
     pub(crate) fn queue(&self, arguments: impl IntoIterator<Item = String>) -> bool {
-        let files: Vec<PathBuf> = arguments
+        let files: Vec<HandedFile> = arguments
             .into_iter()
             .map(PathBuf::from)
             .filter(|path| path.is_file())
+            .map(HandedFile::Path)
             .collect();
         let queued = !files.is_empty();
         self.0
@@ -26,11 +51,30 @@ impl FilesToOpen {
         queued
     }
 
-    pub(crate) fn next(&self) -> Option<PathBuf> {
+    #[cfg_attr(
+        not(any(target_os = "android", test)),
+        expect(dead_code, reason = "only Android hands over documents")
+    )]
+    pub(crate) fn queue_document(&self, storage: Arc<dyn Storage>, path: PathBuf) {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push_back(HandedFile::Document { storage, path });
+    }
+
+    pub(crate) fn next(&self) -> Option<HandedFile> {
         self.0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .pop_front()
+    }
+}
+
+#[cfg(target_os = "android")]
+pub(crate) fn request_document(app: &AppHandle, storage: Arc<dyn Storage>, path: PathBuf) {
+    app.state::<FilesToOpen>().queue_document(storage, path);
+    if let Err(error) = FileOpenRequested.emit(app) {
+        tracing::warn!(%error, "tell the interface a document was handed to the app");
     }
 }
 
@@ -98,7 +142,18 @@ pub(crate) fn show_main_window(app: &AppHandle) {
 mod tests {
     use std::fs;
 
+    use omnileaf_engine::SystemClock;
+    use omnileaf_formats::LocalStorage;
+    use omnileaf_testkit::{ArchiveEntry, Compression, PageShape, ScratchFolder, cbz, page_png};
+
     use super::*;
+
+    fn path_of(file: Option<HandedFile>) -> Option<PathBuf> {
+        match file {
+            Some(HandedFile::Path(path)) => Some(path),
+            Some(HandedFile::Document { .. }) | None => None,
+        }
+    }
 
     #[test]
     fn queues_the_existing_files_among_the_launch_arguments_in_order() {
@@ -118,7 +173,7 @@ mod tests {
             second.display().to_string(),
         ]);
 
-        let order = [files.next(), files.next(), files.next()];
+        let order = [files.next(), files.next(), files.next()].map(path_of);
         fs::remove_dir_all(&folder).unwrap();
         assert_eq!((queued, order), (true, [Some(first), Some(second), None]));
     }
@@ -137,7 +192,7 @@ mod tests {
             ["one.cbz".to_owned(), "missing.cbz".to_owned()],
         ));
 
-        let next = files.next();
+        let next = path_of(files.next());
         fs::remove_dir_all(&folder).unwrap();
         assert_eq!((queued, next), (true, Some(folder.join("one.cbz"))));
     }
@@ -148,6 +203,26 @@ mod tests {
 
         let queued = files.queue(["--flag".to_owned(), "nowhere.cbz".to_owned()]);
 
-        assert_eq!((queued, files.next()), (false, None));
+        assert_eq!((queued, path_of(files.next())), (false, None));
+    }
+
+    #[tokio::test]
+    async fn opens_a_queued_document_through_the_storage_it_came_with() {
+        let folder = ScratchFolder::new("handed-document");
+        let page = ArchiveEntry {
+            name: "001.png".to_owned(),
+            bytes: page_png(7, 0, PageShape::Portrait).unwrap(),
+        };
+        let book = folder.write("Odd Tale.cbz", &cbz(&[page], Compression::Stored).unwrap());
+        let library = Library::open(folder.path().join("library"), SystemClock)
+            .await
+            .unwrap();
+        let files = FilesToOpen::default();
+        files.queue_document(Arc::new(LocalStorage), book);
+
+        let opened = files.next().unwrap().open(&library).await.unwrap();
+
+        assert!(!opened.is_in_library);
+        assert!(files.next().is_none());
     }
 }

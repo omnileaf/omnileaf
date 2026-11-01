@@ -1,4 +1,4 @@
-use std::{fmt, fs::File, io};
+use std::{fmt, fs::File, io, path::PathBuf};
 
 use omnileaf_engine::{RootLocator, TreeUri};
 use tauri::{
@@ -7,8 +7,9 @@ use tauri::{
 };
 
 use crate::{
-    Document, DocumentId, Documents, PersistedGrant,
+    Document, DocumentId, DocumentUri, Documents, HandedDocument, PersistedGrant,
     descriptor::OpenedDocument,
+    handed_messages::{HandedReply, HandedRequest},
     tree_messages::{DocumentRequest, GrantRequest, Grants, Listing, PickedTree, refusal_kind},
 };
 
@@ -18,6 +19,7 @@ const ANDROID_PLUGIN_CLASS: &str = "FolderAccessPlugin";
 const PICK_FOLDER: &str = "pickFolder";
 const LIST_DOCUMENTS: &str = "listDocuments";
 const OPEN_DOCUMENT: &str = "openDocument";
+const OPEN_HANDED_DOCUMENT: &str = "openHandedDocument";
 const DELETE_DOCUMENT: &str = "deleteDocument";
 const PERSISTED_GRANTS: &str = "persistedGrants";
 const RELEASE_GRANT: &str = "releaseGrant";
@@ -55,6 +57,19 @@ impl<R: Runtime> FolderAccess<R> {
     pub fn pick_folder(&self) -> Result<Option<RootLocator>, PluginInvokeError> {
         let picked: Option<PickedTree> = self.0.run_mobile_plugin(PICK_FOLDER, ())?;
         Ok(picked.map(RootLocator::from))
+    }
+
+    /// Waits for the provider and for the copy of the document into `copies`, so it must not run on the main thread.
+    pub fn open_handed_document(
+        &self,
+        uri: &DocumentUri,
+        copies: PathBuf,
+    ) -> io::Result<HandedDocument> {
+        let reply: HandedReply = self
+            .0
+            .run_mobile_plugin(OPEN_HANDED_DOCUMENT, HandedRequest::of(uri))
+            .map_err(io_error)?;
+        reply.into_document(copies)
     }
 
     pub fn persisted_grants(&self) -> Result<Vec<PersistedGrant>, PluginInvokeError> {

@@ -124,7 +124,11 @@ impl Library {
     }
 
     async fn set_home(&self, path: impl AsRef<Path>) -> RootId {
-        let locator = RootLocator::Path(path.as_ref().to_path_buf());
+        self.set_home_at(RootLocator::Path(path.as_ref().to_path_buf()))
+            .await
+    }
+
+    async fn set_home_at(&self, locator: RootLocator) -> RootId {
         self.database
             .write(move |transaction| set_home_root(transaction, &locator, ADDED_AT_MS))
             .await
@@ -855,6 +859,26 @@ async fn moves_the_home_folder_without_leaving_the_old_one_behind() {
             (RootKind::Linked, PathBuf::from(COMICS)),
         ]
     );
+}
+
+#[tokio::test]
+async fn sets_an_android_tree_as_the_home_folder_when_none_is_set() {
+    let library = Library::open("home-tree-first");
+
+    let home = library.set_home_at(comics_tree(INTERNAL_DOCUMENTS)).await;
+
+    assert_eq!(library.locator(home).await, comics_tree(INTERNAL_DOCUMENTS));
+}
+
+#[tokio::test]
+async fn moves_the_home_folder_to_an_android_tree() {
+    let library = Library::open("home-moved-to-tree");
+    let home = library.set_home(HOME).await;
+
+    let moved = library.set_home_at(comics_tree(INTERNAL_DOCUMENTS)).await;
+
+    assert_eq!(moved, home);
+    assert_eq!(library.locator(home).await, comics_tree(INTERNAL_DOCUMENTS));
 }
 
 #[tokio::test]

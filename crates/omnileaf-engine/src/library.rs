@@ -14,9 +14,9 @@ use omnileaf_db::{
     adult_content::set_adult_content,
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
-        NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries, RelatedSeriesWanted, RootId,
-        RootKind, RootLocator, add_root, book_bookmarks, book_to_read, bookmarked_roots,
-        category_series_count, category_series_page, cover_file,
+        LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
+        RelatedSeriesWanted, RootId, RootKind, RootLocator, add_root, book_bookmarks, book_to_read,
+        bookmarked_roots, category_series_count, category_series_page, cover_file,
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
@@ -52,7 +52,7 @@ use crate::{
     BooksRemoval, CategoryId, ChapterCursor, ChapterHitPage, CoversPerRowOutOfRange, CreatorSeries,
     DetailEdits, FileRemoval, FileType, FolderCursor, FolderGroupCursor, FolderGroupId,
     FolderGroupPage, FolderId, FolderPage, FolderRescan, FolderScan, FoundLibrary, HistoryCursor,
-    HistoryMark, HistoryOf, HistoryPage, HistorySeries, LibraryChanges, LibraryFilter,
+    HistoryMark, HistoryOf, HistoryPage, HistorySeries, HomeChoice, LibraryChanges, LibraryFilter,
     LibraryFilterChoices, LibraryFolder, LibraryFolderGroup, LibraryListing, LibrarySearch,
     LibraryTab, LibraryView, LibraryWriter, LocalDay, LogStandIns, MissingFolder, ReadMark,
     ReadingSummary, ReadingWeek, RemovalPreview, RemovalReport, RemovalTarget, RescanOutcome,
@@ -77,7 +77,7 @@ use crate::{
     library_tabs::arranged,
     macos_share::share_address_in_mount_table,
     missing_folder::problem_of,
-    moved_home::move_home,
+    moved_home::{move_home, settle_home},
     network_share::unreachable_share_of,
     opened_file::OpenedFiles,
     reading_pace::ReadingPaceSeen,
@@ -261,6 +261,55 @@ impl Library {
             open_tree: Some(open),
             ..self
         }
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn choose_home_tree(&self, tree: &AndroidTree) -> Result<HomeChoice, LibraryError> {
+        self.readable_tree(tree).await?;
+        let home = self.store.database().read(home_root).await?;
+        Ok(match home.map(|home| home.locator) {
+            Some(RootLocator::AndroidTree(current)) if current.uri() == tree.uri() => {
+                HomeChoice::Current
+            }
+            _ => HomeChoice::Empty,
+        })
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn move_home_to_tree(&self, tree: AndroidTree) -> Result<FolderId, LibraryError> {
+        self.readable_tree(&tree).await?;
+        let _scanning = self.catalog_change_lock.lock().await;
+        let added_at_ms = self.now_ms();
+        let home = RootLocator::AndroidTree(tree);
+        let id = self
+            .store
+            .database()
+            .write(move |transaction| {
+                let id = move_home(transaction, &home, added_at_ms)?;
+                mark_root_available(transaction, id)?;
+                Ok(id)
+            })
+            .await?;
+        self.note_catalog_written();
+        Ok(FolderId(id))
+    }
+
+    async fn readable_tree(&self, tree: &AndroidTree) -> Result<(), LibraryError> {
+        let locator = RootLocator::AndroidTree(tree.clone());
+        let Some(files) = self.files_of(&locator) else {
+            return Err(LibraryError::FolderUnreadable {
+                path: root_folder(&locator),
+                source: io::ErrorKind::Unsupported.into(),
+            });
+        };
+        let folder = files.folder.clone();
+        spawn_blocking(move || files.storage.entries(&files.folder))
+            .await?
+            .map_err(|source| LibraryError::FolderUnreadable {
+                path: folder,
+                source,
+            })?;
+        Ok(())
     }
 
     #[tracing::instrument(skip_all, fields(folder))]
@@ -1460,6 +1509,9 @@ impl Library {
     }
 
     pub(crate) fn book_file(&self, book: &BookToRead) -> Option<FileInStorage> {
+        if book.file == BookFileId::UNSTORED {
+            return self.opened_file_in_storage(book.id);
+        }
         self.file_in(&book.root, &book.location)
     }
 
@@ -1930,8 +1982,14 @@ impl Library {
         let name = folder_name(&root_folder(&root.locator));
         on_progress(ScanProgress::Finding { found: 0 });
         let rescan = if let Some(files) = self.files_of(&root.locator) {
-            self.rescan_files(root.id, root.kind, files, &removed_books, on_progress)
-                .await?
+            self.rescan_files(
+                root.id,
+                unplugging_kind(&root),
+                files,
+                &removed_books,
+                on_progress,
+            )
+            .await?
         } else {
             tracing::warn!("keep the books of a folder this device can't open");
             RescanOutcome::Unreachable.into()
@@ -2192,7 +2250,7 @@ impl Library {
         let added_at_ms = self.now_ms();
         self.store
             .database()
-            .write(move |transaction| move_home(transaction, &home, added_at_ms))
+            .write(move |transaction| settle_home(transaction, &home, added_at_ms))
             .await?;
         Ok(())
     }
@@ -2349,6 +2407,14 @@ impl Library {
 
     fn now_ms(&self) -> i64 {
         i64::try_from(self.store.clock().now_unix_ms()).unwrap_or(i64::MAX)
+    }
+}
+
+/// An Android tree can be revoked or unmounted whichever folder it is, so a home tree that lists empty is read like a linked folder that lost its drive.
+fn unplugging_kind(root: &LibraryRoot) -> RootKind {
+    match root.locator {
+        RootLocator::AndroidTree(_) => RootKind::Linked,
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => root.kind,
     }
 }
 

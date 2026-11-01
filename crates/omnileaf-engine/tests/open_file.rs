@@ -10,15 +10,64 @@
 mod books;
 mod support;
 
-use std::{fs, path::PathBuf};
+use std::{
+    ffi::OsString,
+    fs::{self, File},
+    io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use books::write_book;
 use omnileaf_engine::{
     BookReading, FileToRead, Library, LibraryListing, OpenFileError, ResourceRouter,
 };
+use omnileaf_formats::{Details, Entry, Storage};
 use support::{FixedClock, ScratchFolder};
 
 const SEED: u64 = 11;
+
+#[derive(Debug)]
+struct OneDocument {
+    name: OsString,
+    stored_at: PathBuf,
+}
+
+impl OneDocument {
+    fn handed(name: &str, stored_at: PathBuf) -> (Arc<dyn Storage>, PathBuf) {
+        let document = Self {
+            name: name.into(),
+            stored_at,
+        };
+        (Arc::new(document), PathBuf::from(name))
+    }
+
+    fn stored(&self, file: &Path) -> io::Result<&Path> {
+        if file == Path::new(&self.name) {
+            Ok(&self.stored_at)
+        } else {
+            Err(io::ErrorKind::NotFound.into())
+        }
+    }
+}
+
+impl Storage for OneDocument {
+    fn entries(&self, _folder: &Path) -> io::Result<Vec<Entry>> {
+        Err(io::ErrorKind::Unsupported.into())
+    }
+
+    fn details(&self, path: &Path) -> io::Result<Details> {
+        let metadata = fs::metadata(self.stored(path)?)?;
+        Ok(Details::File {
+            size: metadata.len(),
+            modified: metadata.modified().ok(),
+        })
+    }
+
+    fn open(&self, file: &Path) -> io::Result<File> {
+        File::open(self.stored(file)?)
+    }
+}
 
 struct Opening {
     library: Library,
@@ -264,6 +313,114 @@ async fn refuses_to_add_the_folder_of_a_book_the_library_already_holds() {
     let added = opening
         .library
         .add_opened_book_folder(held.book, |_| {})
+        .await;
+
+    assert!(matches!(
+        added,
+        Err(omnileaf_engine::LibraryError::BookNotFound { .. })
+    ));
+}
+
+#[tokio::test]
+async fn opens_a_document_only_its_own_storage_reaches_without_adding_it() {
+    let opening = Opening::new("open-document").await;
+    let stored_at = opening.file("Hidden Away", "stored.cbz", SEED);
+    let (storage, name) = OneDocument::handed("Handed Tale.cbz", stored_at);
+
+    let to_read = opening.library.open_file_in(storage, name).await.unwrap();
+    let opened = opening
+        .router
+        .open_book(&opening.library, to_read.book, Vec::new())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        (
+            to_read.is_in_library,
+            opened.is_in_library,
+            opened.title.as_str(),
+            opened.series_title.as_str(),
+            opened.pages.len(),
+            opening.listed_series().await,
+        ),
+        (false, false, "Handed Tale", "Handed Tale", 2, 0)
+    );
+}
+
+#[tokio::test]
+async fn serves_the_pages_of_a_document_from_its_own_storage() {
+    let opening = Opening::new("serve-document").await;
+    let stored_at = opening.file("Hidden Away", "stored.cbz", SEED);
+    let (storage, name) = OneDocument::handed("Handed Tale.cbz", stored_at);
+    let to_read = opening.library.open_file_in(storage, name).await.unwrap();
+    let opened = opening
+        .router
+        .open_book(&opening.library, to_read.book, Vec::new())
+        .await
+        .unwrap();
+
+    let page = opening
+        .router
+        .respond(
+            &opening.library,
+            &format!("/{}", opened.pages.first().unwrap().path),
+        )
+        .await;
+
+    assert!(matches!(page, omnileaf_engine::Resource::Immutable { .. }));
+}
+
+#[tokio::test]
+async fn gives_a_document_the_library_already_holds_that_books_own_id() {
+    let opening = Opening::new("open-held-document").await;
+    let folder = opening.outside.path().join("Held Comics");
+    write_book(&folder.join("Held Tale.cbz"), SEED);
+    opening
+        .library
+        .add_folder(folder.clone(), |_| {})
+        .await
+        .unwrap();
+    let held = opening
+        .library
+        .open_file(folder.join("Held Tale.cbz"))
+        .await
+        .unwrap();
+    let (storage, name) = OneDocument::handed("Another Name.cbz", folder.join("Held Tale.cbz"));
+
+    let handed = opening.library.open_file_in(storage, name).await.unwrap();
+
+    assert_eq!(
+        handed,
+        FileToRead {
+            book: held.book,
+            is_in_library: true
+        }
+    );
+}
+
+#[tokio::test]
+async fn refuses_a_document_that_is_not_a_readable_book() {
+    let opening = Opening::new("open-unreadable-document").await;
+    let stored_at = opening.outside.path().join("stored.cbz");
+    fs::create_dir_all(opening.outside.path()).unwrap();
+    fs::write(&stored_at, b"not an archive").unwrap();
+    let (storage, name) = OneDocument::handed("Not A Book.cbz", stored_at);
+
+    let refused = opening.library.open_file_in(storage, name).await;
+
+    assert!(matches!(refused, Err(OpenFileError::Unreadable { .. })));
+}
+
+#[tokio::test]
+async fn refuses_to_add_a_folder_for_a_document_that_has_none() {
+    let opening = Opening::new("add-document-folder").await;
+    let stored_at = opening.file("Hidden Away", "stored.cbz", SEED);
+    let (storage, name) = OneDocument::handed("Handed Tale.cbz", stored_at);
+    let to_read = opening.library.open_file_in(storage, name).await.unwrap();
+
+    let added = opening
+        .library
+        .add_opened_book_folder(to_read.book, |_| {})
         .await;
 
     assert!(matches!(

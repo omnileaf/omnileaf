@@ -5,8 +5,15 @@
   import ToastCard, { TOAST_ICON_SIZE } from "#lib/notices/ToastCard.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
-  let { offer, onDone }: { offer: UndoOffer | undefined; onDone: () => void } =
-    $props();
+  let {
+    offer,
+    isOverBar = false,
+    onDone,
+  }: {
+    offer: UndoOffer | undefined;
+    isOverBar?: boolean;
+    onDone: () => void;
+  } = $props();
 
   let offeredUndo: (() => void) | undefined;
 
@@ -29,10 +36,12 @@
 
 <div
   role="status"
-  class="pointer-events-none sticky inset-be-md flex justify-end pbs-md"
+  class={isOverBar
+    ? "pointer-events-none absolute inset-x-sm inset-bs-native-sheet-notice-top z-10 flex"
+    : "pointer-events-none sticky inset-be-md flex justify-end pbs-md"}
 >
   {#if offer !== undefined}
-    <div class="pointer-events-auto">
+    <div class={["pointer-events-auto", isOverBar && "flex-1"]}>
       <ToastCard
         tone="plain"
         severity="success"
