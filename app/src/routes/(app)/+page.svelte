@@ -91,6 +91,7 @@
   import IosSelectionActions from "#lib/library/IosSelectionActions.svelte";
   import LibrarySelectionActions from "#lib/library/LibrarySelectionActions.svelte";
   import LibrarySelectionHeader from "#lib/library/LibrarySelectionHeader.svelte";
+  import { isNotConnected } from "#lib/library/not-connected.ts";
   import { selectionActions } from "#lib/library/selection-actions.ts";
   import {
     type LabelsFrom,
@@ -783,7 +784,11 @@
 
   function selectEverySeries(): void {
     if (loaded !== undefined) {
-      selection.pickAll(loaded.series.items.map(({ id }) => id));
+      selection.pickAll(
+        loaded.series.items
+          .filter((one) => !isNotConnected(one, data.appInfo.platform))
+          .map(({ id }) => id),
+      );
     }
   }
 

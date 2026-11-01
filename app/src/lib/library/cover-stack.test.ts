@@ -32,6 +32,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         bookCount: 12,
         unreadCount: 3,
         cover: null,
+        isConnected: true,
       },
       {
         id: "0190a3e4-0000-8000-8000-0000000000a5",
@@ -39,6 +40,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         bookCount: 1,
         unreadCount: 1,
         cover: null,
+        isConnected: true,
       },
     ],
     next: null,
