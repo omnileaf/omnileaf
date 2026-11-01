@@ -448,6 +448,14 @@
   --color-native-tile-picked: var(--native-color-tile-picked);
   --spacing-native-tile-picked: var(--native-spacing-tile-picked);
   --radius-native-tile-picked-title: var(--native-radius-tile-picked-title);
+  --text-native-sheet-title: var(--native-text-sheet-title);
+  --leading-native-sheet-title: var(--native-leading-sheet-title);
+  --font-weight-native-sheet-title: var(--native-weight-sheet-title);
+  --text-native-sheet-text: var(--native-text-sheet-text);
+  --leading-native-sheet-text: var(--native-leading-sheet-text);
+  --spacing-native-sheet-top: var(--native-spacing-sheet-top);
+  --spacing-native-sheet-limit: var(--native-spacing-sheet-limit);
+  --shadow-native-sheet-lift: var(--native-shadow-sheet-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {
