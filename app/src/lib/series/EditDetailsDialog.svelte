@@ -24,6 +24,10 @@
     saveDetails,
   } from "./details-to-edit.ts";
   import DetailUndoToast from "./DetailUndoToast.svelte";
+  import {
+    editDetailsLook,
+    PHONE_EDIT_DETAILS_LOOK,
+  } from "./edit-details-look.ts";
   import DiscardDetailsDialog from "./DiscardDetailsDialog.svelte";
   import EditDetailsFields from "./EditDetailsFields.svelte";
   import type { EditedSeries } from "./edited-series.ts";
@@ -44,6 +48,7 @@
     onError: (error: unknown) => void;
   } = $props();
 
+  const wideLook = $derived(editDetailsLook(platform));
   const shown = lastShown(() => series);
   const notices = getNotices();
   const width = new WindowWidth();
@@ -142,8 +147,9 @@
   <ModalContent
     phoneHeight={isIosPhone ? "large" : "fit"}
     phoneGround={isIosPhone ? "grouped" : "plain"}
-    wideClass="inset-none m-auto flex flex-col overflow-hidden rounded-panel border border-dialog-edge bg-card text-foreground fade-motion shadow-dialog block-fit inline-edit-dialog max-block-edit-dialog-height max-inline-dialog-limit"
-    phoneClass={isIosPhone ? "" : "inset-bs-sheet-top block-auto"}
+    wideClass={wideLook.panel}
+    wideOverlayClass={wideLook.overlay}
+    phoneClass={isIosPhone ? "" : PHONE_EDIT_DETAILS_LOOK.panel}
     onDismiss={leave}
   >
     {#snippet children(view)}
@@ -172,52 +178,32 @@
           {@render undoNotice()}
         </div>
       {:else}
-        <div
-          class={[
-            "flex flex-col gap-2xs",
-            view === "wide" ? "px-xl pbs-xl pbe-md" : "px-sheet-inline pbs-md",
-          ]}
-        >
+        {@const look = view === "wide" ? wideLook : PHONE_EDIT_DETAILS_LOOK}
+        <div class={look.header}>
           <div class="flex items-center gap-md">
-            <HeaderBadge icon={Pencil} look="header-accent" />
-            <DialogTitle class="text-title font-bold">
+            {#if look.hasBadge}
+              <HeaderBadge icon={Pencil} look="header-accent" />
+            {/if}
+            <DialogTitle class={look.title}>
               {m.series_edit_details()}
             </DialogTitle>
           </div>
-          <Dialog.Description class="text-label text-muted">
+          <Dialog.Description class={look.subtitle}>
             {m.edit_details_for({ series: shown.current?.title ?? "" })}
           </Dialog.Description>
         </div>
-        <div
-          class={[
-            "flex-1 overflow-y-auto min-block-none",
-            view === "wide" ? "px-xl" : "px-sheet-inline",
-          ]}
-        >
+        <div class={look.body}>
           {@render detailFields(false)}
           {@render undoNotice()}
         </div>
-        <div
-          class={[
-            "flex justify-end gap-sm",
-            view === "wide"
-              ? "px-xl pbs-md pbe-xl"
-              : "border-bs border-border px-sheet-inline pbs-md pbe-sheet-bottom",
-          ]}
-        >
-          <Button
-            type="button"
-            look="outline"
-            class="rounded-control px-lg font-medium min-block-pointer-button touch:min-block-touch-target"
-            onclick={leave}
-          >
+        <div class={look.actions}>
+          <Button type="button" {...look.cancel} onclick={leave}>
             {m.library_cancel()}
           </Button>
           <Button
             type="button"
-            look="filled"
+            {...look.save}
             disabled={editing === undefined}
-            class="rounded-control px-lg font-semibold min-block-pointer-button touch:min-block-touch-target"
             onclick={() => {
               void save();
             }}
