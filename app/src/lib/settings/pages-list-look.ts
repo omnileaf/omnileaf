@@ -28,15 +28,15 @@ const TODAYS_LOOK: PagesListLook = {
 
 const MACOS_LOOK: PagesListLook = {
   sidebar:
-    "hidden shrink-0 flex-col border-e border-border bg-sidebar p-native-sidebar-pad two-pane:flex two-pane:inline-native-settings-sidebar",
+    "hidden shrink-0 flex-col bg-sidebar p-native-sidebar-pad two-pane:flex two-pane:inline-native-settings-sidebar",
   caption: undefined,
-  nav: "flex flex-col mbs-toolbar",
+  nav: "flex flex-col mbs-native-titlebar",
   list: "flex flex-col",
-  row: "relative flex items-center gap-sm rounded-row ps-native-sidebar-item-start pe-native-sidebar-item-end text-native-button leading-native-button font-native-button text-foreground transition-control block-native-sidebar-item",
+  row: "group relative flex items-center gap-sm rounded-row ps-native-sidebar-item-start pe-native-sidebar-item-end text-native-button leading-native-button font-native-button text-foreground transition-control block-native-sidebar-item focus-visible:focus-ring focus-visible:-outline-offset-1",
   rowOpen: "bg-native-nav-indicator",
   rowIdle:
     "active:bg-native-button-primary active:text-native-on-button-primary",
-  icon: "shrink-0 text-native-on-button-link",
+  icon: "shrink-0 text-native-on-button-link group-active:text-native-on-button-primary",
 };
 
 export function pagesListLook(platform: Platform): PagesListLook {
