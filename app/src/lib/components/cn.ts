@@ -233,6 +233,7 @@ export const TOKEN_THEME = {
     "action-row",
     "active-dot",
     "alert-block",
+    "android-hero-icon",
     "app-icon",
     "app-shortcuts",
     "attention-dot",
