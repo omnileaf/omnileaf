@@ -67,6 +67,15 @@
   --native-radius-menu: 12px;
   --native-spacing-tile-picked: calc(100cqi / 16);
   --native-radius-tile-picked-title: 4px;
+  --native-text-sheet-title: calc(0.8125rem * var(--text-scale));
+  --native-leading-sheet-title: calc(16 / 13);
+  --native-weight-sheet-title: 700;
+  --native-tracking-sheet-title: -0.08px;
+  --native-text-sheet-text: calc(0.6875rem * var(--text-scale));
+  --native-leading-sheet-text: calc(14 / 11);
+  --native-tracking-sheet-text: 0.06px;
+  --native-spacing-sheet-top: calc(var(--spacing-toolbar) + 12px);
+  --native-spacing-sheet-limit: min(45rem, calc(100% - var(--native-spacing-sheet-top) - 0.75rem));
 }
 
 :root[data-platform="macos"],
@@ -153,6 +162,7 @@
   --native-color-on-notice-action: #2f6f4f;
   --native-color-focus-ring: #2f6f4f80;
   --native-color-tile-picked: color-mix(in srgb, rgba(0, 0, 0, 0.85) 12%, transparent);
+  --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.30), 0 0 1px rgba(0, 0, 0, 0.8);
 }
 
 :root[data-platform="macos"][data-theme="dark"],
@@ -239,6 +249,7 @@
   --native-color-on-notice-action: #7fcb9d;
   --native-color-focus-ring: #2e7d5580;
   --native-color-tile-picked: color-mix(in srgb, rgba(255, 255, 255, 0.85) 12%, transparent);
+  --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.57), 0 0 1px rgba(0, 0, 0, 0.8), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
 
 :root[data-platform="macos"][data-contrast="more"],
@@ -295,6 +306,7 @@
   --native-color-on-notice-action: #1f5a3c;
   --native-color-focus-ring: #1f5a3c;
   --native-color-tile-picked: color-mix(in srgb, #000000 12%, transparent);
+  --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(0, 0, 0, 0.75), inset 0 0 0 1px #ffffff;
 }
 
 :root[data-platform="macos"][data-contrast="more"][data-theme="dark"],
@@ -351,4 +363,5 @@
   --native-color-on-notice-action: #a8e0bd;
   --native-color-focus-ring: #a8e0bd;
   --native-color-tile-picked: color-mix(in srgb, #ffffff 12%, transparent);
+  --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.57), 0 0 0 1px rgba(0, 0, 0, 0.78), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
