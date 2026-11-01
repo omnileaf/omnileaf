@@ -24,7 +24,7 @@
     label={SMART_LABELS[smart]()}
     description={SMART_HINTS[smart]()}
     isOn={chosen.includes(smart)}
-    {isMaterial}
+    usesItemRow={isMaterial}
     {isInspector}
     onToggle={() => {
       onToggle(smart);
