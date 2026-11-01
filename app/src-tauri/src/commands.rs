@@ -151,6 +151,7 @@ macro_rules! app_commands {
             relocate_library_folder,
             sign_in_to_library_folder,
             show_series_in_folder,
+            show_book_in_folder,
             remove_library_folder,
             preview_removal,
             remove_from_library,
@@ -1486,6 +1487,21 @@ async fn show_series_in_folder(
 ) -> Result<(), IpcError> {
     let Some(file) = library.series_file(series).await? else {
         return Err(LibraryError::SeriesNotFound { id: series }.into());
+    };
+    app.opener()
+        .reveal_item_in_dir(file)
+        .map_err(|error| IpcError::file_manager_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn show_book_in_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+    book: BookId,
+) -> Result<(), IpcError> {
+    let Some(file) = library.book_in_folder(book).await? else {
+        return Err(LibraryError::BookNotFound { id: book }.into());
     };
     app.opener()
         .reveal_item_in_dir(file)
