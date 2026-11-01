@@ -2642,6 +2642,8 @@
   ],
   "library_delete": "Delete",
   "library_remove_from_library": "Remove from library",
+  "library_remove_from_library_ask": "Remove from library…",
+  "library_remove_picked_from_library": "Remove {count} series from library…",
   "remove_title": "Remove from your library?",
   "remove_series_summary": [
     {

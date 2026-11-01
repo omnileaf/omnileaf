@@ -57,6 +57,7 @@
   import ListCover from "./ListCover.svelte";
   import type { SeriesId } from "#lib/series/series-id.ts";
   import type { SeriesMenuActions } from "./series-menu";
+  import PickedSeriesMenu from "./PickedSeriesMenu.svelte";
   import SelectionMark from "./SelectionMark.svelte";
   import TileCheck from "./TileCheck.svelte";
   import { seriesSelection } from "./series-selection";
@@ -159,8 +160,24 @@
   }
 
   const MENU_ICON_SIZE = 16;
+  const namesFolderApp = platform === "windows" || platform === "macos";
+  const showInFolderLabel = namesFolderApp
+    ? showFolderLabel(platform)
+    : m.series_show_in_folder();
+  const removeLabel =
+    platform === "macos"
+      ? m.library_remove_from_library_ask()
+      : m.library_remove_from_library();
   let isMenuOpen = $state(false);
   let menuSeries = $state<LibrarySeries | undefined>();
+  const pickedMenu = $derived(
+    menuSeries !== undefined &&
+      selection !== undefined &&
+      selection.count > 1 &&
+      selection.has(menuSeries.id)
+      ? menu?.picked
+      : undefined,
+  );
 
   function pickedRing(one: LibrarySeries): ClassValue {
     if (selection?.has(one.id) === true) {
@@ -720,7 +737,9 @@
 {/if}
 <ContextMenu.Root bind:open={isMenuOpen}>
   <ContextMenu.Trigger
-    disabled={menu === undefined || isSelecting || !canHover.current}
+    disabled={menu === undefined ||
+      (isSelecting && menu.picked === undefined) ||
+      !canHover.current}
     class="contents"
     oncontextmenu={noteMenuSeries}
     onkeydown={onCoverKeys}
@@ -759,7 +778,7 @@
       {/if}
     </div>
   </ContextMenu.Trigger>
-  {#if menu !== undefined && menuSeries !== undefined}
+  {#if menu !== undefined && menuSeries !== undefined && pickedMenu === undefined}
     {@const target = menuSeries}
     <ContextMenuContent to="main" class="min-inline-book-menu">
       {#if target.continuesFrom !== null}
@@ -810,14 +829,16 @@
           {m.edit_details_menu()}
         </ContextMenuItem>
       {/if}
-      <ContextMenuItem
-        onSelect={() => {
-          menu.onSelect(target);
-        }}
-      >
-        <SquareCheck size={MENU_ICON_SIZE} aria-hidden="true" />
-        {m.library_select()}
-      </ContextMenuItem>
+      {#if !isSelecting}
+        <ContextMenuItem
+          onSelect={() => {
+            menu.onSelect(target);
+          }}
+        >
+          <SquareCheck size={MENU_ICON_SIZE} aria-hidden="true" />
+          {m.library_select()}
+        </ContextMenuItem>
+      {/if}
       <ContextMenuSeparator class="touch:hidden" />
       <ContextMenuItem
         class="touch:hidden"
@@ -826,9 +847,7 @@
         }}
       >
         <FolderOpen size={MENU_ICON_SIZE} aria-hidden="true" />
-        {platform === "windows"
-          ? showFolderLabel(platform)
-          : m.series_show_in_folder()}
+        {showInFolderLabel}
       </ContextMenuItem>
       {#if menu.onRemove !== undefined}
         {@const remove = menu.onRemove}
@@ -839,9 +858,16 @@
           }}
         >
           <Trash size={MENU_ICON_SIZE} aria-hidden="true" />
-          {m.library_remove_from_library()}
+          {removeLabel}
         </ContextMenuItem>
       {/if}
     </ContextMenuContent>
+  {/if}
+  {#if pickedMenu !== undefined && selection !== undefined}
+    <PickedSeriesMenu
+      actions={pickedMenu}
+      count={selection.count}
+      {showInFolderLabel}
+    />
   {/if}
 </ContextMenu.Root>
