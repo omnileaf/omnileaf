@@ -164,6 +164,10 @@
   --native-spacing-tab-bar-inset: 4px;
   --native-spacing-tab-bar-inline: 10px;
   --native-spacing-toolbar-button: 48px;
+  --native-spacing-inspector: var(--spacing-docked-panel);
+  --native-text-inspector-label: var(--text-small);
+  --native-leading-inspector-label: var(--text-small--line-height);
+  --native-weight-inspector-label: var(--font-weight-medium);
   --native-spacing-bottom-bar-start: max(calc(var(--spacing-safe-start) + 16px), calc((100% - 392px) / 2));
   --native-spacing-bottom-bar-end: max(calc(var(--spacing-safe-end) + 16px), calc((100% - 392px) / 2));
   --native-spacing-search-bar-start: calc(var(--native-spacing-bottom-bar-start) + var(--native-spacing-toolbar-button) + 8px);

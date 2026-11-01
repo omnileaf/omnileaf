@@ -168,6 +168,10 @@
   --native-spacing-tab-bar-inset: 0px;
   --native-spacing-tab-bar-inline: 0px;
   --native-spacing-toolbar-button: 48px;
+  --native-spacing-inspector: var(--spacing-docked-panel);
+  --native-text-inspector-label: var(--text-small);
+  --native-leading-inspector-label: var(--text-small--line-height);
+  --native-weight-inspector-label: var(--font-weight-medium);
   --native-spacing-bottom-bar-start: 0px;
   --native-spacing-bottom-bar-end: 0px;
   --native-spacing-search-bar-start: 0px;

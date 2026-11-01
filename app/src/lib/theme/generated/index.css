@@ -229,6 +229,10 @@
   --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
   --spacing-native-tab-bar-inline: var(--native-spacing-tab-bar-inline);
   --spacing-native-toolbar-button: var(--native-spacing-toolbar-button);
+  --spacing-native-inspector: var(--native-spacing-inspector);
+  --text-native-inspector-label: var(--native-text-inspector-label);
+  --leading-native-inspector-label: var(--native-leading-inspector-label);
+  --font-weight-native-inspector-label: var(--native-weight-inspector-label);
   --spacing-native-bottom-bar-start: var(--native-spacing-bottom-bar-start);
   --spacing-native-bottom-bar-end: var(--native-spacing-bottom-bar-end);
   --spacing-native-search-bar-start: var(--native-spacing-search-bar-start);
