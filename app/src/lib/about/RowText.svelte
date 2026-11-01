@@ -10,7 +10,7 @@
   import { type AboutLook, type HintKind, ROW_ICON_SIZES } from "./look";
 
   const LABELS = {
-    phone: "",
+    phone: "android:max-medium:font-regular",
     pane: "desktop:text-callout",
   } satisfies Record<AboutLook, string>;
 
@@ -39,6 +39,7 @@
   <ItemDescription
     dir={isAddress ? "ltr" : undefined}
     translate={isAddress ? "no" : undefined}
-    class="text-footnote">{hint}</ItemDescription
+    class="text-footnote android:max-medium:text-native-row-subtitle/native-row-subtitle"
+    >{hint}</ItemDescription
   >
 </ItemContent>

@@ -31,7 +31,7 @@
         <RowText {icon} {label} {hint} {look} />
         <ChevronRight
           size={ROW_ICON_SIZES[look]}
-          class="shrink-0 text-muted rtl:-scale-x-100"
+          class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
         />
       </a>
     {/snippet}
