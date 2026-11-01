@@ -151,8 +151,11 @@
         ? m.edit_details_mark_adult_ratings_off_box()
         : m.edit_details_mark_adult_ratings_off(),
   );
+  const setAdult = (isMarkedAdult: boolean): void => {
+    onDraft({ ...draft, isMarkedAdult });
+  };
   const toggleAdult = (): void => {
-    onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
+    setAdult(!draft.isMarkedAdult);
   };
   let isShowingEveryone = $state(false);
 
@@ -426,7 +429,7 @@
         isOn={isAdultLocked || draft.isMarkedAdult}
         isLocked={isAdultLocked}
         note={adultNote}
-        onToggle={toggleAdult}
+        onChange={setAdult}
       />
     </div>
   {:else}

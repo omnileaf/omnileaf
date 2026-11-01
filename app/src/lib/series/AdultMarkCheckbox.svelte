@@ -9,12 +9,12 @@
     isOn,
     isLocked,
     note,
-    onToggle,
+    onChange,
   }: {
     isOn: boolean;
     isLocked: boolean;
     note: string;
-    onToggle: () => void;
+    onChange: (isMarked: boolean) => void;
   } = $props();
 
   const id = $props.id();
@@ -28,12 +28,11 @@
     ]}
   >
     <Checkbox
-      bind:checked={() => isOn, onToggle}
+      bind:checked={() => isOn, onChange}
       disabled={isLocked}
-      aria-labelledby="{id}-label"
       aria-describedby="{id}-note"
     />
-    <span id="{id}-label">{m.edit_details_mark_adult()}</span>
+    <span>{m.edit_details_mark_adult()}</span>
   </label>
   <p id="{id}-note" class={MACOS_DETAIL_NOTE}>
     {#if isLocked}
