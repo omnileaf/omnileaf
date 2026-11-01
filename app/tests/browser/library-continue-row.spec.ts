@@ -174,6 +174,21 @@ test("shows each book started and not finished, last read first, with its progre
   await expect(cards(page).last()).toContainText(seriesTitle(STARTED));
 });
 
+test("draws each card's cover with its edge outside the cover's width", async ({
+  page,
+}) => {
+  await openWithTheRow(page);
+  const cover = cards(page).first().locator("[data-slot='list-cover']");
+
+  const box = await cover.boundingBox();
+  const sizing = await cover.evaluate(
+    (element) => getComputedStyle(element).boxSizing,
+  );
+
+  expect(sizing).toBe("content-box");
+  expect(box?.width).toBe(54);
+});
+
 test("scrolls the cards sideways on phones and tablets, and pages through three at a time with arrows on a desktop", async ({
   page,
 }) => {
