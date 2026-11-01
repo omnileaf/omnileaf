@@ -58,3 +58,13 @@ test("highlights the chosen row in the Mac menu highlight", async ({
     await tokenColour(page, "--native-color-menu-item-hover"),
   );
 });
+
+test("writes the search page's key line with the Mac's keys too", async ({
+  page,
+}) => {
+  await page.keyboard.press("Escape");
+  await page.goto("/search");
+
+  await expect(page.getByText("↩ to open")).toBeVisible();
+  await expect(page.getByText("Enter to open")).toHaveCount(0);
+});

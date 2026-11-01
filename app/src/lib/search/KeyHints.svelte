@@ -19,7 +19,9 @@
   ]}
 >
   <span>{m.search_key_move()}</span>
-  <span>{m.search_key_open()}</span>
+  <span>
+    {platform === "macos" ? m.search_key_open_mac() : m.search_key_open()}
+  </span>
   <span class="ms-auto">
     {m.search_key_quick_open({ shortcut: quickOpenShortcutLabel(platform) })}
   </span>
