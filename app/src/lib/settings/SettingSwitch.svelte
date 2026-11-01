@@ -7,7 +7,8 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
-  import SettingWords from "./SettingWords.svelte";
+  import { LIST_ROW } from "./grouped-rows-look";
+  import SettingWords, { type WordsLook } from "./SettingWords.svelte";
 
   interface Props {
     readonly label: string;
@@ -16,6 +17,7 @@
     readonly onToggle: () => void;
     readonly class?: ClassValue;
     readonly bleeds?: boolean;
+    readonly grouped?: boolean;
   }
 
   let {
@@ -25,6 +27,7 @@
     onToggle,
     class: className,
     bleeds = false,
+    grouped = false,
   }: Props = $props();
 
   const ROW =
@@ -35,10 +38,22 @@
 
   const ANDROID_BLEED = "-mx-page-start -me-page-end";
 
+  const GROUPED_ROW = `${LIST_ROW} text-start inline-full`;
+
   const id = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
   const android = new AndroidPhone();
+  const wordsLook: WordsLook = $derived(
+    android.isOn ? "android" : grouped ? "grouped" : "todays",
+  );
+  const rowLook = $derived(
+    android.isOn
+      ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full"]
+      : grouped
+        ? GROUPED_ROW
+        : ROW,
+  );
   const togglesFromSwitchAlone = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
@@ -64,14 +79,12 @@
       ? undefined
       : `${id}-description`}
     class={[
-      android.isOn
-        ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full"]
-        : ROW,
+      rowLook,
       "hover:tint-hover active:tint-pressed",
       ROW_FOCUS_RING,
       className,
     ]}
   >
-    <SettingWords {id} {label} {description} isAndroidPhone={android.isOn} />
+    <SettingWords {id} {label} {description} look={wordsLook} />
   </Switch>
 {/if}

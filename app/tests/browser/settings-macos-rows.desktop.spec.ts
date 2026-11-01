@@ -14,11 +14,14 @@ const PLATE_RADIUS = "12px";
 const PLATE_INSET = "10px";
 const CHEVRON_SIZE = 12;
 const TITLE_TYPE = { fontSize: "13px", fontWeight: "510", lineHeight: "16px" };
+const SUB_TYPE = { fontSize: "11px", lineHeight: "14px" };
 const HEADING_TYPE = {
   fontSize: "11px",
   fontWeight: "590",
   lineHeight: "14px",
 };
+const ADULT_PAGE = "/settings/library/adult-content";
+const AGE_RATINGS = "Use age ratings from book details";
 
 function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name });
@@ -157,6 +160,38 @@ test.describe("the Time format row on the General page", () => {
   });
 });
 
+test.describe("the age ratings row on the 18+ content page", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(ADULT_PAGE);
+    await expect(page.getByRole("switch", { name: AGE_RATINGS })).toBeVisible();
+  });
+
+  test("is at least 42px tall", async ({ page }) => {
+    const row = page.getByRole("switch", { name: AGE_RATINGS });
+
+    await expect(row).toHaveCSS("min-height", ROW_MIN);
+  });
+
+  test("sets its title in 13px 510 type", async ({ page }) => {
+    const title = page.getByText(AGE_RATINGS, { exact: true });
+
+    await expect(title).toHaveCSS("font-size", TITLE_TYPE.fontSize);
+    await expect(title).toHaveCSS("font-weight", TITLE_TYPE.fontWeight);
+    await expect(title).toHaveCSS("line-height", TITLE_TYPE.lineHeight);
+  });
+
+  test("sets its line in 11px muted type", async ({ page }) => {
+    const line = page.getByText("Off: only series you mark 18+ by hand count.");
+
+    await expect(line).toHaveCSS("font-size", SUB_TYPE.fontSize);
+    await expect(line).toHaveCSS("line-height", SUB_TYPE.lineHeight);
+    await expect(line).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-muted"),
+    );
+  });
+});
+
 for (const [name, platform, viewport] of [
   ["Windows", "windows", { width: 1600, height: 900 }],
   ["Linux", "linux", { width: 1600, height: 900 }],
@@ -179,6 +214,19 @@ for (const [name, platform, viewport] of [
       await expect(
         page.getByRole("link", { name: /^Language/ }).locator(".."),
       ).toHaveCSS("border-top-width", "1px");
+    });
+
+    test("keeps the age ratings row's own height and type", async ({
+      page,
+    }) => {
+      await page.goto(ADULT_PAGE);
+      const row = page.getByRole("switch", { name: AGE_RATINGS });
+
+      await expect(row).not.toHaveCSS("min-height", ROW_MIN);
+      await expect(page.getByText(AGE_RATINGS, { exact: true })).not.toHaveCSS(
+        "font-weight",
+        TITLE_TYPE.fontWeight,
+      );
     });
   });
 }
