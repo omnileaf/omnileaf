@@ -82,6 +82,13 @@
   --native-leading-sheet-text: calc(14 / 11);
   --native-spacing-sheet-top: calc(var(--spacing-toolbar) + 12px);
   --native-spacing-sheet-limit: min(700px, calc(100% - var(--native-spacing-sheet-top) - 0.75rem));
+  --native-spacing-detail-label: 99px;
+  --native-spacing-detail-label-tall: 6px;
+  --native-spacing-detail-end: 96px;
+  --native-spacing-detail-chip-gap: 6px;
+  --native-spacing-detail-chip-inline: 10px;
+  --native-spacing-status-badge: 18px;
+  --native-spacing-status-badge-inline: 6px;
 }
 
 :root[data-platform="macos"],

@@ -382,6 +382,13 @@
   --native-spacing-sheet-top: var(--spacing-sheet-top);
   --native-spacing-sheet-limit: var(--spacing-edit-dialog-height);
   --native-shadow-sheet-lift: var(--dialog-shadow);
+  --native-spacing-detail-label: 99px;
+  --native-spacing-detail-label-tall: var(--spacing-xs);
+  --native-spacing-detail-end: 96px;
+  --native-spacing-detail-chip-gap: var(--spacing-sm);
+  --native-spacing-detail-chip-inline: var(--spacing-md);
+  --native-spacing-status-badge: 18px;
+  --native-spacing-status-badge-inline: var(--spacing-sm);
 }
 
 :root[data-platform="ios"],

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
   import {
@@ -32,6 +33,9 @@
     ANDROID_DETAIL_CHIP,
     DETAIL_CHIP,
     GROUPED_DETAIL_CHIP,
+    MACOS_CHIP_CROSS,
+    MACOS_CHIP_CROSS_SIZE,
+    MACOS_DETAIL_CHIP,
   } from "./detail-chip.ts";
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
@@ -46,6 +50,14 @@
   const ICON_SIZE = 16;
   const FIELD = "flex flex-col gap-sm py-md";
   const GROUPED_FIELD = "flex flex-col gap-sm";
+  const MACOS_FIELD = "grid grid-cols-detail-row items-start gap-x-sm gap-y-xs";
+  const MACOS_FROM_FILE =
+    "col-start-2 text-native-sheet-text leading-native-sheet-text text-muted";
+  const MACOS_CHIPS = "col-start-2 flex flex-wrap gap-native-detail-chip-gap";
+  const MACOS_TEXT = "col-start-2 text-native-button leading-native-button";
+  const MACOS_TITLE_FIELD = `${MACOS_TEXT} min-block-native-button py-2xs`;
+  const MACOS_ADULT_ROW = "grid grid-cols-detail-row gap-x-sm";
+  const CHIPS = "flex flex-wrap items-center gap-sm";
   const FROM_FILE = "text-label text-foreground/80";
   const GROUPED_FIELD_BOX = "border-0 bg-transparent p-none";
   const ANDROID_FROM_FILE = "ps-lg text-caption text-muted";
@@ -61,6 +73,7 @@
     isGrouped = false,
     isAndroid = false,
     isSheet = false,
+    isMacos = false,
     onDraft,
     offerUndo,
   }: {
@@ -70,6 +83,7 @@
     isGrouped?: boolean;
     isAndroid?: boolean;
     isSheet?: boolean;
+    isMacos?: boolean;
     onDraft: (draft: DetailDraft) => void;
     offerUndo: (offer: UndoOffer) => void;
   } = $props();
@@ -82,10 +96,18 @@
         ? ["ps-lg", GROUPED_FOOTNOTE_TYPE]
         : isAndroid
           ? ANDROID_FROM_FILE
-          : FROM_FILE,
+          : isMacos
+            ? MACOS_FROM_FILE
+            : FROM_FILE,
   );
   const fieldClass = $derived(
-    isSheet ? "flex flex-col" : isGrouped || isAndroid ? GROUPED_FIELD : FIELD,
+    isSheet
+      ? "flex flex-col"
+      : isMacos
+        ? MACOS_FIELD
+        : isGrouped || isAndroid
+          ? GROUPED_FIELD
+          : FIELD,
   );
   const fieldCardClass = $derived(isSheet ? SHEET_FIELD_CARD : undefined);
   const titleTextClass = $derived(
@@ -94,10 +116,30 @@
   const summaryTextClass = $derived(
     isSheet ? SHEET_SUMMARY_TEXT : isGrouped && GROUPED_FIELD_BOX,
   );
-  const chipExtras = $derived(
-    cn(isGrouped && GROUPED_DETAIL_CHIP, isAndroid && ANDROID_DETAIL_CHIP),
+  const sectionClass = $derived(
+    isGrouped || isAndroid
+      ? "flex flex-col gap-xl"
+      : isMacos
+        ? "flex flex-col gap-md"
+        : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs",
   );
-  const crossSize = $derived(isAndroid ? ANDROID_CHIP_CROSS_SIZE : ICON_SIZE);
+  const chipExtras = $derived(
+    cn(
+      isGrouped && GROUPED_DETAIL_CHIP,
+      isAndroid && ANDROID_DETAIL_CHIP,
+      isMacos && MACOS_DETAIL_CHIP,
+    ),
+  );
+  const chipsClass = $derived(isMacos ? MACOS_CHIPS : CHIPS);
+  const crossSize = $derived(
+    isAndroid
+      ? ANDROID_CHIP_CROSS_SIZE
+      : isMacos
+        ? MACOS_CHIP_CROSS_SIZE
+        : ICON_SIZE,
+  );
+  const crossClass = $derived(isMacos ? MACOS_CHIP_CROSS : undefined);
+  const adultMark: Snippet = markAdult;
   let isShowingEveryone = $state(false);
 
   const edited = $derived({
@@ -165,13 +207,25 @@
   }
 </script>
 
-<section
-  class={isGrouped
-    ? "flex flex-col gap-xl"
-    : isAndroid
-      ? "flex flex-col gap-xl"
-      : "flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card px-lg py-xs"}
->
+{#snippet markAdult()}
+  {#if details.isRatedAdult && countsAgeRatings}
+    <LockedAdultMark />
+  {:else}
+    <SettingSwitch
+      label={m.edit_details_mark_adult()}
+      description={details.isRatedAdult
+        ? m.edit_details_mark_adult_ratings_off()
+        : m.edit_details_mark_adult_note()}
+      isOn={draft.isMarkedAdult}
+      onToggle={() => {
+        onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
+      }}
+      class={isMacos ? "px-none" : "-mx-lg -mbe-xs inline-auto"}
+    />
+  {/if}
+{/snippet}
+
+<section class={sectionClass}>
   <div class={fieldClass}>
     <DetailFieldHead
       label={m.edit_details_title()}
@@ -179,6 +233,7 @@
       isEdited={edited.title}
       {isAndroid}
       {isSheet}
+      {isMacos}
       useFileLabel={useFileLabel("title")}
       onUseFile={() => {
         useFile("title");
@@ -201,7 +256,9 @@
         aria-describedby="{id}-title-file"
         class={[
           !isSheet &&
-            "text-body min-block-title-field touch:min-block-touch-target",
+            (isMacos
+              ? MACOS_TITLE_FIELD
+              : "text-body min-block-title-field touch:min-block-touch-target"),
           titleTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
@@ -216,17 +273,14 @@
       isEdited={edited.people}
       {isAndroid}
       {isSheet}
+      {isMacos}
       useFileLabel={useFileLabel("people")}
       onUseFile={() => {
         useFile("people");
       }}
     />
     <DetailBox {isGrouped}>
-      <div
-        role="group"
-        aria-labelledby="{id}-people"
-        class="flex flex-wrap items-center gap-sm"
-      >
+      <div role="group" aria-labelledby="{id}-people" class={chipsClass}>
         {#each peopleShown as person, index (`${String(index)}·${person.name}`)}
           <button
             type="button"
@@ -237,7 +291,7 @@
             }}
           >
             {personLabel(person)}
-            <X size={crossSize} aria-hidden="true" />
+            <X size={crossSize} class={crossClass} aria-hidden="true" />
           </button>
         {/each}
         {#if peopleShown.length < draft.people.length}
@@ -254,6 +308,7 @@
         <AddDetailChip
           {isGrouped}
           {isAndroid}
+          {isMacos}
           label={m.edit_details_add_person()}
           onAdd={(name: string) => {
             onDraft({
@@ -275,17 +330,14 @@
       isEdited={edited.tags}
       {isAndroid}
       {isSheet}
+      {isMacos}
       useFileLabel={useFileLabel("tags")}
       onUseFile={() => {
         useFile("tags");
       }}
     />
     <DetailBox {isGrouped}>
-      <div
-        role="group"
-        aria-labelledby="{id}-tags"
-        class="flex flex-wrap items-center gap-sm"
-      >
+      <div role="group" aria-labelledby="{id}-tags" class={chipsClass}>
         {#each draft.tags as tag (tag)}
           <button
             type="button"
@@ -296,12 +348,13 @@
             }}
           >
             {tag}
-            <X size={crossSize} aria-hidden="true" />
+            <X size={crossSize} class={crossClass} aria-hidden="true" />
           </button>
         {/each}
         <AddDetailChip
           {isGrouped}
           {isAndroid}
+          {isMacos}
           label={m.edit_details_add_tag()}
           onAdd={(tag: string) => {
             if (!draft.tags.includes(tag)) {
@@ -322,6 +375,8 @@
       isEdited={edited.summary}
       {isAndroid}
       {isSheet}
+      {isMacos}
+      isTallField
       useFileLabel={useFileLabel("summary")}
       onUseFile={() => {
         useFile("summary");
@@ -345,7 +400,7 @@
           ? undefined
           : `${id}-summary-file`}
         class={[
-          !isSheet && "text-body",
+          !isSheet && (isMacos ? MACOS_TEXT : "text-body"),
           summaryTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
@@ -355,21 +410,11 @@
       <p id="{id}-summary-file" class={fromFileClass}>{fromFile.summary}</p>
     {/if}
   </div>
-  <DetailBox {isGrouped}>
-    {#if details.isRatedAdult && countsAgeRatings}
-      <LockedAdultMark />
-    {:else}
-      <SettingSwitch
-        label={m.edit_details_mark_adult()}
-        description={details.isRatedAdult
-          ? m.edit_details_mark_adult_ratings_off()
-          : m.edit_details_mark_adult_note()}
-        isOn={draft.isMarkedAdult}
-        onToggle={() => {
-          onDraft({ ...draft, isMarkedAdult: !draft.isMarkedAdult });
-        }}
-        class="-mx-lg -mbe-xs inline-auto"
-      />
-    {/if}
-  </DetailBox>
+  {#if isMacos}
+    <div class={MACOS_ADULT_ROW}>
+      <div class="col-start-2">{@render adultMark()}</div>
+    </div>
+  {:else}
+    <DetailBox {isGrouped}>{@render adultMark()}</DetailBox>
+  {/if}
 </section>

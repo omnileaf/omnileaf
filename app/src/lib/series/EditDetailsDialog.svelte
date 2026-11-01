@@ -53,7 +53,7 @@
   const notices = getNotices();
   const width = new WindowWidth();
   const isIosPhone = $derived(phoneOf(platform, width.current) === "ios");
-  const detailFields: Snippet<[boolean]> = fields;
+  const detailFields: Snippet<[boolean, boolean]> = fields;
   const undoNotice: Snippet<[boolean]> = undoToast;
   let editing = $state<DetailsBeingEdited | undefined>();
   let isAsking = $state(false);
@@ -106,7 +106,7 @@
   }
 </script>
 
-{#snippet fields(isGrouped: boolean)}
+{#snippet fields(isGrouped: boolean, isWide: boolean)}
   {#if editing !== undefined}
     <EditDetailsFields
       details={editing.details}
@@ -114,6 +114,7 @@
       draft={editing.draft}
       {isGrouped}
       isSheet={isGrouped}
+      isMacos={platform === "macos" && isWide}
       onDraft={(draft: DetailDraft) => {
         if (editing !== undefined) {
           editing.draft = draft;
@@ -175,7 +176,7 @@
               <span class="sr-only">{shown.current?.title ?? ""}. </span>
               {m.edit_details_intro()}
             </Dialog.Description>
-            {@render detailFields(true)}
+            {@render detailFields(true, false)}
           </div>
         </div>
         {@render undoNotice(true)}
@@ -195,7 +196,7 @@
           </Dialog.Description>
         </div>
         <div class={look.body}>
-          {@render detailFields(false)}
+          {@render detailFields(false, view === "wide")}
           {@render undoNotice(false)}
         </div>
         <div class={look.actions}>

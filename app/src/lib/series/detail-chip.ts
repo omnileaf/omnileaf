@@ -7,3 +7,13 @@ export const ANDROID_DETAIL_CHIP =
   "rounded-native-segment border-native-button-outline-edge ps-md text-native-button/native-button font-native-button tracking-native-button text-muted block-auto min-block-native-button-small";
 
 export const ANDROID_CHIP_CROSS_SIZE = 18;
+
+export const MACOS_DETAIL_CHIP =
+  "rounded-native-button border-0 bg-native-button-secondary text-native-button/native-button font-native-button text-native-on-button-secondary block-auto min-block-native-button ps-native-detail-chip-inline pe-native-detail-chip-inline hover:bg-native-control-fill-hover active:bg-native-control-fill-pressed focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-offset-(--focus-ring-offset) focus-visible:outline-(--focus-ring-color)";
+
+export const MACOS_TYPING_CHIP =
+  "flex-none rounded-native-button border border-accent bg-transparent px-native-detail-chip-inline text-native-button/native-button font-native-button block-auto min-block-native-button";
+
+export const MACOS_CHIP_CROSS_SIZE = 10;
+
+export const MACOS_CHIP_CROSS = "-me-xs";

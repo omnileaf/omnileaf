@@ -20,6 +20,15 @@ test.each<[BadgeLook, string[]]>([
   ["condition", ["rounded-full", "bg-accent-soft", "text-detail"]],
   ["outline", ["rounded-label-badge", "border", "border-border"]],
   ["secondary", ["rounded-label-badge", "bg-chip", "text-on-chip"]],
+  [
+    "status",
+    [
+      "rounded-native-button-small",
+      "bg-native-button-secondary",
+      "text-muted",
+      "block-native-status-badge",
+    ],
+  ],
   ["header-accent", ["rounded-full", "bg-accent-soft", "text-accent"]],
   ["header-danger", ["rounded-full", "bg-danger-soft", "text-danger"]],
 ])("draws the %s look with its colours and shape", (look, signature) => {
