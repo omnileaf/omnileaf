@@ -158,7 +158,7 @@ const MAC_LOOK: AlertLook = {
   showsAppIcon: true,
   badge: "block-native-dialog-icon inline-native-dialog-icon mbe-2xs",
   title:
-    "text-native-sheet-title leading-native-sheet-title font-native-sheet-title",
+    "text-native-sheet-title leading-native-sheet-title font-native-sheet-title max-medium:text-native-sheet-title max-medium:leading-native-sheet-title max-medium:font-native-sheet-title",
   body: "gap-none",
   description:
     "gap-native-dialog-text-gap pbs-native-dialog-text-gap px-native-dialog-text-inline text-native-sheet-text leading-native-sheet-text tracking-native-sheet-text",
