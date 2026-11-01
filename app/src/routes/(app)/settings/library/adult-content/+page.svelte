@@ -56,7 +56,7 @@
           }}
         />
       </div>
-      <div class={android.isOn ? "-mx-page-start -me-page-end" : ""}>
+      <div>
         <SettingSwitch
           label={m.adult_content_age_ratings()}
           description={m.adult_content_age_ratings_help()}
