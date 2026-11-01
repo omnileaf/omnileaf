@@ -145,10 +145,22 @@ test.describe("scrolling the library on an iPad", () => {
     await page.getByRole("main").evaluate((main, top) => {
       main.scrollTo({ top });
     }, SCROLLED_PX);
-
     await expect(
-      page.locator("[data-title-bar]").getByText("Library", { exact: true }),
-    ).toHaveCSS("opacity", "0");
+      page.getByRole("heading", { level: 1, name: "Library" }),
+    ).not.toBeInViewport();
+    await page.evaluate(async () => {
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      await Promise.all(document.getAnimations().map((a) => a.finished));
+    });
+
+    const titleBar = page.locator("[data-title-bar]");
+    await expect(titleBar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(titleBar).toHaveCSS("border-bottom-color", "rgba(0, 0, 0, 0)");
+    await expect(titleBar.getByText("Library", { exact: true })).toHaveCSS(
+      "opacity",
+      "0",
+    );
     await expect(mainBar(page)).toBeVisible();
   });
 });

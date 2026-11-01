@@ -138,7 +138,7 @@
       NATIVE_TOP_BAR.edge,
       foldingBar.row,
       leading !== undefined && "grid grid-cols-folding-bar-leading",
-      isTitleUnderBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
+      isTitleFoldedIntoBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
   >
     {#if leading !== undefined}
