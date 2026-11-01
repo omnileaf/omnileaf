@@ -9,7 +9,7 @@ import { resolvedColour } from "../../../../../tests/components/resolved-colour"
 import { cn } from "#lib/components/cn.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
-import { TABS_LOOKS } from "./looks.ts";
+import { ANDROID_PHONE_LOOK, TABS_LOOKS } from "./looks.ts";
 import TabsHarness from "./TabsHarness.svelte";
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
@@ -65,10 +65,9 @@ afterEach(() => {
 });
 
 test("keeps every class of every look through the class merge", () => {
-  const looks = Object.values(TABS_LOOKS).flatMap(({ list, trigger }) => [
-    list,
-    trigger,
-  ]);
+  const looks = [...Object.values(TABS_LOOKS), ANDROID_PHONE_LOOK].flatMap(
+    ({ list, trigger }) => [list, trigger],
+  );
 
   expect(looks.map((classes) => cn(classes))).toEqual(looks);
 });
