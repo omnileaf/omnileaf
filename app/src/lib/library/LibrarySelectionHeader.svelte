@@ -47,7 +47,7 @@
   <Button
     type="button"
     look="bar-button"
-    aria-keyshortcuts={usesCommandKey(platform) ? "Meta+A" : "Control+A"}
+    aria-keyshortcuts={selectAllKeys}
     class="px-md whitespace-nowrap text-foreground inline-auto min-inline-native-target"
     onclick={onSelectAll}
   >
@@ -89,10 +89,12 @@
   {:else if onIosTablet}
     {@render selectAll()}
     <p
-      class="order-last truncate pbs-native-large-title-above pbe-native-large-title-below inline-full {NATIVE_TOP_BAR.largeTitle}"
+      class="order-last pbs-native-large-title-above pbe-native-large-title-below inline-full {NATIVE_TOP_BAR.largeTitle}"
       aria-live="polite"
     >
-      {m.library_selected_series({ count })}
+      <span class="truncate min-inline-none">
+        {m.library_selected_series({ count })}
+      </span>
     </p>
     {@render done()}
   {:else}

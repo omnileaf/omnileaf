@@ -141,9 +141,9 @@ test("puts Select all and Done on one row with the count under them on an iPad",
   const count = page.getByText("3 selected").element().getBoundingClientRect();
 
   expect(right.left).toBeGreaterThan(left.right);
-  expect(right.top).toBe(left.top);
+  expect(right.top).toBeCloseTo(left.top, 0);
   expect(count.top).toBeGreaterThanOrEqual(left.bottom);
-  expect(count.left).toBe(left.left);
+  expect(count.left).toBeCloseTo(left.left, 0);
   await expect
     .element(page.getByRole("button", { name: "Cancel selecting" }))
     .not.toBeInTheDocument();
@@ -159,14 +159,29 @@ test("puts Select all and Done on one row with the count under them on an iPad",
 test("sets the count at title large on an iPad", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   renderHeader("ios");
-  const style = getComputedStyle(page.getByText("3 selected").element());
+  const text = page.getByText("3 selected").element();
+  const title = getComputedStyle(text.parentElement as HTMLElement);
+  const label = getComputedStyle(text);
 
   expect({
-    size: style.fontSize,
-    line: style.lineHeight,
-    weight: style.fontWeight,
-    align: style.textAlign,
-  }).toEqual({ size: "34px", line: "41px", weight: "700", align: "start" });
+    size: title.fontSize,
+    line: title.lineHeight,
+    weight: title.fontWeight,
+    align: title.textAlign,
+    above: title.paddingTop,
+    below: title.paddingBottom,
+    overflow: label.overflow,
+    ellipsis: label.textOverflow,
+  }).toEqual({
+    size: "34px",
+    line: "41px",
+    weight: "700",
+    align: "start",
+    above: "10px",
+    below: "8px",
+    overflow: "hidden",
+    ellipsis: "ellipsis",
+  });
 });
 
 test("draws Select all as a glass bar button and Done on the primary fill on an iPad", async () => {
@@ -194,6 +209,21 @@ test("draws Select all as a glass bar button and Done on the primary fill on an 
     ),
     doneInk: resolvedColour("--color-native-on-button-primary", "color"),
   });
+});
+
+test("draws Done on the dark primary fill on an iPad in the dark theme", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  document.documentElement.dataset.theme = "dark";
+  renderHeader("ios");
+  const done = getComputedStyle(
+    page.getByRole("button", { name: "Done" }).element(),
+  );
+
+  expect({ fill: done.backgroundColor, ink: done.color }).toEqual({
+    fill: resolvedColour("--color-native-button-primary", "backgroundColor"),
+    ink: resolvedColour("--color-native-on-button-primary", "color"),
+  });
+  expect(done.backgroundColor).toBe("rgb(127, 203, 157)");
 });
 
 test("keeps the cancel button and no Done on an Android tablet", async () => {

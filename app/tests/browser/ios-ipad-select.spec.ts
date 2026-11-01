@@ -95,5 +95,9 @@ test.describe("selecting series on an iPad", () => {
     await done.dispatchEvent("click");
 
     await expect(page.getByText("1 selected")).toBeHidden();
+    await expect(page.getByRole("button", { name: "Select all" })).toBeHidden();
+    await expect(
+      page.getByRole("list", { name: "Series" }).getByRole("checkbox"),
+    ).toHaveCount(0);
   });
 });
