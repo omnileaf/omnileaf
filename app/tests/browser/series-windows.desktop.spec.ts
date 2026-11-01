@@ -237,3 +237,22 @@ test.describe("a series that is still loading on Windows", () => {
     await expect(fill).toHaveCSS("animation-name", "none");
   });
 });
+
+test.describe("a series with tags on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    viewport: WINDOW,
+    platform: "windows",
+    backend: new FakeShelf([{ state: "notStarted" }], {
+      tags: ["Harbour", "Lantern"],
+    }).backend(),
+  });
+
+  test("sets the tags as plain labels", async ({ page }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+    const tag = page.getByRole("list", { name: "Tags" }).getByText("Harbour");
+
+    await expect(tag).toHaveCSS("border-top-width", "0px");
+    await expect(tag).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  });
+});
