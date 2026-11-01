@@ -154,6 +154,8 @@
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
+  --native-spacing-large-title-above: 10px;
+  --native-spacing-large-title-below: 8px;
   --native-spacing-reader-bar-end: 0px;
   --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
   --native-color-on-tab-hover: var(--muted-foreground);
