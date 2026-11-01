@@ -654,6 +654,150 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     expect(footnoteSize).toBeLessThan(bodySize);
   });
 
+  test("heads each detail with its name, and says Edited in plain footnote type beside it", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const heading = shown.getByText("Title", { exact: true });
+    const status = shown.getByText("Edited", { exact: true });
+    await expect(status).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const mutedColour = await tokenColour(page, "--color-muted");
+    await expect(status).toHaveCSS("color", mutedColour);
+    await expect(heading).toHaveCSS("color", mutedColour);
+    const [headingBox, statusBox, headingSize, statusSize] = await Promise.all([
+      boxOf(heading),
+      boxOf(status),
+      heading.evaluate((name) => parseFloat(getComputedStyle(name).fontSize)),
+      status.evaluate((name) => parseFloat(getComputedStyle(name).fontSize)),
+    ]);
+    expect(statusSize).toBeLessThan(headingSize);
+    expect(headingBox.x + headingBox.width).toBeLessThan(statusBox.x);
+    expect(
+      Math.abs(
+        headingBox.y +
+          headingBox.height / 2 -
+          (statusBox.y + statusBox.height / 2),
+      ),
+    ).toBeLessThan(2);
+  });
+
+  test("undoes an edit from a plain icon-only button in the section head", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const undo = shown.getByRole("button", { name: "Use the file’s title" });
+    await expect(undo).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(undo).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-plain"),
+    );
+    await expect(undo.locator("svg")).toHaveCSS("width", "18px");
+    const [undoBox, statusBox] = await Promise.all([
+      boxOf(undo),
+      boxOf(shown.getByText("Edited", { exact: true })),
+    ]);
+    expect(undoBox.height).toBeCloseTo(
+      await lengthOf(page, "--native-spacing-button"),
+      0,
+    );
+    expect(statusBox.x + statusBox.width).toBeLessThan(undoBox.x);
+  });
+
+  test("sets the title as one raised row and the summary with the field's block padding", async ({
+    page,
+    platform,
+  }) => {
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    const title = shown.getByRole("textbox", { name: "Title" });
+    const titleCard = title.locator('xpath=ancestor::*[@data-slot="card"]');
+    await expect(titleCard).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-card"),
+    );
+    await expect(titleCard).toHaveCSS("border-top-width", "0px");
+    const rowHeight = await lengthOf(page, "--native-spacing-row");
+    expect((await boxOf(titleCard)).height).toBeCloseTo(rowHeight, 0);
+    expect((await boxOf(title)).height).toBeCloseTo(rowHeight, 0);
+    await expect(shown.getByRole("textbox", { name: "Summary" })).toHaveCSS(
+      "padding-top",
+      `${String(await lengthOf(page, "--native-spacing-field-block"))}px`,
+    );
+  });
+
+  test("drops the undo notice in at the top of the sheet, over its bar, and Undo brings the edit back", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    await tap(shown.getByRole("button", { name: "Use the file’s title" }));
+
+    const notice = shown.getByRole("status");
+    await expect(notice.getByText("Title back to the file’s")).toBeVisible();
+    const [sheetBox, noticeBox, closeBox, fieldBox] = await Promise.all([
+      boxOf(shown),
+      boxOf(notice),
+      boxOf(shown.getByRole("button", { name: "Close" })),
+      boxOf(shown.getByRole("textbox", { name: "Title" })),
+    ]);
+    expect(noticeBox.y - sheetBox.y).toBeCloseTo(
+      await lengthOf(page, "--native-spacing-sheet-notice-top"),
+      0,
+    );
+    expect(noticeBox.y).toBeLessThan(closeBox.y + closeBox.height);
+    expect(noticeBox.y + noticeBox.height).toBeLessThan(fieldBox.y);
+    await tap(notice.getByRole("button", { name: "Undo" }));
+    await expect(shown.getByRole("textbox", { name: "Title" })).toHaveValue(
+      TYPED_TITLE,
+    );
+    await expect(notice.getByText("Title back to the file’s")).toBeHidden();
+  });
+
+  test("names each detail with a heading", async ({ page, platform }) => {
+    const shown = await openEditor(page, platform);
+
+    for (const name of ["Title", "People", "Tags", "Summary"]) {
+      await expect(
+        shown.getByRole("heading", { name, level: 3 }),
+      ).toBeVisible();
+    }
+    await expect(shown.getByRole("textbox", { name: "Title" })).toBeVisible();
+    await expect(shown.getByRole("textbox", { name: "Summary" })).toBeVisible();
+  });
+
   test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
     page,
     platform,
@@ -801,6 +945,28 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
       page.getByRole("dialog", { name: "Edit details" }),
     ).toHaveCount(0);
   });
+
+  test("keeps the Edited badge and the plain heading on its page", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "Android's page");
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+
+    await expect(shown.getByText("Edited", { exact: true })).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-chip"),
+    );
+    await expect(shown.getByRole("heading", { level: 3 })).toHaveCount(0);
+  });
 });
 
 test.describe(
@@ -847,6 +1013,31 @@ test.describe(
       test.skip(platform !== "ios", "iOS's page");
     });
 
+    test("keeps the Edited badge and the heading inside the page's card", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: TYPED_TITLE,
+        },
+      };
+      await page.goto(`/series/${SERIES_ID}/edit`);
+
+      await expect(page.getByText("Edited", { exact: true })).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--color-chip"),
+      );
+      const titleCard = page
+        .getByRole("textbox", { name: "Title" })
+        .locator('xpath=ancestor::*[@data-slot="card"]');
+      expect((await boxOf(titleCard)).height).toBeGreaterThan(
+        await lengthOf(page, "--native-spacing-row"),
+      );
+    });
+
     test("sets the page on the grouped ground with Save as a filled pill", async ({
       page,
     }) => {
@@ -883,5 +1074,28 @@ test.describe("Edit details on a wide iOS window", () => {
     await expect(shown).not.toHaveAttribute("data-ground", "grouped");
     await expect(shown.getByRole("button", { name: "Cancel" })).toBeVisible();
     await expect(shown.getByRole("button", { name: "Save" })).toBeVisible();
+  });
+
+  test("keeps the Edited badge, the Tooltip undo and the sticky notice in the dialog body", async ({
+    page,
+  }) => {
+    test.skip(!isWide(page), "a phone opens the sheet");
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page);
+
+    await expect(shown.getByText("Edited", { exact: true })).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-chip"),
+    );
+    await expect(shown.getByRole("heading", { level: 3 })).toHaveCount(0);
+    await shown.getByRole("button", { name: "Use the file’s title" }).click();
+    await expect(shown.getByRole("status")).toHaveCSS("position", "sticky");
   });
 });

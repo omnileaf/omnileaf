@@ -2,7 +2,10 @@
   import { X } from "@lucide/svelte";
 
   import { cn } from "#lib/components/cn.ts";
-  import { GROUPED_FOOTNOTE_TYPE } from "#lib/library/group-look.ts";
+  import {
+    GROUPED_FOOTNOTE,
+    GROUPED_FOOTNOTE_TYPE,
+  } from "#lib/library/group-look.ts";
   import { Textarea } from "#lib/components/ui/textarea/index.ts";
   import type { SeriesDetails } from "#lib/ipc/bindings.ts";
   import type { UndoOffer } from "#lib/notices/notices.ts";
@@ -33,6 +36,11 @@
   import DetailBox from "./DetailBox.svelte";
   import DetailFieldHead from "./DetailFieldHead.svelte";
   import LockedAdultMark from "./LockedAdultMark.svelte";
+  import {
+    SHEET_FIELD_CARD,
+    SHEET_SUMMARY_TEXT,
+    SHEET_TITLE_TEXT,
+  } from "./sheet-field-look.ts";
 
   const PEOPLE_SHOWN_FIRST = 8;
   const ICON_SIZE = 16;
@@ -52,6 +60,7 @@
     draft,
     isGrouped = false,
     isAndroid = false,
+    isSheet = false,
     onDraft,
     offerUndo,
   }: {
@@ -60,19 +69,31 @@
     draft: DetailDraft;
     isGrouped?: boolean;
     isAndroid?: boolean;
+    isSheet?: boolean;
     onDraft: (draft: DetailDraft) => void;
     offerUndo: (offer: UndoOffer) => void;
   } = $props();
 
   const id = $props.id();
   const fromFileClass = $derived(
-    isGrouped
-      ? ["ps-lg", GROUPED_FOOTNOTE_TYPE]
-      : isAndroid
-        ? ANDROID_FROM_FILE
-        : FROM_FILE,
+    isSheet
+      ? GROUPED_FOOTNOTE
+      : isGrouped
+        ? ["ps-lg", GROUPED_FOOTNOTE_TYPE]
+        : isAndroid
+          ? ANDROID_FROM_FILE
+          : FROM_FILE,
   );
-  const fieldClass = $derived(isGrouped || isAndroid ? GROUPED_FIELD : FIELD);
+  const fieldClass = $derived(
+    isSheet ? "flex flex-col" : isGrouped || isAndroid ? GROUPED_FIELD : FIELD,
+  );
+  const fieldCardClass = $derived(isSheet ? SHEET_FIELD_CARD : undefined);
+  const titleTextClass = $derived(
+    isSheet ? SHEET_TITLE_TEXT : isGrouped && GROUPED_FIELD_BOX,
+  );
+  const summaryTextClass = $derived(
+    isSheet ? SHEET_SUMMARY_TEXT : isGrouped && GROUPED_FIELD_BOX,
+  );
   const chipExtras = $derived(
     cn(isGrouped && GROUPED_DETAIL_CHIP, isAndroid && ANDROID_DETAIL_CHIP),
   );
@@ -157,12 +178,13 @@
       labelFor="{id}-title"
       isEdited={edited.title}
       {isAndroid}
+      {isSheet}
       useFileLabel={useFileLabel("title")}
       onUseFile={() => {
         useFile("title");
       }}
     />
-    <DetailBox {isGrouped} isRelative={isAndroid}>
+    <DetailBox {isGrouped} isRelative={isAndroid} cardClass={fieldCardClass}>
       {#if isAndroid}
         <label for="{id}-title" class={FLOATING_LABEL}>
           {m.edit_details_title()}
@@ -178,8 +200,9 @@
         placeholder={details.title.fromFile}
         aria-describedby="{id}-title-file"
         class={[
-          "text-body min-block-title-field touch:min-block-touch-target",
-          isGrouped && GROUPED_FIELD_BOX,
+          !isSheet &&
+            "text-body min-block-title-field touch:min-block-touch-target",
+          titleTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
       />
@@ -192,6 +215,7 @@
       labelId="{id}-people"
       isEdited={edited.people}
       {isAndroid}
+      {isSheet}
       useFileLabel={useFileLabel("people")}
       onUseFile={() => {
         useFile("people");
@@ -250,6 +274,7 @@
       labelId="{id}-tags"
       isEdited={edited.tags}
       {isAndroid}
+      {isSheet}
       useFileLabel={useFileLabel("tags")}
       onUseFile={() => {
         useFile("tags");
@@ -296,12 +321,13 @@
       labelFor="{id}-summary"
       isEdited={edited.summary}
       {isAndroid}
+      {isSheet}
       useFileLabel={useFileLabel("summary")}
       onUseFile={() => {
         useFile("summary");
       }}
     />
-    <DetailBox {isGrouped} isRelative={isAndroid}>
+    <DetailBox {isGrouped} isRelative={isAndroid} cardClass={fieldCardClass}>
       {#if isAndroid}
         <label for="{id}-summary" class={FLOATING_LABEL}>
           {m.edit_details_summary()}
@@ -319,8 +345,8 @@
           ? undefined
           : `${id}-summary-file`}
         class={[
-          "text-body",
-          isGrouped && GROUPED_FIELD_BOX,
+          !isSheet && "text-body",
+          summaryTextClass,
           isAndroid && ANDROID_OUTLINED_BOX,
         ]}
       />

@@ -54,7 +54,7 @@
   const width = new WindowWidth();
   const isIosPhone = $derived(phoneOf(platform, width.current) === "ios");
   const detailFields: Snippet<[boolean]> = fields;
-  const undoNotice: Snippet = undoToast;
+  const undoNotice: Snippet<[boolean]> = undoToast;
   let editing = $state<DetailsBeingEdited | undefined>();
   let isAsking = $state(false);
   let undoOffer = $state<UndoOffer | undefined>();
@@ -113,6 +113,7 @@
       countsAgeRatings={editing.countsAgeRatings}
       draft={editing.draft}
       {isGrouped}
+      isSheet={isGrouped}
       onDraft={(draft: DetailDraft) => {
         if (editing !== undefined) {
           editing.draft = draft;
@@ -125,9 +126,10 @@
   {/if}
 {/snippet}
 
-{#snippet undoToast()}
+{#snippet undoToast(isOverBar: boolean)}
   <DetailUndoToast
     offer={undoOffer}
+    {isOverBar}
     onDone={() => {
       undoOffer = undefined;
     }}
@@ -175,8 +177,8 @@
             </Dialog.Description>
             {@render detailFields(true)}
           </div>
-          {@render undoNotice()}
         </div>
+        {@render undoNotice(true)}
       {:else}
         {@const look = view === "wide" ? wideLook : PHONE_EDIT_DETAILS_LOOK}
         <div class={look.header}>
@@ -194,7 +196,7 @@
         </div>
         <div class={look.body}>
           {@render detailFields(false)}
-          {@render undoNotice()}
+          {@render undoNotice(false)}
         </div>
         <div class={look.actions}>
           <Button type="button" {...look.cancel} onclick={leave}>
