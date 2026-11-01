@@ -39,6 +39,7 @@ mod scanned_book;
 mod search_text;
 mod series;
 pub(crate) mod series_books;
+mod series_connection;
 mod series_count;
 mod series_file_details;
 mod series_listing;

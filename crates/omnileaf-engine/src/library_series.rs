@@ -129,6 +129,7 @@ mod tests {
             language: Some("en".to_owned()),
             is_rated_adult: true,
             is_marked_adult: false,
+            is_connected: true,
         };
 
         let series = LibrarySeries::new(summary, AdultContent::default());
