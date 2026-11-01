@@ -2191,6 +2191,7 @@ export function sampleBackend(
     showTrayMenu: () => null,
     showIconActions: () => null,
     watchIconActions: () => null,
+    watchOpenWith: () => null,
     openSystemSettings: () => null,
     openColourSettings: () => null,
     panicInCore: () => null,
