@@ -38,7 +38,7 @@
     tabindex="-1"
     class={isSetupPage
       ? "text-welcome-title font-semibold"
-      : ["font-bold tracking-tight", SCALES[scale]]}
+      : ["font-bold tracking-tight android:font-regular", SCALES[scale]]}
   >
     {@render children()}
   </h1>

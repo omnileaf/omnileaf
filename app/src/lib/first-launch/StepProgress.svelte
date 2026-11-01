@@ -17,7 +17,9 @@
     }),
   );
   const share = $derived((100 * position.number) / position.count);
-  const isBar = usesSetupPages(currentPlatform());
+  const platform = currentPlatform();
+  const isBar = usesSetupPages(platform) || platform === "android";
+  const fill = platform === "android" ? "bg-accent" : "bg-windows-accent";
 </script>
 
 <div
@@ -39,7 +41,7 @@
       ></span>
       <span
         data-fill
-        class="absolute inset-y-none inset-s-none rounded-full bg-windows-accent"
+        class={["absolute inset-y-none inset-s-none rounded-full", fill]}
         style:inline-size="{share}%"
       ></span>
     </span>

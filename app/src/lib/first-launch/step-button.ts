@@ -24,7 +24,8 @@ const SETUP_KIND_CLASSES = {
 } as const satisfies Record<StepButtonKind, string>;
 
 const KIND_CLASSES = {
-  primary: "font-bold",
+  primary:
+    "font-bold android:bg-native-button-primary android:text-native-on-button-primary",
   quiet: "",
   outline: "enabled:hover:bg-hover enabled:active:bg-pressed",
 } as const satisfies Record<StepButtonKind, string>;
