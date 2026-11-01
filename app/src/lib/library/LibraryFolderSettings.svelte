@@ -2,11 +2,13 @@
   import { Trash } from "@lucide/svelte";
   import { onMount, type Snippet, tick } from "svelte";
 
+  import { assertNever } from "#lib/assert-never.ts";
   import ChangeHomeButton from "#lib/first-launch/ChangeHomeButton.svelte";
+  import ChangeHomeRow from "#lib/first-launch/ChangeHomeRow.svelte";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPointer, phoneOf } from "#lib/page/platform.ts";
+  import { phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
@@ -101,14 +103,20 @@
   });
 
   function homeHint(): string {
-    if (platform === "ios") {
-      return m.library_settings_home_folder_hint_ios({
-        place: folderLocation({ kind: "home", location: "" }, platform),
-      });
+    switch (platform) {
+      case "ios":
+        return m.library_settings_home_folder_hint_ios({
+          place: folderLocation({ kind: "home", location: "" }, platform),
+        });
+      case "android":
+        return m.library_settings_home_folder_hint_android();
+      case "linux":
+      case "macos":
+      case "windows":
+        return m.library_settings_home_folder_hint_desktop();
+      default:
+        return assertNever(platform);
     }
-    return isPointer(platform)
-      ? m.library_settings_home_folder_hint_desktop()
-      : m.library_settings_home_folder_hint();
   }
 
   async function turnDownFoundHome(): Promise<void> {
@@ -196,15 +204,27 @@
   }
 </script>
 
-{#snippet changeHome()}
-  <ChangeHomeButton
-    bind:ref={changeHomeButton}
-    {platform}
-    isBusy={homeChange.isBusy}
-    onclick={() => {
-      void homeChange.choose();
-    }}
-  />
+{#snippet changeHome(titleId: string, pathId: string)}
+  {@const isChanging = homeChange.isBusy || rescans.isBusy}
+  {@const choose = () => {
+    void homeChange.choose();
+  }}
+  {#if platform === "android"}
+    <ChangeHomeRow
+      bind:ref={changeHomeButton}
+      {titleId}
+      {pathId}
+      isBusy={isChanging}
+      onclick={choose}
+    />
+  {:else}
+    <ChangeHomeButton
+      bind:ref={changeHomeButton}
+      {platform}
+      isBusy={isChanging}
+      onclick={choose}
+    />
+  {/if}
 {/snippet}
 
 {#snippet emptiedNotice(folder: LibraryFolder)}
@@ -251,7 +271,7 @@
   <HomeFolder
     folders={folders.list}
     {platform}
-    change={isPointer(platform) ? changeHome : undefined}
+    change={platform === "ios" ? undefined : changeHome}
     rowAction={rescanButton}
   >
     <RescanStatus status={rescans.status} kind="home" />
