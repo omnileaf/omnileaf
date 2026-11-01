@@ -481,6 +481,7 @@ export const TOKEN_THEME = {
     "native-sheet-large",
     "native-sheet-limit",
     "native-sheet-medium",
+    "native-sheet-notice-top",
     "native-sheet-top",
     "native-slider",
     "native-slider-thumb",

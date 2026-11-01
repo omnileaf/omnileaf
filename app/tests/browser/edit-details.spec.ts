@@ -746,6 +746,43 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     );
   });
 
+  test("drops the undo notice in at the top of the sheet, over its bar, and Undo brings the edit back", async ({
+    page,
+    platform,
+  }) => {
+    details = {
+      ...FROM_FILES,
+      title: {
+        fromFile: FILE_TITLE,
+        source: "folderName",
+        edited: TYPED_TITLE,
+      },
+    };
+    const shown = await openEditor(page, platform);
+    await settle(shown);
+
+    await tap(shown.getByRole("button", { name: "Use the file’s title" }));
+
+    const notice = shown.getByRole("status");
+    await expect(notice.getByText("Title back to the file’s")).toBeVisible();
+    const [sheetBox, noticeBox, closeBox, fieldBox] = await Promise.all([
+      boxOf(shown),
+      boxOf(notice),
+      boxOf(shown.getByRole("button", { name: "Close" })),
+      boxOf(shown.getByRole("textbox", { name: "Title" })),
+    ]);
+    expect(noticeBox.y - sheetBox.y).toBeCloseTo(
+      await lengthOf(page, "--native-spacing-sheet-notice-top"),
+      0,
+    );
+    expect(noticeBox.y).toBeLessThan(closeBox.y + closeBox.height);
+    expect(noticeBox.y + noticeBox.height).toBeLessThan(fieldBox.y);
+    await tap(notice.getByRole("button", { name: "Undo" }));
+    await expect(shown.getByRole("textbox", { name: "Title" })).toHaveValue(
+      TYPED_TITLE,
+    );
+  });
+
   test("raises Save as a filled pill and Close as a glass circle, the title between them", async ({
     page,
     platform,

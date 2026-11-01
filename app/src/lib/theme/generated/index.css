@@ -117,6 +117,7 @@
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
+  --spacing-native-sheet-notice-top: var(--native-spacing-sheet-notice-top);
   --spacing-native-field-block: var(--native-spacing-field-block);
   --spacing-native-alert-block: var(--native-spacing-alert-block);
   --spacing-native-alert-action-start: var(--native-spacing-alert-action-start);
