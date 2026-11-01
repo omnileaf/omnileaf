@@ -14,13 +14,14 @@
   } from "#lib/ipc/bindings.ts";
   import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
-  import { MEDIUM_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import { TABLET_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
   import FilterChoices from "./FilterChoices.svelte";
+  import { GROUPED_GROUP_LOOK } from "./group-look";
   import { filtersOn, NEW_LIBRARY_LISTING } from "./library-listing";
   import OptionsPopover from "./OptionsPopover.svelte";
   import { type SheetScrollRules, scrollRulesOf } from "./sheet-scroll-rules";
@@ -64,8 +65,8 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isIos = platform === "ios";
-  const isWide = new MediaQuery(MEDIUM_QUERY);
-  const opensAsPopover = $derived(isIos && isWide.current);
+  const isTablet = new MediaQuery(TABLET_QUERY);
+  const opensAsPopover = $derived(isIos && isTablet.current);
   const panel = viewPanelLook(platform);
   const opener = $derived(showsButton ? button : returnFocusTo);
   const isMac = platform === "macos";
@@ -95,6 +96,10 @@
     isOpen = false;
   }
 
+  function reset(): void {
+    onChoose(NEW_LIBRARY_LISTING);
+  }
+
   function followsScroll(body: HTMLElement): () => void {
     const follow = () => {
       scrollRules = scrollRulesOf(body);
@@ -114,7 +119,7 @@
 
   function focusButton(event: Event): void {
     event.preventDefault();
-    (showsButton ? button : returnFocusTo)?.focus();
+    opener?.focus();
   }
 </script>
 
@@ -193,24 +198,11 @@
     {panel}
   >
     {#snippet action()}
-      <Button
-        type="button"
-        variant="plain"
-        class="me-lg"
-        onclick={() => {
-          onChoose(NEW_LIBRARY_LISTING);
-        }}
-      >
+      <Button type="button" variant="plain" class="me-lg" onclick={reset}>
         {m.library_reset()}
       </Button>
     {/snippet}
-    <FilterChoices
-      {listing}
-      {choices}
-      {onChoose}
-      isGrouped
-      groups={panel.groups}
-    />
+    <FilterChoices {listing} {choices} {onChoose} groups={panel.groups} />
     <p role="status" class="sr-only">
       {#if matching !== undefined}
         {m.library_series_match({ count: matching })}
@@ -245,9 +237,7 @@
               type="button"
               look="text"
               class="rounded-badge px-sm text-detail block-panel-button"
-              onclick={() => {
-                onChoose(NEW_LIBRARY_LISTING);
-              }}
+              onclick={reset}
             >
               {m.library_reset()}
             </Button>
@@ -292,13 +282,7 @@
               <DialogTitle id={titleId} class={ANDROID_FILTER_SHEET.title}>
                 {m.library_filter_and_sort()}
               </DialogTitle>
-              <Button
-                type="button"
-                variant="plain"
-                onclick={() => {
-                  onChoose(NEW_LIBRARY_LISTING);
-                }}
-              >
+              <Button type="button" variant="plain" onclick={reset}>
                 {m.library_reset()}
               </Button>
             </div>
@@ -308,9 +292,7 @@
               closeLabel={m.library_close()}
               actionLabel={m.library_reset()}
               onClose={close}
-              onAction={() => {
-                onChoose(NEW_LIBRARY_LISTING);
-              }}
+              onAction={reset}
             />
           {:else}
             <div class="flex items-center gap-md px-sheet-inline pbs-md pbe-xs">
@@ -322,9 +304,7 @@
                 type="button"
                 look="text"
                 class="px-xs text-body min-block-touch-target"
-                onclick={() => {
-                  onChoose(NEW_LIBRARY_LISTING);
-                }}
+                onclick={reset}
               >
                 {m.library_reset()}
               </Button>
@@ -340,7 +320,12 @@
                   isIos ? "gap-xl" : "px-sheet-inline",
                 ]}
           >
-            <FilterChoices {listing} {choices} {onChoose} isGrouped={isIos} />
+            <FilterChoices
+              {listing}
+              {choices}
+              {onChoose}
+              groups={isIos ? GROUPED_GROUP_LOOK : undefined}
+            />
           </div>
           <div
             class={isAndroidPhone

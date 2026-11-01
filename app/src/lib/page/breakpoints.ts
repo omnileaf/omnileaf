@@ -5,6 +5,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 export type WidthClass = "compact" | "medium" | "expanded";
 
 export const MEDIUM_QUERY = "(min-width: 600px)";
+export const TABLET_QUERY = "(min-width: 600px) and (min-height: 600px)";
 export const EXPANDED_QUERY = "(min-width: 840px)";
 export const MAC_INSPECTOR_QUERY = "(min-width: 1000px)";
 export const COMPACT_SIDE_QUERY =
