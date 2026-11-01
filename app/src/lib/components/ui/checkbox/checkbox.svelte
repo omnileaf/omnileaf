@@ -8,6 +8,7 @@
   import { cn } from "#lib/components/cn.ts";
 
   import CheckMark from "./check-mark.svelte";
+  import { CHECKBOX_GLYPH } from "./checkbox-glyph.ts";
 
   const DASH_SIZE = 14;
   const DASH_STROKE = 3;
@@ -31,14 +32,19 @@
     "flex shrink-0 items-center justify-center rounded-checkbox border border-control-edge bg-checkbox-off text-on-accent block-checkbox inline-checkbox focus-visible:focus-ring aria-checked:border-accent aria-checked:bg-accent android:border-2 windows:shadow-raised linux:shadow-raised",
     MACOS_CHECKBOX,
     indeterminate &&
-      "border-accent bg-accent macos:bg-accent macos:shadow-none",
+      "border-accent bg-accent macos:bg-accent macos:shadow-none macos:active:bg-accent macos:active:shadow-native-radio-pressed-on",
     className,
   )}
   {...restProps}
 >
   {#snippet children({ checked: isChecked, indeterminate: isSome })}
     {#if isSome}
-      <Minus size={DASH_SIZE} strokeWidth={DASH_STROKE} aria-hidden="true" />
+      <Minus
+        size={DASH_SIZE}
+        strokeWidth={DASH_STROKE}
+        aria-hidden="true"
+        class={CHECKBOX_GLYPH}
+      />
     {:else if isChecked}
       <CheckMark />
     {/if}

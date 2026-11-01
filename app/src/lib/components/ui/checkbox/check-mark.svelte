@@ -2,6 +2,8 @@
   import { Check } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import { CHECKBOX_GLYPH } from "./checkbox-glyph.ts";
+
   let { class: className }: { class?: ClassValue } = $props();
 
   const SIZE = 14;
@@ -12,8 +14,5 @@
   size={SIZE}
   strokeWidth={STROKE}
   aria-hidden="true"
-  class={[
-    "macos:block-native-checkbox-glyph macos:inline-native-checkbox-glyph",
-    className,
-  ]}
+  class={[CHECKBOX_GLYPH, className]}
 />
