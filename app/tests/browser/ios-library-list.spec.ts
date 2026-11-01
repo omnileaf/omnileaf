@@ -63,7 +63,9 @@ test.describe("the library as a list on an iPhone", { tag: "@native" }, () => {
     await expect(row.getByRole("progressbar")).toHaveCount(0);
   });
 
-  test("draws each cover 48 by 72 and a one-line row 92 high", async ({ page }) => {
+  test("draws each cover 48 by 72 and a one-line row 92 high", async ({
+    page,
+  }) => {
     const row = page.locator("[data-series-id]").first();
     const cover = row.locator("[data-slot='list-cover']");
 
