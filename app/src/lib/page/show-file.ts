@@ -13,7 +13,7 @@ const SHOW_FOLDER = {
   ios: m.show_in_files,
   android: m.series_show_the_folder,
   macos: m.show_in_finder,
-  windows: m.series_show_in_folder,
+  windows: m.show_in_file_explorer,
   linux: m.series_show_in_folder,
 } satisfies Record<Platform, () => string>;
 

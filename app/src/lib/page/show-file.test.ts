@@ -25,7 +25,7 @@ test("names showing a series' folder as the series page's menu says it", () => {
     "Show in Files",
     "Show the folder",
     "Show in Finder",
-    "Show in folder",
+    "Show in File Explorer",
     "Show in folder",
   ]);
 });
