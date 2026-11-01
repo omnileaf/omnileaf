@@ -525,6 +525,15 @@
   --spacing-native-bar-badge: var(--native-spacing-bar-badge);
   --spacing-native-bar-badge-inline: var(--native-spacing-bar-badge-inline);
   --spacing-native-bar-badge-offset: var(--native-spacing-bar-badge-offset);
+  --radius-native-checkbox: var(--native-radius-checkbox);
+  --radius-native-link: var(--native-radius-link);
+  --spacing-native-checkbox-glyph: var(--native-spacing-checkbox-glyph);
+  --spacing-native-checkbox-gap: var(--native-spacing-checkbox-gap);
+  --color-native-field-fill: var(--native-color-field-fill);
+  --color-native-field-placeholder: var(--native-color-field-placeholder);
+  --shadow-native-field-rim: var(--native-shadow-field-rim);
+  --spacing-native-text-field-block-tall: var(--native-spacing-text-field-block-tall);
+  --spacing-native-text-field-tall: var(--native-spacing-text-field-tall);
 }
 
 @media (prefers-reduced-motion: reduce) {
