@@ -65,7 +65,7 @@
                 <a href={resolve(section.route)} {...props}>
                   <ItemMedia
                     class={[
-                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip desktop:text-foreground",
+                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip android:max-medium:bg-transparent android:max-medium:text-muted desktop:text-foreground",
                       IOS_CHIPS[section.chip],
                     ]}
                   >
@@ -75,21 +75,21 @@
                     class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm"
                   >
                     <ItemTitle
-                      class="text-body ios:font-regular ios:min-inline-none desktop:text-callout desktop:font-medium"
+                      class="text-body ios:font-regular ios:min-inline-none android:max-medium:font-regular desktop:text-callout desktop:font-medium"
                     >
                       {section.label()}
                     </ItemTitle>
                     {#if summary !== undefined}
                       <ItemDescription
                         lang={summary.lang}
-                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value"
+                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:max-medium:text-native-row-subtitle/native-row-subtitle"
                         >{summary.text}</ItemDescription
                       >
                     {/if}
                   </ItemContent>
                   <ChevronRight
                     size={CHEVRON_SIZE}
-                    class="shrink-0 text-muted rtl:-scale-x-100"
+                    class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"
                   />
                 </a>
               {/snippet}
