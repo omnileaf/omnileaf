@@ -15,12 +15,14 @@ export interface MissingFolderCardContent {
   readonly actions: readonly CardAction[];
 }
 
+export type ShownActionOrder = "hideFirst" | "findFirst";
+
 interface CardAsk {
   readonly missing: MissingFolder;
   readonly isStillFailing: boolean;
   readonly handlers: MissingFolderActions;
   readonly onHide: (missing: MissingFolder) => void;
-  readonly hidesLast: boolean;
+  readonly shownOrder: ShownActionOrder;
 }
 
 export function missingFolderCardOf({
@@ -28,7 +30,7 @@ export function missingFolderCardOf({
   isStillFailing,
   handlers,
   onHide,
-  hidesLast,
+  shownOrder,
 }: CardAsk): MissingFolderCardContent {
   const remedy = remedyOf(missing);
   const wording = wordingOf(missing, isStillFailing);
@@ -45,7 +47,7 @@ export function missingFolderCardOf({
         onHide(missing);
       },
     };
-    return hidesLast ? [find, hide] : [hide, find];
+    return shownOrder === "findFirst" ? [find, hide] : [hide, find];
   };
   switch (remedy) {
     case "chooseAgain":

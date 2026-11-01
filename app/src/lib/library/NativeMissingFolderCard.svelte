@@ -32,7 +32,7 @@
       isStillFailing,
       handlers,
       onHide,
-      hidesLast: true,
+      shownOrder: "findFirst",
     }),
   );
 </script>
@@ -56,7 +56,7 @@
     {content.body}
   </p>
   <div class="col-span-full -mx-native-row-start mbs-md flex flex-col">
-    {#each content.actions as action (action.label)}
+    {#each content.actions as action, index (index)}
       <button type="button" class={NATIVE_ALERT_ROW} onclick={action.run}>
         {action.label}
       </button>
@@ -65,7 +65,7 @@
   <button
     type="button"
     aria-label={m.notice_dismiss()}
-    class="absolute inset-e-native-alert-dismiss-inset inset-bs-native-alert-dismiss-inset flex items-center justify-center rounded-full block-native-button inline-native-button active:bg-native-row-pressed"
+    class="native-target absolute inset-e-native-alert-dismiss-inset inset-bs-native-alert-dismiss-inset flex items-center justify-center rounded-full block-native-button inline-native-button focus-visible:focus-ring active:bg-native-row-pressed"
     onclick={() => {
       onDismiss(missing);
     }}

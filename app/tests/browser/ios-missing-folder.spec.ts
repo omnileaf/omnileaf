@@ -1,7 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
+import type {
+  FolderProblem,
+  MissingFolder,
+  SignInOutcome,
+} from "../../src/lib/ipc/bindings.ts";
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -21,23 +26,30 @@ const DISMISS_INSET = 6;
 const DISMISS_SIZE = 34;
 const ROW_HEIGHT = 52;
 const ROW_TEXT_START = 50;
+const TOUCH_TARGET = 44;
+const NAS_MANGA = { server: "nas", name: "nas/manga" };
 
 let missing: MissingFolder[] = [];
 let asked: string[] = [];
+let signIn: SignInOutcome = "cancelled";
 
-function comicsGone(): MissingFolder {
+function folderWith(problem: FolderProblem, name: string): MissingFolder {
   return {
     folder: {
       id: FOLDER_ID,
       kind: "linked",
-      name: "Comics",
-      location: "/media/Comics",
+      name,
+      location: `/media/${name}`,
       isAvailable: false,
     },
-    problem: { kind: "missing" },
+    problem,
     hiddenSeries: 41,
     isShownAnyway: false,
   } as MissingFolder;
+}
+
+function comicsGone(): MissingFolder {
+  return folderWith({ kind: "missing" }, "Comics");
 }
 
 test.use({
@@ -54,6 +66,24 @@ test.use({
       missing = missing.map((one) => ({ ...one, isShownAnyway: isShown }));
       return null;
     },
+    relocateLibraryFolder: (id) => {
+      asked.push(`relocate ${id}`);
+      missing = [];
+      return null;
+    },
+    removeLibraryFolder: (id) => {
+      asked.push(`remove ${id}`);
+      missing = [];
+      return null;
+    },
+    signInToLibraryFolder: (id) => {
+      asked.push(`sign in ${id}`);
+      return signIn;
+    },
+    rescanLibraryFolder: (id) => {
+      asked.push(`rescan ${id}`);
+      return { id, name: "Manga", outcome: { kind: "unreachable" } };
+    },
     libraryFolderBookCount: () => 41,
   },
 });
@@ -61,6 +91,7 @@ test.use({
 test.beforeEach(() => {
   missing = [comicsGone()];
   asked = [];
+  signIn = "cancelled";
 });
 
 function cardIn(page: Page): Locator {
@@ -166,6 +197,40 @@ test.describe("a missing folder on an iPhone", { tag: "@native" }, () => {
     );
   });
 
+  test("reaches the dismiss button from the keyboard with a focus ring and a 44px hit area", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const dismiss = cardIn(page).getByRole("button", { name: "Dismiss" });
+
+    await dismiss.focus();
+    const area = await dismiss.evaluate((button) => {
+      const { width, height } = getComputedStyle(button, "::before");
+      return { width, height };
+    });
+
+    await expect(dismiss).toHaveCSS("outline-style", "solid");
+    expect(area).toEqual({
+      width: `${String(TOUCH_TARGET)}px`,
+      height: `${String(TOUCH_TARGET)}px`,
+    });
+  });
+
+  test("keeps the keyboard on the first action when Show them anyway swaps the actions", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const card = cardIn(page);
+    await card.getByRole("button", { name: "Show them anyway" }).focus();
+
+    await page.keyboard.press("Enter");
+
+    await expect(card).toContainText("shown, but can’t be opened");
+    await expect(
+      card.getByRole("button", { name: "Find the folder" }),
+    ).toBeFocused();
+  });
+
   test("stays gone for the rest of the visit once dismissed", async ({
     page,
   }) => {
@@ -203,6 +268,74 @@ test.describe("a missing folder on an iPhone", { tag: "@native" }, () => {
       `show ${FOLDER_ID} false`,
     ]);
   });
+});
+
+test.describe("other missing folders on an iPhone", { tag: "@native" }, () => {
+  testOnlyInItsWebview("ios");
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
+  });
+
+  test("offers Choose it again and Unlink it for a folder Omnileaf can't open", async ({
+    page,
+  }) => {
+    missing = [folderWith({ kind: "lostAccess" }, "Manga")];
+    await page.goto("/");
+    const card = cardIn(page);
+
+    await expect(card).toContainText("Omnileaf can’t open Manga");
+    const choose = await boxOf(
+      card.getByRole("button", { name: "Choose it again" }),
+    );
+    const unlink = await boxOf(card.getByRole("button", { name: "Unlink it" }));
+    await card.getByRole("button", { name: "Choose it again" }).click();
+
+    expect(choose.y).toBeLessThan(unlink.y);
+    expect(asked).toEqual([`relocate ${FOLDER_ID}`]);
+  });
+
+  test("offers Sign in, then Sign in again once the sign-in fails", async ({
+    page,
+  }) => {
+    missing = [folderWith({ kind: "needsSignIn", share: NAS_MANGA }, "Manga")];
+    signIn = "failed";
+    await page.goto("/");
+    const card = cardIn(page);
+
+    await card.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(card).toContainText("Couldn’t sign in to Manga");
+    await expect(
+      card.getByRole("button", { name: "Sign in again" }),
+    ).toBeVisible();
+    expect(asked).toEqual([`sign in ${FOLDER_ID}`]);
+  });
+
+  test("offers Try again for a share the system mounts", async ({ page }) => {
+    missing = [
+      folderWith({ kind: "needsMounting", share: NAS_MANGA }, "Manga"),
+    ];
+    await page.goto("/");
+    const card = cardIn(page);
+
+    await expect(card).toContainText("Mount Manga’s share again");
+    await card.getByRole("button", { name: "Try again" }).click();
+
+    await expect.poll(() => asked).toEqual([`rescan ${FOLDER_ID}`]);
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/");
+      await expect(cardIn(page)).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
 
 test.describe("a missing folder on an iPad", () => {

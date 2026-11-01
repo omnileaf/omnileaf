@@ -33,16 +33,6 @@
     onHide: (missing: MissingFolder) => void;
     onDismiss: (missing: MissingFolder) => void;
   } = $props();
-
-  const content = $derived(
-    missingFolderCardOf({
-      missing,
-      isStillFailing,
-      handlers,
-      onHide,
-      hidesLast: false,
-    }),
-  );
 </script>
 
 {#if currentPlatform() === "ios"}
@@ -54,6 +44,13 @@
     {onDismiss}
   />
 {:else}
+  {@const content = missingFolderCardOf({
+    missing,
+    isStillFailing,
+    handlers,
+    onHide,
+    shownOrder: "hideFirst",
+  })}
   <div role="status">
     <Alert tone="warning" icon={TriangleAlert} class="rounded-card">
       <AlertTitle>{content.title}</AlertTitle>
@@ -65,7 +62,7 @@
       />
       <AlertDescription>{content.body}</AlertDescription>
       <AlertActions class="col-span-2 -ms-md">
-        {#each content.actions as action (action.label)}
+        {#each content.actions as action, index (index)}
           <AlertButton emphasis="quiet" class={TEXT_BUTTON} onclick={action.run}
             >{action.label}</AlertButton
           >
