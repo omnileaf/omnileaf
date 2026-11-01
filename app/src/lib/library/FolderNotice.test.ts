@@ -343,21 +343,21 @@ test("turns the finding toast into the result in the same place", async () => {
   expect(page.getByRole("listitem").elements()).toHaveLength(1);
 });
 
-test("draws the scan's icons on Android in the snackbar's inverse primary", async () => {
+test("shows no finding toast on Android and still reports the result", async () => {
   document.documentElement.dataset.platform = "android";
   const scan = new PendingScan();
   const { button } = await renderWith(scan.addFolder);
   await button.click();
   scan.report({ stage: "finding", found: 3 });
-  const finding = toastSaying("Finding books");
-  await expect.element(finding).toBeVisible();
-  const whileFinding = iconColourOf(finding);
+  scan.report({ stage: "reading", scanned: 1, total: 7 });
+  await tick();
+  expect(toastSaying("Finding books").elements()).toEqual([]);
 
-  scan.finish(scanned({}));
+  scan.finish(scanned({ unreadableBooks: 2 }));
+
   const added = toastSaying("Added 7 books from Sample Library");
   await expect.element(added).toBeVisible();
-
-  expect(whileFinding).toBe(colourOf("--android-inverse-primary"));
+  await expect.element(added.getByText(/2 /)).toBeVisible();
   expect(iconColourOf(added)).toBe(colourOf("--android-inverse-primary"));
 });
 
