@@ -3,6 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -12,6 +13,7 @@
   import ShortcutDialog from "#lib/screenshot-mode/ShortcutDialog.svelte";
   import ShortcutKeys from "#lib/screenshot-mode/ShortcutKeys.svelte";
   import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
+  import { radiosLook } from "#lib/settings/radios-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSelect from "#lib/settings/SettingSelect.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
@@ -44,6 +46,8 @@
       : m.screenshot_mode_tray(),
   );
   const quicklyId = $props.id();
+  const android = new AndroidPhone();
+  const androidHeading = radiosLook(true).heading;
 
   let isChangingShortcut = $state(false);
 
@@ -72,7 +76,7 @@
 <div class="mbs-pane-gap flex flex-col gap-xl">
   <div class="flex flex-col gap-sm">
     <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
-    <div class={[CARD, "divide-y divide-border"]}>
+    <div class={[CARD, !android.isOn && "divide-y divide-border"]}>
       <SettingSwitch
         label={m.screenshot_mode_title()}
         description={screenshotModeSummary(
@@ -83,6 +87,9 @@
         onToggle={() => {
           screenshotMode.toggle();
         }}
+        class={android.isOn
+          ? "rounded-full bg-native-accent-soft **:text-foreground"
+          : ""}
       />
       <SettingSelect
         label={m.screenshot_mode_turn_off_after()}
@@ -117,7 +124,12 @@
   </div>
 
   <section aria-labelledby={quicklyId} class={CARD}>
-    <h2 id={quicklyId} class="px-lg pbs-md pbe-xs text-small font-semibold">
+    <h2
+      id={quicklyId}
+      class={android.isOn
+        ? androidHeading
+        : "px-lg pbs-md pbe-xs text-small font-semibold"}
+    >
       {m.screenshot_mode_quickly()}
     </h2>
     {#if hasKeyboard}
@@ -170,13 +182,17 @@
       <div class="flex items-center gap-md px-lg pbs-xs pbe-md">
         <span
           aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile"
+          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted"
         >
           <Smartphone size={ROW_ICON_SIZE} />
         </span>
         <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <span class="font-semibold">{m.screenshot_mode_long_press()}</span>
-          <span class="text-detail text-muted">
+          <span class="font-semibold android:max-medium:font-regular"
+            >{m.screenshot_mode_long_press()}</span
+          >
+          <span
+            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+          >
             {m.screenshot_mode_long_press_help()}
           </span>
         </span>
