@@ -1,4 +1,7 @@
+import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { isPhone } from "#lib/page/platform.ts";
 
 export interface TabsLook {
   readonly list: string;
@@ -35,6 +38,11 @@ export const WINDOWS_SELECTOR_BAR_LOOK: TabsLook = {
     "relative inline-flex items-center gap-sm rounded-native-button border border-transparent px-md pbs-native-tab-block-start pbe-native-tab-block-end text-label font-regular whitespace-nowrap text-native-on-tab transition-control after:absolute after:inset-be-none after:inset-s-1/2 after:-translate-x-1/2 after:rounded-full after:bg-windows-accent after:opacity-0 after:block-windows-indicator after:inline-windows-indicator-length not-disabled:hover:text-native-on-tab-hover not-disabled:active:text-native-on-tab-hover disabled:text-native-on-tab-disabled aria-selected:text-native-on-tab aria-selected:after:opacity-100 focus-visible:focus-ring forced-colors:after:bg-native-on-tab rtl:after:translate-x-1/2",
 };
 
+export const ANDROID_PHONE_LOOK: TabsLook = {
+  list: "-ms-page-start -me-page-end flex border-be border-native-tab-rule",
+  trigger: `relative flex flex-1 basis-0 items-center justify-center px-lg py-sm text-center text-native-tab-label/native-tab-label font-native-tab-label tracking-native-tab-label text-balance wrap-anywhere text-native-on-tab transition-control min-inline-native-tab-min min-block-touch-target active:bg-native-row-pressed aria-selected:text-native-on-tab-current aria-selected:after:absolute aria-selected:after:inset-x-lg aria-selected:after:inset-be-none aria-selected:after:rounded-ss-native-tab-indicator aria-selected:after:rounded-se-native-tab-indicator aria-selected:after:bg-native-tab-indicator aria-selected:after:block-native-tab-indicator ${ROW_FOCUS_RING}`,
+};
+
 export const TABS_LOOKS = {
   ios: IOS_SEGMENTED_LOOK,
   android: TODAYS_LOOK,
@@ -43,6 +51,8 @@ export const TABS_LOOKS = {
   windows: WINDOWS_SELECTOR_BAR_LOOK,
 } satisfies Record<Platform, TabsLook>;
 
-export function tabsLook(platform: Platform): TabsLook {
-  return TABS_LOOKS[platform];
+export function tabsLook(platform: Platform, width: WidthClass): TabsLook {
+  return platform === "android" && isPhone(platform, width)
+    ? ANDROID_PHONE_LOOK
+    : TABS_LOOKS[platform];
 }
