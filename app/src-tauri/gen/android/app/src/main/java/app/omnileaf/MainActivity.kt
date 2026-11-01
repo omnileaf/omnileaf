@@ -17,6 +17,7 @@ class MainActivity : TauriActivity() {
     private var webView: WebView? = null
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
+    internal val handedDocuments = HandedDocuments()
 
     internal var backNavigation: BackNavigation? = null
         private set
@@ -26,7 +27,7 @@ class MainActivity : TauriActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ChosenIconActions.startNewPage()
-        choiceAtLaunch(savedInstanceState)?.let(ChosenIconActions::choose)
+        takeLaunchRequests(savedInstanceState)
         showStartingBarIcons(startingTheme)
         showTheAppBehindTheNavigationButtons()
         turnScreen(resources.configuration)
@@ -37,6 +38,7 @@ class MainActivity : TauriActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.chosenIconAction()?.let(ChosenIconActions::choose)
+        intent.handedDocument()?.let(handedDocuments::receive)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -69,8 +71,11 @@ class MainActivity : TauriActivity() {
      * Android hands an activity it restores, or reopens from Recents, the intent that first started its task,
      * so only a fresh launch carries a new choice.
      */
-    private fun choiceAtLaunch(savedInstanceState: Bundle?): IconAction? =
-        if (savedInstanceState == null && !intent.isFromRecents) intent.chosenIconAction() else null
+    private fun takeLaunchRequests(savedInstanceState: Bundle?) {
+        if (savedInstanceState != null || intent.isFromRecents) return
+        intent.chosenIconAction()?.let(ChosenIconActions::choose)
+        intent.handedDocument()?.let(handedDocuments::receive)
+    }
 
     private fun showTheAppBehindTheNavigationButtons() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
