@@ -172,7 +172,7 @@
   --native-spacing-large-title-above: 10px;
   --native-spacing-large-title-below: 8px;
   --native-spacing-reader-bar-end: 0px;
-  --native-shadow-bar-button-lift: 0 1px 8px rgba(0, 0, 0, 0.12);
+  --native-shadow-bar-button-lift: var(--native-shadow-shadow-glass);
   --native-color-on-tab-hover: var(--muted-foreground);
   --native-color-on-tab-disabled: var(--muted-foreground);
   --native-spacing-tab-bar: 62px;

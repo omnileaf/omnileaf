@@ -10,7 +10,7 @@
 
 <nav
   aria-label={m.navigation_label()}
-  class="fixed inset-x-lg inset-bs-page-top z-top-tab-bar mx-auto rounded-full bg-native-tab-bar p-xs shadow-floating inset-ring inset-ring-glass-edge backdrop-blur-glass backdrop-saturate-160 inline-top-tab-bar block-native-top-tab-bar"
+  class="fixed inset-x-lg inset-bs-page-top z-top-tab-bar mx-auto rounded-full bg-native-tab-bar p-xs shadow-native-shadow-glass backdrop-blur-glass backdrop-saturate-160 inline-top-tab-bar block-native-top-tab-bar"
 >
   <ul class="flex block-full">
     {#each DESTINATIONS as { section, label } (section)}
