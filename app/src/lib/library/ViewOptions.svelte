@@ -1,12 +1,11 @@
 <script lang="ts">
   import { SlidersHorizontal } from "@lucide/svelte";
-  import { Dialog, Popover } from "bits-ui";
+  import { Dialog } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent, SheetBar } from "#lib/components/ui/drawer/index.ts";
-  import { PopoverContent } from "#lib/components/ui/popover/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
@@ -17,6 +16,7 @@
 
   import { ANDROID_FILTER_SHEET } from "./filter-sheet-look";
   import { groupLook } from "./group-look";
+  import OptionsPopover from "./OptionsPopover.svelte";
   import ViewChoices from "./ViewChoices.svelte";
   import { viewPanelLook } from "./view-panel";
 
@@ -45,7 +45,6 @@
   } = $props();
 
   const isWide = new MediaQuery(MEDIUM_QUERY);
-  const titleId = $props.id();
   const platform = currentPlatform();
   const isIos = platform === "ios";
   const width = new WindowWidth();
@@ -56,14 +55,6 @@
   const isMac = platform === "macos";
   const panel = viewPanelLook(platform);
   const opener = $derived(showsButton ? button : returnFocusTo);
-
-  let direction: "ltr" | "rtl" = $state("ltr");
-
-  $effect.pre(() => {
-    if (isOpen && opener !== null) {
-      direction = getComputedStyle(opener).direction === "rtl" ? "rtl" : "ltr";
-    }
-  });
 
   function open(): void {
     isOpen = true;
@@ -127,32 +118,16 @@
 {/if}
 
 {#if isWide.current}
-  <Popover.Root bind:open={isOpen}>
-    <PopoverContent
-      customAnchor={opener}
-      dir={direction}
-      align="end"
-      aria-labelledby={titleId}
-      class={[
-        "flex flex-col overflow-auto max-block-full",
-        panel.surface,
-        panel.width,
-      ]}
-      onCloseAutoFocus={focusButton}
-    >
-      <h2 id={titleId} class={panel.title}>
-        {m.library_view_options()}
-      </h2>
-      <ViewChoices
-        {view}
-        {coversDrawn}
-        {mostThatFit}
-        {hasCategories}
-        {onChoose}
-        look={panel.groups}
-      />
-    </PopoverContent>
-  </Popover.Root>
+  <OptionsPopover bind:isOpen {opener} title={m.library_view_options()} {panel}>
+    <ViewChoices
+      {view}
+      {coversDrawn}
+      {mostThatFit}
+      {hasCategories}
+      {onChoose}
+      look={panel.groups}
+    />
+  </OptionsPopover>
 {:else}
   <Dialog.Root bind:open={isOpen}>
     <DrawerContent
