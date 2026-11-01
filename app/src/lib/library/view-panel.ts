@@ -25,7 +25,7 @@ const TODAYS_LOOK: ViewPanelLook = {
 
 const IPAD_LOOK: ViewPanelLook = {
   ...TODAYS_LOOK,
-  surface: `${PANEL_SPACING} rounded-native-sheet border-0 bg-native-popover shadow-native-popover-lift backdrop-blur-native-glass backdrop-saturate-180`,
+  surface: `${PANEL_SPACING} rounded-native-sheet border-0 bg-native-popover shadow-native-popover-lift backdrop-blur-native-popover backdrop-saturate-180`,
   title:
     "px-lg text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title",
   groups: POPOVER_GROUP_LOOK,

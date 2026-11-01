@@ -311,6 +311,7 @@
   --native-shadow-menu-lift: var(--menu-shadow);
   --native-shadow-popover-lift: var(--shadow-popover);
   --native-color-popover: var(--popover-surface);
+  --native-blur-popover: 0px;
   --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-color-notice: var(--card);

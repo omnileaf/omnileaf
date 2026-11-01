@@ -232,6 +232,7 @@
   --native-spacing-menu-item-inline: 16px;
   --native-spacing-menu-rule-inline: 16px;
   --native-spacing-menu-rule-block: 10px;
+  --native-blur-popover: 30px;
   --native-shadow-tooltip-lift: var(--tooltip-shadow);
   --native-shadow-dialog-lift: var(--dialog-shadow);
   --native-radius-notice: 24px;
@@ -656,6 +657,7 @@
   --native-color-dialog: #f2f2f2;
   --native-color-menu: #f2f2f3;
   --native-color-popover: #f2f2f3;
+  --native-blur-popover: 0px;
   --native-color-notice: #f2f2f3;
 }
 
@@ -667,5 +669,6 @@
   --native-color-dialog: #141414;
   --native-color-menu: #141414;
   --native-color-popover: #141414;
+  --native-blur-popover: 0px;
   --native-color-notice: #141414;
 }

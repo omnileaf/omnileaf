@@ -933,6 +933,7 @@ export const TOKEN_THEME = {
     "menu",
     "native-glass",
     "native-info-bar-floating",
+    "native-popover",
     "reader",
     "series-band",
   ],
