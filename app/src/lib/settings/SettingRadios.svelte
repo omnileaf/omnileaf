@@ -5,7 +5,9 @@
   } from "#lib/components/ui/radio-group/index.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
-  import { radiosLook } from "./radios-look";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
+  import { MACOS_RADIOS_LOOK, radiosLook } from "./radios-look";
 
   let {
     title,
@@ -25,7 +27,10 @@
 
   const id = $props.id();
   const android = new AndroidPhone();
-  const look = $derived(radiosLook(android.isOn));
+  const platform = currentPlatform();
+  const look = $derived(
+    platform === "macos" ? MACOS_RADIOS_LOOK : radiosLook(android.isOn),
+  );
 </script>
 
 <section aria-labelledby="{id}-title" class={look.section}>
@@ -52,9 +57,7 @@
           class={[look.mark, isChosen ? look.markOn : look.markOff]}
         >
           {#if isChosen}
-            <span
-              class="rounded-full bg-accent block-radio-dot inline-radio-dot android:bg-native-button-primary"
-            ></span>
+            <span class={look.dot}></span>
           {/if}
         </span>
         <span class={look.words}>
