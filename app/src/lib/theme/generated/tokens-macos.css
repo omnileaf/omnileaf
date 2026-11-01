@@ -65,6 +65,10 @@
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;
   --native-radius-menu: 12px;
+  --native-spacing-search-scope-gap: 6px;
+  --native-spacing-search-scope-bar-block: 8px;
+  --native-spacing-search-scope-bar-inline: 20px;
+  --native-spacing-search-scope-chip-inline: 20px;
 }
 
 :root[data-platform="macos"],
