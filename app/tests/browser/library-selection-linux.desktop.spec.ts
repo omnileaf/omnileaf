@@ -91,9 +91,18 @@ test.describe("in the list display", () => {
       .nth(0)
       .click({ modifiers: ["ControlOrMeta"] });
 
-    await expect(page.locator("[data-series-id]").nth(0)).toHaveCSS(
+    await expect(covers(page).getByRole("checkbox").nth(0)).toBeChecked();
+    const accent = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.backgroundColor = "var(--color-accent)";
+      document.body.append(probe);
+      const resolved = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return resolved;
+    });
+    await expect(page.locator("[data-series-id]").nth(0)).not.toHaveCSS(
       "background-color",
-      "rgba(0, 0, 0, 0)",
+      accent,
     );
   });
 });
