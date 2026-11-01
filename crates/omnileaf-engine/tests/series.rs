@@ -498,3 +498,51 @@ async fn finds_the_file_of_a_series_first_book_to_show_in_its_folder() {
         )
     );
 }
+
+#[tokio::test]
+async fn finds_the_file_of_a_book_to_show_in_its_folder() {
+    let comics = ScratchFolder::new("book-file-comics");
+    write_sample_library(comics.path()).unwrap();
+    let home = ScratchFolder::new("book-file-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+    library
+        .add_folder(comics.path().join(SAMPLE_LIBRARY_NAME), |_| {})
+        .await
+        .unwrap();
+    let first = first_series(&library).await;
+    let book = *books_of(&library, first.id).await.last().unwrap();
+
+    let file = library.book_in_folder(book).await.unwrap().unwrap();
+
+    assert_eq!(
+        (file.parent().map(Path::to_path_buf), file.is_file()),
+        (
+            Some(
+                comics
+                    .path()
+                    .join(SAMPLE_LIBRARY_NAME)
+                    .join("Sample Series 01")
+            ),
+            true
+        )
+    );
+}
+
+#[tokio::test]
+async fn finds_no_file_to_show_for_a_book_the_library_lacks() {
+    let home = ScratchFolder::new("book-file-missing-home");
+    let library = Library::open(home.path().to_path_buf(), FixedClock)
+        .await
+        .unwrap();
+
+    let file = library
+        .book_in_folder(
+            BookId::try_from("0190a3e4-0000-8000-8000-0000000000ff".to_owned()).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(file, None);
+}
