@@ -58,9 +58,7 @@
   );
 </script>
 
-<div
-  class={isSheet ? SHEET_FIELD_HEAD : isMacos ? "contents" : ROW}
->
+<div class={isSheet ? SHEET_FIELD_HEAD : isMacos ? "contents" : ROW}>
   {#if labelFor === undefined}
     <svelte:element
       this={isSheet ? "h3" : "p"}
