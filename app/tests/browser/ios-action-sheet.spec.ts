@@ -1,17 +1,17 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { SeriesDetails } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  onPlatform,
   test,
+  testOnlyInItsWebview,
   tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
-import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const HELD_MS = 800;
 const LIBRARY = sampleSeries(4);
@@ -20,64 +20,42 @@ const SHEET_BOTTOM_GAP = 16;
 const ACTION_HEIGHT = 48;
 const CANCEL_EXTRA_GAP = 8;
 const ACTION_GAP = 8;
+const NARROW_PHONE = { width: 320, height: 568 } as const;
+const SHEET_SIDE_MARGIN = 16;
+const TABLET_MIN_WIDTH = 600;
 
-const DETAILS = {
-  title: { fromFile: SERIES_TITLE, source: "folderName", edited: null },
-  people: { fromFile: [], edited: null },
-  tags: { fromFile: [], edited: null },
-  summary: { fromFile: "", edited: null },
-  year: null,
-  language: null,
-  isMarkedAdult: false,
-  isRatedAdult: false,
-} satisfies SeriesDetails;
-
-const shelf = new FakeShelf([{ state: "notStarted" }]);
+let removed: boolean[] = [];
 
 const BACKEND: FakeBackend = {
   ...DEFAULT_BACKEND,
   librarySeries: () => ({ series: [...LIBRARY], next: null }),
   librarySeriesCount: () => LIBRARY.length,
-  seriesLabels: () => ({
-    keepsLabels: true,
-    categories: [],
-    tags: [],
-    suggestedTags: [],
-  }),
   previewRemoval: (targets) => ({
     books: targets.length * 3,
     files: targets.length * 3,
     folders: 2,
   }),
-  seriesOverview: (id) => shelf.backend().seriesOverview(id),
-  seriesBooks: (id, listing, after) =>
-    shelf.backend().seriesBooks(id, listing, after),
-  keepsDetailEdits: () => true,
-  seriesDetails: () => DETAILS,
+  removeFromLibrary: (targets, deleteFiles) => {
+    removed = [...removed, deleteFiles];
+    return {
+      removedSeries: targets.length,
+      removedBooks: targets.length * 3,
+      files: [],
+    };
+  },
 };
 
 test.use({ backend: BACKEND });
+
+test.beforeEach(() => {
+  removed = [];
+});
 
 async function tap(target: Locator): Promise<void> {
   const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
   await target.dispatchEvent("pointerdown", touch);
   await target.dispatchEvent("pointerup", touch);
   await target.dispatchEvent("click");
-}
-
-async function openDiscard(page: Page): Promise<Locator> {
-  await page.goto(`/series/${SERIES_ID}`);
-  await page
-    .getByRole("button", { name: `More for ${SERIES_TITLE}`, exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "Edit details…" }).click();
-  await page.getByRole("textbox", { name: "Title" }).fill("A different title");
-  await tap(page.getByRole("button", { name: "Close" }));
-  const sheet = page.getByRole("alertdialog", {
-    name: "Discard your changes?",
-  });
-  await expect(sheet).toBeVisible();
-  return sheet;
 }
 
 async function openRemove(page: Page): Promise<Locator> {
@@ -133,41 +111,6 @@ test.describe("confirmations on an iPhone", { tag: "@native" }, () => {
     test.skip(platform !== "ios", "iOS's action sheet");
   });
 
-  test("asks before discarding with an action sheet, Discard in red above Keep editing", async ({
-    page,
-  }) => {
-    const sheet = await openDiscard(page);
-
-    await expectActionSheetUnder(
-      page,
-      sheet,
-      sheet.getByRole("button", { name: "Discard", exact: true }),
-      sheet.getByRole("button", { name: "Keep editing" }),
-    );
-  });
-
-  test("says what changed in one line, with no card for the series", async ({
-    page,
-  }) => {
-    const sheet = await openDiscard(page);
-
-    await expect(sheet).toContainText(
-      "Title changed. The details stay as they were before you opened Edit details.",
-    );
-    await expect(sheet.getByText(SERIES_TITLE)).toHaveCount(0);
-  });
-
-  test("leaves the sheet and the editor when Discard is tapped", async ({
-    page,
-  }) => {
-    const sheet = await openDiscard(page);
-
-    await tap(sheet.getByRole("button", { name: "Discard", exact: true }));
-
-    await expect(sheet).toHaveCount(0);
-    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`, "u"));
-  });
-
   test("asks before removing from the library with an action sheet, Remove in red above Cancel", async ({
     page,
   }) => {
@@ -197,5 +140,74 @@ test.describe("confirmations on an iPhone", { tag: "@native" }, () => {
     await expect(
       sheet.getByRole("button", { name: "Delete files" }),
     ).toBeVisible();
+  });
+
+  test("removes the series when Remove is tapped", async ({ page }) => {
+    const sheet = await openRemove(page);
+
+    await tap(sheet.getByRole("button", { name: "Remove" }));
+
+    await expect(sheet).toHaveAttribute("data-state", "closed");
+    expect(removed).toEqual([false]);
+  });
+
+  test("deletes the files too when the box is ticked and Delete files is tapped", async ({
+    page,
+  }) => {
+    const sheet = await openRemove(page);
+    await sheet
+      .getByRole("checkbox", { name: "Also delete the files from disk" })
+      .dispatchEvent("click");
+
+    await tap(sheet.getByRole("button", { name: "Delete files" }));
+
+    await expect(sheet).toHaveAttribute("data-state", "closed");
+    expect(removed).toEqual([true]);
+  });
+
+  test("leaves everything alone when Cancel is tapped", async ({ page }) => {
+    const sheet = await openRemove(page);
+
+    await tap(sheet.getByRole("button", { name: "Cancel" }));
+
+    await expect(sheet).toHaveAttribute("data-state", "closed");
+    expect(removed).toEqual([]);
+  });
+
+  test("sets the sheet 16 clear of both edges on the narrowest iPhone", async ({
+    page,
+  }) => {
+    await page.setViewportSize(NARROW_PHONE);
+    const sheet = await openRemove(page);
+
+    const frame = await boxOf(sheet);
+    expect(frame.x).toBeCloseTo(SHEET_SIDE_MARGIN, 0);
+    expect(NARROW_PHONE.width - (frame.x + frame.width)).toBeCloseTo(
+      SHEET_SIDE_MARGIN,
+      0,
+    );
+  });
+});
+
+test.describe("confirmations on an iPad", () => {
+  testOnlyInItsWebview("ios");
+  test.use({
+    backend: { ...BACKEND, appInfo: onPlatform("ios").backend.appInfo },
+  });
+
+  test.beforeEach(({ page }) => {
+    test.skip(viewportOf(page).width < TABLET_MIN_WIDTH, "an iPad's width");
+  });
+
+  test("keeps Cancel before Remove in the tab order", async ({ page }) => {
+    const sheet = await openRemove(page);
+
+    const names = await sheet
+      .getByRole("button")
+      .evaluateAll((buttons) =>
+        buttons.map((button) => button.textContent.trim()),
+      );
+
+    expect(names).toEqual(["Cancel", "Remove"]);
   });
 });
