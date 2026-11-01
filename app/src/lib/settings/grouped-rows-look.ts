@@ -6,7 +6,11 @@ export const LIST_PLATE =
 
 export const LIST_ROW = "flex items-center gap-sm min-block-native-group-row";
 
-export const LIST_TITLE = "text-native-button/native-button font-native-button";
+export const LIST_TEXT = "text-native-button/native-button";
+
+export const LIST_TITLE = `${LIST_TEXT} font-native-button tracking-native-list-title`;
+
+export const LIST_WORDS = "py-native-group-row-text";
 
 export const LIST_LINE =
   "text-native-list-sub/native-list-sub tracking-native-list-sub text-muted";

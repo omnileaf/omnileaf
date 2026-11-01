@@ -2,7 +2,7 @@ import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
 
-import { LIST_HEADING } from "./grouped-rows-look";
+import { LIST_HEADING } from "./grouped-rows-look.ts";
 
 export interface RadiosLook {
   readonly section: string;

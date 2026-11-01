@@ -1,7 +1,7 @@
 <script lang="ts" module>
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 
-  import { LIST_LINE, LIST_TITLE } from "./grouped-rows-look";
+  import { LIST_LINE, LIST_TITLE, LIST_WORDS } from "./grouped-rows-look.ts";
 
   export type WordsLook = "todays" | "android" | "grouped";
 
@@ -17,7 +17,7 @@
       description: `text-muted ${ROW_SUBTITLE_TYPE}`,
     },
     grouped: {
-      words: "flex flex-1 flex-col min-inline-none",
+      words: `flex flex-1 flex-col min-inline-none ${LIST_WORDS}`,
       label: LIST_TITLE,
       description: LIST_LINE,
     },

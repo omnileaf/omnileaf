@@ -3,7 +3,13 @@
 
   import { resolve } from "$app/paths";
 
-  import { LIST_PLATE, LIST_ROW, LIST_TITLE } from "./grouped-rows-look";
+  import {
+    LIST_PLATE,
+    LIST_ROW,
+    LIST_TEXT,
+    LIST_TITLE,
+    LIST_WORDS,
+  } from "./grouped-rows-look.ts";
 
   const CHEVRON_SIZE = 12;
 
@@ -25,11 +31,13 @@
     href={resolve(route)}
     class={[
       LIST_ROW,
-      LIST_TITLE,
+      LIST_TEXT,
       "-mx-native-group-inset px-native-group-inset transition-control focus-visible:focus-ring focus-visible:-outline-offset-2 active:bg-native-group-row-pressed",
     ]}
   >
-    <span class="flex-1 min-inline-none">{label}</span>
+    <span class={["flex-1 min-inline-none", LIST_TITLE, LIST_WORDS]}
+      >{label}</span
+    >
     <span lang={valueLang} class="text-muted">{value}</span>
     <ChevronRight
       size={CHEVRON_SIZE}

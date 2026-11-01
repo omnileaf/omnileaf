@@ -7,7 +7,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
-  import { LIST_ROW } from "./grouped-rows-look";
+  import { LIST_ROW } from "./grouped-rows-look.ts";
   import SettingWords, { type WordsLook } from "./SettingWords.svelte";
 
   interface Props {
@@ -40,19 +40,23 @@
 
   const GROUPED_ROW = `${LIST_ROW} text-start inline-full`;
 
+  const TINTED = "hover:tint-hover active:tint-pressed";
+
+  const GROUPED_PRESSED = "active:bg-native-group-row-pressed";
+
   const id = $props.id();
   const platform = currentPlatform();
   const width = new WindowWidth();
   const android = new AndroidPhone();
-  const wordsLook: WordsLook = $derived(
+  const look: WordsLook = $derived(
     android.isOn ? "android" : grouped ? "grouped" : "todays",
   );
   const rowLook = $derived(
-    android.isOn
-      ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full"]
-      : grouped
-        ? GROUPED_ROW
-        : ROW,
+    look === "android"
+      ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full", TINTED]
+      : look === "grouped"
+        ? [GROUPED_ROW, GROUPED_PRESSED]
+        : [ROW, TINTED],
   );
   const togglesFromSwitchAlone = $derived(
     platform === "ios" && isPhone(platform, width.current),
@@ -78,13 +82,8 @@
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[
-      rowLook,
-      "hover:tint-hover active:tint-pressed",
-      ROW_FOCUS_RING,
-      className,
-    ]}
+    class={[rowLook, ROW_FOCUS_RING, className]}
   >
-    <SettingWords {id} {label} {description} look={wordsLook} />
+    <SettingWords {id} {label} {description} {look} />
   </Switch>
 {/if}
