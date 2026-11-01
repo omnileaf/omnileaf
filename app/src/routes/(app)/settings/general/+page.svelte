@@ -71,6 +71,10 @@
     twelveHour: m.general_time_12(),
     twentyFourHour: m.general_time_24(),
   } satisfies Record<TimeFormat, string>;
+  const TIME_FORMAT_CHOICES = TIME_FORMATS.map((format) => ({
+    value: format,
+    label: TIME_FORMAT_LABELS[format],
+  }));
 </script>
 
 <GroupedGround>
@@ -146,10 +150,7 @@
         <SettingChoiceRow
           title={m.general_time_format()}
           value={TIME_FORMAT_LABELS[timeFormat.choice]}
-          choices={TIME_FORMATS.map((format) => ({
-            value: format,
-            label: TIME_FORMAT_LABELS[format],
-          }))}
+          choices={TIME_FORMAT_CHOICES}
           chosen={timeFormat.choice}
           onChoose={(format: TimeFormat) => {
             timeFormat.choose(format);
@@ -179,10 +180,7 @@
       <GroupedSelectRow
         heading={m.general_dates_and_numbers()}
         label={m.general_time_format()}
-        options={TIME_FORMATS.map((format) => ({
-          value: format,
-          label: TIME_FORMAT_LABELS[format],
-        }))}
+        options={TIME_FORMAT_CHOICES}
         value={timeFormat.choice}
         onChoose={(format: TimeFormat) => {
           timeFormat.choose(format);
