@@ -60,3 +60,36 @@ test.describe("a series' context menu on Windows", () => {
     await expect(page.getByRole("alertdialog")).toBeVisible();
   });
 });
+
+test.describe("the category tabs on Windows", () => {
+  testOnlyInItsWebview("windows");
+  test.use({
+    platform: "windows",
+    viewport: { width: 1280, height: 800 },
+    backend: {
+      ...DEFAULT_BACKEND,
+      librarySeries: () => ({ series: [...LIBRARY], next: null }),
+      librarySeriesCount: () => LIBRARY.length,
+      libraryCategories: () => [
+        { id: "manga", name: "Manga" },
+        { id: "comics", name: "Comics" },
+      ],
+    },
+  });
+
+  test("underlines the chosen tab in the accent colour and no other", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const chosen = page.getByRole("tab", { selected: true });
+    const other = page.getByRole("tab", { name: "Manga" });
+    const underline = (tab: Locator) =>
+      tab.evaluate((element) => {
+        const line = getComputedStyle(element, "::after");
+        return [line.opacity, line.height, line.backgroundColor];
+      });
+
+    expect(await underline(chosen)).toEqual(["1", "3px", "rgb(47, 111, 79)"]);
+    expect((await underline(other))[0]).toBe("0");
+  });
+});
