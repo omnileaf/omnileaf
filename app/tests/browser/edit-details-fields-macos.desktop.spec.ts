@@ -41,6 +41,10 @@ const FIELD = {
   },
 };
 
+const NO_SHADOW = /^(rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, )?)+$/u;
+const LINE_HEIGHT = 16;
+const LINK_CORNER = "4px";
+
 const CHECKBOX = {
   size: 16,
   corner: "5px",
@@ -148,6 +152,23 @@ test.describe("Edit details fields on macOS", () => {
     await expect(summary).toHaveCSS("padding-top", "6px");
   });
 
+  test("keeps the summary at three lines and padding when the text is scaled up", async ({
+    page,
+  }) => {
+    const sheet = await openEditor(page);
+    const summary = sheet.getByRole("textbox", { name: "Summary" });
+    const scale = 1.5;
+
+    await page.evaluate((value) => {
+      document.documentElement.style.setProperty("--text-scale", String(value));
+    }, scale);
+
+    expect((await boxOf(summary)).height).toBeCloseTo(
+      3 * LINE_HEIGHT * scale + 12,
+      0,
+    );
+  });
+
   test("draws the typed name field as a 24 tall field like the title", async ({
     page,
   }) => {
@@ -245,13 +266,40 @@ test.describe("Edit details fields on macOS", () => {
       "background-color",
       await tokenColour(page, "--color-accent"),
     );
-    await expect(mark).not.toHaveCSS("box-shadow", /0\.12/u);
+    await expect(mark).toHaveCSS("box-shadow", NO_SHADOW);
     expect((await boxOf(mark.locator("svg"))).width).toBeCloseTo(
       CHECKBOX.glyph,
       0,
     );
     await sheet.getByRole("button", { name: "Save" }).click();
     await expect.poll(() => sent).toEqual([true]);
+  });
+
+  test("plates the box in the dark field fill in the dark theme", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    const sheet = await openEditor(page);
+    const mark = sheet.getByRole("checkbox", { name: "Mark as 18+" });
+
+    await expect(mark).toHaveCSS(
+      "background-color",
+      await literalColour(page, FIELD.fill.dark),
+    );
+  });
+
+  test("greys the unticked box while it is pressed", async ({ page }) => {
+    const sheet = await openEditor(page);
+    const mark = sheet.getByRole("checkbox", { name: "Mark as 18+" });
+    const { x, y, width, height } = await boxOf(mark);
+
+    await page.mouse.move(x + width / 2, y + height / 2);
+    await page.mouse.down();
+
+    await expect(mark).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-control-fill-pressed"),
+    );
   });
 
   test("puts the note 4 under the label in 11 point text", async ({ page }) => {
@@ -284,6 +332,10 @@ test.describe("Edit details fields on macOS", () => {
       await expect(mark).toBeChecked();
       await expect(mark).toBeDisabled();
       await expect(mark).toHaveCSS("opacity", "0.5");
+      await expect(sheet.getByText("Mark as 18+", { exact: true })).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-muted"),
+      );
       await expect(mark).toHaveAccessibleDescription(RATED_NOTE);
     });
 
@@ -303,6 +355,7 @@ test.describe("Edit details fields on macOS", () => {
       );
       await expect(link).toHaveCSS("text-decoration-line", "none");
       await expect(link).toHaveCSS("font-size", "11px");
+      await expect(link).toHaveCSS("border-top-left-radius", LINK_CORNER);
 
       await link.hover();
 
@@ -349,6 +402,11 @@ for (const platform of ["linux", "windows", "android", "ios"] as const) {
       await expect(title).not.toHaveCSS(
         "box-shadow",
         endingWith(FIELD.rim.light),
+      );
+      await expect(title).not.toHaveCSS("border-top-width", "0px");
+      await expect(title).not.toHaveCSS(
+        "background-color",
+        await literalColour(page, FIELD.fill.light),
       );
       await expect(
         sheet.getByRole("switch", { name: "Mark as 18+" }),

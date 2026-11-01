@@ -166,6 +166,7 @@ export const TOKEN_THEME = {
     "native-group",
     "native-info-bar",
     "native-info-bar-floating",
+    "native-link",
     "native-menu",
     "native-menu-item",
     "native-menu-item-end",

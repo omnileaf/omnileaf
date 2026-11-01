@@ -521,6 +521,7 @@
   --native-spacing-bar-badge-inline: 6px;
   --native-spacing-bar-badge-offset: 5px;
   --native-radius-checkbox: var(--radius-checkbox);
+  --native-radius-link: var(--radius-link);
   --native-spacing-checkbox-glyph: 14px;
   --native-spacing-checkbox-gap: var(--spacing-sm);
   --native-color-field-fill: transparent;

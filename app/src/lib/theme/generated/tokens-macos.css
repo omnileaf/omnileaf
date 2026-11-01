@@ -116,10 +116,11 @@
   --native-spacing-radio-focus-ring: 3.5px;
   --native-spacing-radio-dot: 4.8px;
   --native-radius-checkbox: 5px;
+  --native-radius-link: 4px;
   --native-spacing-checkbox-glyph: 10px;
   --native-spacing-checkbox-gap: 6px;
   --native-spacing-text-field-block-tall: 6px;
-  --native-spacing-text-field-tall: 60px;
+  --native-spacing-text-field-tall: calc(3lh + 2 * var(--native-spacing-text-field-block-tall));
 }
 
 :root[data-platform="macos"],
