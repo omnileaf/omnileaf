@@ -35,6 +35,7 @@
     shortcut,
     children,
     actions,
+    isDismissable = true,
     onDismiss,
   }: {
     severity: InfoBarSeverity;
@@ -45,6 +46,7 @@
     shortcut?: { readonly label: string; readonly keys: string } | undefined;
     children?: Snippet | undefined;
     actions?: Snippet | undefined;
+    isDismissable?: boolean;
     onDismiss: () => void;
   } = $props();
 
@@ -119,13 +121,15 @@
       {@render actions?.()}
     </div>
   {/if}
-  <Button
-    variant="plain"
-    iconOnly
-    label={m.notice_dismiss()}
-    class="absolute inset-e-native-info-bar-close-inset inset-bs-native-info-bar-close-inset block-native-info-bar-close inline-native-info-bar-close"
-    onclick={onDismiss}
-  >
-    <X aria-hidden="true" size={CLOSE_ICON_SIZE} />
-  </Button>
+  {#if isDismissable}
+    <Button
+      variant="plain"
+      iconOnly
+      label={m.notice_dismiss()}
+      class="absolute inset-e-native-info-bar-close-inset inset-bs-native-info-bar-close-inset block-native-info-bar-close inline-native-info-bar-close"
+      onclick={onDismiss}
+    >
+      <X aria-hidden="true" size={CLOSE_ICON_SIZE} />
+    </Button>
+  {/if}
 </div>

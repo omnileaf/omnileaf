@@ -47,6 +47,7 @@
         severity="success"
         title={offer.title}
         action={{ label: m.undo_action(), run: undo }}
+        isDismissable={!isOverBar}
         onDismiss={onDone}
       >
         {#snippet icon()}
