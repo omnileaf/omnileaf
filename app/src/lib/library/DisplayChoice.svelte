@@ -44,8 +44,12 @@
   let {
     chosen,
     onChoose,
-  }: { chosen: LibraryDisplay; onChoose: (display: LibraryDisplay) => void } =
-    $props();
+    labelClass,
+  }: {
+    chosen: LibraryDisplay;
+    onChoose: (display: LibraryDisplay) => void;
+    labelClass?: string | undefined;
+  } = $props();
 
   const id = $props.id();
   const platform = currentPlatform();
@@ -60,7 +64,7 @@
     id={labelId}
     class={android.isOn
       ? [ANDROID_VIEW_SETTING.words, FILTER_SETTING_LABEL_TYPE]
-      : "text-body font-medium large:text-small"}
+      : (labelClass ?? "text-body font-medium large:text-small")}
   >
     {m.library_view_display()}
   </p>

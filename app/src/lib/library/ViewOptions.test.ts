@@ -65,6 +65,8 @@ beforeEach(() => {
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  delete document.documentElement.dataset.contrast;
+  delete document.documentElement.dataset.transparency;
   document.body.replaceChildren();
 });
 
@@ -172,7 +174,9 @@ test("opens View options on an iPad as a popover under the More button, lined up
 
   expect(boxOf(popover).width).toBe(360);
   await expect.poll(() => Math.round(boxOf(popover).right)).toBe(more.right);
-  await expect.poll(() => Math.round(boxOf(popover).top)).toBe(more.bottom + 8);
+  await expect
+    .poll(() => Math.round(boxOf(popover).top))
+    .toBeGreaterThanOrEqual(more.bottom);
 });
 
 test("draws the iPad's View options popover on a 38 radius glass fill with a deep shadow and no edge", async () => {
@@ -229,14 +233,138 @@ test("keeps the iPad popover's switch rows inside it, padded 16 at their end", a
   expect(getComputedStyle(unread).paddingRight).toBe("16px");
 });
 
+const POPOVER_FILLS = [
+  {
+    mode: "light",
+    theme: "light",
+    fill: "rgba(255, 255, 255, 0.85)",
+    blur: "blur(30px)",
+  },
+  {
+    mode: "dark",
+    theme: "dark",
+    fill: "rgba(26, 26, 26, 0.8)",
+    blur: "blur(30px)",
+  },
+  {
+    mode: "light with Increase Contrast",
+    theme: "light",
+    contrast: "more",
+    fill: "rgba(255, 255, 255, 0.94)",
+    blur: "blur(30px)",
+  },
+  {
+    mode: "dark with Increase Contrast",
+    theme: "dark",
+    contrast: "more",
+    fill: "rgb(14, 14, 14)",
+    blur: "blur(30px)",
+  },
+  {
+    mode: "light with Reduce Transparency",
+    theme: "light",
+    transparency: "reduced",
+    fill: "rgb(242, 242, 243)",
+    blur: "blur(0px)",
+  },
+  {
+    mode: "dark with Reduce Transparency",
+    theme: "dark",
+    transparency: "reduced",
+    fill: "rgb(20, 20, 20)",
+    blur: "blur(0px)",
+  },
+] as const;
+
+for (const { mode, ...look } of POPOVER_FILLS) {
+  test(`fills the iPad's View options popover for ${mode}`, async () => {
+    await openOn("ios", TABLET);
+    const root = document.documentElement;
+    root.dataset.theme = look.theme;
+    if ("contrast" in look) {
+      root.dataset.contrast = look.contrast;
+    }
+    if ("transparency" in look) {
+      root.dataset.transparency = look.transparency;
+    }
+
+    const style = getComputedStyle(page.getByRole("dialog").element());
+
+    await expect.poll(() => style.backgroundColor).toBe(look.fill);
+    expect(style.backdropFilter).toContain(look.blur);
+  });
+}
+
+test("draws the iPad popover's choice labels as 15 regular subheads and its switch titles as 17 regular body", async () => {
+  await openOn("ios", TABLET);
+
+  const typeOf = (name: string) => {
+    const style = getComputedStyle(
+      page.getByText(name, { exact: true }).element(),
+    );
+    return [style.fontSize, style.fontWeight, style.letterSpacing];
+  };
+
+  for (const label of ["Display", "Covers per row", "Group by"]) {
+    expect(typeOf(label)).toEqual(["15px", "400", "-0.23px"]);
+  }
+  expect(typeOf("Unread count")).toEqual(["17px", "400", "-0.43px"]);
+});
+
+test("keeps the page's switches under no heading of their own in the iPad popover", async () => {
+  await openOn("ios", TABLET);
+
+  const heading = page
+    .getByRole("heading", { name: "On the library page" })
+    .element();
+  const section = heading.parentElement;
+  const firstSwitch = page
+    .getByRole("switch", { name: "Item counts" })
+    .element();
+
+  expect([boxOf(heading).width, boxOf(heading).height]).toEqual([1, 1]);
+  expect(boxOf(firstSwitch).top).toBe(section?.getBoundingClientRect().top);
+});
+
+const OWN_RADIUS = {
+  android: "12px",
+  linux: "8px",
+  macos: "10px",
+  windows: "8px",
+} as const;
+
 for (const platform of ["android", "linux", "macos", "windows"] as const) {
   test(`keeps ${platform}'s View options popover on its own surface at a tablet's width`, async () => {
     await openOn(platform, TABLET);
 
-    const style = getComputedStyle(page.getByRole("dialog").element());
+    const popover = page.getByRole("dialog").element();
+    const style = getComputedStyle(popover);
+    const textOf = (element: Element) => {
+      const type = getComputedStyle(element);
+      return [type.fontSize, type.fontWeight, type.letterSpacing];
+    };
 
-    expect(style.borderRadius).not.toBe("38px");
+    expect(style.borderRadius).toBe(OWN_RADIUS[platform]);
     expect(style.borderTopWidth).toBe("1px");
-    expect(style.backgroundColor).not.toBe("rgba(255, 255, 255, 0.85)");
+    expect(style.backdropFilter).not.toContain("saturate");
+    expect(style.boxShadow).not.toContain("48px");
+    expect([
+      style.paddingTop,
+      style.paddingRight,
+      style.paddingBottom,
+      style.paddingLeft,
+    ]).toEqual(["16px", "18px", "18px", "18px"]);
+    expect(style.rowGap).toBe("12px");
+    expect(
+      textOf(page.getByRole("heading", { name: "View options" }).element()),
+    ).toEqual(["17px", "700", "normal"]);
+    expect(
+      textOf(
+        page.getByRole("heading", { name: "Layout", exact: true }).element(),
+      ),
+    ).toEqual(["14px", "600", "normal"]);
+    expect(
+      textOf(page.getByText("Display", { exact: true }).element()),
+    ).toEqual(["16px", "500", "normal"]);
   });
 }

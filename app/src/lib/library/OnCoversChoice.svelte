@@ -57,6 +57,7 @@
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={choice.label()}
         isOn={onCovers[choice.name]}
         onToggle={(isShown: boolean) => {

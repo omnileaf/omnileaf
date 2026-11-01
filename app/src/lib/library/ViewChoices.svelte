@@ -73,6 +73,7 @@
   <div class={choicesClass}>
     <div class={look.choice}>
       <DisplayChoice
+        labelClass={look.itemLabel}
         chosen={view.display}
         onChoose={(display: LibraryDisplay) => {
           onChoose(withDisplay(view, display));
@@ -83,6 +84,7 @@
       <div class={look.choice}>
         <CoversPerRowChoice
           {view}
+          labelClass={look.itemLabel}
           drawn={coversInARow}
           {mostThatFit}
           onFit={(fitsToWidth: boolean) => {
@@ -96,6 +98,7 @@
     {/if}
     <div class={look.choice}>
       <GroupByChoice
+        labelClass={look.itemLabel}
         chosen={view.groupBy}
         onChoose={(grouping: LibraryGrouping) => {
           onChoose(withGroupBy(view, grouping));
@@ -105,6 +108,7 @@
     {#if hasCategories}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
         description={isMac
           ? m.library_category_sidebar_hint()
@@ -118,6 +122,7 @@
     {#if canStackCovers}
       <ViewSwitchRow
         {isMaterial}
+        titleClass={look.rowTitle}
         label={m.library_stack_covers()}
         description={m.library_stack_covers_hint()}
         isOn={view.stacksSeriesCovers}
@@ -133,12 +138,16 @@
   aria-labelledby={pageId}
   class={["flex flex-col", look.section]}
 >
-  <h3 id={pageId} class={[headingClass, !isMaterial && look.followingHeading]}>
+  <h3
+    id={pageId}
+    class={isMaterial ? ANDROID_FILTER_HEADING : look.pageHeading}
+  >
     {m.library_on_the_page()}
   </h3>
   <div class={groupClass}>
     <ViewSwitchRow
       {isMaterial}
+      titleClass={look.rowTitle}
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
       isOn={view.showsItemCounts}
@@ -148,6 +157,7 @@
     />
     <ViewSwitchRow
       {isMaterial}
+      titleClass={look.rowTitle}
       label={m.library_continue_row()}
       description={m.library_continue_row_hint()}
       isOn={view.showsContinueRow}

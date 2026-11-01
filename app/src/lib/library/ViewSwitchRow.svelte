@@ -9,17 +9,22 @@
     description,
     isOn,
     isMaterial = false,
+    titleClass,
     onToggle,
   }: {
     label: string;
     description?: string;
     isOn: boolean;
     isMaterial?: boolean;
+    titleClass?: string | undefined;
     onToggle: (isOn: boolean) => void;
   } = $props();
 
   const id = $props.id();
   const isCheckbox = currentPlatform() === "macos";
+  const titleType = $derived(
+    titleClass ?? "text-body font-medium large:text-small",
+  );
 </script>
 
 {#if isCheckbox}
@@ -40,9 +45,7 @@
       <span
         id="{id}-label"
         data-slot={isMaterial ? "item-title" : undefined}
-        class={isMaterial
-          ? undefined
-          : "text-body font-medium large:text-small"}
+        class={isMaterial ? undefined : titleType}
       >
         {label}
       </span>
@@ -77,9 +80,7 @@
       <span
         id="{id}-label"
         data-slot={isMaterial ? "item-title" : undefined}
-        class={isMaterial
-          ? undefined
-          : "text-body font-medium large:text-small"}
+        class={isMaterial ? undefined : titleType}
       >
         {label}
       </span>
