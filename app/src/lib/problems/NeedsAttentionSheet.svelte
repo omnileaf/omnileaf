@@ -67,13 +67,18 @@
       <span
         aria-hidden="true"
         class={cn(
-          "flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense",
+          "flex shrink-0 items-center justify-center rounded-full bg-chip block-reader-dense inline-reader-dense android:max-medium:hidden",
           look.badge,
         )}
       >
         <CircleAlert size={ICON_SIZE} />
       </span>
-      <DialogTitle class={cn("text-title font-bold", look.title)}>
+      <DialogTitle
+        class={cn(
+          "text-title font-bold android:max-medium:font-regular",
+          look.title,
+        )}
+      >
         {m.attention_title()}
       </DialogTitle>
     </div>
