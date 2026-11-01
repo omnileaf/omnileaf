@@ -107,6 +107,7 @@
   --shadow-native-titlebar-rule: var(--native-shadow-titlebar-rule);
   --color-native-on-nav-item: var(--native-color-on-nav-item);
   --color-native-nav-indicator: var(--native-color-nav-indicator);
+  --color-native-window: var(--native-color-window);
   --color-native-grouped-ground: var(--native-color-grouped-ground);
   --color-native-group: var(--native-color-group);
   --radius-native-group: var(--native-radius-group);

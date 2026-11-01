@@ -230,7 +230,6 @@
   --native-color-menu-item-hover: var(--menu-highlight);
   --native-color-on-menu-disabled: var(--muted-foreground);
   --native-color-key-ink: var(--key-ink);
-  --native-color-on-surface: var(--foreground);
   --native-radius-menu: 32px;
   --native-radius-menu-item: 999px;
   --native-radius-menu-item-end: 999px;
@@ -434,6 +433,7 @@
   --native-color-progress-fill: #2f6f4f;
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: rgba(118, 118, 128, 0.12);
+  --native-color-window: var(--background);
   --native-color-grouped-ground: #f2f2f7;
   --native-color-group: #ffffff;
   --native-color-card: #ffffff;
@@ -485,6 +485,7 @@
   --native-color-menu-chosen: transparent;
   --native-color-on-menu-chosen: #000000;
   --native-color-menu-rule: rgba(60, 60, 67, 0.12);
+  --native-color-on-surface: var(--foreground);
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.25);
   --native-shadow-popover-lift: 0 8px 48px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(60, 60, 67, 0.12);
   --native-color-popover: rgba(255, 255, 255, 0.85);
@@ -523,6 +524,7 @@
   --native-color-progress-fill: #7fcb9d;
   --native-color-progress-rest: transparent;
   --native-color-progress-idle-track: rgba(118, 118, 128, 0.24);
+  --native-color-window: #000000;
   --native-color-grouped-ground: #000000;
   --native-color-group: #1c1c1e;
   --native-color-card: #1c1c1e;
@@ -574,6 +576,7 @@
   --native-color-menu-chosen: transparent;
   --native-color-on-menu-chosen: #ffffff;
   --native-color-menu-rule: rgba(84, 84, 88, 0.5);
+  --native-color-on-surface: #ffffff;
   --native-shadow-menu-lift: 0 8px 48px rgba(0, 0, 0, 0.45);
   --native-shadow-popover-lift: 0 8px 48px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(84, 84, 88, 0.5);
   --native-color-popover: rgba(26, 26, 26, 0.8);
