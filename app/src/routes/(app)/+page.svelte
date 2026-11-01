@@ -336,6 +336,12 @@
     void commands.showSeriesInFolder(series.id).then(reportingErrors);
   }
 
+  function showPickedInFolder(): void {
+    for (const id of selection.picked) {
+      void commands.showSeriesInFolder(id).then(reportingErrors);
+    }
+  }
+
   async function unlink(folder: LibraryFolder): Promise<void> {
     unlinking = undefined;
     const removed = await commands.removeLibraryFolder(folder.id);
@@ -464,11 +470,23 @@
       },
       onShowInFolder: showInFolder,
       onRemove:
-        data.appInfo.platform === "windows"
+        data.appInfo.platform === "windows" || isMac
           ? (one: LibrarySeries) => {
               removing = seriesTargets([one.id]);
             }
           : undefined,
+      picked: isMac
+        ? {
+            onMarkRead: markPickedRead,
+            onLabel: () => {
+              labelPicked("categories");
+            },
+            onShowInFolder: showPickedInFolder,
+            onRemove: () => {
+              removing = seriesTargets(selection.picked);
+            },
+          }
+        : undefined,
     },
   });
   const loaded = $derived(

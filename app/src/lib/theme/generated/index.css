@@ -445,6 +445,9 @@
   --spacing-native-tile-check-bleed: var(--native-spacing-tile-check-bleed);
   --spacing-native-tile-hit-corner: var(--native-spacing-tile-hit-corner);
   --spacing-native-drag-lift: var(--native-spacing-drag-lift);
+  --color-native-tile-picked: var(--native-color-tile-picked);
+  --spacing-native-tile-picked: var(--native-spacing-tile-picked);
+  --radius-native-tile-picked-title: var(--native-radius-tile-picked-title);
 }
 
 @media (prefers-reduced-motion: reduce) {

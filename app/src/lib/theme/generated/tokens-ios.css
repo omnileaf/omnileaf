@@ -357,6 +357,9 @@
   --native-spacing-tile-check-bleed: 0px;
   --native-spacing-tile-hit-corner: 0px;
   --native-spacing-drag-lift: 0px;
+  --native-color-tile-picked: transparent;
+  --native-spacing-tile-picked: 0px;
+  --native-radius-tile-picked-title: 0px;
 }
 
 :root[data-platform="ios"],

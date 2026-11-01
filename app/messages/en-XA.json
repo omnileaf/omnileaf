@@ -2641,6 +2641,8 @@
   ],
   "library_delete": "⟦Ðéļéţé···⟧",
   "library_remove_from_library": "⟦Ŕéɱöṽé ƒŕöɱ ļíƀŕáŕý········⟧",
+  "library_remove_from_library_ask": "⟦Ŕéɱöṽé ƒŕöɱ ļíƀŕáŕý…········⟧",
+  "library_remove_picked_from_library": "⟦Ŕéɱöṽé {count} šéŕíéš ƒŕöɱ ļíƀŕáŕý…··············⟧",
   "remove_title": "⟦Ŕéɱöṽé ƒŕöɱ ýöûŕ ļíƀŕáŕý?··········⟧",
   "remove_series_summary": [
     {
