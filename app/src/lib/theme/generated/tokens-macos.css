@@ -61,6 +61,12 @@
   --native-spacing-series-select-gap: var(--spacing-icon-gap);
   --native-spacing-series-icon: 13px;
   --native-spacing-series-chevron: 11px;
+  --native-spacing-inspector: 280px;
+  --native-spacing-inspector-title: 52px;
+  --native-spacing-inspector-section: 14px;
+  --native-text-inspector-label: calc(0.8125rem * var(--text-scale));
+  --native-leading-inspector-label: calc(16 / 13);
+  --native-weight-inspector-label: 510;
   --native-spacing-read-mark: 1.125rem;
   --native-radius-dialog: 34px;
   --native-radius-sheet: 16px;
