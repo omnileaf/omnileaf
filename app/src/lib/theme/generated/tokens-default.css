@@ -92,6 +92,14 @@
   --native-color-nav-item-hover: var(--sidebar-accent);
   --native-color-nav-item-pressed: var(--sidebar-accent);
   --native-color-nav-item-selected: var(--sidebar-selection);
+  --native-spacing-settings-sidebar: 17rem;
+  --native-spacing-sidebar-item: 2rem;
+  --native-spacing-sidebar-item-start: 0.5rem;
+  --native-spacing-sidebar-item-end: 0.5rem;
+  --native-spacing-sidebar-pad: 0.75rem;
+  --native-spacing-titlebar: var(--spacing-toolbar);
+  --native-spacing-titlebar-start: var(--spacing-pane);
+  --native-shadow-titlebar-rule: none;
   --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
   --native-color-grouped-ground: var(--background);

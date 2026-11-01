@@ -15,6 +15,15 @@ export const THEME_OPTION: Control = {
   find: (page) => page.getByRole("radio", { name: "Dark" }),
 };
 
+export const SETTINGS_SECTION: Control = {
+  name: "a settings section beside the page",
+  path: "/settings/library",
+  find: (page) =>
+    page
+      .getByRole("navigation", { name: "Settings sections" })
+      .getByRole("link", { name: "Appearance" }),
+};
+
 export const CONTROLS: readonly Control[] = [
   {
     name: "a filled button",
@@ -34,14 +43,7 @@ export const CONTROLS: readonly Control[] = [
     path: "/",
     find: (page) => destination(page, "Browse"),
   },
-  {
-    name: "a settings section beside the page",
-    path: "/settings/library",
-    find: (page) =>
-      page
-        .getByRole("navigation", { name: "Settings sections" })
-        .getByRole("link", { name: "Appearance" }),
-  },
+  SETTINGS_SECTION,
   THEME_OPTION,
   {
     name: "a language option",
