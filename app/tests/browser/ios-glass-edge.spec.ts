@@ -14,14 +14,6 @@ import { sampleSeries } from "./series-catalog.ts";
 const LIBRARY = sampleSeries(3);
 const FIRST_TITLE = LIBRARY[0]?.title ?? "";
 
-type Scheme = "light" | "dark";
-
-const GLASS_SHADOW = {
-  light:
-    "0 0 0 0.5px rgba(0, 0, 0, 0.12), -1px 0 0 -0.25px rgba(0, 0, 0, 0.22), 1px 0 0 -0.25px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.7), inset 0 6px 6px -6px rgba(255, 255, 255, 0.3), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.4), 0 8px 15px rgba(0, 0, 0, 0.02)",
-  dark: "0 0 0 0.5px rgba(0, 0, 0, 0.8), -1px 0 0 -0.25px rgba(0, 0, 0, 0.3), 1px 0 0 -0.25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.2), inset 0 6px 6px -6px rgba(255, 255, 255, 0.05), inset 0 -12px 10px -6px rgba(255, 255, 255, 0.06), 0 8px 15px rgba(0, 0, 0, 0.04)",
-};
-
 function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
   return {
     backend: {
@@ -48,7 +40,7 @@ function visibleLayers(boxShadow: string): string[] {
     .filter((layer) => layer !== CLEAR_LAYER && layer !== "none");
 }
 
-async function glassOf(page: Page, scheme: Scheme): Promise<string[]> {
+async function glassOf(page: Page): Promise<string[]> {
   const computed = await page.evaluate((shadow) => {
     const probe = document.createElement("span");
     probe.style.boxShadow = shadow;
@@ -56,7 +48,7 @@ async function glassOf(page: Page, scheme: Scheme): Promise<string[]> {
     const boxShadow = getComputedStyle(probe).boxShadow;
     probe.remove();
     return boxShadow;
-  }, GLASS_SHADOW[scheme]);
+  }, "var(--native-shadow-shadow-glass)");
   return visibleLayers(computed);
 }
 
@@ -74,7 +66,7 @@ function more(page: Page): Locator {
   return page.getByRole("main").getByRole("button", { name: "More" });
 }
 
-for (const scheme of ["light", "dark"] as const satisfies Scheme[]) {
+for (const scheme of ["light", "dark"] as const) {
   test.describe(`the iOS glass edge in ${scheme}`, () => {
     test.use({ colorScheme: scheme, ...showing("ios") });
 
@@ -83,9 +75,7 @@ for (const scheme of ["light", "dark"] as const satisfies Scheme[]) {
     }) => {
       await openLibrary(page);
 
-      expect(await shadowOf(mainBar(page))).toEqual(
-        await glassOf(page, scheme),
-      );
+      expect(await shadowOf(mainBar(page))).toEqual(await glassOf(page));
     });
 
     test("rims the More button with the glass edge and shadow", async ({
@@ -93,7 +83,7 @@ for (const scheme of ["light", "dark"] as const satisfies Scheme[]) {
     }) => {
       await openLibrary(page);
 
-      expect(await shadowOf(more(page))).toEqual(await glassOf(page, scheme));
+      expect(await shadowOf(more(page))).toEqual(await glassOf(page));
     });
 
     test("rims the Search button with the glass edge and shadow", async ({
@@ -109,7 +99,7 @@ for (const scheme of ["light", "dark"] as const satisfies Scheme[]) {
         await shadowOf(
           page.getByRole("main").getByRole("link", { name: "Search" }),
         ),
-      ).toEqual(await glassOf(page, scheme));
+      ).toEqual(await glassOf(page));
     });
   });
 

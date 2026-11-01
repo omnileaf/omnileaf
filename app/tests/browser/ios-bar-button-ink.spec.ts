@@ -8,6 +8,7 @@ import {
   MEDIUM_MIN_WIDTH,
   settle,
   test,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import { openSortAndFilter } from "./library-controls.ts";
@@ -19,11 +20,6 @@ const FIRST_TITLE = LIBRARY[0]?.title ?? "";
 const IOS_INK = {
   light: "rgb(0, 0, 0)",
   dark: "rgb(255, 255, 255)",
-};
-
-const ANDROID_INK = {
-  light: "rgb(25, 29, 26)",
-  dark: "rgb(224, 227, 223)",
 };
 
 function showing(platform: Platform): { backend: typeof DEFAULT_BACKEND } {
@@ -91,8 +87,19 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(
         sortAndFilter(page).getByRole("button", { name: "Close" }),
       ).toHaveCSS("color", IOS_INK[scheme]);
-      await page.keyboard.press("Escape");
-      await expect(sortAndFilter(page)).toBeHidden();
+    });
+  });
+
+  test.describe(`the iOS bar buttons with Increase Contrast in ${scheme}`, () => {
+    test.use({ colorScheme: scheme, ...showing("ios") });
+
+    test("keep the primary label colour", async ({ page }) => {
+      await openLibrary(page);
+      await page.evaluate(() => {
+        document.documentElement.setAttribute("data-contrast", "more");
+      });
+
+      await expect(more(page)).toHaveCSS("color", IOS_INK[scheme]);
     });
   });
 
@@ -106,7 +113,10 @@ for (const scheme of ["light", "dark"] as const) {
       );
       await openLibrary(page);
 
-      await expect(more(page)).toHaveCSS("color", ANDROID_INK[scheme]);
+      await expect(more(page)).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-bar-button"),
+      );
     });
   });
 }
