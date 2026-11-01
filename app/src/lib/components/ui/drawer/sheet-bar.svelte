@@ -14,6 +14,7 @@
     closeLabel,
     actionLabel,
     isActionPrimary = false,
+    isActionDisabled = false,
     onClose,
     onAction,
   }: {
@@ -23,6 +24,7 @@
     closeLabel: string;
     actionLabel?: string;
     isActionPrimary?: boolean;
+    isActionDisabled?: boolean;
     onClose: () => void;
     onAction?: () => void;
   } = $props();
@@ -58,6 +60,7 @@
     <Button
       type="button"
       look="header-control"
+      disabled={isActionDisabled}
       class={[
         "col-start-3 row-start-1 justify-self-end px-md ios:backdrop-blur-none",
         isActionPrimary &&
