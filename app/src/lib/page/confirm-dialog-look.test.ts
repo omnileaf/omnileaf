@@ -380,6 +380,17 @@ test("sets iOS's alert actions as 48 tall grey capsules with Delete in red words
   );
 });
 
+test("keeps the badge and Cancel first in a Mac confirmation that does not ask for the alert", async () => {
+  const alert = await openAlertOn("macos", DESKTOP_WINDOW);
+  const names = [...alert.querySelectorAll("button")].map((button) =>
+    button.textContent.trim(),
+  );
+
+  expect(alert.querySelector("img")).toBeNull();
+  expect(alert.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+  expect(names).toEqual(["Cancel", "Delete"]);
+});
+
 test("keeps today's alert on an iPad", async () => {
   const alert = await openAlertOn("ios", TABLET);
 

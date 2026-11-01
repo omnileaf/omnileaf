@@ -166,7 +166,7 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
     await tap(sheet(page).getByRole("button", { name: "Remove Sea" }));
     await tap(sheet(page).getByRole("button", { name: "Done", exact: true }));
 
-    await expect(sheet(page)).toHaveAttribute("data-state", "closed");
+    await expect(sheet(page)).toBeHidden();
     expect(applied).toEqual({
       categoriesAdded: ["c3"],
       categoriesRemoved: [],
@@ -181,7 +181,7 @@ test.describe("labelling series on an iPhone", { tag: "@native" }, () => {
 
     await tap(sheet(page).getByRole("button", { name: "Close", exact: true }));
 
-    await expect(sheet(page)).toHaveAttribute("data-state", "closed");
+    await expect(sheet(page)).toBeHidden();
     expect(applied).toBeUndefined();
   });
 });

@@ -15,6 +15,8 @@
   import { removalWording } from "./removal-wording";
 
   const NOTE_ICON_SIZE = 16;
+  const MAC_TEXT =
+    "macos:text-foreground macos:text-native-sheet-text macos:leading-native-sheet-text macos:tracking-native-sheet-text";
 
   let {
     targets,
@@ -64,6 +66,7 @@
   cancelLabel={m.remove_cancel()}
   {isBusy}
   iosPhoneLook="actionSheet"
+  macLook="alert"
   onConfirm={() => {
     onConfirm(deleteFiles);
   }}
@@ -72,16 +75,21 @@
   {#if wording !== undefined}
     <p>{wording.summary}</p>
     <p
-      class="flex items-start gap-sm text-footnote text-muted max-medium:text-label"
+      class={[
+        "flex items-start gap-sm text-footnote text-muted max-medium:text-label",
+        MAC_TEXT,
+      ]}
     >
       <ShieldCheck
         size={NOTE_ICON_SIZE}
         aria-hidden="true"
-        class="mbs-2xs shrink-0 text-accent"
+        class="mbs-2xs shrink-0 text-accent macos:hidden"
       />
       <span class="min-inline-none">{m.remove_kept_note()}</span>
     </p>
-    <label class="flex items-center gap-md">
+    <label
+      class="flex items-center gap-md macos:gap-native-dialog-accessory-gap"
+    >
       <Checkbox bind:checked={deleteFiles} />
       {m.remove_also_delete_files()}
     </label>

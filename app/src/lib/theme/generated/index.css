@@ -303,6 +303,10 @@
   --spacing-native-dialog: var(--native-spacing-dialog);
   --spacing-native-dialog-text-inline: var(--native-spacing-dialog-text-inline);
   --spacing-native-dialog-text-gap: var(--native-spacing-dialog-text-gap);
+  --spacing-native-dialog-top: var(--native-spacing-dialog-top);
+  --spacing-native-dialog-icon: var(--native-spacing-dialog-icon);
+  --spacing-native-dialog-actions-gap: var(--native-spacing-dialog-actions-gap);
+  --spacing-native-dialog-accessory-gap: var(--native-spacing-dialog-accessory-gap);
   --spacing-native-dialog-button: var(--native-spacing-dialog-button);
   --spacing-native-action-sheet: var(--native-spacing-action-sheet);
   --spacing-native-action-sheet-inset: var(--native-spacing-action-sheet-inset);

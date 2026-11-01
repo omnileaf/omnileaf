@@ -231,6 +231,10 @@
   --native-spacing-dialog: var(--spacing-dialog);
   --native-spacing-dialog-text-inline: 0px;
   --native-spacing-dialog-text-gap: var(--spacing-lg);
+  --native-spacing-dialog-top: var(--spacing-lg);
+  --native-spacing-dialog-icon: var(--spacing-app-icon);
+  --native-spacing-dialog-actions-gap: var(--spacing-sm);
+  --native-spacing-dialog-accessory-gap: var(--spacing-md);
   --native-spacing-dialog-button: var(--spacing-touch-button);
   --native-spacing-action-sheet: var(--spacing-dialog);
   --native-spacing-action-sheet-inset: 0px;
