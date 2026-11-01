@@ -880,8 +880,6 @@ export const TOKEN_THEME = {
     "native-search-field",
     "native-segment",
     "native-series-title",
-    "native-sheet-text",
-    "native-sheet-title",
     "native-tab",
     "native-tab-label",
     "native-title-bar-title",

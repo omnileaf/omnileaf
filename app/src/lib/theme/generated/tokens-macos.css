@@ -70,12 +70,10 @@
   --native-text-sheet-title: calc(0.8125rem * var(--text-scale));
   --native-leading-sheet-title: calc(16 / 13);
   --native-weight-sheet-title: 700;
-  --native-tracking-sheet-title: -0.08px;
   --native-text-sheet-text: calc(0.6875rem * var(--text-scale));
   --native-leading-sheet-text: calc(14 / 11);
-  --native-tracking-sheet-text: 0.06px;
   --native-spacing-sheet-top: calc(var(--spacing-toolbar) + 12px);
-  --native-spacing-sheet-limit: min(45rem, calc(100% - var(--native-spacing-sheet-top) - 0.75rem));
+  --native-spacing-sheet-limit: min(700px, calc(100% - var(--native-spacing-sheet-top) - 0.75rem));
 }
 
 :root[data-platform="macos"],
