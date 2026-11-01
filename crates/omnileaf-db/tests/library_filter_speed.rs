@@ -73,6 +73,7 @@ const BRIEF_BOOK_PAGES: u32 = 10;
 const QUICK_PAGES_LEFT: u32 = 60;
 const BRIEF_PAGES_LEFT: u32 = 120;
 const PAGE_SIZE: u16 = 100;
+const MISSING_SINCE_MS: i64 = 1_790_000_000_000;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
 /// A tag on a tenth or a fifth of the library is too common to sort only its series and too rare to stop soon in walking past the rest, so its page is the slowest a tag filter reads.
@@ -154,6 +155,51 @@ async fn reads_each_sorted_and_filtered_page_of_10_000_series_within_2_ms_at_p95
             if !outcome.is_within_budget() {
                 over_budget.push(format!("{listing:?}: {outcome}"));
             }
+        }
+    }
+
+    assert_eq!(over_budget, Vec::<String>::new());
+}
+
+#[tokio::test]
+#[expect(
+    clippy::print_stderr,
+    reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
+)]
+#[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
+async fn reads_each_sorted_page_of_10_000_series_in_a_missing_folder_within_2_ms_at_p95() {
+    let trial = trial_of("a sorted page of 100 from 10,000 series in a missing folder");
+    let folder = ScratchFolder::new("missing-folder-page-speed");
+    let database = Database::open(&library_config(&folder)).unwrap();
+    add_generated_library(&database).await;
+    database
+        .write(|transaction| {
+            transaction.execute(
+                "UPDATE library_root SET unavailable_since_ms = ?1, shows_while_missing = 1",
+                [MISSING_SINCE_MS],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    let mut over_budget = Vec::new();
+    for sort in SORTS {
+        let listing = SeriesListing {
+            sort,
+            filter: SeriesFilter::NONE,
+        };
+        let outcome = trial
+            .run(
+                async |_| None,
+                async |after| {
+                    *after = read_page(&database, listing.clone(), after.take()).await;
+                },
+            )
+            .await;
+        eprintln!("{listing:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{listing:?}: {outcome}"));
         }
     }
 
