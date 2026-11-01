@@ -28,3 +28,10 @@ export function sectionOf(pathname: string): Section {
     ) ?? "library"
   );
 }
+
+const SECTION_ROOT_ROUTE_IDS: readonly (string | null)[] =
+  Object.values(SECTION_ROUTE_IDS);
+
+export function isSectionRoot(routeId: string | null): boolean {
+  return SECTION_ROOT_ROUTE_IDS.includes(routeId);
+}

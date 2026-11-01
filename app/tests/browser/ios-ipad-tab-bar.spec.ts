@@ -106,6 +106,25 @@ test.describe("History on an iPad", () => {
   });
 });
 
+test.describe("a page inside a section on an iPad", () => {
+  testOnlyInItsWebview("ios");
+  test.use({ backend: onPlatform("ios").backend });
+
+  test("leaves the search field clear of the tab bar", async ({ page }) => {
+    test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "iPads only");
+    await page.goto("/search");
+
+    const field = page.getByRole("combobox", { name: "Search your library" });
+    await expect(field).toBeVisible();
+    const { width, height } = await boxOf(field);
+
+    await expect(mainBar(page)).toHaveCount(0);
+    await field.click({ position: { x: width / 2, y: height / 2 } });
+    await expect(page).toHaveURL(/\/search/);
+    await expect(field).toBeFocused();
+  });
+});
+
 test.describe("scrolling the library on an iPad", () => {
   testOnlyInItsWebview("ios");
   test.use({
