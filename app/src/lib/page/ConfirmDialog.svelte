@@ -10,6 +10,7 @@
     type AlertTone,
     CONTENT_DIALOG_PANEL,
     type ConfirmPhoneLook,
+    type IosPhoneConfirmLook,
     opensAsAlert,
     TODAYS_ALERT_LOOK,
   } from "#lib/components/ui/dialog/alert-look.ts";
@@ -39,6 +40,7 @@
     onConfirm,
     onCancel,
     phoneLook = "sheet",
+    iosPhoneLook,
     tone = "danger",
     isBusy = false,
     children,
@@ -51,14 +53,17 @@
     onConfirm: () => void;
     onCancel: () => void;
     phoneLook?: ConfirmPhoneLook;
+    iosPhoneLook?: IosPhoneConfirmLook | undefined;
     tone?: AlertTone;
     isBusy?: boolean;
     children: Snippet;
   } = $props();
 
-  const isAlert = $derived(opensAsAlert(currentPlatform(), phoneLook));
+  const isAlert = $derived(
+    opensAsAlert(currentPlatform(), phoneLook, iosPhoneLook),
+  );
   const alert = $derived(
-    isAlert ? alertLook(currentPlatform()) : TODAYS_ALERT_LOOK,
+    isAlert ? alertLook(currentPlatform(), iosPhoneLook) : TODAYS_ALERT_LOOK,
   );
 
   const buttons: Record<AlertAction, HTMLButtonElement | null> = $state({
