@@ -70,6 +70,11 @@ impl StreamedCopies {
 
 #[cfg(all(test, unix))]
 mod tests {
+    #![expect(
+        clippy::unwrap_used,
+        reason = "each test builds its own scratch files, so a failed set-up should stop it"
+    )]
+
     use std::{io::Write, os::fd::OwnedFd, thread};
 
     use omnileaf_testkit::ScratchFolder;
@@ -124,9 +129,9 @@ mod tests {
             ..StreamedCopies::new(folder.path().to_path_buf())
         };
 
-        let copied = copies.seekable(streamed(BOOK));
+        let refused = copies.seekable(streamed(BOOK));
 
-        assert_eq!(copied.unwrap_err().kind(), io::ErrorKind::FileTooLarge);
+        assert_eq!(refused.unwrap_err().kind(), io::ErrorKind::FileTooLarge);
     }
 
     #[test]

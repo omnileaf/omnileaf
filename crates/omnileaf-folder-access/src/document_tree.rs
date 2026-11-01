@@ -262,13 +262,16 @@ fn is_one_name(name: &str) -> bool {
 mod tests {
     use std::{
         fs,
-        io::{Read, Seek, SeekFrom, Write},
+        io::{Read, Write},
         sync::{
             Arc,
             atomic::{AtomicBool, AtomicUsize, Ordering},
         },
         thread,
     };
+
+    #[cfg(unix)]
+    use std::io::{Seek, SeekFrom};
 
     use omnileaf_testkit::ScratchFolder;
 
