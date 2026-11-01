@@ -101,7 +101,7 @@
           >
             {#if isChosen}
               <span
-                class="rounded-full bg-accent block-radio-dot inline-radio-dot"
+                class="rounded-full bg-accent block-radio-dot inline-radio-dot android:bg-native-button-primary"
               ></span>
             {/if}
           </span>
