@@ -89,8 +89,11 @@
   }
 
   async function chooseFromClick(event: MouseEvent): Promise<void> {
+    if (!picksOnClick || selection === undefined || event.defaultPrevented) {
+      return;
+    }
     event.preventDefault();
-    selection?.chooseOnly(id);
+    selection.chooseOnly(id);
     await tick();
     element?.focus();
   }
@@ -163,9 +166,7 @@
         return;
       }
       onclick?.(event);
-      if (picksOnClick && selection !== undefined && !event.defaultPrevented) {
-        void chooseFromClick(event);
-      }
+      void chooseFromClick(event);
     }}
   >
     {@render children()}
