@@ -79,6 +79,7 @@
   --native-shadow-titlebar-rule: none;
   --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
+  --native-color-window: var(--background);
   --native-radius-group: 0px;
   --native-radius-card: 12px;
   --native-spacing-row: 56px;

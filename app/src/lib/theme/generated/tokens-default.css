@@ -102,6 +102,7 @@
   --native-shadow-titlebar-rule: none;
   --native-color-on-nav-item: var(--sidebar-foreground);
   --native-color-nav-indicator: var(--color-accent);
+  --native-color-window: var(--background);
   --native-color-grouped-ground: var(--background);
   --native-color-group: var(--card);
   --native-radius-group: var(--radius-list);
