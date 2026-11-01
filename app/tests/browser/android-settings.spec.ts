@@ -303,25 +303,37 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
   });
 });
 
-test.describe("Language on an Android phone", { tag: "@native" }, () => {
+test.describe("Storage on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's list rows");
   });
 
-  test("lists the languages as radio rows, the system one first with its language under it", async ({
+  test("sets the cache rows flat, a 16px name over a 14px line", async ({
     page,
   }) => {
-    await page.goto("/settings/general/language");
-    const system = page.getByRole("radio", { name: /Use the system language/ });
-    const mark = system.locator("[data-radio-mark]");
+    await page.goto("/settings/storage");
+    const name = page.getByText("Cached pages", { exact: true });
+    const line = page.getByText(/^1\.2 GB/);
 
-    await expect(system).toBeChecked();
-    await expect(mark).toHaveCSS("border-top-width", "2px");
-    expect((await boxOf(mark)).width).toBeCloseTo(20, 0);
-    await expect(system.getByText("Use the system language")).toHaveCSS(
-      "font-weight",
-      "400",
+    await expect(name).toHaveCSS("font-size", "16px");
+    await expect(name).toHaveCSS("font-weight", "400");
+    await expect(line).toHaveCSS("font-size", "14px");
+    await expect(line).toHaveCSS("line-height", "20px");
+    await expect(name.locator("xpath=ancestor::section[1]")).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
     );
-    await expect(system.locator("svg:visible")).toHaveCount(0);
+  });
+
+  test("draws Clear as a tonal button in the soft accent", async ({ page }) => {
+    await page.goto("/settings/storage");
+    const clear = page.getByRole("button", { name: "Clear cached pages" });
+
+    await expect(clear).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-accent-soft"),
+    );
+    await expect(clear).toHaveCSS("border-top-width", "0px");
+    await expect(clear).toHaveCSS("font-size", "14px");
   });
 });
