@@ -8,7 +8,7 @@
 
   const ICON_SIZE = 20;
   const COUNT_BADGE =
-    "absolute -inset-e-xs -inset-bs-xs inline-flex items-center justify-center rounded-full bg-native-bar-badge px-native-bar-badge-inline text-caption font-native-bar-badge text-native-on-bar-badge tabular-nums block-native-bar-badge min-inline-native-bar-badge";
+    "absolute -inset-e-native-bar-badge-offset -inset-bs-native-bar-badge-offset inline-flex items-center justify-center rounded-full bg-native-bar-badge px-native-bar-badge-inline text-caption font-native-bar-badge text-native-on-bar-badge tabular-nums block-native-bar-badge min-inline-native-bar-badge";
 
   let {
     count,
@@ -25,7 +25,7 @@
   label={m.attention_count_label({ count })}
   aria-haspopup="dialog"
   aria-expanded={isOpen}
-  class="relative"
+  class="relative text-on-warning aria-expanded:opacity-50"
   onclick={onOpen}
 >
   <TriangleAlert aria-hidden="true" size={ICON_SIZE} />

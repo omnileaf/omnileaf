@@ -30,12 +30,13 @@ const COMICS = {
 } as MissingFolder;
 
 let missing: MissingFolder[] = [];
+let shelf = LIBRARY;
 
 function backendOn(platform: "ios" | "android") {
   return {
     ...onPlatform(platform).backend,
-    librarySeries: pagedSeries(() => LIBRARY),
-    librarySeriesCount: () => LIBRARY.length,
+    librarySeries: pagedSeries(() => shelf),
+    librarySeriesCount: () => shelf.length,
     missingLibraryFolders: () => missing,
     libraryHiddenSeriesCount: () => (missing.length > 0 ? 41 : 0),
   };
@@ -49,8 +50,16 @@ function topBar(page: Page): Locator {
   return page.locator("[data-title-bar]");
 }
 
+async function tap(target: Locator): Promise<void> {
+  const touch = { pointerType: "touch", pointerId: 7, isPrimary: true };
+  await target.dispatchEvent("pointerdown", touch);
+  await target.dispatchEvent("pointerup", touch);
+  await target.dispatchEvent("click");
+}
+
 test.beforeEach(() => {
   missing = [COMICS];
+  shelf = LIBRARY;
 });
 
 test.describe("Needs attention on an iPhone", () => {
@@ -66,12 +75,10 @@ test.describe("Needs attention on an iPhone", () => {
       topBar(page).getByRole("button", { name: "More" }),
     ).toBeVisible();
 
-    const beside = page
-      .getByRole("heading", { level: 1, name: "Library" })
-      .locator("..")
-      .getByRole("button");
-
-    await expect(beside).toHaveCount(0);
+    await expect(attention(page)).toHaveCount(1);
+    await expect(
+      topBar(page).getByRole("button", { name: /^Needs attention/ }),
+    ).toHaveCount(1);
   });
 
   test("shows a warning button in the top bar, named for what it is and how many", async ({
@@ -101,7 +108,7 @@ test.describe("Needs attention on an iPhone", () => {
     );
   });
 
-  test("sits in the glass circle of its neighbours, before Search", async ({
+  test("sits in the glass circle of its neighbours, on the leading side of the bar", async ({
     page,
   }) => {
     await page.goto("/");
@@ -110,7 +117,11 @@ test.describe("Needs attention on an iPhone", () => {
     });
     const search = topBar(page).getByRole("link", { name: /^Search/ });
 
-    expect((await boxOf(button)).x).toBeLessThan((await boxOf(search)).x);
+    const more = topBar(page).getByRole("button", { name: "More" });
+    const buttonBox = await boxOf(button);
+    expect(buttonBox.x).toBeLessThan(viewportOf(page).width / 2);
+    expect(buttonBox.x).toBeLessThan((await boxOf(search)).x);
+    expect(buttonBox.x).toBeLessThan((await boxOf(more)).x);
     await expect(button).toHaveCSS(
       "border-radius",
       await search.evaluate((link) => getComputedStyle(link).borderRadius),
@@ -140,16 +151,58 @@ test.describe("Needs attention on an iPhone", () => {
     await expect(button).toHaveCSS("outline-style", "solid");
   });
 
+  test("takes the warning colour of the board and dims while its list is open", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const button = topBar(page).getByRole("button", {
+      name: /^Needs attention/,
+    });
+
+    await expect(button).toHaveCSS(
+      "color",
+      await tokenColour(page, "--warning-foreground"),
+    );
+    await expect(button).toHaveCSS("opacity", "1");
+
+    await tap(button);
+
+    await expect(topBar(page).locator("[aria-expanded=true]")).toHaveCSS(
+      "opacity",
+      "0.5",
+    );
+  });
+
+  test("puts the count 5 points out from the corner of the button", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const badge = topBar(page)
+      .getByRole("button", { name: /^Needs attention/ })
+      .locator("[data-slot=badge]");
+
+    await expect(badge).toHaveCSS("top", "-5px");
+    await expect(badge).toHaveCSS("right", "-5px");
+  });
+
   test("opens the list of what needs attention", async ({ page }) => {
     await page.goto("/");
 
-    await topBar(page)
-      .getByRole("button", { name: /^Needs attention/ })
-      .click();
+    await tap(topBar(page).getByRole("button", { name: /^Needs attention/ }));
+
+    const list = page.getByRole("dialog", { name: "Needs attention" });
+    await expect(list).toHaveAttribute("data-state", "open");
+    await expect(list).toContainText("Comics isn’t there");
+  });
+
+  test("stays in the bar when the library is empty", async ({ page }) => {
+    shelf = [];
+    await page.goto("/");
 
     await expect(
-      page.getByRole("dialog", { name: "Needs attention" }),
-    ).toContainText("Comics isn’t there");
+      topBar(page).getByRole("button", { name: /^Needs attention/ }),
+    ).toBeVisible();
+    await expect(attention(page)).toHaveCount(1);
   });
 
   for (const theme of ["light", "dark"] as const) {
@@ -200,6 +253,13 @@ test.describe("Needs attention on an Android phone", () => {
     test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "a phone's width");
     await page.goto("/");
 
-    await expect(attention(page).locator("[data-slot=badge]")).toHaveText("1");
+    const badge = attention(page).locator("[data-slot=badge]");
+
+    await expect(badge).toHaveText("1");
+    await expect(badge).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-danger-fill"),
+    );
+    await expect(badge).toHaveCSS("top", "-4px");
   });
 });

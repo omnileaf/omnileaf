@@ -945,6 +945,16 @@
   />
 {/snippet}
 
+{#snippet attentionBarButton()}
+  <NeedsAttentionBarButton
+    count={needsAttention.problems.length}
+    isOpen={needsAttention.isShown}
+    onOpen={() => {
+      needsAttention.show();
+    }}
+  />
+{/snippet}
+
 {#snippet pickedCount()}
   {m.library_selected_of({
     count: selection.count,
@@ -1046,6 +1056,7 @@
     attention={showsAttentionDot && !showsAttentionInBar
       ? attentionDot
       : undefined}
+    leading={showsAttentionDot && isIosPhone ? attentionBarButton : undefined}
     count={isMac && selection.isSelecting
       ? pickedCount
       : showsItemCounts && seriesCount.count !== undefined
@@ -1062,15 +1073,7 @@
         />
       {/if}
       {#if showsLibraryTools && libraryView !== undefined && chosenListing !== undefined}
-        {#if showsAttentionDot && isIosPhone}
-          <NeedsAttentionBarButton
-            count={needsAttention.problems.length}
-            isOpen={needsAttention.isShown}
-            onOpen={() => {
-              needsAttention.show();
-            }}
-          />
-        {:else if showsAttentionDot && androidPhone.isOn}
+        {#if showsAttentionDot && androidPhone.isOn}
           <NeedsAttentionDot
             count={needsAttention.problems.length}
             isOpen={needsAttention.isShown}

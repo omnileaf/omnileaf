@@ -1502,6 +1502,13 @@
   }
 }
 
+@utility grid-cols-folding-bar-leading {
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(
+      max-content,
+      1fr
+    );
+}
+
 @utility grid-cols-collection-heading {
   grid-template-columns: auto auto minmax(0, 1fr) max-content;
 }
