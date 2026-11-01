@@ -1497,7 +1497,16 @@ test.describe(
       await expect(
         shown.getByRole("link", { name: "Settings › Library" }),
       ).toBeVisible();
-      const [rowBox, titleBox] = await Promise.all([boxOf(row), boxOf(title)]);
+      await expect(mark).toHaveCSS("opacity", "0.5");
+      const [rowBox, titleBox, markBox] = await Promise.all([
+        boxOf(row),
+        boxOf(title),
+        boxOf(mark),
+      ]);
+      expect(rowBox.x + rowBox.width - (markBox.x + markBox.width)).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-end"),
+        0,
+      );
       expect(titleBox.x - rowBox.x).toBeCloseTo(
         await lengthOf(page, "--native-spacing-row-start"),
         0,
