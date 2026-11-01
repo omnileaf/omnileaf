@@ -32,7 +32,7 @@
     labelledBy={id}
     describedBy="{id}-hint"
     size="small"
-    class="self-start"
+    hasEqualColumns
     {onChoose}
   />
 </div>

@@ -57,6 +57,7 @@
     describedBy={hintId}
     size="small"
     hasWindowsLook
+    hasEqualColumns
     {onChoose}
     class={android.isOn
       ? "flex-none max-inline-full"

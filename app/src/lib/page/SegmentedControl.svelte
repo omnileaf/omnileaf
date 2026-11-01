@@ -25,6 +25,7 @@
     readonly isFullWidth?: boolean;
     readonly isSetupRow?: boolean;
     readonly hasWindowsLook?: boolean;
+    readonly hasEqualColumns?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
@@ -76,6 +77,11 @@
       "rounded-native-button-small first-of-type:rounded-s-native-button-small last-of-type:rounded-e-native-button-small",
   };
 
+  const EQUAL_COLUMNS = {
+    track: "grid-flow-col auto-cols-fr",
+    segment: "min-inline-none",
+  };
+
   const WINDOWS_LOOK = {
     track:
       "gap-px rounded-windows-control border border-windows-stroke bg-native-segmented-track",
@@ -98,6 +104,7 @@
     isFullWidth = false,
     isSetupRow = false,
     hasWindowsLook = false,
+    hasEqualColumns = false,
     onChoose,
     onFit,
     class: className,
@@ -111,6 +118,7 @@
   const isMacos = platform === "macos";
   const isMacosSmall = $derived(isMacos && size === "small");
   const usesNativeTokens = isNative || isMacos;
+  const hasEqualMacosColumns = $derived(isMacos && hasEqualColumns);
   const isWindows = $derived(
     platform === "windows" &&
       (hasWindowsLook || (size === "regular" && isSetupRow)),
@@ -126,6 +134,13 @@
       ? NATIVE_LOOK.face
       : look.face;
   });
+
+  function onRowOf(): string {
+    if (hasEqualMacosColumns) {
+      return EQUAL_COLUMNS.segment;
+    }
+    return isMacosSmall ? "flex-auto" : look.onRow;
+  }
 
   let track = $state<HTMLElement | null>(null);
   let ruler: HTMLElement | undefined = $state();
@@ -163,7 +178,8 @@
     : `grid-template-columns: repeat(${String(columns)}, minmax(0, 1fr))`}
   class={[
     isCrowded ? "invisible absolute inset-x-none" : "relative",
-    isOneRow ? "flex" : "grid",
+    isOneRow && !hasEqualMacosColumns ? "flex" : "grid",
+    hasEqualMacosColumns && isOneRow && EQUAL_COLUMNS.track,
     usesNativeTokens
       ? [NATIVE_LOOK.track, isMacosSmall && MACOS_SMALL.track]
       : isWindows
@@ -190,7 +206,7 @@
             : look.segment,
         face,
         isOneRow
-          ? [isMacosSmall ? "flex-auto" : look.onRow, "text-nowrap"]
+          ? [onRowOf(), "text-nowrap"]
           : "min-inline-none touch:min-block-touch-target",
         usesNativeTokens
           ? chosen === option

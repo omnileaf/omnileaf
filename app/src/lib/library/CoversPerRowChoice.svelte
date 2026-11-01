@@ -63,6 +63,7 @@
       labelledBy={labelId}
       size="small"
       hasWindowsLook
+      hasEqualColumns
       onChoose={(choice: Choice) => {
         onFit(choice === "auto");
       }}
