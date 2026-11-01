@@ -41,6 +41,9 @@
     onDelete?: (() => void) | undefined;
   } = $props();
 
+  const deleteTone = $derived(
+    isOnPhone ? "text-native-on-button-destructive" : "text-danger",
+  );
   const action = $derived(
     isOnPhone ? `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}` : ACTION,
   );
@@ -159,7 +162,7 @@
         <Button
           type="button"
           look="row"
-          class={[action, "text-danger"]}
+          class={[action, deleteTone]}
           onclick={() => {
             close();
             onDelete();
