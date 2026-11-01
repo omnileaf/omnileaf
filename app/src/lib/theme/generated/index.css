@@ -518,6 +518,8 @@
   --spacing-native-group-inset: var(--native-spacing-group-inset);
   --spacing-native-radio-stack: var(--native-spacing-radio-stack);
   --spacing-native-radio-words-gap: var(--native-spacing-radio-words-gap);
+  --spacing-native-group-row: var(--native-spacing-group-row);
+  --color-native-group-row-pressed: var(--native-color-group-row-pressed);
   --spacing-native-settings-page: var(--native-spacing-settings-page);
   --text-native-list-sub: var(--native-text-list-sub);
   --leading-native-list-sub: var(--native-leading-list-sub);

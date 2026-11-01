@@ -435,6 +435,8 @@
   --native-spacing-group-inset: 0px;
   --native-spacing-radio-stack: 0px;
   --native-spacing-radio-words-gap: 0.75rem;
+  --native-spacing-group-row: 0px;
+  --native-color-group-row-pressed: transparent;
   --native-spacing-settings-page: 45rem;
   --native-text-list-sub: var(--text-caption);
   --native-leading-list-sub: var(--text-caption--line-height);

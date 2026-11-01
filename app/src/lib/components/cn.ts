@@ -430,6 +430,7 @@ export const TOKEN_THEME = {
     "native-group-head-below",
     "native-group-head-end",
     "native-group-inset",
+    "native-group-row",
     "native-hairline",
     "native-icon",
     "native-icon-button-inset",
