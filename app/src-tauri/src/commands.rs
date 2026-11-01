@@ -34,7 +34,7 @@ use crate::{
     folder_picker::pick_folder,
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
-    home_folder::{self, ChosenHome, ChosenHomeFolder},
+    home_folder::{self, ChosenHome, ChosenHomeFolder, HomeMoved},
     icon_actions::{self, IconActionsMenu},
     ipc_error::IpcError,
     library_events::{LibraryChanged, ReadingSaved},
@@ -1203,18 +1203,27 @@ fn found_library(library: State<'_, Library>) -> Option<FoundLibrary> {
 async fn choose_home_folder(
     window: Window,
     app: AppHandle,
+    library: State<'_, Library>,
 ) -> Result<Option<ChosenHomeFolder>, IpcError> {
-    let Some(setting) = home_folder::setting(&app) else {
+    let setting = home_folder::setting(&app);
+    if setting.is_none() && !cfg!(target_os = "android") {
         return Ok(None);
-    };
+    }
     let picked = off_the_runtime(move || pick_folder(&window)).await?;
-    let Some(RootLocator::Path(folder)) = picked else {
-        return Ok(None);
-    };
-    let choice = setting.choose(&folder).await?;
-    let chosen = ChosenHomeFolder::new(&folder, choice);
-    app.state::<ChosenHome>().remember(folder);
-    Ok(Some(chosen))
+    match (picked, setting) {
+        (Some(RootLocator::Path(folder)), Some(setting)) => {
+            let choice = setting.choose(&folder).await?;
+            let chosen = ChosenHomeFolder::new(&folder, choice);
+            app.state::<ChosenHome>().remember(folder);
+            Ok(Some(chosen))
+        }
+        (Some(RootLocator::AndroidTree(tree)), _) => {
+            home_folder::choose_tree(&library, &app.state::<ChosenHome>(), tree)
+                .await
+                .map(Some)
+        }
+        _ => Ok(None),
+    }
 }
 
 #[tauri::command]
@@ -1228,11 +1237,17 @@ async fn use_found_library(app: AppHandle) -> Result<(), IpcError> {
 
 #[tauri::command]
 #[specta::specta]
-async fn move_home_folder(app: AppHandle) -> Result<(), IpcError> {
+async fn move_home_folder(
+    app: AppHandle,
+    library: State<'_, Library>,
+) -> Result<HomeMoved, IpcError> {
+    if app.state::<ChosenHome>().tree().is_some() {
+        return home_folder::move_to_chosen_tree(&library, &app.state::<ChosenHome>()).await;
+    }
     let (setting, chosen) = home_folder::chosen(&app)?;
     setting.move_to(&chosen).await?;
     app.request_restart();
-    Ok(())
+    Ok(HomeMoved::Restarting)
 }
 
 #[tauri::command]

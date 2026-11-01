@@ -178,7 +178,7 @@ export const commands = {
 	choice: HomeChoice,
 } | null, IpcError>(__TAURI_INVOKE("choose_home_folder")),
 	useFoundLibrary: () => typedError<null, IpcError>(__TAURI_INVOKE("use_found_library")),
-	moveHomeFolder: () => typedError<null, IpcError>(__TAURI_INVOKE("move_home_folder")),
+	moveHomeFolder: () => typedError<HomeMoved, IpcError>(__TAURI_INVOKE("move_home_folder")),
 	firstLaunchFinished: () => typedError<boolean, IpcError>(__TAURI_INVOKE("first_launch_finished")),
 	finishFirstLaunch: () => typedError<null, IpcError>(__TAURI_INVOKE("finish_first_launch")),
 	setAppLanguage: (language: string) => typedError<null, IpcError>(__TAURI_INVOKE("set_app_language", { language })),
@@ -543,6 +543,8 @@ export type HistorySeries = {
 export type HomeArrival = "moved" | "moveFailed";
 
 export type HomeChoice = { kind: "current" } | { kind: "found"; library: FoundLibrary } | { kind: "foundFromANewerVersion" } | { kind: "overlapsHome" } | { kind: "empty" };
+
+export type HomeMoved = { kind: "restarting" } | { kind: "moved"; folder: string & { readonly __brand: "FolderId" } };
 
 export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
 

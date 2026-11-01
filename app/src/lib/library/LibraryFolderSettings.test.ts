@@ -98,11 +98,16 @@ class HomeCommandsAsked {
     },
     move: () => {
       this.moves += 1;
-      return Promise.resolve(this.#acted());
+      const acted = this.#acted();
+      return Promise.resolve(
+        acted.status === "ok"
+          ? { status: "ok", data: { kind: "restarting" } }
+          : acted,
+      );
     },
   };
 
-  #acted(): Awaited<ReturnType<HomeCommands["move"]>> {
+  #acted(): Awaited<ReturnType<HomeCommands["use"]>> {
     return this.failsToAct
       ? {
           status: "error",

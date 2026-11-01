@@ -202,7 +202,7 @@ function changingHomeOn(platform: Platform): FakeBackend {
     chooseHomeFolder: () => homeChanges.chosen.shift() ?? null,
     moveHomeFolder: () => {
       homeChanges.moves += 1;
-      return null;
+      return { kind: "restarting" };
     },
     useFoundLibrary: async () => {
       homeChanges.uses += 1;
