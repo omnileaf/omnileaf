@@ -30,6 +30,7 @@
   const titleId = `${cardId}-title`;
   const pathId = `${cardId}-path`;
   const isSetupPage = usesSetupPages(currentPlatform());
+  const isAndroid = currentPlatform() === "android";
 </script>
 
 {#if isSetupPage}
@@ -66,20 +67,33 @@
   >
     <div class="relative flex items-center gap-md p-md ps-home-card">
       <span
-        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile"
+        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile android:bg-transparent"
       >
         <Folder size={ICON_SIZE} aria-hidden="true" />
       </span>
-      <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">
-        {title}
-      </h2>
+      {#if isAndroid}
+        <div class="flex flex-1 flex-col gap-2xs min-inline-none">
+          <h2 id={titleId} class="text-body font-regular">{title}</h2>
+          <code
+            id={pathId}
+            class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-pre-wrap text-muted"
+            >{location}</code
+          >
+        </div>
+      {:else}
+        <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">
+          {title}
+        </h2>
+      {/if}
       {@render change?.(titleId, pathId)}
     </div>
-    <code
-      id={pathId}
-      class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap android:max-medium:rounded-none android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:px-none android:max-medium:text-native-row-subtitle/native-row-subtitle android:max-medium:text-muted"
-      >{location}</code
-    >
+    {#if !isAndroid}
+      <code
+        id={pathId}
+        class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
+        >{location}</code
+      >
+    {/if}
     <dl
       class="grid grid-cols-details divide-y divide-border border-bs border-border android:max-medium:flex android:max-medium:flex-col"
     >

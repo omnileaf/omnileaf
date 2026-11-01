@@ -90,8 +90,8 @@
       {#snippet change(titleId, pathId)}
         {#if canChange}
           <ChangeHomeButton {platform} {isBusy} onclick={onChange} />
-        {:else if platform !== "ios"}
-          <ChangeHomeRow {titleId} {pathId} />
+        {:else if platform === "android"}
+          <ChangeHomeRow {titleId} {pathId} {isBusy} onclick={onChange} />
         {/if}
       {/snippet}
     </HomeCard>

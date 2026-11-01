@@ -1,29 +1,36 @@
 <script lang="ts">
-  import { ChevronRight } from "@lucide/svelte";
-
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
-  import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import { m } from "#lib/paraglide/messages.js";
 
-  let { titleId, pathId }: { titleId: string; pathId: string } = $props();
+  let {
+    ref = $bindable(null),
+    titleId,
+    pathId,
+    isBusy,
+    onclick,
+  }: {
+    ref?: HTMLButtonElement | null;
+    titleId: string;
+    pathId: string;
+    isBusy: boolean;
+    onclick: () => void;
+  } = $props();
 
-  const CHEVRON_SIZE = 16;
+  function change(): void {
+    if (!isBusy) {
+      onclick();
+    }
+  }
 </script>
 
-<Tooltip
-  label={m.reader_coming_soon({ feature: m.first_launch_home_change() })}
+<button
+  bind:this={ref}
   type="button"
-  aria-disabled="true"
+  aria-disabled={isBusy || undefined}
   aria-labelledby={titleId}
   aria-describedby={pathId}
   class={[
-    "absolute inset-none flex items-center justify-end pe-md",
+    "absolute inset-none transition-control not-aria-disabled:hover:bg-hover not-aria-disabled:active:bg-pressed",
     ROW_FOCUS_RING,
   ]}
->
-  <ChevronRight
-    size={CHEVRON_SIZE}
-    aria-hidden="true"
-    class="text-muted rtl:-scale-x-100"
-  />
-</Tooltip>
+  onclick={change}
+></button>
