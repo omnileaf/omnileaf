@@ -1460,6 +1460,9 @@ impl Library {
     }
 
     pub(crate) fn book_file(&self, book: &BookToRead) -> Option<FileInStorage> {
+        if book.file == BookFileId::UNSTORED {
+            return self.opened_file_in_storage(book.id);
+        }
         self.file_in(&book.root, &book.location)
     }
 
