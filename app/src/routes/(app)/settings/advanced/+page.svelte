@@ -70,8 +70,8 @@
   <section
     aria-labelledby={undoHeadingId}
     class={[
-      "flex flex-col overflow-hidden rounded-card border border-border bg-card",
-      !android.isOn && "divide-y divide-border",
+      "flex flex-col rounded-card border border-border bg-card",
+      !android.isOn && "divide-y divide-border overflow-hidden",
       GROUP_PLATE,
     ]}
   >
