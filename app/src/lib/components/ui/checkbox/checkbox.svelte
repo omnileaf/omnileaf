@@ -13,7 +13,7 @@
   const DASH_SIZE = 14;
   const DASH_STROKE = 3;
   const MACOS_CHECKBOX =
-    "macos:rounded-native-checkbox macos:border-0 macos:bg-native-radio-field macos:shadow-native-radio-rim macos:active:bg-native-control-fill-pressed macos:disabled:opacity-50 macos:aria-checked:bg-accent macos:aria-checked:shadow-none macos:aria-checked:active:bg-accent macos:aria-checked:active:shadow-native-radio-pressed-on";
+    "macos:rounded-native-checkbox macos:border-0 macos:bg-native-radio-field macos:shadow-native-radio-rim macos:active:bg-native-control-fill-pressed macos:disabled:opacity-50 macos:aria-checked:bg-accent macos:aria-checked:shadow-none macos:aria-checked:active:bg-accent macos:aria-checked:active:shadow-native-radio-pressed-on macos:inactive:aria-checked:bg-native-check-inactive-fill macos:inactive:aria-checked:text-native-on-check-inactive macos:inactive:aria-[checked=mixed]:bg-native-check-inactive-fill macos:inactive:aria-[checked=mixed]:text-native-on-check-inactive";
 
   let {
     ref = $bindable(null),
