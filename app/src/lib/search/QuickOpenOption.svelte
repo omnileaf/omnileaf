@@ -119,7 +119,7 @@
     isActive &&
       (isMac
         ? "bg-native-menu-item-hover text-native-on-menu"
-        : "bg-accent-soft"),
+        : "bg-accent-soft android:bg-foreground/12"),
   ]}
   onSelect={onChoose}
 >
