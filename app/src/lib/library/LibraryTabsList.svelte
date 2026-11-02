@@ -26,6 +26,8 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
   import { IosPhone } from "./ios-phone.svelte.ts";
   import { type ArrangedTab, tabKey } from "./library-tabs.ts";
   import { moved, shownAs } from "./tab-order.ts";
@@ -49,6 +51,7 @@
   } = $props();
 
   const android = new AndroidPhone();
+  const isMac = currentPlatform() === "macos";
   const ios = new IosPhone();
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
@@ -145,7 +148,7 @@
 
 <ul
   bind:this={list}
-  aria-label={m.library_tabs_title()}
+  aria-label={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
   class={android.isOn
     ? "-mx-page-start -me-page-end flex flex-col"
     : ios.isOn
@@ -274,10 +277,10 @@
             >
               {#if tab.isHidden}
                 <Eye size={ICON_SIZE} aria-hidden="true" />
-                {m.library_tabs_show()}
+                {isMac ? m.library_tabs_show_mac() : m.library_tabs_show()}
               {:else}
                 <EyeOff size={ICON_SIZE} aria-hidden="true" />
-                {m.library_tabs_hide()}
+                {isMac ? m.library_tabs_hide_mac() : m.library_tabs_hide()}
               {/if}
             </DropdownMenuItem>
           {/if}

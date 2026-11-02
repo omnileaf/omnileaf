@@ -26,6 +26,7 @@
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -38,7 +39,14 @@
   let seriesCounts = $state<ReadonlyMap<string, number>>(new Map());
   let keepsLabels = $state(false);
   let isNaming = $state(false);
-  const arranged = $derived(arrangedTabs(keptTabs, categories));
+  const isMac = currentPlatform() === "macos";
+  const arranged = $derived(
+    arrangedTabs(keptTabs, categories).map((tab) =>
+      isMac && tab.id.kind === "all"
+        ? { ...tab, name: m.library_tabs_all_mac() }
+        : tab,
+    ),
+  );
   const opensOn = new LibraryOpensOn();
   const opensOnLabelId = $props.id();
   const openable = $derived(
@@ -147,7 +155,7 @@
 
 <GroupedGround>
   <SectionHeading
-    title={m.library_tabs_title()}
+    title={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
   <div class="mbs-pane-gap flex flex-col gap-sm">
@@ -156,8 +164,12 @@
         ? "text-native-row-subtitle/native-row-subtitle text-muted"
         : "text-footnote text-muted"}
     >
-      <span class="desktop:hidden">{m.library_tabs_intro()}</span>
-      <span class="hidden desktop:inline">{m.library_tabs_intro_keys()}</span>
+      {#if isMac}
+        {m.library_tabs_intro_mac()}
+      {:else}
+        <span class="desktop:hidden">{m.library_tabs_intro()}</span>
+        <span class="hidden desktop:inline">{m.library_tabs_intro_keys()}</span>
+      {/if}
     </p>
     <LibraryTabsList
       tabs={arranged}
@@ -177,7 +189,9 @@
           }}
         >
           <Plus size={ICON_SIZE} aria-hidden="true" />
-          {m.library_tabs_new_category()}
+          {isMac
+            ? m.library_tabs_new_category_mac()
+            : m.library_tabs_new_category()}
         </Button>
       </div>
     {/if}
