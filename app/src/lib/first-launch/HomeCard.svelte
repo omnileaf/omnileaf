@@ -69,7 +69,7 @@
   >
     <div class="relative flex items-center gap-md p-md ps-home-card">
       <span
-        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile android:bg-transparent"
+        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile android:self-start android:bg-transparent android:pbs-2xs android:block-auto"
       >
         <Folder size={ICON_SIZE} aria-hidden="true" />
       </span>
