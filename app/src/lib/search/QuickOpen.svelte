@@ -309,8 +309,10 @@
 >
   <DialogContent
     aria-label={m.quick_open_title()}
-    overlayClass={platform === "macos" ? "bg-transparent" : undefined}
-    class="inset-none inset-bs-quick-open-top mx-auto flex flex-col overflow-hidden rounded-dialog border border-border bg-card text-foreground fade-motion shadow-dialog block-fit inline-quick-open max-block-dialog-limit max-inline-full"
+    overlayClass={platform === "macos" || platform === "android"
+      ? "bg-transparent"
+      : undefined}
+    class="inset-none inset-bs-quick-open-top mx-auto flex flex-col overflow-hidden rounded-dialog border border-border bg-card text-foreground fade-motion shadow-dialog block-fit inline-quick-open max-block-dialog-limit max-inline-full android:rounded-android-xl android:border-0 android:bg-android-container-high"
   >
     <Command.Root
       label={m.quick_open_title()}
@@ -360,7 +362,7 @@
             <Command.Group value={group.name}>
               <Command.GroupHeading
                 id={headingId}
-                class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase"
+                class="px-option-inline pbs-group-label-top pbe-xs text-overline font-bold tracking-overline text-muted uppercase android:text-caption android:font-medium android:tracking-normal android:normal-case"
               >
                 {group.label}
               </Command.GroupHeading>
