@@ -55,7 +55,9 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const android = new AndroidPhone();
-  const showsIcons = $derived(phoneOf(platform, width.current) === undefined);
+  const showsIcons = $derived(
+    platform !== "ios" && phoneOf(platform, width.current) === undefined,
+  );
   const labelId = `${id}-label`;
 </script>
 

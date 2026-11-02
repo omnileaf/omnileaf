@@ -95,7 +95,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
     hasIcons: (platform, width) =>
-      !(platform === "ios" || platform === "android") || width >= COMPACT_BELOW,
+      platform !== "ios" && (platform !== "android" || width >= COMPACT_BELOW),
     backend: withSeries,
     open: async (page, messages) => {
       await page.goto("/");

@@ -10,17 +10,15 @@
     label,
     description,
     isOn,
-    isMaterial = false,
+    usesItemRow = false,
     isInspector = false,
-    titleClass,
     onToggle,
   }: {
     label: string;
     description?: string;
     isOn: boolean;
-    isMaterial?: boolean;
+    usesItemRow?: boolean;
     isInspector?: boolean;
-    titleClass?: string | undefined;
     onToggle: (isOn: boolean) => void;
   } = $props();
 
@@ -30,13 +28,13 @@
   const titleType = $derived(
     isInspector
       ? MAC_INSPECTOR_SMART.title
-      : (titleClass ?? "text-body font-medium large:text-small"),
+      : "text-body font-medium large:text-small",
   );
   const rowType = $derived.by(() => {
     if (isInspector) {
       return MAC_INSPECTOR_SMART.row;
     }
-    return isMaterial
+    return usesItemRow
       ? ITEM_LOOKS["row-static"]
       : "flex items-center gap-md py-setting-grid-pad text-start inline-full min-block-setting-grid-row";
   });
@@ -67,16 +65,16 @@
     <span class="flex flex-1 flex-col gap-2xs">
       <span
         id="{id}-label"
-        data-slot={isMaterial ? "item-title" : undefined}
-        class={isMaterial ? undefined : titleType}
+        data-slot={usesItemRow ? "item-title" : undefined}
+        class={usesItemRow ? undefined : titleType}
       >
         {label}
       </span>
       {#if description !== undefined}
         <span
           id="{id}-description"
-          data-slot={isMaterial ? "item-description" : undefined}
-          class={isMaterial
+          data-slot={usesItemRow ? "item-description" : undefined}
+          class={usesItemRow
             ? "text-muted"
             : "text-small text-muted large:text-caption"}
         >
@@ -97,16 +95,16 @@
     <span class={wordsType}>
       <span
         id="{id}-label"
-        data-slot={isMaterial ? "item-title" : undefined}
-        class={isMaterial ? undefined : titleType}
+        data-slot={usesItemRow ? "item-title" : undefined}
+        class={usesItemRow ? undefined : titleType}
       >
         {label}
       </span>
       {#if description !== undefined}
         <span
           id="{id}-description"
-          data-slot={isMaterial ? "item-description" : undefined}
-          class={isMaterial ? "text-muted" : descriptionType}
+          data-slot={usesItemRow ? "item-description" : undefined}
+          class={usesItemRow ? "text-muted" : descriptionType}
         >
           {description}
         </span>
