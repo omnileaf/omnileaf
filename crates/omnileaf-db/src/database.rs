@@ -34,12 +34,12 @@ impl Database {
         Self::serve(config, migrated_writer(config, migrations)?)
     }
 
-    fn serve(config: &Config, mut writer: Connection) -> Result<Self, Error> {
+    fn serve(config: &Config, writer: Connection) -> Result<Self, Error> {
         let readers = (0..READER_COUNT)
             .map(|_| connection::open_reader(config))
             .collect::<Result<_, _>>()?;
         let checkpointer = Checkpointer::spawn(connection::open_writer(config)?)?;
-        hand_checkpoints_over(&mut writer)?;
+        hand_checkpoints_over(&writer);
         Ok(Self {
             writer: ConnectionWorkers::spawn("omnileaf-db-writer", vec![writer])?,
             readers: ConnectionWorkers::spawn("omnileaf-db-reader", readers)?,

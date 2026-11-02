@@ -632,10 +632,9 @@ async fn reads_a_page_of_books_as_the_series_stood_though_a_book_goes_meanwhile(
     let path = config.path.clone();
 
     let page = database
-        .read(move |_| {
+        .read(move |connection| {
             let rescan = Connection::open(&path)?;
-            let mut connection = Connection::open(&path)?;
-            load_schema(&connection)?;
+            load_schema(connection)?;
             let mut check_ins = 0;
             connection.progress_handler(
                 PROGRESS_STEPS,
@@ -654,7 +653,7 @@ async fn reads_a_page_of_books_as_the_series_stood_though_a_book_goes_meanwhile(
                 size: PageSize::try_from(10).unwrap(),
             };
             let page = series_books(
-                &connection,
+                connection,
                 series_id("Sample Series 01"),
                 BookListing::IN_ORDER,
                 &request,
