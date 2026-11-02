@@ -78,6 +78,7 @@
   const swipe = new RowSwipe((side) => side === "towardStart");
 
   const folderRow: Snippet<[LibraryFolder]> = linkedRow;
+  const countingRow: Snippet<[ShownFolder]> = addingRow;
 
   function isOpen(folder: LibraryFolder | undefined): boolean {
     return folder !== undefined && swipe.sideOf(folder.id) !== undefined;
@@ -89,6 +90,8 @@
       ? folders.list.linked.filter((folder) => !pendingRemovals.has(folder.id))
       : [],
   );
+
+  const isCountedFirst = $derived(android.isOn && !isInCard);
 
   const beingAdded = $derived.by((): ShownFolder | undefined => {
     const folder = adding.beingAdded;
@@ -181,6 +184,28 @@
   }
 </script>
 
+{#snippet addingRow(folder: ShownFolder)}
+  <li
+    class={[
+      !isInCard &&
+        "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card",
+    ]}
+  >
+    <FolderRow {folder} isOwnCard={!isInCard}>
+      {#snippet location()}
+        {folderLocation(folder, platform)}
+      {/snippet}
+      {#snippet detail()}
+        <FolderCounting
+          outcome={adding.outcome}
+          look={countingLook}
+          inList={isCountedFirst}
+        />
+      {/snippet}
+    </FolderRow>
+  </li>
+{/snippet}
+
 {#snippet linkedRow(folder: LibraryFolder)}
   <FolderRow
     {folder}
@@ -245,6 +270,9 @@
             "rounded-card border border-border bg-card android:max-medium:bg-transparent windows:flex windows:flex-col windows:gap-xs windows:divide-y-0 windows:rounded-none windows:border-0 windows:bg-transparent",
         ]}
       >
+        {#if beingAdded !== undefined && isCountedFirst}
+          {@render countingRow(beingAdded)}
+        {/if}
         {#each shownFolders as folder, index (folder.id)}
           <li
             bind:this={rows[folder.id]}
@@ -278,26 +306,8 @@
             {@render rowNotice?.(folder)}
           </li>
         {/each}
-        {#if beingAdded !== undefined}
-          <li
-            class={[
-              !isInCard &&
-                "windows:rounded-windows-control windows:border windows:border-windows-stroke windows:bg-native-card",
-            ]}
-          >
-            <FolderRow folder={beingAdded} isOwnCard={!isInCard}>
-              {#snippet location()}
-                {folderLocation(beingAdded, platform)}
-              {/snippet}
-              {#snippet detail()}
-                <FolderCounting
-                  outcome={adding.outcome}
-                  look={countingLook}
-                  inList={android.isOn && !isInCard}
-                />
-              {/snippet}
-            </FolderRow>
-          </li>
+        {#if beingAdded !== undefined && !isCountedFirst}
+          {@render countingRow(beingAdded)}
         {/if}
       </ul>
     {/if}
