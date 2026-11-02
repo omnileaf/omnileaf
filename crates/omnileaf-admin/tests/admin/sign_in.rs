@@ -1,7 +1,5 @@
-mod support;
-
+use super::support::Harness;
 use axum::http::StatusCode;
-use support::Harness;
 
 const LOGIN_PAGE_MARKER: &str = "Signed in as";
 

@@ -2,16 +2,11 @@ use axum::{
     Form,
     extract::{FromRequestParts, Query, State},
     http::{HeaderMap, HeaderValue, StatusCode, header, request::Parts},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect, Response},
 };
-use maud::html;
 use serde::Deserialize;
 
-use crate::{
-    AppState,
-    page::{layout, notice},
-    sealed::random_token,
-};
+use crate::{AppState, page::notice, sealed::random_token};
 
 pub(crate) const SESSION_COOKIE: &str = "admin_session";
 pub(crate) const STATE_COOKIE: &str = "admin_oauth_state";
@@ -156,21 +151,6 @@ async fn decide(state: &AppState, code: &str) -> Result<Option<String>, ()> {
         .await
         .map_err(drop)?;
     Ok(member.then_some(login))
-}
-
-pub(crate) async fn home(State(state): State<AppState>, session: Session) -> Response {
-    let markup = layout(
-        "Reports",
-        &html! {
-            h1 { "Reports" }
-            p { "Signed in as " strong { (session.login) } "." }
-            form method="post" action="/admin/logout" {
-                input type="hidden" name="csrf" value=(session.csrf_token(&state));
-                button type="submit" { "Sign out" }
-            }
-        },
-    );
-    Html(markup.into_string()).into_response()
 }
 
 #[derive(Deserialize)]

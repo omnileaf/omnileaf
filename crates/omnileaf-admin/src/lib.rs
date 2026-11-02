@@ -1,7 +1,10 @@
 mod auth;
+mod clock_text;
 mod config;
 mod github;
 mod page;
+mod relay;
+mod review;
 mod sealed;
 
 use std::{collections::HashSet, sync::Arc};
@@ -21,6 +24,7 @@ pub type Clock = Arc<dyn Fn() -> u64 + Send + Sync>;
 pub struct AppState {
     keys: sealed::Keys,
     github: Arc<github::GitHub>,
+    relay: Arc<relay::Relay>,
     allowlist: Arc<HashSet<String>>,
     clock: Clock,
 }
@@ -33,9 +37,15 @@ impl AppState {
             .map(|login| login.trim().to_ascii_lowercase())
             .filter(|login| !login.is_empty())
             .collect();
+        let http = github::http_client()?;
         Ok(Self {
             keys: sealed::Keys::new(&config.session_key)?,
-            github: Arc::new(github::GitHub::new(github::http_client()?, config)),
+            github: Arc::new(github::GitHub::new(http.clone(), config)),
+            relay: Arc::new(relay::Relay::new(
+                http,
+                &config.relay_url,
+                &config.relay_token,
+            )),
             allowlist: Arc::new(allowlist),
             clock,
         })
@@ -48,7 +58,10 @@ impl AppState {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
-        .route("/admin", get(auth::home))
+        .route("/admin", get(review::list))
+        .route("/admin/style.css", get(|| async { page::stylesheet() }))
+        .route("/admin/reports/{code}", get(review::detail))
+        .route("/admin/reports/{code}/audit", get(review::audit))
         .route("/admin/login", get(auth::login))
         .route("/admin/auth/callback", get(auth::callback))
         .route("/admin/logout", post(auth::logout))
