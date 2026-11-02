@@ -1,4 +1,4 @@
-use super::support::Harness;
+use super::support::{Harness, csrf_in};
 use axum::http::StatusCode;
 
 const LOGIN_PAGE_MARKER: &str = "Signed in as";
@@ -213,13 +213,7 @@ async fn signing_out_needs_the_csrf_token_that_belongs_to_the_session() {
     let alice = harness.sign_in("alice").await;
     let bob = harness.sign_in("bob").await;
     let page = harness.get("/admin", Some(&alice)).await;
-    let token = page
-        .body
-        .split("name=\"csrf\" value=\"")
-        .nth(1)
-        .and_then(|rest| rest.split('"').next())
-        .unwrap()
-        .to_owned();
+    let token = csrf_in(&page.body);
 
     let missing = harness.post_form("/admin/logout", Some(&alice), "").await;
     assert_eq!(missing.status, StatusCode::FORBIDDEN);

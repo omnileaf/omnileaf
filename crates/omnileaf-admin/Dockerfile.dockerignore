@@ -1,0 +1,10 @@
+.git
+target
+**/node_modules
+app/src-tauri/gen
+app/build
+app/.svelte-kit
+site/build
+site/.svelte-kit
+fuzz/corpus
+fuzz/artifacts
