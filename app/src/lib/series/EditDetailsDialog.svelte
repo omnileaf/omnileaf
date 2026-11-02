@@ -214,6 +214,13 @@
             {m.edit_details_save()}
           </Button>
         </div>
+        {#if isAsking && platform === "macos" && view === "wide"}
+          <div
+            data-sheet-dim
+            aria-hidden="true"
+            class="absolute inset-none z-10 rounded-native-sheet bg-native-scrim"
+          ></div>
+        {/if}
       {/if}
     {/snippet}
   </ModalContent>

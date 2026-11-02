@@ -36,10 +36,13 @@
   onConfirm={onDiscard}
   onCancel={onKeepEditing}
   phoneLook="dialog"
+  macLook="destructiveAlert"
 >
-  <span class="flex items-center gap-md rounded-card bg-well p-md">
+  <span
+    class="flex items-center gap-md rounded-card bg-well p-md macos:gap-native-dialog-plate-gap macos:bg-native-button-secondary macos:p-native-dialog-plate-padding"
+  >
     <span
-      class="relative aspect-cover shrink-0 overflow-hidden rounded-list-cover bg-chip inline-confirm-cover"
+      class="relative aspect-cover shrink-0 overflow-hidden rounded-list-cover bg-chip inline-confirm-cover macos:rounded-native-dialog-plate-cover macos:inline-native-dialog-plate-cover"
     >
       <CoverImage cover={series.cover} {coverUrl} />
     </span>
