@@ -1156,14 +1156,25 @@
   --color-well: color-mix(in oklab, var(--muted) 50%, transparent);
   --color-raised: var(--raised);
   --color-bar: var(--background);
-  --color-accent: var(--primary);
-  --text-color-accent: var(--windows-accent-ink, var(--primary));
-  --color-on-accent: var(--primary-foreground);
-  --color-accent-soft: var(--accent);
+  --color-accent: var(--accent-fill, var(--primary));
+  --text-color-accent: var(
+    --windows-accent-ink,
+    var(--accent-ink, var(--primary))
+  );
+  --color-on-accent: var(--on-accent-fill, var(--primary-foreground));
+  --color-accent-soft: var(--accent-tint, var(--accent));
   --color-on-accent-soft: var(--accent-foreground);
   --color-step-tint: color-mix(in oklab, var(--primary) 12%, var(--background));
-  --color-accent-hover: color-mix(in oklab, var(--primary) 90%, transparent);
-  --color-accent-pressed: color-mix(in oklab, var(--primary) 80%, transparent);
+  --color-accent-hover: color-mix(
+    in oklab,
+    var(--accent-fill, var(--primary)) 90%,
+    transparent
+  );
+  --color-accent-pressed: color-mix(
+    in oklab,
+    var(--accent-fill, var(--primary)) 80%,
+    transparent
+  );
   --color-drag-box: color-mix(in oklab, var(--primary) 10%, transparent);
   --color-veil: color-mix(in oklab, var(--background) 45%, transparent);
   --color-warning: var(--warning);
@@ -1400,8 +1411,9 @@
     color: var(--color-on-accent);
   }
   & tbody tr[aria-selected="true"] td > * {
-    --color-accent: var(--primary-foreground);
-    --color-on-accent: var(--primary);
+    --accent-fill: var(--native-color-on-button-primary);
+    --accent-ink: var(--native-color-on-button-primary);
+    --on-accent-fill: var(--native-color-button-primary);
     --native-color-progress-fill: var(--primary-foreground);
   }
   & tbody tr[aria-selected="true"] + tr[aria-selected="true"] td {

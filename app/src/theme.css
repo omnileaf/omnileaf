@@ -494,6 +494,10 @@
 
 [data-platform="macos"],
 [data-platform="macos"] [data-theme] {
+  --accent-fill: var(--native-color-button-primary);
+  --on-accent-fill: var(--native-color-on-button-primary);
+  --accent-ink: var(--native-color-on-button-link);
+  --accent-tint: var(--native-color-accent-soft);
   --platform-font: var(--font-macos);
   --secondary-text: var(--macos-secondary-label);
   --menu-surface: var(--macos-menu-material);
