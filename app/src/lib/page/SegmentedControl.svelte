@@ -153,9 +153,14 @@
     if (track === null || ruler === undefined) {
       return;
     }
-    return followFittingColumns(track, ruler, (fitted) => {
-      fittedColumns = fitted;
-    });
+    return followFittingColumns(
+      track,
+      ruler,
+      (fitted) => {
+        fittedColumns = fitted;
+      },
+      hasEqualMacosColumns,
+    );
   });
 
   $effect(() => {
