@@ -236,6 +236,7 @@
   --native-spacing-dialog-plate-cover: var(--spacing-confirm-cover);
   --native-spacing-dialog-sheet-top: var(--spacing-lg);
   --native-radius-dialog-plate-cover: var(--radius-list-cover);
+  --native-spacing-top-bar-folded-title: 30px;
   --native-spacing-dialog-accessory-gap: var(--spacing-md);
   --native-spacing-dialog-button: 48px;
   --native-spacing-action-sheet: min(300px, calc(100% - 32px));

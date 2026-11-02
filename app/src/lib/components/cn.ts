@@ -596,6 +596,7 @@ export const TOKEN_THEME = {
     "native-titlebar-start",
     "native-toolbar-button",
     "native-top-bar",
+    "native-top-bar-folded-title",
     "native-top-bar-lift",
     "native-top-tab",
     "native-top-tab-bar",
