@@ -64,7 +64,7 @@
       "rounded-native-segment min-block-native-segment first-of-type:rounded-s-native-segment-end last-of-type:rounded-e-native-segment-end",
     face: "gap-sm px-native-segment-inline text-native-segment leading-native-segment tracking-native-segment",
     chosen:
-      "rounded-native-segment-selected bg-native-segment-selected font-native-segment-selected text-native-on-segment-selected shadow-native-segment-lift",
+      "rounded-native-segment-selected bg-native-segment-selected font-native-segment-selected text-native-on-segment-selected shadow-native-segment-lift macos:inactive:bg-native-control-fill-pressed macos:inactive:text-foreground",
     unchosen:
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };

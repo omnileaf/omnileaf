@@ -27,11 +27,14 @@ const ICON_ONLY_FILL = `bg-native-icon-button-fill text-native-on-button-seconda
 
 const SECONDARY = `bg-native-button-secondary text-native-on-button-secondary not-disabled:not-aria-disabled:hover:bg-native-control-fill-hover not-disabled:not-aria-disabled:active:bg-native-control-fill-pressed disabled:bg-native-button-secondary/50 disabled:text-native-on-button-disabled ${INERT}`;
 
+const INACTIVE_FILL =
+  "inactive:bg-native-button-secondary inactive:text-foreground inactive:shadow-none";
+
 const VARIANTS = {
-  primary: `bg-native-button-primary text-native-on-button-primary not-disabled:not-aria-disabled:hover:tint-native-button-primary-hover not-disabled:not-aria-disabled:active:tint-native-button-primary-pressed disabled:bg-native-button-primary/40 disabled:text-native-on-button-primary/50 ${INERT}`,
+  primary: `bg-native-button-primary text-native-on-button-primary not-disabled:not-aria-disabled:hover:tint-native-button-primary-hover not-disabled:not-aria-disabled:active:tint-native-button-primary-pressed disabled:bg-native-button-primary/40 disabled:text-native-on-button-primary/50 ${INERT} ${INACTIVE_FILL}`,
   secondary: SECONDARY,
   outline: SECONDARY,
-  destructive: `bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed disabled:bg-native-button-destructive/60 disabled:text-native-on-button-destructive/40 ${INERT}`,
+  destructive: `bg-native-button-destructive text-native-on-button-destructive not-disabled:not-aria-disabled:hover:tint-native-button-destructive-hover not-disabled:not-aria-disabled:active:tint-native-button-destructive-pressed disabled:bg-native-button-destructive/60 disabled:text-native-on-button-destructive/40 ${INERT} ${INACTIVE_FILL}`,
   plain: `bg-transparent text-native-on-button-plain not-disabled:not-aria-disabled:active:text-native-on-button-plain-pressed disabled:text-native-on-button-plain/50 ${INERT}`,
 } satisfies Record<Exclude<ButtonVariant, "link">, string>;
 
