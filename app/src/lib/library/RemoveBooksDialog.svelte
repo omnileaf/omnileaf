@@ -34,6 +34,7 @@
     ? m.library_remove_books_confirm_uncounted()
     : m.library_remove_books_confirm({ count: books })}
   cancelLabel={m.library_remove_books_cancel()}
+  iosPhoneLook="actionSheet"
   onConfirm={() => {
     if (folder !== undefined) {
       onConfirm(folder);
