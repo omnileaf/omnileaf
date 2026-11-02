@@ -28,7 +28,7 @@ export const ANDROID_VIEW_SETTING = {
 
 export const MAC_INSPECTOR = {
   heading:
-    "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title",
+    "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title macos:inactive:text-muted",
   label:
     "text-native-inspector-label/native-inspector-label font-native-inspector-label tracking-native-inspector-label",
   section:
