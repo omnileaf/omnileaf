@@ -139,11 +139,11 @@ for (const platform of ["windows", "linux"] as const satisfies Platform[]) {
       await page.goto("/");
       const options = await openViewOptions(page);
 
-      const widths = await widthsOf(
-        options.getByRole("radiogroup", { name: "Group by" }),
-      );
+      const group = options.getByRole("radiogroup", { name: "Group by" });
 
-      expect(new Set(widths.map(Math.round)).size).toBeGreaterThan(1);
+      await expect
+        .poll(async () => new Set((await widthsOf(group)).map(Math.round)).size)
+        .toBeGreaterThan(1);
     });
   });
 }
