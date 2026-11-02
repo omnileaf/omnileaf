@@ -52,6 +52,17 @@ impl StatusKind {
             Self::Closed => "closed",
         }
     }
+
+    pub(crate) fn from_text(text: &str) -> Option<Self> {
+        match text {
+            "received" => Some(Self::Received),
+            "reviewing" => Some(Self::Reviewing),
+            "published" => Some(Self::Published),
+            "duplicate" => Some(Self::Duplicate),
+            "closed" => Some(Self::Closed),
+            _ => None,
+        }
+    }
 }
 
 impl ReviewStatus {

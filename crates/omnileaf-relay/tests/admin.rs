@@ -10,9 +10,9 @@
 mod support;
 
 use omnileaf_relay::{
-    Export, IntakeCaps, IssueNumber, Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS, ReplyAddressView,
-    ReviewStatus, StatusKind, Store, TEXT_KEPT_AFTER_REVIEW_SECONDS, TEXT_KEPT_UNREVIEWED_SECONDS,
-    TargetStatus,
+    AuditEntry, Export, IntakeCaps, IssueNumber, Purged, RECORD_KEPT_AFTER_REVIEW_SECONDS,
+    ReplyAddressView, ReviewStatus, StatusChange, StatusKind, Store,
+    TEXT_KEPT_AFTER_REVIEW_SECONDS, TEXT_KEPT_UNREVIEWED_SECONDS, TargetStatus,
 };
 use support::{Draft, START, code, draft};
 
@@ -22,6 +22,7 @@ const CAPS: IntakeCaps = IntakeCaps {
 };
 const CODE: &str = "R-7K2M-QX9D";
 const ADDRESS: &str = "reader@example.com";
+const ACTOR: &str = "maintainer";
 
 fn store_with(codes: &[&str]) -> Store {
     let store = Store::open_in_memory().unwrap();
@@ -59,7 +60,7 @@ fn lists_reports_newest_first_with_their_details() {
 fn lists_only_the_status_asked_for_up_to_the_limit() {
     let store = store_with(&[CODE, "R-0000-0001", "R-0000-0002"]);
     store
-        .set_status(&code(CODE), TargetStatus::Reviewing, START)
+        .set_status(&code(CODE), TargetStatus::Reviewing, ACTOR, START)
         .unwrap();
 
     let reviewing = store.list(Some(StatusKind::Reviewing), 50).unwrap();
@@ -180,7 +181,7 @@ fn says_when_there_is_nothing_to_export() {
 fn drops_spent_text_and_addresses_ninety_days_after_review() {
     let store = store_with(&[CODE, "R-0000-0001"]);
     store
-        .set_status(&code(CODE), TargetStatus::Closed, START)
+        .set_status(&code(CODE), TargetStatus::Closed, ACTOR, START)
         .unwrap();
     let just_before = START.plus_seconds(TEXT_KEPT_AFTER_REVIEW_SECONDS - 1);
     let on_time = START.plus_seconds(TEXT_KEPT_AFTER_REVIEW_SECONDS);
@@ -210,6 +211,7 @@ fn forgets_a_reviewed_report_a_year_after_review() {
         .set_status(
             &code(CODE),
             TargetStatus::Published(IssueNumber::new(412).unwrap()),
+            ACTOR,
             START,
         )
         .unwrap();
@@ -233,7 +235,7 @@ fn forgets_a_reviewed_report_a_year_after_review() {
 fn drops_the_text_and_address_of_a_report_left_unreviewed() {
     let store = store_with(&[CODE, "R-0000-0001"]);
     store
-        .set_status(&code("R-0000-0001"), TargetStatus::Reviewing, START)
+        .set_status(&code("R-0000-0001"), TargetStatus::Reviewing, ACTOR, START)
         .unwrap();
     let just_before = START.plus_seconds(TEXT_KEPT_UNREVIEWED_SECONDS - 1);
     let on_time = START.plus_seconds(TEXT_KEPT_UNREVIEWED_SECONDS + 1);
@@ -287,4 +289,116 @@ fn drops_expired_challenges() {
         .unwrap();
 
     assert_eq!(purged.challenges, 1);
+}
+
+#[test]
+fn records_who_changed_a_status_and_when() {
+    let store = store_with(&[CODE]);
+    let issue = IssueNumber::new(412).unwrap();
+
+    store
+        .set_status(&code(CODE), TargetStatus::Reviewing, "ana", START)
+        .unwrap();
+    store
+        .set_status(
+            &code(CODE),
+            TargetStatus::Published(issue),
+            "cli",
+            START.plus_seconds(60),
+        )
+        .unwrap();
+
+    let trail = store.audit_trail(&code(CODE)).unwrap();
+    assert_eq!(
+        trail,
+        [
+            AuditEntry {
+                previous: StatusKind::Reviewing,
+                status: ReviewStatus::Published(issue),
+                actor: "cli".to_owned(),
+                at: START.plus_seconds(60),
+            },
+            AuditEntry {
+                previous: StatusKind::Received,
+                status: ReviewStatus::Reviewing,
+                actor: "ana".to_owned(),
+                at: START,
+            },
+        ]
+    );
+}
+
+#[test]
+fn lists_changes_made_in_the_same_second_newest_first() {
+    let store = store_with(&[CODE]);
+    for (target, actor) in [
+        (TargetStatus::Reviewing, "first"),
+        (TargetStatus::Closed, "second"),
+        (TargetStatus::Reviewing, "third"),
+    ] {
+        store.set_status(&code(CODE), target, actor, START).unwrap();
+    }
+
+    let trail = store.audit_trail(&code(CODE)).unwrap();
+
+    let actors: Vec<&str> = trail.iter().map(|entry| entry.actor.as_str()).collect();
+    assert_eq!(actors, ["third", "second", "first"]);
+}
+
+#[test]
+fn keeps_each_reports_trail_apart() {
+    let store = store_with(&[CODE, "R-0000-0001"]);
+    store
+        .set_status(&code(CODE), TargetStatus::Reviewing, ACTOR, START)
+        .unwrap();
+
+    assert_eq!(store.audit_trail(&code(CODE)).unwrap().len(), 1);
+    assert!(store.audit_trail(&code("R-0000-0001")).unwrap().is_empty());
+}
+
+#[test]
+fn records_nothing_for_a_refused_change() {
+    let store = store_with(&[CODE]);
+    store
+        .set_status(&code(CODE), TargetStatus::Reviewing, ACTOR, START)
+        .unwrap();
+
+    let change = store
+        .set_status(&code(CODE), TargetStatus::Reviewing, "other", START)
+        .unwrap();
+
+    assert_eq!(
+        change,
+        StatusChange::Refused {
+            from: ReviewStatus::Reviewing
+        }
+    );
+    assert_eq!(store.audit_trail(&code(CODE)).unwrap().len(), 1);
+}
+
+#[test]
+fn records_nothing_for_a_report_that_is_not_there() {
+    let store = store_with(&[CODE]);
+
+    let change = store
+        .set_status(&code("R-0000-0001"), TargetStatus::Closed, ACTOR, START)
+        .unwrap();
+
+    assert_eq!(change, StatusChange::NotFound);
+    assert!(store.audit_trail(&code("R-0000-0001")).unwrap().is_empty());
+    assert!(store.audit_trail(&code(CODE)).unwrap().is_empty());
+}
+
+#[test]
+fn forgets_the_trail_with_the_report() {
+    let store = store_with(&[CODE]);
+    store
+        .set_status(&code(CODE), TargetStatus::Closed, ACTOR, START)
+        .unwrap();
+
+    store
+        .purge(START.plus_seconds(RECORD_KEPT_AFTER_REVIEW_SECONDS))
+        .unwrap();
+
+    assert!(store.audit_trail(&code(CODE)).unwrap().is_empty());
 }

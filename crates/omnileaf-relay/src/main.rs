@@ -89,6 +89,13 @@ enum ReportsCommand {
         /// The public issue a published report became, or the one a duplicate repeats.
         #[arg(long)]
         issue: Option<u64>,
+        /// Who is making the change, recorded in the report's audit trail.
+        #[arg(
+            long,
+            default_value = "cli",
+            value_parser = clap::builder::NonEmptyStringValueParser::new()
+        )]
+        actor: String,
     },
     /// Prints a report as the body of a public issue, without its reply address.
     Export { code: String },
@@ -264,9 +271,10 @@ fn review(store: &Store, command: ReportsCommand) -> anyhow::Result<()> {
             code,
             status,
             issue,
+            actor,
         } => {
             let target = target_status(status, issue)?;
-            match store.set_status(&parse_code(code)?, target, SystemClock.now())? {
+            match store.set_status(&parse_code(code)?, target, &actor, SystemClock.now())? {
                 StatusChange::Changed => {}
                 StatusChange::NotFound => bail!("no report has that code"),
                 StatusChange::Refused { from } => bail!("a {from} report can't move there"),

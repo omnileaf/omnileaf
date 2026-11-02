@@ -12,6 +12,7 @@ mod support;
 use std::{path::Path, process::Output};
 
 use omnileaf_relay::{IntakeCaps, Store};
+use omnileaf_relay_proto::ReportCode;
 use omnileaf_testkit::ScratchFolder;
 use support::{START, draft};
 
@@ -124,6 +125,46 @@ fn refuses_a_move_the_review_does_not_allow() {
     let output = relay_command(&database, &["reports", "set-status", CODE, "reviewing"]);
 
     assert!(!output.status.success());
+}
+
+fn actors_recorded(database: &Path) -> Vec<String> {
+    Store::open(database)
+        .unwrap()
+        .audit_trail(&ReportCode::try_from(CODE.to_owned()).unwrap())
+        .unwrap()
+        .into_iter()
+        .map(|entry| entry.actor)
+        .collect()
+}
+
+#[test]
+fn records_the_actor_of_a_status_change_as_cli_unless_named() {
+    let folder = ScratchFolder::new("relay-cli-actor");
+    let database = database_with_report(&folder);
+
+    let unnamed = relay_command(&database, &["reports", "set-status", CODE, "reviewing"]);
+    let named = relay_command(
+        &database,
+        &["reports", "set-status", CODE, "closed", "--actor", "ana"],
+    );
+
+    assert!(unnamed.status.success());
+    assert!(named.status.success());
+    assert_eq!(actors_recorded(&database), ["ana", "cli"]);
+}
+
+#[test]
+fn refuses_an_empty_actor() {
+    let folder = ScratchFolder::new("relay-cli-empty-actor");
+    let database = database_with_report(&folder);
+
+    let output = relay_command(
+        &database,
+        &["reports", "set-status", CODE, "reviewing", "--actor", ""],
+    );
+
+    assert!(!output.status.success());
+    assert!(actors_recorded(&database).is_empty());
 }
 
 #[test]

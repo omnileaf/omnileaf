@@ -12,7 +12,7 @@ mod status;
 mod store;
 mod utc;
 
-pub use admin::{Export, ListedReport, ReplyAddressView, ShownReport, StatusChange};
+pub use admin::{AuditEntry, Export, ListedReport, ReplyAddressView, ShownReport, StatusChange};
 pub use challenges::{CHALLENGE_LIFETIME_SECONDS, ChallengeIssue, ChallengeTerms};
 pub use client_ip::{ClientAddress, ClientIpSource};
 pub use clock::{Clock, SystemClock, UnixTime};
