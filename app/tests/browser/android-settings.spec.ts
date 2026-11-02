@@ -85,6 +85,42 @@ test.describe(
       );
     });
 
+    test("draws the crash reports choice as three flat radio rows under the accent heading, with the note below them", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy");
+      const group = page.getByRole("region", { name: "Crash reports" });
+      const ask = group.getByRole("radio", { name: "Ask each time" });
+
+      await expect(group.getByRole("radio")).toHaveCount(3);
+      await expect(ask).toBeChecked();
+      await expect(ask).toHaveAccessibleDescription(
+        "You see a report before it's sent.",
+      );
+      await expect(group).toHaveCSS("border-top-width", "0px");
+      expect((await boxOf(ask)).height).toBeGreaterThanOrEqual(ROW_MIN);
+      await expect(
+        group.getByRole("heading", { name: "Crash reports" }),
+      ).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-button-plain"),
+      );
+      const note = await boxOf(page.getByText(/^Nothing leaves this phone/));
+      const rows = await boxOf(group);
+      expect(note.y).toBeGreaterThanOrEqual(rows.y + rows.height);
+    });
+
+    test("keeps the crash reports choice after a row is tapped and the page reopens", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy");
+
+      await page.getByRole("radio", { name: "Never" }).click();
+      await page.reload();
+
+      await expect(page.getByRole("radio", { name: "Never" })).toBeChecked();
+    });
+
     test("puts a hint under its option in 14px muted type", async ({
       page,
     }) => {

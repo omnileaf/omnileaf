@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ScanEye, ShieldCheck } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
 
   import {
     CRASH_REPORT_CHOICES,
@@ -7,6 +8,7 @@
     getCrashReportSetting,
   } from "#lib/crash-report/choice.svelte.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
   import { isPointer } from "#lib/page/platform.ts";
@@ -14,6 +16,7 @@
   import { permissionsSummary } from "#lib/permissions/permissions.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingRadios from "#lib/settings/SettingRadios.svelte";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { screenshotModeSummary } from "#lib/screenshot-mode/status.ts";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
@@ -37,6 +40,8 @@
 
   let { data }: PageProps = $props();
 
+  const note: Snippet = nothingLeaves;
+  const android = new AndroidPhone();
   const crashReports = getCrashReportSetting();
   const screenshotMode = getScreenshotMode();
   const timeFormat = getTimeFormatSetting();
@@ -45,6 +50,25 @@
   const headingId = $props.id();
   const hintId = `${headingId}-hint`;
 </script>
+
+{#snippet nothingLeaves()}
+  {#if !sendsReportsOnItsOwn}
+    <p class="flex items-start gap-xs px-2xs text-footnote text-muted">
+      <ShieldCheck
+        size={NOTE_ICON_SIZE}
+        aria-hidden="true"
+        class="mbs-2xs shrink-0"
+      />
+      <span class="min-inline-none">
+        <WidthWording
+          wording={isPointer(data.appInfo.platform)
+            ? NOTHING_LEAVES_ON_DESKTOP
+            : NOTHING_LEAVES_ON_TOUCH}
+        />
+      </span>
+    </p>
+  {/if}
+{/snippet}
 
 <SectionHeading title={m.privacy_title()} />
 <div class="mbs-pane-gap flex flex-col gap-lg">
@@ -67,47 +91,52 @@
       },
     ]}
   />
-  {#if !sendsReportsOnItsOwn}
-    <p class="flex items-start gap-xs px-2xs text-footnote text-muted">
-      <ShieldCheck
-        size={NOTE_ICON_SIZE}
-        aria-hidden="true"
-        class="mbs-2xs shrink-0"
-      />
-      <span class="min-inline-none">
-        <WidthWording
-          wording={isPointer(data.appInfo.platform)
-            ? NOTHING_LEAVES_ON_DESKTOP
-            : NOTHING_LEAVES_ON_TOUCH}
-        />
-      </span>
-    </p>
+  {#if !android.isOn}
+    {@render note()}
   {/if}
 </div>
-<section
-  aria-labelledby={headingId}
-  class="mbs-xl flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row"
->
-  <h2
-    id={headingId}
-    class="font-semibold touch:medium:text-label touch:medium:text-muted desktop:text-footnote desktop:text-muted"
-  >
-    {m.privacy_crash_reports()}
-  </h2>
-  <p
-    id={hintId}
-    class="text-footnote text-muted touch:medium:order-last desktop:order-last"
-  >
-    {m.privacy_crash_reports_hint()}
-  </p>
-  <SegmentedControl
+{#if android.isOn}
+  <SettingRadios
+    title={m.privacy_crash_reports()}
     options={CRASH_REPORT_CHOICES}
-    labels={CHOICE_LABELS}
+    labels={{
+      ask: m.crash_reports_ask(),
+      always: m.crash_reports_always(),
+      never: m.crash_reports_never(),
+    }}
+    hints={{ ask: m.privacy_crash_reports_hint() }}
     chosen={crashReports.choice}
-    labelledBy={headingId}
-    describedBy={hintId}
     onChoose={(choice: CrashReportChoice) => {
       crashReports.choose(choice);
     }}
   />
-</section>
+  <div class="mbs-md">{@render note()}</div>
+{:else}
+  <section
+    aria-labelledby={headingId}
+    class="mbs-xl flex flex-col gap-sm touch:max-medium:rounded-list touch:max-medium:border touch:max-medium:border-border touch:max-medium:bg-card touch:max-medium:p-list-row"
+  >
+    <h2
+      id={headingId}
+      class="font-semibold touch:medium:text-label touch:medium:text-muted desktop:text-footnote desktop:text-muted"
+    >
+      {m.privacy_crash_reports()}
+    </h2>
+    <p
+      id={hintId}
+      class="text-footnote text-muted touch:medium:order-last desktop:order-last"
+    >
+      {m.privacy_crash_reports_hint()}
+    </p>
+    <SegmentedControl
+      options={CRASH_REPORT_CHOICES}
+      labels={CHOICE_LABELS}
+      chosen={crashReports.choice}
+      labelledBy={headingId}
+      describedBy={hintId}
+      onChoose={(choice: CrashReportChoice) => {
+        crashReports.choose(choice);
+      }}
+    />
+  </section>
+{/if}
