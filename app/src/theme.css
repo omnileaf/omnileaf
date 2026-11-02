@@ -469,7 +469,6 @@
   --accent-fill: var(--native-color-button-primary);
   --on-accent-fill: var(--native-color-on-button-primary);
   --accent-ink: var(--native-color-button-primary);
-  --accent-tint: var(--native-color-accent-soft);
   --platform-font: var(--font-ios);
   --secondary-text: var(--ios-secondary-label);
   --menu-surface: var(--ios-material);

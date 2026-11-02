@@ -1,11 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import {
-  expect,
-  literalColour,
-  test,
-  testOnlyInItsWebview,
-} from "./fixtures.ts";
+import { expect, test, testOnlyInItsWebview } from "./fixtures.ts";
 
 testOnlyInItsWebview("ios");
 
@@ -13,7 +8,6 @@ interface Drawn {
   readonly fill: string;
   readonly onFill: string;
   readonly ink: string;
-  readonly soft: string;
 }
 
 async function drawnAccent(page: Page): Promise<Drawn> {
@@ -21,7 +15,7 @@ async function drawnAccent(page: Page): Promise<Drawn> {
     const drawn = (name: string, property: "color" | "backgroundColor") => {
       const probe = document.createElement("span");
       probe.className = name;
-      document.body.append(probe);
+      (document.querySelector("[data-theme]") ?? document.body).append(probe);
       const colour = getComputedStyle(probe)[property];
       probe.remove();
       return colour;
@@ -30,14 +24,31 @@ async function drawnAccent(page: Page): Promise<Drawn> {
       fill: drawn("bg-accent", "backgroundColor"),
       onFill: drawn("text-on-accent", "color"),
       ink: drawn("text-accent", "color"),
-      soft: drawn("bg-accent-soft", "backgroundColor"),
     };
   });
 }
 
-for (const [scheme, fill, onFill, ink, soft] of [
-  ["light", "#2f6f4f", "#ffffff", "#2f6f4f", "#ddebe2"],
-  ["dark", "#7fcb9d", "#0f2418", "#7fcb9d", "#243a2c"],
+async function asPixels(page: Page, drawn: Drawn): Promise<number[][]> {
+  return page.evaluate((colours) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const pixel = (css: string): number[] => {
+      context?.clearRect(0, 0, 1, 1);
+      if (context !== null) {
+        context.fillStyle = css;
+        context.fillRect(0, 0, 1, 1);
+      }
+      return [...(context?.getImageData(0, 0, 1, 1).data ?? [])];
+    };
+    return [colours.fill, colours.onFill, colours.ink].map(pixel);
+  }, drawn);
+}
+
+for (const [scheme, fill, onFill, ink] of [
+  ["light", "#2f6f4f", "#ffffff", "#2f6f4f"],
+  ["dark", "#7fcb9d", "#0f2418", "#7fcb9d"],
 ] as const) {
   test(
     `draws the accent in Omnileaf green in the ${scheme} theme`,
@@ -51,12 +62,9 @@ for (const [scheme, fill, onFill, ink, soft] of [
 
       const drawn = await drawnAccent(page);
 
-      expect(drawn).toEqual({
-        fill: await literalColour(page, fill),
-        onFill: await literalColour(page, onFill),
-        ink: await literalColour(page, ink),
-        soft: await literalColour(page, soft),
-      });
+      expect(await asPixels(page, drawn)).toEqual(
+        await asPixels(page, { fill, onFill, ink }),
+      );
     },
   );
 }
