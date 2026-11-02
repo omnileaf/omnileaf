@@ -1,3 +1,4 @@
+mod admin_api;
 mod challenge;
 mod failure;
 mod json_body;
@@ -21,6 +22,7 @@ use tower::{
     timeout::error::Elapsed,
 };
 
+pub use admin_api::{AdminApi, AdminToken, AdminTokenTooShort, admin_router};
 pub use failure::Failure;
 use json_body::JsonBody;
 

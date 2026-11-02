@@ -14,7 +14,8 @@ use axum::{
     http::{HeaderMap, Request, StatusCode},
 };
 use omnileaf_relay::{
-    ClientIpSource, Clock, Limits, NewReport, Relay, Settings, Store, UnixTime, router,
+    AdminApi, AdminToken, ClientIpSource, Clock, Limits, NewReport, Relay, Settings, Store,
+    UnixTime, admin_router, router,
 };
 use omnileaf_relay_proto::{
     Challenge, Platform, ReportCode, StatusKey,
@@ -95,6 +96,21 @@ pub(crate) fn relay_with(settings: Settings, store: Store) -> TestRelay {
         router: router(relay),
         clock,
         store,
+    }
+}
+
+pub(crate) const ADMIN_TOKEN: &str = "an-admin-token-of-at-least-32-bytes";
+
+pub(crate) fn admin_relay() -> TestRelay {
+    let public = relay();
+    let api = AdminApi::new(
+        Arc::clone(&public.store),
+        Arc::clone(&public.clock) as Arc<dyn Clock>,
+        AdminToken::new(ADMIN_TOKEN).unwrap(),
+    );
+    TestRelay {
+        router: admin_router(api),
+        ..public
     }
 }
 

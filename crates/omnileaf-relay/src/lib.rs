@@ -16,7 +16,9 @@ pub use admin::{AuditEntry, Export, ListedReport, ReplyAddressView, ShownReport,
 pub use challenges::{CHALLENGE_LIFETIME_SECONDS, ChallengeIssue, ChallengeTerms};
 pub use client_ip::{ClientAddress, ClientIpSource};
 pub use clock::{Clock, SystemClock, UnixTime};
-pub use http::{Failure, Relay, Settings, router};
+pub use http::{
+    AdminApi, AdminToken, AdminTokenTooShort, Failure, Relay, Settings, admin_router, router,
+};
 pub use rate_limit::{Action, ActionLimit, Admission, Attempt, Limits};
 pub use reports::{Intake, IntakeCaps, NewReport};
 pub use retention::{
