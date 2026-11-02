@@ -203,6 +203,7 @@ test.describe("Edit details fields on macOS", () => {
       await page.emulateMedia({ colorScheme });
       const sheet = await openEditor(page, contrast);
       const title = sheet.getByRole("textbox", { name: "Title" });
+      await title.blur();
 
       await expect(title).toHaveCSS(
         "background-color",
@@ -446,6 +447,34 @@ test.describe("Edit details placeholders on macOS", () => {
       );
 
       expect(drawn).toBe(await literalColour(page, colour));
+    });
+  }
+});
+
+test.describe("Edit details focus ring on macOS with Increase contrast", () => {
+  testOnlyInItsWebview("macos");
+  test.use({ platform: "macos" });
+
+  for (const [name, colorScheme, edge] of [
+    ["light", "light", "#000000"],
+    ["dark", "dark", "#ffffff"],
+  ] as const) {
+    test(`draws a 1 point ${name === "light" ? "black" : "white"} edge under the ring of a focused field`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const sheet = await openEditor(page, "more");
+      const title = sheet.getByRole("textbox", { name: "Title" });
+
+      await title.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+
+      await expect(title).toHaveCSS("outline-offset", "1px");
+      await expect(title).toHaveCSS(
+        "box-shadow",
+        endingWith(`${await literalColour(page, edge)} 0px 0px 0px 1px`),
+      );
     });
   }
 });

@@ -1,5 +1,5 @@
 const MACOS_FIELD_LOOK =
-  "rounded-native-button border-0 bg-native-field-fill px-sm text-native-button/native-button font-native-button text-foreground shadow-native-field-rim caret-accent placeholder:text-native-field-placeholder focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-offset-(--focus-ring-offset) focus-visible:outline-(--focus-ring-color)";
+  "rounded-native-button border-0 bg-native-field-fill px-sm text-native-button/native-button font-native-button text-foreground shadow-native-field-rim caret-accent placeholder:text-native-field-placeholder focus-visible:outline-(length:--focus-ring-width) focus-visible:outline-offset-(--focus-ring-offset) focus-visible:outline-(--focus-ring-color) more-contrast:focus-visible:shadow-[0_0_0_1px_var(--native-color-focus-ring-inner)] more-contrast:focus-visible:outline-offset-1";
 
 export const MACOS_ONE_LINE_FIELD = `col-start-2 ${MACOS_FIELD_LOOK} py-xs min-block-native-button`;
 
