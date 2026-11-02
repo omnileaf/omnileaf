@@ -65,6 +65,29 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("keeps the folder icon level with the Home folder title while the books are counted", async ({
+      page,
+    }) => {
+      const finish = picker.holdRescan();
+      picker.pickEmpty();
+      await goToTheHomeStep(page);
+      await homeRow(page).click();
+      await expect(
+        page.getByText(`Counting… ${String(FOUND_WHILE_READING)} so far`),
+      ).toBeVisible();
+
+      const card = page.getByRole("region", { name: "Home folder" });
+      const icon = await boxOf(card.locator("svg").first());
+      const title = await boxOf(
+        card.getByRole("heading", { name: "Home folder" }),
+      );
+
+      expect(
+        Math.abs(icon.y + icon.height / 2 - (title.y + title.height / 2)),
+      ).toBeLessThanOrEqual(2);
+      finish();
+    });
+
     test("sets the note at 12 over 16", async ({ page }) => {
       await goToTheHomeStep(page);
       const note = page.getByText(FIRST_LAUNCH_NOTE, { exact: true });
