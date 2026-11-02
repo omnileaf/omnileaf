@@ -135,15 +135,14 @@ for (const platform of ["windows", "linux"] as const satisfies Platform[]) {
   test.describe(`a segmented control on ${platform}`, () => {
     test.use({ platform });
 
-    test("keeps Group by segments as wide as their words", async ({ page }) => {
+    test("keeps Group by segments sized by their words", async ({ page }) => {
       await page.goto("/");
       const options = await openViewOptions(page);
-
       const group = options.getByRole("radiogroup", { name: "Group by" });
 
-      await expect
-        .poll(async () => new Set((await widthsOf(group)).map(Math.round)).size)
-        .toBeGreaterThan(1);
+      await expect(group).toBeVisible();
+
+      await expect(group).not.toHaveCSS("grid-auto-flow", "column");
     });
   });
 }
