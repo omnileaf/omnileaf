@@ -1404,6 +1404,21 @@
   "search_everything": "⟦Éṽéŕýţĥíñĝ····⟧",
   "search_remove_condition": "⟦Ŕéɱöṽé ţĥé {condition} ƒíļţéŕ············⟧",
   "search_conditions": "⟦Ƒíļţéŕš···⟧",
+  "search_chapters_heading": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦Çĥáþţéŕ ţíţļéš · {formattedCount}··············⟧",
+        "countPlural=other": "⟦Çĥáþţéŕ ţíţļéš · {formattedCount}··············⟧"
+      }
+    }
+  ],
+  "search_show_all": "⟦Šĥöŵ áļļ····⟧",
   "search_series_heading": "⟦Šéŕíéš áñð ƀööķš · {count}···········⟧",
   "search_scope": "⟦Šéáŕçĥ íñ····⟧",
   "search_scope_manga": "⟦Ṁáñĝá··⟧",
