@@ -1414,6 +1414,14 @@
     background: var(--color-accent);
     color: var(--color-on-accent);
   }
+  :where([data-window-active="false"]) & tbody tr[aria-selected="true"] td {
+    background: color-mix(
+      in oklab,
+      var(--native-color-control-fill-pressed) 87.5%,
+      transparent
+    );
+    color: var(--color-foreground);
+  }
   & tbody tr[aria-selected="true"] td > * {
     --accent-fill: var(--native-color-on-button-primary);
     --accent-ink: var(--native-color-on-button-primary);
