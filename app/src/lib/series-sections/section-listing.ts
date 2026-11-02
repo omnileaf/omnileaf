@@ -28,11 +28,13 @@ const SECTION_VIEWS = {
   macos: COVERS_FOR_PICTURE_SECTIONS,
   ios: COVERS_FOR_PICTURE_SECTIONS,
   windows: undefined,
-  android: undefined,
+  android: COVERS_FOR_PICTURE_SECTIONS,
 } satisfies Record<Platform, SectionViews | undefined>;
 
+const TABBED_AT_ANY_WIDTH: readonly Platform[] = ["ios", "android"];
+
 function sectionViews(screen: SectionScreen): SectionViews | undefined {
-  return screen.isWide || screen.platform === "ios"
+  return screen.isWide || TABBED_AT_ANY_WIDTH.includes(screen.platform)
     ? SECTION_VIEWS[screen.platform]
     : undefined;
 }

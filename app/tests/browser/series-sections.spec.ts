@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
+  accessibilityViolations,
   boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
@@ -314,5 +315,105 @@ test.describe("a series' section tabs on an iPhone", { tag: "@native" }, () => {
         .or(page.getByRole("list", { name: "Books" })),
     ).toContainText(/chapter 13/);
     await expect(covers(page, "Volumes")).toHaveCount(0);
+  });
+});
+
+test.describe(
+  "a series' section tabs on an Android phone",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(EVERY_KIND);
+    test.use({
+      platform: "android",
+      backend: shelf.backend(),
+      viewport: { width: 360, height: 800 },
+    });
+
+    test("shows a tab for each kind of book with volumes as covers", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await expect(kinds(page).getByRole("tab")).toHaveText([
+        /Volumes/,
+        /Chapters/,
+        /Specials/,
+      ]);
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+    });
+
+    test("puts the search and sort row above the tabs", async ({ page }) => {
+      await openSeries(page);
+
+      const [tabs, search, sort] = await Promise.all([
+        boxOf(kinds(page)),
+        boxOf(page.getByRole("searchbox", { name: "Find a book" })),
+        boxOf(page.getByRole("button", { name: /^Sort/ })),
+      ]);
+
+      expect(search.y + search.height).toBeLessThanOrEqual(tabs.y);
+      expect(sort.y + sort.height).toBeLessThanOrEqual(tabs.y);
+    });
+
+    test("lists the chapters as rows once Chapters is chosen", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(
+        page
+          .getByRole("table", { name: "Books" })
+          .or(page.getByRole("list", { name: "Books" })),
+      ).toContainText(/chapter 13/);
+      await expect(covers(page, "Volumes")).toHaveCount(0);
+    });
+
+    test("lists the specials as covers once Specials is chosen", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Specials/ })
+        .click();
+
+      await expect(covers(page, "Specials")).toHaveCount(1);
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await openSeries(page);
+        await expect(kinds(page).getByRole("tab")).toHaveCount(3);
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
+  },
+);
+
+test.describe("a series on a narrow linux window", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({
+    platform: "linux",
+    backend: shelf.backend(),
+    viewport: { width: NARROW_WIDTH, height: 800 },
+  });
+
+  test("keeps every book in one list under the search and sort row", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect(kinds(page)).toHaveCount(0);
+    await expect(
+      page.getByRole("list", { name: "Books" }).getByRole("listitem").first(),
+    ).toBeVisible();
   });
 });

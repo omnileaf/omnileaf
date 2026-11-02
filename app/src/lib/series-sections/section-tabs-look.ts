@@ -17,7 +17,7 @@ const HUGGING_LOOK: SectionTabsLook = {
 const ANDROID_PHONE_LOOK: SectionTabsLook = {
   row: "flex flex-col gap-sm",
   list: "",
-  choicesFirst: false,
+  choicesFirst: true,
 };
 
 const IPHONE_LOOK: SectionTabsLook = {
