@@ -552,6 +552,18 @@
   --shadow-native-field-rim: var(--native-shadow-field-rim);
   --spacing-native-text-field-block-tall: var(--native-spacing-text-field-block-tall);
   --spacing-native-text-field-tall: var(--native-spacing-text-field-tall);
+  --text-native-first-launch-title: var(--native-text-first-launch-title);
+  --leading-native-first-launch-title: var(--native-leading-first-launch-title);
+  --font-weight-native-first-launch-title: var(--native-weight-first-launch-title);
+  --tracking-native-first-launch-title: var(--native-tracking-first-launch-title);
+  --text-native-first-launch-lede: var(--native-text-first-launch-lede);
+  --leading-native-first-launch-lede: var(--native-leading-first-launch-lede);
+  --font-weight-native-first-launch-lede: var(--native-weight-first-launch-lede);
+  --tracking-native-first-launch-lede: var(--native-tracking-first-launch-lede);
+  --text-native-first-launch-note: var(--native-text-first-launch-note);
+  --leading-native-first-launch-note: var(--native-leading-first-launch-note);
+  --font-weight-native-first-launch-note: var(--native-weight-first-launch-note);
+  --tracking-native-first-launch-note: var(--native-tracking-first-launch-note);
 }
 
 @media (prefers-reduced-motion: reduce) {

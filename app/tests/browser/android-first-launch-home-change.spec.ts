@@ -65,6 +65,14 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("sets the note at 12 over 16", async ({ page }) => {
+      await goToTheHomeStep(page);
+      const note = page.getByText(FIRST_LAUNCH_NOTE, { exact: true });
+
+      await expect(note).toHaveCSS("font-size", "12px");
+      await expect(note).toHaveCSS("line-height", "16px");
+    });
+
     test("moves the library to the empty folder picked and reads its books", async ({
       page,
     }) => {

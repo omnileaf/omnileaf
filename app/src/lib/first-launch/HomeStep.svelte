@@ -126,7 +126,9 @@
       {/snippet}
     </HomeCard>
     {#if note !== undefined}
-      <p class="px-xs text-footnote text-muted">
+      <p
+        class="px-xs text-footnote text-muted android:max-medium:text-native-first-launch-note/native-first-launch-note android:max-medium:font-native-first-launch-note android:max-medium:tracking-native-first-launch-note"
+      >
         {note()}
       </p>
     {/if}

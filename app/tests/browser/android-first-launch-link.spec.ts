@@ -51,6 +51,11 @@ const SPINNER_SIZE = 16;
 const LARGE_TEXT_SCALE = 1.3;
 const BUTTON_LABEL_SIZE = 16;
 const BUTTON_LABEL_WEIGHT = "500";
+const HEADLINE_SIZE = "28px";
+const HEADLINE_LINE = "36px";
+const LEDE_SIZE = "14px";
+const LEDE_LINE = "20px";
+const LEDE_MAX_WIDTH = 320;
 
 let linked: WireFolder[] = [HOME];
 let endScan: () => void = () => undefined;
@@ -133,6 +138,31 @@ test.describe(
         "background-color",
         TRANSPARENT,
       );
+    });
+
+    test("sets the headline at 28 over 36 in regular weight", async ({
+      page,
+    }) => {
+      await goToTheLinkStep(page);
+      const headline = page.getByRole("heading", {
+        level: 1,
+        name: LINK_HEADING,
+      });
+
+      await expect(headline).toHaveCSS("font-size", HEADLINE_SIZE);
+      await expect(headline).toHaveCSS("line-height", HEADLINE_LINE);
+      await expect(headline).toHaveCSS("font-weight", REGULAR_WEIGHT);
+    });
+
+    test("sets the lede at 14 over 20, no wider than 320", async ({ page }) => {
+      await goToTheLinkStep(page);
+      const lede = page
+        .getByRole("heading", { level: 1, name: LINK_HEADING })
+        .locator("xpath=following-sibling::p[1]");
+
+      await expect(lede).toHaveCSS("font-size", LEDE_SIZE);
+      await expect(lede).toHaveCSS("line-height", LEDE_LINE);
+      expect((await boxOf(lede)).width).toBeLessThanOrEqual(LEDE_MAX_WIDTH);
     });
 
     test("sets Skip as a plain text button in the accent", async ({ page }) => {

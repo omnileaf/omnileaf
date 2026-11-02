@@ -38,11 +38,22 @@
     tabindex="-1"
     class={isSetupPage
       ? "text-welcome-title font-semibold"
-      : ["font-bold tracking-tight android:font-regular", SCALES[scale]]}
+      : [
+          "font-bold tracking-tight android:font-regular",
+          SCALES[scale],
+          scale === "step" &&
+            "android:max-medium:text-native-first-launch-title/native-first-launch-title android:max-medium:font-native-first-launch-title android:max-medium:tracking-native-first-launch-title",
+        ]}
   >
     {@render children()}
   </h1>
-  <p class={["text-muted", isSetupPage ? "text-label" : "text-step-body"]}>
+  <p
+    class={[
+      "text-muted",
+      isSetupPage ? "text-label" : "text-step-body",
+      "android:max-medium:text-native-first-launch-lede/native-first-launch-lede android:max-medium:font-native-first-launch-lede android:max-medium:tracking-native-first-launch-lede android:max-medium:max-inline-first-launch-lede",
+    ]}
+  >
     {@render lead()}
   </p>
 </div>

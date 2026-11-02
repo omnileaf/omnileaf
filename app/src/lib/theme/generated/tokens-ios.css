@@ -458,6 +458,18 @@
   --native-shadow-field-rim: none;
   --native-spacing-text-field-block-tall: var(--spacing-sm);
   --native-spacing-text-field-tall: var(--spacing-textarea);
+  --native-text-first-launch-title: var(--text-step-body);
+  --native-leading-first-launch-title: var(--text-step-body--line-height);
+  --native-weight-first-launch-title: var(--font-weight-regular);
+  --native-tracking-first-launch-title: 0;
+  --native-text-first-launch-lede: var(--text-step-body);
+  --native-leading-first-launch-lede: var(--text-step-body--line-height);
+  --native-weight-first-launch-lede: var(--font-weight-regular);
+  --native-tracking-first-launch-lede: 0;
+  --native-text-first-launch-note: var(--text-footnote);
+  --native-leading-first-launch-note: var(--text-footnote--line-height);
+  --native-weight-first-launch-note: var(--font-weight-regular);
+  --native-tracking-first-launch-note: 0;
 }
 
 :root[data-platform="ios"],
