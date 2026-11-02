@@ -4,7 +4,14 @@ use axum::{
 };
 use maud::{DOCTYPE, Markup, html};
 
-pub(crate) fn layout(title: &str, content: &Markup) -> Markup {
+pub(crate) const STYLESHEET: &str = include_str!("style.css");
+
+pub(crate) struct SignedIn {
+    pub(crate) login: String,
+    pub(crate) csrf: String,
+}
+
+pub(crate) fn layout(title: &str, signed_in: Option<&SignedIn>, content: &Markup) -> Markup {
     html! {
         (DOCTYPE)
         html lang="en" {
@@ -13,8 +20,20 @@ pub(crate) fn layout(title: &str, content: &Markup) -> Markup {
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 meta name="color-scheme" content="light dark";
                 title { (title) " - Omnileaf reports" }
+                link rel="stylesheet" href="/admin/style.css";
             }
             body {
+                a class="skip" href="#main" { "Skip to main content" }
+                header class="bar" {
+                    a class="brand" href="/admin" { "Omnileaf reports" }
+                    @if let Some(signed_in) = signed_in {
+                        form class="account" method="post" action="/admin/logout" {
+                            span { "Signed in as " strong { (signed_in.login) } }
+                            input type="hidden" name="csrf" value=(signed_in.csrf);
+                            button type="submit" { "Sign out" }
+                        }
+                    }
+                }
                 main id="main" { (content) }
             }
         }
@@ -24,12 +43,21 @@ pub(crate) fn layout(title: &str, content: &Markup) -> Markup {
 pub(crate) fn notice(status: StatusCode, title: &str, message: &str) -> Response {
     let markup = layout(
         title,
+        None,
         &html! {
             h1 { (title) }
             p { (message) }
         },
     );
     (status, Html(markup.into_string())).into_response()
+}
+
+pub(crate) fn stylesheet() -> Response {
+    (
+        [(header::CONTENT_TYPE, "text/css; charset=utf-8")],
+        STYLESHEET,
+    )
+        .into_response()
 }
 
 pub(crate) fn hardened(mut response: Response) -> Response {

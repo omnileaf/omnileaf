@@ -9,14 +9,14 @@ use std::{
     net::SocketAddr,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
     },
 };
 
 use axum::{
     Json, Router,
     body::Body,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{HeaderMap, Request, StatusCode, header},
     response::Response,
     routing::{get, post},
@@ -28,6 +28,7 @@ use tower::ServiceExt;
 pub(crate) const CLIENT_ID: &str = "client-id";
 pub(crate) const CLIENT_SECRET: &str = "client-secret";
 pub(crate) const SESSION_KEY: &str = "0123456789abcdef0123456789abcdef";
+pub(crate) const RELAY_TOKEN: &str = "relay-token";
 pub(crate) const START: u64 = 1_700_000_000;
 
 struct GitHubState {
@@ -118,8 +119,188 @@ async fn membership(
     }
 }
 
+#[derive(Default)]
+struct RelayState {
+    reports: Mutex<Vec<Value>>,
+    details: Mutex<HashMap<String, Value>>,
+    audits: Mutex<HashMap<String, Value>>,
+    requests: Mutex<Vec<Seen>>,
+    leak_reply_address: AtomicBool,
+    reject_everything: AtomicBool,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Seen {
+    pub(crate) path: String,
+    pub(crate) query: HashMap<String, String>,
+    pub(crate) authorized: bool,
+}
+
+pub(crate) struct FakeRelay {
+    address: SocketAddr,
+    state: Arc<RelayState>,
+}
+
+impl FakeRelay {
+    async fn start() -> Self {
+        let state = Arc::new(RelayState::default());
+        let app = Router::new()
+            .route("/admin/v1/reports", get(relay_list))
+            .route("/admin/v1/reports/{code}", get(relay_detail))
+            .route("/admin/v1/reports/{code}/audit", get(relay_audit))
+            .with_state(Arc::clone(&state));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        Self { address, state }
+    }
+
+    pub(crate) fn url(&self) -> String {
+        format!("http://{}", self.address)
+    }
+
+    pub(crate) fn add_report(
+        &self,
+        code: &str,
+        received_at: u64,
+        status: &Value,
+        platform: &str,
+        version: &str,
+    ) {
+        let listed = json!({
+            "code": code, "receivedAt": received_at, "status": status,
+            "platform": platform, "version": version,
+        });
+        self.state.reports.lock().unwrap().push(listed.clone());
+        self.state.details.lock().unwrap().insert(
+            code.to_owned(),
+            json!({ "listed": listed, "report": format!("Full text of {code}"), "replyAddress": null }),
+        );
+    }
+
+    pub(crate) fn set_audit(&self, code: &str, entries: Value) {
+        self.state
+            .audits
+            .lock()
+            .unwrap()
+            .insert(code.to_owned(), entries);
+    }
+
+    pub(crate) fn set_report_text(&self, code: &str, text: &str) {
+        if let Some(detail) = self.state.details.lock().unwrap().get_mut(code) {
+            detail["report"] = json!(text);
+        }
+    }
+
+    pub(crate) fn reject_everything(&self) {
+        self.state.reject_everything.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn leak_reply_address(&self) {
+        self.state.leak_reply_address.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn requests(&self) -> Vec<Seen> {
+        self.state.requests.lock().unwrap().clone()
+    }
+}
+
+fn note(
+    state: &RelayState,
+    path: String,
+    query: HashMap<String, String>,
+    headers: &HeaderMap,
+) -> bool {
+    let authorized = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        == Some(&format!("Bearer {RELAY_TOKEN}"));
+    state.requests.lock().unwrap().push(Seen {
+        path,
+        query,
+        authorized,
+    });
+    authorized && !state.reject_everything.load(Ordering::SeqCst)
+}
+
+async fn relay_list(
+    State(state): State<Arc<RelayState>>,
+    headers: HeaderMap,
+    Query(query): Query<HashMap<String, String>>,
+) -> (StatusCode, Json<Value>) {
+    if !note(
+        &state,
+        "/admin/v1/reports".to_owned(),
+        query.clone(),
+        &headers,
+    ) {
+        return (StatusCode::UNAUTHORIZED, Json(json!([])));
+    }
+    let kept: Vec<Value> = state
+        .reports
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|report| {
+            query
+                .get("status")
+                .is_none_or(|status| report["status"]["kind"] == status.as_str())
+        })
+        .cloned()
+        .collect();
+    (StatusCode::OK, Json(Value::Array(kept)))
+}
+
+async fn relay_detail(
+    State(state): State<Arc<RelayState>>,
+    headers: HeaderMap,
+    Path(code): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+) -> (StatusCode, Json<Value>) {
+    if !note(
+        &state,
+        format!("/admin/v1/reports/{code}"),
+        query.clone(),
+        &headers,
+    ) {
+        return (StatusCode::UNAUTHORIZED, Json(json!({})));
+    }
+    let found = state.details.lock().unwrap().get(&code).cloned();
+    match found {
+        Some(mut detail) => {
+            if state.leak_reply_address.load(Ordering::SeqCst)
+                || query
+                    .get("replyAddress")
+                    .is_some_and(|value| value == "true")
+            {
+                detail["replyAddress"] = json!("leaked-reporter@example.test");
+            }
+            (StatusCode::OK, Json(detail))
+        }
+        None => (StatusCode::NOT_FOUND, Json(json!({}))),
+    }
+}
+
+async fn relay_audit(
+    State(state): State<Arc<RelayState>>,
+    headers: HeaderMap,
+    Path(code): Path<String>,
+) -> (StatusCode, Json<Value>) {
+    if !note(
+        &state,
+        format!("/admin/v1/reports/{code}/audit"),
+        HashMap::new(),
+        &headers,
+    ) {
+        return (StatusCode::UNAUTHORIZED, Json(json!([])));
+    }
+    let entries = state.audits.lock().unwrap().get(&code).cloned();
+    (StatusCode::OK, Json(entries.unwrap_or_else(|| json!([]))))
+}
+
 pub(crate) struct Harness {
     pub(crate) github: FakeGitHub,
+    pub(crate) relay: FakeRelay,
     pub(crate) now: Arc<AtomicU64>,
     app: Router,
 }
@@ -161,6 +342,7 @@ impl Reply {
 impl Harness {
     pub(crate) async fn start(allowlist: &[&str]) -> Self {
         let github = FakeGitHub::start().await;
+        let relay = FakeRelay::start().await;
         let config = Config {
             github_client_id: CLIENT_ID.to_owned(),
             github_client_secret: CLIENT_SECRET.to_owned(),
@@ -168,8 +350,8 @@ impl Harness {
             github_team: "reviewers".to_owned(),
             admin_allowlist: allowlist.iter().map(|login| (*login).to_owned()).collect(),
             session_key: SESSION_KEY.to_owned(),
-            relay_url: "http://127.0.0.1:9".to_owned(),
-            relay_token: "relay-token".to_owned(),
+            relay_url: relay.url(),
+            relay_token: RELAY_TOKEN.to_owned(),
             listen: "127.0.0.1:0".parse().unwrap(),
             github_api_url: github.url(),
             github_auth_url: github.url(),
@@ -179,6 +361,7 @@ impl Harness {
         let state = AppState::new(&config, Arc::new(move || clock.load(Ordering::SeqCst))).unwrap();
         Self {
             github,
+            relay,
             now,
             app: router(state),
         }
