@@ -9,8 +9,9 @@ use std::{
 use anyhow::{Context, bail};
 use clap::{Parser, Subcommand, ValueEnum};
 use omnileaf_relay::{
-    ClientIpSource, Clock, Export, IssueNumber, Limits, Relay, ReplyAddressView, Settings,
-    StatusChange, StatusKind, Store, SystemClock, TargetStatus, router,
+    AdminApi, AdminToken, ClientIpSource, Clock, Export, IssueNumber, Limits, Relay,
+    ReplyAddressView, Settings, StatusChange, StatusKind, Store, SystemClock, TargetStatus,
+    admin_router, router,
 };
 use omnileaf_relay_proto::{ReportCode, pow::Difficulty};
 use tracing::level_filters::LevelFilter;
@@ -61,6 +62,12 @@ struct ServeOptions {
     /// Counts requests by the connecting socket's address instead of Cloudflare's header, for local runs only.
     #[arg(long, env = "RELAY_TRUST_PEER", default_value_t = false)]
     trust_peer: bool,
+    /// The address for the private review API, served only together with `RELAY_ADMIN_TOKEN`.
+    #[arg(long, env = "RELAY_ADMIN_LISTEN")]
+    admin_listen: Option<SocketAddr>,
+    /// The bearer token the review API requires, at least 32 bytes.
+    #[arg(long, env = "RELAY_ADMIN_TOKEN", hide_env_values = true)]
+    admin_token: Option<String>,
     /// The most detailed log level to print.
     #[arg(long, env = "RELAY_LOG", default_value = "info")]
     log: LevelFilter,
@@ -147,16 +154,42 @@ fn serve(database: &std::path::Path, options: &ServeOptions) -> anyhow::Result<(
             ClientIpSource::CloudflareHeader
         },
     };
+    let admin = admin_options(options)?;
     let store = Arc::new(open(database)?);
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .context("start the async runtime")?
-        .block_on(run(store, settings, options.listen))
+        .block_on(run(store, settings, options.listen, admin))
 }
 
-async fn run(store: Arc<Store>, settings: Settings, listen: SocketAddr) -> anyhow::Result<()> {
+fn admin_options(options: &ServeOptions) -> anyhow::Result<Option<(SocketAddr, AdminToken)>> {
+    match (options.admin_listen, options.admin_token.as_deref()) {
+        (None, None) => Ok(None),
+        (Some(listen), Some(token)) => Ok(Some((
+            listen,
+            AdminToken::new(token).context("read RELAY_ADMIN_TOKEN")?,
+        ))),
+        (Some(_), None) | (None, Some(_)) => {
+            bail!("RELAY_ADMIN_LISTEN and RELAY_ADMIN_TOKEN must be set together")
+        }
+    }
+}
+
+async fn run(
+    store: Arc<Store>,
+    settings: Settings,
+    listen: SocketAddr,
+    admin: Option<(SocketAddr, AdminToken)>,
+) -> anyhow::Result<()> {
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
+    let admin_serving = match admin {
+        Some((admin_listen, token)) => {
+            let api = AdminApi::new(Arc::clone(&store), Arc::clone(&clock), token);
+            Some(serve_admin(admin_listen, api).await?)
+        }
+        None => None,
+    };
     let purging = tokio::spawn(purge_hourly(Arc::clone(&store), Arc::clone(&clock)));
     let listener = tokio::net::TcpListener::bind(listen)
         .await
@@ -171,7 +204,25 @@ async fn run(store: Arc<Store>, settings: Settings, listen: SocketAddr) -> anyho
     .await
     .context("serve the relay");
     purging.abort();
+    if let Some(admin_serving) = admin_serving {
+        admin_serving.abort();
+    }
     served
+}
+
+async fn serve_admin(
+    listen: SocketAddr,
+    api: AdminApi,
+) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let listener = tokio::net::TcpListener::bind(listen)
+        .await
+        .with_context(|| format!("listen for the review API on {listen}"))?;
+    tracing::info!(%listen, "review API listening");
+    Ok(tokio::spawn(async move {
+        if let Err(error) = axum::serve(listener, admin_router(api)).await {
+            tracing::error!(%error, "serve the review API");
+        }
+    }))
 }
 
 async fn purge_hourly(store: Arc<Store>, clock: Arc<dyn Clock>) {

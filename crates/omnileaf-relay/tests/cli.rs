@@ -218,3 +218,47 @@ fn fails_its_health_check_when_nothing_listens() {
 
     assert!(!output.status.success());
 }
+
+fn serve_with_admin_env(folder: &ScratchFolder, variables: &[(&str, &str)]) -> Output {
+    let database = folder.path().join("relay.sqlite3");
+    std::process::Command::new(env!("CARGO_BIN_EXE_omnileaf-relay"))
+        .env("RELAY_DATABASE", database)
+        .env("RELAY_LISTEN", "127.0.0.1:0")
+        .envs(variables.iter().copied())
+        .arg("serve")
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn refuses_to_serve_with_only_one_of_the_admin_settings() {
+    let folder = ScratchFolder::new("relay-cli-admin-one");
+
+    for variables in [
+        [("RELAY_ADMIN_LISTEN", "127.0.0.1:0")],
+        [("RELAY_ADMIN_TOKEN", "an-admin-token-of-at-least-32-bytes")],
+    ] {
+        let output = serve_with_admin_env(&folder, &variables);
+
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("must be set together"));
+    }
+}
+
+#[test]
+fn refuses_to_serve_with_an_empty_or_short_admin_token() {
+    let folder = ScratchFolder::new("relay-cli-admin-short");
+
+    for token in ["", "too-short"] {
+        let output = serve_with_admin_env(
+            &folder,
+            &[
+                ("RELAY_ADMIN_LISTEN", "127.0.0.1:0"),
+                ("RELAY_ADMIN_TOKEN", token),
+            ],
+        );
+
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("RELAY_ADMIN_TOKEN"));
+    }
+}

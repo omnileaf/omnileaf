@@ -1,3 +1,7 @@
+#[expect(
+    dead_code,
+    reason = "each test file uses the part of the harness it needs"
+)]
 mod support;
 
 use axum::{
