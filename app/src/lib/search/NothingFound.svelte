@@ -77,7 +77,7 @@
       ? NATIVE_TITLE
       : isMaterial
         ? ANDROID_TITLE
-        : "large:text-heading"}
+        : "large:text-heading macos:text-native-empty/native-empty macos:font-native-empty-title macos:tracking-native-empty"}
   >
     {nothingFoundTitle(text)}
   </EmptyTitle>
