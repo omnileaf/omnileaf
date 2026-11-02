@@ -268,6 +268,26 @@
     }
     const shown = await reveal?.(next);
     shown?.querySelector<HTMLElement>("[data-pickable-link]")?.focus();
+    selectAt(next, event.shiftKey);
+  }
+
+  function selectAt(index: number, isExtending: boolean): void {
+    const reached = series[index];
+    if (
+      platform !== "macos" ||
+      selection === undefined ||
+      reached === undefined
+    ) {
+      return;
+    }
+    if (isExtending) {
+      selection.extendTo(
+        reached.id,
+        series.map((one) => one.id),
+      );
+    } else {
+      selection.chooseOnly(reached.id);
+    }
   }
 
   function onCoverKeys(event: KeyboardEvent): void {
