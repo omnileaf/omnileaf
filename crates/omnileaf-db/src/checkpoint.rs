@@ -75,15 +75,15 @@ impl CheckpointRequests {
     }
 }
 
-pub(crate) fn hand_checkpoints_over(connection: &Connection) {
-    connection.wal_hook(Some(note_log_length));
+pub(crate) fn hand_checkpoints_over(connection: &mut Connection) -> rusqlite::Result<()> {
+    connection.wal_hook(Some(note_log_length))
 }
 
 #[expect(
     clippy::unnecessary_wraps,
     reason = "SQLite's write-ahead log hook has to return a result"
 )]
-fn note_log_length(_: &Wal, frames: c_int) -> rusqlite::Result<()> {
+fn note_log_length(_: &mut Wal, frames: c_int) -> rusqlite::Result<()> {
     if frames >= CHECKPOINT_DUE_AT_FRAMES {
         IS_CHECKPOINT_DUE.set(true);
     }
@@ -117,8 +117,8 @@ mod tests {
         INSERT INTO filler (body) VALUES (zeroblob(10));";
 
     fn handed_over_writer(scratch: &ScratchLibrary) -> Connection {
-        let writer = connection::open_writer(&scratch.config).unwrap();
-        hand_checkpoints_over(&writer);
+        let mut writer = connection::open_writer(&scratch.config).unwrap();
+        hand_checkpoints_over(&mut writer).unwrap();
         writer
     }
 
