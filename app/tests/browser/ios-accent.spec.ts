@@ -60,11 +60,9 @@ for (const [scheme, fill, onFill, ink] of [
         () => document.documentElement.dataset.platform !== undefined,
       );
 
-      const drawn = await drawnAccent(page);
-
-      expect(await asPixels(page, drawn)).toEqual(
-        await asPixels(page, { fill, onFill, ink }),
-      );
+      await expect
+        .poll(async () => asPixels(page, await drawnAccent(page)))
+        .toEqual(await asPixels(page, { fill, onFill, ink }));
     },
   );
 }
