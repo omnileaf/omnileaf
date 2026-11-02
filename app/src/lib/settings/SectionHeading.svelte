@@ -88,7 +88,7 @@
   {#if hasTitleBar}
     <h1
       tabindex="-1"
-      class="truncate text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title text-foreground"
+      class="truncate text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title text-foreground macos:inactive:text-muted"
     >
       {title}
     </h1>

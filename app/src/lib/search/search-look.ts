@@ -72,7 +72,7 @@ export const ANDROID_SEARCH_LOOK: SearchLook = {
 export const MACOS_SEARCH_LOOK: SearchLook = {
   ...TODAYS_SEARCH_LOOK,
   heading:
-    "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title",
+    "text-native-title-bar-title/native-title-bar-title font-native-title-bar-title tracking-native-title-bar-title macos:inactive:text-muted",
   title:
     "line-clamp-2 text-native-button/native-button font-native-button tracking-native-search-title",
   line: "text-native-sheet-text/native-sheet-text tracking-native-sheet-text text-muted",
