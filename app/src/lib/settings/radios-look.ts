@@ -57,10 +57,11 @@ const MACOS_RADIOS_LOOK: RadiosLook = {
     "flex flex-col items-start gap-native-radio-stack rounded-native-group bg-native-group px-native-group-inset py-md",
   row: "group flex items-start gap-native-radio-words-gap text-start text-native-button/native-button font-native-button focus-visible:outline-0",
   mark: "flex shrink-0 items-center justify-center rounded-full block-radio inline-radio group-focus-visible:outline-(length:--spacing-native-radio-focus-ring) group-focus-visible:outline-native-focus-ring",
-  markOn: "bg-accent group-active:shadow-native-radio-pressed-on",
+  markOn:
+    "bg-accent group-active:shadow-native-radio-pressed-on inactive:bg-native-check-inactive-fill",
   markOff:
     "bg-native-radio-field shadow-native-radio-rim group-active:bg-native-control-fill-pressed",
-  dot: "rounded-full bg-on-accent block-native-radio-dot inline-native-radio-dot",
+  dot: "rounded-full bg-on-accent block-native-radio-dot inline-native-radio-dot inactive:bg-native-on-check-inactive",
   words: "flex flex-col",
   label: "",
   hint: "text-native-list-sub/native-list-sub font-regular tracking-native-list-sub text-muted",

@@ -542,6 +542,8 @@
   --leading-native-list-sub: var(--native-leading-list-sub);
   --tracking-native-list-sub: var(--native-tracking-list-sub);
   --color-native-radio-field: var(--native-color-radio-field);
+  --color-native-check-inactive-fill: var(--native-color-check-inactive-fill);
+  --color-native-on-check-inactive: var(--native-color-on-check-inactive);
   --shadow-native-radio-rim: var(--native-shadow-radio-rim);
   --shadow-native-radio-pressed-on: var(--native-shadow-radio-pressed-on);
   --spacing-native-list-footer-gap: var(--native-spacing-list-footer-gap);

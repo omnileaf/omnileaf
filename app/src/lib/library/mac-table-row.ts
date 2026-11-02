@@ -12,7 +12,8 @@ export interface MacTableRowLook {
   readonly progress: string;
 }
 
-const PICKED_ROW = "rounded-native-table-row bg-accent text-on-accent";
+const PICKED_ROW =
+  "rounded-native-table-row bg-accent text-on-accent inactive:bg-native-control-fill-pressed/87.5 inactive:text-foreground";
 
 const PROGRESS_ON_ACCENT =
   "[--primary:var(--primary-foreground)] [--accent-fill:var(--on-accent-fill)]";

@@ -448,6 +448,8 @@
   --native-leading-list-sub: var(--text-caption--line-height);
   --native-tracking-list-sub: 0;
   --native-color-radio-field: var(--background);
+  --native-color-check-inactive-fill: var(--color-accent);
+  --native-color-on-check-inactive: var(--color-on-accent);
   --native-shadow-radio-rim: none;
   --native-shadow-radio-pressed-on: none;
   --native-spacing-list-footer-gap: 0px;
