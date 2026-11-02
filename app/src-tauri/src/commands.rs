@@ -1520,9 +1520,7 @@ async fn show_series_in_folder(
     let Some(file) = library.series_file(series).await? else {
         return Err(LibraryError::SeriesNotFound { id: series }.into());
     };
-    app.opener()
-        .reveal_item_in_dir(file)
-        .map_err(|error| IpcError::file_manager_unavailable(&error))
+    show_in_file_manager(&app, &file)
 }
 
 #[tauri::command]
@@ -1535,6 +1533,21 @@ async fn show_book_in_folder(
     let Some(file) = library.book_in_folder(book).await? else {
         return Err(LibraryError::BookNotFound { id: book }.into());
     };
+    show_in_file_manager(&app, &file)
+}
+
+#[cfg(target_os = "ios")]
+fn show_in_file_manager(app: &AppHandle, file: &std::path::Path) -> Result<(), IpcError> {
+    let url = crate::files_app::folder_url(file).ok_or_else(|| {
+        IpcError::file_manager_unavailable(&std::io::Error::other("the file has no folder"))
+    })?;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|error| IpcError::file_manager_unavailable(&error))
+}
+
+#[cfg(not(target_os = "ios"))]
+fn show_in_file_manager(app: &AppHandle, file: &std::path::Path) -> Result<(), IpcError> {
     app.opener()
         .reveal_item_in_dir(file)
         .map_err(|error| IpcError::file_manager_unavailable(&error))
