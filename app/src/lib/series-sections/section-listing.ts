@@ -32,7 +32,9 @@ const SECTION_VIEWS = {
 } satisfies Record<Platform, SectionViews | undefined>;
 
 function sectionViews(screen: SectionScreen): SectionViews | undefined {
-  return screen.isWide ? SECTION_VIEWS[screen.platform] : undefined;
+  return screen.isWide || screen.platform === "ios"
+    ? SECTION_VIEWS[screen.platform]
+    : undefined;
 }
 
 export function sectionTabs<Tab>(

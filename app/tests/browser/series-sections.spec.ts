@@ -267,3 +267,40 @@ test.describe("a series' section tabs on iOS", { tag: "@native" }, () => {
     );
   });
 });
+
+test.describe("a series' section tabs on an iPhone", { tag: "@native" }, () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({
+    platform: "ios",
+    backend: shelf.backend(),
+    viewport: { width: 390, height: 844 },
+  });
+
+  test("shows a tab for each kind of book with volumes as covers", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect(kinds(page).getByRole("tab")).toHaveText([
+      /Volumes/,
+      /Chapters/,
+      /Specials/,
+    ]);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+  });
+
+  test("lists only the chapters once Chapters is chosen", async ({ page }) => {
+    await openSeries(page);
+
+    await kinds(page)
+      .getByRole("tab", { name: /Chapters/ })
+      .click();
+
+    await expect(
+      page
+        .getByRole("table", { name: "Books" })
+        .or(page.getByRole("list", { name: "Books" })),
+    ).toContainText(/chapter 13/);
+    await expect(covers(page, "Volumes")).toHaveCount(0);
+  });
+});
