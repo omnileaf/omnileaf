@@ -12,7 +12,6 @@ test("lets an Android phone's tabs span the page, neither wrapping nor held insi
 test.each([
   ["android", "medium"],
   ["android", "expanded"],
-  ["ios", "compact"],
   ["linux", "expanded"],
   ["windows", "compact"],
 ] as const)(
@@ -24,3 +23,10 @@ test.each([
     expect(look.list).toBe("flex-wrap max-inline-full");
   },
 );
+
+test("puts the search and sort row above an iPhone's tabs", () => {
+  const look = sectionTabsLook("ios", "compact");
+
+  expect(look.choicesFirst).toBe(true);
+  expect(look.row).toBe("flex flex-col gap-sm");
+});
