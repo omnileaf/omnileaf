@@ -179,7 +179,7 @@
                   {isArriving}
                   size={ICON_SIZE}
                   class={[
-                    "relative desktop-shell:block-sidebar-icon desktop-shell:inline-sidebar-icon",
+                    "relative macos:inactive:text-muted desktop-shell:block-sidebar-icon desktop-shell:inline-sidebar-icon",
                     look.icon,
                     isSelected && look.currentIcon,
                     isArriving &&
