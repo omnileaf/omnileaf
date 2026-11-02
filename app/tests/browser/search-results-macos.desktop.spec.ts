@@ -13,6 +13,14 @@ const WINDOW = { width: 1280, height: 800 };
 const NARROW_WINDOW = { width: 800, height: 800 };
 const FOUND = sampleSeries(6);
 const SPELLING_ONLY = "harbor gat";
+const CHAPTER_HITS = Array.from({ length: 8 }, (_, index) => ({
+  series: FOUND[index % FOUND.length]?.id ?? "",
+  seriesTitle: `Sample Series ${String(index + 1).padStart(2, "0")}`,
+  book: `0190a3e4-0000-8000-8000-${String(index + 1).padStart(12, "0")}`,
+  position: index + 1,
+  title: `Harbour chapter ${String(index + 1)}`,
+  matchedIn: "fileName",
+})) as never[];
 
 testOnlyInItsWebview("macos");
 test.use({
@@ -25,6 +33,11 @@ test.use({
         ? { series: [], next: null }
         : { series: FOUND, next: null },
     librarySearchCount: () => FOUND.length,
+    librarySearchChapters: () => ({
+      hits: CHAPTER_HITS,
+      next: null,
+      count: CHAPTER_HITS.length,
+    }),
     librarySpellingSuggestion: () => ({
       text: "harbour gate",
       chapterOf: null,
@@ -201,4 +214,33 @@ test("sets the no-results title in the Mac's large title type over a muted line"
   await expect(title).toHaveCSS("line-height", "32px");
   await expect(title).toHaveCSS("font-weight", "700");
   await expect(title).toHaveCSS("letter-spacing", "0.22px");
+});
+
+test("lists matching chapter titles as rows under a heading, five first", async ({
+  page,
+}) => {
+  await searchFor(page, "harbour");
+
+  const group = page.getByRole("region", { name: /^Chapter titles/ });
+
+  await expect(group.getByRole("heading", { level: 2 })).toHaveText(
+    "Chapter titles · 8",
+  );
+  await expect(group.getByRole("link")).toHaveCount(5);
+  await expect(group.getByRole("link").first()).toContainText(
+    "Harbour chapter 1",
+  );
+  await expect(group.getByRole("link").first()).toContainText(
+    "Sample Series 01",
+  );
+});
+
+test("shows every chapter title once Show all is chosen", async ({ page }) => {
+  await searchFor(page, "harbour");
+  const group = page.getByRole("region", { name: /^Chapter titles/ });
+
+  await group.getByRole("button", { name: "Show all" }).click();
+
+  await expect(group.getByRole("link")).toHaveCount(8);
+  await expect(group.getByRole("button", { name: "Show all" })).toHaveCount(0);
 });
