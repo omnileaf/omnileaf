@@ -417,3 +417,35 @@ for (const platform of ["linux", "windows", "android", "ios"] as const) {
     });
   });
 }
+
+const PLACEHOLDER = {
+  light: "rgba(0, 0, 0, 0.498)",
+  dark: "rgba(255, 255, 255, 0.549)",
+};
+
+test.describe("Edit details placeholders on macOS", () => {
+  testOnlyInItsWebview("macos");
+  test.use({ platform: "macos" });
+
+  for (const [name, colorScheme, contrast, colour] of [
+    ["light", "light", undefined, PLACEHOLDER.light],
+    ["dark", "dark", undefined, PLACEHOLDER.dark],
+    ["light with Increase contrast", "light", "more", PLACEHOLDER.light],
+    ["dark with Increase contrast", "dark", "more", PLACEHOLDER.dark],
+  ] as const) {
+    test(`draws a placeholder in the colour AppKit reads in the ${name} look`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const sheet = await openEditor(page, contrast);
+      await sheet.getByRole("button", { name: "Add a tag" }).click();
+      const typing = sheet.getByRole("textbox", { name: "Add a tag" });
+
+      const drawn = await typing.evaluate(
+        (element) => getComputedStyle(element, "::placeholder").color,
+      );
+
+      expect(drawn).toBe(await literalColour(page, colour));
+    });
+  }
+});
