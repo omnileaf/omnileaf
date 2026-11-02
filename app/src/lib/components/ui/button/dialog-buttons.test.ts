@@ -136,6 +136,6 @@ test("draws the main dialog button on the accent at the dialog button's size", a
   expect(button.getBoundingClientRect().height).toBeCloseTo(28, 0);
   expect(style.fontWeight).toBe("500");
   expect(style.backgroundColor).toBe(
-    resolvedColour("--primary", "backgroundColor"),
+    resolvedColour("--native-color-button-primary", "backgroundColor"),
   );
 });

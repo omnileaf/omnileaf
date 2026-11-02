@@ -85,8 +85,9 @@ test("turns the field's bottom edge into a 2px accent line when it has focus on 
 test("keeps the large button and raised field on macOS", async () => {
   const { field, send } = await formOn("macos");
 
-  expect(getComputedStyle(send).backgroundColor).not.toBe(
-    resolvedColour("--native-color-button-primary", "backgroundColor"),
-  );
+  const style = getComputedStyle(send);
+
+  expect(style.height).not.toBe("32px");
+  expect(style.borderTopLeftRadius).not.toBe("4px");
   expect(getComputedStyle(field).boxShadow).not.toBe("none");
 });
