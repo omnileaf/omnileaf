@@ -185,3 +185,20 @@ test("centres the spelling suggestion in the empty results", async ({
   const columnMiddle = (columnBox?.x ?? 0) + (columnBox?.width ?? 0) / 2;
   expect(Math.abs(middle - columnMiddle)).toBeLessThan(2);
 });
+
+test("sets the no-results title in the Mac's large title type over a muted line", async ({
+  page,
+}) => {
+  await page.goto("/search");
+  await page
+    .getByRole("combobox", { name: "Search your library" })
+    .fill(SPELLING_ONLY);
+
+  const title = page.getByRole("heading", { name: /^Nothing matches/ });
+
+  await expect(title).toBeVisible();
+  await expect(title).toHaveCSS("font-size", "26px");
+  await expect(title).toHaveCSS("line-height", "32px");
+  await expect(title).toHaveCSS("font-weight", "700");
+  await expect(title).toHaveCSS("letter-spacing", "0.22px");
+});
