@@ -2,8 +2,10 @@
   import { House } from "@lucide/svelte";
 
   import type { Platform } from "#lib/ipc/bindings.ts";
+  import FolderCounting from "#lib/library/FolderCounting.svelte";
   import { folderLocation } from "#lib/library/folder-location.ts";
   import type { FolderList } from "#lib/library/library-folders.svelte.ts";
+  import type { RescanStatus } from "#lib/library/rescans.svelte.ts";
   import { isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -18,6 +20,7 @@
   let {
     platform,
     folders,
+    scan,
     isChanging,
     onBack,
     onNext,
@@ -25,6 +28,7 @@
   }: {
     platform: Platform;
     folders: FolderList;
+    scan: RescanStatus;
     isChanging: boolean;
     onBack: () => void;
     onNext: () => void;
@@ -77,6 +81,10 @@
 
   const isInFiles = $derived(platform === "ios");
   const note = $derived(NOTES[platform]);
+  const isCounting = $derived(
+    platform === "android" &&
+      (scan.kind === "finding" || scan.kind === "reading"),
+  );
 </script>
 
 <StepFrame step="home" {onBack}>
@@ -97,6 +105,13 @@
       location={folderLocation(folders.home, platform)}
       facts={isInFiles ? IN_FILES : IN_A_FOLDER}
     >
+      {#snippet counting()}
+        {#if isCounting}
+          <div class="text-native-row-subtitle/native-row-subtitle text-muted">
+            <FolderCounting outcome={scan} inList />
+          </div>
+        {/if}
+      {/snippet}
       {#snippet change(titleId, pathId)}
         {#if isPointer(platform)}
           <ChangeHomeButton {platform} isBusy={isChanging} onclick={onChange} />
