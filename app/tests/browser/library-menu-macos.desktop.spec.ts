@@ -6,6 +6,7 @@ import {
   expect,
   test,
   testOnlyInItsWebview,
+  tokenColour,
 } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
@@ -220,6 +221,25 @@ test.describe("with several series selected", () => {
     await expect
       .poll(() => markedRead)
       .toEqual([[LIBRARY[0]?.id, LIBRARY[1]?.id]]);
+  });
+
+  test("names the selection in a muted bold heading above the actions", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await pickFirstTwo(page);
+    const menu = await rightClick(page, 1);
+
+    const heading = menu.getByText("2 series", { exact: true });
+
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveCSS("font-size", "13px");
+    await expect(heading).toHaveCSS("font-weight", "700");
+    await expect(heading).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-muted"),
+    );
+    expect(await namesIn(menu)).not.toContain("2 series");
   });
 
   test("opens Categories and tags for the selection", async ({ page }) => {
