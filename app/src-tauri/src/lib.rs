@@ -114,10 +114,6 @@ pub fn run() {
         .invoke_handler(invoke_handler)
         .register_asynchronous_uri_scheme_protocol(omni_protocol::SCHEME, omni_protocol::answer)
         .setup(move |app| {
-            let window_backdrop = main_window::open(app, window_backdrop)?;
-            app.manage(Core::new().with_window_backdrop(window_backdrop));
-            crash_reporting::install(app.handle());
-            report_relay::install(app.handle());
             commands.mount_events(app);
             let launch = match open_library(app, &config?) {
                 Ok(home_arrival) => LibraryAtLaunch {
@@ -132,6 +128,10 @@ pub fn run() {
                     }
                 }
             };
+            let window_backdrop = main_window::open(app, window_backdrop)?;
+            app.manage(Core::new().with_window_backdrop(window_backdrop));
+            crash_reporting::install(app.handle());
+            report_relay::install(app.handle());
             app.manage(launch);
             files_to_open::request(app.handle(), std::env::args().skip(1));
             Ok(())
