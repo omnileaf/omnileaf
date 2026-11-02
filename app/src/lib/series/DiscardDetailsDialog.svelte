@@ -3,6 +3,7 @@
 
   import CoverImage from "#lib/library/CoverImage.svelte";
   import type { CoverUrl } from "#lib/library/cover-url.ts";
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import ConfirmDialog from "#lib/page/ConfirmDialog.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -25,6 +26,8 @@
     onDiscard: () => void;
     onKeepEditing: () => void;
   } = $props();
+
+  const iosPhone = new IosPhone();
 </script>
 
 <ConfirmDialog
@@ -37,22 +40,27 @@
   onCancel={onKeepEditing}
   phoneLook="dialog"
   macLook="destructiveAlert"
+  iosPhoneLook="actionSheet"
 >
-  <span
-    class="flex items-center gap-md rounded-card bg-well p-md macos:gap-native-dialog-plate-gap macos:bg-native-button-secondary macos:p-native-dialog-plate-padding"
-  >
+  {#if iosPhone.isOn}
+    <span>{changedWording(changed)}</span>
+  {:else}
     <span
-      class="relative aspect-cover shrink-0 overflow-hidden rounded-list-cover bg-chip inline-confirm-cover macos:rounded-native-dialog-plate-cover macos:inline-native-dialog-plate-cover"
+      class="flex items-center gap-md rounded-card bg-well p-md macos:gap-native-dialog-plate-gap macos:bg-native-button-secondary macos:p-native-dialog-plate-padding"
     >
-      <CoverImage cover={series.cover} {coverUrl} />
-    </span>
-    <span class="flex flex-col min-inline-none">
-      <span class="truncate text-callout font-semibold max-medium:text-body">
-        {series.title}
+      <span
+        class="relative aspect-cover shrink-0 overflow-hidden rounded-list-cover bg-chip inline-confirm-cover macos:rounded-native-dialog-plate-cover macos:inline-native-dialog-plate-cover"
+      >
+        <CoverImage cover={series.cover} {coverUrl} />
       </span>
-      <span class="text-footnote text-muted">{changedWording(changed)}</span>
+      <span class="flex flex-col min-inline-none">
+        <span class="truncate text-callout font-semibold max-medium:text-body">
+          {series.title}
+        </span>
+        <span class="text-footnote text-muted">{changedWording(changed)}</span>
+      </span>
     </span>
-  </span>
+  {/if}
   <span class="text-label text-muted max-medium:text-body">
     {m.edit_details_discard_note()}
   </span>
