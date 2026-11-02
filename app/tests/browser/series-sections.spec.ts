@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
+  boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
   test,
@@ -287,6 +288,17 @@ test.describe("a series' section tabs on an iPhone", { tag: "@native" }, () => {
       /Specials/,
     ]);
     await expect(covers(page, "Volumes")).toHaveCount(2);
+  });
+
+  test("puts the search and sort row above the tabs", async ({ page }) => {
+    await openSeries(page);
+
+    const [tabs, search] = await Promise.all([
+      boxOf(kinds(page)),
+      boxOf(page.getByRole("searchbox", { name: "Find a book" })),
+    ]);
+
+    expect(search.y + search.height).toBeLessThanOrEqual(tabs.y);
   });
 
   test("lists only the chapters once Chapters is chosen", async ({ page }) => {
