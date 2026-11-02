@@ -20,6 +20,7 @@ const COMPACT_BELOW = 600;
 interface SegmentedControl {
   readonly name: string;
   readonly hasIcons: (platform: string, width: number) => boolean;
+  readonly isSegmented?: (platform: string, width: number) => boolean;
   readonly backend: (platform: Platform) => FakeBackend;
   readonly open: (page: Page, messages: Messages) => Promise<Locator>;
 }
@@ -123,6 +124,8 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "Settings > Privacy's Crash reports",
     hasIcons: () => false,
+    isSegmented: (platform, width) =>
+      platform !== "android" || width >= COMPACT_BELOW,
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(page, "/settings/privacy", messages.privacy_crash_reports),
@@ -246,6 +249,10 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 test.skip(
                   testInfo.project.name !== project,
                   `${platform} is checked in ${project}`,
+                );
+                test.skip(
+                  control.isSegmented?.(platform, width) === false,
+                  `${control.name} is flat radio rows on an Android phone`,
                 );
                 await scaleText(page, scale);
                 await page.setViewportSize({ width, height: HEIGHT });
