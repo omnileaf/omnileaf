@@ -22,6 +22,8 @@ type WireEdits = Parameters<FakeBackend["editSeriesDetails"]>[1];
 
 const FILE_TITLE = SERIES_TITLE;
 const TYPED_TITLE = "The Harbour Gate";
+const LONG_TITLE =
+  "The Lighthouse Keeper’s Apprentice Spends Every Winter Writing Letters to a Sister Across the Northern Sea";
 const FROM_FILES = {
   title: { fromFile: FILE_TITLE, source: "folderName", edited: null },
   people: {
@@ -647,7 +649,10 @@ test.describe("on an iPhone", { tag: "@native" }, () => {
     }
     await expect(
       shown.getByRole("button", { name: /^Remove .*Author A/ }),
-    ).toHaveCSS("background-color", await tokenColour(page, "--color-chip"));
+    ).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-button-secondary"),
+    );
     const footnote = shown.getByText("From the file", { exact: true }).first();
     const footnoteSize = await footnote.evaluate((note) =>
       parseFloat(getComputedStyle(note).fontSize),
@@ -1289,6 +1294,118 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("sets a removable chip 28px tall with 12px before its text and 8px before its X", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      for (const chip of [
+        shown.getByRole("button", { name: "Remove Story · Author A" }),
+        shown.getByRole("button", { name: "Remove Seinen" }),
+      ]) {
+        await expect(chip).toHaveCSS("padding-inline-start", "12px");
+        await expect(chip).toHaveCSS("padding-inline-end", "8px");
+        await expect(chip).toHaveCSS("border-top-width", "0px");
+        expect((await boxOf(chip)).height).toBeCloseTo(28, 0);
+      }
+    });
+
+    test("fills a chip with the grey control fill as a capsule in subhead type", async ({
+      page,
+    }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const chip = shown.getByRole("button", { name: "Remove Sea" });
+      await expect(chip).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-button-secondary"),
+      );
+      await expect(chip).toHaveCSS("font-size", "15px");
+      await expect(chip).toHaveCSS("line-height", "20px");
+      await expect(chip).toHaveCSS("font-weight", "400");
+      await expect(chip).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-foreground"),
+      );
+      const radius = await chip.evaluate((element) =>
+        parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      );
+      expect(radius).toBeGreaterThanOrEqual(14);
+    });
+
+    test("draws a chip's X 15px wide in the muted colour", async ({ page }) => {
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const cross = shown
+        .getByRole("button", { name: "Remove Art · Author C" })
+        .locator("svg");
+      await expect(cross).toHaveCSS("width", "15px");
+      await expect(cross).toHaveCSS("height", "15px");
+      await expect(cross).toHaveCSS(
+        "color",
+        await tokenColour(page, "--color-muted"),
+      );
+    });
+
+    test("sets Show all as a chip with 12px on both sides and no X", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        people: {
+          fromFile: Array.from({ length: 12 }, (_, index) => ({
+            name: `Author ${String(index + 1)}`,
+            role: "story",
+          })),
+          edited: null,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const more = shown.getByRole("button", { name: "Show all 12" });
+      await expect(more).toHaveCSS("padding-inline-start", "12px");
+      await expect(more).toHaveCSS("padding-inline-end", "12px");
+      await expect(more).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-button-secondary"),
+      );
+      await expect(more.locator("svg")).toHaveCount(0);
+      expect((await boxOf(more)).height).toBeCloseTo(28, 0);
+    });
+
+    test("wraps a long title over three lines inside its row", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: LONG_TITLE,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      const title = shown.getByRole("textbox", { name: "Title" });
+      const lines = await title.evaluate((field) => {
+        const style = getComputedStyle(field);
+        const text =
+          field.getBoundingClientRect().height -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom);
+        return {
+          count: Math.round(text / parseFloat(style.lineHeight)),
+          clipped: field.scrollHeight > field.clientHeight,
+        };
+      });
+      expect(lines).toEqual({ count: 3, clipped: false });
+    });
+
     test("sets Mark as 18+ as a list row with a regular title and its switch at the end", async ({
       page,
     }) => {
@@ -1338,6 +1455,33 @@ test.describe(
       ]);
     });
 
+    test("starts the notice's words at its edge with no icon before them", async ({
+      page,
+    }) => {
+      details = {
+        ...FROM_FILES,
+        title: {
+          fromFile: FILE_TITLE,
+          source: "folderName",
+          edited: TYPED_TITLE,
+        },
+      };
+      const shown = await openEditor(page, "ios");
+      await settle(shown);
+
+      await tap(shown.getByRole("button", { name: "Use the file’s title" }));
+
+      const notice = shown.getByRole("status");
+      const words = notice.getByText("Title back to the file’s");
+      await expect(words).toBeVisible();
+      await expect(notice.locator("svg")).toHaveCount(0);
+      const card = notice.getByText("Undo").locator("xpath=../..");
+      expect((await boxOf(words)).x - (await boxOf(card)).x).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-notice-start"),
+        0,
+      );
+    });
+
     test("sets the locked 18+ mark as the same list row, its link kept", async ({
       page,
     }) => {
@@ -1353,7 +1497,16 @@ test.describe(
       await expect(
         shown.getByRole("link", { name: "Settings › Library" }),
       ).toBeVisible();
-      const [rowBox, titleBox] = await Promise.all([boxOf(row), boxOf(title)]);
+      await expect(mark).toHaveCSS("opacity", "0.5");
+      const [rowBox, titleBox, markBox] = await Promise.all([
+        boxOf(row),
+        boxOf(title),
+        boxOf(mark),
+      ]);
+      expect(rowBox.x + rowBox.width - (markBox.x + markBox.width)).toBeCloseTo(
+        await lengthOf(page, "--native-spacing-row-end"),
+        0,
+      );
       expect(titleBox.x - rowBox.x).toBeCloseTo(
         await lengthOf(page, "--native-spacing-row-start"),
         0,
@@ -1369,6 +1522,15 @@ test.describe(
   "people and tags off the iPhone sheet",
   { tag: "@native" },
   () => {
+    test("keep the chips' outline", async ({ page, platform }) => {
+      test.skip(platform === "ios", "an iPhone sets its own chips");
+      const shown = await openEditor(page, platform);
+
+      await expect(
+        shown.getByRole("button", { name: "Remove Seinen" }),
+      ).toHaveCSS("border-top-width", "1px");
+    });
+
     test("keep their Add chip inside the chip group", async ({
       page,
       platform,

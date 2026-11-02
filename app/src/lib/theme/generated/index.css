@@ -125,6 +125,7 @@
   --spacing-native-row-rule-indent: var(--native-spacing-row-rule-indent);
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-row-add-lead: var(--native-spacing-row-add-lead);
+  --spacing-native-row-chip: var(--native-spacing-row-chip);
   --spacing-native-row-chips-end: var(--native-spacing-row-chips-end);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
