@@ -24,6 +24,11 @@
 </script>
 
 <ContextMenuContent to="main" class="min-inline-book-menu">
+  <div
+    class="hidden px-sm pbs-xs pbe-2xs text-native-title-bar-title/native-title-bar-title font-native-title-bar-title text-muted macos:block"
+  >
+    {m.library_picked_menu_heading({ count })}
+  </div>
   <ContextMenuItem onSelect={actions.onMarkRead}>
     <Eye size={MENU_ICON_SIZE} aria-hidden="true" />
     {m.library_mark_read()}
