@@ -42,9 +42,8 @@
   );
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
-  const isTitleFoldedIntoBar = $derived(
-    isTitleUnderBar && !hasTopTabBar(platform, width.current),
-  );
+  const hasTabsAtTop = $derived(hasTopTabBar(platform, width.current));
+  const isTitleFoldedIntoBar = $derived(isTitleUnderBar && !hasTabsAtTop);
 
   $effect(() => {
     const heading = header?.querySelector("h1");
@@ -137,6 +136,7 @@
       "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center pe-page-end pbs-page-top pbe-xs motion-safe:transition-colors motion-safe:duration-fade",
       NATIVE_TOP_BAR.edge,
       foldingBar.row,
+      hasTabsAtTop && "pbe-native-top-bar-folded-title",
       leading !== undefined && "grid grid-cols-folding-bar-leading",
       isTitleFoldedIntoBar ? NATIVE_TOP_BAR.scrolled : "border-transparent",
     )}
@@ -153,7 +153,10 @@
         leading === undefined && "flex-1",
         foldingBar.title,
         NATIVE_TOP_BAR.barTitle,
-        isTitleFoldedIntoBar ? "opacity-100" : "opacity-0",
+        hasTabsAtTop && "absolute inset-x-none inset-be-xs",
+        isTitleFoldedIntoBar || (hasTabsAtTop && isTitleUnderBar)
+          ? "opacity-100"
+          : "opacity-0",
       ]}
     >
       {title}
@@ -162,6 +165,7 @@
       class={[
         NATIVE_TOP_BAR.barButtonRow,
         leading !== undefined && "justify-self-end",
+        hasTabsAtTop && "ms-auto",
       ]}
     >
       {@render actions()}
