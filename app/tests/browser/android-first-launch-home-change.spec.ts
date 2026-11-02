@@ -7,6 +7,7 @@ import {
 } from "./fixtures.ts";
 import {
   APP_STORAGE_HOME,
+  FOUND_WHILE_READING,
   goToTheHomeStep,
   homeRow,
   LONG_PICKED_LOCATION,
@@ -64,6 +65,14 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("sets the note at 12 over 16", async ({ page }) => {
+      await goToTheHomeStep(page);
+      const note = page.getByText(FIRST_LAUNCH_NOTE, { exact: true });
+
+      await expect(note).toHaveCSS("font-size", "12px");
+      await expect(note).toHaveCSS("line-height", "16px");
+    });
+
     test("moves the library to the empty folder picked and reads its books", async ({
       page,
     }) => {
@@ -76,6 +85,29 @@ test.describe(
         page.getByText(PICKED_LOCATION, { exact: true }),
       ).toBeVisible();
       await expect.poll(() => picker.rescans).toEqual([APP_STORAGE_HOME.id]);
+    });
+
+    test("counts the books found under the Home folder row while the moved home is read", async ({
+      page,
+    }) => {
+      const finish = picker.holdRescan();
+      picker.pickEmpty();
+      await goToTheHomeStep(page);
+
+      await homeRow(page).click();
+
+      const counting = page.getByText(
+        `Counting… ${String(FOUND_WHILE_READING)} so far`,
+      );
+      await expect(counting).toBeVisible();
+      const place = await boxOf(
+        page.getByText(PICKED_LOCATION, { exact: true }),
+      );
+      expect((await boxOf(counting)).y).toBeGreaterThanOrEqual(
+        place.y + place.height,
+      );
+      finish();
+      await expect(counting).toHaveCount(0);
     });
 
     test("stays on the step after the move, with Continue in reach", async ({

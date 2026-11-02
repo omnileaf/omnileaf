@@ -57,7 +57,7 @@
   }: {
     tone: NoticeTone;
     severity?: InfoBarSeverity;
-    icon: Snippet;
+    icon?: Snippet | undefined;
     title: string | Snippet;
     body?: string | undefined;
     action?: NoticeAction | undefined;
@@ -75,10 +75,12 @@
   );
 </script>
 
+{#snippet noIcon()}{/snippet}
+
 {#if platform === "windows"}
   <WindowsInfoBar
     severity={severity ?? SEVERITIES[tone]}
-    {icon}
+    icon={icon ?? noIcon}
     {title}
     {body}
     {action}
@@ -104,12 +106,14 @@
         !isTall && look.oneLineWords,
       ]}
     >
-      <span
-        aria-hidden="true"
-        class={["flex shrink-0 items-center text-label block-lh", look.icon]}
-      >
-        {@render icon()}
-      </span>
+      {#if icon !== undefined}
+        <span
+          aria-hidden="true"
+          class={["flex shrink-0 items-center text-label block-lh", look.icon]}
+        >
+          {@render icon()}
+        </span>
+      {/if}
       <div class="flex flex-1 flex-col gap-2xs min-inline-none">
         <p class={["text-label font-medium", look.title]}>
           {#if typeof title === "string"}

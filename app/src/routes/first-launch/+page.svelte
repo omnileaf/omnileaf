@@ -306,6 +306,7 @@
         <HomeStep
           platform={data.appInfo.platform}
           folders={folders.list}
+          scan={rescans.status}
           isChanging={homeChange.isBusy || rescans.isBusy}
           onBack={back}
           onNext={next}

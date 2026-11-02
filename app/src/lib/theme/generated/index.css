@@ -125,6 +125,7 @@
   --spacing-native-row-rule-indent: var(--native-spacing-row-rule-indent);
   --spacing-native-row-lead: var(--native-spacing-row-lead);
   --spacing-native-row-add-lead: var(--native-spacing-row-add-lead);
+  --spacing-native-row-chip: var(--native-spacing-row-chip);
   --spacing-native-row-chips-end: var(--native-spacing-row-chips-end);
   --spacing-native-group-head-end: var(--native-spacing-group-head-end);
   --spacing-native-group-head-below: var(--native-spacing-group-head-below);
@@ -263,6 +264,8 @@
   --text-native-inspector-label: var(--native-text-inspector-label);
   --leading-native-inspector-label: var(--native-leading-inspector-label);
   --font-weight-native-inspector-label: var(--native-weight-inspector-label);
+  --tracking-native-inspector-label: var(--native-tracking-inspector-label);
+  --tracking-native-inspector-note: var(--native-tracking-inspector-note);
   --spacing-native-bottom-bar-start: var(--native-spacing-bottom-bar-start);
   --spacing-native-bottom-bar-end: var(--native-spacing-bottom-bar-end);
   --spacing-native-search-bar-start: var(--native-spacing-search-bar-start);
@@ -306,6 +309,11 @@
   --spacing-native-dialog-top: var(--native-spacing-dialog-top);
   --spacing-native-dialog-icon: var(--native-spacing-dialog-icon);
   --spacing-native-dialog-actions-gap: var(--native-spacing-dialog-actions-gap);
+  --spacing-native-dialog-plate-gap: var(--native-spacing-dialog-plate-gap);
+  --spacing-native-dialog-plate-padding: var(--native-spacing-dialog-plate-padding);
+  --spacing-native-dialog-plate-cover: var(--native-spacing-dialog-plate-cover);
+  --spacing-native-dialog-sheet-top: var(--native-spacing-dialog-sheet-top);
+  --radius-native-dialog-plate-cover: var(--native-radius-dialog-plate-cover);
   --spacing-native-dialog-accessory-gap: var(--native-spacing-dialog-accessory-gap);
   --spacing-native-dialog-button: var(--native-spacing-dialog-button);
   --spacing-native-action-sheet: var(--native-spacing-action-sheet);
@@ -551,6 +559,18 @@
   --shadow-native-field-rim: var(--native-shadow-field-rim);
   --spacing-native-text-field-block-tall: var(--native-spacing-text-field-block-tall);
   --spacing-native-text-field-tall: var(--native-spacing-text-field-tall);
+  --text-native-first-launch-title: var(--native-text-first-launch-title);
+  --leading-native-first-launch-title: var(--native-leading-first-launch-title);
+  --font-weight-native-first-launch-title: var(--native-weight-first-launch-title);
+  --tracking-native-first-launch-title: var(--native-tracking-first-launch-title);
+  --text-native-first-launch-lede: var(--native-text-first-launch-lede);
+  --leading-native-first-launch-lede: var(--native-leading-first-launch-lede);
+  --font-weight-native-first-launch-lede: var(--native-weight-first-launch-lede);
+  --tracking-native-first-launch-lede: var(--native-tracking-first-launch-lede);
+  --text-native-first-launch-note: var(--native-text-first-launch-note);
+  --leading-native-first-launch-note: var(--native-leading-first-launch-note);
+  --font-weight-native-first-launch-note: var(--native-weight-first-launch-note);
+  --tracking-native-first-launch-note: var(--native-tracking-first-launch-note);
 }
 
 @media (prefers-reduced-motion: reduce) {

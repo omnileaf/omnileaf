@@ -2,17 +2,25 @@ export interface SegmentRoom {
   readonly widths: readonly number[];
   readonly space: number;
   readonly gap: number;
+  readonly hasEqualColumns?: boolean;
 }
 
-export function columnsThatFit({ widths, space, gap }: SegmentRoom): number {
+export function columnsThatFit({
+  widths,
+  space,
+  gap,
+  hasEqualColumns = false,
+}: SegmentRoom): number {
   const count = widths.length;
+  const widest = Math.max(...widths);
   const spanOf = (columns: number, total: number): number =>
     total + (columns - 1) * gap;
-  const oneRow = widths.reduce((sum, width) => sum + width, 0);
+  const oneRow = hasEqualColumns
+    ? count * widest
+    : widths.reduce((sum, width) => sum + width, 0);
   if (spanOf(count, oneRow) <= space) {
     return count;
   }
-  const widest = Math.max(...widths);
   const evenColumns = Array.from(
     { length: count - 2 },
     (_, index) => count - 1 - index,
@@ -28,6 +36,7 @@ export function followFittingColumns(
   track: HTMLElement,
   ruler: HTMLElement,
   onFit: (columns: number) => void,
+  hasEqualColumns = false,
 ): () => void {
   const fit = (): void => {
     const rulerWidth = ruler.getBoundingClientRect().width;
@@ -47,6 +56,7 @@ export function followFittingColumns(
         widths,
         space,
         gap: Number.parseFloat(style.columnGap),
+        hasEqualColumns,
       }),
     );
   };

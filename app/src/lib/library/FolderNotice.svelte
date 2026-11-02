@@ -16,6 +16,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { folderStandIn } from "#lib/screenshot-mode/stand-ins.ts";
 
+  import { AndroidPhone } from "./android-phone.svelte";
   import type { FolderAdding, FolderOutcome } from "./folder-adding.svelte";
   import ScanToast from "./ScanToast.svelte";
   import { unsupportedLines } from "./unsupported-lines";
@@ -68,10 +69,12 @@
     return problems.length === 0 ? undefined : problems.join(" ");
   }
 
+  const android = new AndroidPhone();
+
   function isFollowedInToast(outcome: FolderOutcome): boolean {
     return (
-      outcome.kind === "finding" ||
-      outcome.kind === "reading" ||
+      (!android.isOn &&
+        (outcome.kind === "finding" || outcome.kind === "reading")) ||
       (outcome.kind === "scanned" && outcome.scan.books > 0)
     );
   }

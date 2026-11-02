@@ -4,6 +4,7 @@
 
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -18,6 +19,8 @@
     onContinue: () => void;
     onNotNow: () => void;
   } = $props();
+
+  const android = new AndroidPhone();
 </script>
 
 <AlertDialog.Root
@@ -36,9 +39,14 @@
     onDismiss={onNotNow}
   >
     <div class="flex items-center gap-md">
-      <HeaderBadge icon={Folder} look="header-accent" />
+      {#if !android.isOn}
+        <HeaderBadge icon={Folder} look="header-accent" />
+      {/if}
       <DialogTitle
-        class="text-dialog-title font-bold max-medium:text-sheet-title"
+        class={[
+          "text-dialog-title font-bold max-medium:text-sheet-title",
+          "android:max-medium:text-native-page-title/native-page-title android:max-medium:font-regular",
+        ]}
       >
         {m.first_launch_pick_folder_title()}
       </DialogTitle>

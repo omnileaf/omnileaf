@@ -91,6 +91,7 @@
   --native-spacing-row-rule-indent: 42px;
   --native-spacing-row-lead: 30px;
   --native-spacing-row-add-lead: 22px;
+  --native-spacing-row-chip: 28px;
   --native-spacing-row-chips-end: 12px;
   --native-spacing-group-head-end: 6px;
   --native-spacing-group-head-below: 6px;
@@ -195,6 +196,8 @@
   --native-text-inspector-label: var(--text-small);
   --native-leading-inspector-label: var(--text-small--line-height);
   --native-weight-inspector-label: var(--font-weight-medium);
+  --native-tracking-inspector-label: 0;
+  --native-tracking-inspector-note: 0;
   --native-spacing-bottom-bar-start: max(calc(var(--spacing-safe-start) + 16px), calc((100% - 392px) / 2));
   --native-spacing-bottom-bar-end: max(calc(var(--spacing-safe-end) + 16px), calc((100% - 392px) / 2));
   --native-spacing-search-bar-start: calc(var(--native-spacing-bottom-bar-start) + var(--native-spacing-toolbar-button) + 8px);
@@ -228,6 +231,11 @@
   --native-spacing-dialog-top: var(--spacing-lg);
   --native-spacing-dialog-icon: var(--spacing-app-icon);
   --native-spacing-dialog-actions-gap: var(--spacing-sm);
+  --native-spacing-dialog-plate-gap: var(--spacing-md);
+  --native-spacing-dialog-plate-padding: var(--spacing-md);
+  --native-spacing-dialog-plate-cover: var(--spacing-confirm-cover);
+  --native-spacing-dialog-sheet-top: var(--spacing-lg);
+  --native-radius-dialog-plate-cover: var(--radius-list-cover);
   --native-spacing-dialog-accessory-gap: var(--spacing-md);
   --native-spacing-dialog-button: 48px;
   --native-spacing-action-sheet: min(300px, calc(100% - 32px));
@@ -457,6 +465,18 @@
   --native-shadow-field-rim: none;
   --native-spacing-text-field-block-tall: var(--spacing-sm);
   --native-spacing-text-field-tall: var(--spacing-textarea);
+  --native-text-first-launch-title: var(--text-step-body);
+  --native-leading-first-launch-title: var(--text-step-body--line-height);
+  --native-weight-first-launch-title: var(--font-weight-regular);
+  --native-tracking-first-launch-title: 0;
+  --native-text-first-launch-lede: var(--text-step-body);
+  --native-leading-first-launch-lede: var(--text-step-body--line-height);
+  --native-weight-first-launch-lede: var(--font-weight-regular);
+  --native-tracking-first-launch-lede: 0;
+  --native-text-first-launch-note: var(--text-footnote);
+  --native-leading-first-launch-note: var(--text-footnote--line-height);
+  --native-weight-first-launch-note: var(--font-weight-regular);
+  --native-tracking-first-launch-note: 0;
 }
 
 :root[data-platform="ios"],

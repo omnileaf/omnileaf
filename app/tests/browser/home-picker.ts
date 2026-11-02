@@ -31,6 +31,7 @@ const OLD_HOME_KEPT: WireFolder = {
   isAvailable: true,
 };
 export const HOME_ROW = "Home folder";
+export const FOUND_WHILE_READING = 38;
 
 export class HomePicker {
   picks: (ChosenHomeFolder | CommandFailure | null)[] = [];
@@ -43,6 +44,7 @@ export class HomePicker {
   failsToRescan = false;
   isFirstLaunch = false;
   answering: Promise<void> = Promise.resolve();
+  reading: Promise<void> = Promise.resolve();
 
   reset(): void {
     this.picks = [];
@@ -55,6 +57,15 @@ export class HomePicker {
     this.failsToRescan = false;
     this.isFirstLaunch = false;
     this.answering = Promise.resolve();
+    this.reading = Promise.resolve();
+  }
+
+  holdRescan(): () => void {
+    let release = () => {};
+    this.reading = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
   }
 
   holdMove(): () => void {
@@ -111,8 +122,10 @@ export function pickingAHome(): FakeBackend {
       picker.hasMoved = true;
       return { kind: "moved", folder: APP_STORAGE_HOME.id };
     },
-    rescanLibraryFolder: (id) => {
+    rescanLibraryFolder: async (id, onProgress) => {
       picker.rescans.push(id);
+      await onProgress.send({ stage: "finding", found: FOUND_WHILE_READING });
+      await picker.reading;
       if (picker.failsToRescan) {
         throw new CommandFailure({
           code: "internal",
