@@ -90,6 +90,11 @@
   --native-spacing-dialog-top: 20px;
   --native-spacing-dialog-icon: 54px;
   --native-spacing-dialog-actions-gap: 6px;
+  --native-spacing-dialog-plate-gap: 10px;
+  --native-spacing-dialog-plate-padding: 8px;
+  --native-spacing-dialog-plate-cover: 28px;
+  --native-spacing-dialog-sheet-top: calc(var(--spacing-toolbar) + 24px);
+  --native-radius-dialog-plate-cover: 3px;
   --native-spacing-dialog-accessory-gap: 6px;
   --native-radius-sheet: 16px;
   --native-radius-menu: 12px;

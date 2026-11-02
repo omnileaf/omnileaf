@@ -173,6 +173,15 @@ const MAC_LOOK: AlertLook = {
   defaultAction: { danger: "confirm", accent: "confirm" },
 };
 
+const MAC_DESTRUCTIVE_LOOK: AlertLook = {
+  ...MAC_LOOK,
+  surface: `${MAC_LOOK.surface} mbs-native-dialog-sheet-top mbe-auto`,
+  buttons: {
+    cancel: { variant: "secondary" },
+    confirm: { variant: "destructive" },
+  },
+};
+
 const ALERT_LOOKS = {
   ios: IOS_LOOK,
   android: ANDROID_LOOK,
@@ -185,7 +194,7 @@ export type ConfirmPhoneLook = "sheet" | "dialog";
 
 export type IosPhoneConfirmLook = "actionSheet";
 
-export type MacConfirmLook = "alert";
+export type MacConfirmLook = "alert" | "destructiveAlert";
 
 function isIosActionSheet(
   platform: Platform,
@@ -198,7 +207,7 @@ function isMacAlert(
   platform: Platform,
   macLook: MacConfirmLook | undefined,
 ): boolean {
-  return platform === "macos" && macLook === "alert";
+  return platform === "macos" && macLook !== undefined;
 }
 
 /** WinUI has no bottom sheets, so a Windows confirmation is always a ContentDialog. */
@@ -230,7 +239,7 @@ export function alertLook(
   macLook?: MacConfirmLook,
 ): AlertLook {
   if (isMacAlert(platform, macLook)) {
-    return MAC_LOOK;
+    return macLook === "destructiveAlert" ? MAC_DESTRUCTIVE_LOOK : MAC_LOOK;
   }
   return isIosActionSheet(platform, iosPhoneLook)
     ? IOS_ACTION_SHEET_LOOK

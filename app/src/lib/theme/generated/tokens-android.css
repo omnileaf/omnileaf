@@ -237,6 +237,11 @@
   --native-spacing-dialog-top: var(--spacing-lg);
   --native-spacing-dialog-icon: var(--spacing-app-icon);
   --native-spacing-dialog-actions-gap: var(--spacing-sm);
+  --native-spacing-dialog-plate-gap: var(--spacing-md);
+  --native-spacing-dialog-plate-padding: var(--spacing-md);
+  --native-spacing-dialog-plate-cover: var(--spacing-confirm-cover);
+  --native-spacing-dialog-sheet-top: var(--spacing-lg);
+  --native-radius-dialog-plate-cover: var(--radius-list-cover);
   --native-spacing-dialog-accessory-gap: var(--spacing-md);
   --native-spacing-dialog-button: var(--spacing-touch-button);
   --native-spacing-action-sheet: var(--spacing-dialog);
