@@ -14,7 +14,8 @@ export interface MacTableRowLook {
 
 const PICKED_ROW = "rounded-native-table-row bg-accent text-on-accent";
 
-const PROGRESS_ON_ACCENT = "[--primary:var(--primary-foreground)]";
+const PROGRESS_ON_ACCENT =
+  "[--primary:var(--primary-foreground)] [--accent-fill:var(--on-accent-fill)]";
 
 export function macTableRowLook(
   { isPicked, isAbovePicked, isBelowPicked }: MacTableRowPick,
