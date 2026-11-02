@@ -473,7 +473,14 @@ export const SCREENS: readonly Screen[] = [
     heading(english.adult_content_title),
   ]),
   sampleScreen("library tab settings", "/settings/library/tabs", [
-    heading(english.library_tabs_title),
+    (page) =>
+      page.getByRole("heading", {
+        level: 1,
+        name: new RegExp(
+          `^(${english.library_tabs_title}|${english.library_tabs_title_mac})$`,
+          "u",
+        ),
+      }),
   ]),
   sampleScreen("tag settings", "/settings/library/tags", [
     heading(english.manage_tags_title),
