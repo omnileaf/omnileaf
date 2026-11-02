@@ -198,20 +198,51 @@ pub(crate) async fn detail(
     let Some(code) = code_of(code) else {
         return report_not_found();
     };
-    let shown = match state.relay.detail(&code).await {
+    show_report(&state, &session, &code, StatusCode::OK, None).await
+}
+
+/// Draws the report page, with a message above it when a move was turned down.
+pub(crate) async fn show_report(
+    state: &AppState,
+    session: &Session,
+    code: &ReportCode,
+    status: StatusCode,
+    refusal: Option<&str>,
+) -> Response {
+    let shown = match state.relay.detail(code).await {
         Ok(Some(shown)) => shown,
         Ok(None) => return report_not_found(),
         Err(error) => return relay_unavailable(error),
     };
-    let entries = match state.relay.audit(&code).await {
+    let entries = match state.relay.audit(code).await {
         Ok(entries) => entries,
         Err(error) => return relay_unavailable(error),
     };
     let content = html! {
         h1 { (code) }
+        @if let Some(refusal) = refusal {
+            p class="refusal" role="alert" { (refusal) }
+        }
         (facts(&shown.listed))
         nav class="actions" aria-label="Report views" {
+            a href={ "/admin/reports/" (code) "/issue" } { "Copy as public issue" }
             a href={ "/admin/reports/" (code) "/audit" } { "Audit trail" }
+        }
+        form class="move" method="post" action={ "/admin/reports/" (code) "/status" } {
+            fieldset {
+                legend { "Move this report" }
+                input type="hidden" name="csrf" value=(session.csrf_token(state));
+                div {
+                    label for="issue" { "Issue number, for published or duplicate" }
+                    input id="issue" name="issue" type="text" inputmode="numeric" autocomplete="off";
+                }
+                div class="buttons" {
+                    button type="submit" name="status" value="reviewing" { "Reviewing" }
+                    button type="submit" name="status" value="published" { "Published" }
+                    button type="submit" name="status" value="duplicate" { "Duplicate" }
+                    button type="submit" name="status" value="closed" { "Closed" }
+                }
+            }
         }
         h2 { "Report" }
         @if let Some(text) = &shown.report {
@@ -222,8 +253,8 @@ pub(crate) async fn detail(
         h2 { "Audit trail" }
         (trail(&entries))
     };
-    let page = layout(code.as_str(), Some(&signed_in(&state, &session)), &content);
-    Html(page.into_string()).into_response()
+    let page = layout(code.as_str(), Some(&signed_in(state, session)), &content);
+    (status, Html(page.into_string())).into_response()
 }
 
 pub(crate) async fn audit(

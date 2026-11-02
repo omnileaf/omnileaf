@@ -76,7 +76,8 @@ a {
 .brand,
 .account button,
 .link-button,
-.filters button {
+.filters button,
+.move button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -150,7 +151,8 @@ textarea {
   font-family: ui-monospace, monospace;
 }
 
-.filters {
+.filters,
+.move {
   display: grid;
   gap: 0.75rem;
   margin: 1rem 0;
@@ -159,7 +161,8 @@ textarea {
   border-radius: 0.5rem;
 }
 
-.filters fieldset {
+.filters fieldset,
+.move fieldset {
   display: contents;
 }
 
@@ -242,6 +245,21 @@ textarea {
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.refusal {
+  padding: 0.75rem 1rem;
+  background: var(--danger-surface);
+  border: 2px solid var(--danger);
+  border-radius: 0.5rem;
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .trail caption {

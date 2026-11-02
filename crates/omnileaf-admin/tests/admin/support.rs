@@ -127,6 +127,17 @@ struct RelayState {
     requests: Mutex<Vec<Seen>>,
     leak_reply_address: AtomicBool,
     reject_everything: AtomicBool,
+    posts: Mutex<Vec<Posted>>,
+    status_result: Mutex<Option<Value>>,
+    export: Mutex<Option<Value>>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Posted {
+    pub(crate) code: String,
+    pub(crate) body: Value,
+    pub(crate) actor: Option<String>,
+    pub(crate) authorized: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -148,6 +159,8 @@ impl FakeRelay {
             .route("/admin/v1/reports", get(relay_list))
             .route("/admin/v1/reports/{code}", get(relay_detail))
             .route("/admin/v1/reports/{code}/audit", get(relay_audit))
+            .route("/admin/v1/reports/{code}/export", get(relay_export))
+            .route("/admin/v1/reports/{code}/status", post(relay_status))
             .with_state(Arc::clone(&state));
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
@@ -194,6 +207,18 @@ impl FakeRelay {
 
     pub(crate) fn reject_everything(&self) {
         self.state.reject_everything.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn answer_status_with(&self, result: Value) {
+        *self.state.status_result.lock().unwrap() = Some(result);
+    }
+
+    pub(crate) fn answer_export_with(&self, result: Value) {
+        *self.state.export.lock().unwrap() = Some(result);
+    }
+
+    pub(crate) fn posts(&self) -> Vec<Posted> {
+        self.state.posts.lock().unwrap().clone()
     }
 
     pub(crate) fn leak_reply_address(&self) {
@@ -296,6 +321,58 @@ async fn relay_audit(
     }
     let entries = state.audits.lock().unwrap().get(&code).cloned();
     (StatusCode::OK, Json(entries.unwrap_or_else(|| json!([]))))
+}
+
+async fn relay_export(
+    State(state): State<Arc<RelayState>>,
+    headers: HeaderMap,
+    Path(code): Path<String>,
+) -> (StatusCode, Json<Value>) {
+    if !note(
+        &state,
+        format!("/admin/v1/reports/{code}/export"),
+        HashMap::new(),
+        &headers,
+    ) {
+        return (StatusCode::UNAUTHORIZED, Json(json!({})));
+    }
+    let answer = state.export.lock().unwrap().clone();
+    (
+        StatusCode::OK,
+        Json(answer.unwrap_or_else(|| json!({ "result": "notFound" }))),
+    )
+}
+
+async fn relay_status(
+    State(state): State<Arc<RelayState>>,
+    headers: HeaderMap,
+    Path(code): Path<String>,
+    Json(body): Json<Value>,
+) -> (StatusCode, Json<Value>) {
+    let authorized = note(
+        &state,
+        format!("/admin/v1/reports/{code}/status"),
+        HashMap::new(),
+        &headers,
+    );
+    let actor = headers
+        .get("x-admin-actor")
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_owned);
+    state.posts.lock().unwrap().push(Posted {
+        code,
+        body,
+        actor,
+        authorized,
+    });
+    if !authorized {
+        return (StatusCode::UNAUTHORIZED, Json(json!({})));
+    }
+    let answer = state.status_result.lock().unwrap().clone();
+    (
+        StatusCode::OK,
+        Json(answer.unwrap_or_else(|| json!({ "result": "changed" }))),
+    )
 }
 
 pub(crate) struct Harness {
@@ -422,4 +499,12 @@ impl Harness {
         assert_eq!(reply.status, StatusCode::SEE_OTHER, "{}", reply.body);
         reply.cookie_pair("admin_session").unwrap()
     }
+}
+
+pub(crate) fn csrf_in(page: &str) -> String {
+    page.split("name=\"csrf\" value=\"")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .unwrap()
+        .to_owned()
 }

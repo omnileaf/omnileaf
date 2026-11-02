@@ -1,6 +1,6 @@
 use omnileaf_relay_proto::ReportCode;
 use reqwest::{Client, StatusCode, Url};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub(crate) const LIST_LIMIT: usize = 500;
 
@@ -39,6 +39,39 @@ pub(crate) struct AuditEntry {
     pub(crate) status: StatusView,
     pub(crate) actor: String,
     pub(crate) at: u64,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum StatusChange {
+    Changed,
+    NotFound,
+    Refused { from: String },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Export {
+    Ready(String),
+    NotFound,
+    Purged,
+}
+
+#[derive(Serialize)]
+struct StatusRequest<'a> {
+    status: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    issue: Option<u64>,
+}
+
+#[derive(Deserialize)]
+struct StatusAnswer {
+    result: String,
+    from: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ExportAnswer {
+    result: String,
+    body: Option<String>,
 }
 
 pub(crate) struct Relay {
@@ -111,5 +144,48 @@ impl Relay {
             .await?
             .ok_or(RelayError::Unavailable)?;
         response.json().await.map_err(|_| RelayError::Unavailable)
+    }
+
+    pub(crate) async fn change_status(
+        &self,
+        code: &ReportCode,
+        status: &str,
+        issue: Option<u64>,
+        actor: &str,
+    ) -> Result<StatusChange, RelayError> {
+        let answer: StatusAnswer = self
+            .http
+            .post(format!("{}/admin/v1/reports/{code}/status", self.base))
+            .bearer_auth(&self.token)
+            .header("X-Admin-Actor", actor)
+            .json(&StatusRequest { status, issue })
+            .send()
+            .await
+            .map_err(|_| RelayError::Unavailable)?
+            .error_for_status()
+            .map_err(|_| RelayError::Unavailable)?
+            .json()
+            .await
+            .map_err(|_| RelayError::Unavailable)?;
+        match (answer.result.as_str(), answer.from) {
+            ("changed", _) => Ok(StatusChange::Changed),
+            ("notFound", _) => Ok(StatusChange::NotFound),
+            ("refused", Some(from)) => Ok(StatusChange::Refused { from }),
+            _ => Err(RelayError::Unavailable),
+        }
+    }
+
+    pub(crate) async fn export(&self, code: &ReportCode) -> Result<Export, RelayError> {
+        let response = self
+            .get(&format!("reports/{code}/export"), &[])
+            .await?
+            .ok_or(RelayError::Unavailable)?;
+        let answer: ExportAnswer = response.json().await.map_err(|_| RelayError::Unavailable)?;
+        match (answer.result.as_str(), answer.body) {
+            ("ready", Some(body)) => Ok(Export::Ready(body)),
+            ("notFound", _) => Ok(Export::NotFound),
+            ("purged", _) => Ok(Export::Purged),
+            _ => Err(RelayError::Unavailable),
+        }
     }
 }

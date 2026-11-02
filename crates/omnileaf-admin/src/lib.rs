@@ -2,6 +2,7 @@ mod auth;
 mod clock_text;
 mod config;
 mod github;
+mod moves;
 mod page;
 mod relay;
 mod review;
@@ -62,6 +63,8 @@ pub fn router(state: AppState) -> Router {
         .route("/admin/style.css", get(|| async { page::stylesheet() }))
         .route("/admin/reports/{code}", get(review::detail))
         .route("/admin/reports/{code}/audit", get(review::audit))
+        .route("/admin/reports/{code}/issue", get(moves::public_issue))
+        .route("/admin/reports/{code}/status", post(moves::change_status))
         .route("/admin/login", get(auth::login))
         .route("/admin/auth/callback", get(auth::callback))
         .route("/admin/logout", post(auth::logout))
