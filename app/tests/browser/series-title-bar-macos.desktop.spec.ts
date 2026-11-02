@@ -6,6 +6,7 @@ import {
   expect,
   testOnlyInItsWebview,
   test,
+  tokenColour,
 } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
@@ -174,5 +175,30 @@ test.describe("a series' title bar on macOS", () => {
     await expect(
       page.getByRole("checkbox", { name: "Select all" }),
     ).toBeFocused();
+  });
+
+  test("mutes the title while the window has lost focus", async ({ page }) => {
+    await openSeries(page);
+    const title = titleBar(page).locator("[data-title-bar-title]");
+    await expect(title).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-foreground"),
+    );
+
+    await expect
+      .poll(async () => {
+        await page.evaluate(() => {
+          window.dispatchEvent(new Event("blur"));
+        });
+        return page.evaluate(() =>
+          document.documentElement.getAttribute("data-window-active"),
+        );
+      })
+      .toBe("false");
+
+    await expect(title).toHaveCSS(
+      "color",
+      await tokenColour(page, "--color-muted"),
+    );
   });
 });
