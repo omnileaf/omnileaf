@@ -21,6 +21,7 @@ const CAPS: IntakeCaps = IntakeCaps {
     pending_reports: 100,
 };
 const CODE: &str = "R-7K2M-QX9D";
+const ACTOR: &str = "maintainer";
 
 fn issue(number: u64) -> IssueNumber {
     IssueNumber::new(number).unwrap()
@@ -38,7 +39,11 @@ fn status_after(steps: &[TargetStatus]) -> Vec<StatusChange> {
     let store = store_with_report();
     steps
         .iter()
-        .map(|target| store.set_status(&code(CODE), *target, START).unwrap())
+        .map(|target| {
+            store
+                .set_status(&code(CODE), *target, ACTOR, START)
+                .unwrap()
+        })
         .collect()
 }
 
@@ -53,7 +58,7 @@ fn creates_its_schema_in_an_empty_file() {
         .unwrap()
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 2);
+    assert_eq!(version, 3);
 }
 
 #[test]
@@ -72,6 +77,36 @@ fn opens_a_database_it_already_made() {
             .is_already_received(&draft(CODE).as_new_report(START))
             .unwrap()
     );
+}
+
+#[test]
+fn adds_the_audit_trail_to_a_database_that_already_has_reports() {
+    let folder = ScratchFolder::new("relay-audit-upgrade");
+    let path = folder.path().join("relay.sqlite3");
+    let before = Connection::open(&path).unwrap();
+    before
+        .execute_batch(include_str!("../src/schema.sql"))
+        .unwrap();
+    before
+        .execute_batch(include_str!("../src/schema_2.sql"))
+        .unwrap();
+    before
+        .execute(
+            "INSERT INTO reports (code, status_key_hash, body_hash, platform, version, received_at, status_changed_at)
+             VALUES (?1, zeroblob(32), zeroblob(32), 'android', '0.1.0', 1, 1)",
+            [CODE],
+        )
+        .unwrap();
+    before.pragma_update(None, "user_version", 2).unwrap();
+    drop(before);
+
+    let store = Store::open(&path).unwrap();
+    let change = store
+        .set_status(&code(CODE), TargetStatus::Reviewing, ACTOR, START)
+        .unwrap();
+
+    assert_eq!(change, StatusChange::Changed);
+    assert_eq!(store.audit_trail(&code(CODE)).unwrap().len(), 1);
 }
 
 #[test]
@@ -199,7 +234,7 @@ fn says_when_a_code_has_no_report() {
     let store = Store::open_in_memory().unwrap();
 
     let change = store
-        .set_status(&code(CODE), TargetStatus::Closed, START)
+        .set_status(&code(CODE), TargetStatus::Closed, ACTOR, START)
         .unwrap();
 
     assert_eq!(change, StatusChange::NotFound);
@@ -233,6 +268,7 @@ fn publish(store: &Store, code_text: &str, number: u64) {
         .set_status(
             &code(code_text),
             TargetStatus::Published(issue(number)),
+            ACTOR,
             START,
         )
         .unwrap();

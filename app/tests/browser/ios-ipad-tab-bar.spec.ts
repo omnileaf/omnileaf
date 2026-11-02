@@ -154,7 +154,7 @@ test.describe("scrolling the library on an iPad", () => {
     },
   });
 
-  test("leaves the bar row to the tab bar instead of folding the title into it", async ({
+  test("folds the title into a small centred line under the tab bar", async ({
     page,
   }) => {
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "iPads only");
@@ -174,11 +174,17 @@ test.describe("scrolling the library on an iPad", () => {
     });
 
     const titleBar = page.locator("[data-title-bar]");
+    const folded = titleBar.getByText("Library", { exact: true });
     await expect(titleBar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(titleBar).toHaveCSS("border-bottom-color", "rgba(0, 0, 0, 0)");
-    await expect(titleBar.getByText("Library", { exact: true })).toHaveCSS(
-      "opacity",
-      "0",
+    await expect(folded).toHaveCSS("opacity", "1");
+    const [bar, title] = await Promise.all([
+      boxOf(mainBar(page)),
+      boxOf(folded),
+    ]);
+    expect(title.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+    expect(title.x + title.width / 2).toBeCloseTo(
+      viewportOf(page).width / 2,
+      0,
     );
     await expect(mainBar(page)).toBeVisible();
   });

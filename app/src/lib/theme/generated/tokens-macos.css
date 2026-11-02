@@ -102,6 +102,10 @@
   --native-spacing-search-scope-bar-block: 8px;
   --native-spacing-search-scope-bar-inline: 20px;
   --native-spacing-search-scope-chip-inline: 20px;
+  --native-text-empty: 26px;
+  --native-leading-empty: calc(32 / 26);
+  --native-tracking-empty: 0.22px;
+  --native-weight-empty-title: 700;
   --native-spacing-tile-picked: calc(100cqi / 16);
   --native-radius-tile-picked-title: 4px;
   --native-radius-search-hit: 3px;
@@ -166,6 +170,7 @@
   --native-color-button-primary-pressed: rgba(0, 0, 0, 0.11);
   --native-color-button-secondary-hover: rgba(0, 0, 0, 0.018);
   --native-color-button-secondary-pressed: rgba(0, 0, 0, 0.16);
+  --native-color-focus-ring-inner: transparent;
   --native-color-switch-on: #2f6f4f;
   --native-color-switch-off: rgba(0, 0, 0, 0.1);
   --native-color-switch-off-border: #00000000;
@@ -265,6 +270,7 @@
   --native-color-button-primary-pressed: rgba(255, 255, 255, 0.04);
   --native-color-button-secondary-hover: rgba(255, 255, 255, 0.03);
   --native-color-button-secondary-pressed: rgba(255, 255, 255, 0.16);
+  --native-color-focus-ring-inner: transparent;
   --native-color-switch-on: #2e7d55;
   --native-color-switch-off: rgba(255, 255, 255, 0.1);
   --native-color-switch-off-border: #00000000;
@@ -356,6 +362,7 @@
   --native-color-icon-button-fill-disabled: color-mix(in srgb, #000000 5.9%, transparent);
   --native-color-on-button-secondary: #000000;
   --native-color-button-primary-hover: rgba(0, 0, 0, 0.15);
+  --native-color-focus-ring-inner: #000000;
   --native-color-switch-on: #1f5a3c;
   --native-color-switch-off: rgba(0, 0, 0, 0.35);
   --native-color-switch-off-border: #000000;
@@ -421,6 +428,7 @@
   --native-color-icon-button-fill-disabled: color-mix(in srgb, #ffffff 5.9%, transparent);
   --native-color-on-button-secondary: #ffffff;
   --native-color-button-primary-hover: rgba(255, 255, 255, 0.02);
+  --native-color-focus-ring-inner: #ffffff;
   --native-color-switch-on: #2e7d55;
   --native-color-switch-off: rgba(255, 255, 255, 0.29);
   --native-color-switch-off-border: #ffffff;

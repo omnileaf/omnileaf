@@ -77,7 +77,6 @@ const MISSING_SINCE_MS: i64 = 1_790_000_000_000;
 const SAMPLES: usize = 40;
 const BUDGET: Duration = Duration::from_millis(2);
 /// A tag on a tenth or a fifth of the library is too common to sort only its series and too rare to stop soon in walking past the rest, so its page is the slowest a tag filter reads.
-const CROWDED_TAG_BUDGET: Duration = Duration::from_millis(4);
 const EVERY_TENTH_TAGGED_CROWDED: u32 = 10;
 const CROWDED_TAG: &str = "lantern";
 
@@ -212,10 +211,10 @@ async fn reads_each_sorted_page_of_10_000_series_in_a_missing_folder_within_2_ms
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_4_ms_at_p95() {
+async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_2_ms_at_p95() {
     let trial = trial_within(
         "a page of 100 of the series carrying a tag on a tenth or a fifth of 10,000 series",
-        CROWDED_TAG_BUDGET,
+        BUDGET,
     );
     let folder = ScratchFolder::new("mid-band-tag-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
@@ -326,11 +325,11 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn reads_each_page_and_count_of_a_category_of_a_hundredth_or_a_tenth_of_10_000_series_within_4_ms_at_p95()
+async fn reads_each_page_and_count_of_a_category_of_a_hundredth_or_a_tenth_of_10_000_series_within_2_ms_at_p95()
  {
     let trial = trial_within(
         "a page of 100 or a count of the series in a category of a hundredth or a tenth of 10,000 series",
-        CROWDED_TAG_BUDGET,
+        BUDGET,
     );
     let folder = ScratchFolder::new("category-speed");
     let database = Database::open(&library_config(&folder)).unwrap();

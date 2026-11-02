@@ -6,6 +6,7 @@ import {
   expect,
   testOnlyInItsWebview,
   test,
+  literalColour,
   tokenColour,
 } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
@@ -199,6 +200,38 @@ test.describe("a series' title bar on macOS", () => {
     await expect(title).toHaveCSS(
       "color",
       await tokenColour(page, "--color-muted"),
+    );
+  });
+
+  test("greys a picked book's row instead of filling it with the accent while the window is inactive", async ({
+    page,
+  }) => {
+    await openSeries(page);
+    await pick(page, 0);
+    await page.mouse.move(1, 1);
+    const row = page.getByRole("row", { selected: true });
+    await expect(row.first().getByRole("cell").first()).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--color-accent"),
+    );
+
+    await expect
+      .poll(async () => {
+        await page.evaluate(() => {
+          window.dispatchEvent(new Event("blur"));
+        });
+        return page.evaluate(() =>
+          document.documentElement.getAttribute("data-window-active"),
+        );
+      })
+      .toBe("false");
+
+    await expect(row.first().getByRole("cell").first()).toHaveCSS(
+      "background-color",
+      await literalColour(
+        page,
+        "color-mix(in oklab, var(--native-color-control-fill-pressed) 87.5%, transparent)",
+      ),
     );
   });
 });

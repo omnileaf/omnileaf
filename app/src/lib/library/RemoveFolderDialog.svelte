@@ -32,6 +32,7 @@
   title={m.library_remove_folder_title()}
   confirmLabel={m.library_remove_folder_confirm()}
   cancelLabel={m.library_remove_folder_cancel()}
+  iosPhoneLook="actionSheet"
   onConfirm={() => {
     if (folder !== undefined) {
       onConfirm(folder);

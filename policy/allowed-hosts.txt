@@ -1,3 +1,4 @@
+api.github.com
 com.android.externalstorage.documents
 creativecommons.org
 developer.android.com

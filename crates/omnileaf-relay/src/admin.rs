@@ -33,6 +33,14 @@ pub struct ShownReport {
     pub reply_address: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AuditEntry {
+    pub previous: StatusKind,
+    pub status: ReviewStatus,
+    pub actor: String,
+    pub at: UnixTime,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StatusChange {
     Changed,
@@ -104,6 +112,7 @@ impl Store {
         &self,
         code: &ReportCode,
         target: TargetStatus,
+        actor: &str,
         now: UnixTime,
     ) -> Result<StatusChange, StoreError> {
         self.transact(|transaction| {
@@ -131,7 +140,32 @@ impl Store {
                     now.seconds()
                 ],
             )?;
+            transaction.execute(
+                "INSERT INTO status_audit (code, previous_status, new_status, issue, actor, changed_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    code.as_str(),
+                    current.kind().as_str(),
+                    next.kind().as_str(),
+                    next.issue().map(IssueNumber::get),
+                    actor,
+                    now.seconds()
+                ],
+            )?;
             Ok(StatusChange::Changed)
+        })
+    }
+
+    pub fn audit_trail(&self, code: &ReportCode) -> Result<Vec<AuditEntry>, StoreError> {
+        self.transact(|transaction| {
+            let mut rows = transaction.prepare(
+                "SELECT previous_status, new_status, issue, actor, changed_at FROM status_audit
+                 WHERE code = ?1 ORDER BY changed_at DESC, id DESC",
+            )?;
+            let entries = rows
+                .query_map(params![code.as_str()], audit_entry_from)?
+                .collect::<Result<_, _>>()?;
+            Ok(entries)
         })
     }
 
@@ -158,6 +192,17 @@ fn listed_from(row: &Row<'_>) -> rusqlite::Result<ListedReport> {
         status: ReviewStatus::from_row(row, "status", "issue")?,
         platform: row.get("platform")?,
         version: row.get("version")?,
+    })
+}
+
+fn audit_entry_from(row: &Row<'_>) -> rusqlite::Result<AuditEntry> {
+    let previous: String = row.get("previous_status")?;
+    Ok(AuditEntry {
+        previous: StatusKind::from_text(&previous)
+            .ok_or_else(|| rusqlite::Error::InvalidColumnName(format!("status {previous}")))?,
+        status: ReviewStatus::from_row(row, "new_status", "issue")?,
+        actor: row.get("actor")?,
+        at: UnixTime::from_seconds(row.get("changed_at")?),
     })
 }
 

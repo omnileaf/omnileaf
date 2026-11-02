@@ -743,3 +743,39 @@ test.describe("with an iOS folder on a network share", () => {
     ]);
   });
 });
+
+test.describe("unlinking a folder on an iPhone", { tag: "@native" }, () => {
+  const folder = missingFolder(
+    { kind: "lostAccess" },
+    "Manga",
+    "Internal storage › Manga",
+  );
+  test.use({ backend: backendMissing(folder) });
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "ios", "iOS's action sheet");
+    missing = [folder];
+    asked = [];
+  });
+
+  test("asks with an action sheet, Remove folder in red above Cancel", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await notice(page, "Omnileaf can’t open Manga")
+      .getByRole("button", { name: "Unlink it" })
+      .click();
+    const sheet = page.getByRole("alertdialog");
+    await settle(sheet);
+
+    const remove = await boxOf(
+      sheet.getByRole("button", { name: "Remove folder" }),
+    );
+    const cancel = await boxOf(sheet.getByRole("button", { name: "Cancel" }));
+
+    expect(remove.y).toBeLessThan(cancel.y);
+    expect((await boxOf(sheet)).width).toBeCloseTo(300, 0);
+    expect(viewportOf(page).height - (await boxOf(sheet)).y).toBeLessThan(
+      viewportOf(page).height / 2,
+    );
+  });
+});

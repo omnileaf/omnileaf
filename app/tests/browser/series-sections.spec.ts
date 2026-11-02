@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { emitFakeEvent } from "./fake-backend.ts";
 import {
+  boxOf,
   EXPANDED_MIN_WIDTH,
   expect,
   test,
@@ -265,5 +266,53 @@ test.describe("a series' section tabs on iOS", { tag: "@native" }, () => {
       "background-color",
       await tokenColour(page, "--native-color-segmented-track"),
     );
+  });
+});
+
+test.describe("a series' section tabs on an iPhone", { tag: "@native" }, () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({
+    platform: "ios",
+    backend: shelf.backend(),
+    viewport: { width: 390, height: 844 },
+  });
+
+  test("shows a tab for each kind of book with volumes as covers", async ({
+    page,
+  }) => {
+    await openSeries(page);
+
+    await expect(kinds(page).getByRole("tab")).toHaveText([
+      /Volumes/,
+      /Chapters/,
+      /Specials/,
+    ]);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+  });
+
+  test("puts the search and sort row above the tabs", async ({ page }) => {
+    await openSeries(page);
+
+    const [tabs, search] = await Promise.all([
+      boxOf(kinds(page)),
+      boxOf(page.getByRole("searchbox", { name: "Find a book" })),
+    ]);
+
+    expect(search.y + search.height).toBeLessThanOrEqual(tabs.y);
+  });
+
+  test("lists only the chapters once Chapters is chosen", async ({ page }) => {
+    await openSeries(page);
+
+    await kinds(page)
+      .getByRole("tab", { name: /Chapters/ })
+      .click();
+
+    await expect(
+      page
+        .getByRole("table", { name: "Books" })
+        .or(page.getByRole("list", { name: "Books" })),
+    ).toContainText(/chapter 13/);
+    await expect(covers(page, "Volumes")).toHaveCount(0);
   });
 });

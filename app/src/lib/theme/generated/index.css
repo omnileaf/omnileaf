@@ -314,6 +314,7 @@
   --spacing-native-dialog-plate-cover: var(--native-spacing-dialog-plate-cover);
   --spacing-native-dialog-sheet-top: var(--native-spacing-dialog-sheet-top);
   --radius-native-dialog-plate-cover: var(--native-radius-dialog-plate-cover);
+  --spacing-native-top-bar-folded-title: var(--native-spacing-top-bar-folded-title);
   --spacing-native-dialog-accessory-gap: var(--native-spacing-dialog-accessory-gap);
   --spacing-native-dialog-button: var(--native-spacing-dialog-button);
   --spacing-native-action-sheet: var(--native-spacing-action-sheet);

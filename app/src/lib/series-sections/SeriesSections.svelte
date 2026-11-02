@@ -143,6 +143,9 @@
     class="flex flex-col gap-lg"
   >
     <div class={tabsLook.row}>
+      {#if tabsLook.choicesFirst && view === "covers"}
+        <SectionListingChoices {...choices} />
+      {/if}
       <TabsList aria-label={m.series_sections()} class={tabsLook.list}>
         {#each tabs as tab (tab.section)}
           {@const words = tabWords(tab)}
@@ -155,7 +158,7 @@
           </TabsTrigger>
         {/each}
       </TabsList>
-      {#if view === "covers"}
+      {#if !tabsLook.choicesFirst && view === "covers"}
         <SectionListingChoices {...choices} />
       {/if}
     </div>
