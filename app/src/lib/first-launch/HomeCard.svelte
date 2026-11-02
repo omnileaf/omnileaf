@@ -18,11 +18,13 @@
     title,
     location,
     facts,
+    counting,
     change,
   }: {
     title: string;
     location: string;
     facts: readonly HomeFact[];
+    counting?: Snippet;
     change?: Snippet<[titleId: string, pathId: string]>;
   } = $props();
 
@@ -79,6 +81,7 @@
             class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-pre-wrap text-muted"
             >{location}</code
           >
+          {@render counting?.()}
         </div>
       {:else}
         <h2 id={titleId} class="flex-1 text-body font-semibold min-inline-none">

@@ -1,4 +1,7 @@
-import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
+import {
+  ROW_FOCUS_RING,
+  ROW_SUBTITLE_TYPE,
+} from "#lib/components/ui/item/looks.ts";
 import {
   GROUPED_FOOTNOTE_TYPE,
   GROUPED_HEADING_TYPE,
@@ -32,6 +35,12 @@ export const SHEET_SWITCH_CARD = "border-0 px-native-row-start py-none";
 
 export const SHEET_CHIP_ROW =
   "flex flex-wrap gap-sm px-native-row-start pbs-native-row-block pbe-native-row-chips-end";
+
+export const SHEET_DETAIL_CHIP = `block-native-row-chip rounded-full border-0 bg-native-button-secondary min-block-none ${ROW_SUBTITLE_TYPE} hover:bg-native-button-secondary active:bg-native-button-secondary active:opacity-60`;
+
+export const SHEET_CHIP_CROSS_SIZE = 15;
+
+export const SHEET_CHIP_CROSS = "text-muted";
 
 const SHEET_ADD_ROW_LAYOUT = `relative flex items-center gap-native-row-gap ps-native-row-start pe-native-row-end text-start ${SHEET_ROW_TITLE} inline-full min-block-native-row after:absolute after:inset-s-native-row-rule-start after:inset-e-none after:inset-bs-none after:bg-native-row-rule after:block-native-hairline`;
 

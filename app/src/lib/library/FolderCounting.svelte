@@ -5,16 +5,23 @@
 
   import type { CountingLook } from "./counting-look";
   import type { FolderOutcome } from "./folder-adding.svelte";
+  import type { RescanStatus } from "./rescans.svelte";
   import { scanFill } from "./scan-count.svelte";
   import type { ScanStep } from "./scan-step";
 
-  const SPINNER_SIZE = 12;
+  const SMALL_SPINNER_SIZE = 12;
+  const LIST_SPINNER_SIZE = 16;
   const NOTHING_FOUND_YET: ScanStep = { kind: "finding", found: 0 };
 
   let {
     outcome,
     look = "words",
-  }: { outcome: FolderOutcome; look?: CountingLook } = $props();
+    inList = false,
+  }: {
+    outcome: FolderOutcome | RescanStatus;
+    look?: CountingLook;
+    inList?: boolean;
+  } = $props();
 
   const step = $derived(
     outcome.kind === "finding" || outcome.kind === "reading"
@@ -35,8 +42,13 @@
   });
 </script>
 
-<span class="flex items-center gap-xs text-foreground">
-  <Spinner size={SPINNER_SIZE} class="shrink-0" />
+<span
+  class={["flex items-center", inList ? "gap-sm" : "gap-xs text-foreground"]}
+>
+  <Spinner
+    size={inList ? LIST_SPINNER_SIZE : SMALL_SPINNER_SIZE}
+    class="shrink-0"
+  />
   {label}
 </span>
 {#if look === "words-and-bar"}
