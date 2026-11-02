@@ -110,3 +110,25 @@ test.describe("with one category", () => {
     await expect(sidebarCategories(page)).toHaveCount(0);
   });
 });
+
+test("mutes the sidebar icons while the window has lost focus", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const icon = page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Library" })
+    .locator("svg")
+    .first();
+  await expect(icon).toBeVisible();
+  const active = await icon.evaluate((e) => getComputedStyle(e).color);
+
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => {
+        window.dispatchEvent(new Event("blur"));
+      });
+      return icon.evaluate((e) => getComputedStyle(e).color);
+    })
+    .not.toBe(active);
+});
