@@ -20,6 +20,7 @@ cc = "1.5.1"
 clap = { version = "4.6.7", features = ["derive"] }
 libc = "0.2.189"
 local-ip-address = "0.6.13"
+maud = { version = "0.27.0", default-features = false }
 notify = "8.2.0"
 dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSProcessInfo"] }
@@ -27,6 +28,7 @@ fast_image_resize = { version = "6.1.0", default-features = false, features = ["
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
 getrandom = { version = "0.4.3", features = ["std"] }
 gtk = "0.18.2"
+hmac = "0.13.0"
 icu_casemap = "=2.4.0"
 icu_collator = "=2.4.0"
 icu_locale_core = { version = "=2.4.0", features = ["alloc"] }
@@ -36,6 +38,7 @@ imagesize = { version = "0.15.0", default-features = false, features = ["bmp", "
 jpeg-decoder = { version = "0.3.2", default-features = false, features = ["rayon"] }
 jpeg-encoder = { version = "0.7.1", default-features = false, features = ["std"] }
 jxl-oxide = { version = "0.12.6", default-features = false }
+omnileaf-admin = { path = "crates/omnileaf-admin" }
 omnileaf-cache = { path = "crates/omnileaf-cache" }
 omnileaf-db = { path = "crates/omnileaf-db" }
 omnileaf-edge-swipe = { path = "crates/omnileaf-edge-swipe" }
