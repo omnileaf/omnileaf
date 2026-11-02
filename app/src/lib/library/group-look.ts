@@ -10,7 +10,7 @@ export interface GroupLook {
   readonly pageHeading: string;
   readonly itemLabel: string | undefined;
   readonly footnote: string | undefined;
-  readonly rowTitle: string | undefined;
+  readonly itemRows: boolean;
 }
 
 const PLAIN_HEADING = "text-small font-semibold";
@@ -26,7 +26,7 @@ export const PLAIN_GROUP_LOOK: GroupLook = {
   pageHeading: `${PLAIN_HEADING} pbs-xl`,
   itemLabel: undefined,
   footnote: undefined,
-  rowTitle: undefined,
+  itemRows: false,
 };
 
 export const GROUPED_HEADING_TYPE =
@@ -46,7 +46,7 @@ export const GROUPED_GROUP_LOOK: GroupLook = {
   pageHeading: GROUPED_HEADING,
   itemLabel: undefined,
   footnote: undefined,
-  rowTitle: undefined,
+  itemRows: false,
 };
 
 export const GROUPED_FOOTNOTE_TYPE =
@@ -56,7 +56,8 @@ export const POPOVER_GROUP_LOOK: GroupLook = {
   section: "gap-native-popover-gap",
   heading:
     "px-lg text-native-group-footer/native-group-footer tracking-native-group-footer font-native-group-header text-muted",
-  group: "flex flex-col divide-y divide-ios-separator ps-lg *:pe-lg",
+  group:
+    "flex flex-col divide-y divide-ios-separator ps-lg [--native-spacing-row-start:0px]",
   choices: "flex flex-col gap-native-popover-gap *:px-lg",
   choice: "",
   followingHeading: "",
@@ -64,8 +65,7 @@ export const POPOVER_GROUP_LOOK: GroupLook = {
   itemLabel:
     "text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle font-normal",
   footnote: GROUPED_FOOTNOTE_TYPE,
-  rowTitle:
-    "text-native-row-title/native-row-title tracking-native-row-title font-native-row-title",
+  itemRows: true,
 };
 
 export const GROUPED_FOOTNOTE = `ps-lg ${GROUPED_FOOTNOTE_TYPE} mbs-sm`;

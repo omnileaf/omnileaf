@@ -12,7 +12,6 @@
     isOn,
     usesItemRow = false,
     isInspector = false,
-    titleClass,
     onToggle,
   }: {
     label: string;
@@ -20,7 +19,6 @@
     isOn: boolean;
     usesItemRow?: boolean;
     isInspector?: boolean;
-    titleClass?: string | undefined;
     onToggle: (isOn: boolean) => void;
   } = $props();
 
@@ -30,7 +28,7 @@
   const titleType = $derived(
     isInspector
       ? MAC_INSPECTOR_SMART.title
-      : (titleClass ?? "text-body font-medium large:text-small"),
+      : "text-body font-medium large:text-small",
   );
   const rowType = $derived.by(() => {
     if (isInspector) {

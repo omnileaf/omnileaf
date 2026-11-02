@@ -52,6 +52,7 @@
   const isMaterial = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
+  const usesItemRow = $derived(isMaterial || look.itemRows);
   const headingClass = $derived(
     isMaterial ? ANDROID_FILTER_HEADING : look.heading,
   );
@@ -109,8 +110,7 @@
     </div>
     {#if hasCategories}
       <ViewSwitchRow
-        usesItemRow={isMaterial}
-        titleClass={look.rowTitle}
+        {usesItemRow}
         label={isMac ? m.library_category_sidebar() : m.library_category_tabs()}
         description={isMac
           ? m.library_category_sidebar_hint()
@@ -123,8 +123,7 @@
     {/if}
     {#if canStackCovers}
       <ViewSwitchRow
-        usesItemRow={isMaterial}
-        titleClass={look.rowTitle}
+        {usesItemRow}
         label={m.library_stack_covers()}
         description={m.library_stack_covers_hint()}
         isOn={view.stacksSeriesCovers}
@@ -148,8 +147,7 @@
   </h3>
   <div class={groupClass}>
     <ViewSwitchRow
-      usesItemRow={isMaterial}
-      titleClass={look.rowTitle}
+      {usesItemRow}
       label={m.library_item_counts()}
       description={m.library_item_counts_hint()}
       isOn={view.showsItemCounts}
@@ -158,8 +156,7 @@
       }}
     />
     <ViewSwitchRow
-      usesItemRow={isMaterial}
-      titleClass={look.rowTitle}
+      {usesItemRow}
       label={m.library_continue_row()}
       description={m.library_continue_row_hint()}
       isOn={view.showsContinueRow}
