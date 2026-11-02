@@ -38,6 +38,7 @@
   } = $props();
 
   const headingId = $props.id();
+  const usesItemRow = $derived(isMaterial || look.itemRows);
 </script>
 
 <section
@@ -56,8 +57,7 @@
   <div class={isMaterial ? "flex flex-col" : look.group}>
     {#each CHOICES as choice (choice.name)}
       <ViewSwitchRow
-        usesItemRow={isMaterial}
-        titleClass={look.rowTitle}
+        {usesItemRow}
         label={choice.label()}
         isOn={onCovers[choice.name]}
         onToggle={(isShown: boolean) => {
