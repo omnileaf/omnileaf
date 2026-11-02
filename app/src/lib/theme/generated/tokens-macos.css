@@ -233,7 +233,7 @@
   --native-color-radio-field: #ffffff;
   --native-shadow-radio-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.05), 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-color-field-fill: #ffffff;
-  --native-color-field-placeholder: rgba(0, 0, 0, 0.25);
+  --native-color-field-placeholder: rgba(0, 0, 0, 0.498);
   --native-shadow-field-rim: 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
@@ -330,7 +330,7 @@
   --native-color-radio-field: #1e1e1e;
   --native-shadow-radio-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-color-field-fill: #1e1e1e;
-  --native-color-field-placeholder: rgba(255, 255, 255, 0.25);
+  --native-color-field-placeholder: rgba(255, 255, 255, 0.549);
   --native-shadow-field-rim: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
@@ -394,7 +394,7 @@
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(0, 0, 0, 0.75), inset 0 0 0 1px #ffffff;
   --native-shadow-radio-rim: inset 0 0 0 1px #585858, 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-spacing-radio-focus-ring: 2.5px;
-  --native-color-field-placeholder: rgba(0, 0, 0, 0.56);
+  --native-color-field-placeholder: rgba(0, 0, 0, 0.498);
   --native-shadow-field-rim: 0 0 0 1px #585858;
 }
 
@@ -458,6 +458,6 @@
   --native-shadow-sheet-lift: 0 18px 54px rgba(0, 0, 0, 0.57), 0 0 0 1px rgba(0, 0, 0, 0.78), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   --native-shadow-radio-rim: inset 0 0 0 1px #afafaf, 0 0.5px 1px rgba(0, 0, 0, 0.12);
   --native-spacing-radio-focus-ring: 2.5px;
-  --native-color-field-placeholder: rgba(255, 255, 255, 0.5);
+  --native-color-field-placeholder: rgba(255, 255, 255, 0.549);
   --native-shadow-field-rim: 0 0 0 1px #afafaf;
 }
