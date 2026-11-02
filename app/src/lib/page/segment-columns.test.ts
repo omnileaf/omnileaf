@@ -45,3 +45,21 @@ test("tries three columns before two for six segments", () => {
 
   expect(columnsThatFit({ widths, space: 158, gap: GAP })).toBe(3);
 });
+
+test("needs room for the widest segment in every column when the columns are equal", () => {
+  const widths = [60, 100, 90, 60];
+  const space = 330;
+
+  expect(
+    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+  ).toBe(2);
+});
+
+test("keeps equal columns on one row once the widest segment fits in each", () => {
+  const widths = [60, 100, 90, 60];
+  const space = 412;
+
+  expect(
+    columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
+  ).toBe(4);
+});

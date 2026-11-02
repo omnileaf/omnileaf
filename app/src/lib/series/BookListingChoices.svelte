@@ -204,6 +204,7 @@
         labelledBy={showLabelId}
         isFullWidth
         hasWindowsLook
+        hasEqualColumns
         class="flex-1 min-inline-none"
         onChoose={chooseShown}
       />
