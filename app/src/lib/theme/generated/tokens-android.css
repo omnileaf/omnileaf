@@ -200,6 +200,8 @@
   --native-text-inspector-label: var(--text-small);
   --native-leading-inspector-label: var(--text-small--line-height);
   --native-weight-inspector-label: var(--font-weight-medium);
+  --native-tracking-inspector-label: 0;
+  --native-tracking-inspector-note: 0;
   --native-spacing-bottom-bar-start: 0px;
   --native-spacing-bottom-bar-end: 0px;
   --native-spacing-search-bar-start: 0px;

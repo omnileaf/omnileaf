@@ -80,6 +80,8 @@
   --native-text-inspector-label: calc(0.8125rem * var(--text-scale));
   --native-leading-inspector-label: calc(16 / 13);
   --native-weight-inspector-label: 510;
+  --native-tracking-inspector-label: -0.08px;
+  --native-tracking-inspector-note: -0.08px;
   --native-spacing-read-mark: 1.125rem;
   --native-radius-dialog: 34px;
   --native-spacing-dialog: 260px;
