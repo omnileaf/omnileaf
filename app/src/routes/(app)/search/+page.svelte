@@ -14,6 +14,8 @@
   } from "#lib/components/ui/breadcrumb/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import {
+    type ChapterHit,
+    type ChapterHitPage,
     commands,
     type LibrarySearch,
     DEFAULT_LIBRARY_VIEW,
@@ -61,6 +63,8 @@
     type SearchScope,
   } from "#lib/search/search-query.svelte.ts";
   import { RecentSearches } from "#lib/search/recent-searches.svelte.ts";
+  import ChapterTitleResults from "#lib/search/ChapterTitleResults.svelte";
+  import { PagedList } from "#lib/paging/paged-list.svelte.ts";
   import SearchResults from "#lib/search/SearchResults.svelte";
   import SearchStart from "#lib/search/SearchStart.svelte";
   import ScopeChips from "#lib/search/ScopeChips.svelte";
@@ -101,6 +105,18 @@
   const results = librarySeriesList((after) =>
     commands.librarySearch(after, query.search),
   );
+  const chapters = new PagedList<
+    ChapterHit,
+    NonNullable<ChapterHitPage["next"]>
+  >(async (after) => {
+    const page = await commands.librarySearchChapters(query.search, after);
+    return page.status === "ok"
+      ? {
+          status: "ok",
+          data: { items: page.data.hits, next: page.data.next },
+        }
+      : page;
+  });
   const found = new LibrarySeriesCount(
     () => commands.librarySearchCount(query.search),
     (error) => {
@@ -285,6 +301,9 @@
     activeKey = undefined;
     const look = ++latestLook;
     void found.load();
+    if (data.appInfo.platform === "macos") {
+      void chapters.start();
+    }
     await results.start();
     if (look === latestLook) {
       answeredKey = key;
@@ -495,6 +514,15 @@
           ? libraryView.reading.value
           : undefined}
       />
+      {#if data.appInfo.platform === "macos" && chapters.list.kind === "loaded" && chapters.list.items.length > 0}
+        <ChapterTitleResults
+          hits={chapters.list.items}
+          isComplete={chapters.list.isComplete}
+          onShowAll={() => {
+            void chapters.loadAll();
+          }}
+        />
+      {/if}
     {/if}
   {/if}
   <KeyHints platform={data.appInfo.platform} class="mbs-auto" />

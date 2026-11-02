@@ -1404,6 +1404,21 @@
   "search_everything": "Everything",
   "search_remove_condition": "Remove the {condition} filter",
   "search_conditions": "Filters",
+  "search_chapters_heading": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Chapter titles · {formattedCount}",
+        "countPlural=other": "Chapter titles · {formattedCount}"
+      }
+    }
+  ],
+  "search_show_all": "Show all",
   "search_series_heading": "Series and books · {count}",
   "search_scope": "Search in",
   "search_scope_manga": "Manga",
