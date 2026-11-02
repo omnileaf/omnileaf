@@ -107,6 +107,7 @@ const CHOSEN_LIBRARY: ChosenHomeFolder = {
 async function goToTheHomeFolder(page: Page): Promise<void> {
   await page.goto("/first-launch");
   await page.getByRole("button", { name: "Get started" }).click();
+  await page.mouse.move(0, 0);
   await expect(
     page.getByRole("heading", { level: 1, name: FOUND_HEADING }),
   ).toBeVisible();
