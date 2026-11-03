@@ -71,6 +71,8 @@
     onStartPicking,
     onPickedNone,
     onMark,
+    onBookmark,
+    onRemoveBookmark,
     onDelete,
     onSwiped,
   }: {
@@ -84,6 +86,8 @@
     onStartPicking: (book: SeriesBook) => void;
     onPickedNone: () => void;
     onMark: (books: BookId[], mark: ReadMark) => void;
+    onBookmark?: ((book: BookId) => void) | undefined;
+    onRemoveBookmark?: ((book: BookId) => void) | undefined;
     onDelete?: ((book: BookId) => void) | undefined;
     onSwiped: (
       book: SeriesBook,
@@ -391,6 +395,16 @@
             onSelect={() => {
               onStartPicking(book);
             }}
+            onBookmark={onBookmark === undefined
+              ? undefined
+              : () => {
+                  onBookmark(book.id);
+                }}
+            onRemoveBookmark={onRemoveBookmark === undefined
+              ? undefined
+              : () => {
+                  onRemoveBookmark(book.id);
+                }}
             onDelete={onDelete === undefined
               ? undefined
               : () => {
