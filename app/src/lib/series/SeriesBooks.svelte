@@ -163,7 +163,7 @@
   const width = new WindowWidth();
   const phonePlatform = $derived(phoneOf(platform, width.current));
   const hasFileCommands = $derived(
-    platform === "windows" || platform === "macos",
+    platform === "windows" || platform === "macos" || platform === "linux",
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
   const phone = $derived(
@@ -578,6 +578,7 @@
   {#if isWide.current}
     <BookTable
       bind:selectAllBox
+      hasContextMenu={platform === "linux"}
       books={shownBooks}
       {dates}
       {isComplete}

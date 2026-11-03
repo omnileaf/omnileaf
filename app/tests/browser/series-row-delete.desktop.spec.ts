@@ -50,15 +50,15 @@ async function askToDelete(page: Page, index: number): Promise<Locator> {
 }
 
 test.describe("deleting a book from its row menu on Linux", () => {
-  test("ends the menu with Delete in the danger colour, set apart from the rest", async ({
-    page,
-  }) => {
+  test("ends the menu with Delete in the danger colour", async ({ page }) => {
     const menu = await openMenuOf(page, 1);
 
     const items = menu.getByRole("menuitem");
     await expect(items).toHaveText([
       /^\s*(Continue|Start) reading/,
       /^\s*Mark read/,
+      /^\s*Bookmark/,
+      /^\s*Show in folder/,
       /^\s*Delete/,
     ]);
     await expect(menu.getByRole("separator")).toHaveCount(1);
