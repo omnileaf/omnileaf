@@ -120,3 +120,23 @@ for (const platform of PLATFORMS) {
     );
   });
 }
+
+for (const platform of PLATFORMS) {
+  test(`slides a side pane over ${platform === "windows" ? "0.25s" : TODAYS_SLIDE} on ${platform}, from the token source`, () => {
+    followCorePlatform(platform);
+    const element = document.createElement("div");
+    element.className = "duration-pane ease-pane";
+    document.body.append(element);
+
+    const drawn = getComputedStyle(element);
+
+    expect(drawn.transitionDuration).toBe(
+      platform === "windows" ? "0.25s" : TODAYS_SLIDE,
+    );
+    expect(drawn.transitionTimingFunction).toBe(
+      platform === "windows"
+        ? "cubic-bezier(0, 0, 0, 1)"
+        : "cubic-bezier(0.32, 0.72, 0, 1)",
+    );
+  });
+}
