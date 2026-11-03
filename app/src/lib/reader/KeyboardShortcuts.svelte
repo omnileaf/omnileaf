@@ -103,6 +103,13 @@
     [turning, reader],
     [autoScroll, zoom],
   ]);
+
+  let sheetElement: HTMLElement | null = $state(null);
+
+  function focusSheet(event: Event): void {
+    event.preventDefault();
+    sheetElement?.focus();
+  }
 </script>
 
 <Dialog.Root
@@ -114,6 +121,8 @@
   }}
 >
   <SheetContent
+    bind:ref={sheetElement}
+    onOpenAutoFocus={focusSheet}
     to="main"
     dimsBehind
     class="overflow-y-auto bg-background inline-reader-shortcuts expanded:inline-reader-shortcuts-wide"

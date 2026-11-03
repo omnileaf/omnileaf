@@ -110,6 +110,13 @@
       },
     ],
   ]);
+
+  let sheetElement: HTMLElement | null = $state(null);
+
+  function focusSheet(event: Event): void {
+    event.preventDefault();
+    sheetElement?.focus();
+  }
 </script>
 
 <Dialog.Root
@@ -120,7 +127,13 @@
     }
   }}
 >
-  <SheetContent to="main" dimsBehind class="bg-background inline-app-shortcuts">
+  <SheetContent
+    bind:ref={sheetElement}
+    onOpenAutoFocus={focusSheet}
+    to="main"
+    dimsBehind
+    class="bg-background inline-app-shortcuts"
+  >
     <div class="flex items-center gap-md px-lg pbs-lg">
       <span
         class="flex shrink-0 items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
