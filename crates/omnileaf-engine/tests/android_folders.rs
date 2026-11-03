@@ -260,3 +260,30 @@ async fn gives_an_android_folder_its_turn_on_the_rescan_schedule() {
 
     assert!(rescans.iter().any(|rescan| rescan.id == folder.id));
 }
+
+#[tokio::test]
+async fn names_the_tree_of_an_android_folder_so_the_picker_can_open_near_it() {
+    let home = ScratchFolder::new("tree-named-home");
+    let tree = TreeOfFolder::new("tree-named-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let folder = linked_folder(&library).await;
+
+    let named = library.folder_tree(folder.id).await.unwrap();
+
+    assert_eq!(named.as_ref().map(TreeUri::as_str), Some(COMICS_TREE));
+}
+
+#[tokio::test]
+async fn names_no_tree_for_a_folder_on_the_file_system() {
+    let home = ScratchFolder::new("tree-none-home");
+    let comics = ScratchFolder::new("tree-none-comics");
+    let library = open(home.path()).await;
+    library
+        .add_folder(comics.path().to_path_buf(), |_| {})
+        .await
+        .unwrap();
+    let folder = linked_folder(&library).await;
+
+    assert_eq!(library.folder_tree(folder.id).await.unwrap(), None);
+}

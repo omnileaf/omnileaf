@@ -417,3 +417,30 @@ async fn ends_once_the_library_is_gone() {
 
     assert_eq!(ended, Ok(None));
 }
+
+#[tokio::test(start_paused = true)]
+async fn tells_of_a_folder_found_where_it_moved() {
+    let home = ScratchFolder::new("changes-relocated-home");
+    let shelf = ScratchFolder::new("changes-relocated-shelf");
+    let comics = shelf.path().join("Comics");
+    write_books(&comics, 1);
+    let library = open(home.path()).await;
+    library.add_folder(comics.clone(), |_| {}).await.unwrap();
+    let id = library
+        .folders(None)
+        .await
+        .unwrap()
+        .folders
+        .last()
+        .unwrap()
+        .id;
+    let moved = shelf.path().join("Comics, moved");
+    fs::rename(&comics, &moved).unwrap();
+    library.rescan_folder(id, |_| {}).await.unwrap();
+    let mut changes = library.changes();
+    caught_up(&mut changes).await;
+
+    library.relocate_folder(id, moved, |_| {}).await.unwrap();
+
+    assert!(tells_of_a_change(&mut changes).await);
+}

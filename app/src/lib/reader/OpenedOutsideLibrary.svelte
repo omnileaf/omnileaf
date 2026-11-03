@@ -17,7 +17,7 @@
   tone="plain"
   icon={FolderSearch}
   role="status"
-  class="pointer-events-auto fixed inset-x-none inset-bs-none z-notice m-md"
+  class="pointer-events-auto fixed inset-x-none inset-bs-safe-top z-notice m-md"
 >
   <AlertTitle class="text-small font-semibold">
     {openedFromLabel(platform)}

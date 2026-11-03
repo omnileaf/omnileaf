@@ -1,4 +1,4 @@
-use omnileaf_engine::RootLocator;
+use omnileaf_engine::{RootLocator, TreeUri};
 use tauri::Window;
 
 use crate::ipc_error::IpcError;
@@ -28,6 +28,28 @@ fn folder_dialog<R: tauri::Runtime>(
     use tauri_plugin_dialog::DialogExt;
 
     window.dialog().file().set_parent(window)
+}
+
+#[cfg(not(target_os = "android"))]
+pub(crate) fn pick_folder_near(
+    window: &Window,
+    _lost: Option<TreeUri>,
+) -> Result<Option<RootLocator>, IpcError> {
+    pick_folder(window)
+}
+
+#[cfg(target_os = "android")]
+pub(crate) fn pick_folder_near(
+    window: &Window,
+    lost: Option<TreeUri>,
+) -> Result<Option<RootLocator>, IpcError> {
+    use omnileaf_folder_access::FolderAccess;
+    use tauri::Manager;
+
+    window
+        .state::<FolderAccess<tauri::Wry>>()
+        .pick_folder_near(lost.as_ref())
+        .map_err(|error| IpcError::internal(&error))
 }
 
 #[cfg(mobile)]
