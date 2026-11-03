@@ -135,7 +135,8 @@
           <Button
             {...props}
             look="icon"
-            aria-label={m.app_shortcuts_dismiss()}
+            iconOnly
+            label={m.app_shortcuts_dismiss()}
             class="text-muted block-reader-dense inline-reader-dense hover:bg-hover hover:text-foreground"
           >
             <X size={ICON_SIZE} aria-hidden="true" />

@@ -84,6 +84,7 @@
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         aria-hidden="true"
+        escapeKeydownBehavior="defer-otherwise-ignore"
         {side}
         sideOffset={TRIGGER_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}

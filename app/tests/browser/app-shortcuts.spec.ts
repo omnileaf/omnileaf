@@ -100,6 +100,22 @@ test.describe("on a desktop", () => {
     await expect(sheet(page)).toHaveCount(0);
   });
 
+  test("closes with one Esc while the pointer rests on its close button", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await page.keyboard.press("Shift+Slash");
+    await expect(sheet(page)).toBeVisible();
+    await sheet(page)
+      .getByRole("button", { name: "Close keyboard shortcuts" })
+      .hover();
+    await expect(page.locator("[data-tooltip-content]")).toBeAttached();
+
+    await page.keyboard.press("Escape");
+
+    await expect(sheet(page)).toHaveCount(0);
+  });
+
   test("leaves ? to a field being typed in", async ({ page }) => {
     await openLibrary(page);
     await page.keyboard.press("Control+k");
