@@ -24,6 +24,7 @@
     "tauri": "tauri",
     "tokens": "node scripts/write-platform-tokens.ts",
     "icons": "node scripts/write-icons.ts",
+    "locales-config": "node scripts/write-locales-config.ts",
     "pseudo-locale": "node scripts/write-pseudo-locale.ts && prettier --write messages/en-XA.json"
   },
   "devDependencies": {

@@ -50,14 +50,46 @@ export function rememberLanguageChoice(
 }
 
 /** Paraglide saves the first language it resolves; ignoring that save keeps "system" following the device. */
-export function useChosenLanguage(store: Pick<LanguageStore, "getItem">): void {
+export function useChosenLanguage(
+  store: Pick<LanguageStore, "getItem">,
+  systemAppLanguage: () => Locale | undefined,
+): void {
   defineCustomClientStrategy(CHOSEN_LANGUAGE_STRATEGY, {
     getLocale: () => {
       const choice = storedLanguageChoice(store);
-      return choice === "system" ? undefined : choice;
+      return choice === "system" ? systemAppLanguage() : choice;
     },
     setLocale: () => undefined,
   });
+}
+
+function languageSubtags(tag: string): readonly string[] {
+  return tag.toLowerCase().replaceAll("_", "-").split("-");
+}
+
+export function supportedLocaleForTag<Supported extends string>(
+  tag: string,
+  supported: readonly Supported[],
+  fallback: Supported,
+): Supported {
+  const subtags = languageSubtags(tag);
+  const lowered = supported.map((locale) => languageSubtags(locale).join("-"));
+  for (let length = subtags.length; length > 0; length -= 1) {
+    const found = lowered.indexOf(subtags.slice(0, length).join("-"));
+    if (found !== -1) {
+      return supported[found] ?? fallback;
+    }
+  }
+  const sameLanguage = lowered.findIndex(
+    (locale) => languageSubtags(locale)[0] === subtags[0],
+  );
+  return supported[sameLanguage] ?? fallback;
+}
+
+export function systemAppLocale(tag: string | null): Locale | undefined {
+  return tag === null || tag === ""
+    ? undefined
+    : supportedLocaleForTag(tag, LANGUAGES, baseLocale);
 }
 
 export function markLanguage(root: HTMLElement): void {
