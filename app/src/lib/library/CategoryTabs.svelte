@@ -77,18 +77,16 @@
     if (root === null) {
       return;
     }
-    measureTabs(root);
-    const buttons = tabs.flatMap(({ id }) => buttonOf(root, id) ?? []);
-    const watching = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          markHidden(entry.target, entry.intersectionRatio < 1);
-        }
-      },
-      { root, threshold: 1 },
-    );
-    for (const button of buttons) {
-      watching.observe(button);
+    settleStrip(root);
+    const watching = new ResizeObserver(() => {
+      settleStrip(root);
+    });
+    watching.observe(root);
+    for (const { id } of tabs) {
+      const button = buttonOf(root, id);
+      if (button !== null) {
+        watching.observe(button);
+      }
     }
     return () => {
       watching.disconnect();
@@ -97,6 +95,14 @@
 
   function buttonOf(root: HTMLElement, id: string): HTMLElement | null {
     return root.querySelector<HTMLElement>(`[data-tab="${CSS.escape(id)}"]`);
+  }
+
+  function settleStrip(root: HTMLElement): void {
+    const tab = onPhone ? null : buttonOf(root, chosen);
+    if (tab !== null) {
+      root.scrollBy({ left: stepIntoView(root, tab) });
+    }
+    measureTabs(root);
   }
 
   function measureTabs(root: HTMLElement): void {
@@ -127,8 +133,7 @@
     if (strip === null || tab === null) {
       return;
     }
-    const isFirst = followedTab === undefined;
-    const isChange = !isFirst && followedTab !== chosen;
+    const isChange = followedTab !== undefined && followedTab !== chosen;
     followedTab = chosen;
     if (onPhone) {
       strip.scrollBy({
@@ -136,11 +141,6 @@
         behavior:
           isChange && animations.moves("navigation") ? "smooth" : "auto",
       });
-    } else if (isFirst) {
-      strip.scrollBy({ left: stepIntoView(strip, tab) });
-      measureTabs(strip);
-    } else if (isChange) {
-      tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
   });
 
