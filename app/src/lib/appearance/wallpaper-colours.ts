@@ -120,6 +120,28 @@ function accentProperties(accent: AccentColours): SystemColours {
   );
 }
 
+export type WallpaperSwatch = Record<
+  Theme,
+  Record<"primary" | "secondaryContainer" | "surfaceContainerLow", string>
+>;
+
+/** Android below 12 has no wallpaper colours, so this is null there. */
+export async function readWallpaperSwatch(
+  readers: Pick<ColourReaders, "wallpaperColours"> = commands,
+): Promise<WallpaperSwatch | null> {
+  const result = await readers.wallpaperColours();
+  if (result.status === "error" || result.data === null) {
+    return null;
+  }
+  const { light, dark } = result.data;
+  const swatchOf = (roles: ColourRoles): WallpaperSwatch[Theme] => ({
+    primary: hexOf(roles.primary),
+    secondaryContainer: hexOf(roles.secondaryContainer),
+    surfaceContainerLow: hexOf(roles.surfaceContainerLow),
+  });
+  return { light: swatchOf(light), dark: swatchOf(dark) };
+}
+
 async function readWallpaper(
   readers: ColourReaders,
 ): Promise<SystemColours | null> {

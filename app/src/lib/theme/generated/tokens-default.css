@@ -569,4 +569,7 @@
   --native-leading-first-launch-note: var(--text-footnote--line-height);
   --native-weight-first-launch-note: var(--font-weight-regular);
   --native-tracking-first-launch-note: 0;
+  --native-color-colours-omnileaf-primary: var(--primary);
+  --native-color-colours-omnileaf-container: var(--secondary);
+  --native-color-colours-omnileaf-surface: var(--card);
 }

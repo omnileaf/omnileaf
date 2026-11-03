@@ -483,6 +483,7 @@
   --spacing-radio: 1rem;
   --spacing-veil-disc: 2.5rem;
   --spacing-radio-dot: 0.5rem;
+  --spacing-colour-swatch: 2.5rem;
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));

@@ -10,6 +10,7 @@ import type {
 import {
   type ColourReaders,
   followWallpaperColours,
+  readWallpaperSwatch,
 } from "./wallpaper-colours";
 import { BLUE_ACCENT } from "../../../tests/sample-wallpaper";
 
@@ -214,4 +215,29 @@ test("keeps the latest choice when an earlier read finishes after it", async () 
   await following;
 
   expect(root.dataset.colours).toBeUndefined();
+});
+
+test("reads the three colours of each theme that the wallpaper's swatch is drawn from", async () => {
+  const swatch = await readWallpaperSwatch(reading(BLUE_WALLPAPER));
+
+  expect(swatch).toEqual({
+    light: {
+      primary: "#416189",
+      secondaryContainer: "#f9f9fe",
+      surfaceContainerLow: "#f9f9fe",
+    },
+    dark: {
+      primary: "#0c0e12",
+      secondaryContainer: "#0c0e12",
+      surfaceContainerLow: "#111418",
+    },
+  });
+});
+
+test("has no swatch where Android has no colours from the wallpaper", async () => {
+  expect(await readWallpaperSwatch(reading(null))).toBeNull();
+});
+
+test("has no swatch when the wallpaper colours can't be read", async () => {
+  expect(await readWallpaperSwatch(failing)).toBeNull();
 });

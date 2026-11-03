@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AndroidColoursChoice from "#lib/appearance/AndroidColoursChoice.svelte";
   import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
   import WindowsAccentChoice from "#lib/appearance/WindowsAccentChoice.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -22,4 +23,7 @@
 </ThemeChoice>
 {#if data.appInfo.platform === "windows"}
   <WindowsAccentChoice class="mbs-pane-gap" />
+{/if}
+{#if data.appInfo.platform === "android"}
+  <AndroidColoursChoice class="mbs-pane-gap" />
 {/if}

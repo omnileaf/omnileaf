@@ -265,6 +265,7 @@ export const TOKEN_THEME = {
     "checkbox-row",
     "chip-remove",
     "chip-remove-wide",
+    "colour-swatch",
     "compact-button",
     "compact-continue-lift",
     "compact-cover-min",

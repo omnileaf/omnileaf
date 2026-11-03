@@ -149,6 +149,9 @@
   --native-spacing-checkbox-gap: 6px;
   --native-spacing-text-field-block-tall: 6px;
   --native-spacing-text-field-tall: calc(3lh + 2 * var(--native-spacing-text-field-block-tall));
+  --native-color-colours-omnileaf-primary: var(--primary);
+  --native-color-colours-omnileaf-container: var(--secondary);
+  --native-color-colours-omnileaf-surface: var(--card);
 }
 
 :root[data-platform="macos"],
