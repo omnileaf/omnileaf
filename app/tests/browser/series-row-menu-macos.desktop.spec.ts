@@ -123,17 +123,3 @@ test.describe("a book's row menu on macOS", () => {
     ).toBeVisible();
   });
 });
-
-test.describe("a book's row menu on Linux", () => {
-  testOnlyInItsWebview("linux");
-  test.use({ platform: "linux" });
-
-  test("keeps its items as they were", async ({ page }) => {
-    await openMenuOf(page, 1);
-
-    await expect(
-      page.getByRole("menuitem", { name: "Mark read", exact: true }),
-    ).toBeVisible();
-    await expect(bookmarkItem(page)).toHaveCount(0);
-  });
-});

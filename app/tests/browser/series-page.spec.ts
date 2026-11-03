@@ -974,6 +974,8 @@ test.describe("in the table on wide screens", () => {
     await expect(page.getByRole("menuitem")).toHaveText([
       "Start reading",
       "Mark unread",
+      "Bookmark",
+      "Show in folder",
       "Delete",
     ]);
     await page.getByRole("menuitem", { name: "Start reading" }).click();
