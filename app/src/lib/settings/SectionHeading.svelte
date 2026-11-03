@@ -15,7 +15,11 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import {
+    currentPlatform,
+    hasTopTabBar,
+    isPhone,
+  } from "#lib/page/platform.ts";
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -52,6 +56,9 @@
     isPhone(platform, width.current) ? PHONE_TITLE : TODAYS_TITLE,
   );
 
+  const isIpad = $derived(
+    platform === "ios" && hasTopTabBar(platform, width.current),
+  );
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),
   );
@@ -130,6 +137,30 @@
       tabindex="-1"
       class="col-start-2 row-start-1 text-center text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere text-native-on-top-bar"
     >
+      {title}
+    </h1>
+  </header>
+{:else if isIpad}
+  <header class="flex flex-col items-start">
+    <div
+      class={[
+        "block-top-tab-bar-row flex items-center",
+        !isNested && "two-pane:hidden",
+      ]}
+    >
+      <a
+        href={resolve(parent.route)}
+        data-back-link
+        aria-label={backLabel}
+        class={cn(
+          "flex items-center justify-center rounded-full",
+          NATIVE_TOP_BAR.barButton,
+        )}
+      >
+        <Icon name={backIcon(platform)} class="shrink-0 rtl:-scale-x-100" />
+      </a>
+    </div>
+    <h1 tabindex="-1" class={["mbs-xs wrap-anywhere", titleLook]}>
       {title}
     </h1>
   </header>

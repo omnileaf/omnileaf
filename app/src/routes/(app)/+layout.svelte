@@ -21,7 +21,7 @@
     isPaneToggledBy,
     PANE_SHORTCUT,
   } from "#lib/navigation/pane-shortcut.ts";
-  import { isSectionRoot, sectionOf } from "#lib/navigation/sections.ts";
+  import { sectionOf, showsTopTabBar } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
     sidebarSettingForDocument,
@@ -203,7 +203,7 @@
   {#if page.route.id !== EDIT_DETAILS_ROUTE}
     {#key language.resolved}
       {#if hasTopTabBar(data.appInfo.platform, width.current)}
-        {#if isSectionRoot(page.route.id)}
+        {#if showsTopTabBar(page.route.id)}
           <TopTabBar current={sectionOf(page.url.pathname)} />
         {/if}
       {:else}

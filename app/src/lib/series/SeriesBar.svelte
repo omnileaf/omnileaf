@@ -6,7 +6,11 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import {
+    currentPlatform,
+    hasTopTabBar,
+    isPhone,
+  } from "#lib/page/platform.ts";
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -39,6 +43,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(isPhone(platform, width.current));
+  const hasTabsAtTop = $derived(hasTopTabBar(platform, width.current));
   const TODAYS_SCROLLED =
     "border-border bg-background ios:border-ios-separator ios:bg-ios-material ios:backdrop-blur-ios";
   const TODAYS_TITLE = "text-body font-semibold";
@@ -47,7 +52,8 @@
 <header
   bind:clientHeight={height}
   class={[
-    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end pbs-series-bar-top pbe-sm motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
+    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end pbe-sm motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
+    hasTabsAtTop ? "block-top-tab-bar-row pbs-page-top" : "pbs-series-bar-top",
     isNative ? NATIVE_TOP_BAR.edge : "border-be",
     isTitleUnderBar
       ? isNative

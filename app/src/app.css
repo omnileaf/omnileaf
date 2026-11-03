@@ -1521,6 +1521,18 @@
   }
 }
 
+@utility pbs-below-top-tab-bar {
+  padding-block-start: calc(
+    var(--spacing-page-top) + var(--native-spacing-top-tab-bar) +
+      var(--spacing-md)
+  );
+}
+
+@utility block-top-tab-bar-row {
+  box-sizing: content-box;
+  block-size: var(--native-spacing-top-tab-bar);
+}
+
 @utility inline-top-tab-bar {
   inline-size: fit-content;
   max-inline-size: calc(
