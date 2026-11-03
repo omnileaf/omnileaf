@@ -5,7 +5,8 @@ import { commands } from "#lib/ipc/bindings.ts";
 export function openHandedDocuments(
   showBusy: () => () => void,
   onFailed: (error: unknown) => void,
-): void {
+): () => void {
+  let watching = true;
   async function queue(uri: string): Promise<void> {
     const stopBusy = showBusy();
     try {
@@ -19,11 +20,16 @@ export function openHandedDocuments(
   }
 
   const handed = new Channel<string>((uri) => {
-    void queue(uri).catch(onFailed);
+    if (watching) {
+      void queue(uri).catch(onFailed);
+    }
   });
-  void commands.watchOpenWith(handed).then((watching) => {
-    if (watching.status === "error") {
-      onFailed(watching.error);
+  void commands.watchOpenWith(handed).then((started) => {
+    if (started.status === "error") {
+      onFailed(started.error);
     }
   }, onFailed);
+  return () => {
+    watching = false;
+  };
 }

@@ -19,12 +19,15 @@
       (page) => void goto(page),
       reportFailure,
     );
-    openHandedDocuments(
+    const stopOpeningDocuments = openHandedDocuments(
       () =>
         notices.present(OpeningDocumentToast, (toast) => ({ toast }), "polite")
           .dismiss,
       reportFailure,
     );
-    return stopOpeningFiles;
+    return () => {
+      stopOpeningFiles();
+      stopOpeningDocuments();
+    };
   });
 </script>
