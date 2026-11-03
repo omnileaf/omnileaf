@@ -84,3 +84,22 @@ test("stops listening when asked", () => {
 
   expect(heard).toEqual([]);
 });
+
+test.each([
+  "ResizeObserver loop completed with undelivered notifications.",
+  "ResizeObserver loop limit exceeded",
+])("does not count the browser's %s as an interface error", (message) => {
+  const heard = listen();
+
+  window.dispatchEvent(new ErrorEvent("error", { message }));
+
+  expect(heard).toEqual([]);
+});
+
+test("still hears an uncaught error with another message", () => {
+  const heard = listen();
+
+  window.dispatchEvent(new ErrorEvent("error", { message: "boom" }));
+
+  expect(heard).toEqual([{ message: "boom", stack: null }]);
+});
