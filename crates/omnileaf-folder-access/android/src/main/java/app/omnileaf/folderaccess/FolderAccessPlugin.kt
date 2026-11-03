@@ -3,8 +3,10 @@ package app.omnileaf.folderaccess
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import androidx.activity.result.ActivityResult
 import androidx.core.net.toUri
 import app.tauri.annotation.ActivityCallback
@@ -44,6 +46,11 @@ public class DocumentArgs {
 }
 
 @InvokeArg
+public class PickArgs {
+    public var near: String? = null
+}
+
+@InvokeArg
 public class HandedArgs {
     public lateinit var uri: String
 }
@@ -70,9 +77,10 @@ public class FolderAccessPlugin
             if (isPicking) {
                 return invoke.reject("The folder picker is already open.")
             }
+            val near = invoke.parseArgs(PickArgs::class.java).near
             isPicking = true
             try {
-                startActivityForResult(invoke, folderPickerIntent(), FOLDER_PICKED)
+                startActivityForResult(invoke, folderPickerIntent(near?.toUri()), FOLDER_PICKED)
             } catch (error: ActivityNotFoundException) {
                 isPicking = false
                 rejectPicker(invoke, error)
@@ -191,7 +199,18 @@ private fun rejectPicker(
 }
 
 /** A picker grants a tree only the access its intent asks for, so it is asked for write access beside read. */
-private fun folderPickerIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(READ_WRITE_GRANT)
+private fun folderPickerIntent(near: Uri?): Intent {
+    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(READ_WRITE_GRANT)
+    val start = near?.let(::pickerStartOf) ?: return intent
+    return intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, start)
+}
+
+/** The picker opens inside the folder it is given, so a lost folder is offered by opening the folder that held it. */
+private fun pickerStartOf(lost: Uri): Uri? {
+    val authority = lost.authority ?: return null
+    val id = runCatching { DocumentsContract.getTreeDocumentId(lost) }.getOrNull() ?: return null
+    return DocumentsContract.buildDocumentUri(authority, parentDocumentId(id))
+}
 
 /** `detachFd` gives up the descriptor without closing it, so the Rust side that reads the reply owns it. */
 private fun handOver(descriptor: ParcelFileDescriptor): JSObject = JSObject().put("fd", descriptor.detachFd())

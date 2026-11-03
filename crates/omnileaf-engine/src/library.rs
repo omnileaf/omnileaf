@@ -15,8 +15,8 @@ use omnileaf_db::{
     catalog::{
         AndroidTree, AppleBookmark, BookFileId, BookFileToRemove, BookListing, BookToRead, Cover,
         LibraryRoot, NewRoot, PageDimensions, PageRequest, PageSize, PlaceInSeries,
-        RelatedSeriesWanted, RootId, RootKind, RootLocator, add_root, book_bookmarks, book_to_read,
-        bookmarked_roots, category_series_count, category_series_page, cover_file,
+        RelatedSeriesWanted, RootId, RootKind, RootLocator, TreeUri, add_root, book_bookmarks,
+        book_to_read, bookmarked_roots, category_series_count, category_series_page, cover_file,
         filter_choices as stored_filter_choices, folder_group_series_count,
         folder_group_series_page, folder_groups, folder_series_count, folder_series_page,
         hidden_series_count, home_root, library_root, library_roots, mark_root_available,
@@ -1747,6 +1747,18 @@ impl Library {
         })
     }
 
+    pub async fn folder_tree(&self, id: FolderId) -> Result<Option<TreeUri>, LibraryError> {
+        let root = self
+            .store
+            .database()
+            .read(move |connection| library_root(connection, id.0))
+            .await?;
+        Ok(match root.locator {
+            RootLocator::AndroidTree(tree) => Some(tree.uri().clone()),
+            RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
+        })
+    }
+
     pub async fn hidden_series_count(&self) -> Result<u32, LibraryError> {
         Ok(self
             .store
@@ -1787,6 +1799,7 @@ impl Library {
         if !staying.is_empty() {
             return Err(LibraryError::FolderAlreadyInLibrary { id });
         }
+        self.note_catalog_written();
         self.rescan_while_scanning(id, scanning, RemovedBooks::LeftOut, on_progress)
             .await
     }
@@ -2309,12 +2322,14 @@ impl Library {
                 database
                     .write(move |transaction| mark_root_available(transaction, root))
                     .await?;
+                self.note_catalog_written();
             }
             (RescanOutcome::Unreachable | RescanOutcome::FoundEmpty, None) => {
                 let since_ms = self.now_ms();
                 database
                     .write(move |transaction| mark_root_unavailable(transaction, root, since_ms))
                     .await?;
+                self.note_catalog_written();
             }
         }
         Ok(())

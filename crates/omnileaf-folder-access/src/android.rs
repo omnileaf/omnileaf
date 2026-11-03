@@ -10,7 +10,9 @@ use crate::{
     Document, DocumentId, DocumentUri, Documents, HandedDocument, PersistedGrant,
     descriptor::OpenedDocument,
     handed_messages::{HandedReply, HandedRequest},
-    tree_messages::{DocumentRequest, GrantRequest, Grants, Listing, PickedTree, refusal_kind},
+    tree_messages::{
+        DocumentRequest, GrantRequest, Grants, Listing, PickRequest, PickedTree, refusal_kind,
+    },
 };
 
 const PLUGIN_NAME: &str = "folder-access";
@@ -55,7 +57,17 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 impl<R: Runtime> FolderAccess<R> {
     /// Waits for the person to pick a folder or cancel, so it must not run on the main thread.
     pub fn pick_folder(&self) -> Result<Option<RootLocator>, PluginInvokeError> {
-        let picked: Option<PickedTree> = self.0.run_mobile_plugin(PICK_FOLDER, ())?;
+        self.pick_folder_near(None)
+    }
+
+    /// Opens the picker at the folder that held `lost`, and otherwise waits as `pick_folder` does.
+    pub fn pick_folder_near(
+        &self,
+        lost: Option<&TreeUri>,
+    ) -> Result<Option<RootLocator>, PluginInvokeError> {
+        let picked: Option<PickedTree> = self
+            .0
+            .run_mobile_plugin(PICK_FOLDER, PickRequest::near(lost))?;
         Ok(picked.map(RootLocator::from))
     }
 
