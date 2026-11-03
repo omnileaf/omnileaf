@@ -6,6 +6,7 @@
   import type { Snippet } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
 
   let {
     ref = $bindable(null),
@@ -25,6 +26,7 @@
   />
   <DialogPrimitive.Content
     bind:ref
+    {@attach closesOnBack}
     class={cn("fixed z-dialog", className)}
     {...restProps}
   >

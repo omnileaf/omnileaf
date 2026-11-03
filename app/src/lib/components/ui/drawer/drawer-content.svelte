@@ -8,6 +8,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import {
@@ -80,6 +81,7 @@
     bind:ref
     data-ground={ground === "grouped" ? "grouped" : undefined}
     {@attach resolveFirstStyle}
+    {@attach closesOnBack}
     class={cn(
       "fixed inset-none z-dialog mbs-auto flex touch-none flex-col overflow-hidden rounded-ss-bottom-sheet rounded-se-bottom-sheet bg-bottom-sheet text-foreground block-fit inline-full max-block-full desktop:border-bs desktop:border-border motion-sheets:data-starting-style:translate-y-full motion-sheets:starting:translate-y-full motion-sheets:closed:translate-y-full",
       look.surface,
