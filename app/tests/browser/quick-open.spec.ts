@@ -263,28 +263,25 @@ test("leaves Home and End to the field caret", async ({ page }) => {
   await expect(options(page)).toHaveCount(7 + SEARCH_ACTION);
   const before = await selected(page).innerText();
 
-  await field(page).evaluate((input) => {
-    if (!(input instanceof HTMLInputElement)) {
-      throw new Error("quick open field is not an input");
-    }
-    input.setSelectionRange(4, 4);
+  const heard = await field(page).evaluateHandle((input) => {
+    const keydowns: KeyboardEvent[] = [];
+    input.addEventListener("keydown", (event) => {
+      if (event instanceof KeyboardEvent) {
+        keydowns.push(event);
+      }
+    });
+    return keydowns;
   });
   await field(page).press("Home");
-  const atStart = await field(page).evaluate((input) => {
-    if (!(input instanceof HTMLInputElement)) {
-      throw new Error("quick open field is not an input");
-    }
-    return input.selectionStart;
-  });
   await field(page).press("End");
-  const atEnd = await field(page).evaluate((input) => {
-    if (!(input instanceof HTMLInputElement)) {
-      throw new Error("quick open field is not an input");
-    }
-    return input.selectionStart;
-  });
+  const left = await heard.evaluate((keydowns) =>
+    keydowns.map(({ key, defaultPrevented }) => ({ key, defaultPrevented })),
+  );
 
-  expect([atStart, atEnd]).toEqual([0, "settings".length]);
+  expect(left).toEqual([
+    { key: "Home", defaultPrevented: false },
+    { key: "End", defaultPrevented: false },
+  ]);
   await expect(selected(page)).toHaveText(before);
 });
 

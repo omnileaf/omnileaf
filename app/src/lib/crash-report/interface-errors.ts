@@ -1,6 +1,12 @@
 import type { InterfaceError } from "#lib/ipc/bindings.ts";
 
 const ANNOUNCED_ERROR = "omnileaf:interface-error";
+const RESIZE_LOOP_NOTICE = /^ResizeObserver loop (completed|limit exceeded)/u;
+
+/** Browsers raise a ResizeObserver loop notice as a window error although nothing was thrown and the page keeps working. */
+function isResizeLoopNotice(event: ErrorEvent): boolean {
+  return event.error === undefined && RESIZE_LOOP_NOTICE.test(event.message);
+}
 
 export function describeInterfaceError(reason: unknown): InterfaceError {
   if (reason instanceof Error) {
@@ -17,6 +23,9 @@ export function listenForInterfaceErrors(
   onError: (error: InterfaceError) => void,
 ): () => void {
   const onUncaught = (event: ErrorEvent): void => {
+    if (isResizeLoopNotice(event)) {
+      return;
+    }
     onError(describeInterfaceError(event.error ?? event.message));
   };
   const onUnhandled = (event: PromiseRejectionEvent): void => {

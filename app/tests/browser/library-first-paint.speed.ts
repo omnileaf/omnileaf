@@ -6,6 +6,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TEN_THOUSAND = 10_000;
 const FIRST_GRID_PAINT_BUDGET_MS = 150;
+const WARM_UP_OPENINGS = 2;
 const OPENINGS = 9;
 
 declare global {
@@ -71,6 +72,9 @@ test("paints the first rows of ten thousand series within the budget from the cl
   await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
   const timings: number[] = [];
 
+  for (let opening = 0; opening < WARM_UP_OPENINGS; opening += 1) {
+    await openTheLibraryTimed(page);
+  }
   for (let opening = 0; opening < OPENINGS; opening += 1) {
     timings.push(await openTheLibraryTimed(page));
   }
