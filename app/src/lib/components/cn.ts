@@ -997,7 +997,7 @@ export const TOKEN_THEME = {
     "stand-in",
     "tight",
   ],
-  ease: ["emphasized", "glass", "out"],
+  ease: ["emphasized", "glass", "out", "sheet-in", "sheet-out"],
   animate: [
     "book-open",
     "gear-turn",
