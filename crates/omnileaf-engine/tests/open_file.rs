@@ -239,6 +239,45 @@ async fn refuses_a_file_that_is_not_a_readable_book() {
 }
 
 #[tokio::test]
+async fn refuses_a_file_of_a_type_other_than_a_comic_before_reading_it() {
+    let opening = Opening::new("open-pdf").await;
+    let path = opening.outside.path().join("Manual.pdf");
+    fs::create_dir_all(opening.outside.path()).unwrap();
+    fs::write(&path, b"%PDF-1.7").unwrap();
+
+    let refused = opening.library.open_file(path).await;
+
+    assert!(matches!(
+        refused,
+        Err(OpenFileError::UnsupportedType { source: None, .. })
+    ));
+}
+
+#[tokio::test]
+async fn refuses_an_epub_even_though_it_is_an_archive_of_images() {
+    let opening = Opening::new("open-epub").await;
+    let path = opening.file("Loose Comics", "Odd Tale.EPUB", SEED);
+
+    let refused = opening.library.open_file(path).await;
+
+    assert!(matches!(
+        refused,
+        Err(OpenFileError::UnsupportedType { .. })
+    ));
+    assert_eq!(opening.listed_series().await, 0);
+}
+
+#[tokio::test]
+async fn opens_a_zip_the_same_as_a_cbz() {
+    let opening = Opening::new("open-zip").await;
+    let path = opening.file("Loose Comics", "Odd Tale.zip", SEED);
+
+    let to_read = opening.library.open_file(path).await.unwrap();
+
+    assert!(!to_read.is_in_library);
+}
+
+#[tokio::test]
 async fn names_the_place_of_a_file_outside_the_library_as_not_in_it() {
     let opening = Opening::new("place-outside").await;
     let path = opening.file("Loose Comics", "Odd Tale.cbz", SEED);
@@ -409,6 +448,31 @@ async fn refuses_a_document_that_is_not_a_readable_book() {
     let refused = opening.library.open_file_in(storage, name).await;
 
     assert!(matches!(refused, Err(OpenFileError::Unreadable { .. })));
+}
+
+#[tokio::test]
+async fn refuses_a_document_of_a_type_other_than_a_comic_before_reading_it() {
+    let opening = Opening::new("open-pdf-document").await;
+    let stored_at = opening.file("Hidden Away", "stored.cbz", SEED);
+    let (storage, name) = OneDocument::handed("Manual.pdf", stored_at);
+
+    let refused = opening.library.open_file_in(storage, name).await;
+
+    assert!(matches!(
+        refused,
+        Err(OpenFileError::UnsupportedType { source: None, .. })
+    ));
+}
+
+#[tokio::test]
+async fn opens_a_document_shared_with_no_file_type() {
+    let opening = Opening::new("open-untyped-document").await;
+    let stored_at = opening.file("Hidden Away", "stored.cbz", SEED);
+    let (storage, name) = OneDocument::handed("Shared Tale", stored_at);
+
+    let to_read = opening.library.open_file_in(storage, name).await.unwrap();
+
+    assert!(!to_read.is_in_library);
 }
 
 #[tokio::test]

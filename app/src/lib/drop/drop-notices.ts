@@ -62,7 +62,7 @@ export function unreadableFileNotice(error: unknown): Notice | undefined {
         tone: "warning",
         icon: TriangleAlert,
         title: m.reader_unsupported_title(),
-        body: m.reader_unsupported_body_unnamed(),
+        body: m.reader_unsupported_body_types(),
       };
     default:
       return undefined;

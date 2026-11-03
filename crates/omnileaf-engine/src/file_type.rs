@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 const READ_BOOK_TYPES: [&str; 2] = ["cbz", "cb7"];
+const SHARED_ARCHIVE_TYPES: [&str; 2] = ["zip", "7z"];
 const RAR_BOOK_TYPES: [&str; 2] = ["cbr", "rar"];
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type)]
@@ -29,6 +30,10 @@ impl FileType {
 
     pub(crate) fn is_read(&self) -> bool {
         READ_BOOK_TYPES.contains(&self.0.as_str()) || (cfg!(feature = "rar") && self.is_rar_book())
+    }
+
+    pub(crate) fn opens_from_outside_the_library(&self) -> bool {
+        self.is_read() || SHARED_ARCHIVE_TYPES.contains(&self.0.as_str())
     }
 
     pub(crate) fn is_book(&self) -> bool {
