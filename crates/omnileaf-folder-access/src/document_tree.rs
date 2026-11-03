@@ -81,6 +81,19 @@ impl<D: Documents> DocumentTree<D> {
         }
     }
 
+    /// None for the tree's own folder.
+    pub fn folder_id(&self, folder: &Path) -> io::Result<Option<DocumentId>> {
+        let Some((parent, name)) = split(folder) else {
+            return Ok(None);
+        };
+        let document = self.find(parent, name)?;
+        if document.is_folder {
+            Ok(Some(document.id))
+        } else {
+            Err(io::ErrorKind::NotADirectory.into())
+        }
+    }
+
     fn inside<'a>(&self, path: &'a Path) -> io::Result<&'a Path> {
         path.strip_prefix(&self.root)
             .ok()
@@ -494,6 +507,25 @@ mod tests {
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes).unwrap();
         bytes
+    }
+
+    #[test]
+    fn finds_the_document_id_of_a_folder_in_the_tree() {
+        let fixture = Fixture::new();
+        fixture.write("One/Two/book.cbz", BOOK);
+
+        let nested = fixture.tree.folder_id(Path::new("One/Two")).unwrap();
+        let top = fixture.tree.folder_id(Path::new("")).unwrap();
+
+        assert_eq!((nested.is_some(), top), (true, None));
+        assert_eq!(
+            fixture
+                .tree
+                .folder_id(Path::new("One/Two/book.cbz"))
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::NotADirectory
+        );
     }
 
     #[test]
