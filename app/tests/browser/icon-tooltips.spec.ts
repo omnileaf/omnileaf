@@ -204,23 +204,6 @@ const ICON_ACTIONS: readonly IconAction[] = [
       });
     },
     label: "Close reading settings",
-  },
-  {
-    screen: "the reader's keyboard shortcuts",
-    backend: readerBackend(DEFAULT_BACKEND),
-    reach: async (page) => {
-      await servePages(page);
-      await page.goto(`/read/${BOOK_ID}`);
-      await page
-        .locator("main > header")
-        .getByRole("button", { name: "Keyboard shortcuts", exact: true })
-        .click();
-      return page.getByRole("button", {
-        name: "Close keyboard shortcuts",
-        exact: true,
-      });
-    },
-    label: "Close keyboard shortcuts",
     isShownOn: isWideScreen,
   },
   readerComingSoonStep("Bookmark this page"),
