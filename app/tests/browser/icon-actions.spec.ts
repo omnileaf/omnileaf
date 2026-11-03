@@ -95,7 +95,7 @@ test.describe("on an Android phone", () => {
     await expect.poll(lastShownMenu).toEqual({
       screenshotMode: "Screenshot mode",
       screenshotModeState: "Off",
-      screenshotModeWithState: "Screenshot mode · Off",
+      screenshotModeLabel: "Turn on Screenshot mode",
       continueReading: "Continue reading",
       searchLibrary: "Search the library",
     });
@@ -134,7 +134,7 @@ test.describe("on an Android phone", () => {
 
     await expect.poll(lastShownMenu).toMatchObject({
       screenshotModeState: "On",
-      screenshotModeWithState: "Screenshot mode · On",
+      screenshotModeLabel: "Turn off Screenshot mode",
     });
   });
 

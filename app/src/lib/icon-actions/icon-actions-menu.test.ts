@@ -14,26 +14,29 @@ test("names each shortcut in the app's words", () => {
   ]).toEqual(["Screenshot mode", "Continue reading", "Search the library"]);
 });
 
-test("says Screenshot mode is off, beside its name and on its own", () => {
+test("offers to turn Screenshot mode on while it is off", () => {
   const menu = iconActionsMenu({ kind: "off" });
 
-  expect([menu.screenshotModeState, menu.screenshotModeWithState]).toEqual([
+  expect([menu.screenshotModeState, menu.screenshotModeLabel]).toEqual([
     "Off",
-    "Screenshot mode · Off",
+    "Turn on Screenshot mode",
   ]);
 });
 
-test("says only On while Screenshot mode has an hour to run", () => {
+test("offers to turn Screenshot mode off while it has an hour to run", () => {
   const menu = iconActionsMenu({ kind: "onUntil", turnsOffAt: TURNS_OFF_AT });
 
-  expect([menu.screenshotModeState, menu.screenshotModeWithState]).toEqual([
+  expect([menu.screenshotModeState, menu.screenshotModeLabel]).toEqual([
     "On",
-    "Screenshot mode · On",
+    "Turn off Screenshot mode",
   ]);
 });
 
-test("says On while Screenshot mode has no hour limit", () => {
+test("offers to turn Screenshot mode off while it has no hour limit", () => {
   const menu = iconActionsMenu({ kind: "on" });
 
-  expect(menu.screenshotModeState).toBe("On");
+  expect([menu.screenshotModeState, menu.screenshotModeLabel]).toEqual([
+    "On",
+    "Turn off Screenshot mode",
+  ]);
 });
