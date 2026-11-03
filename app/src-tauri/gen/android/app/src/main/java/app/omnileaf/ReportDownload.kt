@@ -1,5 +1,6 @@
 package app.omnileaf
 
+import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.os.Environment
@@ -28,7 +29,11 @@ internal fun saveToDownloads(
     return writer.write(name, "text/plain", text)
 }
 
-/** MediaStore renames a file that would collide, so the name it kept is what the person finds in Downloads. */
+/**
+ * MediaStore renames a file that would collide, so the name it kept is what the person finds in Downloads.
+ * The Downloads collection exists from Android 10, and `saveToDownloads` refuses older phones before it writes.
+ */
+@SuppressLint("NewApi")
 internal class MediaStoreDownloads(
     private val resolver: ContentResolver,
 ) : DownloadWriter {
