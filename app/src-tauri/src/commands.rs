@@ -32,7 +32,7 @@ use crate::{
     document_handover,
     file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
-    folder_picker::pick_folder,
+    folder_picker::{pick_folder, pick_folder_near},
     folder_share::SystemShares,
     full_screen::{self, FullScreenChange},
     home_folder::{self, ChosenHome, ChosenHomeFolder, HomeMoved},
@@ -326,7 +326,8 @@ async fn relocate_library_folder(
     id: FolderId,
     on_progress: Channel<ScanProgress>,
 ) -> Result<Option<FolderRescan>, IpcError> {
-    let picked = off_the_runtime(move || pick_folder(&window)).await?;
+    let lost = library.folder_tree(id).await?;
+    let picked = off_the_runtime(move || pick_folder_near(&window, lost)).await?;
     let Some(folder) = picked else {
         return Ok(None);
     };

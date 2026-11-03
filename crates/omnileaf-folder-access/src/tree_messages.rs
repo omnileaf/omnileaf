@@ -69,6 +69,11 @@ pub(crate) struct GrantRequest<'a> {
     uri: &'a str,
 }
 
+#[derive(Debug, Serialize)]
+pub(crate) struct PickRequest<'a> {
+    near: Option<&'a str>,
+}
+
 impl<'de> Deserialize<'de> for PickedTree {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let picked = Picked::deserialize(deserializer)?;
@@ -134,6 +139,14 @@ impl<'a> DocumentRequest<'a> {
 
     pub(crate) fn document(tree: &'a TreeUri, document: &'a DocumentId) -> Self {
         Self::children_of(tree, Some(document))
+    }
+}
+
+impl<'a> PickRequest<'a> {
+    pub(crate) fn near(lost: Option<&'a TreeUri>) -> Self {
+        Self {
+            near: lost.map(TreeUri::as_str),
+        }
     }
 }
 
@@ -377,6 +390,22 @@ mod tests {
             request,
             serde_json::json!({ "tree": COMICS_TREE, "document": "primary:Documents/Comics/a.cbz" })
         );
+    }
+
+    #[test]
+    fn asks_the_picker_to_open_near_a_lost_tree() {
+        let tree = comics_tree();
+
+        let request = serde_json::to_value(PickRequest::near(Some(&tree))).unwrap();
+
+        assert_eq!(request, serde_json::json!({ "near": COMICS_TREE }));
+    }
+
+    #[test]
+    fn asks_the_picker_to_open_anywhere_when_no_tree_was_lost() {
+        let request = serde_json::to_value(PickRequest::near(None)).unwrap();
+
+        assert_eq!(request, serde_json::json!({ "near": null }));
     }
 
     #[test]
