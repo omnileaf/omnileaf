@@ -6,6 +6,7 @@ macro_rules! libarchive_version {
 
 mod android;
 mod apple;
+mod changelog;
 mod changes;
 mod check;
 mod dev;
@@ -89,12 +90,39 @@ impl Narrowing {
 }
 
 #[derive(Subcommand)]
+enum Fragments {
+    /// Check that every fragment in `.changes` is well formed.
+    Check,
+    /// Fail when the change since a commit touches what people see and adds no fragment.
+    Require {
+        /// The commit the change starts from; its merge base with this branch is used.
+        #[arg(long)]
+        base: String,
+        /// Pass without a fragment, for a pull request labelled `no-changelog`.
+        #[arg(long)]
+        skip: bool,
+    },
+    /// Print the release notes the fragments make.
+    Notes {
+        /// The version the notes are for; `unreleased` when left out.
+        #[arg(long)]
+        version: Option<String>,
+        /// What to print: markdown for the release page, json for the app's What's new notice.
+        #[arg(long, value_enum, default_value = "markdown")]
+        format: changelog::Format,
+    },
+}
+
+#[derive(Subcommand)]
 enum Command {
-    /// Print which areas a change touches since a commit, as `area=true` or `area=false` lines for CI to choose its jobs from; every area when no commit is given.
+    /// Print which areas a change touches since a commit, as `area=true` or `area=false` lines for CI to choose its jobs from; every area when no commit is given. Or work with the changelog fragments in `.changes`.
+    #[command(args_conflicts_with_subcommands = true)]
     Changes {
         /// The commit the change starts from.
         #[arg(long)]
         base: Option<String>,
+        #[command(subcommand)]
+        fragments: Option<Fragments>,
     },
     /// Run the checks CI runs on every pull request.
     Check {
@@ -200,7 +228,14 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
-        Command::Changes { base } => print_changed_areas(base.as_deref())?,
+        Command::Changes {
+            fragments: Some(fragments),
+            ..
+        } => work_with_fragments(fragments)?,
+        Command::Changes {
+            base,
+            fragments: None,
+        } => print_changed_areas(base.as_deref())?,
         Command::Check {
             only,
             narrowing,
@@ -458,6 +493,26 @@ fn print_changed_areas(base: Option<&str>) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
+    let root = workspace::root();
+    match fragments {
+        Fragments::Check => {
+            let violations = changelog::check(&changelog::read_folder(&root)?);
+            report(&violations, "changelog fragment")
+        }
+        Fragments::Require { base, skip } => {
+            let changed = changelog::changed_since_merge_base(&root, &base)?;
+            changelog::require(&changed, skip).map_err(|missing| anyhow::anyhow!("{missing}"))
+        }
+        Fragments::Notes { version, format } => {
+            let notes =
+                changelog::notes(&changelog::read_folder(&root)?, version.as_deref(), format)?;
+            print_text(&notes);
+            Ok(())
+        }
+    }
+}
+
 fn write_fuzz_seeds() -> anyhow::Result<()> {
     let root = workspace::root();
     let corpus = root.join(fuzz_seeds::CORPUS);
@@ -481,6 +536,11 @@ fn write_rar_fixtures(rar5: PathBuf, rar4: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[expect(clippy::print_stdout, reason = "the notes are the command's output")]
+fn print_text(text: &str) {
+    print!("{text}");
+}
+
 #[expect(clippy::print_stdout, reason = "the report is the command's output")]
 fn print_lines(lines: &[impl Display]) {
     for line in lines {
@@ -492,7 +552,8 @@ fn print_lines(lines: &[impl Display]) {
 mod tests {
     use clap::Parser;
 
-    use super::{Cli, Command};
+    use super::{Cli, Command, Fragments};
+    use crate::changelog;
     use crate::dev::Platform;
 
     fn parsed_platforms(args: &[&str]) -> Vec<Platform> {
@@ -551,6 +612,70 @@ mod tests {
             upstream.command,
             Command::VendorCheck { upstream: true }
         ));
+    }
+
+    #[test]
+    fn keeps_the_changed_areas_command_beside_the_fragment_commands() {
+        let areas = Cli::try_parse_from(["xtask", "changes", "--base", "HEAD^1"]).unwrap();
+        let check = Cli::try_parse_from(["xtask", "changes", "check"]).unwrap();
+        let notes = Cli::try_parse_from([
+            "xtask",
+            "changes",
+            "notes",
+            "--version",
+            "1.0.0",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        assert!(matches!(
+            areas.command,
+            Command::Changes {
+                base: Some(_),
+                fragments: None
+            }
+        ));
+        assert!(matches!(
+            check.command,
+            Command::Changes {
+                fragments: Some(Fragments::Check),
+                ..
+            }
+        ));
+        assert!(matches!(
+            notes.command,
+            Command::Changes {
+                fragments: Some(Fragments::Notes {
+                    format: changelog::Format::Json,
+                    ..
+                }),
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn takes_the_base_and_skip_to_require_a_fragment() {
+        let require = Cli::try_parse_from([
+            "xtask",
+            "changes",
+            "require",
+            "--base",
+            "origin/main",
+            "--skip",
+        ])
+        .unwrap();
+        let no_base = Cli::try_parse_from(["xtask", "changes", "require"]);
+
+        assert!(matches!(
+            require.command,
+            Command::Changes {
+                fragments: Some(Fragments::Require { skip: true, .. }),
+                ..
+            }
+        ));
+        assert!(no_base.is_err());
     }
 
     #[test]

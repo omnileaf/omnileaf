@@ -154,7 +154,7 @@ pub(crate) fn changed_files(root: &Path, base: &str) -> anyhow::Result<Vec<Strin
         .collect())
 }
 
-fn git(root: &Path, args: &[&str]) -> anyhow::Result<String> {
+pub(crate) fn git(root: &Path, args: &[&str]) -> anyhow::Result<String> {
     let output = Command::new("git")
         .args(args)
         .current_dir(root)

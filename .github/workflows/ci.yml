@@ -58,6 +58,32 @@ jobs:
           areas=$(cargo xtask changes ${BASE:+--base "$BASE"})
           echo "$areas" | tee -a "$GITHUB_OUTPUT"
 
+  changelog:
+    name: changelog
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: xtask
+          save-if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
+
+      - name: Check the changelog fragments
+        run: cargo xtask changes check
+
+      - name: Require a fragment for a change people see
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        run: cargo xtask changes require --base HEAD^1
+
   secrets:
     name: secret scan
     runs-on: ubuntu-24.04

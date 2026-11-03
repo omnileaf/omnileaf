@@ -1,0 +1,19 @@
+{
+  "types": [
+    { "id": "breaking", "heading": "Breaking changes" },
+    { "id": "sec", "heading": "Security" },
+    { "id": "feat", "heading": "New" },
+    { "id": "perf", "heading": "Faster" },
+    { "id": "fix", "heading": "Fixed" }
+  ],
+  "areas": [
+    { "id": "library", "heading": "Library" },
+    { "id": "reader", "heading": "Reader" },
+    { "id": "series", "heading": "Series" },
+    { "id": "search", "heading": "Search" },
+    { "id": "settings", "heading": "Settings" },
+    { "id": "first-launch", "heading": "First launch" },
+    { "id": "notices", "heading": "Notices" },
+    { "id": "platform", "heading": "Platform" }
+  ]
+}
