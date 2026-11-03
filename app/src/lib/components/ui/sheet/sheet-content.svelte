@@ -36,7 +36,7 @@
     {@attach resolveFirstStyle}
     {@attach closesOnBack}
     class={cn(
-      "fixed inset-none inset-s-auto z-dialog flex flex-col overflow-hidden border-s border-border bg-card text-foreground side-panel-shadow max-inline-full motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass motion-sheets:data-starting-style:translate-x-full motion-sheets:rtl:data-starting-style:-translate-x-full motion-sheets:closed:translate-x-full motion-sheets:rtl:closed:-translate-x-full",
+      "fixed inset-none inset-s-auto z-dialog flex flex-col overflow-hidden border-s border-border bg-card text-foreground side-panel-shadow max-inline-full motion-sheets:transition-transform motion-sheets:duration-pane motion-sheets:ease-pane motion-sheets:data-starting-style:translate-x-full motion-sheets:rtl:data-starting-style:-translate-x-full motion-sheets:closed:translate-x-full motion-sheets:rtl:closed:-translate-x-full",
       className,
     )}
     {...restProps}
