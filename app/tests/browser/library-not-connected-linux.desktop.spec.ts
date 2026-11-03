@@ -164,19 +164,3 @@ test.describe("in the list display on Linux", () => {
     await expect(row.getByRole("link")).toHaveCount(0);
   });
 });
-
-test.describe("a series whose folder is not there on macOS", () => {
-  test.use({ platform: "macos" });
-
-  test("is still shown plainly and opens", async ({ page }) => {
-    await page.goto("/");
-    const tile = tileOf(page, AWAY_TITLE);
-
-    await expect(tile.getByText("Not connected")).toHaveCount(0);
-    await expect(tile.locator("[data-slot=cover-dim]")).toHaveCount(0);
-    await expect(tile.getByRole("link")).toHaveAttribute(
-      "href",
-      `/series/${AWAY[0]?.id ?? ""}`,
-    );
-  });
-});

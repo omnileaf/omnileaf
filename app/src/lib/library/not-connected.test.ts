@@ -32,8 +32,9 @@ test("treats a series with a folder there as connected on Windows", () => {
 });
 
 test.each(["ios", "macos"] satisfies Platform[])(
-  "leaves a not connected series as it was on %s",
+  "treats a series with no folder there as not connected on %s",
   (platform) => {
-    expect(isNotConnected(NOT_CONNECTED, platform)).toBe(false);
+    expect(isNotConnected(NOT_CONNECTED, platform)).toBe(true);
+    expect(isNotConnected(CONNECTED, platform)).toBe(false);
   },
 );
