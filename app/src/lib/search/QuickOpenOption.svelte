@@ -18,6 +18,8 @@
   } from "#lib/library/series-look.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  import { LIBRARY_STATES } from "./places";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
   import {
@@ -100,10 +102,12 @@
               label: m.quick_open_search_for({ text: choice.text }),
               detail: m.quick_open_search_page(),
             };
-      case "showUnread":
+      case "showLibrary":
         return {
           icon: ListFilter,
-          label: m.quick_open_show_unread(),
+          label:
+            LIBRARY_STATES.find((one) => one.state === choice.state)?.label() ??
+            "",
           detail: m.quick_open_library_filter(),
         };
     }

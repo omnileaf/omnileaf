@@ -1481,6 +1481,8 @@
   "quick_open_resume": "⟦{book}, þáĝé {page}········⟧",
   "quick_open_enter_continues": "⟦Éñţéŕ çöñţíñûéš······⟧",
   "quick_open_show_unread": "⟦Šĥöŵ ûñŕéáð·····⟧",
+  "quick_open_show_started": "⟦Šĥöŵ šţáŕţéð·····⟧",
+  "quick_open_show_finished": "⟦Šĥöŵ ƒíñíšĥéð······⟧",
   "quick_open_library_filter": "⟦Ļíƀŕáŕý ƒíļţéŕ······⟧",
   "quick_open_search_for": "⟦Šéáŕçĥ ţĥé ļíƀŕáŕý ƒöŕ “{text}”·············⟧",
   "quick_open_search_page": "⟦Šéáŕçĥ þáĝé·····⟧",
