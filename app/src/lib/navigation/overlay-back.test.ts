@@ -5,9 +5,11 @@ import { OverlayBack, type PageHistory } from "./overlay-back";
 function pageHistory() {
   const listeners = new Set<() => void>();
   const entries = { pushed: 0, backed: 0 };
+  const page = { isOnOverlayEntry: true };
   const history: PageHistory = {
     push: () => {
       entries.pushed += 1;
+      return () => page.isOnOverlayEntry;
     },
     back: () => {
       entries.backed += 1;
@@ -22,6 +24,9 @@ function pageHistory() {
   return {
     history,
     entries,
+    navigateAway: () => {
+      page.isOnOverlayEntry = false;
+    },
     listening: () => listeners.size,
     goBack: () => {
       for (const listener of listeners) {
@@ -76,6 +81,17 @@ test("gives its entry back when the overlay closes some other way", () => {
 
   expect(page.entries).toEqual({ pushed: 1, backed: 1 });
   expect(told.count).toBe(2);
+});
+
+test("keeps the page it navigated to when the overlay closes after the navigation", () => {
+  const { overlays, page } = overlayBack();
+  const release = overlays.hold(() => undefined);
+
+  page.navigateAway();
+  release();
+
+  expect(page.entries).toEqual({ pushed: 1, backed: 0 });
+  expect(page.listening()).toBe(0);
 });
 
 test("ignores the page going back for its own entry", () => {
