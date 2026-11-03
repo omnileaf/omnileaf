@@ -119,6 +119,7 @@
     onLoadAll,
     onMark,
     onBookmark,
+    onRemoveBookmarks,
     onRemove,
     onShowInFolder,
     platform,
@@ -138,6 +139,7 @@
     onBookmark: (
       books: BookId[],
     ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
+    onRemoveBookmarks: (books: BookId[]) => Promise<boolean>;
     onRemove: (
       targets: RemovalTarget[],
       deleteFiles: boolean,
@@ -166,6 +168,7 @@
     platform === "windows" || platform === "macos" || platform === "linux",
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
+  const isBookmarkedFromSheet = $derived(phonePlatform === "android");
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
@@ -320,6 +323,12 @@
     if (report !== undefined) {
       noteRemoval(notices, report);
       await end();
+    }
+  }
+
+  async function removeBookmark(book: BookId): Promise<void> {
+    if (!(await onRemoveBookmarks([book]))) {
+      outcome = { kind: "failed", action: "bookmark" };
     }
   }
 
@@ -642,6 +651,16 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
+      onBookmark={isBookmarkedFromSheet
+        ? (book: BookId) => {
+            void bookmarkSelected([book]);
+          }
+        : undefined}
+      onRemoveBookmark={isBookmarkedFromSheet
+        ? (book: BookId) => {
+            void removeBookmark(book);
+          }
+        : undefined}
       onDelete={isRowDeletable
         ? (book: BookId) => {
             askToRemoveBooks([book]);

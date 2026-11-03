@@ -2035,6 +2035,7 @@
     }
   ],
   "series_bookmark": "Bookmark",
+  "series_remove_bookmark": "Remove bookmark",
   "series_bookmarked_books": [
     {
       "declarations": [

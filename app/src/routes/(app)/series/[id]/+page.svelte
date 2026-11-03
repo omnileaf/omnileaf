@@ -234,6 +234,21 @@
     return { newlyBookmarked: bookmarked.length, failed };
   }
 
+  async function removeBookmarks(picked: SeriesBook["id"][]): Promise<boolean> {
+    const cleared = await commands.clearBookmarks(picked);
+    if (cleared.status === "error") {
+      reportError(cleared.error);
+      notices.show({
+        tone: "warning",
+        icon: BookmarkX,
+        title: m.series_bookmark_failed(),
+        body: m.series_bookmark_failed_body(),
+      });
+    }
+    readAgain();
+    return cleared.status === "ok";
+  }
+
   function opposite(read: ReadMark): ReadMark {
     return read === "read" ? "unread" : "read";
   }
@@ -516,6 +531,7 @@
                   onLoadAll={() => books.loadAll()}
                   onMark={mark}
                   onBookmark={bookmarkSelected}
+                  onRemoveBookmarks={removeBookmarks}
                   onRemove={removeBooks}
                   onShowInFolder={showBookInFolder}
                   platform={data.appInfo.platform}
