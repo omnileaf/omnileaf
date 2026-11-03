@@ -8,7 +8,6 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import { tagIn } from "#lib/library/tag-link.ts";
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { assertNever } from "#lib/assert-never.ts";
   import {
@@ -878,7 +877,7 @@
 
   async function chooseTagFromLink(): Promise<void> {
     await listing.load();
-    const tag = tagIn(page.url);
+    const tag = page.state.libraryTag;
     if (tag === undefined || chosenListing === undefined) {
       return;
     }
@@ -886,7 +885,7 @@
       ...chosenListing,
       filter: { ...withoutFilters(chosenListing).filter, tags: [tag] },
     });
-    await goto(resolve("/(app)"), { replaceState: true });
+    await goto(resolve("/(app)"), { replaceState: true, state: {} });
   }
 
   onMount(() => {

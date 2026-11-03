@@ -11,6 +11,7 @@ declare global {
       firstLaunchStep?: FirstLaunchStep;
       readerOpensAtEnd?: boolean;
       readerJumped?: boolean;
+      libraryTag?: string;
     }
   }
 }

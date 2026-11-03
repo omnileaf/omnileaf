@@ -10,8 +10,8 @@
   import { tick } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { tagQuery } from "#lib/library/tag-link.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import {
     Card,
@@ -188,7 +188,11 @@
       {#each overview.tags as tag (tag)}
         <li>
           <a
-            href={resolve(`/(app)${tagQuery(tag)}`)}
+            href={resolve("/(app)")}
+            onclick={(event) => {
+              event.preventDefault();
+              void goto(resolve("/(app)"), { state: { libraryTag: tag } });
+            }}
             class="rounded-full focus-visible:focus-ring"
           >
             <Badge
