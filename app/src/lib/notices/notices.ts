@@ -80,13 +80,17 @@ export class Notices {
   readonly #shown = new SvelteMap<string, ShownNotice>();
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
+  readonly #queuesOneAtATime: boolean;
+  readonly #waiting: Notice[] = [];
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
   #undoSettling: (Shown & { readonly offer: UndoOffer }) | undefined;
 
   constructor(
     undoRules: () => UndoRules = () => NEW_UNDO_RULES,
     surface: NoticeSurface = noticeSurfaceOn(currentPlatform()),
+    queuesOneAtATime: boolean = currentPlatform() === "android",
   ) {
+    this.#queuesOneAtATime = queuesOneAtATime;
     this.#undoRules = undoRules;
     this.#surface = surface;
   }
@@ -100,6 +104,10 @@ export class Notices {
   }
 
   show(notice: Notice): void {
+    if (this.#queuesOneAtATime && this.#shown.size > 0) {
+      this.#waiting.push(notice);
+      return;
+    }
     const shown = this.#present(
       NoticeToast,
       (toast) => ({ notice, toast }),
@@ -153,6 +161,10 @@ export class Notices {
   }
 
   withdraw(notice: Notice): void {
+    const waitingAt = this.#waiting.indexOf(notice);
+    if (waitingAt >= 0) {
+      this.#waiting.splice(waitingAt, 1);
+    }
     this.#noticesShown.get(notice)?.toast.dismiss();
   }
 
@@ -248,6 +260,10 @@ export class Notices {
 
   #forget(id: string): void {
     this.#shown.delete(id);
+    const next = this.#waiting.shift();
+    if (next !== undefined) {
+      this.show(next);
+    }
     clearTimeout(this.#lapses.get(id)?.timer);
     this.#lapses.delete(id);
     for (const [notice, shown] of this.#noticesShown) {

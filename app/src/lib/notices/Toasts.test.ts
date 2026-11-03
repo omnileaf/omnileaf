@@ -816,3 +816,34 @@ test.each<{
     expect(toaster?.getAttribute("data-y-position")).toBe(edge);
   },
 );
+
+test("shows one notice at a time on Android and the next once the front one is gone", async () => {
+  const notices = new Notices(undefined, "toasts", true);
+  await render(Toasts, { notices, platform: "android", theme: "light" });
+  const first = titled("First");
+
+  notices.show(first);
+  notices.show(titled("Second"));
+
+  await expect.element(toastSaying("First")).toBeVisible();
+  expect(page.getByRole("listitem").elements()).toHaveLength(1);
+
+  notices.withdraw(first);
+
+  await expect.element(toastSaying("Second")).toBeVisible();
+  await expect.poll(() => page.getByRole("listitem").elements().length).toBe(1);
+});
+
+test("drops a waiting notice that is withdrawn before its turn", async () => {
+  const notices = new Notices(undefined, "toasts", true);
+  await render(Toasts, { notices, platform: "android", theme: "light" });
+  const first = titled("First");
+  const second = titled("Second");
+
+  notices.show(first);
+  notices.show(second);
+  notices.withdraw(second);
+  notices.withdraw(first);
+
+  await expect.poll(() => page.getByRole("listitem").elements().length).toBe(0);
+});
