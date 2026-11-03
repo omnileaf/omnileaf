@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   boxOf,
   DEFAULT_BACKEND,
+  EXPANDED_MIN_WIDTH,
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
@@ -198,6 +199,10 @@ test.describe("a page inside a section on an iPad", () => {
   test("draws a Settings page's Back as a glass circle level with the bar", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width >= EXPANDED_MIN_WIDTH,
+      "the sections are listed beside it on wide screens",
+    );
     await page.goto("/settings/general");
 
     const back = page.getByRole("link", { name: "Back to Settings" });

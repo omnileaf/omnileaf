@@ -142,7 +142,12 @@
   </header>
 {:else if isIpad}
   <header class="flex flex-col items-start">
-    <div class="block-top-tab-bar-row flex items-center">
+    <div
+      class={[
+        "block-top-tab-bar-row flex items-center",
+        !isNested && "two-pane:hidden",
+      ]}
+    >
       <a
         href={resolve(parent.route)}
         data-back-link
