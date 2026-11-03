@@ -1,3 +1,5 @@
+import type { Platform } from "#lib/ipc/bindings.ts";
+
 export interface FilterChipLook {
   readonly chip: string;
   readonly more: string;
@@ -25,9 +27,19 @@ export const ANDROID_FILTER_CHIP_LOOK: FilterChipLook = {
   removeSize: 18,
 };
 
+export const MACOS_FILTER_CHIP_LOOK: FilterChipLook = {
+  chip: `rounded-native-button border-0 bg-native-accent-soft text-native-accent-text ps-native-detail-chip-inline pe-sm ${NATIVE_TYPE} block-auto min-block-native-button`,
+  more: TODAYS_FILTER_CHIP_LOOK.more,
+  removeSize: 10,
+};
+
 export function filterChipLook(
   phone: "ios" | "android" | undefined,
+  platform?: Platform,
 ): FilterChipLook {
+  if (platform === "macos") {
+    return MACOS_FILTER_CHIP_LOOK;
+  }
   if (phone === "android") {
     return ANDROID_FILTER_CHIP_LOOK;
   }
