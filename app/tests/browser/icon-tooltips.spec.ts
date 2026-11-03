@@ -217,19 +217,6 @@ const CLOSE_ACTIONS: readonly IconAction[] = [
     label: "Close keyboard shortcuts",
   },
   {
-    screen: "the app's Keyboard shortcuts",
-    backend: DEFAULT_BACKEND,
-    reach: async (page) => {
-      await page.goto("/");
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await page.keyboard.press("Shift+?");
-      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-      await settle(sheet);
-      return sheet.getByRole("button", { name: "Close keyboard shortcuts" });
-    },
-    label: "Close keyboard shortcuts",
-  },
-  {
     screen: "the Edit details page",
     backend: {
       ...SHELF.backend(),
