@@ -12,8 +12,9 @@ import { type Session, xpath } from "./webdriver.ts";
 
 const HOME_FOLDER_NAME = "Omnileaf Home Test";
 const HOME_FOLDER_PATH = `/sdcard/Documents/${HOME_FOLDER_NAME}`;
-const PICKED_PLACE = `Internal storage › Documents › ${HOME_FOLDER_NAME}`;
+const PICKED_PLACE_SUFFIX = `› Documents › ${HOME_FOLDER_NAME}`;
 const ADB_TIMEOUT_MS = 30_000;
+const FOLDER_LISTED_TIMEOUT_MS = 5_000;
 const PICKER_TIMEOUT_MS = 30_000;
 const MOVE_TIMEOUT_MS = 60_000;
 const TEST_TIMEOUT_MS = 5 * 60_000;
@@ -24,9 +25,10 @@ const HOME_FOLDER_ROW = xpath(
   "//main//button[@aria-labelledby][@aria-describedby]",
 );
 const MOVED_HOME_PLACE = xpath(
-  `//main//code[normalize-space()='${PICKED_PLACE}']`,
+  `//main//code[contains(normalize-space(), '${PICKED_PLACE_SUFFIX}')]`,
 );
 const PICKED_FOLDER = xpath(`//*[@text='${HOME_FOLDER_NAME}']`);
+const DOCUMENTS_FOLDER = xpath("//*[@text='Documents']");
 const USE_THIS_FOLDER = xpath(
   "//*[@text='Use this folder' or @text='USE THIS FOLDER']",
 );
@@ -40,9 +42,18 @@ async function adbShell(command: string): Promise<void> {
   await run("adb", ["shell", command], { timeout: ADB_TIMEOUT_MS });
 }
 
-/** Android's folder picker opens in Documents, where it lists the folder and asks for the grant before it hands the tree back. */
+/** The picker opens at the top of the storage on some phones and in Documents on others, and it asks for the grant before it hands the tree back. */
 async function pickHomeFolder(session: Session): Promise<void> {
   await session.inNativeContext(async () => {
+    const listed = await session.findWithin(
+      PICKED_FOLDER,
+      FOLDER_LISTED_TIMEOUT_MS,
+    );
+    if (listed === undefined) {
+      await (
+        await session.waitFor(DOCUMENTS_FOLDER, PICKER_TIMEOUT_MS)
+      ).click();
+    }
     await (await session.waitFor(PICKED_FOLDER, PICKER_TIMEOUT_MS)).click();
     await (await session.waitFor(USE_THIS_FOLDER, PICKER_TIMEOUT_MS)).click();
     await (await session.waitFor(ALLOW_ACCESS, PICKER_TIMEOUT_MS)).click();
@@ -73,7 +84,7 @@ test(
     await pickHomeFolder(appSession());
 
     const moved = await appSession().waitFor(MOVED_HOME_PLACE, MOVE_TIMEOUT_MS);
-    expect(await moved.text()).toBe(PICKED_PLACE);
+    expect(await moved.text()).toContain(PICKED_PLACE_SUFFIX);
   },
   TEST_TIMEOUT_MS,
 );
