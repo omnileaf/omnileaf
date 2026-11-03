@@ -18,9 +18,11 @@
   import HistoryEntryRow from "#lib/history/HistoryEntryRow.svelte";
   import HistorySearchField from "#lib/history/HistorySearchField.svelte";
   import {
+    groupSeconds,
     type HistoryGroupName,
     historyGroups,
   } from "#lib/history/history-groups.ts";
+  import { readingTime } from "#lib/history/reading-time.ts";
   import { whenFormats } from "#lib/history/history-line.ts";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
@@ -320,12 +322,17 @@
   >
     {#each groups as group, index (group.name)}
       <section aria-labelledby={`${headingId}-${String(index)}`}>
-        <h2
-          id={`${headingId}-${String(index)}`}
-          class="px-xs text-small font-semibold"
-        >
-          {GROUP_NAMES[group.name]()}
-        </h2>
+        <div class="flex items-baseline justify-between px-xs">
+          <h2
+            id={`${headingId}-${String(index)}`}
+            class="text-small font-semibold"
+          >
+            {GROUP_NAMES[group.name]()}
+          </h2>
+          <span data-testid="group-total" class="text-detail text-muted">
+            {readingTime(groupSeconds(group))}
+          </span>
+        </div>
         <ul
           aria-labelledby={`${headingId}-${String(index)}`}
           class="flex flex-col large:divide-y large:divide-border"

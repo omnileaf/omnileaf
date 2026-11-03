@@ -46,3 +46,10 @@ export function historyGroups(
     ),
   })).filter(({ entries: grouped }) => grouped.length > 0);
 }
+
+export function groupSeconds({ entries }: HistoryGroup): number {
+  const perDay = new Map(
+    entries.map(({ day }) => [day.day, day.readSeconds] as const),
+  );
+  return [...perDay.values()].reduce((sum, seconds) => sum + seconds, 0);
+}

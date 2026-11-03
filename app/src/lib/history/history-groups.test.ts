@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { HistoryEntry } from "#lib/ipc/bindings.ts";
 
-import { historyGroups } from "./history-groups.ts";
+import { groupSeconds, historyGroups } from "./history-groups.ts";
 
 const THURSDAY = 20_369;
 const MONDAY = THURSDAY - 3;
@@ -50,4 +50,17 @@ test("keeps yesterday on its own when the week starts today", () => {
   });
 
   expect(groups.map(({ name }) => name)).toEqual(["yesterday"]);
+});
+
+test("totals a group's time once per day, not once per book read that day", () => {
+  const [group] = historyGroups(
+    [
+      { book: "a", day: { day: MONDAY, readSeconds: 600 } },
+      { book: "b", day: { day: MONDAY, readSeconds: 600 } },
+      { book: "c", day: { day: MONDAY + 1, readSeconds: 300 } },
+    ] as HistoryEntry[],
+    CALENDAR,
+  );
+
+  expect(group === undefined ? 0 : groupSeconds(group)).toBe(900);
 });
