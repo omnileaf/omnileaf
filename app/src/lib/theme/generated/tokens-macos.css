@@ -2,6 +2,8 @@
 :root[data-platform="macos"] [data-theme] {
   --native-duration-fade: 150ms;
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-sheet-in: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-sheet-out: cubic-bezier(0.32, 0.72, 0, 1);
   --native-blur-glass: 30px;
   --native-radius-button: 6px;
   --native-radius-button-small: 5px;
