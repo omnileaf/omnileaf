@@ -1,8 +1,4 @@
 //! Serves the dashboard against a built-in fake relay and fake GitHub, so a browser can open every page.
-//!
-//! Run it with `cargo run -p omnileaf-admin --example preview -- 127.0.0.1:4180`. Signing in as `reviewer` is
-//! allowed and any other login is turned away. The relay refuses every status change and always hands
-//! back a reply address, so the pages can be checked for leaking it.
 
 use std::{
     collections::HashMap,
