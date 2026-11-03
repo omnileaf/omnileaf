@@ -35,9 +35,9 @@ const SERIES_HEADING = xpath(
   "//main//h1[normalize-space()='Sample Series 01']",
 );
 const FIRST_BOOK_LINK = xpath(
-  "//ul[@aria-label='Books']/li[1]//a[starts-with(@href, '/read/')]",
+  "//ul[@aria-label='Volumes']/li[1]//a[starts-with(@href, '/read/')]",
 );
-const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("ul[aria-label='Books']");
+const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("ul[aria-label='Volumes']");
 if (books === null) { return false; }
 books.scrollIntoView({ block: "start" });
 return true;`;
@@ -173,7 +173,7 @@ async function openFirstBook(): Promise<void> {
   const session = appSession();
   await (await session.waitFor(FIRST_SERIES_COVER)).click();
   await session.waitFor(SERIES_HEADING);
-  await session.waitUntil(SCROLL_TO_THE_BOOKS, "the books list in view");
+  await session.waitUntil(SCROLL_TO_THE_BOOKS, "the volumes list in view");
   await (await session.waitFor(FIRST_BOOK_LINK)).click();
   await session.waitUntil(pageShownScript(1), "the first page shown");
 }
