@@ -8,9 +8,11 @@ import {
   onPlatform,
   test,
   testOnlyInItsWebview,
+  tokenColour,
   viewportOf,
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { FakeShelf, SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const LIBRARY = sampleSeries(9);
 const TAB_BAR_HEIGHT_PX = 44;
@@ -127,20 +129,104 @@ test.describe("History on an iPad", () => {
 
 test.describe("a page inside a section on an iPad", () => {
   testOnlyInItsWebview("ios");
-  test.use({ backend: onPlatform("ios").backend });
-
-  test("leaves the search field clear of the tab bar", async ({ page }) => {
+  const shelf = new FakeShelf([{ state: "notStarted" }]);
+  test.use({
+    backend: {
+      ...onPlatform("ios").backend,
+      seriesOverview: (id) => shelf.backend().seriesOverview(id),
+      seriesBooks: (id, listing, after) =>
+        shelf.backend().seriesBooks(id, listing, after),
+    },
+  });
+  test.beforeEach(({ page }) => {
     test.skip(viewportOf(page).width < MEDIUM_MIN_WIDTH, "iPads only");
+  });
+
+  test("keeps the search field clear of the tab bar", async ({ page }) => {
     await page.goto("/search");
 
     const field = page.getByRole("combobox", { name: "Search your library" });
     await expect(field).toBeVisible();
-    const { width, height } = await boxOf(field);
+    const [bar, box] = await Promise.all([boxOf(mainBar(page)), boxOf(field)]);
 
-    await expect(mainBar(page)).toHaveCount(0);
-    await field.click({ position: { x: width / 2, y: height / 2 } });
+    expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+    await field.click({ position: { x: box.width / 2, y: box.height / 2 } });
     await expect(page).toHaveURL(/\/search/);
     await expect(field).toBeFocused();
+  });
+
+  for (const [name, path, chosen] of [
+    ["search", "/search", "Library"],
+    ["a series", `/series/${SERIES_ID}`, "Library"],
+    ["a Settings page", "/settings/general", "Settings"],
+  ] as const) {
+    test(`keeps the tab bar in the middle of the bar on ${name}, with ${chosen} chosen`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const bar = mainBar(page);
+      await expect(bar).toBeVisible();
+      const box = await boxOf(bar);
+
+      expect(box.x + box.width / 2).toBeCloseTo(viewportOf(page).width / 2, 0);
+      expect(box.height).toBeCloseTo(TAB_BAR_HEIGHT_PX, 0);
+      await expect(bar.getByRole("link", { name: chosen })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
+  }
+
+  test("holds Back at the bar's leading end and More at its trailing end on a series", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+
+    const [bar, back, more] = await Promise.all([
+      boxOf(mainBar(page)),
+      boxOf(page.getByRole("link", { name: "Back to the library" })),
+      boxOf(page.getByRole("button", { name: `More for ${SERIES_TITLE}` })),
+    ]);
+
+    expect(back.x + back.width).toBeLessThanOrEqual(bar.x);
+    expect(more.x).toBeGreaterThanOrEqual(bar.x + bar.width);
+    expect(back.y + back.height / 2).toBeCloseTo(bar.y + bar.height / 2, 0);
+    expect(more.y + more.height / 2).toBeCloseTo(bar.y + bar.height / 2, 0);
+  });
+
+  test("draws a Settings page's Back as a glass circle level with the bar", async ({
+    page,
+  }) => {
+    await page.goto("/settings/general");
+
+    const back = page.getByRole("link", { name: "Back to Settings" });
+    const [bar, box] = await Promise.all([boxOf(mainBar(page)), boxOf(back)]);
+
+    expect(box.width).toBeCloseTo(box.height, 0);
+    expect(box.x + box.width).toBeLessThanOrEqual(bar.x);
+    expect(box.y + box.height / 2).toBeCloseTo(bar.y + bar.height / 2, 0);
+    await expect(back).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-bar-button"),
+    );
+  });
+
+  test("opens another section from the tab bar on a series", async ({
+    page,
+  }) => {
+    await page.goto(`/series/${SERIES_ID}`);
+
+    await mainBar(page).getByRole("link", { name: "History" }).click();
+
+    await expect(page).toHaveURL(/\/history$/);
+  });
+
+  test("leaves the tab bar off the reader", async ({ page }) => {
+    await page.goto(`/read/${shelf.idOf(0)}`);
+
+    await expect(page.getByRole("main")).toBeVisible();
+    await expect(mainBar(page)).toHaveCount(0);
   });
 });
 

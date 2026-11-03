@@ -26,6 +26,7 @@ const SECTIONS_IN_ORDER = [
 ];
 const NARROW_BACK_LINK_HEIGHT = 32;
 const TOUCH_TARGET = 48;
+const TAB_BAR_HEIGHT = 44;
 const GLASS_CIRCLE = 44;
 const STATUS_BAR_GAP = 8;
 const SECTIONS_TITLE_TEXT = "12px";
@@ -212,7 +213,7 @@ for (const platform of ["android", "ios"] as const) {
       ).toBeVisible();
     });
 
-    test("leads a section back to settings with a 48px arrow on a tablet", async ({
+    test("leads a section back to settings with a 48px arrow on a tablet, or a glass circle beside the tab bar on an iPad", async ({
       page,
     }) => {
       const { width } = viewportOf(page);
@@ -228,9 +229,16 @@ for (const platform of ["android", "ios"] as const) {
         page.getByRole("heading", { level: 1, name: "About" }),
       );
 
-      expect(back.width).toBe(TOUCH_TARGET);
-      expect(back.height).toBe(TOUCH_TARGET);
-      expect(back.y).toBe(STATUS_BAR_GAP);
+      if (platform === "ios") {
+        const bar = await boxOf(page.getByRole("navigation", { name: "Main" }));
+        expect(back.width).toBe(TAB_BAR_HEIGHT);
+        expect(back.height).toBe(TAB_BAR_HEIGHT);
+        expect(back.y).toBe(bar.y);
+      } else {
+        expect(back.width).toBe(TOUCH_TARGET);
+        expect(back.height).toBe(TOUCH_TARGET);
+        expect(back.y).toBe(STATUS_BAR_GAP);
+      }
       expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);
     });
   });
