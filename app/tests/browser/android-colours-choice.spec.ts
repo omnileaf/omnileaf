@@ -44,6 +44,10 @@ function wallpaperPrimary(page: Page): Promise<string> {
 }
 
 test.describe("the Colours choice on Android", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's Colours choice");
+  });
+
   test("offers Omnileaf, chosen, and From your wallpaper, with what each does", async ({
     page,
   }) => {
