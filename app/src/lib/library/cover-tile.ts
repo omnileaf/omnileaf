@@ -169,6 +169,7 @@ const WINDOWS_TILE: CoverTileLook = {
 
 const MACOS_TILE: CoverTileLook = {
   ...TODAYS_LOOK,
+  stack: LINUX_STACK,
   menuTargetRing: ACCENT_COVER_RING,
   pickedRing:
     "outline-(length:--native-spacing-tile-picked) outline-native-tile-picked outline-offset-0",
