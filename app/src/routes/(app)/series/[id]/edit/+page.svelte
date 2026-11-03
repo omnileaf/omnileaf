@@ -145,7 +145,8 @@
       <Button
         type="button"
         look={isIosPhone ? "header-control" : "icon"}
-        aria-label={m.edit_details_close()}
+        iconOnly
+        label={m.edit_details_close()}
         class={isIosPhone
           ? "ios:backdrop-blur-none"
           : "relative block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"}

@@ -261,7 +261,8 @@
     <Button
       type="button"
       look="icon"
-      aria-label={m.library_categories_every()}
+      iconOnly
+      label={m.library_categories_every()}
       aria-haspopup="dialog"
       aria-expanded={isSheetOpen}
       class={look.arrow}
