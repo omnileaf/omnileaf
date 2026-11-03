@@ -6,6 +6,7 @@ import {
   accessibilityViolations,
   DEFAULT_BACKEND,
   expect,
+  fakeAppInfo,
   test,
 } from "./fixtures.ts";
 
@@ -34,9 +35,13 @@ const LIBRARY: readonly WireSeries[] = [
   series(5, 1),
 ];
 
-function libraryOf(stacks: boolean): FakeBackend {
+function libraryOf(
+  stacks: boolean,
+  platform: Parameters<typeof fakeAppInfo>[0] = "linux",
+): FakeBackend {
   return {
     ...DEFAULT_BACKEND,
+    appInfo: () => fakeAppInfo(platform),
     librarySeries: () => ({ series: [...LIBRARY], next: null }),
     libraryView: () => ({
       ...DEFAULT_LIBRARY_VIEW,
@@ -112,5 +117,31 @@ test.describe("with stacked covers switched off", () => {
     await expect(tileOf(page, "Sample Series 04")).toBeVisible();
 
     await expect(page.locator('[data-slot="cover-sheet"]')).toHaveCount(0);
+  });
+});
+
+test.describe("on macOS, as its board draws them", () => {
+  test.use({ backend: libraryOf(true, "macos") });
+
+  test("draws two sheets inset 14px and 7px behind each series of many books", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const stacked = tileOf(page, "Sample Series 04");
+    const sheets = sheetsOf(stacked);
+    await expect(sheets).toHaveCount(2);
+    const cover = await stacked.getByRole("link").boundingBox();
+    const far = await sheets.nth(0).boundingBox();
+    const near = await sheets.nth(1).boundingBox();
+    expect(far?.x).toBeCloseTo((cover?.x ?? 0) + 14, 0);
+    expect(near?.x).toBeCloseTo((cover?.x ?? 0) + 7, 0);
+    expect((near?.y ?? 0) - (far?.y ?? 0)).toBeCloseTo(5, 0);
+  });
+
+  test("keeps a one-shot a single cover", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(sheetsOf(tileOf(page, "Sample Series 05"))).toHaveCount(0);
   });
 });

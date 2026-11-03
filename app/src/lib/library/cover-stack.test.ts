@@ -157,7 +157,7 @@ test("draws flat covers when stacking is switched off", async () => {
   expect(drawn[STACKED]?.coverTop).toBe(drawn[STACKED]?.cellTop);
 });
 
-test.each<Platform>(["macos", "windows", "ios", "android"])(
+test.each<Platform>(["windows", "ios", "android"])(
   "keeps today's flat covers on %s",
   async (platform) => {
     const drawn = await drawnOn(platform, { stacks: true, display: "grid" });
@@ -165,3 +165,10 @@ test.each<Platform>(["macos", "windows", "ios", "android"])(
     expect(drawn[STACKED]?.sheets).toBe(0);
   },
 );
+
+test("draws two sheets behind a series of many books on macos, and none behind a one-shot", async () => {
+  const drawn = await drawnOn("macos", { stacks: true, display: "grid" });
+
+  expect(drawn[STACKED]?.sheets).toBe(2);
+  expect(drawn[ONE_SHOT]?.sheets).toBe(0);
+});
