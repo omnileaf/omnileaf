@@ -63,6 +63,13 @@ const LINUX_STACK: CoverStackLook = {
   continueAt: "inset-bs-stacked-cover-end",
 };
 
+const PHONE_STACK: CoverStackLook = {
+  room: "pbs-cover-stack-room-phone",
+  farSheet: `${SHEET} inset-x-cover-sheet-far-phone inset-bs-none bg-cover-sheet-far`,
+  nearSheet: `${SHEET} inset-x-cover-sheet-near-phone inset-bs-cover-sheet-near-top-phone bg-cover-sheet-near`,
+  continueAt: "inset-bs-phone-stacked-cover-end",
+};
+
 const TODAYS_LOOK: CoverTileLook = {
   cell: "",
   link: "",
@@ -193,6 +200,7 @@ const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
     ...IOS_SELECT_CIRCLE,
+    stack: PHONE_STACK,
     unread: IOS_COUNT_BADGE,
     badge: IOS_BADGE,
     downloaded: `${NATIVE_BADGE} ${NATIVE_DOWNLOADED} max-medium:backdrop-blur-ios`,
@@ -200,6 +208,7 @@ const COVER_TILE_LOOKS = {
   },
   android: {
     ...NATIVE_TILE,
+    stack: PHONE_STACK,
     notConnected: ANDROID_NOT_CONNECTED,
     unread: `${BADGE_GEOMETRY} ${NATIVE_BADGE}`,
     badge: NATIVE_BADGE,
