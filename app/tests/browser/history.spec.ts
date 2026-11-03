@@ -208,6 +208,21 @@ test.describe("with books read", () => {
     await expect(rows(page)).toHaveCount(BOOKS.length);
   });
 
+  test("totals the time read under each heading, once per day", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("region", { name: "Today" }).getByTestId("group-total"),
+    ).toHaveText("20 min");
+    await expect(
+      page
+        .getByRole("region", { name: "This week" })
+        .getByTestId("group-total"),
+    ).toHaveText("20 min");
+  });
+
   test("says where each book was left and when", async ({ page }) => {
     await openHistory(page);
 
