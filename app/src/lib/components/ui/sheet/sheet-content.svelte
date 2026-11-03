@@ -8,6 +8,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { resolveFirstStyle } from "#lib/components/resolve-first-style.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
 
   let {
     ref = $bindable(null),
@@ -33,6 +34,7 @@
   <DialogPrimitive.Content
     bind:ref
     {@attach resolveFirstStyle}
+    {@attach closesOnBack}
     class={cn(
       "fixed inset-none inset-s-auto z-dialog flex flex-col overflow-hidden border-s border-border bg-card text-foreground side-panel-shadow max-inline-full motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass motion-sheets:data-starting-style:translate-x-full motion-sheets:rtl:data-starting-style:-translate-x-full motion-sheets:closed:translate-x-full motion-sheets:rtl:closed:-translate-x-full",
       className,
