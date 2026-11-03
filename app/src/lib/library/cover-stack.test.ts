@@ -157,7 +157,7 @@ test("draws flat covers when stacking is switched off", async () => {
   expect(drawn[STACKED]?.coverTop).toBe(drawn[STACKED]?.cellTop);
 });
 
-test.each<Platform>(["windows", "ios", "android"])(
+test.each<Platform>(["windows"])(
   "keeps today's flat covers on %s",
   async (platform) => {
     const drawn = await drawnOn(platform, { stacks: true, display: "grid" });
@@ -172,3 +172,37 @@ test("draws two sheets behind a series of many books on macos, and none behind a
   expect(drawn[STACKED]?.sheets).toBe(2);
   expect(drawn[ONE_SHOT]?.sheets).toBe(0);
 });
+
+const PHONE = { width: 390, height: 844 };
+
+test.each<Platform>(["ios", "android"])(
+  "draws two sheets inset 10px and 5px behind a series of many books on a %s phone",
+  async (platform) => {
+    await page.viewport(PHONE.width, PHONE.height);
+    await drawnOn(platform, { stacks: true, display: "grid" });
+    const cell = document.querySelector("[data-series-id]");
+    const cover = cell?.querySelector(".aspect-cover")?.getBoundingClientRect();
+    const sheets = [
+      ...(cell?.querySelectorAll('[data-slot="cover-sheet"]') ?? []),
+    ].map((sheet) => sheet.getBoundingClientRect());
+    const [far, near] = sheets;
+
+    expect(sheets).toHaveLength(2);
+    expect(far?.left).toBeCloseTo((cover?.left ?? 0) + 10, 0);
+    expect(near?.left).toBeCloseTo((cover?.left ?? 0) + 5, 0);
+    expect((near?.top ?? 0) - (far?.top ?? 0)).toBeCloseTo(4, 0);
+    expect((cover?.top ?? 0) - (cell?.getBoundingClientRect().top ?? 0)).toBe(
+      8,
+    );
+  },
+);
+
+test.each<Platform>(["ios", "android"])(
+  "leaves a one-shot on a %s phone a single cover",
+  async (platform) => {
+    await page.viewport(PHONE.width, PHONE.height);
+    const drawn = await drawnOn(platform, { stacks: true, display: "grid" });
+
+    expect(drawn[ONE_SHOT]?.sheets).toBe(0);
+  },
+);
