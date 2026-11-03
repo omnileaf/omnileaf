@@ -1824,6 +1824,10 @@
       transition-duration: var(--transition-duration-slide);
       transition-timing-function: var(--ease-glass);
 
+      &:where([data-platform="macos"] *) {
+        transition-duration: var(--transition-duration-fade);
+      }
+
       @starting-style {
         opacity: 0;
       }

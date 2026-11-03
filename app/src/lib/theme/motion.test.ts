@@ -31,3 +31,23 @@ for (const platform of PLATFORMS) {
     expect(slide).toBe(TODAYS_SLIDE);
   });
 }
+
+const TODAYS_FADE = "0.15s";
+
+function fadeMotionDuration(platform: Platform): string {
+  followCorePlatform(platform);
+  const element = document.createElement("div");
+  element.className = "fade-motion";
+  document.body.append(element);
+  return getComputedStyle(element).transitionDuration;
+}
+
+test("fades dialogs and tooltips over the fade duration on macOS, as its board draws", () => {
+  expect(fadeMotionDuration("macos")).toBe(TODAYS_FADE);
+});
+
+for (const platform of PLATFORMS.filter((each) => each !== "macos")) {
+  test(`keeps fading dialogs and tooltips at the slide pace on ${platform}`, () => {
+    expect(fadeMotionDuration(platform)).toBe(TODAYS_SLIDE);
+  });
+}
