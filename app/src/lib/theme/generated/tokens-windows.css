@@ -3,6 +3,8 @@
   --native-duration-fade: 150ms;
   --native-duration-tooltip: 83ms;
   --native-ease-tooltip: linear;
+  --native-duration-flyout: 167ms;
+  --native-ease-flyout: cubic-bezier(0, 0, 0, 1);
   --native-duration-pane: 250ms;
   --native-ease-pane: cubic-bezier(0, 0, 0, 1);
   --native-radius-button: 4px;

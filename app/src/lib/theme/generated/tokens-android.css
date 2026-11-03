@@ -16,6 +16,8 @@
   --native-ease-sheet-in: cubic-bezier(0.05, 0.7, 0.1, 1);
   --native-ease-sheet-out: cubic-bezier(0.3, 0, 0.8, 0.15);
   --native-ease-tooltip: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-duration-flyout: 350ms;
+  --native-ease-flyout: cubic-bezier(0.32, 0.72, 0, 1);
   --native-duration-pane: 350ms;
   --native-ease-pane: cubic-bezier(0.32, 0.72, 0, 1);
   --native-color-glass: var(--card);

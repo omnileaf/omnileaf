@@ -1003,6 +1003,7 @@ export const TOKEN_THEME = {
   ],
   ease: [
     "emphasized",
+    "flyout",
     "glass",
     "out",
     "pane",
