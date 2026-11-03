@@ -127,6 +127,11 @@ test.describe(
       await expect(
         page.getByText("Omnileaf can't open this file"),
       ).toBeVisible();
+      await expect(
+        page.getByText(
+          "This file type isn't supported. Omnileaf opens CBZ and CB7 files.",
+        ),
+      ).toBeVisible();
       await expect(page).not.toHaveURL(/\/read\//);
     });
   },

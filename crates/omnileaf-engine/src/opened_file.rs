@@ -46,7 +46,7 @@ pub enum OpenFileError {
         path: PathBuf,
         file_type: FileType,
         #[source]
-        source: Box<FormatError>,
+        source: Option<Box<FormatError>>,
     },
     #[error("read the file {}", path.display())]
     Unreadable {
@@ -72,6 +72,15 @@ impl Library {
         storage: Arc<dyn Storage>,
         path: PathBuf,
     ) -> Result<FileToRead, OpenFileError> {
+        if let Some(file_type) = FileType::of(&path)
+            && !file_type.opens_from_outside_the_library()
+        {
+            return Err(OpenFileError::UnsupportedType {
+                path,
+                file_type,
+                source: None,
+            });
+        }
         let read_path = path.clone();
         let reading_storage = Arc::clone(&storage);
         let read = spawn_blocking(move || {
@@ -87,7 +96,7 @@ impl Library {
                 OpenFileError::UnsupportedType {
                     path: path.clone(),
                     file_type,
-                    source: Box::new(source),
+                    source: Some(Box::new(source)),
                 }
             }
             Some(_) | None => OpenFileError::Unreadable {
