@@ -1539,10 +1539,50 @@ async fn show_book_in_folder(
     library: State<'_, Library>,
     book: BookId,
 ) -> Result<(), IpcError> {
+    if let Some(shown) = library.book_in_android_tree(book).await? {
+        return show_tree_folder(&app, &shown).await;
+    }
     let Some(file) = library.book_in_folder(book).await? else {
         return Err(LibraryError::BookNotFound { id: book }.into());
     };
     show_in_file_manager(&app, &file)
+}
+
+#[cfg(target_os = "android")]
+async fn show_tree_folder(
+    app: &AppHandle,
+    shown: &omnileaf_engine::ShownInTree,
+) -> Result<(), IpcError> {
+    use omnileaf_folder_access::{DocumentTree, FolderAccess};
+
+    let access = app.state::<FolderAccess<tauri::Wry>>().inner().clone();
+    let shown = shown.clone();
+    off_the_runtime(move || {
+        let copies = std::env::temp_dir();
+        let tree = DocumentTree::new(access.clone(), &shown.tree, copies);
+        let inside = std::path::Path::new(shown.tree.name()).join(&shown.folder);
+        let folder = tree
+            .folder_id(&inside)
+            .map_err(|error| IpcError::file_manager_unavailable(&error))?;
+        access
+            .show_folder(shown.tree.uri(), folder.as_ref())
+            .map_err(|error| IpcError::file_manager_unavailable(&std::io::Error::other(error)))
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[expect(
+    clippy::unused_async,
+    reason = "it stands in for the Android version, which awaits"
+)]
+async fn show_tree_folder(
+    _app: &AppHandle,
+    _shown: &omnileaf_engine::ShownInTree,
+) -> Result<(), IpcError> {
+    Err(IpcError::file_manager_unavailable(&std::io::Error::other(
+        "no Android tree on this platform",
+    )))
 }
 
 #[cfg(target_os = "ios")]

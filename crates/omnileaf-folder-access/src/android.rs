@@ -23,6 +23,7 @@ const LIST_DOCUMENTS: &str = "listDocuments";
 const OPEN_DOCUMENT: &str = "openDocument";
 const OPEN_HANDED_DOCUMENT: &str = "openHandedDocument";
 const DELETE_DOCUMENT: &str = "deleteDocument";
+const SHOW_FOLDER: &str = "showFolder";
 const PERSISTED_GRANTS: &str = "persistedGrants";
 const RELEASE_GRANT: &str = "releaseGrant";
 
@@ -82,6 +83,15 @@ impl<R: Runtime> FolderAccess<R> {
             .run_mobile_plugin(OPEN_HANDED_DOCUMENT, HandedRequest::of(uri))
             .map_err(io_error)?;
         reply.into_document(copies)
+    }
+
+    pub fn show_folder(
+        &self,
+        tree: &TreeUri,
+        folder: Option<&DocumentId>,
+    ) -> Result<(), PluginInvokeError> {
+        self.0
+            .run_mobile_plugin(SHOW_FOLDER, DocumentRequest::children_of(tree, folder))
     }
 
     pub fn persisted_grants(&self) -> Result<Vec<PersistedGrant>, PluginInvokeError> {

@@ -149,6 +149,15 @@ public class FolderAccessPlugin
         }
 
         @Command
+        public fun showFolder(invoke: Invoke) {
+            val args = invoke.parseArgs(DocumentArgs::class.java)
+            answer(invoke) {
+                activity.startActivity(folderViewIntent(args.tree.toUri(), args.document))
+                null
+            }
+        }
+
+        @Command
         public fun persistedGrants(invoke: Invoke) {
             answer(invoke) { trees.persistedGrants() }
         }
@@ -210,6 +219,17 @@ private fun pickerStartOf(lost: Uri): Uri? {
     val authority = lost.authority ?: return null
     val id = runCatching { DocumentsContract.getTreeDocumentId(lost) }.getOrNull() ?: return null
     return DocumentsContract.buildDocumentUri(authority, parentDocumentId(id))
+}
+
+/** The Files app opens a folder from its document address with the directory type; a refusal to start it is an error the caller shows. */
+private fun folderViewIntent(
+    tree: Uri,
+    folder: String?,
+): Intent {
+    val id = folder ?: DocumentsContract.getTreeDocumentId(tree)
+    return Intent(Intent.ACTION_VIEW)
+        .setDataAndType(DocumentsContract.buildDocumentUriUsingTree(tree, id), DocumentsContract.Document.MIME_TYPE_DIR)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
 }
 
 /** `detachFd` gives up the descriptor without closing it, so the Rust side that reads the reply owns it. */
