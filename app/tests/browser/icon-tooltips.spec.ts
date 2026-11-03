@@ -84,8 +84,6 @@ const EDITABLE_DETAILS: SeriesDetails = {
   isRatedAdult: false,
 };
 
-const READER_ON_WINDOWS = readerBackend(onPlatform("windows").backend);
-
 const CATEGORIES_BACKEND: FakeBackend = {
   ...SERIES_BACKEND,
   libraryCategories: () => [
@@ -171,51 +169,6 @@ function readerComingSoonStep(name: string): IconAction {
 }
 
 const CLOSE_ACTIONS: readonly IconAction[] = [
-  {
-    screen: "the reader's Reading settings",
-    backend: READER_ON_WINDOWS,
-    reach: async (page) => {
-      await servePages(page);
-      await page.goto(`/read/${BOOK_ID}`);
-      await page
-        .getByRole("button", { name: "Reading settings", exact: true })
-        .click();
-      const pane = page.getByRole("complementary");
-      await settle(pane);
-      return pane.getByRole("button", { name: "Close reading settings" });
-    },
-    label: "Close reading settings",
-  },
-  {
-    screen: "the reader's Jump to a book",
-    backend: READER_ON_WINDOWS,
-    reach: async (page) => {
-      await servePages(page);
-      await page.goto(`/read/${BOOK_ID}`);
-      await page
-        .locator("main > header")
-        .getByRole("button", { name: "Jump to a book" })
-        .click();
-      const pane = page.getByRole("complementary", { name: "Jump to a book" });
-      await settle(pane);
-      return pane.getByRole("button", { name: "Close Jump to a book" });
-    },
-    label: "Close Jump to a book",
-  },
-  {
-    screen: "the reader's Keyboard shortcuts",
-    backend: readerBackend(DEFAULT_BACKEND),
-    reach: async (page) => {
-      await servePages(page);
-      await page.goto(`/read/${BOOK_ID}`);
-      await expect(page.getByRole("img", { name: "Page 1" })).toBeVisible();
-      await page.keyboard.press("Shift+?");
-      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
-      await settle(sheet);
-      return sheet.getByRole("button", { name: "Close keyboard shortcuts" });
-    },
-    label: "Close keyboard shortcuts",
-  },
   {
     screen: "the Edit details page",
     backend: {

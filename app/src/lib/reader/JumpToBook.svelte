@@ -90,8 +90,7 @@
         <Button
           type="button"
           look="icon"
-          iconOnly
-          label={m.reader_jump_close()}
+          aria-label={m.reader_jump_close()}
           class={readerButton(chrome.platform, chrome.width)}
           onclick={onClose}
         >

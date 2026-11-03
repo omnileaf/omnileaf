@@ -134,8 +134,7 @@
           <Button
             {...props}
             look="icon"
-            iconOnly
-            label={m.reader_shortcuts_close()}
+            aria-label={m.reader_shortcuts_close()}
             class={READER_BUTTON}
           >
             <X size={READER_ICON_SIZE} aria-hidden="true" />
