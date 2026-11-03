@@ -37,6 +37,7 @@
   import type {
     Platform,
     ReadMark,
+    SeriesDetails,
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
@@ -89,6 +90,7 @@
 
   let {
     overview,
+    details: sourced,
     cover,
     coverUrl,
     isWide,
@@ -96,6 +98,7 @@
     onEditDetails,
   }: {
     overview: SeriesOverview;
+    details?: SeriesDetails | undefined;
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
@@ -239,7 +242,7 @@
         </CardAction>
       </CardHeader>
       <CardContent class="px-lg">
-        <SeriesDetailsList {overview} bind:ref={details} />
+        <SeriesDetailsList {overview} {sourced} bind:ref={details} />
       </CardContent>
     </Card>
   {:else if overview.bookCount > 0}
@@ -278,7 +281,7 @@
       {/if}
       <CollapsibleContent>
         <Card class={["p-lg shadow-card-rest", WINDOWS_CARD_PLATE]}>
-          <SeriesDetailsList {overview} bind:ref={details} />
+          <SeriesDetailsList {overview} {sourced} bind:ref={details} />
         </Card>
       </CollapsibleContent>
     </Collapsible>

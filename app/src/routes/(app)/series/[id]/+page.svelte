@@ -14,6 +14,8 @@
     type RemovalTarget,
     type SeriesBook,
     type SeriesBookListing,
+    type SeriesDetails,
+    type SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import {
     Breadcrumb,
@@ -126,6 +128,7 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
   );
 
+  let sourcedDetails: SeriesDetails | undefined = $state();
   let keepsDetailEdits = $state(false);
   let keepsLabels = $state(false);
   let isLabelling = $state(false);
@@ -160,6 +163,11 @@
   async function rescan(): Promise<void> {
     await rescanEveryFolder();
     readAgain();
+  }
+
+  async function readSourcedDetails(id: SeriesOverview["id"]): Promise<void> {
+    const read = await commands.seriesDetails(id);
+    sourcedDetails = read.status === "ok" ? read.data : undefined;
   }
 
   function readAgain(): void {
@@ -304,6 +312,16 @@
     return () => {
       isAwaited = false;
     };
+  });
+
+  $effect(() => {
+    const id = foundId;
+    if (id === undefined) {
+      return;
+    }
+    untrack(() => {
+      void readSourcedDetails(id);
+    });
   });
 
   $effect(() => {
@@ -476,6 +494,7 @@
     >
       <SeriesAbout
         {overview}
+        details={sourcedDetails}
         {cover}
         {coverUrl}
         isWide={isWide.current}
