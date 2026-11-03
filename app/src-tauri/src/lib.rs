@@ -37,6 +37,7 @@ mod scheduled_rescans;
 mod screen_orientation;
 mod share_sign_in;
 mod storage;
+mod system_app_language;
 mod system_bars;
 mod system_contrast;
 mod system_settings;
@@ -152,6 +153,7 @@ pub fn run() {
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
+        .plugin(system_app_language::plugin())
         .plugin(wallpaper_colours::plugin())
         .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())

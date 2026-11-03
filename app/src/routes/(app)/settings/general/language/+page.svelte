@@ -128,6 +128,9 @@
       </RadioGroupItem>
     {/each}
   </RadioGroup>
+  {#if language.systemOffersLanguage}
+    <p class="px-xs text-footnote text-muted">{m.language_system_offers()}</p>
+  {/if}
   {#if onPhone}
     <p id={footnoteId} class="px-xs text-footnote text-muted">
       {m.language_more_coming()}

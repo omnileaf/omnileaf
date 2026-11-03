@@ -1229,6 +1229,7 @@
   "language_phone_hint": "Omnileaf uses your phone's language unless you pick one.",
   "language_use_system": "Use the system language",
   "language_intro": "Each language is shown in its own name. It changes straight away.",
+  "language_system_offers": "Your phone's settings, under Apps, Omnileaf, Language, can also change this.",
   "language_more_coming": "More languages arrive as people translate Omnileaf.",
   "back_to": "Back to {page}",
   "screenshot_mode_now_on": "Screenshot mode is on",

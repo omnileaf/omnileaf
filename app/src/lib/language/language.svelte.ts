@@ -16,6 +16,7 @@ import {
 export class LanguageSetting {
   choice: LanguageChoice = $state("system");
   resolved: Locale = $state(baseLocale);
+  systemOffersLanguage = $state(false);
   private systemApp: Locale | undefined = undefined;
 
   constructor(

@@ -46,6 +46,7 @@ use crate::{
     screen_orientation::{self, ScreenOrientation},
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
+    system_app_language::{self, SystemAppLanguage},
     system_bars::{self, Theme, ThemePreference},
     system_contrast::{self, SystemContrast},
     system_settings, system_sign_in,
@@ -69,6 +70,7 @@ macro_rules! app_commands {
             watch_back_swipes,
             allow_back_swipe,
             watch_system_contrast,
+            system_app_language,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -453,6 +455,12 @@ async fn watch_system_contrast(
     on_change: Channel<SystemContrast>,
 ) -> Result<(), IpcError> {
     system_contrast::watch(&app, on_change).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcError> {
+    system_app_language::read(&app).await
 }
 
 #[tauri::command]
