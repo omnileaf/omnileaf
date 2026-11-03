@@ -102,7 +102,7 @@ public class FolderAccessPlugin
                 return invoke.resolve()
             }
             answer(invoke) {
-                withinBound(LISTING_BOUND, discard = { trees.release(tree) }) { signal -> trees.keep(tree, signal) }
+                scope.withinBound(LISTING_BOUND, discard = { trees.release(tree) }) { signal -> trees.keep(tree, signal) }
             }
         }
 
@@ -110,7 +110,7 @@ public class FolderAccessPlugin
         public fun listDocuments(invoke: Invoke) {
             val args = invoke.parseArgs(DocumentArgs::class.java)
             answer(invoke) {
-                withinBound(LISTING_BOUND) { signal -> trees.children(args.tree.toUri(), args.document, signal) }
+                scope.withinBound(LISTING_BOUND) { signal -> trees.children(args.tree.toUri(), args.document, signal) }
             }
         }
 
@@ -120,7 +120,7 @@ public class FolderAccessPlugin
             val document = requireNotNull(args.document) { "open a document without naming it" }
             answer(invoke) {
                 val descriptor =
-                    withinBound(OPENING_BOUND, discard = ParcelFileDescriptor::close) { signal ->
+                    scope.withinBound(OPENING_BOUND, discard = ParcelFileDescriptor::close) { signal ->
                         trees.open(args.tree.toUri(), document, signal)
                     }
                 handOver(descriptor)
@@ -132,7 +132,7 @@ public class FolderAccessPlugin
             val args = invoke.parseArgs(HandedArgs::class.java)
             answer(invoke) {
                 val handed =
-                    withinBound(OPENING_BOUND, discard = { it.descriptor.close() }) { signal ->
+                    scope.withinBound(OPENING_BOUND, discard = { it.descriptor.close() }) { signal ->
                         handedDocuments.open(args.uri.toUri(), signal)
                     }
                 handOver(handed.descriptor).put("name", handed.name)
@@ -144,7 +144,7 @@ public class FolderAccessPlugin
             val args = invoke.parseArgs(DocumentArgs::class.java)
             val document = requireNotNull(args.document) { "delete a document without naming it" }
             answer(invoke) {
-                withinBound(DELETING_BOUND) { _ -> trees.delete(args.tree.toUri(), document) }
+                scope.withinBound(DELETING_BOUND) { _ -> trees.delete(args.tree.toUri(), document) }
                 null
             }
         }
@@ -172,15 +172,6 @@ public class FolderAccessPlugin
             }
         }
 
-        private suspend fun <T : Any> withinBound(
-            bound: Duration,
-            discard: (T) -> Unit = {},
-            run: suspend (CancellationSignal) -> T,
-        ): T {
-            val signal = CancellationSignal()
-            return ProviderCall(run = { run(signal) }, cancel = signal::cancel, discard = discard).within(bound, scope)
-        }
-
         /** Tauri's Rust side blocks until the plugin answers, so even an exception nobody expected must answer it. */
         @Suppress("TooGenericExceptionCaught")
         private fun answer(
@@ -200,6 +191,15 @@ public class FolderAccessPlugin
             }
         }
     }
+
+private suspend fun <T : Any> CoroutineScope.withinBound(
+    bound: Duration,
+    discard: (T) -> Unit = {},
+    run: suspend (CancellationSignal) -> T,
+): T {
+    val signal = CancellationSignal()
+    return ProviderCall(run = { run(signal) }, cancel = signal::cancel, discard = discard).within(bound, this)
+}
 
 private fun rejectPicker(
     invoke: Invoke,
