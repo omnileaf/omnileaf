@@ -426,9 +426,7 @@
               {/if}
             </NotConnectedDim>
             {#if away}
-              <NotConnectedMark
-                class="absolute inset-s-xs inset-be-xs max-inline-full"
-              />
+              <NotConnectedMark class={tile.notConnected?.place ?? ""} />
             {/if}
             {#if marksPicks && !away}
               <SelectionMark
@@ -597,9 +595,7 @@
           {/if}
         </NotConnectedDim>
         {#if away}
-          <NotConnectedMark
-            class="absolute inset-s-xs inset-be-xs max-inline-full"
-          />
+          <NotConnectedMark class={tile.notConnected?.place ?? ""} />
         {/if}
         {#if marksPicks && !away}
           <SelectionMark
