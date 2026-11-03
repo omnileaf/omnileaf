@@ -1,6 +1,9 @@
 import type { Locator, Page, TestInfo } from "@playwright/test";
 
-import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type SeriesDetails,
+} from "../../src/lib/ipc/bindings.ts";
 
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import {
@@ -69,6 +72,27 @@ const SERIES_BACKEND: FakeBackend = {
 };
 
 const ANDROID_BACKEND = onPlatform("android").backend;
+
+const EDITABLE_DETAILS: SeriesDetails = {
+  title: { fromFile: "Sample Series", source: "folderName", edited: null },
+  people: { fromFile: [], edited: null },
+  tags: { fromFile: [], edited: null },
+  summary: { fromFile: null, edited: null },
+  year: null,
+  language: null,
+  isMarkedAdult: false,
+  isRatedAdult: false,
+};
+
+const READER_ON_WINDOWS = readerBackend(onPlatform("windows").backend);
+
+const CATEGORIES_BACKEND: FakeBackend = {
+  ...SERIES_BACKEND,
+  libraryCategories: () => [
+    { id: "manga", name: "Manga" },
+    { id: "comics", name: "Comics" },
+  ],
+};
 
 const CRASHED_ON_ANDROID: FakeBackend = {
   ...ANDROID_BACKEND,
@@ -145,6 +169,96 @@ function readerComingSoonStep(name: string): IconAction {
     label: `${name} · coming soon`,
   };
 }
+
+const CLOSE_ACTIONS: readonly IconAction[] = [
+  {
+    screen: "the reader's Reading settings",
+    backend: READER_ON_WINDOWS,
+    reach: async (page) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK_ID}`);
+      await page
+        .getByRole("button", { name: "Reading settings", exact: true })
+        .click();
+      const pane = page.getByRole("complementary");
+      await settle(pane);
+      return pane.getByRole("button", { name: "Close reading settings" });
+    },
+    label: "Close reading settings",
+  },
+  {
+    screen: "the reader's Jump to a book",
+    backend: READER_ON_WINDOWS,
+    reach: async (page) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK_ID}`);
+      await page
+        .locator("main > header")
+        .getByRole("button", { name: "Jump to a book" })
+        .click();
+      const pane = page.getByRole("complementary", { name: "Jump to a book" });
+      await settle(pane);
+      return pane.getByRole("button", { name: "Close Jump to a book" });
+    },
+    label: "Close Jump to a book",
+  },
+  {
+    screen: "the reader's Keyboard shortcuts",
+    backend: readerBackend(DEFAULT_BACKEND),
+    reach: async (page) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK_ID}`);
+      await expect(page.getByRole("img", { name: "Page 1" })).toBeVisible();
+      await page.keyboard.press("Shift+?");
+      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+      await settle(sheet);
+      return sheet.getByRole("button", { name: "Close keyboard shortcuts" });
+    },
+    label: "Close keyboard shortcuts",
+  },
+  {
+    screen: "the app's Keyboard shortcuts",
+    backend: DEFAULT_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await page.keyboard.press("Shift+?");
+      const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+      await settle(sheet);
+      return sheet.getByRole("button", { name: "Close keyboard shortcuts" });
+    },
+    label: "Close keyboard shortcuts",
+  },
+  {
+    screen: "the Edit details page",
+    backend: {
+      ...SHELF.backend(),
+      keepsDetailEdits: () => true,
+      seriesDetails: () => EDITABLE_DETAILS,
+      seriesLabels: () => ({
+        keepsLabels: true,
+        categories: [],
+        tags: [],
+        suggestedTags: [],
+      }),
+    },
+    reach: async (page) => {
+      await page.goto(`/series/${SERIES_ID}/edit`);
+      return page.getByRole("main").getByRole("button", { name: "Close" });
+    },
+    label: "Close",
+  },
+  {
+    screen: "the category tabs",
+    backend: CATEGORIES_BACKEND,
+    reach: async (page) => {
+      await page.goto("/");
+      return page.getByRole("button", { name: "Every category" });
+    },
+    label: "Every category",
+    isShownOn: isPhoneScreen,
+  },
+];
 
 const ICON_ACTIONS: readonly IconAction[] = [
   {
@@ -338,6 +452,45 @@ for (const { screen, backend, reach, label, isShownOn } of ICON_ACTIONS) {
         expect(violations).toEqual([]);
       });
     }
+  });
+}
+
+const MOST_TABS = 60;
+
+for (const { screen, backend, reach, label, isShownOn } of CLOSE_ACTIONS) {
+  test.describe(`the ${label} button on ${screen}`, () => {
+    test.use({ backend });
+
+    test("shows its tooltip once the keyboard reaches it", async ({ page }) => {
+      async function tabTo(action: Locator): Promise<void> {
+        const hasFocus = () =>
+          action.evaluate((el) => el === document.activeElement);
+        if (await hasFocus()) {
+          await page.keyboard.press("Shift");
+          await action.evaluate((el) => {
+            el.blur();
+            el.focus();
+          });
+          return;
+        }
+        for (let tabs = 0; tabs < MOST_TABS; tabs++) {
+          await page.keyboard.press("Tab");
+          if (await hasFocus()) {
+            return;
+          }
+        }
+        throw new Error(`Tab never reached ${label}`);
+      }
+
+      test.skip(isShownOn?.(page) === false, `not shown on this screen`);
+      const action = await reach(page);
+
+      await tabTo(action);
+
+      await expect(tooltipOf(page, label)).toBeVisible();
+      await expect(action).toBeFocused();
+      await expect(action).toHaveAttribute("aria-label", label);
+    });
   });
 }
 
