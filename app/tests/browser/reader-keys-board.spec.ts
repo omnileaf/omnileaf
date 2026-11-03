@@ -196,6 +196,26 @@ test("opens the sheet from the keyboard button on desktops", async ({
   await expect(sheet(page)).toBeVisible();
 });
 
+test("closes the sheet with one Esc while the pointer rests on its close button", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width < EXPANDED_MIN_WIDTH,
+    "phones leave keyboard shortcuts out",
+  );
+  await openBook(page);
+  await page.getByRole("button", { name: "Keyboard shortcuts" }).click();
+  await expect(sheet(page)).toBeVisible();
+  await sheet(page)
+    .getByRole("button", { name: "Close keyboard shortcuts" })
+    .hover();
+  await expect(page.locator("[data-tooltip-content]")).toBeAttached();
+
+  await page.keyboard.press("Escape");
+
+  await expect(sheet(page)).toHaveCount(0);
+});
+
 test("zooms the page with Ctrl and plus, and fits it again with Ctrl 0", async ({
   page,
 }) => {
