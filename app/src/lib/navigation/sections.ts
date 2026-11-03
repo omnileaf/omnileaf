@@ -35,3 +35,22 @@ const SECTION_ROOT_ROUTE_IDS: readonly (string | null)[] =
 export function isSectionRoot(routeId: string | null): boolean {
   return SECTION_ROOT_ROUTE_IDS.includes(routeId);
 }
+
+const TAB_BAR_PAGE_PREFIXES = [
+  "/(app)/series/[id]",
+  "/(app)/search",
+  "/(app)/settings",
+] as const;
+
+const EDIT_DETAILS_ROUTE_ID = "/(app)/series/[id]/edit";
+
+export function showsTopTabBar(routeId: string | null): boolean {
+  if (isSectionRoot(routeId)) {
+    return true;
+  }
+  return (
+    routeId !== null &&
+    routeId !== EDIT_DETAILS_ROUTE_ID &&
+    TAB_BAR_PAGE_PREFIXES.some((prefix) => routeId.startsWith(prefix))
+  );
+}

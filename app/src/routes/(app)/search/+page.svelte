@@ -44,7 +44,7 @@
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { backIcon } from "#lib/page/top-bar.ts";
-  import { phoneOf } from "#lib/page/platform.ts";
+  import { hasTopTabBar, phoneOf } from "#lib/page/platform.ts";
   import { GROUPED_GROUND } from "#lib/page/plates.ts";
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -132,6 +132,9 @@
   );
   const isIPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "ios",
+  );
+  const hasTabsAtTop = $derived(
+    hasTopTabBar(data.appInfo.platform, width.current),
   );
   const isGroupedStart = $derived(isIPhone && !isLookingFor);
   const isAndroidPhone = $derived(
@@ -425,6 +428,7 @@
   class={[
     "flex flex-col gap-search-gap min-block-full ios:max-medium:flex-none",
     hasToolbar && !(isMacToolbar && isLookingFor) && "pbs-xl",
+    hasTabsAtTop && "pbs-below-top-tab-bar",
     isGroupedStart && GROUPED_GROUND,
   ]}
 >
