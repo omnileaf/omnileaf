@@ -12,8 +12,10 @@
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
   --native-duration-sheet-in: 350ms;
   --native-duration-sheet-out: 350ms;
+  --native-duration-tooltip: 350ms;
   --native-ease-sheet-in: cubic-bezier(0.32, 0.72, 0, 1);
   --native-ease-sheet-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-tooltip: cubic-bezier(0.32, 0.72, 0, 1);
   --native-blur-glass: 30px;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);

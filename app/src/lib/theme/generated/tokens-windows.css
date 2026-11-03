@@ -1,6 +1,8 @@
 :root[data-platform="windows"],
 :root[data-platform="windows"] [data-theme] {
   --native-duration-fade: 150ms;
+  --native-duration-tooltip: 83ms;
+  --native-ease-tooltip: linear;
   --native-radius-button: 4px;
   --native-spacing-button: 32px;
   --native-spacing-button-inline: 11px;
