@@ -88,7 +88,7 @@
       look.grounds[ground],
       look.heights[height],
       !drag.isDragging &&
-        "motion-sheets:transition-transform motion-sheets:duration-slide motion-sheets:ease-glass",
+        "motion-sheets:transition-transform motion-sheets:duration-sheet-in motion-sheets:ease-sheet-in motion-sheets:closed:duration-sheet-out motion-sheets:closed:ease-sheet-out",
       className,
     )}
     style={drag.isDragging
