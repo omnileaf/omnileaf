@@ -9,3 +9,4 @@ ENV ADMIN_LISTEN=0.0.0.0:8080
 USER nonroot
 EXPOSE 8080
 ENTRYPOINT ["/omnileaf-admin"]
+CMD ["serve"]

@@ -8,6 +8,10 @@ The review dashboard for problem reports, served at `omnileaf.app/admin`. It is 
 
 A signed-in browser holds one cookie, `admin_session`, that is `HttpOnly`, `Secure` and `SameSite=Lax`. It holds only the login and an expiry eight hours ahead, signed with HMAC-SHA256 under `ADMIN_SESSION_KEY`. Every `POST` also carries a CSRF token derived from that cookie. Tokens, secrets and cookies are never logged.
 
+## Health check
+
+`GET /admin/health` answers 200 with an empty body and needs no sign-in, and `omnileaf-admin health` requests it on `ADMIN_LISTEN` (`127.0.0.1:8080` by default) and exits 0 only on a 200, so a container can use it as its health check.
+
 ## Settings
 
 All settings are environment variables.
@@ -20,7 +24,7 @@ All settings are environment variables.
 | `ADMIN_SESSION_KEY` | At least 32 characters; signs cookies. |
 | `ADMIN_RELAY_URL` | Base URL of the relay's private listener, such as `http://relay.test:9090`. |
 | `ADMIN_RELAY_TOKEN` | Bearer token the relay expects. |
-| `ADMIN_LISTEN` | Address to listen on, `0.0.0.0:8080` by default. |
+| `ADMIN_LISTEN` | Address to listen on, `0.0.0.0:8080` by default for `serve`. |
 | `ADMIN_GITHUB_API_URL`, `ADMIN_GITHUB_AUTH_URL` | GitHub's API and sign-in hosts, which tests point at a fake. |
 
 ## Relay admin API
