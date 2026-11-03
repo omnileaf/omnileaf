@@ -15,5 +15,6 @@ pub struct IconShortcut {
     pub action: IconAction,
     pub title: String,
     pub state: Option<String>,
-    pub title_with_state: String,
+    /// Android shows one label with no state beside it, so this one names the action itself.
+    pub android_label: String,
 }

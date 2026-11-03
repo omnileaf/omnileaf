@@ -21,7 +21,7 @@ const ADB_TIMEOUT_MS = 30_000;
 const PUBLISHED_TIMEOUT_MS = 30_000;
 const RESTART_TIMEOUT_MS = 60_000;
 const SHORTCUT_LABELS = [
-  "Screenshot mode · Off",
+  "Turn on Screenshot mode",
   "Continue reading",
   "Search the library",
 ];

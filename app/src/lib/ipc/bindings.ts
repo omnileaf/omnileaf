@@ -554,7 +554,7 @@ export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
 export type IconActionsMenu = {
 	screenshotMode: string,
 	screenshotModeState: string,
-	screenshotModeWithState: string,
+	screenshotModeLabel: string,
 	continueReading: string,
 	searchLibrary: string,
 };
