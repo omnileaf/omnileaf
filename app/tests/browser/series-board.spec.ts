@@ -222,6 +222,50 @@ test.describe("a series with one creator, a summary and tags", () => {
     await expect(list).toHaveText([SERIES_TITLE, "Author A", "Manga"]);
   });
 
+  test.describe("with the details' sources known", () => {
+    test.use({
+      backend: {
+        ...shelfBackend(new FakeShelf(EIGHT_BOOKS, ONE_CREATOR, PAGE_COUNT)),
+        seriesDetails: () => ({
+          title: { fromFile: SERIES_TITLE, source: "folderName", edited: null },
+          people: { fromFile: [], edited: null },
+          tags: { fromFile: [], edited: null },
+          summary: { fromFile: null, edited: null },
+          year: { fromFile: 2019, source: "files" },
+          language: null,
+          isMarkedAdult: false,
+          isRatedAdult: false,
+        }),
+      },
+    });
+
+    test("says under each value where it came from", async ({ page }) => {
+      await openSeries(page);
+      const details = about(page).getByRole("button", {
+        name: "Details",
+        exact: true,
+      });
+      if (await details.isVisible()) {
+        await details.click();
+      }
+
+      await expect(
+        about(page).getByText("From the folder name", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        about(page).getByText("From the files (ComicInfo.xml)", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(about(page).getByRole("term")).toHaveText([
+        "Title",
+        "Story and art",
+        "Year",
+        "Format",
+      ]);
+    });
+  });
+
   test("offers to continue the book reading goes on from in a card", async ({
     page,
   }) => {
