@@ -59,6 +59,7 @@ impl AppState {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/admin/health", get(|| async {}))
         .route("/admin", get(review::list))
         .route("/admin/style.css", get(|| async { page::stylesheet() }))
         .route("/admin/reports/{code}", get(review::detail))
