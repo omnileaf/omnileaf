@@ -68,6 +68,7 @@ public class FolderAccessPlugin
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : Plugin(activity) {
         private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+        private val host = activity
         private val trees = DocumentTrees(activity)
         private val handedDocuments = HandedDocuments(activity)
         private var isPicking = false
@@ -152,7 +153,7 @@ public class FolderAccessPlugin
         public fun showFolder(invoke: Invoke) {
             val args = invoke.parseArgs(DocumentArgs::class.java)
             answer(invoke) {
-                activity.startActivity(folderViewIntent(args.tree.toUri(), args.document))
+                host.startActivity(folderViewIntent(args.tree.toUri(), args.document))
                 null
             }
         }
