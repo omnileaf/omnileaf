@@ -51,4 +51,26 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
 
     expect(handle.x).toBeGreaterThan(more.x + more.width - 1);
   });
+
+  test("sets where the library opens as a grouped row with its value and a chevron", async ({
+    page,
+  }) => {
+    const row = page.getByRole("button", { name: /^The library opens on/ });
+
+    await expect(row).toContainText("The tab used last");
+    expect((await boxOf(row)).height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("offers the tabs to open on and keeps the one chosen", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: /^The library opens on/ }).click();
+    const choices = page.getByRole("dialog", { name: "The library opens on" });
+    await choices.getByRole("radio", { name: "Manga" }).click();
+    await expect(choices).toBeHidden();
+
+    await expect(
+      page.getByRole("button", { name: /^The library opens on/ }),
+    ).toContainText("Manga");
+  });
 });

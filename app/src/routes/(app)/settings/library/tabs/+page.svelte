@@ -10,6 +10,7 @@
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     ALL_SERIES,
@@ -24,6 +25,7 @@
     tabKey,
   } from "#lib/library/library-tabs.ts";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
+  import GroupedChoiceRow from "#lib/settings/GroupedChoiceRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -33,6 +35,7 @@
 
   const ICON_SIZE = 16;
   const android = new AndroidPhone();
+  const ios = new IosPhone();
 
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
   let categories = $state<readonly LibraryCategory[]>([]);
@@ -211,6 +214,24 @@
         }}
       />
       <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+        {m.library_opens_on_help()}
+      </p>
+    </div>
+  {:else if ios.isOn}
+    <div class="mbs-lg flex flex-col gap-sm">
+      <GroupedChoiceRow
+        title={m.library_opens_on()}
+        value={opensOnLabel}
+        choices={[
+          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
+          ...openable.map(({ key, name }) => ({ value: key, label: name })),
+        ]}
+        chosen={shownOpensOn}
+        onChoose={(choice: string) => {
+          opensOn.choose(choice);
+        }}
+      />
+      <p class="px-sm text-native-list-sub/native-list-sub text-muted">
         {m.library_opens_on_help()}
       </p>
     </div>
