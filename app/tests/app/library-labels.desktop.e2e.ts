@@ -3,6 +3,8 @@ import { expect, test } from "vitest";
 import { addSampleLibrary, useAppSession } from "./app-session.ts";
 
 const SERIES_LINKS = "ul[aria-label='Series'] a[data-pickable-link]";
+const SERIES_BOXES =
+  "ul[aria-label='Series'] [role=checkbox][data-pickable-link]";
 const SELECTED_BAR = "[role=group][aria-label='Selected series']";
 const DIALOG = "[role=dialog]";
 
@@ -11,15 +13,26 @@ const appSession = useAppSession();
 const buttonNamed = (scope: string, name: string): string =>
   `[...document.querySelectorAll(${JSON.stringify(`${scope} button`)})].find((button) => (button.getAttribute("aria-label") ?? button.textContent).trim() === ${JSON.stringify(name)})`;
 
-const pickSeries = (
-  positions: readonly number[],
-): string => `const links = document.querySelectorAll(${JSON.stringify(SERIES_LINKS)});
-for (const position of ${JSON.stringify(positions)}) {
-  const link = links[position];
-  if (link === undefined) return false;
-  link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: true, metaKey: true }));
-}
+const PICKED_BOXES = SERIES_BOXES;
+
+const startPicking = `const link = document.querySelectorAll(${JSON.stringify(SERIES_LINKS)})[0];
+if (link === undefined) return false;
+link.focus();
+link.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
 return true;`;
+
+const pickSecond = `const box = document.querySelectorAll(${JSON.stringify(PICKED_BOXES)})[1];
+if (box === undefined) return false;
+box.click();
+return true;`;
+
+const BOXES_SHOWN = `return document.querySelectorAll(${JSON.stringify(PICKED_BOXES)}).length > 1;`;
+
+async function pickFirstTwo(): Promise<void> {
+  await appSession().waitUntil(startPicking, "the first series picked");
+  await appSession().waitUntil(BOXES_SHOWN, "the series as checkboxes");
+  await appSession().run(pickSecond);
+}
 
 const CATEGORIES_BUTTON_SHOWN = `return ${buttonNamed(SELECTED_BAR, "Categories")} !== undefined;`;
 
@@ -66,7 +79,7 @@ async function finishDialog(): Promise<void> {
 
 test("keeps a category and a tag on every series they were applied to together", async () => {
   await addSampleLibrary(appSession());
-  await appSession().run(pickSeries([0, 1]));
+  await pickFirstTwo();
   await appSession().waitUntil(CATEGORIES_BUTTON_SHOWN, "two series picked");
 
   await openLabels("Categories");
@@ -89,7 +102,7 @@ test("keeps a category and a tag on every series they were applied to together",
     `return document.querySelector(${JSON.stringify(SERIES_LINKS)}) !== null;`,
     "the library again",
   );
-  await appSession().run(pickSeries([0, 1]));
+  await pickFirstTwo();
   await appSession().waitUntil(CATEGORIES_BUTTON_SHOWN, "the same two picked");
   await openLabels("Categories");
   await appSession().waitUntil(categoryTicked("Holiday"), "Holiday kept");
