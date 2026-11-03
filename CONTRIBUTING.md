@@ -175,15 +175,7 @@ The RAR readers are tested against archives made once with RARLAB's `rar` and co
 
 ## Releasing
 
-Pushing a tag such as `v0.1.0` runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer and an Android APK at the tag's version, then drafts a GitHub release with notes from the merged pull requests. A tag with a suffix, such as `v0.1.0-rc.1`, drafts a pre-release. Check the draft, then publish it.
-
-Each platform is signed only when its secrets are set; otherwise the workflow warns and carries on:
-
-- **macOS:** `APPLE_CERTIFICATE` (the Developer ID Application certificate as a base64 `.p12`), `APPLE_CERTIFICATE_PASSWORD` and `APPLE_SIGNING_IDENTITY` sign the app, and `APPLE_API_ISSUER`, `APPLE_API_KEY` and `APPLE_API_KEY_P8` (the App Store Connect key's contents) notarize it.
-- **Windows:** the installer goes to SignPath when `SIGNPATH_API_TOKEN` is set, with the repository variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG` and `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG`.
-- **Android:** `ANDROID_KEYSTORE` (the keystore as base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. An unsigned APK can't be installed, so without them the release has no APK. Make the keystore once with `keytool -genkeypair -v -keystore omnileaf-release.jks -alias omnileaf -keyalg RSA -keysize 4096 -validity 10000` and keep it, and its passwords, somewhere safe: every later update must be signed with the same key. `base64 -i omnileaf-release.jks | pbcopy` copies it for the secret on macOS.
-
-The Android build reads the keystore from `ANDROID_KEYSTORE_PATH`, with `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`, so setting those signs a local release build too.
+Pushing a tag such as `v0.1.0` runs `.github/workflows/release.yml`, which builds the Linux packages, a universal macOS disk image, the Windows installer, an Android APK and Play bundle, and an iOS build for TestFlight, then drafts a GitHub release. Each platform signs only when its secrets are set, and `docs/releasing.md` lists every secret and variable.
 
 ## Definition of done
 
