@@ -36,3 +36,7 @@ Every request carries `Authorization: Bearer <ADMIN_RELAY_TOKEN>`. Status change
 - `POST /admin/v1/reports/{code}/status` takes `{status: reviewing|published|duplicate|closed, issue?: number}` and returns `{result: changed|notFound|refused, from?: kind}`.
 - `GET /admin/v1/reports/{code}/export` returns `{result: ready|notFound|purged, body?: string}`.
 - `GET /admin/v1/reports/{code}/audit` returns an array, newest first, of `{previous, status: {kind, issue?}, actor, at}`.
+
+## Accessibility check
+
+`cargo run -p omnileaf-admin --example preview -- 127.0.0.1:4180` serves the real pages against a built-in fake relay and fake GitHub with sample reports. Signing in as `reviewer` is allowed and any other login gets the 403 page. The fake relay refuses every status change and always returns a reply address, so a page that showed it would be caught. `pnpm --dir app test:admin` starts that example and runs axe, overflow, target size, focus outline and reply address checks on every page in light and dark at 360 and 1280 pixels wide. The example is not built into the image.

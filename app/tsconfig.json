@@ -12,6 +12,7 @@
     "vite.config.ts",
     "playwright.config.ts",
     "playwright.kit.config.ts",
+    "playwright.admin.config.ts",
     "src/**/*.js",
     "src/**/*.ts",
     "src/**/*.svelte",
