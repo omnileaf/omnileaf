@@ -389,3 +389,33 @@ test("runs Windows's menu rules edge to edge, 1 above and below, and leads a cho
   expect(style(checkOf(radio("List"))).visibility).toBe("hidden");
   expect(style(grid).backgroundColor).toBe("rgba(0, 0, 0, 0)");
 });
+
+test.each<{ platform: Platform; duration: string; ease: string }>([
+  {
+    platform: "windows",
+    duration: "0.167s",
+    ease: "cubic-bezier(0, 0, 0, 1)",
+  },
+  {
+    platform: "macos",
+    duration: "0.15s",
+    ease: "cubic-bezier(0.32, 0.72, 0, 1)",
+  },
+  {
+    platform: "linux",
+    duration: "0.35s",
+    ease: "cubic-bezier(0.32, 0.72, 0, 1)",
+  },
+])(
+  "fades a menu in over $duration on $platform",
+  async ({ platform, duration, ease }) => {
+    const menu = await openMenuOn(platform, "light");
+
+    const drawn = style(menu);
+
+    expect([drawn.transitionDuration, drawn.transitionTimingFunction]).toEqual([
+      duration,
+      ease,
+    ]);
+  },
+);
