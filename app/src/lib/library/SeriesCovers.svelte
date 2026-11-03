@@ -461,7 +461,8 @@
             </p>
             <p
               class={[
-                "truncate text-caption text-muted medium:mbs-2xs",
+                "truncate text-caption medium:mbs-2xs",
+                (away && tile.notConnected?.books) || "text-muted",
                 look.bookCount,
               ]}
             >

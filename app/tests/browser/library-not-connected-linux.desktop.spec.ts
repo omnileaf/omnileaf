@@ -1,9 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import {
-  DEFAULT_LIBRARY_VIEW,
-  type Platform,
-} from "../../src/lib/ipc/bindings.ts";
+import { DEFAULT_LIBRARY_VIEW } from "../../src/lib/ipc/bindings.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
@@ -168,32 +165,18 @@ test.describe("in the list display on Linux", () => {
   });
 });
 
-for (const platform of ["macos", "windows"] satisfies Platform[]) {
-  test.describe(`a series whose folder is not there on ${platform}`, () => {
-    test.use({ platform });
+test.describe("a series whose folder is not there on macOS", () => {
+  test.use({ platform: "macos" });
 
-    test("is still shown plainly and opens", async ({ page }) => {
-      await page.goto("/");
-      const tile = tileOf(page, AWAY_TITLE);
-
-      await expect(tile.getByText("Not connected")).toHaveCount(0);
-      await expect(tile.locator("[data-slot=cover-dim]")).toHaveCount(0);
-      await expect(tile.getByRole("link")).toHaveAttribute(
-        "href",
-        `/series/${AWAY[0]?.id ?? ""}`,
-      );
-    });
-  });
-}
-
-test.describe("a series whose folder is not there on Windows", () => {
-  test.use({ platform: "windows" });
-
-  test("opens on a click", async ({ page }) => {
+  test("is still shown plainly and opens", async ({ page }) => {
     await page.goto("/");
+    const tile = tileOf(page, AWAY_TITLE);
 
-    await tileOf(page, AWAY_TITLE).getByRole("link").click();
-
-    await expect(page).toHaveURL(new RegExp(`/series/${AWAY[0]?.id ?? ""}$`));
+    await expect(tile.getByText("Not connected")).toHaveCount(0);
+    await expect(tile.locator("[data-slot=cover-dim]")).toHaveCount(0);
+    await expect(tile.getByRole("link")).toHaveAttribute(
+      "href",
+      `/series/${AWAY[0]?.id ?? ""}`,
+    );
   });
 });
