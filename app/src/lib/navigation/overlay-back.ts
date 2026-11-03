@@ -6,13 +6,14 @@ import { currentPlatform } from "#lib/page/platform.ts";
 import { followsHistoryForBack } from "./android-back";
 
 export interface PageHistory {
-  push(): void;
+  push(): () => boolean;
   back(): void;
   onBack(listener: () => void): () => void;
 }
 
 interface HeldEntry {
   readonly close: () => void;
+  isOnEntry: () => boolean;
   isPopped: boolean;
 }
 
@@ -35,12 +36,12 @@ export class OverlayBack {
     if (!this.#isOn()) {
       return () => undefined;
     }
-    const entry: HeldEntry = { close, isPopped: false };
+    const entry: HeldEntry = { close, isOnEntry: () => true, isPopped: false };
     this.#held = [...this.#held, entry];
     this.#stopListening ??= this.#history.onBack(() => {
       this.#backed();
     });
-    this.#history.push();
+    entry.isOnEntry = this.#history.push();
     this.#tell();
     return () => {
       this.#release(entry);
@@ -62,7 +63,7 @@ export class OverlayBack {
 
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
-    if (!entry.isPopped) {
+    if (!entry.isPopped && entry.isOnEntry()) {
       this.#ownPops += 1;
       this.#history.back();
     }
@@ -81,6 +82,10 @@ export class OverlayBack {
 const windowHistory: PageHistory = {
   push: () => {
     history.pushState(history.state, "", location.href);
+    const entry = JSON.stringify(history.state);
+    const url = location.href;
+    return () =>
+      location.href === url && JSON.stringify(history.state) === entry;
   },
   back: () => {
     history.back();
