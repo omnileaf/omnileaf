@@ -9,6 +9,10 @@ test("lets an Android phone's tabs span the page, neither wrapping nor held insi
   expect(look.list).toBe("");
 });
 
+test("puts the search and sort row above an Android phone's tabs", () => {
+  expect(sectionTabsLook("android", "compact").choicesFirst).toBe(true);
+});
+
 test.each([
   ["android", "medium"],
   ["android", "expanded"],

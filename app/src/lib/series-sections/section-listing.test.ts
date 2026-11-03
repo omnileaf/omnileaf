@@ -15,8 +15,10 @@ const MACOS_WINDOW: SectionScreen = { platform: "macos", isWide: true };
 const WIDE_IOS_WINDOW: SectionScreen = { platform: "ios", isWide: true };
 const NARROW_LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: false };
 const IPHONE: SectionScreen = { platform: "ios", isWide: false };
+const ANDROID_PHONE: SectionScreen = { platform: "android", isWide: false };
 const WIDE_TABBED_WINDOWS: readonly SectionScreen[] = [
   IPHONE,
+  ANDROID_PHONE,
   LINUX_WINDOW,
   MACOS_WINDOW,
   WIDE_IOS_WINDOW,
@@ -45,7 +47,6 @@ test.each(WIDE_TABBED_WINDOWS)(
 test.each<SectionScreen>([
   NARROW_LINUX_WINDOW,
   { platform: "windows", isWide: true },
-  { platform: "android", isWide: true },
 ])(
   "keeps the books in one list on $platform when wide is $isWide",
   (screen) => {
