@@ -1,6 +1,6 @@
 use std::{
     io,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{Mutex, PoisonError},
 };
 
@@ -71,6 +71,7 @@ impl ShownProblemReport {
         Ok(key)
     }
 
+    #[cfg(not(target_os = "android"))]
     fn remember_saved(&self, path: PathBuf) {
         *self.saved.lock().unwrap_or_else(PoisonError::into_inner) = Some(path);
     }
@@ -96,6 +97,7 @@ pub(crate) async fn shown_or_gathered(app: &AppHandle) -> Result<ProblemReport, 
     }
 }
 
+#[cfg(not(target_os = "android"))]
 pub(crate) fn save(
     app: &AppHandle,
     report: &ProblemReport,
@@ -110,7 +112,25 @@ pub(crate) fn save(
     Ok(SavedProblemReport { place, file })
 }
 
-fn file_name_of(path: &Path) -> String {
+#[cfg(target_os = "android")]
+pub(crate) fn save(
+    app: &AppHandle,
+    report: &ProblemReport,
+    today: LocalDay,
+) -> Result<SavedProblemReport, IpcError> {
+    const DOWNLOADS: &str = "Downloads";
+    let file = crate::report_downloads::save(app, &report.file_name_on(today), &report.to_string())
+        .map_err(|error| IpcError::report_not_saved(&error))?;
+    Ok(SavedProblemReport {
+        place: SavedPlace::Folder {
+            folder: DOWNLOADS.to_owned(),
+        },
+        file,
+    })
+}
+
+#[cfg(not(target_os = "android"))]
+fn file_name_of(path: &std::path::Path) -> String {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_default()
@@ -136,14 +156,6 @@ fn report_folder(app: &AppHandle) -> io::Result<(PathBuf, SavedPlace)> {
         .join(REPORTS_FOLDER);
     std::fs::create_dir_all(&folder)?;
     Ok((folder, SavedPlace::AppFiles))
-}
-
-#[cfg(target_os = "android")]
-fn report_folder(_app: &AppHandle) -> io::Result<(PathBuf, SavedPlace)> {
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "saving a problem report isn't offered on Android yet",
-    ))
 }
 
 fn random_code() -> Result<ReportCode, IpcError> {

@@ -30,6 +30,8 @@ mod open_with;
 mod power_mode;
 mod problem_reporting;
 mod put_away;
+#[cfg(target_os = "android")]
+mod report_downloads;
 mod report_relay;
 mod report_sending;
 mod runtime_config;
@@ -158,6 +160,7 @@ pub fn run() {
         .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
+        .plugin(report_downloads::plugin())
         .plugin(icon_actions::plugin())
         .plugin(volume_keys::plugin())
         .plugin(open_with::plugin());

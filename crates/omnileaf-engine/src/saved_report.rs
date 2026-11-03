@@ -42,8 +42,13 @@ pub enum SavedPlace {
 }
 
 impl ProblemReport {
+    #[must_use]
+    pub fn file_name_on(&self, day: LocalDay) -> String {
+        file_name(&stem_on(day), 1)
+    }
+
     pub fn save_in(&self, folder: &Path, day: LocalDay) -> io::Result<PathBuf> {
-        let stem = format!("{FILE_PREFIX}{}", CalendarDate::of(day));
+        let stem = stem_on(day);
         let text = self.to_string();
         for copy in 1..=MOST_FILES_A_DAY {
             let path = folder.join(file_name(&stem, copy));
@@ -60,6 +65,10 @@ impl ProblemReport {
             ),
         ))
     }
+}
+
+fn stem_on(day: LocalDay) -> String {
+    format!("{FILE_PREFIX}{}", CalendarDate::of(day))
 }
 
 fn file_name(stem: &str, copy: u32) -> String {

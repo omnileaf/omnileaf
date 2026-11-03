@@ -157,3 +157,11 @@ fn shows_a_mac_or_windows_folder_by_its_name() {
 
     assert_eq!(shown, ["Downloads", "Downloads"]);
 }
+
+#[test]
+fn names_the_file_for_a_store_that_does_the_writing() {
+    assert_eq!(
+        report().file_name_on(OCTOBER_16_2026),
+        "omnileaf-report-2026-10-16.txt"
+    );
+}
