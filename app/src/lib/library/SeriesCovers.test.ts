@@ -26,6 +26,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         title: "Sample Series 01",
         bookCount: 3,
         unreadCount: 3,
+        isConnected: true,
         cover: COVER,
       },
       {
@@ -33,6 +34,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         title: "Sample Series 02",
         bookCount: 1,
         unreadCount: 1,
+        isConnected: true,
         cover: null,
       },
     ],

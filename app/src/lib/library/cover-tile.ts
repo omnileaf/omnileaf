@@ -12,6 +12,7 @@ export interface CoverStackLook {
 export interface NotConnectedLook {
   readonly dim: string;
   readonly mark: string;
+  readonly place: string;
 }
 
 export interface CoverTileLook {
@@ -177,6 +178,14 @@ const MACOS_TILE: CoverTileLook = {
 const ANDROID_NOT_CONNECTED: NotConnectedLook = {
   dim: "opacity-38",
   mark: "inline-flex items-center gap-2xs rounded-android-xs bg-card px-xs py-2xs text-caption whitespace-nowrap text-foreground",
+  place: "absolute inset-s-xs inset-be-xs max-inline-full",
+};
+
+const LINUX_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45",
+  mark: "inline-flex items-center gap-xs rounded-sm bg-background px-badge-inline py-2xs text-caption font-semibold whitespace-nowrap text-foreground",
+  place:
+    "absolute inset-s-read-mark-inset inset-e-read-mark-inset inset-be-read-mark-inset",
 };
 
 const COVER_TILE_LOOKS = {
@@ -196,7 +205,12 @@ const COVER_TILE_LOOKS = {
     downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
     downloadedIcon: "max-medium:hidden",
   },
-  linux: { ...TODAYS_LOOK, stack: LINUX_STACK, unread: LINUX_BADGE },
+  linux: {
+    ...TODAYS_LOOK,
+    stack: LINUX_STACK,
+    unread: LINUX_BADGE,
+    notConnected: LINUX_NOT_CONNECTED,
+  },
   macos: MACOS_TILE,
   windows: WINDOWS_TILE,
 } satisfies Record<Platform, CoverTileLook>;
