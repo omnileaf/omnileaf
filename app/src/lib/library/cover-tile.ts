@@ -191,6 +191,20 @@ const ANDROID_NOT_CONNECTED: NotConnectedLook = {
   books: "",
 };
 
+const IOS_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45",
+  mark: "inline-flex items-center justify-center gap-2xs rounded-full bg-native-bar-badge px-xs text-caption font-semibold whitespace-nowrap text-foreground shadow-native-shadow-glass backdrop-blur-native-glass min-block-[1.25rem]",
+  place: "absolute inset-s-xs inset-be-read-mark-inset max-inline-full",
+  books: "text-danger",
+};
+
+const MACOS_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45 grayscale",
+  mark: "inline-flex items-center justify-center gap-xs rounded-native-button bg-native-button-secondary px-xs text-caption whitespace-nowrap text-native-on-button-secondary min-block-[1.25rem]",
+  place: "absolute inset-s-read-mark-inset inset-be-sm max-inline-full",
+  books: "text-danger",
+};
+
 const LINUX_NOT_CONNECTED: NotConnectedLook = {
   dim: "opacity-45",
   mark: "inline-flex items-center gap-xs rounded-sm bg-background px-badge-inline py-2xs text-caption font-semibold whitespace-nowrap text-foreground",
@@ -213,6 +227,7 @@ const COVER_TILE_LOOKS = {
     stack: PHONE_STACK,
     unread: IOS_COUNT_BADGE,
     badge: IOS_BADGE,
+    notConnected: IOS_NOT_CONNECTED,
     downloaded: `${NATIVE_BADGE} ${NATIVE_DOWNLOADED} max-medium:backdrop-blur-ios`,
     downloadedIcon: "",
   },
@@ -231,7 +246,7 @@ const COVER_TILE_LOOKS = {
     unread: LINUX_BADGE,
     notConnected: LINUX_NOT_CONNECTED,
   },
-  macos: MACOS_TILE,
+  macos: { ...MACOS_TILE, notConnected: MACOS_NOT_CONNECTED },
   windows: { ...WINDOWS_TILE, notConnected: WINDOWS_NOT_CONNECTED },
 } satisfies Record<Platform, CoverTileLook>;
 
