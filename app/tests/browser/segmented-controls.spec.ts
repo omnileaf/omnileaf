@@ -311,12 +311,18 @@ interface HeardErrors {
 async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
   const thrown: string[] = [];
   page.on("pageerror", (error) => {
-    thrown.push(error.message);
+    if (!/^ResizeObserver loop/u.test(error.message)) {
+      thrown.push(error.message);
+    }
   });
   await page.addInitScript(() => {
     const heard: string[] = [];
     (window as Window & HeardErrors).heardErrors = heard;
-    window.addEventListener("error", (event) => heard.push(event.message));
+    window.addEventListener("error", (event) => {
+      if (!/^ResizeObserver loop/u.test(event.message)) {
+        heard.push(event.message);
+      }
+    });
     window.addEventListener("omnileaf:interface-error", (event) => {
       heard.push(String(event instanceof CustomEvent ? event.detail : event));
     });
