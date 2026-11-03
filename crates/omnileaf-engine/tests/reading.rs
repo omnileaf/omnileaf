@@ -31,7 +31,7 @@ use tokio::{
         oneshot,
     },
     task,
-    time::{Instant, timeout},
+    time::{Instant, sleep, timeout},
 };
 
 const SEED: u64 = 47;
@@ -526,7 +526,10 @@ async fn warns_once_of_saves_that_keep_failing_however_often_the_library_is_read
         shelf.library.series_overview(opened.series).await.unwrap();
         shelf.open(1).await;
     }
+    sleep(READING_SAVE_DELAY).await;
+    let settled = shelf.library.put_away().await;
 
+    assert!(settled.is_err(), "saves still refused");
     assert_eq!(warnings.logged().len(), 1, "{:#?}", warnings.logged());
 }
 
