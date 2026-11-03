@@ -12,7 +12,7 @@
   const width = new WindowWidth();
   const phone = $derived(phoneOf(platform, width.current));
   const isNative = $derived(phone === "ios");
-  const look = $derived(filterChipLook(phone));
+  const look = $derived(filterChipLook(phone, platform));
 
   let {
     chips,
