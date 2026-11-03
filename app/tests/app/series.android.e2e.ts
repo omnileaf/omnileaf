@@ -14,8 +14,8 @@ const FIRST_SERIES_COVER = xpath(
   "//ul[@aria-label='Series']//a[.//*[normalize-space()='Sample Series 01']]",
 );
 const SERIES_PAGE_HEADING = xpath("//main[.//a[@data-back-link]]//h1");
-const FIRST_BOOK = xpath("//ul[@aria-label='Books']/li[1]");
-const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("ul[aria-label='Books']");
+const FIRST_BOOK = xpath("//ul[@aria-label='Volumes']/li[1]");
+const SCROLL_TO_THE_BOOKS = `const books = document.querySelector("ul[aria-label='Volumes']");
 if (books === null) { return false; }
 books.scrollIntoView({ block: "start" });
 return true;`;
@@ -40,8 +40,8 @@ test("opens a series of a folder picked in Files on its own page, with its books
   expect(heading).toBe("Sample Series 01");
   await appSession().waitUntil(
     SCROLL_TO_THE_BOOKS,
-    "the books list scrolled into view",
+    "the volumes list scrolled into view",
   );
   const first = await appSession().waitFor(FIRST_BOOK);
-  expect(await first.text()).toMatch(/^Sample Series 01 v01/);
+  expect(await first.text()).toMatch(/^Volume 1/);
 });
