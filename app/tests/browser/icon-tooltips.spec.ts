@@ -146,6 +146,24 @@ function readerComingSoonStep(name: string): IconAction {
   };
 }
 
+function readerPanelCloseStep(opener: string, label: string): IconAction {
+  return {
+    screen: `the reader's ${opener.toLowerCase()}`,
+    backend: readerBackend(DEFAULT_BACKEND),
+    reach: async (page) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK_ID}`);
+      await page
+        .locator("main > header")
+        .getByRole("button", { name: opener })
+        .click();
+      return page.getByRole("button", { name: label, exact: true });
+    },
+    label,
+    isShownOn: isWideScreen,
+  };
+}
+
 const ICON_ACTIONS: readonly IconAction[] = [
   {
     screen: "Settings > Library",
@@ -188,24 +206,8 @@ const ICON_ACTIONS: readonly IconAction[] = [
     ...readerComingSoonStep("Reading settings"),
     label: "Reading settings",
   },
-  {
-    screen: "the reader's reading settings",
-    backend: readerBackend(DEFAULT_BACKEND),
-    reach: async (page) => {
-      await servePages(page);
-      await page.goto(`/read/${BOOK_ID}`);
-      await page
-        .locator("main > header")
-        .getByRole("button", { name: "Reading settings", exact: true })
-        .click();
-      return page.getByRole("button", {
-        name: "Close reading settings",
-        exact: true,
-      });
-    },
-    label: "Close reading settings",
-    isShownOn: isWideScreen,
-  },
+  readerPanelCloseStep("Reading settings", "Close reading settings"),
+  readerPanelCloseStep("Jump to a book", "Close Jump to a book"),
   readerComingSoonStep("Bookmark this page"),
   seriesBarStep("Mark read"),
   seriesBarStep("Mark unread"),
