@@ -1481,6 +1481,8 @@
   "quick_open_resume": "{book}, page {page}",
   "quick_open_enter_continues": "Enter continues",
   "quick_open_show_unread": "Show unread",
+  "quick_open_show_started": "Show started",
+  "quick_open_show_finished": "Show finished",
   "quick_open_library_filter": "Library filter",
   "quick_open_search_for": "Search the library for “{text}”",
   "quick_open_search_page": "Search page",

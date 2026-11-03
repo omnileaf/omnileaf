@@ -1,3 +1,4 @@
+import type { FilterCondition } from "#lib/library/library-listing.ts";
 import type { HistoryEntry, LibrarySeries } from "#lib/ipc/bindings.ts";
 
 import type { Place } from "./places";
@@ -11,7 +12,7 @@ export type Choice =
       readonly text: string;
       readonly isRecent: boolean;
     }
-  | { readonly kind: "showUnread" };
+  | { readonly kind: "showLibrary"; readonly state: FilterCondition };
 
 export function choiceKey(choice: Choice): string {
   switch (choice.kind) {
@@ -23,8 +24,8 @@ export function choiceKey(choice: Choice): string {
       return `continue:${choice.entry.book}`;
     case "search":
       return `${choice.isRecent ? "recent" : "search"}:${choice.text}`;
-    case "showUnread":
-      return "show-unread";
+    case "showLibrary":
+      return `show-${choice.state}`;
   }
 }
 

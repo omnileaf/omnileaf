@@ -16,13 +16,21 @@
     type Platform,
     SEARCH_MAX_CHARS,
   } from "#lib/ipc/bindings.ts";
-  import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
+  import {
+    type FilterCondition,
+    NEW_LIBRARY_LISTING,
+  } from "#lib/library/library-listing.ts";
   import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { isComposing } from "./composition";
-  import { PLACES, placesMatching } from "./places";
+  import {
+    LIBRARY_STATES,
+    libraryStatesMatching,
+    PLACES,
+    placesMatching,
+  } from "./places";
   import { type Choice, choiceKey } from "./quick-open-choice";
   import { quickOpenShortcutLabel } from "./quick-open-shortcut";
   import QuickOpenOption from "./QuickOpenOption.svelte";
@@ -104,7 +112,10 @@
           name: "actions",
           label: m.quick_open_actions(),
           choices: [
-            { kind: "showUnread" },
+            ...LIBRARY_STATES.map((one): Choice => ({
+              kind: "showLibrary",
+              state: one.state,
+            })),
             ...(SETTINGS_PLACE === undefined
               ? []
               : [{ kind: "place" as const, place: SETTINGS_PLACE }]),
@@ -122,6 +133,10 @@
         name: "actions",
         label: m.quick_open_actions(),
         choices: [
+          ...libraryStatesMatching(text, getLocale()).map((one): Choice => ({
+            kind: "showLibrary",
+            state: one.state,
+          })),
           ...placesMatching(text, getLocale()).map((place): Choice => ({
             kind: "place",
             place,
@@ -172,12 +187,12 @@
     }
   }
 
-  async function showUnread(): Promise<void> {
+  async function showLibrary(state: FilterCondition): Promise<void> {
     const kept = await commands.libraryListing();
     const listing = kept.status === "ok" ? kept.data : NEW_LIBRARY_LISTING;
     await commands.setLibraryListing({
       ...listing,
-      filter: { ...NEW_LIBRARY_LISTING.filter, unread: "only" },
+      filter: { ...NEW_LIBRARY_LISTING.filter, [state]: "only" },
     });
     await goto(resolve("/(app)"));
   }
@@ -246,8 +261,8 @@
       case "search":
         void goto(resolve(`/(app)/search${searchQuery(choice.text)}`));
         return;
-      case "showUnread":
-        void showUnread();
+      case "showLibrary":
+        void showLibrary(choice.state);
         return;
     }
   }
