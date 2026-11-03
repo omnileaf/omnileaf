@@ -222,7 +222,7 @@ private fun pickerStartOf(lost: Uri): Uri? {
     return DocumentsContract.buildDocumentUri(authority, parentDocumentId(id))
 }
 
-/** The Files app opens a folder from its document address with the directory type; a refusal to start it is an error the caller shows. */
+/** The Files app opens a folder when it is handed the folder's document address with the directory type. */
 private fun folderViewIntent(
     tree: Uri,
     folder: String?,

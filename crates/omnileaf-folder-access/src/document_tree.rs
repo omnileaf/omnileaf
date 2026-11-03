@@ -81,8 +81,7 @@ impl<D: Documents> DocumentTree<D> {
         }
     }
 
-    /// None for the tree's own folder.
-    pub fn folder_id(&self, folder: &Path) -> io::Result<Option<DocumentId>> {
+    pub fn folder_id_in_tree(&self, folder: &Path) -> io::Result<Option<DocumentId>> {
         let Some((parent, name)) = split(folder) else {
             return Ok(None);
         };
@@ -514,14 +513,17 @@ mod tests {
         let fixture = Fixture::new();
         fixture.write("One/Two/book.cbz", BOOK);
 
-        let nested = fixture.tree.folder_id(Path::new("One/Two")).unwrap();
-        let top = fixture.tree.folder_id(Path::new("")).unwrap();
+        let nested = fixture
+            .tree
+            .folder_id_in_tree(Path::new("One/Two"))
+            .unwrap();
+        let top = fixture.tree.folder_id_in_tree(Path::new("")).unwrap();
 
         assert_eq!((nested.is_some(), top), (true, None));
         assert_eq!(
             fixture
                 .tree
-                .folder_id(Path::new("One/Two/book.cbz"))
+                .folder_id_in_tree(Path::new("One/Two/book.cbz"))
                 .unwrap_err()
                 .kind(),
             io::ErrorKind::NotADirectory

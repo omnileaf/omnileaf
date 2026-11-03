@@ -1560,9 +1560,8 @@ async fn show_tree_folder(
     off_the_runtime(move || {
         let copies = std::env::temp_dir();
         let tree = DocumentTree::new(access.clone(), &shown.tree, copies);
-        let inside = std::path::Path::new(shown.tree.name()).join(&shown.folder);
         let folder = tree
-            .folder_id(&inside)
+            .folder_id_in_tree(&shown.folder)
             .map_err(|error| IpcError::file_manager_unavailable(&error))?;
         access
             .show_folder(shown.tree.uri(), folder.as_ref())
