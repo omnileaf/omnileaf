@@ -33,6 +33,7 @@
     languageSettingForDocument,
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
+  import { followSystemAppLanguage } from "#lib/language/system-app-language.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
   import {
     setUndoSetting,
@@ -164,6 +165,10 @@
     void followWallpaperColours(data.appInfo.platform, colours.choice);
   }
 
+  function followSystemLanguage(): void {
+    void followSystemAppLanguage(data.appInfo.platform, language);
+  }
+
   const rereadsColoursOnFocus = $derived(data.appInfo.platform === "windows");
 
   function followFocus(): void {
@@ -177,6 +182,7 @@
     settleScreenshotMode();
     if (document.visibilityState === "visible") {
       followColours();
+      followSystemLanguage();
     }
     if (rescansOnReturn && document.visibilityState === "visible") {
       void rescanOnReturn();
@@ -198,6 +204,8 @@
   });
 
   $effect(followColours);
+
+  $effect(followSystemLanguage);
 
   $effect(() => {
     const root = document.documentElement;

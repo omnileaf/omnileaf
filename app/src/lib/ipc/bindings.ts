@@ -24,6 +24,7 @@ export const commands = {
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
+	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -1068,6 +1069,11 @@ export type StorageUse = {
 };
 
 export type SwipeEdge = "left" | "right";
+
+export type SystemAppLanguage = {
+	offered: boolean,
+	tag: string | null,
+};
 
 export type SystemContrast = "standard" | "medium" | "high";
 
