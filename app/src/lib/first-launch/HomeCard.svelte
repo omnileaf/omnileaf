@@ -9,6 +9,7 @@
   import { Folder } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { ICON_SIZE } from "#lib/library/icon-size.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
@@ -32,7 +33,7 @@
   const titleId = `${cardId}-title`;
   const pathId = `${cardId}-path`;
   const isSetupPage = usesSetupPages(currentPlatform());
-  const isAndroid = currentPlatform() === "android";
+  const android = new AndroidPhone();
 </script>
 
 {#if isSetupPage}
@@ -73,7 +74,7 @@
       >
         <Folder size={ICON_SIZE} aria-hidden="true" />
       </span>
-      {#if isAndroid}
+      {#if android.isOn}
         <div class="flex flex-1 flex-col gap-2xs min-inline-none">
           <h2 id={titleId} class="text-body font-regular">{title}</h2>
           <code
@@ -90,7 +91,7 @@
       {/if}
       {@render change?.(titleId, pathId)}
     </div>
-    {#if !isAndroid}
+    {#if !android.isOn}
       <code
         id={pathId}
         class="mx-home-card mbe-home-card rounded-control border border-border bg-chip px-md py-home-path font-mono text-footnote wrap-anywhere whitespace-pre-wrap"
