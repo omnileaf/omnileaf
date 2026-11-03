@@ -1,4 +1,6 @@
 <script lang="ts" generics="Option extends string">
+  import type { Snippet } from "svelte";
+
   import {
     RadioGroup,
     RadioGroupItem,
@@ -15,6 +17,7 @@
     labels,
     hints = {},
     hintsAreShown = true,
+    leading,
     chosen,
     onChoose,
   }: {
@@ -23,6 +26,7 @@
     labels: Record<Option, string>;
     hints?: Partial<Record<Option, string>>;
     hintsAreShown?: boolean;
+    leading?: Snippet<[Option]>;
     chosen: Option;
     onChoose: (option: Option) => void;
   } = $props();
@@ -60,6 +64,7 @@
             <span class={look.dot}></span>
           {/if}
         </span>
+        {@render leading?.(option)}
         <span class={look.words}>
           <span id="{id}-{option}-label" class={look.label}>
             {labels[option]}

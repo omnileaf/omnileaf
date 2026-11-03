@@ -80,6 +80,9 @@
   --native-spacing-tile-check-target: 24px;
   --native-spacing-tile-check-bleed: calc((var(--native-spacing-tile-check-target) - var(--native-spacing-tile-check)) / 2);
   --native-spacing-tile-hit-corner: calc(var(--native-spacing-tile-corner) - var(--native-spacing-tile-check-bleed));
+  --native-color-colours-omnileaf-primary: var(--primary);
+  --native-color-colours-omnileaf-container: var(--secondary);
+  --native-color-colours-omnileaf-surface: var(--card);
 }
 
 :root[data-platform="windows"],

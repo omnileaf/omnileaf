@@ -574,6 +574,9 @@
   --leading-native-first-launch-note: var(--native-leading-first-launch-note);
   --font-weight-native-first-launch-note: var(--native-weight-first-launch-note);
   --tracking-native-first-launch-note: var(--native-tracking-first-launch-note);
+  --color-native-colours-omnileaf-primary: var(--native-color-colours-omnileaf-primary);
+  --color-native-colours-omnileaf-container: var(--native-color-colours-omnileaf-container);
+  --color-native-colours-omnileaf-surface: var(--native-color-colours-omnileaf-surface);
 }
 
 @media (prefers-reduced-motion: reduce) {
