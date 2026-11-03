@@ -4,6 +4,10 @@
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { assertNever } from "#lib/assert-never.ts";
   import {
@@ -871,8 +875,21 @@
     }
   }
 
+  async function chooseTagFromLink(): Promise<void> {
+    await listing.load();
+    const tag = page.state.libraryTag;
+    if (tag === undefined || chosenListing === undefined) {
+      return;
+    }
+    chooseListing({
+      ...chosenListing,
+      filter: { ...withoutFilters(chosenListing).filter, tags: [tag] },
+    });
+    await goto(resolve("/(app)"), { replaceState: true, state: {} });
+  }
+
   onMount(() => {
-    void listing.load();
+    void chooseTagFromLink();
     void view.load();
     void adultContent.load();
     void loadCategories();

@@ -10,6 +10,8 @@
   import { tick } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import {
     Card,
@@ -185,12 +187,21 @@
     <ul aria-label={m.series_tags()} class="flex flex-wrap gap-icon-gap">
       {#each overview.tags as tag (tag)}
         <li>
-          <Badge
-            look="outline"
-            class="windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted"
+          <a
+            href={resolve("/(app)")}
+            onclick={(event) => {
+              event.preventDefault();
+              void goto(resolve("/(app)"), { state: { libraryTag: tag } });
+            }}
+            class="rounded-full focus-visible:focus-ring"
           >
-            {tag}
-          </Badge>
+            <Badge
+              look="outline"
+              class="windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted"
+            >
+              {tag}
+            </Badge>
+          </a>
         </li>
       {/each}
     </ul>
