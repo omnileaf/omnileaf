@@ -140,3 +140,29 @@ for (const platform of PLATFORMS) {
     );
   });
 }
+
+const FLYOUT_FADES: Record<Platform, string> = {
+  android: TODAYS_SLIDE,
+  ios: TODAYS_SLIDE,
+  linux: TODAYS_SLIDE,
+  macos: TODAYS_FADE,
+  windows: "0.167s",
+};
+
+for (const platform of PLATFORMS) {
+  test(`fades a flyout over ${FLYOUT_FADES[platform]} on ${platform}, from the token source`, () => {
+    followCorePlatform(platform);
+    const element = document.createElement("div");
+    element.className = "fade-motion duration-flyout ease-flyout";
+    document.body.append(element);
+
+    const drawn = getComputedStyle(element);
+
+    expect(drawn.transitionDuration).toBe(FLYOUT_FADES[platform]);
+    expect(drawn.transitionTimingFunction).toBe(
+      platform === "windows"
+        ? "cubic-bezier(0, 0, 0, 1)"
+        : "cubic-bezier(0.32, 0.72, 0, 1)",
+    );
+  });
+}
