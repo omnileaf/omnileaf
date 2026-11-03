@@ -15,6 +15,10 @@
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
+  --transition-duration-sheet-in: var(--native-duration-sheet-in);
+  --transition-duration-sheet-out: var(--native-duration-sheet-out);
+  --ease-sheet-in: var(--native-ease-sheet-in);
+  --ease-sheet-out: var(--native-ease-sheet-out);
   --color-native-glass: var(--native-color-glass);
   --blur-native-glass: var(--native-blur-glass);
   --shadow-native-shadow-glass: var(--native-shadow-shadow-glass);
@@ -586,5 +590,7 @@
   :root[data-platform] [data-theme] {
     --native-duration-move: 0ms;
     --native-duration-slide: 0ms;
+    --native-duration-sheet-in: 0ms;
+    --native-duration-sheet-out: 0ms;
   }
 }
