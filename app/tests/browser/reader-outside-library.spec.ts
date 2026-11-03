@@ -47,6 +47,26 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("sits below the status bar", async ({ page }) => {
+      const STATUS_BAR_PX = 48;
+      await servePages(page);
+      await page.goto(`/read/${BOOK.id}`);
+      await page.evaluate((top) => {
+        document.documentElement.style.setProperty(
+          "--system-inset-top",
+          `${String(top)}px`,
+        );
+      }, STATUS_BAR_PX);
+
+      const banner = page
+        .getByRole("status")
+        .filter({ hasText: "Opened from" });
+
+      await expect
+        .poll(async () => (await banner.boundingBox())?.y ?? 0)
+        .toBeGreaterThanOrEqual(STATUS_BAR_PX);
+    });
+
     test("goes back to the library, not the book's made-up series", async ({
       page,
     }) => {
