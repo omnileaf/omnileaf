@@ -108,8 +108,8 @@ test.describe(
   },
 );
 
-test.describe("the book sheet on Linux", () => {
-  test.use({ platform: "linux" });
+test.describe("the book sheet on Linux in a narrow window", () => {
+  test.use({ platform: "linux", viewport: { width: 390, height: 844 } });
 
   test("does not list Bookmark", async ({ page }) => {
     const sheet = await openSheetOf(page, PLAIN_BOOK);
