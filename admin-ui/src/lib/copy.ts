@@ -32,6 +32,12 @@ export const copy = {
     failedHint: "The page could not be shown. Try again in a moment.",
     backToDashboard: "Back to the dashboard",
   },
+  reportColumns: {
+    code: "Code",
+    platform: "Platform",
+    version: "Version",
+    received: "Received",
+  },
   errors: {
     relayUnavailable:
       "The reports service did not answer. Try again in a moment.",
