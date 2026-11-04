@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, type Snippet } from "svelte";
   import { on } from "svelte/events";
+  import { prefersReducedMotion } from "svelte/motion";
 
   import {
     afterNavigate,
@@ -14,6 +15,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
 
   import { getBackGoesUp } from "./back-goes-up";
+  import { backPreviewLook, previewBackGestures } from "./back-preview";
   import { wayBackFrom } from "./back-link";
   import { backSwipeEdge, directionOf } from "./back-swipe";
   import { holdScrollTop } from "./hold-scroll";
@@ -26,9 +28,22 @@
 
   let {
     isIos,
+    isAndroid = false,
     isFullScreen = false,
     children,
-  }: { isIos: boolean; isFullScreen?: boolean; children: Snippet } = $props();
+  }: {
+    isIos: boolean;
+    isAndroid?: boolean;
+    isFullScreen?: boolean;
+    children: Snippet;
+  } = $props();
+
+  let backProgress: number | undefined = $state();
+  const backPreview = $derived(
+    backProgress === undefined
+      ? undefined
+      : backPreviewLook(backProgress, prefersReducedMotion.current),
+  );
 
   const language = getLanguageSetting();
   const backGoesUp = getBackGoesUp();
@@ -101,6 +116,7 @@
         ? undefined
         : holdScrollTop(swiped.element, landedOn.scrollTop);
     swiped.arrived();
+    backProgress = undefined;
     previousScreens.forgetAllButAbove(page.url.pathname);
   });
 
@@ -112,8 +128,15 @@
     swiped.allowFor(screenShown, edgeIn);
   });
 
-  onMount(() => () => {
-    stopHoldingScroll?.();
+  onMount(() => {
+    if (isAndroid) {
+      previewBackGestures((progress) => {
+        backProgress = progress;
+      });
+    }
+    return () => {
+      stopHoldingScroll?.();
+    };
   });
 </script>
 
@@ -123,7 +146,12 @@
 <main
   bind:this={swiped.element}
   {@attach forgetCopiesOnSettingChange}
-  style:transform={swiped.transform}
+  style:transform={backPreview === undefined
+    ? swiped.transform
+    : `scale(${String(backPreview.scale)})`}
+  style:border-radius={backPreview === undefined
+    ? undefined
+    : `${String(backPreview.cornerPx)}px`}
   class={[
     "order-2 flex flex-1 flex-col overflow-y-auto has-data-macos-inspector:me-native-inspector desktop-shell:has-data-page-toolbar:scroll-pbs-toolbar",
     !isFullScreen &&

@@ -220,6 +220,7 @@
   {/if}
   <SwipeableMain
     isIos={data.appInfo.platform === "ios"}
+    isAndroid={data.appInfo.platform === "android"}
     isFullScreen={page.route.id === EDIT_DETAILS_ROUTE}
   >
     {#key language.resolved}
