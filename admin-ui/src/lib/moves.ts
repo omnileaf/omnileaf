@@ -2,6 +2,7 @@ import { copy } from "#lib/copy.ts";
 import { fillTemplate } from "#lib/template.ts";
 import {
   isIssueStatusKind,
+  STATUS_KINDS,
   type IssueStatusKind,
   type MoveRequest,
   type MoveTarget,
@@ -23,6 +24,13 @@ const ALLOWED_MOVES = {
   duplicate: [],
   closed: ["reviewing"],
 } as const satisfies Record<StatusKind, readonly MoveTarget[]>;
+
+function isMoveTarget(kind: StatusKind): kind is MoveTarget {
+  return kind !== "received";
+}
+
+export const MOVE_TARGETS: readonly MoveTarget[] =
+  STATUS_KINDS.filter(isMoveTarget);
 
 const ISSUE_NUMBER = /^#?([0-9]+)$/;
 
