@@ -348,6 +348,8 @@ async fn a_link_with_an_odd_name_is_skipped_not_fatal() {
 
 const BOOTSTRAP: &str = "\n\t{\n\t\t__sveltekit_1ceqy1n = {\n\t\t\tbase: \"/admin\"\n\t\t};\n\t}\n";
 const BOOTSTRAP_HASH: &str = "'sha256-Vb4kpYXuCcWK4QAkbi10xn4/OtofkhWR0eksrmhrTYk='";
+const ANNOUNCER_STYLE: &str =
+    "style-src-attr 'unsafe-hashes' 'sha256-S8qMpvofolR8Mpjy4kQvEm7m1q8clzU4dfDH0AmvZjo=';";
 const SECOND_SCRIPT: &str = "window.second = 1;";
 const SECOND_HASH: &str = "'sha256-QjrPuZ0w9ba9oGvN7XsqsGQqJou7P5N6cPhn5S1CtkI='";
 const PLAIN_SCRIPTS: &str = "script-src 'self';";
@@ -377,12 +379,13 @@ async fn the_shell_allows_its_own_inline_script_by_hash_and_nothing_else_does() 
             policy.contains(&format!("script-src 'self' {BOOTSTRAP_HASH};")),
             "{path}: {policy}"
         );
+        assert!(policy.contains(ANNOUNCER_STYLE), "{path}: {policy}");
         assert!(!policy.contains("unsafe-inline"), "{path}: {policy}");
     }
     for path in ["/admin/app.js", "/admin/api/session", "/admin/health"] {
         let policy = policy_of(&harness, &cookie, path).await;
         assert!(policy.contains(PLAIN_SCRIPTS), "{path}: {policy}");
-        assert!(!policy.contains("sha256"), "{path}: {policy}");
+        assert!(!policy.contains(BOOTSTRAP_HASH), "{path}: {policy}");
     }
 }
 
