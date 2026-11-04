@@ -3,7 +3,8 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vitest/config";
 
-const BASE_PATH = "/admin";
+import { ADMIN_BASE } from "./src/lib/paths.ts";
+
 const SHELL = "index.html";
 
 export default defineConfig({
@@ -11,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     sveltekit({
       adapter: adapter({ fallback: SHELL }),
-      paths: { base: BASE_PATH, relative: false },
+      paths: { base: ADMIN_BASE, relative: false },
     }),
   ],
   test: {
