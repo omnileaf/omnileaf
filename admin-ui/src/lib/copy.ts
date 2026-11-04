@@ -11,6 +11,19 @@ export const copy = {
     duplicate: "Duplicate",
     closed: "Closed",
   } satisfies Record<StatusKind, string>,
+  shell: {
+    skipLink: "Skip to the content",
+    mainNav: "Main",
+    dashboard: "Dashboard",
+    reports: "Reports",
+    signedInAs: "Signed in as",
+    signOut: "Sign out",
+    retry: "Try again",
+    signingIn: "Signing in",
+    signingInHint: "Taking you to the sign-in page.",
+    sessionFailed: "Could not open your session",
+    signOutFailed: "Could not sign out",
+  },
   errors: {
     relayUnavailable:
       "The reports service did not answer. Try again in a moment.",
