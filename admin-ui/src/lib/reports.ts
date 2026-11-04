@@ -29,7 +29,7 @@ function splitVersion(version: string): {
   };
 }
 
-function compareVersions(a: string, b: string): number {
+export function compareVersions(a: string, b: string): number {
   const first = splitVersion(a);
   const second = splitVersion(b);
   const byCore = compareText(first.core, second.core);
@@ -130,4 +130,13 @@ export function awaitingReview(reports: readonly Listed[]): readonly Listed[] {
   return reports
     .filter((report) => report.status.kind === "received")
     .sort((a, b) => a.receivedAt - b.receivedAt);
+}
+
+export function isFiltering(filter: ReportFilter): boolean {
+  return (
+    filter.status !== undefined ||
+    filter.platform !== undefined ||
+    filter.version !== undefined ||
+    searchTerms(filter.search ?? "").length > 0
+  );
 }
