@@ -18,5 +18,6 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     expect: { requireAssertions: true },
+    setupFiles: ["./src/lib/tailwind-source.setup.ts"],
   },
 });

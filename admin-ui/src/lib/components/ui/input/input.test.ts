@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf } from "#lib/components/ui/render.ts";
+import { html, tokensOf, CONSUMER_CLASS } from "#lib/components/ui/render.ts";
 
 import { Input } from "./index.ts";
 
@@ -41,11 +41,14 @@ test("rings a focused input with a 2px accent outline offset by 2px", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const tokens = tokensOf(html(Input, { class: "rounded-card extra" }), INPUT);
+  const tokens = tokensOf(
+    html(Input, { class: `rounded-card ${CONSUMER_CLASS}` }),
+    INPUT,
+  );
 
   expect(tokens).toContain("rounded-card");
   expect(tokens).not.toContain("rounded-control");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("forwards native attributes to the input", () => {

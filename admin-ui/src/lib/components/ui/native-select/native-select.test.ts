@@ -1,6 +1,11 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import NativeSelectHarness from "./NativeSelectHarness.svelte";
 import { NativeSelect } from "./index.ts";
@@ -57,20 +62,20 @@ test("draws a chevron that lets clicks through to the select", () => {
 });
 
 test("puts the consumer class on the wrapper so it sizes the whole control", () => {
-  const markup = render({ class: "inline-48" });
+  const markup = render({ class: "max-inline-page" });
 
-  expect(tokensOf(markup, WRAPPER)).toContain("inline-48");
-  expect(tokensOf(markup, SELECT)).not.toContain("inline-48");
+  expect(tokensOf(markup, WRAPPER)).toContain("max-inline-page");
+  expect(tokensOf(markup, SELECT)).not.toContain("max-inline-page");
 });
 
 test("puts the field class on the select itself", () => {
-  const markup = render({ fieldClass: "rounded-card extra" });
+  const markup = render({ fieldClass: `rounded-card ${CONSUMER_CLASS}` });
   const tokens = tokensOf(markup, SELECT);
 
   expect(tokens).toContain("rounded-card");
   expect(tokens).not.toContain("rounded-control");
-  expect(tokens.at(-1)).toBe("extra");
-  expect(tokensOf(markup, WRAPPER)).not.toContain("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
+  expect(tokensOf(markup, WRAPPER)).not.toContain(CONSUMER_CLASS);
 });
 
 test("selects the option that matches the value it is given", () => {

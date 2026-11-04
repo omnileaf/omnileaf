@@ -5,6 +5,7 @@ import {
   html,
   tokensOf,
   words,
+  CONSUMER_CLASS,
 } from "#lib/components/ui/render.ts";
 
 import {
@@ -75,11 +76,14 @@ test("rings a focused button with a 2px accent outline offset by 2px", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const tokens = tokensOf(render({ class: "bg-card extra" }), BUTTON);
+  const tokens = tokensOf(
+    render({ class: `bg-card ${CONSUMER_CLASS}` }),
+    BUTTON,
+  );
 
   expect(tokens).toContain("bg-card");
   expect(tokens).not.toContain("bg-accent");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("never submits a form unless asked", () => {

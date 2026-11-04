@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf } from "#lib/components/ui/render.ts";
+import { html, tokensOf, CONSUMER_CLASS } from "#lib/components/ui/render.ts";
 
 import { Textarea } from "./index.ts";
 
@@ -24,13 +24,13 @@ test("draws a textarea like an input but taller than one line", () => {
 
 test("lets the consumer class win and come last", () => {
   const tokens = tokensOf(
-    html(Textarea, { class: "rounded-card extra" }),
+    html(Textarea, { class: `rounded-card ${CONSUMER_CLASS}` }),
     TEXTAREA,
   );
 
   expect(tokens).toContain("rounded-card");
   expect(tokens).not.toContain("rounded-control");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("forwards native attributes to the textarea", () => {
