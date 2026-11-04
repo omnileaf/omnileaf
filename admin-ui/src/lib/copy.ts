@@ -91,6 +91,12 @@ export const copy = {
   moves: {
     issueNeeded:
       "Enter the issue number to mark this report {status}. Use a whole number above zero.",
+    confirmQuestion: "Mark {code} as {status}, issue #{issue}?",
+    confirmHint: "This cannot be changed afterwards.",
+    confirm: "Mark as {status}",
+    cancel: "Cancel",
+    problemTitle: "Could not move this report",
+    reload: "Reload report",
     refused: "A {from} report cannot be moved to {status}.",
     gone: "This report no longer exists.",
     moved: "Moved to {status}.",
