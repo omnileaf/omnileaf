@@ -30,6 +30,10 @@ test("lets a later radius token win over an earlier one", () => {
   expect(cn("rounded-control", "rounded-card")).toBe("rounded-card");
 });
 
+test("lets a later shadow token win over an earlier one", () => {
+  expect(cn("shadow-card", "shadow-none")).toBe("shadow-none");
+});
+
 test("knows every token the theme defines", () => {
   for (const [namespace, names] of Object.entries(TOKEN_THEME)) {
     expect([...names], namespace).toEqual(tokenNames(namespace));

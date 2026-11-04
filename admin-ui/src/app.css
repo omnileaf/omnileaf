@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not "./**/*.test.ts";
 
 @theme {
   --*: initial;
@@ -9,6 +10,8 @@
     system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
+  --text-badge: 0.78125rem;
+  --text-badge--line-height: 1;
   --text-label: 0.8125rem;
   --text-label--line-height: 1.25;
   --text-small: 0.875rem;
@@ -29,10 +32,14 @@
   --tracking-tight: -0.02em;
   --tracking-wide: 0.04em;
 
-  --radius-control: 0.75rem;
+  --radius-control: 0.625rem;
   --radius-card: 1rem;
   --radius-panel: 1.5rem;
   --radius-full: 9999px;
+
+  --shadow-card: 0 1px 2px 0 var(--card-shadow-color);
+
+  --breakpoint-tablet: 48rem;
 
   --container-page: 70rem;
 
@@ -40,6 +47,7 @@
   --color-foreground: #1c1b18;
   --color-muted: #5f5b52;
   --color-border: #e3ded3;
+  --color-field-edge: #8a8474;
   --color-card: #ffffff;
   --color-chip: #eeeae1;
   --color-well: #f3f0e9;
@@ -55,6 +63,8 @@
     --color-foreground: #f1ede4;
     --color-muted: #a9a396;
     --color-border: #302d28;
+    --color-field-edge: #78726a;
+    --card-shadow-color: transparent;
     --color-card: #1f1d1a;
     --color-chip: #2b2823;
     --color-well: #1c1a17;
@@ -68,6 +78,7 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    --card-shadow-color: rgb(28 27 24 / 0.05);
   }
 
   body {
