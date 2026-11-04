@@ -14,7 +14,7 @@ export function badgeOf(page: Page): Locator {
   return heading(page).locator("xpath=..");
 }
 
-function moveStatus(page: Page): Locator {
+export function moveStatus(page: Page): Locator {
   return page.locator(MOVE_STATUS);
 }
 
