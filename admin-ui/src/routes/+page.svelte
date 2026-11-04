@@ -1,11 +1,21 @@
 <script lang="ts">
-  import PageHead from "#lib/components/page-head.svelte";
+  import DashboardView from "#lib/components/dashboard-view.svelte";
+  import { focusPageHeadingInDocument } from "#lib/browser-focus.ts";
   import { copy } from "#lib/copy.ts";
   import { documentTitle } from "#lib/page-title.ts";
+  import { useReports } from "#lib/reports-store.svelte.ts";
+  import { retryReports } from "#lib/retry-reports.ts";
+
+  const reports = useReports();
 </script>
 
 <svelte:head>
   <title>{documentTitle(copy.shell.dashboard)}</title>
 </svelte:head>
 
-<PageHead title={copy.shell.dashboard} />
+<DashboardView
+  load={reports.state}
+  onRetry={() => {
+    void retryReports(reports, focusPageHeadingInDocument);
+  }}
+/>
