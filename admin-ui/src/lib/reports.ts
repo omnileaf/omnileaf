@@ -29,7 +29,7 @@ function splitVersion(version: string): {
   };
 }
 
-function compareVersions(a: string, b: string): number {
+export function compareVersions(a: string, b: string): number {
   const first = splitVersion(a);
   const second = splitVersion(b);
   const byCore = compareText(first.core, second.core);
