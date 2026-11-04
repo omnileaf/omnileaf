@@ -134,7 +134,14 @@
   const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
   const undo = setUndoSetting(undoSettingForDocument());
-  setNotices(new Notices(() => undo.rules));
+  setNotices(
+    new Notices(
+      () => undo.rules,
+      undefined,
+      undefined,
+      () => commands.screenReaderIsRunning(),
+    ),
+  );
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
