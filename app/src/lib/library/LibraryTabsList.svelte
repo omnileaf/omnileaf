@@ -52,6 +52,7 @@
 
   const android = new AndroidPhone();
   const isMac = currentPlatform() === "macos";
+  const IOS_ICON_SIZE = 20;
   const ios = new IosPhone();
   let list = $state<HTMLElement | null>(null);
   let drag = $state<Drag | undefined>();
@@ -191,7 +192,7 @@
         onpointercancel={drop}
       >
         {#if ios.isOn}
-          <Menu size={ICON_SIZE} aria-hidden="true" />
+          <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
         {:else}
           <GripVertical size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -205,21 +206,29 @@
         <span
           class={[
             "truncate",
-            android.isOn || ios.isOn ? "text-body" : "font-medium",
+            android.isOn && "text-body",
+            ios.isOn &&
+              "text-native-row-title/native-row-title tracking-native-row-title",
+            !android.isOn && !ios.isOn && "font-medium",
           ]}>{tab.name}</span
         >
         <span
           class={[
             "text-muted",
-            android.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
+            android.isOn || ios.isOn ? ROW_SUBTITLE_TYPE : "text-detail",
           ]}>{detailOf(tab)}</span
         >
       </span>
       {#if tab.isHidden}
         <span
-          class="flex shrink-0 items-center gap-2xs rounded-full border border-border px-sm text-detail text-muted"
+          class={[
+            "flex shrink-0 items-center gap-2xs text-detail text-muted",
+            !ios.isOn && "rounded-full border border-border px-sm",
+          ]}
         >
-          <EyeOff size={BADGE_ICON_SIZE} aria-hidden="true" />
+          {#if !ios.isOn}
+            <EyeOff size={BADGE_ICON_SIZE} aria-hidden="true" />
+          {/if}
           {m.library_tabs_hidden()}
         </span>
       {/if}
@@ -234,15 +243,19 @@
                 <Button
                   {...props}
                   look="icon"
-                  class={android.isOn || ios.isOn
-                    ? "block-touch-target inline-touch-target"
-                    : ""}
+                  class={[
+                    android.isOn && "block-touch-target inline-touch-target",
+                    ios.isOn && "block-native-button inline-native-button",
+                  ]}
                   aria-label={m.library_tabs_more({ tab: tab.name })}
                 >
                   {#if android.isOn}
                     <EllipsisVertical size={ICON_SIZE} aria-hidden="true" />
                   {:else}
-                    <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+                    <Ellipsis
+                      size={ios.isOn ? IOS_ICON_SIZE : ICON_SIZE}
+                      aria-hidden="true"
+                    />
                   {/if}
                 </Button>
               {/snippet}
