@@ -10,14 +10,10 @@ use axum::{
 };
 use serde_json::{Value, json};
 
-use super::support::{FIRST, Harness, seeded};
+use super::support::{FIRST, Harness, json_of, seeded};
 
 const MOVE_PATH: &str = "/admin/api/reports/R-1111-1111/status";
 const LOGOUT_PATH: &str = "/admin/api/logout";
-
-fn json_of(text: &str) -> Value {
-    serde_json::from_str(text).unwrap()
-}
 
 async fn open() -> (Harness, String, String) {
     let (harness, cookie) = seeded().await;
@@ -77,6 +73,51 @@ async fn a_missing_or_wrong_csrf_token_is_a_403_that_never_reaches_the_relay() {
             json!({ "error": "csrfRejected" }),
             "{token:?}"
         );
+    }
+    assert!(harness.relay.posts().is_empty());
+}
+
+#[tokio::test]
+async fn the_csrf_token_is_checked_before_the_code_and_the_body() {
+    let (harness, cookie, _) = open().await;
+    let cases = [
+        (MOVE_PATH, "not json"),
+        (MOVE_PATH, "{}"),
+        (
+            "/admin/api/reports/..%2Fsecrets/status",
+            r#"{"status":"closed"}"#,
+        ),
+        ("/admin/api/reports/%FF/status", r#"{"status":"closed"}"#),
+    ];
+    for (path, body) in cases {
+        let reply = harness
+            .post_json(path, Some(&cookie), Some("nope"), body)
+            .await;
+        assert_eq!(reply.status, StatusCode::FORBIDDEN, "{path} {body}");
+        assert_eq!(
+            json_of(&reply.body),
+            json!({ "error": "csrfRejected" }),
+            "{path} {body}"
+        );
+    }
+    assert!(harness.relay.posts().is_empty());
+}
+
+#[tokio::test]
+async fn a_forged_or_expired_session_is_a_401_on_both_routes() {
+    let (harness, cookie, csrf) = open().await;
+    for path in [MOVE_PATH, LOGOUT_PATH] {
+        let reply = harness
+            .post_json(path, Some("admin_session=garbage"), Some(&csrf), "{}")
+            .await;
+        assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{path}");
+    }
+    harness.advance(8 * 60 * 60);
+    for path in [MOVE_PATH, LOGOUT_PATH] {
+        let reply = harness
+            .post_json(path, Some(&cookie), Some(&csrf), r#"{"status":"closed"}"#)
+            .await;
+        assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{path}");
     }
     assert!(harness.relay.posts().is_empty());
 }

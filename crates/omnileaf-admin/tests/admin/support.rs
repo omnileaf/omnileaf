@@ -532,6 +532,10 @@ impl Harness {
     }
 }
 
+pub(crate) fn json_of(text: &str) -> Value {
+    serde_json::from_str(text).unwrap()
+}
+
 pub(crate) fn csrf_in(page: &str) -> String {
     page.split("name=\"csrf\" value=\"")
         .nth(1)
