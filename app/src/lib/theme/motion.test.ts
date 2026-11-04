@@ -98,7 +98,7 @@ for (const platform of PLATFORMS) {
 }
 
 const TOOLTIP_FADES: Record<Platform, string> = {
-  android: TODAYS_SLIDE,
+  android: TODAYS_FADE,
   ios: TODAYS_SLIDE,
   linux: TODAYS_SLIDE,
   macos: TODAYS_FADE,
@@ -142,11 +142,19 @@ for (const platform of PLATFORMS) {
 }
 
 const FLYOUT_FADES: Record<Platform, string> = {
-  android: TODAYS_SLIDE,
+  android: "0.5s",
   ios: TODAYS_SLIDE,
   linux: TODAYS_SLIDE,
   macos: TODAYS_FADE,
   windows: "0.167s",
+};
+
+const FLYOUT_EASES: Record<Platform, string> = {
+  android: "cubic-bezier(0.2, 0, 0, 1)",
+  ios: "cubic-bezier(0.32, 0.72, 0, 1)",
+  linux: "cubic-bezier(0.32, 0.72, 0, 1)",
+  macos: "cubic-bezier(0.32, 0.72, 0, 1)",
+  windows: "cubic-bezier(0, 0, 0, 1)",
 };
 
 for (const platform of PLATFORMS) {
@@ -159,10 +167,6 @@ for (const platform of PLATFORMS) {
     const drawn = getComputedStyle(element);
 
     expect(drawn.transitionDuration).toBe(FLYOUT_FADES[platform]);
-    expect(drawn.transitionTimingFunction).toBe(
-      platform === "windows"
-        ? "cubic-bezier(0, 0, 0, 1)"
-        : "cubic-bezier(0.32, 0.72, 0, 1)",
-    );
+    expect(drawn.transitionTimingFunction).toBe(FLYOUT_EASES[platform]);
   });
 }

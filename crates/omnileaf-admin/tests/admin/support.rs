@@ -601,6 +601,10 @@ impl Site {
         Self { folder }
     }
 
+    pub(crate) fn put(&self, path: &str, bytes: &[u8]) {
+        self.folder.write(path, bytes);
+    }
+
     pub(crate) fn beside(&self, name: &str, contents: &str) {
         let path = self.outside(name);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();

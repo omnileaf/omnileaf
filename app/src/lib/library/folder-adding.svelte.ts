@@ -64,6 +64,7 @@ const FAILURES = {
   browserUnavailable: ADDING_FAILED,
   fileManagerUnavailable: ADDING_FAILED,
   systemSettingsUnavailable: ADDING_FAILED,
+  defaultViewerUnavailable: ADDING_FAILED,
   noCrashReport: ADDING_FAILED,
   crashReportUnavailable: ADDING_FAILED,
   developmentBuildOnly: ADDING_FAILED,

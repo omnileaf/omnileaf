@@ -96,6 +96,7 @@ const RULES: &[(&str, Areas)] = &[
     ("crates/omnileaf-admin/", ADMIN_SERVICE),
     ("app/tests/admin/", ADMIN_PAGES_CHECK),
     ("app/playwright.admin.config.ts", ADMIN_PAGES_CHECK),
+    ("admin-ui/", ADMIN_PAGES_CHECK),
     ("app/src-tauri/", NATIVE),
     ("app/src/app.css", APP_READ_BY_NATIVE),
     ("app/src/lib/ipc/bindings.ts", APP_READ_BY_NATIVE),
@@ -220,6 +221,13 @@ mod tests {
             "app/tests/admin/dashboard.spec.ts",
             "app/playwright.admin.config.ts",
         ] {
+            assert_eq!(areas(&[path]), ADMIN_PAGES_CHECK, "{path}");
+        }
+    }
+
+    #[test]
+    fn sends_the_admin_interface_to_the_dashboard_accessibility_check_only() {
+        for path in ["admin-ui/src/app.css", "admin-ui/package.json"] {
             assert_eq!(areas(&[path]), ADMIN_PAGES_CHECK, "{path}");
         }
     }
