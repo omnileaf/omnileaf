@@ -10,6 +10,7 @@ const BUILD_AND_SERVE_MS = 600_000;
 const PHONE_WIDTH = 360;
 const DESKTOP_WIDTH = 1280;
 const WEBKIT_SPECS = /@webkit/;
+const PHONE_ONLY_SPECS = /wide-text\.spec\.ts$/;
 const INTERFACE_BUILD = fileURLToPath(
   new URL("../admin-ui/build", import.meta.url),
 );
@@ -30,6 +31,7 @@ export default defineConfig({
     { name: "phone", use: { viewport: { width: PHONE_WIDTH, height: 740 } } },
     {
       name: "desktop",
+      testIgnore: PHONE_ONLY_SPECS,
       use: { viewport: { width: DESKTOP_WIDTH, height: 800 } },
     },
     {

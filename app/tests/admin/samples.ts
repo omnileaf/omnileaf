@@ -18,3 +18,4 @@ export const ISSUE_TEXT_START = "**Report R-8M4T-K2QX**";
 export const HOSTILE_TEXT = '<img src=x onerror="alert(1)"><b>x</b>';
 
 export const PROBLEM = "#move-problem";
+export const WIDE_LETTER_SPACING_EM = 0.1;

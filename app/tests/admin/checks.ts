@@ -3,7 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import { sidewaysOverflow } from "../browser/sideways-overflow.ts";
 import { expect } from "./fixtures.ts";
-import { REPLY_ADDRESS } from "./samples.ts";
+import { REPLY_ADDRESS, WIDE_LETTER_SPACING_EM } from "./samples.ts";
 
 const TABLET_WIDTH = 768;
 const PHONE_TARGET_PIXELS = 44;
@@ -105,10 +105,38 @@ async function controlsWithoutFocusRing(page: Page): Promise<string[]> {
   return missing;
 }
 
+export async function expectNoSidewaysOverflow(page: Page): Promise<void> {
+  expect(await sidewaysOverflow(page, "body"), "sideways overflow").toEqual([]);
+}
+
+export async function expectTextWidened(page: Page): Promise<void> {
+  const spacings = await page.evaluate(() =>
+    ["body", "h1"].map((selector) => {
+      const element = document.querySelector(selector);
+      if (element === null) {
+        return { selector, spacing: Number.NaN };
+      }
+      const style = getComputedStyle(element);
+      return {
+        selector,
+        spacing:
+          Number.parseFloat(style.letterSpacing) /
+          Number.parseFloat(style.fontSize),
+      };
+    }),
+  );
+  for (const { selector, spacing } of spacings) {
+    expect(spacing, `letter spacing in ems of ${selector}`).toBeCloseTo(
+      WIDE_LETTER_SPACING_EM,
+      2,
+    );
+  }
+}
+
 export async function expectAccessible(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
   expect(results.violations, "axe violations").toEqual([]);
-  expect(await sidewaysOverflow(page, "body"), "sideways overflow").toEqual([]);
+  await expectNoSidewaysOverflow(page);
   expect(await page.content(), "reply address in the page").not.toContain(
     REPLY_ADDRESS,
   );

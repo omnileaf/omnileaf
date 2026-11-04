@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
 import { expect } from "./fixtures.ts";
-import { HOSTILE_TEXT } from "./samples.ts";
+import { HOSTILE_TEXT, WIDE_LETTER_SPACING_EM } from "./samples.ts";
 
 export const SESSION_API = "**/admin/api/session";
 export const REPORTS_API = "**/admin/api/reports";
@@ -11,6 +11,7 @@ export const ISSUE_API = "**/admin/api/reports/*/issue";
 export const LOGOUT_API = "**/admin/api/logout";
 export const LOGIN_PAGE = "**/admin/login";
 
+const STYLESHEETS = "**/_app/immutable/assets/*.css";
 const CSRF_HEADER = "x-csrf-token";
 const REPORT_PATH = /\/admin\/api\/reports\/[^/]+$/;
 
@@ -186,4 +187,17 @@ export async function stubSignInPage(page: Page): Promise<void> {
   await page.route(LOGIN_PAGE, (route) =>
     route.fulfill({ status: 200, body: "sign in" }),
   );
+}
+
+export async function widenText(page: Page): Promise<void> {
+  await page.route(STYLESHEETS, async (route) => {
+    const response = await route.fetch();
+    const headers = { ...response.headers() };
+    delete headers["content-length"];
+    await route.fulfill({
+      status: response.status(),
+      headers,
+      body: `${await response.text()}\n*, *::before, *::after { letter-spacing: ${String(WIDE_LETTER_SPACING_EM)}em !important; }`,
+    });
+  });
 }
