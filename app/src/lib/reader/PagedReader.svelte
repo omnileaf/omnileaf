@@ -1200,7 +1200,8 @@
                   ? "inset-x-none inset-bs-none"
                   : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
               ],
-          !controls.isShown && "pointer-events-none opacity-0",
+          !controls.isShown &&
+            "pointer-events-none opacity-0 android:-translate-y-md",
         ]}
         {...controlEvents}
       >
@@ -1282,7 +1283,8 @@
               ],
           isPanelOpen && panelRoom,
           chrome.floats && "pointer-events-none",
-          !controls.isShown && "pointer-events-none opacity-0",
+          !controls.isShown &&
+            "pointer-events-none opacity-0 android:translate-y-md",
         ]}
         inert={coversPage}
         {...controlEvents}
