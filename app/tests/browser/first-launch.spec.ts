@@ -4,6 +4,7 @@ import { TauriEvent } from "@tauri-apps/api/event";
 import type {
   AdultContent,
   ChosenHomeFolder,
+  DefaultViewer,
   HomeArrival,
   HomeChoice,
   Platform,
@@ -69,6 +70,9 @@ class Device {
   series = new Map<string, number>();
   shelf: WireSeries[] = [];
   adultContent: AdultContent = { treatment: "show", countsAgeRatings: false };
+  comicViewer: DefaultViewer = "somethingElse";
+  makesOmnileafTheViewer = true;
+  viewerRequests = 0;
 
   reset(): void {
     this.finishes = 0;
@@ -78,6 +82,9 @@ class Device {
     this.series = new Map();
     this.shelf = [];
     this.adultContent = { treatment: "show", countsAgeRatings: false };
+    this.comicViewer = "somethingElse";
+    this.makesOmnileafTheViewer = true;
+    this.viewerRequests = 0;
   }
 }
 
@@ -131,6 +138,18 @@ const FIRST_LAUNCH_BACKEND: FakeBackend = {
   libraryAdultContent: () => device.adultContent,
   setLibraryAdultContent: (content) => {
     device.adultContent = content;
+    return null;
+  },
+  comicFilesDefaultViewer: () => device.comicViewer,
+  makeOmnileafTheComicViewer: () => {
+    device.viewerRequests += 1;
+    if (!device.makesOmnileafTheViewer) {
+      throw new CommandFailure({
+        code: "defaultViewerUnavailable",
+        message: "the default app for comic files could not be changed",
+      });
+    }
+    device.comicViewer = "omnileaf";
     return null;
   },
   addLibraryFolder: () => {
@@ -1398,6 +1417,69 @@ test("keeps the 18+ covers choice made on the step", async ({ page }) => {
 
   await expect(heading(page, EMPTY_READY_HEADING)).toBeVisible();
   expect(device.adultContent.treatment).toBe("hide");
+});
+
+test.describe("opening comic and book files with Omnileaf", () => {
+  const OPEN_FILES = "Open comic and book files with Omnileaf";
+
+  test("starts off while another app opens them", async ({ page }) => {
+    await goTo(page, "A few choices");
+
+    await expect(
+      page.getByRole("switch", { name: OPEN_FILES }),
+    ).not.toBeChecked();
+    expect(device.viewerRequests).toBe(0);
+  });
+
+  test("starts on and locked when Omnileaf already opens them", async ({
+    page,
+  }) => {
+    device.comicViewer = "omnileaf";
+    await goTo(page, "A few choices");
+
+    const open = page.getByRole("switch", { name: OPEN_FILES });
+
+    await expect(open).toBeChecked();
+    await expect(open).toBeDisabled();
+  });
+
+  test("makes Omnileaf the app that opens them when turned on", async ({
+    page,
+  }) => {
+    await goTo(page, "A few choices");
+
+    await page.getByRole("switch", { name: OPEN_FILES }).click();
+
+    await expect(page.getByRole("switch", { name: OPEN_FILES })).toBeChecked();
+    expect(device.viewerRequests).toBe(1);
+  });
+
+  test("says so and stays off when the system will not change it", async ({
+    page,
+  }) => {
+    device.makesOmnileafTheViewer = false;
+    await goTo(page, "A few choices");
+
+    await page.getByRole("switch", { name: OPEN_FILES }).click();
+
+    await expect(page.getByRole("alert")).toContainText(
+      "Couldn’t change the default app.",
+    );
+    await expect(
+      page.getByRole("switch", { name: OPEN_FILES }),
+    ).not.toBeChecked();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await goTo(page, "A few choices");
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
 
 test("explains the appearance choice on a desktop", async ({ page }) => {
