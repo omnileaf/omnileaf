@@ -34,7 +34,7 @@ pub(crate) struct Detail {
     pub(crate) report: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct AuditEntry {
     pub(crate) previous: String,
     pub(crate) status: StatusView,
