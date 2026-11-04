@@ -131,3 +131,12 @@ export function awaitingReview(reports: readonly Listed[]): readonly Listed[] {
     .filter((report) => report.status.kind === "received")
     .sort((a, b) => a.receivedAt - b.receivedAt);
 }
+
+export function isFiltering(filter: ReportFilter): boolean {
+  return (
+    filter.status !== undefined ||
+    filter.platform !== undefined ||
+    filter.version !== undefined ||
+    searchTerms(filter.search ?? "").length > 0
+  );
+}

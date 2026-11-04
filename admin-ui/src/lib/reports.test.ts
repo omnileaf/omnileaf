@@ -6,6 +6,7 @@ import {
   countByStatus,
   countByVersion,
   filterReports,
+  isFiltering,
 } from "#lib/reports.ts";
 import { aCode, aListed } from "#lib/testing.ts";
 
@@ -199,4 +200,29 @@ test("does not reorder the list it is given", () => {
   awaitingReview(copy);
 
   expect(copy).toEqual(REPORTS);
+});
+
+test.each([[{}], [{ search: "" }], [{ search: "   " }], [{ search: "#" }]])(
+  "does not count %j as filtering",
+  (filter) => {
+    expect(isFiltering(filter)).toBe(false);
+  },
+);
+
+test.each([
+  [{ search: "a" }],
+  [{ search: " a " }],
+  [{ search: "#7" }],
+  [{ status: "closed" }],
+  [{ platform: "linux" }],
+  [{ version: "1.2.0" }],
+] as const)("counts %j as filtering", (filter) => {
+  expect(isFiltering(filter)).toBe(true);
+});
+
+test("agrees with what filterReports keeps", () => {
+  const blank = { search: "   " };
+
+  expect(isFiltering(blank)).toBe(false);
+  expect(filterReports(REPORTS, blank)).toEqual(REPORTS);
 });
