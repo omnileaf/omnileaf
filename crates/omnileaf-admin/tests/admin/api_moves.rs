@@ -159,6 +159,21 @@ async fn moving_to_reviewing_or_closed_drops_a_stray_issue_number() {
 }
 
 #[tokio::test]
+async fn a_forged_actor_in_the_body_never_reaches_the_relay() {
+    let (harness, cookie, csrf) = open().await;
+    move_to(
+        &harness,
+        &cookie,
+        &csrf,
+        json!({ "status": "closed", "actor": "mallory" }),
+    )
+    .await;
+    let posts = harness.relay.posts();
+    assert_eq!(posts[0].body, json!({ "status": "closed" }));
+    assert_eq!(posts[0].actor.as_deref(), Some("alice"));
+}
+
+#[tokio::test]
 async fn published_and_duplicate_carry_the_issue_number() {
     let (harness, cookie, csrf) = open().await;
     move_to(

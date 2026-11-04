@@ -6,7 +6,7 @@
 use axum::http::{StatusCode, header};
 use serde_json::json;
 
-use super::support::{FIRST, Harness, Reply, SECOND, csrf_in, json_of, seeded};
+use super::support::{FIRST, Harness, Reply, SECOND, json_of, seeded};
 
 const LEAKED_ADDRESS: &str = "leaked-reporter@example.test";
 const SESSION_SECONDS: u64 = 8 * 60 * 60;
@@ -97,12 +97,13 @@ async fn a_session_is_still_valid_one_second_before_it_expires() {
 }
 
 #[tokio::test]
-async fn the_session_names_the_login_and_the_token_the_forms_carry() {
+async fn the_session_names_the_login_and_a_csrf_token_that_stays_the_same() {
     let (harness, cookie) = seeded().await;
-    let session = json_of(&harness.get("/admin/api/session", Some(&cookie)).await.body);
-    let page = harness.get("/admin", Some(&cookie)).await.body;
-    assert_eq!(session["login"], "alice");
-    assert_eq!(session["csrf"], csrf_in(&page));
+    let first = json_of(&harness.get("/admin/api/session", Some(&cookie)).await.body);
+    let second = json_of(&harness.get("/admin/api/session", Some(&cookie)).await.body);
+    assert_eq!(first["login"], "alice");
+    assert!(!first["csrf"].as_str().unwrap_or_default().is_empty());
+    assert_eq!(first["csrf"], second["csrf"]);
 }
 
 #[tokio::test]
@@ -142,6 +143,7 @@ async fn the_list_asks_the_relay_for_its_newest_500() {
         .find(|seen| seen.path == "/admin/v1/reports")
         .unwrap();
     assert_eq!(asked.query["limit"], "500");
+    assert!(asked.authorized);
 }
 
 #[tokio::test]

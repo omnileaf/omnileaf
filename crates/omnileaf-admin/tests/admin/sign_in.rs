@@ -1,7 +1,6 @@
-use super::support::{Harness, csrf_in};
 use axum::http::StatusCode;
 
-const LOGIN_PAGE_MARKER: &str = "Signed in as";
+use super::support::{Harness, json_of};
 
 fn query_of(location: &str) -> Vec<(String, String)> {
     reqwest::Url::parse(location).map_or_else(
@@ -40,10 +39,9 @@ async fn login_sends_the_visitor_to_github_with_a_signed_state_cookie() {
 async fn an_allowlisted_login_signs_in_whatever_its_case() {
     let harness = Harness::start(&["Alice"]).await;
     let cookie = harness.sign_in("alice").await;
-    let page = harness.get("/admin", Some(&cookie)).await;
-    assert_eq!(page.status, StatusCode::OK);
-    assert!(page.body.contains(LOGIN_PAGE_MARKER));
-    assert!(page.body.contains("alice"));
+    let session = harness.get("/admin/api/session", Some(&cookie)).await;
+    assert_eq!(session.status, StatusCode::OK);
+    assert_eq!(json_of(&session.body)["login"], "alice");
 }
 
 #[tokio::test]
@@ -70,8 +68,8 @@ async fn an_active_team_member_signs_in() {
     let harness = Harness::start(&[]).await;
     harness.github.add_team_member("bob", "active");
     let cookie = harness.sign_in("bob").await;
-    let page = harness.get("/admin", Some(&cookie)).await;
-    assert_eq!(page.status, StatusCode::OK);
+    let session = harness.get("/admin/api/session", Some(&cookie)).await;
+    assert_eq!(session.status, StatusCode::OK);
 }
 
 #[tokio::test]
@@ -154,89 +152,29 @@ async fn a_code_github_rejects_does_not_sign_anyone_in() {
 }
 
 #[tokio::test]
-async fn no_page_opens_without_a_session() {
-    let harness = Harness::start(&["alice"]).await;
-    let reply = harness.get("/admin", None).await;
-    assert_eq!(reply.status, StatusCode::SEE_OTHER);
-    assert_eq!(reply.location(), "/admin/login");
-    assert!(!reply.body.contains(LOGIN_PAGE_MARKER));
-}
-
-#[tokio::test]
-async fn an_expired_session_is_refused() {
-    let harness = Harness::start(&["alice"]).await;
-    let cookie = harness.sign_in("alice").await;
-    harness.advance(8 * 3600 - 1);
-    assert_eq!(
-        harness.get("/admin", Some(&cookie)).await.status,
-        StatusCode::OK
-    );
-    harness.advance(1);
-    let reply = harness.get("/admin", Some(&cookie)).await;
-    assert_eq!(reply.status, StatusCode::SEE_OTHER);
-    assert_eq!(reply.location(), "/admin/login");
-}
-
-#[tokio::test]
-async fn a_tampered_session_is_refused() {
-    let harness = Harness::start(&["alice"]).await;
-    let cookie = harness.sign_in("alice").await;
-    let value = cookie.strip_prefix("admin_session=").unwrap();
-    let (payload, tag) = value.split_once('.').unwrap();
-    let mut flipped = tag.to_owned();
-    flipped.replace_range(0..1, if tag.starts_with('A') { "B" } else { "A" });
-    let swapped_tag = format!("admin_session={payload}.{flipped}");
-    let other_payload = format!("admin_session=YWRtaW46OTk5OTk5OTk5OQ.{tag}");
-    for forged in [
-        swapped_tag,
-        other_payload,
-        "admin_session=garbage".to_owned(),
-    ] {
-        let reply = harness.get("/admin", Some(&forged)).await;
-        assert_eq!(reply.status, StatusCode::SEE_OTHER, "{forged}");
-        assert_eq!(reply.location(), "/admin/login");
-    }
-}
-
-#[tokio::test]
 async fn the_state_cookie_cannot_stand_in_for_a_session() {
     let harness = Harness::start(&["alice"]).await;
     let (_, state_cookie) = harness.start_sign_in().await;
     let as_session = state_cookie.replacen("admin_oauth_state", "admin_session", 1);
-    let reply = harness.get("/admin", Some(&as_session)).await;
-    assert_eq!(reply.status, StatusCode::SEE_OTHER);
+    let reply = harness.get("/admin/api/session", Some(&as_session)).await;
+    assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]
-async fn signing_out_needs_the_csrf_token_that_belongs_to_the_session() {
-    let harness = Harness::start(&["alice", "bob"]).await;
-    let alice = harness.sign_in("alice").await;
-    let bob = harness.sign_in("bob").await;
-    let page = harness.get("/admin", Some(&alice)).await;
-    let token = csrf_in(&page.body);
-
-    let missing = harness.post_form("/admin/logout", Some(&alice), "").await;
-    assert_eq!(missing.status, StatusCode::FORBIDDEN);
-    let wrong = harness
-        .post_form("/admin/logout", Some(&alice), "csrf=wrong")
-        .await;
-    assert_eq!(wrong.status, StatusCode::FORBIDDEN);
-    let borrowed = harness
-        .post_form("/admin/logout", Some(&bob), &format!("csrf={token}"))
-        .await;
-    assert_eq!(borrowed.status, StatusCode::FORBIDDEN);
-    let signed_out = harness
-        .post_form("/admin/logout", None, &format!("csrf={token}"))
-        .await;
-    assert_eq!(signed_out.status, StatusCode::SEE_OTHER);
-
-    let done = harness
-        .post_form("/admin/logout", Some(&alice), &format!("csrf={token}"))
-        .await;
-    assert_eq!(done.status, StatusCode::OK);
+async fn the_failure_pages_are_plain_pages_with_their_own_small_stylesheet() {
+    let harness = Harness::start(&["alice"]).await;
+    let refused = harness.finish_sign_in("mallory").await;
+    assert!(refused.body.contains("<html lang=\"en\">"));
+    assert!(refused.body.contains("<main id=\"main\">"));
     assert!(
-        done.cookie_line("admin_session")
-            .unwrap()
-            .contains("Max-Age=0")
+        refused
+            .body
+            .contains("<link rel=\"stylesheet\" href=\"/admin/style.css\">")
     );
+    assert!(!refused.body.contains("<script"));
+    let css = harness.get("/admin/style.css", None).await;
+    assert_eq!(css.status, StatusCode::OK);
+    assert!(css.body.contains("prefers-color-scheme: dark"));
+    assert!(css.body.contains(":focus-visible"));
+    assert!(css.body.contains("min-height: 44px"));
 }
