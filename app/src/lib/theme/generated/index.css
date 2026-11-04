@@ -207,6 +207,7 @@
   --leading-native-bar-title: var(--native-leading-bar-title);
   --font-weight-native-bar-button: var(--native-weight-bar-button);
   --font-weight-native-bar-badge: var(--native-weight-bar-badge);
+  --font-weight-native-tile-title: var(--native-weight-tile-title);
   --font-weight-native-bar-title: var(--native-weight-bar-title);
   --tracking-native-bar-title: var(--native-tracking-bar-title);
   --text-native-title-bar-title: var(--native-text-title-bar-title);

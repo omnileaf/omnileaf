@@ -26,6 +26,7 @@ export interface CoverTileLook {
   readonly pickedRing: string;
   readonly menuTargetRing: string;
   readonly pickedTitle: string;
+  readonly title: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
   readonly unread: string;
@@ -81,6 +82,7 @@ const TODAYS_LOOK: CoverTileLook = {
   pickedRing: PICKED_COVER_RING,
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
+  title: "",
   stack: null,
   cover: "",
   unread: BADGE_GEOMETRY,
@@ -114,6 +116,7 @@ const NATIVE_TILE = {
   pickedRing: PICKED_COVER_RING,
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
+  title: "",
   stack: null,
   cover: "max-medium:rounded-native-cover",
   mark: NATIVE_SELECT_MARK,
@@ -132,6 +135,9 @@ const IOS_BADGE_SHAPE =
   "max-medium:flex max-medium:items-center max-medium:py-none max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge";
 
 const IOS_BADGE = `${NATIVE_BADGE} ${IOS_BADGE_SHAPE} max-medium:backdrop-blur-ios`;
+
+const IOS_TILE_TITLE =
+  "max-medium:text-footnote! max-medium:font-native-tile-title!";
 
 const IOS_COUNT_BADGE = `${BADGE_GEOMETRY} ${IOS_BADGE_SHAPE} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:font-native-bar-badge max-medium:tabular-nums`;
 
@@ -224,6 +230,7 @@ const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
     ...IOS_SELECT_CIRCLE,
+    title: IOS_TILE_TITLE,
     stack: PHONE_STACK,
     unread: IOS_COUNT_BADGE,
     badge: IOS_BADGE,
