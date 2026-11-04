@@ -19,7 +19,7 @@
     "role"
   > & {
     icon: IconComponent;
-    role?: "alert" | "status";
+    role?: "alert" | "status" | "note";
   } = $props();
 </script>
 

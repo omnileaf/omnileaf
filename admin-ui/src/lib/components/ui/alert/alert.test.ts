@@ -30,6 +30,17 @@ test("speaks politely when asked for a status", () => {
   expect(markup).not.toContain('role="alert"');
 });
 
+test("marks a note that nothing announces when it appears", () => {
+  const markup = html(Alert, {
+    icon: Info,
+    role: "note",
+    children: words("Hello"),
+  });
+
+  expect(markup).toContain('role="note"');
+  expect(markup).not.toContain("aria-live");
+});
+
 test("draws a neutral bordered box and keeps it out of red", () => {
   const tokens = tokensOf(
     html(Alert, { icon: Info, children: words("Hello") }),
