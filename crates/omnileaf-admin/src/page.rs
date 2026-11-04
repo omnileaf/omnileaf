@@ -6,7 +6,7 @@ use maud::{DOCTYPE, Markup, html};
 
 pub(crate) const STYLESHEET: &str = include_str!("style.css");
 pub(crate) const NO_STORE: &str = "no-store";
-const POLICY: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
+const POLICY: &str = "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-S8qMpvofolR8Mpjy4kQvEm7m1q8clzU4dfDH0AmvZjo='; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
 
 pub(crate) struct SignedIn {
     pub(crate) login: String,

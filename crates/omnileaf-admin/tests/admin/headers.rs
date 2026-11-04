@@ -13,7 +13,7 @@ const PATHS: [&str; 5] = [
 #[tokio::test]
 async fn the_policy_lets_the_interface_load_from_its_own_origin_only() {
     let (harness, cookie) = seeded().await;
-    let policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
+    let policy = "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-S8qMpvofolR8Mpjy4kQvEm7m1q8clzU4dfDH0AmvZjo='; img-src 'self' data:; \
                   font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; \
                   base-uri 'none'";
     for path in PATHS {
