@@ -201,12 +201,6 @@ impl FakeRelay {
             .insert(code.to_owned(), entries);
     }
 
-    pub(crate) fn set_report_text(&self, code: &str, text: &str) {
-        if let Some(detail) = self.state.details.lock().unwrap().get_mut(code) {
-            detail["report"] = json!(text);
-        }
-    }
-
     pub(crate) fn purge_report_text(&self, code: &str) {
         if let Some(detail) = self.state.details.lock().unwrap().get_mut(code) {
             detail["report"] = Value::Null;
@@ -547,14 +541,6 @@ impl Harness {
 
 pub(crate) fn json_of(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
-}
-
-pub(crate) fn csrf_in(page: &str) -> String {
-    page.split("name=\"csrf\" value=\"")
-        .nth(1)
-        .and_then(|rest| rest.split('"').next())
-        .unwrap()
-        .to_owned()
 }
 
 pub(crate) const FIRST: &str = "R-1111-1111";
