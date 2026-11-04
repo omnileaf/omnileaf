@@ -956,6 +956,7 @@ export const TOKEN_THEME = {
     "native-sheet-title",
     "native-tab",
     "native-tab-label",
+    "native-tile-title",
     "native-title-bar-status",
     "native-title-bar-title",
     "regular",

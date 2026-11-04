@@ -454,6 +454,7 @@
               class={[
                 "line-clamp-2 font-medium wrap-break-word",
                 look.title,
+                tile.title,
                 pickedTitle(one),
               ]}
             >
