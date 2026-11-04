@@ -1,7 +1,14 @@
 import { expectAccessible, heading } from "./checks.ts";
 import { expect, test } from "./fixtures.ts";
-import { CODES, UNKNOWN_CODE } from "./samples.ts";
+import { CODES, PROBLEM, UNKNOWN_CODE } from "./samples.ts";
 import { openSignedIn, signInAs } from "./sign-in.ts";
+import {
+  failOnce,
+  gate,
+  holdAnswers,
+  REPORT_API,
+  REPORTS_API,
+} from "./stubs.ts";
 
 interface InterfacePage {
   readonly name: string;
@@ -89,5 +96,74 @@ for (const colorScheme of ["light", "dark"] as const) {
         await expectAccessible(page);
       });
     }
+
+    test("the move confirm step is accessible", async ({ page }) => {
+      await openSignedIn(page, `/admin/reports/${CODES.received}`);
+      await page.getByLabel("Issue number").fill("77");
+
+      await page
+        .getByRole("button", { name: "Published", exact: true })
+        .click();
+
+      await expect(
+        page.getByText("This cannot be changed afterwards."),
+      ).toBeVisible();
+      await expectAccessible(page);
+    });
+
+    test("the refusal alert of a move is accessible", async ({
+      page,
+      expectFailedLoads,
+    }) => {
+      expectFailedLoads(1);
+      await openSignedIn(page, `/admin/reports/${CODES.received}`);
+
+      await page
+        .getByRole("button", { name: "Reviewing", exact: true })
+        .click();
+
+      await expect(page.locator(PROBLEM)).toBeVisible();
+      await expectAccessible(page);
+    });
+
+    test("a report that is loading is accessible", async ({ page }) => {
+      await openSignedIn(page, "/admin");
+      const answer = gate();
+      await holdAnswers(page, REPORT_API, answer.passed);
+
+      await page.goto(`/admin/reports/${CODES.received}`);
+
+      await expect(page.locator("[aria-busy=true]")).toBeVisible();
+      await expectAccessible(page);
+      answer.open();
+    });
+
+    test("a report that failed to load is accessible", async ({
+      page,
+      expectFailedLoads,
+    }) => {
+      expectFailedLoads(1);
+      await openSignedIn(page, "/admin");
+      await failOnce(page, REPORT_API, 502, { error: "relayUnavailable" });
+
+      await page.goto(`/admin/reports/${CODES.received}`);
+
+      await expect(page.getByText("Could not load this report")).toBeVisible();
+      await expectAccessible(page);
+    });
+
+    test("a list that failed to load is accessible", async ({
+      page,
+      expectFailedLoads,
+    }) => {
+      expectFailedLoads(1);
+      await openSignedIn(page, "/admin");
+      await failOnce(page, REPORTS_API, 502, { error: "relayUnavailable" });
+
+      await page.goto("/admin/reports");
+
+      await expect(page.getByText("Could not load reports")).toBeVisible();
+      await expectAccessible(page);
+    });
   });
 }
