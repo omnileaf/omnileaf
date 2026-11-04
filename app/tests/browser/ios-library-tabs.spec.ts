@@ -73,4 +73,33 @@ test.describe("Library tabs on an iPhone", { tag: "@native" }, () => {
       page.getByRole("button", { name: /^The library opens on/ }),
     ).toContainText("Manga");
   });
+
+  test("sets a tab's name in 17px row type, its detail in 15px, and Hidden as a plain word", async ({
+    page,
+  }) => {
+    const row = page.getByRole("listitem").filter({ hasText: "Reading" });
+
+    await expect(row.getByText("Reading", { exact: true })).toHaveCSS(
+      "font-size",
+      "17px",
+    );
+    await expect(row.getByText(/^Category/)).toHaveCSS("font-size", "15px");
+    const hidden = page
+      .getByRole("listitem")
+      .filter({ hasText: "New chapters" })
+      .getByText("Hidden", { exact: true });
+    await expect(hidden).toHaveCSS("border-top-width", "0px");
+  });
+
+  test("draws the more button as a 34px circle with a 20px icon", async ({
+    page,
+  }) => {
+    const more = page.getByRole("button", { name: "More for Reading" });
+    const box = await boxOf(more);
+    const icon = await boxOf(more.locator("svg"));
+
+    expect(box.width).toBeCloseTo(34, 0);
+    expect(box.height).toBeCloseTo(34, 0);
+    expect(icon.width).toBeCloseTo(20, 0);
+  });
 });
