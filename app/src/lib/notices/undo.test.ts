@@ -333,3 +333,52 @@ test("never commits a change undone from its Undo button", async () => {
 
   expect(counts).toEqual({ undone: 1, committed: 0 });
 });
+
+async function offerUndoWithScreenReader(
+  isScreenReaderOn: boolean,
+  rules: UndoRules = NEW_UNDO_RULES,
+) {
+  const notices = new Notices(
+    () => rules,
+    undefined,
+    undefined,
+    () => Promise.resolve(isScreenReaderOn),
+  );
+  await render(Toasts, { notices, platform: "linux", theme: "light" });
+  notices.offerUndo({ title: REMOVED, undo: () => undefined });
+  const offer = page.getByRole("listitem").filter({ hasText: REMOVED });
+  await expect.element(offer).toBeVisible();
+  await Promise.resolve();
+  return { notices, offer };
+}
+
+test("keeps the offer while a screen reader is on", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { offer, notices } = await offerUndoWithScreenReader(true);
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS * 3);
+
+  await expect.element(offer).toHaveAttribute("data-removed", "false");
+  expect(notices.undoOffer).toBeDefined();
+});
+
+test("lets the offer lapse with a screen reader on when Undo does not wait for it", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { offer } = await offerUndoWithScreenReader(true, {
+    ...NEW_UNDO_RULES,
+    waitsForScreenReader: false,
+  });
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(offer).toHaveAttribute("data-removed", "true");
+});
+
+test("lets the offer lapse when no screen reader is on", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const { offer } = await offerUndoWithScreenReader(false);
+
+  vi.advanceTimersByTime(UNDO_WINDOW_MS);
+
+  await expect.element(offer).toHaveAttribute("data-removed", "true");
+});

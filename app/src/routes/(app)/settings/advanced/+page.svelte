@@ -118,6 +118,14 @@
         });
       }}
     />
+    <SettingSwitch
+      bleeds
+      label={m.advanced_wait_undo_screen_reader()}
+      isOn={undo.rules.waitsForScreenReader}
+      onToggle={() => {
+        undo.choose({ waitsForScreenReader: !undo.rules.waitsForScreenReader });
+      }}
+    />
   </section>
   <SettingSwitch
     bleeds
