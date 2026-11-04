@@ -39,14 +39,18 @@ Every request carries `Authorization: Bearer <ADMIN_RELAY_TOKEN>`. Status change
 
 ## Admin JSON API
 
-The pages' data is also served as JSON under `/admin/api/`. Every route needs the session cookie and answers `401` with `{"error":"signedOut"}` instead of redirecting to sign-in. Other failures are `{"error":"notFound"}` (404, also for an unknown path or a malformed code), `{"error":"methodNotAllowed"}` (405) and `{"error":"relayUnavailable"}` (502). Answers carry the same security headers as the pages, and a reply address is never requested or returned.
+The pages' data is also served as JSON under `/admin/api/`. Every route needs the session cookie and answers `401` with `{"error":"signedOut"}` instead of redirecting to sign-in. Other failures are `{"error":"notFound"}` (404, also for an unknown path or a malformed code), `{"error":"methodNotAllowed"}` (405), `{"error":"relayUnavailable"}` (502), and the ones the writes below add. Answers carry the same security headers as the pages, and a reply address is never requested or returned.
 
 - `GET /admin/api/session` returns `{login, csrf}`.
 - `GET /admin/api/reports` returns `{reports, truncated}`: the newest 500 reports, newest first, each `{code, receivedAt, status: {kind, issue?}, platform, version}`. `truncated` is true when the relay may hold more.
 - `GET /admin/api/reports/{code}` returns `{listed, report, audit}`. `report` is null once its text has been purged, and `audit` is newest first.
 - `GET /admin/api/reports/{code}/issue` returns `{result: "ready", body}` or `{result: "purged"}`.
+- `POST /admin/api/reports/{code}/status` moves a report. The body is `{status, issue?}` with `status` one of `reviewing`, `published`, `duplicate` or `closed`, and `published` and `duplicate` need a positive `issue` number. It answers `{result: "changed"}`.
+- `POST /admin/api/logout` clears the session cookie and answers `204`.
 
-The JSON files in `crates/omnileaf-admin/tests/fixtures/` pin these shapes.
+Both writes need the token from `GET /admin/api/session` in an `X-CSRF-Token` header, checked before anything else. A missing or wrong token is `403` `{"error":"csrfRejected"}`. A body that is not a move is `400` `{"error":"badRequest"}`, a move without its issue number is `400` `{"error":"issueRequired"}`, and a move the relay refuses is `409` `{"error":"refused","from":"<current status>"}`.
+
+The JSON files in `crates/omnileaf-admin/tests/fixtures/` pin the read shapes.
 
 ## Accessibility check
 
