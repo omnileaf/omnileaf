@@ -22,6 +22,7 @@ use axum::{
     routing::{get, post},
 };
 use omnileaf_admin::{AppState, Config, router};
+use omnileaf_testkit::ScratchFolder;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
@@ -431,6 +432,17 @@ impl Reply {
 
 impl Harness {
     pub(crate) async fn start(allowlist: &[&str]) -> Self {
+        Self::start_serving(allowlist, None).await
+    }
+
+    pub(crate) async fn start_serving(allowlist: &[&str], site: Option<&Site>) -> Self {
+        Self::try_start_serving(allowlist, site).await.unwrap()
+    }
+
+    pub(crate) async fn try_start_serving(
+        allowlist: &[&str],
+        site: Option<&Site>,
+    ) -> anyhow::Result<Self> {
         let github = FakeGitHub::start().await;
         let relay = FakeRelay::start().await;
         let config = Config {
@@ -443,18 +455,19 @@ impl Harness {
             relay_url: relay.url(),
             relay_token: RELAY_TOKEN.to_owned(),
             listen: "127.0.0.1:0".parse().unwrap(),
+            static_dir: site.map(|site| site.folder.path().to_path_buf()),
             github_api_url: github.url(),
             github_auth_url: github.url(),
         };
         let now = Arc::new(AtomicU64::new(START));
         let clock = Arc::clone(&now);
-        let state = AppState::new(&config, Arc::new(move || clock.load(Ordering::SeqCst))).unwrap();
-        Self {
+        let state = AppState::new(&config, Arc::new(move || clock.load(Ordering::SeqCst)))?;
+        Ok(Self {
             github,
             relay,
             now,
             app: router(state),
-        }
+        })
     }
 
     pub(crate) fn advance(&self, seconds: u64) {
@@ -573,4 +586,34 @@ pub(crate) async fn seeded() -> (Harness, String) {
     );
     let cookie = harness.sign_in("alice").await;
     (harness, cookie)
+}
+
+pub(crate) struct Site {
+    folder: ScratchFolder,
+}
+
+impl Site {
+    pub(crate) fn with(files: &[(&str, &str)]) -> Self {
+        let folder = ScratchFolder::new("ui");
+        for (path, contents) in files {
+            folder.write(path, contents.as_bytes());
+        }
+        Self { folder }
+    }
+
+    pub(crate) fn beside(&self, name: &str, contents: &str) {
+        let path = self.outside(name);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, contents).unwrap();
+    }
+
+    pub(crate) fn outside(&self, name: &str) -> std::path::PathBuf {
+        self.folder.path().parent().unwrap().join(name)
+    }
+
+    #[cfg(unix)]
+    pub(crate) fn link(&self, name: &str, target: &str) {
+        let parent = self.folder.path().parent().unwrap();
+        std::os::unix::fs::symlink(parent.join(target), self.folder.path().join(name)).unwrap();
+    }
 }

@@ -25,7 +25,14 @@ All settings are environment variables.
 | `ADMIN_RELAY_URL` | Base URL of the relay's private listener, such as `http://relay.test:9090`. |
 | `ADMIN_RELAY_TOKEN` | Bearer token the relay expects. |
 | `ADMIN_LISTEN` | Address to listen on, `0.0.0.0:8080` by default for `serve`. |
+| `ADMIN_STATIC_DIR` | Folder holding a built interface, with an `index.html`. Optional; the service refuses to start when it is set and unreadable. |
 | `ADMIN_GITHUB_API_URL`, `ADMIN_GITHUB_AUTH_URL` | GitHub's API and sign-in hosts, which tests point at a fake. |
+
+## Serving the interface
+
+When `ADMIN_STATIC_DIR` is set, its files are read into memory at start and served under `/admin/` to signed-in visitors only; anyone else is sent to sign-in, so no file is public. Files are matched by exact name, links are skipped, and a file or folder name with any character other than ASCII letters, digits and `-._~!$&'()*+,;=:@[]` stops the service from starting, so nothing outside the folder can be read and no file is silently unreachable. On any path that is neither a page nor an API route of this service, only `GET` and `HEAD` are answered. A path without a file extension that is not a file or a page of this service answers `index.html`, so the app can route it; a missing file with an extension is a `404`. Files under `_app/immutable/` are cached for a year with `private, immutable`; everything else, including every page and API answer, is `no-store`.
+
+Every answer carries `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'`, so scripts, styles, fonts, requests and the manifest may only come from this origin, images from this origin or `data:`, and nothing inline runs.
 
 ## Relay admin API
 

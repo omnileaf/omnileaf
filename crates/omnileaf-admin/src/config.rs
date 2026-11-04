@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, path::PathBuf};
 
 use clap::Parser;
 
@@ -31,6 +31,9 @@ pub struct Config {
     pub relay_token: String,
     #[arg(long, env = "ADMIN_LISTEN", default_value = "0.0.0.0:8080")]
     pub listen: SocketAddr,
+    /// The built interface to serve to signed-in visitors; nothing is served when it is not set.
+    #[arg(long, env = "ADMIN_STATIC_DIR")]
+    pub static_dir: Option<PathBuf>,
     #[arg(
         long,
         env = "ADMIN_GITHUB_API_URL",
