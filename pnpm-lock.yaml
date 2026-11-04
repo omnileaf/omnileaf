@@ -168,6 +168,9 @@ importers:
 
   admin-ui:
     dependencies:
+      '@lucide/svelte':
+        specifier: 1.64.0
+        version: 1.64.0(svelte@5.57.3(@typescript-eslint/types@8.72.1))
       cn:
         specifier: 0.5.0
         version: 0.5.0
