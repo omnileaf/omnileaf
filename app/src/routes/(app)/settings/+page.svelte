@@ -116,6 +116,10 @@
   >
     {m.settings_title()}
   </div>
+  <div
+    aria-hidden="true"
+    class="hidden block-native-target ios:max-medium:block"
+  ></div>
   <PageHeading title={m.settings_title()} />
   <PageNoticeSlot />
   <div class="mbs-lg flex flex-col gap-xl">
