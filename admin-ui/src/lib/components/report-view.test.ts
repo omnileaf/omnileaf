@@ -121,3 +121,61 @@ test("announces a failed load in an alert with a retry button", () => {
   );
   expect(markup).not.toContain("<dl");
 });
+
+test("shows the report text and then the audit trail under the facts", () => {
+  const markup = view({
+    kind: "ready",
+    detail: detail({ report: "Scan stops at 40%" }),
+  });
+
+  expect(markup).toContain("Scan stops at 40%");
+  expect(markup.indexOf("</dl>")).toBeLessThan(markup.indexOf("<pre"));
+  expect(markup.indexOf("<pre")).toBeLessThan(markup.indexOf("Audit trail"));
+});
+
+test("says the text was purged when the service no longer holds it", () => {
+  const markup = view({ kind: "ready", detail: detail({ report: null }) });
+
+  expect(markup).toContain(copy.report.text.purged);
+  expect(markup).toContain("Audit trail");
+});
+
+test("passes the audit entries on newest first as they arrive", () => {
+  const markup = view({
+    kind: "ready",
+    detail: detail({
+      audit: [
+        {
+          previous: "reviewing",
+          status: { kind: "published", issue: 412 },
+          actor: "reviewer",
+          at: MOMENT + 60,
+        },
+        {
+          previous: "received",
+          status: { kind: "reviewing" },
+          actor: "second-reviewer",
+          at: MOMENT,
+        },
+      ],
+    }),
+  });
+
+  expect(markup.indexOf("Reviewing to Published")).toBeLessThan(
+    markup.indexOf("Received to Reviewing"),
+  );
+});
+
+test.each([
+  { kind: "loading" },
+  { kind: "notFound" },
+  { kind: "failed", message: copy.errors.timeout },
+] as const)(
+  "shows neither text nor audit trail while the report is $kind",
+  (load) => {
+    const markup = view(load);
+
+    expect(markup).not.toMatch(/<h2\b[^>]*>\s*Report\s*<\/h2>/);
+    expect(markup).not.toContain(copy.audit.title);
+  },
+);

@@ -82,6 +82,19 @@ export const copy = {
       version: "Version",
       received: "Received",
     },
+    text: {
+      title: "Report",
+      hint: "Shown as plain text, exactly as it was sent.",
+      purged: "The text of this report has been purged.",
+    },
+  },
+  audit: {
+    title: "Audit trail",
+    hint: "Status changes, newest first.",
+    none: "No status changes yet.",
+    columns: { when: "When", who: "Who", change: "Change" },
+    changed: "{previous} to {status}",
+    changedWithIssue: "{previous} to {status}, issue #{issue}",
   },
   dashboard: {
     subtitle: `Counts cover the newest ${String(LIST_LIMIT)} reports.`,
