@@ -38,6 +38,7 @@ mod report_sending;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
+mod screen_reader;
 mod share_sign_in;
 mod storage;
 mod system_app_language;

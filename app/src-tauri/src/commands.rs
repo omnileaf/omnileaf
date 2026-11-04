@@ -45,6 +45,7 @@ use crate::{
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
+    screen_reader,
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
     system_app_language::{self, SystemAppLanguage},
@@ -201,6 +202,7 @@ macro_rules! app_commands {
             watch_icon_actions,
             open_system_settings,
             open_colour_settings,
+            screen_reader_is_running,
             comic_files_default_viewer,
             make_omnileaf_the_comic_viewer,
             $($development_only),*
@@ -1529,6 +1531,12 @@ async fn make_omnileaf_the_comic_viewer(app: AppHandle) -> Result<(), IpcError> 
     default_viewer::make_default(&app)
         .await
         .map_err(|error| IpcError::default_viewer_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn screen_reader_is_running() -> bool {
+    screen_reader::is_running().await
 }
 
 #[tauri::command]
