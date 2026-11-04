@@ -121,11 +121,34 @@ pub(crate) async fn is_running() -> bool {
     omnileaf_windows_probes::screen_reader_is_running()
 }
 
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(target_os = "macos")]
+#[expect(clippy::unused_async, reason = "AppKit answers at once")]
+pub(crate) async fn is_running() -> bool {
+    objc2_app_kit::NSWorkspace::sharedWorkspace().isVoiceOverEnabled()
+}
+
+#[cfg(target_os = "ios")]
+#[expect(clippy::unused_async, reason = "UIKit answers at once")]
+pub(crate) async fn is_running() -> bool {
+    objc2_ui_kit::UIAccessibilityIsVoiceOverRunning()
+}
+
+#[cfg(not(any(target_os = "linux", windows, target_os = "macos", target_os = "ios")))]
 #[expect(
     clippy::unused_async,
-    reason = "macOS, iOS and Android do not report a screen reader to Rust yet"
+    reason = "Android does not report a screen reader to Rust yet"
 )]
 pub(crate) async fn is_running() -> bool {
     false
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod macos_tests {
+    #[test]
+    fn asks_the_workspace_whether_voiceover_is_on() {
+        let asked = tauri::async_runtime::block_on(super::is_running());
+        let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace().isVoiceOverEnabled();
+
+        assert_eq!(asked, workspace);
+    }
 }
