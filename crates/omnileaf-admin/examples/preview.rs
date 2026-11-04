@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     net::SocketAddr,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -8,7 +7,7 @@ use std::{
 use anyhow::Context;
 use axum::{
     Json, Router,
-    extract::{Path, Query},
+    extract::Path,
     http::StatusCode,
     routing::{get, post},
 };
@@ -110,13 +109,8 @@ fn sample_for(code: &str) -> Option<&'static Sample> {
     SAMPLES.iter().find(|sample| sample.code == code)
 }
 
-async fn relay_list(Query(query): Query<HashMap<String, String>>) -> Json<Value> {
-    let kept = SAMPLES
-        .iter()
-        .filter(|sample| query.get("status").is_none_or(|kind| sample.status == kind))
-        .map(listed)
-        .collect();
-    Json(Value::Array(kept))
+async fn relay_list() -> Json<Value> {
+    Json(Value::Array(SAMPLES.iter().map(listed).collect()))
 }
 
 async fn relay_detail(Path(code): Path<String>) -> (StatusCode, Json<Value>) {
