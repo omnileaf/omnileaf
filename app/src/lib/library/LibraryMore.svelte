@@ -22,7 +22,11 @@
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { IosPhone } from "./ios-phone.svelte.ts";
+
   const ICON_SIZE = 20;
+  const IOS_BAR_ICON_SIZE = 22;
+  const ios = new IosPhone();
   const ITEM_ICON_SIZE = 16;
 
   interface FoldedChoices {
@@ -59,7 +63,10 @@
             aria-label={m.library_more()}
             class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target ios:medium:block-native-target ios:medium:inline-native-target desktop-shell:hidden"
           >
-            <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+            <Ellipsis
+              size={ios.isOn ? IOS_BAR_ICON_SIZE : ICON_SIZE}
+              aria-hidden="true"
+            />
           </Button>
         {/snippet}
       </Tooltip>
