@@ -217,6 +217,7 @@ export const commands = {
 	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
 	openColourSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_colour_settings")),
+	screenReaderIsRunning: () => __TAURI_INVOKE<boolean>("screen_reader_is_running"),
 	comicFilesDefaultViewer: () => typedError<DefaultViewer, IpcError>(__TAURI_INVOKE("comic_files_default_viewer")),
 	makeOmnileafTheComicViewer: () => typedError<null, IpcError>(__TAURI_INVOKE("make_omnileaf_the_comic_viewer")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
