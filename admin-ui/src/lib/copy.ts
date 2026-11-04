@@ -1,4 +1,4 @@
-import type { StatusKind } from "#lib/wire.ts";
+import { LIST_LIMIT, type StatusKind } from "#lib/wire.ts";
 
 export const copy = {
   appName: "Omnileaf reports",
@@ -11,6 +11,7 @@ export const copy = {
     duplicate: "Duplicate",
     closed: "Closed",
   } satisfies Record<StatusKind, string>,
+  statusWithIssue: "{status} #{issue}",
   shell: {
     skipLink: "Skip to the content",
     mainNav: "Main",
@@ -37,6 +38,32 @@ export const copy = {
     platform: "Platform",
     version: "Version",
     received: "Received",
+  },
+  reports: {
+    loadFailed: "Could not load reports",
+    none: "No reports yet",
+    noneHint: "Problem reports sent from the app appear here.",
+    loading: "Loading reports",
+  },
+  dashboard: {
+    subtitle: `Counts cover the newest ${String(LIST_LIMIT)} reports.`,
+    phoneSubtitle: `Reports from the newest ${String(LIST_LIMIT)}.`,
+    statusNotes: {
+      received: "Waiting for review",
+      reviewing: "In progress",
+      published: "Issue opened",
+      duplicate: "Matches an issue",
+      closed: "No action",
+    } satisfies Record<StatusKind, string>,
+    byPlatform: "By platform",
+    byPlatformHint: `Reports in the newest ${String(LIST_LIMIT)}.`,
+    byVersion: "By version",
+    byVersionHint: "App version that sent the report.",
+    needsReview: "Waiting longest",
+    needsReviewHint: "Received reports with no review yet, oldest first.",
+    nothingToReview: "Nothing is waiting for review.",
+    viewAll: "View all reports",
+    truncated: `Showing the newest ${String(LIST_LIMIT)} reports; older ones are not counted.`,
   },
   errors: {
     relayUnavailable:
