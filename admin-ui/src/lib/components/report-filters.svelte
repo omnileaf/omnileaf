@@ -20,7 +20,7 @@
     filter: ReportFilter;
     options: FilterOptions;
     onChange: (next: ReportFilter) => void;
-    onClear?: () => void;
+    onClear?: (() => void) | undefined;
   } = $props();
 
   const statusChoices = STATUS_KINDS.map((kind) => ({
