@@ -206,6 +206,12 @@ impl FakeRelay {
         }
     }
 
+    pub(crate) fn purge_report_text(&self, code: &str) {
+        if let Some(detail) = self.state.details.lock().unwrap().get_mut(code) {
+            detail["report"] = Value::Null;
+        }
+    }
+
     pub(crate) fn reject_everything(&self) {
         self.state.reject_everything.store(true, Ordering::SeqCst);
     }

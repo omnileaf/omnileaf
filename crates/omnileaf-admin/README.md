@@ -39,10 +39,12 @@ Every request carries `Authorization: Bearer <ADMIN_RELAY_TOKEN>`. Status change
 
 ## Admin JSON API
 
-The pages' data is also served as JSON under `/admin/api/`. Every route needs the session cookie and answers `401` with `{"error":"signedOut"}` instead of redirecting to sign-in. Other failures are `{"error":"notFound"}` (404, also for an unknown path), `{"error":"methodNotAllowed"}` (405) and `{"error":"relayUnavailable"}` (502). Answers carry the same security headers as the pages, and a reply address is never requested or returned.
+The pages' data is also served as JSON under `/admin/api/`. Every route needs the session cookie and answers `401` with `{"error":"signedOut"}` instead of redirecting to sign-in. Other failures are `{"error":"notFound"}` (404, also for an unknown path or a malformed code), `{"error":"methodNotAllowed"}` (405) and `{"error":"relayUnavailable"}` (502). Answers carry the same security headers as the pages, and a reply address is never requested or returned.
 
 - `GET /admin/api/session` returns `{login, csrf}`.
 - `GET /admin/api/reports` returns `{reports, truncated}`: the newest 500 reports, newest first, each `{code, receivedAt, status: {kind, issue?}, platform, version}`. `truncated` is true when the relay may hold more.
+- `GET /admin/api/reports/{code}` returns `{listed, report, audit}`. `report` is null once its text has been purged, and `audit` is newest first.
+- `GET /admin/api/reports/{code}/issue` returns `{result: "ready", body}` or `{result: "purged"}`.
 
 The JSON files in `crates/omnileaf-admin/tests/fixtures/` pin these shapes.
 

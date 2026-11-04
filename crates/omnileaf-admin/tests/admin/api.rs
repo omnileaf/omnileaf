@@ -7,7 +7,7 @@
 use axum::http::{StatusCode, header};
 use serde_json::{Value, json};
 
-use super::support::{Harness, Reply, csrf_in, seeded};
+use super::support::{FIRST, Harness, Reply, SECOND, csrf_in, seeded};
 
 const LEAKED_ADDRESS: &str = "leaked-reporter@example.test";
 const SESSION_SECONDS: u64 = 8 * 60 * 60;
@@ -17,15 +17,42 @@ fn json_of(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
 }
 
-fn all_routes() -> [&'static str; 2] {
-    ["/admin/api/session", "/admin/api/reports"]
+async fn seeded_with_audit() -> (Harness, String) {
+    let (harness, cookie) = seeded().await;
+    harness.relay.set_audit(
+        SECOND,
+        json!([
+            {
+                "previous": "reviewing",
+                "status": { "kind": "published", "issue": 42 },
+                "actor": "alice",
+                "at": 1_700_000_350,
+            },
+            {
+                "previous": "received",
+                "status": { "kind": "reviewing" },
+                "actor": "bob",
+                "at": 1_700_000_320,
+            },
+        ]),
+    );
+    (harness, cookie)
+}
+
+fn all_routes() -> [String; 4] {
+    [
+        "/admin/api/session".to_owned(),
+        "/admin/api/reports".to_owned(),
+        format!("/admin/api/reports/{SECOND}"),
+        format!("/admin/api/reports/{SECOND}/issue"),
+    ]
 }
 
 #[tokio::test]
 async fn a_visitor_without_a_session_gets_a_401_not_a_redirect() {
     let (harness, _) = seeded().await;
     for path in all_routes() {
-        let reply = harness.get(path, None).await;
+        let reply = harness.get(&path, None).await;
         assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{path}");
         assert_eq!(
             json_of(&reply.body),
@@ -60,7 +87,7 @@ async fn an_expired_session_is_a_401_and_never_reaches_the_relay() {
     let (harness, cookie) = seeded().await;
     harness.advance(SESSION_SECONDS);
     for path in all_routes() {
-        let reply = harness.get(path, Some(&cookie)).await;
+        let reply = harness.get(&path, Some(&cookie)).await;
         assert_eq!(reply.status, StatusCode::UNAUTHORIZED, "{path}");
     }
     assert!(harness.relay.requests().is_empty());
@@ -142,11 +169,37 @@ async fn a_list_at_the_limit_may_hold_more() {
 }
 
 #[tokio::test]
+async fn a_report_comes_with_its_text_and_audit_trail() {
+    let (harness, cookie) = seeded_with_audit().await;
+    let reply = harness
+        .get(&format!("/admin/api/reports/{SECOND}"), Some(&cookie))
+        .await;
+    assert_eq!(reply.status, StatusCode::OK);
+    assert_eq!(
+        json_of(&reply.body),
+        json_of(include_str!("../fixtures/report.json"))
+    );
+}
+
+#[tokio::test]
+async fn a_report_whose_text_was_purged_has_no_text() {
+    let (harness, cookie) = seeded_with_audit().await;
+    harness.relay.purge_report_text(SECOND);
+    let reply = harness
+        .get(&format!("/admin/api/reports/{SECOND}"), Some(&cookie))
+        .await;
+    assert_eq!(
+        json_of(&reply.body),
+        json_of(include_str!("../fixtures/report-purged.json"))
+    );
+}
+
+#[tokio::test]
 async fn the_reply_address_is_never_asked_for_and_never_returned() {
     let (harness, cookie) = seeded().await;
     harness.relay.leak_reply_address();
     for path in all_routes() {
-        let reply = harness.get(path, Some(&cookie)).await;
+        let reply = harness.get(&path, Some(&cookie)).await;
         assert!(!reply.body.contains(LEAKED_ADDRESS), "{path}");
         assert!(
             !reply.body.to_lowercase().contains("replyaddress"),
@@ -156,6 +209,36 @@ async fn the_reply_address_is_never_asked_for_and_never_returned() {
     for seen in harness.relay.requests() {
         assert!(!seen.query.contains_key("replyAddress"), "{}", seen.path);
     }
+}
+
+#[tokio::test]
+async fn an_unknown_report_is_a_404() {
+    let (harness, cookie) = seeded().await;
+    let reply = harness
+        .get("/admin/api/reports/R-9999-9999", Some(&cookie))
+        .await;
+    assert_eq!(reply.status, StatusCode::NOT_FOUND);
+    assert_eq!(json_of(&reply.body), json!({ "error": "notFound" }));
+}
+
+#[tokio::test]
+async fn a_malformed_code_is_a_json_404_that_never_reaches_the_relay() {
+    let (harness, cookie) = seeded().await;
+    for code in ["..%2Fsecrets", "%FF", "r-2222-2222", "R-2222-2222%0A"] {
+        for path in [
+            format!("/admin/api/reports/{code}"),
+            format!("/admin/api/reports/{code}/issue"),
+        ] {
+            let reply = harness.get(&path, Some(&cookie)).await;
+            assert_eq!(reply.status, StatusCode::NOT_FOUND, "{path}");
+            assert_eq!(
+                json_of(&reply.body),
+                json!({ "error": "notFound" }),
+                "{path}"
+            );
+        }
+    }
+    assert!(harness.relay.requests().is_empty());
 }
 
 #[tokio::test]
@@ -197,6 +280,51 @@ async fn a_relay_that_refuses_is_a_502() {
     }
 }
 
+#[tokio::test]
+async fn the_public_issue_text_is_what_the_relay_exports() {
+    let (harness, cookie) = seeded().await;
+    harness.relay.answer_export_with(json!({
+        "result": "ready",
+        "body": "**Report R-2222-2222**\n\nFull text of R-2222-2222",
+    }));
+    let reply = harness
+        .get(&format!("/admin/api/reports/{SECOND}/issue"), Some(&cookie))
+        .await;
+    assert_eq!(reply.status, StatusCode::OK);
+    assert_eq!(
+        json_of(&reply.body),
+        json_of(include_str!("../fixtures/issue.json"))
+    );
+}
+
+#[tokio::test]
+async fn a_purged_report_has_no_issue_text() {
+    let (harness, cookie) = seeded().await;
+    harness
+        .relay
+        .answer_export_with(json!({ "result": "purged" }));
+    let reply = harness
+        .get(&format!("/admin/api/reports/{SECOND}/issue"), Some(&cookie))
+        .await;
+    assert_eq!(reply.status, StatusCode::OK);
+    assert_eq!(
+        json_of(&reply.body),
+        json_of(include_str!("../fixtures/issue-purged.json"))
+    );
+}
+
+#[tokio::test]
+async fn an_export_the_relay_does_not_know_is_a_404() {
+    let (harness, cookie) = seeded().await;
+    harness
+        .relay
+        .answer_export_with(json!({ "result": "notFound" }));
+    let reply = harness
+        .get(&format!("/admin/api/reports/{FIRST}/issue"), Some(&cookie))
+        .await;
+    assert_eq!(reply.status, StatusCode::NOT_FOUND);
+}
+
 fn assert_json_and_hardened(reply: &Reply, label: &str) {
     assert_eq!(
         reply.headers[header::CONTENT_TYPE],
@@ -226,8 +354,8 @@ async fn every_answer_is_json_and_carries_the_hardening_headers() {
     let (harness, cookie) = seeded().await;
     for session in [None, Some(cookie.as_str())] {
         for path in all_routes() {
-            let reply = harness.get(path, session).await;
-            assert_json_and_hardened(&reply, path);
+            let reply = harness.get(&path, session).await;
+            assert_json_and_hardened(&reply, &path);
         }
     }
     let unknown = harness.get("/admin/api/nope", Some(&cookie)).await;
