@@ -345,3 +345,189 @@ async fn a_link_with_an_odd_name_is_skipped_not_fatal() {
     let reply = harness.get("/admin/robots.txt", Some(&cookie)).await;
     assert_eq!(reply.status, StatusCode::OK);
 }
+
+const BOOTSTRAP: &str = "\n\t{\n\t\t__sveltekit_1ceqy1n = {\n\t\t\tbase: \"/admin\"\n\t\t};\n\t}\n";
+const BOOTSTRAP_HASH: &str = "'sha256-Vb4kpYXuCcWK4QAkbi10xn4/OtofkhWR0eksrmhrTYk='";
+const SECOND_SCRIPT: &str = "window.second = 1;";
+const SECOND_HASH: &str = "'sha256-QjrPuZ0w9ba9oGvN7XsqsGQqJou7P5N6cPhn5S1CtkI='";
+const PLAIN_SCRIPTS: &str = "script-src 'self';";
+
+fn shell_with(scripts: &str) -> String {
+    format!("<!doctype html><link rel=\"modulepreload\" href=\"/admin/a.js\">{scripts}")
+}
+
+async fn policy_of(harness: &Harness, cookie: &str, path: &str) -> String {
+    let reply = harness.get(path, Some(cookie)).await;
+    reply
+        .headers
+        .get(header::CONTENT_SECURITY_POLICY)
+        .and_then(|policy| policy.to_str().ok())
+        .map(str::to_owned)
+        .unwrap_or_default()
+}
+
+#[tokio::test]
+async fn the_shell_allows_its_own_inline_script_by_hash_and_nothing_else_does() {
+    let shell = shell_with(&format!("<script>{BOOTSTRAP}</script>"));
+    let site = Site::with(&[("index.html", &shell), ("app.js", SCRIPT)]);
+    let (harness, cookie) = serving(&site).await;
+    for path in ["/admin/index.html", "/admin/dashboard"] {
+        let policy = policy_of(&harness, &cookie, path).await;
+        assert!(
+            policy.contains(&format!("script-src 'self' {BOOTSTRAP_HASH};")),
+            "{path}: {policy}"
+        );
+        assert!(!policy.contains("unsafe-inline"), "{path}: {policy}");
+    }
+    for path in ["/admin/app.js", "/admin/api/session", "/admin/health"] {
+        let policy = policy_of(&harness, &cookie, path).await;
+        assert!(policy.contains(PLAIN_SCRIPTS), "{path}: {policy}");
+        assert!(!policy.contains("sha256"), "{path}: {policy}");
+    }
+}
+
+#[tokio::test]
+async fn every_inline_script_of_the_shell_is_allowed_by_its_own_hash() {
+    let shell = shell_with(&format!(
+        "<script>{BOOTSTRAP}</script><script type=\"module\">{SECOND_SCRIPT}</script>"
+    ));
+    let site = Site::with(&[("index.html", &shell)]);
+    let (harness, cookie) = serving(&site).await;
+    let policy = policy_of(&harness, &cookie, "/admin/dashboard").await;
+    assert!(
+        policy.contains(&format!(
+            "script-src 'self' {BOOTSTRAP_HASH} {SECOND_HASH};"
+        )),
+        "{policy}"
+    );
+}
+
+#[tokio::test]
+async fn scripts_loaded_from_files_add_nothing_to_the_policy() {
+    let shell =
+        shell_with("<script src=\"/admin/a.js\"></script><SCRIPT SRC=\"/admin/b.js\"></SCRIPT>");
+    let site = Site::with(&[("index.html", &shell)]);
+    let (harness, cookie) = serving(&site).await;
+    let policy = policy_of(&harness, &cookie, "/admin/dashboard").await;
+    assert!(policy.contains(PLAIN_SCRIPTS), "{policy}");
+}
+
+#[tokio::test]
+async fn a_script_the_shell_never_closes_stops_start_up() {
+    let shell = shell_with("<script>window.open = 1;");
+    let site = Site::with(&[("index.html", &shell)]);
+    let error = start_up_error(&site).await;
+    assert!(error.contains("never closed"), "{error}");
+}
+
+const HASH_A: &str = "'sha256-VZrq0IJk1XldOQlxjN0Fq9SVcuhP5VWQ7vMaiKCP3/0='";
+const HASH_B: &str = "'sha256-335w5QIVRPSDS77mSp43if68S+gUcN9inK1t2wMyClw='";
+const HASH_EMPTY: &str = "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='";
+const HASH_CLOSE_LOOKALIKE: &str = "'sha256-fA/03Xivgxz3JeSrY09BZsaaD3+84nNkv947qO8cVas='";
+const HASH_NEWLINE_A_NEWLINE: &str = "'sha256-Fl39cvTP4NSkqxnLrlh5xHA7xKric1ocrbVdTFaDVSM='";
+
+#[tokio::test]
+async fn the_scanner_hashes_what_a_browser_would_run_and_nothing_else() {
+    let cases: [(&str, &str, String); 14] = [
+        ("an upper case tag", "<SCRIPT>A</SCRIPT>", HASH_A.to_owned()),
+        (
+            "an empty script",
+            "<script></script>",
+            HASH_EMPTY.to_owned(),
+        ),
+        (
+            "a data-src attribute is not a src",
+            "<script data-src=\"x\">A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a script and its look-alikes",
+            "<scripts>x</scripts><script-x>y</script-x><script>A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a commented out script",
+            "<!-- <script>x</script> --><script>A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a space in the end tag",
+            "<script>A</script ><script>B</script>",
+            format!("{HASH_A} {HASH_B}"),
+        ),
+        (
+            "a greater than sign inside an attribute",
+            "<script data-x=\"a>b\">A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a close tag look-alike inside a script",
+            "<script>a</scriptx>b</script>",
+            HASH_CLOSE_LOOKALIKE.to_owned(),
+        ),
+        (
+            "a single quoted attribute with a greater than sign",
+            "<script data-x='a>b'>A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a double quote inside a single quoted attribute",
+            "<script data-x='a\"b>c'>A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "a slash after the tag name",
+            "<script/ data-x=1>A</script>",
+            HASH_A.to_owned(),
+        ),
+        (
+            "carriage returns become line feeds",
+            "<script>\r\nA\r\n</script>",
+            HASH_NEWLINE_A_NEWLINE.to_owned(),
+        ),
+        (
+            "a lone carriage return",
+            "<script>\rA\r</script>",
+            HASH_NEWLINE_A_NEWLINE.to_owned(),
+        ),
+        (
+            "a script loaded from a file next to an inline one",
+            "<script src=\"/admin/a.js\"></script><script>A</script>",
+            HASH_A.to_owned(),
+        ),
+    ];
+    for (name, scripts, expected) in cases {
+        let shell = shell_with(scripts);
+        let site = Site::with(&[("index.html", &shell), ("other.html", &shell)]);
+        let (harness, cookie) = serving(&site).await;
+        let policy = policy_of(&harness, &cookie, "/admin/dashboard").await;
+        assert!(
+            policy.contains(&format!("script-src 'self' {expected};")),
+            "{name}: {policy}"
+        );
+        let other = policy_of(&harness, &cookie, "/admin/other.html").await;
+        assert!(other.contains(PLAIN_SCRIPTS), "{name}: {other}");
+    }
+}
+
+#[tokio::test]
+async fn a_shell_that_is_not_text_stops_start_up() {
+    let site = Site::with(&[("index.html", SHELL)]);
+    site.put("index.html", &[0xff, 0xfe, 0x3c]);
+    let error = start_up_error(&site).await;
+    assert!(error.contains("is not text"), "{error}");
+}
+
+#[tokio::test]
+async fn a_script_tag_the_shell_never_ends_stops_start_up() {
+    let site = Site::with(&[("index.html", "<script src=\"/admin/a.js\"")]);
+    let error = start_up_error(&site).await;
+    assert!(error.contains("never ends"), "{error}");
+}
+
+#[tokio::test]
+async fn a_comment_the_shell_never_closes_stops_start_up() {
+    let site = Site::with(&[("index.html", "<!-- <script>A</script>")]);
+    let error = start_up_error(&site).await;
+    assert!(error.contains("comment is never closed"), "{error}");
+}

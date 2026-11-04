@@ -68,12 +68,27 @@ pub(crate) fn hardened(mut response: Response) -> Response {
         (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
         (header::REFERRER_POLICY, "no-referrer"),
         (header::X_FRAME_OPTIONS, "DENY"),
-        (header::CONTENT_SECURITY_POLICY, POLICY),
     ] {
         headers.insert(name, header::HeaderValue::from_static(value));
     }
     headers
         .entry(header::CACHE_CONTROL)
         .or_insert(header::HeaderValue::from_static(NO_STORE));
+    headers
+        .entry(header::CONTENT_SECURITY_POLICY)
+        .or_insert(header::HeaderValue::from_static(POLICY));
     response
+}
+
+pub(crate) fn policy_allowing_scripts(digests: &[String]) -> anyhow::Result<header::HeaderValue> {
+    let sources = digests
+        .iter()
+        .map(|digest| format!("'sha256-{digest}'"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    Ok(header::HeaderValue::from_str(&POLICY.replacen(
+        "script-src 'self'",
+        &format!("script-src 'self' {sources}"),
+        1,
+    ))?)
 }
