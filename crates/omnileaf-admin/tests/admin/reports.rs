@@ -1,38 +1,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use super::support::Harness;
-
-const FIRST: &str = "R-1111-1111";
-const SECOND: &str = "R-2222-2222";
-const THIRD: &str = "R-3333-3333";
-
-async fn seeded() -> (Harness, String) {
-    let harness = Harness::start(&["alice"]).await;
-    harness.relay.add_report(
-        FIRST,
-        1_700_000_100,
-        &json!({ "kind": "received" }),
-        "android",
-        "1.2.0",
-    );
-    harness.relay.add_report(
-        SECOND,
-        1_700_000_300,
-        &json!({ "kind": "published", "issue": 42 }),
-        "linux",
-        "1.3.0",
-    );
-    harness.relay.add_report(
-        THIRD,
-        1_700_000_200,
-        &json!({ "kind": "received" }),
-        "linux",
-        "1.2.0",
-    );
-    let cookie = harness.sign_in("alice").await;
-    (harness, cookie)
-}
+use super::support::{FIRST, Harness, SECOND, THIRD, seeded};
 
 fn position(body: &str, needle: &str) -> usize {
     body.find(needle).unwrap_or(usize::MAX)

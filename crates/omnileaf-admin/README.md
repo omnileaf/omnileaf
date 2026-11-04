@@ -37,6 +37,15 @@ Every request carries `Authorization: Bearer <ADMIN_RELAY_TOKEN>`. Status change
 - `GET /admin/v1/reports/{code}/export` returns `{result: ready|notFound|purged, body?: string}`.
 - `GET /admin/v1/reports/{code}/audit` returns an array, newest first, of `{previous, status: {kind, issue?}, actor, at}`.
 
+## Admin JSON API
+
+The pages' data is also served as JSON under `/admin/api/`. Every route needs the session cookie and answers `401` with `{"error":"signedOut"}` instead of redirecting to sign-in. Other failures are `{"error":"notFound"}` (404, also for an unknown path), `{"error":"methodNotAllowed"}` (405) and `{"error":"relayUnavailable"}` (502). Answers carry the same security headers as the pages, and a reply address is never requested or returned.
+
+- `GET /admin/api/session` returns `{login, csrf}`.
+- `GET /admin/api/reports` returns `{reports, truncated}`: the newest 500 reports, newest first, each `{code, receivedAt, status: {kind, issue?}, platform, version}`. `truncated` is true when the relay may hold more.
+
+The JSON files in `crates/omnileaf-admin/tests/fixtures/` pin these shapes.
+
 ## Accessibility check
 
 `cargo run -p omnileaf-admin --example preview -- 127.0.0.1:4180` serves the real pages against a built-in fake relay and fake GitHub with sample reports. Signing in as `reviewer` is allowed and any other login gets the 403 page. The fake relay refuses every status change and always returns a reply address, so a page that showed it would be caught. `pnpm --dir app test:admin` starts that example and runs axe, overflow, target size, focus outline and reply address checks on every page in light and dark at 360 and 1280 pixels wide. The example is not built into the image.
