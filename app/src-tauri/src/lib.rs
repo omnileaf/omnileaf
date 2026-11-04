@@ -2,6 +2,7 @@ mod back_navigation;
 mod back_swipe;
 mod commands;
 mod crash_reporting;
+mod default_viewer;
 mod document_handover;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;

@@ -217,6 +217,8 @@ export const commands = {
 	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
 	openColourSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_colour_settings")),
+	comicFilesDefaultViewer: () => typedError<DefaultViewer, IpcError>(__TAURI_INVOKE("comic_files_default_viewer")),
+	makeOmnileafTheComicViewer: () => typedError<null, IpcError>(__TAURI_INVOKE("make_omnileaf_the_comic_viewer")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -385,6 +387,8 @@ export type CreatorSeries = {
 };
 
 export type DamageCause = "archiveEndsEarly";
+
+export type DefaultViewer = "omnileaf" | "somethingElse";
 
 /**  The details to keep over a series' files; an absent field goes back to the file's. */
 export type DetailEdits = {
@@ -572,7 +576,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],

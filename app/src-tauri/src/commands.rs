@@ -29,6 +29,7 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    default_viewer::{self, DefaultViewer},
     document_handover,
     file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
@@ -200,6 +201,8 @@ macro_rules! app_commands {
             watch_icon_actions,
             open_system_settings,
             open_colour_settings,
+            comic_files_default_viewer,
+            make_omnileaf_the_comic_viewer,
             $($development_only),*
         ]
     };
@@ -1510,6 +1513,22 @@ async fn watch_icon_actions(
 #[specta::specta]
 async fn open_system_settings(app: AppHandle) -> Result<(), IpcError> {
     system_settings::open(&app).map_err(|error| IpcError::system_settings_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn comic_files_default_viewer() -> Result<DefaultViewer, IpcError> {
+    default_viewer::current()
+        .await
+        .map_err(|error| IpcError::default_viewer_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn make_omnileaf_the_comic_viewer(app: AppHandle) -> Result<(), IpcError> {
+    default_viewer::make_default(&app)
+        .await
+        .map_err(|error| IpcError::default_viewer_unavailable(&error))
 }
 
 #[tauri::command]
