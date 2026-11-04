@@ -105,3 +105,26 @@ test("writes no rows for no reports", () => {
 test("never emits an inline style", () => {
   expect(rows()).not.toMatch(/\sstyle=/);
 });
+
+test("shows the status of each report as a badge in both layouts when asked", () => {
+  const markup = html(ReportRows, {
+    reports: [FIRST, SECOND],
+    columns: ["status", ...COLUMNS],
+  });
+  const headers = [
+    ...markup.matchAll(/<th\b[^>]*scope="col"[^>]*>(.*?)<\/th>/gs),
+  ];
+
+  expect(headers.map(([, text]) => withoutMarkers(text ?? ""))).toEqual([
+    "Code",
+    "Status",
+    "Platform",
+    "Version",
+    "Received",
+  ]);
+  expect(markup.match(/data-slot="badge"/g)).toHaveLength(4);
+});
+
+test("shows no badge without the status column", () => {
+  expect(rows()).not.toContain('data-slot="badge"');
+});

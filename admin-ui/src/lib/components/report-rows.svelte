@@ -23,6 +23,10 @@
     reports: readonly Listed[];
     columns: readonly ReportColumn[];
   } = $props();
+
+  const detailColumns = $derived(
+    columns.filter((column) => column !== "status"),
+  );
 </script>
 
 <ul class="tablet:hidden">
@@ -30,9 +34,14 @@
     <li
       class="flex flex-col gap-1 border-be border-border px-4 py-1 last:border-0"
     >
-      <ReportCodeLink {report} />
+      <div class="flex items-center justify-between gap-3">
+        <ReportCodeLink {report} />
+        {#if columns.includes("status")}
+          <ReportCell {report} column="status" />
+        {/if}
+      </div>
       <div class="flex flex-wrap gap-x-3 gap-y-1 pbe-2 text-label text-muted">
-        {#each columns as column (column)}
+        {#each detailColumns as column (column)}
           <span><ReportCell {report} {column} /></span>
         {/each}
       </div>
