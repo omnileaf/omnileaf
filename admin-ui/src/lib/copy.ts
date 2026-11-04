@@ -35,6 +35,7 @@ export const copy = {
   },
   reportColumns: {
     code: "Code",
+    status: "Status",
     platform: "Platform",
     version: "Version",
     received: "Received",
