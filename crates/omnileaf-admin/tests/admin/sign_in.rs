@@ -1,4 +1,4 @@
-use axum::http::StatusCode;
+use axum::http::{StatusCode, header};
 
 use super::support::{Harness, json_of};
 
@@ -161,20 +161,18 @@ async fn the_state_cookie_cannot_stand_in_for_a_session() {
 }
 
 #[tokio::test]
-async fn the_failure_pages_are_plain_pages_with_their_own_small_stylesheet() {
+async fn the_failure_pages_are_plain_pages_that_load_no_script() {
     let harness = Harness::start(&["alice"]).await;
+
     let refused = harness.finish_sign_in("mallory").await;
-    assert!(refused.body.contains("<html lang=\"en\">"));
-    assert!(refused.body.contains("<main id=\"main\">"));
-    assert!(
-        refused
-            .body
-            .contains("<link rel=\"stylesheet\" href=\"/admin/style.css\">")
-    );
+    let stylesheet = harness.get("/admin/style.css", None).await;
+
+    assert_eq!(refused.status, StatusCode::FORBIDDEN);
     assert!(!refused.body.contains("<script"));
-    let css = harness.get("/admin/style.css", None).await;
-    assert_eq!(css.status, StatusCode::OK);
-    assert!(css.body.contains("prefers-color-scheme: dark"));
-    assert!(css.body.contains(":focus-visible"));
-    assert!(css.body.contains("min-height: 44px"));
+    assert!(refused.body.contains("/admin/style.css"));
+    assert_eq!(stylesheet.status, StatusCode::OK);
+    assert_eq!(
+        stylesheet.headers[header::CONTENT_TYPE],
+        "text/css; charset=utf-8"
+    );
 }

@@ -23,7 +23,7 @@ fn layout(title: &str, content: &Markup) -> Markup {
                 header class="bar" {
                     a class="brand" href="/admin" { "Omnileaf reports" }
                 }
-                main id="main" { (content) }
+                main { (content) }
             }
         }
     }
