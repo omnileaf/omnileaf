@@ -25,7 +25,7 @@ All settings are environment variables.
 | `ADMIN_RELAY_URL` | Base URL of the relay's private listener, such as `http://relay.test:9090`. |
 | `ADMIN_RELAY_TOKEN` | Bearer token the relay expects. |
 | `ADMIN_LISTEN` | Address to listen on, `0.0.0.0:8080` by default for `serve`. |
-| `ADMIN_STATIC_DIR` | Folder holding a built interface, with an `index.html`. The built interface; the container image builds it into `/ui` and sets this to `/ui`. Without it every page answers `404` and only sign-in and the API work. The service refuses to start when it is set and unreadable. |
+| `ADMIN_STATIC_DIR` | Folder holding the built interface, with an `index.html`; the container image builds it into `/ui` and sets this to `/ui`. Without it every page answers `404` and only sign-in and the API work. The service refuses to start when it is set and unreadable. |
 | `ADMIN_GITHUB_API_URL`, `ADMIN_GITHUB_AUTH_URL` | GitHub's API and sign-in hosts, which tests point at a fake. |
 
 ## Serving the interface
