@@ -89,8 +89,15 @@ export const copy = {
     },
   },
   moves: {
+    title: "Move this report",
+    hint: "Pick the status it should have now.",
+    issueLabel: "Issue number",
+    issueHint: "Needed for Published and Duplicate.",
     issueNeeded:
       "Enter the issue number to mark this report {status}. Use a whole number above zero.",
+    closedHint: "A closed report can only be reopened as Reviewing.",
+    finalTitle: "This report is final",
+    finalHint: "Published and Duplicate reports cannot be moved.",
     confirmQuestion: "Mark {code} as {status}, issue #{issue}?",
     confirmHint: "This cannot be changed afterwards.",
     confirm: "Mark as {status}",
