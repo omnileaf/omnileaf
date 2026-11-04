@@ -9,11 +9,15 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { copy } from "#lib/copy.ts";
 
-  let { message, onRetry }: { message: string; onRetry: () => void } = $props();
+  let {
+    title,
+    message,
+    onRetry,
+  }: { title: string; message: string; onRetry: () => void } = $props();
 </script>
 
 <Alert icon={CircleAlert}>
-  <AlertTitle>{copy.report.loadFailed}</AlertTitle>
+  <AlertTitle>{title}</AlertTitle>
   <AlertDescription>{message}</AlertDescription>
   <div class="mbs-2">
     <Button variant="outline" onclick={onRetry}>

@@ -9,6 +9,7 @@
   import ReportNotFound from "#lib/components/report-not-found.svelte";
   import ReportSkeleton from "#lib/components/report-skeleton.svelte";
   import ReportText from "#lib/components/report-text.svelte";
+  import { copy } from "#lib/copy.ts";
   import type { ReportState } from "#lib/report-store.svelte.ts";
 
   let {
@@ -35,7 +36,11 @@
 {:else if load.kind === "notFound"}
   <ReportNotFound />
 {:else if load.kind === "failed"}
-  <ReportError message={load.message} {onRetry} />
+  <ReportError
+    title={copy.report.loadFailed}
+    message={load.message}
+    {onRetry}
+  />
 {:else if load.kind === "ready"}
   <ReportFacts report={load.detail.listed} />
   <div
