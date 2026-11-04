@@ -29,6 +29,7 @@ const SHOWN_ON_FAILURE = {
   browserUnavailable: FAILED,
   fileManagerUnavailable: FAILED,
   systemSettingsUnavailable: FAILED,
+  defaultViewerUnavailable: FAILED,
   noCrashReport: FAILED,
   crashReportUnavailable: FAILED,
   developmentBuildOnly: FAILED,

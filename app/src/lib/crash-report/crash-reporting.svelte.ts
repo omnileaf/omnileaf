@@ -40,6 +40,7 @@ const SEND_OUTCOMES = {
   browserUnavailable: "browserUnavailable",
   fileManagerUnavailable: "notSent",
   systemSettingsUnavailable: "notSent",
+  defaultViewerUnavailable: "notSent",
   folderPickerUnavailable: "notSent",
   folderChooserMissing: "notSent",
   folderUnreadable: "notSent",

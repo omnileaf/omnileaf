@@ -2232,6 +2232,8 @@ export function sampleBackend(
     watchOpenWith: () => null,
     openSystemSettings: () => null,
     openColourSettings: () => null,
+    comicFilesDefaultViewer: () => "somethingElse",
+    makeOmnileafTheComicViewer: () => null,
     panicInCore: () => null,
     crashAndQuit: () => null,
   };
