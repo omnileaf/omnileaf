@@ -4,11 +4,11 @@ COPY . .
 RUN cargo build --release --locked -p omnileaf-admin
 
 FROM node:26.10.0-bookworm-slim@sha256:3ffc19ea878019d9e9ae8971732ad4a03cda44f167107173174b60ed7c65bed3 AS ui
-RUN npm install --global pnpm@12.10.1
+RUN npm install --global --ignore-scripts pnpm@12.10.1
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY admin-ui/package.json admin-ui/package.json
-RUN pnpm --filter @omnileaf/admin-ui... install --frozen-lockfile
+RUN pnpm --filter @omnileaf/admin-ui... install --frozen-lockfile --ignore-scripts
 COPY admin-ui admin-ui
 RUN pnpm --dir admin-ui build
 
