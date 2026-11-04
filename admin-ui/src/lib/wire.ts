@@ -114,8 +114,12 @@ const issueNumber: Decoder<number> = (value) =>
 const flag: Decoder<boolean> = (value) =>
   typeof value === "boolean" ? value : undefined;
 
+export function isStatusKind(value: unknown): value is StatusKind {
+  return STATUS_KINDS.some((kind) => kind === value);
+}
+
 const statusKind: Decoder<StatusKind> = (value) =>
-  STATUS_KINDS.find((kind) => kind === value);
+  isStatusKind(value) ? value : undefined;
 
 const code: Decoder<ReportCode> = (value) =>
   typeof value === "string" && isReportCode(value) ? value : undefined;

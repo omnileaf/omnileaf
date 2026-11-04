@@ -8,6 +8,7 @@ import {
   decodeServerError,
   decodeSession,
   isReportCode,
+  isStatusKind,
 } from "#lib/wire.ts";
 import { fixtureText } from "#lib/testing.ts";
 
@@ -315,3 +316,17 @@ test("accepts the last second a calendar date can show for an audit entry", () =
 
   expect(decodeReportDetail(detail)?.audit).toHaveLength(1);
 });
+
+test.each(["received", "reviewing", "published", "duplicate", "closed"])(
+  "knows %s is a status kind",
+  (kind) => {
+    expect(isStatusKind(kind)).toBe(true);
+  },
+);
+
+test.each(["archived", "", "Received", 3, null, undefined, {}])(
+  "knows %j is no status kind",
+  (value) => {
+    expect(isStatusKind(value)).toBe(false);
+  },
+);
