@@ -106,7 +106,7 @@
     },
     {
       "name": "async-executor",
-      "version": "1.14.0",
+      "version": "1.14.1",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         30
