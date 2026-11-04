@@ -12,17 +12,20 @@
   import { isPhone } from "#lib/page/platform.ts";
   import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import { searchShortcutLabel } from "./quick-open-shortcut.ts";
   import { SEARCH_ROUTE_ID, searchQuery } from "./search-route";
 
   const ICON_SIZE = 16;
+  const IOS_BAR_ICON_SIZE = 22;
   const FIELD_ICON_SIZE = 16;
 
   let { platform }: { platform: Platform } = $props();
 
   const width = new WindowWidth();
+  const ios = new IosPhone();
 
   function searchTheLibrary(): void {
     void goto(resolve(SEARCH_ROUTE_ID));
@@ -60,7 +63,10 @@
           : "block-touch-target inline-touch-target",
       ]}
     >
-      <Search size={ICON_SIZE} aria-hidden="true" />
+      <Search
+        size={ios.isOn ? IOS_BAR_ICON_SIZE : ICON_SIZE}
+        aria-hidden="true"
+      />
     </a>
   {/snippet}
 </Tooltip>
