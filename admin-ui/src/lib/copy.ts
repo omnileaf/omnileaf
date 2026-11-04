@@ -93,6 +93,10 @@ export const copy = {
       "Enter the issue number to mark this report {status}. Use a whole number above zero.",
     refused: "A {from} report cannot be moved to {status}.",
     gone: "This report no longer exists.",
+    moved: "Moved to {status}.",
+    movedWithIssue: "Moved to {status}, issue #{issue}.",
+    moving: "Moving this report.",
+    reloading: "Loading this report again.",
   },
   audit: {
     title: "Audit trail",
