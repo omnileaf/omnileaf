@@ -282,3 +282,36 @@ test.each([
 ])("checks whether %s is a report code", (candidate, valid) => {
   expect(isReportCode(candidate)).toBe(valid);
 });
+
+const LAST_FORMATTABLE_SECOND = 253_402_300_799;
+
+test.each([0, 1_740_828_300, LAST_FORMATTABLE_SECOND])(
+  "accepts %i seconds as the moment a report was received",
+  (receivedAt) => {
+    expect(decodeReportList(listWith({ receivedAt }))?.reports).toHaveLength(1);
+  },
+);
+
+test.each([LAST_FORMATTABLE_SECOND + 1, Number.MAX_SAFE_INTEGER])(
+  "refuses %i seconds as the moment a report was received",
+  (receivedAt) => {
+    expect(decodeReportList(listWith({ receivedAt }))).toBeUndefined();
+  },
+);
+
+test.each([LAST_FORMATTABLE_SECOND + 1, Number.MAX_SAFE_INTEGER])(
+  "refuses %i seconds as the moment of an audit entry",
+  (at) => {
+    const detail = detailWith({ audit: [{ ...AUDIT_ENTRY, at }] });
+
+    expect(decodeReportDetail(detail)).toBeUndefined();
+  },
+);
+
+test("accepts the last second a calendar date can show for an audit entry", () => {
+  const detail = detailWith({
+    audit: [{ ...AUDIT_ENTRY, at: LAST_FORMATTABLE_SECOND }],
+  });
+
+  expect(decodeReportDetail(detail)?.audit).toHaveLength(1);
+});
