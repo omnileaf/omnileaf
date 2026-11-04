@@ -316,6 +316,7 @@ async fn a_name_with_a_character_that_needs_escaping_stops_start_up() {
 async fn every_character_a_browser_sends_raw_in_a_name_is_served() {
     let names: Vec<String> = "-._~!$&'()*+,;=:@[]"
         .chars()
+        .filter(|character| !(cfg!(windows) && matches!(character, '*' | ':')))
         .map(|character| format!("a{character}b.txt"))
         .collect();
     let mut files = vec![("index.html", SHELL)];
