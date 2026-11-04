@@ -41,6 +41,31 @@ test("sets the library's large title under its buttons on an iPhone, folding it 
   await expect(barTitle).toHaveCSS("opacity", "1");
 });
 
+const IPHONE_STATUS_BAR = 47;
+
+test("puts the library's bar buttons right under the status bar on an iPhone", async ({
+  page,
+}) => {
+  test.skip(
+    viewportOf(page).width >= MEDIUM_MIN_WIDTH,
+    "iPads leave the bar row to the tab bar",
+  );
+  await page.addInitScript((inset) => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const style = document.createElement("style");
+      style.textContent = `:root { --system-inset-top: ${String(inset)}px; }`;
+      document.head.append(style);
+    });
+  }, IPHONE_STATUS_BAR);
+  await page.goto("/");
+
+  const buttons = await boxOf(
+    page.locator("[data-title-bar]").getByRole("button", { name: "More" }),
+  );
+
+  expect(buttons.y).toBeCloseTo(IPHONE_STATUS_BAR, 0);
+});
+
 test("sets the title under the tab bar and the buttons on a wide iPad", async ({
   page,
 }) => {
