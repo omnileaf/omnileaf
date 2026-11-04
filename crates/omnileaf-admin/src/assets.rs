@@ -4,13 +4,23 @@ use anyhow::Context;
 use axum::{
     body::Bytes,
     extract::State,
-    http::{StatusCode, Uri, header},
+    http::{HeaderValue, StatusCode, Uri, header},
     response::{IntoResponse, Response},
 };
+use base64::{Engine, engine::general_purpose::STANDARD};
+use sha2::{Digest, Sha256};
 
-use crate::{AppState, auth::Session, page::NO_STORE};
+use crate::{
+    AppState,
+    auth::Session,
+    page::{NO_STORE, policy_allowing_scripts},
+};
 
 const PREFIX: &str = "/admin/";
+const SCRIPT_OPEN: &str = "<script";
+const SCRIPT_CLOSE: &str = "</script";
+const COMMENT_OPEN: &str = "<!--";
+const COMMENT_CLOSE: &str = "-->";
 const SHELL: &str = "index.html";
 const IMMUTABLE_DIRECTORY: &str = "_app/immutable/";
 const IMMUTABLE_CACHE: &str = "private, max-age=31536000, immutable";
@@ -19,6 +29,7 @@ struct Asset {
     bytes: Bytes,
     content_type: &'static str,
     immutable: bool,
+    policy: Option<HeaderValue>,
 }
 
 impl Asset {
@@ -28,14 +39,20 @@ impl Asset {
         } else {
             NO_STORE
         };
-        (
+        let mut response = (
             [
                 (header::CONTENT_TYPE, self.content_type),
                 (header::CACHE_CONTROL, cache),
             ],
             self.bytes.clone(),
         )
-            .into_response()
+            .into_response();
+        if let Some(policy) = &self.policy {
+            response
+                .headers_mut()
+                .insert(header::CONTENT_SECURITY_POLICY, policy.clone());
+        }
+        response
     }
 }
 
@@ -47,11 +64,11 @@ impl Assets {
     pub(crate) fn load(directory: &Path) -> anyhow::Result<Self> {
         let mut files = HashMap::new();
         collect(directory, "", &mut files)?;
-        anyhow::ensure!(
-            files.contains_key(SHELL),
-            "no {SHELL} in {}",
-            directory.display()
-        );
+        let shell = files
+            .get_mut(SHELL)
+            .with_context(|| format!("no {SHELL} in {}", directory.display()))?;
+        shell.policy =
+            allow_inline_scripts(&shell.bytes).context("read the inline scripts of index.html")?;
         Ok(Self { files })
     }
 
@@ -61,6 +78,91 @@ impl Assets {
             is_page.then(|| self.files.get(SHELL)).flatten()
         })
     }
+}
+
+fn allow_inline_scripts(page: &[u8]) -> anyhow::Result<Option<HeaderValue>> {
+    let page = std::str::from_utf8(page).context("is not text")?;
+    let digests = inline_scripts(page)?
+        .iter()
+        .map(|script| STANDARD.encode(Sha256::digest(script)))
+        .collect::<Vec<_>>();
+    if digests.is_empty() {
+        return Ok(None);
+    }
+    policy_allowing_scripts(&digests).map(Some)
+}
+
+fn inline_scripts(page: &str) -> anyhow::Result<Vec<String>> {
+    let lower = page.to_ascii_lowercase();
+    let mut scripts = Vec::new();
+    let mut at = 0;
+    while let Some(offset) = lower[at..].find('<') {
+        let open = at + offset;
+        if lower[open..].starts_with(COMMENT_OPEN) {
+            let end = lower[open..]
+                .find(COMMENT_CLOSE)
+                .context("a comment is never closed")?;
+            at = open + end + COMMENT_CLOSE.len();
+        } else if opens_script(&lower[open..]) {
+            let attributes_start = open + SCRIPT_OPEN.len();
+            let tag_end = end_of_tag(&lower, attributes_start)?;
+            let body_end = start_of_script_close(&lower, tag_end + 1)?;
+            if !has_src(&lower[attributes_start..tag_end]) {
+                scripts.push(as_the_browser_reads_it(&page[tag_end + 1..body_end]));
+            }
+            at = body_end + SCRIPT_CLOSE.len();
+        } else {
+            at = open + 1;
+        }
+    }
+    Ok(scripts)
+}
+
+fn opens_script(markup: &str) -> bool {
+    markup
+        .strip_prefix(SCRIPT_OPEN)
+        .and_then(|rest| rest.chars().next())
+        .is_some_and(ends_a_tag_name)
+}
+
+fn ends_a_tag_name(character: char) -> bool {
+    character.is_ascii_whitespace() || matches!(character, '/' | '>')
+}
+
+fn end_of_tag(lower: &str, from: usize) -> anyhow::Result<usize> {
+    let mut quote = None;
+    for (offset, character) in lower[from..].char_indices() {
+        match (quote, character) {
+            (None, '>') => return Ok(from + offset),
+            (None, '"' | '\'') => quote = Some(character),
+            (Some(open), _) if open == character => quote = None,
+            _ => {}
+        }
+    }
+    anyhow::bail!("a script tag never ends")
+}
+
+fn start_of_script_close(lower: &str, from: usize) -> anyhow::Result<usize> {
+    let mut at = from;
+    while let Some(offset) = lower[at..].find(SCRIPT_CLOSE) {
+        let close = at + offset;
+        let after = lower[close + SCRIPT_CLOSE.len()..].chars().next();
+        if after.is_some_and(ends_a_tag_name) {
+            return Ok(close);
+        }
+        at = close + SCRIPT_CLOSE.len();
+    }
+    anyhow::bail!("a script is never closed")
+}
+
+fn has_src(attributes: &str) -> bool {
+    attributes
+        .split_whitespace()
+        .any(|attribute| attribute == "src" || attribute.starts_with("src="))
+}
+
+fn as_the_browser_reads_it(script: &str) -> String {
+    script.replace("\r\n", "\n").replace('\r', "\n")
 }
 
 fn last_segment(path: &str) -> &str {
@@ -139,6 +241,7 @@ fn collect(
                     bytes: Bytes::from(bytes),
                     content_type: content_type_of(&path),
                     immutable: path.starts_with(IMMUTABLE_DIRECTORY),
+                    policy: None,
                 },
             );
         }
