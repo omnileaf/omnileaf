@@ -2498,6 +2498,7 @@
   "reader_unsupported_body": "{file} is a {type} file, which this version can't open yet. The file stays where it is.",
   "reader_unsupported_body_unnamed": "This version can't open files like this one yet. The file stays where it is.",
   "reader_unsupported_body_types": "This file type isn't supported. Omnileaf opens CBZ and CB7 files. The file stays where it is.",
+  "reader_unsupported_dismiss": "OK",
   "reader_opening_handed": "Opening this book",
   "reader_opened_from_files": "Opened from Files",
   "reader_opened_from_finder": "Opened from Finder",
