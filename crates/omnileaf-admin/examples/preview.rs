@@ -209,6 +209,7 @@ async fn main() -> anyhow::Result<()> {
         relay_url: fakes.clone(),
         relay_token: RELAY_TOKEN.to_owned(),
         listen,
+        static_dir: std::env::var_os("ADMIN_STATIC_DIR").map(Into::into),
         github_api_url: fakes.clone(),
         github_auth_url: fakes,
     };

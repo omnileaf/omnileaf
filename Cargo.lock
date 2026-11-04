@@ -3711,6 +3711,7 @@ dependencies = [
  "hmac",
  "maud",
  "omnileaf-relay-proto",
+ "omnileaf-testkit",
  "reqwest",
  "rustls",
  "serde",

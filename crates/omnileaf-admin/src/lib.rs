@@ -1,4 +1,5 @@
 mod api;
+mod assets;
 mod auth;
 mod clock_text;
 mod config;
@@ -11,6 +12,7 @@ mod sealed;
 
 use std::{collections::HashSet, sync::Arc};
 
+use anyhow::Context;
 use axum::{
     Router,
     middleware::map_response,
@@ -29,6 +31,7 @@ pub struct AppState {
     relay: Arc<relay::Relay>,
     allowlist: Arc<HashSet<String>>,
     clock: Clock,
+    assets: Option<Arc<assets::Assets>>,
 }
 
 impl AppState {
@@ -40,6 +43,15 @@ impl AppState {
             .filter(|login| !login.is_empty())
             .collect();
         let http = github::http_client()?;
+        let assets = config
+            .static_dir
+            .as_deref()
+            .map(|directory| {
+                assets::Assets::load(directory)
+                    .map(Arc::new)
+                    .context("load ADMIN_STATIC_DIR")
+            })
+            .transpose()?;
         Ok(Self {
             keys: sealed::Keys::new(&config.session_key)?,
             github: Arc::new(github::GitHub::new(http.clone(), config)),
@@ -50,6 +62,7 @@ impl AppState {
             )),
             allowlist: Arc::new(allowlist),
             clock,
+            assets,
         })
     }
 
@@ -72,6 +85,7 @@ pub fn router(state: AppState) -> Router {
         .route("/admin/login", get(auth::login))
         .route("/admin/auth/callback", get(auth::callback))
         .route("/admin/logout", post(auth::logout))
+        .fallback(get(assets::serve))
         .layer(map_response(|response| async { page::hardened(response) }))
         .with_state(state)
 }
