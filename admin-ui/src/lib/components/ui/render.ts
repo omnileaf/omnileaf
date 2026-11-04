@@ -8,7 +8,7 @@ export function words(text: string) {
 
 export function html<Props extends Record<string, unknown>>(
   component: Component<Props>,
-  props: Props,
+  props: NoInfer<Props>,
 ): string {
   return render(component, { props }).body;
 }
