@@ -17,6 +17,7 @@ export default defineConfig({
   ],
   test: {
     include: ["src/**/*.test.ts"],
+    env: { TZ: "Pacific/Kiritimati" },
     expect: { requireAssertions: true },
     setupFiles: ["./src/lib/tailwind-source.setup.ts"],
   },
