@@ -124,15 +124,20 @@ test.describe(
 
       await watching[0]?.send(HANDED);
 
+      const dialog = page.getByRole("alertdialog", {
+        name: "Omnileaf can't open this file",
+      });
+      await expect(dialog).toBeVisible();
       await expect(
-        page.getByText("Omnileaf can't open this file"),
-      ).toBeVisible();
-      await expect(
-        page.getByText(
+        dialog.getByText(
           "This file type isn't supported. Omnileaf opens CBZ and CB7 files.",
         ),
       ).toBeVisible();
       await expect(page).not.toHaveURL(/\/read\//);
+
+      await dialog.getByRole("button", { name: "OK" }).click();
+
+      await expect(dialog).toBeHidden();
     });
   },
 );
