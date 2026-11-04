@@ -393,7 +393,7 @@ jobs:
 
   admin-accessibility:
     name: admin accessibility
-    needs: changes
+    needs: [changes, browser-packages]
     if: ${{ !cancelled() && needs.changes.outputs.admin != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -412,10 +412,25 @@ jobs:
       - name: Install interface dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Fetch the test browsers' system packages
+        if: needs.browser-packages.result == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: browser-system-packages
+          path: ${{ runner.temp }}/browser-packages
+
+      - name: Put the test browsers' system packages back
+        run: |
+          if compgen -G "$RUNNER_TEMP/browser-packages/*.deb" > /dev/null; then
+            sudo cp "$RUNNER_TEMP"/browser-packages/*.deb /var/cache/apt/archives/
+          fi
+
       - name: Install the test browser
+        timeout-minutes: 15
         uses: ./.github/actions/playwright-browsers
         with:
-          browsers: chromium
+          browsers: chromium webkit
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
@@ -425,8 +440,19 @@ jobs:
           shared-key: admin-preview
           save-if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
 
-      - name: Check the dashboard pages with axe
+      - name: Build the interface
+        run: pnpm --dir admin-ui build
+
+      - name: Check the interface in the browser
         run: pnpm --dir app test:admin
+
+      - name: Keep the traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: admin-test-traces
+          path: app/test-results/
+          retention-days: 7
 
   browser-build:
     name: browser test build
@@ -504,7 +530,7 @@ jobs:
     name: browser system packages
     needs: changes
     continue-on-error: true
-    if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.app != 'false' || needs.changes.outputs.site != 'false' || needs.changes.outputs.admin != 'false') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:

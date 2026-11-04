@@ -16,7 +16,7 @@ use crate::{
     page::{NO_STORE, policy_allowing_scripts},
 };
 
-const PREFIX: &str = "/admin/";
+const ROOT: &str = "/admin";
 const SCRIPT_OPEN: &str = "<script";
 const SCRIPT_CLOSE: &str = "</script";
 const COMMENT_OPEN: &str = "<!--";
@@ -249,12 +249,20 @@ fn collect(
     Ok(())
 }
 
+fn asset_path(request_path: &str) -> Option<&str> {
+    let below_root = request_path.strip_prefix(ROOT)?;
+    if below_root.is_empty() {
+        return Some(below_root);
+    }
+    below_root.strip_prefix('/')
+}
+
 pub(crate) async fn serve(
     State(state): State<AppState>,
     session: Result<Session, Response>,
     uri: Uri,
 ) -> Response {
-    let Some(path) = uri.path().strip_prefix(PREFIX) else {
+    let Some(path) = asset_path(uri.path()) else {
         return StatusCode::NOT_FOUND.into_response();
     };
     let Some(assets) = &state.assets else {

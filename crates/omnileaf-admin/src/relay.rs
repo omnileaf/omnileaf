@@ -114,13 +114,9 @@ impl Relay {
         }
     }
 
-    pub(crate) async fn list(&self, status: Option<&str>) -> Result<Vec<Listed>, RelayError> {
-        let mut query = vec![("limit", LIST_LIMIT.to_string())];
-        if let Some(status) = status {
-            query.push(("status", status.to_owned()));
-        }
+    pub(crate) async fn list(&self) -> Result<Vec<Listed>, RelayError> {
         let response = self
-            .get("reports", &query)
+            .get("reports", &[("limit", LIST_LIMIT.to_string())])
             .await?
             .ok_or(RelayError::Unavailable)?;
         let mut listed: Vec<Listed> = response.json().await.map_err(|_| RelayError::Unavailable)?;

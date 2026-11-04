@@ -178,7 +178,7 @@ async fn reports(
     State(state): State<AppState>,
     _session: ApiSession,
 ) -> Result<Json<ReportsBody>, ApiError> {
-    let reports = state.relay.list(None).await?;
+    let reports = state.relay.list().await?;
     Ok(Json(ReportsBody {
         truncated: reports.len() >= LIST_LIMIT,
         reports,

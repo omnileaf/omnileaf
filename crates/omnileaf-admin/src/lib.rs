@@ -1,13 +1,10 @@
 mod api;
 mod assets;
 mod auth;
-mod clock_text;
 mod config;
 mod github;
-mod moves;
 mod page;
 mod relay;
-mod review;
 mod sealed;
 
 use std::{collections::HashSet, sync::Arc};
@@ -16,7 +13,7 @@ use anyhow::Context;
 use axum::{
     Router,
     middleware::map_response,
-    routing::{any, get, post},
+    routing::{any, get},
 };
 
 pub use config::Config;
@@ -43,6 +40,9 @@ impl AppState {
             .filter(|login| !login.is_empty())
             .collect();
         let http = github::http_client()?;
+        if config.static_dir.is_none() {
+            tracing::warn!("ADMIN_STATIC_DIR is not set, so every page answers 404");
+        }
         let assets = config
             .static_dir
             .as_deref()
@@ -76,15 +76,9 @@ pub fn router(state: AppState) -> Router {
         .route("/admin/health", get(|| async {}))
         .route("/admin/api/", any(api::not_found))
         .nest("/admin/api", api::router())
-        .route("/admin", get(review::list))
         .route("/admin/style.css", get(|| async { page::stylesheet() }))
-        .route("/admin/reports/{code}", get(review::detail))
-        .route("/admin/reports/{code}/audit", get(review::audit))
-        .route("/admin/reports/{code}/issue", get(moves::public_issue))
-        .route("/admin/reports/{code}/status", post(moves::change_status))
         .route("/admin/login", get(auth::login))
         .route("/admin/auth/callback", get(auth::callback))
-        .route("/admin/logout", post(auth::logout))
         .fallback(get(assets::serve))
         .layer(map_response(|response| async { page::hardened(response) }))
         .with_state(state)

@@ -1,5 +1,3 @@
-//! Serves the dashboard against a built-in fake relay and fake GitHub, so a browser can open every page.
-
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -10,8 +8,9 @@ use std::{
 use anyhow::Context;
 use axum::{
     Json, Router,
-    extract::{Path, Query},
+    extract::{Path, Query, State},
     http::StatusCode,
+    response::Redirect,
     routing::{get, post},
 };
 use omnileaf_admin::{AppState, Config, router};
@@ -21,6 +20,7 @@ const SESSION_KEY: &str = "preview-only-key-0123456789abcdef";
 const RELAY_TOKEN: &str = "preview-relay-token";
 const DEFAULT_LISTEN: &str = "127.0.0.1:4180";
 const NOW: u64 = 1_740_837_900;
+const SIGNED_IN_LOGIN: &str = "reviewer";
 
 struct Sample {
     code: &'static str,
@@ -32,7 +32,7 @@ struct Sample {
     text: Option<&'static str>,
 }
 
-const SAMPLES: [Sample; 5] = [
+const SAMPLES: [Sample; 6] = [
     Sample {
         code: "R-8M4T-K2QX",
         age_hours: 2,
@@ -72,6 +72,15 @@ const SAMPLES: [Sample; 5] = [
         text: Some("Search ignores accents."),
     },
     Sample {
+        code: "R-5K6M-N8PQ",
+        age_hours: 200,
+        status: "duplicate",
+        issue: Some(398),
+        platform: "android",
+        version: "1.3.2",
+        text: Some("Searching for an accented title finds nothing."),
+    },
+    Sample {
         code: "R-7E9S-M3TY",
         age_hours: 400,
         status: "closed",
@@ -103,13 +112,8 @@ fn sample_for(code: &str) -> Option<&'static Sample> {
     SAMPLES.iter().find(|sample| sample.code == code)
 }
 
-async fn relay_list(Query(query): Query<HashMap<String, String>>) -> Json<Value> {
-    let kept = SAMPLES
-        .iter()
-        .filter(|sample| query.get("status").is_none_or(|kind| sample.status == kind))
-        .map(listed)
-        .collect();
-    Json(Value::Array(kept))
+async fn relay_list() -> Json<Value> {
+    Json(Value::Array(SAMPLES.iter().map(listed).collect()))
 }
 
 async fn relay_detail(Path(code): Path<String>) -> (StatusCode, Json<Value>) {
@@ -149,6 +153,16 @@ async fn relay_status() -> Json<Value> {
     Json(json!({ "result": "refused", "from": "closed" }))
 }
 
+async fn github_authorize(
+    State(admin): State<Arc<str>>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Redirect {
+    let state = query.get("state").map_or("", String::as_str);
+    Redirect::to(&format!(
+        "http://{admin}/admin/auth/callback?code=code-for-{SIGNED_IN_LOGIN}&state={state}"
+    ))
+}
+
 async fn github_token(Json(body): Json<Value>) -> Json<Value> {
     let code = body.get("code").and_then(Value::as_str).unwrap_or_default();
     match code.strip_prefix("code-for-") {
@@ -172,19 +186,21 @@ async fn github_membership() -> StatusCode {
     StatusCode::NOT_FOUND
 }
 
-async fn serve_fakes() -> anyhow::Result<SocketAddr> {
+async fn serve_fakes(admin: SocketAddr) -> anyhow::Result<SocketAddr> {
     let app = Router::new()
         .route("/admin/v1/reports", get(relay_list))
         .route("/admin/v1/reports/{code}", get(relay_detail))
         .route("/admin/v1/reports/{code}/audit", get(relay_audit))
         .route("/admin/v1/reports/{code}/export", get(relay_export))
         .route("/admin/v1/reports/{code}/status", post(relay_status))
+        .route("/login/oauth/authorize", get(github_authorize))
         .route("/login/oauth/access_token", post(github_token))
         .route("/user", get(github_user))
         .route(
             "/orgs/{org}/teams/{team}/memberships/{login}",
             get(github_membership),
-        );
+        )
+        .with_state(Arc::from(admin.to_string()));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     tokio::spawn(async move { axum::serve(listener, app).await });
@@ -198,13 +214,13 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| DEFAULT_LISTEN.to_owned())
         .parse()
         .context("read the address to listen on")?;
-    let fakes = format!("http://{}", serve_fakes().await?);
+    let fakes = format!("http://{}", serve_fakes(listen).await?);
     let config = Config {
         github_client_id: "preview-client".to_owned(),
         github_client_secret: "preview-secret".to_owned(),
         github_org: "acme".to_owned(),
         github_team: "reviewers".to_owned(),
-        admin_allowlist: vec!["reviewer".to_owned()],
+        admin_allowlist: vec![SIGNED_IN_LOGIN.to_owned()],
         session_key: SESSION_KEY.to_owned(),
         relay_url: fakes.clone(),
         relay_token: RELAY_TOKEN.to_owned(),

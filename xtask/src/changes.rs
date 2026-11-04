@@ -64,7 +64,7 @@ const ADMIN_SERVICE: Areas = Areas {
     admin: true,
     ..NOTHING
 };
-const ADMIN_PAGES_CHECK: Areas = Areas {
+const ADMIN_BROWSER_CHECK: Areas = Areas {
     admin: true,
     ..NOTHING
 };
@@ -94,9 +94,9 @@ const BRANDING: Areas = Areas {
 
 const RULES: &[(&str, Areas)] = &[
     ("crates/omnileaf-admin/", ADMIN_SERVICE),
-    ("app/tests/admin/", ADMIN_PAGES_CHECK),
-    ("app/playwright.admin.config.ts", ADMIN_PAGES_CHECK),
-    ("admin-ui/", ADMIN_PAGES_CHECK),
+    ("app/tests/admin/", ADMIN_BROWSER_CHECK),
+    ("app/playwright.admin.config.ts", ADMIN_BROWSER_CHECK),
+    ("admin-ui/", ADMIN_BROWSER_CHECK),
     ("app/src-tauri/", NATIVE),
     ("app/src/app.css", APP_READ_BY_NATIVE),
     ("app/src/lib/ipc/bindings.ts", APP_READ_BY_NATIVE),
@@ -209,26 +209,26 @@ mod tests {
     }
 
     #[test]
-    fn sends_the_dashboard_to_the_native_jobs_and_its_accessibility_check() {
+    fn sends_the_admin_service_to_the_native_jobs_and_the_browser_check() {
         let changed = areas(&["crates/omnileaf-admin/src/style.css"]);
 
         assert_eq!(changed, ADMIN_SERVICE);
     }
 
     #[test]
-    fn sends_the_dashboard_accessibility_check_to_its_own_job_only() {
+    fn sends_the_browser_check_files_to_its_own_job_only() {
         for path in [
             "app/tests/admin/dashboard.spec.ts",
             "app/playwright.admin.config.ts",
         ] {
-            assert_eq!(areas(&[path]), ADMIN_PAGES_CHECK, "{path}");
+            assert_eq!(areas(&[path]), ADMIN_BROWSER_CHECK, "{path}");
         }
     }
 
     #[test]
-    fn sends_the_admin_interface_to_the_dashboard_accessibility_check_only() {
+    fn sends_the_admin_interface_to_the_browser_check_only() {
         for path in ["admin-ui/src/app.css", "admin-ui/package.json"] {
-            assert_eq!(areas(&[path]), ADMIN_PAGES_CHECK, "{path}");
+            assert_eq!(areas(&[path]), ADMIN_BROWSER_CHECK, "{path}");
         }
     }
 

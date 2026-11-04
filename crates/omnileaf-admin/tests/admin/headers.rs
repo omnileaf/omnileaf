@@ -2,11 +2,12 @@ use axum::http::header;
 
 use super::support::seeded;
 
-const PATHS: [&str; 5] = [
+const PATHS: [&str; 6] = [
     "/admin/api/session",
     "/admin/health",
     "/admin",
     "/admin/login",
+    "/admin/style.css",
     "/admin/nothing-here",
 ];
 

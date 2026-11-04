@@ -1,5 +1,4 @@
 use axum::{
-    Form,
     extract::{FromRequestParts, Query, State},
     http::{HeaderMap, HeaderValue, StatusCode, header, request::Parts},
     response::{IntoResponse, Redirect, Response},
@@ -157,30 +156,4 @@ async fn decide(state: &AppState, code: &str) -> Result<Option<String>, ()> {
         .await
         .map_err(drop)?;
     Ok(member.then_some(login))
-}
-
-#[derive(Deserialize)]
-pub(crate) struct CsrfForm {
-    csrf: Option<String>,
-}
-
-pub(crate) async fn logout(
-    State(state): State<AppState>,
-    session: Session,
-    Form(form): Form<CsrfForm>,
-) -> Response {
-    if !form
-        .csrf
-        .as_deref()
-        .is_some_and(|token| session.csrf_matches(&state, token))
-    {
-        return notice(
-            StatusCode::FORBIDDEN,
-            "Refused",
-            "The form was not made for this session.",
-        );
-    }
-    let mut response = notice(StatusCode::OK, "Signed out", "You are signed out.");
-    clear_session_cookie(&mut response);
-    response
 }
