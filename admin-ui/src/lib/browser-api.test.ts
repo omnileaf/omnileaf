@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { api } from "#lib/browser-api.ts";
+import { api, reloadPage } from "#lib/browser-api.ts";
 import { API_ROOT, LOGIN_PATH } from "#lib/paths.ts";
 
 afterEach(() => {
@@ -35,4 +35,13 @@ test("sends the browser to the sign-in page when the session is gone", async () 
   await api.reports();
 
   expect(assign).toHaveBeenCalledExactlyOnceWith(LOGIN_PATH);
+});
+
+test("asks the browser to load the current page again", () => {
+  const reload = vi.fn();
+  vi.stubGlobal("location", { reload });
+
+  reloadPage();
+
+  expect(reload).toHaveBeenCalledOnce();
 });

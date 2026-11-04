@@ -24,6 +24,14 @@ export const copy = {
     sessionFailed: "Could not open your session",
     signOutFailed: "Could not sign out",
   },
+  errorPage: {
+    notFound: "Page not found",
+    notFoundHint:
+      "There is no page at this address. Check the link or go back to the dashboard.",
+    failed: "Something went wrong",
+    failedHint: "The page could not be shown. Try again in a moment.",
+    backToDashboard: "Back to the dashboard",
+  },
   errors: {
     relayUnavailable:
       "The reports service did not answer. Try again in a moment.",
