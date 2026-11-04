@@ -185,6 +185,8 @@
   --native-spacing-series-actions-gap: var(--spacing-sm);
   --native-spacing-series-select-gap: var(--spacing-sm);
   --native-spacing-series-icon: 16px;
+  --native-spacing-phone-action-icon: 16px;
+  --native-spacing-phone-action-chevron: 16px;
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 64px;
   --native-spacing-top-bar-lift: var(--spacing-title-gap);

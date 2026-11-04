@@ -494,6 +494,8 @@ export const TOKEN_THEME = {
     "native-notice-tall-block",
     "native-notice-top",
     "native-outlined-field",
+    "native-phone-action-chevron",
+    "native-phone-action-icon",
     "native-popover-bottom",
     "native-popover-gap",
     "native-popover-top",
