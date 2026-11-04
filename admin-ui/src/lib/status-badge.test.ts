@@ -1,14 +1,14 @@
 import { expect, test } from "vitest";
 
-import { statusBadgeLook } from "#lib/status-badge.ts";
+import { statusBadgeLook, statusIcon } from "#lib/status-badge.ts";
 import { STATUS_KINDS, type Status } from "#lib/wire.ts";
 
 const LOOKS = [
-  [{ kind: "received" }, "Received", "solid", "inbox"],
-  [{ kind: "reviewing" }, "Reviewing", "soft", "eye"],
-  [{ kind: "published", issue: 42 }, "Published", "outline", "circle-check"],
+  [{ kind: "received" }, "Received", "solid", "circle-dot"],
+  [{ kind: "reviewing" }, "Reviewing", "soft", "clock"],
+  [{ kind: "published", issue: 42 }, "Published #42", "outline", "check"],
   [{ kind: "duplicate", issue: 7 }, "Duplicate", "chip", "copy"],
-  [{ kind: "closed" }, "Closed", "muted-outline", "archive"],
+  [{ kind: "closed" }, "Closed", "muted-outline", "circle-minus"],
 ] as const satisfies readonly (readonly [Status, string, string, string])[];
 
 test.each(LOOKS)(
@@ -31,3 +31,10 @@ test("never gives two statuses the same badge variant", () => {
 
   expect(new Set(looks).size).toBe(looks.length);
 });
+
+test.each(LOOKS)(
+  "looks up the icon of the %j status by its kind",
+  (status, _label, _variant, icon) => {
+    expect(statusIcon(status.kind)).toBe(icon);
+  },
+);
