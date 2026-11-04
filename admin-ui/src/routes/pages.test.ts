@@ -4,12 +4,12 @@ import { beforeEach, expect, test, vi } from "vitest";
 import type { ApiResult } from "#lib/api.ts";
 import { renderPage } from "#lib/components/ui/render.ts";
 import { ReportsStore } from "#lib/reports-store.svelte.ts";
+import ReportPageHarness from "#lib/report-page-harness.svelte";
 import RouteHarness from "#lib/route-harness.svelte";
 import { aCode, aListed } from "#lib/testing.ts";
 import type { ReportList } from "#lib/wire.ts";
 
 import DashboardPage from "./+page.svelte";
-import ReportPage from "./reports/[code]/+page.svelte";
 import ReportsPage from "./reports/+page.svelte";
 
 const address = vi.hoisted(
@@ -93,7 +93,11 @@ test("renders the search of the address in the search box", async () => {
 test("renders a report page with the code of the address as its heading", async () => {
   address.params = { code: "R-1111-1111" };
 
-  const markup = await page(ReportPage);
+  const store = await readyStore();
+  const markup = renderPage(ReportPageHarness, {
+    store,
+    code: "R-1111-1111",
+  }).body.replace(/<!--.*?-->/gs, "");
 
   expect(markup).toMatch(/<h1\b[^>]*>\s*R-1111-1111\s*<\/h1>/);
 });

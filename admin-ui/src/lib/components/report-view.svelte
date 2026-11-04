@@ -1,5 +1,7 @@
 <script lang="ts">
   import ReportAudit from "#lib/components/report-audit.svelte";
+  import MoveCard from "#lib/components/move-card.svelte";
+  import type { MoveProps } from "#lib/move-props.ts";
   import ReportCrumb from "#lib/components/report-crumb.svelte";
   import ReportError from "#lib/components/report-error.svelte";
   import ReportFacts from "#lib/components/report-facts.svelte";
@@ -12,8 +14,14 @@
   let {
     code,
     load,
+    move,
     onRetry,
-  }: { code: string; load: ReportState; onRetry: () => void } = $props();
+  }: {
+    code: string;
+    load: ReportState;
+    move: MoveProps | undefined;
+    onRetry: () => void;
+  } = $props();
 </script>
 
 <ReportCrumb />
@@ -30,8 +38,17 @@
   <ReportError message={load.message} {onRetry} />
 {:else if load.kind === "ready"}
   <ReportFacts report={load.detail.listed} />
-  <div class="mbs-4 grid gap-4 tablet:mbs-6 tablet:gap-6">
-    <ReportText text={load.detail.report} />
-    <ReportAudit entries={load.detail.audit} />
+  <div
+    class="mbs-4 grid items-start gap-4 tablet:mbs-6 tablet:grid-cols-3 tablet:gap-6"
+  >
+    {#if move !== undefined}
+      <div class="tablet:order-last">
+        <MoveCard {code} status={load.detail.listed.status} {move} />
+      </div>
+    {/if}
+    <div class="grid gap-4 tablet:col-span-2 tablet:gap-6">
+      <ReportText text={load.detail.report} />
+      <ReportAudit entries={load.detail.audit} />
+    </div>
   </div>
 {/if}
