@@ -242,3 +242,27 @@ test("lets the move card name the report in its confirmation", () => {
     `Mark ${CODE} as Published, issue #5?`,
   );
 });
+
+test("offers the public issue page for a report that exists", () => {
+  const markup = view(READY);
+
+  expect(markup).toMatch(
+    new RegExp(
+      `<a\\b[^>]*href="/admin/reports/${CODE}/issue"[^>]*>[\\s\\S]*Copy as public issue\\s*</a>`,
+    ),
+  );
+});
+
+test.each([
+  { kind: "loading" },
+  { kind: "notFound" },
+  { kind: "failed", message: copy.errors.timeout },
+] as const)("offers no public issue page while the report is $kind", (load) => {
+  expect(view(load)).not.toContain("Copy as public issue");
+});
+
+test("keeps the public issue link available once the text is purged", () => {
+  const markup = view({ kind: "ready", detail: detail({ report: null }) });
+
+  expect(markup).toContain("Copy as public issue");
+});
