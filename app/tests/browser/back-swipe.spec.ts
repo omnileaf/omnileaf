@@ -253,7 +253,7 @@ test("shows the screen it went back to scrolled as it was during the swipe", asy
   await page
     .getByRole("main")
     .getByRole("link", { name: NESTED_TITLE })
-    .click();
+    .dispatchEvent("click");
   await expect(heading(page, NESTED_TITLE)).toBeVisible();
   await page.getByRole("main").evaluate((main) => {
     main.scrollTop = 0;

@@ -1328,6 +1328,7 @@
   @variant ios {
     @variant max-medium {
       --icon-hole: var(--muted);
+      --spacing-title-gap: 0px;
     }
   }
 }
