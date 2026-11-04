@@ -1,5 +1,3 @@
-//! Serves the dashboard against a built-in fake relay and fake GitHub, so a browser can open every page.
-
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -32,7 +30,7 @@ struct Sample {
     text: Option<&'static str>,
 }
 
-const SAMPLES: [Sample; 5] = [
+const SAMPLES: [Sample; 6] = [
     Sample {
         code: "R-8M4T-K2QX",
         age_hours: 2,
@@ -70,6 +68,15 @@ const SAMPLES: [Sample; 5] = [
         platform: "windows",
         version: "1.3.2",
         text: Some("Search ignores accents."),
+    },
+    Sample {
+        code: "R-5K6L-N8PQ",
+        age_hours: 200,
+        status: "duplicate",
+        issue: Some(398),
+        platform: "android",
+        version: "1.3.2",
+        text: Some("Searching for an accented title finds nothing."),
     },
     Sample {
         code: "R-7E9S-M3TY",
