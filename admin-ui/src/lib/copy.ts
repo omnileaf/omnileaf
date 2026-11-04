@@ -69,6 +69,20 @@ export const copy = {
     noMatchHint:
       "Try a different search, or clear the filters to see every report.",
   },
+  report: {
+    backToReports: "Reports",
+    loading: "Loading report",
+    loadFailed: "Could not load this report",
+    notFound: "This report does not exist",
+    notFoundHint:
+      "Check the code in the address, or go back to the list of reports.",
+    viewAll: "View all reports",
+    facts: {
+      platform: "Platform",
+      version: "Version",
+      received: "Received",
+    },
+  },
   dashboard: {
     subtitle: `Counts cover the newest ${String(LIST_LIMIT)} reports.`,
     phoneSubtitle: `Reports from the newest ${String(LIST_LIMIT)}.`,
