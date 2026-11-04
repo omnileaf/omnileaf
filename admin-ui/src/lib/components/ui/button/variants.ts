@@ -11,6 +11,9 @@ export const BUTTON_VARIANTS = {
   ghost: "text-foreground hover:bg-chip",
 } satisfies Record<string, string>;
 
+export const OUTLINE_TO_GHOST_FROM_TABLET =
+  "tablet:border-transparent tablet:bg-transparent tablet:hover:bg-chip";
+
 export const BUTTON_SIZES = {
   sm: "block-11 px-3 tablet:block-8",
   default: `${CONTROL_HEIGHT} px-4`,

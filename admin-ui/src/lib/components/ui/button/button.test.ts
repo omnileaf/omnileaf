@@ -8,7 +8,11 @@ import {
   CONSUMER_CLASS,
 } from "#lib/components/ui/render.ts";
 
-import { buttonLook } from "./variants.ts";
+import {
+  BUTTON_VARIANTS,
+  buttonLook,
+  OUTLINE_TO_GHOST_FROM_TABLET,
+} from "./variants.ts";
 import {
   Button,
   type ButtonProps,
@@ -110,4 +114,52 @@ test("gives a link the look of a button of the same variant and size", () => {
   expectOwnLook(VARIANT_LOOKS, "outline", tokens);
   expectOwnLook(SIZE_LOOKS, "sm", tokens);
   expect(tokens).toContain("inline-flex");
+});
+
+test("swaps the outline look for the ghost look from the tablet width", () => {
+  expect(OUTLINE_TO_GHOST_FROM_TABLET.split(" ")).toEqual([
+    "tablet:border-transparent",
+    "tablet:bg-transparent",
+    "tablet:hover:bg-chip",
+  ]);
+});
+
+test("takes the hover look of the swap from the ghost variant", () => {
+  const ghostHover = BUTTON_VARIANTS.ghost
+    .split(" ")
+    .filter((token) => token.startsWith("hover:"));
+
+  expect(ghostHover.length).toBeGreaterThan(0);
+  for (const token of ghostHover) {
+    expect(OUTLINE_TO_GHOST_FROM_TABLET.split(" ")).toContain(
+      `tablet:${token}`,
+    );
+  }
+});
+
+const NEUTRAL_UTILITY: Readonly<Record<string, string>> = {
+  border: "border-transparent",
+  bg: "bg-transparent",
+};
+
+const utilityGroup = (token: string): string => token.split("-")[0] ?? token;
+
+const groupsOf = (variant: ButtonVariant): Set<string> =>
+  new Set(BUTTON_VARIANTS[variant].split(" ").map(utilityGroup));
+
+test("neutralises every utility group that outline has and ghost lacks", () => {
+  const ghost = groupsOf("ghost");
+  const outlineOnly = [...groupsOf("outline")].filter(
+    (group) => !ghost.has(group),
+  );
+  const swapped = OUTLINE_TO_GHOST_FROM_TABLET.split(" ");
+
+  expect(outlineOnly.toSorted()).toEqual(["bg", "border"]);
+  for (const group of outlineOnly) {
+    expect(
+      NEUTRAL_UTILITY[group],
+      `no known neutral for ${group}`,
+    ).toBeDefined();
+    expect(swapped).toContain(`tablet:${String(NEUTRAL_UTILITY[group])}`);
+  }
 });
