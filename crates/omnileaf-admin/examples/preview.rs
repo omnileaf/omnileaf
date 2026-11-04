@@ -69,7 +69,7 @@ const SAMPLES: [Sample; 6] = [
         text: Some("Search ignores accents."),
     },
     Sample {
-        code: "R-5K6L-N8PQ",
+        code: "R-5K6M-N8PQ",
         age_hours: 200,
         status: "duplicate",
         issue: Some(398),
