@@ -8,6 +8,7 @@ import {
   CONSUMER_CLASS,
 } from "#lib/components/ui/render.ts";
 
+import { buttonLook } from "./variants.ts";
 import {
   Button,
   type ButtonProps,
@@ -101,4 +102,12 @@ test("forwards native attributes to the button", () => {
   expect(markup).toContain('id="save"');
   expect(markup).toContain('aria-label="Save it"');
   expect(markup).toMatch(/<button\b[^>]*\sdisabled/);
+});
+
+test("gives a link the look of a button of the same variant and size", () => {
+  const tokens = buttonLook("outline", "sm").split(" ");
+
+  expectOwnLook(VARIANT_LOOKS, "outline", tokens);
+  expectOwnLook(SIZE_LOOKS, "sm", tokens);
+  expect(tokens).toContain("inline-flex");
 });

@@ -1,3 +1,4 @@
+import { cn } from "#lib/cn.ts";
 import { CONTROL_HEIGHT } from "#lib/components/ui/controls.ts";
 
 export const BUTTON_BASE =
@@ -19,3 +20,7 @@ export const BUTTON_SIZES = {
 
 export type ButtonVariant = keyof typeof BUTTON_VARIANTS;
 export type ButtonSize = keyof typeof BUTTON_SIZES;
+
+export function buttonLook(variant: ButtonVariant, size: ButtonSize): string {
+  return cn(BUTTON_BASE, BUTTON_VARIANTS[variant], BUTTON_SIZES[size]);
+}
