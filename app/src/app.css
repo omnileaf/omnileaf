@@ -1851,6 +1851,32 @@
   }
 }
 
+@utility dialog-drop {
+  @media (prefers-reduced-motion: no-preference) {
+    &[class]:where([data-platform="android"] *):where(
+        :root:not([data-still~="sheets"]) *
+      ) {
+      transition-property: opacity, transform, clip-path;
+      transition-duration: var(--transition-duration-flyout);
+      transition-timing-function: var(--ease-flyout);
+      transform-origin: 50% 0;
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(-22px) scaleY(0.9);
+        clip-path: inset(0 0 100% 0 round var(--radius-android-xl));
+      }
+
+      &[data-starting-style],
+      &[data-state="closed"] {
+        opacity: 0;
+        transform: translateY(-22px) scaleY(0.9);
+        clip-path: inset(0 0 100% 0 round var(--radius-android-xl));
+      }
+    }
+  }
+}
+
 @utility no-search-cancel {
   &::-webkit-search-cancel-button {
     display: none;
