@@ -312,11 +312,17 @@ async fn a_name_with_a_character_that_needs_escaping_stops_start_up() {
     }
 }
 
+const FORBIDDEN_IN_WINDOWS_FILE_NAMES: [char; 2] = ['*', ':'];
+
+fn can_be_a_file_name_here(character: char) -> bool {
+    !(cfg!(windows) && FORBIDDEN_IN_WINDOWS_FILE_NAMES.contains(&character))
+}
+
 #[tokio::test]
 async fn every_character_a_browser_sends_raw_in_a_name_is_served() {
     let names: Vec<String> = "-._~!$&'()*+,;=:@[]"
         .chars()
-        .filter(|character| !(cfg!(windows) && matches!(character, '*' | ':')))
+        .filter(|character| can_be_a_file_name_here(*character))
         .map(|character| format!("a{character}b.txt"))
         .collect();
     let mut files = vec![("index.html", SHELL)];
