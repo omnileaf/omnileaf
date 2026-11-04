@@ -41,7 +41,7 @@
       {#if group.heading !== undefined}
         <h2
           id="{headingId}-{index}"
-          class="px-lg text-small font-semibold text-muted ios:text-detail ios:font-regular ios:tracking-heading-caps ios:uppercase android:font-medium android:text-accent"
+          class="px-lg text-small font-semibold text-muted ios:text-native-row-title/native-row-title ios:font-native-tile-title ios:tracking-native-row-title android:font-medium android:text-accent"
         >
           {group.heading()}
         </h2>
