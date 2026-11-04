@@ -3,9 +3,11 @@ import { expect, test, vi } from "vitest";
 import { html, tokensOf } from "#lib/components/ui/render.ts";
 import { copy } from "#lib/copy.ts";
 import type { ReportState } from "#lib/report-store.svelte.ts";
+import type { MoveState } from "#lib/move-state.ts";
 import { aListed } from "#lib/testing.ts";
 import type { ReportDetail } from "#lib/wire.ts";
 
+import type { MoveProps } from "#lib/move-props.ts";
 import ReportView from "./report-view.svelte";
 
 const CODE = "R-2222-2222";
@@ -33,11 +35,32 @@ const STATES: readonly ReportState[] = [
   { kind: "failed", message: copy.errors.relayUnavailable },
 ];
 
-function view(load: ReportState, onRetry = vi.fn()): string {
-  return html(ReportView, { code: CODE, load, onRetry }).replace(
+function aMove(state: MoveState = { kind: "idle" }): MoveProps {
+  return {
+    state,
+    draft: "",
+    onDraftChange: vi.fn(),
+    onChoose: vi.fn(),
+    onConfirm: vi.fn(),
+    onCancel: vi.fn(),
+    onRetry: vi.fn(),
+    onReload: vi.fn(),
+  };
+}
+
+function viewWith(
+  load: ReportState,
+  move: MoveProps | undefined,
+  onRetry = vi.fn(),
+): string {
+  return html(ReportView, { code: CODE, load, move, onRetry }).replace(
     /<!--.*?-->/gs,
     "",
   );
+}
+
+function view(load: ReportState): string {
+  return viewWith(load, undefined);
 }
 
 test.each(STATES)(
@@ -179,3 +202,43 @@ test.each([
     expect(markup).not.toContain(copy.audit.title);
   },
 );
+
+test("puts the move card before the text on a phone and beside it from the tablet width", () => {
+  const markup = viewWith(READY, aMove());
+
+  expect(markup.indexOf("Move this report")).toBeLessThan(
+    markup.indexOf("<pre"),
+  );
+  expect(markup).toMatch(
+    /<div\b[^>]*class="[^"]*\btablet:order-last\b[^"]*"[^>]*>\s*<div\b[^>]*data-slot="card"/,
+  );
+  expect(markup).toMatch(/class="[^"]*\btablet:col-span-2\b/);
+});
+
+test("shows no move card without a session to move with", () => {
+  expect(view(READY)).not.toContain("Move this report");
+});
+
+test.each([
+  { kind: "loading" },
+  { kind: "notFound" },
+  { kind: "failed", message: copy.errors.timeout },
+] as const)("shows no move card while the report is $kind", (load) => {
+  expect(viewWith(load, aMove())).not.toContain("Move this report");
+});
+
+test("lets the move card name the report in its confirmation", () => {
+  const move = aMove({
+    kind: "confirming",
+    request: { status: "published", issue: 5 },
+  });
+
+  const reviewing: ReportState = {
+    kind: "ready",
+    detail: detail({ listed: aListed({ status: { kind: "reviewing" } }) }),
+  };
+
+  expect(viewWith(reviewing, move)).toContain(
+    `Mark ${CODE} as Published, issue #5?`,
+  );
+});
