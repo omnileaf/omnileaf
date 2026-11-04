@@ -40,6 +40,9 @@ impl AppState {
             .filter(|login| !login.is_empty())
             .collect();
         let http = github::http_client()?;
+        if config.static_dir.is_none() {
+            tracing::warn!("ADMIN_STATIC_DIR is not set, so every page answers 404");
+        }
         let assets = config
             .static_dir
             .as_deref()

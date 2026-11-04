@@ -80,3 +80,16 @@ async fn the_post_routes_of_the_removed_pages_are_refused_with_or_without_an_int
         assert!(harness.relay.posts().is_empty());
     }
 }
+
+#[tokio::test]
+async fn without_an_interface_every_page_is_a_404_for_everyone() {
+    let harness = Harness::start(&["alice"]).await;
+    let cookie = harness.sign_in("alice").await;
+    for path in PAGES {
+        for session in [None, Some(cookie.as_str())] {
+            let reply = harness.get(path, session).await;
+            assert_eq!(reply.status, StatusCode::NOT_FOUND, "{path} {session:?}");
+        }
+    }
+    assert!(harness.relay.requests().is_empty());
+}
