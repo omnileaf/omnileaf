@@ -1,3 +1,4 @@
+mod api;
 mod health;
 mod moves;
 mod reports;

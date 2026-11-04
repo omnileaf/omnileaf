@@ -19,6 +19,12 @@ pub(crate) struct Session {
 }
 
 impl Session {
+    pub(crate) fn from_headers(headers: &HeaderMap, state: &AppState) -> Option<Self> {
+        let cookie = cookie_value(headers, SESSION_COOKIE)?;
+        let login = state.keys.open(SESSION_COOKIE, &cookie, state.now())?;
+        Some(Self { login, cookie })
+    }
+
     pub(crate) fn csrf_token(&self, state: &AppState) -> String {
         state.keys.csrf_token(&self.cookie)
     }
@@ -35,14 +41,10 @@ impl FromRequestParts<AppState> for Session {
         parts: &mut Parts,
         state: &AppState,
     ) -> impl Future<Output = Result<Self, Self::Rejection>> {
-        let cookie = cookie_value(&parts.headers, SESSION_COOKIE);
-        let login = cookie
-            .as_deref()
-            .and_then(|sealed| state.keys.open(SESSION_COOKIE, sealed, state.now()));
-        std::future::ready(match (cookie, login) {
-            (Some(cookie), Some(login)) => Ok(Self { login, cookie }),
-            _ => Err(Redirect::to("/admin/login").into_response()),
-        })
+        std::future::ready(
+            Self::from_headers(&parts.headers, state)
+                .ok_or_else(|| Redirect::to("/admin/login").into_response()),
+        )
     }
 }
 

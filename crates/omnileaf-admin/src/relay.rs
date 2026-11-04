@@ -10,13 +10,14 @@ pub(crate) enum RelayError {
     Unavailable,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct StatusView {
     pub(crate) kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) issue: Option<u64>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Listed {
     pub(crate) code: ReportCode,
@@ -26,7 +27,7 @@ pub(crate) struct Listed {
     pub(crate) version: String,
 }
 
-/// The relay's answer also carries a reply address, which is left out here so no page can show it.
+/// The relay's answer also carries a reply address, which is left out here so nothing built from it can show it.
 #[derive(Debug, Deserialize)]
 pub(crate) struct Detail {
     pub(crate) listed: Listed,

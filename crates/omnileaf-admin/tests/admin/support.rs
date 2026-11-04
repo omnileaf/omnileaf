@@ -30,6 +30,7 @@ pub(crate) const CLIENT_SECRET: &str = "client-secret";
 pub(crate) const SESSION_KEY: &str = "0123456789abcdef0123456789abcdef";
 pub(crate) const RELAY_TOKEN: &str = "relay-token";
 pub(crate) const START: u64 = 1_700_000_000;
+const DEFAULT_LIST_LIMIT: usize = 50;
 
 struct GitHubState {
     memberships: Mutex<HashMap<String, &'static str>>,
@@ -271,6 +272,12 @@ async fn relay_list(
                 .get("status")
                 .is_none_or(|status| report["status"]["kind"] == status.as_str())
         })
+        .take(
+            query
+                .get("limit")
+                .and_then(|limit| limit.parse().ok())
+                .unwrap_or(DEFAULT_LIST_LIMIT),
+        )
         .cloned()
         .collect();
     (StatusCode::OK, Json(Value::Array(kept)))
@@ -507,4 +514,35 @@ pub(crate) fn csrf_in(page: &str) -> String {
         .and_then(|rest| rest.split('"').next())
         .unwrap()
         .to_owned()
+}
+
+pub(crate) const FIRST: &str = "R-1111-1111";
+pub(crate) const SECOND: &str = "R-2222-2222";
+pub(crate) const THIRD: &str = "R-3333-3333";
+
+pub(crate) async fn seeded() -> (Harness, String) {
+    let harness = Harness::start(&["alice"]).await;
+    harness.relay.add_report(
+        FIRST,
+        1_700_000_100,
+        &json!({ "kind": "received" }),
+        "android",
+        "1.2.0",
+    );
+    harness.relay.add_report(
+        SECOND,
+        1_700_000_300,
+        &json!({ "kind": "published", "issue": 42 }),
+        "linux",
+        "1.3.0",
+    );
+    harness.relay.add_report(
+        THIRD,
+        1_700_000_200,
+        &json!({ "kind": "received" }),
+        "linux",
+        "1.2.0",
+    );
+    let cookie = harness.sign_in("alice").await;
+    (harness, cookie)
 }

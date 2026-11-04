@@ -1,3 +1,4 @@
+mod api;
 mod auth;
 mod clock_text;
 mod config;
@@ -13,7 +14,7 @@ use std::{collections::HashSet, sync::Arc};
 use axum::{
     Router,
     middleware::map_response,
-    routing::{get, post},
+    routing::{any, get, post},
 };
 
 pub use config::Config;
@@ -60,6 +61,8 @@ impl AppState {
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/admin/health", get(|| async {}))
+        .route("/admin/api/", any(api::not_found))
+        .nest("/admin/api", api::router())
         .route("/admin", get(review::list))
         .route("/admin/style.css", get(|| async { page::stylesheet() }))
         .route("/admin/reports/{code}", get(review::detail))
