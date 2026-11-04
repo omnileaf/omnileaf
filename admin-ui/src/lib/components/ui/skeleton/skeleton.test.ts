@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf } from "#lib/components/ui/render.ts";
+import { html, tokensOf, CONSUMER_CLASS } from "#lib/components/ui/render.ts";
 
 import { Skeleton } from "./index.ts";
 
@@ -21,8 +21,11 @@ test("draws a chip coloured block and pulses only for people who allow motion", 
 });
 
 test("lets the consumer class size the block and come last", () => {
-  const tokens = tokensOf(html(Skeleton, { class: "block-4 extra" }), BLOCK);
+  const tokens = tokensOf(
+    html(Skeleton, { class: `block-4 ${CONSUMER_CLASS}` }),
+    BLOCK,
+  );
 
   expect(tokens).toContain("block-4");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });

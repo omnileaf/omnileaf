@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf } from "#lib/components/ui/render.ts";
+import { html, tokensOf, CONSUMER_CLASS } from "#lib/components/ui/render.ts";
 
 import { Separator } from "./index.ts";
 
@@ -46,7 +46,7 @@ test("hides a decorative vertical separator from assistive technology", () => {
 });
 
 test("lets the consumer class come last", () => {
-  const markup = html(Separator, { class: "extra" });
+  const markup = html(Separator, { class: CONSUMER_CLASS });
 
-  expect(tokensOf(markup, /<hr\b[^>]*>/).at(-1)).toBe("extra");
+  expect(tokensOf(markup, /<hr\b[^>]*>/).at(-1)).toBe(CONSUMER_CLASS);
 });

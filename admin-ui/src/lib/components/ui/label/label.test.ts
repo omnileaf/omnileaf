@@ -1,6 +1,11 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import { Label } from "./index.ts";
 
@@ -21,10 +26,10 @@ test("sets a label in small medium text", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const markup = html(Label, { class: "text-label extra" });
+  const markup = html(Label, { class: `text-label ${CONSUMER_CLASS}` });
   const tokens = tokensOf(markup, /<label\b[^>]*>/);
 
   expect(tokens).toContain("text-label");
   expect(tokens).not.toContain("text-small");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });

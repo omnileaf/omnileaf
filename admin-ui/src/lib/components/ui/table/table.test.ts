@@ -1,6 +1,11 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import {
   Table,
@@ -23,9 +28,9 @@ test("scrolls a wide table sideways inside its own container", () => {
 });
 
 test("puts the consumer class and attributes on the table itself", () => {
-  const markup = html(Table, { class: "extra", id: "reports" });
+  const markup = html(Table, { class: CONSUMER_CLASS, id: "reports" });
 
-  expect(tokensOf(markup, /<table\b[^>]*>/).at(-1)).toBe("extra");
+  expect(tokensOf(markup, /<table\b[^>]*>/).at(-1)).toBe(CONSUMER_CLASS);
   expect(markup).toMatch(/<table\b[^>]*id="reports"/);
 });
 
@@ -60,13 +65,13 @@ test("gives a body cell 14px of space above and below", () => {
 
 test("lets the consumer class win on a cell", () => {
   const tokens = tokensOf(
-    html(TableCell, { class: "py-2 extra" }),
+    html(TableCell, { class: `py-5 ${CONSUMER_CLASS}` }),
     /<td\b[^>]*>/,
   );
 
-  expect(tokens).toContain("py-2");
+  expect(tokens).toContain("py-5");
   expect(tokens).not.toContain("py-3.5");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("separates rows with a border that the last row drops", () => {

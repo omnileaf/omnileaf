@@ -1,11 +1,11 @@
 <script lang="ts">
+  import PageHead from "#lib/components/page-head.svelte";
   import { copy } from "#lib/copy.ts";
+  import { documentTitle } from "#lib/page-title.ts";
 </script>
 
 <svelte:head>
-  <title>{copy.appName}</title>
+  <title>{documentTitle(copy.shell.dashboard)}</title>
 </svelte:head>
 
-<main class="mx-auto p-6 max-inline-page">
-  <h1 class="text-title font-semibold">{copy.appName}</h1>
-</main>
+<PageHead title={copy.shell.dashboard} />

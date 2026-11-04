@@ -5,6 +5,7 @@ import {
   html,
   tokensOf,
   words,
+  CONSUMER_CLASS,
 } from "#lib/components/ui/render.ts";
 
 import { Badge, type BadgeVariant } from "./index.ts";
@@ -51,9 +52,9 @@ test.each(VARIANTS)(
 );
 
 test("lets the consumer class come last", () => {
-  const markup = html(Badge, { class: "extra", children: words("New") });
+  const markup = html(Badge, { class: CONSUMER_CLASS, children: words("New") });
 
-  expect(tokensOf(markup, BADGE).at(-1)).toBe("extra");
+  expect(tokensOf(markup, BADGE).at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("forwards native attributes to the badge", () => {

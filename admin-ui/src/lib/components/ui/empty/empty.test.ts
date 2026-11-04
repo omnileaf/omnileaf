@@ -1,7 +1,12 @@
 import Inbox from "@lucide/svelte/icons/inbox";
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import {
   Empty,
@@ -30,11 +35,14 @@ test("draws an empty state as a centred dashed box in the card radius", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const tokens = tokensOf(html(Empty, { class: "p-4 extra" }), /<div\b[^>]*>/);
+  const tokens = tokensOf(
+    html(Empty, { class: `p-4 ${CONSUMER_CLASS}` }),
+    /<div\b[^>]*>/,
+  );
 
   expect(tokens).toContain("p-4");
   expect(tokens).not.toContain("p-8");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("shows the icon it is given in a round accent badge", () => {

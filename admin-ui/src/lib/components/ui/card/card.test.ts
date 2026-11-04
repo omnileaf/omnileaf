@@ -1,6 +1,11 @@
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import {
   Card,
@@ -34,12 +39,12 @@ test("leaves the dark scheme to the shadow colour token", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const markup = html(Card, { class: "rounded-panel extra" });
+  const markup = html(Card, { class: `rounded-control ${CONSUMER_CLASS}` });
   const tokens = tokensOf(markup, /<div\b[^>]*>/);
 
-  expect(tokens).toContain("rounded-panel");
+  expect(tokens).toContain("rounded-control");
   expect(tokens).not.toContain("rounded-card");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("forwards native attributes to the card", () => {

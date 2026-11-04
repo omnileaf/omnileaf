@@ -1,7 +1,12 @@
 import Info from "@lucide/svelte/icons/info";
 import { expect, test } from "vitest";
 
-import { html, tokensOf, words } from "#lib/components/ui/render.ts";
+import {
+  html,
+  tokensOf,
+  words,
+  CONSUMER_CLASS,
+} from "#lib/components/ui/render.ts";
 
 import { Alert, AlertDescription, AlertTitle } from "./index.ts";
 
@@ -53,12 +58,15 @@ test("draws the icon it is given in the accent ink beside the words", () => {
 });
 
 test("lets the consumer class win and come last", () => {
-  const markup = html(Alert, { icon: Info, class: "bg-well extra" });
+  const markup = html(Alert, {
+    icon: Info,
+    class: `bg-well ${CONSUMER_CLASS}`,
+  });
   const tokens = tokensOf(markup, BOX);
 
   expect(tokens).toContain("bg-well");
   expect(tokens).not.toContain("bg-card");
-  expect(tokens.at(-1)).toBe("extra");
+  expect(tokens.at(-1)).toBe(CONSUMER_CLASS);
 });
 
 test("sets the title in semibold and the description in muted text", () => {
