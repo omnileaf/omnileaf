@@ -44,6 +44,15 @@ export const copy = {
     none: "No reports yet",
     noneHint: "Problem reports sent from the app appear here.",
     loading: "Loading reports",
+    summary: {
+      all: { one: "{total} report", other: "{total} reports" },
+      someOfAll: {
+        one: "{shown} of {total} report",
+        other: "{shown} of {total} reports",
+      },
+      newest: "The newest {total} reports",
+      someOfNewest: "{shown} of the newest {total} reports",
+    },
   },
   dashboard: {
     subtitle: `Counts cover the newest ${String(LIST_LIMIT)} reports.`,
