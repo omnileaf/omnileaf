@@ -77,6 +77,7 @@ export const copy = {
     notFoundHint:
       "Check the code in the address, or go back to the list of reports.",
     viewAll: "View all reports",
+    copyAsIssue: "Copy as public issue",
     facts: {
       platform: "Platform",
       version: "Version",
@@ -110,6 +111,21 @@ export const copy = {
     movedWithIssue: "Moved to {status}, issue #{issue}.",
     moving: "Moving this report.",
     reloading: "Loading this report again.",
+  },
+  issue: {
+    title: "Copy {code} as a public issue",
+    crumb: "Public issue",
+    textLabel: "Public issue text",
+    hint: "Select all of the text and paste it into a new issue.",
+    copyText: "Copy text",
+    copied: "Copied",
+    selected: "The text is selected. Copy it with the keyboard.",
+    backToReport: "Back to the report",
+    loading: "Loading the issue text",
+    loadFailed: "Could not load the issue text",
+    purgedTitle: "Nothing to copy",
+    purgedHint:
+      "This report's text has been purged, so there is no issue text to copy.",
   },
   audit: {
     title: "Audit trail",
