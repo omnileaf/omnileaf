@@ -8,3 +8,5 @@ site/build
 site/.svelte-kit
 fuzz/corpus
 fuzz/artifacts
+admin-ui/.svelte-kit
+admin-ui/build
