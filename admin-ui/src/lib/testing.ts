@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { isReportCode, type ReportCode } from "#lib/wire.ts";
+import { isReportCode, type Listed, type ReportCode } from "#lib/wire.ts";
 
 export function aCode(text = "R-2222-2222"): ReportCode {
   if (!isReportCode(text)) {
@@ -15,4 +15,15 @@ export function fixtureText(name: string): string {
   return readFileSync(new URL(`${FIXTURES}${name}`, import.meta.url), {
     encoding: "utf8",
   });
+}
+
+export function aListed(overrides: Partial<Listed> = {}): Listed {
+  return {
+    code: aCode("R-1111-1111"),
+    receivedAt: 1_700_000_000,
+    status: { kind: "received" },
+    platform: "linux",
+    version: "1.2.0",
+    ...overrides,
+  };
 }
