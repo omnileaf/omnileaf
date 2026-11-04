@@ -88,6 +88,12 @@ export const copy = {
       purged: "The text of this report has been purged.",
     },
   },
+  moves: {
+    issueNeeded:
+      "Enter the issue number to mark this report {status}. Use a whole number above zero.",
+    refused: "A {from} report cannot be moved to {status}.",
+    gone: "This report no longer exists.",
+  },
   audit: {
     title: "Audit trail",
     hint: "Status changes, newest first.",

@@ -85,7 +85,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isIssueStatusKind(kind: StatusKind): kind is IssueStatusKind {
+export function isIssueStatusKind(kind: StatusKind): kind is IssueStatusKind {
   return ISSUE_STATUS_KINDS.some((issueKind) => issueKind === kind);
 }
 
