@@ -95,6 +95,15 @@ const count: Decoder<number> = (value) =>
     ? value
     : undefined;
 
+const LAST_FORMATTABLE_SECOND = 253_402_300_799;
+
+const unixSeconds: Decoder<number> = (value) => {
+  const seconds = count(value);
+  return seconds !== undefined && seconds <= LAST_FORMATTABLE_SECOND
+    ? seconds
+    : undefined;
+};
+
 const issueNumber: Decoder<number> = (value) =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0
     ? value
@@ -141,7 +150,7 @@ const listed: Decoder<Listed> = (value) => {
     return undefined;
   }
   const id = code(value["code"]);
-  const receivedAt = count(value["receivedAt"]);
+  const receivedAt = unixSeconds(value["receivedAt"]);
   const state = status(value["status"]);
   const platform = text(value["platform"]);
   const version = text(value["version"]);
@@ -161,7 +170,7 @@ const auditEntry: Decoder<AuditEntry> = (value) => {
   const previous = statusKind(value["previous"]);
   const state = status(value["status"]);
   const actor = text(value["actor"]);
-  const at = count(value["at"]);
+  const at = unixSeconds(value["at"]);
   return previous === undefined ||
     state === undefined ||
     actor === undefined ||
