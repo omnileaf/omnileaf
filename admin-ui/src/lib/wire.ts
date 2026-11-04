@@ -6,6 +6,8 @@ export const STATUS_KINDS = [
   "closed",
 ] as const;
 
+export const LIST_LIMIT = 500;
+
 export const ISSUE_STATUS_KINDS = ["published", "duplicate"] as const;
 
 export const SERVER_ERROR_KINDS = [
