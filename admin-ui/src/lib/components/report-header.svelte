@@ -8,8 +8,11 @@
     code,
     status,
     actions,
-  }: { code: string; status?: Status | undefined; actions?: Snippet } =
-    $props();
+  }: {
+    code: string;
+    status?: Status | undefined;
+    actions?: Snippet | undefined;
+  } = $props();
 </script>
 
 <div
