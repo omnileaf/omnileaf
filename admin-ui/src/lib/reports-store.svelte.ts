@@ -29,6 +29,18 @@ export class ReportsStore {
     return this.#firstLoad;
   }
 
+  apply(report: Listed): void {
+    if (this.state.kind !== "ready") {
+      return;
+    }
+    this.state = {
+      ...this.state,
+      reports: this.state.reports.map((listed) =>
+        listed.code === report.code ? report : listed,
+      ),
+    };
+  }
+
   async reload(): Promise<void> {
     this.#latest += 1;
     const mine = this.#latest;

@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import type { ApiResult } from "#lib/api.ts";
 import { copy } from "#lib/copy.ts";
 import { ReportsStore } from "#lib/reports-store.svelte.ts";
-import { aListed } from "#lib/testing.ts";
+import { aCode, aListed } from "#lib/testing.ts";
 import type { ReportList } from "#lib/wire.ts";
 
 const LISTED = aListed();
@@ -125,4 +125,49 @@ test("ignores an older answer that arrives after a newer reload", async () => {
     reports: [OLDER],
     truncated: false,
   });
+});
+
+const MOVED = aListed({ status: { kind: "closed" } });
+
+test("replaces the entry of a report that changed without moving it in the list", async () => {
+  const other = aListed({ code: aCode("R-3333-3333"), receivedAt: 99 });
+  const { api } = fakeApi(
+    Promise.resolve(ok({ reports: [other, LISTED], truncated: true })),
+  );
+  const store = new ReportsStore(api);
+  await store.reload();
+
+  store.apply(MOVED);
+
+  expect(store.state).toEqual({
+    kind: "ready",
+    reports: [other, MOVED],
+    truncated: true,
+  });
+});
+
+test("leaves the list alone when the report is not in it", async () => {
+  const other = aListed({ code: aCode("R-3333-3333") });
+  const { api } = fakeApi(
+    Promise.resolve(ok({ reports: [other], truncated: false })),
+  );
+  const store = new ReportsStore(api);
+  await store.reload();
+
+  store.apply(MOVED);
+
+  expect(store.state).toEqual({
+    kind: "ready",
+    reports: [other],
+    truncated: false,
+  });
+});
+
+test("leaves a list that is still loading alone", () => {
+  const { api } = fakeApi();
+  const store = new ReportsStore(api);
+
+  store.apply(MOVED);
+
+  expect(store.state).toEqual({ kind: "loading" });
 });
