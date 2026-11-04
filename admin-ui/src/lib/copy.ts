@@ -2,6 +2,7 @@ import type { StatusKind } from "#lib/wire.ts";
 
 export const copy = {
   appName: "Omnileaf reports",
+  breadcrumb: "Breadcrumb",
   status: {
     received: "Received",
     reviewing: "Reviewing",
