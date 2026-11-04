@@ -1,12 +1,13 @@
 import type { Page } from "@playwright/test";
 
-import { expectHeadingFocused } from "./checks.ts";
+import { expectHeadingFocused, heading } from "./checks.ts";
 import { expect, test } from "./fixtures.ts";
-import { CODES, PROBLEM } from "./samples.ts";
+import { CODES, PROBLEM, RECEIVED_TEXT } from "./samples.ts";
 import {
   badgeOf,
   expectMoveAnnounced,
   moveButton,
+  moveStatus,
   openReport,
 } from "./report-page.ts";
 import {
@@ -14,6 +15,7 @@ import {
   failAlways,
   failOnce,
   MOVE_API,
+  REPORT_API,
   stubSignInPage,
   succeedMoves,
 } from "./stubs.ts";
@@ -148,4 +150,46 @@ test("an ended session sends the browser to sign in", async ({
   await moveButton(page, "Closed").click();
 
   await expect(page).toHaveURL("/admin/login");
+});
+
+test.describe("a reload that fails after a lost answer", () => {
+  test.beforeEach(async ({ page, expectFailedLoads }) => {
+    expectFailedLoads(2);
+    await openReport(page, CODES.received);
+    await page.route(MOVE_API, (route) => route.abort("connectionreset"));
+    await moveButton(page, "Closed").click();
+    await expect(page.locator(PROBLEM)).toContainText(
+      "The admin service could not be reached.",
+    );
+    await expect(recoveries(page)).toHaveText(["Reload report", "Try again"]);
+  });
+
+  test("leaves focus on the page heading and can be tried again", async ({
+    page,
+  }) => {
+    await failOnce(page, REPORT_API, 502, { error: "relayUnavailable" });
+
+    await recoveries(page).first().click();
+
+    await expect(page.getByText("Could not load this report")).toBeVisible();
+    await expect(heading(page)).toHaveText(CODES.received);
+    await expectHeadingFocused(page);
+    await expect(moveStatus(page)).toHaveCount(0);
+    await expect(page.locator(PROBLEM)).toHaveCount(0);
+    await page.getByRole("button", { name: "Try again" }).click();
+    await expect(page.locator("pre")).toHaveText(RECEIVED_TEXT);
+    await expectHeadingFocused(page);
+  });
+
+  test("leaves focus on the page heading when the report is gone", async ({
+    page,
+  }) => {
+    await failAlways(page, REPORT_API, 404, { error: "notFound" });
+
+    await recoveries(page).first().click();
+
+    await expect(page.getByText("This report does not exist")).toBeVisible();
+    await expect(heading(page)).toHaveText(CODES.received);
+    await expectHeadingFocused(page);
+  });
 });
