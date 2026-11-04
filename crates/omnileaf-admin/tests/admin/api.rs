@@ -1,21 +1,16 @@
 #![expect(
-    clippy::unwrap_used,
     clippy::indexing_slicing,
     reason = "fixtures and answers are fixed JSON, so a failed parse should stop the test"
 )]
 
 use axum::http::{StatusCode, header};
-use serde_json::{Value, json};
+use serde_json::json;
 
-use super::support::{FIRST, Harness, Reply, SECOND, csrf_in, seeded};
+use super::support::{FIRST, Harness, Reply, SECOND, csrf_in, json_of, seeded};
 
 const LEAKED_ADDRESS: &str = "leaked-reporter@example.test";
 const SESSION_SECONDS: u64 = 8 * 60 * 60;
 const LIST_LIMIT: u64 = 500;
-
-fn json_of(text: &str) -> Value {
-    serde_json::from_str(text).unwrap()
-}
 
 async fn seeded_with_audit() -> (Harness, String) {
     let (harness, cookie) = seeded().await;

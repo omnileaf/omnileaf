@@ -490,6 +490,24 @@ impl Harness {
             .await
     }
 
+    pub(crate) async fn post_json(
+        &self,
+        path: &str,
+        cookie: Option<&str>,
+        csrf: Option<&str>,
+        body: &str,
+    ) -> Reply {
+        let mut request = Request::post(path).header(header::CONTENT_TYPE, "application/json");
+        if let Some(cookie) = cookie {
+            request = request.header(header::COOKIE, cookie);
+        }
+        if let Some(csrf) = csrf {
+            request = request.header("x-csrf-token", csrf);
+        }
+        self.send(request.body(Body::from(body.to_owned())).unwrap())
+            .await
+    }
+
     pub(crate) async fn start_sign_in(&self) -> (String, String) {
         let reply = self.get("/admin/login", None).await;
         let target = reqwest::Url::parse(reply.location()).unwrap();
@@ -512,6 +530,10 @@ impl Harness {
         assert_eq!(reply.status, StatusCode::SEE_OTHER, "{}", reply.body);
         reply.cookie_pair("admin_session").unwrap()
     }
+}
+
+pub(crate) fn json_of(text: &str) -> Value {
+    serde_json::from_str(text).unwrap()
 }
 
 pub(crate) fn csrf_in(page: &str) -> String {

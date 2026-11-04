@@ -59,6 +59,10 @@ pub(crate) fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
         .map(|(_, value)| value.to_owned())
 }
 
+pub(crate) fn clear_session_cookie(response: &mut Response) {
+    set_cookie(response, SESSION_COOKIE, "", 0);
+}
+
 fn set_cookie(response: &mut Response, name: &str, value: &str, max_age: u64) {
     let line =
         format!("{name}={value}; Path=/admin; HttpOnly; Secure; SameSite=Lax; Max-Age={max_age}");
@@ -177,6 +181,6 @@ pub(crate) async fn logout(
         );
     }
     let mut response = notice(StatusCode::OK, "Signed out", "You are signed out.");
-    set_cookie(&mut response, SESSION_COOKIE, "", 0);
+    clear_session_cookie(&mut response);
     response
 }
