@@ -102,6 +102,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0066_keep_the_books_removed_from_the_library"),
     migration!("0067_index_the_sessions_that_moved_forward"),
     migration!("0068_search_the_titles_of_each_book"),
+    migration!("0069_key_reading_sessions_by_profile"),
 ];
 
 pub(crate) fn pending(
@@ -783,9 +784,11 @@ mod tests {
     }
 
     const SESSIONS_AS_THE_STORE_WRITES_THEM: &str =
-        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER";
+        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER;
+        ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
     const SESSIONS_AS_SCHEMA_26_KEPT_THEM: &str =
-        "ALTER TABLE reading_session DROP COLUMN first_page";
+        "ALTER TABLE reading_session DROP COLUMN first_page;
+        ALTER TABLE reading_session DROP COLUMN profile";
 
     #[test]
     fn knows_when_each_series_kept_from_before_was_last_read() {
@@ -1112,6 +1115,36 @@ mod tests {
         assert_eq!(
             stored_registers(&connection, &format!("profile, {REGISTER_COLUMNS}")),
             kept_in_the_default_profile
+        );
+    }
+
+    #[test]
+    fn moves_the_sessions_kept_before_profiles_into_the_default_profile_unchanged() {
+        let scratch = ScratchLibrary::new("sessions-by-profile-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..68]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO reading_session
+                    (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count,
+                     first_page)
+                 VALUES (zeroblob(16), 1000, 2000, 0, 0, 1, 0)",
+                [],
+            )
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let sessions: (i64, Vec<u8>) = connection
+            .query_row(
+                "SELECT (SELECT count(*) FROM reading_session), profile FROM reading_session",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            sessions,
+            (1, ProfileId::default_profile().as_bytes().to_vec())
         );
     }
 
