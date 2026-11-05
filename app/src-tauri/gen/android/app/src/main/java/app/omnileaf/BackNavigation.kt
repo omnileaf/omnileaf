@@ -5,17 +5,16 @@ import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 
 internal interface WebHistory {
-    fun canGoBack(): Boolean
-
     fun goBack()
 }
 
 internal class WebViewHistory(
     private val webView: WebView,
 ) : WebHistory {
-    override fun canGoBack(): Boolean = webView.canGoBack()
-
-    override fun goBack() = webView.goBack()
+    /** Android's WebView keeps no entry for a `pushState`, so `goBack` there does nothing and the page is asked to step back itself. */
+    override fun goBack() {
+        webView.evaluateJavascript("history.back()", null)
+    }
 }
 
 internal sealed interface BackGesture {
@@ -36,8 +35,8 @@ internal class BackNavigation(
     private var gestures: BackGestures? = null
 
     /** Android plays its back-to-home preview only while no enabled callback would take the gesture. */
-    fun followHistory() {
-        isEnabled = history.canGoBack()
+    fun followHistory(canGoBack: Boolean) {
+        isEnabled = canGoBack
     }
 
     fun watch(gestures: BackGestures) {

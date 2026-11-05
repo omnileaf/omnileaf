@@ -437,8 +437,8 @@ async fn match_system_bars(
 
 #[tauri::command]
 #[specta::specta]
-async fn follow_back_history(app: AppHandle) -> Result<(), IpcError> {
-    back_navigation::follow_history(&app).await
+async fn follow_back_history(app: AppHandle, can_go_back: bool) -> Result<(), IpcError> {
+    back_navigation::follow_history(&app, can_go_back).await
 }
 
 #[tauri::command]
