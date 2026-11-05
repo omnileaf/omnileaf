@@ -116,6 +116,26 @@ async fn lists_each_series_in_the_language_its_books_name() {
 }
 
 #[tokio::test]
+async fn lists_a_series_whose_books_name_no_language_without_one() {
+    let scanned = Scanned::with(
+        "details-no-language",
+        &[
+            (SERIES_01, ADULT_IN_JAPANESE),
+            (SERIES_02, BY_THE_SAME_AUTHOR),
+        ],
+    )
+    .await;
+
+    let listed = scanned.listed().await;
+
+    let languages: Vec<Option<&str>> = listed
+        .iter()
+        .map(|series| series.language.as_deref())
+        .collect();
+    assert_eq!(languages, [Some("ja"), None]);
+}
+
+#[tokio::test]
 async fn counts_a_series_its_files_rate_18_plus_as_adult_while_age_ratings_count() {
     let scanned = Scanned::with(
         "details-adult",
