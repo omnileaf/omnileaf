@@ -2,11 +2,7 @@ import type { Attachment } from "svelte/attachments";
 
 import { currentPlatform } from "#lib/page/platform.ts";
 
-import {
-  depth,
-  followsHistoryForBack,
-  tellAndroidHowFarBack,
-} from "./android-back";
+import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
 
 export interface PageHistory {
   push(): () => boolean;
@@ -45,7 +41,6 @@ export class OverlayBack {
       this.#backed();
     });
     entry.isOnEntry = this.#history.push();
-    depth.overlayHeld();
     this.#tell();
     return () => {
       this.#release(entry);
@@ -67,7 +62,6 @@ export class OverlayBack {
 
   #release(entry: HeldEntry): void {
     this.#held = this.#held.filter((held) => held !== entry);
-    depth.overlayReleased();
     if (!entry.isPopped && entry.isOnEntry()) {
       this.#ownPops += 1;
       this.#history.back();

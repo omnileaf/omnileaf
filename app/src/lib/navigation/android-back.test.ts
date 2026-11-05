@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
 
-import type { NavigationType } from "$app/navigation";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { BackDepth, followHistoryForBack } from "./android-back";
@@ -8,94 +7,63 @@ import { BackDepth, followHistoryForBack } from "./android-back";
 const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos", "windows"];
 
 function navigations() {
-  const listeners: ((arrival: { type: NavigationType }) => void)[] = [];
+  const listeners: (() => void)[] = [];
   return {
-    afterEach: (listener: (arrival: { type: NavigationType }) => void) => {
+    afterEach: (listener: () => void) => {
       listeners.push(listener);
     },
-    arrive: (type: NavigationType) => {
+    navigate: () => {
       for (const listener of listeners) {
-        listener({ type });
+        listener();
       }
     },
   };
 }
 
 test("has nowhere to go back to on the screen the app opened on", () => {
-  const depth = new BackDepth();
-
-  depth.arrived("enter");
-
-  expect(depth.canGoBack).toBe(false);
+  expect(new BackDepth().canGoBack).toBe(false);
 });
 
-test("counts the screen the app lands on as the first, whichever way the router arrives", () => {
+test("has somewhere to go back to once the page pushes an entry", () => {
   const depth = new BackDepth();
 
-  depth.arrived("goto");
-
-  expect(depth.canGoBack).toBe(false);
-
-  depth.arrived("link");
+  depth.pushed();
 
   expect(depth.canGoBack).toBe(true);
 });
 
-test("has somewhere to go back to once another screen is opened", () => {
+test("has nowhere to go back to once every entry pushed is stepped back over", () => {
   const depth = new BackDepth();
 
-  depth.arrived("enter");
-  depth.arrived("link");
-
-  expect(depth.canGoBack).toBe(true);
-});
-
-test("has nowhere to go back to once every screen pushed is left again", () => {
-  const depth = new BackDepth();
-
-  depth.arrived("enter");
-  depth.arrived("link");
-  depth.arrived("goto");
-  depth.arrived("popstate");
-  depth.arrived("popstate");
+  depth.pushed();
+  depth.pushed();
+  depth.popped();
+  depth.popped();
+  depth.popped();
 
   expect(depth.canGoBack).toBe(false);
 });
 
-test("counts a form's screen and the browser's back step", () => {
-  const depth = new BackDepth();
-
-  depth.arrived("enter");
-  depth.arrived("form");
-
-  expect(depth.canGoBack).toBe(true);
-
-  depth.arrived("popstate");
-
-  expect(depth.canGoBack).toBe(false);
-});
-
-test("tells Android after every navigation whether the page can go back", () => {
-  const { afterEach, arrive } = navigations();
-  const told: boolean[] = [];
+test("tells Android after every navigation, so its back gesture follows the page's history", () => {
+  const { afterEach, navigate } = navigations();
+  let told = 0;
   followHistoryForBack(
     () => "android",
     afterEach,
-    (canGoBack) => {
-      told.push(canGoBack);
+    () => {
+      told += 1;
       return Promise.resolve(null);
     },
   );
 
-  arrive("enter");
-  arrive("link");
-  arrive("popstate");
+  navigate();
+  navigate();
 
-  expect(told).toEqual([false, true, false]);
+  expect(told).toBe(2);
 });
 
 test.each(ELSEWHERE)("leaves the back gesture alone on %s", (platform) => {
-  const { afterEach, arrive } = navigations();
+  const { afterEach, navigate } = navigations();
   let told = 0;
   followHistoryForBack(
     () => platform,
@@ -106,34 +74,7 @@ test.each(ELSEWHERE)("leaves the back gesture alone on %s", (platform) => {
     },
   );
 
-  arrive("link");
+  navigate();
 
   expect(told).toBe(0);
-});
-
-test("keeps back with the page while a sheet holds a history entry of its own", () => {
-  const depth = new BackDepth();
-
-  depth.overlayHeld();
-
-  expect(depth.canGoBack).toBe(true);
-
-  depth.overlayReleased();
-
-  expect(depth.canGoBack).toBe(false);
-});
-
-test("leaves back with the page after a sheet closes over another screen", () => {
-  const depth = new BackDepth();
-  depth.arrived("enter");
-  depth.arrived("link");
-  depth.overlayHeld();
-
-  depth.overlayReleased();
-
-  expect(depth.canGoBack).toBe(true);
-
-  depth.arrived("popstate");
-
-  expect(depth.canGoBack).toBe(false);
 });

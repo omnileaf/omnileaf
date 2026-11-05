@@ -1,11 +1,7 @@
-import { afterNavigate, type NavigationType } from "$app/navigation";
+import { afterNavigate } from "$app/navigation";
 import { commands, type Platform } from "#lib/ipc/bindings.ts";
 
-interface Arrival {
-  readonly type: NavigationType;
-}
-
-type AfterEachNavigation = (listen: (arrival: Arrival) => void) => void;
+type AfterEachNavigation = (listener: () => void) => void;
 
 const FOLLOWS_HISTORY_FOR_BACK = {
   android: true,
@@ -15,53 +11,47 @@ const FOLLOWS_HISTORY_FOR_BACK = {
   windows: false,
 } satisfies Record<Platform, boolean>;
 
+const SHELL_BRIDGE = "__TAURI_INTERNALS__";
+
 export function followsHistoryForBack(platform: Platform): boolean {
   return FOLLOWS_HISTORY_FOR_BACK[platform];
 }
 
 export class BackDepth {
-  #screensPushed = 0;
-  #overlaysHeld = 0;
-  #hasLanded = false;
+  #pushed = 0;
 
   get canGoBack(): boolean {
-    return this.#screensPushed + this.#overlaysHeld > 0;
+    return this.#pushed > 0;
   }
 
-  arrived(type: NavigationType): void {
-    if (!this.#hasLanded) {
-      this.#hasLanded = true;
-      return;
-    }
-    switch (type) {
-      case "enter":
-        this.#screensPushed = 0;
-        break;
-      case "form":
-      case "goto":
-      case "link":
-        this.#screensPushed += 1;
-        break;
-      case "popstate":
-        this.#screensPushed = Math.max(0, this.#screensPushed - 1);
-        break;
-      case "leave":
-        break;
-    }
+  pushed(): void {
+    this.#pushed += 1;
   }
 
-  overlayHeld(): void {
-    this.#overlaysHeld += 1;
-  }
-
-  overlayReleased(): void {
-    this.#overlaysHeld = Math.max(0, this.#overlaysHeld - 1);
+  popped(): void {
+    this.#pushed = Math.max(0, this.#pushed - 1);
   }
 }
 
-const SHELL_BRIDGE = "__TAURI_INTERNALS__";
-
 export const depth = new BackDepth();
+
+/** Android's WebView keeps no entry for a `pushState`, so the page counts the entries it pushes itself. */
+function countEntriesPushed(): void {
+  const pushState = history.pushState.bind(history);
+  history.pushState = (
+    data: unknown,
+    unused: string,
+    url?: string | URL | null,
+  ) => {
+    pushState(data, unused, url);
+    depth.pushed();
+    tellAndroidHowFarBack();
+  };
+  addEventListener("popstate", () => {
+    depth.popped();
+    tellAndroidHowFarBack();
+  });
+}
 
 /** Tauri's bridge exists only inside the app's own shell, so a page in a plain browser has no command to call. */
 export function tellAndroidHowFarBack(): void {
@@ -70,22 +60,17 @@ export function tellAndroidHowFarBack(): void {
   }
 }
 
-function afterEveryNavigation(listener: (arrival: Arrival) => void): void {
-  afterNavigate((navigation) => {
-    listener({ type: navigation.type });
-  });
-}
+countEntriesPushed();
 
 export function followHistoryForBack(
   platform: () => Platform,
-  afterEachNavigation: AfterEachNavigation = afterEveryNavigation,
-  follow: (canGoBack: boolean) => Promise<unknown> = commands.followBackHistory,
+  afterEachNavigation: AfterEachNavigation = afterNavigate,
+  follow: () => Promise<unknown> = () =>
+    commands.followBackHistory(depth.canGoBack),
 ): void {
-  afterEachNavigation((arrival) => {
-    if (!followsHistoryForBack(platform())) {
-      return;
+  afterEachNavigation(() => {
+    if (followsHistoryForBack(platform())) {
+      void follow();
     }
-    depth.arrived(arrival.type);
-    void follow(depth.canGoBack);
   });
 }
