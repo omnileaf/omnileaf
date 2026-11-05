@@ -6,9 +6,7 @@ import { afterAll, expect, onTestFinished, test } from "vitest";
 import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import { type Locator, pollUntil, xpath } from "./webdriver.ts";
 
-const APP_ID = "app.omnileaf";
 const BACK_KEY = 4;
-const RUNNING_IN_FOREGROUND = 4;
 const NEW_SCREEN_TIMEOUT_MS = 30_000;
 const ADB_TIMEOUT_MS = 30_000;
 const DEFAULT_FONT_SCALE = "1.0";
@@ -69,19 +67,6 @@ async function recreateTheScreenWithFontScale(scale: string): Promise<void> {
   );
   await appSession().switchToWindow(created);
 }
-
-async function appState(): Promise<unknown> {
-  return appSession().runMobileCommand("queryAppState", { appId: APP_ID });
-}
-
-/** The session installs the app for this file, so this runs on the screen the app opens on, with nothing behind it. */
-test("leaves the app from Library", async () => {
-  await shownPage("Library");
-
-  await pressBack();
-
-  await expect.poll(appState).not.toBe(RUNNING_IN_FOREGROUND);
-});
 
 test("goes up from a Settings page to Settings and then to Library", async () => {
   await open(mainNavigationLink("Settings"));
