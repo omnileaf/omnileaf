@@ -307,9 +307,11 @@ pub fn history_page(
 fn profile_and_hiding<'a>(
     connection: &Connection,
     hiding: &'a AdultHiding,
-) -> Result<(ProfileId, [(&'static str, &'a dyn ToSql); 2]), Error> {
+) -> Result<(ProfileId, HidingParams<'a>), Error> {
     Ok((current_profile(connection)?, hiding.params()))
 }
+
+type HidingParams<'a> = [(&'static str, &'a dyn ToSql); 2];
 
 /// Hides a book's sessions so far from History, returning the mark it was hidden behind before, for Undo.
 pub fn hide_book_from_history(
