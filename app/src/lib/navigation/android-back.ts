@@ -22,12 +22,17 @@ export function followsHistoryForBack(platform: Platform): boolean {
 export class BackDepth {
   #screensPushed = 0;
   #overlaysHeld = 0;
+  #hasLanded = false;
 
   get canGoBack(): boolean {
     return this.#screensPushed + this.#overlaysHeld > 0;
   }
 
   arrived(type: NavigationType): void {
+    if (!this.#hasLanded) {
+      this.#hasLanded = true;
+      return;
+    }
     switch (type) {
       case "enter":
         this.#screensPushed = 0;

@@ -29,6 +29,18 @@ test("has nowhere to go back to on the screen the app opened on", () => {
   expect(depth.canGoBack).toBe(false);
 });
 
+test("counts the screen the app lands on as the first, whichever way the router arrives", () => {
+  const depth = new BackDepth();
+
+  depth.arrived("goto");
+
+  expect(depth.canGoBack).toBe(false);
+
+  depth.arrived("link");
+
+  expect(depth.canGoBack).toBe(true);
+});
+
 test("has somewhere to go back to once another screen is opened", () => {
   const depth = new BackDepth();
 
