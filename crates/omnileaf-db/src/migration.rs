@@ -790,6 +790,11 @@ mod tests {
         "ALTER TABLE reading_session DROP COLUMN first_page;
         ALTER TABLE reading_session DROP COLUMN profile";
 
+    const SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68: &str =
+        "ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
+    const SESSIONS_AS_SCHEMA_68_KEPT_THEM: &str =
+        "ALTER TABLE reading_session DROP COLUMN profile";
+
     #[test]
     fn knows_when_each_series_kept_from_before_was_last_read() {
         let scratch = ScratchLibrary::new("last-read-upgrade");
@@ -1121,31 +1126,43 @@ mod tests {
     #[test]
     fn moves_the_sessions_kept_before_profiles_into_the_default_profile_unchanged() {
         let scratch = ScratchLibrary::new("sessions-by-profile-upgrade");
-        drop(Database::open_with(&scratch.config, &MIGRATIONS[..68]).unwrap());
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..68]).unwrap(),
+            ClockAt(9_000),
+        );
         let connection = Connection::open(&scratch.config.path).unwrap();
         connection
-            .execute(
-                "INSERT INTO reading_session
-                    (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count,
-                     first_page)
-                 VALUES (zeroblob(16), 1000, 2000, 0, 0, 1, 0)",
-                [],
-            )
+            .execute_batch(SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68)
+            .unwrap();
+        let place = SessionPlace {
+            book: book(1),
+            page: 0,
+            page_count: 1,
+            utc_offset_minutes: 0,
+        };
+        let written =
+            store.write(move |writer| writer.record_reading(&place, Continuity::AfterBreak));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+        connection
+            .execute_batch(SESSIONS_AS_SCHEMA_68_KEPT_THEM)
             .unwrap();
 
         drop(Database::open(&scratch.config).unwrap());
 
-        let sessions: (i64, Vec<u8>) = connection
+        let default_profile = ProfileId::default_profile().as_bytes().to_vec();
+        let kept: (i64, Vec<u8>, i64) = connection
             .query_row(
-                "SELECT (SELECT count(*) FROM reading_session), profile FROM reading_session",
+                "SELECT count(*), profile, started_at_ms FROM reading_session",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .unwrap();
-        assert_eq!(
-            sessions,
-            (1, ProfileId::default_profile().as_bytes().to_vec())
-        );
+        assert_eq!(kept, (1, default_profile, 9_000));
     }
 
     #[test]
