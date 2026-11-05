@@ -74,6 +74,15 @@ async function appState(): Promise<unknown> {
   return appSession().runMobileCommand("queryAppState", { appId: APP_ID });
 }
 
+/** The session installs the app for this file, so this runs on the screen the app opens on, with nothing behind it. */
+test("leaves the app from Library", async () => {
+  await shownPage("Library");
+
+  await pressBack();
+
+  await expect.poll(appState).not.toBe(RUNNING_IN_FOREGROUND);
+});
+
 test("goes up from a Settings page to Settings and then to Library", async () => {
   await open(mainNavigationLink("Settings"));
   await open(settingsRow("Appearance"));
@@ -107,12 +116,4 @@ test("keeps back inside the app after Android recreates the activity", async () 
   await pressBack();
 
   expect(await shownPage("Settings")).toBe("Settings");
-});
-
-test("leaves the app from Library", async () => {
-  await shownPage("Library");
-
-  await pressBack();
-
-  await expect.poll(appState).not.toBe(RUNNING_IN_FOREGROUND);
 });
