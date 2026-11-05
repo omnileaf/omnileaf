@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::RangeInclusive};
 
-use omnileaf_sync_proto::{BookId, SeriesId};
+use omnileaf_sync_proto::{BookId, ProfileId, SeriesId};
 use rusqlite::{Connection, OptionalExtension, Row, Statement, ToSql, Transaction};
 
 use crate::{
@@ -280,12 +280,12 @@ pub fn history_page(
             Some((":book", book.as_bytes() as &dyn ToSql)),
         ),
     };
-    let profile = current_profile(connection)?;
+    let (profile, hiding_params) = profile_and_hiding(connection, &hiding)?;
     let mut params: Vec<(&str, &dyn ToSql)> = vec![
         (":limit", &limit),
         (":profile", profile.as_bytes() as &dyn ToSql),
     ];
-    params.extend(hiding.params());
+    params.extend(hiding_params);
     if let Some((name, value)) = filter {
         params.push((name, value));
     }
@@ -301,6 +301,14 @@ pub fn history_page(
     };
     let rows = read(connection.prepare(sql)?, &params)?;
     Ok(Page::of(rows, request.size))
+}
+
+/// The current profile and the hiding flags every History query binds, so each read shows only the current profile's sessions.
+fn profile_and_hiding<'a>(
+    connection: &Connection,
+    hiding: &'a AdultHiding,
+) -> Result<(ProfileId, [(&'static str, &'a dyn ToSql); 2]), Error> {
+    Ok((current_profile(connection)?, hiding.params()))
 }
 
 /// Hides a book's sessions so far from History, returning the mark it was hidden behind before, for Undo.
@@ -357,9 +365,8 @@ pub fn reading_time_by_day(
     days: RangeInclusive<i64>,
     hiding: AdultHiding,
 ) -> Result<BTreeMap<i64, i64>, Error> {
-    let profile = current_profile(connection)?;
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     let mut statement = connection.prepare(READING_TIME_BY_DAY)?;
-    let [leaves_out, counts] = hiding.params();
     let rows = statement.query_map(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -387,8 +394,7 @@ pub fn reading_since(
     first_day: i64,
     hiding: AdultHiding,
 ) -> Result<ReadingSince, Error> {
-    let profile = current_profile(connection)?;
-    let [leaves_out, counts] = hiding.params();
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     Ok(connection.prepare(READING_SINCE)?.query_row(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -412,9 +418,8 @@ pub fn days_in_a_row(
     today: i64,
     hiding: AdultHiding,
 ) -> Result<u32, Error> {
-    let profile = current_profile(connection)?;
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     let mut statement = connection.prepare(DAYS_READ_UP_TO)?;
-    let [leaves_out, counts] = hiding.params();
     let days = statement.query_map(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -444,8 +449,7 @@ pub fn book_reading_time(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<i64, Error> {
-    let profile = current_profile(connection)?;
-    let [leaves_out, counts] = hiding.params();
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     Ok(connection.prepare(BOOK_READING_TIME)?.query_row(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -471,8 +475,7 @@ pub fn reading_summary(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<Option<ReadingSummary>, Error> {
-    let profile = current_profile(connection)?;
-    let [leaves_out, counts] = hiding.params();
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     Ok(connection.prepare(READING_SUMMARY)?.query_row(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -510,8 +513,7 @@ pub fn book_sessions(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<Option<BookSessions>, Error> {
-    let profile = current_profile(connection)?;
-    let [leaves_out, counts] = hiding.params();
+    let (profile, [leaves_out, counts]) = profile_and_hiding(connection, &hiding)?;
     Ok(connection.prepare(BOOK_SESSIONS)?.query_row(
         &[
             (":profile", profile.as_bytes() as &dyn ToSql),
@@ -540,10 +542,10 @@ pub fn series_read(
     connection: &Connection,
     hiding: AdultHiding,
 ) -> Result<Vec<(SeriesId, String)>, Error> {
-    let profile = current_profile(connection)?;
+    let (profile, hiding_params) = profile_and_hiding(connection, &hiding)?;
     let mut statement = connection.prepare(SERIES_READ)?;
     let mut params: Vec<(&str, &dyn ToSql)> = vec![(":profile", profile.as_bytes() as &dyn ToSql)];
-    params.extend(hiding.params());
+    params.extend(hiding_params);
     let rows = statement.query_map(&params[..], |row| {
         Ok((stored_id(row, "id")?, row.get("title")?))
     })?;
