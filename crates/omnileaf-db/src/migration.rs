@@ -102,6 +102,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0066_keep_the_books_removed_from_the_library"),
     migration!("0067_index_the_sessions_that_moved_forward"),
     migration!("0068_search_the_titles_of_each_book"),
+    migration!("0069_key_reading_sessions_by_profile"),
 ];
 
 pub(crate) fn pending(
@@ -783,9 +784,14 @@ mod tests {
     }
 
     const SESSIONS_AS_THE_STORE_WRITES_THEM: &str =
-        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER";
+        "ALTER TABLE reading_session ADD COLUMN first_page INTEGER;
+        ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
     const SESSIONS_AS_SCHEMA_26_KEPT_THEM: &str =
-        "ALTER TABLE reading_session DROP COLUMN first_page";
+        "ALTER TABLE reading_session DROP COLUMN first_page;
+        ALTER TABLE reading_session DROP COLUMN profile";
+
+    const SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68: &str = "ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
+    const SESSIONS_AS_SCHEMA_68_KEPT_THEM: &str = "ALTER TABLE reading_session DROP COLUMN profile";
 
     #[test]
     fn knows_when_each_series_kept_from_before_was_last_read() {
@@ -1113,6 +1119,48 @@ mod tests {
             stored_registers(&connection, &format!("profile, {REGISTER_COLUMNS}")),
             kept_in_the_default_profile
         );
+    }
+
+    #[test]
+    fn moves_the_sessions_kept_before_profiles_into_the_default_profile_unchanged() {
+        let scratch = ScratchLibrary::new("sessions-by-profile-upgrade");
+        let store = Store::new(
+            Database::open_with(&scratch.config, &MIGRATIONS[..68]).unwrap(),
+            ClockAt(9_000),
+        );
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute_batch(SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68)
+            .unwrap();
+        let place = SessionPlace {
+            book: book(1),
+            page: 0,
+            page_count: 1,
+            utc_offset_minutes: 0,
+        };
+        let written =
+            store.write(move |writer| writer.record_reading(&place, Continuity::AfterBreak));
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(written)
+            .unwrap();
+        drop(store);
+        connection
+            .execute_batch(SESSIONS_AS_SCHEMA_68_KEPT_THEM)
+            .unwrap();
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let default_profile = ProfileId::default_profile().as_bytes().to_vec();
+        let kept: (i64, Vec<u8>, i64) = connection
+            .query_row(
+                "SELECT count(*), profile, started_at_ms FROM reading_session",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(kept, (1, default_profile, 9_000));
     }
 
     #[test]

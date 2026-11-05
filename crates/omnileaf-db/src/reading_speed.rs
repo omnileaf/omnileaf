@@ -1,21 +1,24 @@
 use rusqlite::Connection;
 
-use crate::Error;
+use crate::{Error, store::current_profile};
 
 const SESSIONS_LEARNED_FROM: u32 = 30;
 const FEWEST_SESSIONS: usize = 3;
 const MS_IN_A_SECOND: u64 = 1_000;
 const LATEST_PAGE_TIMES: &str = "SELECT (ended_at_ms - started_at_ms) / (page - first_page)
     FROM reading_session
-    WHERE page > first_page
+    WHERE profile = ?1 AND page > first_page
     ORDER BY started_at_ms DESC, id DESC
-    LIMIT ?1";
+    LIMIT ?2";
 
 /// Learns how long a page takes to read, none until enough sessions turned pages forward.
 pub fn seconds_per_page(connection: &Connection) -> Result<Option<u32>, Error> {
+    let profile = current_profile(connection)?;
     let mut page_times = connection
         .prepare(LATEST_PAGE_TIMES)?
-        .query_map([SESSIONS_LEARNED_FROM], |row| row.get::<_, u64>(0))?
+        .query_map((profile.as_bytes(), SESSIONS_LEARNED_FROM), |row| {
+            row.get::<_, u64>(0)
+        })?
         .collect::<Result<Vec<_>, _>>()?;
     if page_times.len() < FEWEST_SESSIONS {
         return Ok(None);
@@ -47,7 +50,9 @@ mod tests {
 
         assert_eq!(
             plan,
-            ["SCAN reading_session USING COVERING INDEX reading_session_by_progress"]
+            [
+                "SEARCH reading_session USING COVERING INDEX reading_session_by_profile_progress (profile=?)"
+            ]
         );
     }
 }
