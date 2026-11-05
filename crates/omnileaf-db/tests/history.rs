@@ -32,7 +32,7 @@ use omnileaf_db::{
     },
     store::{Continuity, SeriesEdits, SessionPlace, Store},
 };
-use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, SeriesId};
+use omnileaf_sync_proto::{BookId, Fingerprint, ImageEntry, ProfileId, SeriesId};
 use store_support::{FakeClock, NOW_UNIX_MS, book, open_store, set_position};
 use support::ScratchFolder;
 
@@ -40,6 +40,7 @@ const ADDED_AT_MS: i64 = 1_780_000_000_000;
 const ROOT_FOLDER: &str = "/media/Sample Library";
 const FIRST_SERIES: &str = "Sample Series 01";
 const SECOND_SERIES: &str = "Sample Series 02";
+const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
 const MINUTE_MS: u64 = 60_000;
 const HOUR_MS: u64 = 60 * MINUTE_MS;
 const DAY_MS: u64 = 24 * HOUR_MS;
@@ -900,6 +901,36 @@ async fn pages_through_the_latest_session_of_each_book_started_and_not_finished(
         Some(ms(NOW_UNIX_MS - 3 * HOUR_MS))
     );
     assert_eq!(second.next, None);
+}
+
+#[tokio::test]
+async fn keeps_two_profiles_history_apart() {
+    let history = History::open("history-profiles").await;
+    let another: ProfileId = ANOTHER_PROFILE.parse().unwrap();
+
+    history
+        .read(book(1), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+    let page = history.page(10, None).await.unwrap();
+    assert_eq!(books_of(&page), vec![book(1)]);
+
+    history.store.switch_profile(another).await.unwrap();
+    let page = history.page(10, None).await.unwrap();
+    assert_eq!(books_of(&page), Vec::<BookId>::new());
+
+    history
+        .read(book(4), NOW_UNIX_MS - HOUR_MS, NOW_UNIX_MS - HOUR_MS, 0)
+        .await;
+    let page = history.page(10, None).await.unwrap();
+    assert_eq!(books_of(&page), vec![book(4)]);
+
+    history
+        .store
+        .switch_profile(ProfileId::default_profile())
+        .await
+        .unwrap();
+    let page = history.page(10, None).await.unwrap();
+    assert_eq!(books_of(&page), vec![book(1)]);
 }
 
 #[tokio::test]
