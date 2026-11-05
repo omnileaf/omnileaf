@@ -6,7 +6,12 @@ import androidx.activity.OnBackPressedCallback
 
 internal interface WebHistory {
     fun goBack()
+
+    fun lastStepBack(onAnswered: (Long) -> Unit)
 }
+
+/** A page takes a frame or two to step back, so Android waits this long before deciding it did not. */
+private const val STEP_BACK_ALLOWANCE_MS = 400L
 
 internal class WebViewHistory(
     private val webView: WebView,
@@ -14,6 +19,17 @@ internal class WebViewHistory(
     /** Android's WebView keeps no entry for a `pushState`, so `goBack` there does nothing and the page is asked to step back itself. */
     override fun goBack() {
         webView.evaluateJavascript("history.back()", null)
+    }
+
+    override fun lastStepBack(onAnswered: (Long) -> Unit) {
+        webView.postDelayed(
+            {
+                webView.evaluateJavascript("String(window.__omnileafLastStepBack ?? 0)") { answer ->
+                    onAnswered(answer.trim('"').toLongOrNull() ?: 0L)
+                }
+            },
+            STEP_BACK_ALLOWANCE_MS,
+        )
     }
 }
 
@@ -31,6 +47,7 @@ internal fun interface BackGestures {
 
 internal class BackNavigation(
     private val history: WebHistory,
+    private val leaveTheApp: () -> Unit = {},
 ) : OnBackPressedCallback(false) {
     private var gestures: BackGestures? = null
 
@@ -56,6 +73,12 @@ internal class BackNavigation(
     }
 
     override fun handleOnBackPressed() {
+        val asked = System.currentTimeMillis()
         history.goBack()
+        history.lastStepBack { steppedBackAt ->
+            if (steppedBackAt < asked) {
+                leaveTheApp()
+            }
+        }
     }
 }

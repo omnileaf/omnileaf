@@ -35,6 +35,12 @@ export class BackDepth {
 
 export const depth = new BackDepth();
 
+declare global {
+  interface Window {
+    __omnileafLastStepBack?: number;
+  }
+}
+
 /** Android's WebView keeps no entry for a `pushState`, so the page counts the entries it pushes itself. */
 function countEntriesPushed(): void {
   const pushState = history.pushState.bind(history);
@@ -48,6 +54,7 @@ function countEntriesPushed(): void {
     tellAndroidHowFarBack();
   };
   addEventListener("popstate", () => {
+    window.__omnileafLastStepBack = Date.now();
     depth.popped();
     tellAndroidHowFarBack();
   });
