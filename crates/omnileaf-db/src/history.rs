@@ -11,6 +11,7 @@ use crate::{
         series_books::stored_reading, stored_id::stored_id,
     },
     letter_case::fold_case,
+    store::current_profile,
 };
 
 macro_rules! sessions_newest_first {
@@ -34,7 +35,7 @@ macro_rules! sessions_newest_first {
             LEFT JOIN book_state ON book_state.book_id = book.id ",
             "WHERE NOT ",
             in_hidden_adult_series!("series"),
-            " ",
+            " AND reading_session.profile = :profile ",
             $condition,
             " ORDER BY reading_session.started_at_ms DESC, reading_session.id DESC LIMIT :limit"
         )
@@ -80,19 +81,19 @@ const SESSIONS_OF_BOOK_BEFORE: &str = from_sessions!(
 const FIRST_UNFINISHED: &str = from_sessions!(
     "AND book_state.is_started IS 1 AND book_state.is_read IS NOT 1
         AND NOT EXISTS (SELECT 1 FROM reading_session AS later
-            WHERE later.book_id = reading_session.book_id
+            WHERE later.book_id = reading_session.book_id AND later.profile = reading_session.profile
                 AND later.started_at_ms > reading_session.started_at_ms)"
 );
 const UNFINISHED_BEFORE: &str = from_sessions!(
     "AND book_state.is_started IS 1 AND book_state.is_read IS NOT 1
         AND NOT EXISTS (SELECT 1 FROM reading_session AS later
-            WHERE later.book_id = reading_session.book_id
+            WHERE later.book_id = reading_session.book_id AND later.profile = reading_session.profile
                 AND later.started_at_ms > reading_session.started_at_ms)
         AND (reading_session.started_at_ms, reading_session.id) < (:after_started_at_ms, :after_id)"
 );
 const FIRST_BOOKS: &str = from_sessions!(
     "AND NOT EXISTS (SELECT 1 FROM reading_session AS later
-            WHERE later.book_id = reading_session.book_id
+            WHERE later.book_id = reading_session.book_id AND later.profile = reading_session.profile
                 AND later.started_at_ms > reading_session.started_at_ms)
         AND reading_session.started_at_ms
             > coalesce((SELECT cleared_at_ms FROM history_cleared WHERE id = 1), -1)
@@ -104,7 +105,7 @@ const FIRST_BOOKS: &str = from_sessions!(
 );
 const BOOKS_BEFORE: &str = from_sessions!(
     "AND NOT EXISTS (SELECT 1 FROM reading_session AS later
-            WHERE later.book_id = reading_session.book_id
+            WHERE later.book_id = reading_session.book_id AND later.profile = reading_session.profile
                 AND later.started_at_ms > reading_session.started_at_ms)
         AND reading_session.started_at_ms
             > coalesce((SELECT cleared_at_ms FROM history_cleared WHERE id = 1), -1)
@@ -138,7 +139,7 @@ macro_rules! of_shown_series {
 const READING_TIME_BY_DAY: &str = concat!(
     "SELECT local_day, sum(ended_at_ms - started_at_ms) AS read_ms
     FROM reading_session
-    WHERE local_day BETWEEN :first_day AND :last_day AND ",
+    WHERE local_day BETWEEN :first_day AND :last_day AND reading_session.profile = :profile AND ",
     of_shown_series!(),
     " GROUP BY local_day"
 );
@@ -147,7 +148,7 @@ const READING_SINCE: &str = concat!(
         count(DISTINCT book_id) AS books_opened,
         count(DISTINCT CASE WHEN page + 1 >= page_count THEN book_id END) AS books_finished
     FROM reading_session
-    WHERE local_day >= :first_day AND ",
+    WHERE local_day >= :first_day AND reading_session.profile = :profile AND ",
     of_shown_series!()
 );
 const BOOK_SESSIONS: &str = concat!(
@@ -155,7 +156,7 @@ const BOOK_SESSIONS: &str = concat!(
         coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
         min(local_day) AS first_day, max(local_day) AS last_day
     FROM reading_session
-    WHERE book_id = :book AND ",
+    WHERE book_id = :book AND reading_session.profile = :profile AND ",
     of_shown_series!()
 );
 const SERIES_READ: &str = concat!(
@@ -166,31 +167,32 @@ const SERIES_READ: &str = concat!(
     in_hidden_adult_series!("series"),
     " AND EXISTS (SELECT 1 FROM book
             CROSS JOIN reading_session ON reading_session.book_id = book.id
-            WHERE book.series_local_id = series.local_id)
+            WHERE book.series_local_id = series.local_id
+                AND reading_session.profile = :profile)
     ORDER BY series.title_key, series.id"
 );
 const DAYS_READ_UP_TO: &str = concat!(
     "SELECT DISTINCT local_day
     FROM reading_session
-    WHERE local_day <= :today AND ",
+    WHERE local_day <= :today AND reading_session.profile = :profile AND ",
     of_shown_series!(),
     " ORDER BY local_day DESC"
 );
 const BOOK_READING_TIME: &str = concat!(
     "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0)
     FROM reading_session
-    WHERE book_id = :book AND ",
+    WHERE book_id = :book AND reading_session.profile = :profile AND ",
     of_shown_series!()
 );
 const READING_SUMMARY: &str = concat!(
     "SELECT coalesce(sum(ended_at_ms - started_at_ms), 0) AS read_ms,
         max(page) + 1 AS pages_reached,
         (SELECT latest.page_count FROM reading_session AS latest
-            WHERE latest.book_id = :book
+            WHERE latest.book_id = :book AND latest.profile = :profile
             ORDER BY latest.started_at_ms DESC, latest.ended_at_ms DESC
             LIMIT 1) AS page_count
     FROM reading_session
-    WHERE book_id = :book AND ",
+    WHERE book_id = :book AND reading_session.profile = :profile AND ",
     of_shown_series!()
 );
 
@@ -278,7 +280,11 @@ pub fn history_page(
             Some((":book", book.as_bytes() as &dyn ToSql)),
         ),
     };
-    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":limit", &limit)];
+    let profile = current_profile(connection)?;
+    let mut params: Vec<(&str, &dyn ToSql)> = vec![
+        (":limit", &limit),
+        (":profile", profile.as_bytes() as &dyn ToSql),
+    ];
     params.extend(hiding.params());
     if let Some((name, value)) = filter {
         params.push((name, value));
@@ -351,10 +357,12 @@ pub fn reading_time_by_day(
     days: RangeInclusive<i64>,
     hiding: AdultHiding,
 ) -> Result<BTreeMap<i64, i64>, Error> {
+    let profile = current_profile(connection)?;
     let mut statement = connection.prepare(READING_TIME_BY_DAY)?;
     let [leaves_out, counts] = hiding.params();
     let rows = statement.query_map(
         &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
             (":first_day", days.start() as &dyn ToSql),
             (":last_day", days.end()),
             leaves_out,
@@ -379,9 +387,15 @@ pub fn reading_since(
     first_day: i64,
     hiding: AdultHiding,
 ) -> Result<ReadingSince, Error> {
+    let profile = current_profile(connection)?;
     let [leaves_out, counts] = hiding.params();
     Ok(connection.prepare(READING_SINCE)?.query_row(
-        &[(":first_day", &first_day as &dyn ToSql), leaves_out, counts][..],
+        &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
+            (":first_day", &first_day as &dyn ToSql),
+            leaves_out,
+            counts,
+        ][..],
         |row| {
             Ok(ReadingSince {
                 read_ms: row.get("read_ms")?,
@@ -398,10 +412,16 @@ pub fn days_in_a_row(
     today: i64,
     hiding: AdultHiding,
 ) -> Result<u32, Error> {
+    let profile = current_profile(connection)?;
     let mut statement = connection.prepare(DAYS_READ_UP_TO)?;
     let [leaves_out, counts] = hiding.params();
     let days = statement.query_map(
-        &[(":today", &today as &dyn ToSql), leaves_out, counts][..],
+        &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
+            (":today", &today as &dyn ToSql),
+            leaves_out,
+            counts,
+        ][..],
         |row| row.get::<_, i64>("local_day"),
     )?;
     let mut streak = 0;
@@ -424,9 +444,11 @@ pub fn book_reading_time(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<i64, Error> {
+    let profile = current_profile(connection)?;
     let [leaves_out, counts] = hiding.params();
     Ok(connection.prepare(BOOK_READING_TIME)?.query_row(
         &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
             (":book", &book.as_bytes() as &dyn ToSql),
             leaves_out,
             counts,
@@ -449,9 +471,11 @@ pub fn reading_summary(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<Option<ReadingSummary>, Error> {
+    let profile = current_profile(connection)?;
     let [leaves_out, counts] = hiding.params();
     Ok(connection.prepare(READING_SUMMARY)?.query_row(
         &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
             (":book", &book.as_bytes() as &dyn ToSql),
             leaves_out,
             counts,
@@ -486,9 +510,11 @@ pub fn book_sessions(
     book: BookId,
     hiding: AdultHiding,
 ) -> Result<Option<BookSessions>, Error> {
+    let profile = current_profile(connection)?;
     let [leaves_out, counts] = hiding.params();
     Ok(connection.prepare(BOOK_SESSIONS)?.query_row(
         &[
+            (":profile", profile.as_bytes() as &dyn ToSql),
             (":book", &book.as_bytes() as &dyn ToSql),
             leaves_out,
             counts,
@@ -514,8 +540,11 @@ pub fn series_read(
     connection: &Connection,
     hiding: AdultHiding,
 ) -> Result<Vec<(SeriesId, String)>, Error> {
+    let profile = current_profile(connection)?;
     let mut statement = connection.prepare(SERIES_READ)?;
-    let rows = statement.query_map(&hiding.params()[..], |row| {
+    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":profile", profile.as_bytes() as &dyn ToSql)];
+    params.extend(hiding.params());
+    let rows = statement.query_map(&params[..], |row| {
         Ok((stored_id(row, "id")?, row.get("title")?))
     })?;
     Ok(rows.collect::<Result<_, _>>()?)
@@ -604,19 +633,21 @@ mod tests {
     }
 
     #[test]
-    fn starts_history_at_the_end_of_the_start_index_without_sorting() {
+    fn starts_history_at_the_end_of_the_profile_start_index_without_sorting() {
         let scratch = ScratchLibrary::new("first-sessions-plan");
 
         let plan = scratch.query_plan(FIRST_SESSIONS);
 
         assert_eq!(
             plan,
-            sessions_plan("SCAN reading_session USING INDEX reading_session_by_start")
+            sessions_plan(
+                "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=?)"
+            )
         );
     }
 
     #[test]
-    fn walks_history_back_through_the_start_index_without_sorting() {
+    fn walks_history_back_through_the_profile_start_index_without_sorting() {
         let scratch = ScratchLibrary::new("sessions-before-plan");
 
         let plan = scratch.query_plan(SESSIONS_BEFORE);
@@ -624,7 +655,7 @@ mod tests {
         assert_eq!(
             plan,
             sessions_plan(
-                "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms<?)"
+                "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=? AND started_at_ms<?)"
             )
         );
     }
@@ -649,9 +680,11 @@ mod tests {
         assert_eq!(
             plans,
             [
-                walk("SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"),
                 walk(
-                    "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_book (profile=? AND book_id=?)"
+                ),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_book (profile=? AND book_id=? AND started_at_ms<?)"
                 ),
             ]
         );
@@ -672,11 +705,11 @@ mod tests {
             (
                 [
                     Some(
-                        "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms>?)"
+                        "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=? AND started_at_ms>?)"
                             .to_owned()
                     ),
                     Some(
-                        "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms>? AND started_at_ms<?)"
+                        "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=? AND started_at_ms>? AND started_at_ms<?)"
                             .to_owned()
                     ),
                 ],
@@ -696,7 +729,7 @@ mod tests {
                 &[
                     sessions,
                     "CORRELATED SCALAR SUBQUERY 3",
-                    "SEARCH later USING COVERING INDEX reading_session_by_book (book_id=? AND started_at_ms>?)",
+                    "SEARCH later USING COVERING INDEX reading_session_by_profile_book (profile=? AND book_id=? AND started_at_ms>?)",
                     "SEARCH book USING PRIMARY KEY (id=?)",
                     "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
                 ],
@@ -706,9 +739,11 @@ mod tests {
         assert_eq!(
             plans,
             [
-                walk("SCAN reading_session USING INDEX reading_session_by_start"),
                 walk(
-                    "SEARCH reading_session USING INDEX reading_session_by_start (started_at_ms<?)"
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=?)"
+                ),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=? AND started_at_ms<?)"
                 ),
             ]
         );
@@ -728,15 +763,17 @@ mod tests {
                     "SEARCH book USING PRIMARY KEY (id=?)",
                     "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
                 ],
-                &["USE TEMP B-TREE FOR LAST TERM OF ORDER BY"],
+                &[],
             )
         };
         assert_eq!(
             plans,
             [
-                walk("SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"),
                 walk(
-                    "SEARCH reading_session USING INDEX reading_session_by_book (book_id=? AND started_at_ms<?)"
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=?)"
+                ),
+                walk(
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_start (profile=? AND started_at_ms<?)"
                 ),
             ]
         );
@@ -752,7 +789,7 @@ mod tests {
             plan,
             with_shown_series_check(
                 &[
-                    "SEARCH reading_session USING INDEX reading_session_by_day (local_day>? AND local_day<?)"
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_day (profile=? AND local_day>? AND local_day<?)"
                 ],
                 1
             )
@@ -771,7 +808,7 @@ mod tests {
                 &[
                     "USE TEMP B-TREE FOR count(DISTINCT)",
                     "USE TEMP B-TREE FOR count(DISTINCT)",
-                    "SEARCH reading_session USING INDEX reading_session_by_day (local_day>?)",
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_day (profile=? AND local_day>?)",
                 ],
                 1
             )
@@ -787,7 +824,9 @@ mod tests {
         assert_eq!(
             plan,
             with_shown_series_check(
-                &["SEARCH reading_session USING INDEX reading_session_by_day (local_day<?)"],
+                &[
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_day (profile=? AND local_day<?)"
+                ],
                 1
             )
         );
@@ -802,7 +841,9 @@ mod tests {
         assert_eq!(
             plan,
             with_shown_series_check(
-                &["SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)"],
+                &[
+                    "SEARCH reading_session USING INDEX reading_session_by_profile_book (profile=? AND book_id=?)"
+                ],
                 1
             )
         );
@@ -820,7 +861,7 @@ mod tests {
                 "SCAN series",
                 "CORRELATED SCALAR SUBQUERY 1",
                 "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
-                "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)",
+                "SEARCH reading_session USING COVERING INDEX reading_session_by_profile_book (profile=? AND book_id=?)",
                 "USE TEMP B-TREE FOR ORDER BY",
             ]
         );
@@ -835,12 +876,12 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SEARCH reading_session USING INDEX reading_session_by_book (book_id=?)",
+                "SEARCH reading_session USING INDEX reading_session_by_profile_book (profile=? AND book_id=?)",
                 "CORRELATED SCALAR SUBQUERY 2",
                 "SEARCH book USING PRIMARY KEY (id=?)",
                 "SEARCH series USING INTEGER PRIMARY KEY (rowid=?)",
                 "SCALAR SUBQUERY 1",
-                "SEARCH latest USING INDEX reading_session_by_book (book_id=?)",
+                "SEARCH latest USING INDEX reading_session_by_profile_book (profile=? AND book_id=?)",
             ]
         );
     }
@@ -855,7 +896,7 @@ mod tests {
             plan,
             with_shown_series_check(
                 &[
-                    "SEARCH reading_session USING COVERING INDEX reading_session_by_book (book_id=?)"
+                    "SEARCH reading_session USING COVERING INDEX reading_session_by_profile_book (profile=? AND book_id=?)"
                 ],
                 1
             )
