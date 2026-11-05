@@ -790,10 +790,8 @@ mod tests {
         "ALTER TABLE reading_session DROP COLUMN first_page;
         ALTER TABLE reading_session DROP COLUMN profile";
 
-    const SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68: &str =
-        "ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
-    const SESSIONS_AS_SCHEMA_68_KEPT_THEM: &str =
-        "ALTER TABLE reading_session DROP COLUMN profile";
+    const SESSIONS_AS_THE_STORE_WRITES_THEM_AT_68: &str = "ALTER TABLE reading_session ADD COLUMN profile BLOB NOT NULL DEFAULT x'767c5c13abfd8f4a8c579d6a095c701d'";
+    const SESSIONS_AS_SCHEMA_68_KEPT_THEM: &str = "ALTER TABLE reading_session DROP COLUMN profile";
 
     #[test]
     fn knows_when_each_series_kept_from_before_was_last_read() {
