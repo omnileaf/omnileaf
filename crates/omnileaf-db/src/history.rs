@@ -303,7 +303,6 @@ pub fn history_page(
     Ok(Page::of(rows, request.size))
 }
 
-/// The current profile and the hiding flags every History query binds, so each read shows only the current profile's sessions.
 fn profile_and_hiding<'a>(
     connection: &Connection,
     hiding: &'a AdultHiding,
