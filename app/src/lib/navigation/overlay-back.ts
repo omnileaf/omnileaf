@@ -1,9 +1,8 @@
 import type { Attachment } from "svelte/attachments";
 
-import { commands } from "#lib/ipc/bindings.ts";
 import { currentPlatform } from "#lib/page/platform.ts";
 
-import { followsHistoryForBack } from "./android-back";
+import { followsHistoryForBack, tellAndroidHowFarBack } from "./android-back";
 
 export interface PageHistory {
   push(): () => boolean;
@@ -98,16 +97,7 @@ const windowHistory: PageHistory = {
   },
 };
 
-const SHELL_BRIDGE = "__TAURI_INTERNALS__";
-
-/** Tauri's bridge exists only inside the app's own shell, so a page in a plain browser has no command to call. */
-function followHistory(): void {
-  if (SHELL_BRIDGE in window) {
-    void commands.followBackHistory();
-  }
-}
-
-const overlays = new OverlayBack(windowHistory, followHistory, () =>
+const overlays = new OverlayBack(windowHistory, tellAndroidHowFarBack, () =>
   followsHistoryForBack(currentPlatform()),
 );
 

@@ -7,13 +7,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class PageHistory : WebHistory {
-    var pagesBehind = 0
     var stepsBack = 0
-
-    override fun canGoBack(): Boolean = pagesBehind > 0
+    var steppedBackAt = 0L
 
     override fun goBack() {
         stepsBack += 1
+    }
+
+    override fun lastStepBack(onAnswered: (Long) -> Unit) {
+        onAnswered(steppedBackAt)
     }
 }
 
@@ -23,12 +25,13 @@ class BackNavigationTest {
     private val history = PageHistory()
     private val gestures = mutableListOf<BackGesture>()
 
-    private val back = BackNavigation(history)
+    private var leftTheApp = 0
+
+    private val back = BackNavigation(history) { leftTheApp += 1 }
 
     private fun watched(): BackNavigation =
         back.apply {
-            history.pagesBehind = 1
-            followHistory()
+            followHistory(canGoBack = true)
             watch { gestures.add(it) }
         }
 
@@ -41,28 +44,23 @@ class BackNavigationTest {
 
     @Test
     fun `takes back once the page has somewhere to go back to`() {
-        history.pagesBehind = 1
-
-        back.followHistory()
+        back.followHistory(canGoBack = true)
 
         assertTrue(back.isEnabled)
     }
 
     @Test
     fun `hands back to Android again at the first page`() {
-        history.pagesBehind = 1
-        back.followHistory()
-        history.pagesBehind = 0
+        back.followHistory(canGoBack = true)
 
-        back.followHistory()
+        back.followHistory(canGoBack = false)
 
         assertFalse(back.isEnabled)
     }
 
     @Test
     fun `goes back one page in the web view`() {
-        history.pagesBehind = 1
-        back.followHistory()
+        back.followHistory(canGoBack = true)
 
         back.handleOnBackPressed()
 
@@ -97,5 +95,24 @@ class BackNavigationTest {
         watching.handleOnBackPressed()
 
         assertEquals(1 to listOf(BackGesture.Moved(0f)), history.stepsBack to gestures)
+    }
+
+    @Test
+    fun `leaves the app when the page had nowhere to go back to`() {
+        back.followHistory(canGoBack = true)
+
+        back.handleOnBackPressed()
+
+        assertEquals(1, leftTheApp)
+    }
+
+    @Test
+    fun `stays in the app when the page stepped back`() {
+        back.followHistory(canGoBack = true)
+        history.steppedBackAt = System.currentTimeMillis() + 1_000
+
+        back.handleOnBackPressed()
+
+        assertEquals(0, leftTheApp)
     }
 }

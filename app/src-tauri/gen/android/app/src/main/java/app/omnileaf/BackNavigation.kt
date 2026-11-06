@@ -5,17 +5,32 @@ import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 
 internal interface WebHistory {
-    fun canGoBack(): Boolean
-
     fun goBack()
+
+    fun lastStepBack(onAnswered: (Long) -> Unit)
 }
+
+/** A page takes a frame or two to step back, so Android waits this long before deciding it did not. */
+private const val STEP_BACK_ALLOWANCE_MS = 400L
 
 internal class WebViewHistory(
     private val webView: WebView,
 ) : WebHistory {
-    override fun canGoBack(): Boolean = webView.canGoBack()
+    /** Android's WebView keeps no entry for a `pushState`, so `goBack` there does nothing and the page is asked to step back itself. */
+    override fun goBack() {
+        webView.evaluateJavascript("history.back()", null)
+    }
 
-    override fun goBack() = webView.goBack()
+    override fun lastStepBack(onAnswered: (Long) -> Unit) {
+        webView.postDelayed(
+            {
+                webView.evaluateJavascript("String(window.__omnileafLastStepBack ?? 0)") { answer ->
+                    onAnswered(answer.trim('"').toLongOrNull() ?: 0L)
+                }
+            },
+            STEP_BACK_ALLOWANCE_MS,
+        )
+    }
 }
 
 internal sealed interface BackGesture {
@@ -32,12 +47,13 @@ internal fun interface BackGestures {
 
 internal class BackNavigation(
     private val history: WebHistory,
+    private val leaveTheApp: () -> Unit = {},
 ) : OnBackPressedCallback(false) {
     private var gestures: BackGestures? = null
 
     /** Android plays its back-to-home preview only while no enabled callback would take the gesture. */
-    fun followHistory() {
-        isEnabled = history.canGoBack()
+    fun followHistory(canGoBack: Boolean) {
+        isEnabled = canGoBack
     }
 
     fun watch(gestures: BackGestures) {
@@ -57,6 +73,12 @@ internal class BackNavigation(
     }
 
     override fun handleOnBackPressed() {
+        val asked = System.currentTimeMillis()
         history.goBack()
+        history.lastStepBack { steppedBackAt ->
+            if (steppedBackAt < asked) {
+                leaveTheApp()
+            }
+        }
     }
 }

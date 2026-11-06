@@ -51,7 +51,9 @@ class MainActivity : TauriActivity() {
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
         this.webView = webView
-        backNavigation = BackNavigation(WebViewHistory(webView)).also { onBackPressedDispatcher.addCallback(this, it) }
+        backNavigation =
+            BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })
+                .also { onBackPressedDispatcher.addCallback(this, it) }
         webView.setBackgroundColor(startingBackground)
     }
 

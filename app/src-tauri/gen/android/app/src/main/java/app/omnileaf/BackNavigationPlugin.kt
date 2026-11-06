@@ -11,6 +11,11 @@ import app.tauri.plugin.Plugin
 import app.tauri.plugin.PluginManager
 
 @InvokeArg
+class FollowingHistory {
+    var canGoBack: Boolean = false
+}
+
+@InvokeArg
 class WatchingBackGestures {
     lateinit var channel: Channel
 }
@@ -21,10 +26,11 @@ class BackNavigationPlugin(
 ) : Plugin(activity) {
     @Command
     fun followHistory(invoke: Invoke) {
+        val args = invoke.parseArgs(FollowingHistory::class.java)
         val shownActivity =
             PluginManager.activity as? MainActivity
                 ?: return invoke.reject("no activity is showing the app")
-        shownActivity.runOnUiThread { shownActivity.backNavigation?.followHistory() }
+        shownActivity.runOnUiThread { shownActivity.backNavigation?.followHistory(args.canGoBack) }
         invoke.resolve()
     }
 
