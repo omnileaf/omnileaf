@@ -131,6 +131,7 @@
 {:else}
   <Dialog.Root bind:open={isOpen}>
     <DrawerContent
+      class={isIos ? "" : "inset-bs-sheet-top block-auto"}
       height={isIos ? "large" : "fit"}
       ground={isIos ? "grouped" : "plain"}
       onDismiss={close}
