@@ -1,5 +1,11 @@
 import type { FakeBackend } from "./fake-backend.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 type WireFolder = Awaited<
   ReturnType<FakeBackend["libraryFolders"]>
@@ -65,5 +71,19 @@ test.describe(
       expect((await boxOf(row)).x).toBeLessThanOrEqual(1);
       await expect(row).toHaveCSS("border-top-width", "0px");
     });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto("/settings/library");
+        await expect(
+          page.getByRole("heading", { name: "Folders" }),
+        ).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
   },
 );

@@ -1,4 +1,10 @@
-import { DEFAULT_BACKEND, expect, test, tokenColour } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
@@ -69,4 +75,14 @@ test.describe("quick open on Android", { tag: "@native" }, () => {
     );
     await expect(chosen).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 });
