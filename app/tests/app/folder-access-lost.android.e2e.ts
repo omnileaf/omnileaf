@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { afterAll, beforeAll, test } from "vitest";
+import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import {
@@ -87,6 +87,7 @@ test(
     ).click();
 
     await appSession().waitFor(CANT_OPEN);
-    await appSession().waitFor(CHOOSE_IT_AGAIN);
+    const chooseAgain = await appSession().waitFor(CHOOSE_IT_AGAIN);
+    expect(await chooseAgain.text()).toBe("Choose it again");
   },
 );
