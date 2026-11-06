@@ -7,6 +7,7 @@ import {
   removeSampleLibraryFromTheDevice,
 } from "./files-sample-library.ts";
 import { chooseOnTheIcon } from "./icon-action-intent.ts";
+import { followRestartedApp } from "./restarted-app.ts";
 import {
   FIRST_SERIES_COVER,
   NEXT_PAGE,
@@ -48,6 +49,7 @@ test("Continue reading on the icon opens the book last read at its saved page", 
   await appSession().waitFor(LIBRARY_HEADING);
 
   await chooseOnTheIcon("continueReading");
+  await followRestartedApp(appSession());
 
   await appSession().waitUntil(ON_THE_BOOK, "the book opened from the icon");
   const shown = await appSession().waitFor(xpath(PAGE_SHOWN));
