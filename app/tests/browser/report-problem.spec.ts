@@ -586,17 +586,29 @@ for (const [device, userAgent, place] of [
 
 test.describe("on Android", () => {
   testOnlyInItsWebview("android");
-  test.use(onPlatform("android"));
+  test.use({
+    ...onPlatform("android"),
+    backend: {
+      ...onPlatform("android").backend,
+      saveProblemReport: () => ({
+        place: { kind: "folder", folder: "Downloads" },
+        file: "omnileaf-report-2026-10-16.txt",
+      }),
+    },
+  });
 
-  test("offers no Save as a file", async ({ page }) => {
+  test("saves it to Downloads and says where", async ({ page }) => {
     await openReport(page);
 
-    await expect(
-      waysOut(page).getByRole("button", { name: "Copy report" }),
-    ).toBeVisible();
-    await expect(
-      waysOut(page).getByRole("button", { name: "Save as a file" }),
-    ).toHaveCount(0);
+    await waysOut(page).getByRole("button", { name: "Save as a file" }).click();
+
+    const notice = page
+      .getByRole("listitem")
+      .filter({ hasText: "Report saved" });
+    await expect(notice).toContainText(
+      "In Downloads: omnileaf-report-2026-10-16.txt",
+    );
+    await expect(notice.getByRole("button", { name: /^Show/ })).toHaveCount(0);
   });
 });
 

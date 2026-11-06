@@ -103,7 +103,7 @@
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
     <SendToOmnileaf {sharing} />
-    <WaysToSend {sharing} canSave={platform !== "android"} />
+    <WaysToSend {sharing} canSave />
   {:else}
     <Alert tone="warning" icon={CircleAlert} role="alert">
       <AlertTitle>{m.report_failed()}</AlertTitle>
