@@ -18,7 +18,9 @@ import { xpath } from "./webdriver.ts";
 
 const SETUP_TIMEOUT_MS = 180_000;
 const SAVED_PAGE = 3;
+const GUIDE_TIMEOUT_MS = 3_000;
 const PAGE_SHOWN = `//main//span[starts-with(normalize-space(), '${String(SAVED_PAGE)} / ')]`;
+const GOT_IT = xpath("//*[@role='note']//button[normalize-space()='Got it']");
 const ON_THE_BOOK = "return location.pathname.startsWith('/read/');";
 
 const appSession = useAppSession();
@@ -34,6 +36,8 @@ test("Continue reading on the icon opens the book last read at its saved page", 
   await (await appSession().waitFor(FIRST_SERIES_COVER)).click();
   await showTheBooks(appSession());
   await (await appSession().waitFor(sampleBookLink(1))).click();
+  const card = await appSession().findWithin(GOT_IT, GUIDE_TIMEOUT_MS);
+  await card?.click();
   for (let turned = 1; turned < SAVED_PAGE; turned += 1) {
     await (await appSession().waitFor(NEXT_PAGE)).click();
   }
