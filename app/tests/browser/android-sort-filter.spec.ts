@@ -34,6 +34,7 @@ const TITLE_SIZE = "22px";
 const TITLE_LINE = "28px";
 const TITLE_WEIGHT = "400";
 const SHEET_INLINE_PADDING = 16;
+const SHEET_TOP_GAP = 60;
 const HEAD_END_PADDING = 12;
 const FOOT_BUTTON_HEIGHT = 56;
 const FOOT_BOTTOM = 16;
@@ -516,6 +517,16 @@ test.describe(
         await settle(sheet);
         return sheet;
       }
+
+      test("leaves the top of the screen showing, as the sort and filter sheet does", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+
+        const box = await boxOf(sheet);
+
+        expect(box.y).toBeGreaterThanOrEqual(SHEET_TOP_GAP);
+      });
 
       test("sets the title at title large with no badge and says what it holds under it", async ({
         page,
