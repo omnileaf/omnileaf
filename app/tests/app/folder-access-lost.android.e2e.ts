@@ -24,14 +24,14 @@ const LEAVE_SCREEN_TIMEOUT_MS = 30_000;
 const STAYS_IN_THE_BACKGROUND = -1;
 const IN_THE_BACKGROUND = 3;
 
+const NEEDS_ATTENTION = xpath(
+  "//main//button[starts-with(@aria-label, 'Needs attention')]",
+);
 const CANT_OPEN = xpath(
-  `//*[@role='status']//*[normalize-space()='Omnileaf can’t open ${SAMPLE_LIBRARY.name}']`,
+  `//*[@role='dialog']//*[normalize-space()='Omnileaf can’t open ${SAMPLE_LIBRARY.name}']`,
 );
 const CHOOSE_IT_AGAIN = xpath(
-  "//*[@role='status']//button[normalize-space()='Choose it again']",
-);
-const UNLINK_IT = xpath(
-  "//*[@role='status']//button[normalize-space()='Unlink it']",
+  "//*[@role='dialog']//button[normalize-space()='Choose it again']",
 );
 
 const run = promisify(execFile);
@@ -73,15 +73,18 @@ afterAll(async () => {
 });
 
 test(
-  "tells the person Android no longer lets Omnileaf open a linked folder, and offers to choose it again or unlink it",
+  "lists a linked folder Android no longer lets Omnileaf open under Needs attention, with Choose it again",
   { timeout: TEST_TIMEOUT_MS },
   async () => {
     await adbShell(`mv '${SAMPLE_ON_DEVICE}' '${MOVED_AWAY}'`);
 
     await putAppInTheBackgroundAndBack();
 
-    await appSession().waitFor(CANT_OPEN, NOTICE_TIMEOUT_MS);
+    await (
+      await appSession().waitFor(NEEDS_ATTENTION, NOTICE_TIMEOUT_MS)
+    ).click();
+
+    await appSession().waitFor(CANT_OPEN);
     await appSession().waitFor(CHOOSE_IT_AGAIN);
-    await appSession().waitFor(UNLINK_IT);
   },
 );
