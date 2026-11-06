@@ -4,18 +4,15 @@ import { promisify } from "node:util";
 import { expect, test } from "vitest";
 
 import { useAppSession } from "./app-session.ts";
-import { isRecord, listOf } from "./json.ts";
+import { chooseOnTheIcon, NEW_TASK } from "./icon-action-intent.ts";
+import { followRestartedApp } from "./restarted-app.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
-const APP_WEBVIEW = "WEBVIEW_app.omnileaf";
 const MAIN_ACTIVITY = "app.omnileaf/.MainActivity";
-const OPEN_ICON_ACTION = "app.omnileaf.OPEN_ICON_ACTION";
-const CHOSEN_ICON_ACTION = "app.omnileaf.CHOSEN_ICON_ACTION";
 const LAUNCH = "android.intent.action.MAIN";
 const LAUNCHER = "android.intent.category.LAUNCHER";
 const HOME_KEY = "KEYCODE_HOME";
-const NEW_TASK = 0x10000000;
 const LAUNCHED_FROM_HISTORY = 0x00100000;
 const ADB_TIMEOUT_MS = 30_000;
 const PUBLISHED_TIMEOUT_MS = 30_000;
@@ -48,28 +45,6 @@ async function adb(args: readonly string[]): Promise<string> {
 
 async function publishedShortcuts(): Promise<string> {
   return adb(["shell", "dumpsys", "shortcut"]);
-}
-
-/** Starts the activity as a launcher shortcut does, since where the icon sits and how its menu looks differ from launcher to launcher. */
-async function chooseOnTheIcon(
-  action: string,
-  flags = NEW_TASK,
-): Promise<void> {
-  await adb([
-    "shell",
-    "am",
-    "start",
-    "-W",
-    "-n",
-    MAIN_ACTIVITY,
-    "-f",
-    `0x${flags.toString(16)}`,
-    "-a",
-    OPEN_ICON_ACTION,
-    "--es",
-    CHOSEN_ICON_ACTION,
-    action,
-  ]);
 }
 
 async function searchAfterAnyEarlierChoice(): Promise<void> {
@@ -115,26 +90,6 @@ async function openFromTheLauncher(): Promise<void> {
   ]);
 }
 
-async function hasAppPage(): Promise<true | undefined> {
-  const webviews = listOf(
-    await appSession().runMobileCommand("getContexts", {}),
-  );
-  const shown = webviews.some(
-    (webview) =>
-      isRecord(webview) &&
-      webview.webviewName === APP_WEBVIEW &&
-      listOf(webview.pages).length > 0,
-  );
-  return shown ? true : undefined;
-}
-
-/** Going back to the web view from the native context makes the driver attach to the new process, since the old one's page is gone. */
-async function followRestartedApp(): Promise<void> {
-  await appSession().inNativeContext(() =>
-    pollUntil(hasAppPage, RESTART_TIMEOUT_MS, "the restarted app's web view"),
-  );
-}
-
 test("publishes Screenshot mode with its state, Continue reading and Search the library", async () => {
   await expect
     .poll(publishedShortcuts, { timeout: PUBLISHED_TIMEOUT_MS })
@@ -164,7 +119,7 @@ test("reopening from Recents does not choose again the shortcut that first opene
   await stopTheApp();
 
   await chooseOnTheIcon("screenshotMode", NEW_TASK | LAUNCHED_FROM_HISTORY);
-  await followRestartedApp();
+  await followRestartedApp(appSession());
   await searchAfterAnyEarlierChoice();
 
   expect(await appSession().run(TOLD_SCREENSHOT_MODE_CHANGED)).toBe(false);
@@ -173,7 +128,7 @@ test("reopening from Recents does not choose again the shortcut that first opene
 test("coming back after Android reclaimed the app does not choose again the shortcut that opened it", async () => {
   await stopTheApp();
   await chooseOnTheIcon("screenshotMode");
-  await followRestartedApp();
+  await followRestartedApp(appSession());
   await appSession().waitUntil(
     TOLD_SCREENSHOT_MODE_CHANGED,
     "Screenshot mode to change",
@@ -181,7 +136,7 @@ test("coming back after Android reclaimed the app does not choose again the shor
 
   await reclaimTheAppInTheBackground();
   await openFromTheLauncher();
-  await followRestartedApp();
+  await followRestartedApp(appSession());
   await searchAfterAnyEarlierChoice();
 
   expect(await appSession().run(TOLD_SCREENSHOT_MODE_CHANGED)).toBe(false);
