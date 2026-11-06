@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, test } from "vitest";
+import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { useAppSession } from "./app-session.ts";
 import {
@@ -50,5 +50,8 @@ test("Continue reading on the icon opens the book last read at its saved page", 
   await chooseOnTheIcon("continueReading");
 
   await appSession().waitUntil(ON_THE_BOOK, "the book opened from the icon");
-  await appSession().waitFor(xpath(PAGE_SHOWN));
+  const shown = await appSession().waitFor(xpath(PAGE_SHOWN));
+  expect((await shown.text()).startsWith(`${String(SAVED_PAGE)} / `)).toBe(
+    true,
+  );
 });
