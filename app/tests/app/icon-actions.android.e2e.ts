@@ -4,18 +4,16 @@ import { promisify } from "node:util";
 import { expect, test } from "vitest";
 
 import { useAppSession } from "./app-session.ts";
+import { chooseOnTheIcon, NEW_TASK } from "./icon-action-intent.ts";
 import { isRecord, listOf } from "./json.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
 const APP_ID = "app.omnileaf";
-const APP_WEBVIEW = "WEBVIEW_app.omnileaf";
 const MAIN_ACTIVITY = "app.omnileaf/.MainActivity";
-const OPEN_ICON_ACTION = "app.omnileaf.OPEN_ICON_ACTION";
-const CHOSEN_ICON_ACTION = "app.omnileaf.CHOSEN_ICON_ACTION";
+const APP_WEBVIEW = "WEBVIEW_app.omnileaf";
 const LAUNCH = "android.intent.action.MAIN";
 const LAUNCHER = "android.intent.category.LAUNCHER";
 const HOME_KEY = "KEYCODE_HOME";
-const NEW_TASK = 0x10000000;
 const LAUNCHED_FROM_HISTORY = 0x00100000;
 const ADB_TIMEOUT_MS = 30_000;
 const PUBLISHED_TIMEOUT_MS = 30_000;
@@ -48,28 +46,6 @@ async function adb(args: readonly string[]): Promise<string> {
 
 async function publishedShortcuts(): Promise<string> {
   return adb(["shell", "dumpsys", "shortcut"]);
-}
-
-/** Starts the activity as a launcher shortcut does, since where the icon sits and how its menu looks differ from launcher to launcher. */
-async function chooseOnTheIcon(
-  action: string,
-  flags = NEW_TASK,
-): Promise<void> {
-  await adb([
-    "shell",
-    "am",
-    "start",
-    "-W",
-    "-n",
-    MAIN_ACTIVITY,
-    "-f",
-    `0x${flags.toString(16)}`,
-    "-a",
-    OPEN_ICON_ACTION,
-    "--es",
-    CHOSEN_ICON_ACTION,
-    action,
-  ]);
 }
 
 async function searchAfterAnyEarlierChoice(): Promise<void> {
