@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 
 import { afterAll, beforeAll, test } from "vitest";
 
-import { useAppSession } from "./app-session.ts";
+import { mainNavigationLink, useAppSession } from "./app-session.ts";
 import {
   addSampleLibraryFromFiles,
   SAMPLE_ON_DEVICE,
@@ -24,8 +24,9 @@ const LEAVE_SCREEN_TIMEOUT_MS = 30_000;
 const STAYS_IN_THE_BACKGROUND = -1;
 const IN_THE_BACKGROUND = 3;
 
+const SETTINGS_LINK = mainNavigationLink("Settings");
 const NEEDS_ATTENTION = xpath(
-  "//main//button[starts-with(@aria-label, 'Needs attention')]",
+  "//main//button[@aria-haspopup='dialog'][.//*[normalize-space()='Needs attention']]",
 );
 const CANT_OPEN = xpath(
   `//*[@role='dialog']//*[normalize-space()='Omnileaf can’t open ${SAMPLE_LIBRARY.name}']`,
@@ -73,13 +74,14 @@ afterAll(async () => {
 });
 
 test(
-  "lists a linked folder Android no longer lets Omnileaf open under Needs attention, with Choose it again",
+  "lists a linked folder Android no longer lets Omnileaf open under Needs attention in Settings, with Choose it again",
   { timeout: TEST_TIMEOUT_MS },
   async () => {
     await adbShell(`mv '${SAMPLE_ON_DEVICE}' '${MOVED_AWAY}'`);
 
     await putAppInTheBackgroundAndBack();
 
+    await (await appSession().waitFor(SETTINGS_LINK)).click();
     await (
       await appSession().waitFor(NEEDS_ATTENTION, NOTICE_TIMEOUT_MS)
     ).click();
