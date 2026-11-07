@@ -590,6 +590,16 @@
   --color-native-colours-omnileaf-primary: var(--native-color-colours-omnileaf-primary);
   --color-native-colours-omnileaf-container: var(--native-color-colours-omnileaf-container);
   --color-native-colours-omnileaf-surface: var(--native-color-colours-omnileaf-surface);
+  --text-native-tile-title: var(--native-text-tile-title);
+  --leading-native-tile-title: var(--native-leading-tile-title);
+  --tracking-native-tile-title: var(--native-tracking-tile-title);
+  --text-native-tile-meta: var(--native-text-tile-meta);
+  --leading-native-tile-meta: var(--native-leading-tile-meta);
+  --font-weight-native-tile-meta: var(--native-weight-tile-meta);
+  --tracking-native-tile-meta: var(--native-tracking-tile-meta);
+  --text-native-count-badge: var(--native-text-count-badge);
+  --leading-native-count-badge: var(--native-leading-count-badge);
+  --tracking-native-count-badge: var(--native-tracking-count-badge);
 }
 
 @media (prefers-reduced-motion: reduce) {

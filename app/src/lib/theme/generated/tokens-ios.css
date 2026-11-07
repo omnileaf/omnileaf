@@ -496,6 +496,16 @@
   --native-color-colours-omnileaf-primary: var(--primary);
   --native-color-colours-omnileaf-container: var(--secondary);
   --native-color-colours-omnileaf-surface: var(--card);
+  --native-text-tile-title: var(--text-label);
+  --native-leading-tile-title: var(--text-label--line-height);
+  --native-tracking-tile-title: 0;
+  --native-text-tile-meta: var(--text-caption);
+  --native-leading-tile-meta: var(--text-caption--line-height);
+  --native-weight-tile-meta: var(--font-weight-normal);
+  --native-tracking-tile-meta: 0;
+  --native-text-count-badge: var(--text-caption);
+  --native-leading-count-badge: var(--text-caption--line-height);
+  --native-tracking-count-badge: 0;
 }
 
 :root[data-platform="ios"],
