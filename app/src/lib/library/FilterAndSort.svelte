@@ -153,7 +153,7 @@
             ]
           : bar === undefined
             ? [
-                "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto",
+                "relative block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:ps-header-control-inline large:pe-md large:inline-auto android:block-native-button android:inline-native-button",
                 isOpen
                   ? "large:bg-accent-soft"
                   : "hover:tint-hover active:tint-pressed",
