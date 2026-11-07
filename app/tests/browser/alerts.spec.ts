@@ -18,6 +18,7 @@ const CORNER_RADIUS = 10;
 const BLOCK_PADDING = 12;
 const INLINE_PADDING = 16;
 const TOUCH_TARGET = 48;
+const DISMISS_SIZE = 40;
 
 const SAMPLE_COMICS = {
   id: "2",
@@ -281,17 +282,23 @@ for (const place of PLACES) {
         "phones only",
       );
 
-      test("keeps its buttons 48px tall", async ({ page }) => {
+      test("keeps its buttons 48px tall and its dismiss 40px", async ({
+        page,
+      }) => {
         const shown = await shownAlert(page, place);
 
         const buttons = await shown.alert.getByRole("button").all();
         const heights = await Promise.all(
-          buttons.map(async (button) => (await boxOf(button)).height),
+          buttons.map(async (button) => ({
+            isDismiss:
+              (await button.getAttribute("data-alert-dismiss")) !== null,
+            height: (await boxOf(button)).height,
+          })),
         );
 
         expect(heights.length).toBeGreaterThan(0);
-        for (const height of heights) {
-          expect(height).toBe(TOUCH_TARGET);
+        for (const { isDismiss, height } of heights) {
+          expect(height).toBe(isDismiss ? DISMISS_SIZE : TOUCH_TARGET);
         }
       });
     });
