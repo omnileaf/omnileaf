@@ -165,12 +165,16 @@ function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
     });
   }
 
+  testKeepingTheIconStill({ belowWidth, where });
+}
+
+function testKeepingTheIconStill({ belowWidth, where }: IconMoveScreens): void {
   test("keeps the icon still while the section stays the same", async ({
     page,
   }) => {
     test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
     await page.goto("/settings");
-    const icon = tab(page, "Settings").locator("svg");
+    const icon = tab(page, "Settings").locator("svg, [data-icon]");
     await settle(icon);
 
     await page.getByRole("main").getByRole("link", { name: "About" }).click();
@@ -199,6 +203,10 @@ function testCrossfadingTheFill(iconsBelowWidth = Infinity): void {
     expect(icon.transitions).toEqual([FADE]);
   });
 
+  testFadingWithoutRestarting();
+}
+
+function testFadingWithoutRestarting(): void {
   test("fades the tabs without restarting their transitions every frame", async ({
     page,
   }) => {
@@ -285,8 +293,24 @@ test.describe("on Android", () => {
     expect(motion).toEqual({ transitions: [FADE], animations: [] });
   });
 
-  testMovingIcons({ belowWidth: EXPANDED_MIN_WIDTH, where: "bar and rail" });
-  testCrossfadingTheFill();
+  testKeepingTheIconStill({
+    belowWidth: EXPANDED_MIN_WIDTH,
+    where: "bar and rail",
+  });
+
+  test("fills only the selected tab's icon", async ({ page }) => {
+    await page.goto("/history");
+
+    await expect(tab(page, "History").locator("[data-icon]")).toHaveAttribute(
+      "data-filled",
+      "",
+    );
+    await expect(
+      tab(page, "Library").locator("[data-icon]"),
+    ).not.toHaveAttribute("data-filled");
+  });
+
+  testFadingWithoutRestarting();
   testTurningTheScreen();
   testReducingMotion();
 });
