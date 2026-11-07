@@ -6,6 +6,7 @@
     setSidebarSetting,
     SidebarSetting,
   } from "#lib/navigation/sidebar.svelte.ts";
+  import SeriesCount from "#lib/library/SeriesCount.svelte";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
 
   let {
@@ -14,15 +15,31 @@
     actions,
     platform,
     largeTitle,
+    seriesCount,
+    stacksCount = false,
   }: {
     title: string;
     showsLabel?: boolean;
     actions?: Snippet;
     platform: Platform;
     largeTitle?: boolean | undefined;
+    seriesCount?: number;
+    stacksCount?: boolean;
   } = $props();
 
   setSidebarSetting(new SidebarSetting(undefined));
 </script>
 
-<CollectionHeading {title} {showsLabel} {actions} {platform} {largeTitle} />
+<CollectionHeading
+  {title}
+  {showsLabel}
+  {actions}
+  {platform}
+  {largeTitle}
+  {stacksCount}
+  count={seriesCount === undefined ? undefined : shownCount}
+/>
+
+{#snippet shownCount()}
+  <SeriesCount count={seriesCount ?? 0} />
+{/snippet}
