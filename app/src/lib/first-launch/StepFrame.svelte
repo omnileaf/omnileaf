@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { makesToastRoom } from "#lib/notices/toast-room.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
@@ -83,19 +84,27 @@
       {#if onBack !== undefined}
         <button
           type="button"
-          class="flex shrink-0 items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed expanded:hidden ios:gap-2xs ios:ps-2xs ios:pe-sm ios:text-accent"
+          class="flex shrink-0 items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed expanded:hidden ios:gap-2xs ios:ps-2xs ios:pe-sm ios:text-accent android:block-native-button android:inline-native-button android:min-block-auto android:min-inline-auto"
           onclick={onBack}
         >
-          <ArrowLeft
-            size={BACK_ICON_SIZE}
-            aria-hidden="true"
-            class="rtl:-scale-x-100 ios:hidden"
-          />
-          <ChevronLeft
-            size={BACK_ICON_SIZE}
-            aria-hidden="true"
-            class="hidden rtl:-scale-x-100 ios:block"
-          />
+          {#if currentPlatform() === "android"}
+            <Icon
+              name="arrow-left"
+              size={BACK_ICON_SIZE}
+              class="rtl:-scale-x-100"
+            />
+          {:else}
+            <ArrowLeft
+              size={BACK_ICON_SIZE}
+              aria-hidden="true"
+              class="rtl:-scale-x-100 ios:hidden"
+            />
+            <ChevronLeft
+              size={BACK_ICON_SIZE}
+              aria-hidden="true"
+              class="hidden rtl:-scale-x-100 ios:block"
+            />
+          {/if}
           <span class="sr-only ios:not-sr-only">{m.first_launch_back()}</span>
         </button>
       {/if}
