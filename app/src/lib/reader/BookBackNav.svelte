@@ -1,6 +1,5 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { cn } from "#lib/components/cn.ts";
   import {
     Breadcrumb,
     BreadcrumbItem,
@@ -12,7 +11,7 @@
   import { isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { readerBackLook } from "./reader-bar.ts";
+  import { foregroundBackLook } from "./reader-bar.ts";
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
 
   const SERIES_NAME = "truncate text-small text-muted expanded:hidden";
@@ -48,10 +47,7 @@
     aria-label={inLibraryPlace === null
       ? m.reader_back_label()
       : m.reader_back_to_series({ series: inLibraryPlace.seriesTitle })}
-    class={cn(
-      readerBackLook(platform, width.current),
-      isOnPhone && platform === "android" && "text-foreground",
-    )}
+    class={foregroundBackLook(platform, width.current)}
   >
     <ReaderBackArrow {platform} {isOnPhone} />
   </a>

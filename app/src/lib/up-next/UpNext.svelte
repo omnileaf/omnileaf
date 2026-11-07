@@ -48,7 +48,12 @@
   import { GROUP_PLATE, WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookId } from "#lib/reader/opened-book.ts";
-  import { READER_BUTTON, READER_ICON_SIZE } from "#lib/reader/reader-bar.ts";
+  import {
+    READER_BUTTON,
+    READER_ICON_SIZE,
+    foregroundBackLook,
+  } from "#lib/reader/reader-bar.ts";
+  import ReaderBackArrow from "#lib/reader/ReaderBackArrow.svelte";
   import type { ReadingDirection } from "#lib/reader/reading-direction.svelte.ts";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
@@ -123,6 +128,7 @@
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
   const centresHead = $derived(isOnPhone && platform === "ios");
+  const isOnAndroidPhone = $derived(isOnPhone && platform === "android");
   const actions = $derived(
     acrossTheCard(
       actionGroupLook(
@@ -159,7 +165,11 @@
       ? {
           group: PHONE_CARD_ACTION_GROUP,
           main: cn(look.main, ACROSS_THE_CARD),
-          other: cn(look.other, ACROSS_THE_CARD),
+          other: cn(
+            look.other,
+            ACROSS_THE_CARD,
+            platform === "android" && "text-muted",
+          ),
         }
       : look;
   }
@@ -194,9 +204,15 @@
     <a
       href={seriesHref}
       aria-label={m.reader_back_to_series({ series: seriesTitle })}
-      class={READER_BUTTON}
+      class={isOnAndroidPhone
+        ? foregroundBackLook(platform, width.current)
+        : READER_BUTTON}
     >
-      <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
+      {#if isOnAndroidPhone}
+        <ReaderBackArrow {platform} {isOnPhone} />
+      {:else}
+        <ChevronLeft size={READER_ICON_SIZE} aria-hidden="true" />
+      {/if}
     </a>
     <Breadcrumb class="hidden text-small expanded:block">
       <BreadcrumbItem class="min-inline-none">

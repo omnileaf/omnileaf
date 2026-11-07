@@ -5,7 +5,7 @@ import {
 } from "#lib/components/ui/button/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
-import { isPhone } from "#lib/page/platform.ts";
+import { isPhone, phoneOf } from "#lib/page/platform.ts";
 
 import {
   usesCommandBar,
@@ -87,4 +87,14 @@ export function readerBackLook(platform: Platform, width: WidthClass): string {
   return isPhone(platform, width)
     ? buttonClasses("header-control", platform, { width })
     : READER_BUTTON;
+}
+
+export function foregroundBackLook(
+  platform: Platform,
+  width: WidthClass,
+): string {
+  const look = readerBackLook(platform, width);
+  return phoneOf(platform, width) === "android"
+    ? cn(look, "text-foreground")
+    : look;
 }
