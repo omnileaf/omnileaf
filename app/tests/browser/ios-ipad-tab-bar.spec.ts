@@ -319,7 +319,7 @@ test.describe("the tab bar off an iPad", () => {
         expect(bar.x).toBeLessThan(SAME_ROW_TOLERANCE_PX);
         expect(bar.height).toBeGreaterThan(height / 2);
       }
-      await expect(mainBar(page).locator("svg, [data-icon]")).toHaveCount(4);
+      await expect(mainBar(page).locator("[data-icon]")).toHaveCount(4);
     });
   });
 });
