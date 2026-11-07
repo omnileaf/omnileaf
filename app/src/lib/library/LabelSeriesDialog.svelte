@@ -11,7 +11,10 @@
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import {
+    ROW_SUBTITLE_TYPE,
+    ROW_TITLE_TYPE,
+  } from "#lib/components/ui/item/looks.ts";
   import { ANDROID_FILTER_CHIP_LOOK } from "./filter-chip-look";
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -59,8 +62,6 @@
     "mx-lg mbe-sm mbs-sm rounded-native-outlined-field border border-native-button-outline-edge bg-transparent px-lg text-foreground block-native-outlined-field focus-within:border-accent";
   const SHARED_FIELD =
     "gap-sm rounded-control border border-border bg-background px-md text-muted block-pointer-button focus-within:border-accent touch:block-touch-target";
-  const ANDROID_TITLE =
-    "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
 
   function fieldClass(isWide: boolean): string {
     return android.isOn && !isWide ? ANDROID_FIELD : SHARED_FIELD;
@@ -73,7 +74,7 @@
   }
 
   function titleClass(isWide: boolean): string {
-    return android.isOn && !isWide ? ANDROID_TITLE : "text-body";
+    return android.isOn && !isWide ? ROW_TITLE_TYPE : "text-body";
   }
   const tagsShown = $derived([
     ...(labels?.tags ?? []).filter(({ tag }) => !tagsRemoved.includes(tag)),
