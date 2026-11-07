@@ -9,6 +9,8 @@
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
   import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { readingSettingsContentLook } from "./reading-settings-content-look.ts";
   import ReadingModeSelect from "./ReadingModeSelect.svelte";
   import type {
     PageFit,
@@ -48,6 +50,10 @@
   const features = getSmartFeatures();
   const id = $props.id();
   const look = $derived(settings.look);
+  const chrome = getReaderChrome();
+  const { control } = $derived(
+    readingSettingsContentLook(chrome.platform, chrome.width),
+  );
 </script>
 
 {#if isStrip}
@@ -61,9 +67,10 @@
         {m.reader_reading_title()}
       </h3>
       <div class="flex flex-col divide-y divide-border">
-        <ApplyToChoice {settings} {seriesTitle} />
+        <ApplyToChoice {settings} {seriesTitle} {control} />
         <ReadingModeSelect {reading} />
         <SettingChoice
+          {control}
           isInline
           label={m.reader_tap_to_scroll()}
           choices={[
@@ -112,6 +119,7 @@
       </h3>
       <div class="flex flex-col divide-y divide-border">
         <SettingChoice
+          {control}
           isInline
           label={m.reader_auto_scroll_speed()}
           choices={[
@@ -204,9 +212,10 @@
   </div>
 {:else}
   <div class="flex flex-col divide-y divide-border">
-    <ApplyToChoice {settings} {seriesTitle} />
+    <ApplyToChoice {settings} {seriesTitle} {control} />
     <ReadingModeSelect {reading} />
     <SettingChoice
+      {control}
       label={m.reader_layout()}
       choices={[
         { value: "automatic", label: m.reader_layout_automatic() },
@@ -227,6 +236,7 @@
       }}
     />
     <SettingChoice
+      {control}
       label={m.reader_fit()}
       choices={[
         { value: "screen", label: m.reader_fit_screen() },
@@ -243,6 +253,7 @@
       </p>
     </SettingChoice>
     <SettingChoice
+      {control}
       label={m.reader_background()}
       choices={[
         { value: "black", label: m.reader_background_black() },
@@ -255,6 +266,7 @@
       }}
     />
     <SettingChoice
+      {control}
       label={m.reader_controls()}
       choices={[
         { value: "dark", label: m.reader_controls_dark() },
@@ -275,6 +287,7 @@
       </h3>
       <div class="flex flex-col divide-y divide-border">
         <SettingChoice
+          {control}
           isInline
           label={m.reader_tap_zones()}
           choices={[
@@ -288,6 +301,7 @@
           }}
         />
         <SettingChoice
+          {control}
           isInline
           label={m.reader_page_turn()}
           choices={[
