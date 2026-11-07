@@ -1355,7 +1355,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && selection.count > 0 && !commandsOnTop && !isMac}
+        {#if selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
           {#if isIos}
             <IosSelectionActions
               {keepsLabels}
