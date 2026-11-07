@@ -6,15 +6,22 @@
     SettingsScope,
   } from "./reader-settings.svelte.ts";
   import SettingChoice from "./SettingChoice.svelte";
+  import type { SettingChoiceControl } from "./setting-choice-control.ts";
 
   let {
     settings,
     seriesTitle,
-  }: { settings: ReaderSettings; seriesTitle: string } = $props();
+    control,
+  }: {
+    settings: ReaderSettings;
+    seriesTitle: string;
+    control: SettingChoiceControl;
+  } = $props();
 </script>
 
 <SettingChoice
   isStacked
+  {control}
   label={m.reader_apply_to()}
   choices={[
     { value: "series", label: m.reader_this_series() },

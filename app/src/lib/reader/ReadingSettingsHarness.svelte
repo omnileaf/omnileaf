@@ -16,7 +16,10 @@
 
   const SERIES = "0190a3e4-0000-8000-8000-0000000000a1";
 
-  let { platform }: { platform: Platform } = $props();
+  let {
+    platform,
+    canUseMyPace = true,
+  }: { platform: Platform; canUseMyPace?: boolean } = $props();
 
   setReaderChrome(untrack(() => new ReaderChrome(platform)));
   setSmartFeatures(new SmartFeatures(undefined));
@@ -45,7 +48,7 @@
     {settings}
     {reading}
     seriesTitle="Sample Series"
-    canUseMyPace={true}
+    {canUseMyPace}
     onClose={nothing}
   />
 </main>
