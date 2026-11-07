@@ -44,6 +44,7 @@
 
   import { JUMP_LIST_LOOK, jumpListPhoneLook } from "./jump-list-look.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
 
   const SEARCHABLE_FROM = 20;
   const SPINNER_SIZE = 20;
@@ -280,7 +281,13 @@
               >{book.title}</ItemTitle
             >
             <ItemDescription class={look.detail}>
-              <FileX size={DETAIL_ICON_SIZE} aria-hidden="true" />
+              <ReaderIcon
+                name="file-x"
+                fallback={FileX}
+                isKit={look.hasKitIcons}
+                size={DETAIL_ICON_SIZE}
+                class={look.detailIcon}
+              />
               {m.reader_jump_file_missing()}
             </ItemDescription>
           </Item>
@@ -306,28 +313,43 @@
                   <ItemTitle
                     class={cn(
                       look.title,
-                      book.reading.state === "read" && "text-muted",
+                      book.reading.state === "read" && look.readTitle,
                       isCurrent && look.currentTitle,
                     )}>{book.title}</ItemTitle
                   >
                   {#if book.isBookmarked}
-                    <Bookmark
-                      size={DETAIL_ICON_SIZE}
-                      fill="currentColor"
+                    <span
                       role="img"
                       aria-label={m.series_book_bookmarked()}
-                      class="shrink-0"
-                    />
+                      class="flex shrink-0"
+                    >
+                      <ReaderIcon
+                        name="bookmark"
+                        fallback={Bookmark}
+                        isKit={look.hasKitIcons}
+                        size={DETAIL_ICON_SIZE}
+                        isFilled
+                        class={look.detailIcon}
+                      />
+                    </span>
                   {/if}
                   {#if isCurrent}
-                    <Badge look="secondary">{m.reader_jump_reading()}</Badge>
+                    <Badge look="secondary" class={look.readingBadge}
+                      >{m.reader_jump_reading()}</Badge
+                    >
                   {/if}
                 </span>
                 <ItemDescription
                   class={cn(look.detail, isCurrent && look.currentDetail)}
                 >
                   {#if book.reading.state === "read"}
-                    <Check size={DETAIL_ICON_SIZE} aria-hidden="true" />
+                    <ReaderIcon
+                      name="check"
+                      fallback={Check}
+                      isKit={look.hasKitIcons}
+                      size={DETAIL_ICON_SIZE}
+                      class={look.detailIcon}
+                    />
                   {/if}
                   {bookSummary(book)}
                 </ItemDescription>
