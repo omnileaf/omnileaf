@@ -969,7 +969,7 @@ test.describe("on Android", () => {
 
     const field = searchField(page).locator("..");
     const box = await boxOf(field);
-    const icon = await boxOf(field.locator("svg").first());
+    const icon = await boxOf(field.locator("[data-icon]").first());
     const words = await boxOf(searchField(page));
     const radius = await field.evaluate((element) =>
       Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
@@ -978,7 +978,7 @@ test.describe("on Android", () => {
     expect(box.height).toBe(ANDROID_SEARCH_FIELD_PX);
     expect(radius).toBeGreaterThanOrEqual(box.height / 2);
     expect(words.x - (icon.x + icon.width)).toBe(ANDROID_SEARCH_ICON_GAP_PX);
-    await expect(field.locator("svg").first()).toHaveCSS(
+    await expect(field.locator("[data-icon]").first()).toHaveCSS(
       "color",
       await tokenColour(page, "--secondary-text"),
     );

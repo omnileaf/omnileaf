@@ -186,18 +186,26 @@
             "touch:medium:-ms-md",
           ]}
         >
-          <ArrowLeft
-            size={ARROW_SIZE}
-            class="hidden rtl:-scale-x-100 ios:medium:block android:block"
-          />
-          <ChevronLeft
-            size={PHONE_CHEVRON_SIZE}
-            class="hidden rtl:-scale-x-100 ios:max-medium:block"
-          />
-          <ChevronLeft
-            size={POINTER_CHEVRON_SIZE}
-            class="hidden rtl:-scale-x-100 desktop:block"
-          />
+          {#if platform === "android"}
+            <Icon
+              name="arrow-left"
+              size={ARROW_SIZE}
+              class="rtl:-scale-x-100"
+            />
+          {:else}
+            <ArrowLeft
+              size={ARROW_SIZE}
+              class="hidden rtl:-scale-x-100 ios:medium:block"
+            />
+            <ChevronLeft
+              size={PHONE_CHEVRON_SIZE}
+              class="hidden rtl:-scale-x-100 ios:max-medium:block"
+            />
+            <ChevronLeft
+              size={POINTER_CHEVRON_SIZE}
+              class="hidden rtl:-scale-x-100 desktop:block"
+            />
+          {/if}
           <span class="ios:medium:hidden android:hidden">{parent.title}</span>
         </a>
       {/snippet}
