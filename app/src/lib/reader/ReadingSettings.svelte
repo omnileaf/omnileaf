@@ -21,6 +21,7 @@
   import ReadingSettingsContent from "./ReadingSettingsContent.svelte";
   import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
   import { holdsFocusFor } from "./pane-focus.ts";
+  import { readingSettingsSheetLook } from "./reading-settings-look.ts";
   import { WINDOWS_FLYOUT } from "./windows-reader-bar.ts";
 
   let {
@@ -42,6 +43,9 @@
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const titleId = $props.id();
   const chrome = getReaderChrome();
+  const sheet = $derived(
+    readingSettingsSheetLook(chrome.platform, chrome.width),
+  );
 </script>
 
 {#if isWide.current || chrome.isCommandBar}
@@ -94,24 +98,33 @@
       }
     }}
   >
-    <DrawerContent to="main" onDismiss={onClose} class="max-block-reader-sheet">
-      <div class="flex items-center gap-sm px-sheet-inline pbs-sheet-gap">
-        <span
-          class="flex items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
-        >
-          <SlidersHorizontal size={READER_ICON_SIZE} aria-hidden="true" />
-        </span>
-        <DialogTitle class="flex-1 text-body font-semibold">
+    <DrawerContent
+      to="main"
+      backdrop={sheet.backdrop}
+      onDismiss={onClose}
+      class="max-block-reader-sheet"
+    >
+      <div class={sheet.header}>
+        {#if sheet.hasBadge}
+          <span
+            class="flex items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
+          >
+            <SlidersHorizontal size={READER_ICON_SIZE} aria-hidden="true" />
+          </span>
+        {/if}
+        <DialogTitle class={sheet.title}>
           {m.reader_settings()}
         </DialogTitle>
-        <Button
-          type="button"
-          look="bar-icon"
-          class="px-md font-medium min-block-touch-target"
-          onclick={onClose}
-        >
-          {m.reader_settings_done()}
-        </Button>
+        {#if sheet.hasDone}
+          <Button
+            type="button"
+            look="bar-icon"
+            class="px-md font-medium min-block-touch-target"
+            onclick={onClose}
+          >
+            {m.reader_settings_done()}
+          </Button>
+        {/if}
       </div>
       <div class="overflow-y-auto px-sheet-inline pbs-md pbe-sheet-bottom">
         <ReadingSettingsContent
