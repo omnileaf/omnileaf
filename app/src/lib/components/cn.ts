@@ -345,6 +345,7 @@ export const TOKEN_THEME = {
     "filter-panel-top",
     "filter-row",
     "filter-row-wide",
+    "first-launch-button",
     "first-launch-card",
     "first-launch-lede",
     "floating-bar",

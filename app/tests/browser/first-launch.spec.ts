@@ -336,7 +336,7 @@ function shapeOf(button: Locator): Promise<ButtonShape> {
 
 const DESKTOP_BUTTON = { height: 40, radius: 10, fontSize: 14 };
 const TOUCH_PRIMARY_HEIGHT = 52;
-const ANDROID_PRIMARY_HEIGHT = 48;
+const ANDROID_PRIMARY_HEIGHT = 56;
 const TOUCH_BUTTON_TEXT = 16;
 const STACKED_BUTTON_GAP = 6;
 const LARGE_TEXT_SCALE = 1.3;
@@ -374,7 +374,7 @@ test.describe("buttons on android", () => {
     },
   });
 
-  test("makes the main step button a 48px pill", async ({ page }) => {
+  test("makes the main step button a 56px pill", async ({ page }) => {
     device.folders = [HOME_FOLDER, SAMPLE_COMICS];
     await goTo(page, "Already have comics or books?");
 
