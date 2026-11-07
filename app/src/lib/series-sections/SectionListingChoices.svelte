@@ -22,6 +22,8 @@
     label: () => string;
   }[];
   const ICON_SIZE = 16;
+  const INPUT_COVERS_GROUP_BORDER =
+    "android:max-medium:-my-px android:max-medium:self-stretch";
 
   let {
     direction,
@@ -56,7 +58,7 @@
       aria-label={m.series_find_book()}
       placeholder={m.series_find_book()}
       value={search}
-      class="text-small text-foreground android:max-medium:-my-px android:max-medium:self-stretch"
+      class={["text-small text-foreground", INPUT_COVERS_GROUP_BORDER]}
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         onSearch(event.currentTarget.value);
       }}
