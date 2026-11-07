@@ -32,7 +32,10 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
-  import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
+  import {
+    FLUSH_BLEED,
+    FLUSH_FOOTER,
+  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
@@ -224,9 +227,7 @@
           opensOn.choose(choice);
         }}
       />
-      <p
-        class="{FLUSH_BLEED} px-lg pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle text-muted"
-      >
+      <p class={FLUSH_FOOTER}>
         {m.library_opens_on_help()}
       </p>
     </div>
