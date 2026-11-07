@@ -17,7 +17,8 @@
 
   const PROMISE_ICON_SIZE = 20;
 
-  const isSetupPage = usesSetupPages(currentPlatform());
+  const platform = currentPlatform();
+  const isSetupPage = usesSetupPages(platform);
 
   let { device, onNext }: { device: DeviceKind; onNext: () => void } = $props();
 
@@ -120,7 +121,7 @@
               : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile",
           ]}
         >
-          {#if currentPlatform() === "android"}
+          {#if platform === "android"}
             <Icon name={promise.iconName} size={PROMISE_ICON_SIZE} />
           {:else}
             <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />

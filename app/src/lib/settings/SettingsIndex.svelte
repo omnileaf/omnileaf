@@ -34,6 +34,7 @@
     green: "ios:bg-ios-chip-green",
     orange: "ios:bg-ios-chip-orange",
   } satisfies Record<SectionChip, string>;
+  const platform = currentPlatform();
   const headingId = $props.id();
 </script>
 
@@ -71,7 +72,7 @@
                       IOS_CHIPS[section.chip],
                     ]}
                   >
-                    {#if currentPlatform() === "android" && section.iconName !== undefined}
+                    {#if platform === "android" && section.iconName !== undefined}
                       <Icon name={section.iconName} size={ICON_SIZE} />
                     {:else}
                       <section.icon size={ICON_SIZE} />
