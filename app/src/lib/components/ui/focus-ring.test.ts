@@ -22,7 +22,7 @@ const RINGS: readonly FocusRing[] = [
     platform: "android",
     width: "3px",
     offset: "2px",
-    colour: "--foreground",
+    colour: "--android-palette-focus-ring",
   },
   {
     platform: "ios",
