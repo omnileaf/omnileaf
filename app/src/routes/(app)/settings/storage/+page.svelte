@@ -44,16 +44,21 @@
 <SectionHeading title={m.storage_title()} />
 {#if storage.use !== undefined}
   <div
-    class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none"
+    class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
   >
     <section
       aria-labelledby={meterHeadingId}
-      class={["flex flex-col gap-sm p-lg", card, bleed]}
+      class={[
+        "flex flex-col",
+        android.isOn ? "gap-md px-lg py-sm" : "gap-sm p-lg",
+        card,
+        bleed,
+      ]}
     >
       <h2
         id={meterHeadingId}
         class={android.isOn
-          ? "text-body font-medium"
+          ? "text-native-row-subtitle/native-row-subtitle font-medium"
           : "text-label font-semibold"}
       >
         {deviceName}
