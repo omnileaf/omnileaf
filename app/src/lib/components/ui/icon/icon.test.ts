@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
 import "../../../../app.css";
@@ -7,6 +7,10 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import Icon from "./icon.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 interface PlatformIcon {
   readonly platform: Platform;
@@ -112,4 +116,20 @@ test("sets explicit size when size prop is provided", async () => {
 
   expect(icon?.style.width).toBe("28px");
   expect(icon?.style.height).toBe("28px");
+});
+
+test("merges custom style with size prop and supports array classes", async () => {
+  const { container } = await render(Icon, {
+    name: "library",
+    size: 28,
+    style: "opacity: 0.5;",
+    class: ["custom-icon-class", undefined],
+  });
+
+  const icon = container.querySelector<HTMLElement>("[data-icon]");
+
+  expect(icon?.style.width).toBe("28px");
+  expect(icon?.style.height).toBe("28px");
+  expect(icon?.style.opacity).toBe("0.5");
+  expect(icon?.className).toContain("custom-icon-class");
 });
