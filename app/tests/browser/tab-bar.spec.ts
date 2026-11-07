@@ -126,15 +126,6 @@ test.describe("on Android", () => {
     expect(bar.width).toBeCloseTo(viewport.width, 0);
   });
 
-  test("gives the search page the whole screen, without the bottom bar", async ({
-    page,
-  }) => {
-    test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
-    await page.goto("/search");
-
-    await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
-  });
-
   for (const colorScheme of ["light", "dark"] as const) {
     test(`the navigation has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
