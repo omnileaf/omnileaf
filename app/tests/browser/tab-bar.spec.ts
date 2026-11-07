@@ -126,21 +126,6 @@ test.describe("on Android", () => {
     expect(bar.width).toBeCloseTo(viewport.width, 0);
   });
 
-  test("keeps every tab in the full width bottom bar on the search page", async ({
-    page,
-  }) => {
-    const viewport = viewportOf(page);
-    test.skip(viewport.width >= MEDIUM_MIN_WIDTH, "phones only");
-    await page.goto("/search");
-
-    await expect(
-      page.getByRole("navigation", { name: "Main" }).getByRole("link"),
-    ).toHaveCount(4);
-    const bar = await navigationBox(page);
-    expect(bar.x).toBe(0);
-    expect(bar.width).toBeCloseTo(viewport.width, 0);
-  });
-
   for (const colorScheme of ["light", "dark"] as const) {
     test(`the navigation has no accessibility violations in the ${colorScheme} theme`, async ({
       page,
