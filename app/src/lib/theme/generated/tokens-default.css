@@ -472,6 +472,7 @@
   --native-color-row-current: transparent;
   --native-color-on-row-current: var(--foreground);
   --native-radius-outlined-field: 4px;
+  --native-radius-selection-action: 16px;
   --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: var(--spacing-sheet-bottom);
   --native-spacing-popover-top: var(--spacing-lg);

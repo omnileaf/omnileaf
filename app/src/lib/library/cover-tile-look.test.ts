@@ -52,7 +52,11 @@ interface TileLook {
     readonly fill: string;
     readonly tick: string;
   };
-  readonly emptyMark: { readonly edge: string; readonly ring: string };
+  readonly emptyMark: {
+    readonly edge: string;
+    readonly ring: string;
+    readonly fill: string;
+  };
 }
 
 async function oneSeries(): Promise<LibrarySeries> {
@@ -183,6 +187,7 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
           ? "none"
           : `${emptyMark.borderTopWidth} ${emptyMark.borderTopColor}`,
       ring: visibleShadows(emptyMark.boxShadow),
+      fill: emptyMark.backgroundColor,
     },
   };
 }
@@ -360,7 +365,11 @@ test("draws Android's tile with a 16px red count pill, no download dot and a mat
       fill: "rgb(50, 106, 77)",
       tick: "rgb(230, 255, 237)",
     },
-    emptyMark: { edge: "2px rgb(115, 125, 117)", ring: "none" },
+    emptyMark: {
+      edge: "2px rgb(115, 125, 117)",
+      ring: "none",
+      fill: "rgb(247, 250, 245)",
+    },
   });
 });
 

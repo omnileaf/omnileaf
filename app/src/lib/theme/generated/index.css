@@ -477,6 +477,7 @@
   --color-native-row-current: var(--native-color-row-current);
   --color-native-on-row-current: var(--native-color-on-row-current);
   --radius-native-outlined-field: var(--native-radius-outlined-field);
+  --radius-native-selection-action: var(--native-radius-selection-action);
   --spacing-native-outlined-field: var(--native-spacing-outlined-field);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
   --spacing-native-popover-top: var(--native-spacing-popover-top);
