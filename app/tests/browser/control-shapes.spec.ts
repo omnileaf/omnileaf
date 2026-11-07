@@ -539,13 +539,15 @@ test.describe("on an Android phone", () => {
   test.describe("in the reader", () => {
     test.use({ backend: readerOn("android") });
 
-    test("draws the direction button with a pill start", async ({ page }) => {
+    test("draws the direction button's icon in a pill", async ({ page }) => {
       await openBook(page);
       await expect(directionButton(page)).toBeVisible();
 
-      const isPillStart = await isPill(directionButton(page));
+      const isPillIcon = await isPill(
+        directionButton(page).locator("[data-pill]"),
+      );
 
-      expect(isPillStart).toBe(true);
+      expect(isPillIcon).toBe(true);
     });
 
     test.describe("for a first book", () => {
