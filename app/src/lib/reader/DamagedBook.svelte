@@ -77,7 +77,12 @@
           promised: damage.promisedPages,
         })}
       </p>
-      <Alert tone="plain" icon={TriangleAlert} role="alert">
+      <Alert
+        tone="plain"
+        icon={TriangleAlert}
+        iconName="triangle-alert"
+        role="alert"
+      >
         <AlertTitle class="text-small font-semibold">
           {m.reader_damaged_ends_early({
             first: readable + 1,
