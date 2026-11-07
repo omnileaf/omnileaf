@@ -9,11 +9,14 @@
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { type Platform, SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { searchShortcutLabel } from "#lib/search/quick-open-shortcut.ts";
+  import { ANDROID_SEARCH_VIEW } from "#lib/search/search-look.ts";
 
   const ICON_SIZE = 16;
   const CLEAR_ICON_SIZE = 14;
+  const ANDROID_CLEAR_ICON_SIZE = 24;
 
   let {
     field = $bindable(null),
@@ -30,20 +33,27 @@
     class?: ClassValue;
     onFind: (text: string) => void;
   } = $props();
+
+  const android = new AndroidPhone();
+  const isAndroidBar = $derived(android.isOn && look === "bar");
 </script>
 
 <InputGroup
   class={[
-    "gap-sm px-md text-muted",
-    look === "bar"
-      ? "rounded-search-field bg-well block-touch-target"
-      : "rounded-control border border-field bg-card block-pointer-button focus-within:border-accent",
+    isAndroidBar
+      ? ANDROID_SEARCH_VIEW.field
+      : [
+          "gap-sm px-md text-muted",
+          look === "bar"
+            ? "rounded-search-field bg-well block-touch-target"
+            : "rounded-control border border-field bg-card block-pointer-button focus-within:border-accent",
+        ],
     className,
   ]}
 >
-  {#if platform === "android"}
+  {#if platform === "android" && !isAndroidBar}
     <Icon name="search" size={ICON_SIZE} class="shrink-0" />
-  {:else}
+  {:else if platform !== "android"}
     <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
   {/if}
   <Input
@@ -75,9 +85,13 @@
         <Button
           {...props}
           look="icon"
-          class="shrink-0 bg-chip text-muted block-search-clear inline-search-clear"
+          class={isAndroidBar
+            ? ANDROID_SEARCH_VIEW.clear
+            : "shrink-0 bg-chip text-muted block-search-clear inline-search-clear"}
         >
-          {#if platform === "android"}
+          {#if isAndroidBar}
+            <Icon name="x" size={ANDROID_CLEAR_ICON_SIZE} />
+          {:else if platform === "android"}
             <Icon name="x" size={CLEAR_ICON_SIZE} />
           {:else}
             <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
