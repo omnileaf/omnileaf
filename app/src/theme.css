@@ -496,12 +496,10 @@
   --secondary: var(--android-palette-primary-container);
   --secondary-foreground: var(--android-palette-on-primary-container);
   --glass: var(--android-palette-surface-bar);
-  --state-hover: var(--android-palette-state-hover);
-  --state-pressed: var(--android-palette-state-pressed);
-  --accent-fill: var(--primary);
-  --on-accent-fill: var(--primary-foreground);
-  --accent-ink: var(--primary);
-  --accent-tint: var(--android-palette-primary-container);
+  --accent-fill: var(--native-color-button-primary);
+  --on-accent-fill: var(--native-color-on-button-primary);
+  --accent-ink: var(--native-color-on-button-plain);
+  --accent-tint: var(--native-color-accent-soft);
   --platform-font: var(--font-android);
   --secondary-text: var(--android-palette-on-surface-muted);
   --menu-surface: var(--android-palette-surface-menu);
@@ -529,8 +527,16 @@
   --input-group-fill: var(--android-palette-surface-dialog);
   --input-group-edge: transparent;
   --input-group-radius: 9999px;
-  --hover-fill: var(--android-palette-state-hover);
-  --pressed-fill: var(--android-palette-state-pressed);
+  --hover-fill: color-mix(
+    in oklab,
+    currentColor var(--state-hover),
+    transparent
+  );
+  --pressed-fill: color-mix(
+    in oklab,
+    currentColor var(--state-pressed),
+    transparent
+  );
   --android-container-low: var(--android-palette-surface-sheet);
   --android-container: var(--android-palette-surface-menu);
   --android-container-high: var(--android-palette-surface-dialog);
