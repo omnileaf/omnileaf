@@ -46,6 +46,7 @@ interface Place {
   readonly hasDescription: boolean;
   readonly hasActions: boolean;
   readonly hasButtons: boolean;
+  readonly hasDismiss: boolean;
   readonly show: (page: Page) => Promise<Locator>;
 }
 
@@ -76,6 +77,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: false,
     hasButtons: true,
+    hasDismiss: true,
     show: async (page) => {
       await page.goto("/settings/library");
       await page
@@ -95,6 +97,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: true,
     hasButtons: true,
+    hasDismiss: false,
     show: async (page) => {
       await rescanSampleComics(page);
       return alertIn(page.getByRole("main"), "looks empty");
@@ -115,6 +118,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: true,
     hasButtons: true,
+    hasDismiss: false,
     show: async (page) => {
       await rescanSampleComics(page);
       await page.getByRole("button", { name: "Remove its books" }).click();
@@ -139,6 +143,7 @@ const PLACES: readonly Place[] = [
     hasDescription: false,
     hasActions: false,
     hasButtons: false,
+    hasDismiss: false,
     show: async (page) => {
       await page.goto("/settings/about");
       await page.getByRole("button", { name: "Copy version details" }).click();
@@ -164,6 +169,7 @@ const PLACES: readonly Place[] = [
     hasDescription: false,
     hasActions: false,
     hasButtons: false,
+    hasDismiss: false,
     show: async (page) => {
       await page.goto("/");
       const prompt = page.getByRole("alertdialog");
@@ -297,6 +303,9 @@ for (const place of PLACES) {
         );
 
         expect(heights.length).toBeGreaterThan(0);
+        if (place.hasDismiss) {
+          expect(heights.some(({ isDismiss }) => isDismiss)).toBe(true);
+        }
         for (const { isDismiss, height } of heights) {
           expect(height).toBe(isDismiss ? DISMISS_SIZE : TOUCH_TARGET);
         }
