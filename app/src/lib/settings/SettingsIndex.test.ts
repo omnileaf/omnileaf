@@ -86,21 +86,74 @@ test("renders native Icon components for sections on Android", async () => {
   ).not.toBeNull();
 });
 
-test("renders 40px tonal circles with 24px Material Symbols and row subtitles on Android", async () => {
+test("sets each Android row flush with a bare 24px icon at x=16 and its title at x=56, with no divider", async () => {
   followCorePlatform("android");
   const screen = await render(SettingsIndex, PROPS);
 
-  const media = screen.container.querySelector("[data-slot=item-media]");
-  expect(media).not.toBeNull();
-  expect(media!.getBoundingClientRect().height).toBeCloseTo(40, 0);
-  expect(media!.getBoundingClientRect().width).toBeCloseTo(40, 0);
+  const link = screen.getByRole("link", { name: /^Appearance/ }).element();
+  const icon = link.querySelector("[data-icon]");
+  const title = link.querySelector("[data-slot=item-title]");
+  const list = link.closest("ul");
+  const row = link.getBoundingClientRect();
 
-  const icon = media?.querySelector("[data-icon]");
-  expect(icon).not.toBeNull();
-  expect(icon?.className).toContain("inline-native-icon");
+  expect(link.querySelector("[data-slot=item-media]")).toBeNull();
+  expect(icon?.getBoundingClientRect().left).toBeCloseTo(row.left + 16, 0);
+  expect(icon?.getBoundingClientRect().width).toBeCloseTo(24, 0);
+  expect(title?.getBoundingClientRect().left).toBeCloseTo(row.left + 56, 0);
+  expect(row.height).toBeCloseTo(72, 0);
+  expect(list ? getComputedStyle(list).borderTopWidth : "").toBe("0px");
+  expect(getComputedStyle(link).borderBottomWidth).toBe("0px");
+  const chevron = link.querySelector("svg");
+  expect(chevron ? getComputedStyle(chevron).display : "none").toBe("none");
+});
 
-  const desc = screen.container.querySelector("[data-slot=item-description]");
-  expect(desc?.className).toContain(
-    "android:text-native-row-subtitle/native-row-subtitle",
-  );
+test("sets each Android title in 16px regular with 0.5px tracking over a 14px line", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const link = screen.getByRole("link", { name: /^Appearance/ }).element();
+  const title = link.querySelector("[data-slot=item-title]");
+  const line = link.querySelector("[data-slot=item-description]");
+
+  expect(title ? getComputedStyle(title).letterSpacing : "").toBe("0.5px");
+  expect(title ? getComputedStyle(title).fontSize : "").toBe("16px");
+  expect(line ? getComputedStyle(line).fontSize : "").toBe("14px");
+});
+
+test("sets each Android group heading 44px tall with 16px above and 8px below", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const heading = screen.getByRole("heading", { name: "App" }).element();
+  const style = getComputedStyle(heading);
+
+  expect(heading.getBoundingClientRect().height).toBeCloseTo(44, 0);
+  expect(style.paddingTop).toBe("16px");
+  expect(style.paddingBottom).toBe("8px");
+});
+
+test("heads About on Android only", async () => {
+  followCorePlatform("android");
+  const android = await render(SettingsIndex, PROPS);
+
+  await expect
+    .element(android.getByRole("heading", { name: "About" }))
+    .toBeVisible();
+});
+
+test("leaves About without a heading off Android", async () => {
+  const screen = await render(SettingsIndex, PROPS);
+
+  expect(screen.getByRole("heading", { name: "About" }).elements()).toEqual([]);
+});
+
+test("keeps the desktop rows in their bordered list", async () => {
+  const screen = await render(SettingsIndex, PROPS);
+
+  const list = screen.getByRole("list", { name: "App" }).element();
+
+  expect(getComputedStyle(list).borderTopWidth).toBe("1px");
+  expect(
+    screen.container.querySelectorAll("[data-slot=item-media]").length,
+  ).toBe(8);
 });
