@@ -89,7 +89,7 @@
           </h2>
           <code
             id={pathId}
-            class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-pre-wrap text-muted"
+            class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-break-spaces text-muted"
             >{location}</code
           >
           {@render counting?.()}
