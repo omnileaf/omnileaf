@@ -3,21 +3,29 @@ import { afterEach, expect, test } from "vitest";
 import "../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { type Contrast, followContrast } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
 type Theme = "light" | "dark";
 
-function colourOn(platform: Platform, theme: Theme, token: string): string {
+function colourOn(
+  platform: Platform,
+  theme: Theme,
+  token: string,
+  contrast?: Contrast,
+): string {
   followCorePlatform(platform);
   document.documentElement.dataset.theme = theme;
+  followContrast(contrast);
   return resolvedColour(token, "backgroundColor");
 }
 
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  followContrast(undefined);
 });
 
 test("gives android the Material 3 green palette for window background in both themes", () => {
@@ -82,4 +90,28 @@ test("gives android the Material 3 error red for destructive in both themes", ()
   );
 
   expect(errors).toEqual(["rgb(168, 56, 54)", "rgb(250, 116, 111)"]);
+});
+
+test("increases android contrast under medium contrast mode in both themes", () => {
+  const foregrounds = (["light", "dark"] as const).map((theme) =>
+    colourOn("android", theme, "--foreground", "medium"),
+  );
+  const primaries = (["light", "dark"] as const).map((theme) =>
+    colourOn("android", theme, "--primary", "medium"),
+  );
+
+  expect(foregrounds).toEqual(["rgb(29, 38, 32)", "rgb(255, 255, 255)"]);
+  expect(primaries).toEqual(["rgb(30, 88, 60)", "rgb(142, 240, 179)"]);
+});
+
+test("maximises android contrast under high contrast mode in both themes", () => {
+  const foregrounds = (["light", "dark"] as const).map((theme) =>
+    colourOn("android", theme, "--foreground", "high"),
+  );
+  const primaries = (["light", "dark"] as const).map((theme) =>
+    colourOn("android", theme, "--primary", "high"),
+  );
+
+  expect(foregrounds).toEqual(["rgb(0, 0, 0)", "rgb(255, 255, 255)"]);
+  expect(primaries).toEqual(["rgb(0, 62, 37)", "rgb(174, 255, 206)"]);
 });
