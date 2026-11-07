@@ -65,6 +65,7 @@
       isBlank={true}
       showsPreviews={true}
       isShown={true}
+      hidesSlider={false}
       onPlay={canPlay ? nothing : undefined}
       onSeek={nothing}
     />

@@ -20,7 +20,15 @@
     platform,
     isTwoUp = false,
     isLit = false,
-  }: { platform: Platform; isTwoUp?: boolean; isLit?: boolean } = $props();
+    canPlay = false,
+    hidesSlider = false,
+  }: {
+    platform: Platform;
+    isTwoUp?: boolean;
+    isLit?: boolean;
+    canPlay?: boolean;
+    hidesSlider?: boolean;
+  } = $props();
 
   const pages = Array.from({ length: PAGE_COUNT }, (_, index): BookPage => ({
     path: `page/${String(index)}` as BookPage["path"],
@@ -77,7 +85,8 @@
       isBlank={true}
       showsPreviews={false}
       isShown={true}
-      onPlay={undefined}
+      onPlay={canPlay ? nothing : undefined}
+      {hidesSlider}
       onSeek={nothing}
     />
   </div>
