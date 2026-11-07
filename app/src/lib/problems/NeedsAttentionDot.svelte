@@ -28,7 +28,7 @@
     aria-expanded={isOpen}
     aria-label={m.attention_count_label({ count })}
     class={[
-      "-my-md -ms-xs flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target android:block-native-button android:inline-native-button",
+      "-my-md -ms-xs flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target",
       isOpen ? "bg-accent-soft" : "hover:tint-hover active:tint-pressed",
     ]}
     onclick={onOpen}
