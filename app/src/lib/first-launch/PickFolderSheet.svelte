@@ -45,7 +45,7 @@
       <DialogTitle
         class={[
           "text-dialog-title font-bold max-medium:text-sheet-title",
-          "android:max-medium:text-native-page-title/native-page-title android:max-medium:font-regular",
+          "android:max-medium:text-native-bar-title/native-bar-title android:max-medium:font-regular",
         ]}
       >
         {m.first_launch_pick_folder_title()}
