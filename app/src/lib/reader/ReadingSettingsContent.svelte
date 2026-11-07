@@ -69,7 +69,7 @@
       </h3>
       <div class={content.group}>
         <ApplyToChoice {settings} {seriesTitle} {control} />
-        <ReadingModeSelect {reading} />
+        <ReadingModeSelect {reading} field={content.modeField} />
         <SettingChoice
           {control}
           isInline
@@ -214,7 +214,7 @@
 {:else}
   <div class={content.group}>
     <ApplyToChoice {settings} {seriesTitle} {control} />
-    <ReadingModeSelect {reading} />
+    <ReadingModeSelect {reading} field={content.modeField} />
     <SettingChoice
       {control}
       label={m.reader_layout()}

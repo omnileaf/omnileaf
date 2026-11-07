@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { ChevronDown } from "@lucide/svelte";
-
   import { ButtonGroup } from "#lib/components/ui/button-group/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import { OutlinedSelect } from "#lib/components/ui/outlined-field/index.ts";
   import type { LibrarySort, LibrarySortBy } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { MAC_INSPECTOR } from "./filter-sheet-look";
-  import { GROUPED_FOOTNOTE_TYPE } from "./group-look";
   import { SORTS } from "./library-listing";
   import { SORT_LABELS } from "./sort-labels";
   import SortDirectionButton from "./SortDirectionButton.svelte";
@@ -50,33 +48,18 @@
 
 {#if isAndroidPhone}
   <div class="flex items-center gap-sm px-lg py-sm">
-    <div class="relative flex-1 min-inline-none">
-      <span
-        id={labelId}
-        class={[
-          "pointer-events-none absolute inset-s-md inset-bs-none -translate-y-1/2 bg-native-sheet px-xs text-muted",
-          GROUPED_FOOTNOTE_TYPE,
-        ]}
-      >
-        {m.library_sort_by()}
-      </span>
-      <select
-        aria-labelledby={labelId}
-        aria-describedby={isTimedSort ? footnoteId : undefined}
-        value={sort.by}
-        class="appearance-none rounded-native-outlined-field border border-native-button-outline-edge bg-transparent ps-lg pe-select-end text-body text-ellipsis block-native-outlined-field inline-full"
-        onchange={chooseSort}
-      >
-        {#each SORTS as by (by)}
-          <option value={by}>{SORT_LABELS[by]()}</option>
-        {/each}
-      </select>
-      <ChevronDown
-        size={24}
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-e-md inset-bs-1/2 inset-be-auto -translate-y-1/2 text-muted"
-      />
-    </div>
+    <OutlinedSelect
+      label={m.library_sort_by()}
+      labelClass="bg-native-sheet"
+      class="flex-1"
+      aria-describedby={isTimedSort ? footnoteId : undefined}
+      value={sort.by}
+      onchange={chooseSort}
+    >
+      {#each SORTS as by (by)}
+        <option value={by}>{SORT_LABELS[by]()}</option>
+      {/each}
+    </OutlinedSelect>
     <SortDirectionButton {sort} look="material" {onReverse} />
   </div>
 {:else}

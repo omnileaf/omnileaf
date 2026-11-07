@@ -7,6 +7,7 @@ import type { SettingChoiceControl } from "./setting-choice-control.ts";
 
 export interface ReadingSettingsContentLook {
   readonly control: SettingChoiceControl;
+  readonly modeField: ModeField;
   readonly group: string;
   readonly section: string;
   readonly firstSection: string;
@@ -15,10 +16,13 @@ export interface ReadingSettingsContentLook {
   readonly smartFeaturesSize: "small" | "flat";
 }
 
+export type ModeField = "beside" | "outlined";
+
 const SECTION = "flex flex-col border-be-0";
 
 const TODAYS_LOOK: ReadingSettingsContentLook = {
   control: "toggle",
+  modeField: "beside",
   group: "flex flex-col divide-y divide-border",
   section: `${SECTION} pbs-xl`,
   firstSection: SECTION,
@@ -29,6 +33,7 @@ const TODAYS_LOOK: ReadingSettingsContentLook = {
 
 const ANDROID_PHONE_LOOK: ReadingSettingsContentLook = {
   control: "pills",
+  modeField: "outlined",
   group: "flex flex-col",
   section: SECTION,
   firstSection: SECTION,
