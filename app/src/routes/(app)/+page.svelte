@@ -1075,6 +1075,7 @@
     platform={data.appInfo.platform}
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
+    stacksCount
     attention={showsAttentionDot && !showsAttentionInBar
       ? attentionDot
       : undefined}
