@@ -29,6 +29,7 @@ export interface CoverTileLook {
   readonly menuTargetRing: string;
   readonly pickedTitle: string;
   readonly title: string;
+  readonly compactTitle: string;
   readonly meta: string;
   readonly grid: string;
   readonly stack: CoverStackLook | null;
@@ -59,6 +60,9 @@ const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inli
 
 const ANDROID_TILE_TITLE =
   "max-medium:text-native-tile-title/native-tile-title! max-medium:font-native-tile-title! max-medium:tracking-native-tile-title!";
+
+const ANDROID_COMPACT_TITLE =
+  "max-medium:text-native-tab/native-tab max-medium:font-native-tab max-medium:tracking-native-tab";
 
 const ANDROID_GRID = "max-medium:covers-gap-sm! max-medium:covers-row-gap-lg!";
 
@@ -99,6 +103,7 @@ const TODAYS_LOOK: CoverTileLook = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  compactTitle: "",
   meta: "",
   grid: "",
   stack: null,
@@ -135,6 +140,7 @@ const NATIVE_TILE = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  compactTitle: "",
   meta: "",
   grid: "",
   stack: null,
@@ -268,6 +274,7 @@ const COVER_TILE_LOOKS = {
     mark: ANDROID_SELECT_MARK,
     compactMark: ANDROID_SELECT_MARK,
     title: ANDROID_TILE_TITLE,
+    compactTitle: ANDROID_COMPACT_TITLE,
     stack: PHONE_STACK,
     meta: ANDROID_TILE_META,
     grid: ANDROID_GRID,

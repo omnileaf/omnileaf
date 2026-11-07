@@ -565,3 +565,84 @@ test("keeps Android's cover edge line on a tablet", async () => {
 
   expect(cover.borderTopWidth).toBe("1px");
 });
+
+async function renderedOn(
+  platform: Platform,
+  display: LibraryDisplay,
+): Promise<Element> {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  await render(SeriesCovers, {
+    ...coversOf(await oneSeries(), display),
+    view: {
+      ...DEFAULT_LIBRARY_VIEW,
+      display,
+      onCovers: ON_COVERS,
+    },
+  });
+  return vi.waitFor(() => {
+    const cell = document.querySelector("[data-series-id]");
+    if (cell === null) {
+      throw new Error("the library drew no series");
+    }
+    return cell;
+  });
+}
+
+test("draws Android's list cover 56px tall at the cover's shape", async () => {
+  const cell = await renderedOn("android", "list");
+
+  const cover = cell.querySelector('[data-slot="list-cover"]');
+
+  const box = cover?.getBoundingClientRect();
+  expect(box?.height).toBeCloseTo(56, 0);
+  expect(box?.width).toBeCloseTo((56 * 2) / 3, 0);
+});
+
+test("sets Android's list unread count as a 24px tonal chip in 12px type", async () => {
+  const cell = await renderedOn("android", "list");
+
+  const unread = styleOf(cell.querySelector('[aria-label="3 unread"]'));
+
+  expect({
+    height: unread.height,
+    corner: unread.borderTopLeftRadius,
+    fill: unread.backgroundColor,
+    label: unread.color,
+    type: [unread.fontSize, unread.lineHeight, unread.fontWeight],
+  }).toEqual({
+    height: "24px",
+    corner: "8px",
+    fill: "rgb(208, 232, 215)",
+    label: "rgb(65, 87, 73)",
+    type: ["12px", "16px", "500"],
+  });
+});
+
+test("keeps iOS's list cover and the filled unread count on Linux", async () => {
+  const ios = await renderedOn("ios", "list");
+  const iosCover = ios.querySelector('[data-slot="list-cover"]');
+  const iosWidth = iosCover?.getBoundingClientRect().width;
+  const linux = await renderedOn("linux", "list");
+
+  const unread = styleOf(linux.querySelector('[aria-label="3 unread"]'));
+
+  expect([iosWidth, unread.backgroundColor]).toEqual([
+    48,
+    resolvedColour("--primary", "backgroundColor"),
+  ]);
+});
+
+test("sets Android's compact title in 12px medium type", async () => {
+  const cell = await renderedOn("android", "compact");
+
+  const title = styleOf(cell.querySelector("p"));
+
+  expect([
+    title.fontSize,
+    title.lineHeight,
+    title.fontWeight,
+    title.letterSpacing,
+  ]).toEqual(["12px", "16px", "500", "0.5px"]);
+});
