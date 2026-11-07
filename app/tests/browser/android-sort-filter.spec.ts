@@ -398,7 +398,8 @@ test.describe(
           "background-color",
           await tokenColour(page, "--native-color-accent-soft"),
         );
-        await expect(chip.locator("svg")).toHaveCount(1);
+        await expect(chip.locator("[data-icon='check']")).toHaveCount(1);
+        await expect(chip.locator("svg")).toHaveCount(0);
       });
 
       test("starts the chips 16px in from the sheet's edge, with no rule between settings", async ({
