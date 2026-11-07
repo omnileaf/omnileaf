@@ -5,6 +5,7 @@
     title,
     value,
     valueLang,
+    help,
     choices,
     chosen,
     dialogTitle = title,
@@ -13,6 +14,7 @@
     title: string;
     value: string;
     valueLang?: string | undefined;
+    help?: string | undefined;
     choices: readonly Choice<Value>[];
     chosen: Value;
     dialogTitle?: string;
@@ -31,12 +33,17 @@
   }}
 >
   <span class="flex flex-1 flex-col min-inline-none">
-    <span class="text-body">{title}</span>
+    <span class="text-body tracking-native-row-title">{title}</span>
     <span
       lang={valueLang}
       class="text-native-row-subtitle/native-row-subtitle text-muted"
       >{value}</span
     >
+    {#if help !== undefined}
+      <span class="text-native-row-subtitle/native-row-subtitle text-muted"
+        >{help}</span
+      >
+    {/if}
   </span>
 </button>
 <ChoiceDialog

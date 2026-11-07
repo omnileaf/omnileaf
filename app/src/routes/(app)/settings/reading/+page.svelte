@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import {
@@ -6,6 +9,10 @@
     READING_MODE_CHOICES,
     type ReadingModeChoice,
   } from "#lib/reader/reading-direction.svelte.ts";
+  import {
+    READING_MODE_NAMES,
+    TAP_ZONE_NAMES,
+  } from "#lib/reader/reader-names.ts";
   import {
     readerDefaults,
     TAP_ZONES,
@@ -21,7 +28,12 @@
     type SwipeAction,
   } from "#lib/series/swipe-actions.svelte.ts";
   import SmartFeaturesSection from "#lib/reader/SmartFeaturesSection.svelte";
+  import {
+    FLUSH_BLEED,
+    FLUSH_LIST_HEADING,
+  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
 
@@ -34,13 +46,14 @@
     { side: "towardStart", label: m.reading_swipe_left },
   ] as const satisfies readonly { side: SwipeSide; label: () => string }[];
 
-  const TAP_ZONE_LABELS = {
-    edges: m.reader_tap_zones_edges,
-    lShape: m.reader_tap_zones_l,
-    off: m.reader_tap_zones_off,
-  } satisfies Record<TapZones, () => string>;
+  const CARD_SWITCH = "-mx-list-row inline-auto";
+  const ANDROID_INTRO = `${FLUSH_BLEED} px-lg pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
+
+  const switches: Snippet = deviceSwitches;
+  const skipSwitch: Snippet = skipUpNextSwitch;
 
   const defaults = readerDefaults();
+  const android = new AndroidPhone();
 
   const skipUpNext = getSkipUpNextSetting();
   const swipeActions = getSwipeActionsSetting();
@@ -48,12 +61,6 @@
   const tapZonesId = `${swipesId}-zones`;
   const modeId = `${swipesId}-mode`;
   const endId = `${swipesId}-end`;
-  const MODE_NAMES = {
-    automatic: m.reader_direction_automatic,
-    leftToRight: m.reader_left_to_right,
-    rightToLeft: m.reader_right_to_left,
-    longStrip: m.reader_long_strip,
-  } satisfies Record<ReadingModeChoice, () => string>;
   const newSeries = newSeriesReadingMode();
 
   function chooseNewSeriesMode(value: string): void {
@@ -66,88 +73,142 @@
   }
 </script>
 
+{#snippet deviceSwitches()}
+  {#if hasVolumeKeys(currentPlatform())}
+    <SettingSwitch
+      label={m.reader_volume_keys()}
+      description={m.reader_volume_keys_help()}
+      isOn={defaults.look.turnsPagesWithVolumeKeys}
+      onToggle={() => {
+        defaults.change(
+          "turnsPagesWithVolumeKeys",
+          !defaults.look.turnsPagesWithVolumeKeys,
+        );
+      }}
+      bleeds={android.isOn}
+      class={android.isOn ? "" : CARD_SWITCH}
+    />
+  {/if}
+  <SettingSwitch
+    label={m.reader_keep_screen_on()}
+    description={m.reading_keep_screen_on_help()}
+    isOn={defaults.look.keepsScreenOn}
+    onToggle={() => {
+      defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
+    }}
+    bleeds={android.isOn}
+    class={android.isOn ? "" : CARD_SWITCH}
+  />
+{/snippet}
+
+{#snippet skipUpNextSwitch()}
+  <SettingSwitch
+    label={m.reading_skip_up_next()}
+    description={m.reading_skip_up_next_help()}
+    isOn={skipUpNext.isOn}
+    onToggle={() => {
+      skipUpNext.turn(!skipUpNext.isOn);
+    }}
+    bleeds={android.isOn}
+    class={android.isOn ? "" : CARD_SWITCH}
+  />
+{/snippet}
+
 <SectionHeading title={m.reading_title()} />
-<div class="mbs-pane-gap flex flex-col gap-xl">
-  <div class="flex flex-col gap-sm">
-    <p class="text-detail text-muted">{m.reading_defaults_intro()}</p>
-    <section
-      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
-    >
-      <label for={modeId} class="font-semibold">
-        {m.reading_mode_new_series()}
-      </label>
-      <NativeSelect
-        class="expanded:inline-setting-control"
-        id={modeId}
-        aria-describedby="{modeId}-help"
-        value={newSeries.choice}
-        onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-          chooseNewSeriesMode(event.currentTarget.value);
+<div class={["mbs-pane-gap flex flex-col", !android.isOn && "gap-xl"]}>
+  <div class={["flex flex-col", !android.isOn && "gap-sm"]}>
+    <p class={android.isOn ? ANDROID_INTRO : "text-detail text-muted"}>
+      {m.reading_defaults_intro()}
+    </p>
+    {#if android.isOn}
+      <SettingChoiceRow
+        title={m.reading_mode_new_series()}
+        value={READING_MODE_NAMES[newSeries.choice]()}
+        help={m.reading_mode_new_series_help()}
+        choices={READING_MODE_CHOICES.map((choice) => ({
+          value: choice,
+          label: READING_MODE_NAMES[choice](),
+        }))}
+        chosen={newSeries.choice}
+        onChoose={(choice: ReadingModeChoice) => {
+          newSeries.choose(choice);
         }}
-      >
-        {#each READING_MODE_CHOICES as choice (choice)}
-          <option value={choice}>{MODE_NAMES[choice]()}</option>
-        {/each}
-      </NativeSelect>
-      <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
-        {m.reading_mode_new_series_help()}
-      </p>
-    </section>
-  </div>
-  <section
-    aria-labelledby={tapZonesId}
-    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-  >
-    <h2 id={tapZonesId} class="font-semibold">{m.reader_tap_zones()}</h2>
-    <SegmentedControl
-      options={TAP_ZONES}
-      labels={TAP_ZONE_LABELS}
-      chosen={defaults.look.tapZones}
-      labelledBy={tapZonesId}
-      isFullWidth
-      onChoose={(zones: TapZones) => {
-        defaults.change("tapZones", zones);
-      }}
-    />
-    {#if hasVolumeKeys(currentPlatform())}
-      <SettingSwitch
-        label={m.reader_volume_keys()}
-        description={m.reader_volume_keys_help()}
-        isOn={defaults.look.turnsPagesWithVolumeKeys}
-        onToggle={() => {
-          defaults.change(
-            "turnsPagesWithVolumeKeys",
-            !defaults.look.turnsPagesWithVolumeKeys,
-          );
-        }}
-        class="-mx-list-row inline-auto"
       />
+    {:else}
+      <section
+        class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
+      >
+        <label for={modeId} class="font-semibold">
+          {m.reading_mode_new_series()}
+        </label>
+        <NativeSelect
+          class="expanded:inline-setting-control"
+          id={modeId}
+          aria-describedby="{modeId}-help"
+          value={newSeries.choice}
+          onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
+            chooseNewSeriesMode(event.currentTarget.value);
+          }}
+        >
+          {#each READING_MODE_CHOICES as choice (choice)}
+            <option value={choice}>{READING_MODE_NAMES[choice]()}</option>
+          {/each}
+        </NativeSelect>
+        <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
+          {m.reading_mode_new_series_help()}
+        </p>
+      </section>
     {/if}
-    <SettingSwitch
-      label={m.reader_keep_screen_on()}
-      description={m.reading_keep_screen_on_help()}
-      isOn={defaults.look.keepsScreenOn}
-      onToggle={() => {
-        defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
-      }}
-      class="-mx-list-row inline-auto"
-    />
-  </section>
-  <section
-    aria-labelledby={endId}
-    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-  >
-    <h2 id={endId} class="font-semibold">{m.reader_end_of_book()}</h2>
-    <SettingSwitch
-      label={m.reading_skip_up_next()}
-      description={m.reading_skip_up_next_help()}
-      isOn={skipUpNext.isOn}
-      onToggle={() => {
-        skipUpNext.turn(!skipUpNext.isOn);
-      }}
-      class="-mx-list-row inline-auto"
-    />
-  </section>
+  </div>
+  {#if android.isOn}
+    <div class="flex flex-col">
+      <SettingChoiceRow
+        title={m.reader_tap_zones()}
+        value={TAP_ZONE_NAMES[defaults.look.tapZones]()}
+        choices={TAP_ZONES.map((zones) => ({
+          value: zones,
+          label: TAP_ZONE_NAMES[zones](),
+        }))}
+        chosen={defaults.look.tapZones}
+        onChoose={(zones: TapZones) => {
+          defaults.change("tapZones", zones);
+        }}
+      />
+      {@render switches()}
+    </div>
+  {:else}
+    <section
+      aria-labelledby={tapZonesId}
+      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
+    >
+      <h2 id={tapZonesId} class="font-semibold">{m.reader_tap_zones()}</h2>
+      <SegmentedControl
+        options={TAP_ZONES}
+        labels={TAP_ZONE_NAMES}
+        chosen={defaults.look.tapZones}
+        labelledBy={tapZonesId}
+        isFullWidth
+        onChoose={(zones: TapZones) => {
+          defaults.change("tapZones", zones);
+        }}
+      />
+      {@render switches()}
+    </section>
+  {/if}
+  {#if android.isOn}
+    <div class="flex flex-col">
+      <h2 id={endId} class={FLUSH_LIST_HEADING}>{m.reader_end_of_book()}</h2>
+      {@render skipSwitch()}
+    </div>
+  {:else}
+    <section
+      aria-labelledby={endId}
+      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
+    >
+      <h2 id={endId} class="font-semibold">{m.reader_end_of_book()}</h2>
+      {@render skipSwitch()}
+    </section>
+  {/if}
   <SmartFeaturesSection
     heading="h2"
     size="regular"
