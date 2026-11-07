@@ -27,6 +27,12 @@
     "list",
   ];
 
+  const ANDROID_DISPLAYS: readonly LibraryDisplay[] = [
+    "grid",
+    "compact",
+    "list",
+  ];
+
   const LABELS = {
     grid: m.library_display_grid,
     compact: m.library_display_compact,
@@ -71,7 +77,7 @@
     {m.library_view_display()}
   </p>
   <SegmentedControl
-    options={DISPLAYS}
+    options={android.isOn ? ANDROID_DISPLAYS : DISPLAYS}
     labels={LABELS}
     icons={showsIcons ? ICONS : undefined}
     {chosen}
@@ -81,7 +87,7 @@
     hasEqualColumns
     {onChoose}
     class={android.isOn
-      ? "flex-none max-inline-full"
+      ? "ms-auto flex-none max-inline-full"
       : "mbs-sm large:mbs-icon-gap"}
   />
 </div>
