@@ -8,6 +8,13 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import {
+    READING_MODE_NAMES,
+    TAP_ZONE_NAMES,
+  } from "#lib/reader/reader-names.ts";
+  import { readerDefaults } from "#lib/reader/reader-settings.svelte.ts";
+  import { newSeriesReadingMode } from "#lib/reader/reading-direction.svelte.ts";
   import { languageName } from "#lib/language/language.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -49,6 +56,9 @@
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
   const storage = getStorageCheck();
+  const android = new AndroidPhone();
+  const readerLook = readerDefaults();
+  const newSeriesMode = newSeriesReadingMode();
   let librarySummary = $state<string | undefined>();
 
   onMount(() => {
@@ -99,6 +109,14 @@
       "/(app)/settings/storage": {
         text: m.settings_summary_storage({
           size: formatBytes(storage.use.omnileafBytes),
+        }),
+      },
+    }),
+    ...(android.isOn && {
+      "/(app)/settings/reading": {
+        text: m.settings_summary_pair({
+          first: READING_MODE_NAMES[newSeriesMode.choice](),
+          second: TAP_ZONE_NAMES[readerLook.look.tapZones](),
         }),
       },
     }),

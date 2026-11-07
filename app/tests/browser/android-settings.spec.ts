@@ -275,7 +275,7 @@ test.describe(
       test.skip(platform !== "android", "Android's list rows");
     });
 
-    test("draws each entry's icon in a tonal circle, with no chevron at the end", async ({
+    test("draws each entry's icon bare, with no circle behind it and no chevron at the end", async ({
       page,
     }) => {
       await page.goto("/settings");
@@ -284,11 +284,39 @@ test.describe(
         .getByRole("link", { name: /^General/ });
       const icon = row.locator("[data-icon]");
 
+      await expect(icon).toHaveCSS("width", "24px");
       await expect(icon.locator("xpath=..")).toHaveCSS(
         "background-color",
-        await tokenColour(page, "--native-color-accent-soft"),
+        "rgba(0, 0, 0, 0)",
       );
       await expect(row.locator("svg:visible")).toHaveCount(0);
+    });
+
+    test("lays the rows flush, the icon at x=16 and the name at x=56, with no line between rows", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page
+        .getByRole("main")
+        .getByRole("link", { name: /^General/ });
+      const icon = await boxOf(row.locator("[data-icon]"));
+      const name = await boxOf(row.getByText("General", { exact: true }));
+
+      expect(icon.x).toBe(16);
+      expect(name.x).toBe(56);
+      await expect(row).toHaveCSS("border-bottom-width", "0px");
+      await expect(
+        page.getByRole("heading", { name: "About", level: 2 }),
+      ).toHaveCSS("height", "44px");
+    });
+
+    test("shows the reading mode and tap zones under Reader", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page.getByRole("main").getByRole("link", { name: /^Reader/ });
+
+      await expect(row.getByText(/·/)).toBeVisible();
     });
 
     test("sets each name at 16px and its line under it at 14px, both in regular weight", async ({
