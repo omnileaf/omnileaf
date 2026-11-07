@@ -26,6 +26,8 @@
   --native-color-button-primary: var(--primary);
   --native-color-on-button-primary: var(--primary-foreground);
   --native-color-button-secondary: var(--secondary);
+  --native-color-search-view: var(--background);
+  --native-spacing-search-view-bar: 4.5rem;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);
   --native-color-control-stroke: transparent;

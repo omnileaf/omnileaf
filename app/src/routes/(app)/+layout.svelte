@@ -120,6 +120,10 @@
     page.route.id === SEARCH_ROUTE_ID &&
       phoneOf(data.appInfo.platform, width.current) === "ios",
   );
+  const isSearchViewOpen = $derived(
+    page.route.id === SEARCH_ROUTE_ID &&
+      phoneOf(data.appInfo.platform, width.current) === "android",
+  );
   const wordingContext = $derived({
     usesStandIns: screenshotMode.isOn,
     device: deviceWordOf(data.appInfo.platform, width.current),
@@ -207,14 +211,16 @@
           <TopTabBar current={sectionOf(page.url.pathname)} />
         {/if}
       {:else}
-        <AppNavigation
-          current={sectionOf(page.url.pathname)}
-          isCollapsed={isTabBarCollapsed}
-          attention={isPointer(data.appInfo.platform) &&
-          needsAttention.problems.length > 0
-            ? attention
-            : undefined}
-        />
+        {#if !isSearchViewOpen}
+          <AppNavigation
+            current={sectionOf(page.url.pathname)}
+            isCollapsed={isTabBarCollapsed}
+            attention={isPointer(data.appInfo.platform) &&
+            needsAttention.problems.length > 0
+              ? attention
+              : undefined}
+          />
+        {/if}
       {/if}
     {/key}
   {/if}

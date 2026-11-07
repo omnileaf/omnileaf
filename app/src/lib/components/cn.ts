@@ -535,6 +535,7 @@ export const TOKEN_THEME = {
     "native-search-scope-gap",
     "native-search-token",
     "native-search-token-inline",
+    "native-search-view-bar",
     "native-segment",
     "native-segment-inline",
     "native-segmented-gap",

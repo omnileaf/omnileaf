@@ -938,6 +938,10 @@ test.describe("on Android", () => {
     page,
   }) => {
     test.skip(isDesktop(page), "the clear button shows on phones and tablets");
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "the phone draws the full-screen search view",
+    );
     await page.goto("/search");
     await searchField(page).fill("market");
     const clear = page.getByRole("button", { name: "Clear", exact: true });
@@ -965,6 +969,10 @@ test.describe("on Android", () => {
   test("draws the search field as a 48 dp pill with a muted icon 12 dp from its words", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "the phone draws the full-screen search view",
+    );
     await page.goto("/search");
 
     const field = searchField(page).locator("..");
@@ -988,6 +996,10 @@ test.describe("on Android", () => {
     test(`fills the search field with the high surface container and no edge in the ${colorScheme} theme`, async ({
       page,
     }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "the phone draws the full-screen search view",
+      );
       await page.emulateMedia({ colorScheme });
       await page.goto("/search");
 
