@@ -59,8 +59,10 @@
   import {
     ABOUT_COLUMN,
     ABOUT_COVER,
+    ABOUT_DETAILS_CARD,
     ABOUT_HEAD,
     ABOUT_LINES,
+    ABOUT_TAG,
   } from "./series-about-layout.ts";
 
   const ICON_SIZE = 16;
@@ -200,7 +202,10 @@
           >
             <Badge
               look="outline"
-              class="windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted"
+              class={[
+                "windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted",
+                ABOUT_TAG,
+              ]}
             >
               {tag}
             </Badge>
@@ -280,7 +285,13 @@
         </div>
       {/if}
       <CollapsibleContent>
-        <Card class={["p-lg shadow-card-rest", WINDOWS_CARD_PLATE]}>
+        <Card
+          class={[
+            "p-lg shadow-card-rest",
+            WINDOWS_CARD_PLATE,
+            ABOUT_DETAILS_CARD,
+          ]}
+        >
           <SeriesDetailsList {overview} {sourced} bind:ref={details} />
         </Card>
       </CollapsibleContent>
