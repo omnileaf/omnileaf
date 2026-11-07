@@ -607,6 +607,10 @@
   --spacing-skeleton-line: 8.75rem;
   --spacing-skeleton-card: 12.5rem;
   --spacing-skeleton-card-wide: 9rem;
+  --spacing-skeleton-note-android: 4rem;
+  --spacing-skeleton-card-android: 9.25rem;
+  --spacing-skeleton-book-title-android: 1.125rem;
+  --spacing-skeleton-book-line-android: 0.875rem;
   --spacing-skeleton-title-macos: 13.125rem;
   --spacing-skeleton-line-macos: 0.875rem;
   --spacing-skeleton-card-macos: 7rem;

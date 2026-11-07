@@ -35,7 +35,9 @@
   );
 </script>
 
-<div class="rounded-card border border-border bg-card py-2xl">
+<div
+  class="rounded-card border border-border bg-card py-2xl android:max-medium:bg-transparent"
+>
   <EmptyState
     icon={FolderSearch}
     title={m.series_no_books()}
