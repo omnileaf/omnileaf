@@ -1,7 +1,9 @@
 <script lang="ts">
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import { OutlinedSelect } from "#lib/components/ui/outlined-field/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import type { ModeField } from "./reading-settings-content-look.ts";
   import {
     READING_MODE_CHOICES,
     type ReadingModeChoice,
@@ -18,7 +20,10 @@
     rightToLeft: m.reader_direction_automatic_right_to_left,
   } as const;
 
-  let { reading }: { reading: SeriesReadingDirection } = $props();
+  let {
+    reading,
+    field,
+  }: { reading: SeriesReadingDirection; field: ModeField } = $props();
 
   const id = $props.id();
 
@@ -32,7 +37,16 @@
     return choice === "automatic" ? automaticName() : CHOSEN_NAMES[choice]();
   }
 
-  function chooseDirection(value: string): void {
+  const modes = $derived(
+    READING_MODE_CHOICES.map((choice) => ({
+      choice,
+      name: choiceName(choice),
+    })),
+  );
+
+  function chooseDirection({
+    currentTarget: { value },
+  }: Event & { currentTarget: HTMLSelectElement }) {
     const choice = READING_MODE_CHOICES.find(
       (candidate) => candidate === value,
     );
@@ -42,24 +56,38 @@
   }
 </script>
 
-<div
-  data-slot="setting-row"
-  class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
->
-  <label for="{id}-mode" class="text-small font-medium">
-    {m.reader_mode()}
-  </label>
-  <NativeSelect
-    data-reading-mode
-    id="{id}-mode"
-    class="inline-setting-control"
-    value={reading.choice}
-    onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-      chooseDirection(event.currentTarget.value);
-    }}
+{#if field === "outlined"}
+  <div data-slot="setting-row" class="py-md">
+    <OutlinedSelect
+      data-reading-mode
+      label={m.reader_mode()}
+      labelClass="bg-native-sheet"
+      value={reading.choice}
+      onchange={chooseDirection}
+    >
+      {#each modes as mode (mode.choice)}
+        <option value={mode.choice}>{mode.name}</option>
+      {/each}
+    </OutlinedSelect>
+  </div>
+{:else}
+  <div
+    data-slot="setting-row"
+    class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
   >
-    {#each READING_MODE_CHOICES as choice (choice)}
-      <option value={choice}>{choiceName(choice)}</option>
-    {/each}
-  </NativeSelect>
-</div>
+    <label for="{id}-mode" class="text-small font-medium">
+      {m.reader_mode()}
+    </label>
+    <NativeSelect
+      data-reading-mode
+      id="{id}-mode"
+      class="inline-setting-control"
+      value={reading.choice}
+      onchange={chooseDirection}
+    >
+      {#each modes as mode (mode.choice)}
+        <option value={mode.choice}>{mode.name}</option>
+      {/each}
+    </NativeSelect>
+  </div>
+{/if}
