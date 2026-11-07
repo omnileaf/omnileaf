@@ -45,3 +45,14 @@ test("shows no progress on the steps around the numbered ones", async () => {
 
   expect(progress.elements()).toHaveLength(0);
 });
+
+test("sizes back button to 40px and renders native arrow icon on Android", async () => {
+  const { followCorePlatform } = await import("#lib/page/platform.ts");
+  followCorePlatform("android");
+  const { screen } = await renderFrameOn("choices");
+
+  const back = screen.getByRole("button", { name: "Back" }).first().element();
+  expect(back.className).toContain("android:block-native-button");
+  expect(back.className).toContain("android:inline-native-button");
+  expect(back.querySelector('[data-icon="arrow-left"]')).not.toBeNull();
+});

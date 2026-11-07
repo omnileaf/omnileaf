@@ -89,9 +89,12 @@
     {#snippet badge()}
       <div class={["flex pbe-sm", !isSetupPage && "pbs-xl"]}>
         <AppIcon
-          class={isSetupPage
-            ? "block-setup-app-icon inline-setup-app-icon"
-            : "block-app-icon inline-app-icon"}
+          class={[
+            isSetupPage
+              ? "block-setup-app-icon inline-setup-app-icon"
+              : "block-app-icon inline-app-icon",
+            platform === "android" && "rounded-full",
+          ]}
         />
       </div>
     {/snippet}
@@ -118,11 +121,11 @@
             "flex shrink-0 items-center justify-center",
             isSetupPage
               ? "text-windows-accent"
-              : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile",
+              : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile android:rounded-none android:bg-transparent android:text-foreground",
           ]}
         >
           {#if platform === "android"}
-            <Icon name={promise.iconName} size={PROMISE_ICON_SIZE} />
+            <Icon name={promise.iconName} size={24} />
           {:else}
             <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
           {/if}
@@ -131,9 +134,11 @@
           <span
             class={isSetupPage
               ? "text-label/setup-body font-semibold"
-              : "font-semibold"}>{promise.title()}</span
+              : "android:font-normal font-semibold"}>{promise.title()}</span
           >
-          <span class="text-footnote text-muted">
+          <span
+            class="text-footnote text-muted android:text-native-row-subtitle/native-row-subtitle"
+          >
             <WidthWording wording={promise.detail} />
           </span>
         </span>
