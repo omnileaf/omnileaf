@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { HTMLAttributes } from "svelte/elements";
+  import type { ClassValue, HTMLAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
   import type { IconName } from "#lib/icons/names.ts";
@@ -13,10 +13,10 @@
     ...rest
   }: {
     name: IconName;
-    filled?: boolean;
+    filled?: boolean | undefined;
     size?: number | string | undefined;
-    class?: string;
-    style?: string;
+    class?: ClassValue | undefined;
+    style?: string | undefined;
   } & HTMLAttributes<HTMLSpanElement> = $props();
 
   const sizeValue = $derived(

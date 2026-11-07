@@ -211,7 +211,7 @@
         }}
       >
         {#if platform === "android"}
-          <Icon name="search" size={ICON_SIZE} />
+          <Icon name="search" />
         {:else}
           <Search size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -238,7 +238,7 @@
         }}
       >
         {#if platform === "android"}
-          <Icon name="eraser" size={ICON_SIZE} />
+          <Icon name="eraser" />
         {:else}
           <Eraser size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -256,11 +256,11 @@
           {...props}
           look="icon"
           aria-label={m.history_back()}
-          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
+          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed android:block-native-button android:inline-native-button"
           onclick={stopSearching}
         >
           {#if platform === "android"}
-            <Icon name="arrow-left" size={ICON_SIZE} />
+            <Icon name="arrow-left" />
           {:else}
             <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
           {/if}
@@ -282,6 +282,7 @@
     title={m.history_title()}
     showsLabel={screenshotMode.showsLabel}
     actions={headerActions}
+    largeTitle={platform === "android" ? false : undefined}
   />
 {/if}
 

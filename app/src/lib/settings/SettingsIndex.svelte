@@ -68,12 +68,12 @@
                 <a href={resolve(section.route)} {...props}>
                   <ItemMedia
                     class={[
-                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip android:max-medium:bg-transparent android:max-medium:text-muted desktop:text-foreground",
+                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-accent-soft android:text-accent android:block-settings-chip android:inline-settings-chip desktop:text-foreground",
                       IOS_CHIPS[section.chip],
                     ]}
                   >
                     {#if platform === "android" && section.iconName !== undefined}
-                      <Icon name={section.iconName} size={ICON_SIZE} />
+                      <Icon name={section.iconName} />
                     {:else}
                       <section.icon size={ICON_SIZE} />
                     {/if}
@@ -89,7 +89,7 @@
                     {#if summary !== undefined}
                       <ItemDescription
                         lang={summary.lang}
-                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:max-medium:text-native-row-subtitle/native-row-subtitle"
+                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:text-native-row-subtitle/native-row-subtitle"
                         >{summary.text}</ItemDescription
                       >
                     {/if}

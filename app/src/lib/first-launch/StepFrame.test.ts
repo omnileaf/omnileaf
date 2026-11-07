@@ -1,9 +1,17 @@
 import { createRawSnippet } from "svelte";
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
+
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import type { FirstLaunchStep } from "./steps";
 import StepFrame from "./StepFrame.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const nothing = createRawSnippet(() => ({ render: () => "<span></span>" }));
 
@@ -44,4 +52,14 @@ test("shows no progress on the steps around the numbered ones", async () => {
   const progress = screen.getByRole("progressbar");
 
   expect(progress.elements()).toHaveLength(0);
+});
+
+test("sizes back button to 40px and renders native arrow icon on Android", async () => {
+  followCorePlatform("android");
+  const { screen } = await renderFrameOn("choices");
+
+  const back = screen.getByRole("button", { name: "Back" }).first().element();
+  expect(back.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(back.getBoundingClientRect().width).toBeCloseTo(40, 0);
+  expect(back.querySelector('[data-icon="arrow-left"]')).not.toBeNull();
 });
