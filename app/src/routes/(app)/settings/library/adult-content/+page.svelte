@@ -49,7 +49,9 @@
   />
   {#if content.reading.kind === "read"}
     {@const chosen = content.reading.value}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap macos:gap-lg">
+    <div
+      class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none macos:gap-lg"
+    >
       <div class="flex flex-col gap-sm macos:gap-lg">
         <p
           class="text-footnote text-muted macos:text-native-button/native-button"

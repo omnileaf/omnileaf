@@ -40,7 +40,7 @@ const ANDROID_PHONE_LOOK: RadiosLook = {
   section: FLUSH_LIST,
   heading: FLUSH_HEADING,
   group: "flex flex-col",
-  row: `flex items-center gap-lg py-2xs ps-lg pe-xl text-start text-body transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed min-block-touch-target`,
+  row: `flex items-center gap-lg py-xs ps-lg pe-xl text-start text-body transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed min-block-touch-target`,
   mark: "flex shrink-0 items-center justify-center rounded-full border-2 block-radio inline-radio",
   markOn: "border-radio-edge-on",
   markOff: "border-control-edge",

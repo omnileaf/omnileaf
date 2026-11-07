@@ -45,7 +45,7 @@
   const ROW =
     "flex flex-wrap items-center gap-md py-sm ps-lg pe-md min-block-phone-row touch:medium:ps-list-row desktop:ps-list-row desktop:min-block-settings-row";
   const ANDROID_ROW =
-    "flex items-center gap-native-row-gap py-native-row-block ps-native-row-start pe-native-row-end min-block-native-row-two";
+    "flex items-start gap-native-row-gap py-md ps-native-row-start pe-native-row-end min-block-native-row-two";
   const ANDROID_LABEL = "font-regular tracking-native-row-title";
   const ANDROID_LINE =
     "text-native-row-subtitle/native-row-subtitle text-muted";
@@ -107,7 +107,9 @@
   title={m.permissions_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
+<div
+  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+>
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.permissions_intro()}
   </p>

@@ -56,7 +56,7 @@
   title={m.animations_title()}
   parent={{ route: "/(app)/settings/advanced", title: m.advanced_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-lg">
+<div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
   <p class="text-body text-muted desktop:text-label">{m.animations_intro()}</p>
   <div
     class="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-card android:max-medium:divide-y-0 android:max-medium:overflow-visible android:max-medium:border-0 android:max-medium:bg-transparent"

@@ -269,7 +269,7 @@
 {/snippet}
 
 <div
-  class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none two-pane:max-inline-section"
 >
   <HomeFolder
     folders={folders.list}

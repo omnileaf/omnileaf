@@ -16,7 +16,9 @@
     title: m.about_licences(),
   }}
 />
-<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
+<div
+  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
+>
   <p class="text-label text-muted touch:max-medium:px-xs">
     {m.licence_summary({
       version: licensed.version,
