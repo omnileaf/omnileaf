@@ -82,12 +82,14 @@
         {
           route: "/(app)/settings/library/tabs",
           icon: LayoutGrid,
+          iconName: "layout-grid",
           label: m.library_tabs_title(),
           summary: m.library_tabs_summary(),
         },
         {
           route: "/(app)/settings/library/tags",
           icon: Tags,
+          iconName: "tags",
           label: m.manage_tags_title(),
           ...(tagCount === undefined
             ? {}
@@ -96,6 +98,7 @@
         {
           route: "/(app)/settings/library/adult-content",
           icon: EyeOff,
+          iconName: "eye-off",
           label: m.adult_content_title(),
           ...(adultContent.reading.kind === "read"
             ? {

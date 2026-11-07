@@ -15,6 +15,11 @@
   import { GROUP_PLATE } from "#lib/page/plates.ts";
 
   import {
+    FLUSH_LIST,
+    FLUSH_LIST_HEADING,
+    FLUSH_ROW_ICON,
+  } from "./android-flush-look.ts";
+  import {
     type SectionChip,
     type SettingsGroup,
     type SectionSummary,
@@ -39,14 +44,15 @@
   const platform = currentPlatform();
   const headingId = $props.id();
   const android = new AndroidPhone();
-  const ANDROID_HEADING =
-    "-mx-page-start -me-page-end pbs-lg pbe-sm text-native-row-subtitle/native-row-subtitle font-medium tracking-native-row-subtitle text-accent";
-  const ANDROID_LIST = "-mx-page-start -me-page-end flex flex-col";
+  const TODAYS_HEADING =
+    "px-lg text-small font-semibold text-muted ios:text-native-row-title/native-row-title ios:font-native-tile-title ios:tracking-native-row-title android:font-medium android:text-accent";
   const TODAYS_LIST =
     "divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0";
 
   function headingOf(group: SettingsGroup): (() => string) | undefined {
-    return android.isOn ? (group.heading ?? group.phoneHeading) : group.heading;
+    return android.isOn
+      ? (group.heading ?? group.androidHeading)
+      : group.heading;
   }
 </script>
 
@@ -57,10 +63,7 @@
       {#if heading !== undefined}
         <h2
           id="{headingId}-{index}"
-          class={[
-            "px-lg text-small font-semibold text-muted ios:text-native-row-title/native-row-title ios:font-native-tile-title ios:tracking-native-row-title android:font-medium android:text-accent",
-            android.isOn && ANDROID_HEADING,
-          ]}
+          class={android.isOn ? FLUSH_LIST_HEADING : TODAYS_HEADING}
         >
           {heading()}
         </h2>
@@ -69,7 +72,7 @@
         aria-labelledby={heading === undefined
           ? undefined
           : `${headingId}-${String(index)}`}
-        class={android.isOn ? ANDROID_LIST : [TODAYS_LIST, GROUP_PLATE]}
+        class={android.isOn ? FLUSH_LIST : [TODAYS_LIST, GROUP_PLATE]}
       >
         {#each group.sections as section (section.route)}
           {@const summary = summaries[section.route]}
@@ -81,7 +84,7 @@
                 <a href={resolve(section.route)} {...props}>
                   {#if android.isOn}
                     {#if section.iconName !== undefined}
-                      <Icon name={section.iconName} class="shrink-0" />
+                      <Icon name={section.iconName} class={FLUSH_ROW_ICON} />
                     {/if}
                   {:else}
                     <ItemMedia
