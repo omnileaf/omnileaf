@@ -47,6 +47,7 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
@@ -194,8 +195,11 @@
   );
   let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
   let folders = $state<readonly LibraryFolder[]>([]);
+  const androidPhone = new AndroidPhone();
   const groupBy = $derived<LibraryGrouping>(
-    view.reading.kind === "read" ? view.reading.value.groupBy : "none",
+    view.reading.kind === "read"
+      ? viewDrawn(view.reading.value, androidPhone.isOn).groupBy
+      : "none",
   );
   let writers = $state<readonly LibraryWriter[]>([]);
   const groups = $derived(groupsBy(groupBy));
@@ -229,7 +233,6 @@
   const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
   let hiddenSeries = $state(0);
-  const androidPhone = new AndroidPhone();
   const folderCardsPhone = new FolderCardsPhone();
   let missingFolders = $state<readonly MissingFolder[]>([]);
   let stillFailing = $state<readonly string[]>([]);
