@@ -11,7 +11,7 @@ export type StepButtonKind = Extract<
 >;
 
 const STEP_BUTTON =
-  "flex items-center justify-center gap-sm px-xl text-body min-block-touch-target disabled:opacity-60 ios:rounded-ios-button android:rounded-full touch:min-block-touch-button desktop:rounded-button desktop:px-lg desktop:text-label desktop:min-block-pointer-target";
+  "flex items-center justify-center gap-sm px-xl text-body min-block-touch-target disabled:opacity-60 ios:rounded-ios-button android:rounded-full touch:min-block-touch-button android:min-block-touch-target desktop:rounded-button desktop:px-lg desktop:text-label desktop:min-block-pointer-target";
 
 const SETUP_BUTTON =
   "flex items-center justify-center gap-sm min-inline-setup-button disabled:opacity-60";
