@@ -183,7 +183,7 @@
             "ios:max-medium:-ms-xs ios:max-medium:rounded-row ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
             "android:native-target android:justify-center android:rounded-full android:block-native-button android:inline-native-button android:max-medium:ms-xs android:max-medium:mbs-xs",
             "ios:medium:justify-center ios:medium:rounded-full ios:medium:block-touch-target ios:medium:inline-touch-target",
-            "touch:medium:-ms-md",
+            "android:medium:ms-xs! touch:medium:-ms-md",
           ]}
         >
           {#if platform === "android"}
