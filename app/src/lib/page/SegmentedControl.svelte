@@ -70,6 +70,9 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const ANDROID_PHONE_SMALL_FACE =
+    "max-medium:gap-sm max-medium:px-lg max-medium:text-native-segment max-medium:leading-native-segment max-medium:tracking-native-segment";
+
   const MACOS_SMALL = {
     track: "min-block-native-button-small rounded-native-button-small",
     segment:
@@ -131,6 +134,9 @@
     }
     if (isMacosSmall) {
       return "";
+    }
+    if (platform === "android" && size === "small") {
+      return `${look.face} ${ANDROID_PHONE_SMALL_FACE}`;
     }
     return usesNativeTokens && size === "regular"
       ? NATIVE_LOOK.face
