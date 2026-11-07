@@ -488,6 +488,7 @@ export const TOKEN_THEME = {
     "native-inspector-title",
     "native-large-title-above",
     "native-large-title-below",
+    "native-library-menu",
     "native-list-cover",
     "native-list-footer-gap",
     "native-menu-block",

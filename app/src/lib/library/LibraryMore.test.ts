@@ -78,3 +78,19 @@ test("keeps 16px Lucide icons in the menu on an iPhone", async () => {
 
   expect(icon?.getBoundingClientRect().width).toBe(16);
 });
+
+test("sets the menu at least 208 wide on an Android phone", async () => {
+  await openMenuOn("android");
+
+  const menu = page.getByRole("menu").element();
+
+  expect(menu.getBoundingClientRect().width).toBeGreaterThanOrEqual(208);
+});
+
+test("lets the menu hug its items on an iPhone", async () => {
+  await openMenuOn("ios");
+
+  const menu = page.getByRole("menu").element();
+
+  expect(menu.getBoundingClientRect().width).toBeLessThan(208);
+});
