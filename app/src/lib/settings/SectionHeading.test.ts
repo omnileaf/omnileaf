@@ -113,7 +113,7 @@ test("sets the title on a 32px line on Android phones", async () => {
   expect(style.lineHeight).toBe("32px");
 });
 
-test("keeps the back button's tablet offset on Android tablets", async () => {
+test("keeps the back button's touch area inside the header on Android tablets", async () => {
   await page.viewport(TABLET_WIDTH, VIEWPORT_HEIGHT);
   followCorePlatform("android");
   const screen = await render(SectionHeading, PROPS);
@@ -121,6 +121,6 @@ test("keeps the back button's tablet offset on Android tablets", async () => {
   const back = screen.getByRole("link", { name: "Back to Settings" }).element();
   const style = getComputedStyle(back);
 
-  expect(Number.parseFloat(style.marginInlineStart)).toBeLessThan(0);
+  expect(style.marginInlineStart).toBe("4px");
   expect(style.marginBlockStart).toBe("0px");
 });
