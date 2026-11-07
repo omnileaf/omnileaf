@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { StorageUse } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { formatBytes } from "./bytes";
@@ -11,6 +12,8 @@
   function share(bytes: number): number {
     return used.totalBytes === 0 ? 0 : (bytes / used.totalBytes) * WHOLE;
   }
+
+  const android = new AndroidPhone();
 
   const othersBytes = $derived(
     Math.max(0, used.totalBytes - used.freeBytes - used.omnileafBytes),
@@ -27,13 +30,31 @@
     free: formatBytes(used.freeBytes),
     total: formatBytes(used.totalBytes),
   })}
-  class="flex overflow-hidden rounded-full bg-chip block-md"
+  class={[
+    "flex overflow-hidden rounded-full block-md",
+    android.isOn ? "gap-xs" : "bg-chip",
+  ]}
 >
-  <span class="bg-foreground" style:inline-size="{share(used.omnileafBytes)}%"
+  <span
+    class={android.isOn ? "rounded-full bg-accent" : "bg-foreground"}
+    style:inline-size="{share(used.omnileafBytes)}%"
   ></span>
-  <span class="bg-muted" style:inline-size="{share(othersBytes)}%"></span>
+  <span
+    class={android.isOn ? "rounded-full bg-foreground" : "bg-muted"}
+    style:inline-size="{share(othersBytes)}%"
+  ></span>
+  {#if android.isOn}
+    <span class="flex-1 rounded-full bg-chip"></span>
+  {/if}
 </div>
-<ul class="flex flex-wrap items-center gap-x-md gap-y-2xs text-label">
+<ul
+  class={[
+    "flex flex-wrap items-center gap-x-md gap-y-2xs",
+    android.isOn
+      ? "text-native-row-subtitle/native-row-subtitle text-muted"
+      : "text-label",
+  ]}
+>
   <li class="flex items-center gap-xs">
     <span
       aria-hidden="true"
