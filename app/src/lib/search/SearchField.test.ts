@@ -273,23 +273,29 @@ describe("in an iPhone's bottom bar", () => {
     }).toEqual({ height: 48, size: "17px" });
   });
 
-  test("renders native search Icon on Android", async () => {
-    followCorePlatform("android");
-    const screen = await render(SearchField, {
-      text: "",
-      conditions: [],
-      filterPlace: "field",
-      onType: () => undefined,
-      onRemove: () => undefined,
-      onClear: () => undefined,
-      onEscape: () => undefined,
-      listId: "results",
-      activeId: undefined,
-      hasChoices: false,
-      onKey: () => false,
-    });
+  for (const [device, viewport, hasMagnifier] of [
+    ["phone", { width: 390, height: 844 }, false],
+    ["tablet", { width: 820, height: 1180 }, true],
+  ] as const) {
+    test(`${hasMagnifier ? "draws" : "leaves out"} the magnifier on an Android ${device}`, async () => {
+      followCorePlatform("android");
+      await page.viewport(viewport.width, viewport.height);
+      const screen = await render(SearchField, {
+        text: "",
+        conditions: [],
+        filterPlace: "field",
+        onType: () => undefined,
+        onRemove: () => undefined,
+        onClear: () => undefined,
+        onEscape: () => undefined,
+        listId: "results",
+        activeId: undefined,
+        hasChoices: false,
+        onKey: () => false,
+      });
 
-    const icon = screen.container.querySelector('[data-icon="search"]');
-    expect(icon).not.toBeNull();
-  });
+      const icon = screen.container.querySelector('[data-icon="search"]');
+      expect(icon !== null).toBe(hasMagnifier);
+    });
+  }
 });

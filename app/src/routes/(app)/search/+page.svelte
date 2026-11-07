@@ -55,7 +55,10 @@
   import KeyHints from "#lib/search/KeyHints.svelte";
   import NothingFound from "#lib/search/NothingFound.svelte";
   import { nothingFoundTitle } from "#lib/search/nothing-found.ts";
-  import type { FilterPlace } from "#lib/search/search-look.ts";
+  import {
+    ANDROID_SEARCH_VIEW,
+    type FilterPlace,
+  } from "#lib/search/search-look.ts";
   import { searchTextIn } from "#lib/search/search-route.ts";
   import SearchField from "#lib/search/SearchField.svelte";
   import {
@@ -425,8 +428,10 @@
 {/if}
 <div
   data-ground={isGroupedStart ? "grouped" : undefined}
+  data-search-view={isAndroidPhone || undefined}
   class={[
     "flex flex-col gap-search-gap min-block-full ios:max-medium:flex-none",
+    isAndroidPhone && ANDROID_SEARCH_VIEW.ground,
     hasToolbar && !(isMacToolbar && isLookingFor) && "pbs-xl",
     hasTabsAtTop && "pbs-below-top-tab-bar",
     isGroupedStart && GROUPED_GROUND,
@@ -436,7 +441,13 @@
   <p role="status" class="sr-only">{announcement}</p>
   {#if !isMacToolbar}
     <div
-      class="flex items-center gap-sm large:gap-md ios:max-medium:fixed ios:max-medium:inset-s-native-search-bar-start ios:max-medium:inset-e-native-bottom-bar-end ios:max-medium:inset-be-floating-lift ios:max-medium:z-tab-bar"
+      data-search-bar={isAndroidPhone || undefined}
+      class={[
+        "flex items-center",
+        isAndroidPhone
+          ? ANDROID_SEARCH_VIEW.bar
+          : "gap-sm large:gap-md ios:max-medium:fixed ios:max-medium:inset-s-native-search-bar-start ios:max-medium:inset-e-native-bottom-bar-end ios:max-medium:inset-be-floating-lift ios:max-medium:z-tab-bar",
+      ]}
     >
       {#if !hasToolbar}
         <Tooltip label={m.search_back()}>
@@ -446,13 +457,22 @@
               href={resolve(SECTION_ROUTE_IDS.library)}
               aria-label={m.search_back()}
               data-back-link
-              class="flex shrink-0 items-center justify-center rounded-full transition-control block-touch-target inline-touch-target hover:tint-hover active:tint-pressed ios:max-medium:hidden"
+              class={[
+                "flex shrink-0 items-center justify-center rounded-full transition-control hover:tint-hover active:tint-pressed ios:max-medium:hidden",
+                isAndroidPhone
+                  ? ANDROID_SEARCH_VIEW.back
+                  : "block-touch-target inline-touch-target",
+              ]}
             >
-              <ArrowLeft
-                size={BACK_ICON_SIZE}
-                aria-hidden="true"
-                class="rtl:-scale-x-100"
-              />
+              {#if isAndroidPhone}
+                <Icon name={backIcon("android")} class="rtl:-scale-x-100" />
+              {:else}
+                <ArrowLeft
+                  size={BACK_ICON_SIZE}
+                  aria-hidden="true"
+                  class="rtl:-scale-x-100"
+                />
+              {/if}
             </a>
           {/snippet}
         </Tooltip>
