@@ -79,3 +79,24 @@ test("renders native Icon components for sections on Android", async () => {
     screen.container.querySelector('[data-icon="library"]'),
   ).not.toBeNull();
 });
+
+test("renders 40px tonal circles with 24px Material Symbols and row subtitles on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const media = screen.container.querySelector("[data-slot=item-media]");
+  expect(media).not.toBeNull();
+  expect(media?.className).toContain("android:rounded-full");
+  expect(media?.className).toContain("android:bg-accent-soft");
+  expect(media?.className).toContain("android:text-accent");
+  expect(media?.className).toContain("android:block-settings-chip");
+  expect(media?.className).toContain("android:inline-settings-chip");
+
+  const icon = media?.querySelector("[data-icon]");
+  expect(icon?.getAttribute("style")).toContain("24px");
+
+  const desc = screen.container.querySelector("[data-slot=item-description]");
+  expect(desc?.className).toContain(
+    "android:text-native-row-subtitle/native-row-subtitle",
+  );
+});
