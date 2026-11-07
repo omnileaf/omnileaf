@@ -175,7 +175,7 @@ test("draws two sheets behind a series of many books on macos, and none behind a
 
 const PHONE = { width: 390, height: 844 };
 
-test.each<Platform>(["ios", "android"])(
+test.each<Platform>(["ios"])(
   "draws two sheets inset 10px and 5px behind a series of many books on a %s phone",
   async (platform) => {
     await page.viewport(PHONE.width, PHONE.height);
@@ -206,3 +206,21 @@ test.each<Platform>(["ios", "android"])(
     expect(drawn[ONE_SHOT]?.sheets).toBe(0);
   },
 );
+
+test("draws a series of many books on an Android phone as one flat cover", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  const drawn = await drawnOn("android", { stacks: true, display: "grid" });
+
+  expect(drawn[STACKED]?.sheets).toBe(0);
+  expect(drawn[STACKED]?.coverTop).toBe(drawn[STACKED]?.cellTop);
+});
+
+const TABLET = { width: 768, height: 1024 };
+
+test("keeps two sheets behind a series of many books on an Android tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  const drawn = await drawnOn("android", { stacks: true, display: "grid" });
+
+  expect(drawn[STACKED]?.sheets).toBe(2);
+  expect(drawn[ONE_SHOT]?.sheets).toBe(0);
+});

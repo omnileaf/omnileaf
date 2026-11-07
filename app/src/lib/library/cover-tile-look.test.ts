@@ -133,6 +133,16 @@ async function markOf(
   });
 }
 
+function downloadMarkOf(root: ParentNode): Element {
+  const mark = [
+    ...root.querySelectorAll('[aria-label="Downloaded chapters"]'),
+  ].at(-1);
+  if (mark === undefined) {
+    throw new Error("the tile drew no download mark");
+  }
+  return mark;
+}
+
 async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
   document.body.replaceChildren();
   document.documentElement.dataset.theme = theme;
@@ -141,10 +151,7 @@ async function lookOn(platform: Platform, theme: string): Promise<TileLook> {
   const cover = await coverOf(series);
   await render(CoverBadges, { series, onCovers: ON_COVERS });
   const unread = page.getByRole("img", { name: "3 unread" }).last().element();
-  const downloaded = page
-    .getByRole("img", { name: "Downloaded chapters" })
-    .last()
-    .element();
+  const downloaded = downloadMarkOf(document.body);
   const mark = styleOf(await markOf(series, { isOn: true, display: "grid" }));
   const emptyMark = styleOf(
     await markOf(series, { isOn: false, display: "grid" }),
@@ -332,20 +339,21 @@ test("lightens iOS's count badge to a pink with dark words in the dark theme", a
   ]);
 });
 
-test("draws Android's tile with a download dot and a material check box", async () => {
-  const look = await lookOn("android", "light");
+test("draws Android's tile with a 16px red count pill, no download dot and a material check box", async () => {
+  const { badge, downloaded, ...look } = await lookOn("android", "light");
+  const { corner, ...pill } = badge;
 
-  expect(look).toEqual({
+  expect(Number.parseFloat(corner)).toBeGreaterThanOrEqual(pill.height / 2);
+  expect(downloaded.size).toBe(0);
+  expect({ ...look, badge: pill }).toEqual({
     cover: { corner: "4px" },
     badge: {
-      height: 24,
-      corner: "8px",
-      fill: "rgb(208, 232, 215)",
-      label: "rgb(65, 87, 73)",
+      height: 16,
+      fill: "rgb(168, 56, 54)",
+      label: "rgb(255, 247, 246)",
       weight: "500",
       numerals: "normal",
     },
-    downloaded: { size: 6, fill: "rgb(50, 106, 77)" },
     mark: {
       size: 18,
       corner: "2px",
@@ -366,8 +374,8 @@ test("tints Android's check box and badges for the dark theme", async () => {
     look.mark.tick,
     look.emptyMark.edge,
   ]).toEqual([
-    "rgb(43, 64, 51)",
-    "rgb(173, 197, 180)",
+    "rgb(250, 116, 111)",
+    "rgb(73, 0, 6)",
     "rgb(164, 209, 180)",
     "rgb(31, 72, 51)",
     "2px rgb(110, 120, 112)",
@@ -451,9 +459,7 @@ test("keeps a list row's marks as they were on an iPad", async () => {
   const markLook = [Number.parseFloat(mark.height), mark.borderTopLeftRadius];
   document.body.replaceChildren();
   await render(SeriesCovers, coversOf(series, "list"));
-  const downloaded = page
-    .getByRole("img", { name: "Downloaded chapters" })
-    .element();
+  const downloaded = downloadMarkOf(document.body);
 
   expect([
     ...markLook,
@@ -461,3 +467,47 @@ test("keeps a list row's marks as they were on an iPad", async () => {
     styleOf(downloaded).backdropFilter,
   ]).toEqual([22, "6px", 22, "none"]);
 });
+
+test("sets Android's count pill in 11px type with 4px sides and the cover title in 14px type and the book count in 12px type", async () => {
+  followCorePlatform("android");
+  document.documentElement.dataset.theme = "light";
+  const series = await oneSeries();
+  await render(SeriesCovers, coversOf(series, "grid"));
+  const cell = document.querySelector("[data-series-id]");
+  const unread = styleOf(cell?.querySelector('[role="img"]'));
+  const [title, count] = [...(cell?.querySelectorAll("p") ?? [])].map(styleOf);
+  const typeOf = (style: CSSStyleDeclaration | undefined) => [
+    style?.fontSize,
+    style?.lineHeight,
+    style?.fontWeight,
+    style?.letterSpacing,
+  ];
+
+  expect({
+    unread: [...typeOf(unread), unread.paddingInlineStart],
+    title: typeOf(title),
+    count: typeOf(count),
+  }).toEqual({
+    unread: ["11px", "16px", "500", "0.5px", "4px"],
+    title: ["14px", "20px", "400", "0.25px"],
+    count: ["12px", "16px", "400", "0.4px"],
+  });
+});
+
+test.each<[Platform, string, string]>([
+  ["android", "16px", "8px"],
+  ["ios", "20px", "12px"],
+])(
+  "spaces %s's covers %s between rows and %s between columns",
+  async (platform, rows, columns) => {
+    followCorePlatform(platform);
+    await render(SeriesCovers, coversOf(await oneSeries(), "grid"));
+    let track = document.querySelector("[data-series-id]")?.parentElement;
+    while (track && getComputedStyle(track).display !== "grid") {
+      track = track.parentElement;
+    }
+    const grid = getComputedStyle(track ?? document.body);
+
+    expect([grid.rowGap, grid.columnGap]).toEqual([rows, columns]);
+  },
+);
