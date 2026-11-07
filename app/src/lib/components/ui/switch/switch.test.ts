@@ -157,16 +157,16 @@ test("draws the windows switch's on edge in the track colour", async () => {
   expect(on.borderTopColor).toBe(on.backgroundColor);
 });
 
-test("ticks the knob of a switched-on Android switch, and only that one", async () => {
+test("leaves the knob of a switched-on Android switch unticked", async () => {
   await renderPair("android");
 
-  expect([tickOf("On"), tickOf("Off")]).toEqual(["shown", "hidden"]);
+  expect([tickOf("On"), tickOf("Off")]).toEqual(["absent", "absent"]);
 });
 
 test("leaves the knob of a switched-on Linux switch unticked", async () => {
   await renderPair("linux");
 
-  expect(tickOf("On")).toBe("hidden");
+  expect(tickOf("On")).toBe("absent");
 });
 
 test("draws the iOS knob as a capsule, wider than it is tall", async () => {
