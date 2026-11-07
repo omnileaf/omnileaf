@@ -18,7 +18,7 @@
 
   import { quickSettingLook } from "#lib/reader/quick-setting.ts";
   import { getReaderChrome } from "#lib/reader/reader-chrome.svelte.ts";
-  import ReaderIcon from "#lib/reader/ReaderIcon.svelte";
+  import QuickSettingIcon from "#lib/reader/QuickSettingIcon.svelte";
   import {
     DIRECTION_CHOICES,
     type DirectionChoice,
@@ -83,32 +83,32 @@
   <DropdownMenu.Trigger
     class={cn(look.button, reading.direction === "rightToLeft" && look.lit)}
   >
-    <ReaderIcon
+    <QuickSettingIcon
       name="arrow-left-right"
       fallback={ArrowLeftRight}
-      isKit={look.hasKitIcons}
-      size={look.iconSize}
-      class="shrink-0"
+      {look}
     />
-    <span class="grid min-inline-none">
-      {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
-        <span
-          class={[
-            "col-start-1 row-start-1",
-            look.directionName,
-            reading.direction !== shown && "invisible",
-          ]}
-          aria-hidden={reading.direction !== shown}
-        >
-          {DIRECTION_NAMES[shown]()}
-        </span>
-      {/each}
-    </span>
-    <span
-      class={[look.autoMark, !isAutomatic && "invisible"]}
-      aria-hidden={!isAutomatic}
-    >
-      {m.reader_direction_auto()}
+    <span class={look.words}>
+      <span class="grid min-inline-none">
+        {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
+          <span
+            class={[
+              "col-start-1 row-start-1",
+              look.directionName,
+              reading.direction !== shown && "invisible",
+            ]}
+            aria-hidden={reading.direction !== shown}
+          >
+            {DIRECTION_NAMES[shown]()}
+          </span>
+        {/each}
+      </span>
+      <span
+        class={[look.autoMark, !isAutomatic && "invisible"]}
+        aria-hidden={!isAutomatic}
+      >
+        {m.reader_direction_auto()}
+      </span>
     </span>
     {#if look.hasChevron}
       <ChevronDown

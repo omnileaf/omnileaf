@@ -237,6 +237,9 @@
   --native-spacing-large-title-above: 0px;
   --native-spacing-large-title-below: 0px;
   --native-spacing-reader-bar-end: 0px;
+  --native-spacing-reader-quick-button-end: 0px;
+  --native-spacing-reader-quick-pill-inline: 0px;
+  --native-spacing-reader-quick-pill-block: 0px;
   --native-shadow-bar-button-lift: var(--shadow-raised);
   --native-color-on-top-bar: var(--foreground);
   --native-color-top-bar-scrolled: var(--background);

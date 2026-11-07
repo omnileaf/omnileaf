@@ -242,6 +242,9 @@
   --spacing-native-large-title-above: var(--native-spacing-large-title-above);
   --spacing-native-large-title-below: var(--native-spacing-large-title-below);
   --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);
+  --spacing-native-reader-quick-button-end: var(--native-spacing-reader-quick-button-end);
+  --spacing-native-reader-quick-pill-inline: var(--native-spacing-reader-quick-pill-inline);
+  --spacing-native-reader-quick-pill-block: var(--native-spacing-reader-quick-pill-block);
   --shadow-native-bar-button-lift: var(--native-shadow-bar-button-lift);
   --color-native-on-top-bar: var(--native-color-on-top-bar);
   --color-native-top-bar-scrolled: var(--native-color-top-bar-scrolled);
