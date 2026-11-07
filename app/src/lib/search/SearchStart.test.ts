@@ -18,6 +18,7 @@ const TABLET = { width: 1024, height: 800 } as const;
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  document.documentElement.style.removeProperty("--text-scale");
   document.body.replaceChildren();
 });
 
@@ -211,4 +212,40 @@ test("keeps the plain divided rows on an iPhone when the page leaves the start u
     corner: "0px",
   });
   expect(rowOf("unread manga").titleStart).toBe(28);
+});
+
+function wordsRow() {
+  const title = page.getByText("Words inside books", { exact: true }).element();
+  const column = title.parentElement;
+  if (column === null) {
+    throw new Error("no text column for Words inside books");
+  }
+  return {
+    title: title.getBoundingClientRect(),
+    note: page
+      .getByText("Coming with books", { exact: true })
+      .element()
+      .getBoundingClientRect(),
+    column: column.getBoundingClientRect(),
+  };
+}
+
+test("sets the Coming with books note on the title's line after it on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const { title, note, column } = wordsRow();
+
+  expect(note.top).toBeLessThan(title.bottom);
+  expect(note.left).toBeGreaterThan(title.right);
+  expect(note.right).toBeCloseTo(column.right, 0);
+});
+
+test("drops the Coming with books note under its title on an Android phone at the largest text", async () => {
+  document.documentElement.style.setProperty("--text-scale", "2");
+  await startOn("android", PHONE);
+
+  const { title, note } = wordsRow();
+
+  expect(note.top).toBeGreaterThanOrEqual(title.bottom);
+  expect(note.left).toBe(title.left);
 });
