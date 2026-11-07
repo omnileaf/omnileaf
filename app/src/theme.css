@@ -116,6 +116,7 @@
   --android-palette-on-error: #fff7f6;
   --android-palette-state-hover: rgba(44, 53, 46, 0.08);
   --android-palette-state-pressed: rgba(44, 53, 46, 0.1);
+  --android-palette-inverse-primary: #78d99f;
   --linux-control-fill: transparent;
   --linux-button-outline-fill: var(--background);
 
@@ -259,6 +260,7 @@
   --android-palette-on-error: #490006;
   --android-palette-state-hover: rgba(222, 232, 223, 0.08);
   --android-palette-state-pressed: rgba(222, 232, 223, 0.1);
+  --android-palette-inverse-primary: #326a4d;
   --linux-control-fill: color-mix(
     in oklch,
     oklch(1 0 0 / 15%) 30%,
@@ -435,7 +437,7 @@
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
-  --android-inverse-primary: var(--primary);
+  --android-inverse-primary: var(--android-palette-inverse-primary);
 }
 
 [data-platform="android"][data-contrast="medium"],
@@ -537,7 +539,7 @@
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
-  --android-inverse-primary: var(--primary);
+  --android-inverse-primary: var(--android-palette-inverse-primary);
 }
 
 [data-platform="ios"],
