@@ -618,4 +618,5 @@
   --native-tracking-books-heading: 0;
   --native-spacing-series-hero-cover: var(--spacing-series-cover);
   --native-spacing-history-bar: var(--spacing-history-bar);
+  --native-spacing-library-menu: 0px;
 }
