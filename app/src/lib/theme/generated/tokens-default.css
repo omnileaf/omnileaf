@@ -595,4 +595,17 @@
   --native-text-count-badge: var(--text-caption);
   --native-leading-count-badge: var(--text-caption--line-height);
   --native-tracking-count-badge: 0;
+  --native-text-collection-count: var(--text-small);
+  --native-leading-collection-count: var(--text-small--line-height);
+  --native-weight-collection-count: var(--font-weight-normal);
+  --native-tracking-collection-count: 0;
+  --native-text-continue-title: var(--text-body);
+  --native-leading-continue-title: var(--text-body--line-height);
+  --native-weight-continue-title: var(--font-weight-semibold);
+  --native-tracking-continue-title: 0;
+  --native-text-books-heading: var(--text-group-title);
+  --native-leading-books-heading: var(--text-group-title--line-height);
+  --native-weight-books-heading: var(--font-weight-semibold);
+  --native-tracking-books-heading: 0;
+  --native-spacing-series-hero-cover: var(--spacing-series-cover);
 }
