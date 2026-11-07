@@ -260,6 +260,7 @@
   --native-color-on-tab-hover: var(--muted-foreground);
   --native-color-on-tab-disabled: var(--muted-foreground);
   --native-color-on-tab-current: var(--color-accent);
+  --native-color-on-tab-bar-current: var(--color-accent);
   --native-color-on-tab-pill: var(--color-accent);
   --native-spacing-tab-bar: var(--spacing-floating-bar);
   --native-spacing-tab-bar-inset: var(--spacing-xs);

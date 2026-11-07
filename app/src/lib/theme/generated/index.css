@@ -265,6 +265,7 @@
   --color-native-on-tab-hover: var(--native-color-on-tab-hover);
   --color-native-on-tab-disabled: var(--native-color-on-tab-disabled);
   --color-native-on-tab-current: var(--native-color-on-tab-current);
+  --color-native-on-tab-bar-current: var(--native-color-on-tab-bar-current);
   --color-native-on-tab-pill: var(--native-color-on-tab-pill);
   --spacing-native-tab-bar: var(--native-spacing-tab-bar);
   --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
