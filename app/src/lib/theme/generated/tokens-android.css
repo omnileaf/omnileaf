@@ -160,7 +160,7 @@
   --native-leading-bar-title: calc(28 / 22);
   --native-weight-bar-button: 500;
   --native-weight-bar-badge: var(--font-weight-semibold);
-  --native-weight-tile-title: var(--font-weight-medium);
+  --native-weight-tile-title: 400;
   --native-weight-bar-title: 400;
   --native-tracking-bar-title: 0;
   --native-text-title-bar-title: calc(1.375rem * var(--text-scale));
@@ -231,7 +231,7 @@
   --native-radius-cover: 4px;
   --native-spacing-read-mark: 1.5rem;
   --native-radius-cover-badge: var(--radius-label-badge);
-  --native-spacing-cover-badge: var(--spacing-xl);
+  --native-spacing-cover-badge: 16px;
   --native-color-veil: color-mix(in oklch, color-mix(in oklch, #000000 78%, var(--primary)) 68%, transparent);
   --native-color-on-veil: #ffffff;
   --native-spacing-downloaded-mark: 6px;
@@ -504,6 +504,16 @@
   --native-leading-first-launch-note: calc(16 / 12);
   --native-weight-first-launch-note: 400;
   --native-tracking-first-launch-note: 0.4px;
+  --native-text-tile-title: calc(0.875rem * var(--text-scale));
+  --native-leading-tile-title: calc(20 / 14);
+  --native-tracking-tile-title: 0.25px;
+  --native-text-tile-meta: calc(0.75rem * var(--text-scale));
+  --native-leading-tile-meta: calc(16 / 12);
+  --native-weight-tile-meta: 400;
+  --native-tracking-tile-meta: 0.4px;
+  --native-text-count-badge: calc(0.6875rem * var(--text-scale));
+  --native-leading-count-badge: calc(16 / 11);
+  --native-tracking-count-badge: 0.5px;
 }
 
 :root[data-platform="android"],
