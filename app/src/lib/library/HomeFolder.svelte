@@ -11,6 +11,7 @@
   import { phoneOf } from "#lib/page/platform.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
 
   import { AndroidPhone } from "./android-phone.svelte";
 
@@ -52,7 +53,7 @@
       class={[
         "flex flex-wrap items-center",
         android.isOn
-          ? "-mx-page-start -me-page-end py-native-row-block ps-native-row-start pe-native-row-end"
+          ? `${FLUSH_BLEED} py-native-row-block ps-native-row-start pe-native-row-end`
           : [
               "gap-md rounded-card border border-border bg-card px-lg py-md",
               CARD_PLATE,

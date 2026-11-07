@@ -10,6 +10,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
 
   import type { AddFolder } from "./add-folder";
   import { AndroidPhone } from "./android-phone.svelte";
@@ -281,7 +282,7 @@
       class={[
         "mbs-sm text-muted",
         android.isOn
-          ? "-mx-page-start -me-page-end px-lg pbe-sm text-native-row-subtitle/native-row-subtitle"
+          ? FLUSH_NOTE
           : isNative
             ? "px-lg text-native-notice-body/native-notice-body"
             : "px-xs text-caption",

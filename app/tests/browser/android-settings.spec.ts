@@ -1,4 +1,5 @@
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -387,10 +388,29 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
     await expect(line).toHaveCSS("line-height", "20px");
     await expect(state).toHaveCSS("border-top-width", "0px");
     await expect(state).toHaveCSS("font-size", "12px");
-    await expect(row.locator("svg").first().locator("xpath=..")).toHaveCSS(
-      "border-top-width",
-      "0px",
-    );
+    await expect(row.locator("[data-icon=bell]")).toBeVisible();
+    await expect(name).toHaveCSS("letter-spacing", "0.5px");
+    expect((await boxOf(row.locator("[data-icon=bell]"))).x).toBe(16);
+    expect((await boxOf(name)).x).toBe(56);
+  });
+
+  test("sets the intro of Permissions, Language and the licences at 14px, 16px in", async ({
+    page,
+  }) => {
+    const intros = [
+      ["/settings/privacy/permissions", /^Omnileaf asks for each one/],
+      ["/settings/general/language", /^Each language is shown/],
+      ["/settings/about/licences", /^Made from the packages/],
+    ] as const;
+
+    for (const [route, text] of intros) {
+      await page.goto(route);
+      const intro = page.getByText(text);
+
+      await expect(intro).toHaveCSS("font-size", "14px");
+      await expect(intro).toHaveCSS("line-height", "20px");
+      await expect(intro).toHaveCSS("padding-left", "16px");
+    }
   });
 });
 
@@ -452,3 +472,37 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     );
   });
 });
+
+const CHECKED_SCREENS = [
+  "/settings",
+  "/settings/general",
+  "/settings/privacy",
+  "/settings/privacy/permissions",
+  "/settings/storage",
+  "/settings/general/language",
+  "/settings/advanced",
+] as const;
+
+test.describe(
+  "Settings screens on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's list rows");
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      for (const route of CHECKED_SCREENS) {
+        test(`has no accessibility violations on ${route} in the ${colorScheme} theme`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.goto(route);
+          await expect(page.getByRole("main")).toBeVisible();
+
+          expect(await accessibilityViolations(page)).toEqual([]);
+        });
+      }
+    }
+  },
+);
