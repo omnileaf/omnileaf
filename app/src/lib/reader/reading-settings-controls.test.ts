@@ -106,6 +106,13 @@ test("greys out My pace on Android when the series has no pace to follow", async
   const myPace = page.getByRole("radio", { name: /^My pace/ });
 
   await expect.element(myPace).toBeDisabled();
+  expect(getComputedStyle(asElement(myPace.element())).opacity).toBe("0.5");
+  const radios = Array.from(
+    asElement(myPace.element()).parentElement?.children ?? [],
+  );
+  const enabled = asElement(radios.at(-1) ?? myPace.element());
+  expect(enabled).not.toBe(myPace.element());
+  expect(getComputedStyle(enabled).opacity).toBe("1");
 });
 
 function accentColour(): string {
@@ -159,5 +166,62 @@ test.each([
 
     expect(getComputedStyle(heading("Pages")).fontWeight).toBe("600");
     expect(new Set(settingRowEdges()).size).toBeGreaterThan(1);
+  },
+);
+
+function modeSelect(): HTMLElement {
+  return asElement(
+    page.getByRole("combobox", { name: "Reading mode" }).element(),
+  );
+}
+
+test("draws Android's Reading mode as a 56px outlined select with its label on the outline", async () => {
+  await openSheet("android");
+
+  const select = modeSelect();
+  const box = select.getBoundingClientRect();
+  const title = label("Reading mode").getBoundingClientRect();
+
+  expect(box.height).toBeCloseTo(56, 0);
+  expect(getComputedStyle(select).borderRadius).toBe("4px");
+  expect(Math.abs(title.top + title.height / 2 - box.top)).toBeLessThanOrEqual(
+    1,
+  );
+  expect(box.width).toBeCloseTo(group("Fit").getBoundingClientRect().width, 0);
+});
+
+test("keeps a long Reading mode label clear of its one chevron", async () => {
+  await openSheet("android");
+  const select = modeSelect();
+  const style = getComputedStyle(select);
+  const field = select.parentElement;
+
+  expect(style.textOverflow).toBe("ellipsis");
+  expect(Number.parseFloat(style.paddingInlineEnd)).toBeGreaterThanOrEqual(34);
+  expect(field?.querySelectorAll("svg")).toHaveLength(1);
+});
+
+test("still changes the reading mode from Android's outlined select", async () => {
+  await openSheet("android");
+
+  await page
+    .getByRole("combobox", { name: "Reading mode" })
+    .selectOptions("rightToLeft");
+
+  await expect
+    .element(page.getByRole("combobox", { name: "Reading mode" }))
+    .toHaveValue("rightToLeft");
+});
+
+test.each([
+  ["android", TABLET],
+  ["ios", PHONE],
+  ["linux", PHONE],
+] as const)(
+  "keeps %s's reading mode beside its label in the shared select",
+  async (platform, size) => {
+    await openSheet(platform, size);
+
+    expect(document.querySelector('[data-slot="outlined-select"]')).toBeNull();
   },
 );
