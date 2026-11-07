@@ -552,7 +552,10 @@
             />
           {/if}
           <p
-            class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+            class={[
+              "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only",
+              tile.compactTitle,
+            ]}
           >
             {shown.title}
           </p>
@@ -770,7 +773,7 @@
                 <UnreadCount
                   count={one.unreadCount}
                   isSpelledOut
-                  class={["px-sm py-2xs text-caption", dimmed(one)]}
+                  class={[rowLook.unread, dimmed(one)]}
                 />
               {/if}
               {#if away}

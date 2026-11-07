@@ -6,6 +6,10 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const TABLET = { width: 820, height: 1180 };
 
+const ANDROID_COVER_HEIGHT = 56;
+const ANDROID_COVER_WIDTH = (ANDROID_COVER_HEIGHT * 2) / 3;
+const ANDROID_ROW_HEIGHT = 76;
+
 const ROW_TITLE_SIZE = { ios: "17px", android: "16px" } as const;
 const RULE = {
   ios: { colour: "rgba(60, 60, 67, 0.12)", height: "1px" },
@@ -101,8 +105,9 @@ test.describe("the library's list view on a phone", { tag: "@native" }, () => {
       .boundingBox();
     const rowBox = await row.boundingBox();
 
-    expect(coverBox).toMatchObject({ width: 54, height: 80 });
-    expect(rowBox?.height).toBe(100);
+    expect(coverBox?.width).toBeCloseTo(ANDROID_COVER_WIDTH, 1);
+    expect(coverBox?.height).toBeCloseTo(ANDROID_COVER_HEIGHT, 1);
+    expect(rowBox?.height).toBeCloseTo(ANDROID_ROW_HEIGHT, 0);
   });
 
   test("keeps today's ruled rows on a tablet", async ({ page }) => {
