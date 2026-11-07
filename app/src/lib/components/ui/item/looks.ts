@@ -1,3 +1,6 @@
+export const ROW_TITLE_TYPE =
+  "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
+
 export const ROW_SUBTITLE_TYPE =
   "text-native-row-subtitle leading-native-row-subtitle tracking-native-row-subtitle";
 

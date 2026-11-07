@@ -1,6 +1,7 @@
 import {
   ROW_FOCUS_RING,
   ROW_SUBTITLE_TYPE,
+  ROW_TITLE_TYPE,
 } from "#lib/components/ui/item/looks.ts";
 import {
   GROUPED_FOOTNOTE_TYPE,
@@ -26,8 +27,7 @@ export const SHEET_TITLE_TEXT = `${SHEET_FIELD_TEXT} py-native-title-field-block
 
 export const SHEET_SUMMARY_TEXT = `${SHEET_FIELD_TEXT} py-native-field-block`;
 
-export const SHEET_ROW_TITLE =
-  "text-native-row-title/native-row-title tracking-native-row-title font-native-row-title";
+export const SHEET_ROW_TITLE = ROW_TITLE_TYPE;
 
 export const SHEET_LIST_CARD = "overflow-hidden border-0 p-none";
 
