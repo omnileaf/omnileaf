@@ -223,7 +223,7 @@
     text={matching}
     {platform}
     look="field"
-    class="hidden inline-library-search search-field:flex"
+    class="hidden inline-library-search! search-field:flex"
     onFind={find}
   />
   <Tooltip label={m.history_clear()}>
