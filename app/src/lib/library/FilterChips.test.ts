@@ -197,16 +197,14 @@ function chipLook(label: string) {
 test("keeps the bordered chips on an iPad and an Android phone", async () => {
   await chipsOn("ios", TABLET, FEW);
   const onIpad = chipLook("Unread");
+  const ipadCard = resolvedColour("--card", "backgroundColor");
   document.body.replaceChildren();
   await chipsOn("android", PHONE, FEW);
   const onAndroid = chipLook("Unread");
+  const androidCard = resolvedColour("--card", "backgroundColor");
 
-  const bordered = {
-    border: "1px",
-    fill: resolvedColour("--card", "backgroundColor"),
-  };
-  expect(onIpad).toEqual(bordered);
-  expect(onAndroid).toEqual(bordered);
+  expect(onIpad).toEqual({ border: "1px", fill: ipadCard });
+  expect(onAndroid).toEqual({ border: "1px", fill: androidCard });
 });
 
 test("draws each filter in use 32 points tall on an Android phone", async () => {
