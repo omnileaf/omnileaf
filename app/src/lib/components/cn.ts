@@ -516,6 +516,7 @@ export const TOKEN_THEME = {
     "native-radio-words-gap",
     "native-read-mark",
     "native-reader-bar-end",
+    "native-reader-guide-card-end",
     "native-reader-quick-button-end",
     "native-reader-quick-pill-block",
     "native-reader-quick-pill-inline",
