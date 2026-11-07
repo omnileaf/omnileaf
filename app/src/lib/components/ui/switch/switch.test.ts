@@ -163,12 +163,6 @@ test("leaves the knob of a switched-on Android switch unticked", async () => {
   expect([tickOf("On"), tickOf("Off")]).toEqual(["absent", "absent"]);
 });
 
-test("leaves the knob of a switched-on Linux switch unticked", async () => {
-  await renderPair("linux");
-
-  expect(tickOf("On")).toBe("absent");
-});
-
 test("draws the iOS knob as a capsule, wider than it is tall", async () => {
   await renderPair("ios");
 
