@@ -1585,7 +1585,12 @@ test.describe("on Android", () => {
     await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
     await expect(card).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--native-color-card"),
+      await tokenColour(
+        page,
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? "--color-chip"
+          : "--native-color-card",
+      ),
     );
   });
 
