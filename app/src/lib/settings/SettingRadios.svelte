@@ -18,6 +18,7 @@
     hints = {},
     hintsAreShown = true,
     leading,
+    startsPage = false,
     chosen,
     onChoose,
   }: {
@@ -27,6 +28,7 @@
     hints?: Partial<Record<Option, string>>;
     hintsAreShown?: boolean;
     leading?: Snippet<[Option]>;
+    startsPage?: boolean;
     chosen: Option;
     onChoose: (option: Option) => void;
   } = $props();
@@ -38,7 +40,12 @@
 </script>
 
 <section aria-labelledby="{id}-title" class={look.section}>
-  <h2 id="{id}-title" class={look.heading}>{title}</h2>
+  <h2
+    id="{id}-title"
+    class={[look.heading, startsPage && "android:max-medium:pbs-none"]}
+  >
+    {title}
+  </h2>
   <RadioGroup
     {options}
     {chosen}

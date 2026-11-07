@@ -49,7 +49,9 @@
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
+<div
+  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
+>
   <div class="flex flex-col items-center gap-xs text-center min-inline-none">
     <img
       src={appIcon}

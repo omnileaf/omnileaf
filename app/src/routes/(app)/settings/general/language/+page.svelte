@@ -61,7 +61,7 @@
   title={m.language_label()}
   parent={{ route: "/(app)/settings/general", title: m.general_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
+<div class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none">
   <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
     {m.language_intro()}
   </p>
