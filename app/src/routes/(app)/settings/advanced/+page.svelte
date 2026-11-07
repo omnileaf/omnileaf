@@ -13,7 +13,7 @@
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
-  import { radiosLook } from "#lib/settings/radios-look.ts";
+  import { FLUSH_LIST_HEADING } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSelect from "#lib/settings/SettingSelect.svelte";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
@@ -49,7 +49,6 @@
   });
   const undoHeadingId = $props.id();
   const android = new AndroidPhone();
-  const androidHeading = `-mx-page-start -me-page-end ${radiosLook(true).heading}`;
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
   );
@@ -79,7 +78,7 @@
     <h2
       id={undoHeadingId}
       class={android.isOn
-        ? androidHeading
+        ? FLUSH_LIST_HEADING
         : "px-lg pbs-md pbe-xs text-small font-semibold"}
     >
       {m.advanced_undo()}
@@ -122,6 +121,7 @@
     <SettingSwitch
       bleeds
       label={m.advanced_wait_undo_screen_reader()}
+      description={m.advanced_wait_undo_screen_reader_help()}
       isOn={undo.rules.waitsForScreenReader}
       onToggle={() => {
         undo.choose({ waitsForScreenReader: !undo.rules.waitsForScreenReader });
