@@ -295,6 +295,7 @@
   --native-weight-search-field: var(--font-weight-regular);
   --native-tracking-search-field: 0;
   --native-radius-cover: var(--radius-cover);
+  --native-radius-picked-cover: var(--radius-cover);
   --native-spacing-read-mark: 1.5rem;
   --native-color-cover-badge: var(--card);
   --native-color-on-cover-badge: var(--foreground);

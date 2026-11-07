@@ -75,7 +75,7 @@
   class={[
     "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar",
     onIosTablet ? "flex-wrap justify-between" : "gap-sm",
-    onAndroidPhone ? "bg-bar" : "bg-background",
+    onAndroidPhone ? "bg-native-top-bar-scrolled" : "bg-background",
   ]}
 >
   {#if onIosPhone}

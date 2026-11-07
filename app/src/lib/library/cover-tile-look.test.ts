@@ -646,3 +646,76 @@ test("sets Android's compact title in 12px medium type", async () => {
     title.letterSpacing,
   ]).toEqual(["12px", "16px", "500", "0.5px"]);
 });
+
+async function pickedOn(platform: Platform, picked: boolean) {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  const mark = await markOf(await oneSeries(), {
+    isOn: picked,
+    display: "grid",
+  });
+  const cover = mark.parentElement;
+  const tile = cover?.closest("[data-pickable-link]");
+  if (!(cover instanceof Element) || !(tile instanceof Element)) {
+    throw new Error("the picked cell drew no cover or tile");
+  }
+  return {
+    cover: styleOf(cover),
+    link: styleOf(tile),
+    tonal: getComputedStyle(tile, "::before"),
+  };
+}
+
+test("insets Android's picked cover on a tonal tile instead of outlining it", async () => {
+  const { cover, tonal } = await pickedOn("android", true);
+
+  expect({
+    outline: cover.outlineWidth,
+    scale: cover.scale,
+    corner: cover.borderTopLeftRadius,
+    tile: tonal.backgroundColor,
+  }).toEqual({
+    outline: "0px",
+    scale: "0.88",
+    corner: "12px",
+    tile: "rgb(208, 232, 215)",
+  });
+});
+
+test("leaves Android's cover unpicked without a tonal tile", async () => {
+  const { cover, tonal } = await pickedOn("android", false);
+
+  expect([cover.scale, tonal.content]).toEqual(["none", "none"]);
+});
+
+test("keeps Android's picked cover and its tile as they were on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const { cover, link, tonal } = await pickedOn("android", true);
+
+  expect([
+    cover.scale,
+    cover.outlineWidth,
+    cover.borderTopLeftRadius,
+    tonal.content,
+    link.position,
+    link.isolation,
+  ]).toEqual(["none", "2px", "6px", "none", "static", "auto"]);
+});
+
+test("keeps Android's list row as it was on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const cell = await renderedOn("android", "list");
+
+  const box = cell
+    .querySelector('[data-slot="list-cover"]')
+    ?.getBoundingClientRect();
+  const unread = styleOf(cell.querySelector('[aria-label="3 unread"]'));
+
+  expect([box?.width, unread.backgroundColor]).toEqual([
+    54,
+    resolvedColour("--primary", "backgroundColor"),
+  ]);
+});
