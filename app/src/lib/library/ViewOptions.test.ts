@@ -4,7 +4,11 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import { DEFAULT_LIBRARY_VIEW, type Platform } from "#lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryView,
+  type Platform,
+} from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import ViewOptions from "./ViewOptions.svelte";
@@ -28,13 +32,17 @@ function addMoreButton(): HTMLButtonElement {
   return more;
 }
 
-async function openOn(platform: Platform, size = PHONE) {
+async function openOn(
+  platform: Platform,
+  size = PHONE,
+  view: LibraryView = DEFAULT_LIBRARY_VIEW,
+) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await page.viewport(size.width, size.height);
   const returnFocusTo = size === PHONE ? null : addMoreButton();
   await render(ViewOptions, {
-    view: DEFAULT_LIBRARY_VIEW,
+    view,
     coversDrawn: 3,
     mostThatFit: 3,
     hasCategories: true,
@@ -449,3 +457,41 @@ test("keeps every display and grouping option on a Windows window", async () => 
     .element(page.getByText("Item counts", { exact: true }))
     .toBeVisible();
 });
+
+const SAVED_ON_A_WIDER_WINDOW: LibraryView = {
+  ...DEFAULT_LIBRARY_VIEW,
+  display: "covers",
+  groupBy: "creator",
+};
+
+async function expectOneChecked(group: string, name: string): Promise<void> {
+  const radios = page.getByRole("radiogroup", { name: group });
+
+  await expect
+    .element(radios.getByRole("radio", { checked: true }))
+    .toHaveLength(1);
+  await expect
+    .element(radios.getByRole("radio", { name, checked: true }))
+    .toBeInTheDocument();
+}
+
+test("checks Grid and None on an Android phone for a view saved with Covers and Creator", async () => {
+  await openOn("android", PHONE, SAVED_ON_A_WIDER_WINDOW);
+
+  await expectOneChecked("Display", "Grid");
+  await expectOneChecked("Group by", "None");
+});
+
+for (const [platform, size] of [
+  ["android", TABLET],
+  ["ios", PHONE],
+  ["windows", TABLET],
+  ["macos", TABLET],
+] as const) {
+  test(`checks Covers and Creator as saved on ${platform} at ${String(size.width)}px`, async () => {
+    await openOn(platform, size, SAVED_ON_A_WIDER_WINDOW);
+
+    await expectOneChecked("Display", "Covers");
+    await expectOneChecked("Group by", "Creator");
+  });
+}

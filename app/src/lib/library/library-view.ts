@@ -15,6 +15,20 @@ export const SCREEN_SIZES: readonly ScreenSize[] = [
   "desktop",
 ];
 
+export function viewDrawn(
+  view: LibraryView,
+  isAndroidPhone: boolean,
+): LibraryView {
+  if (!isAndroidPhone) {
+    return view;
+  }
+  return {
+    ...view,
+    display: view.display === "covers" ? "grid" : view.display,
+    groupBy: view.groupBy === "creator" ? "none" : view.groupBy,
+  };
+}
+
 export function withDisplay(
   view: LibraryView,
   display: LibraryDisplay,
