@@ -42,26 +42,35 @@ const BADGE_INSET = {
   desktop: 8,
 } as const satisfies Record<ScreenSize, number>;
 
+const ANDROID_BADGE = {
+  height: 24,
+  minWidth: 24,
+  fontSize: "12px",
+  padding: ["0px", "6px", "0px", "6px"],
+} as const;
+
+const ANDROID_PHONE_BADGE = {
+  height: 16,
+  minWidth: 16,
+  fontSize: "11px",
+  padding: ["0px", "4px", "0px", "4px"],
+} as const;
+
+const LINUX_BADGE = {
+  height: 22,
+  minWidth: 0,
+  fontSize: "12px",
+  padding: ["2px", "8px", "2px", "8px"],
+} as const;
+
 const UNREAD_BADGES = {
   android: {
-    height: 24,
-    minWidth: 24,
-    fontSize: "12px",
-    padding: ["0px", "6px", "0px", "6px"],
+    phone: ANDROID_PHONE_BADGE,
+    tablet: ANDROID_BADGE,
+    desktop: ANDROID_BADGE,
   },
-  androidPhone: {
-    height: 16,
-    minWidth: 16,
-    fontSize: "11px",
-    padding: ["0px", "4px", "0px", "4px"],
-  },
-  linux: {
-    height: 22,
-    minWidth: 0,
-    fontSize: "12px",
-    padding: ["2px", "8px", "2px", "8px"],
-  },
-} as const;
+  linux: { phone: LINUX_BADGE, tablet: LINUX_BADGE, desktop: LINUX_BADGE },
+} as const satisfies Record<string, Record<ScreenSize, object>>;
 
 const FIRST_TITLE = "Sample Series 0001";
 const SECOND_TITLE = "Sample Series 0002";
@@ -200,10 +209,7 @@ test.describe("unread count", () => {
       test("draws a cover's unread count as a badge in medium type", async ({
         page,
       }) => {
-        const expected =
-          platform === "android" && screenSizeOf(page) === "phone"
-            ? UNREAD_BADGES.androidPhone
-            : UNREAD_BADGES[platform];
+        const expected = UNREAD_BADGES[platform][screenSizeOf(page)];
         await openWith(page, {});
         const badge = unreadBadge(seriesNamed(page, FIRST_TITLE), FIRST_UNREAD);
 
