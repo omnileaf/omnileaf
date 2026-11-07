@@ -77,7 +77,7 @@ test.describe(
       ).toBeVisible();
 
       const card = page.getByRole("region", { name: "Home folder" });
-      const icon = await boxOf(card.locator("svg").first());
+      const icon = await boxOf(card.locator("[data-icon=folder]"));
       const title = await boxOf(
         card.getByRole("heading", { name: "Home folder" }),
       );
