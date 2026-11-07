@@ -190,7 +190,12 @@
       </span>
       <span class={jumpLook.book}>
         <span class={jumpLook.bookName}>{bookTitle}</span>
-        <span class="flex shrink-0 items-center gap-2xs ps-2xs max-inline-full">
+        <span
+          class={[
+            "flex shrink-0 items-center gap-2xs max-inline-full",
+            jumpLook.page,
+          ]}
+        >
           <ReaderIcon
             name="chevron-down"
             fallback={ChevronDown}

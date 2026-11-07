@@ -7,6 +7,7 @@ export interface JumpTriggerLook {
   readonly series: string;
   readonly book: string;
   readonly bookName: string;
+  readonly page: string;
   readonly chevron: string;
   readonly hasKitChevron: boolean;
 }
@@ -17,6 +18,7 @@ const IOS_LOOK: JumpTriggerLook = {
   series: "truncate text-small font-semibold max-inline-full",
   book: "flex items-center overflow-hidden text-caption font-medium text-muted max-inline-full",
   bookName: "truncate",
+  page: "ps-2xs",
   chevron: "shrink-0",
   hasKitChevron: false,
 };
@@ -26,8 +28,9 @@ const ANDROID_PHONE_LOOK: JumpTriggerLook = {
     "relative flex flex-1 flex-col justify-center rounded-small-control px-sm text-start text-foreground transition-control min-block-touch-target min-inline-none hover:bg-hover focus-visible:focus-ring active:bg-pressed",
   series:
     "truncate text-native-bar-title leading-native-bar-title font-native-bar-title tracking-native-bar-title",
-  book: "flex items-center gap-2xs overflow-hidden text-native-tab leading-native-tab font-native-tab tracking-native-tab text-muted max-inline-full",
+  book: "flex items-center overflow-hidden text-native-tab leading-native-tab font-native-tab tracking-native-tab text-muted max-inline-full",
   bookName: "truncate text-foreground",
+  page: "ps-xs",
   chevron: "block-lg inline-lg shrink-0",
   hasKitChevron: true,
 };
