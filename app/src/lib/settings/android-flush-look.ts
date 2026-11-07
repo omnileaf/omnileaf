@@ -1,4 +1,4 @@
-const FLUSH_BLEED = "-mx-page-start -me-page-end";
+export const FLUSH_BLEED = "-mx-page-start -me-page-end";
 
 export const FLUSH_LIST = `${FLUSH_BLEED} flex flex-col`;
 

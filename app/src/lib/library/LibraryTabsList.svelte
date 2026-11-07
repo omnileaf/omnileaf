@@ -3,7 +3,6 @@
     ArrowDown,
     ArrowUp,
     Ellipsis,
-    EllipsisVertical,
     Eye,
     EyeOff,
     GripVertical,
@@ -12,6 +11,7 @@
   import { tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,6 +34,9 @@
 
   const ICON_SIZE = 16;
   const BADGE_ICON_SIZE = 12;
+  const ANDROID_BADGE_ICON_SIZE = 14;
+  const ANDROID_BADGE =
+    "gap-xs rounded-label-badge bg-chip px-sm py-xs text-caption font-medium tracking-native-row-title";
 
   interface Drag {
     readonly key: string;
@@ -178,7 +181,10 @@
         data-tab-handle={key}
         aria-label={m.library_tabs_move({ tab: tab.name })}
         class={[
-          "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted block-pointer-button inline-pointer-button focus-visible:outline-2 focus-visible:outline-accent touch:block-touch-target touch:inline-touch-target",
+          "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted focus-visible:outline-2 focus-visible:outline-accent",
+          android.isOn
+            ? "block-native-button inline-native-button"
+            : "block-pointer-button inline-pointer-button touch:block-touch-target touch:inline-touch-target",
           ios.isOn && "order-last",
         ]}
         onkeydown={(event) => {
@@ -193,6 +199,8 @@
       >
         {#if ios.isOn}
           <Menu size={IOS_ICON_SIZE} aria-hidden="true" />
+        {:else if android.isOn}
+          <Icon name="grip-vertical" />
         {:else}
           <GripVertical size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -206,7 +214,7 @@
         <span
           class={[
             "truncate",
-            android.isOn && "text-body",
+            android.isOn && "text-body tracking-native-row-title",
             ios.isOn &&
               "text-native-row-title/native-row-title tracking-native-row-title",
             !android.isOn && !ios.isOn && "font-medium",
@@ -221,12 +229,20 @@
       </span>
       {#if tab.isHidden}
         <span
+          data-tab-badge
           class={[
-            "flex shrink-0 items-center gap-2xs text-detail text-muted",
-            !ios.isOn && "rounded-full border border-border px-sm",
+            "flex shrink-0 items-center text-muted",
+            android.isOn
+              ? ANDROID_BADGE
+              : [
+                  "gap-2xs text-detail",
+                  !ios.isOn && "rounded-full border border-border px-sm",
+                ],
           ]}
         >
-          {#if !ios.isOn}
+          {#if android.isOn}
+            <Icon name="eye-off" size={ANDROID_BADGE_ICON_SIZE} />
+          {:else if !ios.isOn}
             <EyeOff size={BADGE_ICON_SIZE} aria-hidden="true" />
           {/if}
           {m.library_tabs_hidden()}
@@ -244,13 +260,13 @@
                   {...props}
                   look="icon"
                   class={[
-                    android.isOn && "block-touch-target inline-touch-target",
+                    android.isOn && "block-native-button inline-native-button",
                     ios.isOn && "block-native-button inline-native-button",
                   ]}
                   aria-label={m.library_tabs_more({ tab: tab.name })}
                 >
                   {#if android.isOn}
-                    <EllipsisVertical size={ICON_SIZE} aria-hidden="true" />
+                    <Icon name="ellipsis" />
                   {:else}
                     <Ellipsis
                       size={ios.isOn ? IOS_ICON_SIZE : ICON_SIZE}
