@@ -5,7 +5,10 @@
   import { HardDrive } from "@lucide/svelte";
 
   import { Icon } from "#lib/components/ui/icon/index.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import {
+    ROW_SUBTITLE_TYPE,
+    ROW_TITLE_TYPE,
+  } from "#lib/components/ui/item/looks.ts";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { phoneOf } from "#lib/page/platform.ts";
@@ -35,8 +38,6 @@
   } = $props();
 
   const ICON_SIZE = 18;
-  const NATIVE_TITLE =
-    "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
   const NATIVE_PLACE = `font-ui ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
   const ANDROID_PLACE = `font-mono ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
   const headingId = $props.id();
@@ -85,7 +86,7 @@
           <h2
             id={headingId}
             class={isNative || android.isOn
-              ? NATIVE_TITLE
+              ? ROW_TITLE_TYPE
               : "text-body font-medium desktop:font-semibold"}
           >
             {m.library_settings_home_folder()}
