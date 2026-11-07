@@ -300,6 +300,7 @@
   --font-weight-native-search-field: var(--native-weight-search-field);
   --tracking-native-search-field: var(--native-tracking-search-field);
   --radius-native-cover: var(--native-radius-cover);
+  --radius-native-picked-cover: var(--native-radius-picked-cover);
   --spacing-native-read-mark: var(--native-spacing-read-mark);
   --color-native-cover-badge: var(--native-color-cover-badge);
   --color-native-on-cover-badge: var(--native-color-on-cover-badge);

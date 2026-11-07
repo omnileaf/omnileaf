@@ -185,6 +185,7 @@ export const TOKEN_THEME = {
     "native-notice",
     "native-notice-tall",
     "native-outlined-field",
+    "native-picked-cover",
     "native-search-hit",
     "native-segment",
     "native-segment-end",

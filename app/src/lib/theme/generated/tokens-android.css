@@ -234,6 +234,7 @@
   --native-weight-search-field: 400;
   --native-tracking-search-field: 0;
   --native-radius-cover: 4px;
+  --native-radius-picked-cover: 12px;
   --native-spacing-read-mark: 1.5rem;
   --native-radius-cover-badge: var(--radius-label-badge);
   --native-spacing-cover-badge: 16px;

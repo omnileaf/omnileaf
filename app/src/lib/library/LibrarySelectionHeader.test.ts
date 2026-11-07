@@ -130,7 +130,7 @@ test("keeps the cancel button and no Done on an Android phone", async () => {
     .not.toBeInTheDocument();
 });
 
-test("draws the close button as a 24px Material icon on the bar fill on an Android phone", () => {
+test("draws the close button as a 24px Material icon on the tonal contextual bar on an Android phone", () => {
   renderHeader("android");
   const close = page
     .getByRole("button", { name: "Cancel selecting" })
@@ -142,7 +142,7 @@ test("draws the close button as a 24px Material icon on the bar fill on an Andro
   ).toBe(24);
   expect(close.querySelector("svg")).toBeNull();
   expect(getComputedStyle(bar ?? close).backgroundColor).toBe(
-    resolvedColour("--color-bar", "backgroundColor"),
+    resolvedColour("--color-native-top-bar-scrolled", "backgroundColor"),
   );
 });
 
