@@ -3,7 +3,10 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_LIST_HEADING } from "#lib/settings/android-flush-look.ts";
+  import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import {
     getSmartFeatures,
@@ -33,6 +36,8 @@
   } satisfies Record<Size, Record<"heading" | "label" | "description", string>>;
 
   const look = $derived(LOOKS[size]);
+  const android = new AndroidPhone();
+  const isFlush = $derived(android.isOn && size === "regular");
 
   const features = getSmartFeatures();
   const id = $props.id();
@@ -93,51 +98,83 @@
   }[]);
 </script>
 
-<section
-  aria-labelledby="{id}-title"
-  class={["flex flex-col gap-sm", className]}
->
-  <svelte:element this={heading} id="{id}-title" class={look.heading}>
-    {m.reader_smart_features()}
-  </svelte:element>
-  <div class="flex flex-col divide-y divide-border">
-    {#each rows as { feature, label, description, isOn, isDisabled } (feature)}
-      <Switch
-        bind:checked={
-          () => isOn,
-          (turnedOn: boolean) => {
-            features.turn(feature, turnedOn);
-          }
-        }
-        disabled={isDisabled}
-        aria-labelledby="{id}-{feature}"
-        aria-describedby={description === undefined
-          ? undefined
-          : `${id}-${feature}-description`}
-        class={[
-          "flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-          isDisabled && "text-muted",
-        ]}
-      >
-        <span class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <span id="{id}-{feature}" class={look.label}>{label}</span>
-          {#if description !== undefined}
-            <span id="{id}-{feature}-description" class={look.description}
-              >{description}</span
-            >
-          {/if}
-        </span>
-      </Switch>
-    {/each}
-  </div>
-  <Button
-    type="button"
-    look="chip"
-    class="self-start px-lg min-block-touch-target expanded:min-block-pointer-button"
-    onclick={() => {
-      features.turnAllOff();
-    }}
+{#if isFlush}
+  <section aria-labelledby="{id}-title" class={["flex flex-col", className]}>
+    <svelte:element this={heading} id="{id}-title" class={FLUSH_LIST_HEADING}>
+      {m.reader_smart_features()}
+    </svelte:element>
+    <div class="flex flex-col">
+      {#each rows as { feature, label, description, isOn, isDisabled } (feature)}
+        <SettingSwitch
+          {label}
+          {description}
+          {isOn}
+          onToggle={() => {
+            features.turn(feature, !isOn);
+          }}
+          disabled={isDisabled}
+          bleeds
+        />
+      {/each}
+    </div>
+    <Button
+      type="button"
+      look="chip"
+      class="mx-lg my-sm self-start px-lg min-block-touch-target"
+      onclick={() => {
+        features.turnAllOff();
+      }}
+    >
+      {m.reader_turn_all_off()}
+    </Button>
+  </section>
+{:else}
+  <section
+    aria-labelledby="{id}-title"
+    class={["flex flex-col gap-sm", className]}
   >
-    {m.reader_turn_all_off()}
-  </Button>
-</section>
+    <svelte:element this={heading} id="{id}-title" class={look.heading}>
+      {m.reader_smart_features()}
+    </svelte:element>
+    <div class="flex flex-col divide-y divide-border">
+      {#each rows as { feature, label, description, isOn, isDisabled } (feature)}
+        <Switch
+          bind:checked={
+            () => isOn,
+            (turnedOn: boolean) => {
+              features.turn(feature, turnedOn);
+            }
+          }
+          disabled={isDisabled}
+          aria-labelledby="{id}-{feature}"
+          aria-describedby={description === undefined
+            ? undefined
+            : `${id}-${feature}-description`}
+          class={[
+            "flex items-center gap-md py-setting-grid-pad text-start min-block-setting-grid-row focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+            isDisabled && "text-muted",
+          ]}
+        >
+          <span class="flex flex-1 flex-col gap-2xs min-inline-none">
+            <span id="{id}-{feature}" class={look.label}>{label}</span>
+            {#if description !== undefined}
+              <span id="{id}-{feature}-description" class={look.description}
+                >{description}</span
+              >
+            {/if}
+          </span>
+        </Switch>
+      {/each}
+    </div>
+    <Button
+      type="button"
+      look="chip"
+      class="self-start px-lg min-block-touch-target expanded:min-block-pointer-button"
+      onclick={() => {
+        features.turnAllOff();
+      }}
+    >
+      {m.reader_turn_all_off()}
+    </Button>
+  </section>
+{/if}

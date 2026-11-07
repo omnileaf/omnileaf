@@ -1,4 +1,10 @@
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 test.use({ backend: { ...DEFAULT_BACKEND } });
 
@@ -55,5 +61,66 @@ test.describe(
       await expect(skip).toHaveCSS("border-top-width", "0px");
       expect((await boxOf(skip.getByText("Skip Up next"))).x).toBe(ROW_START);
     });
+
+    test("sets Swiping a book as two choice rows under an accent heading", async ({
+      page,
+    }) => {
+      await page.goto("/settings/reading");
+      const right = page.getByRole("button", { name: /^Swipe right/ });
+
+      await expect(
+        page.getByRole("heading", { name: "Swiping a book" }),
+      ).toHaveCSS("font-size", "14px");
+      await expect(right).toContainText("Mark read");
+      await right.click();
+      await page
+        .getByRole("dialog", { name: "Swipe right" })
+        .getByRole("radio", { name: "Nothing" })
+        .click();
+      await expect(right).toContainText("Nothing");
+    });
+
+    test("sets Smart features flush, its switches level with the other rows", async ({
+      page,
+    }) => {
+      await page.goto("/settings/reading");
+      const heading = page.getByRole("heading", { name: "Smart features" });
+      const speed = page.getByRole("switch", {
+        name: "Learn my reading speed",
+      });
+
+      expect((await boxOf(heading)).height).toBe(44);
+      expect((await boxOf(speed)).x).toBe(0);
+      await expect(speed).toHaveCSS("border-top-width", "0px");
+      expect((await boxOf(speed.getByText("Learn my reading speed"))).x).toBe(
+        ROW_START,
+      );
+    });
+  },
+);
+
+const CHECKED_SCREENS = ["/settings/reading"] as const;
+
+test.describe(
+  "Settings > Reader checked for accessibility on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's list rows");
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      for (const route of CHECKED_SCREENS) {
+        test(`has no accessibility violations on ${route} in the ${colorScheme} theme`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.goto(route);
+          await expect(page.getByRole("main")).toBeVisible();
+
+          expect(await accessibilityViolations(page)).toEqual([]);
+        });
+      }
+    }
   },
 );
