@@ -111,3 +111,25 @@ test("keeps the capsule fill while a pointer hovers an unchosen chip on an iOS p
     resolvedColour("--color-native-button-outline", "backgroundColor"),
   );
 });
+
+const ANDROID_CHECK_SIZE = 18;
+
+test("leads a chosen chip with an 18px Material check on an Android phone", async () => {
+  await page.viewport(NARROW_WINDOW.width, NARROW_WINDOW.height);
+  followCorePlatform("android");
+  await renderToggles(["cbz"]);
+
+  const check = chip().querySelector("[data-icon='check']");
+
+  expect(check?.getBoundingClientRect().width).toBe(ANDROID_CHECK_SIZE);
+  expect(chip().querySelector("svg")).toBeNull();
+});
+
+test("keeps the Lucide check in a chosen chip on a Windows window", async () => {
+  await page.viewport(WIDE_WINDOW.width, WIDE_WINDOW.height);
+  followCorePlatform("windows");
+  await renderToggles(["cbz"]);
+
+  expect(chip().querySelector("svg")).not.toBeNull();
+  expect(chip().querySelector("[data-icon='check']")).toBeNull();
+});
