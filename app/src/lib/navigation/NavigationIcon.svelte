@@ -45,7 +45,6 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
-  import { cn } from "#lib/components/cn.ts";
   import Icon from "#lib/components/ui/icon/icon.svelte";
   import type { IconName } from "#lib/icons/names.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
