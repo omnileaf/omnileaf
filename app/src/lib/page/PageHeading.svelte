@@ -4,8 +4,11 @@
   import { currentPlatform, isPhone } from "./platform";
   import { hasLargeTitle, NATIVE_TOP_BAR } from "./top-bar";
 
-  let { title, size = "page" }: { title: string; size?: "page" | "large" } =
-    $props();
+  let {
+    title,
+    size = "page",
+    isFlush = false,
+  }: { title: string; size?: "page" | "large"; isFlush?: boolean } = $props();
 
   const TODAYS_TITLE =
     "text-page-title font-bold tracking-tight android:font-regular android:tracking-normal in-toolbar:truncate in-toolbar:text-body in-toolbar:font-semibold in-toolbar:tracking-normal";
@@ -33,7 +36,11 @@
 
 <h1
   tabindex="-1"
-  class={["touch:max-medium:ps-xs heading-stacked:wrap-anywhere", look]}
+  class={[
+    !isFlush && "touch:max-medium:ps-xs",
+    "heading-stacked:wrap-anywhere",
+    look,
+  ]}
 >
   {title}
 </h1>
