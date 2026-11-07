@@ -4,10 +4,11 @@
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import { phoneAction } from "#lib/page/action-group.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   const ICON_SIZE = 16;
@@ -19,6 +20,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
   const look = $derived.by(() => {
     if (platform === "macos" || platform === "windows") {
       return cn(
@@ -57,6 +61,10 @@
   aria-label={goOn(book)}
   class={cn(look, className)}
 >
-  <Play size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+  {#if isAndroidPhone}
+    <Icon name="play" class="shrink-0" />
+  {:else}
+    <Play size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+  {/if}
   <span class="truncate">{shortLabel(book)}</span>
 </a>
