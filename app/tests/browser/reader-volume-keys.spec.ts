@@ -42,6 +42,8 @@ const STRIP_PAGE = { width: 800, height: 2400 };
 const SERIES_PAGE = new RegExp(`/series/${BOOK_SERIES_ID}$`);
 const NEXT_BOOK_PAGE = new RegExp(`/read/${NEXT_BOOK.id}$`);
 const VOLUME_KEYS_ROW = "Turn pages with the volume keys";
+const VOLUME_KEYS_AND_SCREEN_ROWS =
+  /Turn pages with the volume keys|Keep the screen on/;
 const VOLUME_KEYS_HELP =
   "Only in the reader; everywhere else they change the volume.";
 const COLOR_SCHEMES = ["light", "dark"] as const;
@@ -132,9 +134,10 @@ function volumeKeysRow(within: Locator | Page): Locator {
 
 async function openReaderSettingsPage(page: Page): Promise<Locator> {
   await page.goto("/settings/reading");
-  const tapZones = page.getByRole("region", { name: "Tap zones" });
-  await expect(tapZones).toBeVisible();
-  return tapZones;
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Reader" }),
+  ).toBeVisible();
+  return page.getByRole("main");
 }
 
 testOnlyInItsWebview("android");
@@ -330,10 +333,10 @@ test.describe("on a computer", () => {
   });
 
   test("shows no volume keys row in Settings > Reader", async ({ page }) => {
-    const tapZones = await openReaderSettingsPage(page);
+    const readerSettings = await openReaderSettingsPage(page);
 
     await expect(
-      tapZones.getByRole("switch", { name: "Keep the screen on" }),
+      readerSettings.getByRole("switch", { name: "Keep the screen on" }),
     ).toBeVisible();
     await expect(volumeKeysRow(page)).toHaveCount(0);
   });
@@ -354,10 +357,10 @@ test.describe("on an iPhone", () => {
   });
 
   test("shows no volume keys row in Settings > Reader", async ({ page }) => {
-    const tapZones = await openReaderSettingsPage(page);
+    const readerSettings = await openReaderSettingsPage(page);
 
     await expect(
-      tapZones.getByRole("switch", { name: "Keep the screen on" }),
+      readerSettings.getByRole("switch", { name: "Keep the screen on" }),
     ).toBeVisible();
     await expect(volumeKeysRow(page)).toHaveCount(0);
   });
@@ -369,8 +372,10 @@ test.describe("Settings > Reader on Android", () => {
   test("changes the volume keys default from Settings > Reader", async ({
     page,
   }) => {
-    const tapZones = await openReaderSettingsPage(page);
-    const rows = tapZones.getByRole("switch");
+    const readerSettings = await openReaderSettingsPage(page);
+    const rows = readerSettings.getByRole("switch").filter({
+      hasText: VOLUME_KEYS_AND_SCREEN_ROWS,
+    });
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toHaveAccessibleName(VOLUME_KEYS_ROW);
     await expect(rows.nth(0)).toHaveAccessibleDescription(VOLUME_KEYS_HELP);
