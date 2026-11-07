@@ -11,6 +11,8 @@
   } from "#lib/components/ui/card/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { readerGuideLook } from "./reader-guide-look.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import type { TapZones } from "./reader-settings.svelte.ts";
   import type { ReadingDirection } from "./reading-direction.svelte.ts";
 
@@ -31,6 +33,8 @@
   } = $props();
 
   const titleId = $props.id();
+  const chrome = getReaderChrome();
+  const look = $derived(readerGuideLook(chrome.platform, chrome.width));
   const isReversed = $derived(direction === "rightToLeft");
   const edgesBody = $derived(
     isTouch
@@ -42,9 +46,20 @@
         : m.reader_guide_click_body(),
   );
   const edges = $derived([
-    isReversed ? m.reader_next_page() : m.reader_previous_page(),
-    m.reader_show_controls(),
-    isReversed ? m.reader_previous_page() : m.reader_next_page(),
+    {
+      label: isReversed ? m.reader_next_page() : m.reader_previous_page(),
+      isControls: false,
+    },
+    { label: m.reader_show_controls(), isControls: true },
+    {
+      label: isReversed ? m.reader_previous_page() : m.reader_next_page(),
+      isControls: false,
+    },
+  ]);
+  const stripZones = $derived([
+    { label: m.reader_scroll_up(), isControls: false },
+    { label: m.reader_show_controls(), isControls: true },
+    { label: m.reader_scroll_down(), isControls: false },
   ]);
   const stripWording = $derived(
     isTouch
@@ -76,53 +91,64 @@
     }[zones],
   );
   const wording = $derived(isStrip ? stripWording : zoneWording);
-  const ZONE_LABEL =
-    "flex items-start justify-center border border-dashed border-foreground/60 px-sm pbs-reader-guide-labels text-center text-body font-medium text-foreground expanded:text-group-title";
 </script>
 
 {#if isStrip}
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-none grid grid-strip-zones bg-reader-black/40"
+    class={[
+      "pointer-events-none absolute inset-none grid grid-strip-zones",
+      look.overlay,
+    ]}
   >
-    {#each [m.reader_scroll_up(), m.reader_show_controls(), m.reader_scroll_down()] as zone, index (index)}
-      <div class={[ZONE_LABEL, "items-center"]}>{zone}</div>
+    {#each stripZones as zone (zone.label)}
+      <div
+        class={[
+          zone.isControls ? look.controlsZone : look.zone,
+          "items-center",
+        ]}
+      >
+        {zone.label}
+      </div>
     {/each}
   </div>
 {:else if zones === "edges"}
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-none flex bg-reader-black/40"
+    class={["pointer-events-none absolute inset-none flex", look.overlay]}
   >
     {#each edges as zone, index (index)}
-      <div
-        class="flex flex-1 items-start justify-center border-e border-dashed border-foreground/60 px-sm pbs-reader-guide-labels text-center text-body font-medium text-foreground last:border-e-0 expanded:text-group-title"
-      >
-        {zone}
+      <div class={zone.isControls ? look.controlsEdgeZone : look.edgeZone}>
+        {zone.label}
       </div>
     {/each}
   </div>
 {:else if zones === "lShape"}
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-none grid grid-l-zones bg-reader-black/40"
+    class={[
+      "pointer-events-none absolute inset-none grid grid-l-zones",
+      look.overlay,
+    ]}
   >
-    <div class={[ZONE_LABEL, "col-span-3"]}>{m.reader_previous_page()}</div>
-    <div class={ZONE_LABEL}>
+    <div class={[look.zone, "col-span-3"]}>{m.reader_previous_page()}</div>
+    <div class={look.zone}>
       {isReversed ? m.reader_next_page() : m.reader_previous_page()}
     </div>
-    <div class={ZONE_LABEL}>{m.reader_show_controls()}</div>
-    <div class={ZONE_LABEL}>
+    <div class={look.controlsZone}>
+      {m.reader_show_controls()}
+    </div>
+    <div class={look.zone}>
       {isReversed ? m.reader_previous_page() : m.reader_next_page()}
     </div>
-    <div class={[ZONE_LABEL, "col-span-3"]}>{m.reader_next_page()}</div>
+    <div class={[look.zone, "col-span-3"]}>{m.reader_next_page()}</div>
   </div>
 {:else}
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-none flex bg-reader-black/40"
+    class={["pointer-events-none absolute inset-none flex", look.overlay]}
   >
-    <div class={[ZONE_LABEL, "flex-1 items-center"]}>
+    <div class={[look.zone, "flex-1 items-center"]}>
       {m.reader_guide_off_zone()}
     </div>
   </div>
@@ -130,32 +156,35 @@
 <Card
   role="note"
   aria-labelledby={titleId}
-  class="absolute inset-x-lg inset-be-reader-guide flex flex-col gap-lg py-lg shadow-reader-glass expanded:inset-x-none expanded:mx-auto expanded:inline-reader-guide-wide"
+  class={[
+    "absolute inset-x-lg flex flex-col py-lg shadow-reader-glass expanded:inset-x-none expanded:mx-auto expanded:inline-reader-guide-wide",
+    look.card,
+  ]}
 >
   <CardHeader class="px-lg">
     <div class="flex items-center gap-sm">
-      <span
-        class="flex items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
-      >
-        {#if isTouch}
-          <Hand size={ICON_SIZE} aria-hidden="true" />
-        {:else}
-          <MousePointerClick size={ICON_SIZE} aria-hidden="true" />
-        {/if}
-      </span>
-      <CardTitle id={titleId} class="text-group-title">
+      {#if look.hasBadge}
+        <span
+          class="flex items-center justify-center rounded-shadcn-control bg-chip block-reader-dense inline-reader-dense"
+        >
+          {#if isTouch}
+            <Hand size={ICON_SIZE} aria-hidden="true" />
+          {:else}
+            <MousePointerClick size={ICON_SIZE} aria-hidden="true" />
+          {/if}
+        </span>
+      {/if}
+      <CardTitle id={titleId} class={look.title}>
         {wording.title}
       </CardTitle>
     </div>
-    <CardDescription class="text-body expanded:text-small"
-      >{wording.body}</CardDescription
-    >
+    <CardDescription class={look.body}>{wording.body}</CardDescription>
   </CardHeader>
   <CardFooter class="px-lg expanded:justify-end">
     <Button
       type="button"
-      look="primary"
-      class="flex-1 rounded-shadcn-button px-lg font-medium min-block-touch-target expanded:flex-none expanded:text-small expanded:min-block-pointer-button"
+      {...look.doneButton}
+      class={look.done}
       onclick={onDone}
     >
       {m.reader_guide_done()}
