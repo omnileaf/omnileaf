@@ -143,6 +143,9 @@
   const isAndroidPhone = $derived(
     phoneOf(data.appInfo.platform, width.current) === "android",
   );
+  const listsChapterTitles = $derived(
+    data.appInfo.platform === "macos" || isAndroidPhone,
+  );
   const filterPlace: FilterPlace = $derived.by(() => {
     if (isIPhone) {
       return "token";
@@ -307,7 +310,7 @@
     activeKey = undefined;
     const look = ++latestLook;
     void found.load();
-    if (data.appInfo.platform === "macos") {
+    if (listsChapterTitles) {
       void chapters.start();
     }
     await results.start();
@@ -538,7 +541,7 @@
           ? libraryView.reading.value
           : undefined}
       />
-      {#if data.appInfo.platform === "macos" && chapters.list.kind === "loaded" && chapters.list.items.length > 0}
+      {#if listsChapterTitles && chapters.list.kind === "loaded" && chapters.list.items.length > 0}
         <ChapterTitleResults
           hits={chapters.list.items}
           isComplete={chapters.list.isComplete}

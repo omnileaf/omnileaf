@@ -4,6 +4,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MEDIUM_MIN_WIDTH,
   targetOf,
   test,
   tokenColour,
@@ -18,7 +19,16 @@ const CHIP_LINE = "20px";
 const CHIP_WEIGHT = "500";
 const SCOPE_GAP = 8;
 
+const TABLET = { width: MEDIUM_MIN_WIDTH + 100, height: 1000 };
 const NOTHING = "nothing-here";
+const CHAPTER_HITS = [1, 2].map((position) => ({
+  series: CATALOG[0]?.id ?? "",
+  seriesTitle: CATALOG[0]?.title ?? "",
+  book: `0190a3e4-0000-8000-8000-00000000010${String(position)}`,
+  position,
+  title: `Harbour chapter ${String(position)}`,
+  matchedIn: "fileName" as const,
+}));
 
 test.use({
   backend: {
@@ -30,6 +40,11 @@ test.use({
     }),
     librarySearchCount: (search) =>
       search.text.includes(NOTHING) ? 0 : CATALOG.length,
+    librarySearchChapters: () => ({
+      hits: CHAPTER_HITS,
+      next: null,
+      count: CHAPTER_HITS.length,
+    }),
   },
 });
 
@@ -106,6 +121,58 @@ test.describe(
       expect(await boxOf(clear)).toMatchObject({ width: 48, height: 48 });
       await expect(clear).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
       expect((await boxOf(clear.locator("[data-icon='x']"))).width).toBe(24);
+    });
+
+    test("lists the five things to search for with 24px icons 16px in and their words 56px in", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      const rows = page.getByRole("heading", { name: "You can search for" });
+      const list = rows.locator("xpath=following-sibling::ul");
+
+      await expect(list.getByRole("listitem")).toHaveText([
+        /Title or series/,
+        /Writer or artist/,
+        /Tag/,
+        /Chapter title/,
+        /Words inside books.*Coming with books/,
+      ]);
+      for (const row of await list.getByRole("listitem").all()) {
+        const icon = await boxOf(row.locator("[data-icon]"));
+        expect(icon.x).toBe(16);
+        expect(icon.width).toBe(24);
+      }
+      const words = await boxOf(
+        list.getByText("Title or series", { exact: true }),
+      );
+      expect(words.x).toBe(56);
+    });
+
+    test("pads the section headings and the filter example 16px from both edges", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+
+      for (const name of ["You can search for", "Type a filter to narrow"]) {
+        const heading = await boxOf(page.getByRole("heading", { name }));
+        expect(heading.x).toBe(16);
+      }
+      const example = page.getByText("For example,", { exact: false });
+      expect((await boxOf(example)).x).toBe(16);
+    });
+
+    test("heads the chapter titles in the green accent and lists each under its series", async ({
+      page,
+    }) => {
+      await openSearch(page);
+      const heading = page.getByRole("heading", { name: "Chapter titles · 2" });
+
+      await expect(heading).toBeVisible();
+      await expect(heading).toHaveCSS("font-size", "14px");
+      await expect(heading).toHaveCSS("font-weight", "500");
+      await expect(
+        page.getByRole("link", { name: /Harbour chapter 1/ }),
+      ).toBeVisible();
     });
 
     test("draws each scope as a 32px chip with an 8px corner and a 1px outline, 14px on a 20px line at 500", async ({
@@ -271,7 +338,9 @@ test.describe(
       expect(
         (
           await boxOf(
-            page.locator("li", { hasText: "Title or series" }).locator("svg"),
+            page
+              .locator("li", { hasText: "Title or series" })
+              .locator("[data-icon]"),
           )
         ).width,
       ).toBeCloseTo(24, 0);
@@ -289,6 +358,37 @@ test.describe(
       expect(second.x - (first.x + first.width)).toBeCloseTo(SCOPE_GAP, 0);
       expect(second.y).toBeCloseTo(first.y, 0);
       await expect(chips).toHaveCSS("overflow-x", "auto");
+    });
+  },
+);
+
+test.describe(
+  "the library's search on an Android tablet",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's search");
+    });
+    test.use({ viewport: TABLET });
+
+    test("lists no chapter titles, which only the Android phone and macOS search for", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      await page
+        .getByRole("main")
+        .getByRole("combobox", { name: "Search your library" })
+        .fill("sample");
+
+      await expect(
+        page.getByText(CATALOG[0]?.title ?? "").first(),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /Chapter titles/ }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("link", { name: /Harbour chapter 1/ }),
+      ).toHaveCount(0);
     });
   },
 );

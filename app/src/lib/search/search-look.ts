@@ -162,7 +162,7 @@ export const ANDROID_START_LOOK: StartLook = {
   heading: ANDROID_SEARCH_LOOK.heading,
   headingBesideAction: ANDROID_SEARCH_LOOK.heading,
   clear: { variant: "plain" },
-  rows: "flex flex-col",
+  rows: "-ms-page-start -me-page-end flex flex-col",
   row: `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}`,
   staticRow: ITEM_LOOKS["row-static"],
   lead: "flex shrink-0 items-center justify-center text-muted",
