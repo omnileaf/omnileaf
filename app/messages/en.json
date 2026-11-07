@@ -799,7 +799,8 @@
   "advanced_offer_undo_help": "Off: notices show without Undo; deleting downloads, unpairing a device and deleting a profile still ask first.",
   "advanced_keep_undo": "Keep Undo for",
   "advanced_hold_undo": "Hold it while hovered or focused",
-  "advanced_wait_undo_screen_reader": "Wait for a screen reader",
+  "advanced_wait_undo_screen_reader": "Wait for screen readers",
+  "advanced_wait_undo_screen_reader_help": "Stays until it has been read out.",
   "advanced_undo_seconds": [
     {
       "declarations": [

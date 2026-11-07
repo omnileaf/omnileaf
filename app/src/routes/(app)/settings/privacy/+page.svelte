@@ -7,6 +7,8 @@
     type CrashReportChoice,
     getCrashReportSetting,
   } from "#lib/crash-report/choice.svelte.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
@@ -37,6 +39,7 @@
     m.privacy_nothing_leaves_computer,
   );
   const NOTE_ICON_SIZE = 14;
+  const ANDROID_NOTE = `${FLUSH_BLEED} gap-native-row-gap px-lg py-sm text-native-row-subtitle/native-row-subtitle`;
 
   let { data }: PageProps = $props();
 
@@ -53,12 +56,21 @@
 
 {#snippet nothingLeaves()}
   {#if !sendsReportsOnItsOwn}
-    <p class="flex items-start gap-xs px-2xs text-footnote text-muted">
-      <ShieldCheck
-        size={NOTE_ICON_SIZE}
-        aria-hidden="true"
-        class="mbs-2xs shrink-0"
-      />
+    <p
+      class={[
+        "flex items-start text-muted",
+        android.isOn ? ANDROID_NOTE : "gap-xs px-2xs text-footnote",
+      ]}
+    >
+      {#if android.isOn}
+        <Icon name="shield-check" class="shrink-0" />
+      {:else}
+        <ShieldCheck
+          size={NOTE_ICON_SIZE}
+          aria-hidden="true"
+          class="mbs-2xs shrink-0"
+        />
+      {/if}
       <span class="min-inline-none">
         <WidthWording
           wording={isPointer(data.appInfo.platform)
