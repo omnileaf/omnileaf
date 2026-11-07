@@ -7,6 +7,7 @@ export interface ReadingSettingsSheetLook {
   readonly backdrop: SheetBackdrop;
   readonly header: string;
   readonly title: string;
+  readonly body: string;
   readonly hasBadge: boolean;
   readonly hasDone: boolean;
 }
@@ -15,6 +16,7 @@ const TODAYS_LOOK: ReadingSettingsSheetLook = {
   backdrop: "dimmed",
   header: "flex items-center gap-sm px-sheet-inline pbs-sheet-gap",
   title: "flex-1 text-body font-semibold",
+  body: "px-sheet-inline",
   hasBadge: true,
   hasDone: true,
 };
@@ -24,6 +26,7 @@ const ANDROID_PHONE_LOOK: ReadingSettingsSheetLook = {
   header: "flex items-center px-lg pbs-sheet-gap",
   title:
     "flex-1 text-native-bar-title leading-native-bar-title font-native-bar-title tracking-native-bar-title",
+  body: "px-lg",
   hasBadge: false,
   hasDone: false,
 };
