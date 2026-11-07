@@ -86,6 +86,7 @@ const CACHE_FOLDER: &str = "cache";
     reason = "without its runtime the app has nothing to fall back to"
 )]
 pub fn run() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let recent_log = RecentLog::default();
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
