@@ -72,7 +72,7 @@
     hasEqualColumns
     {onChoose}
     class={android.isOn
-      ? "flex-none max-inline-full"
+      ? "ms-auto flex-none max-inline-full"
       : "mbs-sm large:mbs-icon-gap"}
   />
   {#if !android.isOn}
