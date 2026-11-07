@@ -45,7 +45,7 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(row).toHaveCSS("border-top-width", "0px");
   });
 
-  test("sets each row at 72px with a 16px name over a 14px line, the handle and More as 48px buttons", async ({
+  test("sets each row at 72px with a 16px name over a 14px line, the handle and More as 40px buttons", async ({
     page,
   }) => {
     await page.goto("/settings/library/tabs");
@@ -62,8 +62,8 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     await expect(name).toHaveCSS("font-weight", "400");
     await expect(detail).toHaveCSS("font-size", "14px");
     await expect(detail).toHaveCSS("line-height", "20px");
-    expect(await boxOf(handle)).toMatchObject({ width: 48, height: 48 });
-    expect(await boxOf(more)).toMatchObject({ width: 48, height: 48 });
+    expect(await boxOf(handle)).toMatchObject({ width: 40, height: 40 });
+    expect(await boxOf(more)).toMatchObject({ width: 40, height: 40 });
     expect((await boxOf(handle)).x - (await boxOf(row)).x).toBeCloseTo(4, 0);
   });
 
@@ -74,7 +74,8 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
       .filter({ hasText: "Reading" })
       .getByRole("button", { name: "More for Reading" });
 
-    await expect(more.locator("svg.lucide-ellipsis-vertical")).toBeVisible();
+    await expect(more.locator("[data-icon=ellipsis]")).toBeVisible();
+    await expect(more.locator("svg")).toHaveCount(0);
   });
 
   test("sets New category as an outlined pill under the list, 16px in", async ({
@@ -85,9 +86,35 @@ test.describe("Library tabs on an Android phone", { tag: "@native" }, () => {
     const list = page.getByRole("list", { name: "Library tabs" });
 
     expect((await boxOf(add)).x).toBeCloseTo(16, 0);
+    expect((await boxOf(add)).height).toBe(40);
+    await expect(add).toHaveCSS("font-size", "14px");
+    await expect(add).toHaveCSS("line-height", "20px");
     expect((await boxOf(add)).y).toBeGreaterThan(
       (await boxOf(list)).y + (await boxOf(list)).height,
     );
+  });
+
+  test("sets the Hidden badge without a border and the note and footer at 14px", async ({
+    page,
+  }) => {
+    await page.goto("/settings/library/tabs");
+    const badge = page
+      .getByRole("listitem")
+      .filter({ hasText: "New chapters" })
+      .getByText("Hidden", { exact: true });
+    const note = page
+      .locator("p")
+      .filter({ hasText: "Drag to reorder. Hiding a tab" });
+    const footer = page.getByText(/^Or All, or a tab you choose/);
+
+    await expect(badge).toHaveCSS("border-top-width", "0px");
+    await expect(badge).toHaveCSS("border-top-left-radius", "8px");
+    expect((await boxOf(badge)).height).toBe(24);
+    for (const text of [note, footer]) {
+      await expect(text).toHaveCSS("font-size", "14px");
+      await expect(text).toHaveCSS("line-height", "20px");
+      await expect(text).toHaveCSS("padding-left", "16px");
+    }
   });
 
   test("sets where the library opens as a two-line row that opens a choice dialog", async ({

@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
     commands,
@@ -31,9 +32,14 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
+  import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
+  const NEW_CATEGORY_ICON_SIZE = 20;
+  const ANDROID_NOTE = `${FLUSH_BLEED} px-lg pbs-2xs pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
+  const ANDROID_NEW_CATEGORY =
+    "my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
   const android = new AndroidPhone();
   const ios = new IosPhone();
 
@@ -162,11 +168,7 @@
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
   <div class="mbs-pane-gap flex flex-col gap-sm">
-    <p
-      class={android.isOn
-        ? "text-native-row-subtitle/native-row-subtitle text-muted"
-        : "text-footnote text-muted"}
-    >
+    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
       {#if isMac}
         {m.library_tabs_intro_mac()}
       {:else}
@@ -182,16 +184,25 @@
       }}
     />
     {#if keepsLabels}
-      <div class="mbs-sm flex flex-wrap gap-sm">
+      <div class={["flex flex-wrap gap-sm", !android.isOn && "mbs-sm"]}>
         <Button
           type="button"
           look="outline"
-          class="flex items-center gap-xs rounded-full px-md font-medium min-block-pointer-button touch:min-block-touch-target"
+          class={[
+            "flex items-center font-medium",
+            android.isOn
+              ? ANDROID_NEW_CATEGORY
+              : "gap-xs rounded-full px-md min-block-pointer-button touch:min-block-touch-target",
+          ]}
           onclick={() => {
             isNaming = true;
           }}
         >
-          <Plus size={ICON_SIZE} aria-hidden="true" />
+          {#if android.isOn}
+            <Icon name="plus" size={NEW_CATEGORY_ICON_SIZE} />
+          {:else}
+            <Plus size={ICON_SIZE} aria-hidden="true" />
+          {/if}
           {isMac
             ? m.library_tabs_new_category_mac()
             : m.library_tabs_new_category()}
@@ -213,7 +224,9 @@
           opensOn.choose(choice);
         }}
       />
-      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+      <p
+        class="{FLUSH_BLEED} px-lg pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle text-muted"
+      >
         {m.library_opens_on_help()}
       </p>
     </div>
