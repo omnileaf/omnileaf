@@ -96,7 +96,7 @@
           ? "rounded-native-button"
           : bar === undefined
             ? [
-                "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto android:block-native-button android:inline-native-button",
+                "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto!",
                 isOpen
                   ? "large:bg-accent-soft"
                   : "hover:tint-hover active:tint-pressed",
