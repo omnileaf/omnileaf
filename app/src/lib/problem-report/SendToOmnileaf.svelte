@@ -76,7 +76,12 @@
   </div>
   <div role="alert">
     {#if failure !== undefined && !isAddressRefused}
-      <Alert tone="warning" icon={CircleAlert} class="mbs-md">
+      <Alert
+        tone="warning"
+        icon={CircleAlert}
+        iconName="circle-alert"
+        class="mbs-md"
+      >
         <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>
     {/if}

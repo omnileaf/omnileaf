@@ -105,7 +105,12 @@
     <SendToOmnileaf {sharing} />
     <WaysToSend {sharing} canSave />
   {:else}
-    <Alert tone="warning" icon={CircleAlert} role="alert">
+    <Alert
+      tone="warning"
+      icon={CircleAlert}
+      iconName="circle-alert"
+      role="alert"
+    >
       <AlertTitle>{m.report_failed()}</AlertTitle>
       <AlertActions>
         <AlertButton
