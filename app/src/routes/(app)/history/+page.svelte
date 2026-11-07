@@ -277,13 +277,15 @@
     />
   </div>
 {:else}
-  <CollectionHeading
-    {platform}
-    title={m.history_title()}
-    showsLabel={screenshotMode.showsLabel}
-    actions={headerActions}
-    largeTitle={platform === "android" ? false : undefined}
-  />
+  <div class="android:max-medium:-ms-xs android:max-medium:-me-md">
+    <CollectionHeading
+      {platform}
+      title={m.history_title()}
+      showsLabel={screenshotMode.showsLabel}
+      actions={headerActions}
+      largeTitle={platform === "android" ? false : undefined}
+    />
+  </div>
 {/if}
 
 {#if history.list.kind === "failed"}
@@ -340,16 +342,20 @@
   >
     {#each groups as group, index (group.name)}
       <section aria-labelledby={`${headingId}-${String(index)}`}>
-        <div class="flex items-baseline justify-between px-xs">
+        <div
+          class="flex items-baseline justify-between px-xs android:px-none android:pbs-lg android:pbe-sm"
+        >
           <h2
             id={`${headingId}-${String(index)}`}
-            class="text-small font-semibold"
+            class="text-small font-semibold android:font-medium android:text-muted"
           >
             {GROUP_NAMES[group.name]()}
           </h2>
-          <span data-testid="group-total" class="text-detail text-muted">
-            {readingTime(groupSeconds(group))}
-          </span>
+          {#if platform !== "android"}
+            <span data-testid="group-total" class="text-detail text-muted">
+              {readingTime(groupSeconds(group))}
+            </span>
+          {/if}
         </div>
         <ul
           aria-labelledby={`${headingId}-${String(index)}`}
