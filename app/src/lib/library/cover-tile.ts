@@ -1,4 +1,6 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { phoneOf } from "#lib/page/platform.ts";
 
 import { ACCENT_COVER_RING, ACCENT_TITLE } from "./accent-selection-look.ts";
 
@@ -27,6 +29,8 @@ export interface CoverTileLook {
   readonly menuTargetRing: string;
   readonly pickedTitle: string;
   readonly title: string;
+  readonly meta: string;
+  readonly grid: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
   readonly unread: string;
@@ -52,6 +56,18 @@ const BADGE_PLACEMENT =
   "absolute inset-s-badge-inset inset-bs-badge-inset flex items-center justify-center text-caption medium:inset-s-badge-inset-wide medium:inset-bs-badge-inset-wide large:inset-s-sm large:inset-bs-sm";
 
 const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inline-xl`;
+
+const ANDROID_TILE_TITLE =
+  "max-medium:text-native-tile-title/native-tile-title! max-medium:font-native-tile-title! max-medium:tracking-native-tile-title!";
+
+const ANDROID_GRID = "max-medium:covers-gap-sm! max-medium:covers-row-gap-lg!";
+
+const ANDROID_TILE_META =
+  "max-medium:text-native-tile-meta/native-tile-meta max-medium:font-native-tile-meta max-medium:tracking-native-tile-meta";
+
+const NATIVE_COUNT_BADGE = `${BADGE_GEOMETRY} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+
+const ANDROID_COUNT_BADGE = `${NATIVE_COUNT_BADGE} max-medium:inset-s-xs max-medium:inset-bs-xs max-medium:px-xs max-medium:text-native-count-badge/native-count-badge max-medium:tracking-native-count-badge`;
 
 const LINUX_BADGE = `${BADGE_PLACEMENT} border border-transparent px-sm py-2xs`;
 
@@ -83,6 +99,8 @@ const TODAYS_LOOK: CoverTileLook = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  meta: "",
+  grid: "",
   stack: null,
   cover: "",
   unread: BADGE_GEOMETRY,
@@ -117,6 +135,8 @@ const NATIVE_TILE = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  meta: "",
+  grid: "",
   stack: null,
   cover: "max-medium:rounded-native-cover",
   mark: NATIVE_SELECT_MARK,
@@ -139,7 +159,7 @@ const IOS_BADGE = `${NATIVE_BADGE} ${IOS_BADGE_SHAPE} max-medium:backdrop-blur-i
 const IOS_TILE_TITLE =
   "max-medium:text-footnote! max-medium:font-native-tile-title!";
 
-const IOS_COUNT_BADGE = `${BADGE_GEOMETRY} ${IOS_BADGE_SHAPE} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:font-native-bar-badge max-medium:tabular-nums`;
+const IOS_COUNT_BADGE = `${NATIVE_COUNT_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:font-native-bar-badge max-medium:tabular-nums`;
 
 const IOS_SELECT_STYLE = `${NATIVE_SELECT_SIZE} max-medium:border-0 max-medium:inset-ring-(length:--native-spacing-select-edge) max-medium:inset-ring-native-select-ring max-medium:shadow-native-shadow-glass max-medium:backdrop-blur-native-glass`;
 
@@ -240,12 +260,15 @@ const COVER_TILE_LOOKS = {
   },
   android: {
     ...NATIVE_TILE,
+    title: ANDROID_TILE_TITLE,
     stack: PHONE_STACK,
+    meta: ANDROID_TILE_META,
+    grid: ANDROID_GRID,
     notConnected: ANDROID_NOT_CONNECTED,
-    unread: `${BADGE_GEOMETRY} ${NATIVE_BADGE}`,
+    unread: ANDROID_COUNT_BADGE,
     badge: NATIVE_BADGE,
-    downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
-    downloadedIcon: "max-medium:hidden",
+    downloaded: "max-medium:hidden",
+    downloadedIcon: "",
   },
   linux: {
     ...TODAYS_LOOK,
@@ -259,4 +282,13 @@ const COVER_TILE_LOOKS = {
 
 export function coverTileLook(platform: Platform): CoverTileLook {
   return COVER_TILE_LOOKS[platform];
+}
+
+export function coverStack(
+  platform: Platform,
+  width: WidthClass,
+): CoverStackLook | null {
+  return phoneOf(platform, width) === "android"
+    ? null
+    : coverTileLook(platform).stack;
 }
