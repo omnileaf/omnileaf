@@ -24,8 +24,8 @@ function sizeClassOf(page: Page): SizeClass {
 const LAYOUTS = [
   {
     platform: "android",
-    titleGap: { phone: 64, tablet: 24, desktop: 24 },
-    titleStart: { phone: 20, tablet: 28, desktop: 32 },
+    titleGap: { phone: 68, tablet: 24, desktop: 24 },
+    titleStart: { phone: 16, tablet: 28, desktop: 32 },
   },
   {
     platform: "linux",
