@@ -5,10 +5,12 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
   import type { HistoryEntryActions } from "./history-entry-actions.ts";
+  import { historyEntryLook } from "./history-entry-look.ts";
   import type { HistoryGroupName } from "./history-groups.ts";
   import { historyLine, type WhenFormats } from "./history-line.ts";
   import HistoryEntryMenu from "./HistoryEntryMenu.svelte";
@@ -28,6 +30,7 @@
     actions: HistoryEntryActions;
   } = $props();
 
+  const look = historyEntryLook(currentPlatform());
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
   const cover = $derived(
     (usesStandIns ? standInLook : realLook)({
@@ -50,11 +53,11 @@
   );
 </script>
 
-<li class="flex items-center gap-xs py-xs">
+<li class="flex items-center gap-xs py-xs android:-me-sm">
   <a
     href={resolve("/read/[book]", { book: entry.book })}
     data-history-book={listed.book}
-    class="flex flex-1 items-center gap-md rounded-control py-xs ps-xs min-inline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent"
+    class="flex flex-1 items-center gap-md rounded-control py-xs ps-xs min-inline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent android:ps-none"
   >
     <ListCover
       {cover}
@@ -62,10 +65,10 @@
       class="shrink-0 rounded-history-cover inline-history-cover"
     />
     <span class="flex flex-col gap-2xs min-inline-none">
-      <span class="line-clamp-2 text-small font-semibold">
+      <span class={look.title}>
         {entry.seriesTitle}
       </span>
-      <span class="line-clamp-2 text-detail text-muted tabular-nums">
+      <span class={look.line}>
         {historyLine(entry, group, formats)}
       </span>
       <Progress
@@ -76,6 +79,8 @@
       />
     </span>
   </a>
-  <HistoryEntrySheet {entry} {cover} {actions} />
-  <HistoryEntryMenu {entry} {actions} />
+  {#if !look.opensMenu}
+    <HistoryEntrySheet {entry} {cover} {actions} />
+  {/if}
+  <HistoryEntryMenu {entry} {actions} buttonClass={look.menuButton} />
 </li>
