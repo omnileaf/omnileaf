@@ -126,7 +126,7 @@
           </Button>
         {/if}
       </div>
-      <div class="overflow-y-auto px-sheet-inline pbs-md pbe-sheet-bottom">
+      <div class={["overflow-y-auto pbs-md pbe-sheet-bottom", sheet.body]}>
         <ReadingSettingsContent
           {settings}
           {reading}
