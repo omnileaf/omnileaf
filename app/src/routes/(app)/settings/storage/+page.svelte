@@ -43,7 +43,9 @@
 
 <SectionHeading title={m.storage_title()} />
 {#if storage.use !== undefined}
-  <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+  <div
+    class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none"
+  >
     <section
       aria-labelledby={meterHeadingId}
       class={["flex flex-col gap-sm p-lg", card, bleed]}

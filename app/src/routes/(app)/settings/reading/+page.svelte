@@ -116,7 +116,12 @@
 {/snippet}
 
 <SectionHeading title={m.reading_title()} />
-<div class={["mbs-pane-gap flex flex-col", !android.isOn && "gap-xl"]}>
+<div
+  class={[
+    "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+    !android.isOn && "gap-xl",
+  ]}
+>
   <div class={["flex flex-col", !android.isOn && "gap-sm"]}>
     <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
       {m.reading_defaults_intro()}

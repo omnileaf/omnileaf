@@ -287,6 +287,8 @@ for (const platform of ["android", "ios", "linux"] as const) {
   });
 }
 
+const ANDROID_PHONE_GAP = 0;
+
 for (const { platform, gap } of [
   { platform: "linux", gap: 20 },
   { platform: "android", gap: 24 },
@@ -299,9 +301,11 @@ for (const { platform, gap } of [
       { path: "/settings/library", region: "Home folder" },
       { path: "/settings/appearance", region: "Light or dark" },
     ] as const) {
-      test(`spaces ${path} ${String(gap)}px under its title`, async ({
-        page,
-      }) => {
+      test(`spaces ${path} under its title`, async ({ page }) => {
+        const expectedGap =
+          platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH
+            ? ANDROID_PHONE_GAP
+            : gap;
         await page.goto(path);
 
         const header = await boxOf(
@@ -309,7 +313,7 @@ for (const { platform, gap } of [
         );
         const content = await boxOf(page.getByRole("region", { name: region }));
 
-        expect(content.y - (header.y + header.height)).toBe(gap);
+        expect(content.y - (header.y + header.height)).toBe(expectedGap);
       });
     }
   });

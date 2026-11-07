@@ -55,7 +55,9 @@
 </script>
 
 <SectionHeading title={m.advanced_title()} />
-<div class="mbs-pane-gap flex flex-col gap-pane-gap">
+<div
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none"
+>
   <SettingsEntries
     entries={[
       {
@@ -70,7 +72,7 @@
   <section
     aria-labelledby={undoHeadingId}
     class={[
-      "flex flex-col rounded-card border border-border bg-card",
+      "flex flex-col rounded-card border border-border bg-card android:max-medium:border-0",
       !android.isOn && "divide-y divide-border overflow-hidden",
       GROUP_PLATE,
     ]}
@@ -139,23 +141,25 @@
     class={android.isOn ? "" : "rounded-card border border-border bg-card"}
   />
   {#if data.appInfo.isDevelopmentBuild}
-    <div
-      role="note"
-      class="flex items-start gap-md rounded-card border border-border bg-card py-md ps-md pe-list-row touch:max-medium:ps-list-row"
-    >
-      <span
-        aria-hidden="true"
-        class="flex shrink-0 items-center justify-center rounded-tile bg-accent-soft block-tile inline-tile"
+    <div class="flex flex-col gap-pane-gap android:max-medium:mbs-pane-gap">
+      <div
+        role="note"
+        class="flex items-start gap-md rounded-card border border-border bg-card py-md ps-md pe-list-row touch:max-medium:ps-list-row"
       >
-        <FlaskConical size={NOTE_ICON_SIZE} />
-      </span>
-      <span class="flex flex-1 flex-col gap-2xs self-center min-inline-none">
-        <span class="text-label font-bold touch:max-medium:text-callout"
-          >{m.advanced_note_title()}</span
+        <span
+          aria-hidden="true"
+          class="flex shrink-0 items-center justify-center rounded-tile bg-accent-soft block-tile inline-tile"
         >
-        <span class="text-detail opacity-85">{m.advanced_note_body()}</span>
-      </span>
+          <FlaskConical size={NOTE_ICON_SIZE} />
+        </span>
+        <span class="flex flex-1 flex-col gap-2xs self-center min-inline-none">
+          <span class="text-label font-bold touch:max-medium:text-callout"
+            >{m.advanced_note_title()}</span
+          >
+          <span class="text-detail opacity-85">{m.advanced_note_body()}</span>
+        </span>
+      </div>
+      <CrashTestList {tests} version={data.appInfo.version} />
     </div>
-    <CrashTestList {tests} version={data.appInfo.version} />
   {/if}
 </div>

@@ -33,14 +33,13 @@
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import {
-    FLUSH_BLEED,
     FLUSH_FOOTER,
+    FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
   const NEW_CATEGORY_ICON_SIZE = 20;
-  const ANDROID_NOTE = `${FLUSH_BLEED} px-lg pbs-2xs pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
   const ANDROID_NEW_CATEGORY =
     "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
   const android = new AndroidPhone();
@@ -170,8 +169,10 @@
     title={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
-  <div class="mbs-pane-gap flex flex-col gap-sm">
-    <p class={android.isOn ? ANDROID_NOTE : "text-footnote text-muted"}>
+  <div
+    class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+  >
+    <p class={android.isOn ? FLUSH_NOTE : "text-footnote text-muted"}>
       {#if isMac}
         {m.library_tabs_intro_mac()}
       {:else}
