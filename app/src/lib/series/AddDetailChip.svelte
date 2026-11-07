@@ -4,9 +4,12 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
 
   import {
+    ANDROID_ADD_CHIP,
+    ANDROID_CHIP_CROSS_SIZE,
     ANDROID_DETAIL_CHIP,
     DETAIL_CHIP,
     GROUPED_DETAIL_CHIP,
@@ -129,12 +132,17 @@
       "pe-md",
       isGrouped && GROUPED_DETAIL_CHIP,
       isAndroid && ANDROID_DETAIL_CHIP,
+      isAndroid && ANDROID_ADD_CHIP,
     )}
     onclick={() => {
       isTyping = true;
     }}
   >
-    <Plus size={ICON_SIZE} aria-hidden="true" />
+    {#if isAndroid}
+      <Icon name="plus" size={ANDROID_CHIP_CROSS_SIZE} />
+    {:else}
+      <Plus size={ICON_SIZE} aria-hidden="true" />
+    {/if}
     {label}
   </button>
 {/if}
