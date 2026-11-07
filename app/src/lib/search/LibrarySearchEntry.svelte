@@ -3,14 +3,15 @@
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { type Platform, SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { isPhone } from "#lib/page/platform.ts";
-  import { barIconSize, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import { isPhone, phoneOf } from "#lib/page/platform.ts";
+  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
@@ -63,12 +64,14 @@
           : "block-touch-target inline-touch-target",
       ]}
     >
-      <Search
-        size={isPhone(platform, width.current)
-          ? barIconSize(platform)
-          : ICON_SIZE}
-        aria-hidden="true"
-      />
+      {#if phoneOf(platform, width.current) === "android"}
+        <Icon name="search" />
+      {:else}
+        <Search
+          size={ios.isOn ? IOS_BAR_ICON_SIZE : ICON_SIZE}
+          aria-hidden="true"
+        />
+      {/if}
     </a>
   {/snippet}
 </Tooltip>

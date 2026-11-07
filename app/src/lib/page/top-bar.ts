@@ -4,18 +4,6 @@ import type { IconName } from "#lib/icons/names.ts";
 import type { WidthClass } from "./breakpoints";
 import { hasTopTabBar, isPhone } from "./platform";
 
-const BAR_ICON_SIZE: Record<Platform, number> = {
-  android: 24,
-  ios: 22,
-  linux: 16,
-  macos: 16,
-  windows: 16,
-};
-
-export function barIconSize(platform: Platform): number {
-  return BAR_ICON_SIZE[platform];
-}
-
 export const NATIVE_TOP_BAR = {
   pageTitle:
     "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar",
