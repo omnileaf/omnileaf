@@ -130,6 +130,32 @@ test("keeps the cancel button and no Done on an Android phone", async () => {
     .not.toBeInTheDocument();
 });
 
+test("draws the close button as a 24px Material icon on the bar fill on an Android phone", () => {
+  renderHeader("android");
+  const close = page
+    .getByRole("button", { name: "Cancel selecting" })
+    .element();
+  const bar = page.getByText("3 selected").element().parentElement;
+
+  expect(
+    close.querySelector("[data-icon='x']")?.getBoundingClientRect().width,
+  ).toBe(24);
+  expect(close.querySelector("svg")).toBeNull();
+  expect(getComputedStyle(bar ?? close).backgroundColor).toBe(
+    resolvedColour("--color-bar", "backgroundColor"),
+  );
+});
+
+test("keeps the Lucide close icon on a Linux window", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+  renderHeader("linux");
+  const close = page
+    .getByRole("button", { name: "Cancel selecting" })
+    .element();
+
+  expect(close.querySelector("svg")).not.toBeNull();
+});
+
 test("puts Select all and Done on one row with the count under them on an iPad", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   const { onSelectAll, onCancel } = renderHeader("ios");

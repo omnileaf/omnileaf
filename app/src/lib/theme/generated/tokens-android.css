@@ -394,6 +394,7 @@
   --native-color-row-current: var(--native-color-jump-current);
   --native-color-on-row-current: var(--native-color-on-jump-current);
   --native-radius-outlined-field: 4px;
+  --native-radius-selection-action: 16px;
   --native-spacing-outlined-field: 56px;
   --native-spacing-sheet-foot-bottom: calc(16px + var(--spacing-safe-bottom));
   --native-spacing-popover-top: var(--spacing-lg);
@@ -421,7 +422,6 @@
   --native-color-on-fast-scroll-letter: var(--primary-foreground);
   --native-color-tile-hover: transparent;
   --native-color-tile-pressed: transparent;
-  --native-color-tile-check-fill: transparent;
   --native-color-tile-check-edge: transparent;
   --native-spacing-tile-edge: 0px;
   --native-spacing-tile-lift: 0px;
@@ -609,6 +609,7 @@
   --native-color-notice-action: transparent;
   --native-color-on-notice-action: #bcf9d3;
   --native-color-focus-ring: #4e6456;
+  --native-color-tile-check-fill: #f7faf5;
   --native-color-colours-omnileaf-primary: #326a4d;
   --native-color-colours-omnileaf-container: #d0e8d7;
   --native-color-colours-omnileaf-surface: #eff5ee;
@@ -694,6 +695,7 @@
   --native-color-notice-action: transparent;
   --native-color-on-notice-action: #3e6750;
   --native-color-focus-ring: #b4ccbb;
+  --native-color-tile-check-fill: #0b0f0c;
   --native-color-colours-omnileaf-primary: #a4d1b4;
   --native-color-colours-omnileaf-container: #2b4033;
   --native-color-colours-omnileaf-surface: #0f1511;
