@@ -84,7 +84,7 @@
       {#if onBack !== undefined}
         <button
           type="button"
-          class="flex shrink-0 items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed expanded:hidden ios:gap-2xs ios:ps-2xs ios:pe-sm ios:text-accent android:block-native-button android:inline-native-button android:min-block-auto android:min-inline-auto"
+          class="native-target flex shrink-0 items-center justify-center rounded-full transition-control min-block-touch-target min-inline-touch-target hover:bg-hover active:bg-pressed expanded:hidden ios:gap-2xs ios:ps-2xs ios:pe-sm ios:text-accent android:block-native-button android:inline-native-button android:min-block-auto android:min-inline-auto"
           onclick={onBack}
         >
           {#if currentPlatform() === "android"}
