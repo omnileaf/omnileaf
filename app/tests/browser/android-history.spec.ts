@@ -24,6 +24,8 @@ const BAR_START = 12;
 const BAR_END_INSET = 8;
 const MENU_REACH = 80;
 const HEADING_START = 16;
+const PROGRESS_TRACK_WIDTH = 120;
+const SEARCH_BAR_HEIGHT = 72;
 const PHONE = { width: 390, height: 844 };
 
 function entry(
@@ -178,5 +180,29 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     const moreBox = await more.boundingBox();
     const menuBox = await menu.boundingBox();
     expect(menuBox?.y).toBeLessThan((moreBox?.y ?? 0) + MENU_REACH);
+  });
+
+  test("draws each entry's progress track 120px wide", async ({ page }) => {
+    await openHistory(page);
+    const track = page
+      .getByRole("main")
+      .getByRole("listitem")
+      .first()
+      .getByRole("progressbar");
+
+    expect((await track.boundingBox())?.width).toBe(PROGRESS_TRACK_WIDTH);
+  });
+
+  test("opens the search as a flat 72px bar with no fill behind the field", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    await page.getByRole("button", { name: "Search History" }).click();
+    const field = page.getByRole("searchbox", { name: "Search History" });
+    const group = field.locator("xpath=ancestor::div[1]");
+    const bar = field.locator("xpath=ancestor::div[2]");
+
+    await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    expect((await bar.boundingBox())?.height).toBe(SEARCH_BAR_HEIGHT);
   });
 });

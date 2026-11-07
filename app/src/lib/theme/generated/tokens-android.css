@@ -532,6 +532,7 @@
   --native-weight-books-heading: 500;
   --native-tracking-books-heading: 0.15px;
   --native-spacing-series-hero-cover: 112px;
+  --native-spacing-history-bar: 120px;
 }
 
 :root[data-platform="android"],

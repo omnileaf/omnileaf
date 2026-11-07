@@ -75,7 +75,7 @@
         aria-label={reached.label}
         max={reached.max}
         value={reached.value}
-        class="block-progress-compact inline-history-bar"
+        class={["block-progress-compact", look.bar]}
       />
     </span>
   </a>
