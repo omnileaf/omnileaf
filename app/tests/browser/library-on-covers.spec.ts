@@ -43,8 +43,24 @@ const BADGE_INSET = {
 } as const satisfies Record<ScreenSize, number>;
 
 const UNREAD_BADGES = {
-  android: { height: 24, minWidth: 24, padding: ["0px", "6px", "0px", "6px"] },
-  linux: { height: 22, minWidth: 0, padding: ["2px", "8px", "2px", "8px"] },
+  android: {
+    height: 24,
+    minWidth: 24,
+    fontSize: "12px",
+    padding: ["0px", "6px", "0px", "6px"],
+  },
+  androidPhone: {
+    height: 16,
+    minWidth: 16,
+    fontSize: "11px",
+    padding: ["0px", "4px", "0px", "4px"],
+  },
+  linux: {
+    height: 22,
+    minWidth: 0,
+    fontSize: "12px",
+    padding: ["2px", "8px", "2px", "8px"],
+  },
 } as const;
 
 const FIRST_TITLE = "Sample Series 0001";
@@ -181,11 +197,13 @@ test.describe("unread count", () => {
         },
       });
 
-      const expected = UNREAD_BADGES[platform];
-
-      test(`draws a cover's unread count as a ${String(expected.height)}px badge in 12px medium type`, async ({
+      test("draws a cover's unread count as a badge in medium type", async ({
         page,
       }) => {
+        const expected =
+          platform === "android" && screenSizeOf(page) === "phone"
+            ? UNREAD_BADGES.androidPhone
+            : UNREAD_BADGES[platform];
         await openWith(page, {});
         const badge = unreadBadge(seriesNamed(page, FIRST_TITLE), FIRST_UNREAD);
 
@@ -206,7 +224,7 @@ test.describe("unread count", () => {
 
         expect({ height: box.height, ...look }).toEqual({
           height: expected.height,
-          fontSize: "12px",
+          fontSize: expected.fontSize,
           fontWeight: "500",
           padding: expected.padding,
         });
