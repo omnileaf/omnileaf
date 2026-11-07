@@ -6,6 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent, SheetBar } from "#lib/components/ui/drawer/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
@@ -102,11 +103,15 @@
               ]
             : undefined}
       >
-        <SlidersHorizontal
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class={bar?.icon ?? "large:block-lg large:inline-lg"}
-        />
+        {#if isAndroidPhone}
+          <Icon name="sliders-horizontal" />
+        {:else}
+          <SlidersHorizontal
+            size={ICON_SIZE}
+            aria-hidden="true"
+            class={bar?.icon ?? "large:block-lg large:inline-lg"}
+          />
+        {/if}
         {#if !isMac}
           <span class={bar?.label ?? "hidden large:inline"}>
             {m.library_view()}

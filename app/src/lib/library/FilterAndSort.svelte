@@ -6,6 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { SheetBar } from "#lib/components/ui/drawer/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
@@ -159,11 +160,15 @@
               ]
             : undefined}
       >
-        <ListFilter
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class={bar?.icon ?? "large:block-lg large:inline-lg"}
-        />
+        {#if isAndroidPhone}
+          <Icon name="list-filter" />
+        {:else}
+          <ListFilter
+            size={ICON_SIZE}
+            aria-hidden="true"
+            class={bar?.icon ?? "large:block-lg large:inline-lg"}
+          />
+        {/if}
         {#if !isMac}
           <span class={bar?.label ?? "hidden large:inline"}>
             {m.library_filter()}

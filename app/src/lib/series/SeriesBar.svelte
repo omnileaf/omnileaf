@@ -69,6 +69,7 @@
     class={cn(
       "flex items-center justify-center gap-2xs rounded-full",
       barChip(platform, width.current),
+      isNative && "android:text-native-on-top-bar",
       !isNative && "ios:ps-sm ios:pe-md ios:inline-auto",
     )}
   >

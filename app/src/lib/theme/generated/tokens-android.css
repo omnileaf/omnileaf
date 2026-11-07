@@ -554,7 +554,7 @@
   --native-color-top-bar-scrolled: #e9f0e8;
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
-  --native-color-on-bar-button: #191d1a;
+  --native-color-on-bar-button: #58615a;
   --native-color-bar-badge: var(--color-danger-fill);
   --native-color-on-bar-badge: var(--color-on-danger);
   --native-color-tab-bar: #e9f0e8;
@@ -639,7 +639,7 @@
   --native-color-top-bar-scrolled: #141b17;
   --native-color-top-bar-scrolled-edge: transparent;
   --native-color-bar-button: transparent;
-  --native-color-on-bar-button: #e0e3df;
+  --native-color-on-bar-button: #a4aea5;
   --native-color-bar-badge: var(--color-danger-fill);
   --native-color-on-bar-badge: var(--color-on-danger);
   --native-color-tab-bar: #141b17;
@@ -709,7 +709,7 @@
   --native-color-button-destructive-hover: #811b1d14;
   --native-color-button-destructive-pressed: #811b1d1f;
   --native-color-on-top-bar: #1d2620;
-  --native-color-on-bar-button: #1d2620;
+  --native-color-on-bar-button: #3c453e;
   --native-color-tab-pill: #647a6b;
   --native-color-jump-current: #647a6b;
   --native-color-on-jump-current: #ffffff;
@@ -763,7 +763,7 @@
   --native-color-button-destructive-hover: #ff9f9914;
   --native-color-button-destructive-pressed: #ff9f991f;
   --native-color-on-top-bar: #ffffff;
-  --native-color-on-bar-button: #ffffff;
+  --native-color-on-bar-button: #b1bbb3;
   --native-color-tab-pill: #647a6b;
   --native-color-jump-current: #647a6b;
   --native-color-on-jump-current: #ffffff;
@@ -817,7 +817,7 @@
   --native-color-button-destructive-hover: #51000714;
   --native-color-button-destructive-pressed: #5100071f;
   --native-color-on-top-bar: #000000;
-  --native-color-on-bar-button: #000000;
+  --native-color-on-bar-button: #1d2620;
   --native-color-tab-pill: #42574a;
   --native-color-jump-current: #42574a;
   --native-color-on-jump-current: #ffffff;
@@ -871,7 +871,7 @@
   --native-color-button-destructive-hover: #ffdedb14;
   --native-color-button-destructive-pressed: #ffdedb1f;
   --native-color-on-top-bar: #ffffff;
-  --native-color-on-bar-button: #ffffff;
+  --native-color-on-bar-button: #dee8df;
   --native-color-tab-pill: #92a999;
   --native-color-jump-current: #92a999;
   --native-color-on-jump-current: #000000;
@@ -926,7 +926,7 @@
   --native-color-button-plain-pressed: color-mix(in srgb, var(--android-wallpaper-light-primary) 12%, transparent);
   --native-color-on-top-bar: var(--android-wallpaper-light-on-surface);
   --native-color-top-bar-scrolled: var(--android-wallpaper-light-surface-container);
-  --native-color-on-bar-button: var(--android-wallpaper-light-on-surface);
+  --native-color-on-bar-button: var(--android-wallpaper-light-on-surface-variant);
   --native-color-tab-bar: var(--android-wallpaper-light-surface-container);
   --native-color-tab-pill: var(--android-wallpaper-light-secondary-container);
   --native-color-jump-current: var(--android-wallpaper-light-secondary-container);
@@ -987,7 +987,7 @@
   --native-color-button-plain-pressed: color-mix(in srgb, var(--android-wallpaper-dark-primary) 12%, transparent);
   --native-color-on-top-bar: var(--android-wallpaper-dark-on-surface);
   --native-color-top-bar-scrolled: var(--android-wallpaper-dark-surface-container);
-  --native-color-on-bar-button: var(--android-wallpaper-dark-on-surface);
+  --native-color-on-bar-button: var(--android-wallpaper-dark-on-surface-variant);
   --native-color-tab-bar: var(--android-wallpaper-dark-surface-container);
   --native-color-tab-pill: var(--android-wallpaper-dark-secondary-container);
   --native-color-jump-current: var(--android-wallpaper-dark-secondary-container);
