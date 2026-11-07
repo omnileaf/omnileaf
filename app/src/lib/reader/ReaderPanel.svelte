@@ -20,6 +20,7 @@
     readerButton,
     readerIconSize,
   } from "./reader-bar.ts";
+  import { quickSettingLook } from "./quick-setting.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { type Spread, spreadPosition } from "./spreads.ts";
@@ -64,6 +65,7 @@
   const count = $derived(pages.length);
   const chrome = getReaderChrome();
   const floats = $derived(chrome.floats);
+  const quickLook = $derived(quickSettingLook(chrome.platform, chrome.width));
   let isDragged = $state(false);
   let isSliderFocused = $state(false);
   let isHovered = $state(false);
@@ -141,11 +143,7 @@
     <div
       role="group"
       aria-label={m.reader_quick_settings()}
-      class={floats
-        ? cn(READER_CAPSULE, "flex-wrap justify-center px-2xs max-inline-full")
-        : chrome.isCommandBar
-          ? "flex flex-wrap items-center justify-center gap-2xs large:hidden"
-          : "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"}
+      class={quickLook.group}
     >
       {@render quickSettings()}
     </div>
