@@ -1,4 +1,4 @@
-/// Tauri's dev-server proxy builds its own `reqwest` client, which panics on start-up when no rustls provider is installed.
+/// On mobile dev builds Tauri's dev-server proxy builds its own `reqwest` client, which panics when no rustls provider is installed.
 pub(crate) fn install_default() {
     rustls::crypto::ring::default_provider()
         .install_default()
@@ -19,5 +19,6 @@ mod tests {
     fn installing_twice_is_harmless() {
         install_default();
         install_default();
+        assert!(rustls::crypto::CryptoProvider::get_default().is_some());
     }
 }
