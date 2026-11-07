@@ -45,6 +45,10 @@
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
+  import Icon from "#lib/components/ui/icon/icon.svelte";
+  import type { IconName } from "#lib/icons/names.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+
   import type { Section } from "./sections";
 
   let {
@@ -60,6 +64,14 @@
     size: number;
     class?: ClassValue;
   } = $props();
+
+  const platform = currentPlatform();
+  const SECTION_ICONS: Record<Section, IconName> = {
+    library: "library",
+    browse: "compass",
+    history: "history",
+    settings: "settings",
+  };
 
   const HOLE = "stroke-icon-hole";
   const FILL_FADE =
@@ -159,17 +171,25 @@
   </g>
 {/snippet}
 
-<svg
-  aria-hidden="true"
-  width={size}
-  height={size}
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
-  class={className}
->
-  {@render shape(isSelected)}
-</svg>
+{#if platform === "android"}
+  <Icon
+    name={SECTION_ICONS[section]}
+    filled={isSelected}
+    class={cn("block-native-icon inline-native-icon", className)}
+  />
+{:else}
+  <svg
+    aria-hidden="true"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={className}
+  >
+    {@render shape(isSelected)}
+  </svg>
+{/if}
