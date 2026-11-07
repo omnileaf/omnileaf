@@ -6,7 +6,7 @@ import { hasTopTabBar, isPhone } from "./platform";
 
 export const NATIVE_TOP_BAR = {
   pageTitle:
-    "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar",
+    "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar android:text-native-bar-title android:leading-native-bar-title android:font-native-bar-title android:tracking-native-bar-title",
   largeTitle:
     "flex items-center text-native-large-title leading-native-large-title font-native-large-title tracking-native-large-title text-native-on-top-bar",
   barTitle:

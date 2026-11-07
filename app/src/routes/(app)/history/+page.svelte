@@ -205,13 +205,13 @@
         {...props}
         look="icon"
         aria-label={m.history_search()}
-        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed search-field:hidden"
+        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed android:block-native-button android:inline-native-button search-field:hidden"
         onclick={() => {
           void startSearching();
         }}
       >
         {#if platform === "android"}
-          <Icon name="search" size={ICON_SIZE} />
+          <Icon name="search" size={24} />
         {:else}
           <Search size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -232,13 +232,13 @@
         {...props}
         look="icon"
         aria-label={m.history_clear()}
-        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:block-pointer-button large:inline-pointer-button"
+        class="block-touch-target inline-touch-target hover:tint-hover active:tint-pressed large:block-pointer-button large:inline-pointer-button android:block-native-button android:inline-native-button"
         onclick={() => {
           void clear();
         }}
       >
         {#if platform === "android"}
-          <Icon name="eraser" size={ICON_SIZE} />
+          <Icon name="eraser" size={24} />
         {:else}
           <Eraser size={ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -256,11 +256,11 @@
           {...props}
           look="icon"
           aria-label={m.history_back()}
-          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
+          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed android:block-native-button android:inline-native-button"
           onclick={stopSearching}
         >
           {#if platform === "android"}
-            <Icon name="arrow-left" size={ICON_SIZE} />
+            <Icon name="arrow-left" size={24} />
           {:else}
             <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
           {/if}
@@ -282,6 +282,7 @@
     title={m.history_title()}
     showsLabel={screenshotMode.showsLabel}
     actions={headerActions}
+    largeTitle={platform !== "android"}
   />
 {/if}
 
