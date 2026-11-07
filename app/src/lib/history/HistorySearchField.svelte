@@ -3,6 +3,7 @@
   import type { ClassValue } from "svelte/elements";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
@@ -40,7 +41,11 @@
     className,
   ]}
 >
-  <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+  {#if platform === "android"}
+    <Icon name="search" size={ICON_SIZE} class="shrink-0" />
+  {:else}
+    <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+  {/if}
   <Input
     bind:ref={field}
     type="search"
@@ -72,7 +77,11 @@
           look="icon"
           class="shrink-0 bg-chip text-muted block-search-clear inline-search-clear"
         >
-          <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+          {#if platform === "android"}
+            <Icon name="x" size={CLEAR_ICON_SIZE} />
+          {:else}
+            <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+          {/if}
         </Button>
       {/snippet}
     </Tooltip>

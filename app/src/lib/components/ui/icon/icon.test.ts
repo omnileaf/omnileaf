@@ -101,3 +101,15 @@ test("lets a caller hide it with a class", async () => {
 
   expect(getComputedStyle(icon ?? document.body).display).toBe("none");
 });
+
+test("sets explicit size when size prop is provided", async () => {
+  const { container } = await render(Icon, {
+    name: "library",
+    size: 28,
+  });
+
+  const icon = container.querySelector<HTMLElement>("[data-icon]");
+
+  expect(icon?.style.width).toBe("28px");
+  expect(icon?.style.height).toBe("28px");
+});

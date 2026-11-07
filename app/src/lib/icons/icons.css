@@ -239,7 +239,7 @@
 }
 
 :root[data-platform="android"] [data-icon="chevron-down"] {
-  --icon: url("./material-symbols/arrow_drop_down.svg");
+  --icon: url("./material-symbols/keyboard_arrow_down.svg");
 }
 
 [data-icon="chevron-left"] {
