@@ -184,7 +184,7 @@
         class={[
           "flex shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-muted focus-visible:outline-2 focus-visible:outline-accent",
           android.isOn
-            ? "block-native-button inline-native-button"
+            ? "native-target block-native-button inline-native-button"
             : "block-pointer-button inline-pointer-button touch:block-touch-target touch:inline-touch-target",
           ios.isOn && "order-last",
         ]}
@@ -261,7 +261,8 @@
                   {...props}
                   look="icon"
                   class={[
-                    android.isOn && "block-native-button inline-native-button",
+                    android.isOn &&
+                      "native-target block-native-button inline-native-button",
                     ios.isOn && "block-native-button inline-native-button",
                   ]}
                   aria-label={m.library_tabs_more({ tab: tab.name })}

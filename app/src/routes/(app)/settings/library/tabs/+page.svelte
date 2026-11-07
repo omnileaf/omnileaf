@@ -42,7 +42,7 @@
   const NEW_CATEGORY_ICON_SIZE = 20;
   const ANDROID_NOTE = `${FLUSH_BLEED} px-lg pbs-2xs pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
   const ANDROID_NEW_CATEGORY =
-    "my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
+    "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
   const android = new AndroidPhone();
   const ios = new IosPhone();
 

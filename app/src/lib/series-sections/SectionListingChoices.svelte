@@ -48,7 +48,7 @@
 
 <div class="ms-auto flex flex-1 items-center justify-end gap-sm">
   <InputGroup
-    class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent"
+    class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent android:max-medium:block-native-target"
   >
     <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
     <Input
@@ -56,7 +56,7 @@
       aria-label={m.series_find_book()}
       placeholder={m.series_find_book()}
       value={search}
-      class="text-small text-foreground"
+      class="text-small text-foreground android:max-medium:-my-px android:max-medium:self-stretch"
       oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
         onSearch(event.currentTarget.value);
       }}
@@ -69,7 +69,7 @@
           {...props}
           look="outline"
           aria-label={m.series_sort({ order })}
-          class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button border-transparent bg-transparent px-md text-small font-medium block-pointer-button hover:bg-hover"
+          class="flex shrink-0 items-center justify-center gap-sm rounded-shadcn-button border-transparent bg-transparent px-md text-small font-medium block-pointer-button hover:bg-hover android:max-medium:native-target"
         >
           <ArrowDownUp size={ICON_SIZE} aria-hidden="true" />
           <span class="grid">
