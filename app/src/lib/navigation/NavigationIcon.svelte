@@ -72,6 +72,9 @@
     history: "history",
     settings: "settings",
   };
+  const iconSize = $derived(
+    platform === "android" ? (size === 22 ? 24 : size) : size,
+  );
 
   const HOLE = "stroke-icon-hole";
   const FILL_FADE =
@@ -175,7 +178,8 @@
   <Icon
     name={SECTION_ICONS[section]}
     filled={isSelected}
-    class={cn("block-native-icon inline-native-icon", className)}
+    size={iconSize}
+    class={className}
   />
 {:else}
   <svg
