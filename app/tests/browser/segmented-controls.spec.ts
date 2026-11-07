@@ -38,7 +38,7 @@ interface Segment {
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const PLATFORMS = {
   ios: { project: "webkit-phone", target: 44, screenWidth: 390 },
-  android: { project: "chromium-phone", target: 48, screenWidth: 390 },
+  android: { project: "chromium-phone", target: 48, screenWidth: 320 },
   linux: { project: "chromium-desktop", target: 40, screenWidth: 1280 },
 } as const satisfies Record<
   string,
@@ -50,6 +50,7 @@ const HEIGHT = 844;
 const CHOICES_STEP = 3;
 const ONE_ROW_WIDTHS: readonly number[] = [390, 1440];
 const GLYPH_OVERSHOOT = 4;
+const HALF_PIXEL = 0.5;
 const SAME_WIDTH = 1;
 const SERIES = sampleSeries(12);
 const LARGEST_TEXT_SCALE = 2;
@@ -158,54 +159,70 @@ async function scaleText(page: Page, scale: number): Promise<void> {
 }
 
 function segmentsOf(group: Locator): Promise<Segment[]> {
-  return group.evaluate((track, overshoot) => {
-    track.scrollIntoView({ block: "center" });
-    const origin = track.getBoundingClientRect();
-    const tappedHeight = (segment: Element, box: DOMRect): number => {
-      const x = box.left + box.width / 2;
-      let tapped = 0;
-      for (let y = Math.floor(box.top) - 32; y < box.bottom + 32; y += 1) {
-        if (
-          document.elementFromPoint(x, y)?.closest("[role=radio]") === segment
-        ) {
-          tapped += 1;
+  return group.evaluate(
+    (track, { overshoot, halfPixel }) => {
+      track.scrollIntoView({ block: "center" });
+      const origin = track.getBoundingClientRect();
+      const tappedHeight = (segment: Element, box: DOMRect): number => {
+        const x = box.left + box.width / 2;
+        let tapped = 0;
+        for (let y = Math.floor(box.top) - 32; y < box.bottom + 32; y += 1) {
+          if (
+            document.elementFromPoint(x, y)?.closest("[role=radio]") === segment
+          ) {
+            tapped += 1;
+          }
         }
-      }
-      return tapped;
-    };
-    return [...track.querySelectorAll("[role=radio]")].map((segment) => {
-      const box = segment.getBoundingClientRect();
-      const isWiderThanItself = (element: Element): boolean =>
-        element.scrollWidth > element.clientWidth;
-      const cutOff = [
-        ...(isWiderThanItself(segment) ? [segment] : []),
-        ...[...segment.querySelectorAll("*")].filter(
-          (element) =>
-            element.closest("[aria-hidden=true]") === null &&
-            (isWiderThanItself(element) ||
-              element.scrollHeight - element.clientHeight > overshoot),
-        ),
-      ].map((element) => element.outerHTML.slice(0, 120));
-      return {
-        x: box.left - origin.left,
-        y: box.top - origin.top,
-        width: box.width,
-        height: box.height,
-        target: tappedHeight(segment, box),
-        hasIcon: [...segment.querySelectorAll("svg")].some(
-          (icon) => icon.getBoundingClientRect().width > 0,
-        ),
-        cutOff,
+        return tapped;
       };
-    });
-  }, GLYPH_OVERSHOOT);
+      return [...track.querySelectorAll("[role=radio]")].map((segment) => {
+        const box = segment.getBoundingClientRect();
+        const isWiderThanItself = (element: Element): boolean =>
+          element.scrollWidth > element.clientWidth;
+        const holdsItsContent = [...segment.querySelectorAll("*")].every(
+          (element) => {
+            const inner = element.getBoundingClientRect();
+            return (
+              inner.left >= box.left - halfPixel &&
+              inner.right <= box.right + halfPixel
+            );
+          },
+        );
+        const cutOff = [
+          ...(holdsItsContent ? [] : [segment]),
+          ...[...segment.querySelectorAll("*")].filter(
+            (element) =>
+              element.closest("[aria-hidden=true]") === null &&
+              (isWiderThanItself(element) ||
+                element.scrollHeight - element.clientHeight > overshoot),
+          ),
+        ].map((element) => element.outerHTML.slice(0, 120));
+        return {
+          x: box.left - origin.left,
+          y: box.top - origin.top,
+          width: box.width,
+          height: box.height,
+          target: tappedHeight(segment, box),
+          hasIcon: [...segment.querySelectorAll("svg")].some(
+            (icon) => icon.getBoundingClientRect().width > 0,
+          ),
+          cutOff,
+        };
+      });
+    },
+    { overshoot: GLYPH_OVERSHOOT, halfPixel: HALF_PIXEL },
+  );
 }
 
 function trackSpill(group: Locator): Promise<number> {
   return group.evaluate((track) => {
     const box = track.getBoundingClientRect();
+    const segments = [...track.querySelectorAll("[role=radio]")].map(
+      (segment) => segment.getBoundingClientRect(),
+    );
     return Math.max(
-      track.scrollWidth - track.clientWidth,
+      ...segments.map((segment) => segment.right - box.right),
+      ...segments.map((segment) => box.left - segment.left),
       box.right - document.documentElement.clientWidth,
       -box.left,
     );
@@ -357,15 +374,25 @@ async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
   ];
 }
 
-function displayGroup(page: Page): Locator {
+function wrappingGroup(page: Page, platform: string): Locator {
   return page
     .getByRole("dialog", { name: english.library_view_options })
-    .getByRole("radiogroup", { name: english.library_view_display });
+    .getByRole("radiogroup", { name: wrappingGroupName(platform) });
 }
 
-function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
+function wrappingGroupName(platform: string): string {
+  return platform === "android"
+    ? english.library_group_by
+    : english.library_view_display;
+}
+
+function rowsInFirstFrame(
+  page: Page,
+  platform: string,
+  isFolded: boolean,
+): Promise<number> {
   return page.evaluate(
-    ({ opener, isFolded }) =>
+    ({ opener, groupName, isFolded }) =>
       new Promise<number>((resolve) => {
         const button = isFolded
           ? [...document.querySelectorAll<HTMLElement>("[role=menuitem]")].find(
@@ -376,10 +403,17 @@ function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
             );
         button?.click();
         requestAnimationFrame(() => {
-          const segments =
-            document
-              .querySelector("[role=dialog][data-state=open] [role=radiogroup]")
-              ?.querySelectorAll("[role=radio]") ?? [];
+          const group = [
+            ...document.querySelectorAll(
+              "[role=dialog][data-state=open] [role=radiogroup]",
+            ),
+          ].find(
+            (candidate) =>
+              document
+                .getElementById(candidate.getAttribute("aria-labelledby") ?? "")
+                ?.textContent.trim() === groupName,
+          );
+          const segments = group?.querySelectorAll("[role=radio]") ?? [];
           resolve(
             new Set(
               [...segments].map((segment) =>
@@ -389,7 +423,11 @@ function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
           );
         });
       }),
-    { opener: english.library_view_options, isFolded },
+    {
+      opener: english.library_view_options,
+      groupName: wrappingGroupName(platform),
+      isFolded,
+    },
   );
 }
 
@@ -419,11 +457,13 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         await openLibraryMore(page);
       }
 
-      const firstFrame = await rowsInFirstFrame(page, folded);
+      const firstFrame = await rowsInFirstFrame(page, platform, folded);
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
-      const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
+      const settled = rowsOf(
+        await segmentsOf(wrappingGroup(page, platform)),
+      ).length;
 
       expect(settled).toBeGreaterThan(1);
       expect(firstFrame).toBe(settled);
@@ -444,7 +484,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
-      const rows = rowsOf(await segmentsOf(displayGroup(page)));
+      const rows = rowsOf(await segmentsOf(wrappingGroup(page, platform)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
       const wrappedHeight = await page
         .getByRole("dialog", { name: english.library_view_options })
