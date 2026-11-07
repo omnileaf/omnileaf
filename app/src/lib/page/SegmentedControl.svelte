@@ -19,6 +19,7 @@
     readonly labels: Record<Option, () => string>;
     readonly icons?: Record<Option, Component<LucideProps>> | undefined;
     readonly chosen: Option;
+    readonly disabledOptions?: readonly Option[];
     readonly labelledBy: string;
     readonly describedBy?: string | undefined;
     readonly size?: Size;
@@ -98,6 +99,7 @@
     labels,
     icons,
     chosen,
+    disabledOptions = [],
     labelledBy,
     describedBy,
     size = "regular",
@@ -197,8 +199,9 @@
   {#each options as option (option)}
     <RadioGroupItem
       value={option}
+      disabled={disabledOptions.includes(option)}
       class={[
-        "relative flex items-center justify-center transition-control",
+        "relative flex items-center justify-center transition-control data-disabled:pointer-events-none data-disabled:opacity-50",
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",
