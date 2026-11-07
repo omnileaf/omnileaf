@@ -1683,6 +1683,15 @@
   mask-image: linear-gradient(to right, black 65%, transparent);
 }
 
+@utility series-band-fade-down {
+  mask-image: linear-gradient(
+    to bottom,
+    black 32%,
+    rgb(0 0 0 / 0.25) 50%,
+    transparent
+  );
+}
+
 @utility reader-top-scrim {
   background-image: linear-gradient(
     to bottom,
