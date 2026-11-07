@@ -148,8 +148,8 @@
   --native-text-button-large: calc(1rem * var(--text-scale));
   --native-leading-button-large: 1.5;
   --native-tracking-button-large: 0.15px;
-  --native-text-page-title: calc(1.375rem * var(--text-scale));
-  --native-leading-page-title: calc(28 / 22);
+  --native-text-page-title: calc(1.5rem * var(--text-scale));
+  --native-leading-page-title: calc(32 / 24);
   --native-weight-page-title: 400;
   --native-tracking-page-title: 0;
   --native-text-large-title: calc(1.5rem * var(--text-scale));
