@@ -16,7 +16,7 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 const SERIES_COUNT = 12;
 const NAVIGATION_BAR_HEIGHT = 64;
 const TOP_APP_BAR_HEIGHT = 64;
-const STATE_LAYER = /\/ 0\.08\)/;
+const STATE_LAYER = /0\.08\)/;
 
 testOnlyInItsWebview("android");
 test.use({
