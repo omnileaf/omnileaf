@@ -92,7 +92,7 @@
   <Card
     role="region"
     aria-labelledby={titleId}
-    class="grid grid-cols-details items-center gap-x-lg gap-y-xs p-lg shadow-none"
+    class="grid grid-cols-details items-center gap-x-lg gap-y-xs p-lg shadow-none android:max-medium:border-0 android:max-medium:bg-chip!"
   >
     <span
       data-continue-cover
@@ -103,8 +103,13 @@
       {/if}
       <CoverImage {cover} {coverUrl} />
     </span>
-    <CardTitle id={titleId} class="text-body">{heading(next)}</CardTitle>
-    <CardDescription>
+    <CardTitle
+      id={titleId}
+      class="text-body max-medium:text-native-continue-title/native-continue-title max-medium:font-native-continue-title max-medium:tracking-native-continue-title"
+    >
+      {heading(next)}
+    </CardTitle>
+    <CardDescription class="android:max-medium:tracking-native-row-subtitle">
       {next === null ? where(next) : withTimeLeft(where(next))}
     </CardDescription>
     <Progress
@@ -112,7 +117,10 @@
       max={overview.bookCount}
       value={overview.readCount}
     />
-    <p id={countId} class="text-small text-muted tabular-nums">
+    <p
+      id={countId}
+      class="text-small text-muted tabular-nums android:max-medium:tracking-native-row-subtitle"
+    >
       {m.series_read_count({
         read: overview.readCount,
         total: overview.bookCount,
