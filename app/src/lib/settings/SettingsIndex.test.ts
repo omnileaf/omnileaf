@@ -3,6 +3,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SettingsIndex from "./SettingsIndex.svelte";
@@ -130,6 +131,23 @@ test("sets each Android group heading 44px tall with 16px above and 8px below", 
   expect(heading.getBoundingClientRect().height).toBeCloseTo(44, 0);
   expect(style.paddingTop).toBe("16px");
   expect(style.paddingBottom).toBe("8px");
+});
+
+test("sets each Android group heading in one 14px medium accent type", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const heading = screen.getByRole("heading", { name: "App" }).element();
+  const style = getComputedStyle(heading);
+
+  expect([style.fontSize, style.lineHeight, style.fontWeight]).toEqual([
+    "14px",
+    "20px",
+    "500",
+  ]);
+  expect(style.color).toBe(resolvedColour("--color-accent", "color"));
+  expect(heading.classList.contains("text-small")).toBe(false);
+  expect(heading.classList.contains("font-semibold")).toBe(false);
 });
 
 test("heads About on Android only", async () => {

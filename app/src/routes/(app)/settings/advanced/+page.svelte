@@ -62,6 +62,7 @@
       {
         route: "/(app)/settings/advanced/animations",
         icon: MoveVertical,
+        iconName: "move-vertical",
         label: m.animations_title(),
         summary: animationsSummary,
       },

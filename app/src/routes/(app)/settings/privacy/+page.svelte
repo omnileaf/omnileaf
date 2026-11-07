@@ -77,6 +77,7 @@
       {
         route: "/(app)/settings/privacy/screenshot-mode",
         icon: ScanEye,
+        iconName: "scan-eye",
         label: m.screenshot_mode_title(),
         summary: screenshotModeSummary(
           screenshotMode.activity,
@@ -86,6 +87,7 @@
       {
         route: "/(app)/settings/privacy/permissions",
         icon: ShieldCheck,
+        iconName: "shield-check",
         label: m.permissions_title(),
         summary: permissionsSummary(data.linkedFolders),
       },
