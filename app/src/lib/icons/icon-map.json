@@ -140,6 +140,10 @@
     "lucide": "clock",
     "material": "schedule"
   },
+  "code": {
+    "lucide": "code",
+    "material": "code"
+  },
   "columns-2": {
     "framework7": "square_split_2x1",
     "lucide": "columns-2",
