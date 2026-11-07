@@ -145,9 +145,10 @@ function testReducingMotion(): void {
 interface IconMoveScreens {
   readonly belowWidth: number;
   readonly where: string;
+  readonly icon: string;
 }
 
-function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
+function testMovingIcons({ belowWidth, where, icon }: IconMoveScreens): void {
   for (const { label, startFrom, move } of ICON_MOVES) {
     test(`moves the ${label} icon as it becomes selected`, async ({ page }) => {
       test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
@@ -165,17 +166,21 @@ function testMovingIcons({ belowWidth, where }: IconMoveScreens): void {
     });
   }
 
-  testKeepingTheIconStill({ belowWidth, where });
+  testKeepingTheIconStill({ belowWidth, where, icon });
 }
 
-function testKeepingTheIconStill({ belowWidth, where }: IconMoveScreens): void {
+function testKeepingTheIconStill({
+  belowWidth,
+  where,
+  icon,
+}: IconMoveScreens): void {
   test("keeps the icon still while the section stays the same", async ({
     page,
   }) => {
     test.skip(viewportOf(page).width >= belowWidth, `${where} only`);
     await page.goto("/settings");
-    const icon = tab(page, "Settings").locator("svg, [data-icon]");
-    await settle(icon);
+    const settingsIcon = tab(page, "Settings").locator(icon);
+    await settle(settingsIcon);
 
     await page.getByRole("main").getByRole("link", { name: "About" }).click();
     await expect(
@@ -183,7 +188,7 @@ function testKeepingTheIconStill({ belowWidth, where }: IconMoveScreens): void {
     ).toBeVisible();
 
     expect(
-      await icon.evaluate(
+      await settingsIcon.evaluate(
         (element) => element.getAnimations({ subtree: true }).length,
       ),
     ).toBe(0);
@@ -296,6 +301,28 @@ test.describe("on Android", () => {
   testKeepingTheIconStill({
     belowWidth: EXPANDED_MIN_WIDTH,
     where: "bar and rail",
+    icon: "[data-icon]",
+  });
+
+  test("starts no animation on the icon when the tab becomes selected", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await settle(navigation(page));
+    const historyIcon = tab(page, "History").locator("[data-icon]");
+    const started = await historyIcon.evaluateHandle((element) => {
+      const log: string[] = [];
+      element.addEventListener("animationstart", (event) => {
+        if (event instanceof AnimationEvent) {
+          log.push(event.animationName);
+        }
+      });
+      return log;
+    });
+
+    await openTabAndSettle(page, "History");
+
+    expect(await started.jsonValue()).toEqual([]);
   });
 
   test("fills only the selected tab's icon", async ({ page }) => {
@@ -411,7 +438,11 @@ test.describe("on iOS", () => {
     expect(fadingProperties).not.toContain("opacity");
   });
 
-  testMovingIcons({ belowWidth: MEDIUM_MIN_WIDTH, where: "phones" });
+  testMovingIcons({
+    belowWidth: MEDIUM_MIN_WIDTH,
+    where: "phones",
+    icon: "svg",
+  });
   testCrossfadingTheFill(MEDIUM_MIN_WIDTH);
   testReducingMotion();
 });
