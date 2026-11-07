@@ -14,7 +14,10 @@
   } from "#lib/components/ui/alert/index.ts";
   import type { BookDamage, OpenedBook, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemActionGroup } from "#lib/page/problem-look.ts";
+  import {
+    bookProblemLook,
+    problemActionGroup,
+  } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -44,6 +47,7 @@
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));
+  const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -65,10 +69,10 @@
     }}
   />
   <div
-    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl"
+    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl android:max-medium:px-lg"
   >
     <section class="flex flex-col gap-lg inline-full max-inline-damaged-book">
-      <ProblemHeading icon={FileExclamationPoint} {platform}>
+      <ProblemHeading icon={FileExclamationPoint} {platform} {look}>
         {m.reader_damaged_title({ title: book.title })}
       </ProblemHeading>
       <p class={["text-body expanded:text-small", PROBLEM_TEXT[layout]]}>
@@ -78,18 +82,20 @@
         })}
       </p>
       <Alert
-        tone="plain"
+        tone={look.noticeTone}
         icon={TriangleAlert}
         iconName="triangle-alert"
         role="alert"
       >
-        <AlertTitle class="text-small font-semibold">
+        <AlertTitle
+          class="text-small font-semibold android:max-medium:font-medium"
+        >
           {m.reader_damaged_ends_early({
             first: readable + 1,
             last: damage.promisedPages,
           })}
         </AlertTitle>
-        <AlertDescription class="text-small text-muted">
+        <AlertDescription class="text-small">
           {m.reader_damaged_ends_early_body()}
         </AlertDescription>
       </Alert>

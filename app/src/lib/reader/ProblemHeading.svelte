@@ -5,19 +5,24 @@
   import { EmptyMedia } from "#lib/components/ui/empty/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemLook } from "#lib/page/problem-look.ts";
+  import type { ProblemLook } from "#lib/page/problem-look.ts";
 
   import { PROBLEM_HEAD, problemLayout } from "./problem-heading.ts";
 
   let {
     icon: Icon,
     platform,
+    look,
     children,
-  }: { icon: typeof FileX; platform: Platform; children: Snippet } = $props();
+  }: {
+    icon: typeof FileX;
+    platform: Platform;
+    look: ProblemLook;
+    children: Snippet;
+  } = $props();
 
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));
-  const look = $derived(problemLook(platform));
 </script>
 
 <div class={PROBLEM_HEAD[layout]}>
