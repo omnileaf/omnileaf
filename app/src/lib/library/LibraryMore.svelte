@@ -84,18 +84,30 @@
   <DropdownMenuContent to="main" align="end">
     {#if folded !== undefined}
       <DropdownMenuItem onSelect={folded.onSortAndFilter}>
-        <ListFilter size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="list-filter" size={ITEM_ICON_SIZE} />
+        {:else}
+          <ListFilter size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {/if}
         {folded.filtersCount === 0
           ? m.library_filter_and_sort()
           : m.library_filter_and_sort_filtered({ count: folded.filtersCount })}
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={folded.onViewOptions}>
-        <SlidersHorizontal size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="sliders-horizontal" size={ITEM_ICON_SIZE} />
+        {:else}
+          <SlidersHorizontal size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {/if}
         {m.library_view_options()}
       </DropdownMenuItem>
     {/if}
     <DropdownMenuItem {onSelect}>
-      <SquareCheck size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {#if platform === "android"}
+        <Icon name="square-check" size={ITEM_ICON_SIZE} />
+      {:else}
+        <SquareCheck size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {/if}
       {m.library_select_series()}
     </DropdownMenuItem>
     <DropdownMenuItem
@@ -103,7 +115,11 @@
         void goto(resolve("/(app)/settings/library/tabs"));
       }}
     >
-      <Pencil size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {#if platform === "android"}
+        <Icon name="pencil" size={ITEM_ICON_SIZE} />
+      {:else}
+        <Pencil size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {/if}
       {m.library_edit_categories()}
     </DropdownMenuItem>
     {#if keepsLabels}
@@ -112,13 +128,21 @@
           void goto(resolve("/(app)/settings/library/tags"));
         }}
       >
-        <Tags size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="tags" size={ITEM_ICON_SIZE} />
+        {:else}
+          <Tags size={ITEM_ICON_SIZE} aria-hidden="true" />
+        {/if}
         {m.manage_tags_title()}
       </DropdownMenuItem>
     {/if}
     <DropdownMenuSeparator />
     <DropdownMenuItem onSelect={openLibrarySettings}>
-      <Settings size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {#if platform === "android"}
+        <Icon name="settings" size={ITEM_ICON_SIZE} />
+      {:else}
+        <Settings size={ITEM_ICON_SIZE} aria-hidden="true" />
+      {/if}
       {m.library_settings()}
     </DropdownMenuItem>
   </DropdownMenuContent>
