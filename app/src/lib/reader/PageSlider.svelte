@@ -47,7 +47,8 @@
     return kept;
   }
 
-  const look = pageSliderLook(getReaderChrome().platform);
+  const chrome = getReaderChrome();
+  const look = $derived(pageSliderLook(chrome.platform, chrome.width));
   const progress = $derived(count > 1 ? shown / (count - 1) : 0);
 </script>
 
