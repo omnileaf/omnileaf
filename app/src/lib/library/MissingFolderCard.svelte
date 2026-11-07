@@ -51,7 +51,12 @@
     onHide,
   })}
   <div role="status">
-    <Alert tone="warning" icon={TriangleAlert} class="rounded-card">
+    <Alert
+      tone="warning"
+      icon={TriangleAlert}
+      iconName="triangle-alert"
+      class="rounded-card"
+    >
       <AlertTitle>{content.title}</AlertTitle>
       <AlertDismiss
         label={m.notice_dismiss()}

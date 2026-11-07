@@ -1,7 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
 const LONG_PRESS_MS = 600;
@@ -13,6 +19,8 @@ const AWAY = sampleSeries(AWAY_COUNT).map((series) => ({
   unreadCount: 3,
   isConnected: false,
 }));
+const DISMISS_SIZE = 40;
+const TEXT_START = 56;
 const FOLDER_ID = "5a4d1e00-0000-4000-8002-000000000002";
 
 let missing: MissingFolder[] = [];
@@ -88,6 +96,36 @@ test.describe(
         "border-top-left-radius",
         "12px",
       );
+    });
+
+    test("draws the card in the warning colour with a 24px icon and a 40px dismiss", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/");
+      const card = page.getByRole("status").filter({
+        hasText: "Comics isn’t there",
+      });
+      const alert = card.locator("[data-slot=alert]");
+      const icon = alert.locator('[data-icon="triangle-alert"]');
+      const dismiss = card.getByRole("button", { name: "Dismiss" });
+
+      await expect(alert).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--warning-soft"),
+      );
+      await expect(alert).toHaveCSS("padding", "16px");
+      await expect(icon).toHaveCSS("width", "24px");
+      await expect(icon).toHaveCSS("height", "24px");
+      await expect(dismiss.locator('[data-icon="x"]')).toHaveCSS(
+        "width",
+        "24px",
+      );
+      const box = await boxOf(dismiss);
+      expect([box.width, box.height]).toEqual([DISMISS_SIZE, DISMISS_SIZE]);
+      const title = await boxOf(card.getByText("Comics isn’t there"));
+      const cardBox = await boxOf(alert);
+      expect(title.x - cardBox.x).toBe(TEXT_START);
     });
 
     test("offers Show them anyway and Find the folder as text buttons, and a Dismiss", async ({

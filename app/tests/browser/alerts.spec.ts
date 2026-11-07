@@ -18,6 +18,7 @@ const CORNER_RADIUS = 10;
 const BLOCK_PADDING = 12;
 const INLINE_PADDING = 16;
 const TOUCH_TARGET = 48;
+const DISMISS_SIZE = 40;
 
 const SAMPLE_COMICS = {
   id: "2",
@@ -45,6 +46,7 @@ interface Place {
   readonly hasDescription: boolean;
   readonly hasActions: boolean;
   readonly hasButtons: boolean;
+  readonly hasDismiss: boolean;
   readonly show: (page: Page) => Promise<Locator>;
 }
 
@@ -75,6 +77,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: false,
     hasButtons: true,
+    hasDismiss: true,
     show: async (page) => {
       await page.goto("/settings/library");
       await page
@@ -94,6 +97,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: true,
     hasButtons: true,
+    hasDismiss: false,
     show: async (page) => {
       await rescanSampleComics(page);
       return alertIn(page.getByRole("main"), "looks empty");
@@ -114,6 +118,7 @@ const PLACES: readonly Place[] = [
     hasDescription: true,
     hasActions: true,
     hasButtons: true,
+    hasDismiss: false,
     show: async (page) => {
       await rescanSampleComics(page);
       await page.getByRole("button", { name: "Remove its books" }).click();
@@ -138,6 +143,7 @@ const PLACES: readonly Place[] = [
     hasDescription: false,
     hasActions: false,
     hasButtons: false,
+    hasDismiss: false,
     show: async (page) => {
       await page.goto("/settings/about");
       await page.getByRole("button", { name: "Copy version details" }).click();
@@ -163,6 +169,7 @@ const PLACES: readonly Place[] = [
     hasDescription: false,
     hasActions: false,
     hasButtons: false,
+    hasDismiss: false,
     show: async (page) => {
       await page.goto("/");
       const prompt = page.getByRole("alertdialog");
@@ -281,17 +288,26 @@ for (const place of PLACES) {
         "phones only",
       );
 
-      test("keeps its buttons 48px tall", async ({ page }) => {
+      test("keeps its buttons 48px tall and its dismiss 40px", async ({
+        page,
+      }) => {
         const shown = await shownAlert(page, place);
 
         const buttons = await shown.alert.getByRole("button").all();
         const heights = await Promise.all(
-          buttons.map(async (button) => (await boxOf(button)).height),
+          buttons.map(async (button) => ({
+            isDismiss:
+              (await button.getAttribute("data-alert-dismiss")) !== null,
+            height: (await boxOf(button)).height,
+          })),
         );
 
         expect(heights.length).toBeGreaterThan(0);
-        for (const height of heights) {
-          expect(height).toBe(TOUCH_TARGET);
+        if (place.hasDismiss) {
+          expect(heights.some(({ isDismiss }) => isDismiss)).toBe(true);
+        }
+        for (const { isDismiss, height } of heights) {
+          expect(height).toBe(isDismiss ? DISMISS_SIZE : TOUCH_TARGET);
         }
       });
     });
