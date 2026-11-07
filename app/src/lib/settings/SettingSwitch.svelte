@@ -12,12 +12,13 @@
 
   interface Props {
     readonly label: string;
-    readonly description?: string;
+    readonly description?: string | undefined;
     readonly isOn: boolean;
     readonly onToggle: () => void;
     readonly class?: ClassValue;
     readonly bleeds?: boolean;
     readonly grouped?: boolean;
+    readonly disabled?: boolean;
   }
 
   let {
@@ -28,6 +29,7 @@
     class: className,
     bleeds = false,
     grouped = false,
+    disabled = false,
   }: Props = $props();
 
   const ROW =
@@ -68,6 +70,7 @@
     <SettingWords {id} {label} {description} />
     <Switch
       bind:checked={() => isOn, onToggle}
+      {disabled}
       aria-labelledby="{id}-label"
       aria-describedby={description === undefined
         ? undefined
@@ -78,11 +81,12 @@
 {:else}
   <Switch
     bind:checked={() => isOn, onToggle}
+    {disabled}
     aria-labelledby="{id}-label"
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[rowLook, ROW_FOCUS_RING, className]}
+    class={[rowLook, ROW_FOCUS_RING, disabled && "text-muted", className]}
   >
     <SettingWords {id} {label} {description} {look} />
   </Switch>
