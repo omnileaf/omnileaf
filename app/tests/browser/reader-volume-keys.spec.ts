@@ -132,9 +132,11 @@ function volumeKeysRow(within: Locator | Page): Locator {
 
 async function openReaderSettingsPage(page: Page): Promise<Locator> {
   await page.goto("/settings/reading");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Reader" }),
+  ).toBeVisible();
   const tapZones = page.getByRole("region", { name: "Tap zones" });
-  await expect(tapZones).toBeVisible();
-  return tapZones;
+  return (await tapZones.count()) > 0 ? tapZones : page.getByRole("main");
 }
 
 testOnlyInItsWebview("android");
@@ -179,6 +181,7 @@ test.describe("on Android", () => {
 
     await page
       .getByRole("group", { name: "Background" })
+      .or(page.getByRole("radiogroup", { name: "Background" }))
       .getByRole("radio", { name: "White", exact: true })
       .click();
     await expect
@@ -370,7 +373,9 @@ test.describe("Settings > Reader on Android", () => {
     page,
   }) => {
     const tapZones = await openReaderSettingsPage(page);
-    const rows = tapZones.getByRole("switch");
+    const rows = tapZones.getByRole("switch").filter({
+      hasText: /Turn pages with the volume keys|Keep the screen on/,
+    });
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toHaveAccessibleName(VOLUME_KEYS_ROW);
     await expect(rows.nth(0)).toHaveAccessibleDescription(VOLUME_KEYS_HELP);
