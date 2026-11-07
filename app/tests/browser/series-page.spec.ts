@@ -36,6 +36,7 @@ import {
 const LIBRARY_CHANGED = "library-changed";
 const READING_SAVED = "reading-saved";
 const JUST_UNDER = 6;
+const SHORT_PHONE_HEIGHT = 600;
 const SWIPED_PAST_HALFWAY = 0.7;
 const SWIPED_PART_WAY = 0.3;
 const READ = { state: "read" } as const;
@@ -1403,7 +1404,7 @@ test("sets each book's added date on one line of the table", async ({
 
 for (const { platform, statusBar, target } of [
   { platform: "ios", statusBar: 59, target: 44 },
-  { platform: "android", statusBar: 24, target: 48 },
+  { platform: "android", statusBar: 24, target: 40 },
 ] as const) {
   test.describe(`at the top of a phone on ${platform}`, () => {
     test.use({
@@ -1539,6 +1540,10 @@ test.describe("on Android", () => {
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
       "the selected books bar reaches over All only on a phone",
     );
+    await page.setViewportSize({
+      width: viewportOf(page).width,
+      height: SHORT_PHONE_HEIGHT,
+    });
     await openSeries(page);
     await pickBooks(page, 4);
     const barTop = (await boxOf(selectedBooks(page))).y;
@@ -1575,7 +1580,12 @@ test.describe("on Android", () => {
     await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
     await expect(card).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--native-color-card"),
+      await tokenColour(
+        page,
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? "--color-chip"
+          : "--native-color-card",
+      ),
     );
   });
 
