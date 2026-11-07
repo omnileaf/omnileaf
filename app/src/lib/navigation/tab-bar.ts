@@ -33,7 +33,7 @@ const NATIVE_TAB =
 
 const NATIVE_TABS = {
   cell: "max-medium:flex max-medium:flex-initial max-medium:inline-native-tab-cell",
-  currentTab: "max-medium:text-native-on-tab-current",
+  currentTab: "max-medium:text-native-on-tab-bar-current",
   otherTab: "max-medium:text-native-on-tab",
   icon: "max-medium:block-native-icon max-medium:inline-native-icon",
   currentIcon: "max-medium:text-native-on-tab-pill",
