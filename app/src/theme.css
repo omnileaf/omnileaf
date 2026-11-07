@@ -435,7 +435,7 @@
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
-  --android-inverse-primary: var(--primary);
+  --android-inverse-primary: var(--native-color-on-notice-action);
 }
 
 [data-platform="android"][data-contrast="medium"],
@@ -537,7 +537,7 @@
   --android-tonal: var(--android-palette-primary-container);
   --android-outline: var(--android-palette-outline);
   --android-secondary-text: var(--android-palette-on-surface-muted);
-  --android-inverse-primary: var(--primary);
+  --android-inverse-primary: var(--native-color-on-notice-action);
 }
 
 [data-platform="ios"],
