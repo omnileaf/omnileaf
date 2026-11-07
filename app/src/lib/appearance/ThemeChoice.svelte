@@ -3,9 +3,14 @@
   import type { ClassValue } from "svelte/elements";
 
   import { CHOICE_ROW } from "#lib/first-launch/choice-row.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
+  import {
+    FLUSH_BLEED,
+    FLUSH_HEADING,
+  } from "#lib/settings/android-flush-look.ts";
 
   import { THEME_PREFERENCES, type ThemePreference } from "./theme";
   import { getThemeSetting } from "./theme.svelte";
@@ -17,6 +22,13 @@
   } satisfies Record<ThemePreference, () => string>;
 
   const ICON_SIZE = 20;
+
+  const ANDROID_SETTINGS = {
+    section: FLUSH_BLEED,
+    title: FLUSH_HEADING,
+    hint: "px-lg text-native-row-subtitle/native-row-subtitle text-muted",
+    control: "mx-lg",
+  };
 
   type Placement = "settings" | "first-launch" | "setup-row";
 
@@ -61,7 +73,12 @@
     class?: ClassValue;
   } = $props();
 
-  const look = $derived(LOOKS[placement]);
+  const android = new AndroidPhone();
+  const look = $derived(
+    android.isOn && placement === "settings"
+      ? ANDROID_SETTINGS
+      : LOOKS[placement],
+  );
 
   const theme = getThemeSetting();
   const headingId = $props.id();
