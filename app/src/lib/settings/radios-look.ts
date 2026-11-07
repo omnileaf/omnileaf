@@ -1,7 +1,7 @@
 import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
-import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
 
+import { FLUSH_HEADING, FLUSH_LIST } from "./android-flush-look.ts";
 import { LIST_HEADING } from "./grouped-rows-look.ts";
 
 export interface RadiosLook {
@@ -37,8 +37,8 @@ const TODAYS_LOOK: RadiosLook = {
 };
 
 const ANDROID_PHONE_LOOK: RadiosLook = {
-  section: "-mx-page-start -me-page-end flex flex-col",
-  heading: `pbs-lg pbe-sm ps-lg text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`,
+  section: FLUSH_LIST,
+  heading: FLUSH_HEADING,
   group: "flex flex-col",
   row: `flex items-center gap-lg py-2xs ps-lg pe-xl text-start text-body transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed min-block-touch-target`,
   mark: "flex shrink-0 items-center justify-center rounded-full border-2 block-radio inline-radio",
@@ -46,7 +46,7 @@ const ANDROID_PHONE_LOOK: RadiosLook = {
   markOff: "border-control-edge",
   dot: ACCENT_DOT,
   words: "flex flex-col break-words min-inline-none",
-  label: "",
+  label: "tracking-native-row-title",
   hint: `text-muted ${ROW_SUBTITLE_TYPE}`,
 };
 
