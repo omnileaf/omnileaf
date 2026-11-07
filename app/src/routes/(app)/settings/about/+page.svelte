@@ -42,7 +42,7 @@
   const reportHint = $derived(
     isPointer(data.appInfo.platform)
       ? m.about_report_problem_hint_computer()
-      : look === "phone"
+      : look !== "pane"
         ? m.about_report_problem_hint_phone()
         : m.about_report_problem_hint_tablet(),
   );
