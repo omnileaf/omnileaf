@@ -1,13 +1,18 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import type { ProjectLink } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import AboutFailures from "./AboutFailures.svelte";
 import { LinkOpening, type OpenProjectLink } from "./link-opening.svelte";
 import ProjectLinkRows from "./ProjectLinkRows.svelte";
 import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 type OpenResult = Awaited<ReturnType<OpenProjectLink>>;
 
@@ -99,4 +104,19 @@ test("takes the failure down while it tries again, so a repeat is announced", as
   await sourceCode.click();
 
   await expect.poll(() => alert.element().textContent.trim()).toBe("");
+});
+
+test("draws the Android source code row with a Material icon and no Lucide glyph", async () => {
+  followCorePlatform("android");
+  const opening = new LinkOpening(() => Promise.resolve(OPENED));
+  await render(ProjectLinkRows, {
+    opening,
+    sourceCode: SOURCE_CODE,
+    look: "android",
+  });
+
+  const row = page.getByRole("button", { name: /^Source code/ }).element();
+
+  expect(row.querySelector("[data-icon=code]")).not.toBeNull();
+  expect(row.querySelectorAll("svg").length).toBe(1);
 });
