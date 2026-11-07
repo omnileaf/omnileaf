@@ -5,23 +5,24 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { Icon as MaterialIcon } from "#lib/components/ui/icon/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
 
   import { type AboutLook, type HintKind, ROW_ICON_SIZES } from "./look";
 
-  const LABELS = {
-    phone: "android:max-medium:font-regular",
-    pane: "desktop:text-callout",
-  } satisfies Record<AboutLook, string>;
+  const PANE_LABEL = "desktop:text-callout";
 
   let {
     icon: Icon,
+    iconName,
     label,
     hint,
     hintKind = "prose",
     look,
   }: {
     icon: Glyph;
+    iconName: IconName;
     label: string;
     hint: string;
     hintKind?: HintKind | undefined;
@@ -31,11 +32,16 @@
   const isAddress = $derived(hintKind === "address");
 </script>
 
-<ItemMedia aria-hidden="true" class="shrink-0">
-  <Icon size={ROW_ICON_SIZES[look]} />
-</ItemMedia>
+{#if look === "android"}
+  <MaterialIcon name={iconName} class="shrink-0" />
+{:else}
+  <ItemMedia aria-hidden="true" class="shrink-0">
+    <Icon size={ROW_ICON_SIZES[look]} />
+  </ItemMedia>
+{/if}
 <ItemContent>
-  <ItemTitle class={LABELS[look]}>{label}</ItemTitle>
+  <ItemTitle class={look === "pane" ? PANE_LABEL : undefined}>{label}</ItemTitle
+  >
   <ItemDescription
     dir={isAddress ? "ltr" : undefined}
     translate={isAddress ? "no" : undefined}

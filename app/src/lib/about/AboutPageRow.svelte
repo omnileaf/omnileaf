@@ -3,6 +3,7 @@
 
   import { resolve } from "$app/paths";
   import { Item } from "#lib/components/ui/item/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import type { SettingsPage } from "#lib/settings/sections.ts";
 
@@ -12,12 +13,14 @@
   let {
     route,
     icon,
+    iconName,
     label,
     hint,
     look,
   }: {
     route: SettingsPage;
     icon: Glyph;
+    iconName: IconName;
     label: string;
     hint: string;
     look: AboutLook;
@@ -28,7 +31,7 @@
   <Item look={ROW_LOOKS[look]}>
     {#snippet child({ props })}
       <a href={resolve(route)} {...props}>
-        <RowText {icon} {label} {hint} {look} />
+        <RowText {icon} {iconName} {label} {hint} {look} />
         <ChevronRight
           size={ROW_ICON_SIZES[look]}
           class="shrink-0 text-muted rtl:-scale-x-100 android:max-medium:hidden"

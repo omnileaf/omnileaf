@@ -14,8 +14,11 @@
 
   const PREVIEW_SIZE = 3;
 
+  const PHONE_ROW = "gap-sm ps-lg pe-md min-block-touch-target";
+
   const ROWS = {
-    phone: "gap-sm ps-lg pe-md min-block-touch-target",
+    phone: PHONE_ROW,
+    android: PHONE_ROW,
     pane: "gap-md ps-list-row pe-md text-label min-block-touch-target desktop:min-block-settings-row",
   } satisfies Record<AboutLook, string>;
 
