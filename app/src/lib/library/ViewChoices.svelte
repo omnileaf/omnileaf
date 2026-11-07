@@ -27,6 +27,7 @@
     withGroupBy,
     withItemCounts,
     withOnCovers,
+    viewDrawn,
     withStackedCovers,
   } from "./library-view";
 
@@ -52,6 +53,7 @@
   const isMaterial = $derived(
     phoneOf(currentPlatform(), width.current) === "android",
   );
+  const drawn = $derived(viewDrawn(view, isMaterial));
   const usesItemRow = $derived(isMaterial || look.itemRows);
   const headingClass = $derived(
     isMaterial ? ANDROID_FILTER_HEADING : look.heading,
@@ -62,7 +64,7 @@
   const pageId = `${layoutId}-page`;
   const canStackCovers = coverTileLook(currentPlatform()).stack !== null;
   const coversInARow = $derived(
-    view.display === "list" ? undefined : coversDrawn,
+    drawn.display === "list" ? undefined : coversDrawn,
   );
 </script>
 
@@ -74,13 +76,13 @@
     <div class={look.choice}>
       <DisplayChoice
         labelClass={look.itemLabel}
-        chosen={view.display}
+        chosen={drawn.display}
         onChoose={(display: LibraryDisplay) => {
           onChoose(withDisplay(view, display));
         }}
       />
     </div>
-    {#if view.display !== "list"}
+    {#if drawn.display !== "list"}
       <div class={look.choice}>
         <CoversPerRowChoice
           {view}
@@ -101,7 +103,7 @@
       <GroupByChoice
         labelClass={look.itemLabel}
         footnoteClass={look.footnote}
-        chosen={view.groupBy}
+        chosen={drawn.groupBy}
         onChoose={(grouping: LibraryGrouping) => {
           onChoose(withGroupBy(view, grouping));
         }}
