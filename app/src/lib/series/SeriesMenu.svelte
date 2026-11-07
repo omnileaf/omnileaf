@@ -9,6 +9,7 @@
   } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,10 +19,10 @@
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { barChip } from "./series-chip.ts";
+  import { type BarPlacement, menuChip } from "./series-chip.ts";
 
   const ICON_SIZE = 20;
   const ITEM_ICON_SIZE = 16;
@@ -32,8 +33,10 @@
     onLabel,
     onEditDetails,
     showFolder,
+    placement,
   }: {
     title: string;
+    placement: BarPlacement;
     onMarkAll: (mark: ReadMark) => Promise<void>;
     onLabel: (() => void) | undefined;
     onEditDetails: (() => void) | undefined;
@@ -45,6 +48,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
 </script>
 
 <DropdownMenu>
@@ -54,9 +60,13 @@
         {...props}
         look="icon"
         aria-label={m.series_book_more({ title })}
-        class={barChip(platform, width.current)}
+        class={menuChip(platform, width.current, placement)}
       >
-        <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+        {#if isAndroidPhone}
+          <Icon name="ellipsis" />
+        {:else}
+          <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
     {/snippet}
   </DropdownMenuTrigger>

@@ -19,6 +19,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   sidewaysOverflow,
+  targetOf,
   test,
   tokenColour,
   viewportOf,
@@ -36,6 +37,7 @@ import {
 const LIBRARY_CHANGED = "library-changed";
 const READING_SAVED = "reading-saved";
 const JUST_UNDER = 6;
+const SHORT_PHONE_HEIGHT = 600;
 const SWIPED_PAST_HALFWAY = 0.7;
 const SWIPED_PART_WAY = 0.3;
 const READ = { state: "read" } as const;
@@ -1401,9 +1403,9 @@ test("sets each book's added date on one line of the table", async ({
   expect((await boxOf(added)).height).toBeLessThanOrEqual(lineHeight);
 });
 
-for (const { platform, statusBar, target } of [
-  { platform: "ios", statusBar: 59, target: 44 },
-  { platform: "android", statusBar: 24, target: 48 },
+for (const { platform, statusBar, target, tapped } of [
+  { platform: "ios", statusBar: 59, target: 44, tapped: 44 },
+  { platform: "android", statusBar: 24, target: 40, tapped: 48 },
 ] as const) {
   test.describe(`at the top of a phone on ${platform}`, () => {
     test.use({
@@ -1460,6 +1462,10 @@ for (const { platform, statusBar, target } of [
       expect(Math.min(atRest.width, atRest.height)).toBeGreaterThanOrEqual(
         target,
       );
+      expect(await targetOf(back(page))).toMatchObject({
+        width: tapped,
+        height: tapped,
+      });
     });
 
     test("takes the title away again once larger text brings the page's title back out from under the bar", async ({
@@ -1539,6 +1545,10 @@ test.describe("on Android", () => {
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
       "the selected books bar reaches over All only on a phone",
     );
+    await page.setViewportSize({
+      width: viewportOf(page).width,
+      height: SHORT_PHONE_HEIGHT,
+    });
     await openSeries(page);
     await pickBooks(page, 4);
     const barTop = (await boxOf(selectedBooks(page))).y;

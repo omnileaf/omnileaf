@@ -14,7 +14,7 @@
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { barChip } from "./series-chip.ts";
+  import { backChip } from "./series-chip.ts";
   import SeriesMenu from "./SeriesMenu.svelte";
 
   const BACK_ICON_SIZE = 20;
@@ -43,6 +43,7 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(isPhone(platform, width.current));
+  const placement = $derived(isTitleUnderBar ? "folded" : "band");
   const hasTabsAtTop = $derived(hasTopTabBar(platform, width.current));
   const TODAYS_SCROLLED =
     "border-border bg-background ios:border-ios-separator ios:bg-ios-material ios:backdrop-blur-ios";
@@ -68,8 +69,7 @@
     aria-label={m.series_back_label()}
     class={cn(
       "flex items-center justify-center gap-2xs rounded-full",
-      barChip(platform, width.current),
-      isNative && "android:text-native-on-top-bar",
+      backChip(platform, width.current, placement),
       !isNative && "ios:ps-sm ios:pe-md ios:inline-auto",
     )}
   >
@@ -91,6 +91,13 @@
     {title}
   </span>
   {#if title !== undefined && onMarkAll !== undefined}
-    <SeriesMenu {title} {onMarkAll} {onLabel} {onEditDetails} {showFolder} />
+    <SeriesMenu
+      {title}
+      {onMarkAll}
+      {onLabel}
+      {onEditDetails}
+      {showFolder}
+      {placement}
+    />
   {/if}
 </header>
