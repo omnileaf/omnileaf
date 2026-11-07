@@ -1,9 +1,11 @@
 <script lang="ts">
   import { RefreshCw } from "@lucide/svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { LibraryFolder } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
   import { folderTitle } from "./folder-title";
   import { ACTION_ICON_SIZE } from "./icon-size";
   import type { Rescans } from "./rescans.svelte";
@@ -18,6 +20,9 @@
     rescans: Rescans;
     onFinished: () => void;
   } = $props();
+
+  const android = new AndroidPhone();
+  const spins = $derived(rescans.isRescanning(folder));
 
   async function rescan(): Promise<void> {
     await rescans.rescan(folder);
@@ -34,9 +39,13 @@
     void rescan();
   }}
 >
-  <RefreshCw
-    size={ACTION_ICON_SIZE}
-    aria-hidden="true"
-    class={[rescans.isRescanning(folder) && "motion-safe:animate-spin"]}
-  />
+  {#if android.isOn}
+    <Icon name="refresh-cw" class={[spins && "motion-safe:animate-spin"]} />
+  {:else}
+    <RefreshCw
+      size={ACTION_ICON_SIZE}
+      aria-hidden="true"
+      class={[spins && "motion-safe:animate-spin"]}
+    />
+  {/if}
 </RowActionButton>

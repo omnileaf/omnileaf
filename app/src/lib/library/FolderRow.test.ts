@@ -89,23 +89,39 @@ test("sets the title in 17 point regular type and the place in 15 point on an iP
   }).toEqual({ titleSize: "17px", titleWeight: "400", placeSize: "15px" });
 });
 
-test("keeps the icon tile and the shorter row on an iPad and an Android phone", async () => {
+test("keeps the icon tile and the shorter row on an iPad", async () => {
   await rowOn("ios", TABLET);
-  const onIpad = {
-    tile: getComputedStyle(media()).backgroundColor,
-    height: item().getBoundingClientRect().height,
-  };
-  document.body.replaceChildren();
-  await rowOn("android", PHONE);
-  const onAndroid = {
-    tile: getComputedStyle(media()).backgroundColor,
-    height: item().getBoundingClientRect().height,
-  };
 
-  for (const drawn of [onIpad, onAndroid]) {
-    expect(drawn.tile).not.toBe("rgba(0, 0, 0, 0)");
-    expect(drawn.height).toBeLessThan(70);
-  }
+  expect(getComputedStyle(media()).backgroundColor).not.toBe(
+    "rgba(0, 0, 0, 0)",
+  );
+  expect(item().getBoundingClientRect().height).toBeLessThan(70);
+});
+
+test("sets a folder as a flush Android row with a bare 24px icon at x=16 and its title at x=56", async () => {
+  await rowOn("android", PHONE);
+
+  const row = item().getBoundingClientRect();
+  const icon = asElement(item().querySelector("[data-icon=folder]"));
+  const title = asElement(item().querySelector("[data-slot=item-title]"));
+  const place = asElement(item().querySelector("[data-slot=item-description]"));
+
+  expect(item().querySelector("[data-slot=item-media]")).toBeNull();
+  expect(item().querySelector("svg")).toBeNull();
+  expect(icon.getBoundingClientRect().left).toBeCloseTo(row.left + 16, 0);
+  expect(icon.getBoundingClientRect().width).toBeCloseTo(24, 0);
+  expect(title.getBoundingClientRect().left).toBeCloseTo(row.left + 56, 0);
+  expect({
+    titleSize: getComputedStyle(title).fontSize,
+    titleTracking: getComputedStyle(title).letterSpacing,
+    titleWeight: getComputedStyle(title).fontWeight,
+    placeSize: getComputedStyle(place).fontSize,
+  }).toEqual({
+    titleSize: "16px",
+    titleTracking: "0.5px",
+    titleWeight: "400",
+    placeSize: "14px",
+  });
 });
 
 test("leaves the iPhone folder row without a pressed or hover tint, since the row opens nothing", async () => {

@@ -2,6 +2,7 @@
   import { Folder, House } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     Item,
     ItemContent,
@@ -18,22 +19,20 @@
   import { ICON_SIZE } from "./icon-size";
 
   const SEPARATOR = " · ";
+  const IOS_ICON_SIZE = 22;
 
   const LOOKS = {
     android: {
-      iconSize: 20,
       title: "text-native-row-title/native-row-title font-regular",
       description: "text-native-row-subtitle/native-row-subtitle wrap-anywhere",
       detail: "text-native-row-subtitle/native-row-subtitle text-muted",
     },
     ios: {
-      iconSize: 22,
       title: "truncate",
       description: "truncate",
       detail: "text-footnote text-muted",
     },
     standard: {
-      iconSize: ICON_SIZE,
       title: "truncate text-body font-medium",
       description: "truncate text-detail",
       detail: "text-footnote text-muted",
@@ -61,12 +60,10 @@
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const android = new AndroidPhone();
   const look = $derived(
-    android.isOn && isOwnCard
-      ? LOOKS.android
-      : isNative
-        ? LOOKS.ios
-        : LOOKS.standard,
+    android.isOn ? LOOKS.android : isNative ? LOOKS.ios : LOOKS.standard,
   );
+
+  const glyphSize = $derived(isNative ? IOS_ICON_SIZE : ICON_SIZE);
 
   const status = $derived.by((): string | undefined => {
     if (isFoundEmpty) {
@@ -77,26 +74,34 @@
 </script>
 
 <Item
-  look={isNative ? "row-static" : "folder"}
-  class={[isOwnCard && "windows:py-md windows:pe-lg"]}
+  look={android.isOn ? "row" : isNative ? "row-static" : "folder"}
+  class={[
+    isOwnCard && "windows:py-md windows:pe-lg",
+    android.isOn && "items-start",
+  ]}
 >
-  <ItemMedia
-    class={look === LOOKS.android
-      ? "self-start pbs-2xs"
-      : isNative
+  {#if look === LOOKS.android}
+    <Icon
+      name={folder.kind === "home" ? "house" : "folder"}
+      class="self-start"
+    />
+  {:else}
+    <ItemMedia
+      class={isNative
         ? "text-accent"
         : [
             "rounded-control block-icon-tile inline-icon-tile",
             folder.kind === "home" ? "bg-accent-soft" : "bg-chip",
             isOwnCard && "windows:bg-transparent",
           ]}
-  >
-    {#if folder.kind === "home"}
-      <House size={look.iconSize} aria-hidden="true" />
-    {:else}
-      <Folder size={look.iconSize} aria-hidden="true" />
-    {/if}
-  </ItemMedia>
+    >
+      {#if folder.kind === "home"}
+        <House size={glyphSize} aria-hidden="true" />
+      {:else}
+        <Folder size={glyphSize} aria-hidden="true" />
+      {/if}
+    </ItemMedia>
+  {/if}
   <ItemContent>
     <ItemTitle class={look.title}>{folderTitle(folder)}</ItemTitle>
     <ItemDescription class={look.description}>
@@ -111,5 +116,9 @@
       <div class={look.detail}>{@render detail(folder)}</div>
     {/if}
   </ItemContent>
-  {@render action?.()}
+  {#if android.isOn}
+    <span class="flex items-center self-center">{@render action?.()}</span>
+  {:else}
+    {@render action?.()}
+  {/if}
 </Item>
