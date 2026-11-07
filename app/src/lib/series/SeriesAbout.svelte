@@ -143,7 +143,7 @@
     <div class={ABOUT_LINES}>
       <h1
         tabindex="-1"
-        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty"
+        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty android:max-medium:mbe-xs android:max-medium:text-native-page-title/native-page-title android:max-medium:font-native-page-title android:max-medium:tracking-native-page-title"
       >
         {overview.title}
       </h1>
