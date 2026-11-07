@@ -565,7 +565,7 @@ test.describe(
       });
 
       for (const name of ["Display", "Group by"]) {
-        test(`sets ${name} with its words over a group the width of the row, no icons`, async ({
+        test(`sets ${name} with its words at the start and its three options at the end of one row, no icons`, async ({
           page,
         }) => {
           const sheet = await openView(page);
@@ -575,11 +575,11 @@ test.describe(
           const groupBox = await boxOf(group);
 
           expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
-          expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
           expect(
             sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
           ).toBeCloseTo(SETTING_END, 0);
-          expect(groupBox.y).toBeGreaterThanOrEqual(words.y + words.height);
+          expect(groupBox.y).toBeLessThan(words.y + words.height);
+          await expect(group.getByRole("radio")).toHaveCount(3);
           await expect(group.locator("svg")).toHaveCount(0);
           await expect(sheet.getByText(name, { exact: true })).toHaveCSS(
             "font-weight",
