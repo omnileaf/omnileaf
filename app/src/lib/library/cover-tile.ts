@@ -148,6 +148,10 @@ const NATIVE_TILE = {
   notConnected: undefined,
 };
 
+const ANDROID_COVER = `${NATIVE_TILE.cover} max-medium:border-0`;
+
+const ANDROID_SELECT_MARK = `${NATIVE_SELECT_MARK} max-medium:inset-e-native-select-inset max-medium:inset-bs-native-select-inset`;
+
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
 
@@ -260,6 +264,9 @@ const COVER_TILE_LOOKS = {
   },
   android: {
     ...NATIVE_TILE,
+    cover: ANDROID_COVER,
+    mark: ANDROID_SELECT_MARK,
+    compactMark: ANDROID_SELECT_MARK,
     title: ANDROID_TILE_TITLE,
     stack: PHONE_STACK,
     meta: ANDROID_TILE_META,
