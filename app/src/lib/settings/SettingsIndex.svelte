@@ -73,7 +73,7 @@
                     ]}
                   >
                     {#if platform === "android" && section.iconName !== undefined}
-                      <Icon name={section.iconName} size={24} />
+                      <Icon name={section.iconName} />
                     {:else}
                       <section.icon size={ICON_SIZE} />
                     {/if}
