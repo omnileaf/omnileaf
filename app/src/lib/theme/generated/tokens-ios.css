@@ -21,6 +21,8 @@
   --native-duration-pane: 350ms;
   --native-ease-pane: cubic-bezier(0.32, 0.72, 0, 1);
   --native-blur-glass: 30px;
+  --native-color-search-view: var(--background);
+  --native-spacing-search-view-bar: 4.5rem;
   --native-color-control-fill-hover: var(--color-hover);
   --native-color-control-fill-pressed: var(--color-hover);
   --native-color-control-stroke: transparent;
