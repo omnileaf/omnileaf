@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -7,6 +7,10 @@ import "../../app.css";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SectionHeading from "./SectionHeading.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const PROPS = { title: "About" };
 const EXPANDED_WIDTH = 1280;
@@ -74,10 +78,11 @@ test("renders native back Icon on Android", async () => {
 });
 
 test("sizes back button to 40px × 40px on Android", async () => {
+  await page.viewport(400, 800);
   followCorePlatform("android");
   const screen = await render(SectionHeading, PROPS);
   const back = screen.container.querySelector("[data-back-link]");
   expect(back).not.toBeNull();
-  expect(back?.className).toContain("android:block-native-button");
-  expect(back?.className).toContain("android:inline-native-button");
+  expect(back?.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(back?.getBoundingClientRect().width).toBeCloseTo(40, 0);
 });
