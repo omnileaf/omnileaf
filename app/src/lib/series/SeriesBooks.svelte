@@ -468,7 +468,7 @@
       tabindex="-1"
       aria-live={isPhonePicking ? "polite" : undefined}
       class={[
-        "text-group-title font-semibold",
+        "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
         selection.isSelecting && "flex-1",
         isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
         isWide.current && "sr-only",
@@ -488,7 +488,9 @@
         onPickNone={pickNone}
       />
     {:else if !selection.isSelecting && !isWide.current}
-      <p class="flex-1 text-small text-muted">
+      <p
+        class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
+      >
         {bookmarkCount > 0
           ? m.series_read_and_bookmarked({
               read: readCount,
