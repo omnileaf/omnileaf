@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Check } from "@lucide/svelte";
   import {
     Switch as SwitchPrimitive,
     type WithoutChildrenOrChild,
@@ -17,8 +16,6 @@
   }: WithoutChildrenOrChild<SwitchPrimitive.RootProps> & {
     children?: Snippet;
   } = $props();
-
-  const TICK_SIZE = 16;
 </script>
 
 <SwitchPrimitive.Root
@@ -34,11 +31,6 @@
   >
     <SwitchPrimitive.Thumb
       class="flex items-center justify-center rounded-full bg-native-switch-thumb-off block-native-switch-knob inline-native-switch-knob-length group-aria-checked/switch:bg-native-switch-thumb group-aria-checked/switch:block-native-switch-knob-on group-aria-checked/switch:inline-native-switch-knob-on-length ios:shadow-switch-knob macos:shadow-switch-knob"
-    >
-      <Check
-        size={TICK_SIZE}
-        class="hidden text-native-switch-on android:group-aria-checked/switch:block"
-      />
-    </SwitchPrimitive.Thumb>
+    />
   </span>
 </SwitchPrimitive.Root>
