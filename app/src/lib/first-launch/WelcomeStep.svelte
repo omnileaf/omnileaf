@@ -125,7 +125,7 @@
           ]}
         >
           {#if platform === "android"}
-            <Icon name={promise.iconName} size={24} />
+            <Icon name={promise.iconName} />
           {:else}
             <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
           {/if}
@@ -134,7 +134,7 @@
           <span
             class={isSetupPage
               ? "text-label/setup-body font-semibold"
-              : "android:font-normal font-semibold"}>{promise.title()}</span
+              : "font-semibold android:font-regular"}>{promise.title()}</span
           >
           <span
             class="text-footnote text-muted android:text-native-row-subtitle/native-row-subtitle"
