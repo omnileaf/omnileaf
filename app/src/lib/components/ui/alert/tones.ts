@@ -5,7 +5,7 @@ export type AlertTone = "plain" | "warning";
 export const ALERT_TONES = {
   plain: {
     alert:
-      "border-border bg-card text-foreground windows:bg-native-info-bar windows:text-native-on-info-bar",
+      "border-border bg-card text-foreground android:bg-android-container windows:bg-native-info-bar windows:text-native-on-info-bar",
     icon: "text-accent windows:text-native-info-bar-icon",
     description: "text-muted windows:text-native-on-info-bar",
     strongAction: "bg-foreground text-card",
