@@ -1,7 +1,9 @@
+import { cn } from "#lib/components/cn.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { phoneOf } from "#lib/page/platform.ts";
 
-import { floatsReaderBars } from "./reader-bar.ts";
+import { floatsReaderBars, READER_CAPSULE } from "./reader-bar.ts";
 import {
   WINDOWS_COMMAND_BUTTON,
   WINDOWS_COMMAND_LABEL,
@@ -21,6 +23,10 @@ export interface QuickSettingLook {
   readonly hasChevron: boolean;
   readonly directionName: string;
   readonly autoMark: string;
+  readonly hasPill: boolean;
+  readonly pill: string;
+  readonly words: string;
+  readonly group: string;
 }
 
 const AUTO_MARK =
@@ -40,6 +46,11 @@ const SEGMENT_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  hasPill: false,
+  pill: "",
+  words: "contents",
+  group:
+    "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden",
 };
 
 const CAPSULE_LIT = "bg-native-tab-pill";
@@ -56,6 +67,10 @@ const CAPSULE_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  hasPill: false,
+  pill: "",
+  words: "contents",
+  group: cn(READER_CAPSULE, "flex-wrap justify-center px-2xs max-inline-full"),
 };
 
 const WINDOWS_LOOK: QuickSettingLook = {
@@ -69,6 +84,35 @@ const WINDOWS_LOOK: QuickSettingLook = {
   hasChevron: false,
   directionName: "text-center max-medium:sr-only",
   autoMark: "sr-only",
+  hasPill: false,
+  pill: "",
+  words: "contents",
+  group: "flex flex-wrap items-center justify-center gap-2xs large:hidden",
+};
+
+const STRIP_PILL_TINT =
+  "[&>[data-pill]]:bg-native-tab-pill [&>[data-pill]]:text-native-on-tab-pill";
+
+const STRIP_LIT = `text-foreground ${STRIP_PILL_TINT}`;
+
+const STRIP_LOOK: QuickSettingLook = {
+  button:
+    "flex min-inline-none flex-1 basis-0 flex-col items-center gap-xs pbs-xs pbe-native-reader-quick-button-end text-native-tab leading-native-tab font-native-tab tracking-native-tab text-muted transition-control focus-visible:focus-ring focus-visible:-outline-offset-2",
+  toggle: "",
+  toggleLabel: "",
+  lit: STRIP_LIT,
+  on: STRIP_LIT,
+  iconSize: 24,
+  hasKitIcons: true,
+  hasChevron: false,
+  directionName: "truncate",
+  autoMark:
+    "rounded-auto-mark border border-current px-xs text-reader-thumbnail font-medium tracking-native-tab",
+  hasPill: true,
+  pill: "flex items-center justify-center rounded-full block-native-reader-quick-pill-block inline-native-reader-quick-pill-inline",
+  words:
+    "flex max-inline-full flex-wrap items-center justify-center gap-x-xs gap-y-2xs",
+  group: "-mx-sm flex",
 };
 
 export function quickSettingLook(
@@ -77,6 +121,9 @@ export function quickSettingLook(
 ): QuickSettingLook {
   if (usesCommandBar(platform)) {
     return WINDOWS_LOOK;
+  }
+  if (phoneOf(platform, width) === "android") {
+    return STRIP_LOOK;
   }
   return floatsReaderBars(platform, width) ? CAPSULE_LOOK : SEGMENT_LOOK;
 }
