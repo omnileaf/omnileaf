@@ -49,7 +49,7 @@ function tab(name: string): Element {
 }
 
 function iconOf(name: string): Element {
-  return asElement(tab(name).querySelector("svg"));
+  return asElement(tab(name).querySelector("svg, [data-icon]"));
 }
 
 function labelOf(name: string): Element {
