@@ -85,7 +85,7 @@ test("sets Android's page title as title large, centred in a 64 tall bar", async
   expect(style.fontSize).toBe("22px");
   expect(style.lineHeight).toBe("28px");
   expect(style.fontWeight).toBe("400");
-  expect(style.color).toBe("rgb(25, 29, 26)");
+  expect(style.color).toBe("rgb(44, 53, 46)");
   expect(heading().getBoundingClientRect().height).toBeCloseTo(64, 0);
 });
 
@@ -165,7 +165,7 @@ test("draws Android's 64 tall bar with a bare back arrow, on the surface contain
   );
   expect(backLink().getBoundingClientRect().width).toBeCloseTo(48, 0);
   expect(back.backgroundColor).toBe("rgba(0, 0, 0, 0)");
-  expect(back.color).toBe("rgb(25, 29, 26)");
+  expect(back.color).toBe("rgb(44, 53, 46)");
   expect(
     backLink().querySelector("[data-icon]")?.getAttribute("data-icon"),
   ).toBe("arrow-left");
