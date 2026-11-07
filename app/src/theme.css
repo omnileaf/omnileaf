@@ -429,15 +429,16 @@
   --input-group-fill: var(--input-fill);
   --input-group-edge: var(--input);
   --input-group-radius: var(--radius-md);
-  --android-container-low: var(--android-surface-sheet);
-  --android-container: var(--android-surface-menu);
-  --android-container-high: var(--android-surface-dialog);
-  --android-tonal: var(--android-primary-container);
-  --android-outline: var(--android-outline);
-  --android-secondary-text: var(--android-on-surface-muted);
+  --android-container-low: var(--android-palette-surface-sheet);
+  --android-container: var(--android-palette-surface-menu);
+  --android-container-high: var(--android-palette-surface-dialog);
+  --android-tonal: var(--android-palette-primary-container);
+  --android-outline: var(--android-palette-outline);
+  --android-secondary-text: var(--android-palette-on-surface-muted);
   --android-inverse-primary: var(--primary);
 }
 
+[data-platform="android"][data-contrast="medium"],
 [data-platform="android"][data-contrast="medium"] [data-theme="light"],
 [data-platform="android"][data-contrast="medium"][data-theme="light"] {
   --android-palette-on-surface: #1d2620;
@@ -454,6 +455,7 @@
   --android-palette-on-primary: #002d15;
 }
 
+[data-platform="android"][data-contrast="high"],
 [data-platform="android"][data-contrast="high"] [data-theme="light"],
 [data-platform="android"][data-contrast="high"][data-theme="light"] {
   --android-palette-on-surface: #000000;
