@@ -5,6 +5,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { formatBytes } from "#lib/storage/bytes.ts";
   import CacheRow from "#lib/storage/CacheRow.svelte";
@@ -27,6 +28,7 @@
   const storage = getStorageCheck();
   const android = new AndroidPhone();
   const card = $derived(android.isOn ? FLAT_CARD : CARD);
+  const bleed = $derived(android.isOn && FLUSH_BLEED);
   const width = new WindowWidth();
   const meterHeadingId = $props.id();
 
@@ -44,15 +46,20 @@
   <div class="mbs-pane-gap flex flex-col gap-pane-gap">
     <section
       aria-labelledby={meterHeadingId}
-      class={["flex flex-col gap-sm p-lg", card]}
+      class={["flex flex-col gap-sm p-lg", card, bleed]}
     >
-      <h2 id={meterHeadingId} class="text-label font-semibold">
+      <h2
+        id={meterHeadingId}
+        class={android.isOn
+          ? "text-body font-medium"
+          : "text-label font-semibold"}
+      >
         {deviceName}
       </h2>
       <StorageMeter used={storage.use} />
     </section>
-    <section class={["flex flex-col overflow-hidden", card]}>
-      <div class="flex flex-col divide-y divide-border">
+    <section class={["flex flex-col overflow-hidden", card, bleed]}>
+      <div class={["flex flex-col", !android.isOn && "divide-y divide-border"]}>
         <CacheRow
           title={m.storage_cached_pages()}
           detail={m.storage_cached_pages_size({
@@ -72,7 +79,14 @@
           }}
         />
       </div>
-      <p class="px-lg pbe-md text-detail text-muted max-inline-prose">
+      <p
+        class={[
+          "px-lg text-muted max-inline-prose",
+          android.isOn
+            ? "pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle"
+            : "pbe-md text-detail",
+        ]}
+      >
         {m.storage_runs_low()}
       </p>
     </section>

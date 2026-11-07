@@ -1,7 +1,15 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import "../../app.css";
+
+import { followCorePlatform } from "#lib/page/platform.ts";
+
 import StorageMeter from "./StorageMeter.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const USED = {
   omnileafBytes: 1_440_000_000,
@@ -29,4 +37,26 @@ test("names Omnileaf's share, everything else and what's free", async () => {
   await expect.element(screen.getByText("Omnileaf 1.4 GB")).toBeVisible();
   await expect.element(screen.getByText("Everything else")).toBeVisible();
   await expect.element(screen.getByText("1.1 GB free")).toBeVisible();
+});
+
+test("splits the Android bar into three parts 4px apart, and sets the legend in muted type", async () => {
+  followCorePlatform("android");
+  const screen = await render(StorageMeter, { used: USED });
+
+  const meter = screen.getByRole("meter").element();
+  const [first, second, third] = [...meter.children];
+  const legend = screen.getByText("Everything else").element();
+
+  expect(meter.children).toHaveLength(3);
+  expect(
+    (second?.getBoundingClientRect().left ?? 0) -
+      (first?.getBoundingClientRect().right ?? 0),
+  ).toBeCloseTo(4, 0);
+  expect(
+    (third?.getBoundingClientRect().left ?? 0) -
+      (second?.getBoundingClientRect().right ?? 0),
+  ).toBeCloseTo(4, 0);
+  expect(getComputedStyle(legend).color).toBe(
+    getComputedStyle(screen.getByText("1.1 GB free").element()).color,
+  );
 });

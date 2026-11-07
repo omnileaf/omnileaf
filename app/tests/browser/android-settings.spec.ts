@@ -426,5 +426,29 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     );
     await expect(clear).toHaveCSS("border-top-width", "0px");
     await expect(clear).toHaveCSS("font-size", "14px");
+    await expect(clear).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-secondary"),
+    );
+    expect((await boxOf(clear)).height).toBe(40);
+  });
+
+  test("sets the meter and the cache rows flush at 16px with no line between them", async ({
+    page,
+  }) => {
+    await page.goto("/settings/storage");
+    const heading = page.getByRole("heading", { name: "On this phone" });
+    const name = page.getByText("Cached pages", { exact: true });
+    const row = name.locator("xpath=ancestor::li[1] | ancestor::div[2]");
+
+    expect((await boxOf(heading)).x).toBe(16);
+    await expect(heading).toHaveCSS("font-weight", "500");
+    expect((await boxOf(name)).x).toBe(16);
+    await expect(name).toHaveCSS("letter-spacing", "0.5px");
+    await expect(row.first()).toHaveCSS("border-bottom-width", "0px");
+    await expect(page.getByText(/^When space runs low/)).toHaveCSS(
+      "font-size",
+      "14px",
+    );
   });
 });
