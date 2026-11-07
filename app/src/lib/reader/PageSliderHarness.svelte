@@ -5,8 +5,12 @@
 
   import PageSlider from "./PageSlider.svelte";
   import { ReaderChrome, setReaderChrome } from "./reader-chrome.svelte.ts";
+  import type { ReadingDirection } from "./reading-direction.svelte.ts";
 
-  let { platform }: { platform: Platform } = $props();
+  let {
+    platform,
+    direction = "leftToRight",
+  }: { platform: Platform; direction?: ReadingDirection } = $props();
 
   setReaderChrome(untrack(() => new ReaderChrome(platform)));
 
@@ -17,7 +21,7 @@
   <PageSlider
     shown={3}
     count={30}
-    direction="leftToRight"
+    {direction}
     onSeek={nothing}
     onDrag={nothing}
     onFocusChange={nothing}

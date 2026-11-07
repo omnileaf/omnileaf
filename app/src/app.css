@@ -1811,6 +1811,57 @@
   inline-size: calc(var(--progress) * 100%);
 }
 
+@utility reader-slider-root {
+  --handle: calc(
+    var(--spacing-xs) + var(--spacing-2xs) + var(--progress) *
+      (100% - var(--spacing-md))
+  );
+}
+
+@utility reader-slider-handle {
+  inset-inline-start: var(--handle);
+  margin-inline-start: calc(var(--spacing-native-slider-thumb) / -2);
+}
+
+@utility reader-slider-fill {
+  clip-path: inset(
+    0 calc(100% - var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
+      var(--spacing-2xs) var(--spacing-2xs) var(--spacing-sm)
+  );
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    clip-path: inset(
+      0 0 0 calc(100% - var(--handle) + var(--spacing-sm)) round
+        var(--spacing-2xs) var(--spacing-sm) var(--spacing-sm)
+        var(--spacing-2xs)
+    );
+  }
+}
+
+@utility reader-slider-rest {
+  background-image: radial-gradient(
+    circle at calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%,
+    var(--native-color-button-primary) var(--spacing-2xs),
+    transparent calc(var(--spacing-2xs) + 0.5px)
+  );
+  clip-path: inset(
+    0 0 0 calc(var(--handle) + var(--spacing-sm)) round var(--spacing-2xs)
+      var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs)
+  );
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    background-image: radial-gradient(
+      circle at calc(var(--spacing-xs) + var(--spacing-2xs)) 50%,
+      var(--native-color-button-primary) var(--spacing-2xs),
+      transparent calc(var(--spacing-2xs) + 0.5px)
+    );
+    clip-path: inset(
+      0 calc(var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
+        var(--spacing-2xs) var(--spacing-2xs) var(--spacing-sm)
+    );
+  }
+}
+
 @utility reader-progress-thumb {
   --reader-thumb: var(--spacing-lg);
   inset-inline-start: calc(var(--progress) * (100% - var(--reader-thumb)));
