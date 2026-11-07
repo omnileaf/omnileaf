@@ -228,6 +228,8 @@ export const TOKEN_THEME = {
     "sheet-card",
     "sidebar-row",
     "skeleton-macos",
+    "slider-cap",
+    "slider-join",
     "small-control",
     "tile",
     "toast",

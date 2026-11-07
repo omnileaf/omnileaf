@@ -775,6 +775,8 @@
   --radius-cover: 0.375rem;
   --radius-drag-box: 0.375rem;
   --radius-list-cover: 0.25rem;
+  --radius-slider-cap: 0.5rem;
+  --radius-slider-join: 0.125rem;
   --radius-field: 0.625rem;
   --radius-bottom-sheet: 0.625rem;
   --radius-menu-item: 0.375rem;
@@ -1838,28 +1840,52 @@
   }
 }
 
-@utility reader-slider-rest {
+@utility reader-slider-end-dot {
+  --dot-edge: 0.5px;
   background-image: radial-gradient(
-    circle at calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%,
+    circle at var(--dot-at),
     var(--native-color-button-primary) var(--spacing-2xs),
-    transparent calc(var(--spacing-2xs) + 0.5px)
+    transparent calc(var(--spacing-2xs) + var(--dot-edge))
   );
+}
+
+@utility reader-slider-rest {
+  --dot-at: calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%;
+  @apply reader-slider-end-dot;
   clip-path: inset(
     0 0 0 calc(var(--handle) + var(--spacing-sm)) round var(--spacing-2xs)
       var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs)
   );
 
   &:where([dir="rtl"], [dir="rtl"] *) {
-    background-image: radial-gradient(
-      circle at calc(var(--spacing-xs) + var(--spacing-2xs)) 50%,
-      var(--native-color-button-primary) var(--spacing-2xs),
-      transparent calc(var(--spacing-2xs) + 0.5px)
-    );
+    --dot-at: calc(var(--spacing-xs) + var(--spacing-2xs)) 50%;
     clip-path: inset(
       0 calc(var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
         var(--spacing-2xs) var(--spacing-2xs) var(--spacing-sm)
     );
   }
+}
+
+@utility reader-scrubber-frame {
+  inset-block-start: calc(
+    var(--spacing-safe-top) + var(--spacing-native-top-bar) + var(--spacing-lg)
+  );
+  inset-block-end: calc(var(--reader-toast-room) + var(--spacing-lg));
+}
+
+@utility reader-scrubber-track {
+  --handle: calc(var(--progress) * 100%);
+  --gap: calc(var(--spacing-xs) + var(--spacing-2xs));
+}
+
+@utility reader-scrubber-range {
+  inset-block-end: calc(100% - var(--handle) + var(--gap));
+}
+
+@utility reader-scrubber-rest {
+  inset-block-start: calc(var(--handle) + var(--gap));
+  --dot-at: 50% calc(100% - var(--gap));
+  @apply reader-slider-end-dot;
 }
 
 @utility reader-progress-thumb {
