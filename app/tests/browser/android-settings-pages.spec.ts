@@ -177,5 +177,13 @@ test.describe(
 
       expect(list.y - (intro.y + intro.height)).toBeCloseTo(0, 0);
     });
+
+    test("says About's report is built on this phone", async ({ page }) => {
+      await page.goto("/settings/about");
+
+      await expect(page.getByText(/^Builds a report on this/)).toHaveText(
+        "Builds a report on this phone; you choose where it goes",
+      );
+    });
   },
 );
