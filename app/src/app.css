@@ -535,6 +535,7 @@
   --spacing-select-end: 2.125rem;
   --spacing-panel-button: 2rem;
   --spacing-sheet-top: 3.75rem;
+  --spacing-below-sheet-top: calc(100% - var(--spacing-sheet-top));
   --spacing-library-search: 15rem;
   --spacing-library-search-toolbar: 16.25rem;
   --spacing-search-field: 2.875rem;

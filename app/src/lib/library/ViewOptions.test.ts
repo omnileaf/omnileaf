@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { type Locator, page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -372,3 +372,80 @@ for (const platform of ["android", "linux", "macos", "windows"] as const) {
     ).toEqual(["16px", "500", "normal"]);
   });
 }
+
+const ANDROID_SHEET_TOP_GAP = 60;
+const ANDROID_SETTING_ROW_HEIGHT = 48;
+
+function radiosOf(group: string): Locator {
+  return page.getByRole("radiogroup", { name: group }).getByRole("radio");
+}
+
+async function expectRadios(group: string, names: string[]): Promise<void> {
+  await expect.element(radiosOf(group)).toHaveLength(names.length);
+  for (const name of names) {
+    await expect
+      .element(radiosOf(group).getByText(name, { exact: true }).first())
+      .toBeInTheDocument();
+  }
+}
+
+test("fits the View options sheet to its content at the bottom on an Android phone", async () => {
+  await openOn("android");
+
+  const sheet = page.getByRole("dialog").element();
+
+  await expect.poll(() => boxOf(sheet).bottom).toBe(PHONE.height);
+  expect(boxOf(sheet).top).toBeGreaterThanOrEqual(ANDROID_SHEET_TOP_GAP);
+});
+
+test("draws Display and Group by as one row of three options on an Android phone", async () => {
+  await openOn("android");
+
+  await expectRadios("Display", ["Grid", "Compact", "List"]);
+  await expectRadios("Group by", ["None", "Category", "Folder"]);
+  for (const name of ["Display", "Group by"]) {
+    const label = boxOf(page.getByText(name, { exact: true }).element());
+    const control = boxOf(page.getByRole("radiogroup", { name }).element());
+
+    expect(control.left).toBeGreaterThanOrEqual(label.right);
+    expect(
+      Math.abs(
+        control.top + control.height / 2 - (label.top + label.height / 2),
+      ),
+    ).toBeLessThan(1);
+    expect(control.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
+  }
+});
+
+test("leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
+  await openOn("android");
+
+  for (const name of [
+    "Stack series covers",
+    "On the library page",
+    "Item counts",
+    "Continue reading row",
+  ]) {
+    await expect
+      .element(page.getByText(name, { exact: true }))
+      .not.toBeInTheDocument();
+  }
+  const heading = page.getByRole("heading", {
+    name: "Show on covers",
+    exact: true,
+  });
+  await expect.element(heading).toBeVisible();
+  await expect
+    .poll(() => boxOf(heading.element()).bottom)
+    .toBeLessThanOrEqual(PHONE.height);
+});
+
+test("keeps every display and grouping option on a Windows window", async () => {
+  await openOn("windows", TABLET);
+
+  await expectRadios("Display", ["Grid", "Compact", "Covers", "List"]);
+  await expectRadios("Group by", ["None", "Category", "Folder", "Creator"]);
+  await expect
+    .element(page.getByText("Item counts", { exact: true }))
+    .toBeVisible();
+});

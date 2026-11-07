@@ -56,7 +56,6 @@
   const headingClass = $derived(
     isMaterial ? ANDROID_FILTER_HEADING : look.heading,
   );
-  const groupClass = $derived(isMaterial ? "flex flex-col" : look.group);
   const choicesClass = $derived(isMaterial ? "flex flex-col" : look.choices);
 
   const layoutId = $props.id();
@@ -121,7 +120,7 @@
         }}
       />
     {/if}
-    {#if canStackCovers}
+    {#if canStackCovers && !isMaterial}
       <ViewSwitchRow
         {usesItemRow}
         label={m.library_stack_covers()}
@@ -134,38 +133,37 @@
     {/if}
   </div>
 </section>
-<section
-  role="group"
-  aria-labelledby={pageId}
-  class={["flex flex-col", look.section]}
->
-  <h3
-    id={pageId}
-    class={isMaterial ? ANDROID_FILTER_HEADING : look.pageHeading}
+{#if !isMaterial}
+  <section
+    role="group"
+    aria-labelledby={pageId}
+    class={["flex flex-col", look.section]}
   >
-    {m.library_on_the_page()}
-  </h3>
-  <div class={groupClass}>
-    <ViewSwitchRow
-      {usesItemRow}
-      label={m.library_item_counts()}
-      description={m.library_item_counts_hint()}
-      isOn={view.showsItemCounts}
-      onToggle={(isShown: boolean) => {
-        onChoose(withItemCounts(view, isShown));
-      }}
-    />
-    <ViewSwitchRow
-      {usesItemRow}
-      label={m.library_continue_row()}
-      description={m.library_continue_row_hint()}
-      isOn={view.showsContinueRow}
-      onToggle={(isShown: boolean) => {
-        onChoose(withContinueRow(view, isShown));
-      }}
-    />
-  </div>
-</section>
+    <h3 id={pageId} class={look.pageHeading}>
+      {m.library_on_the_page()}
+    </h3>
+    <div class={look.group}>
+      <ViewSwitchRow
+        {usesItemRow}
+        label={m.library_item_counts()}
+        description={m.library_item_counts_hint()}
+        isOn={view.showsItemCounts}
+        onToggle={(isShown: boolean) => {
+          onChoose(withItemCounts(view, isShown));
+        }}
+      />
+      <ViewSwitchRow
+        {usesItemRow}
+        label={m.library_continue_row()}
+        description={m.library_continue_row_hint()}
+        isOn={view.showsContinueRow}
+        onToggle={(isShown: boolean) => {
+          onChoose(withContinueRow(view, isShown));
+        }}
+      />
+    </div>
+  </section>
+{/if}
 <OnCoversChoice
   {look}
   {isMaterial}
