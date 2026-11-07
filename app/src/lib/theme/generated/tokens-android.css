@@ -514,6 +514,19 @@
   --native-text-count-badge: calc(0.6875rem * var(--text-scale));
   --native-leading-count-badge: calc(16 / 11);
   --native-tracking-count-badge: 0.5px;
+  --native-text-collection-count: calc(0.875rem * var(--text-scale));
+  --native-leading-collection-count: calc(1.25 / 0.875);
+  --native-weight-collection-count: 500;
+  --native-tracking-collection-count: 0.1px;
+  --native-text-continue-title: calc(1rem * var(--text-scale));
+  --native-leading-continue-title: 1.5;
+  --native-weight-continue-title: 500;
+  --native-tracking-continue-title: 0.15px;
+  --native-text-books-heading: calc(1rem * var(--text-scale));
+  --native-leading-books-heading: 1.5;
+  --native-weight-books-heading: 500;
+  --native-tracking-books-heading: 0.15px;
+  --native-spacing-series-hero-cover: 112px;
 }
 
 :root[data-platform="android"],
