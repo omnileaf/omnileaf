@@ -72,3 +72,12 @@ test("renders native back Icon on Android", async () => {
   const icon = screen.container.querySelector('[data-icon="arrow-left"]');
   expect(icon).not.toBeNull();
 });
+
+test("sizes back button to 40px × 40px on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+  const back = screen.container.querySelector("[data-back-link]");
+  expect(back).not.toBeNull();
+  expect(back?.className).toContain("android:block-native-button");
+  expect(back?.className).toContain("android:inline-native-button");
+});
