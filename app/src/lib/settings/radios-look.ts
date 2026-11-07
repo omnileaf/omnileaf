@@ -38,7 +38,7 @@ const TODAYS_LOOK: RadiosLook = {
 
 const ANDROID_PHONE_LOOK: RadiosLook = {
   section: "-mx-page-start -me-page-end flex flex-col",
-  heading: `pbs-md pbe-sm ps-lg text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`,
+  heading: `pbs-lg pbe-sm ps-lg text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`,
   group: "flex flex-col",
   row: `flex items-center gap-lg py-2xs ps-lg pe-xl text-start text-body transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed min-block-touch-target`,
   mark: "flex shrink-0 items-center justify-center rounded-full border-2 block-radio inline-radio",
