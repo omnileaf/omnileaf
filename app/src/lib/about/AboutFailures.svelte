@@ -13,12 +13,22 @@
 
 <div role="alert">
   {#if copying.outcome === "failed"}
-    <Alert tone="warning" icon={CircleAlert} class="mbs-sm">
+    <Alert
+      tone="warning"
+      icon={CircleAlert}
+      iconName="circle-alert"
+      class="mbs-sm"
+    >
       <AlertTitle>{m.about_copy_failed()}</AlertTitle>
     </Alert>
   {/if}
   {#if opening.hasFailed}
-    <Alert tone="warning" icon={CircleAlert} class="mbs-sm">
+    <Alert
+      tone="warning"
+      icon={CircleAlert}
+      iconName="circle-alert"
+      class="mbs-sm"
+    >
       <AlertTitle>{m.about_browser_unavailable()}</AlertTitle>
     </Alert>
   {/if}

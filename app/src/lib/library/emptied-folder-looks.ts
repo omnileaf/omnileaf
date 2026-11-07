@@ -1,5 +1,6 @@
 import { CircleAlert, FolderSearch, TriangleAlert } from "@lucide/svelte";
 
+import type { IconName } from "#lib/icons/names.ts";
 import type { Glyph } from "#lib/page/glyph.ts";
 import { m } from "#lib/paraglide/messages.js";
 
@@ -8,6 +9,7 @@ import type { EmptiedFolder } from "./rescans.svelte";
 export interface EmptiedFolderLook {
   readonly role: "status" | "alert";
   readonly icon: Glyph;
+  readonly iconName: IconName;
   readonly nativeIcon: Glyph;
   readonly title: (inputs: { name: string }) => string;
   readonly body: (inputs: { name: string }) => string;
@@ -18,6 +20,7 @@ export const EMPTIED_FOLDER_LOOKS = {
   foundEmpty: {
     role: "status",
     icon: FolderSearch,
+    iconName: "folder-search",
     nativeIcon: TriangleAlert,
     title: m.library_found_empty_title,
     body: m.library_found_empty_body,
@@ -26,6 +29,7 @@ export const EMPTIED_FOLDER_LOOKS = {
   removalFailed: {
     role: "alert",
     icon: CircleAlert,
+    iconName: "circle-alert",
     nativeIcon: CircleAlert,
     title: m.library_remove_books_failed,
     body: m.library_remove_books_failed_body,
