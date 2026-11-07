@@ -118,7 +118,7 @@ test("labels every section as label medium at 500, the current one in the accent
   await expect(current).toHaveCSS("font-weight", "500");
   await expect(current).toHaveCSS(
     "color",
-    await tokenColour(page, "--native-color-on-tab-current"),
+    await tokenColour(page, "--native-color-on-tab-bar-current"),
   );
   await expect(other).toHaveCSS("font-weight", "500");
   await expect(other).toHaveCSS(
