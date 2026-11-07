@@ -30,6 +30,7 @@
   const ICON_SIZE = 20;
   const IOS_BAR_ICON_SIZE = 22;
   const ITEM_ICON_SIZE = 16;
+  const ANDROID_ITEM_ICON_SIZE = 20;
   const platform = currentPlatform();
   const width = new WindowWidth();
   const ios = new IosPhone();
@@ -66,7 +67,7 @@
             {...props}
             look="header-control"
             aria-label={m.library_more()}
-            class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target ios:medium:block-native-target ios:medium:inline-native-target desktop-shell:hidden"
+            class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target ios:medium:block-native-target ios:medium:inline-native-target android:max-medium:aria-expanded:rounded-native-segment android:max-medium:aria-expanded:bg-native-row-pressed desktop-shell:hidden"
           >
             {#if phoneOf(platform, width.current) === "android"}
               <Icon name="ellipsis" />
@@ -85,7 +86,7 @@
     {#if folded !== undefined}
       <DropdownMenuItem onSelect={folded.onSortAndFilter}>
         {#if platform === "android"}
-          <Icon name="list-filter" size={ITEM_ICON_SIZE} />
+          <Icon name="list-filter" size={ANDROID_ITEM_ICON_SIZE} />
         {:else}
           <ListFilter size={ITEM_ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -95,7 +96,7 @@
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={folded.onViewOptions}>
         {#if platform === "android"}
-          <Icon name="sliders-horizontal" size={ITEM_ICON_SIZE} />
+          <Icon name="sliders-horizontal" size={ANDROID_ITEM_ICON_SIZE} />
         {:else}
           <SlidersHorizontal size={ITEM_ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -104,7 +105,7 @@
     {/if}
     <DropdownMenuItem {onSelect}>
       {#if platform === "android"}
-        <Icon name="square-check" size={ITEM_ICON_SIZE} />
+        <Icon name="square-check" size={ANDROID_ITEM_ICON_SIZE} />
       {:else}
         <SquareCheck size={ITEM_ICON_SIZE} aria-hidden="true" />
       {/if}
@@ -116,7 +117,7 @@
       }}
     >
       {#if platform === "android"}
-        <Icon name="pencil" size={ITEM_ICON_SIZE} />
+        <Icon name="pencil" size={ANDROID_ITEM_ICON_SIZE} />
       {:else}
         <Pencil size={ITEM_ICON_SIZE} aria-hidden="true" />
       {/if}
@@ -129,7 +130,7 @@
         }}
       >
         {#if platform === "android"}
-          <Icon name="tags" size={ITEM_ICON_SIZE} />
+          <Icon name="tags" size={ANDROID_ITEM_ICON_SIZE} />
         {:else}
           <Tags size={ITEM_ICON_SIZE} aria-hidden="true" />
         {/if}
@@ -139,7 +140,7 @@
     <DropdownMenuSeparator />
     <DropdownMenuItem onSelect={openLibrarySettings}>
       {#if platform === "android"}
-        <Icon name="settings" size={ITEM_ICON_SIZE} />
+        <Icon name="settings" size={ANDROID_ITEM_ICON_SIZE} />
       {:else}
         <Settings size={ITEM_ICON_SIZE} aria-hidden="true" />
       {/if}
