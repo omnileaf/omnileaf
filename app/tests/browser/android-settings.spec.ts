@@ -282,13 +282,13 @@ test.describe(
       const row = page
         .getByRole("main")
         .getByRole("link", { name: /^General/ });
-      const icon = row.locator("svg").first();
+      const icon = row.locator("[data-icon]");
 
       await expect(icon.locator("xpath=..")).toHaveCSS(
         "background-color",
         "rgba(0, 0, 0, 0)",
       );
-      await expect(row.locator("svg:visible")).toHaveCount(1);
+      await expect(row.locator("svg:visible")).toHaveCount(0);
     });
 
     test("sets each name at 16px and its line under it at 14px, both in regular weight", async ({

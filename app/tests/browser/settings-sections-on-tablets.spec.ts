@@ -46,7 +46,7 @@ function labelLines(sections: Locator): Promise<LabelLines[]> {
     }
 
     return links.map((link) => {
-      const text = link.querySelector("span")?.firstChild;
+      const text = link.querySelector("[data-label]")?.firstChild;
       if (!(text instanceof Text)) {
         return {
           name: link.textContent.trim(),
