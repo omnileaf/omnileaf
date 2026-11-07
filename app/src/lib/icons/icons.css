@@ -354,6 +354,18 @@
   --icon: url("./material-symbols/schedule.svg");
 }
 
+[data-icon="code"] {
+  --icon: url("./lucide/code.svg");
+}
+
+:root[data-platform="ios"] [data-icon="code"] {
+  --icon: url("./lucide/light/code.svg");
+}
+
+:root[data-platform="android"] [data-icon="code"] {
+  --icon: url("./material-symbols/code.svg");
+}
+
 [data-icon="columns-2"] {
   --icon: url("./lucide/columns-2.svg");
 }
