@@ -190,6 +190,7 @@ export const TOKEN_THEME = {
     "native-segment-selected",
     "native-segmented",
     "native-select",
+    "native-selection-action",
     "native-sheet",
     "native-tab-indicator",
     "native-table-row",

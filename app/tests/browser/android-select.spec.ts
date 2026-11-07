@@ -77,6 +77,49 @@ test.describe(
       }
     });
 
+    test("swaps the navigation bar for the action bar as soon as choosing starts, before anything is picked", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await expect(seriesList(page).getByRole("listitem")).toHaveCount(
+        LIBRARY.length,
+      );
+
+      await page.getByRole("button", { name: "More for the library" }).click();
+      await page.getByRole("menuitem", { name: "Select series" }).click();
+
+      await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
+      const bar = page.getByRole("group", { name: "Selected series" });
+      for (const name of ["Categories", "Tags", "Mark as read", "Delete"]) {
+        await expect(bar.getByRole("button", { name })).toBeVisible();
+        await expect(bar.getByRole("button", { name })).toBeDisabled();
+      }
+    });
+
+    test("enables the action bar buttons once a series is chosen", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+
+      const bar = page.getByRole("group", { name: "Selected series" });
+      for (const name of ["Categories", "Tags", "Mark as read", "Delete"]) {
+        await expect(bar.getByRole("button", { name })).toBeEnabled();
+      }
+    });
+
+    test("fills an unchecked cover check box with the window colour inside a 2px outline", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const box = seriesList(page)
+        .getByRole("listitem")
+        .first()
+        .locator('[data-slot="selection-mark"]');
+
+      await expect(box).toHaveCSS("background-color", "rgb(247, 250, 245)");
+      await expect(box).toHaveCSS("border-top-width", "2px");
+    });
+
     test("sets the count at title large, 22px on a 28px line in regular weight", async ({
       page,
     }) => {
