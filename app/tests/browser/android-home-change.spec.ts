@@ -41,20 +41,17 @@ test.describe(
       );
     });
 
-    test("makes the whole row a 48px tall touch target, the Rescan button above it", async ({
+    test("makes the whole row a 48px tall touch target, with no Rescan button on it", async ({
       page,
     }) => {
       await page.goto("/settings/library");
       const section = page.getByRole("region", { name: HOME_ROW });
       const row = await boxOf(homeRow(page));
-      const rescan = await boxOf(
-        section.getByRole("button", { name: "Rescan Omnileaf" }),
-      );
 
       expect(row.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
-      expect(rescan.x).toBeGreaterThanOrEqual(row.x);
-      await section.getByRole("button", { name: "Rescan Omnileaf" }).click();
-      expect(picker.chooses).toBe(0);
+      await expect(
+        section.getByRole("button", { name: "Rescan Omnileaf" }),
+      ).toHaveCount(0);
     });
 
     test("offers no Change word button and no coming-soon control", async ({

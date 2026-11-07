@@ -12,6 +12,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AddFolder } from "./add-folder";
+  import { AndroidPhone } from "./android-phone.svelte";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
   import { folderLocation } from "./folder-location";
   import { FolderAdding } from "./folder-adding.svelte";
@@ -68,6 +69,7 @@
   } = $props();
 
   const width = new WindowWidth();
+  const android = new AndroidPhone();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
 
   const folders = new LibraryFolders(
@@ -277,10 +279,12 @@
     <RescanStatus status={rescans.status} kind="home" />
     <p
       class={[
-        "mbs-sm px-xs text-muted",
-        isNative
-          ? "px-lg text-native-notice-body/native-notice-body"
-          : "text-caption",
+        "mbs-sm text-muted",
+        android.isOn
+          ? "-mx-page-start -me-page-end px-lg pbe-sm text-native-row-subtitle/native-row-subtitle"
+          : isNative
+            ? "px-lg text-native-notice-body/native-notice-body"
+            : "px-xs text-caption",
       ]}
     >
       {homeHint()}
