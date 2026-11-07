@@ -1,9 +1,15 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import WelcomeStep from "./WelcomeStep.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 test("renders native Icon components for promises on Android", async () => {
   followCorePlatform("android");
@@ -40,5 +46,5 @@ test("styles hero icon and promises for Android", async () => {
   expect(tiles[0]?.className).toContain("android:bg-transparent");
 
   const icons = screen.container.querySelectorAll("[data-icon]");
-  expect(icons[0]?.getAttribute("style")).toContain("24px");
+  expect(icons[0]?.className).toContain("inline-native-icon");
 });
