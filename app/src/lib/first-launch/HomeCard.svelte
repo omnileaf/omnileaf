@@ -9,6 +9,8 @@
   import { Folder } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import { ROW_TITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { ICON_SIZE } from "#lib/library/icon-size.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -68,15 +70,23 @@
     aria-labelledby={titleId}
     class="flex flex-col overflow-hidden rounded-card border border-border bg-card ios:bg-ios-cell"
   >
-    <div class="relative flex items-center gap-md p-md ps-home-card">
+    <div
+      class="relative flex items-center gap-md p-md ps-home-card android:gap-lg"
+    >
       <span
-        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile android:self-start android:bg-transparent android:pbs-2xs android:block-auto"
+        class="flex shrink-0 items-center justify-center rounded-control bg-chip block-icon-tile inline-icon-tile android:self-start android:bg-transparent android:pbs-2xs android:block-auto android:inline-auto"
       >
-        <Folder size={ICON_SIZE} aria-hidden="true" />
+        {#if android.isOn}
+          <Icon name="folder" />
+        {:else}
+          <Folder size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </span>
       {#if android.isOn}
         <div class="flex flex-1 flex-col gap-2xs min-inline-none">
-          <h2 id={titleId} class="text-body font-regular">{title}</h2>
+          <h2 id={titleId} class={ROW_TITLE_TYPE}>
+            {title}
+          </h2>
           <code
             id={pathId}
             class="font-mono text-native-row-subtitle/native-row-subtitle wrap-anywhere whitespace-pre-wrap text-muted"
@@ -106,7 +116,7 @@
           class="col-span-2 grid grid-cols-subgrid gap-x-lg px-home-card py-home-path android:max-medium:flex android:max-medium:flex-col android:max-medium:py-sm"
         >
           <dt
-            class="text-footnote text-muted min-inline-home-term android:max-medium:text-body android:max-medium:text-foreground"
+            class="text-footnote text-muted min-inline-home-term android:max-medium:text-body android:max-medium:tracking-native-row-title android:max-medium:text-foreground"
           >
             {fact.term}
           </dt>
