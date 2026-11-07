@@ -239,6 +239,7 @@
   --native-radius-select: 999px;
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
+  --native-spacing-select-inset: var(--spacing-xs);
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);

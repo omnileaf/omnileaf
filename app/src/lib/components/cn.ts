@@ -552,6 +552,7 @@ export const TOKEN_THEME = {
     "native-segmented-inset",
     "native-select",
     "native-select-edge",
+    "native-select-inset",
     "native-series-actions-gap",
     "native-series-aside",
     "native-series-chevron",

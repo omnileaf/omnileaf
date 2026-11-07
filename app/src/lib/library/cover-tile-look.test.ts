@@ -317,7 +317,7 @@ test("draws no outline round a picked cover on an iPhone, and keeps it on an iPa
   ]);
 });
 
-test("keeps Android's check box in the cover's top end", async () => {
+test("sets Android's check box 15px in from the cover's top end", async () => {
   document.documentElement.dataset.theme = "light";
   followCorePlatform("android");
   const mark = await markOf(await oneSeries(), {
@@ -325,7 +325,7 @@ test("keeps Android's check box in the cover's top end", async () => {
     display: "grid",
   });
 
-  expect(gapsAround(mark)).toMatchObject({ top: 5, end: 5 });
+  expect(gapsAround(mark)).toMatchObject({ top: 15, end: 15 });
 });
 
 test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
@@ -520,3 +520,48 @@ test.each<[Platform, string, string]>([
     expect([grid.rowGap, grid.columnGap]).toEqual([rows, columns]);
   },
 );
+
+async function coverBoxOn(
+  platform: Platform,
+  display: LibraryDisplay,
+): Promise<CSSStyleDeclaration> {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  await render(SeriesCovers, coversOf(await oneSeries(), display));
+  const picture = await vi.waitFor(() => {
+    const found = document.querySelector("[data-series-id] img");
+    if (found === null) {
+      throw new Error("the cell drew no cover picture");
+    }
+    return found;
+  });
+  return styleOf(picture.parentElement);
+}
+
+test.each<LibraryDisplay>(["grid", "compact", "list"])(
+  "draws Android's %s cover without an edge line on a phone",
+  async (display) => {
+    const cover = await coverBoxOn("android", display);
+
+    expect(cover.borderTopWidth).toBe("0px");
+  },
+);
+
+test.each<[Platform, LibraryDisplay]>([
+  ["ios", "grid"],
+  ["ios", "list"],
+  ["linux", "grid"],
+])("keeps %s's %s cover edge line", async (platform, display) => {
+  const cover = await coverBoxOn(platform, display);
+
+  expect(cover.borderTopWidth).toBe("1px");
+});
+
+test("keeps Android's cover edge line on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const cover = await coverBoxOn("android", "grid");
+
+  expect(cover.borderTopWidth).toBe("1px");
+});

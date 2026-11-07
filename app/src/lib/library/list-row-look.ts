@@ -35,6 +35,11 @@ const PHONE: ListRowLook = {
   meta: `${ROW_SUBTITLE_TYPE} text-muted`,
 };
 
+const ANDROID_PHONE: ListRowLook = {
+  ...PHONE,
+  cover: `${COVER} border-0!`,
+};
+
 const IOS_PHONE: ListRowLook = {
   ...PHONE,
   cover: "rounded-list-cover box-border! inline-native-list-cover",
@@ -47,5 +52,5 @@ export function listRowLook(
   if (!isPhone(platform, width)) {
     return TODAY;
   }
-  return platform === "ios" ? IOS_PHONE : PHONE;
+  return platform === "ios" ? IOS_PHONE : ANDROID_PHONE;
 }

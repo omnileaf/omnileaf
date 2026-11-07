@@ -309,6 +309,7 @@
   --native-radius-select: var(--radius-series-check);
   --native-spacing-select: var(--spacing-series-check);
   --native-spacing-select-edge: 2px;
+  --native-spacing-select-inset: var(--spacing-xs);
   --native-shadow-select-ring-lift: none;
   --native-color-sheet: var(--bottom-sheet-surface);
   --native-color-grouped-sheet: var(--bottom-sheet-surface);
