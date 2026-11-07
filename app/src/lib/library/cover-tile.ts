@@ -264,6 +264,8 @@ const COVER_TILE_LOOKS = {
     stack: PHONE_STACK,
     meta: ANDROID_TILE_META,
     grid: ANDROID_GRID,
+    markOff:
+      "max-medium:border-native-select-ring max-medium:bg-native-tile-check-fill max-medium:shadow-native-select-ring-lift",
     notConnected: ANDROID_NOT_CONNECTED,
     unread: ANDROID_COUNT_BADGE,
     badge: NATIVE_BADGE,
