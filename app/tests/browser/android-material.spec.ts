@@ -16,7 +16,6 @@ import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 const SERIES_COUNT = 12;
 const NAVIGATION_BAR_HEIGHT = 64;
 const TOP_APP_BAR_HEIGHT = 64;
-const STATE_LAYER = /0\.08\)/;
 
 testOnlyInItsWebview("android");
 test.use({
@@ -137,7 +136,8 @@ test("lays a state layer in the control's own colour under the pointer, instead 
 
   await filter.hover();
 
-  await expect.poll(() => paintOf(filter)).toMatch(STATE_LAYER);
+  const hoverLayer = await tokenColour(page, "--android-palette-state-hover");
+  await expect.poll(() => paintOf(filter)).toContain(hoverLayer);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
