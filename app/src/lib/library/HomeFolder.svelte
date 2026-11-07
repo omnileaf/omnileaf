@@ -4,6 +4,7 @@
 
   import { HardDrive } from "@lucide/svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -36,6 +37,7 @@
   const NATIVE_TITLE =
     "text-native-row-title/native-row-title font-native-row-title tracking-native-row-title";
   const NATIVE_PLACE = `font-ui ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
+  const ANDROID_PLACE = `font-mono ${ROW_SUBTITLE_TYPE} wrap-anywhere text-muted`;
   const headingId = $props.id();
   const pathId = `${headingId}-path`;
   const width = new WindowWidth();
@@ -48,45 +50,52 @@
     {@const home = folders.home}
     <div
       class={[
-        "flex flex-wrap items-center gap-md px-lg py-md",
+        "flex flex-wrap items-center",
         android.isOn
-          ? "-mx-page-start -me-page-end"
-          : ["rounded-card border border-border bg-card", CARD_PLATE],
+          ? "-mx-page-start -me-page-end py-native-row-block ps-native-row-start pe-native-row-end"
+          : [
+              "gap-md rounded-card border border-border bg-card px-lg py-md",
+              CARD_PLATE,
+            ],
       ]}
     >
       <div
         class={[
-          "relative flex flex-1 items-center gap-md min-inline-none",
+          "relative flex flex-1 min-inline-none",
+          android.isOn
+            ? "items-start gap-native-row-gap"
+            : "items-center gap-md",
           change !== undefined &&
             platform !== "android" &&
             "max-medium:basis-full",
         ]}
       >
-        <span
-          aria-hidden="true"
-          class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile ios:rounded-settings-chip-ios ios:border-transparent ios:bg-ios-chip-grey ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
-        >
-          <HardDrive size={ICON_SIZE} />
-        </span>
+        {#if android.isOn}
+          <Icon name="hard-drive" class="shrink-0" />
+        {:else}
+          <span
+            aria-hidden="true"
+            class="flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile ios:rounded-settings-chip-ios ios:border-transparent ios:bg-ios-chip-grey ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:border-transparent android:bg-android-tonal android:block-settings-chip android:inline-settings-chip"
+          >
+            <HardDrive size={ICON_SIZE} />
+          </span>
+        {/if}
         <div class="flex flex-1 flex-col gap-2xs min-inline-none">
           <h2
             id={headingId}
-            class={isNative
+            class={isNative || android.isOn
               ? NATIVE_TITLE
-              : [
-                  "text-body",
-                  android.isOn
-                    ? "font-regular"
-                    : "font-medium desktop:font-semibold",
-                ]}
+              : "text-body font-medium desktop:font-semibold"}
           >
             {m.library_settings_home_folder()}
           </h2>
           <code
             id={pathId}
-            class={isNative || android.isOn
-              ? NATIVE_PLACE
-              : "font-mono text-detail wrap-anywhere text-muted"}
+            class={android.isOn
+              ? ANDROID_PLACE
+              : isNative
+                ? NATIVE_PLACE
+                : "font-mono text-detail wrap-anywhere text-muted"}
           >
             {folderLocation(home, platform)}
           </code>
@@ -99,7 +108,9 @@
         {#if platform !== "android"}
           {@render change?.(headingId, pathId)}
         {/if}
-        {@render rowAction?.(home)}
+        {#if !android.isOn}
+          {@render rowAction?.(home)}
+        {/if}
       </div>
     </div>
   {:else}

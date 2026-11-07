@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Plus } from "@lucide/svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Button, type ButtonLook } from "#lib/components/ui/button/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -9,6 +10,7 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { AndroidPhone } from "./android-phone.svelte";
   import type { FolderAdding } from "./folder-adding.svelte";
 
   type Placement =
@@ -55,6 +57,7 @@
     element?: HTMLElement | null;
   } = $props();
 
+  const android = new AndroidPhone();
   const isInHeading = $derived(placement === "page-heading");
   const platform = currentPlatform();
   const width = new WindowWidth();
@@ -92,7 +95,13 @@
           : phone.fit,
       ]}
     >
-      <Plus size={placement === "list-row" ? LIST_ROW_ICON_SIZE : ICON_SIZE} />
+      {#if placement === "list-row" && android.isOn}
+        <Icon name="plus" />
+      {:else}
+        <Plus
+          size={placement === "list-row" ? LIST_ROW_ICON_SIZE : ICON_SIZE}
+        />
+      {/if}
       <span class={{ "max-medium:sr-only": isInHeading }}
         >{m.library_add_folder()}</span
       >
