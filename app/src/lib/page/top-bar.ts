@@ -4,6 +4,18 @@ import type { IconName } from "#lib/icons/names.ts";
 import type { WidthClass } from "./breakpoints";
 import { hasTopTabBar, isPhone } from "./platform";
 
+const BAR_ICON_SIZE: Record<Platform, number> = {
+  android: 24,
+  ios: 22,
+  linux: 16,
+  macos: 16,
+  windows: 16,
+};
+
+export function barIconSize(platform: Platform): number {
+  return BAR_ICON_SIZE[platform];
+}
+
 export const NATIVE_TOP_BAR = {
   pageTitle:
     "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar",
@@ -14,7 +26,7 @@ export const NATIVE_TOP_BAR = {
   barButton:
     "shrink-0 rounded-full bg-native-bar-button font-native-bar-button text-native-on-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios block-native-target inline-native-target",
   barButtonRow:
-    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:font-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios android:gap-none android:*:mx-xs",
+    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:font-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios android:gap-none android:*:mx-xs android:*:block-native-button android:*:inline-native-button *:native-target",
   edge: "border-be-(length:--native-spacing-hairline)",
   scrolled:
     "border-native-top-bar-scrolled-edge bg-native-top-bar-scrolled backdrop-blur-ios",

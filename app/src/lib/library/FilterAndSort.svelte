@@ -16,6 +16,7 @@
   import HeaderBadge from "#lib/page/HeaderBadge.svelte";
   import { TABLET_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
+  import { barIconSize } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
@@ -160,7 +161,7 @@
             : undefined}
       >
         <ListFilter
-          size={ICON_SIZE}
+          size={isAndroidPhone ? barIconSize(platform) : ICON_SIZE}
           aria-hidden="true"
           class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />

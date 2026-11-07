@@ -11,7 +11,7 @@ import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
 import PageHeading from "./PageHeading.svelte";
 import { followCorePlatform } from "./platform";
-import { foldingBarLook, NATIVE_TOP_BAR } from "./top-bar";
+import { barIconSize, foldingBarLook, NATIVE_TOP_BAR } from "./top-bar";
 
 const SERIES_BAR_PROPS = {
   title: "Dune",
@@ -136,12 +136,18 @@ test("spaces Android's top bar action buttons with 4px margins and no gap", () =
   const container = document.createElement("div");
   container.className = NATIVE_TOP_BAR.barButtonRow;
   const button = document.createElement("button");
+  button.className = "block-native-target inline-native-target";
   container.append(button);
   document.body.append(container);
 
   expect(getComputedStyle(container).gap).toBe("0px");
   expect(getComputedStyle(button).marginLeft).toBe("4px");
   expect(getComputedStyle(button).marginRight).toBe("4px");
+  expect(getComputedStyle(button).width).toBe("40px");
+  expect(getComputedStyle(button).height).toBe("40px");
+  expect(barIconSize("android")).toBe(24);
+  expect(barIconSize("ios")).toBe(22);
+  expect(barIconSize("windows")).toBe(16);
   container.remove();
 });
 

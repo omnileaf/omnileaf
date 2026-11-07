@@ -20,14 +20,17 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { barIconSize } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { IosPhone } from "./ios-phone.svelte.ts";
 
   const ICON_SIZE = 20;
-  const IOS_BAR_ICON_SIZE = 22;
-  const ios = new IosPhone();
   const ITEM_ICON_SIZE = 16;
+  const platform = currentPlatform();
+  const width = new WindowWidth();
 
   interface FoldedChoices {
     readonly filtersCount: number;
@@ -64,7 +67,9 @@
             class="block-native-target inline-native-target hover:tint-hover active:tint-pressed medium:block-touch-target medium:inline-touch-target large:block-touch-target ios:medium:block-native-target ios:medium:inline-native-target desktop-shell:hidden"
           >
             <Ellipsis
-              size={ios.isOn ? IOS_BAR_ICON_SIZE : ICON_SIZE}
+              size={isPhone(platform, width.current)
+                ? barIconSize(platform)
+                : ICON_SIZE}
               aria-hidden="true"
             />
           </Button>

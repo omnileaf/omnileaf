@@ -10,7 +10,7 @@
   import { type Platform, SEARCH_MAX_CHARS } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
-  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
+  import { barIconSize, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { shortcut } from "#lib/shortcut.ts";
@@ -64,7 +64,9 @@
       ]}
     >
       <Search
-        size={ios.isOn ? IOS_BAR_ICON_SIZE : ICON_SIZE}
+        size={isPhone(platform, width.current)
+          ? barIconSize(platform)
+          : ICON_SIZE}
         aria-hidden="true"
       />
     </a>

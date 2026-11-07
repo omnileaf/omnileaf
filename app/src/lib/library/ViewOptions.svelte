@@ -11,6 +11,7 @@
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { MEDIUM_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
+  import { barIconSize } from "#lib/page/top-bar.ts";
   import { commandBarLook } from "#lib/page/command-bar-look.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -103,7 +104,7 @@
             : undefined}
       >
         <SlidersHorizontal
-          size={ICON_SIZE}
+          size={isAndroidPhone ? barIconSize(platform) : ICON_SIZE}
           aria-hidden="true"
           class={bar?.icon ?? "large:block-lg large:inline-lg"}
         />
