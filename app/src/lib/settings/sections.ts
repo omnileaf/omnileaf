@@ -9,6 +9,7 @@ import {
 } from "@lucide/svelte";
 
 import LibraryGlyph from "#lib/navigation/LibraryGlyph.svelte";
+import type { IconName } from "#lib/icons/names.ts";
 import type { Glyph } from "#lib/page/glyph.ts";
 import { m } from "#lib/paraglide/messages.js";
 import type { Locale } from "#lib/paraglide/runtime.js";
@@ -55,6 +56,7 @@ export interface SettingsSection {
   readonly route: SettingsRoute;
   readonly label: () => string;
   readonly icon: Glyph;
+  readonly iconName?: IconName;
   /** The colour of the section's tile in the iOS Settings list. */
   readonly chip: SectionChip;
 }
@@ -87,6 +89,7 @@ const GENERAL: SettingsSection = {
   route: "/(app)/settings/general",
   label: m.general_title,
   icon: Settings,
+  iconName: "settings",
   chip: "grey",
 };
 
@@ -94,6 +97,7 @@ const APPEARANCE: SettingsSection = {
   route: "/(app)/settings/appearance",
   label: m.appearance_title,
   icon: Sun,
+  iconName: "sun",
   chip: "blue",
 };
 
@@ -101,6 +105,7 @@ const LIBRARY: SettingsSection = {
   route: "/(app)/settings/library",
   label: m.library_title,
   icon: LibraryGlyph,
+  iconName: "library",
   chip: "green",
 };
 
@@ -108,6 +113,7 @@ const READING: SettingsSection = {
   route: "/(app)/settings/reading",
   label: m.reading_title,
   icon: BookOpen,
+  iconName: "book-open",
   chip: "orange",
 };
 
@@ -115,6 +121,7 @@ const PRIVACY: SettingsSection = {
   route: "/(app)/settings/privacy",
   label: m.privacy_title,
   icon: ShieldCheck,
+  iconName: "shield-check",
   chip: "blue",
 };
 
@@ -122,6 +129,7 @@ const STORAGE: SettingsSection = {
   route: "/(app)/settings/storage",
   label: m.storage_title,
   icon: HardDrive,
+  iconName: "hard-drive",
   chip: "grey",
 };
 
@@ -129,6 +137,7 @@ const ADVANCED: SettingsSection = {
   route: "/(app)/settings/advanced",
   label: m.advanced_title,
   icon: SlidersHorizontal,
+  iconName: "sliders-horizontal",
   chip: "grey",
 };
 
@@ -136,6 +145,7 @@ const ABOUT: SettingsSection = {
   route: "/(app)/settings/about",
   label: m.about_title,
   icon: Info,
+  iconName: "info",
   chip: "grey",
 };
 
