@@ -179,22 +179,42 @@ function segmentsOf(group: Locator): Promise<Segment[]> {
         const box = segment.getBoundingClientRect();
         const isWiderThanItself = (element: Element): boolean =>
           element.scrollWidth > element.clientWidth;
-        const holdsItsContent = [...segment.querySelectorAll("*")].every(
-          (element) => {
-            const inner = element.getBoundingClientRect();
-            return (
-              inner.left >= box.left - halfPixel &&
-              inner.right <= box.right + halfPixel
-            );
-          },
+        const touchOverhang = Math.max(
+          0,
+          (Number.parseFloat(getComputedStyle(segment, "::before").width) -
+            box.width) /
+            2 || 0,
         );
+        const isClippedAcross =
+          segment.scrollWidth - box.width - touchOverhang > halfPixel;
+        const isOutsideSegment = (inner: DOMRect): boolean =>
+          inner.left < box.left - halfPixel ||
+          inner.right > box.right + halfPixel;
+        const shown = [...segment.querySelectorAll("*")].filter(
+          (element) => element.closest("[aria-hidden=true]") === null,
+        );
+        const texts = document.createTreeWalker(segment, NodeFilter.SHOW_TEXT);
+        const textBoxes: DOMRect[] = [];
+        for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+          if (node.parentElement?.closest("[aria-hidden=true]") === null) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const textBox = range.getBoundingClientRect();
+            if (textBox.width > 0) {
+              textBoxes.push(textBox);
+            }
+          }
+        }
+        const holdsItsContent =
+          !shown.some((element) =>
+            isOutsideSegment(element.getBoundingClientRect()),
+          ) && !textBoxes.some(isOutsideSegment);
         const cutOff = [
-          ...(holdsItsContent ? [] : [segment]),
-          ...[...segment.querySelectorAll("*")].filter(
+          ...(isClippedAcross || !holdsItsContent ? [segment] : []),
+          ...shown.filter(
             (element) =>
-              element.closest("[aria-hidden=true]") === null &&
-              (isWiderThanItself(element) ||
-                element.scrollHeight - element.clientHeight > overshoot),
+              isWiderThanItself(element) ||
+              element.scrollHeight - element.clientHeight > overshoot,
           ),
         ].map((element) => element.outerHTML.slice(0, 120));
         return {
@@ -217,12 +237,21 @@ function segmentsOf(group: Locator): Promise<Segment[]> {
 function trackSpill(group: Locator): Promise<number> {
   return group.evaluate((track) => {
     const box = track.getBoundingClientRect();
-    const segments = [...track.querySelectorAll("[role=radio]")].map(
-      (segment) => segment.getBoundingClientRect(),
+    const segments = [...track.querySelectorAll("[role=radio]")];
+    const rects = segments.map((segment) => segment.getBoundingClientRect());
+    const touchOverhang = Math.max(
+      0,
+      ...segments.map(
+        (segment, index) =>
+          (Number.parseFloat(getComputedStyle(segment, "::before").width) -
+            (rects[index]?.width ?? 0)) /
+            2 || 0,
+      ),
     );
     return Math.max(
-      ...segments.map((segment) => segment.right - box.right),
-      ...segments.map((segment) => box.left - segment.left),
+      track.scrollWidth - Math.ceil(box.width + touchOverhang),
+      ...rects.map((rect) => rect.right - box.right),
+      ...rects.map((rect) => box.left - rect.left),
       box.right - document.documentElement.clientWidth,
       -box.left,
     );
@@ -374,21 +403,43 @@ async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
   ];
 }
 
-function wrappingGroup(page: Page, platform: string): Locator {
-  return page
-    .getByRole("dialog", { name: english.library_view_options })
-    .getByRole("radiogroup", { name: wrappingGroupName(platform) });
+interface WrappingCase {
+  readonly platform: Platform;
+  readonly project: string;
+  readonly screenWidth: number;
+  readonly groupName: string;
 }
 
-function wrappingGroupName(platform: string): string {
-  return platform === "android"
-    ? english.library_group_by
-    : english.library_view_display;
+const WRAPPING_CASES: readonly WrappingCase[] = [
+  {
+    platform: "ios",
+    project: PLATFORMS.ios.project,
+    screenWidth: PLATFORMS.ios.screenWidth,
+    groupName: english.library_view_display,
+  },
+  {
+    platform: "android",
+    project: PLATFORMS.android.project,
+    screenWidth: PLATFORMS.android.screenWidth,
+    groupName: english.library_group_by,
+  },
+  {
+    platform: "linux",
+    project: PLATFORMS.linux.project,
+    screenWidth: PLATFORMS.linux.screenWidth,
+    groupName: english.library_view_display,
+  },
+];
+
+function wrappingGroup(page: Page, groupName: string): Locator {
+  return page
+    .getByRole("dialog", { name: english.library_view_options })
+    .getByRole("radiogroup", { name: groupName });
 }
 
 function rowsInFirstFrame(
   page: Page,
-  platform: string,
+  groupName: string,
   isFolded: boolean,
 ): Promise<number> {
   return page.evaluate(
@@ -425,15 +476,15 @@ function rowsInFirstFrame(
       }),
     {
       opener: english.library_view_options,
-      groupName: wrappingGroupName(platform),
+      groupName,
       isFolded,
     },
   );
 }
 
-for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
-  test.describe(`View options on ${platform} at the largest text`, () => {
-    test.use({ backend: withSeries(platform as Platform) });
+for (const { platform, project, screenWidth, groupName } of WRAPPING_CASES) {
+  test.describe(`View options' ${groupName} on ${platform} at ${String(screenWidth)}px and the largest text`, () => {
+    test.use({ backend: withSeries(platform) });
 
     test.beforeEach(async ({ page }, testInfo) => {
       test.skip(
@@ -457,12 +508,12 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         await openLibraryMore(page);
       }
 
-      const firstFrame = await rowsInFirstFrame(page, platform, folded);
+      const firstFrame = await rowsInFirstFrame(page, groupName, folded);
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
       const settled = rowsOf(
-        await segmentsOf(wrappingGroup(page, platform)),
+        await segmentsOf(wrappingGroup(page, groupName)),
       ).length;
 
       expect(settled).toBeGreaterThan(1);
@@ -484,7 +535,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
-      const rows = rowsOf(await segmentsOf(wrappingGroup(page, platform)));
+      const rows = rowsOf(await segmentsOf(wrappingGroup(page, groupName)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
       const wrappedHeight = await page
         .getByRole("dialog", { name: english.library_view_options })
