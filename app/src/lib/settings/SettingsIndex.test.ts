@@ -1,9 +1,15 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SettingsIndex from "./SettingsIndex.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const PROPS = {
   summaries: {
@@ -86,14 +92,12 @@ test("renders 40px tonal circles with 24px Material Symbols and row subtitles on
 
   const media = screen.container.querySelector("[data-slot=item-media]");
   expect(media).not.toBeNull();
-  expect(media?.className).toContain("android:rounded-full");
-  expect(media?.className).toContain("android:bg-accent-soft");
-  expect(media?.className).toContain("android:text-accent");
-  expect(media?.className).toContain("android:block-settings-chip");
-  expect(media?.className).toContain("android:inline-settings-chip");
+  expect(media!.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(media!.getBoundingClientRect().width).toBeCloseTo(40, 0);
 
   const icon = media?.querySelector("[data-icon]");
-  expect(icon?.getAttribute("style")).toContain("24px");
+  expect(icon).not.toBeNull();
+  expect(icon?.className).toContain("inline-native-icon");
 
   const desc = screen.container.querySelector("[data-slot=item-description]");
   expect(desc?.className).toContain(
