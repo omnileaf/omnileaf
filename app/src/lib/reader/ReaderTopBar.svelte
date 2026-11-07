@@ -36,6 +36,7 @@
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
   import ReaderCommandLabel from "./ReaderCommandLabel.svelte";
   import ReaderIcon from "./ReaderIcon.svelte";
+  import { jumpTriggerLook } from "./jump-trigger-look.ts";
   import {
     WINDOWS_BACK_KEYS,
     WINDOWS_BAR,
@@ -93,6 +94,7 @@
   const chrome = getReaderChrome();
   const isOnPhone = $derived(chrome.isOnPhone);
   const floats = $derived(chrome.floats);
+  const jumpLook = $derived(jumpTriggerLook(platform, chrome.width));
   const commandButton = $derived(readerCommandButton(platform, chrome.width));
   const iconSize = $derived(readerIconSize(platform));
   const isWindows = $derived(chrome.isCommandBar);
@@ -173,28 +175,33 @@
         {m.reader_page_of({ page: pageNumber, count: pageCount })}
       </span>
     </div>
-  {:else if floats}
+  {:else if floats || chrome.spans}
     <button
       type="button"
       aria-label={jumpLabel}
       aria-haspopup="dialog"
       aria-expanded={isJumpOpen}
       aria-keyshortcuts="G"
-      class="flex flex-1 flex-col items-center justify-center rounded-full text-center text-native-on-top-bar transition-control min-block-native-target min-inline-none focus-visible:focus-ring active:opacity-50"
+      class={jumpLook.button}
       onclick={onJump}
     >
-      <span class="truncate text-small font-semibold max-inline-full">
+      <span class={jumpLook.series}>
         {seriesTitle}
       </span>
-      <span
-        class="flex items-center overflow-hidden text-caption font-medium text-muted max-inline-full"
-      >
-        <span class="truncate">{bookTitle}</span>
-        <span class="flex shrink-0 items-center gap-2xs ps-2xs max-inline-full">
-          <ChevronDown
+      <span class={jumpLook.book}>
+        <span class={jumpLook.bookName}>{bookTitle}</span>
+        <span
+          class={[
+            "flex shrink-0 items-center gap-2xs max-inline-full",
+            jumpLook.page,
+          ]}
+        >
+          <ReaderIcon
+            name="chevron-down"
+            fallback={ChevronDown}
+            isKit={jumpLook.hasKitChevron}
             size={JUMP_ICON_SIZE}
-            aria-hidden="true"
-            class="shrink-0"
+            class={jumpLook.chevron}
           />
           <span class="truncate">
             {m.reader_page_after_book({
