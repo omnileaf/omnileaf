@@ -7,6 +7,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
+  import { FLUSH_BLEED } from "./android-flush-look.ts";
   import { LIST_ROW } from "./grouped-rows-look.ts";
   import SettingWords, { type WordsLook } from "./SettingWords.svelte";
 
@@ -38,8 +39,6 @@
   const ANDROID_ROW =
     "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row-two";
 
-  const ANDROID_BLEED = "-mx-page-start -me-page-end";
-
   const GROUPED_ROW = `${LIST_ROW} text-start inline-full`;
 
   const TINTED = "hover:tint-hover active:tint-pressed";
@@ -55,7 +54,7 @@
   );
   const rowLook = $derived(
     look === "android"
-      ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full", TINTED]
+      ? [ANDROID_ROW, bleeds ? FLUSH_BLEED : "inline-full", TINTED]
       : look === "grouped"
         ? [GROUPED_ROW, GROUPED_PRESSED]
         : [ROW, TINTED],

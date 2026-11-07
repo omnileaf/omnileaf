@@ -14,11 +14,7 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
 
-  import {
-    FLUSH_LIST,
-    FLUSH_LIST_HEADING,
-    FLUSH_ROW_ICON,
-  } from "./android-flush-look.ts";
+  import { FLUSH_LIST, FLUSH_LIST_HEADING } from "./android-flush-look.ts";
   import {
     type SectionChip,
     type SettingsGroup,
@@ -84,7 +80,7 @@
                 <a href={resolve(section.route)} {...props}>
                   {#if android.isOn}
                     {#if section.iconName !== undefined}
-                      <Icon name={section.iconName} class={FLUSH_ROW_ICON} />
+                      <Icon name={section.iconName} class="shrink-0" />
                     {/if}
                   {:else}
                     <ItemMedia
