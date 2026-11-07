@@ -8,6 +8,7 @@ import { render } from "vitest-browser-svelte";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";
+import { compositedContrast } from "../../../tests/components/contrast-ratio";
 import "../../app.css";
 
 import {
@@ -18,6 +19,8 @@ import {
 } from "./notices";
 import SelfDismissingToastHarness from "./SelfDismissingToastHarness.svelte";
 import Toasts from "./Toasts.svelte";
+
+const MIN_TEXT_CONTRAST = 4.5;
 
 const READY: Notice = {
   tone: "plain",
@@ -67,6 +70,7 @@ afterEach(async () => {
     element.remove();
   }
   delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
   document.documentElement.style.removeProperty("--platform-font");
   await clearToasts();
 });
@@ -751,6 +755,27 @@ test("draws a plain toast on an Android tablet inverse at 4px corners with a qui
   expect(action.color).toBe(colourOf("--android-inverse-primary"));
   expect(action.fontWeight).toBe("600");
 });
+
+test.each(["light", "dark"] as const)(
+  "keeps a plain toast's action readable against the Android snackbar in the %s theme",
+  async (theme) => {
+    document.documentElement.dataset.theme = theme;
+    await page.viewport(TABLET.width, TABLET.height);
+    const notices = await renderToastsOn("android");
+    notices.show({ ...READY, action: START_OVER });
+    const toast = toastSaying(READY.title);
+    await expect.element(toast).toBeVisible();
+
+    const action = toast
+      .getByRole("button", { name: START_OVER.label })
+      .element();
+    const surface = getComputedStyle(cardOf(toast)).backgroundColor;
+
+    expect(compositedContrast(action, [surface])).toBeGreaterThanOrEqual(
+      MIN_TEXT_CONTRAST,
+    );
+  },
+);
 
 test("keeps a warning's own colours and filled action on an Android tablet, at the snackbar's 4px corners", async () => {
   await page.viewport(TABLET.width, TABLET.height);
