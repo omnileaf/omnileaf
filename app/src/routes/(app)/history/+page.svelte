@@ -11,6 +11,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
@@ -209,7 +210,11 @@
           void startSearching();
         }}
       >
-        <Search size={ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="search" size={ICON_SIZE} />
+        {:else}
+          <Search size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
     {/snippet}
   </Tooltip>
@@ -232,7 +237,11 @@
           void clear();
         }}
       >
-        <Eraser size={ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="eraser" size={ICON_SIZE} />
+        {:else}
+          <Eraser size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
     {/snippet}
   </Tooltip>
@@ -250,7 +259,11 @@
           class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
           onclick={stopSearching}
         >
-          <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
+          {#if platform === "android"}
+            <Icon name="arrow-left" size={ICON_SIZE} />
+          {:else}
+            <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
+          {/if}
         </Button>
       {/snippet}
     </Tooltip>
@@ -309,7 +322,11 @@
         href={resolve("/(app)")}
         class="mbs-lg flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button"
       >
-        <LibraryBig size={FIELD_ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="library" size={FIELD_ICON_SIZE} />
+        {:else}
+          <LibraryBig size={FIELD_ICON_SIZE} aria-hidden="true" />
+        {/if}
         {m.history_go_to_library()}
       </a>
     </EmptyState>
