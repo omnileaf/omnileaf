@@ -20,7 +20,12 @@ const STRIP_OVERHANG = 8;
 
 async function openHud(
   platform: Platform,
-  options: { isTwoUp?: boolean; isLit?: boolean } = {},
+  options: {
+    isTwoUp?: boolean;
+    isLit?: boolean;
+    canPlay?: boolean;
+    hidesSlider?: boolean;
+  } = {},
 ): Promise<void> {
   document.body.replaceChildren();
   followCorePlatform(platform);
@@ -145,4 +150,16 @@ test("keeps the bordered segmented group on the other platforms", async () => {
   for (const item of items()) {
     expect(getComputedStyle(item).borderTopWidth).toBe("1px");
   }
+});
+
+test("keeps the page slider while the strip is not on screen even when auto-scroll is offered", async () => {
+  await openHud("android", { canPlay: true, hidesSlider: false });
+
+  await expect.element(page.getByRole("slider")).toBeInTheDocument();
+});
+
+test("leaves the page slider to the strip's own scrubber once the strip is on screen", async () => {
+  await openHud("android", { canPlay: true, hidesSlider: true });
+
+  expect(page.getByRole("slider").elements()).toHaveLength(0);
 });

@@ -11,6 +11,7 @@ import {
 } from "./reader-book.ts";
 
 const CLOSE_PX = 6;
+const SCRUBBER_SIDE_GAP_PX = 8;
 
 function tallPages(base: FakeBackend, bookmarked: number[] | null = null) {
   return {
@@ -116,4 +117,42 @@ test.describe("on a phone", () => {
 
     await expect(rail(page)).toBeHidden();
   });
+
+  test(
+    "runs Android's page slider down the right edge instead of along the bottom bar",
+    { tag: "@native" },
+    async ({ page, platform }) => {
+      test.skip(platform !== "android", "Android's vertical page slider");
+      await openStrip(page);
+      const scrubber = page.locator("[data-scrubber]");
+
+      await expect(scrubber).toBeVisible();
+      await expect(page.locator("input[type=range]")).toHaveCount(0);
+      const track = await boxOf(scrubber);
+      const viewport = page.viewportSize();
+      expect(track.x + track.width).toBeCloseTo(
+        (viewport?.width ?? 0) - SCRUBBER_SIDE_GAP_PX,
+        0,
+      );
+
+      await page.mouse.move(track.x + track.width / 2, track.y + 20);
+      await page.mouse.down();
+      await page.mouse.move(track.x + track.width / 2, track.y + track.height, {
+        steps: 6,
+      });
+      await page.mouse.up();
+
+      const isAtEnd = await page
+        .locator("[data-strip]")
+        .evaluate(
+          (element) =>
+            element.scrollTop + element.clientHeight >=
+            element.scrollHeight - 2,
+        );
+      expect(isAtEnd).toBe(true);
+      await expect(scrubber.locator("[data-scrubber-count]")).toContainText(
+        /\d+ \/ \d+/,
+      );
+    },
+  );
 });
