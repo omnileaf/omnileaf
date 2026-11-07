@@ -44,6 +44,7 @@
     isBlank,
     showsPreviews,
     isShown,
+    hidesSlider,
     onPlay,
     onSeek,
   }: {
@@ -58,6 +59,7 @@
     isBlank: boolean;
     showsPreviews: boolean;
     isShown: boolean;
+    hidesSlider: boolean;
     onPlay: (() => void) | undefined;
     onSeek: (index: number) => void;
   } = $props();
@@ -157,6 +159,7 @@
       : cn(
           "flex items-center gap-xs expanded:gap-sm",
           chrome.isOnPhone && "gap-sm",
+          hidesSlider && "justify-center",
         )}
   >
     <BookStepLink step="previous" neighbour={previous} />
@@ -175,24 +178,26 @@
         />
       </button>
     {/if}
-    <span
-      class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
-    >
-      {spreadPosition(spread, count)}
-    </span>
-    <PageSlider
-      {shown}
-      {count}
-      {direction}
-      {onSeek}
-      onDrag={(dragged: boolean) => {
-        isDragged = dragged;
-        staysUp ||= dragged;
-      }}
-      onFocusChange={(isFocused: boolean) => {
-        isSliderFocused = isFocused;
-      }}
-    />
+    {#if !hidesSlider}
+      <span
+        class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
+      >
+        {spreadPosition(spread, count)}
+      </span>
+      <PageSlider
+        {shown}
+        {count}
+        {direction}
+        {onSeek}
+        onDrag={(dragged: boolean) => {
+          isDragged = dragged;
+          staysUp ||= dragged;
+        }}
+        onFocusChange={(isFocused: boolean) => {
+          isSliderFocused = isFocused;
+        }}
+      />
+    {/if}
     <BookStepLink step="next" neighbour={next} />
   </div>
   {#if secondsLeft !== undefined}

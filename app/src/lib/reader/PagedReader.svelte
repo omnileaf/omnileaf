@@ -53,6 +53,7 @@
     slowerSpeed,
   } from "#lib/reader/auto-scroll.ts";
   import StripFoundCard from "#lib/reader/StripFoundCard.svelte";
+  import StripScrubber from "#lib/reader/StripScrubber.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
     type ReaderAction,
@@ -189,6 +190,7 @@
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
+  let stripProgress = $state(0);
   const crop = $derived(pageCrop(look.cropsBorders, isStrip));
   let cropped: CroppedPages | undefined = $state.raw(
     untrack(() =>
@@ -251,6 +253,7 @@
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
         place: () => StripPlace | undefined;
+        scrubTo: (along: number) => void;
       }
     | undefined = $state();
   let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
@@ -1122,6 +1125,7 @@
               marks={bookmarks === null ? [] : [...bookmarks]}
               overlay={stripZones}
               startAt={startAt?.kind === "strip" ? startAt : undefined}
+              bind:progress={stripProgress}
               onShown={(index: number) => {
                 turner.goTo(index);
               }}
@@ -1270,6 +1274,28 @@
           />
         </div>
       {/if}
+      {#if isStripShown && chrome.spans}
+        <div
+          class={[
+            "transition-opacity motion-reader:duration-fade motion-reader:ease-out",
+            !controls.isShown && "pointer-events-none opacity-0",
+          ]}
+          {...controlEvents}
+        >
+          <StripScrubber
+            progress={stripProgress}
+            shown={turner.shown}
+            count={pageCount}
+            position={spreadPosition(spread, pageCount)}
+            onScrub={(along: number) => {
+              strip?.scrubTo(along);
+            }}
+            onSeek={(index: number) => {
+              turner.goTo(index);
+            }}
+          />
+        </div>
+      {/if}
       <div
         class={[
           "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
@@ -1302,6 +1328,7 @@
             screenshotMode.options.blankReaderPages}
           showsPreviews={smartFeatures.showsPagePreviews}
           isShown={controls.isShown}
+          hidesSlider={isStripShown && chrome.spans}
           onPlay={isStrip ? startAutoScroll : undefined}
           secondsLeft={book.secondsPerPage === null ||
           !smartFeatures.showsTimeLeft
