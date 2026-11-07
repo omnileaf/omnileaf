@@ -19,6 +19,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   sidewaysOverflow,
+  targetOf,
   test,
   tokenColour,
   viewportOf,
@@ -1402,9 +1403,9 @@ test("sets each book's added date on one line of the table", async ({
   expect((await boxOf(added)).height).toBeLessThanOrEqual(lineHeight);
 });
 
-for (const { platform, statusBar, target } of [
-  { platform: "ios", statusBar: 59, target: 44 },
-  { platform: "android", statusBar: 24, target: 40 },
+for (const { platform, statusBar, target, tapped } of [
+  { platform: "ios", statusBar: 59, target: 44, tapped: 44 },
+  { platform: "android", statusBar: 24, target: 40, tapped: 48 },
 ] as const) {
   test.describe(`at the top of a phone on ${platform}`, () => {
     test.use({
@@ -1461,6 +1462,10 @@ for (const { platform, statusBar, target } of [
       expect(Math.min(atRest.width, atRest.height)).toBeGreaterThanOrEqual(
         target,
       );
+      expect(await targetOf(back(page))).toMatchObject({
+        width: tapped,
+        height: tapped,
+      });
     });
 
     test("takes the title away again once larger text brings the page's title back out from under the bar", async ({
