@@ -38,7 +38,7 @@ interface Segment {
 const LANGUAGES = { en: english, "en-XA": pseudo } as const;
 const PLATFORMS = {
   ios: { project: "webkit-phone", target: 44, screenWidth: 390 },
-  android: { project: "chromium-phone", target: 48, screenWidth: 390 },
+  android: { project: "chromium-phone", target: 48, screenWidth: 320 },
   linux: { project: "chromium-desktop", target: 40, screenWidth: 1280 },
 } as const satisfies Record<
   string,
@@ -50,6 +50,7 @@ const HEIGHT = 844;
 const CHOICES_STEP = 3;
 const ONE_ROW_WIDTHS: readonly number[] = [390, 1440];
 const GLYPH_OVERSHOOT = 4;
+const HALF_PIXEL = 0.5;
 const SAME_WIDTH = 1;
 const SERIES = sampleSeries(12);
 const LARGEST_TEXT_SCALE = 2;
@@ -158,54 +159,99 @@ async function scaleText(page: Page, scale: number): Promise<void> {
 }
 
 function segmentsOf(group: Locator): Promise<Segment[]> {
-  return group.evaluate((track, overshoot) => {
-    track.scrollIntoView({ block: "center" });
-    const origin = track.getBoundingClientRect();
-    const tappedHeight = (segment: Element, box: DOMRect): number => {
-      const x = box.left + box.width / 2;
-      let tapped = 0;
-      for (let y = Math.floor(box.top) - 32; y < box.bottom + 32; y += 1) {
-        if (
-          document.elementFromPoint(x, y)?.closest("[role=radio]") === segment
-        ) {
-          tapped += 1;
+  return group.evaluate(
+    (track, { overshoot, halfPixel }) => {
+      track.scrollIntoView({ block: "center" });
+      const origin = track.getBoundingClientRect();
+      const tappedHeight = (segment: Element, box: DOMRect): number => {
+        const x = box.left + box.width / 2;
+        let tapped = 0;
+        for (let y = Math.floor(box.top) - 32; y < box.bottom + 32; y += 1) {
+          if (
+            document.elementFromPoint(x, y)?.closest("[role=radio]") === segment
+          ) {
+            tapped += 1;
+          }
         }
-      }
-      return tapped;
-    };
-    return [...track.querySelectorAll("[role=radio]")].map((segment) => {
-      const box = segment.getBoundingClientRect();
-      const isWiderThanItself = (element: Element): boolean =>
-        element.scrollWidth > element.clientWidth;
-      const cutOff = [
-        ...(isWiderThanItself(segment) ? [segment] : []),
-        ...[...segment.querySelectorAll("*")].filter(
-          (element) =>
-            element.closest("[aria-hidden=true]") === null &&
-            (isWiderThanItself(element) ||
-              element.scrollHeight - element.clientHeight > overshoot),
-        ),
-      ].map((element) => element.outerHTML.slice(0, 120));
-      return {
-        x: box.left - origin.left,
-        y: box.top - origin.top,
-        width: box.width,
-        height: box.height,
-        target: tappedHeight(segment, box),
-        hasIcon: [...segment.querySelectorAll("svg")].some(
-          (icon) => icon.getBoundingClientRect().width > 0,
-        ),
-        cutOff,
+        return tapped;
       };
-    });
-  }, GLYPH_OVERSHOOT);
+      return [...track.querySelectorAll("[role=radio]")].map((segment) => {
+        const box = segment.getBoundingClientRect();
+        const isWiderThanItself = (element: Element): boolean =>
+          element.scrollWidth > element.clientWidth;
+        const touchOverhang = Math.max(
+          0,
+          (Number.parseFloat(getComputedStyle(segment, "::before").width) -
+            box.width) /
+            2 || 0,
+        );
+        const isClippedAcross =
+          segment.scrollWidth - box.width - touchOverhang > halfPixel;
+        const isOutsideSegment = (inner: DOMRect): boolean =>
+          inner.left < box.left - halfPixel ||
+          inner.right > box.right + halfPixel;
+        const shown = [...segment.querySelectorAll("*")].filter(
+          (element) => element.closest("[aria-hidden=true]") === null,
+        );
+        const texts = document.createTreeWalker(segment, NodeFilter.SHOW_TEXT);
+        const textBoxes: DOMRect[] = [];
+        for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+          if (node.parentElement?.closest("[aria-hidden=true]") === null) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const textBox = range.getBoundingClientRect();
+            if (textBox.width > 0) {
+              textBoxes.push(textBox);
+            }
+          }
+        }
+        const holdsItsContent =
+          !shown.some((element) =>
+            isOutsideSegment(element.getBoundingClientRect()),
+          ) && !textBoxes.some(isOutsideSegment);
+        const cutOff = [
+          ...(isClippedAcross || !holdsItsContent ? [segment] : []),
+          ...shown.filter(
+            (element) =>
+              isWiderThanItself(element) ||
+              element.scrollHeight - element.clientHeight > overshoot,
+          ),
+        ].map((element) => element.outerHTML.slice(0, 120));
+        return {
+          x: box.left - origin.left,
+          y: box.top - origin.top,
+          width: box.width,
+          height: box.height,
+          target: tappedHeight(segment, box),
+          hasIcon: [...segment.querySelectorAll("svg")].some(
+            (icon) => icon.getBoundingClientRect().width > 0,
+          ),
+          cutOff,
+        };
+      });
+    },
+    { overshoot: GLYPH_OVERSHOOT, halfPixel: HALF_PIXEL },
+  );
 }
 
 function trackSpill(group: Locator): Promise<number> {
   return group.evaluate((track) => {
     const box = track.getBoundingClientRect();
+    const segments = [...track.querySelectorAll("[role=radio]")];
+    const rects = segments.map((segment) => segment.getBoundingClientRect());
+    const touchOverhang = Math.max(
+      0,
+      ...segments.map(
+        (segment, index) =>
+          (Number.parseFloat(getComputedStyle(segment, "::before").width) -
+            (rects[index]?.width ?? 0)) /
+            2 || 0,
+      ),
+    );
     return Math.max(
-      track.scrollWidth - track.clientWidth,
+      track.scrollWidth - Math.ceil(box.width + touchOverhang),
+      ...rects.map((rect) => rect.right - box.right),
+      ...rects.map((rect) => box.left - rect.left),
       box.right - document.documentElement.clientWidth,
       -box.left,
     );
@@ -357,15 +403,47 @@ async function listenForErrors(page: Page): Promise<() => Promise<string[]>> {
   ];
 }
 
-function displayGroup(page: Page): Locator {
-  return page
-    .getByRole("dialog", { name: english.library_view_options })
-    .getByRole("radiogroup", { name: english.library_view_display });
+interface WrappingCase {
+  readonly platform: Platform;
+  readonly project: string;
+  readonly screenWidth: number;
+  readonly groupName: string;
 }
 
-function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
+const WRAPPING_CASES: readonly WrappingCase[] = [
+  {
+    platform: "ios",
+    project: PLATFORMS.ios.project,
+    screenWidth: PLATFORMS.ios.screenWidth,
+    groupName: english.library_view_display,
+  },
+  {
+    platform: "android",
+    project: PLATFORMS.android.project,
+    screenWidth: PLATFORMS.android.screenWidth,
+    groupName: english.library_group_by,
+  },
+  {
+    platform: "linux",
+    project: PLATFORMS.linux.project,
+    screenWidth: PLATFORMS.linux.screenWidth,
+    groupName: english.library_view_display,
+  },
+];
+
+function wrappingGroup(page: Page, groupName: string): Locator {
+  return page
+    .getByRole("dialog", { name: english.library_view_options })
+    .getByRole("radiogroup", { name: groupName });
+}
+
+function rowsInFirstFrame(
+  page: Page,
+  groupName: string,
+  isFolded: boolean,
+): Promise<number> {
   return page.evaluate(
-    ({ opener, isFolded }) =>
+    ({ opener, groupName, isFolded }) =>
       new Promise<number>((resolve) => {
         const button = isFolded
           ? [...document.querySelectorAll<HTMLElement>("[role=menuitem]")].find(
@@ -376,10 +454,17 @@ function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
             );
         button?.click();
         requestAnimationFrame(() => {
-          const segments =
-            document
-              .querySelector("[role=dialog][data-state=open] [role=radiogroup]")
-              ?.querySelectorAll("[role=radio]") ?? [];
+          const group = [
+            ...document.querySelectorAll(
+              "[role=dialog][data-state=open] [role=radiogroup]",
+            ),
+          ].find(
+            (candidate) =>
+              document
+                .getElementById(candidate.getAttribute("aria-labelledby") ?? "")
+                ?.textContent.trim() === groupName,
+          );
+          const segments = group?.querySelectorAll("[role=radio]") ?? [];
           resolve(
             new Set(
               [...segments].map((segment) =>
@@ -389,13 +474,17 @@ function rowsInFirstFrame(page: Page, isFolded: boolean): Promise<number> {
           );
         });
       }),
-    { opener: english.library_view_options, isFolded },
+    {
+      opener: english.library_view_options,
+      groupName,
+      isFolded,
+    },
   );
 }
 
-for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
-  test.describe(`View options on ${platform} at the largest text`, () => {
-    test.use({ backend: withSeries(platform as Platform) });
+for (const { platform, project, screenWidth, groupName } of WRAPPING_CASES) {
+  test.describe(`View options' ${groupName} on ${platform} at ${String(screenWidth)}px and the largest text`, () => {
+    test.use({ backend: withSeries(platform) });
 
     test.beforeEach(async ({ page }, testInfo) => {
       test.skip(
@@ -419,11 +508,13 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
         await openLibraryMore(page);
       }
 
-      const firstFrame = await rowsInFirstFrame(page, folded);
+      const firstFrame = await rowsInFirstFrame(page, groupName, folded);
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
-      const settled = rowsOf(await segmentsOf(displayGroup(page))).length;
+      const settled = rowsOf(
+        await segmentsOf(wrappingGroup(page, groupName)),
+      ).length;
 
       expect(settled).toBeGreaterThan(1);
       expect(firstFrame).toBe(settled);
@@ -444,7 +535,7 @@ for (const [platform, { project, screenWidth }] of Object.entries(PLATFORMS)) {
       await settle(
         page.getByRole("dialog", { name: english.library_view_options }),
       );
-      const rows = rowsOf(await segmentsOf(displayGroup(page)));
+      const rows = rowsOf(await segmentsOf(wrappingGroup(page, groupName)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
       const wrappedHeight = await page
         .getByRole("dialog", { name: english.library_view_options })

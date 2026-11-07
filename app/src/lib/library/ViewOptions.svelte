@@ -45,6 +45,11 @@
     returnFocusTo?: HTMLElement | null;
   } = $props();
 
+  const SHEET_CLASS = {
+    androidPhone: "max-block-below-sheet-top",
+    ios: "",
+    other: "inset-bs-sheet-top block-auto",
+  } as const;
   const isWide = new MediaQuery(MEDIUM_QUERY);
   const platform = currentPlatform();
   const isIos = platform === "ios";
@@ -55,6 +60,12 @@
   const bar = commandBarLook(platform);
   const isMac = platform === "macos";
   const panel = viewPanelLook(platform);
+  const sheetClass = $derived.by(() => {
+    if (isAndroidPhone) {
+      return SHEET_CLASS.androidPhone;
+    }
+    return isIos ? SHEET_CLASS.ios : SHEET_CLASS.other;
+  });
   const opener = $derived(showsButton ? button : returnFocusTo);
 
   function open(): void {
@@ -136,7 +147,7 @@
 {:else}
   <Dialog.Root bind:open={isOpen}>
     <DrawerContent
-      class={isIos ? "" : "inset-bs-sheet-top block-auto"}
+      class={sheetClass}
       height={isIos ? "large" : "fit"}
       ground={isIos ? "grouped" : "plain"}
       onDismiss={close}

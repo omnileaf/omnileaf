@@ -257,6 +257,7 @@ export const TOKEN_THEME = {
     "band",
     "band-fade",
     "band-wide",
+    "below-sheet-top",
     "book-cover-min",
     "book-menu",
     "book-menu-macos",
