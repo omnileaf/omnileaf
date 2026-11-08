@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CircleCheck } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
@@ -18,8 +19,11 @@
     TAP_ZONES,
     type TapZones,
   } from "#lib/reader/reader-settings.svelte.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import { hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import type { SwipeSide } from "#lib/series/swipe.ts";
   import {
@@ -34,6 +38,7 @@
     FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import SettingActionRow from "#lib/settings/SettingActionRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
@@ -50,11 +55,16 @@
   const CARD_SWITCH = "-mx-list-row inline-auto";
   const CARD = "rounded-card border border-border bg-card p-list-row";
 
+  const guideRows: Snippet = tapGuideRows;
   const switches: Snippet = deviceSwitches;
   const skipSwitch: Snippet = skipUpNextSwitch;
 
   const defaults = readerDefaults();
+  const hints = readerHints();
+  const notices = getNotices();
+  const width = new WindowWidth();
   const android = new AndroidPhone();
+  const isOnPhone = $derived(isPhone(currentPlatform(), width.current));
 
   const skipUpNext = getSkipUpNextSetting();
   const swipeActions = getSwipeActionsSetting();
@@ -73,6 +83,32 @@
     }
   }
 </script>
+
+{#snippet tapGuideRows()}
+  <SettingSwitch
+    label={m.reading_tap_guide()}
+    description={m.reading_tap_guide_help()}
+    isOn={hints.showsTapGuide}
+    onToggle={() => {
+      hints.turnTapGuide(!hints.showsTapGuide);
+    }}
+    bleeds={android.isOn}
+    class={android.isOn ? "" : CARD_SWITCH}
+  />
+  <SettingActionRow
+    label={m.reading_guide_again()}
+    description={m.reading_guide_again_help()}
+    onPress={() => {
+      hints.armReplay();
+      notices.show({
+        tone: "plain",
+        icon: CircleCheck,
+        title: m.reading_guide_again_done(),
+      });
+    }}
+    class={android.isOn ? "" : CARD_SWITCH}
+  />
+{/snippet}
 
 {#snippet deviceSwitches()}
   {#if hasVolumeKeys(currentPlatform())}
@@ -96,6 +132,16 @@
     isOn={defaults.look.keepsScreenOn}
     onToggle={() => {
       defaults.change("keepsScreenOn", !defaults.look.keepsScreenOn);
+    }}
+    bleeds={android.isOn}
+    class={android.isOn ? "" : CARD_SWITCH}
+  />
+  <SettingSwitch
+    label={m.reading_resume_notice()}
+    description={m.reading_resume_notice_help()}
+    isOn={hints.showsResumeNotice(isOnPhone)}
+    onToggle={() => {
+      hints.turnResumeNotice(!hints.showsResumeNotice(isOnPhone));
     }}
     bleeds={android.isOn}
     class={android.isOn ? "" : CARD_SWITCH}
@@ -180,6 +226,7 @@
           defaults.change("tapZones", zones);
         }}
       />
+      {@render guideRows()}
       {@render switches()}
     </div>
   {:else}
@@ -198,6 +245,7 @@
           defaults.change("tapZones", zones);
         }}
       />
+      {@render guideRows()}
       {@render switches()}
     </section>
   {/if}
