@@ -24,9 +24,19 @@ import {
 const PROMISED_PAGES = PAGE_COUNT + 6;
 const MIRRORED = "-1 1";
 
+let shownInFolder: string[] = [];
+
+test.beforeEach(() => {
+  shownInFolder = [];
+});
+
 test.use({
   backend: {
     ...readerBackend(DEFAULT_BACKEND),
+    showBookInFolder: (book) => {
+      shownInFolder = [...shownInFolder, book];
+      return null;
+    },
     openBook: () => ({
       ...readerBook(NOT_STARTED),
       damage: { promisedPages: PROMISED_PAGES, cause: "archiveEndsEarly" },
@@ -86,14 +96,14 @@ test("reads the pages that work", async ({ page }) => {
   );
 });
 
-test("says showing the file is still to come", async ({ page }) => {
+test("shows the damaged book's file from its button", async ({ page }) => {
   await openDamagedBook(page);
 
-  await expect(
-    page.getByRole("button", {
-      name: /^Show (the file|in folder) · coming soon$/,
-    }),
-  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: /^Show (the file|in folder)$/ })
+    .click();
+
+  await expect.poll(() => shownInFolder).toEqual([BOOK_ID]);
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

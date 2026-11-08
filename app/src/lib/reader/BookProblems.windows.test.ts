@@ -40,6 +40,7 @@ async function unreadable() {
     kind: "unreadable",
     place: null,
     platform: "windows",
+    onShowFile: () => undefined,
   });
 }
 

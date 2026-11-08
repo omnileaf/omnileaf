@@ -22,14 +22,12 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
-  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import ComingSoon from "./ComingSoon.svelte";
   import { moreHeading } from "./more-heading.ts";
   import {
     READER_ICON_SIZE,
@@ -64,6 +62,7 @@
     platform,
     onMarkRead,
     onStartOver,
+    onShowFile,
     onOpenChange,
   }: {
     title: string;
@@ -73,6 +72,7 @@
     platform: Platform;
     onMarkRead: () => void;
     onStartOver: () => void;
+    onShowFile: (() => void) | undefined;
     onOpenChange: (isOpen: boolean) => void;
   } = $props();
 
@@ -174,10 +174,12 @@
           <RotateCcw size={ITEM_ICON_SIZE} aria-hidden="true" />
           {m.reader_start_over()}
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </DropdownMenuItem>
+        {#if onShowFile !== undefined}
+          <DropdownMenuItem onSelect={onShowFile}>
+            <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
+            {showFile}
+          </DropdownMenuItem>
+        {/if}
         {#if chrome.isOnPhone}
           <DropdownMenuSeparator />
         {:else}
@@ -279,18 +281,29 @@
             </Button>
           {/snippet}
         </Item>
-        <ComingSoon
-          label={showFile}
-          class={cn(ITEM_LOOKS[sheet.row], "text-muted")}
-        >
-          <ReaderIcon
-            name="folder-open"
-            fallback={FolderOpen}
-            isKit={isOnPhone}
-            size={READER_ICON_SIZE}
-          />
-          <ItemTitle class={sheet.title}>{showFile}</ItemTitle>
-        </ComingSoon>
+        {#if onShowFile !== undefined}
+          <Item look={sheet.row}>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                type="button"
+                look="row"
+                onclick={() => {
+                  closeSheet();
+                  onShowFile();
+                }}
+              >
+                <ReaderIcon
+                  name="folder-open"
+                  fallback={FolderOpen}
+                  isKit={isOnPhone}
+                  size={READER_ICON_SIZE}
+                />
+                <ItemTitle class={sheet.title}>{showFile}</ItemTitle>
+              </Button>
+            {/snippet}
+          </Item>
+        {/if}
         <hr class={sheet.rule} />
         <Item look={sheet.row}>
           {#snippet child({ props })}
