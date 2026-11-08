@@ -8,7 +8,9 @@
   );
 </script>
 
-<p class="text-small text-muted in-toolbar:truncate">
+<p
+  class="text-small text-muted max-medium:text-native-collection-count/native-collection-count max-medium:font-native-collection-count max-medium:tracking-native-collection-count in-toolbar:truncate"
+>
   {hidden === 0
     ? series
     : m.library_series_and_hidden({
