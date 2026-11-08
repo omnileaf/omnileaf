@@ -14,8 +14,15 @@
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import RescanSchedule from "#lib/scheduled-rescans/RescanSchedule.svelte";
+  import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import {
+    FLUSH_FOOTER,
+    FLUSH_LIST,
+  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SettingsEntries from "#lib/settings/SettingsEntries.svelte";
@@ -27,6 +34,8 @@
 
   const screenshotMode = getScreenshotMode();
   const notices = getNotices();
+  const scheduledRescans = getScheduledRescansSetting();
+  const android = new AndroidPhone();
 
   const TREATMENT_LABELS = {
     show: m.adult_content_show,
@@ -76,6 +85,17 @@
       void goto(resolve("/(app)"));
     }}
   />
+  {#if android.isOn}
+    <section aria-label={m.library_rescan_schedule_title()} class="mbs-xl">
+      <div class={FLUSH_LIST}>
+        <RescanSchedule
+          schedule={scheduledRescans}
+          platform={data.appInfo.platform}
+        />
+      </div>
+      <p class={FLUSH_FOOTER}>{m.advanced_scheduled_rescans_help()}</p>
+    </section>
+  {/if}
   <div class="mbs-xl">
     <SettingsEntries
       entries={[
