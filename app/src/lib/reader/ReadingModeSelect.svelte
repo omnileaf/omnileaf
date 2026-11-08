@@ -2,6 +2,8 @@
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import { OutlinedSelect } from "#lib/components/ui/outlined-field/index.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { ANDROID_SHEET_BLEED } from "#lib/settings/android-flush-look.ts";
+  import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
 
   import type { ModeField } from "./reading-settings-content-look.ts";
   import {
@@ -39,8 +41,8 @@
 
   const modes = $derived(
     READING_MODE_CHOICES.map((choice) => ({
-      choice,
-      name: choiceName(choice),
+      value: choice,
+      label: choiceName(choice),
     })),
   );
 
@@ -56,7 +58,19 @@
   }
 </script>
 
-{#if field === "outlined"}
+{#if field === "row"}
+  <SettingChoiceRow
+    data-reading-mode
+    title={m.reader_mode()}
+    value={choiceName(reading.choice)}
+    choices={modes}
+    chosen={reading.choice}
+    bleed={ANDROID_SHEET_BLEED}
+    onChoose={(choice: ReadingModeChoice) => {
+      reading.choose(choice);
+    }}
+  />
+{:else if field === "outlined"}
   <div data-slot="setting-row" class="py-md">
     <OutlinedSelect
       data-reading-mode
@@ -65,8 +79,8 @@
       value={reading.choice}
       onchange={chooseDirection}
     >
-      {#each modes as mode (mode.choice)}
-        <option value={mode.choice}>{mode.name}</option>
+      {#each modes as mode (mode.value)}
+        <option value={mode.value}>{mode.label}</option>
       {/each}
     </OutlinedSelect>
   </div>
@@ -85,8 +99,8 @@
       value={reading.choice}
       onchange={chooseDirection}
     >
-      {#each modes as mode (mode.choice)}
-        <option value={mode.choice}>{mode.name}</option>
+      {#each modes as mode (mode.value)}
+        <option value={mode.value}>{mode.label}</option>
       {/each}
     </NativeSelect>
   </div>
