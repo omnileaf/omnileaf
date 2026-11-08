@@ -180,3 +180,13 @@ export function startLook(isNative: boolean, isMaterial = false): StartLook {
 }
 
 export type FilterPlace = "token" | "field" | "row";
+
+export const ANDROID_SEARCH_VIEW = {
+  ground:
+    "-ms-page-start -me-page-end isolate -mbs-page-top bg-native-search-view ps-page-start pe-page-end pbs-safe-top before:fixed before:inset-none before:-z-10 before:bg-native-search-view min-block-dvh",
+  bar: "-ms-page-start -me-page-end border-be border-native-button-outline-edge px-sm block-native-search-view-bar",
+  field:
+    "flex-1 gap-md rounded-none border-0 bg-transparent px-xs shadow-none block-auto min-inline-none min-block-none",
+  back: "relative block-native-button inline-native-button before:absolute before:block-touch-target before:inline-touch-target",
+  clear: "relative shrink-0 text-muted block-touch-target inline-touch-target",
+} as const;

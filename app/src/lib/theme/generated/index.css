@@ -31,6 +31,8 @@
   --color-native-button-primary: var(--native-color-button-primary);
   --color-native-on-button-primary: var(--native-color-on-button-primary);
   --color-native-button-secondary: var(--native-color-button-secondary);
+  --color-native-search-view: var(--native-color-search-view);
+  --spacing-native-search-view-bar: var(--native-spacing-search-view-bar);
   --color-native-control-fill-hover: var(--native-color-control-fill-hover);
   --color-native-control-fill-pressed: var(--native-color-control-fill-pressed);
   --color-native-control-stroke: var(--native-color-control-stroke);
