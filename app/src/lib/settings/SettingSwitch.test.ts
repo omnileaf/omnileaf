@@ -159,3 +159,18 @@ test("draws a grouped row on the Mac 42px tall with 6px above and below its word
   expect(label.fontWeight).toBe("510");
   expect(label.letterSpacing).toBe("-0.08px");
 });
+
+test("disables the switch on an iPhone when the row is disabled", async () => {
+  await page.viewport(PHONE.width, PHONE.height);
+  followCorePlatform("ios");
+  const screen = await render(SettingSwitch, {
+    label: LABEL,
+    isOn: false,
+    disabled: true,
+    onToggle: () => undefined,
+  });
+
+  await expect
+    .element(screen.getByRole("switch", { name: LABEL }))
+    .toBeDisabled();
+});

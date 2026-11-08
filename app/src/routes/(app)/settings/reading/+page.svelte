@@ -47,6 +47,8 @@
   ] as const satisfies readonly { side: SwipeSide; label: () => string }[];
 
   const CARD_SWITCH = "-mx-list-row inline-auto";
+  const CARD = "rounded-card border border-border bg-card p-list-row";
+  const ANDROID_FOOTER = `${FLUSH_BLEED} px-lg pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle text-muted`;
   const ANDROID_INTRO = `${FLUSH_BLEED} px-lg pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
 
   const switches: Snippet = deviceSwitches;
@@ -212,31 +214,52 @@
   <SmartFeaturesSection
     heading="h2"
     size="regular"
-    class="rounded-card border border-border bg-card p-list-row"
+    class={android.isOn ? "" : CARD}
   />
-  <section
-    aria-labelledby={swipesId}
-    class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-  >
-    <h2 id={swipesId} class="font-semibold">{m.reading_swipes()}</h2>
-    <p id="{swipesId}-hint" class="text-footnote text-muted">
-      {m.reading_swipes_help()}
-    </p>
-    {#each SWIPES as { side, label } (side)}
-      <span id="{swipesId}-{side}" class="text-detail font-medium">
-        {label()}
-      </span>
-      <SegmentedControl
-        options={SWIPE_ACTIONS}
-        labels={SWIPE_LABELS}
-        chosen={swipeActions.actionFor(side)}
-        labelledBy="{swipesId}-{side}"
-        describedBy="{swipesId}-hint"
-        size="small"
-        onChoose={(action: SwipeAction) => {
-          swipeActions.choose(side, action);
-        }}
-      />
-    {/each}
-  </section>
+  {#if android.isOn}
+    <div class="flex flex-col">
+      <h2 id={swipesId} class={FLUSH_LIST_HEADING}>{m.reading_swipes()}</h2>
+      {#each SWIPES as { side, label } (side)}
+        <SettingChoiceRow
+          title={label()}
+          value={SWIPE_LABELS[swipeActions.actionFor(side)]()}
+          choices={SWIPE_ACTIONS.map((action) => ({
+            value: action,
+            label: SWIPE_LABELS[action](),
+          }))}
+          chosen={swipeActions.actionFor(side)}
+          onChoose={(action: SwipeAction) => {
+            swipeActions.choose(side, action);
+          }}
+        />
+      {/each}
+      <p class={ANDROID_FOOTER}>{m.reading_swipes_help()}</p>
+    </div>
+  {:else}
+    <section
+      aria-labelledby={swipesId}
+      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
+    >
+      <h2 id={swipesId} class="font-semibold">{m.reading_swipes()}</h2>
+      <p id="{swipesId}-hint" class="text-footnote text-muted">
+        {m.reading_swipes_help()}
+      </p>
+      {#each SWIPES as { side, label } (side)}
+        <span id="{swipesId}-{side}" class="text-detail font-medium">
+          {label()}
+        </span>
+        <SegmentedControl
+          options={SWIPE_ACTIONS}
+          labels={SWIPE_LABELS}
+          chosen={swipeActions.actionFor(side)}
+          labelledBy="{swipesId}-{side}"
+          describedBy="{swipesId}-hint"
+          size="small"
+          onChoose={(action: SwipeAction) => {
+            swipeActions.choose(side, action);
+          }}
+        />
+      {/each}
+    </section>
+  {/if}
 </div>
