@@ -150,6 +150,20 @@ test("shows Delete as the More menu's only item and runs it once on an Android p
   expect(calls.picked).toEqual(["delete"]);
 });
 
+test("sets the More menu at least 208 wide like the library menu on an Android phone", async () => {
+  followCorePlatform("android");
+  await drawBar(2);
+
+  await page.getByRole("button", { name: "More" }).click();
+  await expect
+    .element(page.getByRole("menuitem", { name: "Delete" }))
+    .toBeVisible();
+
+  expect(
+    page.getByRole("menu").element().getBoundingClientRect().width,
+  ).toBeGreaterThanOrEqual(208);
+});
+
 test("spreads the three actions and More evenly across the bar on an Android phone", async () => {
   followCorePlatform("android");
   await drawBar(2);
