@@ -110,6 +110,33 @@ test.describe(
       expect(note.y).toBeGreaterThanOrEqual(rows.y + rows.height);
     });
 
+    test("sets the privacy note with a 24px icon at x=16 and its words at x=56 in 14px", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy");
+      const icon = page.locator("p [data-icon=shield-check]");
+      const words = page.getByText(/^Nothing leaves this phone/);
+
+      expect((await boxOf(icon)).x).toBe(16);
+      expect((await boxOf(icon)).width).toBe(24);
+      expect((await boxOf(words)).x).toBe(56);
+      await expect(words).toHaveCSS("font-size", "14px");
+      await expect(words).toHaveCSS("line-height", "20px");
+    });
+
+    test("heads Undo 44px tall and describes the screen reader row", async ({
+      page,
+    }) => {
+      await page.goto("/settings/advanced");
+      const heading = page.getByRole("heading", { name: "Undo", level: 2 });
+
+      expect((await boxOf(heading)).height).toBe(44);
+      await expect(heading).toHaveCSS("padding-top", "16px");
+      await expect(
+        page.getByRole("switch", { name: "Wait for screen readers" }),
+      ).toHaveAccessibleDescription("Stays until it has been read out.");
+    });
+
     test("keeps the crash reports choice after a row is tapped and the page reopens", async ({
       page,
     }) => {

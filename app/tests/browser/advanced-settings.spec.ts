@@ -524,7 +524,7 @@ test.describe("Undo", () => {
   }) => {
     await page.goto("/settings/advanced");
     const waits = page.getByRole("switch", {
-      name: "Wait for a screen reader",
+      name: "Wait for screen readers",
     });
     await expect(waits).toBeChecked();
 
@@ -532,7 +532,7 @@ test.describe("Undo", () => {
     await page.reload();
 
     await expect(
-      page.getByRole("switch", { name: "Wait for a screen reader" }),
+      page.getByRole("switch", { name: "Wait for screen readers" }),
     ).not.toBeChecked();
   });
 
