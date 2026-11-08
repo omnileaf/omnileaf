@@ -6,7 +6,7 @@
 
   import { quickSettingLook } from "./quick-setting.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
-  import ReaderIcon from "./ReaderIcon.svelte";
+  import QuickSettingIcon from "./QuickSettingIcon.svelte";
   import type { PageFit, PageLayout } from "./reader-settings.svelte.ts";
 
   let {
@@ -35,13 +35,7 @@
     onLayout(isTwoUp ? "automatic" : "two");
   }}
 >
-  <ReaderIcon
-    name="columns-2"
-    fallback={Columns2}
-    isKit={look.hasKitIcons}
-    size={look.iconSize}
-    class="shrink-0"
-  />
+  <QuickSettingIcon name="columns-2" fallback={Columns2} {look} />
   <span class={look.toggleLabel}>{m.reader_two_pages()}</span>
 </button>
 <button

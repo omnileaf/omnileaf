@@ -14,7 +14,7 @@
   import LightSliders from "./LightSliders.svelte";
   import { quickSettingLook } from "./quick-setting.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
-  import ReaderIcon from "./ReaderIcon.svelte";
+  import QuickSettingIcon from "./QuickSettingIcon.svelte";
   import type { ReaderLight } from "./reader-settings.svelte.ts";
 
   let {
@@ -64,13 +64,7 @@
     open(isOn);
   }}
 >
-  <ReaderIcon
-    name="sun"
-    fallback={Sun}
-    isKit={look.hasKitIcons}
-    size={look.iconSize}
-    class="shrink-0"
-  />
+  <QuickSettingIcon name="sun" fallback={Sun} {look} />
   <span class={look.toggleLabel}>{m.reader_light()}</span>
 </button>
 {#if opensSheet}
