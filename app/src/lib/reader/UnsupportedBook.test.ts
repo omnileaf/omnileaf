@@ -69,13 +69,11 @@ async function shown(
   {
     shownPlace = place(),
     fileTypes = new FileTypes(),
-    onShowFile = vi.fn(),
-    canShowFile = true,
+    onShowFile,
   }: {
     shownPlace?: BookPlace | null;
     fileTypes?: FileTypes;
-    onShowFile?: () => void;
-    canShowFile?: boolean;
+    onShowFile?: (() => void) | undefined;
   } = {},
 ) {
   const notices = new Notices();
@@ -85,7 +83,7 @@ async function shown(
     platform: "linux",
     hideFilesLike: fileTypes.hideFilesLike,
     showFileType: fileTypes.showFileType,
-    onShowFile: canShowFile ? onShowFile : undefined,
+    onShowFile,
     notices,
   });
   await render(Toasts, { notices, platform: "linux", theme: "light" });
@@ -165,7 +163,7 @@ test("shows the file from its button", async () => {
 });
 
 test("leaves Show in folder out when there is no library folder to show", async () => {
-  const { screen } = await shown(CBR_FILE, { canShowFile: false });
+  const { screen } = await shown(CBR_FILE);
 
   expect(screen.getByText("Show in folder").elements()).toHaveLength(0);
 });

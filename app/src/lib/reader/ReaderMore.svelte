@@ -40,7 +40,7 @@
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
-  interface SheetAction {
+  interface MoreAction {
     readonly icon: IconName;
     readonly fallback: Component<LucideProps>;
     readonly label: string;
@@ -97,7 +97,7 @@
   let isSheetOpen = $state(false);
   let isMenuOpen = $state(false);
   const showFile = $derived(showFileLabel(platform));
-  const sheetActions: readonly SheetAction[] = $derived([
+  const moreActions: readonly MoreAction[] = $derived([
     {
       icon: "eye",
       fallback: Eye,
@@ -118,7 +118,7 @@
             fallback: FolderOpen,
             label: showFile,
             act: onShowFile,
-          } satisfies SheetAction,
+          } satisfies MoreAction,
         ]),
   ]);
 
@@ -200,20 +200,12 @@
         aria-labelledby={floats ? headingId : undefined}
         class="flex flex-col"
       >
-        <DropdownMenuItem onSelect={onMarkRead}>
-          <Eye size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_mark_read()}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onStartOver}>
-          <RotateCcw size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_start_over()}
-        </DropdownMenuItem>
-        {#if onShowFile !== undefined}
-          <DropdownMenuItem onSelect={onShowFile}>
-            <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
-            {showFile}
+        {#each moreActions as action (action.icon)}
+          <DropdownMenuItem onSelect={action.act}>
+            <action.fallback size={ITEM_ICON_SIZE} aria-hidden="true" />
+            {action.label}
           </DropdownMenuItem>
-        {/if}
+        {/each}
         {#if chrome.isOnPhone}
           <DropdownMenuSeparator />
         {:else}
@@ -273,7 +265,7 @@
         {/if}
       </div>
       <div class={sheet.list}>
-        {#each sheetActions as action (action.icon)}
+        {#each moreActions as action (action.icon)}
           <Item look={sheet.row}>
             {#snippet child({ props })}
               <Button
