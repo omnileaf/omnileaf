@@ -5,6 +5,7 @@
   import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { coverUrl } from "#lib/library/cover-url.ts";
   import { realLook } from "#lib/library/series-look.ts";
@@ -149,10 +150,16 @@
         label={m.edit_details_close()}
         class={isIosPhone
           ? "ios:backdrop-blur-none"
-          : "relative block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"}
+          : isAndroidPhone
+            ? "relative block-native-button inline-native-button before:absolute before:block-touch-target before:inline-touch-target hover:bg-hover active:bg-pressed"
+            : "relative block-touch-target inline-touch-target hover:bg-hover active:bg-pressed"}
         onclick={backToSeries}
       >
-        <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
+        {#if isAndroidPhone}
+          <Icon name="x" />
+        {:else}
+          <X size={CLOSE_ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
       <h1
         class={[
@@ -171,7 +178,7 @@
         class={isIosPhone
           ? "bg-native-button-primary px-md text-native-on-button-primary shadow-none ios:backdrop-blur-none"
           : isAndroidPhone
-            ? "rounded-full bg-transparent px-md text-native-button/native-button font-native-button tracking-native-button text-native-on-button-plain shadow-none min-block-touch-target hover:bg-native-button-plain-hover active:bg-native-button-plain-pressed"
+            ? "relative rounded-full bg-transparent px-lg text-native-button/native-button font-native-button tracking-native-button text-native-on-button-plain shadow-none min-block-native-button before:absolute before:inset-x-none before:block-touch-target hover:bg-native-button-plain-hover active:bg-native-button-plain-pressed"
             : "rounded-full px-lg font-semibold min-block-touch-target"}
         onclick={() => {
           void save();
