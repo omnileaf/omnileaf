@@ -41,8 +41,7 @@
       : [
           "font-bold tracking-tight android:font-regular",
           SCALES[scale],
-          scale === "step" &&
-            "android:max-medium:text-native-first-launch-title/native-first-launch-title android:max-medium:font-native-first-launch-title android:max-medium:tracking-native-first-launch-title",
+          "android:max-medium:text-native-first-launch-title/native-first-launch-title android:max-medium:font-native-first-launch-title android:max-medium:tracking-native-first-launch-title",
         ]}
   >
     {@render children()}

@@ -7,6 +7,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  targetOf,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -222,9 +223,8 @@ for (const platform of ["android", "ios"] as const) {
         "rail width only",
       );
       await page.goto("/settings/about");
-      const back = await boxOf(
-        page.getByRole("link", { name: "Back to Settings" }),
-      );
+      const backLink = page.getByRole("link", { name: "Back to Settings" });
+      const back = await boxOf(backLink);
       const title = await boxOf(
         page.getByRole("heading", { level: 1, name: "About" }),
       );
@@ -235,8 +235,10 @@ for (const platform of ["android", "ios"] as const) {
         expect(back.height).toBe(TAB_BAR_HEIGHT);
         expect(back.y).toBe(bar.y);
       } else {
-        expect(back.width).toBe(TOUCH_TARGET);
-        expect(back.height).toBe(TOUCH_TARGET);
+        expect(await targetOf(backLink)).toMatchObject({
+          width: TOUCH_TARGET,
+          height: TOUCH_TARGET,
+        });
         expect(back.y).toBe(STATUS_BAR_GAP);
       }
       expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);

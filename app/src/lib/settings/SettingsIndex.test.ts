@@ -1,9 +1,15 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
+
+import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SettingsIndex from "./SettingsIndex.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const PROPS = {
   summaries: {
@@ -78,4 +84,23 @@ test("renders native Icon components for sections on Android", async () => {
   expect(
     screen.container.querySelector('[data-icon="library"]'),
   ).not.toBeNull();
+});
+
+test("renders 40px tonal circles with 24px Material Symbols and row subtitles on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const media = screen.container.querySelector("[data-slot=item-media]");
+  expect(media).not.toBeNull();
+  expect(media?.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(media?.getBoundingClientRect().width).toBeCloseTo(40, 0);
+
+  const icon = media?.querySelector("[data-icon]");
+  expect(icon).not.toBeNull();
+  expect(icon?.className).toContain("inline-native-icon");
+
+  const desc = screen.container.querySelector("[data-slot=item-description]");
+  expect(desc?.className).toContain(
+    "android:text-native-row-subtitle/native-row-subtitle",
+  );
 });

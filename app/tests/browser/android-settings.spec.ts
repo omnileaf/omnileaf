@@ -275,7 +275,7 @@ test.describe(
       test.skip(platform !== "android", "Android's list rows");
     });
 
-    test("draws each entry's icon bare, with no circle behind it and no chevron at the end", async ({
+    test("draws each entry's icon in a tonal circle, with no chevron at the end", async ({
       page,
     }) => {
       await page.goto("/settings");
@@ -286,7 +286,7 @@ test.describe(
 
       await expect(icon.locator("xpath=..")).toHaveCSS(
         "background-color",
-        "rgba(0, 0, 0, 0)",
+        await tokenColour(page, "--native-color-accent-soft"),
       );
       await expect(row.locator("svg:visible")).toHaveCount(0);
     });

@@ -21,8 +21,9 @@
     readonly count?: Snippet | undefined;
     readonly attention?: Snippet | undefined;
     readonly leading?: Snippet | undefined;
-    readonly actions?: Snippet;
+    readonly actions?: Snippet | undefined;
     readonly platform: Platform;
+    readonly largeTitle?: boolean | undefined;
   }
 
   let {
@@ -33,12 +34,14 @@
     leading,
     actions,
     platform,
+    largeTitle,
   }: Props = $props();
 
   const width = new WindowWidth();
   const foldingBar = $derived(foldingBarLook(platform));
   const hasLargeTitle = $derived(
-    hasLargeTitleOn(platform, width.current) && actions !== undefined,
+    (largeTitle ?? hasLargeTitleOn(platform, width.current)) &&
+      actions !== undefined,
   );
   let bar = $state<HTMLElement | null>(null);
   let isTitleUnderBar = $state(false);
@@ -220,7 +223,7 @@
     {#if actions !== undefined && !hasLargeTitle}
       <div
         bind:this={buttons}
-        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end medium:gap-sm heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto in-toolbar:shrink-0"
+        class="col-start-4 row-start-1 ms-title-count flex items-center justify-self-end *:native-target medium:gap-sm android:max-large:gap-none android:max-large:*:mx-xs android:max-large:*:block-native-button android:max-large:*:inline-native-button heading-two-rows:order-2 heading-two-rows:ms-auto heading-stacked:order-6 heading-stacked:col-span-full heading-stacked:col-start-1 heading-stacked:row-start-auto heading-stacked:mbs-sm heading-stacked:basis-full heading-stacked:justify-end in-toolbar:ms-auto in-toolbar:shrink-0"
       >
         {@render actions()}
       </div>
