@@ -21,9 +21,8 @@ export const ANDROID_FILTER_CHIP = {
 } as const;
 
 export const ANDROID_VIEW_SETTING = {
-  row: "flex flex-col gap-sm ps-lg pe-xl",
+  row: "flex flex-wrap items-center justify-between gap-md ps-lg pe-xl min-block-touch-target",
   words: "",
-  note: "basis-full text-muted",
 } as const;
 
 export const MAC_INSPECTOR = {

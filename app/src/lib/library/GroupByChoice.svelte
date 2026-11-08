@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { LibraryGrouping } from "#lib/ipc/bindings.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -15,6 +14,12 @@
     "category",
     "folder",
     "creator",
+  ];
+
+  const ANDROID_GROUPINGS: readonly LibraryGrouping[] = [
+    "none",
+    "category",
+    "folder",
   ];
 
   const LABELS = {
@@ -57,25 +62,22 @@
     {m.library_group_by()}
   </p>
   <SegmentedControl
-    options={GROUPINGS}
+    options={android.isOn ? ANDROID_GROUPINGS : GROUPINGS}
     labels={LABELS}
     {chosen}
     labelledBy={labelId}
-    describedBy={hintId}
+    describedBy={android.isOn ? undefined : hintId}
     size="small"
     hasWindowsLook
     hasEqualColumns
     {onChoose}
     class={android.isOn
-      ? "flex-none max-inline-full"
+      ? "ms-auto flex-none max-inline-full"
       : "mbs-sm large:mbs-icon-gap"}
   />
-  <p
-    id={hintId}
-    class={android.isOn
-      ? [ANDROID_VIEW_SETTING.note, ROW_SUBTITLE_TYPE]
-      : hintClass}
-  >
-    {m.library_group_creator_hint()}
-  </p>
+  {#if !android.isOn}
+    <p id={hintId} class={hintClass}>
+      {m.library_group_creator_hint()}
+    </p>
+  {/if}
 </div>
