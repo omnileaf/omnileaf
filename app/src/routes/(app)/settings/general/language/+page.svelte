@@ -18,6 +18,7 @@
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { radiosLook } from "#lib/settings/radios-look.ts";
+  import { FLUSH_LIST, FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -61,7 +62,9 @@
   parent={{ route: "/(app)/settings/general", title: m.general_title() }}
 />
 <div class="mbs-pane-gap flex flex-col gap-sm">
-  <p class="text-detail text-muted">{m.language_intro()}</p>
+  <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
+    {m.language_intro()}
+  </p>
   <RadioGroup
     options={LANGUAGE_CHOICES}
     chosen={language.choice}
@@ -71,7 +74,7 @@
     aria-label={m.language_label()}
     aria-describedby={onPhone ? footnoteId : undefined}
     class={android.isOn
-      ? "-mx-page-start -me-page-end flex flex-col"
+      ? FLUSH_LIST
       : [
           "flex flex-col divide-y divide-border rounded-list border border-border bg-card",
           GROUP_PLATE,

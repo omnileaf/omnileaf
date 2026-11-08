@@ -28,7 +28,7 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
 
-  import { FLUSH_LIST, FLUSH_ROW_ICON } from "./android-flush-look.ts";
+  import { FLUSH_LIST } from "./android-flush-look.ts";
 
   let { entries }: { readonly entries: readonly SettingsEntry[] } = $props();
 
@@ -47,7 +47,7 @@
         <Item look="row">
           {#snippet child({ props })}
             <a href={resolve(entry.route)} {...props}>
-              <Icon name={entry.iconName} class={FLUSH_ROW_ICON} />
+              <Icon name={entry.iconName} class="shrink-0" />
               <ItemContent>
                 <ItemTitle>{entry.label}</ItemTitle>
                 {#if entry.summary !== undefined}

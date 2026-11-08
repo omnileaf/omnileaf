@@ -10,7 +10,10 @@
   import { phoneOf } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { FLUSH_HEADING } from "#lib/settings/android-flush-look.ts";
+  import {
+    FLUSH_HEADING,
+    FLUSH_LIST,
+  } from "#lib/settings/android-flush-look.ts";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { RowSwipe } from "#lib/series/row-swipe.svelte.ts";
 
@@ -246,7 +249,7 @@
   <div
     class={isInCard
       ? android.isOn
-        ? "-mx-page-start -me-page-end flex flex-col overflow-hidden"
+        ? `${FLUSH_LIST} overflow-hidden`
         : [
             "flex flex-col overflow-hidden rounded-card border border-border bg-card",
             GROUP_PLATE,

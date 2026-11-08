@@ -24,6 +24,7 @@
   import { NOTICE_WINDOW_MS } from "#lib/notices/notices.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
 
   import { AndroidPhone } from "./android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
@@ -154,7 +155,7 @@
   bind:this={list}
   aria-label={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
   class={android.isOn
-    ? "-mx-page-start -me-page-end flex flex-col"
+    ? FLUSH_LIST
     : ios.isOn
       ? `flex flex-col divide-y divide-ios-separator overflow-hidden ${GROUP_PLATE}`
       : "flex flex-col divide-y divide-border rounded-card border border-border bg-card"}

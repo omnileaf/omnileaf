@@ -29,8 +29,9 @@
   } from "#lib/series/swipe-actions.svelte.ts";
   import SmartFeaturesSection from "#lib/reader/SmartFeaturesSection.svelte";
   import {
-    FLUSH_BLEED,
+    FLUSH_FOOTER,
     FLUSH_LIST_HEADING,
+    FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
@@ -48,8 +49,6 @@
 
   const CARD_SWITCH = "-mx-list-row inline-auto";
   const CARD = "rounded-card border border-border bg-card p-list-row";
-  const ANDROID_FOOTER = `${FLUSH_BLEED} px-lg pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle text-muted`;
-  const ANDROID_INTRO = `${FLUSH_BLEED} px-lg pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
 
   const switches: Snippet = deviceSwitches;
   const skipSwitch: Snippet = skipUpNextSwitch;
@@ -119,7 +118,7 @@
 <SectionHeading title={m.reading_title()} />
 <div class={["mbs-pane-gap flex flex-col", !android.isOn && "gap-xl"]}>
   <div class={["flex flex-col", !android.isOn && "gap-sm"]}>
-    <p class={android.isOn ? ANDROID_INTRO : "text-detail text-muted"}>
+    <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
       {m.reading_defaults_intro()}
     </p>
     {#if android.isOn}
@@ -233,7 +232,7 @@
           }}
         />
       {/each}
-      <p class={ANDROID_FOOTER}>{m.reading_swipes_help()}</p>
+      <p class={FLUSH_FOOTER}>{m.reading_swipes_help()}</p>
     </div>
   {:else}
     <section
