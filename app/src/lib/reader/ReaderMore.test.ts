@@ -6,6 +6,7 @@ import "../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
+import { showFileLabel } from "#lib/page/show-file.ts";
 
 import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
 
@@ -31,38 +32,42 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("shows the book's file from the desktop More menu", async () => {
-  const onShowFile = vi.fn();
-  await openMore("windows", DESKTOP, onShowFile);
+const LAYOUTS = [
+  ["windows", DESKTOP, "menuitem"],
+  ["macos", DESKTOP, "menuitem"],
+  ["linux", DESKTOP, "menuitem"],
+  ["ios", PHONE, "menuitem"],
+  ["android", PHONE, "button"],
+] as const;
 
-  await page.getByRole("menuitem", { name: "Show in File Explorer" }).click();
+test.each(LAYOUTS)(
+  "shows the book's file from %s's More",
+  async (platform, size, role) => {
+    const onShowFile = vi.fn();
+    await openMore(platform, size, onShowFile);
 
-  expect(onShowFile).toHaveBeenCalledOnce();
-});
+    await page.getByRole(role, { name: showFileLabel(platform) }).click();
 
-test("shows the book's file from the Android phone More sheet and closes it", async () => {
-  const onShowFile = vi.fn();
-  await openMore("android", PHONE, onShowFile);
+    expect(onShowFile).toHaveBeenCalledOnce();
+  },
+);
+
+test("closes the Android phone More sheet once the file is shown", async () => {
+  await openMore("android", PHONE, vi.fn());
 
   await page.getByRole("button", { name: "Show the file" }).click();
 
-  expect(onShowFile).toHaveBeenCalledOnce();
   await expect
     .element(page.getByRole("button", { name: "Show the file" }))
     .not.toBeInTheDocument();
 });
 
-test.each([
-  ["windows", DESKTOP],
-  ["android", PHONE],
-] as const)(
+test.each(LAYOUTS)(
   "leaves Show the file out of %s's More when the book is not in the library",
   async (platform, size) => {
     await openMore(platform, size, undefined);
 
     expect(page.getByText("Mark read").elements()).not.toHaveLength(0);
-    expect(
-      page.getByText(/Show (the file|in File Explorer)/).elements(),
-    ).toHaveLength(0);
+    expect(page.getByText(showFileLabel(platform)).elements()).toHaveLength(0);
   },
 );

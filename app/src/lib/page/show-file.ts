@@ -1,4 +1,4 @@
-import type { Platform } from "#lib/ipc/bindings.ts";
+import { type BookPlace, commands, type Platform } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 const SHOW_FILE = {
@@ -35,4 +35,23 @@ export function showFolderLabel(platform: Platform): string {
 
 export function openedFromLabel(platform: Platform): string {
   return OPENED_FROM[platform]();
+}
+
+export function showBookFile(book: BookPlace["id"]): void {
+  void commands.showBookInFolder(book).then((shown) => {
+    if (shown.status === "error") {
+      reportError(shown.error);
+    }
+  });
+}
+
+export function libraryBookFileShower(
+  book: Pick<BookPlace, "id" | "isInLibrary"> | null,
+): (() => void) | undefined {
+  if (book === null || !book.isInLibrary) {
+    return undefined;
+  }
+  return () => {
+    showBookFile(book.id);
+  };
 }

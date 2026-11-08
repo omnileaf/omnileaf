@@ -2,4 +2,4 @@
 type: feat
 area: reader
 ---
-Show the file in a book's More menu, and on the screens for a damaged or unreadable book, now opens the folder the book is in, in Files on iPhone, the file manager on Android and your desktop's file manager elsewhere.
+You can now open the folder a book is in from the reader's More menu and from the damaged, unreadable and unsupported book screens. It opens in Files on iPhone, the file manager on Android and your file manager on desktop.

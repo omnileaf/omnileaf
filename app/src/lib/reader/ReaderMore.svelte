@@ -4,9 +4,11 @@
     Eye,
     FolderOpen,
     Library,
+    type LucideProps,
     RotateCcw,
   } from "@lucide/svelte";
   import { Dialog, DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Component } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
@@ -22,6 +24,7 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
@@ -36,6 +39,13 @@
   } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
+
+  interface SheetAction {
+    readonly icon: IconName;
+    readonly fallback: Component<LucideProps>;
+    readonly label: string;
+    readonly act: () => void;
+  }
 
   const ITEM_ICON_SIZE = 16;
   const SHEET = {
@@ -87,6 +97,30 @@
   let isSheetOpen = $state(false);
   let isMenuOpen = $state(false);
   const showFile = $derived(showFileLabel(platform));
+  const sheetActions: readonly SheetAction[] = $derived([
+    {
+      icon: "eye",
+      fallback: Eye,
+      label: m.reader_mark_read(),
+      act: onMarkRead,
+    },
+    {
+      icon: "rotate-ccw",
+      fallback: RotateCcw,
+      label: m.reader_start_over(),
+      act: onStartOver,
+    },
+    ...(onShowFile === undefined
+      ? []
+      : [
+          {
+            icon: "folder-open",
+            fallback: FolderOpen,
+            label: showFile,
+            act: onShowFile,
+          } satisfies SheetAction,
+        ]),
+  ]);
 
   function closeSheet(): void {
     isSheetOpen = false;
@@ -239,49 +273,7 @@
         {/if}
       </div>
       <div class={sheet.list}>
-        <Item look={sheet.row}>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              type="button"
-              look="row"
-              onclick={() => {
-                closeSheet();
-                onMarkRead();
-              }}
-            >
-              <ReaderIcon
-                name="eye"
-                fallback={Eye}
-                isKit={isOnPhone}
-                size={READER_ICON_SIZE}
-              />
-              <ItemTitle class={sheet.title}>{m.reader_mark_read()}</ItemTitle>
-            </Button>
-          {/snippet}
-        </Item>
-        <Item look={sheet.row}>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              type="button"
-              look="row"
-              onclick={() => {
-                closeSheet();
-                onStartOver();
-              }}
-            >
-              <ReaderIcon
-                name="rotate-ccw"
-                fallback={RotateCcw}
-                isKit={isOnPhone}
-                size={READER_ICON_SIZE}
-              />
-              <ItemTitle class={sheet.title}>{m.reader_start_over()}</ItemTitle>
-            </Button>
-          {/snippet}
-        </Item>
-        {#if onShowFile !== undefined}
+        {#each sheetActions as action (action.icon)}
           <Item look={sheet.row}>
             {#snippet child({ props })}
               <Button
@@ -290,20 +282,20 @@
                 look="row"
                 onclick={() => {
                   closeSheet();
-                  onShowFile();
+                  action.act();
                 }}
               >
                 <ReaderIcon
-                  name="folder-open"
-                  fallback={FolderOpen}
+                  name={action.icon}
+                  fallback={action.fallback}
                   isKit={isOnPhone}
                   size={READER_ICON_SIZE}
                 />
-                <ItemTitle class={sheet.title}>{showFile}</ItemTitle>
+                <ItemTitle class={sheet.title}>{action.label}</ItemTitle>
               </Button>
             {/snippet}
           </Item>
-        {/if}
+        {/each}
         <hr class={sheet.rule} />
         <Item look={sheet.row}>
           {#snippet child({ props })}

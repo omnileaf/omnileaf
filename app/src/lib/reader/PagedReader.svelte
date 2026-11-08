@@ -26,6 +26,7 @@
   } from "#lib/navigation/ReaderBackSwipe.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -69,7 +70,6 @@
     readerSettings,
   } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
-  import { libraryBookFileShower } from "#lib/reader/show-book-file.ts";
   import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";

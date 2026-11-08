@@ -47,6 +47,22 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("offers no way to show its file in the More menu", async ({
+      page,
+    }) => {
+      await servePages(page);
+      await page.goto(`/read/${BOOK.id}`);
+
+      await page.getByRole("button", { name: "More", exact: true }).click();
+
+      await expect(page.getByText("Mark read")).toBeVisible();
+      await expect(
+        page.getByText(
+          /^Show (the file|in folder|in Files|in Finder|in File Explorer)$/,
+        ),
+      ).toHaveCount(0);
+    });
+
     test("sits below the status bar", async ({ page }) => {
       const STATUS_BAR_PX = 48;
       await servePages(page);

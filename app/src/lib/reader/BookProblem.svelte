@@ -26,7 +26,7 @@
 
   import BookBackNav from "./BookBackNav.svelte";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
-  import type { BookId, BookProblem } from "./opened-book.ts";
+  import type { BookProblem } from "./opened-book.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
 
   const BUTTON_ICON_SIZE = 16;
@@ -57,7 +57,7 @@
     kind: BookProblem;
     place: BookPlace | null;
     platform: Platform;
-    onShowFile: (book: BookId) => void;
+    onShowFile: (() => void) | undefined;
   } = $props();
 
   const inLibraryPlace = $derived(
@@ -112,14 +112,8 @@
             {m.reader_back_to_the_series()}
           </a>
         {/if}
-        {#if kind === "unreadable" && inLibraryPlace !== null}
-          <button
-            type="button"
-            class={actions.other}
-            onclick={() => {
-              onShowFile(inLibraryPlace.id);
-            }}
-          >
+        {#if kind === "unreadable" && onShowFile !== undefined}
+          <button type="button" class={actions.other} onclick={onShowFile}>
             <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
             {showFile}
           </button>

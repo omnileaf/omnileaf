@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 
-import { openedFromLabel, showFileLabel, showFolderLabel } from "./show-file";
+import { bookIdIn } from "#lib/reader/opened-book.ts";
+
+import {
+  libraryBookFileShower,
+  openedFromLabel,
+  showFileLabel,
+  showFolderLabel,
+} from "./show-file";
 
 test("names showing a book's file in each platform's own words", () => {
   const labels = (["ios", "android", "macos", "windows", "linux"] as const).map(
@@ -42,4 +49,28 @@ test("names where a book opened from, in each platform's own words", () => {
     "Opened from File Explorer",
     "Opened from your file manager",
   ]);
+});
+
+function sampleBook() {
+  const id = bookIdIn("0190a3e4-0000-8000-8000-0000000000b6");
+  if (id === undefined) {
+    throw new Error("the sample id has no id's shape");
+  }
+  return id;
+}
+
+test.each([
+  ["no book at all", null],
+  [
+    "a file opened from outside the library",
+    { id: sampleBook(), isInLibrary: false },
+  ],
+] as const)("offers no way to show %s", (_name, book) => {
+  expect(libraryBookFileShower(book)).toBeUndefined();
+});
+
+test("offers a way to show a library book's file", () => {
+  expect(
+    libraryBookFileShower({ id: sampleBook(), isInLibrary: true }),
+  ).toBeTypeOf("function");
 });

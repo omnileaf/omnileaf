@@ -84,6 +84,7 @@ async function unsupported() {
     platform: "android",
     hideFilesLike: () => Promise.resolve({ status: "ok", data: "cbr" }),
     showFileType: () => Promise.resolve({ status: "ok", data: null }),
+    onShowFile: undefined,
     notices: new Notices(),
   });
 }
@@ -275,17 +276,5 @@ test("shows an unreadable book's file from its Show the file button", async () =
 
   await screen.getByRole("button", { name: "Show the file" }).click();
 
-  expect(onShowFile).toHaveBeenCalledExactlyOnceWith(BOOK);
-});
-
-test("leaves an unreadable book's Show the file out when it was opened from outside the library", async () => {
-  await onAndroid();
-  const screen = await render(BookProblem, {
-    kind: "unreadable",
-    place: null,
-    platform: "android",
-    onShowFile: () => undefined,
-  });
-
-  expect(screen.getByText("Show the file").elements()).toHaveLength(0);
+  expect(onShowFile).toHaveBeenCalledOnce();
 });

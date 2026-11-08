@@ -51,7 +51,7 @@
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
-  import { showFolderLabel } from "#lib/page/show-file.ts";
+  import { showBookFile, showFolderLabel } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
@@ -386,14 +386,6 @@
     }
   }
 
-  function showBookInFolder(book: SeriesBook["id"]): void {
-    void commands.showBookInFolder(book).then((shown) => {
-      if (shown.status === "error") {
-        reportError(shown.error);
-      }
-    });
-  }
-
   function showInFolder(): void {
     if (foundId === undefined) {
       return;
@@ -553,7 +545,7 @@
                   onBookmark={bookmarkSelected}
                   onRemoveBookmarks={removeBookmarks}
                   onRemove={removeBooks}
-                  onShowInFolder={showBookInFolder}
+                  onShowInFolder={showBookFile}
                   platform={data.appInfo.platform}
                   onPickedCount={(count: number | undefined) => {
                     pickedCount = count;
