@@ -95,6 +95,27 @@
   --linux-sidebar-accent-foreground: oklch(0.218 0.008 223.9);
   --linux-sidebar-border: oklch(0.925 0.005 214.3);
   --linux-sidebar-ring: oklch(0.49 0.084 159.2);
+  --android-palette-window: #f7faf5;
+  --android-palette-surface: #f7faf5;
+  --android-palette-surface-raised: #eff5ee;
+  --android-palette-surface-sheet: #eff5ee;
+  --android-palette-surface-dialog: #e2eae2;
+  --android-palette-surface-menu: #eff5ee;
+  --android-palette-surface-field: #dbe5dc;
+  --android-palette-surface-bar: #e9f0e8;
+  --android-palette-on-surface: #2c352e;
+  --android-palette-on-surface-muted: #58615a;
+  --android-palette-primary: #326a4d;
+  --android-palette-on-primary: #e6ffed;
+  --android-palette-primary-container: #d0e8d7;
+  --android-palette-on-primary-container: #415749;
+  --android-palette-separator: #abb4ac;
+  --android-palette-outline: #737d75;
+  --android-palette-focus-ring: #4e6456;
+  --android-palette-error: #a83836;
+  --android-palette-on-error: #fff7f6;
+  --android-palette-state-hover: rgba(44, 53, 46, 0.08);
+  --android-palette-state-pressed: rgba(44, 53, 46, 0.1);
   --linux-control-fill: transparent;
   --linux-button-outline-fill: var(--background);
 
@@ -217,6 +238,27 @@
   --linux-sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --linux-sidebar-border: oklch(1 0 0 / 10%);
   --linux-sidebar-ring: oklch(0.78 0.101 156.6);
+  --android-palette-window: #0b0f0c;
+  --android-palette-surface: #0b0f0c;
+  --android-palette-surface-raised: #0f1511;
+  --android-palette-surface-sheet: #0f1511;
+  --android-palette-surface-dialog: #1a211c;
+  --android-palette-surface-menu: #0f1511;
+  --android-palette-surface-field: #1f2721;
+  --android-palette-surface-bar: #141b17;
+  --android-palette-on-surface: #dee8df;
+  --android-palette-on-surface-muted: #a4aea5;
+  --android-palette-primary: #78d99f;
+  --android-palette-on-primary: #00391d;
+  --android-palette-primary-container: #304b3b;
+  --android-palette-on-primary-container: #b8d2bf;
+  --android-palette-separator: #414a43;
+  --android-palette-outline: #6e7870;
+  --android-palette-focus-ring: #b4ccbb;
+  --android-palette-error: #fa746f;
+  --android-palette-on-error: #490006;
+  --android-palette-state-hover: rgba(222, 232, 223, 0.08);
+  --android-palette-state-pressed: rgba(222, 232, 223, 0.1);
   --linux-control-fill: color-mix(
     in oklch,
     oklch(1 0 0 / 15%) 30%,
@@ -387,69 +429,102 @@
   --input-group-fill: var(--input-fill);
   --input-group-edge: var(--input);
   --input-group-radius: var(--radius-md);
-  --android-container-low: color-mix(
-    in oklch,
-    var(--foreground) 4%,
-    var(--background)
-  );
-  --android-container: color-mix(
-    in oklch,
-    var(--foreground) 6%,
-    var(--background)
-  );
-  --android-container-high: color-mix(
-    in oklch,
-    var(--foreground) 9%,
-    var(--background)
-  );
-  --android-tonal: color-mix(in oklch, var(--primary) 14%, var(--background));
-  --android-outline: color-mix(
-    in oklch,
-    var(--foreground) 45%,
-    var(--background)
-  );
-  --android-secondary-text: color-mix(
-    in oklch,
-    var(--foreground) 60%,
-    var(--background)
-  );
-  --android-inverse-primary: color-mix(
-    in oklch,
-    var(--primary) 30%,
-    var(--background)
-  );
+  --android-container-low: var(--android-palette-surface-sheet);
+  --android-container: var(--android-palette-surface-menu);
+  --android-container-high: var(--android-palette-surface-dialog);
+  --android-tonal: var(--android-palette-primary-container);
+  --android-outline: var(--android-palette-outline);
+  --android-secondary-text: var(--android-palette-on-surface-muted);
+  --android-inverse-primary: var(--native-color-on-notice-action);
+}
+
+[data-platform="android"][data-contrast="medium"],
+[data-platform="android"][data-contrast="medium"] [data-theme="light"],
+[data-platform="android"][data-contrast="medium"][data-theme="light"] {
+  --android-palette-on-surface: #1d2620;
+  --android-palette-on-surface-muted: #49524b;
+  --android-palette-primary: #1e583c;
+  --android-palette-on-primary: #ffffff;
+}
+
+[data-platform="android"][data-contrast="medium"] [data-theme="dark"],
+[data-platform="android"][data-contrast="medium"][data-theme="dark"] {
+  --android-palette-on-surface: #ffffff;
+  --android-palette-on-surface-muted: #b8c3ba;
+  --android-palette-primary: #8ef0b3;
+  --android-palette-on-primary: #002d15;
+}
+
+[data-platform="android"][data-contrast="high"],
+[data-platform="android"][data-contrast="high"] [data-theme="light"],
+[data-platform="android"][data-contrast="high"][data-theme="light"] {
+  --android-palette-on-surface: #000000;
+  --android-palette-on-surface-muted: #242c26;
+  --android-palette-primary: #003e25;
+  --android-palette-on-primary: #ffffff;
+}
+
+[data-platform="android"][data-contrast="high"] [data-theme="dark"],
+[data-platform="android"][data-contrast="high"][data-theme="dark"] {
+  --android-palette-on-surface: #ffffff;
+  --android-palette-on-surface-muted: #dce7dc;
+  --android-palette-primary: #aeffce;
+  --android-palette-on-primary: #000000;
 }
 
 [data-platform="android"],
 [data-platform="android"] [data-theme] {
+  --background: var(--android-palette-window);
+  --foreground: var(--android-palette-on-surface);
+  --primary: var(--android-palette-primary);
+  --primary-foreground: var(--android-palette-on-primary);
+  --border: var(--android-palette-separator);
+  --destructive: var(--android-palette-error);
+  --destructive-foreground: var(--android-palette-on-error);
+  --ring: var(--android-palette-focus-ring);
+  --sidebar: var(--android-palette-window);
+  --sidebar-foreground: var(--android-palette-on-surface);
+  --card: var(--android-palette-surface-raised);
+  --card-foreground: var(--android-palette-on-surface);
+  --popover: var(--android-palette-surface-dialog);
+  --popover-foreground: var(--android-palette-on-surface);
+  --accent: var(--android-palette-primary-container);
+  --accent-foreground: var(--android-palette-on-primary-container);
+  --muted: var(--android-palette-surface-field);
+  --muted-foreground: var(--android-palette-on-surface-muted);
+  --input: var(--android-palette-outline);
+  --secondary: var(--android-palette-primary-container);
+  --secondary-foreground: var(--android-palette-on-primary-container);
+  --glass: var(--android-palette-surface-bar);
   --accent-fill: var(--native-color-button-primary);
   --on-accent-fill: var(--native-color-on-button-primary);
   --accent-ink: var(--native-color-on-button-plain);
   --accent-tint: var(--native-color-accent-soft);
   --platform-font: var(--font-android);
-  --secondary-text: var(--android-secondary-text);
-  --menu-surface: var(--android-container);
+  --secondary-text: var(--android-palette-on-surface-muted);
+  --menu-surface: var(--android-palette-surface-menu);
   --menu-edge: transparent;
   --menu-radius: var(--radius-android-xs);
   --card-radius: var(--radius-android-md);
-  --popover-surface: var(--android-container-high);
+  --popover-surface: var(--android-palette-surface-dialog);
   --popover-radius: var(--radius-android-md);
   --empty-art-radius: 9999px;
-  --empty-art-fill: var(--android-tonal);
-  --bottom-sheet-surface: var(--android-container-low);
-  --sheet-handle: var(--android-outline);
-  --control-edge: var(--android-outline);
-  --select-edge: var(--android-outline);
+  --empty-art-fill: var(--android-palette-primary-container);
+  --bottom-sheet-surface: var(--android-palette-surface-sheet);
+  --sheet-handle: var(--android-palette-outline);
+  --control-edge: var(--android-palette-outline);
+  --select-edge: var(--android-palette-outline);
   --select-radius: var(--radius-android-xs);
   --radio-edge-on: var(--primary);
   --checkbox-off: transparent;
   --focus-ring-width: 3px;
-  --dialog-surface: var(--android-container-high);
+  --focus-ring-color: var(--android-palette-focus-ring);
+  --dialog-surface: var(--android-palette-surface-dialog);
   --dialog-edge: transparent;
   --dialog-radius: var(--radius-android-xl);
   --button-outline-fill: transparent;
-  --button-outline-edge: var(--android-outline);
-  --input-group-fill: var(--android-container-high);
+  --button-outline-edge: var(--android-palette-outline);
+  --input-group-fill: var(--android-palette-surface-dialog);
   --input-group-edge: transparent;
   --input-group-radius: 9999px;
   --hover-fill: color-mix(
@@ -462,6 +537,13 @@
     currentColor var(--state-pressed),
     transparent
   );
+  --android-container-low: var(--android-palette-surface-sheet);
+  --android-container: var(--android-palette-surface-menu);
+  --android-container-high: var(--android-palette-surface-dialog);
+  --android-tonal: var(--android-palette-primary-container);
+  --android-outline: var(--android-palette-outline);
+  --android-secondary-text: var(--android-palette-on-surface-muted);
+  --android-inverse-primary: var(--native-color-on-notice-action);
 }
 
 [data-platform="ios"],

@@ -36,7 +36,7 @@ const NATIVE_LOOKS: readonly NativeButtonLook[] = [
     height: 40,
     target: "48px",
     fill: "rgb(50, 106, 77)",
-    darkFill: "rgb(164, 209, 180)",
+    darkFill: "rgb(120, 217, 159)",
     secondaryFill: "rgb(208, 232, 215)",
   },
 ];

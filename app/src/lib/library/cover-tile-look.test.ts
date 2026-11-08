@@ -366,10 +366,10 @@ test("tints Android's check box and badges for the dark theme", async () => {
     look.mark.tick,
     look.emptyMark.edge,
   ]).toEqual([
-    "rgb(43, 64, 51)",
+    "rgb(48, 75, 59)",
     "rgb(173, 197, 180)",
-    "rgb(164, 209, 180)",
-    "rgb(31, 72, 51)",
+    "rgb(120, 217, 159)",
+    "rgb(0, 57, 29)",
     "2px rgb(110, 120, 112)",
   ]);
 });

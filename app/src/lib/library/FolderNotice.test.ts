@@ -13,6 +13,7 @@ import { NOTICE_WINDOW_MS, Notices } from "#lib/notices/notices.ts";
 import Toasts from "#lib/notices/Toasts.svelte";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";
+import { compositedContrast } from "../../../tests/components/contrast-ratio";
 
 import type { AddFolder } from "./add-folder";
 import "../../app.css";
@@ -62,10 +63,13 @@ function failed(code: IpcErrorCode): AddFolderResult {
   return { status: "error", error: { code, message: "from the backend" } };
 }
 
+const MIN_ICON_CONTRAST = 4.5;
+
 const CANCELLED: AddFolderResult = { status: "ok", data: null };
 
 afterEach(async () => {
   delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
   await clearToasts();
 });
 
@@ -360,6 +364,30 @@ test("shows no finding toast on Android and still reports the result", async () 
   await expect.element(added.getByText(/2 /)).toBeVisible();
   expect(iconColourOf(added)).toBe(colourOf("--android-inverse-primary"));
 });
+
+test.each(["light", "dark"] as const)(
+  "keeps the Android result toast's icon readable against the snackbar in the %s theme",
+  async (theme) => {
+    document.documentElement.dataset.platform = "android";
+    document.documentElement.dataset.theme = theme;
+    const scan = new PendingScan();
+    const { button } = await renderWith(scan.addFolder);
+    await button.click();
+    scan.finish(scanned({}));
+    const added = toastSaying("Added 7 books from Sample Library");
+    await expect.element(added).toBeVisible();
+
+    const icon = added.element().querySelector("svg");
+    const card = added.element().querySelector(":scope > div");
+    if (icon === null || card === null) {
+      throw new Error("the toast has no icon or card");
+    }
+
+    expect(
+      compositedContrast(icon, [getComputedStyle(card).backgroundColor]),
+    ).toBeGreaterThanOrEqual(MIN_ICON_CONTRAST);
+  },
+);
 
 test("keeps one toast when the page swaps in another notice for the same scan", async () => {
   const { button, notices, adding } = await renderWith(answering(scanned({})));
