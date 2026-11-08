@@ -3,6 +3,12 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Icon as MaterialIcon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { DOCKED_BAR, DOCKED_ROW } from "#lib/navigation/tab-bar.ts";
@@ -19,6 +25,9 @@
   const ICON_SIZE = 18;
   const PILL_ICON_SIZE = 16;
   const ANDROID_ICON_SIZE = 24;
+  const ANDROID_MENU_ICON_SIZE = 20;
+  const ANDROID_ACTION =
+    "flex flex-col items-center gap-xs rounded-native-selection-action px-md py-xs text-native-tab/native-tab font-native-tab tracking-native-tab whitespace-nowrap text-muted transition-control min-block-touch-target not-disabled:active:tint-pressed disabled:text-native-on-tab-disabled disabled:opacity-60";
 
   let {
     count,
@@ -40,18 +49,23 @@
 
   const android = new AndroidPhone();
   const FEWEST_ACTIONS_NEEDING_ROOM = 4;
+  const keptActions = $derived(
+    selectionActions({ keepsLabels, onLabels, onMarkRead }),
+  );
+  const deleteAction = $derived<SelectionAction>({
+    name: "delete",
+    icon: Trash,
+    iconName: "trash",
+    label: m.library_delete(),
+    act: onDelete,
+  });
   const actions = $derived<readonly SelectionAction[]>([
-    ...selectionActions({ keepsLabels, onLabels, onMarkRead }),
-    {
-      name: "delete",
-      icon: Trash,
-      iconName: "trash",
-      label: m.library_delete(),
-      act: onDelete,
-    },
+    ...keptActions,
+    deleteAction,
   ]);
+  const barItems = $derived(keptActions.length + 1);
   const rowSpacing = $derived(
-    actions.length >= FEWEST_ACTIONS_NEEDING_ROOM
+    (android.isOn ? barItems : actions.length) >= FEWEST_ACTIONS_NEEDING_ROOM
       ? "justify-evenly gap-xs"
       : "justify-center gap-2xl",
   );
@@ -65,12 +79,12 @@
     class="sticky -inset-be-xl z-tab-bar -mx-page-start -me-page-end shrink-0 bg-bar pbe-safe-bottom {DOCKED_BAR}"
   >
     <ul class="flex px-lg {rowSpacing} {DOCKED_ROW}">
-      {#each actions as { name, iconName, label, act } (name)}
+      {#each keptActions as { name, iconName, label, act } (name)}
         <li class="flex min-inline-none">
           <button
             type="button"
             disabled={count === 0}
-            class="flex flex-col items-center gap-xs rounded-native-selection-action px-md py-xs text-native-tab/native-tab font-native-tab tracking-native-tab whitespace-nowrap text-muted transition-control min-block-touch-target not-disabled:active:tint-pressed disabled:text-native-on-tab-disabled disabled:opacity-60"
+            class={ANDROID_ACTION}
             onclick={act}
           >
             <MaterialIcon name={iconName} size={ANDROID_ICON_SIZE} />
@@ -78,6 +92,23 @@
           </button>
         </li>
       {/each}
+      <li class="flex min-inline-none">
+        <DropdownMenu>
+          <DropdownMenuTrigger disabled={count === 0} class={ANDROID_ACTION}>
+            <MaterialIcon name="ellipsis" size={ANDROID_ICON_SIZE} />
+            {m.library_selection_more()}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent to="main" side="top" align="end">
+            <DropdownMenuItem tone="danger" onSelect={deleteAction.act}>
+              <MaterialIcon
+                name={deleteAction.iconName}
+                size={ANDROID_MENU_ICON_SIZE}
+              />
+              {deleteAction.label}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </li>
     </ul>
   </div>
 {:else if isPill}
