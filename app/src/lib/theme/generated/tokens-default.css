@@ -240,6 +240,8 @@
   --native-spacing-reader-quick-button-end: 0px;
   --native-spacing-reader-quick-pill-inline: 0px;
   --native-spacing-reader-quick-pill-block: 0px;
+  --native-spacing-reader-guide-card-end: 0px;
+  --native-color-reader-guide-menu-zone: transparent;
   --native-shadow-bar-button-lift: var(--shadow-raised);
   --native-color-on-top-bar: var(--foreground);
   --native-color-top-bar-scrolled: var(--background);

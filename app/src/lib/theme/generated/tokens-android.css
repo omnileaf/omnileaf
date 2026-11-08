@@ -197,6 +197,7 @@
   --native-spacing-reader-quick-button-end: 6px;
   --native-spacing-reader-quick-pill-inline: 56px;
   --native-spacing-reader-quick-pill-block: 32px;
+  --native-spacing-reader-guide-card-end: calc(var(--spacing-safe-bottom) + 16px);
   --native-shadow-bar-button-lift: none;
   --native-color-on-tab-hover: var(--muted-foreground);
   --native-color-on-tab-disabled: var(--muted-foreground);
@@ -578,6 +579,7 @@
   --native-color-on-button-destructive: #a83836;
   --native-color-button-destructive-hover: #a8383614;
   --native-color-button-destructive-pressed: #a838361f;
+  --native-color-reader-guide-menu-zone: #e2eae2e6;
   --native-color-on-top-bar: #2c352e;
   --native-color-top-bar-scrolled: #e9f0e8;
   --native-color-top-bar-scrolled-edge: transparent;
@@ -665,6 +667,7 @@
   --native-color-on-button-destructive: #fa746f;
   --native-color-button-destructive-hover: #fa746f14;
   --native-color-button-destructive-pressed: #fa746f1f;
+  --native-color-reader-guide-menu-zone: #1a211ce6;
   --native-color-on-top-bar: #dee8df;
   --native-color-top-bar-scrolled: #141b17;
   --native-color-top-bar-scrolled-edge: transparent;
