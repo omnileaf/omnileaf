@@ -11,7 +11,10 @@
   import BookProblem from "#lib/reader/BookProblem.svelte";
   import DamagedBook from "#lib/reader/DamagedBook.svelte";
   import PagedReader from "#lib/reader/PagedReader.svelte";
-  import { showBookFile, showFileAction } from "#lib/reader/show-book-file.ts";
+  import {
+    showBookFile,
+    libraryBookFileShower,
+  } from "#lib/reader/show-book-file.ts";
   import UnsupportedBook from "#lib/reader/UnsupportedBook.svelte";
   import { allowPinchZoom } from "#lib/reader/pinch-zoom.ts";
 
@@ -72,7 +75,7 @@
     onRead={() => {
       damagedBookRead = shown.book.id;
     }}
-    onShowFile={showFileAction(shown.book)}
+    onShowFile={libraryBookFileShower(shown.book)}
   />
 {:else if shown.kind === "found"}
   {#key shown.book.id}

@@ -69,7 +69,7 @@
     readerSettings,
   } from "#lib/reader/reader-settings.svelte.ts";
   import ReaderMore from "#lib/reader/ReaderMore.svelte";
-  import { showFileAction } from "#lib/reader/show-book-file.ts";
+  import { libraryBookFileShower } from "#lib/reader/show-book-file.ts";
   import { makesToastRoom } from "#lib/reader/toast-room.ts";
   import { spreadAt, spreadPosition, spreadsOf } from "#lib/reader/spreads.ts";
   import LayoutQuickSettings from "#lib/reader/LayoutQuickSettings.svelte";
@@ -985,7 +985,7 @@
     onStartOver={() => {
       turner.goTo(0);
     }}
-    onShowFile={showFileAction(book)}
+    onShowFile={libraryBookFileShower(book)}
     onOpenChange={holdControls}
   />
 {/snippet}

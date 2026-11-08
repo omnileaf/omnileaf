@@ -15,8 +15,7 @@ export function showBookFile(book: BookId): void {
   });
 }
 
-/** None for a file opened from outside the library, which has no library folder to show. */
-export function showFileAction(
+export function libraryBookFileShower(
   book: BookInPlace | null,
 ): (() => void) | undefined {
   if (book === null || !book.isInLibrary) {
