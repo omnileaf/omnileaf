@@ -262,11 +262,8 @@ function typedWords(): readonly HTMLElement[] {
 }
 
 function visibleWord(word: HTMLElement): string {
-  return [...word.childNodes]
-    .filter((node) => node.nodeType === Node.TEXT_NODE)
-    .map((node) => node.textContent)
-    .join("")
-    .trim();
+  const shown = word.querySelector("[aria-hidden='true']") ?? word;
+  return shown.textContent.trim();
 }
 
 test("lists all seven typed filters on an Android phone, the four that cannot narrow a search yet last", async () => {
@@ -290,11 +287,14 @@ test("tells a screen reader which typed filters are coming soon on an Android ph
     Object.values(filterWords()),
   );
   expect(
-    soon.map((each) => each.textContent.replace(/\s+/gu, " ").trim()),
+    soon.map((each) => each.querySelector(".sr-only")?.textContent.trim()),
   ).toEqual(SOON_WORDS.map((word) => `${word}, coming soon`));
+  expect(
+    soon.every((each) => each.querySelector("[aria-hidden='true']") !== null),
+  ).toBe(true);
 });
 
-test("mutes the typed filters coming soon without dimming them below readable contrast on an Android phone", async () => {
+test("draws the typed filters coming soon in the muted colour at full opacity, their spoken suffix hidden, on an Android phone", async () => {
   await startOn("android", PHONE);
 
   const words = typedWords();
@@ -312,6 +312,8 @@ test("mutes the typed filters coming soon without dimming them below readable co
       resolvedColour("--color-muted", "color"),
     );
     expect(getComputedStyle(word).opacity).toBe("1");
+    const spoken = word.querySelector(".sr-only")?.getBoundingClientRect();
+    expect([spoken?.width, spoken?.height]).toEqual([1, 1]);
   }
 });
 

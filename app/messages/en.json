@@ -1437,7 +1437,7 @@
   "search_word_manga": "manga",
   "search_word_books": "books",
   "search_word_adult": "18+",
-  "search_word_soon": "coming soon",
+  "search_word_soon": "{word}, coming soon",
   "search_everything": "Everything",
   "search_remove_condition": "Remove the {condition} filter",
   "search_conditions": "Filters",

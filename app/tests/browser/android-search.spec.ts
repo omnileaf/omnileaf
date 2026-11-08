@@ -162,26 +162,29 @@ test.describe(
       expect((await boxOf(example)).x).toBe(16);
     });
 
-    test("lists seven typed filters, the four that cannot narrow a search yet read out as coming soon, with no accessibility violations", async ({
-      page,
-    }) => {
-      await page.goto("/search");
-      const heading = page.getByRole("heading", {
-        name: "Type a filter to narrow",
-      });
-      const words = heading.locator("xpath=following-sibling::ul//code");
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`lists seven typed filters, the four that cannot narrow a search yet read out as coming soon, with no accessibility violations in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto("/search");
+        const heading = page.getByRole("heading", {
+          name: "Type a filter to narrow",
+        });
+        const words = heading.locator("xpath=following-sibling::ul//code");
 
-      await expect(words).toHaveText([
-        "unread",
-        "started",
-        "finished",
-        "downloaded, coming soon",
-        "manga, coming soon",
-        "books, coming soon",
-        "18+, coming soon",
-      ]);
-      expect(await accessibilityViolations(page)).toEqual([]);
-    });
+        await expect(words).toHaveText([
+          "unread",
+          "started",
+          "finished",
+          /^downloaded\s*downloaded, coming soon$/,
+          /^manga\s*manga, coming soon$/,
+          /^books\s*books, coming soon$/,
+          /^18\+\s*18\+, coming soon$/,
+        ]);
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
 
     test("heads the chapter titles in the green accent and lists each under its series", async ({
       page,

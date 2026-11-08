@@ -155,11 +155,11 @@
       {/each}
       {#if look.soonWord !== undefined}
         {#each SOON_FILTERS as soon (soon)}
+          {@const word = SOON_FILTER_WORDS[soon]()}
           <li>
             <code class={look.soonWord}>
-              {SOON_FILTER_WORDS[soon]()}<span class="sr-only"
-                >, {m.search_word_soon()}</span
-              >
+              <span aria-hidden="true">{word}</span>
+              <span class="sr-only">{m.search_word_soon({ word })}</span>
             </code>
           </li>
         {/each}
