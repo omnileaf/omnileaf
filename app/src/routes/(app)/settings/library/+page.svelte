@@ -11,10 +11,10 @@
   } from "#lib/ipc/bindings.ts";
   import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
   import { addFolderWithProgress } from "#lib/library/add-folder.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import LibraryFolderSettings from "#lib/library/LibraryFolderSettings.svelte";
   import { rescanFolderWithProgress } from "#lib/library/rescan-folder.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import RescanSchedule from "#lib/scheduled-rescans/RescanSchedule.svelte";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
@@ -86,7 +86,7 @@
     }}
   />
   {#if android.isOn}
-    <section aria-label={m.library_rescan_schedule_title()} class="mbs-xl">
+    <div class="mbs-xl">
       <div class={FLUSH_LIST}>
         <RescanSchedule
           schedule={scheduledRescans}
@@ -94,7 +94,7 @@
         />
       </div>
       <p class={FLUSH_FOOTER}>{m.advanced_scheduled_rescans_help()}</p>
-    </section>
+    </div>
   {/if}
   <div class="mbs-xl">
     <SettingsEntries

@@ -1,4 +1,6 @@
 <script lang="ts" module>
+  import { m } from "#lib/paraglide/messages.js";
+
   const SCHEDULES = ["everyDay", "off"] as const;
 
   type Schedule = (typeof SCHEDULES)[number];
@@ -18,7 +20,6 @@
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
-  import { m } from "#lib/paraglide/messages.js";
   import ChoiceDialog from "#lib/settings/ChoiceDialog.svelte";
 
   import type { ScheduledRescansSetting } from "./scheduled-rescans.svelte.ts";
