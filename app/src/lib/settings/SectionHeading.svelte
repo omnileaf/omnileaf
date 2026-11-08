@@ -48,7 +48,7 @@
 
   const TODAYS_TITLE =
     "text-bar-title font-bold tracking-tight touch:medium:max-expanded:text-page-title";
-  const PHONE_TITLE = `${NATIVE_TOP_BAR.pageTitle} ios:ps-xs android:mbs-none`;
+  const PHONE_TITLE = `${NATIVE_TOP_BAR.largeTitle} ios:ps-xs android:mbs-none`;
 
   const platform = currentPlatform();
   const width = new WindowWidth();
@@ -166,7 +166,7 @@
   </header>
 {:else if !hasTitleBar}
   <header
-    class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:flex-row android:max-medium:items-center android:max-medium:gap-xs touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
+    class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:-me-md touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
   >
     <Tooltip label={backLabel}>
       {#snippet child({ props })}
@@ -212,7 +212,10 @@
     </Tooltip>
     <h1
       tabindex="-1"
-      class={["mbs-xs wrap-anywhere two-pane:mbs-none", titleLook]}
+      class={[
+        "mbs-xs wrap-anywhere android:max-medium:mbs-lg android:max-medium:self-stretch android:max-medium:px-md android:max-medium:pbe-md two-pane:mbs-none",
+        titleLook,
+      ]}
     >
       {title}
     </h1>

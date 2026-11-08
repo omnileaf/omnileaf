@@ -180,13 +180,13 @@ test("keeps today's series bar chips on Linux", async () => {
   expect(seriesBar().className).toContain("bg-background");
 });
 
-test("sets a settings page's Android title as title large", async () => {
+test("sets a settings page's Android title as headline small", async () => {
   onPlatformInLight("android");
   await render(SectionHeading, { title: "About" });
 
   const style = getComputedStyle(heading());
 
-  expect(style.fontSize).toBe("22px");
+  expect(style.fontSize).toBe("24px");
   expect(style.fontWeight).toBe("400");
 });
 
