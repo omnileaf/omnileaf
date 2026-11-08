@@ -5,23 +5,24 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
+  import { ANDROID_ROW, ROW, TINTED } from "./setting-row-look.ts";
   import SettingWords from "./SettingWords.svelte";
 
   interface Props {
     readonly label: string;
     readonly description?: string | undefined;
     readonly onPress: () => void;
+    readonly bleeds?: boolean;
     readonly class?: ClassValue;
   }
 
-  let { label, description, onPress, class: className }: Props = $props();
-
-  const ROW =
-    "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target";
-
-  const ANDROID_ROW = `${FLUSH_BLEED} flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row-two`;
-
-  const TINTED = "transition-control hover:tint-hover active:tint-pressed";
+  let {
+    label,
+    description,
+    onPress,
+    class: className,
+    bleeds = false,
+  }: Props = $props();
 
   const id = $props.id();
   const android = new AndroidPhone();
@@ -29,7 +30,13 @@
 
 <button
   type="button"
-  class={[android.isOn ? ANDROID_ROW : ROW, TINTED, ROW_FOCUS_RING, className]}
+  class={[
+    android.isOn ? [ANDROID_ROW, bleeds ? FLUSH_BLEED : "inline-full"] : ROW,
+    TINTED,
+    "transition-control",
+    ROW_FOCUS_RING,
+    className,
+  ]}
   onclick={onPress}
 >
   <SettingWords

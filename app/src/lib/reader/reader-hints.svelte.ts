@@ -20,8 +20,7 @@ function choiceIn(stored: string | null): boolean | undefined {
 }
 
 export class ReaderHints {
-  isReplayArmed = $state(false);
-
+  #isReplayArmed = $state(false);
   #tapGuide: boolean | undefined = $state();
   #resumeNotice: boolean | undefined = $state();
 
@@ -35,7 +34,11 @@ export class ReaderHints {
     this.#replayStored = new StoredPreference(store, REPLAY_KEY);
     this.#tapGuide = choiceIn(this.#tapGuideStored.read());
     this.#resumeNotice = choiceIn(this.#resumeNoticeStored.read());
-    this.isReplayArmed = this.#replayStored.read() === STORED_ARMED;
+    this.#isReplayArmed = this.#replayStored.read() === STORED_ARMED;
+  }
+
+  get isReplayArmed(): boolean {
+    return this.#isReplayArmed;
   }
 
   get showsTapGuide(): boolean {
@@ -47,7 +50,7 @@ export class ReaderHints {
   }
 
   isGuideDue(isSeen: boolean): boolean {
-    return this.isReplayArmed || (this.showsTapGuide && !isSeen);
+    return this.#isReplayArmed || (this.showsTapGuide && !isSeen);
   }
 
   turnTapGuide(isOn: boolean): void {
@@ -61,12 +64,12 @@ export class ReaderHints {
   }
 
   armReplay(): void {
-    this.isReplayArmed = true;
+    this.#isReplayArmed = true;
     this.#replayStored.writeIfPossible(STORED_ARMED);
   }
 
   disarmReplay(): void {
-    this.isReplayArmed = false;
+    this.#isReplayArmed = false;
     this.#replayStored.writeIfPossible(STORED_IDLE);
   }
 }

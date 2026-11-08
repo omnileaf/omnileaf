@@ -106,6 +106,7 @@
         title: m.reading_guide_again_done(),
       });
     }}
+    bleeds={android.isOn}
     class={android.isOn ? "" : CARD_SWITCH}
   />
 {/snippet}
