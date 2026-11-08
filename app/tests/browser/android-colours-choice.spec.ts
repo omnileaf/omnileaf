@@ -4,6 +4,7 @@ import type { Platform, WallpaperColours } from "../../src/lib/ipc/bindings.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
 import {
   accessibilityViolations,
+  boxOf,
   expect,
   onPlatform,
   test,
@@ -183,6 +184,26 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
       expect(await accessibilityViolations(page)).toEqual([]);
     });
   }
+  test("heads Light or dark and Colours with 44px accent headings, the choice flush", async ({
+    page,
+  }) => {
+    await openAppearance(page);
+    const theme = page.getByRole("heading", { name: "Light or dark" });
+    const colours = page.getByRole("heading", { name: "Colours" });
+
+    for (const heading of [theme, colours]) {
+      expect((await boxOf(heading)).height).toBe(44);
+      await expect(heading).toHaveCSS("font-size", "14px");
+      await expect(heading).toHaveCSS("font-weight", "500");
+    }
+    expect(
+      (await boxOf(page.getByRole("radiogroup", { name: "Light or dark" }))).x,
+    ).toBe(16);
+    await expect(page.getByRole("region", { name: "Light or dark" })).toHaveCSS(
+      "border-top-width",
+      "0px",
+    );
+  });
 });
 
 const OTHER_PLATFORMS: readonly Platform[] = ["linux", "windows", "macos"];
