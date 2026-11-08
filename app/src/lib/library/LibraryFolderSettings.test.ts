@@ -28,6 +28,8 @@ import LibraryFolderSettings from "./LibraryFolderSettings.svelte";
 import type { RescanFolder } from "./rescan-folder";
 import type { RemoveFolderBooks } from "./rescans.svelte";
 
+const ANDROID_TABLET_WIDTH = 800;
+
 type RemoveFolder = typeof commands.removeLibraryFolder;
 type CountFolderBooks = typeof commands.libraryFolderBookCount;
 type FolderId = Parameters<RemoveFolder>[0];
@@ -2029,4 +2031,89 @@ test("turns the iPhone warning into an alert that tries removing the books again
 
   await expect.poll(() => removedFrom).toEqual([COMICS.id, COMICS.id]);
   expect(dialog.elements()).toEqual([]);
+});
+
+test("sets the Android home folder as a flush row with a bare 24px icon, a monospace path and no Rescan", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  const { home } = await renderSettings({ platform: "android" });
+  const title = home.getByRole("heading", { name: "Home folder" });
+  await expect.element(title).toBeVisible();
+
+  const row = home.element().querySelector("div");
+  const icon = home.element().querySelector("[data-icon=hard-drive]");
+  const path = home.element().querySelector("code");
+
+  expect(home.element().querySelector("svg")).toBeNull();
+  expect(icon?.getBoundingClientRect().width).toBeCloseTo(24, 0);
+  expect(icon?.getBoundingClientRect().left).toBeCloseTo(
+    (row?.getBoundingClientRect().left ?? 0) + 16,
+    0,
+  );
+  expect(title.element().getBoundingClientRect().left).toBeCloseTo(
+    (row?.getBoundingClientRect().left ?? 0) + 56,
+    0,
+  );
+  expect(path ? getComputedStyle(path).fontFamily : "").toContain("mono");
+  expect(path ? getComputedStyle(path).fontSize : "").toBe("14px");
+  await expect
+    .element(home.getByRole("button", { name: "Rescan Omnileaf" }))
+    .not.toBeInTheDocument();
+});
+
+test("sets the Android home folder hint in 14px type with 16px of padding", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  const { home } = await renderSettings({ platform: "android" });
+
+  const hint = home.getByText(/^Progress, settings and backups/);
+  await expect.element(hint).toBeVisible();
+  const style = getComputedStyle(hint.element());
+
+  expect([style.fontSize, style.lineHeight, style.paddingLeft]).toEqual([
+    "14px",
+    "20px",
+    "16px",
+  ]);
+});
+
+test("sets the Android Folders heading 44px tall and draws each folder with bare Material icons", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(390, 844);
+  followCorePlatform("android");
+  const { folders } = await renderSettings({ platform: "android" });
+  const heading = folders.getByRole("heading", { name: "Folders" });
+  await expect.element(heading).toBeVisible();
+
+  const row = comicsRow(folders).element();
+
+  expect(heading.element().getBoundingClientRect().height).toBeCloseTo(44, 0);
+  expect(row.querySelector("svg")).toBeNull();
+  expect(row.querySelector("[data-icon=folder]")).not.toBeNull();
+  expect(row.querySelector("[data-icon=refresh-cw]")).not.toBeNull();
+  expect(row.querySelector("[data-icon=folder-minus]")).not.toBeNull();
+  expect(
+    folders.element().querySelector("[data-icon=plus]")?.getBoundingClientRect()
+      .width,
+  ).toBeCloseTo(24, 0);
+});
+
+test("keeps the Android tonal circle tile on the home folder at tablet width", async () => {
+  serveFolders([HOME, COMICS]);
+  await page.viewport(ANDROID_TABLET_WIDTH, 1024);
+  followCorePlatform("android");
+  const { home } = await renderSettings({ platform: "android" });
+  await expect
+    .element(home.getByRole("heading", { name: "Home folder" }))
+    .toBeVisible();
+
+  const tile = home.element().querySelector("span[aria-hidden=true]");
+  const style = tile ? getComputedStyle(tile) : undefined;
+
+  expect(home.element().querySelector("[data-icon=hard-drive]")).toBeNull();
+  expect(style?.borderRadius).not.toBe("0px");
+  expect(style?.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(style?.borderTopColor).toBe("rgba(0, 0, 0, 0)");
 });

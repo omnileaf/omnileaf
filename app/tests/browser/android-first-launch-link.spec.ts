@@ -229,12 +229,16 @@ test.describe(
     }) => {
       await goToTheLinkStep(page);
       const row = folderRow(page, MANGA.name);
-      const media = row.locator("[data-slot=item-media]");
+      const glyph = row.locator("[data-icon=folder]");
 
-      const icon = await boxOf(media.locator("svg"));
+      const icon = await boxOf(glyph);
       const name = await boxOf(row.getByText(MANGA.name, { exact: true }));
 
-      await expect(media).toHaveCSS("background-color", TRANSPARENT);
+      await expect(row.locator("[data-slot=item-media]")).toHaveCount(0);
+      await expect(glyph.locator("xpath=..")).toHaveCSS(
+        "background-color",
+        TRANSPARENT,
+      );
       expect(icon.y).toBeLessThanOrEqual(name.y + name.height);
     });
 
