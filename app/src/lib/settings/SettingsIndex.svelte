@@ -11,7 +11,7 @@
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
   import { cn } from "#lib/components/cn.ts";
-  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
+  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
@@ -126,12 +126,12 @@
           </li>
         {/each}
         {#if android.isOn}
-          {#each group.comingSoon ?? [] as soon (soon.iconName)}
+          {#each group.comingSoon ?? [] as soon (soon.label())}
             <li>
               <ComingSoon
                 label={soon.label()}
                 name="{soon.label()} {m.settings_coming_soon()}"
-                class={cn(ITEM_LOOKS.row, "text-muted")}
+                class={cn(ITEM_LOOKS.row, ROW_FOCUS_RING, "text-muted")}
               >
                 <Icon name={soon.iconName} class="shrink-0" />
                 <ItemContent>
