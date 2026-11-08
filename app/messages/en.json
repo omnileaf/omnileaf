@@ -784,6 +784,8 @@
   ],
   "settings_title": "Settings",
   "settings_group_app": "App",
+  "settings_trackers_title": "Trackers",
+  "settings_coming_soon": "Coming soon",
   "settings_group_reading": "Reading",
   "settings_group_data": "Data and privacy",
   "settings_summary_pair": "{first} · {second}",

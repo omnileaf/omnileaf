@@ -7,16 +7,22 @@
 
   let {
     label,
+    name = label,
     class: className,
     children,
-  }: { label: string; class: string; children: Snippet } = $props();
+  }: {
+    label: string;
+    name?: string;
+    class: string;
+    children: Snippet;
+  } = $props();
 </script>
 
 <Tooltip
   label={m.reader_coming_soon({ feature: label })}
   type="button"
   aria-disabled="true"
-  aria-label={label}
+  aria-label={name}
   class={cn(
     "text-muted focus-visible:outline-2 focus-visible:outline-accent",
     className,

@@ -175,3 +175,37 @@ test("keeps the desktop rows in their bordered list", async () => {
     screen.container.querySelectorAll("[data-slot=item-media]").length,
   ).toBe(8);
 });
+
+test("lists Trackers last in Reading on Android as a disabled row that says it is coming soon", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const row = screen.getByRole("button", { name: /^Trackers/ });
+  const reading = screen.getByRole("list", { name: "Reading" }).element();
+
+  await expect.element(row).toHaveAttribute("aria-disabled", "true");
+  expect(row.element().textContent).toContain("Coming soon");
+  expect(reading.lastElementChild?.contains(row.element())).toBe(true);
+});
+
+test("sets the Android Trackers row like the other rows, its icon at x=16 and its title at x=56", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const row = screen.getByRole("button", { name: /^Trackers/ }).element();
+  const icon = row.querySelector("[data-icon]");
+  const title = row.querySelector("[data-slot=item-title]");
+  const box = row.getBoundingClientRect();
+
+  expect(icon?.getBoundingClientRect().left).toBeCloseTo(box.left + 16, 0);
+  expect(title?.getBoundingClientRect().left).toBeCloseTo(box.left + 56, 0);
+  expect(box.height).toBeCloseTo(72, 0);
+});
+
+test("leaves Trackers out of the list everywhere but Android", async () => {
+  const screen = await render(SettingsIndex, PROPS);
+
+  expect(screen.getByRole("button", { name: /^Trackers/ }).elements()).toEqual(
+    [],
+  );
+});
