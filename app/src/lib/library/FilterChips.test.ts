@@ -207,3 +207,9 @@ test("keeps the bordered chips on an iPad and an Android phone", async () => {
     fill: resolvedColour("--card", "backgroundColor"),
   });
 });
+
+test("draws each filter in use 32 points tall on an Android phone", async () => {
+  await chipsOn("android", PHONE, FEW);
+
+  expect(removableChip("Unread").getBoundingClientRect().height).toBe(32);
+});
