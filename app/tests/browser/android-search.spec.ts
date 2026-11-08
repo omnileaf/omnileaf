@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -159,6 +160,33 @@ test.describe(
       }
       const example = page.getByText("For example,", { exact: false });
       expect((await boxOf(example)).x).toBe(16);
+    });
+
+    test("lists seven typed filters, the four the app cannot search by disabled and explained, with no accessibility violations", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      const heading = page.getByRole("heading", {
+        name: "Type a filter to narrow",
+      });
+      const words = heading.locator("xpath=following-sibling::ul//code");
+
+      await expect(words).toHaveText([
+        "unread",
+        "started",
+        "finished",
+        "downloaded",
+        "manga",
+        "books",
+        "18+",
+      ]);
+      await expect(words.locator("xpath=self::*[@aria-disabled]")).toHaveCount(
+        4,
+      );
+      await expect(words.getByText("manga")).toHaveAccessibleDescription(
+        "Searching by this word is coming soon.",
+      );
+      expect(await accessibilityViolations(page)).toEqual([]);
     });
 
     test("heads the chapter titles in the green accent and lists each under its series", async ({

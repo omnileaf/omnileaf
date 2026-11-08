@@ -249,3 +249,83 @@ test("drops the Coming with books note under its title on an Android phone at th
   expect(note.top).toBeGreaterThanOrEqual(title.bottom);
   expect(note.left).toBe(title.left);
 });
+
+const UNAVAILABLE_WORDS = ["downloaded", "manga", "books", "18+"] as const;
+
+function typedWords(): readonly HTMLElement[] {
+  const list = page
+    .getByRole("region", { name: "Type a filter to narrow" })
+    .getByRole("list")
+    .element();
+  return [...list.querySelectorAll<HTMLElement>("code")];
+}
+
+test("lists all seven typed filters on an Android phone, the four without a filter disabled", async () => {
+  await startOn("android", PHONE);
+
+  const words = typedWords();
+
+  expect(words.map((each) => each.textContent.trim())).toEqual([
+    ...Object.values(filterWords()),
+    ...UNAVAILABLE_WORDS,
+  ]);
+  expect(words.map((each) => each.getAttribute("aria-disabled"))).toEqual([
+    null,
+    null,
+    null,
+    "true",
+    "true",
+    "true",
+    "true",
+  ]);
+});
+
+test("explains to a screen reader why the disabled typed filters are off on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const unavailable = typedWords().slice(3);
+
+  expect(unavailable).toHaveLength(UNAVAILABLE_WORDS.length);
+  for (const word of unavailable) {
+    const hint = document.getElementById(
+      word.getAttribute("aria-describedby") ?? "",
+    );
+    expect(hint?.textContent).toBe("Searching by this word is coming soon.");
+  }
+});
+
+test("keeps the disabled typed filters out of the tab order and muted on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const words = typedWords();
+  const live = words.slice(0, 3);
+  const unavailable = words.slice(3);
+
+  expect(unavailable).toHaveLength(UNAVAILABLE_WORDS.length);
+  expect(unavailable.every((each) => !each.hasAttribute("tabindex"))).toBe(
+    true,
+  );
+  expect(live.map((each) => getComputedStyle(each).opacity)).toEqual([
+    "1",
+    "1",
+    "1",
+  ]);
+  for (const word of unavailable) {
+    expect(Number(getComputedStyle(word).opacity)).toBeLessThan(0.5);
+  }
+});
+
+test("keeps the three typed filters the app understands on an Android tablet, an iPhone and an iPad", async () => {
+  for (const [platform, size] of [
+    ["android", TABLET],
+    ["ios", PHONE],
+    ["ios", TABLET],
+  ] as const) {
+    document.body.replaceChildren();
+    await startOn(platform, size);
+
+    expect(typedWords().map((each) => each.textContent.trim())).toEqual(
+      Object.values(filterWords()),
+    );
+  }
+});

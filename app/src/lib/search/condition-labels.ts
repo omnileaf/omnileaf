@@ -16,3 +16,12 @@ export function filterWords(): FilterWords {
     finished: m.search_word_finished(),
   };
 }
+
+export function unavailableFilterWords(): readonly string[] {
+  return [
+    m.search_word_downloaded(),
+    m.search_word_manga(),
+    m.search_word_books(),
+    m.search_word_adult(),
+  ];
+}

@@ -10,7 +10,7 @@
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
-  import { filterWords } from "./condition-labels";
+  import { filterWords, unavailableFilterWords } from "./condition-labels";
   import { startLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
 
@@ -55,7 +55,9 @@
   const recentId = `${id}-recent`;
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
+  const unavailableId = `${id}-unavailable`;
   const words = filterWords();
+  const unavailableWords = unavailableFilterWords();
   const android = new AndroidPhone();
   const look = $derived(startLook(isGrouped, android.isOn));
   const locale = getLocale();
@@ -154,7 +156,23 @@
           </code>
         </li>
       {/each}
+      {#if android.isOn}
+        {#each unavailableWords as word (word)}
+          <li>
+            <code
+              class={[TODAYS_WORD, "opacity-38"]}
+              aria-disabled="true"
+              aria-describedby={unavailableId}
+            >
+              {word}
+            </code>
+          </li>
+        {/each}
+      {/if}
     </ul>
+    {#if android.isOn}
+      <p id={unavailableId} class="sr-only">{m.search_word_unavailable()}</p>
+    {/if}
     {#if !isGrouped}
       <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
