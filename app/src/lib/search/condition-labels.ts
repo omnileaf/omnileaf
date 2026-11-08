@@ -17,11 +17,11 @@ export function filterWords(): FilterWords {
   };
 }
 
-export function unavailableFilterWords(): readonly string[] {
-  return [
-    m.search_word_downloaded(),
-    m.search_word_manga(),
-    m.search_word_books(),
-    m.search_word_adult(),
-  ];
-}
+export const SOON_FILTERS = ["downloaded", "manga", "books", "adult"] as const;
+
+export const SOON_FILTER_WORDS = {
+  downloaded: m.search_word_downloaded,
+  manga: m.search_word_manga,
+  books: m.search_word_books,
+  adult: m.search_word_adult,
+} as const satisfies Record<(typeof SOON_FILTERS)[number], () => string>;

@@ -6,6 +6,7 @@ import "../../app.css";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
+import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { filterWords } from "./condition-labels";
@@ -250,7 +251,7 @@ test("drops the Coming with books note under its title on an Android phone at th
   expect(note.left).toBe(title.left);
 });
 
-const UNAVAILABLE_WORDS = ["downloaded", "manga", "books", "18+"] as const;
+const SOON_WORDS = ["downloaded", "manga", "books", "18+"] as const;
 
 function typedWords(): readonly HTMLElement[] {
   const list = page
@@ -260,58 +261,57 @@ function typedWords(): readonly HTMLElement[] {
   return [...list.querySelectorAll<HTMLElement>("code")];
 }
 
-test("lists all seven typed filters on an Android phone, the four without a filter disabled", async () => {
+function visibleWord(word: HTMLElement): string {
+  return [...word.childNodes]
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent)
+    .join("")
+    .trim();
+}
+
+test("lists all seven typed filters on an Android phone, the four that cannot narrow a search yet last", async () => {
   await startOn("android", PHONE);
 
-  const words = typedWords();
-
-  expect(words.map((each) => each.textContent.trim())).toEqual([
+  expect(typedWords().map(visibleWord)).toEqual([
     ...Object.values(filterWords()),
-    ...UNAVAILABLE_WORDS,
-  ]);
-  expect(words.map((each) => each.getAttribute("aria-disabled"))).toEqual([
-    null,
-    null,
-    null,
-    "true",
-    "true",
-    "true",
-    "true",
+    ...SOON_WORDS,
   ]);
 });
 
-test("explains to a screen reader why the disabled typed filters are off on an Android phone", async () => {
-  await startOn("android", PHONE);
-
-  const unavailable = typedWords().slice(3);
-
-  expect(unavailable).toHaveLength(UNAVAILABLE_WORDS.length);
-  for (const word of unavailable) {
-    const hint = document.getElementById(
-      word.getAttribute("aria-describedby") ?? "",
-    );
-    expect(hint?.textContent).toBe("Searching by this word is coming soon.");
-  }
-});
-
-test("keeps the disabled typed filters out of the tab order and muted on an Android phone", async () => {
+test("tells a screen reader which typed filters are coming soon on an Android phone", async () => {
   await startOn("android", PHONE);
 
   const words = typedWords();
-  const live = words.slice(0, 3);
-  const unavailable = words.slice(3);
+  const live = words.slice(0, FILTER_CONDITIONS.length);
+  const soon = words.slice(FILTER_CONDITIONS.length);
 
-  expect(unavailable).toHaveLength(UNAVAILABLE_WORDS.length);
-  expect(unavailable.every((each) => !each.hasAttribute("tabindex"))).toBe(
-    true,
+  expect(soon).toHaveLength(SOON_WORDS.length);
+  expect(live.map((each) => each.textContent.trim())).toEqual(
+    Object.values(filterWords()),
   );
-  expect(live.map((each) => getComputedStyle(each).opacity)).toEqual([
-    "1",
-    "1",
-    "1",
-  ]);
-  for (const word of unavailable) {
-    expect(Number(getComputedStyle(word).opacity)).toBeLessThan(0.5);
+  expect(
+    soon.map((each) => each.textContent.replace(/\s+/gu, " ").trim()),
+  ).toEqual(SOON_WORDS.map((word) => `${word}, coming soon`));
+});
+
+test("mutes the typed filters coming soon without dimming them below readable contrast on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const words = typedWords();
+  const live = words.slice(0, FILTER_CONDITIONS.length);
+  const soon = words.slice(FILTER_CONDITIONS.length);
+
+  expect(soon).toHaveLength(SOON_WORDS.length);
+  for (const word of live) {
+    expect(getComputedStyle(word).color).toBe(
+      resolvedColour("--color-foreground", "color"),
+    );
+  }
+  for (const word of soon) {
+    expect(getComputedStyle(word).color).toBe(
+      resolvedColour("--color-muted", "color"),
+    );
+    expect(getComputedStyle(word).opacity).toBe("1");
   }
 });
 
@@ -324,8 +324,6 @@ test("keeps the three typed filters the app understands on an Android tablet, an
     document.body.replaceChildren();
     await startOn(platform, size);
 
-    expect(typedWords().map((each) => each.textContent.trim())).toEqual(
-      Object.values(filterWords()),
-    );
+    expect(typedWords().map(visibleWord)).toEqual(Object.values(filterWords()));
   }
 });

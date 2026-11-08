@@ -162,7 +162,7 @@ test.describe(
       expect((await boxOf(example)).x).toBe(16);
     });
 
-    test("lists seven typed filters, the four the app cannot search by disabled and explained, with no accessibility violations", async ({
+    test("lists seven typed filters, the four that cannot narrow a search yet read out as coming soon, with no accessibility violations", async ({
       page,
     }) => {
       await page.goto("/search");
@@ -175,17 +175,11 @@ test.describe(
         "unread",
         "started",
         "finished",
-        "downloaded",
-        "manga",
-        "books",
-        "18+",
+        "downloaded, coming soon",
+        "manga, coming soon",
+        "books, coming soon",
+        "18+, coming soon",
       ]);
-      await expect(words.locator("xpath=self::*[@aria-disabled]")).toHaveCount(
-        4,
-      );
-      await expect(words.getByText("manga")).toHaveAccessibleDescription(
-        "Searching by this word is coming soon.",
-      );
       expect(await accessibilityViolations(page)).toEqual([]);
     });
 

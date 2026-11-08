@@ -10,14 +10,13 @@
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
-  import { filterWords, unavailableFilterWords } from "./condition-labels";
+  import {
+    filterWords,
+    SOON_FILTER_WORDS,
+    SOON_FILTERS,
+  } from "./condition-labels";
   import { startLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
-
-  const TODAYS_WORD =
-    "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
-  const NATIVE_WORD =
-    "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
   let {
     recent,
@@ -55,9 +54,7 @@
   const recentId = `${id}-recent`;
   const byId = `${id}-by`;
   const filterId = `${id}-filter`;
-  const unavailableId = `${id}-unavailable`;
   const words = filterWords();
-  const unavailableWords = unavailableFilterWords();
   const android = new AndroidPhone();
   const look = $derived(startLook(isGrouped, android.isOn));
   const locale = getLocale();
@@ -151,28 +148,23 @@
     <ul class={look.filters}>
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
-          <code class={isGrouped ? NATIVE_WORD : TODAYS_WORD}>
+          <code class={look.word}>
             {words[condition]}
           </code>
         </li>
       {/each}
-      {#if android.isOn}
-        {#each unavailableWords as word (word)}
+      {#if look.soonWord !== undefined}
+        {#each SOON_FILTERS as soon (soon)}
           <li>
-            <code
-              class={[TODAYS_WORD, "opacity-38"]}
-              aria-disabled="true"
-              aria-describedby={unavailableId}
-            >
-              {word}
+            <code class={look.soonWord}>
+              {SOON_FILTER_WORDS[soon]()}<span class="sr-only"
+                >, {m.search_word_soon()}</span
+              >
             </code>
           </li>
         {/each}
       {/if}
     </ul>
-    {#if android.isOn}
-      <p id={unavailableId} class="sr-only">{m.search_word_unavailable()}</p>
-    {/if}
     {#if !isGrouped}
       <p class={look.example}>
         {m.search_filter_example({ unread: words.unread })}
