@@ -63,7 +63,7 @@ export interface SettingsSection {
 
 export interface SettingsGroup {
   readonly heading?: () => string;
-  readonly phoneHeading?: () => string;
+  readonly androidHeading?: () => string;
   readonly sections: readonly SettingsSection[];
 }
 
@@ -154,7 +154,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   { heading: m.settings_group_app, sections: [GENERAL, APPEARANCE] },
   { heading: m.settings_group_reading, sections: [LIBRARY, READING] },
   { heading: m.settings_group_data, sections: [PRIVACY, STORAGE, ADVANCED] },
-  { phoneHeading: m.about_title, sections: [ABOUT] },
+  { androidHeading: m.about_title, sections: [ABOUT] },
 ];
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] =
