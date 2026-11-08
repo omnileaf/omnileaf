@@ -3,6 +3,7 @@ import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import { NOT_STARTED, readerBook, servePages } from "./reader-book.ts";
 
+const CONTROLS_PAUSE_AHEAD_MS = 500;
 const FAKE_SERIES_ID = "0190a3e4-0000-8000-8000-00000000dead";
 const SERIES_URL = new RegExp(`/series/${FAKE_SERIES_ID}$`);
 
@@ -50,10 +51,14 @@ test.describe(
     test("offers no way to show its file in the More menu", async ({
       page,
     }) => {
+      await page.clock.install();
       await servePages(page);
       await page.goto(`/read/${BOOK.id}`);
-
-      await page.getByRole("button", { name: "More", exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
+      const now = await page.evaluate(() => Date.now());
+      await page.clock.pauseAt(now + CONTROLS_PAUSE_AHEAD_MS);
+      await page.getByRole("button", { name: "More", exact: true }).focus();
+      await page.keyboard.press("Enter");
 
       await expect(page.getByText("Mark read")).toBeVisible();
       await expect(
