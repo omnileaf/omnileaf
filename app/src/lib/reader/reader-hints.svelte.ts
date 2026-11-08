@@ -19,7 +19,6 @@ function choiceIn(stored: string | null): boolean | undefined {
   return stored === STORED_OFF ? false : undefined;
 }
 
-/** What the reader shows to help: the tap guide, and the notice that says where a book opened. */
 export class ReaderHints {
   isReplayArmed = $state(false);
 
@@ -43,7 +42,6 @@ export class ReaderHints {
     return this.#tapGuide ?? true;
   }
 
-  /** Phones read quietly until the person asks for the notice. */
   showsResumeNotice(isOnPhone: boolean): boolean {
     return this.#resumeNotice ?? !isOnPhone;
   }
