@@ -63,9 +63,8 @@
     ...keptActions,
     deleteAction,
   ]);
-  const barItems = $derived(keptActions.length + 1);
   const rowSpacing = $derived(
-    (android.isOn ? barItems : actions.length) >= FEWEST_ACTIONS_NEEDING_ROOM
+    actions.length >= FEWEST_ACTIONS_NEEDING_ROOM
       ? "justify-evenly gap-xs"
       : "justify-center gap-2xl",
   );
@@ -98,7 +97,12 @@
             <MaterialIcon name="ellipsis" size={ANDROID_ICON_SIZE} />
             {m.library_selection_more()}
           </DropdownMenuTrigger>
-          <DropdownMenuContent to="main" side="top" align="end">
+          <DropdownMenuContent
+            to="main"
+            side="top"
+            align="end"
+            class="min-inline-native-library-menu"
+          >
             <DropdownMenuItem tone="danger" onSelect={deleteAction.act}>
               <MaterialIcon
                 name={deleteAction.iconName}

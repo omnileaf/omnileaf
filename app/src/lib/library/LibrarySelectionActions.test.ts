@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -10,6 +10,7 @@ import LibrarySelectionActions from "./LibrarySelectionActions.svelte";
 import type { LabelsFrom } from "./series-selection";
 
 const PHONE = { width: 390, height: 844 };
+const TABLET = { width: 1024, height: 800 };
 const ACTION_ICON_SIZE = 24;
 const ACTION_MIN_HEIGHT = 48;
 const ACTION_CORNER = "16px";
@@ -24,9 +25,12 @@ function mainLandmark(): HTMLElement {
   return main;
 }
 
-async function drawBar(count = 0): Promise<{ picked: string[] }> {
+async function drawBar(
+  count = 0,
+  size: { width: number; height: number } = PHONE,
+): Promise<{ picked: string[] }> {
   const calls = { picked: [] as string[] };
-  await page.viewport(PHONE.width, PHONE.height);
+  await page.viewport(size.width, size.height);
   await render(LibrarySelectionActions, {
     target: mainLandmark(),
     props: {
@@ -137,6 +141,9 @@ test("shows Delete as the More menu's only item and runs it once on an Android p
   const calls = await drawBar(2);
 
   await page.getByRole("button", { name: "More" }).click();
+  await expect
+    .element(page.getByRole("menuitem", { name: "Delete" }))
+    .toBeVisible();
   expect(page.getByRole("menuitem").elements()).toHaveLength(1);
   await page.getByRole("menuitem", { name: "Delete" }).click();
 
@@ -154,26 +161,34 @@ test("spreads the three actions and More evenly across the bar on an Android pho
   );
 });
 
-test("keeps Delete in the floating card on an iPhone and in the docked bar on an Android tablet", async () => {
+test("opens the More menu from the keyboard and returns focus to More when it closes on an Android phone", async () => {
+  followCorePlatform("android");
+  await drawBar(2);
+  const more = buttonOf("More");
+
+  if (!(more instanceof HTMLElement)) {
+    throw new Error("More is not an element");
+  }
+  more.focus();
+  await userEvent.keyboard("{Enter}");
+  await expect
+    .element(page.getByRole("menuitem", { name: "Delete" }))
+    .toHaveFocus();
+  await userEvent.keyboard("{Escape}");
+
+  await expect
+    .element(page.getByRole("button", { name: "More" }))
+    .toHaveFocus();
+});
+
+test("keeps Delete in the floating card on an iPhone and an Android tablet", async () => {
   for (const [platform, size] of [
     ["ios", PHONE],
-    ["android", { width: 1024, height: 800 }],
+    ["android", TABLET],
   ] as const) {
     document.body.replaceChildren();
     followCorePlatform(platform);
-    await page.viewport(size.width, size.height);
-    await render(LibrarySelectionActions, {
-      target: mainLandmark(),
-      props: {
-        count: 2,
-        isPill: false,
-        keepsLabels: true,
-        onLabels: () => undefined,
-        onMarkRead: () => undefined,
-        onDelete: () => undefined,
-        onCancel: () => undefined,
-      },
-    });
+    await drawBar(2, size);
 
     await expect
       .element(page.getByRole("button", { name: "Delete" }))
