@@ -601,7 +601,11 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
       "color",
       await tokenColour(page, "--native-color-on-jump-current", READER_THEME),
     );
-    await expect(read.locator(".lucide-check")).toHaveCount(1);
+    await expect(
+      read.locator(
+        platform === "ios" ? ".lucide-check" : "[data-icon='check']",
+      ),
+    ).toHaveCount(1);
   });
 
   test("keeps the phone's current book in its own colours when the tab pill changes", async ({
