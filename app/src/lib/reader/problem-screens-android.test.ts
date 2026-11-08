@@ -278,3 +278,52 @@ test("shows an unreadable book's file from its Show the file button", async () =
 
   expect(onShowFile).toHaveBeenCalledOnce();
 });
+
+test("draws a damaged book's actions with the Material icons on an Android phone", async () => {
+  await onAndroid();
+  const screen = await damaged(() => undefined);
+
+  const read = screen.getByRole("button", { name: /^Read the \d+ pages/ });
+  const show = screen.getByRole("button", { name: "Show the file" });
+
+  expect(
+    read.element().querySelector('[data-icon="book-open"]'),
+  ).not.toBeNull();
+  expect(
+    show.element().querySelector('[data-icon="folder-open"]'),
+  ).not.toBeNull();
+  expect(read.element().querySelector("svg")).toBeNull();
+  expect(show.element().querySelector("svg")).toBeNull();
+  for (const icon of [read, show]) {
+    const box = icon
+      .element()
+      .querySelector("[data-icon]")
+      ?.getBoundingClientRect();
+    expect([box?.width, box?.height]).toEqual([18, 18]);
+  }
+});
+
+test("keeps a damaged book's drawn action icons on an Android tablet", async () => {
+  await onAndroid(TABLET);
+  const screen = await damaged(() => undefined);
+
+  const read = screen.getByRole("button", { name: /^Read the \d+ pages/ });
+
+  expect(read.element().querySelector("svg")).not.toBeNull();
+  expect(read.element().querySelector("[data-icon]")).toBeNull();
+});
+
+test("draws an unreadable book's Show the file with the Material icon on an Android phone", async () => {
+  await onAndroid();
+  const screen = await render(BookProblem, {
+    kind: "unreadable",
+    place: place(),
+    platform: "android",
+    onShowFile: () => undefined,
+  });
+
+  const show = screen.getByRole("button", { name: "Show the file" }).element();
+
+  expect(show.querySelector('[data-icon="folder-open"]')).not.toBeNull();
+  expect(show.querySelector("svg")).toBeNull();
+});

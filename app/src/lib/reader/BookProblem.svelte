@@ -19,12 +19,14 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import {
     bookProblemLook,
+    KIT_BUTTON_ICON_SIZE,
     problemActionGroup,
   } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
   import type { BookProblem } from "./opened-book.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
@@ -114,7 +116,13 @@
         {/if}
         {#if kind === "unreadable" && onShowFile !== undefined}
           <button type="button" class={actions.other} onclick={onShowFile}>
-            <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            <ReaderIcon
+              name="folder-open"
+              fallback={FolderOpen}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
             {showFile}
           </button>
         {/if}

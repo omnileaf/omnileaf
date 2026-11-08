@@ -8,6 +8,8 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { showFileLabel } from "#lib/page/show-file.ts";
 
+import { resolvedColour } from "../../../tests/components/resolved-colour";
+
 import ReaderTopBarHarness from "./ReaderTopBarHarness.svelte";
 
 const PHONE = { width: 400, height: 800 };
@@ -71,3 +73,54 @@ test.each(LAYOUTS)(
     expect(page.getByText(showFileLabel(platform)).elements()).toHaveLength(0);
   },
 );
+
+const ROWS = ["Mark read", "Start over", "Show the file"] as const;
+const CLEAR = "rgba(0, 0, 0, 0)";
+
+function backRow(): HTMLElement {
+  const element = page
+    .getByRole("link", { name: "Back to the library" })
+    .element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("More drew no way back");
+  }
+  return element;
+}
+
+function actionRow(name: string): HTMLElement {
+  const element = page.getByRole("button", { name }).element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error(`More drew no ${name} row`);
+  }
+  return element;
+}
+
+test("sets every Android phone More row in the board's 56px row with a 4px corner", async () => {
+  await openMore("android", PHONE, vi.fn());
+
+  const rows = [...ROWS.map(actionRow), backRow()].map((row) => {
+    const style = getComputedStyle(row);
+    return [
+      style.paddingLeft,
+      style.paddingRight,
+      style.columnGap,
+      style.minHeight,
+      style.borderTopLeftRadius,
+    ];
+  });
+
+  expect(rows).toEqual(
+    Array(rows.length).fill(["16px", "24px", "16px", "56px", "4px"]),
+  );
+});
+
+test("highlights only Back to the library in the tonal row colour on the Android phone's More sheet", async () => {
+  await openMore("android", PHONE, vi.fn());
+
+  expect(getComputedStyle(backRow()).backgroundColor).toBe(
+    resolvedColour("--native-color-row-pressed", "backgroundColor"),
+  );
+  for (const name of ROWS) {
+    expect(getComputedStyle(actionRow(name)).backgroundColor).toBe(CLEAR);
+  }
+});

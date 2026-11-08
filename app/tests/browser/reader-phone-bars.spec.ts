@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -729,6 +730,24 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
       await tokenColour(page, "--native-color-menu-rule", READER_THEME),
     );
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no accessibility violations in the Android phone's More sheet in the ${colorScheme} theme`, async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await page.emulateMedia({ colorScheme });
+      await openBook(page);
+      await topBar(page).getByRole("button", { name: "More" }).click();
+      await settle(page.getByRole("dialog", { name: BOOK_TITLE }));
+
+      expect(await accessibilityViolations(page)).toEqual([]);
+    });
+  }
 
   test("shows the book's file from the Android phone's More sheet and closes it", async ({
     page,
