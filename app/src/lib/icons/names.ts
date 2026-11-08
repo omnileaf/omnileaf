@@ -26,6 +26,7 @@ export const ICON_NAMES = [
   "circle-alert",
   "circle-check",
   "clock",
+  "code",
   "columns-2",
   "compass",
   "copy",
