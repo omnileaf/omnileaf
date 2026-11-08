@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { followCorePlatform } from "#lib/page/platform.ts";
+
 import SettingsIndex from "./SettingsIndex.svelte";
 
 const PROPS = {
@@ -62,4 +64,18 @@ test("lists About on its own, last", async () => {
 
   expect(last?.querySelectorAll("a")).toHaveLength(1);
   expect(last?.textContent).toContain("About");
+});
+
+test("renders native Icon components for sections on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SettingsIndex, PROPS);
+
+  const icons = screen.container.querySelectorAll("[data-icon]");
+  expect(icons.length).toBeGreaterThanOrEqual(8);
+  expect(
+    screen.container.querySelector('[data-icon="settings"]'),
+  ).not.toBeNull();
+  expect(
+    screen.container.querySelector('[data-icon="library"]'),
+  ).not.toBeNull();
 });

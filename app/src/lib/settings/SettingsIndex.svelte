@@ -2,6 +2,7 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     Item,
     ItemContent,
@@ -9,6 +10,7 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
 
   import {
@@ -32,6 +34,7 @@
     green: "ios:bg-ios-chip-green",
     orange: "ios:bg-ios-chip-orange",
   } satisfies Record<SectionChip, string>;
+  const platform = currentPlatform();
   const headingId = $props.id();
 </script>
 
@@ -69,7 +72,11 @@
                       IOS_CHIPS[section.chip],
                     ]}
                   >
-                    <section.icon size={ICON_SIZE} />
+                    {#if platform === "android" && section.iconName !== undefined}
+                      <Icon name={section.iconName} size={ICON_SIZE} />
+                    {:else}
+                      <section.icon size={ICON_SIZE} />
+                    {/if}
                   </ItemMedia>
                   <ItemContent
                     class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm"

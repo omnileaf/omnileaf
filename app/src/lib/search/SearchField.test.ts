@@ -272,4 +272,24 @@ describe("in an iPhone's bottom bar", () => {
       size: getComputedStyle(words).fontSize,
     }).toEqual({ height: 48, size: "17px" });
   });
+
+  test("renders native search Icon on Android", async () => {
+    followCorePlatform("android");
+    const screen = await render(SearchField, {
+      text: "",
+      conditions: [],
+      filterPlace: "field",
+      onType: () => undefined,
+      onRemove: () => undefined,
+      onClear: () => undefined,
+      onEscape: () => undefined,
+      listId: "results",
+      activeId: undefined,
+      hasChoices: false,
+      onKey: () => false,
+    });
+
+    const icon = screen.container.querySelector('[data-icon="search"]');
+    expect(icon).not.toBeNull();
+  });
 });

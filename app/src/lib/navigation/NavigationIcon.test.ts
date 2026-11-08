@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-svelte";
 
+import { followCorePlatform } from "#lib/page/platform.ts";
+
 import NavigationIcon from "./NavigationIcon.svelte";
 import type { Section } from "./sections";
 
@@ -75,3 +77,35 @@ test("keeps the clock's circular arrow drawn when the history icon is filled", a
   expect(filledShapes(screen.container)).toBe(1);
   expect(drawnAsLines.length).toBeGreaterThanOrEqual(2);
 });
+
+test.each(SECTIONS)(
+  "renders native Icon component for %s on Android",
+  async (section) => {
+    followCorePlatform("android");
+    const screen = await render(NavigationIcon, {
+      section,
+      isSelected: false,
+      isArriving: false,
+      size: SIZE,
+    });
+
+    const icon = screen.container.querySelector("[data-icon]");
+    expect(icon).not.toBeNull();
+  },
+);
+
+test.each(SECTIONS)(
+  "renders filled native Icon component for selected %s on Android",
+  async (section) => {
+    followCorePlatform("android");
+    const screen = await render(NavigationIcon, {
+      section,
+      isSelected: true,
+      isArriving: false,
+      size: SIZE,
+    });
+
+    const icon = screen.container.querySelector("[data-icon][data-filled]");
+    expect(icon).not.toBeNull();
+  },
+);

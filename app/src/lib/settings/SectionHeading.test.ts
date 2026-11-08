@@ -4,6 +4,8 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { followCorePlatform } from "#lib/page/platform.ts";
+
 import SectionHeading from "./SectionHeading.svelte";
 
 const PROPS = { title: "About" };
@@ -62,4 +64,11 @@ test("keeps the way back to the page it sits under beside the list of sections",
   await expect
     .element(screen.getByRole("link", { name: "Back to Privacy and security" }))
     .toBeVisible();
+});
+
+test("renders native back Icon on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+  const icon = screen.container.querySelector('[data-icon="arrow-left"]');
+  expect(icon).not.toBeNull();
 });

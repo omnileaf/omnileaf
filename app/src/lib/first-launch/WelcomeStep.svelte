@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Folder, Lock, Sparkles } from "@lucide/svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import WidthWording from "#lib/page/WidthWording.svelte";
   import { atEveryWidth, type WordingByWidth } from "#lib/page/wording.ts";
@@ -15,7 +17,8 @@
 
   const PROMISE_ICON_SIZE = 20;
 
-  const isSetupPage = usesSetupPages(currentPlatform());
+  const platform = currentPlatform();
+  const isSetupPage = usesSetupPages(platform);
 
   let { device, onNext }: { device: DeviceKind; onNext: () => void } = $props();
 
@@ -27,20 +30,30 @@
     desktop: atEveryWidth(m.first_launch_welcome_body_desktop),
   } satisfies Record<DeviceKind, WordingByWidth>;
 
+  interface WelcomePromise {
+    readonly icon: typeof Folder;
+    readonly iconName: IconName;
+    readonly title: () => string;
+    readonly detail: WordingByWidth;
+  }
+
   const PROMISES = {
     phone: [
       {
         icon: Folder,
+        iconName: "folder",
         title: m.first_launch_promise_folders,
         detail: atEveryWidth(m.first_launch_promise_folders_detail_phone),
       },
       {
         icon: Sparkles,
+        iconName: "sparkles",
         title: m.first_launch_promise_reading,
         detail: atEveryWidth(m.first_launch_promise_reading_detail_phone),
       },
       {
         icon: Lock,
+        iconName: "lock",
         title: m.first_launch_promise_private_phone,
         detail: {
           onPhones: m.first_launch_promise_private_detail_phone,
@@ -51,21 +64,24 @@
     desktop: [
       {
         icon: Folder,
+        iconName: "folder",
         title: m.first_launch_promise_folders,
         detail: atEveryWidth(m.first_launch_promise_folders_detail_desktop),
       },
       {
         icon: Sparkles,
+        iconName: "sparkles",
         title: m.first_launch_promise_reading,
         detail: atEveryWidth(m.first_launch_promise_reading_detail_desktop),
       },
       {
         icon: Lock,
+        iconName: "lock",
         title: m.first_launch_promise_private_desktop,
         detail: atEveryWidth(m.first_launch_promise_private_detail_desktop),
       },
     ],
-  } satisfies Record<DeviceKind, readonly unknown[]>;
+  } satisfies Record<DeviceKind, readonly WelcomePromise[]>;
 </script>
 
 <StepFrame step="welcome">
@@ -105,7 +121,11 @@
               : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile",
           ]}
         >
-          <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
+          {#if platform === "android"}
+            <Icon name={promise.iconName} size={PROMISE_ICON_SIZE} />
+          {:else}
+            <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
+          {/if}
         </span>
         <span class="flex flex-col">
           <span
