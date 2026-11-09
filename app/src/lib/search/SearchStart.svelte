@@ -110,7 +110,9 @@
             <span data-slot="item-media" class={look.lead}>
               <Icon name={searchable.icon} size={look.iconSize} />
             </span>
-            <span class="flex flex-1 flex-col min-inline-none">
+            <span
+              class="flex flex-1 flex-wrap items-baseline justify-between gap-x-md min-inline-none"
+            >
               <span data-slot="item-title" class="wrap-anywhere">
                 {searchable.label()}
               </span>
