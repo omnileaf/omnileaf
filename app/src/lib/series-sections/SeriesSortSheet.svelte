@@ -13,7 +13,7 @@
   import FilterSetting from "#lib/library/FilterSetting.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import {
-    type BooksOrder,
+    type SortAndFilter,
     DIRECTIONS,
     EVERY_BOOK_IN_ORDER,
     ORDER_LABELS,
@@ -27,9 +27,9 @@
     onChoose,
     onClose,
   }: {
-    listing: BooksOrder;
+    listing: SortAndFilter;
     isOpen: boolean;
-    onChoose: (listing: BooksOrder) => void;
+    onChoose: (listing: SortAndFilter) => void;
     onClose: () => void;
   } = $props();
 </script>
@@ -70,7 +70,7 @@
         labels={ORDER_LABELS}
         chosen={listing.direction}
         onChoose={(direction: SortDirection) => {
-          onChoose({ ...listing, direction });
+          onChoose({ shown: listing.shown, direction });
         }}
       />
       <h3 class={ANDROID_FILTER_HEADING}>{m.library_filter()}</h3>
@@ -80,7 +80,7 @@
         labels={SHOWN_LABELS}
         chosen={listing.shown}
         onChoose={(shown: BooksShown) => {
-          onChoose({ ...listing, shown });
+          onChoose({ direction: listing.direction, shown });
         }}
       />
       <p class="{ROW_SUBTITLE_TYPE} ps-lg pe-xl pbs-sm text-muted">

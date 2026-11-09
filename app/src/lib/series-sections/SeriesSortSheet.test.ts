@@ -6,7 +6,7 @@ import "../../app.css";
 
 import { followCorePlatform } from "#lib/page/platform.ts";
 import {
-  type BooksOrder,
+  type SortAndFilter,
   EVERY_BOOK_IN_ORDER,
 } from "#lib/series/book-listing.ts";
 
@@ -14,13 +14,13 @@ import SeriesSortSheet from "./SeriesSortSheet.svelte";
 
 const ANDROID_PHONE = { width: 412, height: 915 };
 async function openSheet(
-  listing: BooksOrder = EVERY_BOOK_IN_ORDER,
-): Promise<BooksOrder[]> {
-  const chosen: BooksOrder[] = [];
+  listing: SortAndFilter = EVERY_BOOK_IN_ORDER,
+): Promise<SortAndFilter[]> {
+  const chosen: SortAndFilter[] = [];
   await render(SeriesSortSheet, {
     listing,
     isOpen: true,
-    onChoose: (next: BooksOrder) => {
+    onChoose: (next: SortAndFilter) => {
       chosen.push(next);
     },
     onClose: () => undefined,
