@@ -94,6 +94,15 @@ test("keeps the books shown as chosen under an Android phone's covers", () => {
   expect(sectionListing(chosen, EVERY_SECTION, ANDROID_PHONE)).toEqual(chosen);
 });
 
+test("lists every book of an Android phone's series with one kind", () => {
+  const chosen: SeriesBookListing = { shown: "unread", direction: "ascending" };
+
+  expect(sectionListing(chosen, ["volumes"], ANDROID_PHONE)).toEqual({
+    ...chosen,
+    shown: "all",
+  });
+});
+
 test("goes back to the first section when the chosen one is gone", () => {
   const chosen: SeriesBookListing = { ...IN_ORDER, section: "specials" };
 

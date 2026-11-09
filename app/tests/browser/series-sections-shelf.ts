@@ -143,7 +143,9 @@ export class SectionShelf {
           (book) => listing.section == null || book.section === listing.section,
         );
         const shown = inSection.filter(
-          (book) => listing.shown !== "unread" || book.reading.state !== "read",
+          (book) =>
+            (listing.shown !== "unread" || book.reading.state !== "read") &&
+            (listing.shown !== "bookmarked" || book.isBookmarked),
         );
         const ordered =
           listing.direction === "descending" ? shown.toReversed() : shown;

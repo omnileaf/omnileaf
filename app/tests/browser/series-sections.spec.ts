@@ -529,6 +529,120 @@ test.describe(
       await expect(phoneRows(page)).toContainText(/chapter 13/);
     });
 
+    test("hides the field and clears the search when Find a book is pressed again", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      const find = page.getByRole("button", { name: "Find a book" });
+      await find.click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("13");
+      await expect(phoneRows(page)).toHaveCount(1);
+
+      await find.click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("clears the search when another tab is chosen", async ({ page }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("clears the search from Clear the search when no chapter matches", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page
+        .getByRole("searchbox", { name: "Find a book" })
+        .fill("harbour");
+
+      await page.getByRole("button", { name: "Clear the search" }).click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("shows the selection bar while picking on the Chapters tab and goes back to the heading after", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      await page
+        .getByRole("button", { name: /^More for .*chapter 13/ })
+        .click();
+      await page
+        .getByRole("button", { name: "Select", exact: true })
+        .or(page.getByRole("menuitem", { name: "Select", exact: true }))
+        .click();
+      await expect(
+        page.getByRole("heading", { level: 2, name: "1 selected" }),
+      ).toBeVisible();
+
+      await page.getByRole("button", { name: "Clear the selection" }).click();
+
+      await expect(
+        page.getByRole("heading", { level: 2, name: "2 chapters" }),
+      ).toBeFocused();
+      await expect(
+        page.getByRole("heading", { level: 2, name: /books$/ }),
+      ).toHaveCount(0);
+    });
+
+    test("closes Sort and filter back to its button", async ({ page }) => {
+      await openSeries(page);
+      const sortAndFilter = page.getByRole("button", {
+        name: "Sort and filter",
+      });
+      await sortAndFilter.click();
+
+      await page.keyboard.press("Escape");
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeHidden();
+      await expect(sortAndFilter).toHaveAttribute("aria-expanded", "false");
+      await expect(sortAndFilter).toBeFocused();
+    });
+
+    test("says when no volume is bookmarked and shows them all again from Show all books", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await showOnly(page, "Bookmarked");
+      await expect(
+        page.getByText("No book in this series has a bookmark."),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Show all books" }).click();
+
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
     test("shows only the unread volumes, with no gap, once Sort and filter says Unread", async ({
       page,
     }) => {
