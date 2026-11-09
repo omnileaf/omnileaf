@@ -102,14 +102,15 @@
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
-  let chosen: ListingChange = $state({});
+  let chosen: { id: string; change: ListingChange } | undefined = $state();
+  const chosenHere = $derived(chosen?.id === data.id ? chosen.change : {});
   const sections = $derived(
     found?.overview.sections.map(({ section }) => section) ?? [],
   );
   const listing: SeriesBookListing = $derived({
     ...EVERY_BOOK_IN_ORDER,
     direction: firstDirection(sections, phone),
-    ...chosen,
+    ...chosenHere,
   });
   const listed = $derived(
     sectionListing(listing, sections, {
@@ -137,7 +138,7 @@
   let startedFor: string | undefined;
 
   function choose(change: ListingChange): void {
-    chosen = { ...chosen, ...change };
+    chosen = { id: data.id, change: { ...chosenHere, ...change } };
     if (listingKey === startedFor) {
       void books?.start();
     }
