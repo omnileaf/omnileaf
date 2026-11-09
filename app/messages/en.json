@@ -2401,6 +2401,7 @@
   "reader_start_over": "Start over",
   "reader_show_file": "Show the file",
   "reader_show_in_folder": "Show in folder",
+  "show_file_failed": "Couldn't open the folder.",
   "show_in_files": "Show in Files",
   "show_in_finder": "Show in Finder",
   "show_in_file_explorer": "Show in File Explorer",

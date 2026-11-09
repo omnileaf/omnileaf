@@ -131,6 +131,30 @@ test.describe("a book whose file couldn't be opened", () => {
   }
 });
 
+test.describe("a book whose folder can't be shown", () => {
+  test.use({
+    backend: {
+      ...failingWith("bookUnreadable", PLACE),
+      showBookInFolder: () => {
+        throw new CommandFailure({
+          code: "fileManagerUnavailable",
+          message: "no file manager",
+        });
+      },
+    },
+  });
+
+  test("tells the reader the folder could not be opened", async ({ page }) => {
+    await page.goto(`/read/${BOOK_ID}`);
+
+    await problem(page)
+      .getByRole("button", { name: /^Show (the file|in folder)$/ })
+      .click();
+
+    await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+  });
+});
+
 test.describe("a book that failed to open for a reason of the app's own", () => {
   test.use({ backend: failingWith("internal", PLACE) });
 

@@ -985,7 +985,7 @@
     onStartOver={() => {
       turner.goTo(0);
     }}
-    onShowFile={libraryBookFileShower(book)}
+    onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
   />
 {/snippet}
