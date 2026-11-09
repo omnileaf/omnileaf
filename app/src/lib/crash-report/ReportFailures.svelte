@@ -25,12 +25,12 @@
   class={["flex flex-col gap-sm", isQuiet && "-mbs-dialog-gap"]}
 >
   {#if isCopyFailed}
-    <Alert tone="warning" icon={CircleAlert}>
+    <Alert tone="warning" icon={CircleAlert} iconName="circle-alert">
       <AlertTitle>{m.crash_report_copy_failed()}</AlertTitle>
     </Alert>
   {/if}
   {#if failure !== undefined}
-    <Alert tone="warning" icon={CircleAlert}>
+    <Alert tone="warning" icon={CircleAlert} iconName="circle-alert">
       <AlertTitle>{SEND_FAILURES[failure]()}</AlertTitle>
     </Alert>
   {/if}
