@@ -26,6 +26,7 @@ const TURNS = [
     first: "chapter 30",
   },
 ] as const;
+const UNNUMBERED_CHAPTER = "Sample Series 04 Extra.cbz";
 const SECOND_SERIES = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
