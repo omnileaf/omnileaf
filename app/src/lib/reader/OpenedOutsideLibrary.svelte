@@ -16,6 +16,7 @@
 <Alert
   tone="plain"
   icon={FolderSearch}
+  iconName="folder-search"
   role="status"
   class="pointer-events-auto fixed inset-x-none inset-bs-safe-top z-notice m-md"
 >

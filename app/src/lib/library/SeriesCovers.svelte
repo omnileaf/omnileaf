@@ -44,6 +44,7 @@
   import { showFolderLabel } from "#lib/page/show-file.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
+  import { AndroidPhone } from "./android-phone.svelte.ts";
   import CoverBadges from "./CoverBadges.svelte";
   import ContinueDisc from "./ContinueDisc.svelte";
   import AdultVeil from "./AdultVeil.svelte";
@@ -69,7 +70,7 @@
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
   import { coverStack, coverTileLook } from "./cover-tile";
-  import { SCREEN_SIZES } from "./library-view";
+  import { SCREEN_SIZES, viewDrawn } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
   import UnreadCount from "./UnreadCount.svelte";
@@ -82,7 +83,7 @@
     onColumns,
     onMostThatFit,
     coverUrl,
-    view,
+    view: saved,
     usesStandIns,
     menu,
     adultTreatment = "show",
@@ -105,6 +106,8 @@
     readonly cell: Snippet<[LibrarySeries]>;
   }
 
+  const androidPhone = new AndroidPhone();
+  const view = $derived(viewDrawn(saved, androidPhone.isOn));
   const fitsToWidth = $derived(view.fitsCoversToWidth);
   const look = $derived(
     coverLook(
@@ -549,7 +552,10 @@
             />
           {/if}
           <p
-            class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+            class={[
+              "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only",
+              tile.compactTitle,
+            ]}
           >
             {shown.title}
           </p>
@@ -767,7 +773,7 @@
                 <UnreadCount
                   count={one.unreadCount}
                   isSpelledOut
-                  class={["px-sm py-2xs text-caption", dimmed(one)]}
+                  class={[rowLook.unread, dimmed(one)]}
                 />
               {/if}
               {#if away}

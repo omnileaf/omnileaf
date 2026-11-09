@@ -61,10 +61,16 @@ export interface SettingsSection {
   readonly chip: SectionChip;
 }
 
+export interface ComingSoonSection {
+  readonly label: () => string;
+  readonly iconName: IconName;
+}
+
 export interface SettingsGroup {
   readonly heading?: () => string;
   readonly androidHeading?: () => string;
   readonly sections: readonly SettingsSection[];
+  readonly comingSoon?: readonly ComingSoonSection[];
 }
 
 export function isWithinSection(
@@ -150,9 +156,18 @@ const ABOUT: SettingsSection = {
   chip: "grey",
 };
 
+const TRACKERS: ComingSoonSection = {
+  label: m.settings_trackers_title,
+  iconName: "link-2",
+};
+
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   { heading: m.settings_group_app, sections: [GENERAL, APPEARANCE] },
-  { heading: m.settings_group_reading, sections: [LIBRARY, READING] },
+  {
+    heading: m.settings_group_reading,
+    sections: [LIBRARY, READING],
+    comingSoon: [TRACKERS],
+  },
   { heading: m.settings_group_data, sections: [PRIVACY, STORAGE, ADVANCED] },
   { androidHeading: m.about_title, sections: [ABOUT] },
 ];

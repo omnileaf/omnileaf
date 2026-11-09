@@ -93,7 +93,12 @@
   </ul>
   <div role="alert">
     {#if failure !== undefined}
-      <Alert tone="warning" icon={CircleAlert} class="mbs-sm">
+      <Alert
+        tone="warning"
+        icon={CircleAlert}
+        iconName="circle-alert"
+        class="mbs-sm"
+      >
         <AlertTitle>{failureMessage(failure)}</AlertTitle>
       </Alert>
     {/if}

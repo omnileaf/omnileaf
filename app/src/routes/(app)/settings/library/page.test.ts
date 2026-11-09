@@ -56,3 +56,36 @@ test("offers to add a folder", async () => {
     .element(folders.getByRole("button", { name: "Add a folder" }))
     .toBeVisible();
 });
+
+test("leaves Rescan folders to the Android phone", async () => {
+  const screen = await render(PageWithAppContext, {
+    screenshotMode: screenshotModeTurned("off"),
+    page: Page,
+    pageProps: {
+      params: {},
+      data: {
+        appInfo: {
+          version: "1.2.3",
+          platform: "linux",
+          sourceCode: "repo.example.org/omnileaf",
+          isDevelopmentBuild: false,
+          windowBackdrop: "none",
+        },
+        libraryProblem: null,
+        homeArrival: null,
+        isFirstLaunch: false,
+      },
+    },
+  });
+
+  await expect
+    .element(
+      screen
+        .getByRole("region", { name: "Folders" })
+        .getByRole("button", { name: "Add a folder" }),
+    )
+    .toBeVisible();
+  expect(
+    screen.getByRole("button", { name: /^Rescan folders/ }).elements(),
+  ).toEqual([]);
+});

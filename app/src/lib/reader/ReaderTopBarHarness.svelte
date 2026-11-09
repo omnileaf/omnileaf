@@ -16,7 +16,10 @@
 
   const SERIES = "0190a3e4-0000-8000-8000-0000000000a1";
 
-  let { platform }: { platform: Platform } = $props();
+  let {
+    platform,
+    onShowFile,
+  }: { platform: Platform; onShowFile?: (() => void) | undefined } = $props();
 
   setReaderChrome(untrack(() => new ReaderChrome(platform)));
 
@@ -65,6 +68,7 @@
     {platform}
     onMarkRead={nothing}
     onStartOver={nothing}
+    {onShowFile}
     onOpenChange={nothing}
   />
 {/snippet}

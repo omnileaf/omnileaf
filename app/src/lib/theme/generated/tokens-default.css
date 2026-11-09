@@ -231,6 +231,7 @@
   --native-spacing-series-icon: 16px;
   --native-spacing-phone-action-icon: 16px;
   --native-spacing-phone-action-chevron: 16px;
+  --native-spacing-series-band: var(--spacing-series-band);
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
@@ -260,6 +261,7 @@
   --native-color-on-tab-hover: var(--muted-foreground);
   --native-color-on-tab-disabled: var(--muted-foreground);
   --native-color-on-tab-current: var(--color-accent);
+  --native-color-on-tab-bar-current: var(--color-accent);
   --native-color-on-tab-pill: var(--color-accent);
   --native-spacing-tab-bar: var(--spacing-floating-bar);
   --native-spacing-tab-bar-inset: var(--spacing-xs);
@@ -294,6 +296,7 @@
   --native-weight-search-field: var(--font-weight-regular);
   --native-tracking-search-field: 0;
   --native-radius-cover: var(--radius-cover);
+  --native-radius-picked-cover: var(--radius-cover);
   --native-spacing-read-mark: 1.5rem;
   --native-color-cover-badge: var(--card);
   --native-color-on-cover-badge: var(--foreground);
@@ -308,6 +311,7 @@
   --native-radius-select: var(--radius-series-check);
   --native-spacing-select: var(--spacing-series-check);
   --native-spacing-select-edge: 2px;
+  --native-spacing-select-inset: var(--spacing-xs);
   --native-shadow-select-ring-lift: none;
   --native-color-sheet: var(--bottom-sheet-surface);
   --native-color-grouped-sheet: var(--bottom-sheet-surface);
@@ -616,4 +620,6 @@
   --native-weight-books-heading: var(--font-weight-semibold);
   --native-tracking-books-heading: 0;
   --native-spacing-series-hero-cover: var(--spacing-series-cover);
+  --native-spacing-history-bar: var(--spacing-history-bar);
+  --native-spacing-library-menu: 0px;
 }

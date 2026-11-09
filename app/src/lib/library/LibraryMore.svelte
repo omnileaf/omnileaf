@@ -82,7 +82,11 @@
       </Tooltip>
     {/snippet}
   </DropdownMenuTrigger>
-  <DropdownMenuContent to="main" align="end">
+  <DropdownMenuContent
+    to="main"
+    align="end"
+    class="android:max-medium:min-inline-native-library-menu"
+  >
     {#if folded !== undefined}
       <DropdownMenuItem onSelect={folded.onSortAndFilter}>
         {#if platform === "android"}

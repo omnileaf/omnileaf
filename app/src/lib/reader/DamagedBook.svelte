@@ -14,12 +14,17 @@
   } from "#lib/components/ui/alert/index.ts";
   import type { BookDamage, OpenedBook, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemActionGroup } from "#lib/page/problem-look.ts";
+  import {
+    bookProblemLook,
+    KIT_BUTTON_ICON_SIZE,
+    problemActionGroup,
+  } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
   import { librarySeriesKey } from "./opened-book.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import ProblemHeading from "./ProblemHeading.svelte";
   import { PROBLEM_TEXT, problemLayout } from "./problem-heading.ts";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
@@ -32,11 +37,13 @@
     damage,
     platform,
     onRead,
+    onShowFile,
   }: {
     book: OpenedBook;
     damage: BookDamage;
     platform: Platform;
     onRead: () => void;
+    onShowFile: (() => void) | undefined;
   } = $props();
 
   const settings = untrack(() => readerSettings(librarySeriesKey(book)));
@@ -44,6 +51,7 @@
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));
+  const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -65,10 +73,10 @@
     }}
   />
   <div
-    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl"
+    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl android:max-medium:px-lg"
   >
     <section class="flex flex-col gap-lg inline-full max-inline-damaged-book">
-      <ProblemHeading icon={FileExclamationPoint} {platform}>
+      <ProblemHeading icon={FileExclamationPoint} {platform} {look}>
         {m.reader_damaged_title({ title: book.title })}
       </ProblemHeading>
       <p class={["text-body expanded:text-small", PROBLEM_TEXT[layout]]}>
@@ -77,26 +85,47 @@
           promised: damage.promisedPages,
         })}
       </p>
-      <Alert tone="plain" icon={TriangleAlert} role="alert">
-        <AlertTitle class="text-small font-semibold">
+      <Alert
+        tone={look.noticeTone}
+        icon={TriangleAlert}
+        iconName="triangle-alert"
+        role="alert"
+      >
+        <AlertTitle
+          class="text-small font-semibold android:max-medium:font-medium"
+        >
           {m.reader_damaged_ends_early({
             first: readable + 1,
             last: damage.promisedPages,
           })}
         </AlertTitle>
-        <AlertDescription class="text-small text-muted">
+        <AlertDescription class="text-small">
           {m.reader_damaged_ends_early_body()}
         </AlertDescription>
       </Alert>
       <div class={actions.group}>
         <button type="button" class={actions.main} onclick={onRead}>
-          <BookOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+          <ReaderIcon
+            name="book-open"
+            fallback={BookOpen}
+            isKit={look.hasKitIcons}
+            size={BUTTON_ICON_SIZE}
+            kitSize={KIT_BUTTON_ICON_SIZE}
+          />
           {m.reader_read_pages_that_work({ count: readable })}
         </button>
-        <button type="button" disabled class={actions.other}>
-          <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </button>
+        {#if onShowFile !== undefined}
+          <button type="button" class={actions.other} onclick={onShowFile}>
+            <ReaderIcon
+              name="folder-open"
+              fallback={FolderOpen}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
+            {showFile}
+          </button>
+        {/if}
       </div>
     </section>
   </div>

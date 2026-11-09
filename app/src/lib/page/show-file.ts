@@ -1,4 +1,7 @@
-import type { Platform } from "#lib/ipc/bindings.ts";
+import { CircleAlert } from "@lucide/svelte";
+
+import { type BookPlace, commands, type Platform } from "#lib/ipc/bindings.ts";
+import type { Notices } from "#lib/notices/notices.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 const SHOW_FILE = {
@@ -35,4 +38,32 @@ export function showFolderLabel(platform: Platform): string {
 
 export function openedFromLabel(platform: Platform): string {
   return OPENED_FROM[platform]();
+}
+
+export function showBookFile(
+  book: BookPlace["id"],
+  notices: Pick<Notices, "show">,
+): void {
+  void commands.showBookInFolder(book).then((shown) => {
+    if (shown.status === "error") {
+      reportError(shown.error);
+      notices.show({
+        tone: "warning",
+        icon: CircleAlert,
+        title: m.show_file_failed(),
+      });
+    }
+  });
+}
+
+export function libraryBookFileShower(
+  book: Pick<BookPlace, "id" | "isInLibrary"> | null,
+  notices: Pick<Notices, "show">,
+): (() => void) | undefined {
+  if (book === null || !book.isInLibrary) {
+    return undefined;
+  }
+  return () => {
+    showBookFile(book.id, notices);
+  };
 }

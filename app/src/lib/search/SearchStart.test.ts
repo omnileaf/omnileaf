@@ -6,6 +6,7 @@ import "../../app.css";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
+import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { filterWords } from "./condition-labels";
@@ -18,6 +19,7 @@ const TABLET = { width: 1024, height: 800 } as const;
 afterEach(() => {
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
+  document.documentElement.style.removeProperty("--text-scale");
   document.body.replaceChildren();
 });
 
@@ -211,4 +213,119 @@ test("keeps the plain divided rows on an iPhone when the page leaves the start u
     corner: "0px",
   });
   expect(rowOf("unread manga").titleStart).toBe(28);
+});
+
+function wordsRow() {
+  const title = page.getByText("Words inside books", { exact: true }).element();
+  const column = title.parentElement;
+  if (column === null) {
+    throw new Error("no text column for Words inside books");
+  }
+  return {
+    title: title.getBoundingClientRect(),
+    note: page
+      .getByText("Coming with books", { exact: true })
+      .element()
+      .getBoundingClientRect(),
+    column: column.getBoundingClientRect(),
+  };
+}
+
+test("sets the Coming with books note on the title's line after it on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const { title, note, column } = wordsRow();
+
+  expect(note.top).toBeLessThan(title.bottom);
+  expect(note.left).toBeGreaterThan(title.right);
+  expect(note.right).toBeCloseTo(column.right, 0);
+});
+
+test("drops the Coming with books note under its title on an Android phone at the largest text", async () => {
+  document.documentElement.style.setProperty("--text-scale", "2");
+  await startOn("android", PHONE);
+
+  const { title, note } = wordsRow();
+
+  expect(note.top).toBeGreaterThanOrEqual(title.bottom);
+  expect(note.left).toBe(title.left);
+});
+
+const SOON_WORDS = ["downloaded", "manga", "books", "18+"] as const;
+
+function typedWords(): readonly HTMLElement[] {
+  const list = page
+    .getByRole("region", { name: "Type a filter to narrow" })
+    .getByRole("list")
+    .element();
+  return [...list.querySelectorAll<HTMLElement>("code")];
+}
+
+function visibleWord(word: HTMLElement): string {
+  const shown = word.querySelector("[aria-hidden='true']") ?? word;
+  return shown.textContent.trim();
+}
+
+test("lists all seven typed filters on an Android phone, the four that cannot narrow a search yet last", async () => {
+  await startOn("android", PHONE);
+
+  expect(typedWords().map(visibleWord)).toEqual([
+    ...Object.values(filterWords()),
+    ...SOON_WORDS,
+  ]);
+});
+
+test("tells a screen reader which typed filters are coming soon on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const words = typedWords();
+  const live = words.slice(0, FILTER_CONDITIONS.length);
+  const soon = words.slice(FILTER_CONDITIONS.length);
+
+  expect(soon).toHaveLength(SOON_WORDS.length);
+  expect(live.map((each) => each.textContent.trim())).toEqual(
+    Object.values(filterWords()),
+  );
+  expect(
+    soon.map((each) => each.querySelector(".sr-only")?.textContent.trim()),
+  ).toEqual(SOON_WORDS.map((word) => `${word}, coming soon`));
+  expect(
+    soon.every((each) => each.querySelector("[aria-hidden='true']") !== null),
+  ).toBe(true);
+});
+
+test("draws the typed filters coming soon in the muted colour at full opacity, their spoken suffix hidden, on an Android phone", async () => {
+  await startOn("android", PHONE);
+
+  const words = typedWords();
+  const live = words.slice(0, FILTER_CONDITIONS.length);
+  const soon = words.slice(FILTER_CONDITIONS.length);
+
+  expect(soon).toHaveLength(SOON_WORDS.length);
+  for (const word of live) {
+    expect(getComputedStyle(word).color).toBe(
+      resolvedColour("--color-foreground", "color"),
+    );
+  }
+  for (const word of soon) {
+    expect(getComputedStyle(word).color).toBe(
+      resolvedColour("--color-muted", "color"),
+    );
+    expect(getComputedStyle(word).opacity).toBe("1");
+    const spoken = word.querySelector(".sr-only")?.getBoundingClientRect();
+    expect([spoken?.width, spoken?.height]).toEqual([1, 1]);
+  }
+});
+
+test("keeps the three typed filters the app understands on an Android tablet, an iPhone and an iPad", async () => {
+  for (const [platform, size] of [
+    ["android", TABLET],
+    ["ios", PHONE],
+    ["ios", TABLET],
+  ] as const) {
+    document.body.replaceChildren();
+    await startOn(platform, size);
+
+    expect(typedWords().map(visibleWord)).toEqual(Object.values(filterWords()));
+  }
 });

@@ -26,6 +26,7 @@
   } from "#lib/navigation/ReaderBackSwipe.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -76,6 +77,7 @@
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
+  import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import { seenOnce } from "#lib/reader/seen-once.ts";
   import { tapZonesFor } from "#lib/reader/tap-zones.ts";
@@ -185,8 +187,9 @@
         ? `omnileaf.readerGuide.${reading.direction}`
         : `omnileaf.readerGuide.zones.${settings.look.tapZones}`,
   );
-  const isGuideSeen = $derived(
-    guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen,
+  const hints = readerHints();
+  const isGuideDue = $derived(
+    hints.isGuideDue(guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen),
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
@@ -716,7 +719,7 @@
       }
       return;
     }
-    if (chrome.isOnPhone) {
+    if (!hints.showsResumeNotice(chrome.isOnPhone)) {
       return;
     }
     notices.show({
@@ -898,7 +901,7 @@
   );
 
   onMount(() => {
-    if (!isGuideSeen) {
+    if (isGuideDue) {
       controls.hide();
     }
     sayWhereItOpened();
@@ -982,6 +985,7 @@
     onStartOver={() => {
       turner.goTo(0);
     }}
+    onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
   />
 {/snippet}
@@ -1401,14 +1405,12 @@
           seeStripFound();
           openSettings(true);
           void tick().then(() => {
-            document
-              .querySelector<HTMLSelectElement>("select[data-reading-mode]")
-              ?.focus();
+            document.querySelector<HTMLElement>("[data-reading-mode]")?.focus();
           });
         }}
         onDone={seeStripFound}
       />
-    {:else if !isGuideSeen && !turner.isPastEnd}
+    {:else if isGuideDue && !turner.isPastEnd}
       <ReaderGuide
         {isStrip}
         direction={reading.direction}
@@ -1417,6 +1419,7 @@
         onDone={() => {
           seenOnce(guideKey).see();
           guidesSeenNow.add(guideKey);
+          hints.disarmReplay();
         }}
       />
     {/if}

@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { Slider } from "#lib/components/ui/slider/index.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import LightSlider from "./LightSlider.svelte";
   import type { ReaderLight } from "./reader-settings.svelte.ts";
-
-  const STEP = 1;
-  const HIGHEST = 100;
 
   let {
     light,
@@ -20,6 +17,15 @@
   } = $props();
 
   const id = $props.id();
+  const control = $derived(isInRows ? "inline-setting-control" : undefined);
+
+  function setBrightness(brightness: number): void {
+    onChange({ ...light, isOn: true, brightness });
+  }
+
+  function setWarmth(warmth: number): void {
+    onChange({ ...light, isOn: true, warmth });
+  }
 </script>
 
 <div class={["flex flex-col", isInRows ? "divide-y divide-border" : "gap-md"]}>
@@ -33,18 +39,11 @@
     <p id="{id}-brightness" class="text-small font-medium">
       {m.reader_brightness()}
     </p>
-    <Slider
-      aria-labelledby="{id}-brightness"
-      class={isInRows ? "inline-setting-control" : undefined}
-      min={0}
-      max={HIGHEST}
-      step={STEP}
-      bind:value={
-        () => light.brightness,
-        (brightness: number) => {
-          onChange({ ...light, isOn: true, brightness });
-        }
-      }
+    <LightSlider
+      labelledBy="{id}-brightness"
+      value={light.brightness}
+      class={control}
+      onChange={setBrightness}
     />
   </div>
   {#if showsWarmth}
@@ -56,18 +55,11 @@
       ]}
     >
       <p id="{id}-warmth" class="text-small font-medium">{m.reader_warmth()}</p>
-      <Slider
-        aria-labelledby="{id}-warmth"
-        class={isInRows ? "inline-setting-control" : undefined}
-        min={0}
-        max={HIGHEST}
-        step={STEP}
-        bind:value={
-          () => light.warmth,
-          (warmth: number) => {
-            onChange({ ...light, isOn: true, warmth });
-          }
-        }
+      <LightSlider
+        labelledBy="{id}-warmth"
+        value={light.warmth}
+        class={control}
+        onChange={setWarmth}
       />
     </div>
   {/if}

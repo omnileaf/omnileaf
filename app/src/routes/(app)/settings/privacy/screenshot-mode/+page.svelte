@@ -74,7 +74,7 @@
   title={m.screenshot_mode_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-xl">
+<div class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none">
   <div class="flex flex-col gap-sm">
     <p class="text-detail text-muted">{m.screenshot_mode_intro()}</p>
     <div class={android.isOn ? FLAT_CARD : [CARD, "divide-y divide-border"]}>

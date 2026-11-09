@@ -98,14 +98,19 @@
   title={m.about_report_problem()}
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
+<div class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none">
   <p class="text-detail text-muted">{m.report_intro()}</p>
   {#if data.report.status === "ok"}
     <IncludedRows report={data.report.data} />
     <SendToOmnileaf {sharing} />
     <WaysToSend {sharing} canSave />
   {:else}
-    <Alert tone="warning" icon={CircleAlert} role="alert">
+    <Alert
+      tone="warning"
+      icon={CircleAlert}
+      iconName="circle-alert"
+      role="alert"
+    >
       <AlertTitle>{m.report_failed()}</AlertTitle>
       <AlertActions>
         <AlertButton

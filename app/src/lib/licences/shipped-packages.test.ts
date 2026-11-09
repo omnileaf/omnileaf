@@ -119,7 +119,7 @@ test("takes the licence a package's manifest declares", () => {
 });
 
 test("knows the licence a package ships without declaring it", () => {
-  expect(licenceOf("svelte-toolbelt", "0.10.6", undefined)).toBe("MIT");
+  expect(licenceOf("svelte-toolbelt", "0.10.7", undefined)).toBe("MIT");
 });
 
 test("knows no licence for another version of that package", () => {

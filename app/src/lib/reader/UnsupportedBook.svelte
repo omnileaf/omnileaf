@@ -19,11 +19,16 @@
   } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemActionGroup } from "#lib/page/problem-look.ts";
+  import {
+    bookProblemLook,
+    KIT_BUTTON_ICON_SIZE,
+    problemActionGroup,
+  } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import { fileKindsOpened, fileTypeLabel } from "./file-types.ts";
   import ProblemHeading from "./ProblemHeading.svelte";
   import {
@@ -45,6 +50,7 @@
     platform,
     hideFilesLike,
     showFileType,
+    onShowFile,
     notices,
   }: {
     place: BookPlace | null;
@@ -52,6 +58,7 @@
     platform: Platform;
     hideFilesLike: typeof commands.hideFilesLike;
     showFileType: typeof commands.showFileType;
+    onShowFile: (() => void) | undefined;
     notices: Notices;
   } = $props();
 
@@ -63,6 +70,7 @@
   const showFile = $derived(showFileLabel(platform));
   const width = new WindowWidth();
   const layout = $derived(problemLayout(platform, width.current));
+  const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -124,10 +132,10 @@
 >
   <BookBackNav {place} {platform} />
   <div
-    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl"
+    class="flex flex-1 items-center justify-center px-md pbe-xl expanded:px-xl android:max-medium:px-lg"
   >
     <section class="flex flex-col gap-lg inline-full max-inline-damaged-book">
-      <ProblemHeading icon={FileX} {platform}>
+      <ProblemHeading icon={FileX} {platform} {look}>
         {m.reader_unsupported_title()}
       </ProblemHeading>
       <p
@@ -147,7 +155,9 @@
         <CardContent class="flex flex-col gap-md px-lg">
           <ul class="flex flex-wrap gap-sm">
             {#each fileKindsOpened() as kind (kind)}
-              <li><Badge look="secondary">{kind}</Badge></li>
+              <li>
+                <Badge look="secondary" class={look.chip}>{kind}</Badge>
+              </li>
             {/each}
           </ul>
           <p class="text-small text-muted">{m.reader_not_yet()}</p>
@@ -165,10 +175,18 @@
             {m.reader_hide_files_like()}
           </button>
         {/if}
-        <button type="button" disabled class={other}>
-          <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </button>
+        {#if onShowFile !== undefined}
+          <button type="button" class={other} onclick={onShowFile}>
+            <ReaderIcon
+              name="folder-open"
+              fallback={FolderOpen}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
+            {showFile}
+          </button>
+        {/if}
       </div>
       {#if place !== null}
         <p class={["text-small text-muted", PROBLEM_CAPTION[layout]]}>

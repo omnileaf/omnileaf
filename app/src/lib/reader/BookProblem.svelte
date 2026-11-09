@@ -17,11 +17,16 @@
   } from "#lib/components/ui/empty/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemActionGroup, problemLook } from "#lib/page/problem-look.ts";
+  import {
+    bookProblemLook,
+    KIT_BUTTON_ICON_SIZE,
+    problemActionGroup,
+  } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import BookBackNav from "./BookBackNav.svelte";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
   import type { BookProblem } from "./opened-book.ts";
   import { readerSettings } from "./reader-settings.svelte.ts";
@@ -49,8 +54,13 @@
     kind,
     place,
     platform,
-  }: { kind: BookProblem; place: BookPlace | null; platform: Platform } =
-    $props();
+    onShowFile,
+  }: {
+    kind: BookProblem;
+    place: BookPlace | null;
+    platform: Platform;
+    onShowFile: (() => void) | undefined;
+  } = $props();
 
   const inLibraryPlace = $derived(
     place !== null && place.isInLibrary ? place : null,
@@ -66,8 +76,8 @@
       : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
   const showFile = $derived(showFileLabel(platform));
-  const look = $derived(problemLook(platform));
   const width = new WindowWidth();
+  const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );
@@ -104,10 +114,16 @@
             {m.reader_back_to_the_series()}
           </a>
         {/if}
-        {#if kind === "unreadable"}
-          <button type="button" disabled class={actions.other}>
-            <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_coming_soon({ feature: showFile })}
+        {#if kind === "unreadable" && onShowFile !== undefined}
+          <button type="button" class={actions.other} onclick={onShowFile}>
+            <ReaderIcon
+              name="folder-open"
+              fallback={FolderOpen}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
+            {showFile}
           </button>
         {/if}
       </div>

@@ -181,7 +181,7 @@ test.each<[Platform, string]>([
 test.each<[Platform, SheetHeight, number]>([
   ["ios", "medium", PHONE.height * 0.5],
   ["ios", "large", PHONE.height * 0.92],
-  ["android", "large", PHONE.height - 48],
+  ["android", "large", PHONE.height - 80],
 ])("opens %s's %s sheet %d tall", async (platform, height, tall) => {
   await page.viewport(PHONE.width, PHONE.height);
 

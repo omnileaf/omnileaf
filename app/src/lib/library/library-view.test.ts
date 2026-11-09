@@ -9,6 +9,7 @@ import {
   withItemCounts,
   withFitsCoversToWidth,
   withOnCovers,
+  viewDrawn,
   withStackedCovers,
 } from "./library-view";
 
@@ -86,4 +87,40 @@ test("turns one thing covers show on or off and keeps the rest", () => {
     ...VIEW,
     onCovers: { ...VIEW.onCovers, showsLanguage: true },
   });
+});
+
+test("draws the Android phone's closest options for a view saved with Covers or Creator", () => {
+  const saved = {
+    ...VIEW,
+    display: "covers",
+    groupBy: "creator",
+    showsItemCounts: true,
+    showsContinueRow: true,
+  } satisfies LibraryView;
+
+  expect(viewDrawn(saved, true)).toEqual({
+    ...saved,
+    display: "grid",
+    groupBy: "none",
+  });
+});
+
+test("draws every option the Android phone offers as saved", () => {
+  const saved = {
+    ...VIEW,
+    display: "compact",
+    groupBy: "folder",
+  } satisfies LibraryView;
+
+  expect(viewDrawn(saved, true)).toEqual(saved);
+});
+
+test("draws the saved view unchanged away from an Android phone", () => {
+  const saved = {
+    ...VIEW,
+    display: "covers",
+    groupBy: "creator",
+  } satisfies LibraryView;
+
+  expect(viewDrawn(saved, false)).toEqual(saved);
 });

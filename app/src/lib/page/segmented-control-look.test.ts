@@ -8,6 +8,9 @@ import { followDisplayModes } from "./display-modes";
 import { followCorePlatform } from "./platform";
 import SegmentedControl from "./SegmentedControl.svelte";
 
+const ANDROID_PHONE = { width: 390, height: 844 };
+const ANDROID_TABLET = { width: 820, height: 1180 };
+
 const OPTIONS = ["light", "dark", "system"] as const;
 
 const LABELS = {
@@ -19,6 +22,7 @@ const LABELS = {
 async function renderThemeChoice(
   chosen: (typeof OPTIONS)[number] = "dark",
   isSetupRow = false,
+  size: "small" | "regular" = "regular",
 ): Promise<void> {
   document.documentElement.dataset.theme = "light";
   const heading = document.createElement("h2");
@@ -30,6 +34,7 @@ async function renderThemeChoice(
     labels: LABELS,
     chosen,
     isSetupRow,
+    size,
     labelledBy: "theme-heading",
     onChoose: () => undefined,
   });
@@ -122,6 +127,37 @@ test("rounds both outer ends of Android's connected buttons and keeps 8 inside, 
   expect(first.borderTopLeftRadius).toBe("20px");
   expect(last.borderTopRightRadius).toBe("20px");
   expect(first.borderTopRightRadius).toBe("8px");
+});
+
+test("sets Android's small segments at 14 on a 20 line with 16 either side of the label", async () => {
+  followCorePlatform("android");
+  await page.viewport(ANDROID_PHONE.width, ANDROID_PHONE.height);
+  await renderThemeChoice("dark", false, "small");
+
+  const light = getComputedStyle(segment("Light"));
+
+  expect(light.fontSize).toBe("14px");
+  expect(light.lineHeight).toBe("20px");
+  expect(light.paddingInlineStart).toBe("16px");
+  expect(light.paddingInlineEnd).toBe("16px");
+});
+
+function faceOf(name: string): readonly string[] {
+  const face = getComputedStyle(segment(name));
+  return [face.fontSize, face.lineHeight, face.paddingInlineStart];
+}
+
+test("keeps an Android tablet's small segments as a Linux tablet draws them", async () => {
+  await page.viewport(ANDROID_TABLET.width, ANDROID_TABLET.height);
+  followCorePlatform("linux");
+  await renderThemeChoice("dark", false, "small");
+  const linux = faceOf("Light");
+  document.body.replaceChildren();
+
+  followCorePlatform("android");
+  await renderThemeChoice("dark", false, "small");
+
+  expect(faceOf("Light")).toEqual(linux);
 });
 
 test("draws Windows's segmented control as an outlined track of 32px segments with an accent mark under the chosen segment", async () => {

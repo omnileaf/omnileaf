@@ -40,6 +40,7 @@ async function unreadable() {
     kind: "unreadable",
     place: null,
     platform: "windows",
+    onShowFile: undefined,
   });
 }
 
@@ -63,6 +64,7 @@ async function unsupported() {
     platform: "windows",
     hideFilesLike: () => Promise.resolve({ status: "ok", data: "cbr" }),
     showFileType: () => Promise.resolve({ status: "ok", data: null }),
+    onShowFile: undefined,
     notices: new Notices(),
   });
 }

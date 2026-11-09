@@ -2,7 +2,7 @@
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { usesSetupPages } from "./setup-pages.ts";
+  import { stepProgressLook } from "./step-progress-look.ts";
   import type { StepNumber } from "./steps";
 
   let { position }: { position: StepNumber } = $props();
@@ -17,10 +17,7 @@
     }),
   );
   const share = $derived((100 * position.number) / position.count);
-  const platform = currentPlatform();
-  const isBar = usesSetupPages(platform) || platform === "android";
-  const fill =
-    platform === "android" ? "bg-native-button-primary" : "bg-windows-accent";
+  const look = stepProgressLook(currentPlatform());
 </script>
 
 <div
@@ -30,28 +27,19 @@
   aria-valuemax={position.count}
   aria-valuenow={position.number}
   aria-valuetext={count}
-  class={[
-    "flex items-center min-inline-none",
-    isBar ? ["gap-md", platform === "android" && "flex-1"] : "flex-1 gap-sm",
-  ]}
+  class={["flex items-center min-inline-none", look.root]}
 >
-  {#if isBar}
-    <span
-      class={[
-        "relative block block-setup-bar-height",
-        platform === "android" ? "flex-1" : "inline-setup-bar",
-      ]}
-    >
-      <span
-        class="absolute inset-x-none inset-bs-px rounded-full bg-border block-px"
+  {#if look.isBar}
+    <span class={["relative block", look.track]}>
+      <span class={["absolute inset-x-none rounded-full bg-border", look.rule]}
       ></span>
       <span
         data-fill
-        class={["absolute inset-y-none inset-s-none rounded-full", fill]}
+        class={["absolute inset-y-none inset-s-none rounded-full", look.fill]}
         style:inline-size="{share}%"
       ></span>
     </span>
-    <span class="text-caption text-muted tabular-nums">{count}</span>
+    <span class={["text-muted tabular-nums", look.count]}>{count}</span>
   {:else}
     <span class="flex flex-1 items-center justify-center gap-icon-gap">
       {#each dots as dot (dot)}

@@ -99,7 +99,10 @@
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
   <div
-    class={["mbs-pane-gap flex flex-col", android.isOn ? "gap-none" : "gap-sm"]}
+    class={[
+      "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+      android.isOn ? "gap-none" : "gap-sm",
+    ]}
   >
     <InputGroup
       class={android.isOn

@@ -159,7 +159,12 @@
     {/snippet}
   </StepHeader>
   {#if unreadable !== undefined}
-    <Alert tone="warning" icon={TriangleAlert} role="alert">
+    <Alert
+      tone="warning"
+      icon={TriangleAlert}
+      iconName="triangle-alert"
+      role="alert"
+    >
       <AlertTitle>{m.first_launch_ready_fix_title()}</AlertTitle>
       <AlertDescription>{FIXES[platform]()}</AlertDescription>
     </Alert>

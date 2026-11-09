@@ -317,7 +317,7 @@ test("draws no outline round a picked cover on an iPhone, and keeps it on an iPa
   ]);
 });
 
-test("keeps Android's check box in the cover's top end", async () => {
+test("sets Android's check box 15px in from the cover's top end", async () => {
   document.documentElement.dataset.theme = "light";
   followCorePlatform("android");
   const mark = await markOf(await oneSeries(), {
@@ -325,7 +325,7 @@ test("keeps Android's check box in the cover's top end", async () => {
     display: "grid",
   });
 
-  expect(gapsAround(mark)).toMatchObject({ top: 5, end: 5 });
+  expect(gapsAround(mark)).toMatchObject({ top: 15, end: 15 });
 });
 
 test("lightens iOS's count badge to a pink with dark words in the dark theme", async () => {
@@ -520,3 +520,202 @@ test.each<[Platform, string, string]>([
     expect([grid.rowGap, grid.columnGap]).toEqual([rows, columns]);
   },
 );
+
+async function coverBoxOn(
+  platform: Platform,
+  display: LibraryDisplay,
+): Promise<CSSStyleDeclaration> {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  await render(SeriesCovers, coversOf(await oneSeries(), display));
+  const picture = await vi.waitFor(() => {
+    const found = document.querySelector("[data-series-id] img");
+    if (found === null) {
+      throw new Error("the cell drew no cover picture");
+    }
+    return found;
+  });
+  return styleOf(picture.parentElement);
+}
+
+test.each<LibraryDisplay>(["grid", "compact", "list"])(
+  "draws Android's %s cover without an edge line on a phone",
+  async (display) => {
+    const cover = await coverBoxOn("android", display);
+
+    expect(cover.borderTopWidth).toBe("0px");
+  },
+);
+
+test.each<[Platform, LibraryDisplay]>([
+  ["ios", "grid"],
+  ["ios", "list"],
+  ["linux", "grid"],
+])("keeps %s's %s cover edge line", async (platform, display) => {
+  const cover = await coverBoxOn(platform, display);
+
+  expect(cover.borderTopWidth).toBe("1px");
+});
+
+test("keeps Android's cover edge line on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const cover = await coverBoxOn("android", "grid");
+
+  expect(cover.borderTopWidth).toBe("1px");
+});
+
+async function renderedOn(
+  platform: Platform,
+  display: LibraryDisplay,
+): Promise<Element> {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  await render(SeriesCovers, {
+    ...coversOf(await oneSeries(), display),
+    view: {
+      ...DEFAULT_LIBRARY_VIEW,
+      display,
+      onCovers: ON_COVERS,
+    },
+  });
+  return vi.waitFor(() => {
+    const cell = document.querySelector("[data-series-id]");
+    if (cell === null) {
+      throw new Error("the library drew no series");
+    }
+    return cell;
+  });
+}
+
+test("draws Android's list cover 56px tall at the cover's shape", async () => {
+  const cell = await renderedOn("android", "list");
+
+  const cover = cell.querySelector('[data-slot="list-cover"]');
+
+  const box = cover?.getBoundingClientRect();
+  expect(box?.height).toBeCloseTo(56, 0);
+  expect(box?.width).toBeCloseTo((56 * 2) / 3, 0);
+});
+
+test("sets Android's list unread count as a 24px tonal chip in 12px type", async () => {
+  const cell = await renderedOn("android", "list");
+
+  const unread = styleOf(cell.querySelector('[aria-label="3 unread"]'));
+
+  expect({
+    height: unread.height,
+    corner: unread.borderTopLeftRadius,
+    fill: unread.backgroundColor,
+    label: unread.color,
+    type: [unread.fontSize, unread.lineHeight, unread.fontWeight],
+  }).toEqual({
+    height: "24px",
+    corner: "8px",
+    fill: "rgb(208, 232, 215)",
+    label: "rgb(65, 87, 73)",
+    type: ["12px", "16px", "500"],
+  });
+});
+
+test("keeps iOS's list cover and the filled unread count on Linux", async () => {
+  const ios = await renderedOn("ios", "list");
+  const iosCover = ios.querySelector('[data-slot="list-cover"]');
+  const iosWidth = iosCover?.getBoundingClientRect().width;
+  const linux = await renderedOn("linux", "list");
+
+  const unread = styleOf(linux.querySelector('[aria-label="3 unread"]'));
+
+  expect([iosWidth, unread.backgroundColor]).toEqual([
+    48,
+    resolvedColour("--primary", "backgroundColor"),
+  ]);
+});
+
+test("sets Android's compact title in 12px medium type", async () => {
+  const cell = await renderedOn("android", "compact");
+
+  const title = styleOf(cell.querySelector("p"));
+
+  expect([
+    title.fontSize,
+    title.lineHeight,
+    title.fontWeight,
+    title.letterSpacing,
+  ]).toEqual(["12px", "16px", "500", "0.5px"]);
+});
+
+async function pickedOn(platform: Platform, picked: boolean) {
+  document.body.replaceChildren();
+  document.documentElement.dataset.theme = "light";
+  followCorePlatform(platform);
+  const mark = await markOf(await oneSeries(), {
+    isOn: picked,
+    display: "grid",
+  });
+  const cover = mark.parentElement;
+  const tile = cover?.closest("[data-pickable-link]");
+  if (!(cover instanceof Element) || !(tile instanceof Element)) {
+    throw new Error("the picked cell drew no cover or tile");
+  }
+  return {
+    cover: styleOf(cover),
+    link: styleOf(tile),
+    tonal: getComputedStyle(tile, "::before"),
+  };
+}
+
+test("insets Android's picked cover on a tonal tile instead of outlining it", async () => {
+  const { cover, tonal } = await pickedOn("android", true);
+
+  expect({
+    outline: cover.outlineWidth,
+    scale: cover.scale,
+    corner: cover.borderTopLeftRadius,
+    tile: tonal.backgroundColor,
+  }).toEqual({
+    outline: "0px",
+    scale: "0.88",
+    corner: "12px",
+    tile: "rgb(208, 232, 215)",
+  });
+});
+
+test("leaves Android's cover unpicked without a tonal tile", async () => {
+  const { cover, tonal } = await pickedOn("android", false);
+
+  expect([cover.scale, tonal.content]).toEqual(["none", "none"]);
+});
+
+test("keeps Android's picked cover and its tile as they were on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const { cover, link, tonal } = await pickedOn("android", true);
+
+  expect([
+    cover.scale,
+    cover.outlineWidth,
+    cover.borderTopLeftRadius,
+    tonal.content,
+    link.position,
+    link.isolation,
+  ]).toEqual(["none", "2px", "6px", "none", "static", "auto"]);
+});
+
+test("keeps Android's list row as it was on a tablet", async () => {
+  await page.viewport(TABLET.width, TABLET.height);
+
+  const cell = await renderedOn("android", "list");
+
+  const box = cell
+    .querySelector('[data-slot="list-cover"]')
+    ?.getBoundingClientRect();
+  const unread = styleOf(cell.querySelector('[aria-label="3 unread"]'));
+
+  expect([box?.width, unread.backgroundColor]).toEqual([
+    54,
+    resolvedColour("--primary", "backgroundColor"),
+  ]);
+});

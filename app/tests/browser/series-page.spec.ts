@@ -1316,6 +1316,32 @@ test.describe("when marking books fails", () => {
   });
 });
 
+test.describe("when showing a book's folder fails", () => {
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      showBookInFolder: () => {
+        throw new CommandFailure({
+          code: "fileManagerUnavailable",
+          message: "no file manager",
+        });
+      },
+    },
+  });
+
+  test("tells the reader the folder could not be opened", async ({ page }) => {
+    test.skip(!isWide(page), "the book menu is a button on wide screens");
+    await openSeries(page);
+
+    await page
+      .getByRole("button", { name: `More for ${shelf.titleOf(0)}` })
+      .click();
+    await page.getByRole("menuitem", { name: "Show in folder" }).click();
+
+    await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+  });
+});
+
 test("marks every book picked, though another listing leaves some of them out", async ({
   page,
 }) => {

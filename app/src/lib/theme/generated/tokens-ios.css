@@ -184,6 +184,7 @@
   --native-spacing-series-icon: 16px;
   --native-spacing-phone-action-icon: 17px;
   --native-spacing-phone-action-chevron: 13px;
+  --native-spacing-series-band: var(--spacing-series-band);
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
@@ -230,6 +231,7 @@
   --native-weight-search-field: 400;
   --native-tracking-search-field: -0.43px;
   --native-radius-cover: 6px;
+  --native-radius-picked-cover: 6px;
   --native-spacing-read-mark: 1.375rem;
   --native-radius-cover-badge: 6px;
   --native-spacing-cover-badge: 20px;
@@ -239,6 +241,7 @@
   --native-radius-select: 999px;
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
+  --native-spacing-select-inset: var(--spacing-xs);
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);
@@ -526,6 +529,8 @@
   --native-weight-books-heading: var(--font-weight-semibold);
   --native-tracking-books-heading: 0;
   --native-spacing-series-hero-cover: var(--spacing-series-cover);
+  --native-spacing-history-bar: var(--spacing-history-bar);
+  --native-spacing-library-menu: 0px;
 }
 
 :root[data-platform="ios"],
@@ -593,6 +598,7 @@
   --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: #000000;
   --native-color-on-tab-current: #2f6f4f;
+  --native-color-on-tab-bar-current: #2f6f4f;
   --native-color-on-tab-pill: #2f6f4f;
   --native-color-cover-badge: rgba(255, 255, 255, 0.78);
   --native-color-on-cover-badge: #000000;
@@ -687,6 +693,7 @@
   --native-color-jump-current-progress-rest: transparent;
   --native-color-on-tab: #ffffff;
   --native-color-on-tab-current: #7fcb9d;
+  --native-color-on-tab-bar-current: #7fcb9d;
   --native-color-on-tab-pill: #7fcb9d;
   --native-color-cover-badge: rgba(44, 44, 46, 0.72);
   --native-color-on-cover-badge: #ffffff;
@@ -740,6 +747,7 @@
   --native-color-tab-bar: rgba(255, 255, 255, 0.65);
   --native-color-on-jump-current: #245a40;
   --native-color-on-tab-current: #245a40;
+  --native-color-on-tab-bar-current: #245a40;
   --native-color-on-tab-pill: #245a40;
   --native-color-cover-badge: rgba(255, 255, 255, 0.92);
   --native-color-cover-accent: #245a40;
@@ -777,6 +785,7 @@
   --native-color-tab-bar: rgba(153, 153, 153, 0.13);
   --native-color-on-jump-current: #a8e0bf;
   --native-color-on-tab-current: #a8e0bf;
+  --native-color-on-tab-bar-current: #a8e0bf;
   --native-color-on-tab-pill: #a8e0bf;
   --native-color-cover-badge: rgba(0, 0, 0, 0.85);
   --native-color-cover-accent: #a8e0bf;

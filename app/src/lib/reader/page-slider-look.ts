@@ -5,14 +5,14 @@ import { phoneOf } from "#lib/page/platform.ts";
 
 import { usesCommandBar } from "./windows-reader-bar.ts";
 
-export interface PageSliderLook {
+export interface ProgressSliderLook {
   readonly root: string;
   readonly track: string;
   readonly fill: string;
   readonly thumb: string;
 }
 
-const TODAYS_LOOK: PageSliderLook = {
+const TODAYS_LOOK: ProgressSliderLook = {
   root: "relative flex-1 rounded-full block-reader-dense has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent desktop:expanded:block-lg",
   track:
     "absolute inset-none my-auto overflow-hidden rounded-full bg-chip block-slider-track",
@@ -21,7 +21,7 @@ const TODAYS_LOOK: PageSliderLook = {
     "absolute inset-y-none reader-progress-thumb my-auto rounded-full border border-accent bg-background shadow-card-rest",
 };
 
-const WINDOWS_LOOK: PageSliderLook = {
+const WINDOWS_LOOK: ProgressSliderLook = {
   root: "group/slider relative flex-1 block-native-slider",
   track:
     "absolute inset-none my-auto overflow-hidden rounded-full bg-native-progress-track block-native-slider-track",
@@ -29,7 +29,7 @@ const WINDOWS_LOOK: PageSliderLook = {
   thumb: `absolute inset-y-none reader-progress-thumb my-auto rounded-full border [--reader-thumb:var(--spacing-native-slider-thumb)] ${WINDOWS_SLIDER_THUMB} group-has-focus-visible/slider:focus-ring group-has-focus-visible/slider:ring-1 group-has-focus-visible/slider:ring-native-focus-ring-inner`,
 };
 
-const ANDROID_PHONE_LOOK: PageSliderLook = {
+export const ANDROID_PHONE_LOOK: ProgressSliderLook = {
   root: "group/slider reader-slider-root relative flex-1 block-native-slider has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-native-focus-ring",
   track:
     "absolute inset-x-none my-auto block-native-slider-track before:absolute before:inset-none before:rounded-slider-cap before:bg-native-tab-pill before:reader-slider-rest before:content-['']",
@@ -41,7 +41,7 @@ const ANDROID_PHONE_LOOK: PageSliderLook = {
 export function pageSliderLook(
   platform: Platform,
   width: WidthClass,
-): PageSliderLook {
+): ProgressSliderLook {
   if (usesCommandBar(platform)) {
     return WINDOWS_LOOK;
   }

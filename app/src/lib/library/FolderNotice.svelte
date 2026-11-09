@@ -10,6 +10,7 @@
     AlertTitle,
     type AlertTone,
   } from "#lib/components/ui/alert/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { FolderScan } from "#lib/ipc/bindings.ts";
   import type { Notices } from "#lib/notices/notices.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
@@ -33,6 +34,7 @@
   interface EmptyFolderNotice {
     readonly tone: AlertTone;
     readonly icon: Glyph;
+    readonly iconName: IconName;
     readonly title: string;
     readonly body?: string;
   }
@@ -113,9 +115,20 @@
     const title = m.library_folder_no_books({ name: shownName(scan) });
     const body = problemsIn(scan);
     if (body === undefined) {
-      return { tone: "plain", icon: CircleCheckBig, title };
+      return {
+        tone: "plain",
+        icon: CircleCheckBig,
+        iconName: "circle-check",
+        title,
+      };
     }
-    return { tone: "warning", icon: CircleAlert, title, body };
+    return {
+      tone: "warning",
+      icon: CircleAlert,
+      iconName: "circle-alert",
+      title,
+      body,
+    };
   }
 
   const notice = $derived(emptyFolderNotice(adding.outcome));
@@ -128,7 +141,7 @@
 
 <div role="status" class={["empty:absolute", className]}>
   {#if notice !== undefined}
-    <Alert tone={notice.tone} icon={notice.icon}>
+    <Alert tone={notice.tone} icon={notice.icon} iconName={notice.iconName}>
       <AlertTitle>{notice.title}</AlertTitle>
       <AlertDismiss label={m.notice_dismiss()} onDismiss={dismiss} />
       {#if notice.body !== undefined}
