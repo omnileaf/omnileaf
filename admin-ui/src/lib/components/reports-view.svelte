@@ -69,7 +69,7 @@
       <ReportsSkeleton />
     {:else if load.kind === "failed"}
       <ReportsError message={load.message} {onRetry} />
-    {:else if load.kind === "ready"}
+    {:else}
       <p aria-live="polite" class="mbe-3 text-small text-muted">
         {resultsSummary(
           matches.length,
