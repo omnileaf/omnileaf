@@ -16,6 +16,10 @@
     setNeedsAttention,
   } from "#lib/problems/needs-attention.svelte.ts";
   import {
+    ScheduledRescansSetting,
+    setScheduledRescansSetting,
+  } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
+  import {
     type ScreenshotMode,
     setScreenshotMode,
   } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
@@ -41,6 +45,7 @@
   );
   setSidebarSetting(new SidebarSetting(undefined));
   setAnimationsSetting(new AnimationsSetting(undefined));
+  setScheduledRescansSetting(new ScheduledRescansSetting(undefined));
 
   const Page = $derived(page);
 </script>
