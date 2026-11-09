@@ -35,11 +35,13 @@
     damage,
     platform,
     onRead,
+    onShowFile,
   }: {
     book: OpenedBook;
     damage: BookDamage;
     platform: Platform;
     onRead: () => void;
+    onShowFile: (() => void) | undefined;
   } = $props();
 
   const settings = untrack(() => readerSettings(librarySeriesKey(book)));
@@ -104,10 +106,12 @@
           <BookOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
           {m.reader_read_pages_that_work({ count: readable })}
         </button>
-        <button type="button" disabled class={actions.other}>
-          <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </button>
+        {#if onShowFile !== undefined}
+          <button type="button" class={actions.other} onclick={onShowFile}>
+            <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            {showFile}
+          </button>
+        {/if}
       </div>
     </section>
   </div>

@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { getThemeSetting } from "#lib/appearance/theme.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
+  import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { focusPageHeading } from "#lib/navigation/page-heading.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import Toasts from "#lib/notices/Toasts.svelte";
@@ -19,6 +20,9 @@
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+  const showFile = $derived(
+    libraryBookFileShower(shown.kind === "found" ? shown.book : shown.place),
+  );
   const isFound = $derived(shown.kind === "found");
   const bookPresence = getBookPresence();
   const notices = getNotices();
@@ -71,6 +75,7 @@
     onRead={() => {
       damagedBookRead = shown.book.id;
     }}
+    onShowFile={showFile}
   />
 {:else if shown.kind === "found"}
   {#key shown.book.id}
@@ -88,6 +93,7 @@
     platform={data.appInfo.platform}
     hideFilesLike={commands.hideFilesLike}
     showFileType={commands.showFileType}
+    onShowFile={showFile}
     {notices}
   />
 {:else}
@@ -95,6 +101,7 @@
     kind={shown.kind}
     place={shown.place}
     platform={data.appInfo.platform}
+    onShowFile={showFile}
   />
 {/if}
 <div class="fixed inset-x-none inset-be-none z-notice">

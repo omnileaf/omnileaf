@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
@@ -63,7 +63,7 @@ async function onAndroid(size = PHONE): Promise<void> {
   await page.viewport(size.width, size.height);
 }
 
-async function damaged() {
+async function damaged(onShowFile?: () => void) {
   const book = damagedBook();
   if (book.damage === null) {
     throw new Error("the sample book is not damaged");
@@ -73,6 +73,7 @@ async function damaged() {
     damage: book.damage,
     platform: "android",
     onRead: () => undefined,
+    onShowFile,
   });
 }
 
@@ -83,6 +84,7 @@ async function unsupported() {
     platform: "android",
     hideFilesLike: () => Promise.resolve({ status: "ok", data: "cbr" }),
     showFileType: () => Promise.resolve({ status: "ok", data: null }),
+    onShowFile: undefined,
     notices: new Notices(),
   });
 }
@@ -232,6 +234,7 @@ test("sets a missing book's headline and circle as an Android phone's", async ()
     kind: "missing",
     place: place(),
     platform: "android",
+    onShowFile: () => undefined,
   });
 
   const title = screen.getByRole("heading", { level: 1 }).element();
@@ -242,4 +245,36 @@ test("sets a missing book's headline and circle as an Android phone's", async ()
   }
   expect(metricsOf(title)).toEqual(["24px", "32px", "400"]);
   expect(sizeOf(media)).toEqual([56, 56]);
+});
+
+test("shows a damaged book's file from its Show the file button", async () => {
+  await onAndroid();
+  const onShowFile = vi.fn();
+  const screen = await damaged(onShowFile);
+
+  await screen.getByRole("button", { name: "Show the file" }).click();
+
+  expect(onShowFile).toHaveBeenCalledOnce();
+});
+
+test("leaves a damaged book's Show the file out when its file has no library folder", async () => {
+  await onAndroid();
+  const screen = await damaged(undefined);
+
+  expect(screen.getByText("Show the file").elements()).toHaveLength(0);
+});
+
+test("shows an unreadable book's file from its Show the file button", async () => {
+  await onAndroid();
+  const onShowFile = vi.fn();
+  const screen = await render(BookProblem, {
+    kind: "unreadable",
+    place: place(),
+    platform: "android",
+    onShowFile,
+  });
+
+  await screen.getByRole("button", { name: "Show the file" }).click();
+
+  expect(onShowFile).toHaveBeenCalledOnce();
 });

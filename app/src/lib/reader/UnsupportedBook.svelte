@@ -48,6 +48,7 @@
     platform,
     hideFilesLike,
     showFileType,
+    onShowFile,
     notices,
   }: {
     place: BookPlace | null;
@@ -55,6 +56,7 @@
     platform: Platform;
     hideFilesLike: typeof commands.hideFilesLike;
     showFileType: typeof commands.showFileType;
+    onShowFile: (() => void) | undefined;
     notices: Notices;
   } = $props();
 
@@ -171,10 +173,12 @@
             {m.reader_hide_files_like()}
           </button>
         {/if}
-        <button type="button" disabled class={other}>
-          <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </button>
+        {#if onShowFile !== undefined}
+          <button type="button" class={other} onclick={onShowFile}>
+            <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            {showFile}
+          </button>
+        {/if}
       </div>
       {#if place !== null}
         <p class={["text-small text-muted", PROBLEM_CAPTION[layout]]}>

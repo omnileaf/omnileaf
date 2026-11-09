@@ -69,7 +69,12 @@ async function shown(
   {
     shownPlace = place(),
     fileTypes = new FileTypes(),
-  }: { shownPlace?: BookPlace | null; fileTypes?: FileTypes } = {},
+    onShowFile,
+  }: {
+    shownPlace?: BookPlace | null;
+    fileTypes?: FileTypes;
+    onShowFile?: (() => void) | undefined;
+  } = {},
 ) {
   const notices = new Notices();
   const screen = await render(UnsupportedBook, {
@@ -78,6 +83,7 @@ async function shown(
     platform: "linux",
     hideFilesLike: fileTypes.hideFilesLike,
     showFileType: fileTypes.showFileType,
+    onShowFile,
     notices,
   });
   await render(Toasts, { notices, platform: "linux", theme: "light" });
@@ -147,14 +153,19 @@ test("lists the files Omnileaf opens and those it doesn't yet", async () => {
     .toBeVisible();
 });
 
-test("says showing the file is still to come", async () => {
+test("shows the file from its button", async () => {
+  const onShowFile = vi.fn();
+  const { screen } = await shown(CBR_FILE, { onShowFile });
+
+  await screen.getByRole("button", { name: "Show in folder" }).click();
+
+  expect(onShowFile).toHaveBeenCalledOnce();
+});
+
+test("leaves Show in folder out when there is no library folder to show", async () => {
   const { screen } = await shown(CBR_FILE);
 
-  await expect
-    .element(
-      screen.getByRole("button", { name: "Show in folder · coming soon" }),
-    )
-    .toBeDisabled();
+  expect(screen.getByText("Show in folder").elements()).toHaveLength(0);
 });
 
 test("hides files like this one and offers to undo it", async () => {

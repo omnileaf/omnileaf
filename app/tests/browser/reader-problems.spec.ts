@@ -24,6 +24,12 @@ const PLACE = {
   isInLibrary: true,
 };
 
+let shownInFolder: string[] = [];
+
+test.beforeEach(() => {
+  shownInFolder = [];
+});
+
 function failingWith(
   code: "bookNotFound" | "bookUnreadable" | "internal",
   place: typeof PLACE | null,
@@ -34,6 +40,10 @@ function failingWith(
       throw new CommandFailure({ code, message: "the book didn't open" });
     },
     bookPlace: () => place,
+    showBookInFolder: (book) => {
+      shownInFolder = [...shownInFolder, book];
+      return null;
+    },
   };
 }
 
@@ -94,14 +104,14 @@ test.describe("a book whose file couldn't be opened", () => {
     ).toHaveText(new RegExp(`${BOOK_SERIES_TITLE}.*${BOOK_TITLE}`));
   });
 
-  test("says showing the file is still to come", async ({ page }) => {
+  test("shows the unreadable book's file from its button", async ({ page }) => {
     await page.goto(`/read/${BOOK_ID}`);
 
-    await expect(
-      problem(page).getByRole("button", {
-        name: /^Show (the file|in folder) · coming soon$/,
-      }),
-    ).toBeDisabled();
+    await problem(page)
+      .getByRole("button", { name: /^Show (the file|in folder)$/ })
+      .click();
+
+    await expect.poll(() => shownInFolder).toEqual([BOOK_ID]);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

@@ -26,6 +26,7 @@
   } from "#lib/navigation/ReaderBackSwipe.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -984,6 +985,7 @@
     onStartOver={() => {
       turner.goTo(0);
     }}
+    onShowFile={libraryBookFileShower(book)}
     onOpenChange={holdControls}
   />
 {/snippet}

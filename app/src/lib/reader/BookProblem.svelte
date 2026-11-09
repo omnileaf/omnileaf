@@ -52,8 +52,13 @@
     kind,
     place,
     platform,
-  }: { kind: BookProblem; place: BookPlace | null; platform: Platform } =
-    $props();
+    onShowFile,
+  }: {
+    kind: BookProblem;
+    place: BookPlace | null;
+    platform: Platform;
+    onShowFile: (() => void) | undefined;
+  } = $props();
 
   const inLibraryPlace = $derived(
     place !== null && place.isInLibrary ? place : null,
@@ -107,10 +112,10 @@
             {m.reader_back_to_the_series()}
           </a>
         {/if}
-        {#if kind === "unreadable"}
-          <button type="button" disabled class={actions.other}>
+        {#if kind === "unreadable" && onShowFile !== undefined}
+          <button type="button" class={actions.other} onclick={onShowFile}>
             <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
-            {m.reader_coming_soon({ feature: showFile })}
+            {showFile}
           </button>
         {/if}
       </div>

@@ -61,7 +61,21 @@ const SQUARE = "0px";
 const NO_BORDER = "0px";
 const NO_SHADOW = "none";
 
-test.use({ backend: readerBackend(DEFAULT_BACKEND) });
+let shownInFolder: string[] = [];
+
+test.beforeEach(() => {
+  shownInFolder = [];
+});
+
+test.use({
+  backend: {
+    ...readerBackend(DEFAULT_BACKEND),
+    showBookInFolder: (book) => {
+      shownInFolder = [...shownInFolder, book];
+      return null;
+    },
+  },
+});
 
 async function openBook(page: Page): Promise<void> {
   await servePages(page);
@@ -716,7 +730,7 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     );
   });
 
-  test("gives the Android phone's coming-soon More row no pressed look", async ({
+  test("shows the book's file from the Android phone's More sheet and closes it", async ({
     page,
     platform,
   }) => {
@@ -728,34 +742,11 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     await topBar(page).getByRole("button", { name: "More" }).click();
     const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
     await settle(sheet);
-    const row = sheet.getByRole("button", { name: "Show the file" });
-    const box = await boxOf(row);
 
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await settle(row);
+    await sheet.getByRole("button", { name: "Show the file" }).click();
 
-    await expect(row).toHaveCSS("background-color", CLEAR);
-    await page.mouse.up();
-  });
-
-  test("names the Android phone's coming-soon More row in a tooltip once a finger is held on it", async ({
-    page,
-    platform,
-  }) => {
-    if (platform !== "android") {
-      test.skip();
-      return;
-    }
-    await openBook(page);
-    await topBar(page).getByRole("button", { name: "More" }).click();
-    const sheet = page.getByRole("dialog", { name: BOOK_TITLE });
-    await settle(sheet);
-    const row = sheet.getByRole("button", { name: "Show the file" });
-
-    await holdFingerOn(page, row);
-
-    await expect(comingSoonTooltip(page, "Show the file")).toBeVisible();
+    await expect.poll(() => shownInFolder).toEqual([BOOK_ID]);
+    await expect(sheet).toHaveCount(0);
   });
 
   test("centres the iPhone's Light title over its sheet in a longer language", async ({
