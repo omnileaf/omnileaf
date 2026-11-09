@@ -59,7 +59,7 @@ export default defineConfig({
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",
-      outputStructure: "message-modules",
+      outputStructure: "locale-modules",
       strategy: ["custom-chosen", "preferredLanguage", "baseLocale"],
     }),
     javascriptLicences(licencesMode),
