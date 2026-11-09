@@ -26,6 +26,8 @@ const READ_CHAPTER: ShelvedBook = {
   reading: { state: "read" },
 };
 const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
+const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
+const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
 
 function isWide(page: Page): boolean {
@@ -624,8 +626,11 @@ test.describe(
       await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
       await expect(covers(page, "Volumes")).toHaveCount(1);
 
-      await page.setViewportSize({ width: 700, height: 360 });
-      await page.setViewportSize({ width: 360, height: 800 });
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await expect(
+        page.getByRole("button", { name: "Sort and filter" }),
+      ).toHaveCount(0);
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
 
       await expect(
         page.getByRole("searchbox", { name: "Find a book" }),
@@ -642,12 +647,48 @@ test.describe(
         page.getByRole("dialog", { name: "Sort and filter" }),
       ).toBeVisible();
 
-      await page.setViewportSize({ width: 700, height: 360 });
-      await page.setViewportSize({ width: 360, height: 800 });
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await expect(
+        page.getByRole("button", { name: "Sort and filter" }),
+      ).toHaveCount(0);
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
 
       await expect(
         page.getByRole("dialog", { name: "Sort and filter" }),
       ).toHaveCount(0);
+    });
+
+    test("lists every cover again after a search in landscape and a turn back to portrait", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await openSeries(page);
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("clears a cover search with no match from Clear the search", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page
+        .getByRole("searchbox", { name: "Find a book" })
+        .fill("harbour");
+
+      await page.getByRole("button", { name: "Clear the search" }).click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(covers(page, "Volumes")).toHaveCount(3);
     });
 
     test("closes Sort and filter back to its button", async ({ page }) => {
