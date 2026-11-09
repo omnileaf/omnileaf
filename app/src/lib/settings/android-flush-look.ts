@@ -1,5 +1,9 @@
 export const FLUSH_BLEED = "-mx-page-start -me-page-end";
 
+export const ANDROID_SHEET_INLINE = "px-lg";
+
+export const ANDROID_SHEET_BLEED = "-mx-lg";
+
 export const FLUSH_LIST = `${FLUSH_BLEED} flex flex-col`;
 
 export const ANDROID_LIST_HEADING =

@@ -1403,9 +1403,7 @@
           seeStripFound();
           openSettings(true);
           void tick().then(() => {
-            document
-              .querySelector<HTMLSelectElement>("select[data-reading-mode]")
-              ?.focus();
+            document.querySelector<HTMLElement>("[data-reading-mode]")?.focus();
           });
         }}
         onDone={seeStripFound}

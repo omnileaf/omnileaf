@@ -225,3 +225,68 @@ test.each([
     expect(document.querySelector('[data-slot="outlined-select"]')).toBeNull();
   },
 );
+
+async function openStripSheet(platform: Platform, size = PHONE): Promise<void> {
+  await openSheet(platform, size);
+  await page
+    .getByRole("combobox", { name: "Reading mode" })
+    .selectOptions("longStrip");
+}
+
+function modeRow(): HTMLElement {
+  return asElement(
+    page.getByRole("button", { name: /^Reading mode/ }).element(),
+  );
+}
+
+test("draws Android's long strip Reading mode as a two-line row with the current mode under its title", async () => {
+  await openStripSheet("android");
+
+  const row = modeRow();
+  const box = row.getBoundingClientRect();
+  const title = label("Reading mode").getBoundingClientRect();
+  const current = label("Long strip").getBoundingClientRect();
+
+  expect(row.getAttribute("aria-haspopup")).toBe("dialog");
+  expect(page.getByRole("combobox").elements()).toHaveLength(0);
+  expect(box.height).toBeGreaterThanOrEqual(72);
+  expect(title.left - box.left).toBeCloseTo(16, 0);
+  expect(current.top).toBeGreaterThanOrEqual(title.bottom - 1);
+  expect(current.left).toBe(title.left);
+  expect(box.width).toBeCloseTo(window.innerWidth, 0);
+});
+
+test("changes Android's long strip Reading mode from the choice dialog", async () => {
+  await openStripSheet("android");
+
+  await page.getByRole("button", { name: /^Reading mode/ }).click();
+  await page
+    .getByRole("dialog", { name: "Reading mode" })
+    .getByRole("radio", { name: "Left to right" })
+    .click();
+
+  await expect
+    .element(page.getByRole("combobox", { name: "Reading mode" }))
+    .toHaveValue("leftToRight");
+  await expect
+    .element(page.getByRole("dialog", { name: "Reading mode" }))
+    .not.toBeInTheDocument();
+});
+
+test.each([
+  ["android", TABLET],
+  ["ios", PHONE],
+  ["linux", PHONE],
+] as const)(
+  "keeps %s's long strip reading mode beside its label in the shared select",
+  async (platform, size) => {
+    await openStripSheet(platform, size);
+
+    await expect
+      .element(page.getByRole("combobox", { name: "Reading mode" }))
+      .toHaveValue("longStrip");
+    expect(
+      page.getByRole("button", { name: /^Reading mode/ }).elements(),
+    ).toHaveLength(0);
+  },
+);

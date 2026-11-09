@@ -69,7 +69,7 @@
       </h3>
       <div class={content.group}>
         <ApplyToChoice {settings} {seriesTitle} {control} />
-        <ReadingModeSelect {reading} field={content.modeField} />
+        <ReadingModeSelect {reading} field={content.stripModeField} />
         <SettingChoice
           {control}
           isInline
