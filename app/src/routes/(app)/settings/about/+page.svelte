@@ -42,14 +42,16 @@
   const reportHint = $derived(
     isPointer(data.appInfo.platform)
       ? m.about_report_problem_hint_computer()
-      : look === "phone"
+      : look !== "pane"
         ? m.about_report_problem_hint_phone()
         : m.about_report_problem_hint_tablet(),
   );
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
+<div
+  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
+>
   <div class="flex flex-col items-center gap-xs text-center min-inline-none">
     <img
       src={appIcon}

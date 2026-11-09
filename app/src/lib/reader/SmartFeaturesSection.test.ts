@@ -34,7 +34,7 @@ test("sets the Android settings section flush, headed in the accent with 44px, i
   ).toBeCloseTo(16, 0);
 });
 
-test("keeps the compact sheet rows off Android as they were", async () => {
+test("keeps the compact sheet heading semibold on Android phones", async () => {
   followCorePlatform("android");
   const screen = await render(SmartFeaturesSection, { heading: "h3" });
 
@@ -70,4 +70,21 @@ test("disables the Android time left switch once reading speed is off", async ()
   await expect
     .element(screen.getByRole("switch", { name: "Show time left" }))
     .toBeDisabled();
+});
+
+test("turns a single Android switch off when it is pressed", async () => {
+  followCorePlatform("android");
+  const screen = await render(SmartFeaturesSection, {
+    heading: "h2",
+    size: "regular",
+  });
+  const toggle = screen.getByRole("switch", { name: "Learn my reading speed" });
+  await expect.element(toggle).toBeChecked();
+
+  await toggle.click();
+
+  await expect.element(toggle).not.toBeChecked();
+  await expect
+    .element(screen.getByRole("switch", { name: /^Choose the reading mode/ }))
+    .toBeChecked();
 });

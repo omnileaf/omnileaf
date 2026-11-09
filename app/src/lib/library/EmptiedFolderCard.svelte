@@ -40,6 +40,7 @@
 <Alert
   tone="warning"
   icon={look.icon}
+  iconName={look.iconName}
   role={look.role}
   aria-labelledby={titleId}
   class="mx-sm mbe-sm"

@@ -9,19 +9,27 @@
     DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { HistoryEntry } from "#lib/ipc/bindings.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { HistoryEntryActions } from "./history-entry-actions.ts";
 
   const ICON_SIZE = 16;
+  const platform = currentPlatform();
 
   let {
     entry,
     actions,
-  }: { entry: HistoryEntry; actions: HistoryEntryActions } = $props();
+    buttonClass,
+  }: {
+    entry: HistoryEntry;
+    actions: HistoryEntryActions;
+    buttonClass: string;
+  } = $props();
 </script>
 
 <DropdownMenu>
@@ -33,9 +41,16 @@
             {...props}
             look="row-action"
             aria-label={m.history_more({ book: entry.bookTitle })}
-            class="relative hidden block-pointer-target inline-pointer-target before:block-pointer-target before:inline-pointer-target large:flex"
+            class={[
+              "relative block-pointer-target inline-pointer-target before:block-pointer-target before:inline-pointer-target",
+              buttonClass,
+            ]}
           >
-            <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+            {#if platform === "android"}
+              <Icon name="ellipsis" />
+            {:else}
+              <Ellipsis size={ICON_SIZE} aria-hidden="true" />
+            {/if}
           </Button>
         {/snippet}
       </DropdownMenuTrigger>
@@ -66,7 +81,9 @@
     >
       <X size={ICON_SIZE} aria-hidden="true" />
       <span class="flex-1">{m.history_remove()}</span>
-      <Kbd aria-hidden="true">{m.history_remove_shortcut()}</Kbd>
+      {#if platform !== "android"}
+        <Kbd aria-hidden="true">{m.history_remove_shortcut()}</Kbd>
+      {/if}
     </DropdownMenuItem>
   </DropdownMenuContent>
 </DropdownMenu>

@@ -109,8 +109,9 @@
       </div>
     </div>
   {:else if android.isOn}
-    <div class="mbs-pane-gap flex flex-col gap-pane-gap">
+    <div class="flex flex-col">
       <SettingRadios
+        startsPage
         title={m.general_opens_on()}
         options={OPENING_PLACES}
         labels={PLACE_LABELS}
@@ -120,7 +121,7 @@
           opensOn.choose(place);
         }}
       />
-      <div class="flex flex-col">
+      <div class="mbs-sm flex flex-col">
         <SettingChoiceRow
           title={m.language_label()}
           value={languageName(

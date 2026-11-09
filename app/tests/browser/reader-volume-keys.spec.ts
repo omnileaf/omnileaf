@@ -6,6 +6,7 @@ import {
   accessibilityViolations,
   expect,
   EXPANDED_MIN_WIDTH,
+  MEDIUM_MIN_WIDTH,
   framesPassed,
   onPlatform,
   settle,
@@ -132,6 +133,12 @@ function volumeKeysRow(within: Locator | Page): Locator {
   return within.getByRole("switch", { name: VOLUME_KEYS_ROW });
 }
 
+function backgroundChoice(page: Page): Locator {
+  return viewportOf(page).width < MEDIUM_MIN_WIDTH
+    ? page.getByRole("radiogroup", { name: "Background" })
+    : page.getByRole("group", { name: "Background" });
+}
+
 async function openReaderSettingsPage(page: Page): Promise<Locator> {
   await page.goto("/settings/reading");
   await expect(
@@ -180,8 +187,7 @@ test.describe("on Android", () => {
     await expect.poll(() => calls).toEqual(["capture"]);
     await openSettings(page);
 
-    await page
-      .getByRole("group", { name: "Background" })
+    await backgroundChoice(page)
       .getByRole("radio", { name: "White", exact: true })
       .click();
     await expect

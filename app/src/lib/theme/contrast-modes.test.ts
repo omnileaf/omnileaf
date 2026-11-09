@@ -34,6 +34,7 @@ const ANDROID_TEXT: readonly Pair[] = [
   ["on-top-bar", "top-bar-scrolled"],
   ["on-tab", "tab-bar"],
   ["on-tab-current", "tab-bar"],
+  ["on-tab-bar-current", "tab-bar"],
   ["on-tab-pill", "tab-pill"],
   ["on-jump-current", "jump-current"],
   ["on-menu", "menu"],
