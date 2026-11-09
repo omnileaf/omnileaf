@@ -12,7 +12,9 @@ export const ANDROID_FILTER_SHEET = {
 export const FILTER_SETTING_LABEL_TYPE =
   "text-native-segment/native-segment font-native-segment tracking-native-segment";
 
-export const ANDROID_FILTER_HEADING = `pbs-md pbe-sm ps-lg text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`;
+export const ANDROID_SUBHEADING = `text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`;
+
+export const ANDROID_FILTER_HEADING = `pbs-md pbe-sm ps-lg ${ANDROID_SUBHEADING}`;
 
 export const ANDROID_FILTER_CHIP = {
   chip: "flex shrink-0 items-center gap-sm rounded-native-segment border px-lg text-native-button/native-button font-native-button tracking-native-button whitespace-nowrap block-auto min-block-native-button-small touch:touch-target-around",

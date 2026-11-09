@@ -10,7 +10,7 @@
   import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
-  import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
+  import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
   import type { PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { chapterRunWords } from "#lib/series-sections/book-number-words.ts";
@@ -37,7 +37,7 @@
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
   const CAPSULE_ACT_PAST_OPEN_PX = 48;
-  const RUN_HEADING = `flex items-end block-full ps-native-row-start pbe-sm text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`;
+  const RUN_HEADING = `flex items-end block-full ps-native-row-start pbe-sm ${ANDROID_SUBHEADING}`;
 
   interface PhoneList {
     readonly plate: string;
