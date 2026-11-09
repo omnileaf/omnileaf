@@ -31,28 +31,17 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { ORDERS, SHOWN_LABELS, SHOWN_OPTIONS } from "./book-listing";
+
   interface PhoneTools {
     readonly variant: ButtonVariant;
     readonly foldsShownWhenCrowded: boolean;
   }
 
-  const SHOWN_OPTIONS: readonly BooksShown[] = ["all", "unread", "bookmarked"];
-  const SHOWN_LABELS = {
-    all: m.series_show_all,
-    unread: m.series_show_unread,
-    bookmarked: m.series_show_bookmarked,
-  } satisfies Record<BooksShown, () => string>;
   const PHONE_TOOLS: Readonly<Record<PhonePlatform, PhoneTools>> = {
     ios: { variant: "secondary", foldsShownWhenCrowded: true },
     android: { variant: "plain", foldsShownWhenCrowded: false },
   };
-  const ORDERS = [
-    { direction: "ascending", label: m.series_order_first_first },
-    { direction: "descending", label: m.series_order_last_first },
-  ] as const satisfies readonly {
-    direction: SortDirection;
-    label: () => string;
-  }[];
   const ICON_SIZE = 16;
 
   const platform = currentPlatform();

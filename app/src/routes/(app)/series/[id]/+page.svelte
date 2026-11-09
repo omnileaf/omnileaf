@@ -48,6 +48,7 @@
     SERIES_OVERVIEW,
     type SeriesShown,
   } from "#lib/series/series-overview.ts";
+  import { EVERY_BOOK_IN_ORDER } from "#lib/series/book-listing.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
@@ -81,10 +82,6 @@
     size: "large",
     class: "mbs-empty-button-macos",
   } as const;
-  const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
-    shown: "all",
-    direction: "ascending",
-  };
 
   let { data }: PageProps = $props();
 
@@ -103,10 +100,7 @@
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
-  let listing: SeriesBookListing = $state({
-    shown: "all",
-    direction: "ascending",
-  });
+  let listing: SeriesBookListing = $state({ ...EVERY_BOOK_IN_ORDER });
   const listed = $derived(
     sectionListing(
       listing,

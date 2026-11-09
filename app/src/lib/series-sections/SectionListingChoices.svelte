@@ -13,14 +13,8 @@
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import type { SortDirection } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { ORDERS } from "#lib/series/book-listing.ts";
 
-  const ORDERS = [
-    { direction: "ascending", label: m.series_order_first_first },
-    { direction: "descending", label: m.series_order_last_first },
-  ] as const satisfies readonly {
-    direction: SortDirection;
-    label: () => string;
-  }[];
   const ICON_SIZE = 16;
   const INPUT_COVERS_GROUP_BORDER =
     "android:max-medium:-my-px android:max-medium:self-stretch";

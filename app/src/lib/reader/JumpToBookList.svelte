@@ -36,6 +36,7 @@
   } from "#lib/ipc/bindings.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import { SHOWN_LABELS, SHOWN_OPTIONS } from "#lib/series/book-listing.ts";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
   import BookProgress from "#lib/series/BookProgress.svelte";
@@ -50,12 +51,6 @@
   const SPINNER_SIZE = 20;
   const ICON_SIZE = 16;
   const DETAIL_ICON_SIZE = 12;
-  const SHOWN_OPTIONS: readonly BooksShown[] = ["all", "unread", "bookmarked"];
-  const SHOWN_LABELS = {
-    all: m.series_show_all,
-    unread: m.series_show_unread,
-    bookmarked: m.series_show_bookmarked,
-  } satisfies Record<BooksShown, () => string>;
 
   let {
     books,
