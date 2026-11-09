@@ -186,6 +186,10 @@
     return true;
   }
 
+  function showFileOf(book: SeriesBook["id"]): void {
+    showBookFile(book, notices);
+  }
+
   async function removeBooks(
     targets: RemovalTarget[],
     deleteFiles: boolean,
@@ -545,7 +549,7 @@
                   onBookmark={bookmarkSelected}
                   onRemoveBookmarks={removeBookmarks}
                   onRemove={removeBooks}
-                  onShowInFolder={showBookFile}
+                  onShowInFolder={showFileOf}
                   platform={data.appInfo.platform}
                   onPickedCount={(count: number | undefined) => {
                     pickedCount = count;

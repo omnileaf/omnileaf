@@ -20,12 +20,15 @@
   let { data }: PageProps = $props();
 
   const shown = $derived(data.shown);
+  const notices = getNotices();
   const showFile = $derived(
-    libraryBookFileShower(shown.kind === "found" ? shown.book : shown.place),
+    libraryBookFileShower(
+      shown.kind === "found" ? shown.book : shown.place,
+      notices,
+    ),
   );
   const isFound = $derived(shown.kind === "found");
   const bookPresence = getBookPresence();
-  const notices = getNotices();
   const theme = getThemeSetting();
   let damagedBookRead: string | undefined = $state();
 
