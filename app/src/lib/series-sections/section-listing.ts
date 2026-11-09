@@ -5,6 +5,8 @@ import type {
 } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 
+import { sectionTabsLook } from "./section-tabs-look";
+
 export type SectionView = "covers" | "books";
 
 export type ListingChange = Partial<
@@ -91,7 +93,10 @@ export function sectionListing(
   screen: SectionScreen,
 ): SeriesBookListing {
   const chosen = chosenSection(listing, sectionTabs(sections, screen));
-  return sectionView(chosen, sections, screen) === "covers"
+  const isShownChosenAbove =
+    sectionTabsLook(screen.platform, screen.width).controls === "heading";
+  return sectionView(chosen, sections, screen) === "covers" &&
+    !isShownChosenAbove
     ? { ...chosen, shown: "all" }
     : chosen;
 }

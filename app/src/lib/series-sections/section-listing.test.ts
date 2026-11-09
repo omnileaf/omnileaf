@@ -84,6 +84,16 @@ test("lists every book of a section shown as covers", () => {
   });
 });
 
+test("keeps the books shown as chosen under an Android phone's covers", () => {
+  const chosen: SeriesBookListing = {
+    shown: "unread",
+    direction: "ascending",
+    section: "volumes",
+  };
+
+  expect(sectionListing(chosen, EVERY_SECTION, ANDROID_PHONE)).toEqual(chosen);
+});
+
 test("goes back to the first section when the chosen one is gone", () => {
   const chosen: SeriesBookListing = { ...IN_ORDER, section: "specials" };
 

@@ -449,6 +449,104 @@ test.describe(
   },
 );
 
+test.describe(
+  "a series' tabs with read books on an Android phone",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(
+      [
+        {
+          kind: "volume",
+          numbers: { first: 1, last: 1 },
+          reading: { state: "read" },
+        },
+        ...volumes(2, 4),
+        READ_CHAPTER,
+        ...chapters(13),
+      ],
+      [{ first: 3, last: 3 }],
+    );
+    test.use({
+      platform: "android",
+      backend: shelf.backend(),
+      viewport: { width: 360, height: 800 },
+    });
+
+    function phoneRows(page: Page) {
+      return page.getByRole("list", { name: "Books" }).getByRole("listitem");
+    }
+
+    async function showOnly(page: Page, shown: string): Promise<void> {
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+      const sheet = page.getByRole("dialog", { name: "Sort and filter" });
+      await sheet.getByRole("radio", { name: shown, exact: true }).click();
+      await page.keyboard.press("Escape");
+      await expect(sheet).toBeHidden();
+    }
+
+    test("keeps the Show group and a second Find a book out of the Chapters tab", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(phoneRows(page)).toHaveCount(2);
+      await expect(page.getByRole("radiogroup", { name: "Show" })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByRole("button", { name: "Find a book" }),
+      ).toHaveCount(1);
+    });
+
+    test("finds a chapter from the heading's Find a book", async ({ page }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("13");
+
+      await expect(phoneRows(page)).toHaveCount(1);
+      await expect(phoneRows(page)).toContainText(/chapter 13/);
+    });
+
+    test("shows only the unread chapters once Sort and filter says Unread", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await showOnly(page, "Unread");
+
+      await expect(phoneRows(page)).toHaveCount(1);
+      await expect(phoneRows(page)).toContainText(/chapter 13/);
+    });
+
+    test("shows only the unread volumes, with no gap, once Sort and filter says Unread", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(1);
+
+      await showOnly(page, "Unread");
+
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(0);
+    });
+  },
+);
+
 test.describe("a series on a narrow linux window", () => {
   const shelf = new SectionShelf(EVERY_KIND);
   test.use({

@@ -3,6 +3,7 @@
 
   import type {
     BookSection,
+    BooksShown,
     ReadMark,
     SeriesBook,
     SortDirection,
@@ -10,6 +11,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
+  import type { BooksControls } from "#lib/series/books-controls.ts";
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
   import { bookWords } from "./book-number-words";
@@ -27,45 +29,49 @@
     view,
     series,
     direction,
+    shown,
     search,
     books,
     usesStandIns,
     onMark,
     onPickedCount,
     children,
+    controls,
   }: {
     section: BookSection | undefined;
     noted: BookSection | undefined;
     view: SectionView;
     series: NotedSeries;
     direction: SortDirection;
+    shown: BooksShown;
     search: string;
     books: ListedBooks | undefined;
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
-    children: Snippet;
+    children: Snippet<[BooksControls]>;
+    controls: BooksControls;
   } = $props();
 
   const isSearching = $derived(search.trim() !== "");
 
-  function found(shown: readonly SeriesBook[]): readonly SeriesBook[] {
-    const named = shown.map((book) => ({ book, title: bookWords(book) }));
+  function found(drawn: readonly SeriesBook[]): readonly SeriesBook[] {
+    const named = drawn.map((book) => ({ book, title: bookWords(book) }));
     return booksMatching(named, search, getLocale()).map(({ book }) => book);
   }
 
   function tilesOf(listed: readonly SeriesBook[], isComplete: boolean) {
-    const shown = usesStandIns ? listed.map(standInBook) : listed;
+    const drawn = usesStandIns ? listed.map(standInBook) : listed;
     if (isSearching) {
-      return booksOnly(found(shown));
+      return booksOnly(found(drawn));
     }
-    return section === "volumes"
-      ? withGaps(shown, {
+    return section === "volumes" && shown === "all"
+      ? withGaps(drawn, {
           missing: series.missingVolumes,
           direction,
           isComplete,
         })
-      : booksOnly(shown);
+      : booksOnly(drawn);
   }
 </script>
 
@@ -74,7 +80,7 @@
 {/if}
 {#if view === "books"}
   {#if books !== undefined}
-    {@render children()}
+    {@render children(controls)}
   {/if}
 {:else if books?.list.kind === "failed"}
   <p class="text-body text-muted">{m.series_books_failed()}</p>

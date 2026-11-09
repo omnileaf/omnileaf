@@ -19,6 +19,10 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
+  import {
+    type BooksControls,
+    OWN_CONTROLS,
+  } from "#lib/series/books-controls.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import {
@@ -58,7 +62,7 @@
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
-    children: Snippet;
+    children: Snippet<[BooksControls]>;
   } = $props();
 
   const kinds = $derived(sections.map(({ section }) => section));
@@ -112,18 +116,25 @@
       }
     },
   });
+  const booksControls = $derived<BooksControls>(
+    tabsLook.controls === "heading" && tabs.length > 0
+      ? { kind: "above", search, onSearch: choices.onSearch }
+      : OWN_CONTROLS,
+  );
   const panel = $derived({
     section,
     noted: tabs.length > 0 || view === "covers" ? section : undefined,
     view,
     series: { sections: kinds, missingVolumes, lastVolume },
     direction: listing.direction,
+    shown: listing.shown,
     search,
     books: books?.list === staleList ? undefined : books,
     usesStandIns,
     onMark,
     onPickedCount,
     children,
+    controls: booksControls,
   });
 
   async function toggleFinding(): Promise<void> {

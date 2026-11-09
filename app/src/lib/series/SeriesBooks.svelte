@@ -37,6 +37,7 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import { hasRowDelete } from "./book-actions";
   import { booksMatching } from "./book-search";
+  import { type BooksControls, OWN_CONTROLS } from "./books-controls";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
   import { SERIES_CONTROL } from "./series-control.ts";
@@ -124,6 +125,7 @@
     onShowInFolder,
     platform,
     onPickedCount,
+    controls = OWN_CONTROLS,
   }: {
     books: readonly SeriesBook[];
     seriesTitle: string;
@@ -147,6 +149,7 @@
     onShowInFolder: (book: BookId) => void;
     platform: Platform;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
+    controls?: BooksControls;
   } = $props();
 
   type Outcome =
@@ -184,7 +187,10 @@
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
-  let search = $state("");
+  let ownSearch = $state("");
+  const search = $derived(
+    controls.kind === "above" ? controls.search : ownSearch,
+  );
   let isShownCrowded = $state(false);
   const shownBooks = $derived(booksMatching(books, search, getLocale()));
   const ids = $derived(shownBooks.map((book) => book.id));
@@ -431,6 +437,7 @@
       isPhonePicking
         ? "flex-wrap bg-native-grouped-ground"
         : selection.isSelecting && "bg-background",
+      controls.kind === "above" && !selection.isSelecting && "sr-only",
     ]}
   >
     {#if isPhonePicking}
@@ -527,14 +534,14 @@
         void end();
       }}
     />
-  {:else}
+  {:else if controls.kind === "own"}
     <BookListingChoices
       phone={phonePlatform}
       {listing}
       onChoose={onListing}
       {search}
       onSearch={(typed: string) => {
-        search = typed;
+        ownSearch = typed;
         if (!isComplete) {
           void onLoadAll();
         }
@@ -557,7 +564,11 @@
           type="button"
           {...emptyAction}
           onclick={() => {
-            search = "";
+            if (controls.kind === "above") {
+              controls.onSearch("");
+            } else {
+              ownSearch = "";
+            }
           }}
         >
           {#if phone?.emptyActionHasIcon !== false}
