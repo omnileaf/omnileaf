@@ -5,33 +5,21 @@
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
-  import type {
-    BooksShown,
-    SeriesBookListing,
-    SortDirection,
-  } from "#lib/ipc/bindings.ts";
+  import type { BooksShown, SortDirection } from "#lib/ipc/bindings.ts";
   import {
     ANDROID_FILTER_HEADING,
     ANDROID_FILTER_SHEET,
   } from "#lib/library/filter-sheet-look.ts";
   import FilterSetting from "#lib/library/FilterSetting.svelte";
   import { m } from "#lib/paraglide/messages.js";
-
-  const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
-    shown: "all",
-    direction: "ascending",
-  };
-  const DIRECTIONS: readonly SortDirection[] = ["ascending", "descending"];
-  const DIRECTION_LABELS = {
-    ascending: m.series_order_first_first,
-    descending: m.series_order_last_first,
-  } satisfies Record<SortDirection, () => string>;
-  const SHOWN: readonly BooksShown[] = ["all", "unread", "bookmarked"];
-  const SHOWN_LABELS = {
-    all: m.series_show_all,
-    unread: m.series_show_unread,
-    bookmarked: m.series_show_bookmarked,
-  } satisfies Record<BooksShown, () => string>;
+  import {
+    type BooksOrder,
+    DIRECTIONS,
+    EVERY_BOOK_IN_ORDER,
+    ORDER_LABELS,
+    SHOWN_LABELS,
+    SHOWN_OPTIONS,
+  } from "#lib/series/book-listing.ts";
 
   let {
     listing,
@@ -39,9 +27,9 @@
     onChoose,
     onClose,
   }: {
-    listing: SeriesBookListing;
+    listing: BooksOrder;
     isOpen: boolean;
-    onChoose: (listing: SeriesBookListing) => void;
+    onChoose: (listing: BooksOrder) => void;
     onClose: () => void;
   } = $props();
 </script>
@@ -59,7 +47,7 @@
   <ModalContent phoneClass="max-block-dialog-limit" onDismiss={onClose}>
     <div class={ANDROID_FILTER_SHEET.header}>
       <DialogTitle class={ANDROID_FILTER_SHEET.title}>
-        {m.series_sort_and_filter()}
+        {m.library_filter_and_sort()}
       </DialogTitle>
       <Button
         type="button"
@@ -79,7 +67,7 @@
       <FilterSetting
         label={m.library_sort_order()}
         options={DIRECTIONS}
-        labels={DIRECTION_LABELS}
+        labels={ORDER_LABELS}
         chosen={listing.direction}
         onChoose={(direction: SortDirection) => {
           onChoose({ ...listing, direction });
@@ -88,7 +76,7 @@
       <h3 class={ANDROID_FILTER_HEADING}>{m.library_filter()}</h3>
       <FilterSetting
         label={m.series_show()}
-        options={SHOWN}
+        options={SHOWN_OPTIONS}
         labels={SHOWN_LABELS}
         chosen={listing.shown}
         onChoose={(shown: BooksShown) => {

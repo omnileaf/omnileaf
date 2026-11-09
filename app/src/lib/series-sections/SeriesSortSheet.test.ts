@@ -4,25 +4,23 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import type { SeriesBookListing } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
+import {
+  type BooksOrder,
+  EVERY_BOOK_IN_ORDER,
+} from "#lib/series/book-listing.ts";
 
 import SeriesSortSheet from "./SeriesSortSheet.svelte";
 
 const ANDROID_PHONE = { width: 412, height: 915 };
-const EVERY_BOOK_IN_ORDER: SeriesBookListing = {
-  shown: "all",
-  direction: "ascending",
-};
-
 async function openSheet(
-  listing: SeriesBookListing = EVERY_BOOK_IN_ORDER,
-): Promise<SeriesBookListing[]> {
-  const chosen: SeriesBookListing[] = [];
+  listing: BooksOrder = EVERY_BOOK_IN_ORDER,
+): Promise<BooksOrder[]> {
+  const chosen: BooksOrder[] = [];
   await render(SeriesSortSheet, {
     listing,
     isOpen: true,
-    onChoose: (next: SeriesBookListing) => {
+    onChoose: (next: BooksOrder) => {
       chosen.push(next);
     },
     onClose: () => undefined,
@@ -76,7 +74,7 @@ test("says the choices hold for every tab and that gaps need All", async () => {
     .toBeVisible();
 });
 
-test("shows only the unread books once Unread is chosen", async () => {
+test("chooses Unread and keeps the order", async () => {
   const chosen = await openSheet();
 
   await userEvent.click(sheet().getByRole("radio", { name: "Unread" }));
@@ -84,7 +82,7 @@ test("shows only the unread books once Unread is chosen", async () => {
   expect(chosen).toEqual([{ shown: "unread", direction: "ascending" }]);
 });
 
-test("lists the last book first once Last first is chosen", async () => {
+test("chooses Last first and keeps the books shown", async () => {
   const chosen = await openSheet();
 
   await userEvent.click(sheet().getByRole("radio", { name: "Last first" }));
@@ -92,7 +90,7 @@ test("lists the last book first once Last first is chosen", async () => {
   expect(chosen).toEqual([{ shown: "all", direction: "descending" }]);
 });
 
-test("goes back to every book in order on Reset", async () => {
+test("chooses every book in order on Reset", async () => {
   const chosen = await openSheet({
     shown: "bookmarked",
     direction: "descending",
