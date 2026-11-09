@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -90,7 +91,7 @@ test.describe(
 
       await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
       const bar = page.getByRole("group", { name: "Selected series" });
-      for (const name of ["Categories", "Tags", "Mark as read", "Delete"]) {
+      for (const name of ["Categories", "Tags", "Mark as read", "More"]) {
         await expect(bar.getByRole("button", { name })).toBeVisible();
         await expect(bar.getByRole("button", { name })).toBeDisabled();
       }
@@ -102,9 +103,61 @@ test.describe(
       await startSelecting(page);
 
       const bar = page.getByRole("group", { name: "Selected series" });
-      for (const name of ["Categories", "Tags", "Mark as read", "Delete"]) {
+      for (const name of ["Categories", "Tags", "Mark as read", "More"]) {
         await expect(bar.getByRole("button", { name })).toBeEnabled();
       }
+    });
+
+    test("keeps Delete out of the bar, three actions and a More button with a 24px three dots icon", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const bar = page.getByRole("group", { name: "Selected series" });
+
+      await expect(bar.getByRole("button")).toHaveText([
+        "Categories",
+        "Tags",
+        "Mark as read",
+        "More",
+      ]);
+      await expect(bar.getByRole("button", { name: "Delete" })).toHaveCount(0);
+      const icon = bar
+        .getByRole("button", { name: "More" })
+        .locator("[data-icon]");
+      await expect(icon).toHaveAttribute("data-icon", "ellipsis");
+      expect((await boxOf(icon)).width).toBe(24);
+    });
+
+    test("opens a menu with Delete above the bar, and Delete asks before it removes anything", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      const bar = page.getByRole("group", { name: "Selected series" });
+
+      await bar.getByRole("button", { name: "More" }).click();
+      const menu = page.getByRole("menu");
+      await expect(menu.getByRole("menuitem")).toHaveText(["Delete"]);
+      expect(
+        (await boxOf(menu)).y + (await boxOf(menu)).height,
+      ).toBeLessThanOrEqual((await boxOf(bar)).y);
+      await menu.getByRole("menuitem", { name: "Delete" }).click();
+
+      await expect(
+        page.getByRole("alertdialog", { name: "Remove from your library?" }),
+      ).toBeVisible();
+    });
+
+    test("has no accessibility violations with the More menu open", async ({
+      page,
+    }) => {
+      await startSelecting(page);
+      await page
+        .getByRole("group", { name: "Selected series" })
+        .getByRole("button", { name: "More" })
+        .click();
+      await expect(page.getByRole("menu")).toBeVisible();
+
+      expect(await accessibilityViolations(page)).toEqual([]);
     });
 
     test("fills an unchecked cover check box with the window colour inside a 2px outline", async ({
