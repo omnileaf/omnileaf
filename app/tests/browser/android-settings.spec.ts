@@ -463,6 +463,8 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
 
     expect((await boxOf(heading)).x).toBe(16);
     await expect(heading).toHaveCSS("font-weight", "500");
+    await expect(heading).toHaveCSS("font-size", "14px");
+    await expect(heading).toHaveCSS("line-height", "20px");
     expect((await boxOf(name)).x).toBe(16);
     await expect(name).toHaveCSS("letter-spacing", "0.5px");
     await expect(row.first()).toHaveCSS("border-bottom-width", "0px");

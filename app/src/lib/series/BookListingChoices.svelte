@@ -171,7 +171,10 @@
         labelledBy={showLabelId}
         size="small"
         isFullWidth
-        segmentClass="min-inline-native-target"
+        segmentClass={[
+          "min-inline-native-target",
+          phonePlatform === "android" && "max-medium:px-md",
+        ]}
         onChoose={chooseShown}
         crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
         onFit={(fitsOneRow: boolean) => {

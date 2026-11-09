@@ -31,8 +31,8 @@
     total: formatBytes(used.totalBytes),
   })}
   class={[
-    "flex overflow-hidden rounded-full block-md",
-    android.isOn ? "gap-xs" : "bg-chip",
+    "flex overflow-hidden rounded-full",
+    android.isOn ? "gap-xs block-sm" : "bg-chip block-md",
   ]}
 >
   <span
@@ -40,7 +40,7 @@
     style:inline-size="{share(used.omnileafBytes)}%"
   ></span>
   <span
-    class={android.isOn ? "rounded-full bg-foreground" : "bg-muted"}
+    class={["bg-muted", android.isOn && "rounded-full"]}
     style:inline-size="{share(othersBytes)}%"
   ></span>
   {#if android.isOn}
@@ -49,25 +49,34 @@
 </div>
 <ul
   class={[
-    "flex flex-wrap items-center gap-x-md gap-y-2xs",
+    "flex flex-wrap items-center",
     android.isOn
-      ? "text-native-row-subtitle/native-row-subtitle text-muted"
-      : "text-label",
+      ? "gap-x-lg gap-y-sm text-native-row-subtitle/native-row-subtitle text-muted"
+      : "gap-x-md gap-y-2xs text-label",
   ]}
 >
-  <li class="flex items-center gap-xs">
+  <li class={["flex items-center", android.isOn ? "gap-sm" : "gap-xs"]}>
     <span
       aria-hidden="true"
-      class="rounded-full bg-foreground block-sm inline-sm"
+      class={[
+        "rounded-full block-sm inline-sm",
+        android.isOn ? "bg-accent" : "bg-foreground",
+      ]}
     ></span>
     {m.storage_omnileaf({ size: formatBytes(used.omnileafBytes) })}
   </li>
-  <li class="flex items-center gap-xs">
+  <li class={["flex items-center", android.isOn ? "gap-sm" : "gap-xs"]}>
     <span aria-hidden="true" class="rounded-full bg-muted block-sm inline-sm"
     ></span>
     {m.storage_everything_else()}
   </li>
-  <li class="text-muted">
+  <li class={["text-muted", android.isOn && "flex items-center gap-sm"]}>
+    {#if android.isOn}
+      <span
+        aria-hidden="true"
+        class="rounded-full border border-border bg-chip block-sm inline-sm"
+      ></span>
+    {/if}
     {m.storage_free({ size: formatBytes(used.freeBytes) })}
   </li>
 </ul>

@@ -33,6 +33,7 @@
     weekStartOf,
   } from "#lib/history/local-date.ts";
   import { commands, type HistoryEntry } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
@@ -41,12 +42,15 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { ANDROID_SEARCH_VIEW } from "#lib/search/search-look.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
+  const ANDROID_HISTORY_SEARCH_BAR =
+    "-ms-page-start -me-page-end px-sm block-native-search-view-bar";
   const ICON_SIZE = 18;
   const FIELD_ICON_SIZE = 16;
   const SKELETON_ROWS = 6;
@@ -63,6 +67,7 @@
   const formats = $derived(whenFormats(getLocale(), timeFormat.hourCycle));
   const platform = $derived(data.appInfo.platform);
   const headingId = $props.id();
+  const android = new AndroidPhone();
 
   let matching = $state("");
   let isSearching = $state(false);
@@ -249,14 +254,24 @@
 
 {#if isSearching}
   <h1 class="sr-only">{m.history_title()}</h1>
-  <div class="flex items-center gap-sm search-field:hidden">
+  <div
+    class={[
+      "flex items-center search-field:hidden",
+      android.isOn ? ANDROID_HISTORY_SEARCH_BAR : "gap-sm",
+    ]}
+  >
     <Tooltip label={m.history_back()}>
       {#snippet child({ props })}
         <Button
           {...props}
           look="icon"
           aria-label={m.history_back()}
-          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed android:block-native-button android:inline-native-button"
+          class={[
+            "shrink-0 hover:tint-hover active:tint-pressed",
+            android.isOn
+              ? ANDROID_SEARCH_VIEW.back
+              : "block-touch-target inline-touch-target android:block-native-button android:inline-native-button",
+          ]}
           onclick={stopSearching}
         >
           {#if platform === "android"}

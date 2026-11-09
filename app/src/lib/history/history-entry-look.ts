@@ -9,6 +9,7 @@ export interface HistoryEntryLook {
   readonly line: string;
   readonly opensMenu: boolean;
   readonly menuButton: string;
+  readonly bar: string;
 }
 
 const TODAYS_LOOK: HistoryEntryLook = {
@@ -16,6 +17,7 @@ const TODAYS_LOOK: HistoryEntryLook = {
   line: "line-clamp-2 text-detail text-muted tabular-nums",
   opensMenu: false,
   menuButton: "hidden large:flex",
+  bar: "inline-history-bar",
 };
 
 const ANDROID_LOOK: HistoryEntryLook = {
@@ -24,6 +26,7 @@ const ANDROID_LOOK: HistoryEntryLook = {
   opensMenu: true,
   menuButton:
     "flex block-touch-target inline-touch-target before:block-touch-target before:inline-touch-target",
+  bar: "inline-history-bar max-medium:inline-native-history-bar",
 };
 
 const HISTORY_ENTRY_LOOKS = {

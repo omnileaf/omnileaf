@@ -622,6 +622,8 @@
   --font-weight-native-books-heading: var(--native-weight-books-heading);
   --tracking-native-books-heading: var(--native-tracking-books-heading);
   --spacing-native-series-hero-cover: var(--native-spacing-series-hero-cover);
+  --spacing-native-history-bar: var(--native-spacing-history-bar);
+  --spacing-native-library-menu: var(--native-spacing-library-menu);
 }
 
 @media (prefers-reduced-motion: reduce) {
