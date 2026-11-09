@@ -90,6 +90,27 @@ test("heads an Android phone's chapters with a list heading for each run of twel
   ]);
 });
 
+test("counts only an Android phone's chapters as list items, leaving the run headings out", async () => {
+  await runHeadingsOn("android");
+
+  const rows = [...document.querySelectorAll('[aria-label="Books"] > li')].map(
+    (row) => ({
+      role: row.getAttribute("role"),
+      at: row.getAttribute("aria-posinset"),
+      of: row.getAttribute("aria-setsize"),
+    }),
+  );
+
+  expect(rows).toEqual([
+    { role: "presentation", at: null, of: null },
+    { role: null, at: "1", of: "4" },
+    { role: null, at: "2", of: "4" },
+    { role: "presentation", at: null, of: null },
+    { role: null, at: "3", of: "4" },
+    { role: null, at: "4", of: "4" },
+  ]);
+});
+
 test("keeps an iPhone's chapters in one run without headings", async () => {
   expect(await runHeadingsOn("ios")).toEqual([]);
 });

@@ -123,6 +123,8 @@
     isComplete,
     onNearEnd,
     cell: listedRow,
+    itemRole: (listed: ChapterRow) =>
+      listed.kind === "run" ? "presentation" : "listitem",
   });
   const ids = $derived(books.map((book) => book.id));
   const swipeActions = getSwipeActionsSetting();
