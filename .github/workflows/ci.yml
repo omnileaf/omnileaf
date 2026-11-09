@@ -82,7 +82,7 @@ jobs:
         run: cargo xtask changes check
 
       - name: Require a fragment for a change people see
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: cargo xtask changes require --base HEAD^1
 
   secrets:
