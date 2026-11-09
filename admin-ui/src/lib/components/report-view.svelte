@@ -60,7 +60,7 @@
     message={load.message}
     {onRetry}
   />
-{:else if load.kind === "ready"}
+{:else}
   <ReportFacts report={load.detail.listed} />
   <div
     class="mbs-4 grid items-start gap-4 tablet:mbs-6 tablet:grid-cols-3 tablet:gap-6"

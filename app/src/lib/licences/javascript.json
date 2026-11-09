@@ -34,7 +34,7 @@
     },
     {
       "name": "@lucide/svelte",
-      "version": "1.64.0",
+      "version": "1.69.0",
       "licence": "ISC",
       "texts": [
         2
@@ -50,7 +50,7 @@
     },
     {
       "name": "@sveltejs/kit",
-      "version": "3.1.0",
+      "version": "3.1.1",
       "licence": "MIT",
       "texts": [
         4
@@ -67,7 +67,7 @@
     },
     {
       "name": "bits-ui",
-      "version": "2.20.2",
+      "version": "2.20.6",
       "licence": "MIT",
       "texts": [
         7
@@ -83,7 +83,7 @@
     },
     {
       "name": "cn",
-      "version": "0.5.0",
+      "version": "0.5.2",
       "licence": "MIT",
       "texts": [
         9
@@ -123,14 +123,6 @@
     },
     {
       "name": "runed",
-      "version": "0.28.0",
-      "licence": "MIT",
-      "texts": [
-        13
-      ]
-    },
-    {
-      "name": "runed",
       "version": "0.35.1",
       "licence": "MIT",
       "texts": [
@@ -155,7 +147,7 @@
     },
     {
       "name": "svelte-sonner",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "licence": "MIT",
       "texts": [
         16
@@ -163,7 +155,7 @@
     },
     {
       "name": "svelte-toolbelt",
-      "version": "0.10.6",
+      "version": "0.10.7",
       "licence": "MIT",
       "texts": [
         13
@@ -171,7 +163,7 @@
     },
     {
       "name": "tabbable",
-      "version": "6.5.0",
+      "version": "6.5.1",
       "licence": "MIT",
       "texts": [
         17
@@ -179,7 +171,7 @@
     },
     {
       "name": "tailwindcss",
-      "version": "4.3.3",
+      "version": "4.3.4",
       "licence": "MIT",
       "texts": [
         18

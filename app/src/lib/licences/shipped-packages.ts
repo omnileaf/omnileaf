@@ -15,7 +15,7 @@ export interface ShippedPackage {
 
 /** Licences granted by a package's licence file but missing from its manifest, by name and version so an upgrade is checked again. */
 const UNDECLARED_LICENCES: ReadonlyMap<string, string> = new Map([
-  ["svelte-toolbelt@0.10.6", "MIT"],
+  ["svelte-toolbelt@0.10.7", "MIT"],
 ]);
 
 /** Code ported into the app from a package, kept in a folder beside that package's licence file. */

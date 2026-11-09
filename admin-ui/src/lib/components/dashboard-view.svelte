@@ -55,9 +55,9 @@
   <DashboardSkeleton />
 {:else if load.kind === "failed"}
   <ReportsError message={load.message} {onRetry} />
-{:else if load.kind === "ready" && load.reports.length === 0}
+{:else if load.reports.length === 0}
   <ReportsEmpty />
-{:else if load.kind === "ready"}
+{:else}
   {@const waiting = awaitingReview(load.reports).slice(0, NEEDS_REVIEW_LIMIT)}
   <StatusCards counts={countByStatus(load.reports)} />
   <div class="mbs-4 grid gap-4 tablet:mbs-6 tablet:grid-cols-2 tablet:gap-6">
