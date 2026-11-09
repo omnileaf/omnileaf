@@ -105,7 +105,7 @@
     sectionListing(
       listing,
       found?.overview.sections.map(({ section }) => section) ?? [],
-      { platform: data.appInfo.platform, isWide: isWide.current },
+      { platform: data.appInfo.platform, width: width.current },
     ),
   );
   const foundId = $derived(found?.overview.id);

@@ -3,6 +3,7 @@ import type {
   Platform,
   SeriesBookListing,
 } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
 
 export type SectionView = "covers" | "books";
 
@@ -12,7 +13,7 @@ export type ListingChange = Partial<
 
 export interface SectionScreen {
   readonly platform: Platform;
-  readonly isWide: boolean;
+  readonly width: WidthClass;
 }
 
 type SectionViews = Readonly<Record<BookSection, SectionView>>;
@@ -34,7 +35,8 @@ const SECTION_VIEWS = {
 const TABBED_AT_ANY_WIDTH: readonly Platform[] = ["ios", "android"];
 
 function sectionViews(screen: SectionScreen): SectionViews | undefined {
-  return screen.isWide || TABBED_AT_ANY_WIDTH.includes(screen.platform)
+  return screen.width === "expanded" ||
+    TABBED_AT_ANY_WIDTH.includes(screen.platform)
     ? SECTION_VIEWS[screen.platform]
     : undefined;
 }

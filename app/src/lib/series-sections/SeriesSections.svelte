@@ -1,6 +1,5 @@
 <script lang="ts">
   import { type Snippet, untrack } from "svelte";
-  import { MediaQuery } from "svelte/reactivity";
 
   import {
     Tabs,
@@ -17,7 +16,7 @@
     SeriesSection,
     SortDirection,
   } from "#lib/ipc/bindings.ts";
-  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -60,12 +59,11 @@
   } = $props();
 
   const kinds = $derived(sections.map(({ section }) => section));
-  const isWide = new MediaQuery(EXPANDED_QUERY);
+  const width = new WindowWidth();
   const screen = $derived({
     platform: currentPlatform(),
-    isWide: isWide.current,
+    width: width.current,
   });
-  const width = new WindowWidth();
   const tabsLook = $derived(sectionTabsLook(screen.platform, width.current));
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
