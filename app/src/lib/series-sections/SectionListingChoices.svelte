@@ -13,7 +13,11 @@
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import type { SortDirection } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { ORDERS } from "#lib/series/book-listing.ts";
+  import {
+    isSortDirection,
+    ORDER_LABELS,
+    ORDERS,
+  } from "#lib/series/book-listing.ts";
 
   const ICON_SIZE = 16;
   const INPUT_COVERS_GROUP_BORDER =
@@ -31,15 +35,7 @@
     onSearch: (search: string) => void;
   } = $props();
 
-  const order = $derived(
-    direction === "descending"
-      ? m.series_order_last_first()
-      : m.series_order_first_first(),
-  );
-
-  function isDirection(value: string): value is SortDirection {
-    return ORDERS.some((one) => one.direction === value);
-  }
+  const order = $derived(ORDER_LABELS[direction]());
 </script>
 
 <div class="ms-auto flex flex-1 items-center justify-end gap-sm">
@@ -87,7 +83,7 @@
       <DropdownMenuRadioGroup
         value={direction}
         onValueChange={(chosen: string) => {
-          if (isDirection(chosen)) {
+          if (isSortDirection(chosen)) {
             onDirection(chosen);
           }
         }}

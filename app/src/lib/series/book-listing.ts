@@ -5,9 +5,9 @@ import type {
 } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
-export type BooksOrder = Pick<SeriesBookListing, "shown" | "direction">;
+export type SortAndFilter = Pick<SeriesBookListing, "shown" | "direction">;
 
-export const EVERY_BOOK_IN_ORDER: BooksOrder = {
+export const EVERY_BOOK_IN_ORDER: SortAndFilter = {
   shown: "all",
   direction: "ascending",
 };
@@ -35,3 +35,11 @@ export const ORDERS = DIRECTIONS.map((direction) => ({
   direction,
   label: ORDER_LABELS[direction],
 }));
+
+export function isBooksShown(value: string): value is BooksShown {
+  return SHOWN_OPTIONS.some((shown) => shown === value);
+}
+
+export function isSortDirection(value: string): value is SortDirection {
+  return DIRECTIONS.some((direction) => direction === value);
+}
