@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, expect, test } from "./fixtures.ts";
+import { expect, test } from "./fixtures.ts";
 import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
@@ -26,7 +26,6 @@ const TURNS = [
     first: "chapter 30",
   },
 ] as const;
-const UNNUMBERED_CHAPTER = "Sample Series 04 Extra.cbz";
 const SECOND_SERIES = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
@@ -49,14 +48,6 @@ async function openSeries(page: Page): Promise<void> {
 
 function sort(page: Page): Locator {
   return page.getByRole("button", { name: /^Sort/ });
-}
-
-function findBook(page: Page): Locator {
-  return page.getByRole("button", { name: "Find a book" });
-}
-
-function searchField(page: Page): Locator {
-  return page.getByRole("searchbox", { name: "Find a book" });
 }
 
 function showChoices(page: Page): Locator {
@@ -191,7 +182,6 @@ test.describe(
       ).toHaveCount(1);
       await expect(runHeadings(page).first()).toHaveText("Chapters 25–30");
     });
-
   },
 );
 
@@ -268,6 +258,5 @@ test.describe(
       await expect(bookLinks(page).first()).toContainText("chapter 01");
       await expect(runHeadings(page)).toHaveCount(0);
     });
-
   },
 );
