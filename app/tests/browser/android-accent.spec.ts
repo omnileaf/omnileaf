@@ -68,32 +68,36 @@ test.describe(
           () => document.documentElement.dataset.platform === "android",
         );
 
-        const drawn = await page.evaluate(() => {
-          const drawn = (
-            name: string,
-            property: "color" | "backgroundColor",
-          ): string => {
-            const probe = document.createElement("span");
-            probe.className = name;
-            document.body.append(probe);
-            const colour = getComputedStyle(probe)[property];
-            probe.remove();
-            return colour;
-          };
-          return {
-            fill: drawn("bg-accent", "backgroundColor"),
-            onFill: drawn("text-on-accent", "color"),
-            ink: drawn("text-accent", "color"),
-            soft: drawn("bg-accent-soft", "backgroundColor"),
-          };
-        });
-
-        expect(drawn).toEqual({
+        const drawnAccent = () =>
+          page.evaluate(() => {
+            const drawn = (
+              name: string,
+              property: "color" | "backgroundColor",
+            ): string => {
+              const probe = document.createElement("span");
+              probe.className = name;
+              document.body.append(probe);
+              const colour = getComputedStyle(probe)[property];
+              probe.remove();
+              return colour;
+            };
+            return {
+              fill: drawn("bg-accent", "backgroundColor"),
+              onFill: drawn("text-on-accent", "color"),
+              ink: drawn("text-accent", "color"),
+              soft: drawn("bg-accent-soft", "backgroundColor"),
+            };
+          });
+        const tokenAccent = async () => ({
           fill: await tokenColour(page, "--native-color-button-primary"),
           onFill: await tokenColour(page, "--native-color-on-button-primary"),
           ink: await tokenColour(page, "--native-color-on-button-plain"),
           soft: await tokenColour(page, "--native-color-accent-soft"),
         });
+
+        await expect(async () => {
+          expect(await drawnAccent()).toEqual(await tokenAccent());
+        }).toPass();
       });
     }
   },
