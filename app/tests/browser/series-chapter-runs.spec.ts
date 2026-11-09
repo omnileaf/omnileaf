@@ -48,8 +48,12 @@ function sort(page: Page): Locator {
   return page.getByRole("button", { name: /^Sort/ });
 }
 
+function bookList(page: Page): Locator {
+  return page.getByRole("list", { name: "Books" });
+}
+
 function bookLinks(page: Page): Locator {
-  return page.getByRole("list", { name: "Books" }).getByRole("link");
+  return bookList(page).getByRole("link");
 }
 
 test.describe(
