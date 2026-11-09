@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDownUp, Search } from "@lucide/svelte";
+  import { ArrowDownUp } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import {
@@ -9,8 +9,6 @@
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
-  import { Input } from "#lib/components/ui/input/index.ts";
-  import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import type { SortDirection } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -19,9 +17,10 @@
     ORDERS,
   } from "#lib/series/book-listing.ts";
 
+
+  import BookSearchField from "./BookSearchField.svelte";
+
   const ICON_SIZE = 16;
-  const INPUT_COVERS_GROUP_BORDER =
-    "android:max-medium:-my-px android:max-medium:self-stretch";
 
   let {
     direction,
@@ -39,21 +38,7 @@
 </script>
 
 <div class="ms-auto flex flex-1 items-center justify-end gap-sm">
-  <InputGroup
-    class="flex-1 gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button max-inline-section-search min-inline-section-search-narrowest focus-within:border-accent android:max-medium:block-native-target"
-  >
-    <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-    <Input
-      type="search"
-      aria-label={m.series_find_book()}
-      placeholder={m.series_find_book()}
-      value={search}
-      class={["text-small text-foreground", INPUT_COVERS_GROUP_BORDER]}
-      oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
-        onSearch(event.currentTarget.value);
-      }}
-    />
-  </InputGroup>
+  <BookSearchField {search} {onSearch} />
   <DropdownMenu>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
