@@ -70,7 +70,7 @@
   let {
     phone: phonePlatform,
     books,
-    hasChapterRuns,
+    rows,
     seriesTitle,
     hasTwoLineTitles,
     isComplete,
@@ -86,7 +86,7 @@
   }: {
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
-    hasChapterRuns: boolean;
+    rows: "books" | "chapterRuns";
     seriesTitle: string;
     hasTwoLineTitles: boolean;
     isComplete: boolean;
@@ -111,13 +111,13 @@
   const longPress = new LongPress(LONG_PRESS_MS);
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
-  const rows: readonly ChapterRow[] = $derived(
-    hasChapterRuns
+  const listedRows: readonly ChapterRow[] = $derived(
+    rows === "chapterRuns"
       ? chapterRuns(books)
       : books.map((book) => ({ kind: "book", key: book.id, book })),
   );
   const grid = $derived({
-    items: rows,
+    items: listedRows,
     key: (listed: ChapterRow) => listed.key,
     label: m.series_books_list(),
     isComplete,
@@ -462,7 +462,10 @@
   <div data-book-plate class={phone.plate}>
     <VirtualGrid
       {...grid}
-      class={["row-rules grid-cols-1", hasChapterRuns && "auto-rows-fr"]}
+      class={[
+        "row-rules grid-cols-1",
+        rows === "chapterRuns" && "auto-rows-fr",
+      ]}
     />
   </div>
 {/if}

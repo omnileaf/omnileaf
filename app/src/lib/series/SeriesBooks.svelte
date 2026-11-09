@@ -53,6 +53,20 @@
 
   type BarControl = "close" | "done" | "selectAll";
 
+  interface BookListLook {
+    readonly rows: "books" | "chapterRuns";
+    readonly searchPlace: "besideShown" | "inPlaceOfShown";
+  }
+
+  const BOOKS_LOOK: BookListLook = {
+    rows: "books",
+    searchPlace: "besideShown",
+  };
+  const ANDROID_CHAPTERS_LOOK: BookListLook = {
+    rows: "chapterRuns",
+    searchPlace: "inPlaceOfShown",
+  };
+
   interface PhonePicking {
     readonly leading: readonly BarControl[];
     readonly trailing: readonly BarControl[];
@@ -172,8 +186,10 @@
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
   const isBookmarkedFromSheet = $derived(phonePlatform === "android");
-  const isAndroidChapterList = $derived(
-    phonePlatform === "android" && isChaptersOnly(sections),
+  const listLook = $derived(
+    phonePlatform === "android" && isChaptersOnly(sections)
+      ? ANDROID_CHAPTERS_LOOK
+      : BOOKS_LOOK,
   );
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
@@ -414,7 +430,7 @@
       return;
     }
     ownSearch = "";
-    if (isAndroidChapterList) {
+    if (listLook.searchPlace === "inPlaceOfShown") {
       isSearching = false;
     }
   }
@@ -577,7 +593,7 @@
       onShownCrowded={(isCrowded: boolean) => {
         isShownCrowded = isCrowded;
       }}
-      searchReplacesShown={isAndroidChapterList}
+      searchPlace={listLook.searchPlace}
       bind:isSearching
     />
   {/if}
@@ -643,7 +659,7 @@
     <BookList
       phone={phonePlatform}
       books={shownBooks}
-      hasChapterRuns={isAndroidChapterList}
+      rows={listLook.rows}
       {seriesTitle}
       hasTwoLineTitles={isShownCrowded}
       {isComplete}

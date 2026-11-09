@@ -69,7 +69,7 @@
     search,
     onSearch,
     onShownCrowded,
-    searchReplacesShown,
+    searchPlace,
     isSearching = $bindable(false),
   }: {
     phone: PhonePlatform | undefined;
@@ -78,11 +78,13 @@
     search: string;
     onSearch: (search: string) => void;
     onShownCrowded: (isCrowded: boolean) => void;
-    searchReplacesShown: boolean;
+    searchPlace: "besideShown" | "inPlaceOfShown";
     isSearching?: boolean;
   } = $props();
 
-  const isShownReplaced = $derived(searchReplacesShown && isSearching);
+  const isShownReplaced = $derived(
+    searchPlace === "inPlaceOfShown" && isSearching,
+  );
 
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_TOOLS[phonePlatform],
