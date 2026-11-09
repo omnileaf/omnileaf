@@ -373,7 +373,7 @@
         </ul>
       </section>
     {/each}
-    {#if listed !== undefined && !listed.isComplete}
+    {#if !listed.isComplete}
       {#key listed.items.length}
         <div
           aria-hidden="true"
