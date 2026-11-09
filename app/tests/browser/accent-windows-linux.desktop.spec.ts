@@ -46,19 +46,23 @@ for (const { platform, scheme, accent, onAccent } of PLATFORM_ACCENTS) {
         () => document.documentElement.dataset.platform !== undefined,
       );
 
-      const drawn = await page.evaluate(() => {
-        const probe = document.createElement("span");
-        probe.className = "bg-accent text-on-accent";
-        document.body.append(probe);
-        const { backgroundColor, color } = getComputedStyle(probe);
-        probe.remove();
-        return { backgroundColor, color };
-      });
-
-      expect(drawn).toEqual({
+      const expected = {
         backgroundColor: await literalColour(page, accent),
         color: await literalColour(page, onAccent),
-      });
+      };
+
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const probe = document.createElement("span");
+            probe.className = "bg-accent text-on-accent";
+            document.body.append(probe);
+            const { backgroundColor, color } = getComputedStyle(probe);
+            probe.remove();
+            return { backgroundColor, color };
+          }),
+        )
+        .toEqual(expected);
     });
   });
 }
