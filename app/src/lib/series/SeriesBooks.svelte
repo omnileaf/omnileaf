@@ -567,7 +567,7 @@
   {/if}
   {#if isComplete && shownBooks.length === 0}
     <NoShownBooks
-      {platform}
+      phone={phonePlatform}
       {search}
       shown={listing.shown}
       onClearSearch={clearSearch}

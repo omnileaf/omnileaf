@@ -4,9 +4,8 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { ButtonVariant } from "#lib/components/ui/button/looks.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
-  import type { BooksShown, Platform } from "#lib/ipc/bindings.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { type PhonePlatform, phoneOf } from "#lib/page/platform.ts";
+  import type { BooksShown } from "#lib/ipc/bindings.ts";
+  import type { PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { SERIES_CONTROL } from "./series-control.ts";
@@ -23,26 +22,22 @@
   };
 
   let {
-    platform,
+    phone: phonePlatform,
     search,
     shown,
     onClearSearch,
     onShowAll,
   }: {
-    platform: Platform;
+    phone: PhonePlatform | undefined;
     search: string;
     shown: BooksShown;
     onClearSearch: () => void;
     onShowAll: () => void;
   } = $props();
 
-  const width = new WindowWidth();
-  const phone = $derived.by(() => {
-    const phonePlatform = phoneOf(platform, width.current);
-    return phonePlatform === undefined
-      ? undefined
-      : PHONE_ACTIONS[phonePlatform];
-  });
+  const phone = $derived(
+    phonePlatform === undefined ? undefined : PHONE_ACTIONS[phonePlatform],
+  );
   const action = $derived(
     phone === undefined
       ? { look: "outline" as const, class: SERIES_CONTROL }

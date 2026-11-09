@@ -11,7 +11,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import type { PhonePlatform } from "#lib/page/platform.ts";
   import NoShownBooks from "#lib/series/NoShownBooks.svelte";
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
@@ -37,6 +37,7 @@
     onMark,
     onPickedCount,
     children,
+    phone,
     onClearSearch,
     onShowAll,
   }: {
@@ -52,6 +53,7 @@
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     children: Snippet;
+    phone: PhonePlatform | undefined;
     onClearSearch: () => void;
     onShowAll: () => void;
   } = $props();
@@ -90,13 +92,7 @@
 {:else if books?.list.kind === "loaded" && section !== undefined}
   {@const tiles = tilesOf(books.list.items, books.list.isComplete)}
   {#if books.list.isComplete && tiles.length === 0 && (isSearching || shown !== "all")}
-    <NoShownBooks
-      platform={currentPlatform()}
-      {search}
-      {shown}
-      {onClearSearch}
-      {onShowAll}
-    />
+    <NoShownBooks {phone} {search} {shown} {onClearSearch} {onShowAll} />
   {/if}
   {#key section}
     <PickedCovers

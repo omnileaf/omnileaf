@@ -17,7 +17,7 @@
     SortDirection,
   } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
   import {
     type BooksControls,
@@ -125,11 +125,17 @@
       : OWN_CONTROLS,
   );
 
+  let wasHeadingShown: boolean | undefined;
+
   $effect(() => {
-    if (!hasHeading) {
-      closeFinding();
-      isSorting = false;
-    }
+    const isHeadingShown = hasHeading;
+    untrack(() => {
+      if (wasHeadingShown !== undefined && wasHeadingShown !== isHeadingShown) {
+        closeFinding();
+        isSorting = false;
+      }
+      wasHeadingShown = isHeadingShown;
+    });
   });
   const panel = $derived({
     section,
@@ -144,6 +150,7 @@
     onMark,
     onPickedCount,
     children: booksWithControls,
+    phone: phoneOf(screen.platform, screen.width),
     onClearSearch: () => {
       search = "";
     },
