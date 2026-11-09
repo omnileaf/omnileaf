@@ -342,17 +342,68 @@ test.describe(
       await expect(covers(page, "Volumes")).toHaveCount(2);
     });
 
-    test("puts the search and sort row above the tabs", async ({ page }) => {
+    test("heads the tabs with the chosen kind's count, Find a book and Sort and filter", async ({
+      page,
+    }) => {
       await openSeries(page);
 
-      const [tabs, search, sort] = await Promise.all([
+      const heading = page.getByRole("heading", {
+        level: 2,
+        name: "2 volumes",
+      });
+      const [tabs, title, find, sort] = await Promise.all([
         boxOf(kinds(page)),
-        boxOf(page.getByRole("searchbox", { name: "Find a book" })),
-        boxOf(page.getByRole("button", { name: /^Sort/ })),
+        boxOf(heading),
+        boxOf(page.getByRole("button", { name: "Find a book" })),
+        boxOf(page.getByRole("button", { name: "Sort and filter" })),
       ]);
 
-      expect(search.y + search.height).toBeLessThanOrEqual(tabs.y);
-      expect(sort.y + sort.height).toBeLessThanOrEqual(tabs.y);
+      expect(
+        [title, find, sort].every((part) => part.y + part.height <= tabs.y),
+      ).toBe(true);
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+    });
+
+    test("names the chosen kind in the heading", async ({ page }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Specials/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { level: 2, name: "1 special" }),
+      ).toBeVisible();
+    });
+
+    test("opens the search field under the tabs from Find a book", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      const find = page.getByRole("button", { name: "Find a book" });
+
+      await find.click();
+
+      const field = page.getByRole("searchbox", { name: "Find a book" });
+      await expect(field).toBeFocused();
+      await expect(find).toHaveAttribute("aria-expanded", "true");
+      const [tabs, search] = await Promise.all([
+        boxOf(kinds(page)),
+        boxOf(field),
+      ]);
+      expect(search.y).toBeGreaterThanOrEqual(tabs.y + tabs.height);
+    });
+
+    test("opens Sort and filter as a sheet", async ({ page }) => {
+      await openSeries(page);
+
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeVisible();
     });
 
     test("lists the chapters as rows once Chapters is chosen", async ({

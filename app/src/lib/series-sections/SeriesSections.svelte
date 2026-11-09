@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
+  import { type Snippet, tick, untrack } from "svelte";
 
   import {
     Tabs,
@@ -28,11 +28,14 @@
     sectionView,
     shownSection,
   } from "./section-listing";
-  import { tabWords } from "./section-names";
+  import BookSearchField from "./BookSearchField.svelte";
+  import { sectionCount, tabWords } from "./section-names";
+  import SectionHeading from "./SectionHeading.svelte";
   import type { ListedBooks } from "./listed-books";
   import SectionListingChoices from "./SectionListingChoices.svelte";
   import SectionPanel from "./SectionPanel.svelte";
   import { sectionTabsLook } from "./section-tabs-look";
+  import SeriesSortSheet from "./SeriesSortSheet.svelte";
 
   let {
     sections,
@@ -69,6 +72,10 @@
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
   let search = $state("");
+  let isFinding = $state(false);
+  let isSorting = $state(false);
+  let findField = $state<HTMLInputElement | null>(null);
+  const chosenTab = $derived(tabs.find((tab) => tab.section === section));
   let staleList = $state<ListState<SeriesBook>>();
   let readFor: string | undefined;
 
@@ -119,6 +126,16 @@
     children,
   });
 
+  async function toggleFinding(): Promise<void> {
+    isFinding = !isFinding;
+    if (!isFinding) {
+      search = "";
+      return;
+    }
+    await tick();
+    findField?.focus();
+  }
+
   function isTab(value: string): value is BookSection {
     return tabs.some((tab) => tab.section === value);
   }
@@ -141,7 +158,19 @@
     class="flex flex-col gap-lg"
   >
     <div class={tabsLook.row}>
-      {#if tabsLook.choicesFirst && view === "covers"}
+      {#if tabsLook.controls === "heading" && chosenTab !== undefined}
+        <SectionHeading
+          heading={sectionCount(chosenTab)}
+          {isFinding}
+          {isSorting}
+          onFind={() => {
+            void toggleFinding();
+          }}
+          onSortAndFilter={() => {
+            isSorting = true;
+          }}
+        />
+      {:else if tabsLook.controls === "choicesFirst" && view === "covers"}
         <SectionListingChoices {...choices} />
       {/if}
       <TabsList aria-label={m.series_sections()} class={tabsLook.list}>
@@ -156,14 +185,32 @@
           </TabsTrigger>
         {/each}
       </TabsList>
-      {#if !tabsLook.choicesFirst && view === "covers"}
+      {#if tabsLook.controls === "choicesAfter" && view === "covers"}
         <SectionListingChoices {...choices} />
+      {:else if tabsLook.controls === "heading" && isFinding}
+        <BookSearchField
+          bind:field={findField}
+          search={choices.search}
+          onSearch={choices.onSearch}
+        />
       {/if}
     </div>
     <TabsContent value={section} class="flex flex-col gap-lg">
       <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
+  {#if tabsLook.controls === "heading"}
+    <SeriesSortSheet
+      listing={{ shown: listing.shown, direction: listing.direction }}
+      isOpen={isSorting}
+      onChoose={({ shown, direction }: SeriesBookListing) => {
+        onListing({ shown, direction });
+      }}
+      onClose={() => {
+        isSorting = false;
+      }}
+    />
+  {/if}
 {:else}
   {#if view === "covers"}
     <SectionListingChoices {...choices} />

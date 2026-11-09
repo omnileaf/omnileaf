@@ -8,7 +8,7 @@ import type { WidthClass } from "#lib/page/breakpoints.ts";
 export type SectionView = "covers" | "books";
 
 export type ListingChange = Partial<
-  Pick<SeriesBookListing, "section" | "direction">
+  Pick<SeriesBookListing, "section" | "direction" | "shown">
 >;
 
 export interface SectionScreen {
