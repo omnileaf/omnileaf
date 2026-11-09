@@ -4,12 +4,14 @@
   import { m } from "#lib/paraglide/messages.js";
 
   let {
+    id,
     heading,
     isFinding,
     isSorting,
     onFind,
     onSortAndFilter,
   }: {
+    id: string;
     heading: string;
     isFinding: boolean;
     isSorting: boolean;
@@ -20,6 +22,8 @@
 
 <div class="flex items-center gap-sm">
   <h2
+    {id}
+    tabindex="-1"
     class="flex-1 text-native-books-heading/native-books-heading font-native-books-heading tracking-native-books-heading min-inline-none"
   >
     {heading}
@@ -39,7 +43,7 @@
     type="button"
     variant="plain"
     iconOnly
-    label={m.series_sort_and_filter()}
+    label={m.library_filter_and_sort()}
     aria-haspopup="dialog"
     aria-expanded={isSorting}
     class="shrink-0"

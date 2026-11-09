@@ -93,10 +93,18 @@ export function sectionListing(
   screen: SectionScreen,
 ): SeriesBookListing {
   const chosen = chosenSection(listing, sectionTabs(sections, screen));
-  const isShownChosenAbove =
-    sectionTabsLook(screen.platform, screen.width).controls === "heading";
   return sectionView(chosen, sections, screen) === "covers" &&
-    !isShownChosenAbove
+    !hasHeadingOverTabs(sections, screen)
     ? { ...chosen, shown: "all" }
     : chosen;
+}
+
+export function hasHeadingOverTabs<Tab>(
+  sections: readonly Tab[],
+  screen: SectionScreen,
+): boolean {
+  return (
+    sectionTabsLook(screen.platform, screen.width).controls === "heading" &&
+    sectionTabs(sections, screen).length > 0
+  );
 }

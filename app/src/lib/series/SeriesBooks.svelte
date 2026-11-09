@@ -184,6 +184,9 @@
   const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
   const notices = getNotices();
   const headingId = $props.id();
+  const showsOwnHeading = $derived(
+    controls.kind === "own" || selection.isSelecting,
+  );
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
@@ -232,13 +235,22 @@
 
   let endings = 0;
 
+  function focusAfterPicking(): HTMLElement | null {
+    if (isWide.current) {
+      return selectAllBox;
+    }
+    return controls.kind === "above"
+      ? document.getElementById(controls.headingId)
+      : heading;
+  }
+
   async function end(): Promise<void> {
     const isFocusToKeep = isFocusHereOrLost();
     endings += 1;
     selection.end();
     if (isFocusToKeep) {
       await tick();
-      (isWide.current ? selectAllBox : heading)?.focus();
+      focusAfterPicking()?.focus();
     }
   }
 
@@ -425,100 +437,103 @@
 <section
   bind:this={section}
   data-picking={selection.isSelecting || undefined}
-  aria-labelledby={headingId}
+  aria-labelledby={showsOwnHeading || controls.kind === "own"
+    ? headingId
+    : controls.headingId}
   class="flex flex-col gap-sm"
 >
-  <div
-    data-picking-bar={isPhonePicking || undefined}
-    class={[
-      "flex items-center gap-sm min-block-series-back",
-      selection.isSelecting &&
-        "sticky -inset-bs-page-top z-series-bar -mx-page-start px-page-start pbs-series-bar-top pbe-xs",
-      isPhonePicking
-        ? "flex-wrap bg-native-grouped-ground"
-        : selection.isSelecting && "bg-background",
-      controls.kind === "above" && !selection.isSelecting && "sr-only",
-    ]}
-  >
-    {#if isPhonePicking}
-      <BarControls
-        controls={phone?.leading ?? []}
-        {isPickingAll}
-        {isAllPicked}
-        onEnd={endPicking}
-        onPickAll={pickAllShown}
-        onPickNone={pickNone}
-      />
-    {:else if selection.isSelecting}
-      <Tooltip
-        label={m.series_clear_selection()}
-        type="button"
-        aria-label={m.series_clear_selection()}
-        onclick={() => {
-          void end();
-        }}
-      >
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            look="icon"
-            class="shrink-0 border border-border bg-card block-series-back inline-series-back"
-          >
-            <X size={ICON_SIZE} aria-hidden="true" />
-          </Button>
-        {/snippet}
-      </Tooltip>
-    {/if}
-    <h2
-      bind:this={heading}
-      id={headingId}
-      tabindex="-1"
-      aria-live={isPhonePicking ? "polite" : undefined}
+  {#if showsOwnHeading}
+    <div
+      data-picking-bar={isPhonePicking || undefined}
       class={[
-        "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
-        selection.isSelecting && "flex-1",
-        isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
-        isWide.current && "sr-only",
+        "flex items-center gap-sm min-block-series-back",
+        selection.isSelecting &&
+          "sticky -inset-bs-page-top z-series-bar -mx-page-start px-page-start pbs-series-bar-top pbe-xs",
+        isPhonePicking
+          ? "flex-wrap bg-native-grouped-ground"
+          : selection.isSelecting && "bg-background",
       ]}
     >
-      {selection.isSelecting
-        ? m.series_selected_count({ count: selection.count })
-        : m.series_books_heading({ count: bookCount })}
-    </h2>
-    {#if isPhonePicking}
-      <BarControls
-        controls={phone?.trailing ?? []}
-        {isPickingAll}
-        {isAllPicked}
-        onEnd={endPicking}
-        onPickAll={pickAllShown}
-        onPickNone={pickNone}
-      />
-    {:else if !selection.isSelecting && !isWide.current}
-      <p
-        class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
+      {#if isPhonePicking}
+        <BarControls
+          controls={phone?.leading ?? []}
+          {isPickingAll}
+          {isAllPicked}
+          onEnd={endPicking}
+          onPickAll={pickAllShown}
+          onPickNone={pickNone}
+        />
+      {:else if selection.isSelecting}
+        <Tooltip
+          label={m.series_clear_selection()}
+          type="button"
+          aria-label={m.series_clear_selection()}
+          onclick={() => {
+            void end();
+          }}
+        >
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              look="icon"
+              class="shrink-0 border border-border bg-card block-series-back inline-series-back"
+            >
+              <X size={ICON_SIZE} aria-hidden="true" />
+            </Button>
+          {/snippet}
+        </Tooltip>
+      {/if}
+      <h2
+        bind:this={heading}
+        id={headingId}
+        tabindex="-1"
+        aria-live={isPhonePicking ? "polite" : undefined}
+        class={[
+          "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
+          selection.isSelecting && "flex-1",
+          isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
+          isWide.current && "sr-only",
+        ]}
       >
-        {bookmarkCount > 0
-          ? m.series_read_and_bookmarked({
-              read: readCount,
-              bookmarked: bookmarkCount,
-            })
-          : m.series_read_only({ read: readCount })}
-      </p>
-    {:else if selection.isSelecting}
-      <Button
-        type="button"
-        look="outline"
-        aria-busy={isPickingAll}
-        class="rounded-full px-md py-2xs text-detail min-block-series-back"
-        onclick={() => {
-          void pickAll();
-        }}
-      >
-        {m.series_select_all()}
-      </Button>
-    {/if}
-  </div>
+        {selection.isSelecting
+          ? m.series_selected_count({ count: selection.count })
+          : m.series_books_heading({ count: bookCount })}
+      </h2>
+      {#if isPhonePicking}
+        <BarControls
+          controls={phone?.trailing ?? []}
+          {isPickingAll}
+          {isAllPicked}
+          onEnd={endPicking}
+          onPickAll={pickAllShown}
+          onPickNone={pickNone}
+        />
+      {:else if !selection.isSelecting && !isWide.current}
+        <p
+          class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
+        >
+          {bookmarkCount > 0
+            ? m.series_read_and_bookmarked({
+                read: readCount,
+                bookmarked: bookmarkCount,
+              })
+            : m.series_read_only({ read: readCount })}
+        </p>
+      {:else if selection.isSelecting}
+        <Button
+          type="button"
+          look="outline"
+          aria-busy={isPickingAll}
+          class="rounded-full px-md py-2xs text-detail min-block-series-back"
+          onclick={() => {
+            void pickAll();
+          }}
+        >
+          {m.series_select_all()}
+        </Button>
+      {/if}
+    </div>
+  {/if}
   {#if platform === "windows" && selection.count > 0}
     <WindowsSelectionBar
       bind:element={toolbar}

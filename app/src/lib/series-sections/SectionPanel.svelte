@@ -1,5 +1,9 @@
 <script lang="ts">
+  import { List } from "@lucide/svelte";
   import type { Snippet } from "svelte";
+
+  import { Button } from "#lib/components/ui/button/index.ts";
+  import { Card } from "#lib/components/ui/card/index.ts";
 
   import type {
     BookSection,
@@ -11,7 +15,6 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
-  import type { BooksControls } from "#lib/series/books-controls.ts";
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
   import { bookWords } from "./book-number-words";
@@ -22,6 +25,8 @@
   import type { NotedSeries } from "./section-note";
   import SectionNote from "./SectionNote.svelte";
   import { booksOnly, withGaps } from "./section-tiles";
+
+  const ICON_SIZE = 18;
 
   let {
     section,
@@ -36,7 +41,7 @@
     onMark,
     onPickedCount,
     children,
-    controls,
+    onShowAll,
   }: {
     section: BookSection | undefined;
     noted: BookSection | undefined;
@@ -49,8 +54,8 @@
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
-    children: Snippet<[BooksControls]>;
-    controls: BooksControls;
+    children: Snippet;
+    onShowAll: () => void;
   } = $props();
 
   const isSearching = $derived(search.trim() !== "");
@@ -80,7 +85,7 @@
 {/if}
 {#if view === "books"}
   {#if books !== undefined}
-    {@render children(controls)}
+    {@render children()}
   {/if}
 {:else if books?.list.kind === "failed"}
   <p class="text-body text-muted">{m.series_books_failed()}</p>
@@ -88,6 +93,18 @@
   {@const tiles = tilesOf(books.list.items, books.list.isComplete)}
   {#if isSearching && books.list.isComplete && tiles.length === 0}
     <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
+  {:else if shown !== "all" && books.list.isComplete && tiles.length === 0}
+    <Card class="flex flex-col items-center gap-md px-lg py-xl text-center">
+      <p class="text-body">
+        {shown === "bookmarked"
+          ? m.series_no_bookmarked()
+          : m.series_no_unread()}
+      </p>
+      <Button type="button" variant="secondary" onclick={onShowAll}>
+        <List size={ICON_SIZE} aria-hidden="true" />
+        {m.series_show_all_books()}
+      </Button>
+    </Card>
   {/if}
   {#key section}
     <PickedCovers

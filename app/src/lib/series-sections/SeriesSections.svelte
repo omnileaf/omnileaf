@@ -26,6 +26,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import {
+    hasHeadingOverTabs,
     type ListingChange,
     type SectionView,
     sectionTabs,
@@ -71,7 +72,9 @@
     platform: currentPlatform(),
     width: width.current,
   });
-  const tabsLook = $derived(sectionTabsLook(screen.platform, width.current));
+  const tabsLook = $derived(sectionTabsLook(screen.platform, screen.width));
+  const hasHeading = $derived(hasHeadingOverTabs(sections, screen));
+  const headingId = $props.id();
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
@@ -117,10 +120,19 @@
     },
   });
   const booksControls = $derived<BooksControls>(
-    tabsLook.controls === "heading" && tabs.length > 0
-      ? { kind: "above", search, onSearch: choices.onSearch }
+    hasHeading
+      ? { kind: "above", headingId, search, onSearch: choices.onSearch }
       : OWN_CONTROLS,
   );
+
+  $effect(() => {
+    if (!hasHeading) {
+      untrack(() => {
+        isFinding = false;
+        isSorting = false;
+      });
+    }
+  });
   const panel = $derived({
     section,
     noted: tabs.length > 0 || view === "covers" ? section : undefined,
@@ -133,8 +145,10 @@
     usesStandIns,
     onMark,
     onPickedCount,
-    children,
-    controls: booksControls,
+    children: booksWithControls,
+    onShowAll: () => {
+      onListing({ shown: "all" });
+    },
   });
 
   async function toggleFinding(): Promise<void> {
@@ -151,6 +165,10 @@
     return tabs.some((tab) => tab.section === value);
   }
 </script>
+
+{#snippet booksWithControls()}
+  {@render children(booksControls)}
+{/snippet}
 
 {#if tabs.length > 0 && section !== undefined}
   <Tabs
@@ -169,8 +187,9 @@
     class="flex flex-col gap-lg"
   >
     <div class={tabsLook.row}>
-      {#if tabsLook.controls === "heading" && chosenTab !== undefined}
+      {#if hasHeading && chosenTab !== undefined}
         <SectionHeading
+          id={headingId}
           heading={sectionCount(chosenTab)}
           {isFinding}
           {isSorting}
@@ -198,7 +217,7 @@
       </TabsList>
       {#if tabsLook.controls === "choicesAfter" && view === "covers"}
         <SectionListingChoices {...choices} />
-      {:else if tabsLook.controls === "heading" && isFinding}
+      {:else if hasHeading && isFinding}
         <BookSearchField
           bind:field={findField}
           search={choices.search}
@@ -210,13 +229,11 @@
       <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
-  {#if tabsLook.controls === "heading"}
+  {#if hasHeading}
     <SeriesSortSheet
-      listing={{ shown: listing.shown, direction: listing.direction }}
+      {listing}
       isOpen={isSorting}
-      onChoose={({ shown, direction }: SeriesBookListing) => {
-        onListing({ shown, direction });
-      }}
+      onChoose={onListing}
       onClose={() => {
         isSorting = false;
       }}
