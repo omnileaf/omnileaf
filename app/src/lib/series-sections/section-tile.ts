@@ -1,4 +1,6 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { isPhone } from "#lib/page/platform.ts";
 
 export interface SectionTileLook {
   readonly link: string;
@@ -30,4 +32,14 @@ const SECTION_TILE_LOOKS = {
 
 export function sectionTileLook(platform: Platform): SectionTileLook {
   return SECTION_TILE_LOOKS[platform];
+}
+
+const COVERS_FILL_THE_ROW =
+  "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))";
+const THREE_COVERS_A_ROW = "grid-template-columns: repeat(3, minmax(0, 1fr))";
+
+export function coversTrack(platform: Platform, width: WidthClass): string {
+  return platform === "android" && isPhone(platform, width)
+    ? THREE_COVERS_A_ROW
+    : COVERS_FILL_THE_ROW;
 }

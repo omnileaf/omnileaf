@@ -1,17 +1,15 @@
 <script lang="ts">
   import type { SeriesBook } from "#lib/ipc/bindings.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import type { Selection } from "#lib/page/selection.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import SectionCover from "./SectionCover.svelte";
   import SectionGap from "./SectionGap.svelte";
-  import { sectionTileLook } from "./section-tile";
+  import { coversTrack, sectionTileLook } from "./section-tile";
   import { bookIdsOf, type SectionTile, tileKey } from "./section-tiles";
-
-  const BOOK_COVERS_TRACK =
-    "grid-template-columns: repeat(auto-fill, minmax(calc(var(--spacing-book-cover-min) * var(--text-scale)), 1fr))";
 
   let {
     tiles,
@@ -29,7 +27,9 @@
     selection: Selection<SeriesBook["id"]> | undefined;
   } = $props();
 
-  const look = sectionTileLook(currentPlatform());
+  const platform = currentPlatform();
+  const look = sectionTileLook(platform);
+  const width = new WindowWidth();
   const bookOrder = () => bookIdsOf(tiles);
 
   function shownCover(book: SeriesBook): ShownCover {
@@ -63,7 +63,7 @@
   {isComplete}
   {onNearEnd}
   {cell}
-  style={BOOK_COVERS_TRACK}
+  style={coversTrack(platform, width.current)}
   class="gap-x-lg gap-y-cover-row"
   itemClass="min-inline-none"
 />
