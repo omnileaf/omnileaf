@@ -99,8 +99,8 @@ export function sectionListing(
     : chosen;
 }
 
-export function hasHeadingOverTabs<Tab>(
-  sections: readonly Tab[],
+export function hasHeadingOverTabs(
+  sections: readonly unknown[],
   screen: SectionScreen,
 ): boolean {
   return (
