@@ -43,15 +43,29 @@ function fileName(book: ShelvedBook): string {
   return book.title ?? `${SERIES_TITLE} ${book.kind} ${first}.cbz`;
 }
 
-function isUnnumberedChapter(book: WireBook): boolean {
-  return book.section === "chapters" && book.numbers === null;
+const SPECIALS_FIRST = 0;
+const NUMBERED_CHAPTERS_NEXT = 1;
+const UNNUMBERED_CHAPTERS_AFTER = 2;
+const VOLUMES_LAST = 3;
+
+function lastFirstPass(book: WireBook): number {
+  switch (book.section) {
+    case "volumes":
+      return VOLUMES_LAST;
+    case "chapters":
+      return book.numbers === null
+        ? UNNUMBERED_CHAPTERS_AFTER
+        : NUMBERED_CHAPTERS_NEXT;
+    case "specials":
+    case null:
+      return SPECIALS_FIRST;
+  }
 }
 
 function newestFirst(books: readonly WireBook[]): WireBook[] {
-  return [
-    ...books.filter((book) => !isUnnumberedChapter(book)).toReversed(),
-    ...books.filter(isUnnumberedChapter).toReversed(),
-  ];
+  return books
+    .toReversed()
+    .toSorted((one, other) => lastFirstPass(one) - lastFirstPass(other));
 }
 
 export function volumes(...numbers: readonly number[]): ShelvedBook[] {
