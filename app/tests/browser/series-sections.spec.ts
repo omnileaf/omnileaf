@@ -592,6 +592,9 @@ test.describe(
       await kinds(page)
         .getByRole("tab", { name: /Chapters/ })
         .click();
+      await expect(
+        page.getByRole("region", { name: "2 chapters" }),
+      ).toBeVisible();
       await page
         .getByRole("button", { name: /^More for .*chapter 13/ })
         .click();
@@ -610,6 +613,40 @@ test.describe(
       ).toBeFocused();
       await expect(
         page.getByRole("heading", { level: 2, name: /books$/ }),
+      ).toHaveCount(0);
+    });
+
+    test("closes Find a book and lists every cover again after a turn to landscape and back", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await page.setViewportSize({ width: 700, height: 360 });
+      await page.setViewportSize({ width: 360, height: 800 });
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("keeps Sort and filter closed after a turn to landscape and back", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeVisible();
+
+      await page.setViewportSize({ width: 700, height: 360 });
+      await page.setViewportSize({ width: 360, height: 800 });
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
       ).toHaveCount(0);
     });
 
