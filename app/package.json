@@ -10,7 +10,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy custom-chosen preferredLanguage baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --output-structure locale-modules --strategy custom-chosen preferredLanguage baseLocale && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "lint": "eslint . && prettier --check . && node scripts/check-starting-style.ts",
     "format": "prettier --write .",
     "test": "vitest run --project components --project harness",
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
-    "@inlang/paraglide-js": "2.29.3",
+    "@inlang/paraglide-js": "3.2.0",
     "@inlang/plugin-message-format": "4.6.0",
     "@omnileaf/branding": "workspace:*",
     "@playwright/test": "1.64.1",
