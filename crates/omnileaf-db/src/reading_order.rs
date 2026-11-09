@@ -494,6 +494,43 @@ mod tests {
         }
 
         #[test]
+        fn keys_a_book_among_the_unnumbered_chapters_only_when_it_is_a_chapter_with_no_number_or_volume(
+            numbering in proptest::option::of(numbering()),
+            title in TITLE,
+        ) {
+            let key = reading_order_key(numbering.as_ref(), &title);
+            let is_unnumbered_chapter = matches!(
+                numbering,
+                Some(Numbering::Chapter {
+                    number: None,
+                    volume: None,
+                })
+            );
+
+            prop_assert_eq!(
+                unnumbered_chapter_keys().contains(&key),
+                is_unnumbered_chapter,
+                "{:?}",
+                numbering
+            );
+        }
+
+        #[test]
+        fn keys_every_book_within_exactly_one_of_the_last_first_ranges(
+            numbering in proptest::option::of(numbering()),
+            title in TITLE,
+        ) {
+            let key = reading_order_key(numbering.as_ref(), &title);
+
+            let holding = last_first_keys()
+                .iter()
+                .filter(|keys| keys.contains(&key))
+                .count();
+
+            prop_assert_eq!(holding, 1, "{:?}", numbering);
+        }
+
+        #[test]
         fn keys_a_book_not_placed_yet_by_its_title_alone(title in TITLE) {
             let key = reading_order_key(None, &title);
 
