@@ -9,6 +9,8 @@
   import KeepScreenOnSwitch from "./KeepScreenOnSwitch.svelte";
   import LightSliders from "./LightSliders.svelte";
   import type { SeriesReadingDirection } from "./reading-direction.svelte.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { readingSettingsContentLook } from "./reading-settings-content-look.ts";
   import ReadingModeSelect from "./ReadingModeSelect.svelte";
   import type {
     PageFit,
@@ -48,22 +50,28 @@
   const features = getSmartFeatures();
   const id = $props.id();
   const look = $derived(settings.look);
+  const chrome = getReaderChrome();
+  const content = $derived(
+    readingSettingsContentLook(chrome.platform, chrome.width),
+  );
+  const control = $derived(content.control);
 </script>
 
 {#if isStrip}
-  <div class="flex flex-col divide-y divide-border">
+  <div class={content.group}>
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-reading"
-      class="flex flex-col border-be-0"
+      class={content.firstSection}
     >
-      <h3 id="{id}-reading" class="text-small font-semibold">
+      <h3 id="{id}-reading" class={content.heading}>
         {m.reader_reading_title()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
-        <ApplyToChoice {settings} {seriesTitle} />
+      <div class={content.group}>
+        <ApplyToChoice {settings} {seriesTitle} {control} />
         <ReadingModeSelect {reading} />
         <SettingChoice
+          {control}
           isInline
           label={m.reader_tap_to_scroll()}
           choices={[
@@ -84,12 +92,12 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-strip-screen"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-strip-screen" class="text-small font-semibold">
+      <h3 id="{id}-strip-screen" class={content.heading}>
         {m.reader_screen_title()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
+      <div class={content.group}>
         <CropBordersSwitch {settings} />
         <KeepScreenOnSwitch {settings} />
         <LightSliders
@@ -105,13 +113,14 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-auto"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-auto" class="text-small font-semibold">
+      <h3 id="{id}-auto" class={content.heading}>
         {m.reader_auto_scroll()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
+      <div class={content.group}>
         <SettingChoice
+          {control}
           isInline
           label={m.reader_auto_scroll_speed()}
           choices={[
@@ -172,12 +181,12 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-strip-end"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-strip-end" class="text-small font-semibold">
+      <h3 id="{id}-strip-end" class={content.heading}>
         {m.reader_end_of_book()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
+      <div class={content.group}>
         <Switch
           bind:checked={
             () => features.showsBookSummary,
@@ -203,10 +212,11 @@
     </section>
   </div>
 {:else}
-  <div class="flex flex-col divide-y divide-border">
-    <ApplyToChoice {settings} {seriesTitle} />
+  <div class={content.group}>
+    <ApplyToChoice {settings} {seriesTitle} {control} />
     <ReadingModeSelect {reading} />
     <SettingChoice
+      {control}
       label={m.reader_layout()}
       choices={[
         { value: "automatic", label: m.reader_layout_automatic() },
@@ -227,6 +237,7 @@
       }}
     />
     <SettingChoice
+      {control}
       label={m.reader_fit()}
       choices={[
         { value: "screen", label: m.reader_fit_screen() },
@@ -243,6 +254,7 @@
       </p>
     </SettingChoice>
     <SettingChoice
+      {control}
       label={m.reader_background()}
       choices={[
         { value: "black", label: m.reader_background_black() },
@@ -255,6 +267,7 @@
       }}
     />
     <SettingChoice
+      {control}
       label={m.reader_controls()}
       choices={[
         { value: "dark", label: m.reader_controls_dark() },
@@ -268,13 +281,14 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-pages"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-pages" class="text-small font-semibold">
+      <h3 id="{id}-pages" class={content.heading}>
         {m.reader_pages_title()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
+      <div class={content.group}>
         <SettingChoice
+          {control}
           isInline
           label={m.reader_tap_zones()}
           choices={[
@@ -288,6 +302,7 @@
           }}
         />
         <SettingChoice
+          {control}
           isInline
           label={m.reader_page_turn()}
           choices={[
@@ -305,9 +320,9 @@
         </SettingChoice>
       </div>
     </section>
-    <fieldset data-slot="setting-row" class="flex flex-col border-be-0 pbs-xl">
+    <fieldset data-slot="setting-row" class={content.section}>
       <legend class="contents">
-        <span class="text-small font-semibold">{m.reader_light_title()}</span>
+        <span class={content.heading}>{m.reader_light_title()}</span>
       </legend>
       <LightSliders
         isInRows
@@ -320,12 +335,12 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-screen"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-screen" class="text-small font-semibold">
+      <h3 id="{id}-screen" class={content.heading}>
         {m.reader_screen_title()}
       </h3>
-      <div class="flex flex-col divide-y divide-border">
+      <div class={content.group}>
         <KeepScreenOnSwitch {settings} />
         <CropBordersSwitch {settings} />
         <VolumeKeysSwitch {settings} />
@@ -334,13 +349,17 @@
     <section
       data-slot="setting-row"
       aria-labelledby="{id}-end"
-      class="flex flex-col border-be-0 pbs-xl"
+      class={content.section}
     >
-      <h3 id="{id}-end" class="text-small font-semibold">
+      <h3 id="{id}-end" class={content.heading}>
         {m.reader_end_of_book()}
       </h3>
       <SkipUpNextSwitch />
     </section>
-    <SmartFeaturesSection heading="h3" class="pbs-xl" />
+    <SmartFeaturesSection
+      heading="h3"
+      size={content.smartFeaturesSize}
+      class={content.smartFeatures}
+    />
   </div>
 {/if}
