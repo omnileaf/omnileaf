@@ -11,6 +11,8 @@ import { type ActionGroupLook, actionGroupLook } from "./action-group.ts";
 import type { WidthClass } from "./breakpoints.ts";
 import { phoneOf } from "./platform.ts";
 
+export const KIT_BUTTON_ICON_SIZE = 18;
+
 export interface ProblemButton {
   readonly look?: ButtonLook;
   readonly variant?: ButtonVariant;
@@ -34,6 +36,7 @@ export interface ProblemLook {
 export interface BookProblemLook extends ProblemLook {
   readonly chip: string;
   readonly noticeTone: AlertTone;
+  readonly hasKitIcons: boolean;
 }
 
 const TODAYS_LOOK: ProblemLook = {
@@ -65,6 +68,7 @@ const ANDROID_PHONE_LOOK: BookProblemLook = {
     "text-native-page-title/native-page-title font-native-page-title tracking-native-page-title",
   chip: "inline-flex items-center rounded-native-segment border border-native-button-outline-edge bg-transparent px-md text-native-button/native-button font-native-button tracking-native-button text-foreground min-block-native-button-small",
   noticeTone: "warning",
+  hasKitIcons: true,
 };
 
 const WINDOWS_LOOK: ProblemLook = {
@@ -100,7 +104,12 @@ export function bookProblemLook(
 ): BookProblemLook {
   return phoneOf(platform, width) === "android"
     ? ANDROID_PHONE_LOOK
-    : { ...problemLook(platform), chip: "", noticeTone: "plain" };
+    : {
+        ...problemLook(platform),
+        chip: "",
+        noticeTone: "plain",
+        hasKitIcons: false,
+      };
 }
 
 const WINDOWS_ACTION_GROUP: ActionGroupLook = {

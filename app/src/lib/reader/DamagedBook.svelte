@@ -16,6 +16,7 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import {
     bookProblemLook,
+    KIT_BUTTON_ICON_SIZE,
     problemActionGroup,
   } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
@@ -23,6 +24,7 @@
 
   import BookBackNav from "./BookBackNav.svelte";
   import { librarySeriesKey } from "./opened-book.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
   import ProblemHeading from "./ProblemHeading.svelte";
   import { PROBLEM_TEXT, problemLayout } from "./problem-heading.ts";
   import { TODAYS_PROBLEM_ACTIONS } from "./problem-actions.ts";
@@ -103,12 +105,24 @@
       </Alert>
       <div class={actions.group}>
         <button type="button" class={actions.main} onclick={onRead}>
-          <BookOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+          <ReaderIcon
+            name="book-open"
+            fallback={BookOpen}
+            isKit={look.hasKitIcons}
+            size={BUTTON_ICON_SIZE}
+            kitSize={KIT_BUTTON_ICON_SIZE}
+          />
           {m.reader_read_pages_that_work({ count: readable })}
         </button>
         {#if onShowFile !== undefined}
           <button type="button" class={actions.other} onclick={onShowFile}>
-            <FolderOpen size={BUTTON_ICON_SIZE} aria-hidden="true" />
+            <ReaderIcon
+              name="folder-open"
+              fallback={FolderOpen}
+              isKit={look.hasKitIcons}
+              size={BUTTON_ICON_SIZE}
+              kitSize={KIT_BUTTON_ICON_SIZE}
+            />
             {showFile}
           </button>
         {/if}

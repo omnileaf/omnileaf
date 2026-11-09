@@ -54,6 +54,8 @@
     row: "reader-sheet-action",
     title: "font-medium",
     rule: "my-xs border-border",
+    shape: "",
+    wayBack: "",
   } as const;
   const PHONE_SHEET = {
     heading:
@@ -62,6 +64,8 @@
     row: "row",
     title: "",
     rule: "mx-lg my-sm border-native-menu-rule",
+    shape: "rounded-native-menu-item",
+    wayBack: "bg-native-row-pressed",
   } as const;
 
   let {
@@ -266,7 +270,7 @@
       </div>
       <div class={sheet.list}>
         {#each moreActions as action (action.icon)}
-          <Item look={sheet.row}>
+          <Item look={sheet.row} class={sheet.shape}>
             {#snippet child({ props })}
               <Button
                 {...props}
@@ -289,7 +293,7 @@
           </Item>
         {/each}
         <hr class={sheet.rule} />
-        <Item look={sheet.row}>
+        <Item look={sheet.row} class={[sheet.shape, sheet.wayBack]}>
           {#snippet child({ props })}
             <a {...props} href={resolve("/(app)")}>
               <ReaderIcon
