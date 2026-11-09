@@ -117,7 +117,15 @@ export interface StartLook {
   readonly filterSection: string;
   readonly example: string;
   readonly filters: string;
+  readonly word: string;
+  readonly soonWord: string | undefined;
 }
+
+const TODAYS_WORD_BOX =
+  "rounded-badge bg-chip px-sm py-2xs font-mono text-detail";
+const TODAYS_WORD = `${TODAYS_WORD_BOX} text-foreground`;
+const NATIVE_WORD =
+  "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
 const TODAYS_ROW = "flex items-center gap-md py-md";
 
@@ -136,6 +144,8 @@ export const TODAYS_START_LOOK: StartLook = {
   filterSection: "flex flex-col gap-sm",
   example: "text-detail text-muted",
   filters: "flex flex-wrap gap-sm",
+  word: TODAYS_WORD,
+  soonWord: undefined,
 };
 
 export const NATIVE_START_LOOK: StartLook = {
@@ -153,6 +163,8 @@ export const NATIVE_START_LOOK: StartLook = {
   filterSection: "flex flex-col",
   example: `px-lg mbe-sm ${GROUPED_FOOTNOTE_TYPE}`,
   filters: "flex flex-wrap gap-sm px-lg",
+  word: NATIVE_WORD,
+  soonWord: undefined,
 };
 
 export const ANDROID_START_LOOK: StartLook = {
@@ -170,6 +182,8 @@ export const ANDROID_START_LOOK: StartLook = {
   filterSection: "flex flex-col",
   example: `${ROW_SUBTITLE_TYPE} pbe-sm text-muted`,
   filters: "flex flex-wrap gap-sm pbe-sm",
+  word: TODAYS_WORD,
+  soonWord: `${TODAYS_WORD_BOX} text-muted`,
 };
 
 export function startLook(isNative: boolean, isMaterial = false): StartLook {
