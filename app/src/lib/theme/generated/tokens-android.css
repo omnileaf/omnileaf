@@ -595,6 +595,7 @@
   --native-color-jump-current-progress-rest: #f7faf5;
   --native-color-on-tab: #58615a;
   --native-color-on-tab-current: #326a4d;
+  --native-color-on-tab-bar-current: #4e6456;
   --native-color-on-tab-pill: #415749;
   --native-color-cover-badge: #d0e8d7;
   --native-color-on-cover-badge: #415749;
@@ -683,6 +684,7 @@
   --native-color-jump-current-progress-rest: #0b0f0c;
   --native-color-on-tab: #a4aea5;
   --native-color-on-tab-current: #78d99f;
+  --native-color-on-tab-bar-current: #b4ccbb;
   --native-color-on-tab-pill: #adc5b4;
   --native-color-cover-badge: #304b3b;
   --native-color-on-cover-badge: #adc5b4;
@@ -749,6 +751,7 @@
   --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #3c453e;
   --native-color-on-tab-current: #114c32;
+  --native-color-on-tab-bar-current: #33473b;
   --native-color-on-tab-pill: #ffffff;
   --native-color-cover-badge: #647a6b;
   --native-color-on-cover-badge: #ffffff;
@@ -803,6 +806,7 @@
   --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #b1bbb3;
   --native-color-on-tab-current: #a4d1b4;
+  --native-color-on-tab-bar-current: #b4ccbb;
   --native-color-on-tab-pill: #ffffff;
   --native-color-cover-badge: #647a6b;
   --native-color-on-cover-badge: #ffffff;
@@ -857,6 +861,7 @@
   --native-color-on-jump-current: #ffffff;
   --native-color-on-tab: #1d2620;
   --native-color-on-tab-current: #002a18;
+  --native-color-on-tab-bar-current: #14281d;
   --native-color-on-tab-pill: #ffffff;
   --native-color-cover-badge: #42574a;
   --native-color-on-cover-badge: #ffffff;
@@ -911,6 +916,7 @@
   --native-color-on-jump-current: #000000;
   --native-color-on-tab: #dee8df;
   --native-color-on-tab-current: #c2f0d2;
+  --native-color-on-tab-bar-current: #d3ebda;
   --native-color-on-tab-pill: #000000;
   --native-color-cover-badge: #92a999;
   --native-color-on-cover-badge: #000000;
@@ -969,6 +975,7 @@
   --native-color-jump-current-progress-rest: var(--android-wallpaper-light-surface);
   --native-color-on-tab: var(--android-wallpaper-light-on-surface-variant);
   --native-color-on-tab-current: var(--android-wallpaper-light-primary);
+  --native-color-on-tab-bar-current: var(--android-wallpaper-light-on-secondary-container);
   --native-color-on-tab-pill: var(--android-wallpaper-light-on-secondary-container);
   --native-color-cover-badge: var(--android-wallpaper-light-secondary-container);
   --native-color-on-cover-badge: var(--android-wallpaper-light-on-secondary-container);
@@ -1031,6 +1038,7 @@
   --native-color-jump-current-progress-rest: var(--android-wallpaper-dark-surface);
   --native-color-on-tab: var(--android-wallpaper-dark-on-surface-variant);
   --native-color-on-tab-current: var(--android-wallpaper-dark-primary);
+  --native-color-on-tab-bar-current: var(--android-wallpaper-dark-on-secondary-container);
   --native-color-on-tab-pill: var(--android-wallpaper-dark-on-secondary-container);
   --native-color-cover-badge: var(--android-wallpaper-dark-secondary-container);
   --native-color-on-cover-badge: var(--android-wallpaper-dark-on-secondary-container);

@@ -16,7 +16,10 @@
 </script>
 
 <SectionHeading title={m.appearance_title()} />
-<ThemeChoice title={m.appearance_light_or_dark()} class="mbs-pane-gap">
+<ThemeChoice
+  title={m.appearance_light_or_dark()}
+  class="mbs-pane-gap android:max-medium:mbs-none"
+>
   {#snippet hint()}
     {onPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
   {/snippet}
@@ -25,5 +28,5 @@
   <WindowsAccentChoice class="mbs-pane-gap" />
 {/if}
 {#if data.appInfo.platform === "android"}
-  <AndroidColoursChoice class="mbs-pane-gap" />
+  <AndroidColoursChoice class="mbs-pane-gap android:max-medium:mbs-none" />
 {/if}

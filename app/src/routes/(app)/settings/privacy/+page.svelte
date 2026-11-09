@@ -83,7 +83,7 @@
 {/snippet}
 
 <SectionHeading title={m.privacy_title()} />
-<div class="mbs-pane-gap flex flex-col gap-lg">
+<div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
   <SettingsEntries
     entries={[
       {

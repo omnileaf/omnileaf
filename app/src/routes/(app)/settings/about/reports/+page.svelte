@@ -71,7 +71,7 @@
   title={m.your_reports_title()}
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
+<div class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none">
   <p class="text-detail text-muted">{intro}</p>
   {#if yourReports.reports.length === 0}
     <p class="text-detail">{m.your_reports_none()}</p>
