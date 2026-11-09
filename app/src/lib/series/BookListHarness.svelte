@@ -23,6 +23,7 @@
   <BookList
     {phone}
     {books}
+    hasChapterRuns={false}
     seriesTitle="Sample Series 04"
     hasTwoLineTitles={false}
     isComplete

@@ -1,4 +1,4 @@
-import type { SeriesBook } from "#lib/ipc/bindings.ts";
+import type { NumberRange, SeriesBook } from "#lib/ipc/bindings.ts";
 
 export function book(
   position: number,
@@ -20,4 +20,11 @@ export function book(
     volume: null,
     section: "volumes",
   };
+}
+
+export function chapter(
+  position: number,
+  numbers: NumberRange | null = { first: position, last: position },
+): SeriesBook {
+  return { ...book(position), kind: "chapter", numbers, section: "chapters" };
 }
