@@ -230,6 +230,7 @@
   --native-weight-search-field: 400;
   --native-tracking-search-field: -0.43px;
   --native-radius-cover: 6px;
+  --native-radius-picked-cover: 6px;
   --native-spacing-read-mark: 1.375rem;
   --native-radius-cover-badge: 6px;
   --native-spacing-cover-badge: 20px;
@@ -239,6 +240,7 @@
   --native-radius-select: 999px;
   --native-spacing-select: 22px;
   --native-spacing-select-edge: 1.5px;
+  --native-spacing-select-inset: var(--spacing-xs);
   --native-shadow-select-ring-lift: 0 1px 3px rgba(0, 0, 0, 0.3);
   --native-color-dialog-layer: transparent;
   --native-color-dialog-edge: var(--dialog-edge);

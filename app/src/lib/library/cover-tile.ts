@@ -29,6 +29,7 @@ export interface CoverTileLook {
   readonly menuTargetRing: string;
   readonly pickedTitle: string;
   readonly title: string;
+  readonly compactTitle: string;
   readonly meta: string;
   readonly grid: string;
   readonly stack: CoverStackLook | null;
@@ -59,6 +60,9 @@ const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inli
 
 const ANDROID_TILE_TITLE =
   "max-medium:text-native-tile-title/native-tile-title! max-medium:font-native-tile-title! max-medium:tracking-native-tile-title!";
+
+const ANDROID_COMPACT_TITLE =
+  "max-medium:text-native-tab/native-tab max-medium:font-native-tab max-medium:tracking-native-tab";
 
 const ANDROID_GRID = "max-medium:covers-gap-sm! max-medium:covers-row-gap-lg!";
 
@@ -99,6 +103,7 @@ const TODAYS_LOOK: CoverTileLook = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  compactTitle: "",
   meta: "",
   grid: "",
   stack: null,
@@ -135,6 +140,7 @@ const NATIVE_TILE = {
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
   title: "",
+  compactTitle: "",
   meta: "",
   grid: "",
   stack: null,
@@ -147,6 +153,15 @@ const NATIVE_TILE = {
     "max-medium:border-native-select-ring max-medium:bg-transparent max-medium:shadow-native-select-ring-lift",
   notConnected: undefined,
 };
+
+const ANDROID_COVER = `${NATIVE_TILE.cover} max-medium:border-0`;
+
+const ANDROID_PICKED_COVER = `${NO_PICKED_RING_ON_PHONES} max-medium:scale-88 max-medium:rounded-native-picked-cover!`;
+
+const ANDROID_PICKED_TILE =
+  "max-medium:relative max-medium:isolate max-medium:aria-checked:before:absolute max-medium:aria-checked:before:inset-x-none max-medium:aria-checked:before:inset-bs-none max-medium:aria-checked:before:z-behind max-medium:aria-checked:before:aspect-cover max-medium:aria-checked:before:rounded-native-cover max-medium:aria-checked:before:bg-native-accent-soft";
+
+const ANDROID_SELECT_MARK = `${NATIVE_SELECT_MARK} max-medium:inset-e-native-select-inset max-medium:inset-bs-native-select-inset`;
 
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
@@ -260,7 +275,13 @@ const COVER_TILE_LOOKS = {
   },
   android: {
     ...NATIVE_TILE,
+    cover: ANDROID_COVER,
+    link: ANDROID_PICKED_TILE,
+    pickedRing: ANDROID_PICKED_COVER,
+    mark: ANDROID_SELECT_MARK,
+    compactMark: ANDROID_SELECT_MARK,
     title: ANDROID_TILE_TITLE,
+    compactTitle: ANDROID_COMPACT_TITLE,
     stack: PHONE_STACK,
     meta: ANDROID_TILE_META,
     grid: ANDROID_GRID,
