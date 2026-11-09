@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { expect, test } from "./fixtures.ts";
+import { boxOf, expect, test } from "./fixtures.ts";
 import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
@@ -48,6 +48,14 @@ async function openSeries(page: Page): Promise<void> {
 
 function sort(page: Page): Locator {
   return page.getByRole("button", { name: /^Sort/ });
+}
+
+function findBook(page: Page): Locator {
+  return page.getByRole("button", { name: "Find a book" });
+}
+
+function searchField(page: Page): Locator {
+  return page.getByRole("searchbox", { name: "Find a book" });
 }
 
 function showChoices(page: Page): Locator {
@@ -182,6 +190,48 @@ test.describe(
       ).toHaveCount(1);
       await expect(runHeadings(page).first()).toHaveText("Chapters 25–30");
     });
+
+    test("puts the search field, lit, in place of the Show group until Find a book is pressed again", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await findBook(page).click();
+      const [field, find] = await Promise.all([
+        boxOf(searchField(page)),
+        boxOf(findBook(page)),
+      ]);
+
+      await expect(showChoices(page)).toHaveCount(0);
+      await expect(findBook(page)).toHaveAttribute("aria-expanded", "true");
+      await expect(findBook(page)).not.toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+      expect(field.y + field.height / 2).toBeCloseTo(
+        find.y + find.height / 2,
+        0,
+      );
+      await findBook(page).click();
+      await expect(showChoices(page)).toBeVisible();
+    });
+
+    test("says no chapter matches, then brings the Show group back with Clear the search", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await findBook(page).click();
+
+      await searchField(page).fill("zzz");
+
+      await expect(
+        page.getByText("No book in this series matches “zzz”."),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Clear the search" }).click();
+      await expect(showChoices(page)).toBeVisible();
+      await expect(searchField(page)).toBeHidden();
+      await expect(bookLinks(page).first()).toContainText("chapter 30");
+    });
   },
 );
 
@@ -257,6 +307,15 @@ test.describe(
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
       await expect(bookLinks(page).first()).toContainText("chapter 01");
       await expect(runHeadings(page)).toHaveCount(0);
+    });
+
+    test("keeps the Show group beside the search field", async ({ page }) => {
+      await openSeries(page);
+
+      await findBook(page).click();
+
+      await expect(searchField(page)).toBeVisible();
+      await expect(showChoices(page)).toBeVisible();
     });
   },
 );

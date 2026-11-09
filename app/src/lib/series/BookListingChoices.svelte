@@ -52,7 +52,6 @@
   const isNativeDesktop = platform === "macos" || platform === "windows";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
-  let isSearching = $state(false);
   let searchField = $state<HTMLInputElement | null>(null);
 
   async function reveal(): Promise<void> {
@@ -70,6 +69,8 @@
     search,
     onSearch,
     onShownCrowded,
+    searchReplacesShown,
+    isSearching = $bindable(false),
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
@@ -77,7 +78,11 @@
     search: string;
     onSearch: (search: string) => void;
     onShownCrowded: (isCrowded: boolean) => void;
+    searchReplacesShown: boolean;
+    isSearching?: boolean;
   } = $props();
+
+  const isShownReplaced = $derived(searchReplacesShown && isSearching);
 
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_TOOLS[phonePlatform],
@@ -125,7 +130,10 @@
 <div class="flex flex-wrap items-center gap-sm">
   <InputGroup
     class={[
-      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:block-touch-target windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+      isShownReplaced
+        ? "flex-1 min-inline-none"
+        : "max-expanded:order-last max-expanded:inline-full",
       !isSearching && "max-expanded:hidden",
     ]}
   >
@@ -143,29 +151,31 @@
     />
   </InputGroup>
   {#if phone !== undefined}
-    <span id={showLabelId} class="sr-only">{m.series_show()}</span>
-    <div class="relative flex-1 min-inline-none">
-      <SegmentedControl
-        options={SHOWN_OPTIONS}
-        labels={SHOWN_LABELS}
-        chosen={listing.shown}
-        labelledBy={showLabelId}
-        size="small"
-        isFullWidth
-        segmentClass={[
-          "min-inline-native-target",
-          phonePlatform === "android" && "max-medium:px-md",
-        ]}
-        onChoose={chooseShown}
-        crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
-        onFit={(fitsOneRow: boolean) => {
-          onShownCrowded(!fitsOneRow);
-        }}
-      />
-    </div>
+    {#if !isShownReplaced}
+      <span id={showLabelId} class="sr-only">{m.series_show()}</span>
+      <div class="relative flex-1 min-inline-none">
+        <SegmentedControl
+          options={SHOWN_OPTIONS}
+          labels={SHOWN_LABELS}
+          chosen={listing.shown}
+          labelledBy={showLabelId}
+          size="small"
+          isFullWidth
+          segmentClass={[
+            "min-inline-native-target",
+            phonePlatform === "android" && "max-medium:px-md",
+          ]}
+          onChoose={chooseShown}
+          crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
+          onFit={(fitsOneRow: boolean) => {
+            onShownCrowded(!fitsOneRow);
+          }}
+        />
+      </div>
+    {/if}
     <Button
       type="button"
-      variant={phone.variant}
+      variant={isShownReplaced ? "secondary" : phone.variant}
       iconOnly
       label={m.series_find_book()}
       aria-expanded={isSearching}

@@ -197,6 +197,7 @@
   const search = $derived(
     controls.kind === "above" ? controls.search : ownSearch,
   );
+  let isSearching = $state(false);
   let isShownCrowded = $state(false);
   const shownBooks = $derived(booksMatching(books, search, getLocale()));
   const ids = $derived(shownBooks.map((book) => book.id));
@@ -237,14 +238,6 @@
   }
 
   let endings = 0;
-
-  function clearSearch(): void {
-    if (controls.kind === "above") {
-      controls.onSearch("");
-    } else {
-      ownSearch = "";
-    }
-  }
 
   function focusAfterPicking(): HTMLElement | null {
     if (isWide.current) {
@@ -415,6 +408,17 @@
     }
   }
 
+  function clearSearch(): void {
+    if (controls.kind === "above") {
+      controls.onSearch("");
+      return;
+    }
+    ownSearch = "";
+    if (isAndroidChapterList) {
+      isSearching = false;
+    }
+  }
+
   function endPicking(): void {
     void end();
   }
@@ -573,6 +577,8 @@
       onShownCrowded={(isCrowded: boolean) => {
         isShownCrowded = isCrowded;
       }}
+      searchReplacesShown={isAndroidChapterList}
+      bind:isSearching
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}
