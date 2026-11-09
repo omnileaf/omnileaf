@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { groupByLicence } from "#lib/licences/licences.ts";
   import LicenceGroupList from "#lib/licences/LicenceGroupList.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
@@ -12,6 +14,7 @@
   let { data }: PageProps = $props();
 
   const width = new WindowWidth();
+  const android = new AndroidPhone();
   const look = $derived(
     isPhone(data.appInfo.platform, width.current) ? "phone" : "pane",
   );
@@ -24,9 +27,13 @@
   title={m.about_licences()}
   parent={{ route: "/(app)/settings/about", title: m.about_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm two-pane:max-inline-section">
-  <p class="text-detail text-muted">{m.licences_intro()}</p>
-  <div class="flex flex-col gap-xl">
+<div
+  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none two-pane:max-inline-section"
+>
+  <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
+    {m.licences_intro()}
+  </p>
+  <div class={["flex flex-col", !android.isOn && "gap-xl"]}>
     {#each groups as group (group.name)}
       <LicenceGroupList {group} {look} />
     {/each}

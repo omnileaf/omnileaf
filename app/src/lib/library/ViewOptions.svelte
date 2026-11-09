@@ -6,6 +6,7 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { DialogTitle } from "#lib/components/ui/dialog/index.ts";
   import { DrawerContent, SheetBar } from "#lib/components/ui/drawer/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { LibraryView } from "#lib/ipc/bindings.ts";
   import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
@@ -44,6 +45,11 @@
     returnFocusTo?: HTMLElement | null;
   } = $props();
 
+  const SHEET_CLASS = {
+    androidPhone: "max-block-below-sheet-top",
+    ios: "",
+    other: "inset-bs-sheet-top block-auto",
+  } as const;
   const isWide = new MediaQuery(MEDIUM_QUERY);
   const platform = currentPlatform();
   const isIos = platform === "ios";
@@ -54,6 +60,12 @@
   const bar = commandBarLook(platform);
   const isMac = platform === "macos";
   const panel = viewPanelLook(platform);
+  const sheetClass = $derived.by(() => {
+    if (isAndroidPhone) {
+      return SHEET_CLASS.androidPhone;
+    }
+    return isIos ? SHEET_CLASS.ios : SHEET_CLASS.other;
+  });
   const opener = $derived(showsButton ? button : returnFocusTo);
 
   function open(): void {
@@ -95,18 +107,22 @@
           ? "rounded-native-button"
           : bar === undefined
             ? [
-                "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto",
+                "block-native-target inline-native-target medium:block-touch-target medium:inline-touch-target large:px-header-control-inline large:inline-auto!",
                 isOpen
                   ? "large:bg-accent-soft"
                   : "hover:tint-hover active:tint-pressed",
               ]
             : undefined}
       >
-        <SlidersHorizontal
-          size={ICON_SIZE}
-          aria-hidden="true"
-          class={bar?.icon ?? "large:block-lg large:inline-lg"}
-        />
+        {#if isAndroidPhone}
+          <Icon name="sliders-horizontal" />
+        {:else}
+          <SlidersHorizontal
+            size={ICON_SIZE}
+            aria-hidden="true"
+            class={bar?.icon ?? "large:block-lg large:inline-lg"}
+          />
+        {/if}
         {#if !isMac}
           <span class={bar?.label ?? "hidden large:inline"}>
             {m.library_view()}
@@ -131,6 +147,7 @@
 {:else}
   <Dialog.Root bind:open={isOpen}>
     <DrawerContent
+      class={sheetClass}
       height={isIos ? "large" : "fit"}
       ground={isIos ? "grouped" : "plain"}
       onDismiss={close}

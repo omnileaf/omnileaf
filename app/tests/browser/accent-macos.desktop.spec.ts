@@ -108,14 +108,14 @@ for (const look of LOOKS) {
       }, look.contrast);
     }
 
-    const drawn = await drawnAccent(page);
-
-    expect(drawn).toEqual({
+    const expected = {
       fill: await literalColour(page, look.accent),
       onFill: await literalColour(page, look.onAccent),
       ink: await literalColour(page, look.ink),
       soft: await literalColour(page, look.soft),
-    });
+    };
+
+    await expect.poll(() => drawnAccent(page)).toEqual(expected);
   });
 }
 

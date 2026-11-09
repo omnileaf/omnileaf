@@ -8,14 +8,20 @@
   import { Button } from "#lib/components/ui/button/index.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { radiosLook } from "#lib/settings/radios-look.ts";
+  import {
+    FLUSH_HEADING,
+    FLUSH_LIST,
+  } from "#lib/settings/android-flush-look.ts";
 
   import type { LicenceGroup } from "./licences";
 
   const PREVIEW_SIZE = 3;
 
+  const PHONE_ROW = "gap-sm ps-lg pe-md min-block-touch-target";
+
   const ROWS = {
-    phone: "gap-sm ps-lg pe-md min-block-touch-target",
+    phone: PHONE_ROW,
+    android: PHONE_ROW,
     pane: "gap-md ps-list-row pe-md text-label min-block-touch-target desktop:min-block-settings-row",
   } satisfies Record<AboutLook, string>;
 
@@ -23,7 +29,6 @@
 
   const headingId = $props.id();
   const android = new AndroidPhone();
-  const androidHeading = radiosLook(true).heading;
 
   let isExpanded = $state(false);
   const links: HTMLAnchorElement[] = $state([]);
@@ -42,21 +47,23 @@
 
 <section
   aria-labelledby={headingId}
-  class={[
-    "flex flex-col overflow-hidden rounded-list border border-border bg-card",
-    GROUP_PLATE,
-  ]}
+  class={android.isOn
+    ? FLUSH_LIST
+    : [
+        "flex flex-col overflow-hidden rounded-list border border-border bg-card",
+        GROUP_PLATE,
+      ]}
 >
   <h2
     id={headingId}
     translate="no"
     class={android.isOn
-      ? androidHeading
+      ? FLUSH_HEADING
       : "px-lg pbs-md pbe-xs text-small font-semibold"}
   >
     {group.name}
   </h2>
-  <ul class="divide-y divide-border">
+  <ul class={android.isOn ? "" : "divide-y divide-border"}>
     {#each shown as licensed, index (licensed.key)}
       <li>
         <a

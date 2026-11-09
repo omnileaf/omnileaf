@@ -119,6 +119,7 @@
     onLoadAll,
     onMark,
     onBookmark,
+    onRemoveBookmarks,
     onRemove,
     onShowInFolder,
     platform,
@@ -138,6 +139,7 @@
     onBookmark: (
       books: BookId[],
     ) => Promise<{ newlyBookmarked: number; failed: boolean }>;
+    onRemoveBookmarks: (books: BookId[]) => Promise<boolean>;
     onRemove: (
       targets: RemovalTarget[],
       deleteFiles: boolean,
@@ -163,9 +165,10 @@
   const width = new WindowWidth();
   const phonePlatform = $derived(phoneOf(platform, width.current));
   const hasFileCommands = $derived(
-    platform === "windows" || platform === "macos",
+    platform === "windows" || platform === "macos" || platform === "linux",
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
+  const isBookmarkedFromSheet = $derived(phonePlatform === "android");
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
@@ -323,6 +326,12 @@
     }
   }
 
+  async function removeBookmark(book: BookId): Promise<void> {
+    if (!(await onRemoveBookmarks([book]))) {
+      outcome = { kind: "failed", action: "bookmark" };
+    }
+  }
+
   async function bookmark(): Promise<void> {
     if (await bookmarkSelected(selection.picked)) {
       await end();
@@ -459,7 +468,7 @@
       tabindex="-1"
       aria-live={isPhonePicking ? "polite" : undefined}
       class={[
-        "text-group-title font-semibold",
+        "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
         selection.isSelecting && "flex-1",
         isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
         isWide.current && "sr-only",
@@ -479,7 +488,9 @@
         onPickNone={pickNone}
       />
     {:else if !selection.isSelecting && !isWide.current}
-      <p class="flex-1 text-small text-muted">
+      <p
+        class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
+      >
         {bookmarkCount > 0
           ? m.series_read_and_bookmarked({
               read: readCount,
@@ -578,6 +589,7 @@
   {#if isWide.current}
     <BookTable
       bind:selectAllBox
+      hasContextMenu={platform === "linux"}
       books={shownBooks}
       {dates}
       {isComplete}
@@ -641,6 +653,16 @@
       onMark={(picked: BookId[], read: ReadMark) => {
         void markBooks(picked, read);
       }}
+      onBookmark={isBookmarkedFromSheet
+        ? (book: BookId) => {
+            void bookmarkSelected([book]);
+          }
+        : undefined}
+      onRemoveBookmark={isBookmarkedFromSheet
+        ? (book: BookId) => {
+            void removeBookmark(book);
+          }
+        : undefined}
       onDelete={isRowDeletable
         ? (book: BookId) => {
             askToRemoveBooks([book]);

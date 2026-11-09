@@ -519,6 +519,23 @@ test.describe("Undo", () => {
     ).not.toBeChecked();
   });
 
+  test("waits for a screen reader unless told not to, and remembers the choice", async ({
+    page,
+  }) => {
+    await page.goto("/settings/advanced");
+    const waits = page.getByRole("switch", {
+      name: "Wait for screen readers",
+    });
+    await expect(waits).toBeChecked();
+
+    await waits.click();
+    await page.reload();
+
+    await expect(
+      page.getByRole("switch", { name: "Wait for screen readers" }),
+    ).not.toBeChecked();
+  });
+
   test("tells of a deletion without Undo once Undo is turned off", async ({
     page,
   }) => {

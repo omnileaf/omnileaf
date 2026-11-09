@@ -9,6 +9,7 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import CoversChoice from "./CoversChoice.svelte";
+  import OpenFilesChoice from "./OpenFilesChoice.svelte";
   import StepButton from "./StepButton.svelte";
   import type { DeviceKind } from "./device";
   import { usesSetupPages } from "./setup-pages.ts";
@@ -64,6 +65,9 @@
       hint={appearanceHelpText}
     />
     <CoversChoice chosen={adultTreatment} onChoose={onChooseAdult} />
+    {#if device === "desktop"}
+      <OpenFilesChoice />
+    {/if}
   </div>
   {#snippet actions()}
     <StepButton kind="primary" onclick={onNext}>

@@ -28,6 +28,8 @@
     readonly state: string;
     readonly stateChevron: IconName;
     readonly chevron: string;
+    readonly icon: string;
+    readonly chevronSize: string;
   }
 
   const PHONE_LAYOUTS: Readonly<Record<Platform, PhoneLayout | undefined>> = {
@@ -36,12 +38,17 @@
       state: "min-inline-none max-inline-full",
       stateChevron: "chevrons-up-down",
       chevron: "",
+      icon: "block-native-phone-action-icon inline-native-phone-action-icon",
+      chevronSize:
+        "block-native-phone-action-chevron inline-native-phone-action-chevron",
     },
     android: {
       row: "flex items-center gap-sm",
       state: "flex-1 justify-start min-inline-none",
       stateChevron: "chevron-down",
       chevron: "ms-auto",
+      icon: "",
+      chevronSize: "",
     },
     linux: undefined,
     macos: undefined,
@@ -112,15 +119,18 @@
         phone.state,
       )}
     >
-      <Icon name="book-open" class="shrink-0" />
+      <Icon name="book-open" class={cn("shrink-0", phone.icon)} />
       <span class="truncate min-inline-none">{state}</span>
-      <Icon name={phone.stateChevron} class={cn("shrink-0", phone.chevron)} />
+      <Icon
+        name={phone.stateChevron}
+        class={cn("shrink-0", phone.chevron, phone.chevronSize)}
+      />
     </ComingSoonControl>
     <ComingSoonControl
       label={m.series_tags_for({ title: overview.title })}
       class={variantClasses(phone.other, "regular", true, platform)}
     >
-      <Icon name="tag" />
+      <Icon name="tag" class={phone.icon} />
     </ComingSoonControl>
     <Button
       type="button"
@@ -129,7 +139,7 @@
       label={markLabel}
       onClickPromise={() => onMarkAll(isAllRead ? "unread" : "read")}
     >
-      <Icon name={isAllRead ? "eye-off" : "eye"} />
+      <Icon name={isAllRead ? "eye-off" : "eye"} class={phone.icon} />
     </Button>
   </div>
 {:else}

@@ -9,18 +9,21 @@ import {
   markLanguage,
   rememberLanguageChoice,
   storedLanguageChoice,
+  systemAppLocale,
   useChosenLanguage,
 } from "./language";
 
 export class LanguageSetting {
   choice: LanguageChoice = $state("system");
   resolved: Locale = $state(baseLocale);
+  systemOffersLanguage = $state(false);
+  private systemApp: Locale | undefined = undefined;
 
   constructor(
     private readonly store: LanguageStore,
     private readonly root: HTMLElement,
   ) {
-    useChosenLanguage(store);
+    useChosenLanguage(store, () => this.systemApp);
     this.choice = storedLanguageChoice(store);
     this.apply();
   }
@@ -28,6 +31,11 @@ export class LanguageSetting {
   choose(choice: LanguageChoice): void {
     rememberLanguageChoice(choice, this.store);
     this.choice = choice;
+    this.apply();
+  }
+
+  followSystemApp(tag: string | null): void {
+    this.systemApp = systemAppLocale(tag);
     this.apply();
   }
 

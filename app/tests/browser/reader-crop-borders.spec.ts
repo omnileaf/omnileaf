@@ -2,7 +2,12 @@ import type { Locator, Page, Route } from "@playwright/test";
 
 import type { Size } from "../../src/lib/reader/page-fit.ts";
 import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_SERIES_ID,
@@ -243,6 +248,25 @@ test.describe("the paged reader", () => {
 
     await expect(cropSwitch(page)).toBeChecked();
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    for (const crops of [false, true]) {
+      test(`has no accessibility violations in the ${colorScheme} theme with Crop white borders ${crops ? "on" : "off"}`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await openBook(page);
+        await openSettings(page);
+        await expect(cropSwitch(page)).toBeEnabled();
+        if (crops) {
+          await cropSwitch(page).click();
+        }
+        await expect(cropSwitch(page)).toBeChecked({ checked: crops });
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
+  }
 
   test("shows each page with its borders cropped once Crop white borders turns on", async ({
     page,

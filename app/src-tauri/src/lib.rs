@@ -2,6 +2,7 @@ mod back_navigation;
 mod back_swipe;
 mod commands;
 mod crash_reporting;
+mod default_viewer;
 mod document_handover;
 #[cfg(all(desktop, feature = "e2e"))]
 mod e2e;
@@ -30,17 +31,22 @@ mod open_with;
 mod power_mode;
 mod problem_reporting;
 mod put_away;
+#[cfg(target_os = "android")]
+mod report_downloads;
 mod report_relay;
 mod report_sending;
 mod runtime_config;
 mod scheduled_rescans;
 mod screen_orientation;
+mod screen_reader;
 mod share_sign_in;
 mod storage;
+mod system_app_language;
 mod system_bars;
 mod system_contrast;
 mod system_settings;
 mod system_sign_in;
+mod tls_provider;
 mod tray;
 #[cfg(target_os = "android")]
 mod tree_storage;
@@ -81,6 +87,7 @@ const CACHE_FOLDER: &str = "cache";
     reason = "without its runtime the app has nothing to fall back to"
 )]
 pub fn run() {
+    tls_provider::install_default();
     let recent_log = RecentLog::default();
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
@@ -152,10 +159,12 @@ pub fn run() {
         .plugin(system_bars::plugin())
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
+        .plugin(system_app_language::plugin())
         .plugin(wallpaper_colours::plugin())
         .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())
         .plugin(system_settings::plugin())
+        .plugin(report_downloads::plugin())
         .plugin(icon_actions::plugin())
         .plugin(volume_keys::plugin())
         .plugin(open_with::plugin());

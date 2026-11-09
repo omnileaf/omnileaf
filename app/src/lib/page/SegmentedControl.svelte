@@ -19,6 +19,7 @@
     readonly labels: Record<Option, () => string>;
     readonly icons?: Record<Option, Component<LucideProps>> | undefined;
     readonly chosen: Option;
+    readonly disabledOptions?: readonly Option[];
     readonly labelledBy: string;
     readonly describedBy?: string | undefined;
     readonly size?: Size;
@@ -69,6 +70,9 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const ANDROID_PHONE_SMALL_FACE =
+    "max-medium:gap-sm max-medium:px-lg max-medium:text-native-segment max-medium:leading-native-segment max-medium:tracking-native-segment";
+
   const MACOS_SMALL = {
     track: "min-block-native-button-small rounded-native-button-small",
     segment:
@@ -98,6 +102,7 @@
     labels,
     icons,
     chosen,
+    disabledOptions = [],
     labelledBy,
     describedBy,
     size = "regular",
@@ -129,6 +134,9 @@
     }
     if (isMacosSmall) {
       return "";
+    }
+    if (platform === "android" && size === "small") {
+      return `${look.face} ${ANDROID_PHONE_SMALL_FACE}`;
     }
     return usesNativeTokens && size === "regular"
       ? NATIVE_LOOK.face
@@ -197,8 +205,9 @@
   {#each options as option (option)}
     <RadioGroupItem
       value={option}
+      disabled={disabledOptions.includes(option)}
       class={[
-        "relative flex items-center justify-center transition-control",
+        "relative flex items-center justify-center transition-control data-disabled:pointer-events-none data-disabled:opacity-50",
         isNative
           ? "native-target"
           : "before:absolute before:inset-x-none before:-inset-y-xs",

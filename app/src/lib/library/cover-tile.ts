@@ -1,4 +1,6 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { phoneOf } from "#lib/page/platform.ts";
 
 import { ACCENT_COVER_RING, ACCENT_TITLE } from "./accent-selection-look.ts";
 
@@ -12,6 +14,8 @@ export interface CoverStackLook {
 export interface NotConnectedLook {
   readonly dim: string;
   readonly mark: string;
+  readonly place: string;
+  readonly books: string;
 }
 
 export interface CoverTileLook {
@@ -24,6 +28,10 @@ export interface CoverTileLook {
   readonly pickedRing: string;
   readonly menuTargetRing: string;
   readonly pickedTitle: string;
+  readonly title: string;
+  readonly compactTitle: string;
+  readonly meta: string;
+  readonly grid: string;
   readonly stack: CoverStackLook | null;
   readonly cover: string;
   readonly unread: string;
@@ -50,6 +58,21 @@ const BADGE_PLACEMENT =
 
 const BADGE_GEOMETRY = `${BADGE_PLACEMENT} px-badge-inline min-block-xl min-inline-xl`;
 
+const ANDROID_TILE_TITLE =
+  "max-medium:text-native-tile-title/native-tile-title! max-medium:font-native-tile-title! max-medium:tracking-native-tile-title!";
+
+const ANDROID_COMPACT_TITLE =
+  "max-medium:text-native-tab/native-tab max-medium:font-native-tab max-medium:tracking-native-tab";
+
+const ANDROID_GRID = "max-medium:covers-gap-sm! max-medium:covers-row-gap-lg!";
+
+const ANDROID_TILE_META =
+  "max-medium:text-native-tile-meta/native-tile-meta max-medium:font-native-tile-meta max-medium:tracking-native-tile-meta";
+
+const NATIVE_COUNT_BADGE = `${BADGE_GEOMETRY} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:min-block-native-cover-badge max-medium:min-inline-native-cover-badge`;
+
+const ANDROID_COUNT_BADGE = `${NATIVE_COUNT_BADGE} max-medium:inset-s-xs max-medium:inset-bs-xs max-medium:px-xs max-medium:text-native-count-badge/native-count-badge max-medium:tracking-native-count-badge`;
+
 const LINUX_BADGE = `${BADGE_PLACEMENT} border border-transparent px-sm py-2xs`;
 
 const SHEET =
@@ -62,6 +85,13 @@ const LINUX_STACK: CoverStackLook = {
   continueAt: "inset-bs-stacked-cover-end",
 };
 
+const PHONE_STACK: CoverStackLook = {
+  room: "pbs-cover-stack-room-phone",
+  farSheet: `${SHEET} inset-x-cover-sheet-far-phone inset-bs-none bg-cover-sheet-far`,
+  nearSheet: `${SHEET} inset-x-cover-sheet-near-phone inset-bs-cover-sheet-near-top-phone bg-cover-sheet-near`,
+  continueAt: "inset-bs-phone-stacked-cover-end",
+};
+
 const TODAYS_LOOK: CoverTileLook = {
   cell: "",
   link: "",
@@ -72,6 +102,10 @@ const TODAYS_LOOK: CoverTileLook = {
   pickedRing: PICKED_COVER_RING,
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
+  title: "",
+  compactTitle: "",
+  meta: "",
+  grid: "",
   stack: null,
   cover: "",
   unread: BADGE_GEOMETRY,
@@ -105,6 +139,10 @@ const NATIVE_TILE = {
   pickedRing: PICKED_COVER_RING,
   menuTargetRing: MENU_TARGET_RING,
   pickedTitle: "",
+  title: "",
+  compactTitle: "",
+  meta: "",
+  grid: "",
   stack: null,
   cover: "max-medium:rounded-native-cover",
   mark: NATIVE_SELECT_MARK,
@@ -116,6 +154,15 @@ const NATIVE_TILE = {
   notConnected: undefined,
 };
 
+const ANDROID_COVER = `${NATIVE_TILE.cover} max-medium:border-0`;
+
+const ANDROID_PICKED_COVER = `${NO_PICKED_RING_ON_PHONES} max-medium:scale-88 max-medium:rounded-native-picked-cover!`;
+
+const ANDROID_PICKED_TILE =
+  "max-medium:relative max-medium:isolate max-medium:aria-checked:before:absolute max-medium:aria-checked:before:inset-x-none max-medium:aria-checked:before:inset-bs-none max-medium:aria-checked:before:z-behind max-medium:aria-checked:before:aspect-cover max-medium:aria-checked:before:rounded-native-cover max-medium:aria-checked:before:bg-native-accent-soft";
+
+const ANDROID_SELECT_MARK = `${NATIVE_SELECT_MARK} max-medium:inset-e-native-select-inset max-medium:inset-bs-native-select-inset`;
+
 const NATIVE_DOWNLOADED =
   "max-medium:block-native-downloaded-mark max-medium:inline-native-downloaded-mark";
 
@@ -124,7 +171,10 @@ const IOS_BADGE_SHAPE =
 
 const IOS_BADGE = `${NATIVE_BADGE} ${IOS_BADGE_SHAPE} max-medium:backdrop-blur-ios`;
 
-const IOS_COUNT_BADGE = `${BADGE_GEOMETRY} ${IOS_BADGE_SHAPE} max-medium:rounded-full max-medium:bg-native-bar-badge max-medium:text-native-on-bar-badge max-medium:font-native-bar-badge max-medium:tabular-nums`;
+const IOS_TILE_TITLE =
+  "max-medium:text-footnote! max-medium:font-native-tile-title!";
+
+const IOS_COUNT_BADGE = `${NATIVE_COUNT_BADGE} max-medium:flex max-medium:items-center max-medium:py-none max-medium:font-native-bar-badge max-medium:tabular-nums`;
 
 const IOS_SELECT_STYLE = `${NATIVE_SELECT_SIZE} max-medium:border-0 max-medium:inset-ring-(length:--native-spacing-select-edge) max-medium:inset-ring-native-select-ring max-medium:shadow-native-shadow-glass max-medium:backdrop-blur-native-glass`;
 
@@ -168,6 +218,7 @@ const WINDOWS_TILE: CoverTileLook = {
 
 const MACOS_TILE: CoverTileLook = {
   ...TODAYS_LOOK,
+  stack: LINUX_STACK,
   menuTargetRing: ACCENT_COVER_RING,
   pickedRing:
     "outline-(length:--native-spacing-tile-picked) outline-native-tile-picked outline-offset-0",
@@ -177,30 +228,90 @@ const MACOS_TILE: CoverTileLook = {
 const ANDROID_NOT_CONNECTED: NotConnectedLook = {
   dim: "opacity-38",
   mark: "inline-flex items-center gap-2xs rounded-android-xs bg-card px-xs py-2xs text-caption whitespace-nowrap text-foreground",
+  place: "absolute inset-s-xs inset-be-xs max-inline-full",
+  books: "",
+};
+
+const IOS_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45",
+  mark: "inline-flex items-center justify-center gap-2xs rounded-full bg-native-bar-badge px-xs text-caption font-semibold whitespace-nowrap text-foreground shadow-native-shadow-glass backdrop-blur-native-glass min-block-[1.25rem]",
+  place: "absolute inset-s-xs inset-be-read-mark-inset max-inline-full",
+  books: "text-danger",
+};
+
+const MACOS_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45 grayscale",
+  mark: "inline-flex items-center justify-center gap-xs rounded-native-button bg-native-button-secondary px-xs text-caption whitespace-nowrap text-native-on-button-secondary min-block-[1.25rem]",
+  place: "absolute inset-s-read-mark-inset inset-be-sm max-inline-full",
+  books: "text-danger",
+};
+
+const LINUX_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45",
+  mark: "inline-flex items-center gap-xs rounded-sm bg-background px-badge-inline py-2xs text-caption font-semibold whitespace-nowrap text-foreground",
+  place:
+    "absolute inset-s-read-mark-inset inset-e-read-mark-inset inset-be-read-mark-inset",
+  books: "",
+};
+
+const WINDOWS_NOT_CONNECTED: NotConnectedLook = {
+  dim: "opacity-45",
+  mark: "inline-flex items-center justify-center gap-xs rounded-control border border-border bg-card px-xs text-caption whitespace-nowrap text-foreground min-block-[1.25rem]",
+  place: "absolute inset-s-read-mark-inset inset-be-sm max-inline-full",
+  books: "text-danger",
 };
 
 const COVER_TILE_LOOKS = {
   ios: {
     ...NATIVE_TILE,
     ...IOS_SELECT_CIRCLE,
+    title: IOS_TILE_TITLE,
+    stack: PHONE_STACK,
     unread: IOS_COUNT_BADGE,
     badge: IOS_BADGE,
+    notConnected: IOS_NOT_CONNECTED,
     downloaded: `${NATIVE_BADGE} ${NATIVE_DOWNLOADED} max-medium:backdrop-blur-ios`,
     downloadedIcon: "",
   },
   android: {
     ...NATIVE_TILE,
+    cover: ANDROID_COVER,
+    link: ANDROID_PICKED_TILE,
+    pickedRing: ANDROID_PICKED_COVER,
+    mark: ANDROID_SELECT_MARK,
+    compactMark: ANDROID_SELECT_MARK,
+    title: ANDROID_TILE_TITLE,
+    compactTitle: ANDROID_COMPACT_TITLE,
+    stack: PHONE_STACK,
+    meta: ANDROID_TILE_META,
+    grid: ANDROID_GRID,
+    markOff:
+      "max-medium:border-native-select-ring max-medium:bg-native-tile-check-fill max-medium:shadow-native-select-ring-lift",
     notConnected: ANDROID_NOT_CONNECTED,
-    unread: `${BADGE_GEOMETRY} ${NATIVE_BADGE}`,
+    unread: ANDROID_COUNT_BADGE,
     badge: NATIVE_BADGE,
-    downloaded: `${NATIVE_DOWNLOADED} max-medium:bg-native-cover-accent`,
-    downloadedIcon: "max-medium:hidden",
+    downloaded: "max-medium:hidden",
+    downloadedIcon: "",
   },
-  linux: { ...TODAYS_LOOK, stack: LINUX_STACK, unread: LINUX_BADGE },
-  macos: MACOS_TILE,
-  windows: WINDOWS_TILE,
+  linux: {
+    ...TODAYS_LOOK,
+    stack: LINUX_STACK,
+    unread: LINUX_BADGE,
+    notConnected: LINUX_NOT_CONNECTED,
+  },
+  macos: { ...MACOS_TILE, notConnected: MACOS_NOT_CONNECTED },
+  windows: { ...WINDOWS_TILE, notConnected: WINDOWS_NOT_CONNECTED },
 } satisfies Record<Platform, CoverTileLook>;
 
 export function coverTileLook(platform: Platform): CoverTileLook {
   return COVER_TILE_LOOKS[platform];
+}
+
+export function coverStack(
+  platform: Platform,
+  width: WidthClass,
+): CoverStackLook | null {
+  return phoneOf(platform, width) === "android"
+    ? null
+    : coverTileLook(platform).stack;
 }

@@ -7,6 +7,11 @@
     GROUPED_FOOTNOTE,
     GROUPED_FOOTNOTE_TYPE,
   } from "#lib/library/group-look.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import {
+    OUTLINED_FIELD_MULTILINE_CONTROL,
+    OutlinedField,
+  } from "#lib/components/ui/outlined-field/index.ts";
   import { Textarea } from "#lib/components/ui/textarea/index.ts";
   import type { SeriesDetails } from "#lib/ipc/bindings.ts";
   import type { UndoOffer } from "#lib/notices/notices.ts";
@@ -70,11 +75,8 @@
   const CHIPS = "flex flex-wrap items-center gap-sm";
   const FROM_FILE = "text-label text-foreground/80";
   const GROUPED_FIELD_BOX = "border-0 bg-transparent p-none";
-  const ANDROID_FROM_FILE = "ps-lg text-caption text-muted";
-  const ANDROID_OUTLINED_BOX =
-    "rounded-native-outlined-field border border-native-button-outline-edge bg-transparent px-lg pbs-lg shadow-none";
-  const FLOATING_LABEL =
-    "absolute inset-bs-0 ms-md -translate-y-1/2 bg-background px-xs text-caption text-muted";
+  const ANDROID_FROM_FILE =
+    "px-lg pbs-xs text-native-group-footer/native-group-footer tracking-native-group-footer text-muted";
 
   let {
     details,
@@ -158,6 +160,9 @@
     isSheet ? SHEET_CHIP_CROSS : isMacos ? MACOS_CHIP_CROSS : undefined,
   );
   const adultMark: Snippet = markAdult;
+  const cross: Snippet = crossIcon;
+  const titleField: Snippet = titleArea;
+  const summaryField: Snippet = summaryArea;
   const isAdultLocked = $derived(details.isRatedAdult && countsAgeRatings);
   const adultNote = $derived(
     !details.isRatedAdult
@@ -250,6 +255,56 @@
   }
 </script>
 
+{#snippet crossIcon()}
+  {#if isAndroid}
+    <Icon name="x" size={crossSize} />
+  {:else}
+    <X size={crossSize} class={crossClass} aria-hidden="true" />
+  {/if}
+{/snippet}
+
+{#snippet titleArea()}
+  <Textarea
+    id="{id}-title"
+    rows={1}
+    value={draft.title}
+    oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
+      onDraft({ ...draft, title: event.currentTarget.value });
+    }}
+    placeholder={details.title.fromFile}
+    aria-describedby="{id}-title-file"
+    class={[
+      !isSheet &&
+        !isAndroid &&
+        (isMacos
+          ? MACOS_ONE_LINE_FIELD
+          : "text-body min-block-title-field touch:min-block-touch-target"),
+      titleTextClass,
+      isAndroid && OUTLINED_FIELD_MULTILINE_CONTROL,
+    ]}
+  />
+{/snippet}
+
+{#snippet summaryArea()}
+  <Textarea
+    id="{id}-summary"
+    rows={3}
+    value={draft.summary}
+    placeholder={details.summary.fromFile ?? undefined}
+    oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
+      onDraft({ ...draft, summary: event.currentTarget.value });
+    }}
+    aria-describedby={fromFile.summary === undefined
+      ? undefined
+      : `${id}-summary-file`}
+    class={[
+      !isSheet && (isMacos ? MACOS_TALL_FIELD : "text-body"),
+      summaryTextClass,
+      isAndroid && OUTLINED_FIELD_MULTILINE_CONTROL,
+    ]}
+  />
+{/snippet}
+
 {#snippet addDetail(label: string, onAdd: (name: string) => void)}
   <AddDetailChip {isGrouped} {isAndroid} {isMacos} {isSheet} {label} {onAdd} />
 {/snippet}
@@ -289,31 +344,15 @@
         useFile("title");
       }}
     />
-    <DetailBox {isGrouped} isRelative={isAndroid} cardClass={fieldCardClass}>
-      {#if isAndroid}
-        <label for="{id}-title" class={FLOATING_LABEL}>
-          {m.edit_details_title()}
-        </label>
-      {/if}
-      <Textarea
-        id="{id}-title"
-        rows={1}
-        value={draft.title}
-        oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
-          onDraft({ ...draft, title: event.currentTarget.value });
-        }}
-        placeholder={details.title.fromFile}
-        aria-describedby="{id}-title-file"
-        class={[
-          !isSheet &&
-            (isMacos
-              ? MACOS_ONE_LINE_FIELD
-              : "text-body min-block-title-field touch:min-block-touch-target"),
-          titleTextClass,
-          isAndroid && ANDROID_OUTLINED_BOX,
-        ]}
-      />
-    </DetailBox>
+    {#if isAndroid}
+      <OutlinedField label={m.edit_details_title()} labelFor="{id}-title">
+        {@render titleField()}
+      </OutlinedField>
+    {:else}
+      <DetailBox {isGrouped} cardClass={fieldCardClass}>
+        {@render titleField()}
+      </DetailBox>
+    {/if}
     <p id="{id}-title-file" class={fromFileClass}>{fromFile.title}</p>
   </div>
   <div class={fieldClass}>
@@ -342,7 +381,7 @@
               }}
             >
               {personLabel(person)}
-              <X size={crossSize} class={crossClass} aria-hidden="true" />
+              {@render cross()}
             </button>
           {/each}
           {#if peopleShown.length < draft.people.length}
@@ -395,7 +434,7 @@
               }}
             >
               {tag}
-              <X size={crossSize} class={crossClass} aria-hidden="true" />
+              {@render cross()}
             </button>
           {/each}
           {#if !isSheet}
@@ -425,30 +464,15 @@
         useFile("summary");
       }}
     />
-    <DetailBox {isGrouped} isRelative={isAndroid} cardClass={fieldCardClass}>
-      {#if isAndroid}
-        <label for="{id}-summary" class={FLOATING_LABEL}>
-          {m.edit_details_summary()}
-        </label>
-      {/if}
-      <Textarea
-        id="{id}-summary"
-        rows={3}
-        value={draft.summary}
-        placeholder={details.summary.fromFile ?? undefined}
-        oninput={(event: Event & { currentTarget: HTMLTextAreaElement }) => {
-          onDraft({ ...draft, summary: event.currentTarget.value });
-        }}
-        aria-describedby={fromFile.summary === undefined
-          ? undefined
-          : `${id}-summary-file`}
-        class={[
-          !isSheet && (isMacos ? MACOS_TALL_FIELD : "text-body"),
-          summaryTextClass,
-          isAndroid && ANDROID_OUTLINED_BOX,
-        ]}
-      />
-    </DetailBox>
+    {#if isAndroid}
+      <OutlinedField label={m.edit_details_summary()} labelFor="{id}-summary">
+        {@render summaryField()}
+      </OutlinedField>
+    {:else}
+      <DetailBox {isGrouped} cardClass={fieldCardClass}>
+        {@render summaryField()}
+      </DetailBox>
+    {/if}
     {#if fromFile.summary !== undefined}
       <p id="{id}-summary-file" class={fromFileClass}>{fromFile.summary}</p>
     {/if}

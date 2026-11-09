@@ -2,6 +2,13 @@
 :root[data-platform="macos"] [data-theme] {
   --native-duration-fade: 150ms;
   --native-ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-duration-tooltip: 150ms;
+  --native-ease-sheet-in: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-sheet-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-tooltip: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-duration-flyout: 150ms;
+  --native-ease-flyout: cubic-bezier(0.32, 0.72, 0, 1);
+  --native-ease-pane: cubic-bezier(0.32, 0.72, 0, 1);
   --native-blur-glass: 30px;
   --native-radius-button: 6px;
   --native-radius-button-small: 5px;
@@ -149,6 +156,9 @@
   --native-spacing-checkbox-gap: 6px;
   --native-spacing-text-field-block-tall: 6px;
   --native-spacing-text-field-tall: calc(3lh + 2 * var(--native-spacing-text-field-block-tall));
+  --native-color-colours-omnileaf-primary: var(--primary);
+  --native-color-colours-omnileaf-container: var(--secondary);
+  --native-color-colours-omnileaf-surface: var(--card);
 }
 
 :root[data-platform="macos"],
@@ -219,6 +229,7 @@
   --native-color-on-jump-current: #2f6f4f;
   --native-color-on-tab: rgba(0, 0, 0, 0.85);
   --native-color-on-tab-current: #2f6f4f;
+  --native-color-on-tab-bar-current: #2f6f4f;
   --native-color-on-tab-pill: #2f6f4f;
   --native-color-cover-badge: rgba(242, 242, 242, 0.55);
   --native-color-on-cover-badge: rgba(0, 0, 0, 0.85);
@@ -319,6 +330,7 @@
   --native-color-on-jump-current: #7fcb9d;
   --native-color-on-tab: rgba(255, 255, 255, 0.85);
   --native-color-on-tab-current: #7fcb9d;
+  --native-color-on-tab-bar-current: #7fcb9d;
   --native-color-on-tab-pill: #7fcb9d;
   --native-color-cover-badge: rgba(153, 153, 153, 0.17);
   --native-color-on-cover-badge: rgba(255, 255, 255, 0.85);
@@ -397,6 +409,7 @@
   --native-color-on-jump-current: #1f5a3c;
   --native-color-on-tab: #000000;
   --native-color-on-tab-current: #1f5a3c;
+  --native-color-on-tab-bar-current: #1f5a3c;
   --native-color-on-tab-pill: #1f5a3c;
   --native-color-cover-badge: #f1f1f1;
   --native-color-on-cover-badge: #000000;
@@ -463,6 +476,7 @@
   --native-color-on-jump-current: #a8e0bd;
   --native-color-on-tab: #ffffff;
   --native-color-on-tab-current: #a8e0bd;
+  --native-color-on-tab-bar-current: #a8e0bd;
   --native-color-on-tab-pill: #a8e0bd;
   --native-color-cover-badge: #0f0f0f;
   --native-color-on-cover-badge: #ffffff;

@@ -45,7 +45,7 @@ const DESKTOP_SEGMENT_TRACK_CORNER = "8px";
 const DESKTOP_SEGMENT_CORNER = "6px";
 const DESKTOP_SEGMENT_TEXT = "12px";
 const PHONE_SEGMENT_HEIGHT = 40;
-const PHONE_SEGMENT_TEXT = "13px";
+const PHONE_SEGMENT_TEXT = "14px";
 const DESKTOP_STEPPER_CORNER = "8px";
 const ON_PAGE_14 = { state: "started", page: 14 } as const;
 const NOT_STARTED = { state: "notStarted" } as const;
@@ -539,13 +539,15 @@ test.describe("on an Android phone", () => {
   test.describe("in the reader", () => {
     test.use({ backend: readerOn("android") });
 
-    test("draws the direction button with a pill start", async ({ page }) => {
+    test("draws the direction button's icon in a pill", async ({ page }) => {
       await openBook(page);
       await expect(directionButton(page)).toBeVisible();
 
-      const isPillStart = await isPill(directionButton(page));
+      const isPillIcon = await isPill(
+        directionButton(page).locator("[data-pill]"),
+      );
 
-      expect(isPillStart).toBe(true);
+      expect(isPillIcon).toBe(true);
     });
 
     test.describe("for a first book", () => {

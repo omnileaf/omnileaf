@@ -92,15 +92,29 @@ test.describe("on linux", () => {
 test.describe("on macOS", () => {
   test.use({ backend: { ...BACKEND, appInfo: () => fakeAppInfo("macos") } });
 
-  test("leaves the stacking switch out, since its covers stay flat", async ({
+  test("offers stacked covers as a switch, on to start with", async ({
     page,
   }) => {
     await page.goto("/");
     const options = await openViewOptions(page);
 
     await expect(
-      options.getByRole("radiogroup", { name: "Group by" }),
-    ).toBeVisible();
-    await expect(stackSwitch(options)).toHaveCount(0);
+      options.getByRole("checkbox", { name: "Stack series covers" }),
+    ).toBeChecked();
+  });
+
+  test("flattens the covers behind at once and keeps the choice", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(sheets(page).first()).toBeVisible();
+    const options = await openViewOptions(page);
+
+    await options
+      .getByRole("checkbox", { name: "Stack series covers" })
+      .click();
+
+    await expect(sheets(page)).toHaveCount(0);
+    await expect.poll(() => storedView.stacksSeriesCovers).toBe(false);
   });
 });

@@ -9,9 +9,10 @@ export function iconActionsMenu(
   return {
     screenshotMode: m.screenshot_mode_title(),
     screenshotModeState: state,
-    screenshotModeWithState: m.icon_action_screenshot_mode_with_state({
-      state,
-    }),
+    screenshotModeLabel:
+      activity.kind === "off"
+        ? m.icon_action_screenshot_mode_turn_on()
+        : m.icon_action_screenshot_mode_turn_off(),
     continueReading: m.icon_action_continue_reading(),
     searchLibrary: m.icon_action_search_library(),
   };

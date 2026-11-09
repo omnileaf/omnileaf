@@ -55,6 +55,7 @@ export interface UndoOffer {
 export interface ToastHandle {
   readonly dismiss: () => void;
   readonly lapse: (windowMs: number) => void;
+  readonly keep: () => void;
 }
 
 export const UNDO_WINDOW_MS = 10_000;
@@ -77,16 +78,23 @@ export class Notices {
   #isHeld = false;
   readonly #undoRules: () => UndoRules;
   readonly #surface: NoticeSurface;
+  readonly #isScreenReaderOn: () => Promise<boolean>;
   readonly #shown = new SvelteMap<string, ShownNotice>();
   readonly #lapses = new Map<string, Lapse>();
   readonly #noticesShown = new Map<Notice, Shown>();
+  readonly #queuesOneAtATime: boolean;
+  readonly #waiting: Notice[] = [];
   #undoShown: (Shown & { readonly offer: UndoOffer }) | undefined;
   #undoSettling: (Shown & { readonly offer: UndoOffer }) | undefined;
 
   constructor(
     undoRules: () => UndoRules = () => NEW_UNDO_RULES,
     surface: NoticeSurface = noticeSurfaceOn(currentPlatform()),
+    queuesOneAtATime: boolean = currentPlatform() === "android",
+    isScreenReaderOn: () => Promise<boolean> = () => Promise.resolve(false),
   ) {
+    this.#isScreenReaderOn = isScreenReaderOn;
+    this.#queuesOneAtATime = queuesOneAtATime;
     this.#undoRules = undoRules;
     this.#surface = surface;
   }
@@ -100,6 +108,10 @@ export class Notices {
   }
 
   show(notice: Notice): void {
+    if (this.#queuesOneAtATime && this.#shown.size > 0) {
+      this.#waiting.push(notice);
+      return;
+    }
     const shown = this.#present(
       NoticeToast,
       (toast) => ({ notice, toast }),
@@ -139,6 +151,15 @@ export class Notices {
     );
     this.#undoShown = { ...shown, offer };
     shown.toast.lapse(rules.windowSeconds * MS_PER_SECOND);
+    if (rules.waitsForScreenReader) {
+      void this.#keepWhileScreenReaderIsOn(shown.toast);
+    }
+  }
+
+  async #keepWhileScreenReaderIsOn(toast: ToastHandle): Promise<void> {
+    if (await this.#isScreenReaderOn()) {
+      toast.keep();
+    }
   }
 
   undo(): void {
@@ -153,6 +174,10 @@ export class Notices {
   }
 
   withdraw(notice: Notice): void {
+    const waitingAt = this.#waiting.indexOf(notice);
+    if (waitingAt >= 0) {
+      this.#waiting.splice(waitingAt, 1);
+    }
     this.#noticesShown.get(notice)?.toast.dismiss();
   }
 
@@ -198,6 +223,10 @@ export class Notices {
         isDismissed = true;
         this.#forget(id);
         this.#takeAway(id);
+      },
+      keep: () => {
+        clearTimeout(this.#lapses.get(id)?.timer);
+        this.#lapses.delete(id);
       },
       lapse: (windowMs) => {
         const lapse: Lapse = { windowMs, timer: undefined };
@@ -248,6 +277,10 @@ export class Notices {
 
   #forget(id: string): void {
     this.#shown.delete(id);
+    const next = this.#waiting.shift();
+    if (next !== undefined) {
+      this.show(next);
+    }
     clearTimeout(this.#lapses.get(id)?.timer);
     this.#lapses.delete(id);
     for (const [notice, shown] of this.#noticesShown) {

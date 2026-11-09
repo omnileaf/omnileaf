@@ -22,6 +22,21 @@ You sign it once, on your first pull request: the CLA Assistant check comments w
 - **Small pull requests.** Aim for about 400 changed lines or fewer, not counting generated files. Split bigger work into a series of pull requests that each stand on their own.
 - **Review and merge.** Every pull request needs a maintainer's review and green CI, then it is squash-merged into `main`. Nothing lands on `main` directly.
 
+### Changelog
+
+A pull request that changes what people see in the app adds one small file to `.changes/`, named for the change, such as `.changes/android-section-tabs.md`. It is needed when the change touches `app/src`, `app/src-tauri/src`, `app/messages`, `crates/*/src` or `crates/*/android`; docs, tests, CI and dependency updates need none.
+
+```markdown
+---
+type: feat
+area: library
+credit: [octocat]
+---
+Sections now show as tabs on Android, so you can switch between them with one tap.
+```
+
+`type` is `feat`, `fix`, `perf`, `sec` or `breaking`, and `area` is one of the ids in `.changes/config.json`. `credit` and `pr` are optional. Write one or two plain sentences for a reader. [`.changes/README.md`](.changes/README.md) has the full rules, and `cargo xtask changes check` and `cargo xtask changes require --base origin/main` run what CI runs. If a change in those folders is invisible to people, such as a refactor, ask a maintainer to put the `no-changelog` label on the pull request.
+
 ## Running the app
 
 Run `cargo xtask doctor` first, since it lists anything missing, including WebKitGTK 4.1 on Linux and the Xcode command line tools on macOS. It also checks the Android and iOS tools, and reports them missing without failing, since only work on phones needs them. Then install the interface dependencies with `pnpm install` and start the app with `pnpm --dir app tauri dev`. The window reloads as you edit the interface. `cargo tauri dev` works too, from the repository root or `app/`, if the `tauri-cli` you installed is the version pinned in `app/package.json`. `pnpm dev` on its own serves the interface without the Rust side, so its commands fail there. The browser tests answer them with a fake backend instead.

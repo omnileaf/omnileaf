@@ -6,7 +6,7 @@ import { hasTopTabBar, isPhone } from "./platform";
 
 export const NATIVE_TOP_BAR = {
   pageTitle:
-    "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar",
+    "flex items-center text-native-page-title leading-native-page-title font-native-page-title tracking-native-page-title text-native-on-top-bar min-block-native-top-bar android:text-native-bar-title android:leading-native-bar-title android:font-native-bar-title android:tracking-native-bar-title",
   largeTitle:
     "flex items-center text-native-large-title leading-native-large-title font-native-large-title tracking-native-large-title text-native-on-top-bar",
   barTitle:
@@ -14,7 +14,7 @@ export const NATIVE_TOP_BAR = {
   barButton:
     "shrink-0 rounded-full bg-native-bar-button font-native-bar-button text-native-on-bar-button shadow-native-bar-button-lift ios:backdrop-blur-ios block-native-target inline-native-target",
   barButtonRow:
-    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:font-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios",
+    "flex shrink-0 items-center gap-md *:shrink-0 *:rounded-full *:bg-native-bar-button *:font-native-bar-button *:text-native-on-bar-button *:shadow-native-bar-button-lift *:block-native-target *:inline-native-target ios:*:backdrop-blur-ios android:gap-none android:*:mx-xs android:*:block-native-button android:*:inline-native-button *:native-target",
   edge: "border-be-(length:--native-spacing-hairline)",
   scrolled:
     "border-native-top-bar-scrolled-edge bg-native-top-bar-scrolled backdrop-blur-ios",
@@ -51,7 +51,7 @@ const CENTRED_TITLE: FoldingBarLook = { row: "", title: "px-sm text-center" };
 const FOLDING_BARS = {
   ios: CENTRED_TITLE,
   android: {
-    row: "box-content pbs-safe-top pbe-none min-block-native-top-bar",
+    row: "box-content pbs-safe-top pbe-none min-block-native-top-bar pe-xs",
     title: "ps-lg pe-sm text-start",
   },
   linux: CENTRED_TITLE,

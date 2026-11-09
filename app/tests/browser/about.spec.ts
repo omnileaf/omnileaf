@@ -18,6 +18,7 @@ import {
 } from "./fixtures.ts";
 
 const ABOUT_PAGE = "/settings/about";
+const ANDROID_ROW_HEIGHT = 72;
 const PHONE_ROW_HEIGHT = 64;
 const PANE_ROW_HEIGHT = 56;
 const TOUCH_BUTTON_HEIGHT = 48;
@@ -178,7 +179,7 @@ for (const platform of ["android", "ios"] as const) {
     testOnlyInItsWebview(platform);
     test.use(onPlatform(platform));
 
-    test("lists the version details with a copy button, on 64px rows", async ({
+    test("lists the version details with a copy button, on two-line rows", async ({
       page,
     }) => {
       test.skip(viewportOf(page).width >= MEDIUM_MIN_WIDTH, "phones only");
@@ -196,8 +197,10 @@ for (const platform of ["android", "ios"] as const) {
       await expect(
         version.getByRole("button", { name: "Copy version details" }),
       ).toBeVisible();
-      expect(versionRow.height).toBe(PHONE_ROW_HEIGHT);
-      expect(sourceRow.height).toBe(PHONE_ROW_HEIGHT);
+      const rowHeight =
+        platform === "android" ? ANDROID_ROW_HEIGHT : PHONE_ROW_HEIGHT;
+      expect(versionRow.height).toBe(rowHeight);
+      expect(sourceRow.height).toBe(rowHeight);
       expect(button.height).toBe(TOUCH_BUTTON_HEIGHT);
       expect(icon.width).toBe(PHONE_ICON_SIZE);
     });

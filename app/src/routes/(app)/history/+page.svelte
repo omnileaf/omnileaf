@@ -11,6 +11,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import { getTimeFormatSetting } from "#lib/general/time-format.svelte.ts";
@@ -18,9 +19,11 @@
   import HistoryEntryRow from "#lib/history/HistoryEntryRow.svelte";
   import HistorySearchField from "#lib/history/HistorySearchField.svelte";
   import {
+    groupSeconds,
     type HistoryGroupName,
     historyGroups,
   } from "#lib/history/history-groups.ts";
+  import { readingTime } from "#lib/history/reading-time.ts";
   import { whenFormats } from "#lib/history/history-line.ts";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
@@ -30,6 +33,7 @@
     weekStartOf,
   } from "#lib/history/local-date.ts";
   import { commands, type HistoryEntry } from "#lib/ipc/bindings.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
@@ -38,12 +42,15 @@
   import { getLocale } from "#lib/paraglide/runtime.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { ANDROID_SEARCH_VIEW } from "#lib/search/search-look.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
+  const ANDROID_HISTORY_SEARCH_BAR =
+    "-ms-page-start -me-page-end px-sm block-native-search-view-bar";
   const ICON_SIZE = 18;
   const FIELD_ICON_SIZE = 16;
   const SKELETON_ROWS = 6;
@@ -60,6 +67,7 @@
   const formats = $derived(whenFormats(getLocale(), timeFormat.hourCycle));
   const platform = $derived(data.appInfo.platform);
   const headingId = $props.id();
+  const android = new AndroidPhone();
 
   let matching = $state("");
   let isSearching = $state(false);
@@ -207,7 +215,11 @@
           void startSearching();
         }}
       >
-        <Search size={ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="search" />
+        {:else}
+          <Search size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
     {/snippet}
   </Tooltip>
@@ -216,7 +228,7 @@
     text={matching}
     {platform}
     look="field"
-    class="hidden inline-library-search search-field:flex"
+    class="hidden inline-library-search! search-field:flex"
     onFind={find}
   />
   <Tooltip label={m.history_clear()}>
@@ -230,7 +242,11 @@
           void clear();
         }}
       >
-        <Eraser size={ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="eraser" />
+        {:else}
+          <Eraser size={ICON_SIZE} aria-hidden="true" />
+        {/if}
       </Button>
     {/snippet}
   </Tooltip>
@@ -238,17 +254,31 @@
 
 {#if isSearching}
   <h1 class="sr-only">{m.history_title()}</h1>
-  <div class="flex items-center gap-sm search-field:hidden">
+  <div
+    class={[
+      "flex items-center search-field:hidden",
+      android.isOn ? ANDROID_HISTORY_SEARCH_BAR : "gap-sm",
+    ]}
+  >
     <Tooltip label={m.history_back()}>
       {#snippet child({ props })}
         <Button
           {...props}
           look="icon"
           aria-label={m.history_back()}
-          class="shrink-0 block-touch-target inline-touch-target hover:tint-hover active:tint-pressed"
+          class={[
+            "shrink-0 hover:tint-hover active:tint-pressed",
+            android.isOn
+              ? ANDROID_SEARCH_VIEW.back
+              : "block-touch-target inline-touch-target android:block-native-button android:inline-native-button",
+          ]}
           onclick={stopSearching}
         >
-          <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
+          {#if platform === "android"}
+            <Icon name="arrow-left" />
+          {:else}
+            <ArrowLeft size={ICON_SIZE} aria-hidden="true" />
+          {/if}
         </Button>
       {/snippet}
     </Tooltip>
@@ -262,12 +292,15 @@
     />
   </div>
 {:else}
-  <CollectionHeading
-    {platform}
-    title={m.history_title()}
-    showsLabel={screenshotMode.showsLabel}
-    actions={headerActions}
-  />
+  <div class="android:max-medium:-ms-xs android:max-medium:-me-md">
+    <CollectionHeading
+      {platform}
+      title={m.history_title()}
+      showsLabel={screenshotMode.showsLabel}
+      actions={headerActions}
+      largeTitle={platform === "android" ? false : undefined}
+    />
+  </div>
 {/if}
 
 {#if history.list.kind === "failed"}
@@ -307,7 +340,11 @@
         href={resolve("/(app)")}
         class="mbs-lg flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button"
       >
-        <LibraryBig size={FIELD_ICON_SIZE} aria-hidden="true" />
+        {#if platform === "android"}
+          <Icon name="library" size={FIELD_ICON_SIZE} />
+        {:else}
+          <LibraryBig size={FIELD_ICON_SIZE} aria-hidden="true" />
+        {/if}
         {m.history_go_to_library()}
       </a>
     </EmptyState>
@@ -320,12 +357,21 @@
   >
     {#each groups as group, index (group.name)}
       <section aria-labelledby={`${headingId}-${String(index)}`}>
-        <h2
-          id={`${headingId}-${String(index)}`}
-          class="px-xs text-small font-semibold"
+        <div
+          class="flex items-baseline justify-between px-xs android:px-none android:pbs-lg android:pbe-sm"
         >
-          {GROUP_NAMES[group.name]()}
-        </h2>
+          <h2
+            id={`${headingId}-${String(index)}`}
+            class="text-small font-semibold android:font-medium android:text-muted"
+          >
+            {GROUP_NAMES[group.name]()}
+          </h2>
+          {#if platform !== "android"}
+            <span data-testid="group-total" class="text-detail text-muted">
+              {readingTime(groupSeconds(group))}
+            </span>
+          {/if}
+        </div>
         <ul
           aria-labelledby={`${headingId}-${String(index)}`}
           class="flex flex-col large:divide-y large:divide-border"
@@ -342,7 +388,7 @@
         </ul>
       </section>
     {/each}
-    {#if listed !== undefined && !listed.isComplete}
+    {#if !listed.isComplete}
       {#key listed.items.length}
         <div
           aria-hidden="true"

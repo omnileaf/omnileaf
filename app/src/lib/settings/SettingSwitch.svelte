@@ -7,17 +7,20 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
 
+  import { FLUSH_BLEED } from "./android-flush-look.ts";
   import { LIST_ROW } from "./grouped-rows-look.ts";
+  import { ANDROID_ROW, ROW, TINTED } from "./setting-row-look.ts";
   import SettingWords, { type WordsLook } from "./SettingWords.svelte";
 
   interface Props {
     readonly label: string;
-    readonly description?: string;
+    readonly description?: string | undefined;
     readonly isOn: boolean;
     readonly onToggle: () => void;
     readonly class?: ClassValue;
     readonly bleeds?: boolean;
     readonly grouped?: boolean;
+    readonly disabled?: boolean;
   }
 
   let {
@@ -28,19 +31,10 @@
     class: className,
     bleeds = false,
     grouped = false,
+    disabled = false,
   }: Props = $props();
 
-  const ROW =
-    "flex items-center gap-md px-lg py-md text-start inline-full min-block-touch-target";
-
-  const ANDROID_ROW =
-    "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row-two";
-
-  const ANDROID_BLEED = "-mx-page-start -me-page-end";
-
   const GROUPED_ROW = `${LIST_ROW} text-start inline-full`;
-
-  const TINTED = "hover:tint-hover active:tint-pressed";
 
   const GROUPED_PRESSED = "active:bg-native-group-row-pressed";
 
@@ -53,7 +47,7 @@
   );
   const rowLook = $derived(
     look === "android"
-      ? [ANDROID_ROW, bleeds ? ANDROID_BLEED : "inline-full", TINTED]
+      ? [ANDROID_ROW, bleeds ? FLUSH_BLEED : "inline-full", TINTED]
       : look === "grouped"
         ? [GROUPED_ROW, GROUPED_PRESSED]
         : [ROW, TINTED],
@@ -68,6 +62,7 @@
     <SettingWords {id} {label} {description} />
     <Switch
       bind:checked={() => isOn, onToggle}
+      {disabled}
       aria-labelledby="{id}-label"
       aria-describedby={description === undefined
         ? undefined
@@ -78,11 +73,12 @@
 {:else}
   <Switch
     bind:checked={() => isOn, onToggle}
+    {disabled}
     aria-labelledby="{id}-label"
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[rowLook, ROW_FOCUS_RING, className]}
+    class={[rowLook, ROW_FOCUS_RING, disabled && "text-muted", className]}
   >
     <SettingWords {id} {label} {description} {look} />
   </Switch>

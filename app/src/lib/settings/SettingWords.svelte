@@ -13,7 +13,7 @@
     },
     android: {
       words: "flex flex-1 flex-col min-inline-none",
-      label: "",
+      label: "tracking-native-row-title",
       description: `text-muted ${ROW_SUBTITLE_TYPE}`,
     },
     grouped: {

@@ -7,10 +7,22 @@
   import { openHandedDocuments } from "./open-handed-documents.ts";
   import { openHandedFiles } from "./open-handed-files.ts";
   import OpeningDocumentToast from "./OpeningDocumentToast.svelte";
+  import UnsupportedFileDialog from "./UnsupportedFileDialog.svelte";
 
   const notices = getNotices();
 
+  let isUnsupportedShown = $state(false);
+
   function reportFailure(error: unknown): void {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "bookTypeUnsupported"
+    ) {
+      isUnsupportedShown = true;
+      return;
+    }
     reportFileFailure(notices, error, reportError);
   }
 
@@ -19,12 +31,22 @@
       (page) => void goto(page),
       reportFailure,
     );
-    openHandedDocuments(
+    const stopOpeningDocuments = openHandedDocuments(
       () =>
         notices.present(OpeningDocumentToast, (toast) => ({ toast }), "polite")
           .dismiss,
       reportFailure,
     );
-    return stopOpeningFiles;
+    return () => {
+      stopOpeningFiles();
+      stopOpeningDocuments();
+    };
   });
 </script>
+
+<UnsupportedFileDialog
+  isOpen={isUnsupportedShown}
+  onClose={() => {
+    isUnsupportedShown = false;
+  }}
+/>

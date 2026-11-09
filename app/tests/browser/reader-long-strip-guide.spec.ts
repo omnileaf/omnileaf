@@ -70,16 +70,22 @@ test("says a series of tall pages opened as a long strip, then shows how to scro
   ).not.toBeNull();
 });
 
-test("opens Reading settings at Reading mode from Change", async ({ page }) => {
-  await openStrip(page);
+test(
+  "opens Reading settings at Reading mode from Change",
+  { tag: "@native" },
+  async ({ page, platform }) => {
+    await openStrip(page);
 
-  await stripFound(page).getByRole("button", { name: "Change" }).click();
+    await stripFound(page).getByRole("button", { name: "Change" }).click();
 
-  await expect(
-    page.getByRole("combobox", { name: "Reading mode" }),
-  ).toBeFocused();
-  await expect(stripFound(page)).toHaveCount(0);
-});
+    const mode =
+      platform === "android"
+        ? page.getByRole("button", { name: /^Reading mode/ })
+        : page.getByRole("combobox", { name: "Reading mode" });
+    await expect(mode).toBeFocused();
+    await expect(stripFound(page)).toHaveCount(0);
+  },
+);
 
 test("says how to scroll by tapping or clicking, and the keys on a desktop, once", async ({
   page,

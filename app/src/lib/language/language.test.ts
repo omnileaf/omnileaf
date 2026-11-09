@@ -5,6 +5,8 @@ import { baseLocale } from "#lib/paraglide/runtime.js";
 import {
   rememberLanguageChoice,
   storedLanguageChoice,
+  supportedLocaleForTag,
+  systemAppLocale,
   systemLanguage,
 } from "./language";
 
@@ -70,4 +72,43 @@ test("falls back to the app's base language when the device prefers none the app
   preferLanguages(["xx", "yy-ZZ"]);
 
   expect(systemLanguage()).toBe(baseLocale);
+});
+
+const SHIPPED = ["en", "de", "pt-BR"];
+
+test("matches a system tag that is a shipped language exactly", () => {
+  expect(supportedLocaleForTag("pt-BR", SHIPPED, "en")).toBe("pt-BR");
+});
+
+test("matches a region of a shipped language to the language", () => {
+  expect(supportedLocaleForTag("de-AT", SHIPPED, "en")).toBe("de");
+});
+
+test("matches a script and region of a shipped language to the language", () => {
+  expect(supportedLocaleForTag("de-Latn-CH", SHIPPED, "en")).toBe("de");
+});
+
+test("matches another region of a language shipped for one region to that region", () => {
+  expect(supportedLocaleForTag("pt-PT", SHIPPED, "en")).toBe("pt-BR");
+});
+
+test("matches a tag whatever its case or separator", () => {
+  expect(supportedLocaleForTag("PT_br", SHIPPED, "en")).toBe("pt-BR");
+});
+
+test("falls back to the default for a language the app isn't translated into", () => {
+  expect(supportedLocaleForTag("ja-JP", SHIPPED, "en")).toBe("en");
+});
+
+test("offers no language of its own to a system that has chosen none", () => {
+  expect(systemAppLocale(null)).toBeUndefined();
+  expect(systemAppLocale("")).toBeUndefined();
+});
+
+test("never picks the pseudo locale for a system tag", () => {
+  expect(systemAppLocale("en-XA")).toBe("en");
+});
+
+test("picks the default for a system language the app isn't translated into", () => {
+  expect(systemAppLocale("ja")).toBe(baseLocale);
 });

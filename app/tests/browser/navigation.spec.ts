@@ -194,9 +194,9 @@ test("keeps Settings at the far end of the rail and the sidebar", async ({
   );
 });
 
-for (const { platform, rowHeight, iconSize } of [
-  { platform: "linux", rowHeight: 32, iconSize: 16 },
-  { platform: "android", rowHeight: 48, iconSize: 22 },
+for (const { platform, rowHeight, iconSize, icon: iconSelector } of [
+  { platform: "linux", rowHeight: 32, iconSize: 16, icon: "svg" },
+  { platform: "android", rowHeight: 48, iconSize: 24, icon: "[data-icon]" },
 ] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -212,7 +212,7 @@ for (const { platform, rowHeight, iconSize } of [
         .getByRole("link", { name: "Library" });
 
       const row = await boxOf(library);
-      const icon = await boxOf(library.locator("svg"));
+      const icon = await boxOf(library.locator(iconSelector));
 
       expect(row.height).toBe(rowHeight);
       expect(icon.width).toBe(iconSize);

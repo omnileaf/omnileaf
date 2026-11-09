@@ -10,6 +10,8 @@
   import { tick } from "svelte";
 
   import { cn } from "#lib/components/cn.ts";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { Badge } from "#lib/components/ui/badge/index.ts";
   import {
     Card,
@@ -35,6 +37,7 @@
   import type {
     Platform,
     ReadMark,
+    SeriesDetails,
     SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import CoverImage from "#lib/library/CoverImage.svelte";
@@ -56,8 +59,10 @@
   import {
     ABOUT_COLUMN,
     ABOUT_COVER,
+    ABOUT_DETAILS_CARD,
     ABOUT_HEAD,
     ABOUT_LINES,
+    ABOUT_TAG,
   } from "./series-about-layout.ts";
 
   const ICON_SIZE = 16;
@@ -87,6 +92,7 @@
 
   let {
     overview,
+    details: sourced,
     cover,
     coverUrl,
     isWide,
@@ -94,6 +100,7 @@
     onEditDetails,
   }: {
     overview: SeriesOverview;
+    details?: SeriesDetails | undefined;
     cover: ShownCover;
     coverUrl: CoverUrl;
     isWide: boolean;
@@ -138,7 +145,7 @@
     <div class={ABOUT_LINES}>
       <h1
         tabindex="-1"
-        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty"
+        class="line-clamp-3 text-native-series-title/native-series-title font-bold tracking-native-series-title text-balance expanded:text-pretty android:max-medium:mbe-xs android:max-medium:text-native-page-title/native-page-title android:max-medium:font-native-page-title android:max-medium:tracking-native-page-title"
       >
         {overview.title}
       </h1>
@@ -185,12 +192,24 @@
     <ul aria-label={m.series_tags()} class="flex flex-wrap gap-icon-gap">
       {#each overview.tags as tag (tag)}
         <li>
-          <Badge
-            look="outline"
-            class="windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted"
+          <a
+            href={resolve("/(app)")}
+            onclick={(event) => {
+              event.preventDefault();
+              void goto(resolve("/(app)"), { state: { libraryTag: tag } });
+            }}
+            class="rounded-full focus-visible:focus-ring"
           >
-            {tag}
-          </Badge>
+            <Badge
+              look="outline"
+              class={[
+                "windows:rounded-none windows:border-0 windows:bg-transparent windows:px-none windows:text-caption windows:text-muted",
+                ABOUT_TAG,
+              ]}
+            >
+              {tag}
+            </Badge>
+          </a>
         </li>
       {/each}
     </ul>
@@ -228,7 +247,7 @@
         </CardAction>
       </CardHeader>
       <CardContent class="px-lg">
-        <SeriesDetailsList {overview} bind:ref={details} />
+        <SeriesDetailsList {overview} {sourced} bind:ref={details} />
       </CardContent>
     </Card>
   {:else if overview.bookCount > 0}
@@ -266,8 +285,14 @@
         </div>
       {/if}
       <CollapsibleContent>
-        <Card class={["p-lg shadow-card-rest", WINDOWS_CARD_PLATE]}>
-          <SeriesDetailsList {overview} bind:ref={details} />
+        <Card
+          class={[
+            "p-lg shadow-card-rest",
+            WINDOWS_CARD_PLATE,
+            ABOUT_DETAILS_CARD,
+          ]}
+        >
+          <SeriesDetailsList {overview} {sourced} bind:ref={details} />
         </Card>
       </CollapsibleContent>
     </Collapsible>

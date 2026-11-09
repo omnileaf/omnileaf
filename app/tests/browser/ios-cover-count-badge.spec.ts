@@ -109,7 +109,9 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`the cover count badge on Android in ${scheme}`, () => {
     test.use({ colorScheme: scheme, ...showing("android") });
 
-    test("keeps the green cover badge", async ({ page }) => {
+    test("fills with the red bar badge colour and writes its count in the colour made for it", async ({
+      page,
+    }) => {
       test.skip(
         viewportOf(page).width >= MEDIUM_MIN_WIDTH,
         "tablets keep their own badge",
@@ -118,7 +120,11 @@ for (const scheme of ["light", "dark"] as const) {
 
       await expect(badge).toHaveCSS(
         "background-color",
-        await tokenColour(page, "--native-color-cover-badge"),
+        await tokenColour(page, "--native-color-bar-badge"),
+      );
+      await expect(badge).toHaveCSS(
+        "color",
+        await tokenColour(page, "--native-color-on-bar-badge"),
       );
     });
   });

@@ -16,7 +16,7 @@ use std::{
 use omnileaf_engine::{
     AndroidTree, BooksRemoval, FileChanges, FolderKind, Library, LibraryError, LibraryFolder,
     LibraryListing, PowerMode, RESCAN_EVERY, RescanConditions, RescanOutcome, Resource,
-    ResourceRouter, RootLocator, TreeUri,
+    ResourceRouter, RootLocator, SeriesBookListing, TreeUri,
 };
 use omnileaf_testkit::SAMPLE_LIBRARY_NAME;
 use stepped_clock::SteppedClock;
@@ -286,4 +286,35 @@ async fn names_no_tree_for_a_folder_on_the_file_system() {
     let folder = linked_folder(&library).await;
 
     assert_eq!(library.folder_tree(folder.id).await.unwrap(), None);
+}
+
+#[tokio::test]
+async fn finds_the_tree_and_folder_to_show_for_a_book_in_an_android_folder() {
+    let home = ScratchFolder::new("tree-show-home");
+    let tree = TreeOfFolder::new("tree-show-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .into_iter()
+        .next()
+        .unwrap();
+    let book = library
+        .series_books(series.id, SeriesBookListing::default(), None)
+        .await
+        .unwrap()
+        .books
+        .into_iter()
+        .next()
+        .unwrap()
+        .id;
+
+    let target = library.book_in_android_tree(book).await.unwrap().unwrap();
+
+    assert_eq!(target.tree.uri().as_str(), COMICS_TREE);
+    assert!(target.folder.is_relative());
+    assert_eq!(library.book_in_folder(book).await.unwrap(), None);
 }

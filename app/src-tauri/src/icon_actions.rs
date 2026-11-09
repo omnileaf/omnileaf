@@ -23,7 +23,7 @@ use crate::ipc_error::IpcError;
 pub(crate) struct IconActionsMenu {
     screenshot_mode: String,
     screenshot_mode_state: String,
-    screenshot_mode_with_state: String,
+    screenshot_mode_label: String,
     continue_reading: String,
     search_library: String,
 }
@@ -35,7 +35,7 @@ fn shortcuts(menu: &IconActionsMenu) -> Vec<IconShortcut> {
             action: IconAction::ScreenshotMode,
             title: menu.screenshot_mode.clone(),
             state: Some(menu.screenshot_mode_state.clone()),
-            title_with_state: menu.screenshot_mode_with_state.clone(),
+            android_label: menu.screenshot_mode_label.clone(),
         },
         stateless(IconAction::ContinueReading, &menu.continue_reading),
         stateless(IconAction::SearchLibrary, &menu.search_library),
@@ -48,7 +48,7 @@ fn stateless(action: IconAction, title: &str) -> IconShortcut {
         action,
         title: title.to_owned(),
         state: None,
-        title_with_state: title.to_owned(),
+        android_label: title.to_owned(),
     }
 }
 
@@ -206,7 +206,7 @@ mod tests {
         IconActionsMenu {
             screenshot_mode: "Screenshot mode".to_owned(),
             screenshot_mode_state: "Off".to_owned(),
-            screenshot_mode_with_state: "Screenshot mode · Off".to_owned(),
+            screenshot_mode_label: "Turn on Screenshot mode".to_owned(),
             continue_reading: "Continue reading".to_owned(),
             search_library: "Search the library".to_owned(),
         }
@@ -223,19 +223,19 @@ mod tests {
                     action: IconAction::ScreenshotMode,
                     title: "Screenshot mode".to_owned(),
                     state: Some("Off".to_owned()),
-                    title_with_state: "Screenshot mode · Off".to_owned(),
+                    android_label: "Turn on Screenshot mode".to_owned(),
                 },
                 IconShortcut {
                     action: IconAction::ContinueReading,
                     title: "Continue reading".to_owned(),
                     state: None,
-                    title_with_state: "Continue reading".to_owned(),
+                    android_label: "Continue reading".to_owned(),
                 },
                 IconShortcut {
                     action: IconAction::SearchLibrary,
                     title: "Search the library".to_owned(),
                     state: None,
-                    title_with_state: "Search the library".to_owned(),
+                    android_label: "Search the library".to_owned(),
                 },
             ]
         );

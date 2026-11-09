@@ -34,6 +34,7 @@ const TITLE_SIZE = "22px";
 const TITLE_LINE = "28px";
 const TITLE_WEIGHT = "400";
 const SHEET_INLINE_PADDING = 16;
+const SHEET_TOP_GAP = 60;
 const HEAD_END_PADDING = 12;
 const FOOT_BUTTON_HEIGHT = 56;
 const FOOT_BOTTOM = 16;
@@ -397,7 +398,8 @@ test.describe(
           "background-color",
           await tokenColour(page, "--native-color-accent-soft"),
         );
-        await expect(chip.locator("svg")).toHaveCount(1);
+        await expect(chip.locator("[data-icon='check']")).toHaveCount(1);
+        await expect(chip.locator("svg")).toHaveCount(0);
       });
 
       test("starts the chips 16px in from the sheet's edge, with no rule between settings", async ({
@@ -517,6 +519,16 @@ test.describe(
         return sheet;
       }
 
+      test("leaves the top of the screen showing, as the sort and filter sheet does", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+
+        const box = await boxOf(sheet);
+
+        expect(box.y).toBeGreaterThanOrEqual(SHEET_TOP_GAP);
+      });
+
       test("sets the title at title large with no badge and says what it holds under it", async ({
         page,
       }) => {
@@ -554,7 +566,7 @@ test.describe(
       });
 
       for (const name of ["Display", "Group by"]) {
-        test(`sets ${name} with its words over a group the width of the row, no icons`, async ({
+        test(`sets ${name} with its words at the start and its three options at the end of one row, no icons`, async ({
           page,
         }) => {
           const sheet = await openView(page);
@@ -564,11 +576,11 @@ test.describe(
           const groupBox = await boxOf(group);
 
           expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
-          expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
           expect(
             sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
           ).toBeCloseTo(SETTING_END, 0);
-          expect(groupBox.y).toBeGreaterThanOrEqual(words.y + words.height);
+          expect(groupBox.y).toBeLessThan(words.y + words.height);
+          await expect(group.getByRole("radio")).toHaveCount(3);
           await expect(group.locator("svg")).toHaveCount(0);
           await expect(sheet.getByText(name, { exact: true })).toHaveCSS(
             "font-weight",

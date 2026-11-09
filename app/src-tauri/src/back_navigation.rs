@@ -8,6 +8,7 @@ pub(crate) use android::{follow_history, plugin, watch_gestures};
 )]
 pub(crate) async fn follow_history(
     _app: &tauri::AppHandle,
+    _can_go_back: bool,
 ) -> Result<(), crate::ipc_error::IpcError> {
     Ok(())
 }
@@ -41,6 +42,12 @@ mod android {
     }
 
     #[derive(Serialize)]
+    struct Following {
+        #[serde(rename = "canGoBack")]
+        can_go_back: bool,
+    }
+
+    #[derive(Serialize)]
     struct Watching {
         channel: Channel<BackSwipe>,
     }
@@ -55,8 +62,8 @@ mod android {
             .build()
     }
 
-    pub(crate) async fn follow_history(app: &AppHandle) -> Result<(), IpcError> {
-        ask(app, FOLLOW_HISTORY, ())
+    pub(crate) async fn follow_history(app: &AppHandle, can_go_back: bool) -> Result<(), IpcError> {
+        ask(app, FOLLOW_HISTORY, Following { can_go_back })
             .await
             .map_err(|error| IpcError::internal(&error))
     }

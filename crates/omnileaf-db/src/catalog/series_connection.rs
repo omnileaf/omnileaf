@@ -6,18 +6,12 @@ const SOME_FOLDER_IS_MISSING: &str =
     "SELECT EXISTS (SELECT 1 FROM library_root WHERE unavailable_since_ms IS NOT NULL)";
 
 const IS_NOT_CONNECTED: &str = "SELECT
-    NOT EXISTS (
-        SELECT 1 FROM series
-        JOIN book ON book.series_local_id = series.local_id
-        JOIN book_file ON book_file.book_id = book.id
-        JOIN library_root ON library_root.id = book_file.root_id
-        WHERE series.id = ?1 AND library_root.unavailable_since_ms IS NULL
-    ) AND EXISTS (
-        SELECT 1 FROM series
-        JOIN book ON book.series_local_id = series.local_id
-        JOIN book_file ON book_file.book_id = book.id
-        WHERE series.id = ?1
-    )";
+    count(*) > 0 AND count(library_root.unavailable_since_ms) = count(*)
+    FROM series
+    JOIN book ON book.series_local_id = series.local_id
+    JOIN book_file ON book_file.book_id = book.id
+    JOIN library_root ON library_root.id = book_file.root_id
+    WHERE series.id = ?1";
 
 /// Marks the listed series whose every book file sits in a missing folder, which only a folder shown anyway lets into a listing.
 pub(crate) fn note_connections<'a>(
@@ -69,16 +63,10 @@ mod tests {
         assert_eq!(
             plan,
             [
-                "SCAN CONSTANT ROW",
-                "SCALAR SUBQUERY 1",
                 "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
                 "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
                 "SEARCH book_file USING INDEX book_file_by_book (book_id=?)",
                 "SEARCH library_root USING INTEGER PRIMARY KEY (rowid=?)",
-                "SCALAR SUBQUERY 2",
-                "SEARCH series USING COVERING INDEX sqlite_autoindex_series_1 (id=?)",
-                "SEARCH book USING COVERING INDEX book_by_series_and_added (series_local_id=?)",
-                "SEARCH book_file USING COVERING INDEX book_file_by_book (book_id=?)",
             ]
         );
     }

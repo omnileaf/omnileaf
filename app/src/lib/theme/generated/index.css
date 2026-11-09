@@ -15,12 +15,24 @@
   --ease-out: var(--native-ease-out);
   --ease-emphasized: var(--native-ease-emphasized);
   --ease-glass: var(--native-ease-glass);
+  --transition-duration-sheet-in: var(--native-duration-sheet-in);
+  --transition-duration-sheet-out: var(--native-duration-sheet-out);
+  --transition-duration-tooltip: var(--native-duration-tooltip);
+  --ease-sheet-in: var(--native-ease-sheet-in);
+  --ease-sheet-out: var(--native-ease-sheet-out);
+  --ease-tooltip: var(--native-ease-tooltip);
+  --transition-duration-flyout: var(--native-duration-flyout);
+  --ease-flyout: var(--native-ease-flyout);
+  --transition-duration-pane: var(--native-duration-pane);
+  --ease-pane: var(--native-ease-pane);
   --color-native-glass: var(--native-color-glass);
   --blur-native-glass: var(--native-blur-glass);
   --shadow-native-shadow-glass: var(--native-shadow-shadow-glass);
   --color-native-button-primary: var(--native-color-button-primary);
   --color-native-on-button-primary: var(--native-color-on-button-primary);
   --color-native-button-secondary: var(--native-color-button-secondary);
+  --color-native-search-view: var(--native-color-search-view);
+  --spacing-native-search-view-bar: var(--native-spacing-search-view-bar);
   --color-native-control-fill-hover: var(--native-color-control-fill-hover);
   --color-native-control-fill-pressed: var(--native-color-control-fill-pressed);
   --color-native-control-stroke: var(--native-color-control-stroke);
@@ -197,6 +209,7 @@
   --leading-native-bar-title: var(--native-leading-bar-title);
   --font-weight-native-bar-button: var(--native-weight-bar-button);
   --font-weight-native-bar-badge: var(--native-weight-bar-badge);
+  --font-weight-native-tile-title: var(--native-weight-tile-title);
   --font-weight-native-bar-title: var(--native-weight-bar-title);
   --tracking-native-bar-title: var(--native-tracking-bar-title);
   --text-native-title-bar-title: var(--native-text-title-bar-title);
@@ -221,12 +234,20 @@
   --spacing-native-series-actions-gap: var(--native-spacing-series-actions-gap);
   --spacing-native-series-select-gap: var(--native-spacing-series-select-gap);
   --spacing-native-series-icon: var(--native-spacing-series-icon);
+  --spacing-native-phone-action-icon: var(--native-spacing-phone-action-icon);
+  --spacing-native-phone-action-chevron: var(--native-spacing-phone-action-chevron);
+  --spacing-native-series-band: var(--native-spacing-series-band);
   --spacing-native-series-chevron: var(--native-spacing-series-chevron);
   --spacing-native-top-bar: var(--native-spacing-top-bar);
   --spacing-native-top-bar-lift: var(--native-spacing-top-bar-lift);
   --spacing-native-large-title-above: var(--native-spacing-large-title-above);
   --spacing-native-large-title-below: var(--native-spacing-large-title-below);
   --spacing-native-reader-bar-end: var(--native-spacing-reader-bar-end);
+  --spacing-native-reader-quick-button-end: var(--native-spacing-reader-quick-button-end);
+  --spacing-native-reader-quick-pill-inline: var(--native-spacing-reader-quick-pill-inline);
+  --spacing-native-reader-quick-pill-block: var(--native-spacing-reader-quick-pill-block);
+  --spacing-native-reader-guide-card-end: var(--native-spacing-reader-guide-card-end);
+  --color-native-reader-guide-menu-zone: var(--native-color-reader-guide-menu-zone);
   --shadow-native-bar-button-lift: var(--native-shadow-bar-button-lift);
   --color-native-on-top-bar: var(--native-color-on-top-bar);
   --color-native-top-bar-scrolled: var(--native-color-top-bar-scrolled);
@@ -245,6 +266,7 @@
   --color-native-on-tab-hover: var(--native-color-on-tab-hover);
   --color-native-on-tab-disabled: var(--native-color-on-tab-disabled);
   --color-native-on-tab-current: var(--native-color-on-tab-current);
+  --color-native-on-tab-bar-current: var(--native-color-on-tab-bar-current);
   --color-native-on-tab-pill: var(--native-color-on-tab-pill);
   --spacing-native-tab-bar: var(--native-spacing-tab-bar);
   --spacing-native-tab-bar-inset: var(--native-spacing-tab-bar-inset);
@@ -279,6 +301,7 @@
   --font-weight-native-search-field: var(--native-weight-search-field);
   --tracking-native-search-field: var(--native-tracking-search-field);
   --radius-native-cover: var(--native-radius-cover);
+  --radius-native-picked-cover: var(--native-radius-picked-cover);
   --spacing-native-read-mark: var(--native-spacing-read-mark);
   --color-native-cover-badge: var(--native-color-cover-badge);
   --color-native-on-cover-badge: var(--native-color-on-cover-badge);
@@ -293,6 +316,7 @@
   --radius-native-select: var(--native-radius-select);
   --spacing-native-select: var(--native-spacing-select);
   --spacing-native-select-edge: var(--native-spacing-select-edge);
+  --spacing-native-select-inset: var(--native-spacing-select-inset);
   --shadow-native-select-ring-lift: var(--native-shadow-select-ring-lift);
   --color-native-sheet: var(--native-color-sheet);
   --color-native-grouped-sheet: var(--native-color-grouped-sheet);
@@ -464,6 +488,7 @@
   --color-native-row-current: var(--native-color-row-current);
   --color-native-on-row-current: var(--native-color-on-row-current);
   --radius-native-outlined-field: var(--native-radius-outlined-field);
+  --radius-native-selection-action: var(--native-radius-selection-action);
   --spacing-native-outlined-field: var(--native-spacing-outlined-field);
   --spacing-native-sheet-foot-bottom: var(--native-spacing-sheet-foot-bottom);
   --spacing-native-popover-top: var(--native-spacing-popover-top);
@@ -574,6 +599,34 @@
   --leading-native-first-launch-note: var(--native-leading-first-launch-note);
   --font-weight-native-first-launch-note: var(--native-weight-first-launch-note);
   --tracking-native-first-launch-note: var(--native-tracking-first-launch-note);
+  --color-native-colours-omnileaf-primary: var(--native-color-colours-omnileaf-primary);
+  --color-native-colours-omnileaf-container: var(--native-color-colours-omnileaf-container);
+  --color-native-colours-omnileaf-surface: var(--native-color-colours-omnileaf-surface);
+  --text-native-tile-title: var(--native-text-tile-title);
+  --leading-native-tile-title: var(--native-leading-tile-title);
+  --tracking-native-tile-title: var(--native-tracking-tile-title);
+  --text-native-tile-meta: var(--native-text-tile-meta);
+  --leading-native-tile-meta: var(--native-leading-tile-meta);
+  --font-weight-native-tile-meta: var(--native-weight-tile-meta);
+  --tracking-native-tile-meta: var(--native-tracking-tile-meta);
+  --text-native-count-badge: var(--native-text-count-badge);
+  --leading-native-count-badge: var(--native-leading-count-badge);
+  --tracking-native-count-badge: var(--native-tracking-count-badge);
+  --text-native-collection-count: var(--native-text-collection-count);
+  --leading-native-collection-count: var(--native-leading-collection-count);
+  --font-weight-native-collection-count: var(--native-weight-collection-count);
+  --tracking-native-collection-count: var(--native-tracking-collection-count);
+  --text-native-continue-title: var(--native-text-continue-title);
+  --leading-native-continue-title: var(--native-leading-continue-title);
+  --font-weight-native-continue-title: var(--native-weight-continue-title);
+  --tracking-native-continue-title: var(--native-tracking-continue-title);
+  --text-native-books-heading: var(--native-text-books-heading);
+  --leading-native-books-heading: var(--native-leading-books-heading);
+  --font-weight-native-books-heading: var(--native-weight-books-heading);
+  --tracking-native-books-heading: var(--native-tracking-books-heading);
+  --spacing-native-series-hero-cover: var(--native-spacing-series-hero-cover);
+  --spacing-native-history-bar: var(--native-spacing-history-bar);
+  --spacing-native-library-menu: var(--native-spacing-library-menu);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -583,5 +636,10 @@
   :root[data-platform] [data-theme] {
     --native-duration-move: 0ms;
     --native-duration-slide: 0ms;
+    --native-duration-sheet-in: 0ms;
+    --native-duration-sheet-out: 0ms;
+    --native-duration-tooltip: 0ms;
+    --native-duration-flyout: 0ms;
+    --native-duration-pane: 0ms;
   }
 }

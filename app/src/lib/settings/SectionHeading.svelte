@@ -48,7 +48,7 @@
 
   const TODAYS_TITLE =
     "text-bar-title font-bold tracking-tight touch:medium:max-expanded:text-page-title";
-  const PHONE_TITLE = `${NATIVE_TOP_BAR.pageTitle} ios:ps-xs android:mbs-none`;
+  const PHONE_TITLE = `${NATIVE_TOP_BAR.largeTitle} ios:ps-xs android:mbs-none`;
 
   const platform = currentPlatform();
   const width = new WindowWidth();
@@ -166,7 +166,7 @@
   </header>
 {:else if !hasTitleBar}
   <header
-    class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:flex-row android:max-medium:items-center android:max-medium:gap-xs touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
+    class="flex flex-col items-start android:max-medium:-ms-md android:max-medium:-me-md touch:max-medium:-mbs-sm touch:medium:max-expanded:-mbs-lg desktop:max-medium:-mbs-md"
   >
     <Tooltip label={backLabel}>
       {#snippet child({ props })}
@@ -181,30 +181,41 @@
             "desktop:two-pane:hidden",
             "desktop:-ms-xs desktop:rounded-row desktop:ps-2xs desktop:pe-sm desktop:text-label desktop:font-semibold desktop:text-accent desktop:block-2xl",
             "ios:max-medium:-ms-xs ios:max-medium:rounded-row ios:max-medium:px-sm ios:max-medium:text-back-link ios:max-medium:font-medium ios:max-medium:text-accent ios:max-medium:min-block-touch-target",
-            "android:justify-center android:rounded-full android:block-touch-target android:inline-touch-target",
+            "android:native-target android:justify-center android:rounded-full android:block-native-button android:inline-native-button android:max-medium:ms-xs android:max-medium:mbs-xs",
             "ios:medium:justify-center ios:medium:rounded-full ios:medium:block-touch-target ios:medium:inline-touch-target",
-            "touch:medium:-ms-md",
+            "android:medium:ms-xs! touch:medium:-ms-md",
           ]}
         >
-          <ArrowLeft
-            size={ARROW_SIZE}
-            class="hidden rtl:-scale-x-100 ios:medium:block android:block"
-          />
-          <ChevronLeft
-            size={PHONE_CHEVRON_SIZE}
-            class="hidden rtl:-scale-x-100 ios:max-medium:block"
-          />
-          <ChevronLeft
-            size={POINTER_CHEVRON_SIZE}
-            class="hidden rtl:-scale-x-100 desktop:block"
-          />
+          {#if platform === "android"}
+            <Icon
+              name="arrow-left"
+              size={ARROW_SIZE}
+              class="rtl:-scale-x-100"
+            />
+          {:else}
+            <ArrowLeft
+              size={ARROW_SIZE}
+              class="hidden rtl:-scale-x-100 ios:medium:block"
+            />
+            <ChevronLeft
+              size={PHONE_CHEVRON_SIZE}
+              class="hidden rtl:-scale-x-100 ios:max-medium:block"
+            />
+            <ChevronLeft
+              size={POINTER_CHEVRON_SIZE}
+              class="hidden rtl:-scale-x-100 desktop:block"
+            />
+          {/if}
           <span class="ios:medium:hidden android:hidden">{parent.title}</span>
         </a>
       {/snippet}
     </Tooltip>
     <h1
       tabindex="-1"
-      class={["mbs-xs wrap-anywhere two-pane:mbs-none", titleLook]}
+      class={[
+        "mbs-xs wrap-anywhere android:max-medium:mbs-lg android:max-medium:self-stretch android:max-medium:px-md android:max-medium:pbe-md two-pane:mbs-none",
+        titleLook,
+      ]}
     >
       {title}
     </h1>

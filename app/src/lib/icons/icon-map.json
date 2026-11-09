@@ -92,7 +92,7 @@
   "chevron-down": {
     "framework7": "chevron_down",
     "lucide": "chevron-down",
-    "material": "arrow_drop_down"
+    "material": "keyboard_arrow_down"
   },
   "chevron-left": {
     "framework7": "chevron_left",
@@ -139,6 +139,10 @@
     "framework7Filled": "clock_fill",
     "lucide": "clock",
     "material": "schedule"
+  },
+  "code": {
+    "lucide": "code",
+    "material": "code"
   },
   "columns-2": {
     "framework7": "square_split_2x1",

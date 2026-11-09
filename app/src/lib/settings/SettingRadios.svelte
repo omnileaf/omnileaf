@@ -1,4 +1,6 @@
 <script lang="ts" generics="Option extends string">
+  import type { Snippet } from "svelte";
+
   import {
     RadioGroup,
     RadioGroupItem,
@@ -15,6 +17,8 @@
     labels,
     hints = {},
     hintsAreShown = true,
+    leading,
+    startsPage = false,
     chosen,
     onChoose,
   }: {
@@ -23,6 +27,8 @@
     labels: Record<Option, string>;
     hints?: Partial<Record<Option, string>>;
     hintsAreShown?: boolean;
+    leading?: Snippet<[Option]>;
+    startsPage?: boolean;
     chosen: Option;
     onChoose: (option: Option) => void;
   } = $props();
@@ -34,7 +40,12 @@
 </script>
 
 <section aria-labelledby="{id}-title" class={look.section}>
-  <h2 id="{id}-title" class={look.heading}>{title}</h2>
+  <h2
+    id="{id}-title"
+    class={[look.heading, startsPage && "android:max-medium:pbs-none"]}
+  >
+    {title}
+  </h2>
   <RadioGroup
     {options}
     {chosen}
@@ -60,6 +71,7 @@
             <span class={look.dot}></span>
           {/if}
         </span>
+        {@render leading?.(option)}
         <span class={look.words}>
           <span id="{id}-{option}-label" class={look.label}>
             {labels[option]}

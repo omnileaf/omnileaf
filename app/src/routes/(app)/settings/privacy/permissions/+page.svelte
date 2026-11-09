@@ -9,7 +9,9 @@
     Wifi,
   } from "@lucide/svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Badge } from "#lib/components/ui/badge/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
@@ -22,12 +24,14 @@
     type PermissionState,
     systemSettingsLabel,
   } from "#lib/permissions/permissions.ts";
+  import { FLUSH_LIST, FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { PageProps } from "./$types";
 
   interface PermissionRow {
     readonly icon: Glyph;
+    readonly iconName: IconName;
     readonly label: string;
     readonly description: string;
     readonly state: PermissionState | undefined;
@@ -40,6 +44,11 @@
   } satisfies Record<PermissionState, () => string>;
   const ROW =
     "flex flex-wrap items-center gap-md py-sm ps-lg pe-md min-block-phone-row touch:medium:ps-list-row desktop:ps-list-row desktop:min-block-settings-row";
+  const ANDROID_ROW =
+    "flex items-start gap-native-row-gap py-md ps-native-row-start pe-native-row-end min-block-native-row-two";
+  const ANDROID_LABEL = "font-regular tracking-native-row-title";
+  const ANDROID_LINE =
+    "text-native-row-subtitle/native-row-subtitle text-muted";
   const TILE =
     "flex shrink-0 items-center justify-center rounded-tile border border-border bg-card block-entry-tile inline-entry-tile android:max-medium:border-0 android:max-medium:bg-transparent android:max-medium:text-muted";
 
@@ -51,6 +60,7 @@
   const rows: readonly PermissionRow[] = $derived([
     {
       icon: Folder,
+      iconName: "folder",
       label: m.permissions_folders(),
       description: foldersDescription(
         data.appInfo.platform,
@@ -60,18 +70,21 @@
     },
     {
       icon: Bell,
+      iconName: "bell",
       label: m.permissions_notifications(),
       description: m.permissions_notifications_help(),
       state: "notAsked",
     },
     {
       icon: Wifi,
+      iconName: "wifi",
       label: m.permissions_local_network(),
       description: m.permissions_local_network_help(),
       state: "notAsked",
     },
     {
       icon: Camera,
+      iconName: "camera",
       label: m.permissions_camera(),
       description: m.permissions_camera_help(),
       state: "notAsked",
@@ -94,34 +107,57 @@
   title={m.permissions_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
-<div class="mbs-pane-gap flex flex-col gap-sm">
-  <p class="text-detail text-muted">{m.permissions_intro()}</p>
+<div
+  class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+>
+  <p class={android.isOn ? FLUSH_NOTE : "text-detail text-muted"}>
+    {m.permissions_intro()}
+  </p>
   <ul
     aria-label={m.permissions_title()}
-    class={[
-      "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-      GROUP_PLATE,
-    ]}
+    class={android.isOn
+      ? FLUSH_LIST
+      : [
+          "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
+          GROUP_PLATE,
+        ]}
   >
     {#each rows as row (row.label)}
-      <li class={ROW}>
-        <span aria-hidden="true" class={TILE}>
-          <row.icon size={ICON_SIZE} />
-        </span>
-        <span class="flex grow basis-permission-reason flex-col gap-2xs">
+      <li class={android.isOn ? ANDROID_ROW : ROW}>
+        {#if android.isOn}
+          <Icon name={row.iconName} class="shrink-0" />
+        {:else}
+          <span aria-hidden="true" class={TILE}>
+            <row.icon size={ICON_SIZE} />
+          </span>
+        {/if}
+        <span
+          class={[
+            "flex grow flex-col",
+            android.isOn
+              ? "min-inline-none"
+              : "basis-permission-reason gap-2xs",
+          ]}
+        >
           <span
-            class="font-semibold android:max-medium:font-regular desktop:text-callout"
-            >{row.label}</span
+            class={[
+              "desktop:text-callout",
+              android.isOn ? ANDROID_LABEL : "font-semibold",
+            ]}>{row.label}</span
           >
           <span
-            class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+            class={["text-muted", android.isOn ? ANDROID_LINE : "text-detail"]}
             >{row.description}</span
           >
         </span>
         {#if row.state !== undefined}
           {#if android.isOn}
-            <span data-slot="state" class="shrink-0 text-caption text-muted"
-              >{STATE_LABELS[row.state]()}</span
+            <span
+              data-slot="state"
+              class={[
+                "shrink-0 text-caption font-medium tracking-native-row-title",
+                row.state === "allowed" ? "text-accent" : "text-muted",
+              ]}>{STATE_LABELS[row.state]()}</span
             >
           {:else}
             <Badge look="outline" class="shrink-0 bg-card">

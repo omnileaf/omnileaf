@@ -32,6 +32,7 @@
     ContextMenuSeparator,
   } from "#lib/components/ui/context-menu/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
+  import { openMenuFromKeys } from "#lib/page/menu-keys.ts";
   import { m } from "#lib/paraglide/messages.js";
   import {
     columnsOf,
@@ -43,6 +44,7 @@
   import { showFolderLabel } from "#lib/page/show-file.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
+  import { AndroidPhone } from "./android-phone.svelte.ts";
   import CoverBadges from "./CoverBadges.svelte";
   import ContinueDisc from "./ContinueDisc.svelte";
   import AdultVeil from "./AdultVeil.svelte";
@@ -67,8 +69,8 @@
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
-  import { coverTileLook } from "./cover-tile";
-  import { SCREEN_SIZES } from "./library-view";
+  import { coverStack, coverTileLook } from "./cover-tile";
+  import { SCREEN_SIZES, viewDrawn } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
   import UnreadCount from "./UnreadCount.svelte";
@@ -81,7 +83,7 @@
     onColumns,
     onMostThatFit,
     coverUrl,
-    view,
+    view: saved,
     usesStandIns,
     menu,
     adultTreatment = "show",
@@ -104,6 +106,8 @@
     readonly cell: Snippet<[LibrarySeries]>;
   }
 
+  const androidPhone = new AndroidPhone();
+  const view = $derived(viewDrawn(saved, androidPhone.isOn));
   const fitsToWidth = $derived(view.fitsCoversToWidth);
   const look = $derived(
     coverLook(
@@ -113,8 +117,10 @@
   const baseLook = coverLook(DEFAULT_LIBRARY_VIEW.coversPerRow);
   const platform = currentPlatform();
   const tile = coverTileLook(platform);
-  const stack = $derived(view.stacksSeriesCovers ? tile.stack : null);
   const width = new WindowWidth();
+  const stack = $derived(
+    view.stacksSeriesCovers ? coverStack(platform, width.current) : null,
+  );
   const rowLook = $derived(listRowLook(platform, width.current));
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),
@@ -217,25 +223,6 @@
     return selection?.has(one.id) === true ? tile.pickedTitle : "";
   }
 
-  /** Opens the menu from the keyboard ourselves, since WebKit sends no contextmenu event for Shift F10 or the Menu key. */
-  function openMenuFromKeys(event: KeyboardEvent): void {
-    const isMenuKey =
-      event.key === "ContextMenu" || (event.shiftKey && event.key === "F10");
-    if (!isMenuKey || !(event.target instanceof HTMLElement)) {
-      return;
-    }
-    event.preventDefault();
-    const box = event.target.getBoundingClientRect();
-    event.target.dispatchEvent(
-      new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        clientX: box.left + box.width / 2,
-        clientY: box.top + box.height / 2,
-      }),
-    );
-  }
-
   let reveal: Reveal | undefined;
 
   async function moveAmongCovers(event: KeyboardEvent): Promise<void> {
@@ -335,15 +322,21 @@
     (
       {
         grid: {
-          list: [coversTrack, look.gap],
+          list: [coversTrack, look.gap, tile.grid],
           cell: gridCell,
         },
         compact: {
-          list: [coversTrack, "covers-fit-titles", look.gap, look.title],
+          list: [
+            coversTrack,
+            "covers-fit-titles",
+            look.gap,
+            look.title,
+            tile.grid,
+          ],
           cell: compactCell,
         },
         covers: {
-          list: [coversTrack, look.gap],
+          list: [coversTrack, look.gap, tile.grid],
           cell: coversCell,
         },
         list: {
@@ -444,9 +437,7 @@
               {/if}
             </NotConnectedDim>
             {#if away}
-              <NotConnectedMark
-                class="absolute inset-s-xs inset-be-xs max-inline-full"
-              />
+              <NotConnectedMark class={tile.notConnected?.place ?? ""} />
             {/if}
             {#if marksPicks && !away}
               <SelectionMark
@@ -474,6 +465,7 @@
               class={[
                 "line-clamp-2 font-medium wrap-break-word",
                 look.title,
+                tile.title,
                 pickedTitle(one),
               ]}
             >
@@ -481,8 +473,10 @@
             </p>
             <p
               class={[
-                "truncate text-caption text-muted medium:mbs-2xs",
+                "truncate text-caption medium:mbs-2xs",
+                (away && tile.notConnected?.books) || "text-muted",
                 look.bookCount,
+                tile.meta,
               ]}
             >
               {m.library_series_books({ count: one.bookCount })}
@@ -558,7 +552,10 @@
             />
           {/if}
           <p
-            class="line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only"
+            class={[
+              "line-clamp-2 leading-band font-semibold wrap-anywhere text-on-band @max-cover-title:sr-only",
+              tile.compactTitle,
+            ]}
           >
             {shown.title}
           </p>
@@ -615,9 +612,7 @@
           {/if}
         </NotConnectedDim>
         {#if away}
-          <NotConnectedMark
-            class="absolute inset-s-xs inset-be-xs max-inline-full"
-          />
+          <NotConnectedMark class={tile.notConnected?.place ?? ""} />
         {/if}
         {#if marksPicks && !away}
           <SelectionMark
@@ -778,7 +773,7 @@
                 <UnreadCount
                   count={one.unreadCount}
                   isSpelledOut
-                  class={["px-sm py-2xs text-caption", dimmed(one)]}
+                  class={[rowLook.unread, dimmed(one)]}
                 />
               {/if}
               {#if away}

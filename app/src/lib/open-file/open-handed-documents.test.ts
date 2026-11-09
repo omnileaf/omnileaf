@@ -176,3 +176,32 @@ test("reports when Android cannot be asked for the documents it hands over", asy
 
   await expect.poll(() => failures).toEqual([refusal]);
 });
+
+test("queues nothing handed after the app stops watching", async () => {
+  const queued: string[] = [];
+  let hand: (uri: string) => void = () => undefined;
+  mockIPC((command, args) => {
+    if (command === WATCH_OPEN_WITH) {
+      hand = (uri) => {
+        handDocument(args, uri);
+      };
+      return null;
+    }
+    if (command === QUEUE_DOCUMENT_TO_OPEN) {
+      queued.push((args as { uri: string }).uri);
+    }
+    return null;
+  });
+
+  const stop = openHandedDocuments(
+    () => () => undefined,
+    () => undefined,
+  );
+  await listening();
+  stop();
+  hand(DOCUMENT);
+  await listening();
+  await listening();
+
+  expect(queued).toEqual([]);
+});

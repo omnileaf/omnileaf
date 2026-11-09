@@ -10,6 +10,7 @@
     fallback: Fallback,
     isKit,
     size,
+    kitSize,
     isFilled = false,
     class: className = "",
   }: {
@@ -17,13 +18,14 @@
     fallback: Component<LucideProps>;
     isKit: boolean;
     size: number;
+    kitSize?: number | undefined;
     isFilled?: boolean;
     class?: string;
   } = $props();
 </script>
 
 {#if isKit}
-  <Icon {name} class={className} />
+  <Icon {name} size={kitSize} class={className} />
 {:else}
   <Fallback
     {size}

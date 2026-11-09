@@ -239,7 +239,7 @@
 }
 
 :root[data-platform="android"] [data-icon="chevron-down"] {
-  --icon: url("./material-symbols/arrow_drop_down.svg");
+  --icon: url("./material-symbols/keyboard_arrow_down.svg");
 }
 
 [data-icon="chevron-left"] {
@@ -352,6 +352,18 @@
 
 :root[data-platform="android"] [data-icon="clock"] {
   --icon: url("./material-symbols/schedule.svg");
+}
+
+[data-icon="code"] {
+  --icon: url("./lucide/code.svg");
+}
+
+:root[data-platform="ios"] [data-icon="code"] {
+  --icon: url("./lucide/light/code.svg");
+}
+
+:root[data-platform="android"] [data-icon="code"] {
+  --icon: url("./material-symbols/code.svg");
 }
 
 [data-icon="columns-2"] {

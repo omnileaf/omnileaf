@@ -1,5 +1,4 @@
 use axum::{
-    Form,
     extract::{FromRequestParts, Query, State},
     http::{HeaderMap, HeaderValue, StatusCode, header, request::Parts},
     response::{IntoResponse, Redirect, Response},
@@ -19,6 +18,12 @@ pub(crate) struct Session {
 }
 
 impl Session {
+    pub(crate) fn from_headers(headers: &HeaderMap, state: &AppState) -> Option<Self> {
+        let cookie = cookie_value(headers, SESSION_COOKIE)?;
+        let login = state.keys.open(SESSION_COOKIE, &cookie, state.now())?;
+        Some(Self { login, cookie })
+    }
+
     pub(crate) fn csrf_token(&self, state: &AppState) -> String {
         state.keys.csrf_token(&self.cookie)
     }
@@ -35,14 +40,10 @@ impl FromRequestParts<AppState> for Session {
         parts: &mut Parts,
         state: &AppState,
     ) -> impl Future<Output = Result<Self, Self::Rejection>> {
-        let cookie = cookie_value(&parts.headers, SESSION_COOKIE);
-        let login = cookie
-            .as_deref()
-            .and_then(|sealed| state.keys.open(SESSION_COOKIE, sealed, state.now()));
-        std::future::ready(match (cookie, login) {
-            (Some(cookie), Some(login)) => Ok(Self { login, cookie }),
-            _ => Err(Redirect::to("/admin/login").into_response()),
-        })
+        std::future::ready(
+            Self::from_headers(&parts.headers, state)
+                .ok_or_else(|| Redirect::to("/admin/login").into_response()),
+        )
     }
 }
 
@@ -55,6 +56,10 @@ pub(crate) fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
         .filter_map(|pair| pair.trim().split_once('='))
         .find(|(candidate, _)| *candidate == name)
         .map(|(_, value)| value.to_owned())
+}
+
+pub(crate) fn clear_session_cookie(response: &mut Response) {
+    set_cookie(response, SESSION_COOKIE, "", 0);
 }
 
 fn set_cookie(response: &mut Response, name: &str, value: &str, max_age: u64) {
@@ -151,30 +156,4 @@ async fn decide(state: &AppState, code: &str) -> Result<Option<String>, ()> {
         .await
         .map_err(drop)?;
     Ok(member.then_some(login))
-}
-
-#[derive(Deserialize)]
-pub(crate) struct CsrfForm {
-    csrf: Option<String>,
-}
-
-pub(crate) async fn logout(
-    State(state): State<AppState>,
-    session: Session,
-    Form(form): Form<CsrfForm>,
-) -> Response {
-    if !form
-        .csrf
-        .as_deref()
-        .is_some_and(|token| session.csrf_matches(&state, token))
-    {
-        return notice(
-            StatusCode::FORBIDDEN,
-            "Refused",
-            "The form was not made for this session.",
-        );
-    }
-    let mut response = notice(StatusCode::OK, "Signed out", "You are signed out.");
-    set_cookie(&mut response, SESSION_COOKIE, "", 0);
-    response
 }

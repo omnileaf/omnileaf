@@ -457,7 +457,7 @@ test.describe("on an iPhone with a long series name", () => {
 test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
   const READER_THEME = "dark";
   const IOS_LARGE_SHEET_SHARE = 0.92;
-  const ANDROID_SHEET_TOP_GAP_PX = 48;
+  const ANDROID_SHEET_TOP_GAP_PX = 80;
   const ANDROID_SHEET_START_PX = 16;
   const ANDROID_CALLOUT = { size: "14px", leading: "20px" };
   const CLEAR = "rgba(0, 0, 0, 0)";
@@ -488,6 +488,7 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
       return;
     }
     await openBook(page);
+    const bar = await boxOf(page.locator("main > header"));
 
     const sheet = await openJumpList(page);
     const { height } = viewportOf(page);
@@ -509,6 +510,7 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
         0,
       );
     } else {
+      expect(drawn.y).toBeGreaterThanOrEqual(bar.y + bar.height);
       expect(titleBox.x - drawn.x).toBe(ANDROID_SHEET_START_PX);
       const subtitle = sheet.getByText(`${BOOK_SERIES_TITLE} · 8 books`);
       await expect(subtitle).toHaveCSS("font-size", ANDROID_CALLOUT.size);
@@ -601,7 +603,11 @@ test.describe("Jump to a book on a phone", { tag: "@native" }, () => {
       "color",
       await tokenColour(page, "--native-color-on-jump-current", READER_THEME),
     );
-    await expect(read.locator(".lucide-check")).toHaveCount(1);
+    await expect(
+      read.locator(
+        platform === "ios" ? ".lucide-check" : "[data-icon='check']",
+      ),
+    ).toHaveCount(1);
   });
 
   test("keeps the phone's current book in its own colours when the tab pill changes", async ({

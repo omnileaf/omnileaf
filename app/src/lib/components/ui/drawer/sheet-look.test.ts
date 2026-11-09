@@ -181,7 +181,7 @@ test.each<[Platform, string]>([
 test.each<[Platform, SheetHeight, number]>([
   ["ios", "medium", PHONE.height * 0.5],
   ["ios", "large", PHONE.height * 0.92],
-  ["android", "large", PHONE.height - 48],
+  ["android", "large", PHONE.height - 80],
 ])("opens %s's %s sheet %d tall", async (platform, height, tall) => {
   await page.viewport(PHONE.width, PHONE.height);
 
@@ -221,3 +221,28 @@ test("leaves the page undimmed behind a clear sheet", async () => {
 
   expect(backgroundOf(scrim)).toBe("rgba(0, 0, 0, 0)");
 });
+
+test.each<{ platform: Platform; duration: string; ease: string }>([
+  {
+    platform: "android",
+    duration: "0.4s",
+    ease: "cubic-bezier(0.05, 0.7, 0.1, 1)",
+  },
+  {
+    platform: "ios",
+    duration: "0.35s",
+    ease: "cubic-bezier(0.32, 0.72, 0, 1)",
+  },
+])(
+  "rises on $platform over $duration along its own curve",
+  async ({ platform, duration, ease }) => {
+    const { sheet } = await sheetOn(platform, "light");
+
+    const drawn = getComputedStyle(sheet);
+
+    expect([drawn.transitionDuration, drawn.transitionTimingFunction]).toEqual([
+      duration,
+      ease,
+    ]);
+  },
+);

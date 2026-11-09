@@ -8,6 +8,7 @@
   import RowText from "#lib/about/RowText.svelte";
   import { Bug, FileText, Info, Send } from "@lucide/svelte";
 
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
   import { DetailsCopying } from "#lib/copying/details-copying.svelte.ts";
   import { commands } from "#lib/ipc/bindings.ts";
@@ -16,7 +17,10 @@
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
+  import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+
+  import type { AboutLook } from "#lib/about/look.ts";
 
   import type { PageProps } from "./$types";
 
@@ -27,32 +31,47 @@
 
   const yourReports = yourReportsForDocument();
   const width = new WindowWidth();
-  const look = $derived(
-    isPhone(data.appInfo.platform, width.current) ? "phone" : "pane",
+  const android = new AndroidPhone();
+  const look: AboutLook = $derived(
+    android.isOn
+      ? "android"
+      : isPhone(data.appInfo.platform, width.current)
+        ? "phone"
+        : "pane",
   );
   const reportHint = $derived(
     isPointer(data.appInfo.platform)
       ? m.about_report_problem_hint_computer()
-      : look === "phone"
+      : look !== "pane"
         ? m.about_report_problem_hint_phone()
         : m.about_report_problem_hint_tablet(),
   );
 </script>
 
 <SectionHeading title={m.about_title()} />
-<div class="mbs-pane-gap flex flex-col gap-xl two-pane:max-inline-section">
+<div
+  class="mbs-pane-gap flex flex-col gap-xl android:max-medium:mbs-none two-pane:max-inline-section"
+>
   <div class="flex flex-col items-center gap-xs text-center min-inline-none">
     <img
       src={appIcon}
       alt=""
-      class={look === "phone"
-        ? "block-app-icon inline-app-icon"
-        : "block-pane-app-icon inline-pane-app-icon"}
+      class={look === "pane"
+        ? "block-pane-app-icon inline-pane-app-icon"
+        : [
+            "block-app-icon inline-app-icon",
+            look === "android" && "rounded-full",
+          ]}
     />
     <h2
       class={[
-        "mbs-xs font-bold wrap-anywhere",
-        look === "phone" ? "text-app-name" : "text-group-title",
+        "mbs-xs wrap-anywhere",
+        look === "android"
+          ? "text-app-name font-regular"
+          : [
+              "font-bold",
+              look === "phone" ? "text-app-name" : "text-group-title",
+            ],
       ]}
     >
       {m.app_name()}
@@ -63,14 +82,17 @@
   </div>
   <div>
     <ul
-      class={[
-        "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
-        GROUP_PLATE,
-      ]}
+      class={look === "android"
+        ? FLUSH_LIST
+        : [
+            "divide-y divide-border overflow-hidden rounded-list border border-border bg-card",
+            GROUP_PLATE,
+          ]}
     >
       <AboutPageRow
         route="/(app)/settings/about/report"
         icon={Bug}
+        iconName="bug"
         label={m.about_report_problem()}
         hint={reportHint}
         {look}
@@ -79,6 +101,7 @@
         <AboutPageRow
           route="/(app)/settings/about/reports"
           icon={Send}
+          iconName="send"
           label={m.your_reports_title()}
           hint={m.your_reports_sent({ count: yourReports.reports.length })}
           {look}
@@ -88,15 +111,17 @@
       <AboutPageRow
         route="/(app)/settings/about/licences"
         icon={FileText}
+        iconName="file-text"
         label={m.about_licences()}
         hint={m.about_licences_hint()}
         {look}
       />
-      <Item look="about-version">
+      <Item look={look === "android" ? "row" : "about-version"}>
         {#snippet child({ props })}
           <li {...props}>
             <RowText
               icon={Info}
+              iconName="info"
               label={m.about_version_details()}
               hint={data.appInfo.version}
               {look}

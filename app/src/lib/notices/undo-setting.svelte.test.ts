@@ -17,6 +17,22 @@ test("starts with Undo offered for ten seconds, held while hovered or focused", 
     isOffered: true,
     windowSeconds: 10,
     holdsWhileHoveredOrFocused: true,
+    waitsForScreenReader: true,
+  });
+});
+
+test("waits for a screen reader in rules stored before that choice existed", () => {
+  const store = memoryPreferenceStore();
+  store.setItem(
+    "omnileaf.undo",
+    '{"isOffered":false,"windowSeconds":20,"holdsWhileHoveredOrFocused":false}',
+  );
+
+  expect(new UndoSetting(store).rules).toEqual({
+    isOffered: false,
+    windowSeconds: 20,
+    holdsWhileHoveredOrFocused: false,
+    waitsForScreenReader: true,
   });
 });
 

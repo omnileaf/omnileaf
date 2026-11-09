@@ -14,6 +14,8 @@
     type RemovalTarget,
     type SeriesBook,
     type SeriesBookListing,
+    type SeriesDetails,
+    type SeriesOverview,
   } from "#lib/ipc/bindings.ts";
   import {
     Breadcrumb,
@@ -49,7 +51,7 @@
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
-  import { showFolderLabel } from "#lib/page/show-file.ts";
+  import { showBookFile, showFolderLabel } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
@@ -89,13 +91,14 @@
   let settled: { id: string; shown: SeriesShown } | undefined = $state();
   const shown = $derived(settled?.id === data.id ? settled.shown : undefined);
   const found = $derived(shown?.kind === "found" ? shown : undefined);
+  const hasFailed = $derived(shown?.kind === "failed");
 
   const screenshotMode = getScreenshotMode();
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const width = new WindowWidth();
-  const editsInSheet = $derived(
-    isWide.current || phoneOf(data.appInfo.platform, width.current) === "ios",
-  );
+  const phone = $derived(phoneOf(data.appInfo.platform, width.current));
+  const isAndroidPhone = $derived(phone === "android");
+  const editsInSheet = $derived(isWide.current || phone === "ios");
   const hasToolbar = $derived(
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
@@ -126,6 +129,7 @@
     foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
   );
 
+  let sourcedDetails: SeriesDetails | undefined = $state();
   let keepsDetailEdits = $state(false);
   let keepsLabels = $state(false);
   let isLabelling = $state(false);
@@ -162,6 +166,11 @@
     readAgain();
   }
 
+  async function readSourcedDetails(id: SeriesOverview["id"]): Promise<void> {
+    const read = await commands.seriesDetails(id);
+    sourcedDetails = read.status === "ok" ? read.data : undefined;
+  }
+
   function readAgain(): void {
     void invalidate(SERIES_OVERVIEW);
     void books?.load();
@@ -175,6 +184,10 @@
     }
     readAgain();
     return true;
+  }
+
+  function showFileOf(book: SeriesBook["id"]): void {
+    showBookFile(book, notices);
   }
 
   async function removeBooks(
@@ -234,6 +247,21 @@
     return { newlyBookmarked: bookmarked.length, failed };
   }
 
+  async function removeBookmarks(picked: SeriesBook["id"][]): Promise<boolean> {
+    const cleared = await commands.clearBookmarks(picked);
+    if (cleared.status === "error") {
+      reportError(cleared.error);
+      notices.show({
+        tone: "warning",
+        icon: BookmarkX,
+        title: m.series_bookmark_failed(),
+        body: m.series_bookmark_failed_body(),
+      });
+    }
+    readAgain();
+    return cleared.status === "ok";
+  }
+
   function opposite(read: ReadMark): ReadMark {
     return read === "read" ? "unread" : "read";
   }
@@ -289,6 +317,16 @@
     return () => {
       isAwaited = false;
     };
+  });
+
+  $effect(() => {
+    const id = foundId;
+    if (id === undefined) {
+      return;
+    }
+    untrack(() => {
+      void readSourcedDetails(id);
+    });
   });
 
   $effect(() => {
@@ -350,14 +388,6 @@
     } else {
       void goto(resolve("/(app)/series/[id]/edit", { id: data.id }));
     }
-  }
-
-  function showBookInFolder(book: SeriesBook["id"]): void {
-    void commands.showBookInFolder(book).then((shown) => {
-      if (shown.status === "error") {
-        reportError(shown.error);
-      }
-    });
   }
 
   function showInFolder(): void {
@@ -438,7 +468,7 @@
   {#if !hasToolbar}
     <SeriesBar
       title={overview?.title}
-      {isTitleUnderBar}
+      isTitleUnderBar={isTitleUnderBar || (hasFailed && isAndroidPhone)}
       bind:height={barHeight}
       onMarkAll={found === undefined ? undefined : markAll}
       onLabel={keepsLabels && found !== undefined
@@ -461,6 +491,7 @@
     >
       <SeriesAbout
         {overview}
+        details={sourcedDetails}
         {cover}
         {coverUrl}
         isWide={isWide.current}
@@ -516,8 +547,9 @@
                   onLoadAll={() => books.loadAll()}
                   onMark={mark}
                   onBookmark={bookmarkSelected}
+                  onRemoveBookmarks={removeBookmarks}
                   onRemove={removeBooks}
-                  onShowInFolder={showBookInFolder}
+                  onShowInFolder={showFileOf}
                   platform={data.appInfo.platform}
                   onPickedCount={(count: number | undefined) => {
                     pickedCount = count;
@@ -527,7 +559,7 @@
             </SeriesSections>
           {/key}
         {/if}
-        {#if adultTreatment !== undefined}
+        {#if adultTreatment !== undefined && !(isAndroidPhone && overview.bookCount === 0)}
           <RelatedSeries
             related={found.overview.related}
             usesStandIns={screenshotMode.isOn}

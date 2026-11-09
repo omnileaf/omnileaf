@@ -2,6 +2,7 @@
   import { ChevronRight } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     Item,
     ItemContent,
@@ -9,10 +10,18 @@
     ItemMedia,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { cn } from "#lib/components/cn.ts";
+  import { ITEM_LOOKS, ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import ComingSoon from "#lib/reader/ComingSoon.svelte";
 
+  import { FLUSH_LIST, FLUSH_LIST_HEADING } from "./android-flush-look.ts";
   import {
     type SectionChip,
+    type SettingsGroup,
     type SectionSummary,
     type SettingsRoute,
     SETTINGS_GROUPS,
@@ -32,45 +41,65 @@
     green: "ios:bg-ios-chip-green",
     orange: "ios:bg-ios-chip-orange",
   } satisfies Record<SectionChip, string>;
+  const platform = currentPlatform();
   const headingId = $props.id();
+  const android = new AndroidPhone();
+  const TODAYS_HEADING =
+    "px-lg text-small font-semibold text-muted ios:text-native-row-title/native-row-title ios:font-native-tile-title ios:tracking-native-row-title android:font-medium android:text-accent";
+  const TODAYS_LIST =
+    "divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0";
+
+  function headingOf(group: SettingsGroup): (() => string) | undefined {
+    return android.isOn
+      ? (group.heading ?? group.androidHeading)
+      : group.heading;
+  }
 </script>
 
-<div class="flex flex-col gap-xl">
+<div class={["flex flex-col", !android.isOn && "gap-xl"]}>
   {#each SETTINGS_GROUPS as group, index (index)}
-    <section class="flex flex-col gap-sm">
-      {#if group.heading !== undefined}
+    {@const heading = headingOf(group)}
+    <section class={["flex flex-col", !android.isOn && "gap-sm"]}>
+      {#if heading !== undefined}
         <h2
           id="{headingId}-{index}"
-          class="px-lg text-small font-semibold text-muted ios:text-detail ios:font-regular ios:tracking-heading-caps ios:uppercase android:font-medium android:text-accent"
+          class={android.isOn ? FLUSH_LIST_HEADING : TODAYS_HEADING}
         >
-          {group.heading()}
+          {heading()}
         </h2>
       {/if}
       <ul
-        aria-labelledby={group.heading === undefined
+        aria-labelledby={heading === undefined
           ? undefined
           : `${headingId}-${String(index)}`}
-        class={[
-          "divide-y divide-border overflow-hidden rounded-list border border-border bg-card ios:divide-y-0",
-          GROUP_PLATE,
-        ]}
+        class={android.isOn ? FLUSH_LIST : [TODAYS_LIST, GROUP_PLATE]}
       >
         {#each group.sections as section (section.route)}
           {@const summary = summaries[section.route]}
           <li
             class="relative ios:not-last:after:absolute ios:not-last:after:inset-s-ios-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
           >
-            <Item look="settings-section">
+            <Item look={android.isOn ? "row" : "settings-section"}>
               {#snippet child({ props })}
                 <a href={resolve(section.route)} {...props}>
-                  <ItemMedia
-                    class={[
-                      "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-android-tonal android:text-foreground android:block-settings-chip android:inline-settings-chip android:max-medium:bg-transparent android:max-medium:text-muted desktop:text-foreground",
-                      IOS_CHIPS[section.chip],
-                    ]}
-                  >
-                    <section.icon size={ICON_SIZE} />
-                  </ItemMedia>
+                  {#if android.isOn}
+                    {#if section.iconName !== undefined}
+                      <Icon name={section.iconName} class="shrink-0" />
+                    {/if}
+                  {:else}
+                    <ItemMedia
+                      class={[
+                        "rounded-tile bg-accent-soft text-accent block-tile inline-tile ios:rounded-settings-chip-ios ios:text-reader-white ios:block-settings-chip-ios ios:inline-settings-chip-ios android:rounded-full android:bg-accent-soft android:text-accent android:block-settings-chip android:inline-settings-chip desktop:text-foreground",
+                        IOS_CHIPS[section.chip],
+                      ]}
+                    >
+                      {#if platform === "android" && section.iconName !== undefined}
+                        <Icon name={section.iconName} />
+                      {:else}
+                        <section.icon size={ICON_SIZE} />
+                      {/if}
+                    </ItemMedia>
+                  {/if}
                   <ItemContent
                     class="ios:flex-row ios:flex-wrap ios:items-center ios:gap-x-sm"
                   >
@@ -82,7 +111,7 @@
                     {#if summary !== undefined}
                       <ItemDescription
                         lang={summary.lang}
-                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:max-medium:text-native-row-subtitle/native-row-subtitle"
+                        class="text-footnote ios:flex-1 ios:truncate ios:text-end ios:text-body ios:min-inline-settings-value android:text-native-row-subtitle/native-row-subtitle"
                         >{summary.text}</ItemDescription
                       >
                     {/if}
@@ -96,6 +125,23 @@
             </Item>
           </li>
         {/each}
+        {#if android.isOn}
+          {#each group.comingSoon ?? [] as soon (soon.label())}
+            <li>
+              <ComingSoon
+                label={soon.label()}
+                name="{soon.label()} {m.settings_coming_soon()}"
+                class={cn(ITEM_LOOKS.row, ROW_FOCUS_RING, "text-muted")}
+              >
+                <Icon name={soon.iconName} class="shrink-0" />
+                <ItemContent>
+                  <ItemTitle>{soon.label()}</ItemTitle>
+                  <ItemDescription>{m.settings_coming_soon()}</ItemDescription>
+                </ItemContent>
+              </ComingSoon>
+            </li>
+          {/each}
+        {/if}
       </ul>
     </section>
   {/each}

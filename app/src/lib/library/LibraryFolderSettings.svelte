@@ -10,8 +10,10 @@
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
 
   import type { AddFolder } from "./add-folder";
+  import { AndroidPhone } from "./android-phone.svelte";
   import EmptiedFolderCard from "./EmptiedFolderCard.svelte";
   import { folderLocation } from "./folder-location";
   import { FolderAdding } from "./folder-adding.svelte";
@@ -68,6 +70,7 @@
   } = $props();
 
   const width = new WindowWidth();
+  const android = new AndroidPhone();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
 
   const folders = new LibraryFolders(
@@ -266,7 +269,7 @@
 {/snippet}
 
 <div
-  class="mbs-pane-gap flex flex-col gap-pane-gap two-pane:max-inline-section"
+  class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none two-pane:max-inline-section"
 >
   <HomeFolder
     folders={folders.list}
@@ -277,10 +280,12 @@
     <RescanStatus status={rescans.status} kind="home" />
     <p
       class={[
-        "mbs-sm px-xs text-muted",
-        isNative
-          ? "px-lg text-native-notice-body/native-notice-body"
-          : "text-caption",
+        "mbs-sm text-muted",
+        android.isOn
+          ? FLUSH_NOTE
+          : isNative
+            ? "px-lg text-native-notice-body/native-notice-body"
+            : "px-xs text-caption",
       ]}
     >
       {homeHint()}

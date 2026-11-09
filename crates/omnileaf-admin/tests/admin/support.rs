@@ -22,6 +22,7 @@ use axum::{
     routing::{get, post},
 };
 use omnileaf_admin::{AppState, Config, router};
+use omnileaf_testkit::ScratchFolder;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
@@ -30,6 +31,7 @@ pub(crate) const CLIENT_SECRET: &str = "client-secret";
 pub(crate) const SESSION_KEY: &str = "0123456789abcdef0123456789abcdef";
 pub(crate) const RELAY_TOKEN: &str = "relay-token";
 pub(crate) const START: u64 = 1_700_000_000;
+const DEFAULT_LIST_LIMIT: usize = 50;
 
 struct GitHubState {
     memberships: Mutex<HashMap<String, &'static str>>,
@@ -199,9 +201,9 @@ impl FakeRelay {
             .insert(code.to_owned(), entries);
     }
 
-    pub(crate) fn set_report_text(&self, code: &str, text: &str) {
+    pub(crate) fn purge_report_text(&self, code: &str) {
         if let Some(detail) = self.state.details.lock().unwrap().get_mut(code) {
-            detail["report"] = json!(text);
+            detail["report"] = Value::Null;
         }
     }
 
@@ -271,6 +273,12 @@ async fn relay_list(
                 .get("status")
                 .is_none_or(|status| report["status"]["kind"] == status.as_str())
         })
+        .take(
+            query
+                .get("limit")
+                .and_then(|limit| limit.parse().ok())
+                .unwrap_or(DEFAULT_LIST_LIMIT),
+        )
         .cloned()
         .collect();
     (StatusCode::OK, Json(Value::Array(kept)))
@@ -418,6 +426,17 @@ impl Reply {
 
 impl Harness {
     pub(crate) async fn start(allowlist: &[&str]) -> Self {
+        Self::start_serving(allowlist, None).await
+    }
+
+    pub(crate) async fn start_serving(allowlist: &[&str], site: Option<&Site>) -> Self {
+        Self::try_start_serving(allowlist, site).await.unwrap()
+    }
+
+    pub(crate) async fn try_start_serving(
+        allowlist: &[&str],
+        site: Option<&Site>,
+    ) -> anyhow::Result<Self> {
         let github = FakeGitHub::start().await;
         let relay = FakeRelay::start().await;
         let config = Config {
@@ -430,18 +449,19 @@ impl Harness {
             relay_url: relay.url(),
             relay_token: RELAY_TOKEN.to_owned(),
             listen: "127.0.0.1:0".parse().unwrap(),
+            static_dir: site.map(|site| site.folder.path().to_path_buf()),
             github_api_url: github.url(),
             github_auth_url: github.url(),
         };
         let now = Arc::new(AtomicU64::new(START));
         let clock = Arc::clone(&now);
-        let state = AppState::new(&config, Arc::new(move || clock.load(Ordering::SeqCst))).unwrap();
-        Self {
+        let state = AppState::new(&config, Arc::new(move || clock.load(Ordering::SeqCst)))?;
+        Ok(Self {
             github,
             relay,
             now,
             app: router(state),
-        }
+        })
     }
 
     pub(crate) fn advance(&self, seconds: u64) {
@@ -477,6 +497,24 @@ impl Harness {
             .await
     }
 
+    pub(crate) async fn post_json(
+        &self,
+        path: &str,
+        cookie: Option<&str>,
+        csrf: Option<&str>,
+        body: &str,
+    ) -> Reply {
+        let mut request = Request::post(path).header(header::CONTENT_TYPE, "application/json");
+        if let Some(cookie) = cookie {
+            request = request.header(header::COOKIE, cookie);
+        }
+        if let Some(csrf) = csrf {
+            request = request.header("x-csrf-token", csrf);
+        }
+        self.send(request.body(Body::from(body.to_owned())).unwrap())
+            .await
+    }
+
     pub(crate) async fn start_sign_in(&self) -> (String, String) {
         let reply = self.get("/admin/login", None).await;
         let target = reqwest::Url::parse(reply.location()).unwrap();
@@ -501,10 +539,71 @@ impl Harness {
     }
 }
 
-pub(crate) fn csrf_in(page: &str) -> String {
-    page.split("name=\"csrf\" value=\"")
-        .nth(1)
-        .and_then(|rest| rest.split('"').next())
-        .unwrap()
-        .to_owned()
+pub(crate) fn json_of(text: &str) -> Value {
+    serde_json::from_str(text).unwrap()
+}
+
+pub(crate) const FIRST: &str = "R-1111-1111";
+pub(crate) const SECOND: &str = "R-2222-2222";
+pub(crate) const THIRD: &str = "R-3333-3333";
+
+pub(crate) async fn seeded() -> (Harness, String) {
+    let harness = Harness::start(&["alice"]).await;
+    harness.relay.add_report(
+        FIRST,
+        1_700_000_100,
+        &json!({ "kind": "received" }),
+        "android",
+        "1.2.0",
+    );
+    harness.relay.add_report(
+        SECOND,
+        1_700_000_300,
+        &json!({ "kind": "published", "issue": 42 }),
+        "linux",
+        "1.3.0",
+    );
+    harness.relay.add_report(
+        THIRD,
+        1_700_000_200,
+        &json!({ "kind": "received" }),
+        "linux",
+        "1.2.0",
+    );
+    let cookie = harness.sign_in("alice").await;
+    (harness, cookie)
+}
+
+pub(crate) struct Site {
+    folder: ScratchFolder,
+}
+
+impl Site {
+    pub(crate) fn with(files: &[(&str, &str)]) -> Self {
+        let folder = ScratchFolder::new("ui");
+        for (path, contents) in files {
+            folder.write(path, contents.as_bytes());
+        }
+        Self { folder }
+    }
+
+    pub(crate) fn put(&self, path: &str, bytes: &[u8]) {
+        self.folder.write(path, bytes);
+    }
+
+    pub(crate) fn beside(&self, name: &str, contents: &str) {
+        let path = self.outside(name);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, contents).unwrap();
+    }
+
+    pub(crate) fn outside(&self, name: &str) -> std::path::PathBuf {
+        self.folder.path().parent().unwrap().join(name)
+    }
+
+    #[cfg(unix)]
+    pub(crate) fn link(&self, name: &str, target: &str) {
+        let parent = self.folder.path().parent().unwrap();
+        std::os::unix::fs::symlink(parent.join(target), self.folder.path().join(name)).unwrap();
+    }
 }

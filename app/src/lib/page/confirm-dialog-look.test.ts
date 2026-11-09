@@ -406,3 +406,27 @@ test("draws the Material alert on an Android phone, 28px round on the scrim", as
     resolvedColour("--native-color-scrim", "backgroundColor"),
   );
 });
+
+test("drops an Android dialog in over 0.5s on the emphasized curve, moving and unfolding as well as fading", async () => {
+  const dialog = await openAlertOn("android", DESKTOP_WINDOW);
+
+  const style = getComputedStyle(dialog);
+
+  expect([
+    style.transitionProperty,
+    style.transitionDuration,
+    style.transitionTimingFunction,
+    style.transformOrigin,
+  ]).toEqual([
+    "opacity, transform, clip-path",
+    "0.5s",
+    "cubic-bezier(0.2, 0, 0, 1)",
+    `${String(dialog.getBoundingClientRect().width / 2)}px 0px`,
+  ]);
+});
+
+test("only fades a dialog in on Linux", async () => {
+  const dialog = await openAlertOn("linux", DESKTOP_WINDOW);
+
+  expect(getComputedStyle(dialog).transitionProperty).toBe("opacity");
+});

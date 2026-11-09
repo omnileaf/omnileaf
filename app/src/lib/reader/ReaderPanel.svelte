@@ -20,6 +20,7 @@
     readerButton,
     readerIconSize,
   } from "./reader-bar.ts";
+  import { quickSettingLook } from "./quick-setting.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
   import { type Spread, spreadPosition } from "./spreads.ts";
@@ -43,6 +44,7 @@
     isBlank,
     showsPreviews,
     isShown,
+    hidesSlider,
     onPlay,
     onSeek,
   }: {
@@ -57,6 +59,7 @@
     isBlank: boolean;
     showsPreviews: boolean;
     isShown: boolean;
+    hidesSlider: boolean;
     onPlay: (() => void) | undefined;
     onSeek: (index: number) => void;
   } = $props();
@@ -64,6 +67,7 @@
   const count = $derived(pages.length);
   const chrome = getReaderChrome();
   const floats = $derived(chrome.floats);
+  const quickLook = $derived(quickSettingLook(chrome.platform, chrome.width));
   let isDragged = $state(false);
   let isSliderFocused = $state(false);
   let isHovered = $state(false);
@@ -141,11 +145,7 @@
     <div
       role="group"
       aria-label={m.reader_quick_settings()}
-      class={floats
-        ? cn(READER_CAPSULE, "flex-wrap justify-center px-2xs max-inline-full")
-        : chrome.isCommandBar
-          ? "flex flex-wrap items-center justify-center gap-2xs large:hidden"
-          : "flex flex-wrap items-stretch rounded-shadcn-control shadow-raised large:hidden"}
+      class={quickLook.group}
     >
       {@render quickSettings()}
     </div>
@@ -159,6 +159,7 @@
       : cn(
           "flex items-center gap-xs expanded:gap-sm",
           chrome.isOnPhone && "gap-sm",
+          hidesSlider && "justify-center",
         )}
   >
     <BookStepLink step="previous" neighbour={previous} />
@@ -177,24 +178,26 @@
         />
       </button>
     {/if}
-    <span
-      class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
-    >
-      {spreadPosition(spread, count)}
-    </span>
-    <PageSlider
-      {shown}
-      {count}
-      {direction}
-      {onSeek}
-      onDrag={(dragged: boolean) => {
-        isDragged = dragged;
-        staysUp ||= dragged;
-      }}
-      onFocusChange={(isFocused: boolean) => {
-        isSliderFocused = isFocused;
-      }}
-    />
+    {#if !hidesSlider}
+      <span
+        class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
+      >
+        {spreadPosition(spread, count)}
+      </span>
+      <PageSlider
+        {shown}
+        {count}
+        {direction}
+        {onSeek}
+        onDrag={(dragged: boolean) => {
+          isDragged = dragged;
+          staysUp ||= dragged;
+        }}
+        onFocusChange={(isFocused: boolean) => {
+          isSliderFocused = isFocused;
+        }}
+      />
+    {/if}
     <BookStepLink step="next" neighbour={next} />
   </div>
   {#if secondsLeft !== undefined}

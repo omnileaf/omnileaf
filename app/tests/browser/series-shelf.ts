@@ -38,6 +38,7 @@ export class FakeShelf {
     readonly pages: number[];
     readonly isBookmarked: boolean;
   }[] = [];
+  readonly bookmarksCleared: string[][] = [];
   readonly #books: WireBook[];
   readonly #details: SeriesDetails;
   #laterPages: Promise<void> = Promise.resolve();
@@ -166,6 +167,17 @@ export class FakeShelf {
           bookmarking.isBookmarked = isBookmarked;
         }
         return null;
+      },
+      clearBookmarks: (books) => {
+        this.bookmarksCleared.push([...books]);
+        let cleared = 0;
+        for (const book of this.#books) {
+          if (books.includes(book.id) && book.isBookmarked) {
+            book.isBookmarked = false;
+            cleared += 1;
+          }
+        }
+        return cleared;
       },
     };
   }

@@ -3,6 +3,7 @@
   import { Toggle } from "bits-ui";
   import type { Snippet } from "svelte";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
 
@@ -19,6 +20,7 @@
   }
 
   const CHECK_SIZE = 14;
+  const ANDROID_CHECK_SIZE = 18;
 
   let {
     label,
@@ -101,7 +103,9 @@
         }
         class={chipClassOf(isChosen)}
       >
-        {#if isChosen}
+        {#if isChosen && isAndroidPhone}
+          <Icon name="check" size={ANDROID_CHECK_SIZE} />
+        {:else if isChosen}
           <Check
             size={isInspector ? MAC_INSPECTOR_CHIP.iconSize : CHECK_SIZE}
             aria-hidden="true"

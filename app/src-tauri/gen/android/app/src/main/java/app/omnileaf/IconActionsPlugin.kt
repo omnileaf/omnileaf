@@ -34,8 +34,7 @@ enum class IconAction(
 @InvokeArg
 class IconShortcut {
     var action: String = ""
-    var title: String = ""
-    var titleWithState: String = ""
+    var androidLabel: String = ""
 }
 
 @InvokeArg
@@ -85,8 +84,8 @@ private fun IconShortcut.info(
             .putExtra(CHOSEN_ACTION, chosen.id)
     return ShortcutInfoCompat
         .Builder(context, chosen.id)
-        .setShortLabel(title)
-        .setLongLabel(titleWithState)
+        .setShortLabel(androidLabel)
+        .setLongLabel(androidLabel)
         .setIcon(IconCompat.createWithResource(context, chosen.icon))
         .setIntent(opening)
         .setRank(rank)

@@ -938,6 +938,10 @@ test.describe("on Android", () => {
     page,
   }) => {
     test.skip(isDesktop(page), "the clear button shows on phones and tablets");
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "the phone draws the full-screen search view",
+    );
     await page.goto("/search");
     await searchField(page).fill("market");
     const clear = page.getByRole("button", { name: "Clear", exact: true });
@@ -965,11 +969,15 @@ test.describe("on Android", () => {
   test("draws the search field as a 48 dp pill with a muted icon 12 dp from its words", async ({
     page,
   }) => {
+    test.skip(
+      viewportOf(page).width < MEDIUM_MIN_WIDTH,
+      "the phone draws the full-screen search view",
+    );
     await page.goto("/search");
 
     const field = searchField(page).locator("..");
     const box = await boxOf(field);
-    const icon = await boxOf(field.locator("svg").first());
+    const icon = await boxOf(field.locator("[data-icon]").first());
     const words = await boxOf(searchField(page));
     const radius = await field.evaluate((element) =>
       Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
@@ -978,7 +986,7 @@ test.describe("on Android", () => {
     expect(box.height).toBe(ANDROID_SEARCH_FIELD_PX);
     expect(radius).toBeGreaterThanOrEqual(box.height / 2);
     expect(words.x - (icon.x + icon.width)).toBe(ANDROID_SEARCH_ICON_GAP_PX);
-    await expect(field.locator("svg").first()).toHaveCSS(
+    await expect(field.locator("[data-icon]").first()).toHaveCSS(
       "color",
       await tokenColour(page, "--secondary-text"),
     );
@@ -988,6 +996,10 @@ test.describe("on Android", () => {
     test(`fills the search field with the high surface container and no edge in the ${colorScheme} theme`, async ({
       page,
     }) => {
+      test.skip(
+        viewportOf(page).width < MEDIUM_MIN_WIDTH,
+        "the phone draws the full-screen search view",
+      );
       await page.emulateMedia({ colorScheme });
       await page.goto("/search");
 

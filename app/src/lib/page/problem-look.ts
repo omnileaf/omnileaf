@@ -1,3 +1,5 @@
+import { cn } from "#lib/components/cn.ts";
+import type { AlertTone } from "#lib/components/ui/alert/index.ts";
 import {
   type ButtonLook,
   type ButtonVariant,
@@ -7,6 +9,9 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { type ActionGroupLook, actionGroupLook } from "./action-group.ts";
 import type { WidthClass } from "./breakpoints.ts";
+import { phoneOf } from "./platform.ts";
+
+export const KIT_BUTTON_ICON_SIZE = 18;
 
 export interface ProblemButton {
   readonly look?: ButtonLook;
@@ -28,6 +33,12 @@ export interface ProblemLook {
   readonly button: ProblemButton;
 }
 
+export interface BookProblemLook extends ProblemLook {
+  readonly chip: string;
+  readonly noticeTone: AlertTone;
+  readonly hasKitIcons: boolean;
+}
+
 const TODAYS_LOOK: ProblemLook = {
   section:
     "gap-md pbs-2xl medium:pbs-3xl expanded:pbs-problem-top max-inline-problem",
@@ -46,6 +57,18 @@ const TODAYS_LOOK: ProblemLook = {
     class:
       "flex items-center justify-center rounded-full px-xl font-bold min-block-touch-target medium:rounded-control",
   },
+};
+
+const ANDROID_PHONE_LOOK: BookProblemLook = {
+  ...TODAYS_LOOK,
+  iconSize: 28,
+  media:
+    "rounded-full bg-native-button-secondary text-native-on-button-secondary block-problem-media inline-problem-media",
+  bookTitle:
+    "text-native-page-title/native-page-title font-native-page-title tracking-native-page-title",
+  chip: "inline-flex items-center rounded-native-segment border border-native-button-outline-edge bg-transparent px-md text-native-button/native-button font-native-button tracking-native-button text-foreground min-block-native-button-small",
+  noticeTone: "warning",
+  hasKitIcons: true,
 };
 
 const WINDOWS_LOOK: ProblemLook = {
@@ -75,6 +98,20 @@ export function problemLook(platform: Platform): ProblemLook {
   return PROBLEM_LOOKS[platform];
 }
 
+export function bookProblemLook(
+  platform: Platform,
+  width: WidthClass,
+): BookProblemLook {
+  return phoneOf(platform, width) === "android"
+    ? ANDROID_PHONE_LOOK
+    : {
+        ...problemLook(platform),
+        chip: "",
+        noticeTone: "plain",
+        hasKitIcons: false,
+      };
+}
+
 const WINDOWS_ACTION_GROUP: ActionGroupLook = {
   group: "flex flex-wrap items-center gap-sm",
   main: variantClasses("primary", "regular", false, "windows"),
@@ -86,7 +123,11 @@ export function problemActionGroup(
   width: WidthClass,
   today: ActionGroupLook,
 ): ActionGroupLook {
-  return platform === "windows"
-    ? WINDOWS_ACTION_GROUP
-    : actionGroupLook(platform, width, today);
+  if (platform === "windows") {
+    return WINDOWS_ACTION_GROUP;
+  }
+  const look = actionGroupLook(platform, width, today);
+  return phoneOf(platform, width) === "android"
+    ? { ...look, other: cn(look.other, "text-muted") }
+    : look;
 }

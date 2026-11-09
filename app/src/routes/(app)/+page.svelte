@@ -4,6 +4,10 @@
   import { onMount, type Snippet, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+
   import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
   import { assertNever } from "#lib/assert-never.ts";
   import {
@@ -43,6 +47,7 @@
   import ContinueRow from "#lib/library/ContinueRow.svelte";
   import CoverSkeletons from "#lib/library/CoverSkeletons.svelte";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
+  import { viewDrawn } from "#lib/library/library-view.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { FolderCardsPhone } from "#lib/library/folder-cards-phone.svelte.ts";
   import MissingFolderCard from "#lib/library/MissingFolderCard.svelte";
@@ -190,8 +195,11 @@
   );
   let filterChoices = $state<LibraryFilterChoices>(NO_FILTER_CHOICES);
   let folders = $state<readonly LibraryFolder[]>([]);
+  const androidPhone = new AndroidPhone();
   const groupBy = $derived<LibraryGrouping>(
-    view.reading.kind === "read" ? view.reading.value.groupBy : "none",
+    view.reading.kind === "read"
+      ? viewDrawn(view.reading.value, androidPhone.isOn).groupBy
+      : "none",
   );
   let writers = $state<readonly LibraryWriter[]>([]);
   const groups = $derived(groupsBy(groupBy));
@@ -225,7 +233,6 @@
   const seriesCount = $derived(chosenPage.count);
   const notices = getNotices();
   let hiddenSeries = $state(0);
-  const androidPhone = new AndroidPhone();
   const folderCardsPhone = new FolderCardsPhone();
   let missingFolders = $state<readonly MissingFolder[]>([]);
   let stillFailing = $state<readonly string[]>([]);
@@ -871,8 +878,21 @@
     }
   }
 
+  async function chooseTagFromLink(): Promise<void> {
+    await listing.load();
+    const tag = page.state.libraryTag;
+    if (tag === undefined || chosenListing === undefined) {
+      return;
+    }
+    chooseListing({
+      ...chosenListing,
+      filter: { ...withoutFilters(chosenListing).filter, tags: [tag] },
+    });
+    await goto(resolve("/(app)"), { replaceState: true, state: {} });
+  }
+
   onMount(() => {
-    void listing.load();
+    void chooseTagFromLink();
     void view.load();
     void adultContent.load();
     void loadCategories();
@@ -1058,6 +1078,7 @@
     platform={data.appInfo.platform}
     title={m.library_title()}
     showsLabel={screenshotMode.showsLabel}
+    stacksCount
     attention={showsAttentionDot && !showsAttentionInBar
       ? attentionDot
       : undefined}
@@ -1337,7 +1358,7 @@
             {/if}
           </div>
         </div>
-        {#if selection.isSelecting && selection.count > 0 && !commandsOnTop && !isMac}
+        {#if selection.isSelecting && (selection.count > 0 || androidPhone.isOn) && !commandsOnTop && !isMac}
           {#if isIos}
             <IosSelectionActions
               {keepsLabels}

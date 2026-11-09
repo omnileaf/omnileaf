@@ -3,6 +3,7 @@
   import type { Snippet } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
@@ -72,8 +73,9 @@
   data-page-toolbar
   data-picking-bar={onIosPhone || undefined}
   class={[
-    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center bg-background ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar",
+    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end -mbs-page-top flex items-center ps-page-start pe-page-end pbs-page-top pbe-xs in-toolbar:-inset-bs-title-gap in-toolbar:-ms-gutter in-toolbar:-mbs-title-gap in-toolbar:border-be in-toolbar:border-border in-toolbar:px-lg in-toolbar:pbs-none in-toolbar:pbe-none in-toolbar:min-block-toolbar",
     onIosTablet ? "flex-wrap justify-between" : "gap-sm",
+    onAndroidPhone ? "bg-native-top-bar-scrolled" : "bg-background",
   ]}
 >
   {#if onIosPhone}
@@ -113,7 +115,11 @@
             ? undefined
             : "block-touch-target inline-touch-target in-toolbar:block-pointer-button in-toolbar:inline-pointer-button"}
         >
-          <X size={ICON_SIZE} aria-hidden="true" />
+          {#if onAndroidPhone}
+            <Icon name="x" />
+          {:else}
+            <X size={ICON_SIZE} aria-hidden="true" />
+          {/if}
         </Button>
       {/snippet}
     </Tooltip>

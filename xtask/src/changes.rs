@@ -14,6 +14,7 @@ pub(crate) struct Areas {
     pub(crate) app: bool,
     pub(crate) site: bool,
     pub(crate) vendor: bool,
+    pub(crate) admin: bool,
 }
 
 impl Areas {
@@ -22,6 +23,7 @@ impl Areas {
         app: true,
         site: true,
         vendor: true,
+        admin: true,
     };
 
     fn union(self, other: Self) -> Self {
@@ -30,15 +32,17 @@ impl Areas {
             app: self.app || other.app,
             site: self.site || other.site,
             vendor: self.vendor || other.vendor,
+            admin: self.admin || other.admin,
         }
     }
 
-    pub(crate) fn outputs(self) -> [String; 4] {
+    pub(crate) fn outputs(self) -> [String; 5] {
         [
             format!("native={}", self.native),
             format!("app={}", self.app),
             format!("site={}", self.site),
             format!("vendor={}", self.vendor),
+            format!("admin={}", self.admin),
         ]
     }
 }
@@ -48,10 +52,20 @@ const NOTHING: Areas = Areas {
     app: false,
     site: false,
     vendor: false,
+    admin: false,
 };
 
 const NATIVE: Areas = Areas {
     native: true,
+    ..NOTHING
+};
+const ADMIN_SERVICE: Areas = Areas {
+    native: true,
+    admin: true,
+    ..NOTHING
+};
+const ADMIN_BROWSER_CHECK: Areas = Areas {
+    admin: true,
     ..NOTHING
 };
 const VENDORED: Areas = Areas {
@@ -79,6 +93,10 @@ const BRANDING: Areas = Areas {
 };
 
 const RULES: &[(&str, Areas)] = &[
+    ("crates/omnileaf-admin/", ADMIN_SERVICE),
+    ("app/tests/admin/", ADMIN_BROWSER_CHECK),
+    ("app/playwright.admin.config.ts", ADMIN_BROWSER_CHECK),
+    ("admin-ui/", ADMIN_BROWSER_CHECK),
     ("app/src-tauri/", NATIVE),
     ("app/src/app.css", APP_READ_BY_NATIVE),
     ("app/src/lib/ipc/bindings.ts", APP_READ_BY_NATIVE),
@@ -97,6 +115,7 @@ const RULES: &[(&str, Areas)] = &[
     ("deny.toml", NATIVE),
     ("about.toml", NATIVE),
     ("docs/", NOTHING),
+    (".changes/", NOTHING),
     ("policy/", NOTHING),
     (".githooks/", NOTHING),
     ("README.md", NOTHING),
@@ -190,6 +209,30 @@ mod tests {
     }
 
     #[test]
+    fn sends_the_admin_service_to_the_native_jobs_and_the_browser_check() {
+        let changed = areas(&["crates/omnileaf-admin/src/style.css"]);
+
+        assert_eq!(changed, ADMIN_SERVICE);
+    }
+
+    #[test]
+    fn sends_the_browser_check_files_to_its_own_job_only() {
+        for path in [
+            "app/tests/admin/dashboard.spec.ts",
+            "app/playwright.admin.config.ts",
+        ] {
+            assert_eq!(areas(&[path]), ADMIN_BROWSER_CHECK, "{path}");
+        }
+    }
+
+    #[test]
+    fn sends_the_admin_interface_to_the_browser_check_only() {
+        for path in ["admin-ui/src/app.css", "admin-ui/package.json"] {
+            assert_eq!(areas(&[path]), ADMIN_BROWSER_CHECK, "{path}");
+        }
+    }
+
+    #[test]
     fn sends_the_website_to_the_site_tests() {
         let changed = areas(&["site/src/routes/+page.svelte"]);
 
@@ -210,6 +253,8 @@ mod tests {
             "SECURITY.md",
             "LICENSE",
             "docs/code-standards.md",
+            ".changes/android-section-tabs.md",
+            ".changes/config.json",
             "policy/allowed-hosts.txt",
             ".githooks/pre-push",
             ".editorconfig",
@@ -252,6 +297,7 @@ mod tests {
                 app: false,
                 site: true,
                 vendor: false,
+                admin: false,
             }
         );
     }
@@ -269,7 +315,13 @@ mod tests {
 
         assert_eq!(
             lines,
-            ["native=false", "app=false", "site=true", "vendor=false"]
+            [
+                "native=false",
+                "app=false",
+                "site=true",
+                "vendor=false",
+                "admin=false"
+            ]
         );
     }
 }

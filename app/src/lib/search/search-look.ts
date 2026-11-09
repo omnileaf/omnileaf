@@ -117,7 +117,15 @@ export interface StartLook {
   readonly filterSection: string;
   readonly example: string;
   readonly filters: string;
+  readonly word: string;
+  readonly soonWord: string | undefined;
 }
+
+const TODAYS_WORD_BOX =
+  "rounded-badge bg-chip px-sm py-2xs font-mono text-detail";
+const TODAYS_WORD = `${TODAYS_WORD_BOX} text-foreground`;
+const NATIVE_WORD =
+  "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
 const TODAYS_ROW = "flex items-center gap-md py-md";
 
@@ -136,6 +144,8 @@ export const TODAYS_START_LOOK: StartLook = {
   filterSection: "flex flex-col gap-sm",
   example: "text-detail text-muted",
   filters: "flex flex-wrap gap-sm",
+  word: TODAYS_WORD,
+  soonWord: undefined,
 };
 
 export const NATIVE_START_LOOK: StartLook = {
@@ -153,6 +163,8 @@ export const NATIVE_START_LOOK: StartLook = {
   filterSection: "flex flex-col",
   example: `px-lg mbe-sm ${GROUPED_FOOTNOTE_TYPE}`,
   filters: "flex flex-wrap gap-sm px-lg",
+  word: NATIVE_WORD,
+  soonWord: undefined,
 };
 
 export const ANDROID_START_LOOK: StartLook = {
@@ -162,7 +174,7 @@ export const ANDROID_START_LOOK: StartLook = {
   heading: ANDROID_SEARCH_LOOK.heading,
   headingBesideAction: ANDROID_SEARCH_LOOK.heading,
   clear: { variant: "plain" },
-  rows: "flex flex-col",
+  rows: "-ms-page-start -me-page-end flex flex-col",
   row: `${ITEM_LOOKS.row} ${ROW_FOCUS_RING}`,
   staticRow: ITEM_LOOKS["row-static"],
   lead: "flex shrink-0 items-center justify-center text-muted",
@@ -170,6 +182,8 @@ export const ANDROID_START_LOOK: StartLook = {
   filterSection: "flex flex-col",
   example: `${ROW_SUBTITLE_TYPE} pbe-sm text-muted`,
   filters: "flex flex-wrap gap-sm pbe-sm",
+  word: TODAYS_WORD,
+  soonWord: `${TODAYS_WORD_BOX} text-muted`,
 };
 
 export function startLook(isNative: boolean, isMaterial = false): StartLook {
@@ -180,3 +194,13 @@ export function startLook(isNative: boolean, isMaterial = false): StartLook {
 }
 
 export type FilterPlace = "token" | "field" | "row";
+
+export const ANDROID_SEARCH_VIEW = {
+  ground:
+    "-ms-page-start -me-page-end isolate -mbs-page-top bg-native-search-view ps-page-start pe-page-end pbs-safe-top before:fixed before:inset-none before:-z-10 before:bg-native-search-view min-block-dvh",
+  bar: "-ms-page-start -me-page-end border-be border-native-button-outline-edge px-sm block-native-search-view-bar",
+  field:
+    "flex-1 gap-md rounded-none border-0 bg-transparent px-xs shadow-none block-auto min-inline-none min-block-none",
+  back: "relative block-native-button inline-native-button before:absolute before:block-touch-target before:inline-touch-target",
+  clear: "relative shrink-0 text-muted block-touch-target inline-touch-target",
+} as const;

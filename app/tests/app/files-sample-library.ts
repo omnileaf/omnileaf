@@ -9,8 +9,8 @@ import {
 import { createSampleLibrary, SAMPLE_LIBRARY } from "./sample-library.ts";
 import { type Locator, type Session, xpath } from "./webdriver.ts";
 
-const SHARED_DOCUMENTS = "/sdcard/Documents";
-const SAMPLE_ON_DEVICE = `${SHARED_DOCUMENTS}/${SAMPLE_LIBRARY.name}`;
+export const SHARED_DOCUMENTS = "/sdcard/Documents";
+export const SAMPLE_ON_DEVICE = `${SHARED_DOCUMENTS}/${SAMPLE_LIBRARY.name}`;
 const ADB_TIMEOUT_MS = 30_000;
 const PICKER_APPEARS_TIMEOUT_MS = 30_000;
 const SCAN_TIMEOUT_MS = 60_000;

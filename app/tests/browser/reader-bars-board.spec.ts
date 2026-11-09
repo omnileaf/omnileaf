@@ -320,6 +320,23 @@ test.describe("on Android", () => {
     );
     await expect(bar).toHaveCSS("backdrop-filter", "none");
   });
+
+  test("slides the top bar up a little as it fades out, and the bottom bar down", async ({
+    page,
+  }) => {
+    await openBook(page);
+    const top = page.locator("main > header");
+    const bottom = page.locator("main > div").filter({
+      has: page.getByRole("slider"),
+    });
+    await expect(top).toHaveCSS("translate", "none");
+
+    await page.getByRole("button", { name: /the controls$/ }).click();
+
+    await expect(top).toHaveCSS("opacity", "0");
+    await expect(top).toHaveCSS("translate", "0px -12px");
+    await expect(bottom).toHaveCSS("translate", "0px 12px");
+  });
 });
 
 test("lays the page slider's track along the slider", async ({ page }) => {

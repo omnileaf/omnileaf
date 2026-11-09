@@ -8,6 +8,7 @@ import { render } from "vitest-browser-svelte";
 import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { clearToasts } from "../../../tests/components/clear-toasts";
+import { compositedContrast } from "../../../tests/components/contrast-ratio";
 import "../../app.css";
 
 import {
@@ -18,6 +19,8 @@ import {
 } from "./notices";
 import SelfDismissingToastHarness from "./SelfDismissingToastHarness.svelte";
 import Toasts from "./Toasts.svelte";
+
+const MIN_TEXT_CONTRAST = 4.5;
 
 const READY: Notice = {
   tone: "plain",
@@ -67,6 +70,7 @@ afterEach(async () => {
     element.remove();
   }
   delete document.documentElement.dataset.platform;
+  delete document.documentElement.dataset.theme;
   document.documentElement.style.removeProperty("--platform-font");
   await clearToasts();
 });
@@ -752,6 +756,27 @@ test("draws a plain toast on an Android tablet inverse at 4px corners with a qui
   expect(action.fontWeight).toBe("600");
 });
 
+test.each(["light", "dark"] as const)(
+  "keeps a plain toast's action readable against the Android snackbar in the %s theme",
+  async (theme) => {
+    document.documentElement.dataset.theme = theme;
+    await page.viewport(TABLET.width, TABLET.height);
+    const notices = await renderToastsOn("android");
+    notices.show({ ...READY, action: START_OVER });
+    const toast = toastSaying(READY.title);
+    await expect.element(toast).toBeVisible();
+
+    const action = toast
+      .getByRole("button", { name: START_OVER.label })
+      .element();
+    const surface = getComputedStyle(cardOf(toast)).backgroundColor;
+
+    expect(compositedContrast(action, [surface])).toBeGreaterThanOrEqual(
+      MIN_TEXT_CONTRAST,
+    );
+  },
+);
+
 test("keeps a warning's own colours and filled action on an Android tablet, at the snackbar's 4px corners", async () => {
   await page.viewport(TABLET.width, TABLET.height);
   const notices = await renderToastsOn("android");
@@ -816,3 +841,34 @@ test.each<{
     expect(toaster?.getAttribute("data-y-position")).toBe(edge);
   },
 );
+
+test("shows one notice at a time on Android and the next once the front one is gone", async () => {
+  const notices = new Notices(undefined, "toasts", true);
+  await render(Toasts, { notices, platform: "android", theme: "light" });
+  const first = titled("First");
+
+  notices.show(first);
+  notices.show(titled("Second"));
+
+  await expect.element(toastSaying("First")).toBeVisible();
+  expect(page.getByRole("listitem").elements()).toHaveLength(1);
+
+  notices.withdraw(first);
+
+  await expect.element(toastSaying("Second")).toBeVisible();
+  await expect.poll(() => page.getByRole("listitem").elements().length).toBe(1);
+});
+
+test("drops a waiting notice that is withdrawn before its turn", async () => {
+  const notices = new Notices(undefined, "toasts", true);
+  await render(Toasts, { notices, platform: "android", theme: "light" });
+  const first = titled("First");
+  const second = titled("Second");
+
+  notices.show(first);
+  notices.show(second);
+  notices.withdraw(second);
+  notices.withdraw(first);
+
+  await expect.poll(() => page.getByRole("listitem").elements().length).toBe(0);
+});

@@ -3,6 +3,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  targetOf,
   test,
   tokenColour,
 } from "./fixtures.ts";
@@ -59,7 +60,7 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
     await expect(save).toHaveCSS("font-weight", "500");
   });
 
-  test("sets the title at 22px on a 28px line beside a 48px close button", async ({
+  test("sets the title at 22px on a 28px line beside a 40px close button", async ({
     page,
   }) => {
     await open(page);
@@ -69,7 +70,20 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
     await expect(title).toHaveCSS("font-size", "22px");
     await expect(title).toHaveCSS("line-height", "28px");
     await expect(title).toHaveCSS("font-weight", "400");
-    expect(await boxOf(close)).toMatchObject({ width: 48, height: 48 });
+    expect(await boxOf(close)).toMatchObject({ width: 40, height: 40 });
+  });
+
+  test("gives Close and Save a 48px touch area around their 40px look", async ({
+    page,
+  }) => {
+    await open(page);
+    const close = page.getByRole("button", { name: "Close" });
+    const save = page.getByRole("button", { name: "Save" });
+
+    expect(await boxOf(close)).toMatchObject({ width: 40, height: 40 });
+    expect(await boxOf(save)).toMatchObject({ height: 40 });
+    expect(await targetOf(close)).toMatchObject({ width: 48, height: 48 });
+    expect((await targetOf(save)).height).toBe(48);
   });
 
   test("sets the fields on the page with no card and no rules between them", async ({
@@ -89,22 +103,35 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
     await open(page);
 
     for (const name of ["Title", "Summary"]) {
-      const box = page.getByRole("textbox", { name });
+      const box = page
+        .locator("[data-slot='outlined-field']")
+        .filter({ has: page.getByRole("textbox", { name }) });
       const label = page.locator("label", {
         hasText: new RegExp(`^${name}$`),
       });
-      const boxTop = (await boxOf(box)).y;
+      const boxBox = await boxOf(box);
       const labelBox = await boxOf(label);
 
       await expect(box).toHaveCSS("border-top-left-radius", "4px");
-      expect(Math.abs(labelBox.y + labelBox.height / 2 - boxTop)).toBeLessThan(
-        3,
-      );
+      expect(boxBox.height).toBeGreaterThanOrEqual(56);
+      expect(
+        Math.abs(labelBox.y + labelBox.height / 2 - boxBox.y),
+      ).toBeLessThanOrEqual(1);
       await expect(label).toHaveCSS("font-size", "12px");
+      await expect(label).toHaveCSS("letter-spacing", "0.4px");
     }
+    expect(
+      (
+        await boxOf(
+          page
+            .locator("[data-slot='outlined-field']")
+            .filter({ has: page.getByRole("textbox", { name: "Title" }) }),
+        )
+      ).height,
+    ).toBe(56);
   });
 
-  test("draws each tag as a 32px chip with an 8px corner and an 18px cross", async ({
+  test("draws each tag as a 32px chip with an 8px corner and an 18px Material cross", async ({
     page,
   }) => {
     await open(page);
@@ -114,6 +141,39 @@ test.describe("Edit details on an Android phone", { tag: "@native" }, () => {
 
     expect((await boxOf(chip)).height).toBeCloseTo(32, 0);
     await expect(chip).toHaveCSS("border-top-left-radius", "8px");
-    expect((await boxOf(chip.locator("svg"))).width).toBeCloseTo(18, 0);
+    expect((await boxOf(chip.locator("[data-icon='x']"))).width).toBeCloseTo(
+      18,
+      0,
+    );
+    await expect(chip.locator("svg")).toHaveCount(0);
   });
+
+  test("sets each From the file line 16px in from both edges at 0.4px tracking", async ({
+    page,
+  }) => {
+    await open(page);
+    const note = page.getByText("From the file", { exact: true }).first();
+
+    await expect(note).toHaveCSS("padding-left", "16px");
+    await expect(note).toHaveCSS("padding-right", "16px");
+    await expect(note).toHaveCSS("letter-spacing", "0.4px");
+  });
+
+  for (const name of ["Add a person", "Add a tag"]) {
+    test(`draws ${name} as a 32px outlined button with 16px sides and an 18px Material plus`, async ({
+      page,
+    }) => {
+      await open(page);
+      const add = page.getByRole("button", { name, exact: true });
+
+      expect((await boxOf(add)).height).toBeCloseTo(32, 0);
+      await expect(add).toHaveCSS("padding-left", "16px");
+      await expect(add).toHaveCSS("padding-right", "16px");
+      await expect(add).toHaveCSS("border-top-left-radius", "8px");
+      expect(
+        (await boxOf(add.locator("[data-icon='plus']"))).width,
+      ).toBeCloseTo(18, 0);
+      await expect(add.locator("svg")).toHaveCount(0);
+    });
+  }
 });

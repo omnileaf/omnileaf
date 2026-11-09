@@ -3,13 +3,17 @@
   import type { Snippet } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
 
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { LibraryFolder, Platform } from "#lib/ipc/bindings.ts";
   import type { Notices, UndoOffer } from "#lib/notices/notices.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { phoneOf } from "#lib/page/platform.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import { radiosLook } from "#lib/settings/radios-look.ts";
+  import {
+    FLUSH_HEADING,
+    FLUSH_LIST,
+  } from "#lib/settings/android-flush-look.ts";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { RowSwipe } from "#lib/series/row-swipe.svelte.ts";
 
@@ -71,7 +75,6 @@
   const width = new WindowWidth();
   const isNative = $derived(phoneOf(platform, width.current) === "ios");
   const android = new AndroidPhone();
-  const androidHeading = radiosLook(true).heading;
   const isSwipeable = $derived(isNative && isInCard);
 
   const rows: Record<LibraryFolder["id"], HTMLLIElement> = {};
@@ -226,7 +229,11 @@
             removeWithUndo(folder);
           }}
         >
-          <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
+          {#if android.isOn}
+            <Icon name="folder-minus" />
+          {:else}
+            <FolderMinus size={ACTION_ICON_SIZE} aria-hidden="true" />
+          {/if}
         </RowActionButton>
       {/if}
     {/snippet}
@@ -242,7 +249,7 @@
   <div
     class={isInCard
       ? android.isOn
-        ? "-mx-page-start -me-page-end flex flex-col overflow-hidden"
+        ? `${FLUSH_LIST} overflow-hidden`
         : [
             "flex flex-col overflow-hidden rounded-card border border-border bg-card",
             GROUP_PLATE,
@@ -255,7 +262,7 @@
       bind:this={foldersHeading}
       class={isInCard
         ? android.isOn
-          ? androidHeading
+          ? FLUSH_HEADING
           : "px-lg pbs-md pbe-xs text-small font-semibold"
         : "sr-only"}
     >
@@ -321,6 +328,7 @@
             "relative",
             (shownFolders.length > 0 || beingAdded !== undefined) &&
               !isLastRowOpen &&
+              !android.isOn &&
               "before:absolute before:inset-s-ios-folder-separator-native before:inset-e-none before:inset-bs-none before:border-bs before:border-ios-separator",
           ]}
         >

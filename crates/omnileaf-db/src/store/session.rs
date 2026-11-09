@@ -1,12 +1,13 @@
-use omnileaf_sync_proto::BookId;
+use omnileaf_sync_proto::{BookId, ProfileId};
 use rusqlite::{Connection, OptionalExtension};
 
-use crate::{Error, catalog::stored_id::stored_id};
+use crate::{Error, catalog::stored_id::stored_id, store::local::current_profile};
 
 const RESUME_GAP_MS: i64 = 120_000;
 
 /// The session written last, which a clock set back can leave starting before an earlier one.
 const LATEST_SESSION: &str = "SELECT id, book_id, ended_at_ms FROM reading_session
+    WHERE profile = ?1
     ORDER BY id DESC
     LIMIT 1";
 const CARRY_ON: &str = "UPDATE reading_session
@@ -14,8 +15,8 @@ const CARRY_ON: &str = "UPDATE reading_session
     WHERE id = ?1";
 const STOP: &str = "UPDATE reading_session SET ended_at_ms = max(ended_at_ms, ?2) WHERE id = ?1";
 const START: &str = "INSERT INTO reading_session
-    (book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count, first_page)
-    VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?4)";
+    (profile, book_id, started_at_ms, ended_at_ms, utc_offset_minutes, page, page_count, first_page)
+    VALUES (?1, ?2, ?3, ?3, ?4, ?5, ?6, ?5)";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SessionPlace {
@@ -56,7 +57,8 @@ pub(crate) fn record_reading(
     place: &SessionPlace,
     continuity: Continuity,
 ) -> Result<(), Error> {
-    match latest_session(connection)?
+    let profile = current_profile(connection)?;
+    match latest_session(connection, profile)?
         .filter(|latest| latest.goes_on_with(place.book, at_ms, continuity))
     {
         Some(latest) => {
@@ -65,6 +67,7 @@ pub(crate) fn record_reading(
         None => connection.execute(
             START,
             (
+                profile.as_bytes(),
                 place.book.as_bytes(),
                 at_ms,
                 place.utc_offset_minutes,
@@ -82,18 +85,22 @@ pub(crate) fn record_reading_stopped(
     book: BookId,
     continuity: Continuity,
 ) -> Result<(), Error> {
-    if let Some(latest) =
-        latest_session(connection)?.filter(|latest| latest.goes_on_with(book, at_ms, continuity))
+    let profile = current_profile(connection)?;
+    if let Some(latest) = latest_session(connection, profile)?
+        .filter(|latest| latest.goes_on_with(book, at_ms, continuity))
     {
         connection.execute(STOP, (latest.id, at_ms))?;
     }
     Ok(())
 }
 
-fn latest_session(connection: &Connection) -> Result<Option<LatestSession>, Error> {
+fn latest_session(
+    connection: &Connection,
+    profile: ProfileId,
+) -> Result<Option<LatestSession>, Error> {
     Ok(connection
         .prepare(LATEST_SESSION)?
-        .query_row([], |row| {
+        .query_row([profile.as_bytes()], |row| {
             Ok(LatestSession {
                 id: row.get("id")?,
                 book: stored_id(row, "book_id")?,
@@ -105,16 +112,52 @@ fn latest_session(connection: &Connection) -> Result<Option<LatestSession>, Erro
 
 #[cfg(test)]
 mod tests {
-    use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+    use omnileaf_sync_proto::{Fingerprint, ImageEntry, ProfileId};
     use proptest::{prelude::*, test_runner::TestRunner};
 
     use super::*;
-    use crate::{Database, scratch::ScratchLibrary};
+    use crate::{Database, scratch::ScratchLibrary, store::local::switch_profile};
 
     const DAY_MS: i64 = 86_400_000;
     const MINUTE_MS: i64 = 60_000;
     const FURTHEST_OFFSET_MINUTES: i16 = 18 * 60;
     const YEAR_10000_MS: i64 = 253_402_300_800_000;
+    const ANOTHER_PROFILE: &str = "0b5e1a3c-7d2f-8a4b-9c6d-1e2f3a4b5c6d";
+
+    #[test]
+    fn keeps_two_profiles_sessions_of_the_same_book_apart() {
+        let scratch = ScratchLibrary::new("session-profiles");
+        drop(Database::open(&scratch.config).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        let place = SessionPlace {
+            book: BookId::local(&Fingerprint::pmf1([ImageEntry { crc32: 1, size: 1 }]).unwrap()),
+            page: 0,
+            page_count: 2,
+            utc_offset_minutes: 0,
+        };
+
+        record_reading(&connection, MINUTE_MS, &place, Continuity::AfterBreak).unwrap();
+        switch_profile(&connection, ANOTHER_PROFILE.parse().unwrap()).unwrap();
+        record_reading(&connection, 2 * MINUTE_MS, &place, Continuity::AfterBreak).unwrap();
+
+        let sessions: Vec<(Vec<u8>, i64)> = connection
+            .prepare("SELECT profile, started_at_ms FROM reading_session ORDER BY started_at_ms")
+            .unwrap()
+            .query_map([], |row| {
+                Ok((row.get::<_, Vec<u8>>(0)?, row.get::<_, i64>(1)?))
+            })
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let another = ANOTHER_PROFILE.parse::<ProfileId>().unwrap();
+        assert_eq!(
+            sessions,
+            [
+                (ProfileId::default_profile().as_bytes().to_vec(), MINUTE_MS),
+                (another.as_bytes().to_vec(), 2 * MINUTE_MS),
+            ]
+        );
+    }
 
     #[test]
     fn days_every_session_by_the_local_date_it_started_on() {
@@ -151,12 +194,15 @@ mod tests {
     }
 
     #[test]
-    fn finds_the_latest_session_at_the_end_of_the_table_with_no_sort() {
+    fn finds_the_latest_session_from_the_profile_id_index_with_no_sort() {
         let scratch = ScratchLibrary::new("latest-session-plan");
 
         let plan = scratch.query_plan(LATEST_SESSION);
 
-        assert_eq!(plan, ["SCAN reading_session"]);
+        assert_eq!(
+            plan,
+            ["SEARCH reading_session USING INDEX reading_session_by_profile_id (profile=?)"]
+        );
     }
 
     #[test]

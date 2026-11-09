@@ -18,6 +18,10 @@ export interface JumpListLook {
   readonly currentTitle: string;
   readonly currentDetail: string;
   readonly missingTitle: string;
+  readonly readTitle: string;
+  readonly readingBadge: string;
+  readonly hasKitIcons: boolean;
+  readonly detailIcon: string;
   readonly detail: string;
 }
 
@@ -41,6 +45,10 @@ export const JUMP_LIST_LOOK: JumpListLook = {
   currentTitle: "",
   currentDetail: "",
   missingTitle: "line-through",
+  readTitle: "text-muted",
+  readingBadge: "",
+  hasKitIcons: false,
+  detailIcon: "shrink-0",
   detail:
     "flex items-center gap-xs text-small text-muted expanded:text-caption",
 };
@@ -57,6 +65,10 @@ const PHONE_LOOK: JumpListLook = {
   currentTitle: "",
   currentDetail: "",
   missingTitle: "",
+  readTitle: "text-muted",
+  readingBadge: "",
+  hasKitIcons: false,
+  detailIcon: "shrink-0",
   detail: "flex items-center gap-xs",
 };
 
@@ -75,6 +87,11 @@ const PHONE_LOOKS: Partial<Record<Platform, JumpListPhoneLook>> = {
       "bg-native-jump-current [--native-color-progress-rest:var(--native-color-jump-current-progress-rest)]",
     currentTitle: "text-native-on-jump-current",
     currentDetail: "text-native-on-jump-current",
+    readTitle: "",
+    readingBadge:
+      "bg-native-button-primary px-sm text-native-on-button-primary block-filter-badge",
+    hasKitIcons: true,
+    detailIcon: "shrink-0 block-lg inline-lg",
     sort: "plain",
     crowdedShow: "own-row",
     crowdedButton: "outline",

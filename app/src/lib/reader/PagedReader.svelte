@@ -26,6 +26,7 @@
   } from "#lib/navigation/ReaderBackSwipe.svelte";
   import { getNotices } from "#lib/notices/notices.ts";
   import { isPointer, usesCommandKey } from "#lib/page/platform.ts";
+  import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
@@ -53,6 +54,7 @@
     slowerSpeed,
   } from "#lib/reader/auto-scroll.ts";
   import StripFoundCard from "#lib/reader/StripFoundCard.svelte";
+  import StripScrubber from "#lib/reader/StripScrubber.svelte";
   import StripStack from "#lib/reader/StripStack.svelte";
   import {
     type ReaderAction,
@@ -75,6 +77,7 @@
   import KeyboardShortcuts from "#lib/reader/KeyboardShortcuts.svelte";
   import { fitPinch } from "#lib/reader/pinch-zoom.ts";
   import ReaderGuide from "#lib/reader/ReaderGuide.svelte";
+  import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import ReadingSettings from "#lib/reader/ReadingSettings.svelte";
   import { seenOnce } from "#lib/reader/seen-once.ts";
   import { tapZonesFor } from "#lib/reader/tap-zones.ts";
@@ -184,11 +187,13 @@
         ? `omnileaf.readerGuide.${reading.direction}`
         : `omnileaf.readerGuide.zones.${settings.look.tapZones}`,
   );
-  const isGuideSeen = $derived(
-    guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen,
+  const hints = readerHints();
+  const isGuideDue = $derived(
+    hints.isGuideDue(guidesSeenNow.has(guideKey) || seenOnce(guideKey).isSeen),
   );
   const look = $derived(settings.look);
   const isStrip = $derived(reading.mode === "longStrip");
+  let stripProgress = $state(0);
   const crop = $derived(pageCrop(look.cropsBorders, isStrip));
   let cropped: CroppedPages | undefined = $state.raw(
     untrack(() =>
@@ -251,6 +256,7 @@
         scrollByPixels: (pixels: number) => boolean;
         shownPageHeight: () => number;
         place: () => StripPlace | undefined;
+        scrubTo: (along: number) => void;
       }
     | undefined = $state();
   let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
@@ -713,7 +719,7 @@
       }
       return;
     }
-    if (chrome.isOnPhone) {
+    if (!hints.showsResumeNotice(chrome.isOnPhone)) {
       return;
     }
     notices.show({
@@ -895,7 +901,7 @@
   );
 
   onMount(() => {
-    if (!isGuideSeen) {
+    if (isGuideDue) {
       controls.hide();
     }
     sayWhereItOpened();
@@ -979,6 +985,7 @@
     onStartOver={() => {
       turner.goTo(0);
     }}
+    onShowFile={libraryBookFileShower(book, notices)}
     onOpenChange={holdControls}
   />
 {/snippet}
@@ -1122,6 +1129,7 @@
               marks={bookmarks === null ? [] : [...bookmarks]}
               overlay={stripZones}
               startAt={startAt?.kind === "strip" ? startAt : undefined}
+              bind:progress={stripProgress}
               onShown={(index: number) => {
                 turner.goTo(index);
               }}
@@ -1200,7 +1208,8 @@
                   ? "inset-x-none inset-bs-none"
                   : "inset-x-reader-bar-inline inset-bs-reader-bar-top",
               ],
-          !controls.isShown && "pointer-events-none opacity-0",
+          !controls.isShown &&
+            "pointer-events-none opacity-0 android:-translate-y-md",
         ]}
         {...controlEvents}
       >
@@ -1269,6 +1278,28 @@
           />
         </div>
       {/if}
+      {#if isStripShown && chrome.spans}
+        <div
+          class={[
+            "transition-opacity motion-reader:duration-fade motion-reader:ease-out",
+            !controls.isShown && "pointer-events-none opacity-0",
+          ]}
+          {...controlEvents}
+        >
+          <StripScrubber
+            progress={stripProgress}
+            shown={turner.shown}
+            count={pageCount}
+            position={spreadPosition(spread, pageCount)}
+            onScrub={(along: number) => {
+              strip?.scrubTo(along);
+            }}
+            onSeek={(index: number) => {
+              turner.goTo(index);
+            }}
+          />
+        </div>
+      {/if}
       <div
         class={[
           "absolute transition-all motion-reader:duration-fade motion-reader:ease-out",
@@ -1282,7 +1313,8 @@
               ],
           isPanelOpen && panelRoom,
           chrome.floats && "pointer-events-none",
-          !controls.isShown && "pointer-events-none opacity-0",
+          !controls.isShown &&
+            "pointer-events-none opacity-0 android:translate-y-md",
         ]}
         inert={coversPage}
         {...controlEvents}
@@ -1300,6 +1332,7 @@
             screenshotMode.options.blankReaderPages}
           showsPreviews={smartFeatures.showsPagePreviews}
           isShown={controls.isShown}
+          hidesSlider={isStripShown && chrome.spans}
           onPlay={isStrip ? startAutoScroll : undefined}
           secondsLeft={book.secondsPerPage === null ||
           !smartFeatures.showsTimeLeft
@@ -1372,14 +1405,12 @@
           seeStripFound();
           openSettings(true);
           void tick().then(() => {
-            document
-              .querySelector<HTMLSelectElement>("select[data-reading-mode]")
-              ?.focus();
+            document.querySelector<HTMLElement>("[data-reading-mode]")?.focus();
           });
         }}
         onDone={seeStripFound}
       />
-    {:else if !isGuideSeen && !turner.isPastEnd}
+    {:else if isGuideDue && !turner.isPastEnd}
       <ReaderGuide
         {isStrip}
         direction={reading.direction}
@@ -1388,6 +1419,7 @@
         onDone={() => {
           seenOnce(guideKey).see();
           guidesSeenNow.add(guideKey);
+          hints.disarmReplay();
         }}
       />
     {/if}

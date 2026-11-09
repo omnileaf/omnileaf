@@ -1,0 +1,24 @@
+{
+  "listed": {
+    "code": "R-2222-2222",
+    "receivedAt": 1700000300,
+    "status": { "kind": "published", "issue": 42 },
+    "platform": "linux",
+    "version": "1.3.0"
+  },
+  "report": null,
+  "audit": [
+    {
+      "previous": "reviewing",
+      "status": { "kind": "published", "issue": 42 },
+      "actor": "alice",
+      "at": 1700000350
+    },
+    {
+      "previous": "received",
+      "status": { "kind": "reviewing" },
+      "actor": "bob",
+      "at": 1700000320
+    }
+  ]
+}

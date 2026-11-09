@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { type Locator, page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import { DEFAULT_LIBRARY_VIEW, type Platform } from "#lib/ipc/bindings.ts";
+import {
+  DEFAULT_LIBRARY_VIEW,
+  type LibraryView,
+  type Platform,
+} from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import ViewOptions from "./ViewOptions.svelte";
@@ -28,13 +32,17 @@ function addMoreButton(): HTMLButtonElement {
   return more;
 }
 
-async function openOn(platform: Platform, size = PHONE) {
+async function openOn(
+  platform: Platform,
+  size = PHONE,
+  view: LibraryView = DEFAULT_LIBRARY_VIEW,
+) {
   document.documentElement.dataset.theme = "light";
   followCorePlatform(platform);
   await page.viewport(size.width, size.height);
   const returnFocusTo = size === PHONE ? null : addMoreButton();
   await render(ViewOptions, {
-    view: DEFAULT_LIBRARY_VIEW,
+    view,
     coversDrawn: 3,
     mostThatFit: 3,
     hasCategories: true,
@@ -370,5 +378,120 @@ for (const platform of ["android", "linux", "macos", "windows"] as const) {
     expect(
       textOf(page.getByText("Display", { exact: true }).element()),
     ).toEqual(["16px", "500", "normal"]);
+  });
+}
+
+const ANDROID_SHEET_TOP_GAP = 60;
+const ANDROID_SETTING_ROW_HEIGHT = 48;
+
+function radiosOf(group: string): Locator {
+  return page.getByRole("radiogroup", { name: group }).getByRole("radio");
+}
+
+async function expectRadios(group: string, names: string[]): Promise<void> {
+  await expect.element(radiosOf(group)).toHaveLength(names.length);
+  for (const name of names) {
+    await expect
+      .element(radiosOf(group).getByText(name, { exact: true }).first())
+      .toBeInTheDocument();
+  }
+}
+
+test("fits the View options sheet to its content at the bottom on an Android phone", async () => {
+  await openOn("android");
+
+  const sheet = page.getByRole("dialog").element();
+
+  await expect.poll(() => boxOf(sheet).bottom).toBe(PHONE.height);
+  expect(boxOf(sheet).top).toBeGreaterThanOrEqual(ANDROID_SHEET_TOP_GAP);
+});
+
+test("draws Display and Group by as one row of three options on an Android phone", async () => {
+  await openOn("android");
+
+  await expectRadios("Display", ["Grid", "Compact", "List"]);
+  await expectRadios("Group by", ["None", "Category", "Folder"]);
+  for (const name of ["Display", "Group by"]) {
+    const label = boxOf(page.getByText(name, { exact: true }).element());
+    const control = boxOf(page.getByRole("radiogroup", { name }).element());
+
+    expect(control.left).toBeGreaterThanOrEqual(label.right);
+    expect(
+      Math.abs(
+        control.top + control.height / 2 - (label.top + label.height / 2),
+      ),
+    ).toBeLessThan(1);
+    expect(control.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
+  }
+});
+
+test("leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
+  await openOn("android");
+
+  for (const name of [
+    "Stack series covers",
+    "On the library page",
+    "Item counts",
+    "Continue reading row",
+  ]) {
+    await expect
+      .element(page.getByText(name, { exact: true }))
+      .not.toBeInTheDocument();
+  }
+  const heading = page.getByRole("heading", {
+    name: "Show on covers",
+    exact: true,
+  });
+  await expect.element(heading).toBeVisible();
+  await expect
+    .poll(() => boxOf(heading.element()).bottom)
+    .toBeLessThanOrEqual(PHONE.height);
+});
+
+test("keeps every display and grouping option on a Windows window", async () => {
+  await openOn("windows", TABLET);
+
+  await expectRadios("Display", ["Grid", "Compact", "Covers", "List"]);
+  await expectRadios("Group by", ["None", "Category", "Folder", "Creator"]);
+  await expect
+    .element(page.getByText("Item counts", { exact: true }))
+    .toBeVisible();
+});
+
+const SAVED_ON_A_WIDER_WINDOW: LibraryView = {
+  ...DEFAULT_LIBRARY_VIEW,
+  display: "covers",
+  groupBy: "creator",
+};
+
+async function expectOneChecked(group: string, name: string): Promise<void> {
+  const radios = page.getByRole("radiogroup", { name: group });
+
+  await expect
+    .element(radios.getByRole("radio", { checked: true }))
+    .toHaveLength(1);
+  await expect
+    .element(radios.getByRole("radio", { name, checked: true }))
+    .toBeInTheDocument();
+}
+
+test("checks Grid and None on an Android phone for a view saved with Covers and Creator", async () => {
+  await openOn("android", PHONE, SAVED_ON_A_WIDER_WINDOW);
+
+  await expectOneChecked("Display", "Grid");
+  await expectOneChecked("Group by", "None");
+});
+
+for (const [platform, size] of [
+  ["android", TABLET],
+  ["ios", PHONE],
+  ["windows", TABLET],
+  ["macos", TABLET],
+] as const) {
+  test(`checks Covers and Creator as saved on ${platform} at ${String(size.width)}px`, async () => {
+    await openOn(platform, size, SAVED_ON_A_WIDER_WINDOW);
+
+    await expectOneChecked("Display", "Covers");
+    await expectOneChecked("Group by", "Creator");
   });
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AndroidColoursChoice from "#lib/appearance/AndroidColoursChoice.svelte";
   import ThemeChoice from "#lib/appearance/ThemeChoice.svelte";
   import WindowsAccentChoice from "#lib/appearance/WindowsAccentChoice.svelte";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -15,11 +16,17 @@
 </script>
 
 <SectionHeading title={m.appearance_title()} />
-<ThemeChoice title={m.appearance_light_or_dark()} class="mbs-pane-gap">
+<ThemeChoice
+  title={m.appearance_light_or_dark()}
+  class="mbs-pane-gap android:max-medium:mbs-none"
+>
   {#snippet hint()}
     {onPhone ? m.appearance_system_hint_phone() : m.appearance_system_hint()}
   {/snippet}
 </ThemeChoice>
 {#if data.appInfo.platform === "windows"}
   <WindowsAccentChoice class="mbs-pane-gap" />
+{/if}
+{#if data.appInfo.platform === "android"}
+  <AndroidColoursChoice class="mbs-pane-gap android:max-medium:mbs-none" />
 {/if}

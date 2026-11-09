@@ -227,6 +227,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchBackSwipes: () => null,
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
+  systemAppLanguage: () => ({ offered: false, tag: null }),
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,
@@ -277,6 +278,9 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchOpenWith: () => null,
   openSystemSettings: () => null,
   openColourSettings: () => null,
+  screenReaderIsRunning: () => false,
+  comicFilesDefaultViewer: () => "somethingElse",
+  makeOmnileafTheComicViewer: () => null,
   panicInCore: () => null,
   crashAndQuit: () => null,
 };

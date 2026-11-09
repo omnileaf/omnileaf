@@ -29,6 +29,7 @@ use crate::crash_reporting::developer_crashes;
 use crate::{
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
+    default_viewer::{self, DefaultViewer},
     document_handover,
     file_trash::SystemTrash,
     files_to_open::{FileOpenRequested, FilesToOpen},
@@ -44,8 +45,10 @@ use crate::{
     problem_reporting::{self, ShownProblemReport},
     report_sending::{self, ProblemReportStatus, SentProblemReport, SentReportKey},
     screen_orientation::{self, ScreenOrientation},
+    screen_reader,
     share_sign_in::{self, SignInOutcome},
     storage::StoragePlaces,
+    system_app_language::{self, SystemAppLanguage},
     system_bars::{self, Theme, ThemePreference},
     system_contrast::{self, SystemContrast},
     system_settings, system_sign_in,
@@ -69,6 +72,7 @@ macro_rules! app_commands {
             watch_back_swipes,
             allow_back_swipe,
             watch_system_contrast,
+            system_app_language,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -198,6 +202,9 @@ macro_rules! app_commands {
             watch_icon_actions,
             open_system_settings,
             open_colour_settings,
+            screen_reader_is_running,
+            comic_files_default_viewer,
+            make_omnileaf_the_comic_viewer,
             $($development_only),*
         ]
     };
@@ -430,8 +437,8 @@ async fn match_system_bars(
 
 #[tauri::command]
 #[specta::specta]
-async fn follow_back_history(app: AppHandle) -> Result<(), IpcError> {
-    back_navigation::follow_history(&app).await
+async fn follow_back_history(app: AppHandle, can_go_back: bool) -> Result<(), IpcError> {
+    back_navigation::follow_history(&app, can_go_back).await
 }
 
 #[tauri::command]
@@ -453,6 +460,12 @@ async fn watch_system_contrast(
     on_change: Channel<SystemContrast>,
 ) -> Result<(), IpcError> {
     system_contrast::watch(&app, on_change).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcError> {
+    system_app_language::read(&app).await
 }
 
 #[tauri::command]
@@ -1506,6 +1519,28 @@ async fn open_system_settings(app: AppHandle) -> Result<(), IpcError> {
 
 #[tauri::command]
 #[specta::specta]
+async fn comic_files_default_viewer() -> Result<DefaultViewer, IpcError> {
+    default_viewer::current()
+        .await
+        .map_err(|error| IpcError::default_viewer_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn make_omnileaf_the_comic_viewer(app: AppHandle) -> Result<(), IpcError> {
+    default_viewer::make_default(&app)
+        .await
+        .map_err(|error| IpcError::default_viewer_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn screen_reader_is_running() -> bool {
+    screen_reader::is_running().await
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn open_colour_settings(app: AppHandle) -> Result<(), IpcError> {
     system_settings::open_colours(&app)
         .map_err(|error| IpcError::system_settings_unavailable(&error))
@@ -1531,10 +1566,49 @@ async fn show_book_in_folder(
     library: State<'_, Library>,
     book: BookId,
 ) -> Result<(), IpcError> {
+    if let Some(shown) = library.book_in_android_tree(book).await? {
+        return show_tree_folder(&app, &shown).await;
+    }
     let Some(file) = library.book_in_folder(book).await? else {
         return Err(LibraryError::BookNotFound { id: book }.into());
     };
     show_in_file_manager(&app, &file)
+}
+
+#[cfg(target_os = "android")]
+async fn show_tree_folder(
+    app: &AppHandle,
+    shown: &omnileaf_engine::ShownInTree,
+) -> Result<(), IpcError> {
+    use omnileaf_folder_access::{DocumentTree, FolderAccess};
+
+    let access = app.state::<FolderAccess<tauri::Wry>>().inner().clone();
+    let shown = shown.clone();
+    off_the_runtime(move || {
+        let copies = std::env::temp_dir();
+        let tree = DocumentTree::new(access.clone(), &shown.tree, copies);
+        let folder = tree
+            .folder_id_in_tree(&shown.folder)
+            .map_err(|error| IpcError::file_manager_unavailable(&error))?;
+        access
+            .show_folder(shown.tree.uri(), folder.as_ref())
+            .map_err(|error| IpcError::file_manager_unavailable(&std::io::Error::other(error)))
+    })
+    .await
+}
+
+#[cfg(not(target_os = "android"))]
+#[expect(
+    clippy::unused_async,
+    reason = "it stands in for the Android version, which awaits"
+)]
+async fn show_tree_folder(
+    _app: &AppHandle,
+    _shown: &omnileaf_engine::ShownInTree,
+) -> Result<(), IpcError> {
+    Err(IpcError::file_manager_unavailable(&std::io::Error::other(
+        "no Android tree on this platform",
+    )))
 }
 
 #[cfg(target_os = "ios")]

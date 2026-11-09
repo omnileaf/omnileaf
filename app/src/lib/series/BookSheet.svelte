@@ -1,6 +1,8 @@
 <script lang="ts">
   import {
     BookOpen,
+    Bookmark,
+    BookmarkMinus,
     Ellipsis,
     Eye,
     EyeOff,
@@ -32,12 +34,16 @@
     isOnPhone,
     onMark,
     onSelect,
+    onBookmark,
+    onRemoveBookmark,
     onDelete,
   }: {
     book: SeriesBook;
     isOnPhone: boolean;
     onMark: (mark: ReadMark) => void;
     onSelect: () => void;
+    onBookmark?: (() => void) | undefined;
+    onRemoveBookmark?: (() => void) | undefined;
     onDelete?: (() => void) | undefined;
   } = $props();
 
@@ -145,6 +151,33 @@
           <span data-slot="item-title">{m.series_mark_unread()}</span>
         {/if}
       </Button>
+      {#if book.isBookmarked && onRemoveBookmark !== undefined}
+        <Button
+          type="button"
+          look="row"
+          class={action}
+          onclick={() => {
+            close();
+            onRemoveBookmark();
+          }}
+        >
+          <BookmarkMinus size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{m.series_remove_bookmark()}</span>
+        </Button>
+      {:else if !book.isBookmarked && onBookmark !== undefined}
+        <Button
+          type="button"
+          look="row"
+          class={action}
+          onclick={() => {
+            close();
+            onBookmark();
+          }}
+        >
+          <Bookmark size={ICON_SIZE} aria-hidden="true" />
+          <span data-slot="item-title">{m.series_bookmark()}</span>
+        </Button>
+      {/if}
       <Button
         type="button"
         look="row"

@@ -11,6 +11,7 @@ import {
   SquareTerminal,
 } from "@lucide/svelte";
 
+import type { FilterCondition } from "#lib/library/library-listing.ts";
 import { m } from "#lib/paraglide/messages.js";
 import type { SettingsRoute } from "#lib/settings/sections.ts";
 
@@ -95,5 +96,26 @@ export function placesMatching(text: string, locale: string): readonly Place[] {
     [place.label(), place.within?.() ?? ""].some((name) =>
       name.toLocaleLowerCase(locale).includes(wanted),
     ),
+  );
+}
+
+export interface LibraryState {
+  readonly state: FilterCondition;
+  readonly label: () => string;
+}
+
+export const LIBRARY_STATES: readonly LibraryState[] = [
+  { state: "unread", label: m.quick_open_show_unread },
+  { state: "started", label: m.quick_open_show_started },
+  { state: "finished", label: m.quick_open_show_finished },
+];
+
+export function libraryStatesMatching(
+  text: string,
+  locale: string,
+): readonly LibraryState[] {
+  const wanted = text.trim().toLocaleLowerCase(locale);
+  return LIBRARY_STATES.filter((one) =>
+    one.label().toLocaleLowerCase(locale).includes(wanted),
   );
 }

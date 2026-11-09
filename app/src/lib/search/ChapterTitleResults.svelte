@@ -5,7 +5,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
-  import { searchLook } from "./search-look";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+
+  import { ANDROID_SEARCH_LOOK, searchLook } from "./search-look";
 
   const PREVIEW = 5;
 
@@ -19,7 +21,10 @@
     onShowAll: () => void;
   } = $props();
 
-  const look = searchLook("macos", undefined);
+  const android = new AndroidPhone();
+  const look = $derived(
+    android.isOn ? ANDROID_SEARCH_LOOK : searchLook("macos", undefined),
+  );
   const headingId = $props.id();
   const numbers = new Intl.NumberFormat(getLocale());
   let isExpanded = $state(false);
@@ -53,7 +58,10 @@
       <li>
         <a
           href={resolve("/read/[book]", { book: hit.book })}
-          class="flex flex-col rounded-control px-sm py-xs hover:bg-hover focus-visible:focus-ring"
+          class={[
+            "flex flex-col rounded-control hover:bg-hover focus-visible:focus-ring",
+            android.isOn ? "px-lg py-sm" : "px-sm py-xs",
+          ]}
         >
           <span class={look.title}>{hit.title}</span>
           <span class={look.line}>{hit.seriesTitle}</span>

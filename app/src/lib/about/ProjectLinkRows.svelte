@@ -3,6 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Item } from "#lib/components/ui/item/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { ProjectLink } from "#lib/ipc/bindings.ts";
   import type { Glyph } from "#lib/page/glyph.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -19,6 +20,7 @@
   interface ExternalRow {
     readonly link: ProjectLink;
     readonly icon: Glyph;
+    readonly iconName: IconName;
     readonly label: string;
     readonly hint: string;
     readonly hintKind: HintKind;
@@ -34,6 +36,7 @@
     {
       link: "sourceCode",
       icon: Code,
+      iconName: "code",
       label: m.about_source_code(),
       hint: sourceCode,
       hintKind: "address",
@@ -55,6 +58,7 @@
         >
           <RowText
             icon={external.icon}
+            iconName={external.iconName}
             label={external.label}
             hint={external.hint}
             hintKind={external.hintKind}

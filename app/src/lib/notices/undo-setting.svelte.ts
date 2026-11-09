@@ -16,12 +16,14 @@ export interface UndoRules {
   readonly isOffered: boolean;
   readonly windowSeconds: UndoWindowSeconds;
   readonly holdsWhileHoveredOrFocused: boolean;
+  readonly waitsForScreenReader: boolean;
 }
 
 export const NEW_UNDO_RULES: UndoRules = {
   isOffered: true,
   windowSeconds: 10,
   holdsWhileHoveredOrFocused: true,
+  waitsForScreenReader: true,
 };
 
 function isWindow(value: unknown): value is UndoWindowSeconds {
@@ -37,12 +39,24 @@ function storedRules(stored: string | null): UndoRules {
     if (typeof read !== "object" || read === null) {
       return NEW_UNDO_RULES;
     }
-    const { isOffered, windowSeconds, holdsWhileHoveredOrFocused } =
-      read as Record<string, unknown>;
+    const {
+      isOffered,
+      windowSeconds,
+      holdsWhileHoveredOrFocused,
+      waitsForScreenReader,
+    } = read as Record<string, unknown>;
     return typeof isOffered === "boolean" &&
       isWindow(windowSeconds) &&
       typeof holdsWhileHoveredOrFocused === "boolean"
-      ? { isOffered, windowSeconds, holdsWhileHoveredOrFocused }
+      ? {
+          isOffered,
+          windowSeconds,
+          holdsWhileHoveredOrFocused,
+          waitsForScreenReader:
+            typeof waitsForScreenReader === "boolean"
+              ? waitsForScreenReader
+              : NEW_UNDO_RULES.waitsForScreenReader,
+        }
       : NEW_UNDO_RULES;
   } catch {
     return NEW_UNDO_RULES;

@@ -27,6 +27,7 @@ use windows_sys::Win32::System::Ioctl::{
 };
 use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
 use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
+use windows_sys::Win32::UI::WindowsAndMessaging::{SPI_GETSCREENREADER, SystemParametersInfoW};
 
 pub use registry::user_binary_value;
 
@@ -143,6 +144,20 @@ pub fn system_status_flag() -> Option<u8> {
     // SAFETY: `status` is a valid, writable SYSTEM_POWER_STATUS that outlives the call, which only fills it in.
     let succeeded = unsafe { GetSystemPowerStatus(&raw mut status) } != 0;
     succeeded.then_some(status.SystemStatusFlag)
+}
+
+/// Asks `SystemParametersInfoW` whether a screen reader such as Narrator or NVDA has told Windows it is running.
+#[must_use]
+#[expect(
+    unsafe_code,
+    reason = "SystemParametersInfoW is only reachable through FFI"
+)]
+pub fn screen_reader_is_running() -> bool {
+    let mut running: i32 = 0;
+    // SAFETY: `running` is a live, writable BOOL for the call to fill in, and SPI_GETSCREENREADER takes no other argument.
+    let succeeded =
+        unsafe { SystemParametersInfoW(SPI_GETSCREENREADER, 0, (&raw mut running).cast(), 0) } != 0;
+    succeeded && running != 0
 }
 
 /// Asks `WNetGetConnectionW` for the share a drive such as `Z:` is mapped to, which it names even while the share is disconnected.
@@ -331,6 +346,13 @@ mod tests {
     #[test]
     fn draws_no_mica_behind_a_window_that_is_not_there() {
         assert!(!draws_main_window_backdrop(0));
+    }
+
+    #[test]
+    fn finds_no_screen_reader_running_on_a_machine_without_one() {
+        let running = screen_reader_is_running();
+
+        assert!(!running);
     }
 
     #[test]

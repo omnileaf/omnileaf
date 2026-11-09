@@ -1244,6 +1244,7 @@ export function sampleBackend(
     watchBackSwipes: () => null,
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
+    systemAppLanguage: () => ({ offered: false, tag: null }),
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,
@@ -2231,6 +2232,9 @@ export function sampleBackend(
     watchOpenWith: () => null,
     openSystemSettings: () => null,
     openColourSettings: () => null,
+    screenReaderIsRunning: () => false,
+    comicFilesDefaultViewer: () => "somethingElse",
+    makeOmnileafTheComicViewer: () => null,
     panicInCore: () => null,
     crashAndQuit: () => null,
   };

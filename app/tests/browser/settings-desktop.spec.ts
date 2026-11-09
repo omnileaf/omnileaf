@@ -7,6 +7,7 @@ import {
   expect,
   MEDIUM_MIN_WIDTH,
   onPlatform,
+  targetOf,
   test,
   testOnlyInItsWebview,
   tokenColour,
@@ -222,9 +223,8 @@ for (const platform of ["android", "ios"] as const) {
         "rail width only",
       );
       await page.goto("/settings/about");
-      const back = await boxOf(
-        page.getByRole("link", { name: "Back to Settings" }),
-      );
+      const backLink = page.getByRole("link", { name: "Back to Settings" });
+      const back = await boxOf(backLink);
       const title = await boxOf(
         page.getByRole("heading", { level: 1, name: "About" }),
       );
@@ -235,8 +235,10 @@ for (const platform of ["android", "ios"] as const) {
         expect(back.height).toBe(TAB_BAR_HEIGHT);
         expect(back.y).toBe(bar.y);
       } else {
-        expect(back.width).toBe(TOUCH_TARGET);
-        expect(back.height).toBe(TOUCH_TARGET);
+        expect(await targetOf(backLink)).toMatchObject({
+          width: TOUCH_TARGET,
+          height: TOUCH_TARGET,
+        });
         expect(back.y).toBe(STATUS_BAR_GAP);
       }
       expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);
@@ -285,6 +287,8 @@ for (const platform of ["android", "ios", "linux"] as const) {
   });
 }
 
+const ANDROID_PHONE_GAP = 0;
+
 for (const { platform, gap } of [
   { platform: "linux", gap: 20 },
   { platform: "android", gap: 24 },
@@ -297,9 +301,11 @@ for (const { platform, gap } of [
       { path: "/settings/library", region: "Home folder" },
       { path: "/settings/appearance", region: "Light or dark" },
     ] as const) {
-      test(`spaces ${path} ${String(gap)}px under its title`, async ({
-        page,
-      }) => {
+      test(`spaces ${path} under its title`, async ({ page }) => {
+        const expectedGap =
+          platform === "android" && viewportOf(page).width < MEDIUM_MIN_WIDTH
+            ? ANDROID_PHONE_GAP
+            : gap;
         await page.goto(path);
 
         const header = await boxOf(
@@ -307,7 +313,7 @@ for (const { platform, gap } of [
         );
         const content = await boxOf(page.getByRole("region", { name: region }));
 
-        expect(content.y - (header.y + header.height)).toBe(gap);
+        expect(content.y - (header.y + header.height)).toBe(expectedGap);
       });
     }
   });

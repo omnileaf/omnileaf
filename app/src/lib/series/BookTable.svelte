@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ContextMenu } from "bits-ui";
+
   import { resolve } from "$app/paths";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
@@ -10,9 +12,11 @@
     TableRow,
   } from "#lib/components/ui/table/index.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { openMenuFromKeys } from "#lib/page/menu-keys.ts";
   import { m } from "#lib/paraglide/messages.js";
   import VirtualTable from "#lib/virtual-grid/VirtualTable.svelte";
 
+  import BookContextMenu from "./BookContextMenu.svelte";
   import BookMenu from "./BookMenu.svelte";
   import { progressWords } from "./book-reading";
   import BookMarks from "./BookMarks.svelte";
@@ -36,6 +40,7 @@
     onBookmark,
     onDelete,
     onShowInFolder,
+    hasContextMenu = false,
     selectAllBox = $bindable(null),
   }: {
     books: readonly SeriesBook[];
@@ -50,8 +55,29 @@
     onBookmark?: ((books: BookId[]) => void) | undefined;
     onDelete?: ((books: BookId[]) => void) | undefined;
     onShowInFolder?: ((book: BookId) => void) | undefined;
+    hasContextMenu?: boolean;
     selectAllBox?: HTMLElement | null;
   } = $props();
+
+  let menuBook: SeriesBook | undefined = $state();
+
+  function noteMenuBook(event: MouseEvent): void {
+    const row =
+      event.target instanceof Element
+        ? event.target.closest("[data-book-id]")
+        : null;
+    const id = row?.getAttribute("data-book-id");
+    menuBook = books.find((book) => book.id === id);
+  }
+
+  function openMenuFromRowKeys(event: KeyboardEvent): void {
+    if (
+      event.target instanceof Element &&
+      event.target.closest("[data-book-id]") !== null
+    ) {
+      openMenuFromKeys(event);
+    }
+  }
 
   const ids = $derived(books.map((book) => book.id));
   const isAllPicked = $derived(isComplete && selection.hasAll(ids));
@@ -70,173 +96,211 @@
   }
 </script>
 
-<Card
-  class={[
-    "relative overflow-hidden px-sm shadow-card-rest macos:rounded-none macos:border-0 macos:bg-transparent macos:px-none macos:shadow-none",
-    WINDOWS_CARD_PLATE,
-  ]}
->
-  <VirtualTable
-    items={books}
-    key={(book: SeriesBook) => book.id}
-    label={m.series_books_list()}
-    columns={COLUMNS}
-    {isComplete}
-    {onNearEnd}
-    class="table-fixed select-none macos:macos-books-table"
+<ContextMenu.Root>
+  <ContextMenu.Trigger
+    disabled={!hasContextMenu}
+    class="contents"
+    oncontextmenu={noteMenuBook}
+    onkeydown={openMenuFromRowKeys}
   >
-    {#snippet head()}
-      <TableHeader>
-        <tr aria-rowindex={1}>
-          <TableHead
-            class="inline-series-row-check macos:inline-series-row-check-macos"
-          >
-            <Checkbox
-              bind:ref={selectAllBox}
-              checked={isAllPicked}
-              indeterminate={selection.count > 0 && !isAllPicked}
-              aria-label={m.series_select_all()}
-              aria-busy={isPickingAll}
-              onCheckedChange={() => {
-                if (isAllPicked) {
-                  onClear();
-                } else {
-                  onPickAll();
-                }
-              }}
-            />
-          </TableHead>
-          <TableHead>{m.series_column_book()}</TableHead>
-          <TableHead
-            class="inline-series-column-added macos:inline-series-column-added-macos"
-          >
-            {m.series_column_added()}
-          </TableHead>
-          <TableHead class="inline-series-column-pages">
-            {m.series_column_pages()}
-          </TableHead>
-          <TableHead
-            class="inline-series-column-progress macos:inline-series-column-progress-macos"
-          >
-            {m.series_column_progress()}
-          </TableHead>
-          <TableHead
-            class="inline-series-row-actions macos:inline-series-row-actions-macos"
-          >
-            <span class="sr-only">{m.series_column_actions()}</span>
-          </TableHead>
-        </tr>
-      </TableHeader>
-    {/snippet}
-    {#snippet row(book: SeriesBook, rowIndex: number)}
-      {@const isPicked = selection.has(book.id)}
-      {@const added = dates.format(book.addedAtMs)}
-      <TableRow
-        aria-rowindex={rowIndex}
-        aria-selected={isPicked}
-        data-stripe={rowIndex % 2 === 0}
-        class={[
-          "block-book-row-wide macos:border-0 macos:block-auto windows:border-native-row-rule",
-          isPicked &&
-            "bg-selected-row hover:bg-selected-row macos:bg-transparent",
-        ]}
-        onmousedown={keepTextUnselectedOnShift}
+    <Card
+      class={[
+        "relative overflow-hidden px-sm shadow-card-rest macos:rounded-none macos:border-0 macos:bg-transparent macos:px-none macos:shadow-none",
+        WINDOWS_CARD_PLATE,
+      ]}
+    >
+      <VirtualTable
+        items={books}
+        key={(book: SeriesBook) => book.id}
+        label={m.series_books_list()}
+        columns={COLUMNS}
+        {isComplete}
+        {onNearEnd}
+        class="table-fixed select-none macos:macos-books-table"
       >
-        <TableCell class="relative">
-          {#if isPicked}
-            <span
-              aria-hidden="true"
-              class="absolute inset-s-none inset-bs-none inset-be-none bg-accent inline-selected-edge macos:hidden"
-            ></span>
-          {/if}
-          <Checkbox
-            checked={isPicked}
-            aria-label={m.series_select_book({ title: book.title })}
-            onCheckedChange={() => {
-              selection.toggle(book.id);
-            }}
-            onclick={(event: MouseEvent) => {
-              pickRunOnShift(event, book);
-            }}
-          />
-        </TableCell>
-        <TableCell>
-          <span class="flex items-center gap-icon-gap min-inline-none">
-            <a
-              href={resolve("/read/[book]", { book: book.id })}
-              draggable="false"
+        {#snippet head()}
+          <TableHeader>
+            <tr aria-rowindex={1}>
+              <TableHead
+                class="inline-series-row-check macos:inline-series-row-check-macos"
+              >
+                <Checkbox
+                  bind:ref={selectAllBox}
+                  checked={isAllPicked}
+                  indeterminate={selection.count > 0 && !isAllPicked}
+                  aria-label={m.series_select_all()}
+                  aria-busy={isPickingAll}
+                  onCheckedChange={() => {
+                    if (isAllPicked) {
+                      onClear();
+                    } else {
+                      onPickAll();
+                    }
+                  }}
+                />
+              </TableHead>
+              <TableHead>{m.series_column_book()}</TableHead>
+              <TableHead
+                class="inline-series-column-added macos:inline-series-column-added-macos"
+              >
+                {m.series_column_added()}
+              </TableHead>
+              <TableHead class="inline-series-column-pages">
+                {m.series_column_pages()}
+              </TableHead>
+              <TableHead
+                class="inline-series-column-progress macos:inline-series-column-progress-macos"
+              >
+                {m.series_column_progress()}
+              </TableHead>
+              <TableHead
+                class="inline-series-row-actions macos:inline-series-row-actions-macos"
+              >
+                <span class="sr-only">{m.series_column_actions()}</span>
+              </TableHead>
+            </tr>
+          </TableHeader>
+        {/snippet}
+        {#snippet row(book: SeriesBook, rowIndex: number)}
+          {@const isPicked = selection.has(book.id)}
+          {@const added = dates.format(book.addedAtMs)}
+          <TableRow
+            aria-rowindex={rowIndex}
+            data-book-id={book.id}
+            aria-selected={isPicked}
+            data-stripe={rowIndex % 2 === 0}
+            class={[
+              "block-book-row-wide macos:border-0 macos:block-auto windows:border-native-row-rule",
+              isPicked &&
+                "bg-selected-row hover:bg-selected-row macos:bg-transparent",
+            ]}
+            onmousedown={keepTextUnselectedOnShift}
+          >
+            <TableCell class="relative">
+              {#if isPicked}
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-s-none inset-bs-none inset-be-none bg-accent inline-selected-edge macos:hidden"
+                ></span>
+              {/if}
+              <Checkbox
+                checked={isPicked}
+                aria-label={m.series_select_book({ title: book.title })}
+                onCheckedChange={() => {
+                  selection.toggle(book.id);
+                }}
+                onclick={(event: MouseEvent) => {
+                  pickRunOnShift(event, book);
+                }}
+              />
+            </TableCell>
+            <TableCell>
+              <span class="flex items-center gap-icon-gap min-inline-none">
+                <a
+                  href={resolve("/read/[book]", { book: book.id })}
+                  draggable="false"
+                  class={[
+                    "truncate font-medium",
+                    book.reading.state === "read" && !isPicked
+                      ? "text-muted"
+                      : "text-foreground",
+                    isPicked && "macos:text-inherit",
+                  ]}
+                >
+                  {book.title}
+                </a>
+                <BookMarks {book} />
+              </span>
+            </TableCell>
+            <TableCell
               class={[
-                "truncate font-medium",
-                book.reading.state === "read" && !isPicked
-                  ? "text-muted"
-                  : "text-foreground",
-                isPicked && "macos:text-inherit",
+                "whitespace-nowrap",
+                isPicked ? "text-foreground" : "text-muted",
               ]}
             >
-              {book.title}
-            </a>
-            <BookMarks {book} />
-          </span>
-        </TableCell>
-        <TableCell
-          class={[
-            "whitespace-nowrap",
-            isPicked ? "text-foreground" : "text-muted",
-          ]}
-        >
-          <span class="sr-only">{m.series_book_added({ date: added })}</span>
-          <span aria-hidden="true">{added}</span>
-        </TableCell>
-        <TableCell
-          class={["tabular-nums", isPicked ? "text-foreground" : "text-muted"]}
-        >
-          {book.pageCount ?? ""}
-        </TableCell>
-        <TableCell
-          class={isPicked || book.reading.state === "started"
-            ? "text-foreground"
-            : "text-muted"}
-        >
-          <span
-            class="flex flex-col gap-xs macos:flex-row macos:items-center macos:gap-sm"
-          >
-            <span
-              class={book.reading.state === "started"
-                ? "text-caption"
-                : "text-small"}
+              <span class="sr-only">{m.series_book_added({ date: added })}</span
+              >
+              <span aria-hidden="true">{added}</span>
+            </TableCell>
+            <TableCell
+              class={[
+                "tabular-nums",
+                isPicked ? "text-foreground" : "text-muted",
+              ]}
             >
-              {progressWords(book)}
-            </span>
-            <BookProgress
-              {book}
-              class="inline-full macos:inline-book-progress-macos"
-            />
-          </span>
-        </TableCell>
-        <TableCell>
-          <BookMenu
-            {book}
-            onMark={(mark: ReadMark) => {
-              onMark([book.id], mark);
-            }}
-            onBookmark={onBookmark === undefined
-              ? undefined
-              : () => {
-                  onBookmark([book.id]);
+              {book.pageCount ?? ""}
+            </TableCell>
+            <TableCell
+              class={isPicked || book.reading.state === "started"
+                ? "text-foreground"
+                : "text-muted"}
+            >
+              <span
+                class="flex flex-col gap-xs macos:flex-row macos:items-center macos:gap-sm"
+              >
+                <span
+                  class={book.reading.state === "started"
+                    ? "text-caption"
+                    : "text-small"}
+                >
+                  {progressWords(book)}
+                </span>
+                <BookProgress
+                  {book}
+                  class="inline-full macos:inline-book-progress-macos"
+                />
+              </span>
+            </TableCell>
+            <TableCell>
+              <BookMenu
+                {book}
+                onMark={(mark: ReadMark) => {
+                  onMark([book.id], mark);
                 }}
-            onShowInFolder={onShowInFolder === undefined
-              ? undefined
-              : () => {
-                  onShowInFolder(book.id);
-                }}
-            onDelete={onDelete === undefined
-              ? undefined
-              : () => {
-                  onDelete([book.id]);
-                }}
-          />
-        </TableCell>
-      </TableRow>
-    {/snippet}
-  </VirtualTable>
-</Card>
+                onBookmark={onBookmark === undefined
+                  ? undefined
+                  : () => {
+                      onBookmark([book.id]);
+                    }}
+                onShowInFolder={onShowInFolder === undefined
+                  ? undefined
+                  : () => {
+                      onShowInFolder(book.id);
+                    }}
+                onDelete={onDelete === undefined
+                  ? undefined
+                  : () => {
+                      onDelete([book.id]);
+                    }}
+              />
+            </TableCell>
+          </TableRow>
+        {/snippet}
+      </VirtualTable>
+    </Card>
+  </ContextMenu.Trigger>
+  {#if hasContextMenu && menuBook !== undefined}
+    {@const target = menuBook}
+    <BookContextMenu
+      book={target}
+      onMark={(mark: ReadMark) => {
+        onMark([target.id], mark);
+      }}
+      onBookmark={onBookmark === undefined
+        ? undefined
+        : () => {
+            onBookmark([target.id]);
+          }}
+      onShowInFolder={onShowInFolder === undefined
+        ? undefined
+        : () => {
+            onShowInFolder(target.id);
+          }}
+      onDelete={onDelete === undefined
+        ? undefined
+        : () => {
+            onDelete([target.id]);
+          }}
+    />
+  {/if}
+</ContextMenu.Root>

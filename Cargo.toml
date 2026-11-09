@@ -23,6 +23,8 @@ local-ip-address = "0.6.13"
 maud = { version = "0.27.0", default-features = false }
 notify = "8.2.0"
 dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSAccessibility", "NSWorkspace"] }
+objc2-ui-kit = { version = "0.3.2", default-features = false, features = ["std", "UIAccessibility"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSProcessInfo"] }
 fast_image_resize = { version = "6.1.0", default-features = false, features = ["std"] }
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
@@ -80,14 +82,14 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 thiserror = "2.0.21"
 tokio = { version = "1.53.1", default-features = false }
 tower = { version = "0.5.3", default-features = false, features = ["util"] }
-trash = { version = "5.2.9", default-features = false, features = ["chrono", "coinit_apartmentthreaded"] }
+trash = { version = "5.3.0", default-features = false, features = ["chrono", "coinit_apartmentthreaded", "freedesktop"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
 unicode-normalization = "0.1.26"
 uuid = { version = "1.26.1", default-features = false, features = ["v8"] }
 webpki-roots = "1.0.11"
 webkit2gtk = { version = "2.0.2", features = ["v2_34"] }
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_NetworkManagement_WNet", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_Power", "Win32_System_Registry"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_NetworkManagement_WNet", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_Power", "Win32_System_Registry", "Win32_UI_WindowsAndMessaging"] }
 zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 zip = { version = "9.0.4", default-features = false, features = ["deflate-flate2"] }
 

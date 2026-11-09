@@ -12,6 +12,8 @@ app/src/lib/paraglide/
 app/src-tauri/gen/schemas/
 app/.vitest/
 app/test-results/
+admin-ui/.svelte-kit/
+admin-ui/build/
 site/.svelte-kit/
 site/build/
 site/test-results/

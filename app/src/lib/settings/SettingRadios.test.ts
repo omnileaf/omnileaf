@@ -5,6 +5,7 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
 
@@ -148,3 +149,30 @@ test("draws the macos radio as a 16px field with a rim and a 4.8px dot in the ac
     resolvedShadow("--native-shadow-radio-rim"),
   );
 });
+
+const ANDROID_PHONE_WIDTH = 400;
+const HEADING_SIZE = "14px";
+const HEADING_WEIGHT = "500";
+
+for (const theme of ["light", "dark"] as const) {
+  test(`heads the android phone group at 14px medium in the accent in the ${theme} theme`, async () => {
+    followCorePlatform("android");
+    document.documentElement.dataset.theme = theme;
+    await page.viewport(ANDROID_PHONE_WIDTH, 800);
+    await render(SettingRadios, {
+      title: "Time format",
+      options: ["clock", "words"],
+      labels: { clock: "Clock", words: "Words" },
+      chosen: "clock",
+      onChoose: () => undefined,
+    });
+
+    const style = getComputedStyle(
+      page.getByRole("heading", { name: "Time format" }).element(),
+    );
+
+    expect(style.fontSize).toBe(HEADING_SIZE);
+    expect(style.fontWeight).toBe(HEADING_WEIGHT);
+    expect(style.color).toBe(resolvedColour("--color-accent", "color"));
+  });
+}

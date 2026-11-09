@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
   import {
     commands,
@@ -10,6 +11,7 @@
     type LibraryTab,
   } from "#lib/ipc/bindings.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import { IosPhone } from "#lib/library/ios-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import {
     ALL_SERIES,
@@ -24,15 +26,24 @@
     tabKey,
   } from "#lib/library/library-tabs.ts";
   import LibraryTabsList from "#lib/library/LibraryTabsList.svelte";
+  import GroupedChoiceRow from "#lib/settings/GroupedChoiceRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
   import NewCategoryDialog from "#lib/library/NewCategoryDialog.svelte";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
+  import {
+    FLUSH_FOOTER,
+    FLUSH_NOTE,
+  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   const ICON_SIZE = 16;
+  const NEW_CATEGORY_ICON_SIZE = 20;
+  const ANDROID_NEW_CATEGORY =
+    "native-target my-sm gap-sm self-start rounded-full px-lg text-native-row-subtitle/native-row-subtitle font-medium text-muted block-native-button";
   const android = new AndroidPhone();
+  const ios = new IosPhone();
 
   let keptTabs = $state<readonly LibraryTab[]>(NEW_LIBRARY_TABS);
   let categories = $state<readonly LibraryCategory[]>([]);
@@ -158,12 +169,10 @@
     title={isMac ? m.library_tabs_title_mac() : m.library_tabs_title()}
     parent={{ route: "/(app)/settings/library", title: m.library_title() }}
   />
-  <div class="mbs-pane-gap flex flex-col gap-sm">
-    <p
-      class={android.isOn
-        ? "text-native-row-subtitle/native-row-subtitle text-muted"
-        : "text-footnote text-muted"}
-    >
+  <div
+    class="mbs-pane-gap flex flex-col gap-sm android:max-medium:mbs-none android:max-medium:gap-none"
+  >
+    <p class={android.isOn ? FLUSH_NOTE : "text-footnote text-muted"}>
       {#if isMac}
         {m.library_tabs_intro_mac()}
       {:else}
@@ -179,16 +188,25 @@
       }}
     />
     {#if keepsLabels}
-      <div class="mbs-sm flex flex-wrap gap-sm">
+      <div class={["flex flex-wrap gap-sm", !android.isOn && "mbs-sm"]}>
         <Button
           type="button"
           look="outline"
-          class="flex items-center gap-xs rounded-full px-md font-medium min-block-pointer-button touch:min-block-touch-target"
+          class={[
+            "flex items-center font-medium",
+            android.isOn
+              ? ANDROID_NEW_CATEGORY
+              : "gap-xs rounded-full px-md min-block-pointer-button touch:min-block-touch-target",
+          ]}
           onclick={() => {
             isNaming = true;
           }}
         >
-          <Plus size={ICON_SIZE} aria-hidden="true" />
+          {#if android.isOn}
+            <Icon name="plus" size={NEW_CATEGORY_ICON_SIZE} />
+          {:else}
+            <Plus size={ICON_SIZE} aria-hidden="true" />
+          {/if}
           {isMac
             ? m.library_tabs_new_category_mac()
             : m.library_tabs_new_category()}
@@ -210,7 +228,25 @@
           opensOn.choose(choice);
         }}
       />
-      <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+      <p class={FLUSH_FOOTER}>
+        {m.library_opens_on_help()}
+      </p>
+    </div>
+  {:else if ios.isOn}
+    <div class="mbs-lg flex flex-col gap-sm">
+      <GroupedChoiceRow
+        title={m.library_opens_on()}
+        value={opensOnLabel}
+        choices={[
+          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
+          ...openable.map(({ key, name }) => ({ value: key, label: name })),
+        ]}
+        chosen={shownOpensOn}
+        onChoose={(choice: string) => {
+          opensOn.choose(choice);
+        }}
+      />
+      <p class="px-sm text-native-list-sub/native-list-sub text-muted">
         {m.library_opens_on_help()}
       </p>
     </div>

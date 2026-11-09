@@ -3,6 +3,7 @@
   import { onMount, tick } from "svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Input } from "#lib/components/ui/input/index.ts";
   import { InputGroup } from "#lib/components/ui/input-group/index.ts";
   import { Kbd } from "#lib/components/ui/kbd/index.ts";
@@ -18,10 +19,11 @@
   import { CONDITION_LABELS } from "./condition-labels";
   import ConditionChips from "./ConditionChips.svelte";
   import { isComposing } from "./composition";
-  import type { FilterPlace } from "./search-look";
+  import { ANDROID_SEARCH_VIEW, type FilterPlace } from "./search-look";
 
   const SEARCH_ICON_SIZE = 20;
   const CLEAR_ICON_SIZE = 14;
+  const ANDROID_CLEAR_ICON_SIZE = 24;
 
   let {
     text,
@@ -50,7 +52,13 @@
   } = $props();
 
   const android = new AndroidPhone();
-  const isMac = currentPlatform() === "macos";
+  const fieldClass = $derived(
+    android.isOn
+      ? ANDROID_SEARCH_VIEW.field
+      : `flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide ios:max-medium:gap-native-search-field-gap ios:max-medium:block-native-toolbar-button ios:max-medium:focus-within:focus-ring android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target macos:in-toolbar:ms-auto macos:in-toolbar:flex-none macos:in-toolbar:rounded-input-group macos:in-toolbar:border macos:in-toolbar:border-input-group-edge macos:in-toolbar:bg-input-group macos:in-toolbar:shadow-raised macos:in-toolbar:block-shadcn-control macos:in-toolbar:inline-library-search-toolbar ${FLOATING_GLASS}`,
+  );
+  const platform = currentPlatform();
+  const isMac = platform === "macos";
   let input = $state<HTMLInputElement | null>(null);
   const hasTokens = $derived(filterPlace === "token" && conditions.length > 0);
   const canClear = $derived(text !== "" || hasTokens);
@@ -101,14 +109,16 @@
   }
 </script>
 
-<InputGroup
-  class="flex-1 gap-sm rounded-search-field border-2 border-border bg-card px-md block-search-field min-inline-none focus-within:border-accent large:rounded-card large:ps-search-field-inline large:pe-md large:block-search-field-wide ios:max-medium:gap-native-search-field-gap ios:max-medium:block-native-toolbar-button ios:max-medium:focus-within:focus-ring android:gap-md android:rounded-full android:border-0 android:bg-android-container-high android:block-touch-target macos:in-toolbar:ms-auto macos:in-toolbar:flex-none macos:in-toolbar:rounded-input-group macos:in-toolbar:border macos:in-toolbar:border-input-group-edge macos:in-toolbar:bg-input-group macos:in-toolbar:shadow-raised macos:in-toolbar:block-shadcn-control macos:in-toolbar:inline-library-search-toolbar {FLOATING_GLASS}"
->
-  <Search
-    size={SEARCH_ICON_SIZE}
-    aria-hidden="true"
-    class="shrink-0 ios:max-medium:block-native-icon ios:max-medium:inline-native-icon android:text-muted"
-  />
+<InputGroup class={fieldClass}>
+  {#if platform === "android" && !android.isOn}
+    <Icon name="search" size={SEARCH_ICON_SIZE} class="shrink-0 text-muted" />
+  {:else if platform !== "android"}
+    <Search
+      size={SEARCH_ICON_SIZE}
+      aria-hidden="true"
+      class="shrink-0 ios:max-medium:block-native-icon ios:max-medium:inline-native-icon android:text-muted"
+    />
+  {/if}
   {#if hasTokens}
     <div
       role="group"
@@ -176,9 +186,17 @@
         <Button
           {...props}
           look="icon"
-          class="relative shrink-0 bg-chip text-muted block-search-clear inline-search-clear large:hidden touch:before:absolute touch:before:block-touch-target touch:before:inline-touch-target"
+          class={android.isOn
+            ? ANDROID_SEARCH_VIEW.clear
+            : "relative shrink-0 bg-chip text-muted block-search-clear inline-search-clear large:hidden touch:before:absolute touch:before:block-touch-target touch:before:inline-touch-target"}
         >
-          <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+          {#if android.isOn}
+            <Icon name="x" size={ANDROID_CLEAR_ICON_SIZE} />
+          {:else if platform === "android"}
+            <Icon name="x" size={CLEAR_ICON_SIZE} />
+          {:else}
+            <X size={CLEAR_ICON_SIZE} strokeWidth={2.5} aria-hidden="true" />
+          {/if}
         </Button>
       {/snippet}
     </Tooltip>

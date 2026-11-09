@@ -21,6 +21,7 @@
     marks,
     overlay,
     startAt,
+    progress = $bindable(0),
     onShown,
     onShownReady,
   }: {
@@ -31,6 +32,7 @@
     marks: readonly number[];
     overlay: Snippet;
     startAt: StripPlace | undefined;
+    progress?: number;
     onShown: (index: number) => void;
     onShownReady: () => void;
   } = $props();
@@ -49,7 +51,6 @@
   let reported = -1;
   let isScrollPending = false;
   let unscrolled = 0;
-  let progress = $state(0);
   let scrollRange = $state(0);
   let track: HTMLDivElement | undefined = $state();
   let isDragging = false;
@@ -67,17 +68,19 @@
     return scrollRange > 0 ? Math.min(1, top / scrollRange) : 0;
   }
 
+  export function scrubTo(along: number): void {
+    if (scroller !== undefined) {
+      scroller.scrollTop =
+        along * (scroller.scrollHeight - scroller.clientHeight);
+    }
+  }
+
   function dragTo(event: PointerEvent): void {
-    if (scroller === undefined || track === undefined) {
+    if (track === undefined) {
       return;
     }
     const box = track.getBoundingClientRect();
-    const along = Math.min(
-      1,
-      Math.max(0, (event.clientY - box.top) / box.height),
-    );
-    scroller.scrollTop =
-      along * (scroller.scrollHeight - scroller.clientHeight);
+    scrubTo(Math.min(1, Math.max(0, (event.clientY - box.top) / box.height)));
   }
 
   function ratioOf(page: BookPage): string {

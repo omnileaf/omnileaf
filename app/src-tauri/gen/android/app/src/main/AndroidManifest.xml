@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
@@ -9,6 +10,8 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        tools:targetApi="tiramisu"
         android:theme="@style/Theme.omnileaf_app"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
         <activity
@@ -31,6 +34,8 @@
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
                 <data android:mimeType="application/x-cb7" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/x-cbr" />
             </intent-filter>
 
             <!-- Many providers report a comic archive as a generic type, so only its file name tells it apart. -->
@@ -41,6 +46,8 @@
                 <data android:host="*" />
                 <data android:mimeType="application/zip" />
                 <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/vnd.rar" />
+                <data android:mimeType="application/x-rar-compressed" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:pathPattern=".*\\.cbz" />
                 <data android:pathPattern=".*\\..*\\.cbz" />
@@ -48,6 +55,9 @@
                 <data android:pathPattern=".*\\.cb7" />
                 <data android:pathPattern=".*\\..*\\.cb7" />
                 <data android:pathPattern=".*\\..*\\..*\\.cb7" />
+                <data android:pathPattern=".*\\.cbr" />
+                <data android:pathPattern=".*\\..*\\.cbr" />
+                <data android:pathPattern=".*\\..*\\..*\\.cbr" />
             </intent-filter>
 
             <!-- A shared file has no name to match, so the generic archive types must be offered too. -->
@@ -57,8 +67,12 @@
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
                 <data android:mimeType="application/x-cb7" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/x-cbr" />
                 <data android:mimeType="application/zip" />
                 <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/vnd.rar" />
+                <data android:mimeType="application/x-rar-compressed" />
             </intent-filter>
         </activity>
 

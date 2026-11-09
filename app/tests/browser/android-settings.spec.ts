@@ -1,4 +1,5 @@
 import {
+  accessibilityViolations,
   boxOf,
   DEFAULT_BACKEND,
   expect,
@@ -108,6 +109,33 @@ test.describe(
       const note = await boxOf(page.getByText(/^Nothing leaves this phone/));
       const rows = await boxOf(group);
       expect(note.y).toBeGreaterThanOrEqual(rows.y + rows.height);
+    });
+
+    test("sets the privacy note with a 24px icon at x=16 and its words at x=56 in 14px", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy");
+      const icon = page.locator("p [data-icon=shield-check]");
+      const words = page.getByText(/^Nothing leaves this phone/);
+
+      expect((await boxOf(icon)).x).toBe(16);
+      expect((await boxOf(icon)).width).toBe(24);
+      expect((await boxOf(words)).x).toBe(56);
+      await expect(words).toHaveCSS("font-size", "14px");
+      await expect(words).toHaveCSS("line-height", "20px");
+    });
+
+    test("heads Undo 44px tall and describes the screen reader row", async ({
+      page,
+    }) => {
+      await page.goto("/settings/advanced");
+      const heading = page.getByRole("heading", { name: "Undo", level: 2 });
+
+      expect((await boxOf(heading)).height).toBe(44);
+      await expect(heading).toHaveCSS("padding-top", "16px");
+      await expect(
+        page.getByRole("switch", { name: "Wait for screen readers" }),
+      ).toHaveAccessibleDescription("Stays until it has been read out.");
     });
 
     test("keeps the crash reports choice after a row is tapped and the page reopens", async ({
@@ -282,13 +310,41 @@ test.describe(
       const row = page
         .getByRole("main")
         .getByRole("link", { name: /^General/ });
-      const icon = row.locator("svg").first();
+      const icon = row.locator("[data-icon]");
 
+      await expect(icon).toHaveCSS("width", "24px");
       await expect(icon.locator("xpath=..")).toHaveCSS(
         "background-color",
         "rgba(0, 0, 0, 0)",
       );
-      await expect(row.locator("svg:visible")).toHaveCount(1);
+      await expect(row.locator("svg:visible")).toHaveCount(0);
+    });
+
+    test("lays the rows flush, the icon at x=16 and the name at x=56, with no line between rows", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page
+        .getByRole("main")
+        .getByRole("link", { name: /^General/ });
+      const icon = await boxOf(row.locator("[data-icon]"));
+      const name = await boxOf(row.getByText("General", { exact: true }));
+
+      expect(icon.x).toBe(16);
+      expect(name.x).toBe(56);
+      await expect(row).toHaveCSS("border-bottom-width", "0px");
+      await expect(
+        page.getByRole("heading", { name: "About", level: 2 }),
+      ).toHaveCSS("height", "44px");
+    });
+
+    test("shows the reading mode and tap zones under Reader", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+      const row = page.getByRole("main").getByRole("link", { name: /^Reader/ });
+
+      await expect(row.getByText(/·/)).toBeVisible();
     });
 
     test("sets each name at 16px and its line under it at 14px, both in regular weight", async ({
@@ -332,10 +388,29 @@ test.describe("Permissions on an Android phone", { tag: "@native" }, () => {
     await expect(line).toHaveCSS("line-height", "20px");
     await expect(state).toHaveCSS("border-top-width", "0px");
     await expect(state).toHaveCSS("font-size", "12px");
-    await expect(row.locator("svg").first().locator("xpath=..")).toHaveCSS(
-      "border-top-width",
-      "0px",
-    );
+    await expect(row.locator("[data-icon=bell]")).toBeVisible();
+    await expect(name).toHaveCSS("letter-spacing", "0.5px");
+    expect((await boxOf(row.locator("[data-icon=bell]"))).x).toBe(16);
+    expect((await boxOf(name)).x).toBe(56);
+  });
+
+  test("sets the intro of Permissions, Language and the licences at 14px, 16px in", async ({
+    page,
+  }) => {
+    const intros = [
+      ["/settings/privacy/permissions", /^Omnileaf asks for each one/],
+      ["/settings/general/language", /^Each language is shown/],
+      ["/settings/about/licences", /^Made from the packages/],
+    ] as const;
+
+    for (const [route, text] of intros) {
+      await page.goto(route);
+      const intro = page.getByText(text);
+
+      await expect(intro).toHaveCSS("font-size", "14px");
+      await expect(intro).toHaveCSS("line-height", "20px");
+      await expect(intro).toHaveCSS("padding-left", "16px");
+    }
   });
 });
 
@@ -371,5 +446,65 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     );
     await expect(clear).toHaveCSS("border-top-width", "0px");
     await expect(clear).toHaveCSS("font-size", "14px");
+    await expect(clear).toHaveCSS(
+      "color",
+      await tokenColour(page, "--native-color-on-button-secondary"),
+    );
+    expect((await boxOf(clear)).height).toBe(40);
+  });
+
+  test("sets the meter and the cache rows flush at 16px with no line between them", async ({
+    page,
+  }) => {
+    await page.goto("/settings/storage");
+    const heading = page.getByRole("heading", { name: "On this phone" });
+    const name = page.getByText("Cached pages", { exact: true });
+    const row = name.locator("xpath=ancestor::li[1] | ancestor::div[2]");
+
+    expect((await boxOf(heading)).x).toBe(16);
+    await expect(heading).toHaveCSS("font-weight", "500");
+    await expect(heading).toHaveCSS("font-size", "14px");
+    await expect(heading).toHaveCSS("line-height", "20px");
+    expect((await boxOf(name)).x).toBe(16);
+    await expect(name).toHaveCSS("letter-spacing", "0.5px");
+    await expect(row.first()).toHaveCSS("border-bottom-width", "0px");
+    await expect(page.getByText(/^When space runs low/)).toHaveCSS(
+      "font-size",
+      "14px",
+    );
   });
 });
+
+const CHECKED_SCREENS = [
+  "/settings",
+  "/settings/general",
+  "/settings/privacy",
+  "/settings/privacy/permissions",
+  "/settings/storage",
+  "/settings/general/language",
+  "/settings/advanced",
+] as const;
+
+test.describe(
+  "Settings screens on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's list rows");
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      for (const route of CHECKED_SCREENS) {
+        test(`has no accessibility violations on ${route} in the ${colorScheme} theme`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.goto(route);
+          await expect(page.getByRole("main")).toBeVisible();
+
+          expect(await accessibilityViolations(page)).toEqual([]);
+        });
+      }
+    }
+  },
+);

@@ -4,9 +4,11 @@
     Eye,
     FolderOpen,
     Library,
+    type LucideProps,
     RotateCcw,
   } from "@lucide/svelte";
   import { Dialog, DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Component } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { resolve } from "$app/paths";
@@ -22,14 +24,13 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
-  import { ITEM_LOOKS } from "#lib/components/ui/item/looks.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import ComingSoon from "./ComingSoon.svelte";
   import { moreHeading } from "./more-heading.ts";
   import {
     READER_ICON_SIZE,
@@ -39,6 +40,13 @@
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
+  interface MoreAction {
+    readonly icon: IconName;
+    readonly fallback: Component<LucideProps>;
+    readonly label: string;
+    readonly act: () => void;
+  }
+
   const ITEM_ICON_SIZE = 16;
   const SHEET = {
     heading: "text-title font-bold",
@@ -46,6 +54,8 @@
     row: "reader-sheet-action",
     title: "font-medium",
     rule: "my-xs border-border",
+    shape: "",
+    wayBack: "",
   } as const;
   const PHONE_SHEET = {
     heading:
@@ -54,6 +64,8 @@
     row: "row",
     title: "",
     rule: "mx-lg my-sm border-native-menu-rule",
+    shape: "rounded-native-menu-item",
+    wayBack: "bg-native-row-pressed",
   } as const;
 
   let {
@@ -64,6 +76,7 @@
     platform,
     onMarkRead,
     onStartOver,
+    onShowFile,
     onOpenChange,
   }: {
     title: string;
@@ -73,6 +86,7 @@
     platform: Platform;
     onMarkRead: () => void;
     onStartOver: () => void;
+    onShowFile: (() => void) | undefined;
     onOpenChange: (isOpen: boolean) => void;
   } = $props();
 
@@ -87,6 +101,30 @@
   let isSheetOpen = $state(false);
   let isMenuOpen = $state(false);
   const showFile = $derived(showFileLabel(platform));
+  const moreActions: readonly MoreAction[] = $derived([
+    {
+      icon: "eye",
+      fallback: Eye,
+      label: m.reader_mark_read(),
+      act: onMarkRead,
+    },
+    {
+      icon: "rotate-ccw",
+      fallback: RotateCcw,
+      label: m.reader_start_over(),
+      act: onStartOver,
+    },
+    ...(onShowFile === undefined
+      ? []
+      : [
+          {
+            icon: "folder-open",
+            fallback: FolderOpen,
+            label: showFile,
+            act: onShowFile,
+          } satisfies MoreAction,
+        ]),
+  ]);
 
   function closeSheet(): void {
     isSheetOpen = false;
@@ -166,18 +204,12 @@
         aria-labelledby={floats ? headingId : undefined}
         class="flex flex-col"
       >
-        <DropdownMenuItem onSelect={onMarkRead}>
-          <Eye size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_mark_read()}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onStartOver}>
-          <RotateCcw size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_start_over()}
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <FolderOpen size={ITEM_ICON_SIZE} aria-hidden="true" />
-          {m.reader_coming_soon({ feature: showFile })}
-        </DropdownMenuItem>
+        {#each moreActions as action (action.icon)}
+          <DropdownMenuItem onSelect={action.act}>
+            <action.fallback size={ITEM_ICON_SIZE} aria-hidden="true" />
+            {action.label}
+          </DropdownMenuItem>
+        {/each}
         {#if chrome.isOnPhone}
           <DropdownMenuSeparator />
         {:else}
@@ -237,62 +269,31 @@
         {/if}
       </div>
       <div class={sheet.list}>
-        <Item look={sheet.row}>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              type="button"
-              look="row"
-              onclick={() => {
-                closeSheet();
-                onMarkRead();
-              }}
-            >
-              <ReaderIcon
-                name="eye"
-                fallback={Eye}
-                isKit={isOnPhone}
-                size={READER_ICON_SIZE}
-              />
-              <ItemTitle class={sheet.title}>{m.reader_mark_read()}</ItemTitle>
-            </Button>
-          {/snippet}
-        </Item>
-        <Item look={sheet.row}>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              type="button"
-              look="row"
-              onclick={() => {
-                closeSheet();
-                onStartOver();
-              }}
-            >
-              <ReaderIcon
-                name="rotate-ccw"
-                fallback={RotateCcw}
-                isKit={isOnPhone}
-                size={READER_ICON_SIZE}
-              />
-              <ItemTitle class={sheet.title}>{m.reader_start_over()}</ItemTitle>
-            </Button>
-          {/snippet}
-        </Item>
-        <ComingSoon
-          label={showFile}
-          class={cn(ITEM_LOOKS[sheet.row], "text-muted")}
-        >
-          <ReaderIcon
-            name="folder-open"
-            fallback={FolderOpen}
-            isKit={isOnPhone}
-            size={READER_ICON_SIZE}
-          />
-          <ItemTitle class={sheet.title}>{showFile}</ItemTitle>
-        </ComingSoon>
+        {#each moreActions as action (action.icon)}
+          <Item look={sheet.row} class={sheet.shape}>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                type="button"
+                look="row"
+                onclick={() => {
+                  closeSheet();
+                  action.act();
+                }}
+              >
+                <ReaderIcon
+                  name={action.icon}
+                  fallback={action.fallback}
+                  isKit={isOnPhone}
+                  size={READER_ICON_SIZE}
+                />
+                <ItemTitle class={sheet.title}>{action.label}</ItemTitle>
+              </Button>
+            {/snippet}
+          </Item>
+        {/each}
         <hr class={sheet.rule} />
-        <Item look={sheet.row}>
+        <Item look={sheet.row} class={[sheet.shape, sheet.wayBack]}>
           {#snippet child({ props })}
             <a {...props} href={resolve("/(app)")}>
               <ReaderIcon

@@ -20,6 +20,8 @@ import {
 const FILE_NAME = `${BOOK_TITLE}.cbr`;
 const typesHiddenLike: string[] = [];
 const typesShownAgain: string[] = [];
+const SHOW_FILE_BUTTON = /^Show (the file|in folder)$/;
+let shownInFolder: string[] = [];
 
 const UNSUPPORTED: FakeBackend = {
   ...DEFAULT_BACKEND,
@@ -45,6 +47,10 @@ const UNSUPPORTED: FakeBackend = {
     typesShownAgain.push(fileType);
     return null;
   },
+  showBookInFolder: (book) => {
+    shownInFolder = [...shownInFolder, book];
+    return null;
+  },
 };
 
 test.use({ backend: UNSUPPORTED });
@@ -52,6 +58,7 @@ test.use({ backend: UNSUPPORTED });
 test.beforeEach(() => {
   typesHiddenLike.length = 0;
   typesShownAgain.length = 0;
+  shownInFolder = [];
 });
 
 function heading(page: Page) {
@@ -98,14 +105,12 @@ test("lists the files Omnileaf opens and those it doesn't yet", async ({
   await expect(page.getByText("Not yet: CBR and RAR files.")).toBeVisible();
 });
 
-test("says showing the file is still to come", async ({ page }) => {
+test("shows the file from its button", async ({ page }) => {
   await openUnsupportedFile(page);
 
-  await expect(
-    page.getByRole("button", {
-      name: /^Show (the file|in folder) · coming soon$/,
-    }),
-  ).toBeDisabled();
+  await page.getByRole("button", { name: SHOW_FILE_BUTTON }).click();
+
+  await expect.poll(() => shownInFolder).toEqual([BOOK_ID]);
 });
 
 test("hides files like this one, offering to undo it", async ({ page }) => {
@@ -145,7 +150,9 @@ test("sets Hide and Show side by side on desktops", async ({ page }) => {
   const hide = await boxOf(
     page.getByRole("button", { name: "Hide files like this" }),
   );
-  const show = await boxOf(page.getByRole("button", { name: /coming soon$/ }));
+  const show = await boxOf(
+    page.getByRole("button", { name: SHOW_FILE_BUTTON }),
+  );
 
   expect(show.x).toBeGreaterThan(hide.x + hide.width);
   expect(show.y).toBeCloseTo(hide.y, 0);
@@ -195,7 +202,7 @@ test.describe(
         page.getByRole("button", { name: "Hide files like this" }),
       );
       const show = await boxOf(
-        page.getByRole("button", { name: /coming soon$/ }),
+        page.getByRole("button", { name: SHOW_FILE_BUTTON }),
       );
 
       expect(show.y).toBeGreaterThanOrEqual(hide.y + hide.height);

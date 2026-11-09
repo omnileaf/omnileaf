@@ -208,6 +208,21 @@ test.describe("with books read", () => {
     await expect(rows(page)).toHaveCount(BOOKS.length);
   });
 
+  test("totals the time read under each heading, once per day", async ({
+    page,
+  }) => {
+    await openHistory(page);
+
+    await expect(
+      page.getByRole("region", { name: "Today" }).getByTestId("group-total"),
+    ).toHaveText("20 min");
+    await expect(
+      page
+        .getByRole("region", { name: "This week" })
+        .getByTestId("group-total"),
+    ).toHaveText("20 min");
+  });
+
   test("says where each book was left and when", async ({ page }) => {
     await openHistory(page);
 
@@ -286,6 +301,47 @@ test.describe("with books read", () => {
 
     await expect(rows(page)).toHaveCount(BOOKS.length);
     expect(asked).toEqual(["clear", `restore all ${String(CLEARED_MARK)}`]);
+  });
+
+  test.describe("with Undo turned off in Advanced settings", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem(
+          "omnileaf.undo",
+          JSON.stringify({
+            isOffered: false,
+            windowSeconds: 10,
+            holdsWhileHoveredOrFocused: true,
+          }),
+        );
+      });
+    });
+
+    test("removes an entry for good, with a notice and no Undo", async ({
+      page,
+    }) => {
+      await openHistory(page);
+
+      const menu = await openMenuOf(page, 7);
+      await menuAction(menu, page, "Remove from History").click();
+
+      await expect(rowOf(page, 7)).toHaveCount(0);
+      await expect(page.getByText("Removed from History")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+      expect(asked).toEqual([`remove ${bookId(7)}`]);
+    });
+
+    test("clears History for good, with no Undo", async ({ page }) => {
+      await openHistory(page);
+
+      await page.getByRole("button", { name: "Clear History" }).click();
+
+      await expect(
+        page.getByRole("heading", { name: "History is empty" }),
+      ).toBeVisible();
+      await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+      expect(asked).toEqual(["clear"]);
+    });
   });
 
   test("finds books by series or book title, and says when nothing matches", async ({

@@ -334,6 +334,7 @@
   --spacing-step-dialog-inline: 2.25rem;
   --spacing-step-dialog-block: 1.75rem;
   --spacing-promise-tile: 2.5rem;
+  --spacing-first-launch-button: 3.5rem;
   --spacing-promise-gap: 0.875rem;
   --spacing-home-card: 0.875rem;
   --spacing-home-path: 0.625rem;
@@ -369,6 +370,10 @@
   --spacing-cover-sheet-far: 0.875rem;
   --spacing-cover-sheet-near: 0.4375rem;
   --spacing-cover-sheet-near-top: 0.3125rem;
+  --spacing-cover-stack-room-phone: 0.5rem;
+  --spacing-cover-sheet-far-phone: 0.625rem;
+  --spacing-cover-sheet-near-phone: 0.3125rem;
+  --spacing-cover-sheet-near-top-phone: 0.25rem;
   --spacing-cover-fit: 6.5rem;
   --spacing-compact-cover-min: calc(2.125em + 0.875rem);
   --spacing-compact-cover-readable: calc(5.25em + 1.375rem);
@@ -483,9 +488,11 @@
   --spacing-radio: 1rem;
   --spacing-veil-disc: 2.5rem;
   --spacing-radio-dot: 0.5rem;
+  --spacing-colour-swatch: 2.5rem;
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
+  --spacing-problem-media: 3.5rem;
   --spacing-switch-length: 2rem;
   --spacing-progress: 0.5rem;
   --spacing-progress-compact: 0.375rem;
@@ -530,6 +537,7 @@
   --spacing-select-end: 2.125rem;
   --spacing-panel-button: 2rem;
   --spacing-sheet-top: 3.75rem;
+  --spacing-below-sheet-top: calc(100% - var(--spacing-sheet-top));
   --spacing-library-search: 15rem;
   --spacing-library-search-toolbar: 16.25rem;
   --spacing-search-field: 2.875rem;
@@ -600,6 +608,10 @@
   --spacing-skeleton-line: 8.75rem;
   --spacing-skeleton-card: 12.5rem;
   --spacing-skeleton-card-wide: 9rem;
+  --spacing-skeleton-note-android: 4rem;
+  --spacing-skeleton-card-android: 9.25rem;
+  --spacing-skeleton-book-title-android: 1.125rem;
+  --spacing-skeleton-book-line-android: 0.875rem;
   --spacing-skeleton-title-macos: 13.125rem;
   --spacing-skeleton-line-macos: 0.875rem;
   --spacing-skeleton-card-macos: 7rem;
@@ -760,6 +772,7 @@
   --radius-row: 0.5rem;
   --radius-phone-button: 0.875rem;
   --radius-small-control: 0.5rem;
+  --radius-auto-mark: 0.25rem;
   --radius-segment: 0.375rem;
   --radius-segment-outer: 0.5rem;
   --radius-card: 0.75rem;
@@ -768,6 +781,8 @@
   --radius-cover: 0.375rem;
   --radius-drag-box: 0.375rem;
   --radius-list-cover: 0.25rem;
+  --radius-slider-cap: 0.5rem;
+  --radius-slider-join: 0.125rem;
   --radius-field: 0.625rem;
   --radius-bottom-sheet: 0.625rem;
   --radius-menu-item: 0.375rem;
@@ -1323,6 +1338,7 @@
   @variant ios {
     @variant max-medium {
       --icon-hole: var(--muted);
+      --spacing-title-gap: 0px;
     }
   }
 }
@@ -1672,6 +1688,15 @@
   mask-image: linear-gradient(to right, black 65%, transparent);
 }
 
+@utility series-band-fade-down {
+  mask-image: linear-gradient(
+    to bottom,
+    black 32%,
+    rgb(0 0 0 / 0.25) 50%,
+    transparent
+  );
+}
+
 @utility reader-top-scrim {
   background-image: linear-gradient(
     to bottom,
@@ -1747,6 +1772,13 @@
   );
 }
 
+@utility inset-bs-phone-stacked-cover-end {
+  inset-block-start: calc(
+    150cqi + var(--spacing-cover-stack-room-phone) - var(--continue-disc) -
+      var(--spacing-sm)
+  );
+}
+
 @utility grid-cols-covers-fit {
   grid-template-columns: repeat(
     auto-fill,
@@ -1796,6 +1828,81 @@
   inline-size: calc(var(--progress) * 100%);
 }
 
+@utility reader-slider-root {
+  --handle: calc(
+    var(--spacing-xs) + var(--spacing-2xs) + var(--progress) *
+      (100% - var(--spacing-md))
+  );
+}
+
+@utility reader-slider-handle {
+  inset-inline-start: var(--handle);
+  margin-inline-start: calc(var(--spacing-native-slider-thumb) / -2);
+}
+
+@utility reader-slider-fill {
+  clip-path: inset(
+    0 calc(100% - var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
+      var(--spacing-2xs) var(--spacing-2xs) var(--spacing-sm)
+  );
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    clip-path: inset(
+      0 0 0 calc(100% - var(--handle) + var(--spacing-sm)) round
+        var(--spacing-2xs) var(--spacing-sm) var(--spacing-sm)
+        var(--spacing-2xs)
+    );
+  }
+}
+
+@utility reader-slider-end-dot {
+  --dot-edge: 0.5px;
+  background-image: radial-gradient(
+    circle at var(--dot-at),
+    var(--native-color-button-primary) var(--spacing-2xs),
+    transparent calc(var(--spacing-2xs) + var(--dot-edge))
+  );
+}
+
+@utility reader-slider-rest {
+  --dot-at: calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%;
+  @apply reader-slider-end-dot;
+  clip-path: inset(
+    0 0 0 calc(var(--handle) + var(--spacing-sm)) round var(--spacing-2xs)
+      var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs)
+  );
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    --dot-at: calc(var(--spacing-xs) + var(--spacing-2xs)) 50%;
+    clip-path: inset(
+      0 calc(var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
+        var(--spacing-2xs) var(--spacing-2xs) var(--spacing-sm)
+    );
+  }
+}
+
+@utility reader-scrubber-frame {
+  inset-block-start: calc(
+    var(--spacing-safe-top) + var(--spacing-native-top-bar) + var(--spacing-lg)
+  );
+  inset-block-end: calc(var(--reader-toast-room) + var(--spacing-lg));
+}
+
+@utility reader-scrubber-track {
+  --handle: calc(var(--progress) * 100%);
+  --gap: calc(var(--spacing-xs) + var(--spacing-2xs));
+}
+
+@utility reader-scrubber-range {
+  inset-block-end: calc(100% - var(--handle) + var(--gap));
+}
+
+@utility reader-scrubber-rest {
+  inset-block-start: calc(var(--handle) + var(--gap));
+  --dot-at: 50% calc(100% - var(--gap));
+  @apply reader-slider-end-dot;
+}
+
 @utility reader-progress-thumb {
   --reader-thumb: var(--spacing-lg);
   inset-inline-start: calc(var(--progress) * (100% - var(--reader-thumb)));
@@ -1806,6 +1913,10 @@
       --reader-thumb: var(--spacing-reader-thumb-touch);
     }
   }
+}
+
+@utility reader-zone-edge {
+  box-shadow: inset 0 0 0 1px var(--native-color-button-outline-edge);
 }
 
 @utility side-panel-shadow {
@@ -1823,6 +1934,10 @@
       transition-duration: var(--transition-duration-slide);
       transition-timing-function: var(--ease-glass);
 
+      &:where([data-platform="macos"] *) {
+        transition-duration: var(--transition-duration-fade);
+      }
+
       @starting-style {
         opacity: 0;
       }
@@ -1830,6 +1945,32 @@
       &[data-starting-style],
       &[data-state="closed"] {
         opacity: 0;
+      }
+    }
+  }
+}
+
+@utility dialog-drop {
+  @media (prefers-reduced-motion: no-preference) {
+    &[class]:where([data-platform="android"] *):where(
+        :root:not([data-still~="sheets"]) *
+      ) {
+      transition-property: opacity, transform, clip-path;
+      transition-duration: var(--transition-duration-flyout);
+      transition-timing-function: var(--ease-flyout);
+      transform-origin: 50% 0;
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(-22px) scaleY(0.9);
+        clip-path: inset(0 0 100% 0 round var(--radius-android-xl));
+      }
+
+      &[data-starting-style],
+      &[data-state="closed"] {
+        opacity: 0;
+        transform: translateY(-22px) scaleY(0.9);
+        clip-path: inset(0 0 100% 0 round var(--radius-android-xl));
       }
     }
   }

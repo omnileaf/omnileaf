@@ -38,7 +38,11 @@ async function toastOnWindows() {
     props: {
       missing: MISSING,
       isStillFailing: false,
-      toast: { dismiss: () => undefined, lapse: () => undefined },
+      toast: {
+        dismiss: () => undefined,
+        lapse: () => undefined,
+        keep: () => undefined,
+      },
       handlers: {
         showAnyway: () => undefined,
         find: () => undefined,

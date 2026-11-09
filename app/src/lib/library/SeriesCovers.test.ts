@@ -1,17 +1,24 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import {
   commands,
   DEFAULT_LIBRARY_VIEW,
+  type LibraryDisplay,
   type LibrarySeries,
+  type Platform,
 } from "#lib/ipc/bindings.ts";
+
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import type { CoverPath } from "./cover-url";
 import SeriesCovers from "./SeriesCovers.svelte";
 import { NEW_LIBRARY_LISTING } from "./library-listing";
 
+const ANDROID_PHONE_WIDTH = 390;
+const PHONE_HEIGHT = 844;
 const COVER = "thumb/v1/0190a3e4-0000-8000-8000-000000000001/1/1";
 
 afterEach(() => {
@@ -26,6 +33,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         title: "Sample Series 01",
         bookCount: 3,
         unreadCount: 3,
+        isConnected: true,
         cover: COVER,
       },
       {
@@ -33,6 +41,7 @@ async function listed(): Promise<readonly LibrarySeries[]> {
         title: "Sample Series 02",
         bookCount: 1,
         unreadCount: 1,
+        isConnected: true,
         cover: null,
       },
     ],
@@ -140,4 +149,40 @@ test("keeps each series' cover with its series when the list reorders", async ()
 
   const moved = screen.getByRole("listitem").nth(1);
   expect(moved.getByRole("presentation").element()).toBe(cover);
+});
+
+async function listMarkupOn(
+  platform: Platform,
+  display: LibraryDisplay,
+): Promise<string> {
+  followCorePlatform(platform);
+  await page.viewport(ANDROID_PHONE_WIDTH, PHONE_HEIGHT);
+  const screen = await render(SeriesCovers, {
+    series: await listed(),
+    isComplete: true,
+    coverUrl: fakeCoverUrl,
+    view: { ...DEFAULT_LIBRARY_VIEW, display },
+    usesStandIns: false,
+  });
+
+  const markup = screen
+    .getByRole("list", { name: "Series" })
+    .element().innerHTML;
+  await screen.unmount();
+
+  return markup;
+}
+
+test("lays the covers display out as the grid on an Android phone", async () => {
+  const covers = await listMarkupOn("android", "covers");
+  const grid = await listMarkupOn("android", "grid");
+
+  expect(covers).toBe(grid);
+});
+
+test("lays the covers display out apart from the grid on a Windows window", async () => {
+  const covers = await listMarkupOn("windows", "covers");
+  const grid = await listMarkupOn("windows", "grid");
+
+  expect(covers).not.toBe(grid);
 });

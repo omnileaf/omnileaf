@@ -2,20 +2,21 @@
   import { BookOpen, RotateCcwClock } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import type { IconName } from "#lib/icons/names.ts";
   import { FILTER_CONDITIONS } from "#lib/library/library-listing.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
 
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
-  import { filterWords } from "./condition-labels";
+  import {
+    filterWords,
+    SOON_FILTER_WORDS,
+    SOON_FILTERS,
+  } from "./condition-labels";
   import { startLook } from "./search-look";
   import { type RecentSearch, searchedWhen } from "./recent-searches.svelte";
-
-  const TODAYS_WORD =
-    "rounded-badge bg-chip px-sm py-2xs font-mono text-detail text-foreground";
-  const NATIVE_WORD =
-    "flex items-center rounded-full bg-native-button-outline font-ui px-md text-foreground text-native-button/native-button font-native-button tracking-native-button min-block-native-segment";
 
   let {
     recent,
@@ -30,6 +31,24 @@
     onRun: (text: string) => void;
     onClear: () => void;
   } = $props();
+
+  interface Searchable {
+    readonly icon: IconName;
+    readonly label: () => string;
+    readonly note: (() => string) | undefined;
+  }
+
+  const ANDROID_SEARCHABLES: readonly Searchable[] = [
+    { icon: "book-open", label: m.search_by_title, note: undefined },
+    { icon: "user", label: m.search_by_creator, note: undefined },
+    { icon: "tag", label: m.search_by_tag, note: undefined },
+    { icon: "list", label: m.search_by_chapter, note: undefined },
+    {
+      icon: "file-text",
+      label: m.search_by_words,
+      note: m.search_by_words_soon,
+    },
+  ];
 
   const id = $props.id();
   const recentId = `${id}-recent`;
@@ -63,7 +82,11 @@
               }}
             >
               <span data-slot="item-media" class={look.lead}>
-                <RotateCcwClock size={look.iconSize} aria-hidden="true" />
+                {#if android.isOn}
+                  <Icon name="history" size={look.iconSize} />
+                {:else}
+                  <RotateCcwClock size={look.iconSize} aria-hidden="true" />
+                {/if}
               </span>
               <span data-slot="item-title" class="flex-1 truncate"
                 >{entry.text}</span
@@ -80,15 +103,39 @@
   <section aria-labelledby={byId} class={look.section}>
     <h2 id={byId} class={look.heading}>{m.search_by()}</h2>
     <ul class={look.rows}>
-      <li class={look.staticRow}>
-        <span data-slot="item-media" class={look.lead}>
-          <BookOpen size={look.iconSize} aria-hidden="true" />
-        </span>
-        <span data-slot="item-title" class="flex-1">{m.search_by_title()}</span>
-        <span class="text-detail text-muted max-medium:hidden">
-          {m.search_by_title_example()}
-        </span>
-      </li>
+      {#if android.isOn}
+        {#each ANDROID_SEARCHABLES as searchable (searchable.icon)}
+          <li class={look.staticRow}>
+            <span data-slot="item-media" class={look.lead}>
+              <Icon name={searchable.icon} size={look.iconSize} />
+            </span>
+            <span
+              class="flex flex-1 flex-wrap items-baseline justify-between gap-x-md min-inline-none"
+            >
+              <span data-slot="item-title" class="wrap-anywhere">
+                {searchable.label()}
+              </span>
+              {#if searchable.note !== undefined}
+                <span class="text-detail wrap-anywhere text-muted">
+                  {searchable.note()}
+                </span>
+              {/if}
+            </span>
+          </li>
+        {/each}
+      {:else}
+        <li class={look.staticRow}>
+          <span data-slot="item-media" class={look.lead}>
+            <BookOpen size={look.iconSize} aria-hidden="true" />
+          </span>
+          <span data-slot="item-title" class="flex-1"
+            >{m.search_by_title()}</span
+          >
+          <span class="text-detail text-muted max-medium:hidden">
+            {m.search_by_title_example()}
+          </span>
+        </li>
+      {/if}
     </ul>
   </section>
   <section aria-labelledby={filterId} class={look.filterSection}>
@@ -101,11 +148,22 @@
     <ul class={look.filters}>
       {#each FILTER_CONDITIONS as condition (condition)}
         <li>
-          <code class={isGrouped ? NATIVE_WORD : TODAYS_WORD}>
+          <code class={look.word}>
             {words[condition]}
           </code>
         </li>
       {/each}
+      {#if look.soonWord !== undefined}
+        {#each SOON_FILTERS as soon (soon)}
+          {@const word = SOON_FILTER_WORDS[soon]()}
+          <li>
+            <code class={look.soonWord}>
+              <span aria-hidden="true">{word}</span>
+              <span class="sr-only">{m.search_word_soon({ word })}</span>
+            </code>
+          </li>
+        {/each}
+      {/if}
     </ul>
     {#if !isGrouped}
       <p class={look.example}>

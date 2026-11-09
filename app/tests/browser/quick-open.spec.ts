@@ -156,7 +156,7 @@ test("opens with Control K from anywhere, offering its actions before anything i
 
   await expect(
     quickOpen(page).getByRole("group", { name: "Actions" }).getByRole("option"),
-  ).toHaveText([/Show unread/, /Settings/]);
+  ).toHaveText([/Show unread/, /Show started/, /Show finished/, /Settings/]);
   await expect(selected(page)).toContainText("Show unread");
 });
 
@@ -169,6 +169,40 @@ test("shows only the unread series from Show unread", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/$/);
   expect(storedListing?.filter.unread).toBe("only");
+});
+
+for (const [state, label] of [
+  ["started", "Show started"],
+  ["finished", "Show finished"],
+] as const) {
+  test(`shows only the ${state} series from ${label}, with the keyboard alone`, async ({
+    page,
+  }) => {
+    await page.goto("/settings/appearance");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await pressQuickOpen(page);
+
+    await field(page).fill(label);
+    await expect(selected(page)).toContainText(label);
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/$/);
+    expect(storedListing?.filter[state]).toBe("only");
+    expect(storedListing?.filter.unread).toBe("any");
+  });
+}
+
+test("finds the library filter actions by typing part of their name", async ({
+  page,
+}) => {
+  await openLibrary(page);
+  await pressQuickOpen(page);
+
+  await field(page).fill("show");
+
+  await expect(
+    quickOpen(page).getByRole("group", { name: "Actions" }).getByRole("option"),
+  ).toContainText([/Show unread/, /Show started/, /Show finished/]);
 });
 
 test("offers the searches made last and runs one again", async ({ page }) => {

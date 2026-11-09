@@ -33,6 +33,7 @@
     languageSettingForDocument,
     setLanguageSetting,
   } from "#lib/language/language.svelte.ts";
+  import { followSystemAppLanguage } from "#lib/language/system-app-language.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
   import {
     setUndoSetting,
@@ -133,7 +134,14 @@
   const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
   const undo = setUndoSetting(undoSettingForDocument());
-  setNotices(new Notices(() => undo.rules));
+  setNotices(
+    new Notices(
+      () => undo.rules,
+      undefined,
+      undefined,
+      () => commands.screenReaderIsRunning(),
+    ),
+  );
   const bookPresence = setBookPresence(new BookPresence());
   setPreviousScreens(new PreviousScreens());
   followHistoryForBack(() => data.appInfo.platform);
@@ -164,6 +172,10 @@
     void followWallpaperColours(data.appInfo.platform, colours.choice);
   }
 
+  function followSystemLanguage(): void {
+    void followSystemAppLanguage(data.appInfo.platform, language);
+  }
+
   const rereadsColoursOnFocus = $derived(data.appInfo.platform === "windows");
 
   function followFocus(): void {
@@ -177,6 +189,7 @@
     settleScreenshotMode();
     if (document.visibilityState === "visible") {
       followColours();
+      followSystemLanguage();
     }
     if (rescansOnReturn && document.visibilityState === "visible") {
       void rescanOnReturn();
@@ -198,6 +211,8 @@
   });
 
   $effect(followColours);
+
+  $effect(followSystemLanguage);
 
   $effect(() => {
     const root = document.documentElement;

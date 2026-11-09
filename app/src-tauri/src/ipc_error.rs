@@ -30,6 +30,7 @@ pub(crate) enum IpcErrorCode {
     BrowserUnavailable,
     FileManagerUnavailable,
     SystemSettingsUnavailable,
+    DefaultViewerUnavailable,
     NoCrashReport,
     CrashReportUnavailable,
     #[cfg_attr(
@@ -129,6 +130,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::SystemSettingsUnavailable,
             message: "the system's settings could not be opened",
+        }
+    }
+
+    pub(crate) fn default_viewer_unavailable(error: &dyn Error) -> Self {
+        tracing::warn!(error = %describe_error(error), "change the default app for comic files");
+        Self {
+            code: IpcErrorCode::DefaultViewerUnavailable,
+            message: "the default app for comic files could not be changed",
         }
     }
 

@@ -49,7 +49,7 @@ function tab(name: string): Element {
 }
 
 function iconOf(name: string): Element {
-  return asElement(tab(name).querySelector("svg"));
+  return asElement(tab(name).querySelector("svg, [data-icon]"));
 }
 
 function labelOf(name: string): Element {
@@ -177,7 +177,7 @@ test("sits Android's current icon on a 56 by 32 secondary container pill", async
     "rgb(208, 232, 215)",
   );
   expect(getComputedStyle(iconOf("Library")).color).toBe("rgb(65, 87, 73)");
-  expect(getComputedStyle(tab("Library")).color).toBe("rgb(50, 106, 77)");
+  expect(getComputedStyle(tab("Library")).color).toBe("rgb(78, 100, 86)");
   expect(getComputedStyle(tab("Browse")).color).toBe("rgb(88, 97, 90)");
 });
 

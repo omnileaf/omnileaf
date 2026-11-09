@@ -54,7 +54,7 @@
     icon: Glyph;
     title: string;
     confirmLabel: string;
-    cancelLabel: string;
+    cancelLabel?: string | undefined;
     onConfirm: () => void;
     onCancel: () => void;
     phoneLook?: ConfirmPhoneLook;
@@ -146,22 +146,25 @@
         class={cn(
           "mbs-xs",
           isAlert
-            ? "grid grid-cols-2 gap-sm"
-            : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:grid-cols-2 medium:gap-sm",
+            ? "grid gap-sm"
+            : "flex flex-col-reverse gap-sheet-buttons medium:grid medium:gap-sm",
+          cancelLabel === undefined ? "grid-cols-1" : "grid-cols-2",
           alert.actions,
         )}
       >
         {#each alert.actionOrder as action (action)}
           {#if action === "cancel"}
-            <Button
-              bind:ref={buttons.cancel}
-              type="button"
-              {...alert.buttons.cancel}
-              class={alert.cancel}
-              onclick={onCancel}
-            >
-              {cancelLabel}
-            </Button>
+            {#if cancelLabel !== undefined}
+              <Button
+                bind:ref={buttons.cancel}
+                type="button"
+                {...alert.buttons.cancel}
+                class={alert.cancel}
+                onclick={onCancel}
+              >
+                {cancelLabel}
+              </Button>
+            {/if}
           {:else}
             <Button
               bind:ref={buttons.confirm}

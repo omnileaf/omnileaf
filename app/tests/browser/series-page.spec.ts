@@ -19,6 +19,7 @@ import {
   MEDIUM_MIN_WIDTH,
   onPlatform,
   sidewaysOverflow,
+  targetOf,
   test,
   tokenColour,
   viewportOf,
@@ -36,6 +37,7 @@ import {
 const LIBRARY_CHANGED = "library-changed";
 const READING_SAVED = "reading-saved";
 const JUST_UNDER = 6;
+const SHORT_PHONE_HEIGHT = 600;
 const SWIPED_PAST_HALFWAY = 0.7;
 const SWIPED_PART_WAY = 0.3;
 const READ = { state: "read" } as const;
@@ -974,6 +976,8 @@ test.describe("in the table on wide screens", () => {
     await expect(page.getByRole("menuitem")).toHaveText([
       "Start reading",
       "Mark unread",
+      "Bookmark",
+      "Show in folder",
       "Delete",
     ]);
     await page.getByRole("menuitem", { name: "Start reading" }).click();
@@ -1312,6 +1316,32 @@ test.describe("when marking books fails", () => {
   });
 });
 
+test.describe("when showing a book's folder fails", () => {
+  test.use({
+    backend: {
+      ...SHELF_BACKEND,
+      showBookInFolder: () => {
+        throw new CommandFailure({
+          code: "fileManagerUnavailable",
+          message: "no file manager",
+        });
+      },
+    },
+  });
+
+  test("tells the reader the folder could not be opened", async ({ page }) => {
+    test.skip(!isWide(page), "the book menu is a button on wide screens");
+    await openSeries(page);
+
+    await page
+      .getByRole("button", { name: `More for ${shelf.titleOf(0)}` })
+      .click();
+    await page.getByRole("menuitem", { name: "Show in folder" }).click();
+
+    await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+  });
+});
+
 test("marks every book picked, though another listing leaves some of them out", async ({
   page,
 }) => {
@@ -1399,9 +1429,9 @@ test("sets each book's added date on one line of the table", async ({
   expect((await boxOf(added)).height).toBeLessThanOrEqual(lineHeight);
 });
 
-for (const { platform, statusBar, target } of [
-  { platform: "ios", statusBar: 59, target: 44 },
-  { platform: "android", statusBar: 24, target: 48 },
+for (const { platform, statusBar, target, tapped } of [
+  { platform: "ios", statusBar: 59, target: 44, tapped: 44 },
+  { platform: "android", statusBar: 24, target: 40, tapped: 48 },
 ] as const) {
   test.describe(`at the top of a phone on ${platform}`, () => {
     test.use({
@@ -1458,6 +1488,10 @@ for (const { platform, statusBar, target } of [
       expect(Math.min(atRest.width, atRest.height)).toBeGreaterThanOrEqual(
         target,
       );
+      expect(await targetOf(back(page))).toMatchObject({
+        width: tapped,
+        height: tapped,
+      });
     });
 
     test("takes the title away again once larger text brings the page's title back out from under the bar", async ({
@@ -1537,6 +1571,10 @@ test.describe("on Android", () => {
       viewportOf(page).width >= MEDIUM_MIN_WIDTH,
       "the selected books bar reaches over All only on a phone",
     );
+    await page.setViewportSize({
+      width: viewportOf(page).width,
+      height: SHORT_PHONE_HEIGHT,
+    });
     await openSeries(page);
     await pickBooks(page, 4);
     const barTop = (await boxOf(selectedBooks(page))).y;
@@ -1573,7 +1611,12 @@ test.describe("on Android", () => {
     await expect(card).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
     await expect(card).toHaveCSS(
       "background-color",
-      await tokenColour(page, "--native-color-card"),
+      await tokenColour(
+        page,
+        viewportOf(page).width < MEDIUM_MIN_WIDTH
+          ? "--color-chip"
+          : "--native-color-card",
+      ),
     );
   });
 

@@ -1,14 +1,22 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import { followCorePlatform } from "#lib/page/platform.ts";
+
 import SectionHeading from "./SectionHeading.svelte";
+
+afterEach(() => {
+  delete document.documentElement.dataset.platform;
+});
 
 const PROPS = { title: "About" };
 const EXPANDED_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 800;
+const PHONE_WIDTH = 400;
+const TABLET_WIDTH = 800;
 
 test("titles the page", async () => {
   const screen = await render(SectionHeading, PROPS);
@@ -62,4 +70,57 @@ test("keeps the way back to the page it sits under beside the list of sections",
   await expect
     .element(screen.getByRole("link", { name: "Back to Privacy and security" }))
     .toBeVisible();
+});
+
+test("renders native back Icon on Android", async () => {
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+  const icon = screen.container.querySelector('[data-icon="arrow-left"]');
+  expect(icon).not.toBeNull();
+});
+
+test("sizes back button to 40px × 40px on Android", async () => {
+  await page.viewport(PHONE_WIDTH, VIEWPORT_HEIGHT);
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+  const back = screen.getByRole("link", { name: "Back to Settings" }).element();
+  expect(back.getBoundingClientRect().height).toBeCloseTo(40, 0);
+  expect(back.getBoundingClientRect().width).toBeCloseTo(40, 0);
+});
+
+test("sets the title under the back button on Android phones", async () => {
+  await page.viewport(PHONE_WIDTH, VIEWPORT_HEIGHT);
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+
+  const back = screen.getByRole("link", { name: "Back to Settings" }).element();
+  const title = screen.getByRole("heading", { level: 1 }).element();
+
+  expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    back.getBoundingClientRect().bottom,
+  );
+});
+
+test("sets the title on a 32px line on Android phones", async () => {
+  await page.viewport(PHONE_WIDTH, VIEWPORT_HEIGHT);
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+
+  const style = getComputedStyle(
+    screen.getByRole("heading", { level: 1 }).element(),
+  );
+
+  expect(style.lineHeight).toBe("32px");
+});
+
+test("keeps the back button's touch area inside the header on Android tablets", async () => {
+  await page.viewport(TABLET_WIDTH, VIEWPORT_HEIGHT);
+  followCorePlatform("android");
+  const screen = await render(SectionHeading, PROPS);
+
+  const back = screen.getByRole("link", { name: "Back to Settings" }).element();
+  const style = getComputedStyle(back);
+
+  expect(style.marginInlineStart).toBe("4px");
+  expect(style.marginBlockStart).toBe("0px");
 });

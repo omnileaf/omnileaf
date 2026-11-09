@@ -8,6 +8,13 @@
   import { commands } from "#lib/ipc/bindings.ts";
   import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import {
+    READING_MODE_NAMES,
+    TAP_ZONE_NAMES,
+  } from "#lib/reader/reader-names.ts";
+  import { readerDefaults } from "#lib/reader/reader-settings.svelte.ts";
+  import { newSeriesReadingMode } from "#lib/reader/reading-direction.svelte.ts";
   import { languageName } from "#lib/language/language.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -49,6 +56,9 @@
   const screenshotMode = getScreenshotMode();
   const needsAttention = getNeedsAttention();
   const storage = getStorageCheck();
+  const android = new AndroidPhone();
+  const readerLook = readerDefaults();
+  const newSeriesMode = newSeriesReadingMode();
   let librarySummary = $state<string | undefined>();
 
   onMount(() => {
@@ -102,6 +112,14 @@
         }),
       },
     }),
+    ...(android.isOn && {
+      "/(app)/settings/reading": {
+        text: m.settings_summary_pair({
+          first: READING_MODE_NAMES[newSeriesMode.choice](),
+          second: TAP_ZONE_NAMES[readerLook.look.tapZones](),
+        }),
+      },
+    }),
     "/(app)/settings/advanced": { text: m.settings_summary_advanced() },
     "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),
@@ -116,6 +134,10 @@
   >
     {m.settings_title()}
   </div>
+  <div
+    aria-hidden="true"
+    class="hidden block-native-target ios:max-medium:block"
+  ></div>
   <PageHeading title={m.settings_title()} />
   <PageNoticeSlot />
   <div class="mbs-lg flex flex-col gap-xl">

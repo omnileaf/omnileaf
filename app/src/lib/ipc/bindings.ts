@@ -20,10 +20,11 @@ export const commands = {
 	linkLibraryFolder: (folder: string, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("link_library_folder", { folder, onProgress })),
 	addOpenedBookFolder: (book: string & { readonly __brand: "BookId" }, onProgress: Channel<ScanProgress>) => typedError<FolderScan, IpcError>(__TAURI_INVOKE("add_opened_book_folder", { book, onProgress })),
 	matchSystemBars: (theme: Theme, preference: ThemePreference) => typedError<null, IpcError>(__TAURI_INVOKE("match_system_bars", { theme, preference })),
-	followBackHistory: () => typedError<null, IpcError>(__TAURI_INVOKE("follow_back_history")),
+	followBackHistory: (canGoBack: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("follow_back_history", { canGoBack })),
 	watchBackSwipes: (onSwipe: Channel<BackSwipe>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_back_swipes", { onSwipe })),
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
+	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -216,6 +217,9 @@ export const commands = {
 	watchIconActions: (onChosen: Channel<IconAction>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_icon_actions", { onChosen })),
 	openSystemSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_system_settings")),
 	openColourSettings: () => typedError<null, IpcError>(__TAURI_INVOKE("open_colour_settings")),
+	screenReaderIsRunning: () => __TAURI_INVOKE<boolean>("screen_reader_is_running"),
+	comicFilesDefaultViewer: () => typedError<DefaultViewer, IpcError>(__TAURI_INVOKE("comic_files_default_viewer")),
+	makeOmnileafTheComicViewer: () => typedError<null, IpcError>(__TAURI_INVOKE("make_omnileaf_the_comic_viewer")),
 	panicInCore: () => typedError<null, IpcError>(__TAURI_INVOKE("panic_in_core")),
 	crashAndQuit: () => typedError<null, IpcError>(__TAURI_INVOKE("crash_and_quit")),
 };
@@ -384,6 +388,8 @@ export type CreatorSeries = {
 };
 
 export type DamageCause = "archiveEndsEarly";
+
+export type DefaultViewer = "omnileaf" | "somethingElse";
 
 /**  The details to keep over a series' files; an absent field goes back to the file's. */
 export type DetailEdits = {
@@ -554,7 +560,7 @@ export type IconAction = "screenshotMode" | "continueReading" | "searchLibrary";
 export type IconActionsMenu = {
 	screenshotMode: string,
 	screenshotModeState: string,
-	screenshotModeWithState: string,
+	screenshotModeLabel: string,
 	continueReading: string,
 	searchLibrary: string,
 };
@@ -571,7 +577,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -1068,6 +1074,11 @@ export type StorageUse = {
 };
 
 export type SwipeEdge = "left" | "right";
+
+export type SystemAppLanguage = {
+	offered: boolean,
+	tag: string | null,
+};
 
 export type SystemContrast = "standard" | "medium" | "high";
 

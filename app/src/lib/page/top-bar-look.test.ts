@@ -11,6 +11,7 @@ import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
 import PageHeading from "./PageHeading.svelte";
 import { followCorePlatform } from "./platform";
+import { foldingBarLook, NATIVE_TOP_BAR } from "./top-bar";
 
 const SERIES_BAR_PROPS = {
   title: "Dune",
@@ -84,7 +85,7 @@ test("sets Android's page title as title large, centred in a 64 tall bar", async
   expect(style.fontSize).toBe("22px");
   expect(style.lineHeight).toBe("28px");
   expect(style.fontWeight).toBe("400");
-  expect(style.color).toBe("rgb(25, 29, 26)");
+  expect(style.color).toBe("rgb(44, 53, 46)");
   expect(heading().getBoundingClientRect().height).toBeCloseTo(64, 0);
 });
 
@@ -130,6 +131,28 @@ test("blurs nothing behind Android's bare bar buttons", async () => {
   expect(getComputedStyle(backLink()).backdropFilter).toBe("none");
 });
 
+test("spaces Android's top bar action buttons with 4px margins and no gap", () => {
+  onPlatformInLight("android");
+  const container = document.createElement("div");
+  container.className = NATIVE_TOP_BAR.barButtonRow;
+  const button = document.createElement("button");
+  button.className = "block-native-target inline-native-target";
+  container.append(button);
+  document.body.append(container);
+
+  expect(getComputedStyle(container).gap).toBe("0px");
+  expect(getComputedStyle(button).marginLeft).toBe("4px");
+  expect(getComputedStyle(button).marginRight).toBe("4px");
+  expect(getComputedStyle(button).width).toBe("40px");
+  expect(getComputedStyle(button).height).toBe("40px");
+  expect(getComputedStyle(button).color).toBe("rgb(88, 97, 90)");
+  container.remove();
+});
+
+test("pads Android's folding bar on the trailing edge", () => {
+  expect(foldingBarLook("android").row).toContain("pe-xs");
+});
+
 test("draws Android's 64 tall bar with a bare back arrow, on the surface container once scrolled", async () => {
   onPlatformInLight("android");
   await render(SeriesBar, { ...SERIES_BAR_PROPS, isTitleUnderBar: true });
@@ -142,7 +165,7 @@ test("draws Android's 64 tall bar with a bare back arrow, on the surface contain
   );
   expect(backLink().getBoundingClientRect().width).toBeCloseTo(48, 0);
   expect(back.backgroundColor).toBe("rgba(0, 0, 0, 0)");
-  expect(back.color).toBe("rgb(25, 29, 26)");
+  expect(back.color).toBe("rgb(44, 53, 46)");
   expect(
     backLink().querySelector("[data-icon]")?.getAttribute("data-icon"),
   ).toBe("arrow-left");
@@ -157,13 +180,13 @@ test("keeps today's series bar chips on Linux", async () => {
   expect(seriesBar().className).toContain("bg-background");
 });
 
-test("sets a settings page's Android title as title large", async () => {
+test("sets a settings page's Android title as headline small", async () => {
   onPlatformInLight("android");
   await render(SectionHeading, { title: "About" });
 
   const style = getComputedStyle(heading());
 
-  expect(style.fontSize).toBe("22px");
+  expect(style.fontSize).toBe("24px");
   expect(style.fontWeight).toBe("400");
 });
 

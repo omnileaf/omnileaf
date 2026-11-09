@@ -68,6 +68,7 @@ public class FolderAccessPlugin
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : Plugin(activity) {
         private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+        private val host = activity
         private val trees = DocumentTrees(activity)
         private val handedDocuments = HandedDocuments(activity)
         private var isPicking = false
@@ -101,7 +102,7 @@ public class FolderAccessPlugin
                 return invoke.resolve()
             }
             answer(invoke) {
-                withinBound(LISTING_BOUND, discard = { trees.release(tree) }) { signal -> trees.keep(tree, signal) }
+                scope.withinBound(LISTING_BOUND, discard = { trees.release(tree) }) { signal -> trees.keep(tree, signal) }
             }
         }
 
@@ -109,7 +110,7 @@ public class FolderAccessPlugin
         public fun listDocuments(invoke: Invoke) {
             val args = invoke.parseArgs(DocumentArgs::class.java)
             answer(invoke) {
-                withinBound(LISTING_BOUND) { signal -> trees.children(args.tree.toUri(), args.document, signal) }
+                scope.withinBound(LISTING_BOUND) { signal -> trees.children(args.tree.toUri(), args.document, signal) }
             }
         }
 
@@ -119,7 +120,7 @@ public class FolderAccessPlugin
             val document = requireNotNull(args.document) { "open a document without naming it" }
             answer(invoke) {
                 val descriptor =
-                    withinBound(OPENING_BOUND, discard = ParcelFileDescriptor::close) { signal ->
+                    scope.withinBound(OPENING_BOUND, discard = ParcelFileDescriptor::close) { signal ->
                         trees.open(args.tree.toUri(), document, signal)
                     }
                 handOver(descriptor)
@@ -131,7 +132,7 @@ public class FolderAccessPlugin
             val args = invoke.parseArgs(HandedArgs::class.java)
             answer(invoke) {
                 val handed =
-                    withinBound(OPENING_BOUND, discard = { it.descriptor.close() }) { signal ->
+                    scope.withinBound(OPENING_BOUND, discard = { it.descriptor.close() }) { signal ->
                         handedDocuments.open(args.uri.toUri(), signal)
                     }
                 handOver(handed.descriptor).put("name", handed.name)
@@ -143,7 +144,16 @@ public class FolderAccessPlugin
             val args = invoke.parseArgs(DocumentArgs::class.java)
             val document = requireNotNull(args.document) { "delete a document without naming it" }
             answer(invoke) {
-                withinBound(DELETING_BOUND) { _ -> trees.delete(args.tree.toUri(), document) }
+                scope.withinBound(DELETING_BOUND) { _ -> trees.delete(args.tree.toUri(), document) }
+                null
+            }
+        }
+
+        @Command
+        public fun showFolder(invoke: Invoke) {
+            val args = invoke.parseArgs(DocumentArgs::class.java)
+            answer(invoke) {
+                host.startActivity(folderViewIntent(args.tree.toUri(), args.document))
                 null
             }
         }
@@ -160,15 +170,6 @@ public class FolderAccessPlugin
                 trees.release(args.uri.toUri())
                 null
             }
-        }
-
-        private suspend fun <T : Any> withinBound(
-            bound: Duration,
-            discard: (T) -> Unit = {},
-            run: suspend (CancellationSignal) -> T,
-        ): T {
-            val signal = CancellationSignal()
-            return ProviderCall(run = { run(signal) }, cancel = signal::cancel, discard = discard).within(bound, scope)
         }
 
         /** Tauri's Rust side blocks until the plugin answers, so even an exception nobody expected must answer it. */
@@ -191,6 +192,15 @@ public class FolderAccessPlugin
         }
     }
 
+private suspend fun <T : Any> CoroutineScope.withinBound(
+    bound: Duration,
+    discard: (T) -> Unit = {},
+    run: suspend (CancellationSignal) -> T,
+): T {
+    val signal = CancellationSignal()
+    return ProviderCall(run = { run(signal) }, cancel = signal::cancel, discard = discard).within(bound, this)
+}
+
 private fun rejectPicker(
     invoke: Invoke,
     error: RuntimeException,
@@ -210,6 +220,17 @@ private fun pickerStartOf(lost: Uri): Uri? {
     val authority = lost.authority ?: return null
     val id = runCatching { DocumentsContract.getTreeDocumentId(lost) }.getOrNull() ?: return null
     return DocumentsContract.buildDocumentUri(authority, parentDocumentId(id))
+}
+
+/** The Files app opens a folder when it is handed the folder's document address with the directory type. */
+private fun folderViewIntent(
+    tree: Uri,
+    folder: String?,
+): Intent {
+    val id = folder ?: DocumentsContract.getTreeDocumentId(tree)
+    return Intent(Intent.ACTION_VIEW)
+        .setDataAndType(DocumentsContract.buildDocumentUriUsingTree(tree, id), DocumentsContract.Document.MIME_TYPE_DIR)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
 }
 
 /** `detachFd` gives up the descriptor without closing it, so the Rust side that reads the reply owns it. */
