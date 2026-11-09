@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import { expect, literalColour, onPlatform, test } from "./fixtures.ts";
 
@@ -35,6 +37,17 @@ const PLATFORM_ACCENTS: readonly PlatformAccent[] = [
   },
 ];
 
+async function drawnAccent(page: Page) {
+  return page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.className = "bg-accent text-on-accent";
+    document.body.append(probe);
+    const { backgroundColor, color } = getComputedStyle(probe);
+    probe.remove();
+    return { backgroundColor, color };
+  });
+}
+
 for (const { platform, scheme, accent, onAccent } of PLATFORM_ACCENTS) {
   test.describe(`${platform} in the ${scheme} theme`, () => {
     test.use(onPlatform(platform));
@@ -51,18 +64,7 @@ for (const { platform, scheme, accent, onAccent } of PLATFORM_ACCENTS) {
         color: await literalColour(page, onAccent),
       };
 
-      await expect
-        .poll(() =>
-          page.evaluate(() => {
-            const probe = document.createElement("span");
-            probe.className = "bg-accent text-on-accent";
-            document.body.append(probe);
-            const { backgroundColor, color } = getComputedStyle(probe);
-            probe.remove();
-            return { backgroundColor, color };
-          }),
-        )
-        .toEqual(expected);
+      await expect.poll(() => drawnAccent(page)).toEqual(expected);
     });
   });
 }
