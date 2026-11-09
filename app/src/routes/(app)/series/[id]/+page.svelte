@@ -64,6 +64,7 @@
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
   import {
+    firstDirection,
     type ListingChange,
     sectionListing,
   } from "#lib/series-sections/section-listing.ts";
@@ -101,13 +102,20 @@
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
-  let listing: SeriesBookListing = $state({ ...EVERY_BOOK_IN_ORDER });
+  let chosen: ListingChange = $state({});
+  const sections = $derived(
+    found?.overview.sections.map(({ section }) => section) ?? [],
+  );
+  const listing: SeriesBookListing = $derived({
+    ...EVERY_BOOK_IN_ORDER,
+    direction: firstDirection(sections, phone),
+    ...chosen,
+  });
   const listed = $derived(
-    sectionListing(
-      listing,
-      found?.overview.sections.map(({ section }) => section) ?? [],
-      { platform: data.appInfo.platform, width: width.current },
-    ),
+    sectionListing(listing, sections, {
+      platform: data.appInfo.platform,
+      width: width.current,
+    }),
   );
   const foundId = $derived(found?.overview.id);
   const overview = $derived(
@@ -509,7 +517,7 @@
               lastVolume={found.overview.lastVolume}
               listing={listed}
               onListing={(change: ListingChange) => {
-                listing = { ...listing, ...change };
+                chosen = { ...chosen, ...change };
                 void books?.start();
               }}
               {books}
@@ -532,8 +540,8 @@
                     readCount={found.overview.readCount}
                     bookmarkCount={found.overview.bookmarkCount}
                     {listing}
-                    onListing={(chosen: SeriesBookListing) => {
-                      listing = chosen;
+                    onListing={(change: ListingChange) => {
+                      chosen = { ...chosen, ...change };
                       void books.start();
                     }}
                     isComplete={books.list.isComplete}

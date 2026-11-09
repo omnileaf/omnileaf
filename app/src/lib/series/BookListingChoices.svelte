@@ -26,6 +26,7 @@
   import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import type { ListingChange } from "#lib/series-sections/section-listing.ts";
 
   import {
     isBooksShown,
@@ -72,7 +73,7 @@
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
-    onChoose: (listing: SeriesBookListing) => void;
+    onChoose: (change: ListingChange) => void;
     search: string;
     onSearch: (search: string) => void;
     onShownCrowded: (isCrowded: boolean) => void;
@@ -86,13 +87,13 @@
 
   function chooseShown(chosen: string): void {
     if (isBooksShown(chosen)) {
-      onChoose({ ...listing, shown: chosen });
+      onChoose({ shown: chosen });
     }
   }
 
   function chooseDirection(chosen: string): void {
     if (isSortDirection(chosen)) {
-      onChoose({ ...listing, direction: chosen });
+      onChoose({ direction: chosen });
     }
   }
 </script>
