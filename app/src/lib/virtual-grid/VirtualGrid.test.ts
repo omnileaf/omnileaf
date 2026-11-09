@@ -388,3 +388,62 @@ test("leaves the press of an item alone when items cannot be activated", async (
 
   expect(press.defaultPrevented).toBe(false);
 });
+
+const HEADING_EVERY = 3;
+
+function withHeadings(count: number): Sample[] {
+  return samples(count).map((sample, index) =>
+    index % HEADING_EVERY === 0
+      ? { id: `heading-${sample.id}`, name: `Heading ${String(index)}` }
+      : sample,
+  );
+}
+
+async function renderWithHeadings(count: number) {
+  let reveal: ((index: number) => Promise<HTMLElement | undefined>) | undefined;
+  const screen = await render(VirtualGrid<Sample>, {
+    items: withHeadings(count),
+    key: (sample: Sample) => sample.id,
+    label: LABEL,
+    isComplete: true,
+    cell,
+    class: "grid-cols-1",
+    itemRole: (sample: Sample) =>
+      sample.id.startsWith("heading-") ? "presentation" : "listitem",
+    onRevealReady: (
+      ready: (index: number) => Promise<HTMLElement | undefined>,
+    ) => {
+      reveal = ready;
+    },
+  });
+  const list = screen.getByRole("list", { name: LABEL });
+  await expect.element(list.getByRole("listitem").first()).toBeVisible();
+  return { list, reveal: () => reveal };
+}
+
+test("numbers only the items, leaving rows shown as presentation out", async () => {
+  const { list } = await renderWithHeadings(6);
+
+  const items = list.getByRole("listitem").elements();
+
+  expect(
+    items.map((item) => [
+      item.textContent,
+      item.getAttribute("aria-posinset"),
+      item.getAttribute("aria-setsize"),
+    ]),
+  ).toEqual([
+    ["Sample 2", "1", "4"],
+    ["Sample 3", "2", "4"],
+    ["Sample 5", "3", "4"],
+    ["Sample 6", "4", "4"],
+  ]);
+});
+
+test("reveals the item at an index that comes after a presentation row", async () => {
+  const { reveal } = await renderWithHeadings(6);
+
+  const shown = await reveal()?.(4);
+
+  expect(shown?.textContent).toBe("Sample 5");
+});
