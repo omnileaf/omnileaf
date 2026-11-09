@@ -91,13 +91,14 @@
   let settled: { id: string; shown: SeriesShown } | undefined = $state();
   const shown = $derived(settled?.id === data.id ? settled.shown : undefined);
   const found = $derived(shown?.kind === "found" ? shown : undefined);
+  const hasFailed = $derived(shown?.kind === "failed");
 
   const screenshotMode = getScreenshotMode();
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const width = new WindowWidth();
-  const editsInSheet = $derived(
-    isWide.current || phoneOf(data.appInfo.platform, width.current) === "ios",
-  );
+  const phone = $derived(phoneOf(data.appInfo.platform, width.current));
+  const isAndroidPhone = $derived(phone === "android");
+  const editsInSheet = $derived(isWide.current || phone === "ios");
   const hasToolbar = $derived(
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
@@ -471,7 +472,7 @@
   {#if !hasToolbar}
     <SeriesBar
       title={overview?.title}
-      {isTitleUnderBar}
+      isTitleUnderBar={isTitleUnderBar || (hasFailed && isAndroidPhone)}
       bind:height={barHeight}
       onMarkAll={found === undefined ? undefined : markAll}
       onLabel={keepsLabels && found !== undefined
@@ -562,7 +563,7 @@
             </SeriesSections>
           {/key}
         {/if}
-        {#if adultTreatment !== undefined}
+        {#if adultTreatment !== undefined && !(isAndroidPhone && overview.bookCount === 0)}
           <RelatedSeries
             related={found.overview.related}
             usesStandIns={screenshotMode.isOn}

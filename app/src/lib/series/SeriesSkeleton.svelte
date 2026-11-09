@@ -2,9 +2,11 @@
   import { cn } from "#lib/components/cn.ts";
   import { Progress } from "#lib/components/ui/progress/index.ts";
   import { Skeleton } from "#lib/components/ui/skeleton/index.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
+  import { ANDROID_SKELETON } from "./series-skeleton-look.ts";
   import {
     ABOUT_COLUMN,
     ABOUT_COVER,
@@ -17,6 +19,10 @@
 
   const isMacos = currentPlatform() === "macos";
   const isWindows = currentPlatform() === "windows";
+  const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(currentPlatform(), width.current) === "android",
+  );
 </script>
 
 {#if isWindows}
@@ -62,6 +68,25 @@
               class="ms-auto shrink-0 rounded-skeleton-macos block-md inline-skeleton-trailing-macos"
             />
           </div>
+        {/each}
+      </div>
+    </div>
+  {:else if isAndroidPhone}
+    <div class={ANDROID_SKELETON.page}>
+      <div class={ANDROID_SKELETON.head}>
+        <Skeleton class={ANDROID_SKELETON.cover} />
+        <div class={ANDROID_SKELETON.lines}>
+          {#each ANDROID_SKELETON.headLines as line (line)}
+            <Skeleton class={line} />
+          {/each}
+        </div>
+      </div>
+      <Skeleton class={ANDROID_SKELETON.actions} />
+      <Skeleton class={ANDROID_SKELETON.note} />
+      <Skeleton class={ANDROID_SKELETON.card} />
+      <div class={ANDROID_SKELETON.books}>
+        {#each ANDROID_SKELETON.bookLines as line, row (row)}
+          <Skeleton class={line} />
         {/each}
       </div>
     </div>

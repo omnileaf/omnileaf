@@ -231,6 +231,7 @@
   --native-spacing-series-icon: 16px;
   --native-spacing-phone-action-icon: 16px;
   --native-spacing-phone-action-chevron: 16px;
+  --native-spacing-series-band: var(--spacing-series-band);
   --native-spacing-series-chevron: 16px;
   --native-spacing-top-bar: 0px;
   --native-spacing-top-bar-lift: 0px;
