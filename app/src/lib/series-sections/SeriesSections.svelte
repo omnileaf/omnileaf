@@ -127,10 +127,8 @@
 
   $effect(() => {
     if (!hasHeading) {
-      untrack(() => {
-        isFinding = false;
-        isSorting = false;
-      });
+      closeFinding();
+      isSorting = false;
     }
   });
   const panel = $derived({
@@ -146,17 +144,25 @@
     onMark,
     onPickedCount,
     children: booksWithControls,
+    onClearSearch: () => {
+      search = "";
+    },
     onShowAll: () => {
       onListing({ shown: "all" });
     },
   });
 
+  function closeFinding(): void {
+    isFinding = false;
+    search = "";
+  }
+
   async function toggleFinding(): Promise<void> {
-    isFinding = !isFinding;
-    if (!isFinding) {
-      search = "";
+    if (isFinding) {
+      closeFinding();
       return;
     }
+    isFinding = true;
     await tick();
     findField?.focus();
   }

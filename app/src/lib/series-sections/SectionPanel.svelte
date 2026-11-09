@@ -1,9 +1,5 @@
 <script lang="ts">
-  import { List } from "@lucide/svelte";
   import type { Snippet } from "svelte";
-
-  import { Button } from "#lib/components/ui/button/index.ts";
-  import { Card } from "#lib/components/ui/card/index.ts";
 
   import type {
     BookSection,
@@ -15,6 +11,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
+  import NoShownBooks from "#lib/series/NoShownBooks.svelte";
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
   import { bookWords } from "./book-number-words";
@@ -25,8 +23,6 @@
   import type { NotedSeries } from "./section-note";
   import SectionNote from "./SectionNote.svelte";
   import { booksOnly, withGaps } from "./section-tiles";
-
-  const ICON_SIZE = 18;
 
   let {
     section,
@@ -41,6 +37,7 @@
     onMark,
     onPickedCount,
     children,
+    onClearSearch,
     onShowAll,
   }: {
     section: BookSection | undefined;
@@ -55,6 +52,7 @@
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     children: Snippet;
+    onClearSearch: () => void;
     onShowAll: () => void;
   } = $props();
 
@@ -91,20 +89,14 @@
   <p class="text-body text-muted">{m.series_books_failed()}</p>
 {:else if books?.list.kind === "loaded" && section !== undefined}
   {@const tiles = tilesOf(books.list.items, books.list.isComplete)}
-  {#if isSearching && books.list.isComplete && tiles.length === 0}
-    <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
-  {:else if shown !== "all" && books.list.isComplete && tiles.length === 0}
-    <Card class="flex flex-col items-center gap-md px-lg py-xl text-center">
-      <p class="text-body">
-        {shown === "bookmarked"
-          ? m.series_no_bookmarked()
-          : m.series_no_unread()}
-      </p>
-      <Button type="button" variant="secondary" onclick={onShowAll}>
-        <List size={ICON_SIZE} aria-hidden="true" />
-        {m.series_show_all_books()}
-      </Button>
-    </Card>
+  {#if books.list.isComplete && tiles.length === 0 && (isSearching || shown !== "all")}
+    <NoShownBooks
+      platform={currentPlatform()}
+      {search}
+      {shown}
+      {onClearSearch}
+      {onShowAll}
+    />
   {/if}
   {#key section}
     <PickedCovers

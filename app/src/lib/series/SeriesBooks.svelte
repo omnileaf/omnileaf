@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { BookmarkPlus, Eye, EyeOff, List, Trash, X } from "@lucide/svelte";
+  import { BookmarkPlus, Eye, EyeOff, Trash, X } from "@lucide/svelte";
   import { Portal } from "bits-ui";
   import { tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { beforeNavigate } from "$app/navigation";
   import { Button } from "#lib/components/ui/button/index.ts";
-  import type { ButtonVariant } from "#lib/components/ui/button/looks.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
@@ -35,12 +34,12 @@
 
   import BookList from "./BookList.svelte";
   import BookListingChoices from "./BookListingChoices.svelte";
+  import NoShownBooks from "./NoShownBooks.svelte";
   import { hasRowDelete } from "./book-actions";
   import { booksMatching } from "./book-search";
   import { type BooksControls, OWN_CONTROLS } from "./books-controls";
   import BookTable from "./BookTable.svelte";
   import { Selection } from "#lib/page/selection.svelte.ts";
-  import { SERIES_CONTROL } from "./series-control.ts";
   import BarControls from "./BarControls.svelte";
   import SelectionBar from "./SelectionBar.svelte";
   import WindowsSelectionBar from "./WindowsSelectionBar.svelte";
@@ -60,8 +59,6 @@
     readonly action: string;
     readonly isIconOnly: boolean;
     readonly isDocked: boolean;
-    readonly emptyAction: ButtonVariant;
-    readonly emptyActionHasIcon: boolean;
   }
 
   const PHONE_PICKING: Readonly<Record<PhonePlatform, PhonePicking>> = {
@@ -76,8 +73,6 @@
       action: "disabled:text-faint",
       isIconOnly: true,
       isDocked: false,
-      emptyAction: "plain",
-      emptyActionHasIcon: false,
     },
     android: {
       leading: ["close"],
@@ -90,8 +85,6 @@
       action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
       isIconOnly: false,
       isDocked: true,
-      emptyAction: "secondary",
-      emptyActionHasIcon: true,
     },
   };
 
@@ -176,16 +169,16 @@
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
   let toolbarHeight = $state(0);
-  const emptyAction = $derived(
-    phone === undefined
-      ? { look: "outline" as const, class: SERIES_CONTROL }
-      : { variant: phone.emptyAction },
-  );
   const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
   const notices = getNotices();
   const headingId = $props.id();
   const showsOwnHeading = $derived(
     controls.kind === "own" || selection.isSelecting,
+  );
+  const labelledBy = $derived(
+    controls.kind === "above" && !selection.isSelecting
+      ? controls.headingId
+      : headingId,
   );
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
@@ -234,6 +227,14 @@
   }
 
   let endings = 0;
+
+  function clearSearch(): void {
+    if (controls.kind === "above") {
+      controls.onSearch("");
+    } else {
+      ownSearch = "";
+    }
+  }
 
   function focusAfterPicking(): HTMLElement | null {
     if (isWide.current) {
@@ -437,9 +438,7 @@
 <section
   bind:this={section}
   data-picking={selection.isSelecting || undefined}
-  aria-labelledby={showsOwnHeading || controls.kind === "own"
-    ? headingId
-    : controls.headingId}
+  aria-labelledby={labelledBy}
   class="flex flex-col gap-sm"
 >
   {#if showsOwnHeading}
@@ -567,50 +566,15 @@
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}
-    <Card
-      class={[
-        "flex flex-col items-center gap-md px-lg py-xl text-center expanded:p-2xl",
-        phone === undefined && "shadow-card-rest",
-      ]}
-    >
-      {#if search.trim() !== ""}
-        <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
-        <Button
-          type="button"
-          {...emptyAction}
-          onclick={() => {
-            if (controls.kind === "above") {
-              controls.onSearch("");
-            } else {
-              ownSearch = "";
-            }
-          }}
-        >
-          {#if phone?.emptyActionHasIcon !== false}
-            <X size={ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {m.series_clear_search()}
-        </Button>
-      {:else}
-        <p class="text-body">
-          {listing.shown === "bookmarked"
-            ? m.series_no_bookmarked()
-            : m.series_no_unread()}
-        </p>
-        <Button
-          type="button"
-          {...emptyAction}
-          onclick={() => {
-            onListing({ ...listing, shown: "all" });
-          }}
-        >
-          {#if phone?.emptyActionHasIcon !== false}
-            <List size={ICON_SIZE} aria-hidden="true" />
-          {/if}
-          {m.series_show_all_books()}
-        </Button>
-      {/if}
-    </Card>
+    <NoShownBooks
+      {platform}
+      {search}
+      shown={listing.shown}
+      onClearSearch={clearSearch}
+      onShowAll={() => {
+        onListing({ ...listing, shown: "all" });
+      }}
+    />
   {/if}
   {#if isWide.current}
     <BookTable
