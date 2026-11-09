@@ -72,7 +72,7 @@ pub(crate) fn volume_keys(volume: BookNumber) -> KeyRange {
     KeyRange { start, end }
 }
 
-pub(crate) fn unnumbered_chapter_keys() -> KeyRange {
+fn unnumbered_chapter_keys() -> KeyRange {
     let mut start = vec![section_byte(BookSection::Chapters)];
     start.extend_from_slice(&[0; VOLUME_WIDTH]);
     let mut end = start.clone();
@@ -217,6 +217,7 @@ mod tests {
     };
 
     const TITLE: &str = "[a-c0-9 ]{0,4}";
+    const ANY_SCRIPT_TITLE: &str = "[a-c0-9 ßÉé一-三０-９①Ａ-Ｚ]{0,4}";
 
     fn numbers(first: u32, last: u32) -> Sourced<NumberRange> {
         let range = NumberRange::new(
@@ -518,7 +519,7 @@ mod tests {
         #[test]
         fn keys_every_book_within_exactly_one_of_the_last_first_ranges(
             numbering in proptest::option::of(numbering()),
-            title in TITLE,
+            title in ANY_SCRIPT_TITLE,
         ) {
             let key = reading_order_key(numbering.as_ref(), &title);
 
