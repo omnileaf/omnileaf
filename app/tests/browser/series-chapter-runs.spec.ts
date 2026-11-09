@@ -12,6 +12,18 @@ const ANDROID_PHONE = {
   platform: "android",
   viewport: { width: 360, height: 800 },
 } as const;
+const TURNS = [
+  {
+    viewport: { width: 700, height: 360 },
+    sort: "Sort: In order",
+    first: "chapter 01",
+  },
+  {
+    viewport: ANDROID_PHONE.viewport,
+    sort: "Sort: Last first",
+    first: "chapter 30",
+  },
+] as const;
 const IPHONE = {
   platform: "ios",
   viewport: { width: 390, height: 844 },
@@ -62,6 +74,20 @@ test.describe(
 
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
       await expect(bookLinks(page).first()).toContainText("chapter 01");
+    });
+
+    test("lists the rows in the order Sort names as the phone turns past the compact width and back", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      for (const turn of TURNS) {
+        await page.setViewportSize(turn.viewport);
+        await bookList(page).scrollIntoViewIfNeeded();
+
+        await expect(sort(page)).toHaveAccessibleName(turn.sort);
+        await expect(bookLinks(page).first()).toContainText(turn.first);
+      }
     });
   },
 );
