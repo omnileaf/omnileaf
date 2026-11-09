@@ -54,13 +54,13 @@ test("keeps the chapters with no number in a last run of their own when the newe
   const books = [...numbered(13, 12, 1), chapter(2, null)];
 
   expect(shape(books)).toEqual([
-    { first: 13, last: 13 },
+    { run: { first: 13, last: 13 } },
     13,
-    { first: 1, last: 12 },
+    { run: { first: 1, last: 12 } },
     12,
     1,
-    undefined,
-    undefined,
+    { run: "others" },
+    2,
   ]);
 });
 
