@@ -34,6 +34,7 @@
     ORDER_LABELS,
     ORDERS,
     SHOWN_LABELS,
+    type SearchPlace,
     SHOWN_OPTIONS,
   } from "./book-listing";
 
@@ -78,7 +79,7 @@
     search: string;
     onSearch: (search: string) => void;
     onShownCrowded: (isCrowded: boolean) => void;
-    searchPlace: "besideShown" | "inPlaceOfShown";
+    searchPlace: SearchPlace;
     isSearching?: boolean;
   } = $props();
 

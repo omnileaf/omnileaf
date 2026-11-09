@@ -7,6 +7,10 @@ import { m } from "#lib/paraglide/messages.js";
 
 export type SortAndFilter = Pick<SeriesBookListing, "shown" | "direction">;
 
+export type BookRows = "books" | "chapterRuns";
+
+export type SearchPlace = "besideShown" | "inPlaceOfShown";
+
 export const EVERY_BOOK_IN_ORDER: SortAndFilter = {
   shown: "all",
   direction: "ascending",

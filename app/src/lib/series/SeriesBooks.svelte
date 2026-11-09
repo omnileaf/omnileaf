@@ -41,6 +41,7 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import NoShownBooks from "./NoShownBooks.svelte";
   import { hasRowDelete } from "./book-actions";
+  import type { BookRows, SearchPlace } from "./book-listing";
   import { booksMatching } from "./book-search";
   import { type BooksControls, OWN_CONTROLS } from "./books-controls";
   import BookTable from "./BookTable.svelte";
@@ -54,8 +55,8 @@
   type BarControl = "close" | "done" | "selectAll";
 
   interface BookListLook {
-    readonly rows: "books" | "chapterRuns";
-    readonly searchPlace: "besideShown" | "inPlaceOfShown";
+    readonly rows: BookRows;
+    readonly searchPlace: SearchPlace;
   }
 
   const BOOKS_LOOK: BookListLook = {

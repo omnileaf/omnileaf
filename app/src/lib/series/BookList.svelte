@@ -21,6 +21,7 @@
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { bookActions } from "./book-actions";
+  import type { BookRows } from "./book-listing";
   import BookMenu from "./BookMenu.svelte";
   import BookRowText from "./BookRowText.svelte";
   import PhoneBookRowText from "./PhoneBookRowText.svelte";
@@ -86,7 +87,7 @@
   }: {
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
-    rows: "books" | "chapterRuns";
+    rows: BookRows;
     seriesTitle: string;
     hasTwoLineTitles: boolean;
     isComplete: boolean;
