@@ -17,7 +17,6 @@
     ORDERS,
   } from "#lib/series/book-listing.ts";
 
-
   import BookSearchField from "./BookSearchField.svelte";
 
   const ICON_SIZE = 16;
