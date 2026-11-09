@@ -12,7 +12,7 @@ use crate::{
         staged_rows::snapshot,
         stored_id::stored_id,
     },
-    reading_order::{section_keys, volume_keys},
+    reading_order::{section_keys, unnumbered_chapter_keys, volume_keys},
 };
 
 macro_rules! books_in_series {
@@ -95,6 +95,12 @@ macro_rules! in_section {
     };
 }
 
+macro_rules! beside_unnumbered_chapters {
+    () => {
+        "NOT (book.reading_order_key >= :unnumbered_start AND book.reading_order_key < :unnumbered_end)"
+    };
+}
+
 macro_rules! after_cursor {
     ($comparison:literal) => {
         concat!(
@@ -107,32 +113,78 @@ macro_rules! after_cursor {
 
 const FIRST_IN_SERIES: &str = books_in_series!("ASC");
 const NEXT_IN_SERIES: &str = books_in_series!("ASC", after_cursor!(">"));
-const LAST_IN_SERIES: &str = books_in_series!("DESC");
-const PREVIOUS_IN_SERIES: &str = books_in_series!("DESC", after_cursor!("<"));
+const LAST_IN_SERIES: &str = books_in_series!("DESC", beside_unnumbered_chapters!());
+const PREVIOUS_IN_SERIES: &str =
+    books_in_series!("DESC", beside_unnumbered_chapters!(), after_cursor!("<"));
 const FIRST_IN_SECTION: &str = books_in_series!("ASC", in_section!());
 const NEXT_IN_SECTION: &str = books_in_series!("ASC", after_cursor!(">"), in_section!());
-const LAST_IN_SECTION: &str = books_in_series!("DESC", in_section!());
-const PREVIOUS_IN_SECTION: &str = books_in_series!("DESC", after_cursor!("<"), in_section!());
+const LAST_IN_SECTION: &str =
+    books_in_series!("DESC", beside_unnumbered_chapters!(), in_section!());
+const PREVIOUS_IN_SECTION: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    after_cursor!("<"),
+    in_section!()
+);
 const FIRST_UNREAD_IN_SERIES: &str = books_in_series!("ASC", unread!());
 const NEXT_UNREAD_IN_SERIES: &str = books_in_series!("ASC", unread!(), after_cursor!(">"));
-const LAST_UNREAD_IN_SERIES: &str = books_in_series!("DESC", unread!());
-const PREVIOUS_UNREAD_IN_SERIES: &str = books_in_series!("DESC", unread!(), after_cursor!("<"));
+const LAST_UNREAD_IN_SERIES: &str =
+    books_in_series!("DESC", beside_unnumbered_chapters!(), unread!());
+const PREVIOUS_UNREAD_IN_SERIES: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    unread!(),
+    after_cursor!("<")
+);
 const FIRST_UNREAD_IN_SECTION: &str = books_in_series!("ASC", unread!(), in_section!());
 const NEXT_UNREAD_IN_SECTION: &str =
     books_in_series!("ASC", unread!(), after_cursor!(">"), in_section!());
-const LAST_UNREAD_IN_SECTION: &str = books_in_series!("DESC", unread!(), in_section!());
-const PREVIOUS_UNREAD_IN_SECTION: &str =
-    books_in_series!("DESC", unread!(), after_cursor!("<"), in_section!());
+const LAST_UNREAD_IN_SECTION: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    unread!(),
+    in_section!()
+);
+const PREVIOUS_UNREAD_IN_SECTION: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    unread!(),
+    after_cursor!("<"),
+    in_section!()
+);
 const FIRST_BOOKMARKED_IN_SERIES: &str = books_in_series!("ASC", bookmarked!());
 const NEXT_BOOKMARKED_IN_SERIES: &str = books_in_series!("ASC", bookmarked!(), after_cursor!(">"));
-const LAST_BOOKMARKED_IN_SERIES: &str = books_in_series!("DESC", bookmarked!());
-const PREVIOUS_BOOKMARKED_IN_SERIES: &str =
-    books_in_series!("DESC", bookmarked!(), after_cursor!("<"));
+const LAST_BOOKMARKED_IN_SERIES: &str =
+    books_in_series!("DESC", beside_unnumbered_chapters!(), bookmarked!());
+const PREVIOUS_BOOKMARKED_IN_SERIES: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    bookmarked!(),
+    after_cursor!("<")
+);
 const FIRST_BOOKMARKED_IN_SECTION: &str = books_in_series!("ASC", bookmarked!(), in_section!());
 const NEXT_BOOKMARKED_IN_SECTION: &str =
     books_in_series!("ASC", bookmarked!(), after_cursor!(">"), in_section!());
-const LAST_BOOKMARKED_IN_SECTION: &str = books_in_series!("DESC", bookmarked!(), in_section!());
-const PREVIOUS_BOOKMARKED_IN_SECTION: &str =
+const LAST_BOOKMARKED_IN_SECTION: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    bookmarked!(),
+    in_section!()
+);
+const PREVIOUS_BOOKMARKED_IN_SECTION: &str = books_in_series!(
+    "DESC",
+    beside_unnumbered_chapters!(),
+    bookmarked!(),
+    after_cursor!("<"),
+    in_section!()
+);
+const UNNUMBERED_LAST: &str = books_in_series!("DESC", in_section!());
+const UNNUMBERED_PREVIOUS: &str = books_in_series!("DESC", after_cursor!("<"), in_section!());
+const UNNUMBERED_LAST_UNREAD: &str = books_in_series!("DESC", unread!(), in_section!());
+const UNNUMBERED_PREVIOUS_UNREAD: &str =
+    books_in_series!("DESC", unread!(), after_cursor!("<"), in_section!());
+const UNNUMBERED_LAST_BOOKMARKED: &str = books_in_series!("DESC", bookmarked!(), in_section!());
+const UNNUMBERED_PREVIOUS_BOOKMARKED: &str =
     books_in_series!("DESC", bookmarked!(), after_cursor!("<"), in_section!());
 const UP_NEXT: &str = concat!(
     "SELECT book.id, book.reading_order_key,
@@ -262,6 +314,17 @@ impl BookListing {
             }
         }
     }
+
+    const fn unnumbered_query(self, is_continued: bool) -> &'static str {
+        match (self.shown, is_continued) {
+            (BooksShown::All, false) => UNNUMBERED_LAST,
+            (BooksShown::All, true) => UNNUMBERED_PREVIOUS,
+            (BooksShown::Unread, false) => UNNUMBERED_LAST_UNREAD,
+            (BooksShown::Unread, true) => UNNUMBERED_PREVIOUS_UNREAD,
+            (BooksShown::Bookmarked, false) => UNNUMBERED_LAST_BOOKMARKED,
+            (BooksShown::Bookmarked, true) => UNNUMBERED_PREVIOUS_BOOKMARKED,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -275,6 +338,18 @@ pub enum BookReading {
     Read {
         position_page: Option<u32>,
     },
+}
+
+type KeyRange = (Vec<u8>, Vec<u8>);
+
+fn overlap((start, end): &KeyRange, (other_start, other_end): &KeyRange) -> Option<KeyRange> {
+    let start = start.max(other_start);
+    let end = end.min(other_end);
+    (start < end).then(|| (start.clone(), end.clone()))
+}
+
+fn holds(range: Option<&KeyRange>, key: &[u8]) -> bool {
+    range.is_some_and(|(start, end)| start.as_slice() <= key && key < end.as_slice())
 }
 
 /// A series missing from the catalog has no books, so its page is empty.
@@ -291,20 +366,14 @@ pub fn series_books(
         .volume
         .map(volume_keys)
         .or_else(|| listing.section.map(section_keys));
-    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":series", &series_id)];
-    match request.after.as_ref().map(|cursor| &cursor.0) {
-        None => {}
+    let after = match request.after.as_ref().map(|cursor| &cursor.0) {
+        None => None,
         Some(Position::Book {
             series: listed,
             listing: given,
             sort_key,
             id,
-        }) if *listed == series && *given == listing => {
-            params.extend([
-                (":after_key", sort_key as &dyn ToSql),
-                (":after_id", id.as_bytes()),
-            ]);
-        }
+        }) if *listed == series && *given == listing => Some((sort_key, id.as_bytes())),
         Some(
             Position::Book { .. }
             | Position::Title { .. }
@@ -319,14 +388,57 @@ pub fn series_books(
             | Position::FolderGroup { .. }
             | Position::Chapter { .. },
         ) => return Err(Error::CursorForAnotherList),
+    };
+    let unnumbered = unnumbered_chapter_keys();
+    let unnumbered_last = match (listing.direction, &section_keys) {
+        (SortDirection::Ascending, _) => None,
+        (SortDirection::Descending, None) => Some(unnumbered.clone()),
+        (SortDirection::Descending, Some(keys)) => overlap(keys, &unnumbered),
+    };
+    let resumes_among_unnumbered =
+        after.is_some_and(|(key, _)| holds(unnumbered_last.as_ref(), key));
+    let wanted = usize::try_from(request.size.rows_to_fetch()).unwrap_or(usize::MAX);
+    let mut rows = Vec::with_capacity(wanted);
+    if !resumes_among_unnumbered {
+        let mut params: Vec<(&str, &dyn ToSql)> = vec![(":series", &series_id)];
+        if let Some((key, id)) = &after {
+            params.extend([(":after_key", key as &dyn ToSql), (":after_id", id)]);
+        }
+        if let Some((start, end)) = &section_keys {
+            params.extend([
+                (":section_start", start as &dyn ToSql),
+                (":section_end", end),
+            ]);
+        }
+        if listing.direction == SortDirection::Descending {
+            params.extend([
+                (":unnumbered_start", &unnumbered.0 as &dyn ToSql),
+                (":unnumbered_end", &unnumbered.1),
+            ]);
+        }
+        let query = listing.query(after.is_some());
+        rows.extend(walk(connection, series, listing, query, &params, wanted)?);
     }
-    if let Some((start, end)) = &section_keys {
-        params.extend([
-            (":section_start", start as &dyn ToSql),
+    if let Some((start, end)) = &unnumbered_last
+        && rows.len() < wanted
+    {
+        let after = after.filter(|_| resumes_among_unnumbered);
+        let mut params: Vec<(&str, &dyn ToSql)> = vec![
+            (":series", &series_id),
+            (":section_start", start),
             (":section_end", end),
-        ]);
+        ];
+        if let Some((key, id)) = &after {
+            params.extend([(":after_key", key as &dyn ToSql), (":after_id", id)]);
+        }
+        let query = listing.unnumbered_query(after.is_some());
+        let left = wanted - rows.len();
+        rows.extend(walk(connection, series, listing, query, &params, left)?);
     }
-    let rows = walk(connection, series, listing, request, &params)?;
+    let mut details = connection.prepare(BOOK_DETAILS)?;
+    for (book, _) in &mut rows {
+        fill_details(&mut details, book)?;
+    }
     Ok(Page::of(rows, request.size))
 }
 
@@ -334,11 +446,11 @@ fn walk(
     connection: &Connection,
     series: SeriesId,
     listing: BookListing,
-    request: &PageRequest,
+    query: &str,
     params: &[(&str, &dyn ToSql)],
+    wanted: usize,
 ) -> Result<Vec<(BookSummary, Position)>, Error> {
-    let wanted = usize::try_from(request.size.rows_to_fetch()).unwrap_or(usize::MAX);
-    let mut statement = connection.prepare(listing.query(request.after.is_some()))?;
+    let mut statement = connection.prepare(query)?;
     let mut rows = statement.query(params)?;
     let mut held: Vec<(BookSummary, Position)> = Vec::with_capacity(wanted);
     while held.len() < wanted {
@@ -366,10 +478,6 @@ fn walk(
             ) => previous.position - books_between(connection, &cursor, previous_cursor)?,
         };
         held.push((book, cursor));
-    }
-    let mut details = connection.prepare(BOOK_DETAILS)?;
-    for (book, _) in &mut held {
-        fill_details(&mut details, book)?;
     }
     Ok(held)
 }
@@ -605,6 +713,41 @@ mod tests {
                 plan[0].starts_with(
                     "SEARCH book USING COVERING INDEX book_unread_by_series (series_local_id=?"
                 ),
+                "{plan:?}"
+            );
+            assert!(
+                !plan.iter().any(|step| step.contains("TEMP B-TREE")),
+                "{plan:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn lists_the_chapters_without_a_number_last_from_a_range_of_an_index_without_sorting() {
+        let scratch = ScratchLibrary::new("unnumbered-chapters-plans");
+        let listings = [BooksShown::All, BooksShown::Unread, BooksShown::Bookmarked].map(|shown| {
+            BookListing {
+                shown,
+                direction: SortDirection::Descending,
+                ..BookListing::IN_ORDER
+            }
+        });
+
+        let plans: Vec<Vec<String>> = listings
+            .into_iter()
+            .flat_map(|listing| {
+                [
+                    listing.unnumbered_query(false),
+                    listing.unnumbered_query(true),
+                ]
+            })
+            .map(|query| scratch.query_plan(query))
+            .collect();
+
+        for plan in plans {
+            assert!(
+                plan[0].starts_with("SEARCH book USING COVERING INDEX book_")
+                    && plan[0].contains("reading_order_key>?"),
                 "{plan:?}"
             );
             assert!(

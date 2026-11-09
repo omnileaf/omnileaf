@@ -50,6 +50,20 @@ test("puts the chapters with no number under a run of their own", () => {
   ]);
 });
 
+test("keeps the chapters with no number in a last run of their own when the newest come first", () => {
+  const books = [...numbered(13, 12, 1), chapter(2, null)];
+
+  expect(shape(books)).toEqual([
+    { first: 13, last: 13 },
+    13,
+    { first: 1, last: 12 },
+    12,
+    1,
+    undefined,
+    undefined,
+  ]);
+});
+
 test("keys every row apart", () => {
   const rows = chapterRuns(numbered(1, 13, 25));
 

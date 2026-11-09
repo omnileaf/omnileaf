@@ -236,6 +236,34 @@ test.describe(
 );
 
 test.describe(
+  "a series of chapters with one without a number on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      ...ANDROID_PHONE,
+      backend: new SectionShelf([
+        ...chapters(1, 2, 3),
+        { kind: "chapter", title: UNNUMBERED_CHAPTER },
+      ]).backend(),
+    });
+
+    test("lists the chapter without a number last, under Other chapters", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(bookLinks(page).first()).toContainText("chapter 03");
+
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+
+      await expect(runHeadings(page).last()).toHaveText("Other chapters");
+      await expect(bookLinks(page).last()).toContainText(UNNUMBERED_CHAPTER);
+    });
+  },
+);
+
+test.describe(
   "two series of chapters only on an Android phone",
   { tag: "@native" },
   () => {

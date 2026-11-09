@@ -43,6 +43,17 @@ function fileName(book: ShelvedBook): string {
   return book.title ?? `${SERIES_TITLE} ${book.kind} ${first}.cbz`;
 }
 
+function isUnnumberedChapter(book: WireBook): boolean {
+  return book.section === "chapters" && book.numbers === null;
+}
+
+function newestFirst(books: readonly WireBook[]): WireBook[] {
+  return [
+    ...books.filter((book) => !isUnnumberedChapter(book)).toReversed(),
+    ...books.filter(isUnnumberedChapter).toReversed(),
+  ];
+}
+
 export function volumes(...numbers: readonly number[]): ShelvedBook[] {
   return numbers.map((first) => ({
     kind: "volume",
@@ -148,7 +159,7 @@ export class SectionShelf {
             (listing.shown !== "bookmarked" || book.isBookmarked),
         );
         const ordered =
-          listing.direction === "descending" ? shown.toReversed() : shown;
+          listing.direction === "descending" ? newestFirst(shown) : shown;
         return { books: id === SERIES_ID ? ordered : [], next: null };
       },
       markBooks: (books, mark) => {

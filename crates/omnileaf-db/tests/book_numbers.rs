@@ -444,6 +444,78 @@ async fn pages_through_a_section_either_way_round_without_running_into_the_next(
     );
 }
 
+fn chapters_and_unnumbered(library: &Library) -> Vec<ScannedBook> {
+    let numbered = [("c001", 1000), ("c002", 2000), ("c003", 3000)].map(|(title, number)| {
+        library.found(
+            title,
+            Some(Numbering::Chapter {
+                number: Some(numbers(number, number, ValueSource::FileName)),
+                volume: None,
+            }),
+        )
+    });
+    let unnumbered = ["Afterword", "Extra"].map(|title| {
+        library.found(
+            title,
+            Some(Numbering::Chapter {
+                number: None,
+                volume: None,
+            }),
+        )
+    });
+    numbered.into_iter().chain(unnumbered).collect()
+}
+
+#[tokio::test]
+async fn lists_the_chapters_without_a_number_last_either_way_round() {
+    let library = Library::open("unnumbered-chapters-last").await;
+    library.record(chapters_and_unnumbered(&library)).await;
+    let last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
+    };
+    let chapters_last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..in_section(BookSection::Chapters)
+    };
+
+    let mut found = Vec::new();
+    for (listing, page_size) in [
+        (BookListing::IN_ORDER, 10),
+        (last_first, 10),
+        (last_first, 1),
+        (chapters_last_first, 2),
+    ] {
+        found.push(titles_and_positions(
+            library.listed(listing, page_size).await,
+        ));
+    }
+
+    let in_order = vec![
+        ("c001".to_owned(), 1),
+        ("c002".to_owned(), 2),
+        ("c003".to_owned(), 3),
+        ("Afterword".to_owned(), 4),
+        ("Extra".to_owned(), 5),
+    ];
+    let newest_first = vec![
+        ("c003".to_owned(), 3),
+        ("c002".to_owned(), 2),
+        ("c001".to_owned(), 1),
+        ("Extra".to_owned(), 5),
+        ("Afterword".to_owned(), 4),
+    ];
+    assert_eq!(
+        found,
+        [
+            in_order,
+            newest_first.clone(),
+            newest_first.clone(),
+            newest_first
+        ]
+    );
+}
+
 fn chapter_in_volume(
     library: &Library,
     title: &str,

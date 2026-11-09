@@ -48,6 +48,15 @@ pub(crate) fn volume_keys(volume: BookNumber) -> (Vec<u8>, Vec<u8>) {
     (start, end)
 }
 
+pub(crate) fn unnumbered_chapter_keys() -> (Vec<u8>, Vec<u8>) {
+    let mut start = vec![section_byte(BookSection::Chapters)];
+    start.extend_from_slice(&[0; VOLUME_WIDTH]);
+    let mut end = start.clone();
+    start.push(UNNUMBERED);
+    end.push(UNNUMBERED + 1);
+    (start, end)
+}
+
 const fn section_byte(section: BookSection) -> u8 {
     match section {
         BookSection::Volumes => 0,
