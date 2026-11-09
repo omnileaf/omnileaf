@@ -657,6 +657,7 @@ export const TOKEN_THEME = {
     "pointer-minimum",
     "pointer-target",
     "preview",
+    "problem-media",
     "problem-top",
     "progress",
     "progress-compact",

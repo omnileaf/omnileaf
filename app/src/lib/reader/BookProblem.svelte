@@ -17,7 +17,10 @@
   } from "#lib/components/ui/empty/index.ts";
   import type { BookPlace, Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { problemActionGroup, problemLook } from "#lib/page/problem-look.ts";
+  import {
+    bookProblemLook,
+    problemActionGroup,
+  } from "#lib/page/problem-look.ts";
   import { showFileLabel } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -66,8 +69,8 @@
       : resolve("/(app)/series/[id]", { id: inLibraryPlace.series }),
   );
   const showFile = $derived(showFileLabel(platform));
-  const look = $derived(problemLook(platform));
   const width = new WindowWidth();
+  const look = $derived(bookProblemLook(platform, width.current));
   const actions = $derived(
     problemActionGroup(platform, width.current, TODAYS_PROBLEM_ACTIONS),
   );

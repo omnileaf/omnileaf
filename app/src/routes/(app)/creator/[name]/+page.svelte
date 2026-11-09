@@ -35,6 +35,7 @@
   import PageHeading from "#lib/page/PageHeading.svelte";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { isPhone } from "#lib/page/platform.ts";
+  import { problemLook } from "#lib/page/problem-look.ts";
   import { backIcon } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { TODAYS_PROBLEM_ACTIONS } from "#lib/reader/problem-actions.ts";
@@ -273,7 +274,11 @@
         role="alert"
         class="flex flex-col gap-lg inline-full max-inline-damaged-book"
       >
-        <ProblemHeading icon={CircleAlert} {platform}>
+        <ProblemHeading
+          icon={CircleAlert}
+          {platform}
+          look={problemLook(platform)}
+        >
           {m.creator_failed({ name: data.name })}
         </ProblemHeading>
         <p class={["text-body expanded:text-small", PROBLEM_TEXT[layout]]}>

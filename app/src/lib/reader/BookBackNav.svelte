@@ -11,8 +11,12 @@
   import { isPhone } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { readerBackLook } from "./reader-bar.ts";
+  import { foregroundBackLook } from "./reader-bar.ts";
   import ReaderBackArrow from "./ReaderBackArrow.svelte";
+
+  const SERIES_NAME = "truncate text-small text-muted expanded:hidden";
+  const ANDROID_BAR_TITLE =
+    "truncate text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-foreground";
 
   let { place, platform }: { place: BookPlace | null; platform: Platform } =
     $props();
@@ -20,6 +24,9 @@
   const width = new WindowWidth();
   const isOnPhone = $derived(isPhone(platform, width.current));
   const namesSeries = $derived(!(isOnPhone && platform === "ios"));
+  const seriesName = $derived(
+    isOnPhone && platform === "android" ? ANDROID_BAR_TITLE : SERIES_NAME,
+  );
   const libraryHref = resolve("/(app)");
   const inLibraryPlace = $derived(
     place !== null && place.isInLibrary ? place : null,
@@ -40,16 +47,12 @@
     aria-label={inLibraryPlace === null
       ? m.reader_back_label()
       : m.reader_back_to_series({ series: inLibraryPlace.seriesTitle })}
-    class={readerBackLook(platform, width.current)}
+    class={foregroundBackLook(platform, width.current)}
   >
     <ReaderBackArrow {platform} {isOnPhone} />
   </a>
   {#if inLibraryPlace !== null && seriesHref !== undefined && namesSeries}
-    <a
-      href={seriesHref}
-      aria-hidden="true"
-      tabindex="-1"
-      class="truncate text-small text-muted expanded:hidden"
+    <a href={seriesHref} aria-hidden="true" tabindex="-1" class={seriesName}
       >{inLibraryPlace.seriesTitle}</a
     >
     <Breadcrumb class="hidden text-small expanded:block">

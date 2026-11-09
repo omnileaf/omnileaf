@@ -492,6 +492,7 @@
   --spacing-settings-list: 17rem;
   --spacing-settings-list-widest: 17rem;
   --spacing-problem-top: calc(10.625rem - var(--spacing-title-gap));
+  --spacing-problem-media: 3.5rem;
   --spacing-switch-length: 2rem;
   --spacing-progress: 0.5rem;
   --spacing-progress-compact: 0.375rem;
