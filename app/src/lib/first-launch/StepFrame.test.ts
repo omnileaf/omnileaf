@@ -1,5 +1,6 @@
 import { createRawSnippet } from "svelte";
 import { afterEach, expect, test } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -62,4 +63,31 @@ test("sizes back button to 40px and renders native arrow icon on Android", async
   expect(back.getBoundingClientRect().height).toBeCloseTo(40, 0);
   expect(back.getBoundingClientRect().width).toBeCloseTo(40, 0);
   expect(back.querySelector('[data-icon="arrow-left"]')).not.toBeNull();
+});
+
+const PROGRESS_BAR_HEIGHT = 4;
+const BACK_TO_BAR_GAP = 12;
+
+test("draws the step as a 4px bar beside a 12px count on Android", async () => {
+  await page.viewport(400, 800);
+  followCorePlatform("android");
+  const { screen } = await renderFrameOn("home");
+
+  const progress = screen.getByRole("progressbar").element();
+  const bar = progress.querySelector("[data-fill]")?.parentElement;
+  const count = screen.getByText("1 of 3").element();
+  const style = getComputedStyle(count);
+
+  const back = screen.getByRole("button", { name: "Back" }).first().element();
+
+  expect(bar?.getBoundingClientRect().height).toBe(PROGRESS_BAR_HEIGHT);
+  expect(
+    (bar?.getBoundingClientRect().left ?? 0) -
+      back.getBoundingClientRect().right,
+  ).toBe(BACK_TO_BAR_GAP);
+  expect(style.fontSize).toBe("12px");
+  expect(style.lineHeight).toBe("16px");
+  expect(style.letterSpacing).toBe("0.4px");
+  expect(style.paddingLeft).toBe("8px");
+  expect(style.paddingRight).toBe("16px");
 });

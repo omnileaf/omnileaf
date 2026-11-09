@@ -79,7 +79,7 @@
 {:else}
   {#if position !== undefined}
     <header
-      class="flex items-center gap-sm p-sm min-block-row expanded:px-step-dialog-inline expanded:pbs-step-dialog-block expanded:pbe-none expanded:min-block-none"
+      class="flex items-center gap-sm p-sm min-block-row expanded:px-step-dialog-inline expanded:pbs-step-dialog-block expanded:pbe-none expanded:min-block-none android:gap-md"
     >
       {#if onBack !== undefined}
         <button

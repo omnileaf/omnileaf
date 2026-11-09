@@ -12,13 +12,12 @@
   import type { DeviceKind } from "./device";
   import StepButton from "./StepButton.svelte";
   import StepFrame from "./StepFrame.svelte";
-  import { usesSetupPages } from "./setup-pages.ts";
   import StepHeader from "./StepHeader.svelte";
+  import { welcomeStepLook } from "./welcome-step-look.ts";
 
   const PROMISE_ICON_SIZE = 20;
 
-  const platform = currentPlatform();
-  const isSetupPage = usesSetupPages(platform);
+  const look = welcomeStepLook(currentPlatform());
 
   let { device, onNext }: { device: DeviceKind; onNext: () => void } = $props();
 
@@ -87,15 +86,8 @@
 <StepFrame step="welcome">
   <StepHeader scale="welcome">
     {#snippet badge()}
-      <div class={["flex pbe-sm", !isSetupPage && "pbs-xl"]}>
-        <AppIcon
-          class={[
-            isSetupPage
-              ? "block-setup-app-icon inline-setup-app-icon"
-              : "block-app-icon inline-app-icon",
-            platform === "android" && "rounded-full",
-          ]}
-        />
+      <div class={["flex pbe-sm", look.badge]}>
+        <AppIcon class={look.appIcon} />
       </div>
     {/snippet}
     {m.first_launch_welcome_title()}
@@ -103,42 +95,21 @@
       <WidthWording wording={BODY[device]} />
     {/snippet}
   </StepHeader>
-  <ul
-    class={[
-      "mbs-sm flex flex-col",
-      isSetupPage ? "gap-lg pbs-md" : "gap-promise-gap",
-    ]}
-  >
+  <ul class={["mbs-sm flex flex-col", look.promises]}>
     {#each PROMISES[device] as promise (promise.title)}
-      <li
-        class={[
-          "flex gap-promise-gap",
-          isSetupPage ? "items-start" : "items-center",
-        ]}
-      >
+      <li class={["flex", look.promise]}>
         <span
-          class={[
-            "flex shrink-0 items-center justify-center",
-            isSetupPage
-              ? "text-windows-accent"
-              : "rounded-control bg-step-tint text-accent block-promise-tile inline-promise-tile android:rounded-none android:bg-transparent android:text-foreground",
-          ]}
+          class={["flex shrink-0 items-center justify-center", look.marker]}
         >
-          {#if platform === "android"}
+          {#if look.usesMaterialIcons}
             <Icon name={promise.iconName} />
           {:else}
             <promise.icon size={PROMISE_ICON_SIZE} aria-hidden="true" />
           {/if}
         </span>
         <span class="flex flex-col">
-          <span
-            class={isSetupPage
-              ? "text-label/setup-body font-semibold"
-              : "font-semibold android:font-regular"}>{promise.title()}</span
-          >
-          <span
-            class="text-footnote text-muted android:text-native-row-subtitle/native-row-subtitle"
-          >
+          <span class={look.title}>{promise.title()}</span>
+          <span class={["text-muted", look.detail]}>
             <WidthWording wording={promise.detail} />
           </span>
         </span>
