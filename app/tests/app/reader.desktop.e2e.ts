@@ -22,7 +22,7 @@ const FIRST_BOOK_HEADING = xpath(
   "//main//h1[normalize-space()='Sample Series 01 v01']",
 );
 const PAGE_COUNT_SHOWN = xpath(
-  "//main//span[contains(normalize-space(), ' / 8')]",
+  "//main//span[not(*)][contains(normalize-space(), ' / 8')]",
 );
 
 const appSession = useAppSession();
