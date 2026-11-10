@@ -31,13 +31,29 @@ async function openSliders(
   });
 }
 
-function root(): HTMLElement {
-  const slider = page.getByRole("slider", { name: "Brightness" }).element();
+function root(name = "Brightness"): HTMLElement {
+  const slider = page.getByRole("slider", { name }).element();
   const found = slider.closest("[data-slider-root]");
   if (!(found instanceof HTMLElement)) {
-    throw new Error("the brightness slider drew no root");
+    throw new Error(`the ${name} slider drew no root`);
   }
   return found;
+}
+
+function handleOf(slider: HTMLElement): HTMLElement {
+  const handle = slider.querySelector("[data-progress-thumb]");
+  if (!(handle instanceof HTMLElement)) {
+    throw new Error("the slider drew no handle");
+  }
+  return handle;
+}
+
+function barOf(slider: HTMLElement): HTMLElement {
+  const bar = handleOf(slider).previousElementSibling;
+  if (!(bar instanceof HTMLElement)) {
+    throw new Error("the slider drew no bar");
+  }
+  return bar;
 }
 
 afterEach(() => {
@@ -68,15 +84,12 @@ test.each(["Brightness", "Warmth"])(
   "centres the Android phone %s handle on its bar's height",
   async (name) => {
     await openSliders("android");
-    const slider = page.getByRole("slider", { name }).element();
-    const handle = slider
-      .closest("[data-slider-root]")
-      ?.querySelector("[data-progress-thumb]");
-    const bar = handle?.previousElementSibling?.getBoundingClientRect();
 
-    const box = handle?.getBoundingClientRect();
-    expect((box?.top ?? 0) + (box?.height ?? 0) / 2).toBeCloseTo(
-      (bar?.top ?? 0) + (bar?.height ?? 0) / 2,
+    const handle = handleOf(root(name)).getBoundingClientRect();
+    const bar = barOf(root(name)).getBoundingClientRect();
+
+    expect(handle.top + handle.height / 2).toBeCloseTo(
+      bar.top + bar.height / 2,
       0,
     );
   },
