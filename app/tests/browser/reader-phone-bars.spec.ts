@@ -678,7 +678,9 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
         .click();
 
       const icon = await boxOf(direction.locator("[data-icon]"));
-      const label = direction.getByText(choice, { exact: true });
+      const label = direction
+        .getByText(choice, { exact: true })
+        .filter({ visible: true });
       await expect
         .poll(async () =>
           Math.abs((await textCentreOf(label)) - (icon.x + icon.width / 2)),
@@ -686,6 +688,29 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
         .toBeLessThanOrEqual(CENTRED_WITHIN_PX);
     });
   }
+
+  test("keeps Android's quick settings strip the same height once a fixed direction drops the AUTO mark, at the largest text in a longer language", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openBook(page);
+    const strip = page.getByRole("group", { name: /Ǫûíçķ šéţţíñĝš/ });
+    const automaticHeight = (await boxOf(strip)).height;
+
+    await strip.getByRole("button").first().click();
+    await page.getByRole("menuitemradio").nth(1).click();
+
+    await expect(page.getByRole("menu")).toBeHidden();
+    expect((await boxOf(strip)).height).toBe(automaticHeight);
+  });
 
   test("runs Android's bars edge to edge on the container colour, past the status and gesture bars, as the boards draw them", async ({
     page,

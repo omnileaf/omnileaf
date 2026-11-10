@@ -79,6 +79,31 @@
   }
 </script>
 
+{#snippet words(showsAutoMark: boolean)}
+  <span class={look.words}>
+    <span class="grid min-inline-none">
+      {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
+        <span
+          class={[
+            "col-start-1 row-start-1",
+            look.directionName,
+            reading.direction !== shown && "invisible",
+          ]}
+          aria-hidden={reading.direction !== shown}
+        >
+          {DIRECTION_NAMES[shown]()}
+        </span>
+      {/each}
+    </span>
+    <span
+      class={[look.autoMark, !showsAutoMark && look.hiddenAutoMark]}
+      aria-hidden={!showsAutoMark}
+    >
+      {m.reader_direction_auto()}
+    </span>
+  </span>
+{/snippet}
+
 <DropdownMenu.Root bind:open={isOpen} {onOpenChange}>
   <DropdownMenu.Trigger
     class={cn(look.button, reading.direction === "rightToLeft" && look.lit)}
@@ -88,28 +113,18 @@
       fallback={ArrowLeftRight}
       {look}
     />
-    <span class={look.words}>
-      <span class="grid min-inline-none">
-        {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
-          <span
-            class={[
-              "col-start-1 row-start-1",
-              look.directionName,
-              reading.direction !== shown && "invisible",
-            ]}
-            aria-hidden={reading.direction !== shown}
-          >
-            {DIRECTION_NAMES[shown]()}
-          </span>
-        {/each}
+    {#if look.reservesAutoMarkBehind}
+      <span class="grid items-start justify-items-center max-inline-full">
+        <span class="invisible col-start-1 row-start-1 grid" aria-hidden="true">
+          {@render words(true)}
+        </span>
+        <span class="col-start-1 row-start-1 grid">
+          {@render words(isAutomatic)}
+        </span>
       </span>
-      <span
-        class={[look.autoMark, !isAutomatic && look.hiddenAutoMark]}
-        aria-hidden={!isAutomatic}
-      >
-        {m.reader_direction_auto()}
-      </span>
-    </span>
+    {:else}
+      {@render words(isAutomatic)}
+    {/if}
     {#if look.hasChevron}
       <ChevronDown
         size={look.iconSize}
