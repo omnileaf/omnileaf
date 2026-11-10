@@ -90,7 +90,7 @@
           look.surface,
         )}
       >
-        <SelectPrimitive.Viewport class="flex flex-col overflow-y-auto">
+        <SelectPrimitive.Viewport class="flex flex-col">
           {#each choices as choice (choice.value)}
             <SelectPrimitive.Item value={choice.value} label={choice.label}>
               {#snippet child({ props, selected })}
