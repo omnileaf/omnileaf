@@ -452,6 +452,10 @@
       isTouchPausing = false;
       return;
     }
+    if (autoScroll === "running") {
+      autoScroll = "paused";
+      return;
+    }
     onZone(event, zone);
   }
 
@@ -1281,6 +1285,9 @@
             settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
           }}
           onStop={stopAutoScroll}
+          onReturnFocus={() => {
+            heading?.focus();
+          }}
         />
       {/if}
       {#if isStripShown && chrome.spans}

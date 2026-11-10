@@ -418,7 +418,7 @@ test.describe(
       await expect(bar(page)).toBeHidden();
     });
 
-    test("keeps the toolbar up three seconds after its last touch", async ({
+    test("tucks the toolbar away three seconds after its last touch, not before", async ({
       page,
       platform,
     }) => {
@@ -456,6 +456,89 @@ test.describe(
 
       await expect(bar(page)).toBeVisible();
       await expect(bar(page)).toContainText("Paused");
+    });
+
+    test("brings the toolbar back, paused, when Scroll down is pressed with a key", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+      await expect(bar(page)).toBeHidden();
+
+      await page.getByRole("button", { name: "Scroll down" }).focus();
+      await page.keyboard.press("Enter");
+
+      await expect(bar(page)).toBeVisible();
+      await expect(bar(page)).toContainText("Paused");
+    });
+
+    test("keeps the toolbar up while a key has focused it, and tucks it away three seconds after focus leaves", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await bar(page).getByRole("button", { name: "Faster" }).focus();
+      await page.keyboard.press("Tab");
+      const stop = bar(page).getByRole("button", { name: "Stop auto scroll" });
+      await expect(stop).toBeFocused();
+
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+
+      await expect(bar(page)).toBeVisible();
+      await expect(stop).toBeFocused();
+      await page.locator("h1").focus();
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+      await expect(bar(page)).toBeHidden();
+    });
+
+    test("leaves no focus inside the toolbar once it tucks away after a tap", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await bar(page).getByRole("button", { name: "Faster" }).click();
+
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+
+      await expect(bar(page)).toBeHidden();
+      await expect(page.locator("h1")).toBeFocused();
+    });
+
+    test("tucks the toolbar away again three seconds after Play", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+      await page.getByRole("button", { name: "Scroll down" }).click();
+
+      await bar(page).getByRole("button", { name: "Play" }).click();
+      await page.clock.runFor(FEW_SECONDS_MS);
+
+      await expect(bar(page)).toBeVisible();
+      await page.clock.runFor(FEW_SECONDS_MS);
+      await expect(bar(page)).toBeHidden();
     });
 
     test("ends with Stop auto scroll", async ({ page, platform }) => {
@@ -507,6 +590,24 @@ test.describe("on an Android phone", () => {
     await page.getByRole("button", { name: "Scroll down" }).click();
 
     await expect(bar(page)).toContainText("Tap Play to resume");
+  });
+});
+
+test.describe("on an iPhone", () => {
+  test.use({
+    backend: {
+      ...onPlatform("ios").backend,
+      openBook: tallPages(null).openBook,
+    },
+  });
+
+  test("keeps its toolbar up while it runs", async ({ page }) => {
+    await openStrip(page);
+    await startAutoScroll(page);
+
+    await page.clock.runFor(SIX_SECONDS_MS);
+
+    await expect(bar(page)).toBeVisible();
   });
 });
 
