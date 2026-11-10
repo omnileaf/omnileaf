@@ -21,45 +21,38 @@
     ToggleGroupItem,
   } from "#lib/components/ui/toggle-group/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
-  import type {
-    BooksShown,
-    SeriesBookListing,
-    SortDirection,
-  } from "#lib/ipc/bindings.ts";
+  import type { SeriesBookListing } from "#lib/ipc/bindings.ts";
   import { EXPANDED_QUERY } from "#lib/page/breakpoints.ts";
   import { currentPlatform, type PhonePlatform } from "#lib/page/platform.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import type { ListingChange } from "#lib/series-sections/section-listing.ts";
+
+  import {
+    isBooksShown,
+    isSortDirection,
+    ORDER_LABELS,
+    ORDERS,
+    SHOWN_LABELS,
+    type SearchPlace,
+    SHOWN_OPTIONS,
+  } from "./book-listing";
 
   interface PhoneTools {
     readonly variant: ButtonVariant;
     readonly foldsShownWhenCrowded: boolean;
   }
 
-  const SHOWN_OPTIONS: readonly BooksShown[] = ["all", "unread", "bookmarked"];
-  const SHOWN_LABELS = {
-    all: m.series_show_all,
-    unread: m.series_show_unread,
-    bookmarked: m.series_show_bookmarked,
-  } satisfies Record<BooksShown, () => string>;
   const PHONE_TOOLS: Readonly<Record<PhonePlatform, PhoneTools>> = {
     ios: { variant: "secondary", foldsShownWhenCrowded: true },
     android: { variant: "plain", foldsShownWhenCrowded: false },
   };
-  const ORDERS = [
-    { direction: "ascending", label: m.series_order_first_first },
-    { direction: "descending", label: m.series_order_last_first },
-  ] as const satisfies readonly {
-    direction: SortDirection;
-    label: () => string;
-  }[];
   const ICON_SIZE = 16;
 
   const platform = currentPlatform();
   const isNativeDesktop = platform === "macos" || platform === "windows";
   const isWide = new MediaQuery(EXPANDED_QUERY);
   const showLabelId = $props.id();
-  let isSearching = $state(false);
   let searchField = $state<HTMLInputElement | null>(null);
 
   async function reveal(): Promise<void> {
@@ -77,43 +70,39 @@
     search,
     onSearch,
     onShownCrowded,
+    searchPlace,
+    isSearching = $bindable(false),
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
-    onChoose: (listing: SeriesBookListing) => void;
+    onChoose: (change: ListingChange) => void;
     search: string;
     onSearch: (search: string) => void;
     onShownCrowded: (isCrowded: boolean) => void;
+    searchPlace: SearchPlace;
+    isSearching?: boolean;
   } = $props();
+
+  const isShownReplaced = $derived(
+    searchPlace === "inPlaceOfShown" && isSearching,
+  );
 
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_TOOLS[phonePlatform],
   );
 
-  const order = $derived(
-    listing.direction === "descending"
-      ? m.series_order_last_first()
-      : m.series_order_first_first(),
-  );
-
-  function isShown(value: string): value is BooksShown {
-    return SHOWN_OPTIONS.some((shown) => shown === value);
-  }
+  const order = $derived(ORDER_LABELS[listing.direction]());
 
   function chooseShown(chosen: string): void {
-    if (isShown(chosen)) {
-      onChoose({ ...listing, shown: chosen });
+    if (isBooksShown(chosen)) {
+      onChoose({ shown: chosen });
     }
   }
 
   function chooseDirection(chosen: string): void {
-    if (isDirection(chosen)) {
-      onChoose({ ...listing, direction: chosen });
+    if (isSortDirection(chosen)) {
+      onChoose({ direction: chosen });
     }
-  }
-
-  function isDirection(value: string): value is SortDirection {
-    return ORDERS.some(({ direction }) => direction === value);
   }
 </script>
 
@@ -144,7 +133,10 @@
 <div class="flex flex-wrap items-center gap-sm">
   <InputGroup
     class={[
-      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:block-touch-target windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+      isShownReplaced
+        ? "flex-1 min-inline-none"
+        : "max-expanded:order-last max-expanded:inline-full",
       !isSearching && "max-expanded:hidden",
     ]}
   >
@@ -162,29 +154,31 @@
     />
   </InputGroup>
   {#if phone !== undefined}
-    <span id={showLabelId} class="sr-only">{m.series_show()}</span>
-    <div class="relative flex-1 min-inline-none">
-      <SegmentedControl
-        options={SHOWN_OPTIONS}
-        labels={SHOWN_LABELS}
-        chosen={listing.shown}
-        labelledBy={showLabelId}
-        size="small"
-        isFullWidth
-        segmentClass={[
-          "min-inline-native-target",
-          phonePlatform === "android" && "max-medium:px-md",
-        ]}
-        onChoose={chooseShown}
-        crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
-        onFit={(fitsOneRow: boolean) => {
-          onShownCrowded(!fitsOneRow);
-        }}
-      />
-    </div>
+    {#if !isShownReplaced}
+      <span id={showLabelId} class="sr-only">{m.series_show()}</span>
+      <div class="relative flex-1 min-inline-none">
+        <SegmentedControl
+          options={SHOWN_OPTIONS}
+          labels={SHOWN_LABELS}
+          chosen={listing.shown}
+          labelledBy={showLabelId}
+          size="small"
+          isFullWidth
+          segmentClass={[
+            "min-inline-native-target",
+            phonePlatform === "android" && "max-medium:px-md",
+          ]}
+          onChoose={chooseShown}
+          crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
+          onFit={(fitsOneRow: boolean) => {
+            onShownCrowded(!fitsOneRow);
+          }}
+        />
+      </div>
+    {/if}
     <Button
       type="button"
-      variant={phone.variant}
+      variant={isShownReplaced ? "secondary" : phone.variant}
       iconOnly
       label={m.series_find_book()}
       aria-expanded={isSearching}

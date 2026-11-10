@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { type Snippet, untrack } from "svelte";
-  import { MediaQuery } from "svelte/reactivity";
+  import { type Snippet, tick, untrack } from "svelte";
 
   import {
     Tabs,
@@ -17,23 +16,32 @@
     SeriesSection,
     SortDirection,
   } from "#lib/ipc/bindings.ts";
-  import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
+  import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
   import type { ListState } from "#lib/paging/paged-list.svelte.ts";
+  import {
+    type BooksControls,
+    OWN_CONTROLS,
+  } from "#lib/series/books-controls.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import {
+    hasHeadingOverTabs,
     type ListingChange,
     type SectionView,
     sectionTabs,
     sectionView,
     shownSection,
   } from "./section-listing";
-  import { tabWords } from "./section-names";
+  import BookSearchField from "./BookSearchField.svelte";
+  import { sectionCount, tabWords } from "./section-names";
+  import { showsSectionNotes } from "./section-note";
+  import SectionHeading from "./SectionHeading.svelte";
   import type { ListedBooks } from "./listed-books";
   import SectionListingChoices from "./SectionListingChoices.svelte";
   import SectionPanel from "./SectionPanel.svelte";
   import { sectionTabsLook } from "./section-tabs-look";
+  import SeriesSortSheet from "./SeriesSortSheet.svelte";
 
   let {
     sections,
@@ -56,21 +64,26 @@
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
-    children: Snippet;
+    children: Snippet<[BooksControls]>;
   } = $props();
 
   const kinds = $derived(sections.map(({ section }) => section));
-  const isWide = new MediaQuery(EXPANDED_QUERY);
+  const width = new WindowWidth();
   const screen = $derived({
     platform: currentPlatform(),
-    isWide: isWide.current,
+    width: width.current,
   });
-  const width = new WindowWidth();
-  const tabsLook = $derived(sectionTabsLook(screen.platform, width.current));
+  const tabsLook = $derived(sectionTabsLook(screen.platform, screen.width));
+  const hasHeading = $derived(hasHeadingOverTabs(sections, screen));
+  const headingId = $props.id();
   const tabs = $derived(sectionTabs(sections, screen));
   const section = $derived(shownSection(listing, kinds));
   const view = $derived(sectionView(listing, kinds, screen));
   let search = $state("");
+  let isFinding = $state(false);
+  let isSorting = $state(false);
+  let findField = $state<HTMLInputElement | null>(null);
+  const chosenTab = $derived(tabs.find((tab) => tab.section === section));
   let staleList = $state<ListState<SeriesBook>>();
   let readFor: string | undefined;
 
@@ -107,24 +120,73 @@
       }
     },
   });
+  const booksControls = $derived<BooksControls>(
+    hasHeading
+      ? { kind: "above", headingId, search, onSearch: choices.onSearch }
+      : OWN_CONTROLS,
+  );
+
+  let wasHeadingShown: boolean | undefined;
+
+  $effect(() => {
+    const isHeadingShown = hasHeading;
+    untrack(() => {
+      if (wasHeadingShown !== undefined && wasHeadingShown !== isHeadingShown) {
+        closeFinding();
+        isSorting = false;
+      }
+      wasHeadingShown = isHeadingShown;
+    });
+  });
   const panel = $derived({
     section,
-    noted: tabs.length > 0 || view === "covers" ? section : undefined,
+    noted:
+      showsSectionNotes(screen.platform) &&
+      (tabs.length > 0 || view === "covers")
+        ? section
+        : undefined,
     view,
     series: { sections: kinds, missingVolumes, lastVolume },
     direction: listing.direction,
+    shown: listing.shown,
     search,
     books: books?.list === staleList ? undefined : books,
     usesStandIns,
     onMark,
     onPickedCount,
-    children,
+    children: booksWithControls,
+    phone: phoneOf(screen.platform, screen.width),
+    onClearSearch: () => {
+      search = "";
+    },
+    onShowAll: () => {
+      onListing({ shown: "all" });
+    },
   });
+
+  function closeFinding(): void {
+    isFinding = false;
+    search = "";
+  }
+
+  async function toggleFinding(): Promise<void> {
+    if (isFinding) {
+      closeFinding();
+      return;
+    }
+    isFinding = true;
+    await tick();
+    findField?.focus();
+  }
 
   function isTab(value: string): value is BookSection {
     return tabs.some((tab) => tab.section === value);
   }
 </script>
+
+{#snippet booksWithControls()}
+  {@render children(booksControls)}
+{/snippet}
 
 {#if tabs.length > 0 && section !== undefined}
   <Tabs
@@ -143,7 +205,20 @@
     class="flex flex-col gap-lg"
   >
     <div class={tabsLook.row}>
-      {#if tabsLook.choicesFirst && view === "covers"}
+      {#if hasHeading && chosenTab !== undefined}
+        <SectionHeading
+          id={headingId}
+          heading={sectionCount(chosenTab)}
+          {isFinding}
+          {isSorting}
+          onFind={() => {
+            void toggleFinding();
+          }}
+          onSortAndFilter={() => {
+            isSorting = true;
+          }}
+        />
+      {:else if tabsLook.controls === "choicesFirst" && view === "covers"}
         <SectionListingChoices {...choices} />
       {/if}
       <TabsList aria-label={m.series_sections()} class={tabsLook.list}>
@@ -158,14 +233,30 @@
           </TabsTrigger>
         {/each}
       </TabsList>
-      {#if !tabsLook.choicesFirst && view === "covers"}
+      {#if tabsLook.controls === "choicesAfter" && view === "covers"}
         <SectionListingChoices {...choices} />
+      {:else if hasHeading && isFinding}
+        <BookSearchField
+          bind:field={findField}
+          search={choices.search}
+          onSearch={choices.onSearch}
+        />
       {/if}
     </div>
     <TabsContent value={section} class="flex flex-col gap-lg">
       <SectionPanel {...panel} />
     </TabsContent>
   </Tabs>
+  {#if hasHeading}
+    <SeriesSortSheet
+      {listing}
+      isOpen={isSorting}
+      onChoose={onListing}
+      onClose={() => {
+        isSorting = false;
+      }}
+    />
+  {/if}
 {:else}
   {#if view === "covers"}
     <SectionListingChoices {...choices} />

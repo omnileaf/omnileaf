@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import {
   bookWords,
+  chapterRunWords,
   gapWords,
   missingVolumeCount,
   missingVolumeNumbers,
@@ -122,4 +123,16 @@ test("lists every missing run", () => {
       { first: 9, last: 12 },
     ]),
   ).toBe("2, 5, 6, and 9–12");
+});
+
+test("names a run of chapters by its first and last chapter", () => {
+  expect(chapterRunWords({ first: 131, last: 142 })).toBe("Chapters 131–142");
+});
+
+test("names a run of one chapter by its number", () => {
+  expect(chapterRunWords({ first: 7, last: 7 })).toBe("Chapter 7");
+});
+
+test("names the run of chapters with no number apart", () => {
+  expect(chapterRunWords(undefined)).toBe("Other chapters");
 });

@@ -3,6 +3,7 @@
 
   import type {
     BookSection,
+    BooksShown,
     ReadMark,
     SeriesBook,
     SortDirection,
@@ -10,6 +11,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
+  import type { PhonePlatform } from "#lib/page/platform.ts";
+  import NoShownBooks from "#lib/series/NoShownBooks.svelte";
   import { standInBook } from "#lib/series/series-stand-ins.ts";
 
   import { bookWords } from "./book-number-words";
@@ -27,45 +30,53 @@
     view,
     series,
     direction,
+    shown,
     search,
     books,
     usesStandIns,
     onMark,
     onPickedCount,
     children,
+    phone,
+    onClearSearch,
+    onShowAll,
   }: {
     section: BookSection | undefined;
     noted: BookSection | undefined;
     view: SectionView;
     series: NotedSeries;
     direction: SortDirection;
+    shown: BooksShown;
     search: string;
     books: ListedBooks | undefined;
     usesStandIns: boolean;
     onMark: (picked: SeriesBook["id"][], read: ReadMark) => Promise<boolean>;
     onPickedCount?: ((count: number | undefined) => void) | undefined;
     children: Snippet;
+    phone: PhonePlatform | undefined;
+    onClearSearch: () => void;
+    onShowAll: () => void;
   } = $props();
 
   const isSearching = $derived(search.trim() !== "");
 
-  function found(shown: readonly SeriesBook[]): readonly SeriesBook[] {
-    const named = shown.map((book) => ({ book, title: bookWords(book) }));
+  function found(drawn: readonly SeriesBook[]): readonly SeriesBook[] {
+    const named = drawn.map((book) => ({ book, title: bookWords(book) }));
     return booksMatching(named, search, getLocale()).map(({ book }) => book);
   }
 
   function tilesOf(listed: readonly SeriesBook[], isComplete: boolean) {
-    const shown = usesStandIns ? listed.map(standInBook) : listed;
+    const drawn = usesStandIns ? listed.map(standInBook) : listed;
     if (isSearching) {
-      return booksOnly(found(shown));
+      return booksOnly(found(drawn));
     }
-    return section === "volumes"
-      ? withGaps(shown, {
+    return section === "volumes" && shown === "all"
+      ? withGaps(drawn, {
           missing: series.missingVolumes,
           direction,
           isComplete,
         })
-      : booksOnly(shown);
+      : booksOnly(drawn);
   }
 </script>
 
@@ -80,8 +91,8 @@
   <p class="text-body text-muted">{m.series_books_failed()}</p>
 {:else if books?.list.kind === "loaded" && section !== undefined}
   {@const tiles = tilesOf(books.list.items, books.list.isComplete)}
-  {#if isSearching && books.list.isComplete && tiles.length === 0}
-    <p class="text-body">{m.series_no_match({ search: search.trim() })}</p>
+  {#if books.list.isComplete && tiles.length === 0 && (isSearching || shown !== "all")}
+    <NoShownBooks {phone} {search} {shown} {onClearSearch} {onShowAll} />
   {/if}
   {#key section}
     <PickedCovers

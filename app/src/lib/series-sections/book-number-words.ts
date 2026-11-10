@@ -48,6 +48,12 @@ export function bookWords(book: NumberedBook): string {
   }
 }
 
+export function chapterRunWords(chapters: NumberRange | undefined): string {
+  return chapters === undefined
+    ? m.series_chapters_unnumbered()
+    : rangeWords(chapters, CHAPTER_NAMES);
+}
+
 export function volumeWords(book: NumberedBook): string | undefined {
   return book.kind === "chapter" && book.volume !== null
     ? m.series_in_volume({ number: book.volume })

@@ -10,11 +10,18 @@
   import { Item } from "#lib/components/ui/item/index.ts";
   import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { ReadMark, SeriesBook } from "#lib/ipc/bindings.ts";
+  import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
   import type { PhonePlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { chapterRunWords } from "#lib/series-sections/book-number-words.ts";
+  import {
+    type ChapterRow,
+    chapterRuns,
+  } from "#lib/series-sections/chapter-runs.ts";
   import VirtualGrid from "#lib/virtual-grid/VirtualGrid.svelte";
 
   import { bookActions } from "./book-actions";
+  import type { BookRows } from "./book-listing";
   import BookMenu from "./BookMenu.svelte";
   import BookRowText from "./BookRowText.svelte";
   import PhoneBookRowText from "./PhoneBookRowText.svelte";
@@ -31,6 +38,7 @@
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
   const CAPSULE_ACT_PAST_OPEN_PX = 48;
+  const RUN_HEADING = `flex items-end block-full ps-native-row-start pbe-sm ${ANDROID_SUBHEADING}`;
 
   interface PhoneList {
     readonly plate: string;
@@ -63,6 +71,7 @@
   let {
     phone: phonePlatform,
     books,
+    rows,
     seriesTitle,
     hasTwoLineTitles,
     isComplete,
@@ -78,6 +87,7 @@
   }: {
     phone: PhonePlatform | undefined;
     books: readonly SeriesBook[];
+    rows: BookRows;
     seriesTitle: string;
     hasTwoLineTitles: boolean;
     isComplete: boolean;
@@ -102,13 +112,20 @@
   const longPress = new LongPress(LONG_PRESS_MS);
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
+  const listedRows: readonly ChapterRow[] = $derived(
+    rows === "chapterRuns"
+      ? chapterRuns(books)
+      : books.map((book) => ({ kind: "book", key: book.id, book })),
+  );
   const grid = $derived({
-    items: books,
-    key: (book: SeriesBook) => book.id,
+    items: listedRows,
+    key: (listed: ChapterRow) => listed.key,
     label: m.series_books_list(),
     isComplete,
     onNearEnd,
-    cell: row,
+    cell: listedRow,
+    itemRole: (listed: ChapterRow) =>
+      listed.kind === "run" ? "presentation" : "listitem",
   });
   const ids = $derived(books.map((book) => book.id));
   const swipeActions = getSwipeActionsSetting();
@@ -417,6 +434,14 @@
   {/if}
 {/snippet}
 
+{#snippet listedRow(listed: ChapterRow)}
+  {#if listed.kind === "run"}
+    <h3 class={RUN_HEADING}>{chapterRunWords(listed.chapters)}</h3>
+  {:else}
+    {@render row(listed.book)}
+  {/if}
+{/snippet}
+
 <svelte:window
   onpointerdowncapture={() => {
     longPress.pointerWentDown();
@@ -436,6 +461,12 @@
   </Card>
 {:else}
   <div data-book-plate class={phone.plate}>
-    <VirtualGrid {...grid} class="row-rules grid-cols-1" />
+    <VirtualGrid
+      {...grid}
+      class={[
+        "row-rules grid-cols-1",
+        rows === "chapterRuns" && "auto-rows-fr",
+      ]}
+    />
   </div>
 {/if}

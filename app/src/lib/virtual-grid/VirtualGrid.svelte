@@ -27,6 +27,7 @@
     itemClass,
     listbox,
     onRevealReady,
+    itemRole,
   }: {
     items: readonly Item[];
     key: (item: Item) => string;
@@ -42,6 +43,7 @@
     itemClass?: ClassValue;
     listbox?: Listbox | undefined;
     onRevealReady?: ((reveal: Reveal) => void) | undefined;
+    itemRole?: ((item: Item) => "listitem" | "presentation") | undefined;
   } = $props();
 
   const ITEMS_BEFORE_MEASURING = 24;
@@ -77,9 +79,26 @@
         ),
   );
 
+  const positions = $derived(listedPositions(items));
   const setSize = $derived(
-    isComplete ? items.length : (knownTotal ?? UNKNOWN_SIZE),
+    isComplete ? positions.listed : (knownTotal ?? UNKNOWN_SIZE),
   );
+
+  function isPresentation(item: Item): boolean {
+    return itemRole?.(item) === "presentation";
+  }
+
+  function listedPositions(all: readonly Item[]) {
+    let listed = 0;
+    const at = all.map((item) => {
+      if (isPresentation(item)) {
+        return undefined;
+      }
+      listed += 1;
+      return listed;
+    });
+    return { at, listed };
+  }
 
   function measured(grid: HTMLUListElement): Measure | undefined {
     const first = grid.firstElementChild;
@@ -148,11 +167,12 @@
       look();
       await tick();
     }
-    const item = list.querySelector<HTMLElement>(
-      `:scope > [aria-posinset="${String(index + 1)}"]`,
-    );
-    item?.scrollIntoView({ block: "nearest" });
-    return item ?? undefined;
+    const item = list.children.item(index - shown.start);
+    if (!(item instanceof HTMLElement)) {
+      return undefined;
+    }
+    item.scrollIntoView({ block: "nearest" });
+    return item;
   }
 
   let pendingLook: number | undefined;
@@ -223,7 +243,11 @@
     {#each items.slice(shown.start, shown.end) as item, offset (key(item))}
       <li
         id={listbox === undefined ? undefined : optionId(listbox.id, key(item))}
-        role={listbox === undefined ? undefined : "option"}
+        role={listbox === undefined
+          ? isPresentation(item)
+            ? "presentation"
+            : undefined
+          : "option"}
         aria-selected={listbox === undefined
           ? undefined
           : key(item) === listbox.activeKey}
@@ -242,8 +266,8 @@
           : (event) => {
               event.preventDefault();
             }}
-        aria-posinset={shown.start + offset + 1}
-        aria-setsize={setSize}
+        aria-posinset={positions.at[shown.start + offset]}
+        aria-setsize={isPresentation(item) ? undefined : setSize}
         class={itemClass}
       >
         {@render cell(item)}

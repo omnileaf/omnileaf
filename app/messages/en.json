@@ -1625,6 +1625,8 @@
   "series_books_list": "Books",
   "series_books_failed": "Couldn't load the books in this series. Try again later.",
   "series_show": "Show",
+  "series_sort_and_filter_lead": "For every tab of this series.",
+  "series_gaps_with_all_only": "Missing-volume gaps show only with All.",
   "series_show_choice": "Show: {shown}",
   "series_show_all": "All",
   "series_show_unread": "Unread",
@@ -1635,6 +1637,48 @@
   "series_section_volumes": "Volumes",
   "series_section_chapters": "Chapters",
   "series_section_specials": "Specials",
+  "series_volume_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} volume",
+        "countPlural=other": "{formattedCount} volumes"
+      }
+    }
+  ],
+  "series_chapter_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} chapter",
+        "countPlural=other": "{formattedCount} chapters"
+      }
+    }
+  ],
+  "series_special_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} special",
+        "countPlural=other": "{formattedCount} specials"
+      }
+    }
+  ],
   "series_section_tab": [
     {
       "declarations": [
@@ -1753,6 +1797,7 @@
       }
     }
   ],
+  "series_chapters_unnumbered": "Other chapters",
   "series_chapters_note": "The chapters after the last volume. A chapter that’s already inside a volume is read there.",
   "series_chapters_note_after": [
     {

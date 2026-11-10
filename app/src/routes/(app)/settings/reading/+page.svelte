@@ -23,6 +23,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { saysWhereABookOpened } from "#lib/reader/opening-notice.ts";
   import { readerHints } from "#lib/reader/reader-hints.svelte.ts";
   import { hasVolumeKeys } from "#lib/reader/volume-keys.ts";
   import type { SwipeSide } from "#lib/series/swipe.ts";
@@ -137,16 +138,18 @@
     bleeds={android.isOn}
     class={android.isOn ? "" : CARD_SWITCH}
   />
-  <SettingSwitch
-    label={m.reading_resume_notice()}
-    description={m.reading_resume_notice_help()}
-    isOn={hints.showsResumeNotice(isOnPhone)}
-    onToggle={() => {
-      hints.turnResumeNotice(!hints.showsResumeNotice(isOnPhone));
-    }}
-    bleeds={android.isOn}
-    class={android.isOn ? "" : CARD_SWITCH}
-  />
+  {#if saysWhereABookOpened(currentPlatform())}
+    <SettingSwitch
+      label={m.reading_resume_notice()}
+      description={m.reading_resume_notice_help()}
+      isOn={hints.showsResumeNotice(isOnPhone)}
+      onToggle={() => {
+        hints.turnResumeNotice(!hints.showsResumeNotice(isOnPhone));
+      }}
+      bleeds={android.isOn}
+      class={android.isOn ? "" : CARD_SWITCH}
+    />
+  {/if}
 {/snippet}
 
 {#snippet skipUpNextSwitch()}

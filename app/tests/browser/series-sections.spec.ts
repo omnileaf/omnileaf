@@ -26,6 +26,8 @@ const READ_CHAPTER: ShelvedBook = {
   reading: { state: "read" },
 };
 const NARROW_WIDTH = EXPANDED_MIN_WIDTH - 40;
+const PHONE_IN_LANDSCAPE = { width: 700, height: 360 };
+const PHONE_IN_PORTRAIT = { width: 360, height: 800 };
 const LIBRARY_CHANGED = "library-changed";
 
 function isWide(page: Page): boolean {
@@ -204,6 +206,29 @@ test.describe("a series read across the wide breakpoint", () => {
   });
 });
 
+test.describe("a series' books read tab by tab", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({ platform: "linux", backend: shelf.backend() });
+
+  test("reads the books once when another tab is chosen", async ({ page }) => {
+    test.skip(!isWide(page), "only a wide window shows tabs");
+    await openSeries(page);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+    const before = shelf.listings.length;
+
+    await kinds(page)
+      .getByRole("tab", { name: /Chapters/ })
+      .click();
+
+    await expect(
+      page
+        .getByRole("table", { name: "Books" })
+        .or(page.getByRole("list", { name: "Books" })),
+    ).toContainText(/chapter 13/);
+    expect(shelf.listings.length - before).toBe(1);
+  });
+});
+
 test.describe("a series whose specials a rescan takes away", () => {
   const shelf = new SectionShelf(EVERY_KIND);
   test.use({ backend: shelf.backend() });
@@ -342,17 +367,68 @@ test.describe(
       await expect(covers(page, "Volumes")).toHaveCount(2);
     });
 
-    test("puts the search and sort row above the tabs", async ({ page }) => {
+    test("heads the tabs with the chosen kind's count, Find a book and Sort and filter", async ({
+      page,
+    }) => {
       await openSeries(page);
 
-      const [tabs, search, sort] = await Promise.all([
+      const heading = page.getByRole("heading", {
+        level: 2,
+        name: "2 volumes",
+      });
+      const [tabs, title, find, sort] = await Promise.all([
         boxOf(kinds(page)),
-        boxOf(page.getByRole("searchbox", { name: "Find a book" })),
-        boxOf(page.getByRole("button", { name: /^Sort/ })),
+        boxOf(heading),
+        boxOf(page.getByRole("button", { name: "Find a book" })),
+        boxOf(page.getByRole("button", { name: "Sort and filter" })),
       ]);
 
-      expect(search.y + search.height).toBeLessThanOrEqual(tabs.y);
-      expect(sort.y + sort.height).toBeLessThanOrEqual(tabs.y);
+      expect(
+        [title, find, sort].every((part) => part.y + part.height <= tabs.y),
+      ).toBe(true);
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+    });
+
+    test("names the chosen kind in the heading", async ({ page }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Specials/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { level: 2, name: "1 special" }),
+      ).toBeVisible();
+    });
+
+    test("opens the search field under the tabs from Find a book", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      const find = page.getByRole("button", { name: "Find a book" });
+
+      await find.click();
+
+      const field = page.getByRole("searchbox", { name: "Find a book" });
+      await expect(field).toBeFocused();
+      await expect(find).toHaveAttribute("aria-expanded", "true");
+      const [tabs, search] = await Promise.all([
+        boxOf(kinds(page)),
+        boxOf(field),
+      ]);
+      expect(search.y).toBeGreaterThanOrEqual(tabs.y + tabs.height);
+    });
+
+    test("opens Sort and filter as a sheet", async ({ page }) => {
+      await openSeries(page);
+
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeVisible();
     });
 
     test("lists the chapters as rows once Chapters is chosen", async ({
@@ -370,6 +446,19 @@ test.describe(
           .or(page.getByRole("list", { name: "Books" })),
       ).toContainText(/chapter 13/);
       await expect(covers(page, "Volumes")).toHaveCount(0);
+    });
+
+    test("shows no note under the Specials tab", async ({ page }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Specials/ })
+        .click();
+
+      await expect(covers(page, "Specials")).toHaveCount(1);
+      await expect(page.getByText(/kept apart from the numbered/)).toHaveCount(
+        0,
+      );
     });
 
     test("lists the specials as covers once Specials is chosen", async ({
@@ -395,6 +484,311 @@ test.describe(
         expect(await accessibilityViolations(page)).toEqual([]);
       });
     }
+  },
+);
+
+test.describe(
+  "a series' tabs with read books on an Android phone",
+  { tag: "@native" },
+  () => {
+    const shelf = new SectionShelf(
+      [
+        {
+          kind: "volume",
+          numbers: { first: 1, last: 1 },
+          reading: { state: "read" },
+        },
+        ...volumes(2, 4),
+        READ_CHAPTER,
+        ...chapters(13),
+      ],
+      [{ first: 3, last: 3 }],
+    );
+    test.use({
+      platform: "android",
+      backend: shelf.backend(),
+      viewport: { width: 360, height: 800 },
+    });
+
+    function phoneRows(page: Page) {
+      return page.getByRole("list", { name: "Books" }).getByRole("listitem");
+    }
+
+    async function showOnly(page: Page, shown: string): Promise<void> {
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+      const sheet = page.getByRole("dialog", { name: "Sort and filter" });
+      await sheet.getByRole("radio", { name: shown, exact: true }).click();
+      await page.keyboard.press("Escape");
+      await expect(sheet).toBeHidden();
+    }
+
+    test("keeps the Show group and a second Find a book out of the Chapters tab", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(phoneRows(page)).toHaveCount(2);
+      await expect(page.getByRole("radiogroup", { name: "Show" })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByRole("button", { name: "Find a book" }),
+      ).toHaveCount(1);
+    });
+
+    test("shows no note under the Volumes or Chapters tab", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(1);
+      await expect(page.getByText(/keeps the others in place/)).toHaveCount(0);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(phoneRows(page)).toHaveCount(2);
+      await expect(page.getByText(/is read there/)).toHaveCount(0);
+    });
+
+    test("finds a chapter from the heading's Find a book", async ({ page }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("13");
+
+      await expect(phoneRows(page)).toHaveCount(1);
+      await expect(phoneRows(page)).toContainText(/chapter 13/);
+    });
+
+    test("shows only the unread chapters once Sort and filter says Unread", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await showOnly(page, "Unread");
+
+      await expect(phoneRows(page)).toHaveCount(1);
+      await expect(phoneRows(page)).toContainText(/chapter 13/);
+    });
+
+    test("hides the field and clears the search when Find a book is pressed again", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      const find = page.getByRole("button", { name: "Find a book" });
+      await find.click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("13");
+      await expect(phoneRows(page)).toHaveCount(1);
+
+      await find.click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("clears the search when another tab is chosen", async ({ page }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("clears the search from Clear the search when no chapter matches", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page
+        .getByRole("searchbox", { name: "Find a book" })
+        .fill("harbour");
+
+      await page.getByRole("button", { name: "Clear the search" }).click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(phoneRows(page)).toHaveCount(2);
+    });
+
+    test("shows the selection bar while picking on the Chapters tab and goes back to the heading after", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+      await expect(
+        page.getByRole("region", { name: "2 chapters" }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: /^More for .*chapter 13/ })
+        .click();
+      await page
+        .getByRole("button", { name: "Select", exact: true })
+        .or(page.getByRole("menuitem", { name: "Select", exact: true }))
+        .click();
+      await expect(
+        page.getByRole("heading", { level: 2, name: "1 selected" }),
+      ).toBeVisible();
+
+      await page.getByRole("button", { name: "Clear the selection" }).click();
+
+      await expect(
+        page.getByRole("heading", { level: 2, name: "2 chapters" }),
+      ).toBeFocused();
+      await expect(
+        page.getByRole("heading", { level: 2, name: /books$/ }),
+      ).toHaveCount(0);
+    });
+
+    test("closes Find a book and lists every cover again after a turn to landscape and back", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await expect(
+        page.getByRole("button", { name: "Sort and filter" }),
+      ).toHaveCount(0);
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("keeps Sort and filter closed after a turn to landscape and back", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Sort and filter" }).click();
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeVisible();
+
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await expect(
+        page.getByRole("button", { name: "Sort and filter" }),
+      ).toHaveCount(0);
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toHaveCount(0);
+    });
+
+    test("lists every cover again after a search in landscape and a turn back to portrait", async ({
+      page,
+    }) => {
+      await page.setViewportSize(PHONE_IN_LANDSCAPE);
+      await openSeries(page);
+      await page.getByRole("searchbox", { name: "Find a book" }).fill("2");
+      await expect(covers(page, "Volumes")).toHaveCount(1);
+
+      await page.setViewportSize(PHONE_IN_PORTRAIT);
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveCount(0);
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("clears a cover search with no match from Clear the search", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await page.getByRole("button", { name: "Find a book" }).click();
+      await page
+        .getByRole("searchbox", { name: "Find a book" })
+        .fill("harbour");
+
+      await page.getByRole("button", { name: "Clear the search" }).click();
+
+      await expect(
+        page.getByRole("searchbox", { name: "Find a book" }),
+      ).toHaveValue("");
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("closes Sort and filter back to its button", async ({ page }) => {
+      await openSeries(page);
+      const sortAndFilter = page.getByRole("button", {
+        name: "Sort and filter",
+      });
+      await sortAndFilter.click();
+
+      await page.keyboard.press("Escape");
+
+      await expect(
+        page.getByRole("dialog", { name: "Sort and filter" }),
+      ).toBeHidden();
+      await expect(sortAndFilter).toHaveAttribute("aria-expanded", "false");
+      await expect(sortAndFilter).toBeFocused();
+    });
+
+    test("says when no volume is bookmarked and shows them all again from Show all books", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await showOnly(page, "Bookmarked");
+      await expect(
+        page.getByText("No book in this series has a bookmark."),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Show all books" }).click();
+
+      await expect(covers(page, "Volumes")).toHaveCount(3);
+    });
+
+    test("shows only the unread volumes, with no gap, once Sort and filter says Unread", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(1);
+
+      await showOnly(page, "Unread");
+
+      await expect(covers(page, "Volumes")).toHaveCount(2);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(0);
+    });
   },
 );
 

@@ -10,10 +10,10 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, NewRoot,
-        NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind, RootLocator,
-        ScannedBook, SortDirection, Sourced, ValueSource, add_root, record_moved_books,
-        record_scanned_books, series_books, series_numberings, series_volume,
+        BookDetails, BookFile, BookListing, BookNumber, BookSection, BookSummary, BooksShown,
+        NewRoot, NewSeries, NumberRange, Numbering, PageRequest, PageSize, RootId, RootKind,
+        RootLocator, ScannedBook, SortDirection, Sourced, ValueSource, add_root,
+        record_moved_books, record_scanned_books, series_books, series_numberings, series_volume,
     },
     rusqlite::types::Value,
 };
@@ -442,6 +442,273 @@ async fn pages_through_a_section_either_way_round_without_running_into_the_next(
             .map(|books| books.into_iter().map(|book| book.title).collect::<Vec<_>>()),
         [["c010", "c011", "c012"], ["c012", "c011", "c010"]]
     );
+}
+
+fn chapters_and_unnumbered(library: &Library) -> Vec<ScannedBook> {
+    let numbered = [("c001", 1000), ("c002", 2000), ("c003", 3000)].map(|(title, number)| {
+        library.found(
+            title,
+            Some(Numbering::Chapter {
+                number: Some(numbers(number, number, ValueSource::FileName)),
+                volume: None,
+            }),
+        )
+    });
+    let unnumbered = ["Afterword", "Extra"].map(|title| {
+        library.found(
+            title,
+            Some(Numbering::Chapter {
+                number: None,
+                volume: None,
+            }),
+        )
+    });
+    numbered.into_iter().chain(unnumbered).collect()
+}
+
+#[tokio::test]
+async fn lists_the_chapters_without_a_number_last_either_way_round() {
+    let library = Library::open("unnumbered-chapters-last").await;
+    library.record(chapters_and_unnumbered(&library)).await;
+    let last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
+    };
+    let chapters_last_first = BookListing {
+        direction: SortDirection::Descending,
+        ..in_section(BookSection::Chapters)
+    };
+
+    let mut found = Vec::new();
+    for (listing, page_size) in [
+        (BookListing::IN_ORDER, 10),
+        (last_first, 10),
+        (last_first, 1),
+        (chapters_last_first, 2),
+    ] {
+        found.push(titles_and_positions(
+            library.listed(listing, page_size).await,
+        ));
+    }
+
+    let in_order = vec![
+        ("c001".to_owned(), 1),
+        ("c002".to_owned(), 2),
+        ("c003".to_owned(), 3),
+        ("Afterword".to_owned(), 4),
+        ("Extra".to_owned(), 5),
+    ];
+    let newest_first = vec![
+        ("c003".to_owned(), 3),
+        ("c002".to_owned(), 2),
+        ("c001".to_owned(), 1),
+        ("Extra".to_owned(), 5),
+        ("Afterword".to_owned(), 4),
+    ];
+    assert_eq!(
+        found,
+        [
+            in_order,
+            newest_first.clone(),
+            newest_first.clone(),
+            newest_first
+        ]
+    );
+}
+
+fn chapter_numbered(library: &Library, title: &str, number: Option<u32>) -> ScannedBook {
+    library.found(
+        title,
+        Some(Numbering::Chapter {
+            number: number.map(|number| numbers(number, number, ValueSource::FileName)),
+            volume: None,
+        }),
+    )
+}
+
+fn volume_numbered(library: &Library, title: &str, number: u32) -> ScannedBook {
+    library.found(
+        title,
+        Some(Numbering::Volume {
+            numbers: numbers(number, number, ValueSource::FileName),
+        }),
+    )
+}
+
+fn special_numbered(library: &Library, title: &str, number: u32) -> ScannedBook {
+    library.found(
+        title,
+        Some(Numbering::Special {
+            number: Some(numbers(number, number, ValueSource::FileName)),
+        }),
+    )
+}
+
+fn every_kind_of_place(library: &Library) -> Vec<ScannedBook> {
+    vec![
+        volume_numbered(library, "Volume 1", 1000),
+        volume_numbered(library, "Volume 2", 2000),
+        chapter_numbered(library, "c001", Some(1000)),
+        chapter_numbered(library, "c002", Some(2000)),
+        chapter_numbered(library, "Afterword", None),
+        special_numbered(library, "S1", 1000),
+    ]
+}
+
+fn last_first(shown: BooksShown) -> BookListing {
+    BookListing {
+        shown,
+        direction: SortDirection::Descending,
+        ..BookListing::IN_ORDER
+    }
+}
+
+fn titled(books: &[(&str, u32)]) -> Vec<(String, u32)> {
+    books
+        .iter()
+        .map(|(title, position)| ((*title).to_owned(), *position))
+        .collect()
+}
+
+impl Library {
+    async fn listed_at_page_sizes(
+        &self,
+        listing: BookListing,
+        page_sizes: [u16; 2],
+    ) -> [Vec<(String, u32)>; 2] {
+        let mut found = [Vec::new(), Vec::new()];
+        for (listed, page_size) in found.iter_mut().zip(page_sizes) {
+            *listed = titles_and_positions(self.listed(listing, page_size).await);
+        }
+        found
+    }
+
+    async fn run(&self, statements: &'static str) {
+        self.database
+            .write(move |transaction| {
+                transaction.execute_batch(statements)?;
+                Ok(())
+            })
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn lists_last_first_backwards_from_in_order_keeping_the_chapters_without_a_number_after_the_numbered_ones()
+ {
+    let library = Library::open("last-first-with-specials").await;
+    library
+        .record(vec![
+            chapter_numbered(&library, "c001", Some(1000)),
+            chapter_numbered(&library, "c002", Some(2000)),
+            chapter_numbered(&library, "Afterword", None),
+            special_numbered(&library, "S1", 1000),
+            library.found("Notes", None),
+        ])
+        .await;
+
+    let in_order = library
+        .listed_at_page_sizes(BookListing::IN_ORDER, [1, 10])
+        .await;
+    let newest_first = library
+        .listed_at_page_sizes(last_first(BooksShown::All), [1, 10])
+        .await;
+
+    let expected_in_order = titled(&[
+        ("c001", 1),
+        ("c002", 2),
+        ("Afterword", 3),
+        ("S1", 4),
+        ("Notes", 5),
+    ]);
+    let expected_newest_first = titled(&[
+        ("Notes", 5),
+        ("S1", 4),
+        ("c002", 2),
+        ("c001", 1),
+        ("Afterword", 3),
+    ]);
+    assert_eq!(
+        (in_order, newest_first),
+        (
+            [expected_in_order.clone(), expected_in_order],
+            [expected_newest_first.clone(), expected_newest_first]
+        )
+    );
+}
+
+#[tokio::test]
+async fn lists_a_series_of_every_kind_last_first_with_the_chapters_without_a_number_before_the_volumes()
+ {
+    let library = Library::open("last-first-every-kind").await;
+    library.record(every_kind_of_place(&library)).await;
+
+    let newest_first = library
+        .listed_at_page_sizes(last_first(BooksShown::All), [1, 10])
+        .await;
+
+    let expected = titled(&[
+        ("S1", 6),
+        ("c002", 4),
+        ("c001", 3),
+        ("Afterword", 5),
+        ("Volume 2", 2),
+        ("Volume 1", 1),
+    ]);
+    assert_eq!(newest_first, [expected.clone(), expected]);
+}
+
+#[tokio::test]
+async fn lists_only_the_unread_or_bookmarked_books_last_first_in_the_same_order() {
+    let library = Library::open("last-first-shown").await;
+    library.record(every_kind_of_place(&library)).await;
+    library
+        .run(
+            "INSERT INTO book_state (book_id, is_read)
+                SELECT id, 1 FROM book WHERE title IN ('c002', 'Volume 1');
+             INSERT INTO book_bookmark (book_id, page)
+                SELECT id, 2 FROM book WHERE title IN ('c002', 'Afterword', 'Volume 1');",
+        )
+        .await;
+
+    let unread = library
+        .listed_at_page_sizes(last_first(BooksShown::Unread), [1, 10])
+        .await;
+    let bookmarked = library
+        .listed_at_page_sizes(last_first(BooksShown::Bookmarked), [1, 10])
+        .await;
+
+    let expected_unread = titled(&[("S1", 6), ("c001", 3), ("Afterword", 5), ("Volume 2", 2)]);
+    let expected_bookmarked = titled(&[("c002", 4), ("Afterword", 5), ("Volume 1", 1)]);
+    assert_eq!(
+        (unread, bookmarked),
+        (
+            [expected_unread.clone(), expected_unread],
+            [expected_bookmarked.clone(), expected_bookmarked]
+        )
+    );
+}
+
+#[tokio::test]
+async fn lists_only_the_unread_chapters_last_first_with_those_without_a_number_after() {
+    let library = Library::open("last-first-unread-chapters").await;
+    library.record(every_kind_of_place(&library)).await;
+    library
+        .run(
+            "INSERT INTO book_state (book_id, is_read)
+                SELECT id, 1 FROM book WHERE title = 'c002';",
+        )
+        .await;
+    let unread_chapters = BookListing {
+        section: Some(BookSection::Chapters),
+        ..last_first(BooksShown::Unread)
+    };
+
+    let listed = library.listed_at_page_sizes(unread_chapters, [1, 10]).await;
+
+    let expected = titled(&[("c001", 3), ("Afterword", 5)]);
+    assert_eq!(listed, [expected.clone(), expected]);
 }
 
 fn chapter_in_volume(

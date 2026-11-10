@@ -4,6 +4,7 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_TITLE,
+  PAGE_COUNT,
   readerBackend,
   readerBook,
   servePages,
@@ -83,7 +84,85 @@ test.describe("the tap guide", { tag: "@native" }, () => {
   });
 });
 
+test.describe("the resume notice on Android", { tag: "@native" }, () => {
+  test.use({ platform: "android" });
+
+  test("never shows, even when it was turned on before", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.readerHints.resumeNotice", "on");
+    });
+
+    await openBook(page);
+
+    await expect(
+      page.getByRole("img", { name: "Page 14", exact: true }),
+    ).toBeVisible();
+    await expect(resumeNotice(page)).toHaveCount(0);
+  });
+});
+
+async function recordStatusLine(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const heard: string[] = [];
+    Object.assign(window, { heardStatus: heard });
+    new MutationObserver(() => {
+      const line = document.querySelector("main > p[role='status']");
+      if (line !== null && heard.at(-1) !== line.textContent) {
+        heard.push(line.textContent);
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+  });
+}
+
+function heardStatus(page: Page): Promise<string[]> {
+  return page.evaluate(
+    () => (window as unknown as { heardStatus: string[] }).heardStatus,
+  );
+}
+
+const SAVED_PAGE_LINE = `Page 14 of ${String(PAGE_COUNT)}`;
+
+test.describe("the page line", { tag: "@native" }, () => {
+  test("speaks the saved page once a book opens on Android", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "only Android drops the resume notice");
+    await recordStatusLine(page);
+
+    await openBook(page);
+
+    await expect.poll(() => heardStatus(page)).toEqual(["", SAVED_PAGE_LINE]);
+  });
+
+  test("holds the saved page from the start elsewhere", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform === "android", "Android speaks it once the book opens");
+    await recordStatusLine(page);
+
+    await openBook(page);
+
+    await expect(
+      page.getByRole("img", { name: "Page 14", exact: true }),
+    ).toBeVisible();
+    expect((await heardStatus(page))[0]).toBe(SAVED_PAGE_LINE);
+  });
+});
+
 test.describe("the resume notice", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(
+      platform === "android",
+      "Android opens a book quietly and has no resume notice setting",
+    );
+  });
+
   test("says where a book opened once it is turned on", async ({ page }) => {
     await page.goto("/settings/reading");
     const resume = setting(page, "Show the resume notice");

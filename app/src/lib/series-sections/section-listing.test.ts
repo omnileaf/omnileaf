@@ -1,8 +1,10 @@
 import { expect, test } from "vitest";
 
 import type { BookSection, SeriesBookListing } from "#lib/ipc/bindings.ts";
+import type { PhonePlatform } from "#lib/page/platform.ts";
 
 import {
+  firstDirection,
   type SectionScreen,
   sectionListing,
   sectionTabs,
@@ -10,12 +12,15 @@ import {
   shownSection,
 } from "./section-listing";
 
-const LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: true };
-const MACOS_WINDOW: SectionScreen = { platform: "macos", isWide: true };
-const WIDE_IOS_WINDOW: SectionScreen = { platform: "ios", isWide: true };
-const NARROW_LINUX_WINDOW: SectionScreen = { platform: "linux", isWide: false };
-const IPHONE: SectionScreen = { platform: "ios", isWide: false };
-const ANDROID_PHONE: SectionScreen = { platform: "android", isWide: false };
+const LINUX_WINDOW: SectionScreen = { platform: "linux", width: "expanded" };
+const MACOS_WINDOW: SectionScreen = { platform: "macos", width: "expanded" };
+const WIDE_IOS_WINDOW: SectionScreen = { platform: "ios", width: "expanded" };
+const NARROW_LINUX_WINDOW: SectionScreen = {
+  platform: "linux",
+  width: "compact",
+};
+const IPHONE: SectionScreen = { platform: "ios", width: "compact" };
+const ANDROID_PHONE: SectionScreen = { platform: "android", width: "compact" };
 const WIDE_TABBED_WINDOWS: readonly SectionScreen[] = [
   IPHONE,
   ANDROID_PHONE,
@@ -46,13 +51,10 @@ test.each(WIDE_TABBED_WINDOWS)(
 
 test.each<SectionScreen>([
   NARROW_LINUX_WINDOW,
-  { platform: "windows", isWide: true },
-])(
-  "keeps the books in one list on $platform when wide is $isWide",
-  (screen) => {
-    expect(sectionTabs(EVERY_SECTION, screen)).toEqual([]);
-  },
-);
+  { platform: "windows", width: "expanded" },
+])("keeps the books in one list on $platform at width $width", (screen) => {
+  expect(sectionTabs(EVERY_SECTION, screen)).toEqual([]);
+});
 
 test("lists the first section until another is chosen", () => {
   expect(sectionListing(IN_ORDER, EVERY_SECTION, LINUX_WINDOW)).toEqual({
@@ -79,6 +81,25 @@ test("lists every book of a section shown as covers", () => {
   };
 
   expect(sectionListing(chosen, EVERY_SECTION, LINUX_WINDOW)).toEqual({
+    ...chosen,
+    shown: "all",
+  });
+});
+
+test("keeps the books shown as chosen under an Android phone's covers", () => {
+  const chosen: SeriesBookListing = {
+    shown: "unread",
+    direction: "ascending",
+    section: "volumes",
+  };
+
+  expect(sectionListing(chosen, EVERY_SECTION, ANDROID_PHONE)).toEqual(chosen);
+});
+
+test("lists every book of an Android phone's series with one kind", () => {
+  const chosen: SeriesBookListing = { shown: "unread", direction: "ascending" };
+
+  expect(sectionListing(chosen, ["volumes"], ANDROID_PHONE)).toEqual({
     ...chosen,
     shown: "all",
   });
@@ -146,6 +167,20 @@ test("keeps the books list for chapters only and for unsorted books", () => {
     sectionView(IN_ORDER, ["chapters"], LINUX_WINDOW),
     sectionView(IN_ORDER, [], LINUX_WINDOW),
   ]).toEqual(["books", "books"]);
+});
+
+test("lists a series of chapters only newest first on an Android phone", () => {
+  expect(firstDirection(["chapters"], "android")).toBe("descending");
+});
+
+test.each<[readonly BookSection[], PhonePlatform | undefined]>([
+  [["chapters"], "ios"],
+  [["chapters"], undefined],
+  [["volumes"], "android"],
+  [["volumes", "chapters"], "android"],
+  [[], "android"],
+])("lists %j in order on %s", (sections, phone) => {
+  expect(firstDirection(sections, phone)).toBe("ascending");
 });
 
 test("keeps the books list for volumes in a narrow window", () => {

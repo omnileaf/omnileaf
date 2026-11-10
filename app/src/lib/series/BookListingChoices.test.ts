@@ -35,6 +35,7 @@ async function listingOn(
     search: "",
     onSearch: () => undefined,
     onShownCrowded: () => undefined,
+    searchPlace: "besideShown",
   });
 }
 

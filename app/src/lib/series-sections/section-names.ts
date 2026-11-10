@@ -12,6 +12,16 @@ export const SECTION_NAMES = {
   specials: m.series_section_specials,
 } satisfies Record<BookSection, () => string>;
 
+const SECTION_COUNTS = {
+  volumes: (count: number) => m.series_volume_count({ count }),
+  chapters: (count: number) => m.series_chapter_count({ count }),
+  specials: (count: number) => m.series_special_count({ count }),
+} satisfies Record<BookSection, (count: number) => string>;
+
+export function sectionCount({ section, bookCount }: SeriesSection): string {
+  return SECTION_COUNTS[section](bookCount);
+}
+
 export function tabWords({ section, bookCount }: SeriesSection): TabWords {
   const name = SECTION_NAMES[section]();
   return {

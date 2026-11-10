@@ -1625,6 +1625,8 @@
   "series_books_list": "⟦Ɓööķš··⟧",
   "series_books_failed": "⟦Çöûļðñ'ţ ļöáð ţĥé ƀööķš íñ ţĥíš šéŕíéš. Ţŕý áĝáíñ ļáţéŕ.·······················⟧",
   "series_show": "⟦Šĥöŵ··⟧",
+  "series_sort_and_filter_lead": "⟦Ƒöŕ éṽéŕý ţáƀ öƒ ţĥíš šéŕíéš.············⟧",
+  "series_gaps_with_all_only": "⟦Ṁíššíñĝ-ṽöļûɱé ĝáþš šĥöŵ öñļý ŵíţĥ Áļļ.················⟧",
   "series_show_choice": "⟦Šĥöŵ: {shown}······⟧",
   "series_show_all": "⟦Áļļ··⟧",
   "series_show_unread": "⟦Ûñŕéáð···⟧",
@@ -1635,6 +1637,48 @@
   "series_section_volumes": "⟦Ṽöļûɱéš···⟧",
   "series_section_chapters": "⟦Çĥáþţéŕš····⟧",
   "series_section_specials": "⟦Šþéçíáļš····⟧",
+  "series_volume_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ṽöļûɱé··········⟧",
+        "countPlural=other": "⟦{formattedCount} ṽöļûɱéš··········⟧"
+      }
+    }
+  ],
+  "series_chapter_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
+  "series_special_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šþéçíáļ··········⟧",
+        "countPlural=other": "⟦{formattedCount} šþéçíáļš··········⟧"
+      }
+    }
+  ],
   "series_section_tab": [
     {
       "declarations": [
@@ -1753,6 +1797,7 @@
       }
     }
   ],
+  "series_chapters_unnumbered": "⟦Öţĥéŕ çĥáþţéŕš······⟧",
   "series_chapters_note": "⟦Ţĥé çĥáþţéŕš áƒţéŕ ţĥé ļášţ ṽöļûɱé. Á çĥáþţéŕ ţĥáţ’š áļŕéáðý íñšíðé á ṽöļûɱé íš ŕéáð ţĥéŕé.·····································⟧",
   "series_chapters_note_after": [
     {

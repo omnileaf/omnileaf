@@ -2,28 +2,30 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { isPhone } from "#lib/page/platform.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 
+export type SectionControls = "choicesFirst" | "choicesAfter" | "heading";
+
 export interface SectionTabsLook {
   readonly row: string;
   readonly list: string;
-  readonly choicesFirst: boolean;
+  readonly controls: SectionControls;
 }
 
 const HUGGING_LOOK: SectionTabsLook = {
   row: "flex flex-wrap items-center gap-sm",
   list: "flex-wrap max-inline-full",
-  choicesFirst: false,
+  controls: "choicesAfter",
 };
 
 const ANDROID_PHONE_LOOK: SectionTabsLook = {
   row: "flex flex-col gap-sm",
   list: "",
-  choicesFirst: true,
+  controls: "heading",
 };
 
 const IPHONE_LOOK: SectionTabsLook = {
   row: "flex flex-col gap-sm",
   list: "",
-  choicesFirst: true,
+  controls: "choicesFirst",
 };
 
 export function sectionTabsLook(

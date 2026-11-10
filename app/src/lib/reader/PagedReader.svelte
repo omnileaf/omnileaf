@@ -29,6 +29,7 @@
   import { libraryBookFileShower } from "#lib/page/show-file.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import { saysWhereABookOpened } from "#lib/reader/opening-notice.ts";
   import { getSmartFeatures } from "#lib/reader/smart-features.svelte.ts";
   import { getScreenshotMode } from "#lib/screenshot-mode/screenshot-mode.svelte.ts";
   import { standInOpenedBook } from "#lib/series/series-stand-ins.ts";
@@ -347,7 +348,9 @@
       ? undefined
       : resolve("/read/[book]", { book: book.next.id }),
   );
-  let announced = $state(untrack(() => pageLine));
+  let announced = $state(
+    untrack(() => (saysWhereABookOpened(platform) ? pageLine : "")),
+  );
 
   async function markRead(): Promise<void> {
     const marked = await commands.markBooks([book.id], "read");
@@ -705,7 +708,7 @@
   }
 
   function sayWhereItOpened(): void {
-    if (opensAtEnd) {
+    if (opensAtEnd || !saysWhereABookOpened(platform)) {
       return;
     }
     if (book.startPage === 0) {

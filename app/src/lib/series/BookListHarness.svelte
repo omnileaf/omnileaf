@@ -23,6 +23,7 @@
   <BookList
     {phone}
     {books}
+    rows="books"
     seriesTitle="Sample Series 04"
     hasTwoLineTitles={false}
     isComplete

@@ -16,6 +16,10 @@ import SectionCoversHarness from "./SectionCoversHarness.svelte";
 import type { SectionTile } from "./section-tiles";
 
 const DESKTOP_WINDOW = { width: 1280, height: 800 } as const;
+const ANDROID_PHONE_WINDOW = { width: 412, height: 915 } as const;
+const PHONE_BOOKS_COLUMN = 380;
+const COVERS_A_ROW_ON_A_PHONE_BOARD = 3;
+const LARGEST_TEXT_SCALE = "2";
 const BOOKS_COLUMN = 640;
 const COVERS_A_ROW_ON_THE_BOARD = 6;
 const GAP_NAME = "Volumes 5 and 6 are not in the folder";
@@ -93,6 +97,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   clearMocks();
+  document.documentElement.style.removeProperty("--text-scale");
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
   document.body.replaceChildren();
@@ -103,6 +108,26 @@ test("fits six covers a row in the series page's books column", async () => {
 
   expect(columnsOf(list)).toBe(COVERS_A_ROW_ON_THE_BOARD);
 });
+
+test.each(["1", LARGEST_TEXT_SCALE])(
+  "fits three covers a row on an Android phone at text scale %s",
+  async (scale) => {
+    await page.viewport(
+      ANDROID_PHONE_WINDOW.width,
+      ANDROID_PHONE_WINDOW.height,
+    );
+    document.documentElement.style.setProperty("--text-scale", scale);
+    followCorePlatform("android");
+    await render(SectionCoversHarness, {
+      tiles: TILES,
+      width: PHONE_BOOKS_COLUMN,
+    });
+
+    const list = page.getByRole("list", { name: "Volumes" }).element();
+
+    expect(columnsOf(list)).toBe(COVERS_A_ROW_ON_A_PHONE_BOARD);
+  },
+);
 
 test("draws a missing run as a dashed muted box the size of a cover", async () => {
   const { gap, link } = await drawTiles();

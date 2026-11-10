@@ -2,17 +2,35 @@ import type {
   BookSection,
   Platform,
   SeriesBookListing,
+  SortDirection,
 } from "#lib/ipc/bindings.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import type { PhonePlatform } from "#lib/page/platform.ts";
+
+import { sectionTabsLook } from "./section-tabs-look";
 
 export type SectionView = "covers" | "books";
 
 export type ListingChange = Partial<
-  Pick<SeriesBookListing, "section" | "direction">
+  Pick<SeriesBookListing, "section" | "direction" | "shown">
 >;
+
+export function isChaptersOnly(sections: readonly BookSection[]): boolean {
+  return sections.length === 1 && sections[0] === "chapters";
+}
+
+export function firstDirection(
+  sections: readonly BookSection[],
+  phone: PhonePlatform | undefined,
+): SortDirection {
+  return phone === "android" && isChaptersOnly(sections)
+    ? "descending"
+    : "ascending";
+}
 
 export interface SectionScreen {
   readonly platform: Platform;
-  readonly isWide: boolean;
+  readonly width: WidthClass;
 }
 
 type SectionViews = Readonly<Record<BookSection, SectionView>>;
@@ -34,7 +52,8 @@ const SECTION_VIEWS = {
 const TABBED_AT_ANY_WIDTH: readonly Platform[] = ["ios", "android"];
 
 function sectionViews(screen: SectionScreen): SectionViews | undefined {
-  return screen.isWide || TABBED_AT_ANY_WIDTH.includes(screen.platform)
+  return screen.width === "expanded" ||
+    TABBED_AT_ANY_WIDTH.includes(screen.platform)
     ? SECTION_VIEWS[screen.platform]
     : undefined;
 }
@@ -89,7 +108,18 @@ export function sectionListing(
   screen: SectionScreen,
 ): SeriesBookListing {
   const chosen = chosenSection(listing, sectionTabs(sections, screen));
-  return sectionView(chosen, sections, screen) === "covers"
+  return sectionView(chosen, sections, screen) === "covers" &&
+    !hasHeadingOverTabs(sections, screen)
     ? { ...chosen, shown: "all" }
     : chosen;
+}
+
+export function hasHeadingOverTabs(
+  sections: readonly unknown[],
+  screen: SectionScreen,
+): boolean {
+  return (
+    sectionTabsLook(screen.platform, screen.width).controls === "heading" &&
+    sectionTabs(sections, screen).length > 0
+  );
 }
