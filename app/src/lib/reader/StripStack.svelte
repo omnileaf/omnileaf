@@ -52,7 +52,7 @@
   let isScrollPending = false;
   let unscrolled = 0;
   let scrollRange = $state(0);
-  let track: HTMLDivElement | undefined = $state();
+  let track = $state<HTMLDivElement | null>(null);
   let isDragging = false;
 
   function measure(): void {
@@ -76,7 +76,7 @@
   }
 
   function dragTo(event: PointerEvent): void {
-    if (track === undefined) {
+    if (track === null) {
       return;
     }
     const box = track.getBoundingClientRect();
