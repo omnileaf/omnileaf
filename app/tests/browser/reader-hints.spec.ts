@@ -110,7 +110,7 @@ test.describe("the page line on Android", { tag: "@native" }, () => {
       new MutationObserver(() => {
         const line = document.querySelector("main > p[role='status']");
         if (line !== null && heard.at(-1) !== line.textContent) {
-          heard.push(line.textContent ?? "");
+          heard.push(line.textContent);
         }
       }).observe(document, {
         subtree: true,
