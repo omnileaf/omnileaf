@@ -3,4 +3,4 @@ type: fix
 area: platform
 ---
 
-On Android, the page now shrinks above the keyboard instead of sliding up, so its top no longer draws under the status bar while you type.
+On Android phones, the page now shrinks above the keyboard and the navigation bar hides while it is open, so the page no longer slides under the status bar and the bar no longer rides on top of the keyboard.
