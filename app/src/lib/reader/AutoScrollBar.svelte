@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { Minus, Pause, Play, Plus } from "@lucide/svelte";
+  import { Minus, Pause, Play, Plus, X } from "@lucide/svelte";
 
-  import { cn } from "#lib/components/cn.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AutoScrollSpeed } from "./auto-scroll.ts";
-  import {
-    READER_BUTTON,
-    READER_GLASS,
-    READER_ICON_SIZE,
-  } from "./reader-bar.ts";
+  import { autoScrollLook } from "./auto-scroll-look.ts";
+  import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import ReaderIcon from "./ReaderIcon.svelte";
 
   let {
     speed,
@@ -18,6 +15,7 @@
     onToggle,
     onSlower,
     onFaster,
+    onStop,
   }: {
     speed: AutoScrollSpeed;
     isPaused: boolean;
@@ -25,9 +23,12 @@
     onToggle: () => void;
     onSlower: () => void;
     onFaster: () => void;
+    onStop: () => void;
   } = $props();
 
   const titleId = $props.id();
+  const chrome = getReaderChrome();
+  const look = $derived(autoScrollLook(chrome.platform, chrome.width));
   const roundedSpeed = $derived(Math.round(speed.pagesPerMinute * 2) / 2);
   const state = $derived.by(() => {
     if (isPaused) {
@@ -50,54 +51,92 @@
   });
 </script>
 
-<section
-  aria-labelledby={titleId}
-  class={cn(
-    READER_GLASS,
-    "grid grid-cols-auto-scroll items-center gap-sm px-md py-sm",
-  )}
->
-  <div class="flex flex-col">
-    <h2 id={titleId} class="text-caption text-muted">
-      {m.reader_auto_scroll()}
-    </h2>
-    <p class="text-small font-semibold" aria-live="polite">{state}</p>
-    {#if hint !== undefined}
-      <p class="text-caption text-muted">{hint}</p>
-    {/if}
-  </div>
+{#snippet toggle()}
   <button
     type="button"
     aria-label={isPaused
       ? m.reader_auto_scroll_play()
       : m.reader_auto_scroll_pause()}
-    class="flex items-center justify-center rounded-full bg-foreground text-background block-touch-target inline-touch-target focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    class={look.toggle}
     onclick={onToggle}
   >
     {#if isPaused}
-      <Play size={READER_ICON_SIZE} aria-hidden="true" />
+      <ReaderIcon
+        name="play"
+        fallback={Play}
+        isKit={look.hasKitIcons}
+        size={look.iconSize}
+      />
     {:else}
-      <Pause size={READER_ICON_SIZE} aria-hidden="true" />
+      <ReaderIcon
+        name="pause"
+        fallback={Pause}
+        isKit={look.hasKitIcons}
+        size={look.iconSize}
+      />
     {/if}
   </button>
-  <div class="flex items-center justify-end gap-xs">
-    {#if !speed.isMyPace}
-      <button
-        type="button"
-        aria-label={m.reader_auto_scroll_slower()}
-        class={READER_BUTTON}
-        onclick={onSlower}
-      >
-        <Minus size={READER_ICON_SIZE} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        aria-label={m.reader_auto_scroll_faster()}
-        class={READER_BUTTON}
-        onclick={onFaster}
-      >
-        <Plus size={READER_ICON_SIZE} aria-hidden="true" />
-      </button>
+{/snippet}
+
+<div class={look.place}>
+  <section aria-labelledby={titleId} class={look.bar}>
+    {#if look.leadsWithToggle}
+      {@render toggle()}
     {/if}
-  </div>
-</section>
+    <div class={look.readout}>
+      <h2 id={titleId} class="text-caption text-muted">
+        {m.reader_auto_scroll()}
+      </h2>
+      <p class={look.state} aria-live="polite">{state}</p>
+      {#if hint !== undefined}
+        <p class="text-caption text-muted">{hint}</p>
+      {/if}
+    </div>
+    {#if !look.leadsWithToggle}
+      {@render toggle()}
+    {/if}
+    <div class={look.actions}>
+      {#if !speed.isMyPace}
+        <button
+          type="button"
+          aria-label={m.reader_auto_scroll_slower()}
+          class={look.speedButton}
+          onclick={onSlower}
+        >
+          <ReaderIcon
+            name="minus"
+            fallback={Minus}
+            isKit={look.hasKitIcons}
+            size={look.iconSize}
+          />
+        </button>
+        <button
+          type="button"
+          aria-label={m.reader_auto_scroll_faster()}
+          class={look.speedButton}
+          onclick={onFaster}
+        >
+          <ReaderIcon
+            name="plus"
+            fallback={Plus}
+            isKit={look.hasKitIcons}
+            size={look.iconSize}
+          />
+        </button>
+      {/if}
+      <button
+        type="button"
+        aria-label={m.reader_auto_scroll_stop()}
+        class={look.stopButton}
+        onclick={onStop}
+      >
+        <ReaderIcon
+          name="x"
+          fallback={X}
+          isKit={look.hasKitIcons}
+          size={look.iconSize}
+        />
+      </button>
+    </div>
+  </section>
+</div>
