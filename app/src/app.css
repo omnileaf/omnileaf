@@ -1627,7 +1627,7 @@
 }
 
 @utility grid-cols-auto-scroll {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(min-content, 1fr);
 }
 
 @utility grid-cols-sheet-header {

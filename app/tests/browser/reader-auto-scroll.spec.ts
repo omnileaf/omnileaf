@@ -25,6 +25,8 @@ const CLOSE_PX = 8;
 const PAUSE_AHEAD_MS = 500;
 const CONTROLS_GONE_MS = 4000;
 const ANDROID_ROUND_BUTTON_PX = 48;
+const NARROWEST_WIDTHS = [360, 375] as const;
+const NARROW_HEIGHT = 800;
 const ANDROID_SPEED_BUTTON_PX = 40;
 
 function tallPages(secondsPerPage: number | null): FakeBackend {
@@ -98,6 +100,27 @@ async function pageHeightOf(page: Page): Promise<number> {
 
 async function leftEdgesOf(parts: readonly Locator[]): Promise<number[]> {
   return Promise.all(parts.map(async (part) => (await boxOf(part)).x));
+}
+
+interface Span {
+  readonly start: number;
+  readonly end: number;
+}
+
+async function spansOf(parts: readonly Locator[]): Promise<Span[]> {
+  return Promise.all(
+    parts.map(async (part) => {
+      const { x, width } = await boxOf(part);
+      return { start: x, end: x + width };
+    }),
+  );
+}
+
+function overlapping(spans: readonly Span[]): Span[][] {
+  return spans.flatMap((span, index) => {
+    const next = spans[index + 1];
+    return next !== undefined && span.end > next.start ? [[span, next]] : [];
+  });
 }
 
 function ascending(edges: readonly number[]): number[] {
@@ -216,7 +239,28 @@ test.describe("at a set speed", () => {
     const stopped = await scrollTopOf(page);
     await page.clock.runFor(FEW_SECONDS_MS);
     expect(await scrollTopOf(page)).toBe(stopped);
+    await expect(page.locator("h1")).toBeFocused();
   });
+
+  for (const width of NARROWEST_WIDTHS) {
+    test(`fits its readout and buttons side by side in a ${String(width)} px window`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: NARROW_HEIGHT });
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      const spans = await spansOf([
+        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByRole("button", { name: "Pause" }),
+        bar(page).getByRole("button", { name: "Slower" }),
+        bar(page).getByRole("button", { name: "Faster" }),
+        bar(page).getByRole("button", { name: "Stop auto scroll" }),
+      ]);
+      expect(overlapping(spans)).toEqual([]);
+    });
+  }
 
   test("stops when the reader leaves the long strip", async ({ page }) => {
     await openStrip(page);
