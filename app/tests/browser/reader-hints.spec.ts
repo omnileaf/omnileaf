@@ -4,6 +4,7 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_TITLE,
+  PAGE_COUNT,
   readerBackend,
   readerBook,
   servePages,
@@ -100,34 +101,57 @@ test.describe("the resume notice on Android", { tag: "@native" }, () => {
   });
 });
 
-test.describe("the page line on Android", { tag: "@native" }, () => {
-  test.use({ platform: "android" });
-
-  test("speaks the saved page once the book opens", async ({ page }) => {
-    await page.addInitScript(() => {
-      const heard: string[] = [];
-      Object.assign(window, { heardStatus: heard });
-      new MutationObserver(() => {
-        const line = document.querySelector("main > p[role='status']");
-        if (line !== null && heard.at(-1) !== line.textContent) {
-          heard.push(line.textContent);
-        }
-      }).observe(document, {
-        subtree: true,
-        childList: true,
-        characterData: true,
-      });
+function recordStatusLine(page: Page): Promise<void> {
+  return page.addInitScript(() => {
+    const heard: string[] = [];
+    Object.assign(window, { heardStatus: heard });
+    new MutationObserver(() => {
+      const line = document.querySelector("main > p[role='status']");
+      if (line !== null && heard.at(-1) !== line.textContent) {
+        heard.push(line.textContent);
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true,
     });
+  });
+}
+
+function heardStatus(page: Page): Promise<string[]> {
+  return page.evaluate(
+    () => (window as unknown as { heardStatus: string[] }).heardStatus,
+  );
+}
+
+const SAVED_PAGE_LINE = `Page 14 of ${String(PAGE_COUNT)}`;
+
+test.describe("the page line", { tag: "@native" }, () => {
+  test("speaks the saved page once a book opens on Android", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform !== "android", "only Android drops the resume notice");
+    await recordStatusLine(page);
 
     await openBook(page);
 
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => (window as unknown as { heardStatus: string[] }).heardStatus,
-        ),
-      )
-      .toEqual(["", expect.stringContaining("14")]);
+    await expect.poll(() => heardStatus(page)).toEqual(["", SAVED_PAGE_LINE]);
+  });
+
+  test("holds the saved page from the start elsewhere", async ({
+    page,
+    platform,
+  }) => {
+    test.skip(platform === "android", "Android speaks it once the book opens");
+    await recordStatusLine(page);
+
+    await openBook(page);
+
+    await expect(
+      page.getByRole("img", { name: "Page 14", exact: true }),
+    ).toBeVisible();
+    expect((await heardStatus(page))[0]).toBe(SAVED_PAGE_LINE);
   });
 });
 
