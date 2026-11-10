@@ -1,4 +1,4 @@
-import type { BookSection, NumberRange } from "#lib/ipc/bindings.ts";
+import type { BookSection, NumberRange, Platform } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
 import { missingVolumeCount, missingVolumeNumbers } from "./book-number-words";
@@ -40,4 +40,10 @@ export function sectionNote(
     case "specials":
       return m.series_specials_note();
   }
+}
+
+const PLATFORMS_WITHOUT_NOTES: readonly Platform[] = ["android"];
+
+export function showsSectionNotes(platform: Platform): boolean {
+  return !PLATFORMS_WITHOUT_NOTES.includes(platform);
 }

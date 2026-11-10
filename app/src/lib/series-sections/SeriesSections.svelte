@@ -35,6 +35,7 @@
   } from "./section-listing";
   import BookSearchField from "./BookSearchField.svelte";
   import { sectionCount, tabWords } from "./section-names";
+  import { showsSectionNotes } from "./section-note";
   import SectionHeading from "./SectionHeading.svelte";
   import type { ListedBooks } from "./listed-books";
   import SectionListingChoices from "./SectionListingChoices.svelte";
@@ -139,7 +140,11 @@
   });
   const panel = $derived({
     section,
-    noted: tabs.length > 0 || view === "covers" ? section : undefined,
+    noted:
+      showsSectionNotes(screen.platform) &&
+      (tabs.length > 0 || view === "covers")
+        ? section
+        : undefined,
     view,
     series: { sections: kinds, missingVolumes, lastVolume },
     direction: listing.direction,

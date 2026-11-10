@@ -448,6 +448,19 @@ test.describe(
       await expect(covers(page, "Volumes")).toHaveCount(0);
     });
 
+    test("shows no note under the Specials tab", async ({ page }) => {
+      await openSeries(page);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Specials/ })
+        .click();
+
+      await expect(covers(page, "Specials")).toHaveCount(1);
+      await expect(page.getByText(/kept apart from the numbered/)).toHaveCount(
+        0,
+      );
+    });
+
     test("lists the specials as covers once Specials is chosen", async ({
       page,
     }) => {
@@ -525,6 +538,23 @@ test.describe(
       await expect(
         page.getByRole("button", { name: "Find a book" }),
       ).toHaveCount(1);
+    });
+
+    test("shows no note under the Volumes or Chapters tab", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(
+        page.getByRole("img", { name: /not in the folder/ }),
+      ).toHaveCount(1);
+      await expect(page.getByText(/aren’t in the folder/)).toHaveCount(0);
+
+      await kinds(page)
+        .getByRole("tab", { name: /Chapters/ })
+        .click();
+
+      await expect(phoneRows(page)).toHaveCount(2);
+      await expect(page.getByText(/is read there/)).toHaveCount(0);
     });
 
     test("finds a chapter from the heading's Find a book", async ({ page }) => {

@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { type NotedSeries, sectionNote } from "./section-note";
+import {
+  type NotedSeries,
+  sectionNote,
+  showsSectionNotes,
+} from "./section-note";
 
 const WITH_GAPS: NotedSeries = {
   sections: ["volumes", "chapters", "specials"],
@@ -103,3 +107,14 @@ test("says where the specials come from", () => {
     "Extras from the series’ Specials folder, kept apart from the numbered books.",
   );
 });
+
+test("leaves the notes under the tabs out on Android", () => {
+  expect(showsSectionNotes("android")).toBe(false);
+});
+
+test.each(["ios", "macos", "windows", "linux"] as const)(
+  "keeps the notes under the tabs on %s",
+  (platform) => {
+    expect(showsSectionNotes(platform)).toBe(true);
+  },
+);
