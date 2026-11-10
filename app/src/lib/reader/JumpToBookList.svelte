@@ -36,6 +36,12 @@
   } from "#lib/ipc/bindings.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import {
+    isBooksShown,
+    ORDER_LABELS,
+    SHOWN_LABELS,
+    SHOWN_OPTIONS,
+  } from "#lib/series/book-listing.ts";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { booksMatching } from "#lib/series/book-search.ts";
   import BookProgress from "#lib/series/BookProgress.svelte";
@@ -50,12 +56,6 @@
   const SPINNER_SIZE = 20;
   const ICON_SIZE = 16;
   const DETAIL_ICON_SIZE = 12;
-  const SHOWN_OPTIONS: readonly BooksShown[] = ["all", "unread", "bookmarked"];
-  const SHOWN_LABELS = {
-    all: m.series_show_all,
-    unread: m.series_show_unread,
-    bookmarked: m.series_show_bookmarked,
-  } satisfies Record<BooksShown, () => string>;
 
   let {
     books,
@@ -89,16 +89,8 @@
     );
     return direction === "descending" ? kept.toReversed() : kept;
   });
-  const order = $derived(
-    direction === "descending"
-      ? m.series_order_last_first()
-      : m.series_order_first_first(),
-  );
+  const order = $derived(ORDER_LABELS[direction]());
   const sortLabel = $derived(m.series_sort({ order }));
-
-  function isShown(value: string): value is BooksShown {
-    return SHOWN_OPTIONS.some((option) => option === value);
-  }
 
   function toggleDirection(): void {
     direction = direction === "ascending" ? "descending" : "ascending";
@@ -171,7 +163,7 @@
             <DropdownMenuRadioGroup
               value={shown}
               onValueChange={(chosen: string) => {
-                if (isShown(chosen)) {
+                if (isBooksShown(chosen)) {
                   shown = chosen;
                 }
               }}
@@ -229,7 +221,7 @@
         bind:value={
           () => shown,
           (chosen: string) => {
-            if (isShown(chosen)) {
+            if (isBooksShown(chosen)) {
               shown = chosen;
             }
           }

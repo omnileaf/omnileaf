@@ -1625,6 +1625,8 @@
   "series_books_list": "Books",
   "series_books_failed": "Couldn't load the books in this series. Try again later.",
   "series_show": "Show",
+  "series_sort_and_filter_lead": "For every tab of this series.",
+  "series_gaps_with_all_only": "Missing-volume gaps show only with All.",
   "series_show_choice": "Show: {shown}",
   "series_show_all": "All",
   "series_show_unread": "Unread",
