@@ -47,11 +47,24 @@ test.describe("Rescan folders on an Android phone", { tag: "@native" }, () => {
     await expect(rescan).toHaveAttribute("aria-haspopup", "dialog");
 
     await rescan.click();
+    const isDialogEntryGone = page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          addEventListener(
+            "popstate",
+            () => {
+              resolve(true);
+            },
+            { once: true },
+          );
+        }),
+    );
     await page
       .getByRole("dialog", { name: "Rescan folders" })
       .getByRole("radio", { name: "Every day" })
       .click();
     await expect(rescan).toContainText("Every day");
+    expect(await isDialogEntryGone).toBe(true);
     await page.goto("/settings/advanced");
 
     await expect(
