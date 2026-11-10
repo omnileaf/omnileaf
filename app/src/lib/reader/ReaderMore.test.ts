@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
@@ -114,13 +114,33 @@ test("sets every Android phone More row in the board's 56px row with a 4px corne
   );
 });
 
-test("highlights only Back to the library in the tonal row colour on the Android phone's More sheet", async () => {
+function focusedRow(): HTMLElement {
+  const row = [...ROWS.map(actionRow), backRow()].find(
+    (candidate) => candidate === document.activeElement,
+  );
+  if (row === undefined) {
+    throw new Error("no More row has the keyboard focus");
+  }
+  return row;
+}
+
+test("leaves every Android phone More row clear at rest", async () => {
   await openMore("android", PHONE, vi.fn());
 
-  expect(getComputedStyle(backRow()).backgroundColor).toBe(
-    resolvedColour("--native-color-row-pressed", "backgroundColor"),
+  const backgrounds = [...ROWS.map(actionRow), backRow()].map(
+    (row) => getComputedStyle(row).backgroundColor,
   );
-  for (const name of ROWS) {
-    expect(getComputedStyle(actionRow(name)).backgroundColor).toBe(CLEAR);
-  }
+
+  expect(backgrounds).toEqual(Array(backgrounds.length).fill(CLEAR));
+});
+
+test("tints the keyboard-focused Android phone More row in the tonal row colour", async () => {
+  await openMore("android", PHONE, vi.fn());
+
+  await userEvent.tab();
+
+  const row = focusedRow();
+  await expect
+    .poll(() => getComputedStyle(row).backgroundColor)
+    .toBe(resolvedColour("--native-color-row-pressed", "backgroundColor"));
 });
