@@ -23,13 +23,13 @@ class SystemInsets(
     private var documentStartScript: ScriptHandler? = null
 
     fun attach() {
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
             val keyboard = insets.getInsets(KEYBOARD)
             makeRoomFor(keyboard)
             val aboveKeyboard = insets.inset(0, 0, 0, keyboard.bottom)
-            publish(insetVariablesScript(aboveKeyboard.getInsets(SYSTEM_AREAS), view.resources.displayMetrics.density))
-            webView.evaluateJavascript(keyboardShownScript(insets.isVisible(KEYBOARD)), null)
-            ViewCompat.onApplyWindowInsets(view, aboveKeyboard)
+            val density = webView.resources.displayMetrics.density
+            publish(insetVariablesScript(aboveKeyboard.getInsets(SYSTEM_AREAS), density) + keyboardShownScript(keyboard.bottom > 0))
+            ViewCompat.onApplyWindowInsets(webView, aboveKeyboard)
         }
         ViewCompat.requestApplyInsets(webView)
     }
