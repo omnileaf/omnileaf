@@ -43,6 +43,31 @@ function fileName(book: ShelvedBook): string {
   return book.title ?? `${SERIES_TITLE} ${book.kind} ${first}.cbz`;
 }
 
+const SPECIALS_FIRST = 0;
+const NUMBERED_CHAPTERS_NEXT = 1;
+const UNNUMBERED_CHAPTERS_AFTER = 2;
+const VOLUMES_LAST = 3;
+
+function lastFirstPass(book: WireBook): number {
+  switch (book.section) {
+    case "volumes":
+      return VOLUMES_LAST;
+    case "chapters":
+      return book.numbers === null
+        ? UNNUMBERED_CHAPTERS_AFTER
+        : NUMBERED_CHAPTERS_NEXT;
+    case "specials":
+    case null:
+      return SPECIALS_FIRST;
+  }
+}
+
+function newestFirst(books: readonly WireBook[]): WireBook[] {
+  return books
+    .toReversed()
+    .toSorted((one, other) => lastFirstPass(one) - lastFirstPass(other));
+}
+
 export function volumes(...numbers: readonly number[]): ShelvedBook[] {
   return numbers.map((first) => ({
     kind: "volume",
@@ -148,7 +173,7 @@ export class SectionShelf {
             (listing.shown !== "bookmarked" || book.isBookmarked),
         );
         const ordered =
-          listing.direction === "descending" ? shown.toReversed() : shown;
+          listing.direction === "descending" ? newestFirst(shown) : shown;
         return { books: id === SERIES_ID ? ordered : [], next: null };
       },
       markBooks: (books, mark) => {

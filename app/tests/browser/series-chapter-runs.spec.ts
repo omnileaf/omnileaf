@@ -26,6 +26,7 @@ const TURNS = [
     first: "chapter 30",
   },
 ] as const;
+const UNNUMBERED_CHAPTER = "Sample Series 04 Extra.cbz";
 const SECOND_SERIES = {
   id: "0190a3e4-0000-8000-8000-0000000000a1",
   title: "Sample Series 01",
@@ -231,6 +232,34 @@ test.describe(
       await expect(showChoices(page)).toBeVisible();
       await expect(searchField(page)).toBeHidden();
       await expect(bookLinks(page).first()).toContainText("chapter 30");
+    });
+  },
+);
+
+test.describe(
+  "a series of chapters with one without a number on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      ...ANDROID_PHONE,
+      backend: new SectionShelf([
+        ...chapters(1, 2, 3),
+        { kind: "chapter", title: UNNUMBERED_CHAPTER },
+      ]).backend(),
+    });
+
+    test("lists the chapter without a number last, under Other chapters", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await expect(bookLinks(page).first()).toContainText("chapter 03");
+
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTo({ top: main.scrollHeight });
+      });
+
+      await expect(runHeadings(page).last()).toHaveText("Other chapters");
+      await expect(bookLinks(page).last()).toContainText(UNNUMBERED_CHAPTER);
     });
   },
 );

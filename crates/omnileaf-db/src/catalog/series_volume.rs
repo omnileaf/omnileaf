@@ -52,14 +52,14 @@ pub fn series_volume(
     series: SeriesId,
     volume: BookNumber,
 ) -> Result<Option<VolumeOverview>, Error> {
-    let (start, end) = volume_keys(volume);
+    let keys = volume_keys(volume);
     Ok(connection
         .prepare(VOLUME_OF_SERIES)?
         .query_row(
             rusqlite::named_params! {
                 ":series": series.as_bytes(),
-                ":start": start,
-                ":end": end,
+                ":start": keys.start,
+                ":end": keys.end,
             },
             overview,
         )

@@ -32,20 +32,73 @@ enum VolumeEntry {
     Chapter { number: Option<NumberRange> },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct KeyRange {
+    pub(crate) start: Vec<u8>,
+    pub(crate) end: Vec<u8>,
+}
+
+impl KeyRange {
+    pub(crate) fn contains(&self, key: &[u8]) -> bool {
+        self.start.as_slice() <= key && key < self.end.as_slice()
+    }
+
+    pub(crate) fn overlap(&self, other: &Self) -> Option<Self> {
+        let start = self.start.clone().max(other.start.clone());
+        let end = self.end.clone().min(other.end.clone());
+        (start < end).then_some(Self { start, end })
+    }
+}
+
+/// UTF-8 never holds the byte 0xFF, so no title key and no placed key reaches it.
+const PAST_EVERY_KEY: [u8; 1] = [0xFF];
+
 /// The keys a section's books sort from, inclusive, and up to, exclusive, which no book not placed yet falls between.
-pub(crate) fn section_keys(section: BookSection) -> (Vec<u8>, Vec<u8>) {
+pub(crate) fn section_keys(section: BookSection) -> KeyRange {
     let first = section_byte(section);
-    (vec![first], vec![first.saturating_add(1)])
+    KeyRange {
+        start: vec![first],
+        end: vec![first.saturating_add(1)],
+    }
 }
 
 /// The keys the chapters filed in a volume sort between, which its own book and the other volumes fall outside.
-pub(crate) fn volume_keys(volume: BookNumber) -> (Vec<u8>, Vec<u8>) {
+pub(crate) fn volume_keys(volume: BookNumber) -> KeyRange {
     let mut start = vec![section_byte(BookSection::Volumes)];
     push_number(&mut start, volume);
     let mut end = start.clone();
     start.push(VolumeEntry::Chapter { number: None }.position());
     end.push(VolumeEntry::Chapter { number: None }.position() + 1);
-    (start, end)
+    KeyRange { start, end }
+}
+
+fn unnumbered_chapter_keys() -> KeyRange {
+    let mut start = vec![section_byte(BookSection::Chapters)];
+    start.extend_from_slice(&[0; VOLUME_WIDTH]);
+    let mut end = start.clone();
+    start.push(UNNUMBERED);
+    end.push(UNNUMBERED + 1);
+    KeyRange { start, end }
+}
+
+pub(crate) fn last_first_keys() -> [KeyRange; 4] {
+    let chapters = section_keys(BookSection::Chapters);
+    let unnumbered = unnumbered_chapter_keys();
+    [
+        KeyRange {
+            start: unnumbered.end.clone(),
+            end: PAST_EVERY_KEY.to_vec(),
+        },
+        KeyRange {
+            start: chapters.start.clone(),
+            end: unnumbered.start.clone(),
+        },
+        unnumbered,
+        KeyRange {
+            start: Vec::new(),
+            end: chapters.start,
+        },
+    ]
 }
 
 const fn section_byte(section: BookSection) -> u8 {
@@ -164,6 +217,7 @@ mod tests {
     };
 
     const TITLE: &str = "[a-c0-9 ]{0,4}";
+    const ANY_SCRIPT_TITLE: &str = "[a-c0-9 ßÉé一-三０-９①Ａ-Ｚ]{0,4}";
 
     fn numbers(first: u32, last: u32) -> Sourced<NumberRange> {
         let range = NumberRange::new(
@@ -433,12 +487,48 @@ mod tests {
             ]
             .into_iter()
             .filter(|section| {
-                let (start, end) = section_keys(*section);
-                start <= key && key < end
+                section_keys(*section).contains(&key)
             })
             .collect();
 
             prop_assert_eq!(holding, [numbering.section()], "{:?}", numbering);
+        }
+
+        #[test]
+        fn keys_a_book_among_the_unnumbered_chapters_only_when_it_is_a_chapter_with_no_number_or_volume(
+            numbering in proptest::option::of(numbering()),
+            title in TITLE,
+        ) {
+            let key = reading_order_key(numbering.as_ref(), &title);
+            let is_unnumbered_chapter = matches!(
+                numbering,
+                Some(Numbering::Chapter {
+                    number: None,
+                    volume: None,
+                })
+            );
+
+            prop_assert_eq!(
+                unnumbered_chapter_keys().contains(&key),
+                is_unnumbered_chapter,
+                "{:?}",
+                numbering
+            );
+        }
+
+        #[test]
+        fn keys_every_book_within_exactly_one_of_the_last_first_ranges(
+            numbering in proptest::option::of(numbering()),
+            title in ANY_SCRIPT_TITLE,
+        ) {
+            let key = reading_order_key(numbering.as_ref(), &title);
+
+            let holding = last_first_keys()
+                .iter()
+                .filter(|keys| keys.contains(&key))
+                .count();
+
+            prop_assert_eq!(holding, 1, "{:?}", numbering);
         }
 
         #[test]
