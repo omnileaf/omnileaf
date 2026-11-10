@@ -246,7 +246,10 @@ test.describe(
         const field = sheet.getByRole("combobox", { name: "Sort by" });
 
         await field.click();
-        await page.getByRole("option", { name: "Recently read" }).click();
+        await page
+          .getByRole("listbox", { name: "Sort by" })
+          .getByRole("option", { name: "Recently read" })
+          .click();
 
         await expect(page.getByRole("listbox")).toBeHidden();
         await expect(field).toHaveText("Recently read");

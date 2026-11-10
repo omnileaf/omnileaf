@@ -12,7 +12,7 @@ import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
 
 const MENU_ITEM_PX = 48;
 const READER_THEME = "dark";
-const SHORT_WINDOW_PX = 300;
+const SHORT_WINDOW_PX = 200;
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
@@ -46,7 +46,7 @@ test.describe(
 
       await field.click();
 
-      const menu = page.getByRole("listbox");
+      const menu = page.getByRole("listbox", { name: "Reading mode" });
       const chosen = menu.getByRole("option", { selected: true });
       await expect(menu).toBeVisible();
       await expect(menu.getByRole("option")).toHaveCount(4);
@@ -95,6 +95,18 @@ test.describe(
       await expect(field).toHaveText("Left to right");
     });
 
+    test("picks a mode by its first letter while the menu stays closed", async ({
+      page,
+    }) => {
+      const field = readingMode(await openReadingSettings(page));
+      await field.focus();
+
+      await page.keyboard.press("L");
+
+      await expect(field).toHaveText("Left to right");
+      await expect(page.getByRole("listbox")).toHaveCount(0);
+    });
+
     test("closes only the menu on Escape, handing focus back to the field", async ({
       page,
     }) => {
@@ -134,6 +146,12 @@ test.describe(
       await field.focus();
 
       await page.keyboard.press("Enter");
+      const options = page.locator("[data-select-viewport]");
+      expect(
+        await options.evaluate(
+          (element) => element.scrollHeight > element.clientHeight,
+        ),
+      ).toBe(true);
       await page.keyboard.press("End");
 
       await expect(

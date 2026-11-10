@@ -199,6 +199,7 @@ test("keeps a long Reading mode label clear of its one chevron", async () => {
   const shownMode = select.querySelector("span");
   const field = select.parentElement;
 
+  expect(shownMode).not.toBeNull();
   expect(shownMode && getComputedStyle(shownMode).textOverflow).toBe(
     "ellipsis",
   );
