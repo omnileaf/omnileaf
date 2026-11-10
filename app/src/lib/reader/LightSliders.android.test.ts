@@ -40,16 +40,16 @@ function root(name = "Brightness"): HTMLElement {
   return found;
 }
 
-function handleOf(slider: HTMLElement): HTMLElement {
-  const handle = slider.querySelector("[data-progress-thumb]");
+function handleOf(sliderRoot: HTMLElement): HTMLElement {
+  const handle = sliderRoot.querySelector("[data-progress-thumb]");
   if (!(handle instanceof HTMLElement)) {
     throw new Error("the slider drew no handle");
   }
   return handle;
 }
 
-function barOf(slider: HTMLElement): HTMLElement {
-  const bar = handleOf(slider).previousElementSibling;
+function barOf(sliderRoot: HTMLElement): HTMLElement {
+  const bar = handleOf(sliderRoot).previousElementSibling;
   if (!(bar instanceof HTMLElement)) {
     throw new Error("the slider drew no bar");
   }
@@ -85,8 +85,10 @@ test.each(["Brightness", "Warmth"])(
   async (name) => {
     await openSliders("android");
 
-    const handle = handleOf(root(name)).getBoundingClientRect();
-    const bar = barOf(root(name)).getBoundingClientRect();
+    const sliderRoot = root(name);
+
+    const handle = handleOf(sliderRoot).getBoundingClientRect();
+    const bar = barOf(sliderRoot).getBoundingClientRect();
 
     expect(handle.top + handle.height / 2).toBeCloseTo(
       bar.top + bar.height / 2,
