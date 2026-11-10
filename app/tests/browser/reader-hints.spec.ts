@@ -101,8 +101,8 @@ test.describe("the resume notice on Android", { tag: "@native" }, () => {
   });
 });
 
-function recordStatusLine(page: Page): Promise<void> {
-  return page.addInitScript(() => {
+async function recordStatusLine(page: Page): Promise<void> {
+  await page.addInitScript(() => {
     const heard: string[] = [];
     Object.assign(window, { heardStatus: heard });
     new MutationObserver(() => {
