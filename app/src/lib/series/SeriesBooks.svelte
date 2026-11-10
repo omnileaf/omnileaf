@@ -10,6 +10,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import { Tooltip } from "#lib/components/ui/tooltip/index.ts";
   import type {
+    BookSection,
     Platform,
     ReadMark,
     RemovalReport,
@@ -30,7 +31,10 @@
   } from "#lib/navigation/tab-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
-  import type { ListingChange } from "#lib/series-sections/section-listing.ts";
+  import {
+    isChaptersOnly,
+    type ListingChange,
+  } from "#lib/series-sections/section-listing.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import BookList from "./BookList.svelte";
@@ -103,6 +107,7 @@
 
   let {
     books,
+    sections,
     seriesTitle,
     bookCount,
     readCount,
@@ -122,6 +127,7 @@
     controls = OWN_CONTROLS,
   }: {
     books: readonly SeriesBook[];
+    sections: readonly BookSection[];
     seriesTitle: string;
     bookCount: number;
     readCount: number;
@@ -166,6 +172,9 @@
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
   const isBookmarkedFromSheet = $derived(phonePlatform === "android");
+  const isAndroidChapterList = $derived(
+    phonePlatform === "android" && isChaptersOnly(sections),
+  );
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
   );
@@ -628,6 +637,7 @@
     <BookList
       phone={phonePlatform}
       books={shownBooks}
+      hasChapterRuns={isAndroidChapterList}
       {seriesTitle}
       hasTwoLineTitles={isShownCrowded}
       {isComplete}

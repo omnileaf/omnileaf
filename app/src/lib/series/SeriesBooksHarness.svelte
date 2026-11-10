@@ -1,7 +1,6 @@
 <script lang="ts">
-  import type { SeriesBook } from "#lib/ipc/bindings.ts";
+  import type { BookSection, Platform, SeriesBook } from "#lib/ipc/bindings.ts";
   import { Notices, setNotices } from "#lib/notices/notices.ts";
-  import type { Platform } from "#lib/ipc/bindings.ts";
 
   import SeriesBooks from "./SeriesBooks.svelte";
   import {
@@ -12,7 +11,12 @@
   let {
     platform,
     books,
-  }: { platform: Platform; books: readonly SeriesBook[] } = $props();
+    sections = ["volumes"],
+  }: {
+    platform: Platform;
+    books: readonly SeriesBook[];
+    sections?: readonly BookSection[];
+  } = $props();
 
   setNotices(new Notices());
   setSwipeActionsSetting(new SwipeActionsSetting(undefined));
@@ -21,6 +25,7 @@
 <main>
   <SeriesBooks
     {books}
+    {sections}
     seriesTitle="Sample Series 04"
     bookCount={8}
     readCount={2}

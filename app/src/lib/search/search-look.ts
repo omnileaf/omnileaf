@@ -11,7 +11,7 @@ import {
   GROUPED_FOOTNOTE_TYPE,
   GROUPED_GROUP_LOOK,
 } from "#lib/library/group-look.ts";
-import { FILTER_SETTING_LABEL_TYPE } from "#lib/library/filter-sheet-look.ts";
+import { ANDROID_SUBHEADING } from "#lib/library/filter-sheet-look.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { GROUP_PLATE } from "#lib/page/plates.ts";
 
@@ -66,7 +66,7 @@ export const NATIVE_SEARCH_LOOK: SearchLook = {
 export const ANDROID_SEARCH_LOOK: SearchLook = {
   ...NATIVE_SEARCH_LOOK,
   mark: ANDROID_MARK,
-  heading: `pbs-md pbe-sm text-native-on-button-plain ${FILTER_SETTING_LABEL_TYPE}`,
+  heading: `pbs-md pbe-sm ${ANDROID_SUBHEADING}`,
 };
 
 export const MACOS_SEARCH_LOOK: SearchLook = {

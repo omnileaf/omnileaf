@@ -1797,6 +1797,7 @@
       }
     }
   ],
+  "series_chapters_unnumbered": "Other chapters",
   "series_chapters_note": "The chapters after the last volume. A chapter that’s already inside a volume is read there.",
   "series_chapters_note_after": [
     {

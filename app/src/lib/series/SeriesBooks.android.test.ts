@@ -7,7 +7,7 @@ import "../../app.css";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
-import { book } from "./book-fixture.ts";
+import { book, chapter } from "./book-fixture.ts";
 import SeriesBooksHarness from "./SeriesBooksHarness.svelte";
 
 const PHONE = { width: 400, height: 800 } as const;
@@ -65,4 +65,52 @@ test("keeps an iPhone's book list head title as it was", async () => {
   const drawn = await headOn("ios");
 
   expect(drawn.title).toEqual(["18px", "24px", "600", "normal"]);
+});
+
+async function runHeadingsOn(platform: Platform) {
+  await page.viewport(PHONE.width, PHONE.height);
+  followCorePlatform(platform);
+  await render(SeriesBooksHarness, {
+    platform,
+    sections: ["chapters"],
+    books: [chapter(14), chapter(13), chapter(12), chapter(1)],
+  });
+  await expect.element(page.getByRole("list", { name: "Books" })).toBeVisible();
+  return page
+    .getByRole("list", { name: "Books" })
+    .getByRole("heading", { level: 3 })
+    .elements()
+    .map((heading) => heading.textContent.trim());
+}
+
+test("heads an Android phone's chapters with a list heading for each run of twelve", async () => {
+  expect(await runHeadingsOn("android")).toEqual([
+    "Chapters 13–14",
+    "Chapters 1–12",
+  ]);
+});
+
+test("counts only an Android phone's chapters as list items, leaving the run headings out", async () => {
+  await runHeadingsOn("android");
+
+  const rows = [...document.querySelectorAll('[aria-label="Books"] > li')].map(
+    (row) => ({
+      role: row.getAttribute("role"),
+      at: row.getAttribute("aria-posinset"),
+      of: row.getAttribute("aria-setsize"),
+    }),
+  );
+
+  expect(rows).toEqual([
+    { role: "presentation", at: null, of: null },
+    { role: null, at: "1", of: "4" },
+    { role: null, at: "2", of: "4" },
+    { role: "presentation", at: null, of: null },
+    { role: null, at: "3", of: "4" },
+    { role: null, at: "4", of: "4" },
+  ]);
+});
+
+test("keeps an iPhone's chapters in one run without headings", async () => {
+  expect(await runHeadingsOn("ios")).toEqual([]);
 });

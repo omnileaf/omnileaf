@@ -5,6 +5,8 @@ import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
 const CHAPTER_COUNT = 30;
+const LONG_PRESS_MS = 500;
+const SCROLL_STEP_PX = 300;
 const EVERY_CHAPTER = chapters(
   ...Array.from({ length: CHAPTER_COUNT }, (_, index) => index + 1),
 );
@@ -48,12 +50,43 @@ function sort(page: Page): Locator {
   return page.getByRole("button", { name: /^Sort/ });
 }
 
+function showChoices(page: Page): Locator {
+  return page.getByRole("radiogroup", { name: "Show" });
+}
+
 function bookList(page: Page): Locator {
   return page.getByRole("list", { name: "Books" });
 }
 
 function bookLinks(page: Page): Locator {
   return bookList(page).getByRole("link");
+}
+
+function runHeadings(page: Page): Locator {
+  return bookList(page).getByRole("heading", { level: 3 });
+}
+
+async function scrollBy(page: Page, top: number): Promise<boolean> {
+  return page.getByRole("main").evaluate((main, by) => {
+    const before = main.scrollTop;
+    main.scrollBy({ top: by });
+    return main.scrollTop > before;
+  }, top);
+}
+
+async function drawnRowHeights(page: Page): Promise<number[]> {
+  return bookList(page)
+    .locator(":scope > li")
+    .evaluateAll((rows) =>
+      rows.map((row) => Math.round(row.getBoundingClientRect().height)),
+    );
+}
+
+async function hold(page: Page, target: Locator): Promise<void> {
+  const touch = { pointerType: "touch", isPrimary: true };
+  await target.dispatchEvent("pointerdown", touch);
+  await page.clock.runFor(LONG_PRESS_MS);
+  await target.dispatchEvent("pointerup", touch);
 }
 
 test.describe(
@@ -79,10 +112,7 @@ test.describe(
 
       await sort(page).click();
       await page.getByRole("menuitemradio", { name: "In order" }).click();
-      await page
-        .getByRole("radiogroup", { name: "Show" })
-        .getByRole("radio", { name: "Unread" })
-        .click();
+      await showChoices(page).getByRole("radio", { name: "Unread" }).click();
 
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
       await expect(bookLinks(page).first()).toContainText("chapter 01");
@@ -100,6 +130,57 @@ test.describe(
         await expect(sort(page)).toHaveAccessibleName(turn.sort);
         await expect(bookLinks(page).first()).toContainText(turn.first);
       }
+    });
+
+    test("heads the newest run of twelve chapters above its rows", async ({
+      page,
+    }) => {
+      await openSeries(page);
+
+      await expect(runHeadings(page).first()).toHaveText("Chapters 25–30");
+      const [heading, newest] = await Promise.all([
+        runHeadings(page).first().boundingBox(),
+        bookLinks(page).first().boundingBox(),
+      ]);
+      expect(heading?.y).toBeLessThan(newest?.y ?? 0);
+    });
+
+    test("scrolls through every run with the headings and rows kept even", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      const seen = new Set<string>();
+      const heights = new Set<number>();
+
+      do {
+        await expect(bookLinks(page).first()).toBeVisible();
+        for (const text of await runHeadings(page).allTextContents()) {
+          seen.add(text.trim());
+        }
+        for (const height of await drawnRowHeights(page)) {
+          heights.add(height);
+        }
+      } while (await scrollBy(page, SCROLL_STEP_PX));
+
+      await expect(bookLinks(page).last()).toContainText("chapter 01");
+      expect([...seen]).toEqual([
+        "Chapters 25–30",
+        "Chapters 13–24",
+        "Chapters 1–12",
+      ]);
+      expect(heights.size).toBe(1);
+    });
+
+    test("keeps the run headings while picking chapters", async ({ page }) => {
+      await page.clock.install();
+      await openSeries(page);
+
+      await hold(page, bookList(page).getByText("chapter 30"));
+
+      await expect(
+        bookList(page).getByRole("checkbox", { checked: true }),
+      ).toHaveCount(1);
+      await expect(runHeadings(page).first()).toHaveText("Chapters 25–30");
     });
   },
 );
@@ -175,6 +256,7 @@ test.describe(
 
       await expect(sort(page)).toHaveAccessibleName("Sort: In order");
       await expect(bookLinks(page).first()).toContainText("chapter 01");
+      await expect(runHeadings(page)).toHaveCount(0);
     });
   },
 );
