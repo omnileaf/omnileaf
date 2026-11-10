@@ -60,6 +60,7 @@ const ANDROID_TOP_BAR_PX = 64;
 const ANDROID_BOTTOM_BAR_BLOCK_PX = 8;
 const SQUARE = "0px";
 const CENTRED_WITHIN_PX = 1;
+const EN_XA_LEFT_TO_RIGHT = "⟦Ļéƒţ ţö ŕíĝĥţ······⟧";
 const NO_BORDER = "0px";
 const NO_SHADOW = "none";
 
@@ -705,8 +706,10 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     const strip = page.getByRole("group", { name: /Ǫûíçķ šéţţíñĝš/ });
     const automaticHeight = (await boxOf(strip)).height;
 
-    await strip.getByRole("button").first().click();
-    await page.getByRole("menuitemradio").nth(1).click();
+    await strip.getByRole("button", { name: EN_XA_LEFT_TO_RIGHT }).click();
+    await page
+      .getByRole("menuitemradio", { name: EN_XA_LEFT_TO_RIGHT, exact: true })
+      .click();
 
     await expect(page.getByRole("menu")).toBeHidden();
     expect((await boxOf(strip)).height).toBe(automaticHeight);
