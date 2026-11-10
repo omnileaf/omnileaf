@@ -59,5 +59,4 @@ internal fun insetVariablesScript(
             "document.documentElement.style.setProperty('--system-inset-$side','${px / density}px');"
         }
 
-internal fun keyboardShownScript(isShown: Boolean): String =
-    "document.documentElement.toggleAttribute('data-keyboard-shown',$isShown);"
+internal fun keyboardShownScript(isShown: Boolean): String = "document.documentElement.toggleAttribute('data-keyboard-shown',$isShown);"
