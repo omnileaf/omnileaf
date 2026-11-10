@@ -12,6 +12,7 @@ import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
 
 const MENU_ITEM_PX = 48;
 const READER_THEME = "dark";
+const SHORT_WINDOW_PX = 300;
 
 test.use({ backend: readerBackend(DEFAULT_BACKEND) });
 
@@ -77,17 +78,67 @@ test.describe(
       await expect(field).toContainText("Right to left");
     });
 
-    test("is chosen from the keyboard as a listbox", async ({ page }) => {
+    test("is chosen from the keyboard as a listbox, starting on the chosen mode", async ({
+      page,
+    }) => {
       const field = readingMode(await openReadingSettings(page));
       await field.focus();
 
       await page.keyboard.press("Enter");
-      await expect(page.getByRole("listbox")).toBeVisible();
+      await expect(
+        page.getByRole("option", { selected: true }),
+      ).toHaveAttribute("data-highlighted");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
 
       await expect(page.getByRole("listbox")).toBeHidden();
-      await expect(field).not.toContainText("Automatic");
+      await expect(field).toHaveText("Left to right");
+    });
+
+    test("closes only the menu on Escape, handing focus back to the field", async ({
+      page,
+    }) => {
+      const sheet = await openReadingSettings(page);
+      const field = readingMode(sheet);
+      await field.click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+
+      await page.keyboard.press("Escape");
+
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(sheet).toBeVisible();
+      await expect(field).toBeFocused();
+    });
+
+    test("closes only the menu on Back, then the sheet on the next Back", async ({
+      page,
+    }) => {
+      const sheet = await openReadingSettings(page);
+      await readingMode(sheet).click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+
+      await page.goBack();
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(sheet).toBeVisible();
+      await page.goBack();
+
+      await expect(sheet).toBeHidden();
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+    });
+
+    test("keeps the option it moves to in view in a short window", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: SHORT_WINDOW_PX });
+      const field = readingMode(await openReadingSettings(page));
+      await field.focus();
+
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("End");
+
+      await expect(
+        page.getByRole("option", { name: "Long strip" }),
+      ).toBeInViewport();
     });
 
     for (const colorScheme of ["light", "dark"] as const) {

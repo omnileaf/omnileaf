@@ -238,6 +238,20 @@ test.describe(
 
         await expect(order).not.toHaveAttribute("aria-label", before ?? "");
       });
+
+      test("sorts by what is picked from the field's menu", async ({
+        page,
+      }) => {
+        const sheet = await openSheet(page);
+        const field = sheet.getByRole("combobox", { name: "Sort by" });
+
+        await field.click();
+        await page.getByRole("option", { name: "Recently read" }).click();
+
+        await expect(page.getByRole("listbox")).toBeHidden();
+        await expect(field).toHaveText("Recently read");
+        await expect(sheet).toBeVisible();
+      });
     });
 
     test.describe("the filter settings", () => {

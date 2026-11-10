@@ -5,6 +5,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { menuLook } from "#lib/components/ui/menu-look.ts";
+  import { closesOnBack } from "#lib/navigation/overlay-back.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
   import { OUTLINED_FIELD_LABEL } from "./looks.ts";
@@ -40,6 +41,7 @@
   } = $props();
 
   const id = $props.id();
+  const labelId = `${id}-label`;
   const look = menuLook(currentPlatform());
   const chosenLabel = $derived(
     choices.find((choice) => choice.value === value)?.label ?? "",
@@ -58,12 +60,18 @@
   class={cn("relative min-inline-none", className)}
 >
   <label
+    id={labelId}
     for={id}
     class={cn(OUTLINED_FIELD_LABEL, "pointer-events-none", labelClass)}
   >
     {label}
   </label>
-  <SelectPrimitive.Root type="single" {value} onValueChange={choose}>
+  <SelectPrimitive.Root
+    type="single"
+    {value}
+    onValueChange={choose}
+    items={[...choices]}
+  >
     <SelectPrimitive.Trigger
       {id}
       class="flex items-center rounded-native-outlined-field border border-native-button-outline-edge bg-transparent ps-lg pe-select-end text-start text-body outline-none block-native-outlined-field inline-full focus-visible:border-accent aria-expanded:border-accent"
@@ -73,39 +81,43 @@
     </SelectPrimitive.Trigger>
     <SelectPrimitive.Portal disabled>
       <SelectPrimitive.Content
+        {@attach closesOnBack}
+        aria-labelledby={labelId}
         sideOffset={FIELD_GAP_PX}
         collisionPadding={SCREEN_EDGE_GAP_PX}
         class={cn(
-          "z-dialog flex flex-col overflow-y-auto fade-motion duration-flyout ease-flyout outline-none inline-(--bits-select-anchor-width) max-block-(--bits-select-content-available-height)",
+          "z-dialog flex flex-col rounded-menu border border-menu-edge bg-menu p-menu-pad text-foreground fade-motion shadow-menu backdrop-blur-menu duration-flyout ease-flyout outline-none inline-(--bits-select-anchor-width) max-block-(--bits-select-content-available-height)",
           look.surface,
         )}
       >
-        {#each choices as choice (choice.value)}
-          <SelectPrimitive.Item value={choice.value} label={choice.label}>
-            {#snippet child({ props, selected })}
-              <div
-                {...props}
-                data-state={selected ? "checked" : "unchecked"}
-                class={cn(
-                  "flex cursor-default items-center gap-sm outline-none select-none",
-                  look.item,
-                  look.chosenItem,
-                )}
-              >
-                <span class="flex-1 truncate">{choice.label}</span>
-                <Check
-                  size={CHECK_SIZE}
-                  aria-hidden="true"
-                  class={[
-                    "shrink-0",
-                    look.check,
-                    !selected && ["invisible", look.uncheckedCheck],
-                  ]}
-                />
-              </div>
-            {/snippet}
-          </SelectPrimitive.Item>
-        {/each}
+        <SelectPrimitive.Viewport class="flex flex-col overflow-y-auto">
+          {#each choices as choice (choice.value)}
+            <SelectPrimitive.Item value={choice.value} label={choice.label}>
+              {#snippet child({ props, selected })}
+                <div
+                  {...props}
+                  data-state={selected ? "checked" : "unchecked"}
+                  class={cn(
+                    "flex cursor-default items-center gap-sm rounded-menu-item px-menu-item-inline text-label outline-none select-none min-block-menu-item data-highlighted:bg-menu-highlight data-highlighted:text-on-menu-highlight",
+                    look.item,
+                    look.chosenItem,
+                  )}
+                >
+                  <span class="flex-1 truncate">{choice.label}</span>
+                  <Check
+                    size={CHECK_SIZE}
+                    aria-hidden="true"
+                    class={[
+                      "shrink-0",
+                      look.check,
+                      !selected && ["invisible", look.uncheckedCheck],
+                    ]}
+                  />
+                </div>
+              {/snippet}
+            </SelectPrimitive.Item>
+          {/each}
+        </SelectPrimitive.Viewport>
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
   </SelectPrimitive.Root>
