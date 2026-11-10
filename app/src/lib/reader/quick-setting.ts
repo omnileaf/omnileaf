@@ -109,7 +109,7 @@ const STRIP_LOOK: QuickSettingLook = {
   iconSize: 24,
   hasKitIcons: true,
   hasChevron: false,
-  directionName: "truncate text-center",
+  directionName: "truncate",
   autoMark:
     "rounded-auto-mark border border-current px-xs text-reader-thumbnail font-medium tracking-native-tab",
   hiddenAutoMark: "hidden",
