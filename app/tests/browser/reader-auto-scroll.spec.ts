@@ -6,6 +6,7 @@ import {
   DEFAULT_BACKEND,
   expect,
   onPlatform,
+  setTextScale,
   test,
 } from "./fixtures.ts";
 import {
@@ -27,6 +28,8 @@ const CONTROLS_GONE_MS = 4000;
 const ANDROID_ROUND_BUTTON_PX = 48;
 const NARROWEST_WIDTHS = [360, 375] as const;
 const NARROW_HEIGHT = 800;
+const SMALLEST_IPHONE_WIDTH = 375;
+const VERY_LARGE_TEXT_SCALE = 3;
 const ANDROID_SPEED_BUTTON_PX = 40;
 
 function tallPages(secondsPerPage: number | null): FakeBackend {
@@ -114,6 +117,15 @@ async function spansOf(parts: readonly Locator[]): Promise<Span[]> {
       return { start: x, end: x + width };
     }),
   );
+}
+
+async function textSpanOf(part: Locator): Promise<Span> {
+  return part.evaluate((element) => {
+    const text = document.createRange();
+    text.selectNodeContents(element);
+    const { left, right } = text.getBoundingClientRect();
+    return { start: left, end: right };
+  });
 }
 
 function overlapping(spans: readonly Span[]): Span[][] {
@@ -251,16 +263,41 @@ test.describe("at a set speed", () => {
 
       await startAutoScroll(page);
 
-      const spans = await spansOf([
-        bar(page).getByText("2 pages a minute", { exact: true }),
-        bar(page).getByRole("button", { name: "Pause" }),
-        bar(page).getByRole("button", { name: "Slower" }),
-        bar(page).getByRole("button", { name: "Faster" }),
-        bar(page).getByRole("button", { name: "Stop auto scroll" }),
-      ]);
+      const spans = [
+        await textSpanOf(
+          bar(page).getByText("2 pages a minute", { exact: true }),
+        ),
+        ...(await spansOf([
+          bar(page).getByRole("button", { name: "Pause" }),
+          bar(page).getByRole("button", { name: "Slower" }),
+          bar(page).getByRole("button", { name: "Faster" }),
+          bar(page).getByRole("button", { name: "Stop auto scroll" }),
+        ])),
+      ];
       expect(overlapping(spans)).toEqual([]);
     });
   }
+
+  test("keeps its readout clear of Pause with very large text", async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: SMALLEST_IPHONE_WIDTH,
+      height: NARROW_HEIGHT,
+    });
+    await setTextScale(page, VERY_LARGE_TEXT_SCALE);
+    await openStrip(page);
+
+    await startAutoScroll(page);
+
+    const spans = [
+      await textSpanOf(
+        bar(page).getByText("2 pages a minute", { exact: true }),
+      ),
+      ...(await spansOf([bar(page).getByRole("button", { name: "Pause" })])),
+    ];
+    expect(overlapping(spans)).toEqual([]);
+  });
 
   test("stops when the reader leaves the long strip", async ({ page }) => {
     await openStrip(page);
