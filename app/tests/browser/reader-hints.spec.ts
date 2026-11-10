@@ -100,6 +100,37 @@ test.describe("the resume notice on Android", { tag: "@native" }, () => {
   });
 });
 
+test.describe("the page line on Android", { tag: "@native" }, () => {
+  test.use({ platform: "android" });
+
+  test("speaks the saved page once the book opens", async ({ page }) => {
+    await page.addInitScript(() => {
+      const heard: string[] = [];
+      Object.assign(window, { heardStatus: heard });
+      new MutationObserver(() => {
+        const line = document.querySelector("main > p[role='status']");
+        if (line !== null && heard.at(-1) !== line.textContent) {
+          heard.push(line.textContent ?? "");
+        }
+      }).observe(document, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+    });
+
+    await openBook(page);
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { heardStatus: string[] }).heardStatus,
+        ),
+      )
+      .toEqual(["", expect.stringContaining("14")]);
+  });
+});
+
 test.describe("the resume notice", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(

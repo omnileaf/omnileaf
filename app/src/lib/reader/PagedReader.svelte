@@ -348,7 +348,9 @@
       ? undefined
       : resolve("/read/[book]", { book: book.next.id }),
   );
-  let announced = $state(untrack(() => pageLine));
+  let announced = $state(
+    untrack(() => (saysWhereABookOpened(platform) ? pageLine : "")),
+  );
 
   async function markRead(): Promise<void> {
     const marked = await commands.markBooks([book.id], "read");
