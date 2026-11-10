@@ -1,28 +1,56 @@
-<script lang="ts">
-  import { ChevronDown } from "@lucide/svelte";
-  import type { Snippet } from "svelte";
-  import type { ClassValue, HTMLSelectAttributes } from "svelte/elements";
+<script lang="ts" generics="Value extends string">
+  import { Check, ChevronDown } from "@lucide/svelte";
+  import { Select as SelectPrimitive } from "bits-ui";
+  import type { ClassValue, HTMLButtonAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
+  import { menuLook } from "#lib/components/ui/menu-look.ts";
+  import { currentPlatform } from "#lib/page/platform.ts";
 
   import { OUTLINED_FIELD_LABEL } from "./looks.ts";
 
   const CHEVRON_SIZE = 24;
+  const CHECK_SIZE = 20;
+  const FIELD_GAP_PX = 4;
+  const SCREEN_EDGE_GAP_PX = 8;
+
+  interface Choice {
+    readonly value: Value;
+    readonly label: string;
+  }
 
   let {
     label,
     labelClass = "bg-background",
     class: className,
-    children,
-    ...selectProps
-  }: Omit<HTMLSelectAttributes, "id" | "class" | "children"> & {
+    choices,
+    value,
+    onChoose,
+    ...triggerProps
+  }: Omit<
+    HTMLButtonAttributes,
+    "id" | "class" | "children" | "value" | "type"
+  > & {
     label: string;
     labelClass?: ClassValue;
     class?: ClassValue;
-    children: Snippet;
+    choices: readonly Choice[];
+    value: Value;
+    onChoose: (value: Value) => void;
   } = $props();
 
   const id = $props.id();
+  const look = menuLook(currentPlatform());
+  const chosenLabel = $derived(
+    choices.find((choice) => choice.value === value)?.label ?? "",
+  );
+
+  function choose(picked: string): void {
+    const choice = choices.find((candidate) => candidate.value === picked);
+    if (choice !== undefined) {
+      onChoose(choice.value);
+    }
+  }
 </script>
 
 <div
@@ -35,13 +63,52 @@
   >
     {label}
   </label>
-  <select
-    {id}
-    class="appearance-none rounded-native-outlined-field border border-native-button-outline-edge bg-transparent ps-lg pe-select-end text-body text-ellipsis outline-none block-native-outlined-field inline-full focus-visible:border-accent"
-    {...selectProps}
-  >
-    {@render children()}
-  </select>
+  <SelectPrimitive.Root type="single" {value} onValueChange={choose}>
+    <SelectPrimitive.Trigger
+      {id}
+      class="flex items-center rounded-native-outlined-field border border-native-button-outline-edge bg-transparent ps-lg pe-select-end text-start text-body outline-none block-native-outlined-field inline-full focus-visible:border-accent aria-expanded:border-accent"
+      {...triggerProps}
+    >
+      <span class="truncate">{chosenLabel}</span>
+    </SelectPrimitive.Trigger>
+    <SelectPrimitive.Portal disabled>
+      <SelectPrimitive.Content
+        sideOffset={FIELD_GAP_PX}
+        collisionPadding={SCREEN_EDGE_GAP_PX}
+        class={cn(
+          "z-dialog flex flex-col overflow-y-auto fade-motion duration-flyout ease-flyout outline-none inline-(--bits-select-anchor-width) max-block-(--bits-select-content-available-height)",
+          look.surface,
+        )}
+      >
+        {#each choices as choice (choice.value)}
+          <SelectPrimitive.Item value={choice.value} label={choice.label}>
+            {#snippet child({ props, selected })}
+              <div
+                {...props}
+                data-state={selected ? "checked" : "unchecked"}
+                class={cn(
+                  "flex cursor-default items-center gap-sm outline-none select-none",
+                  look.item,
+                  look.chosenItem,
+                )}
+              >
+                <span class="flex-1 truncate">{choice.label}</span>
+                <Check
+                  size={CHECK_SIZE}
+                  aria-hidden="true"
+                  class={[
+                    "shrink-0",
+                    look.check,
+                    !selected && ["invisible", look.uncheckedCheck],
+                  ]}
+                />
+              </div>
+            {/snippet}
+          </SelectPrimitive.Item>
+        {/each}
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  </SelectPrimitive.Root>
   <ChevronDown
     size={CHEVRON_SIZE}
     aria-hidden="true"

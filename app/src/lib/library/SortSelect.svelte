@@ -53,13 +53,10 @@
       labelClass="bg-native-sheet"
       class="flex-1"
       aria-describedby={isTimedSort ? footnoteId : undefined}
+      choices={SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() }))}
       value={sort.by}
-      onchange={chooseSort}
-    >
-      {#each SORTS as by (by)}
-        <option value={by}>{SORT_LABELS[by]()}</option>
-      {/each}
-    </OutlinedSelect>
+      onChoose={onSortBy}
+    />
     <SortDirectionButton {sort} look="material" {onReverse} />
   </div>
 {:else}
