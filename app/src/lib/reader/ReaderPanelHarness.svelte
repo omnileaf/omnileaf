@@ -57,6 +57,7 @@
       {pages}
       shown={4}
       spread={[4]}
+      spreads={[[4]]}
       previous={null}
       next={null}
       direction="leftToRight"

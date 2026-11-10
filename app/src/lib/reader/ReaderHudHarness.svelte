@@ -77,6 +77,7 @@
       {pages}
       shown={SHOWN}
       spread={[SHOWN]}
+      spreads={[[SHOWN]]}
       previous={null}
       next={null}
       direction="leftToRight"

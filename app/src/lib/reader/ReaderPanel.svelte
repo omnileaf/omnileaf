@@ -23,7 +23,11 @@
   import { quickSettingLook } from "./quick-setting.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
-  import { type Spread, spreadPosition } from "./spreads.ts";
+  import {
+    type Spread,
+    spreadPosition,
+    widestSpreadPosition,
+  } from "./spreads.ts";
   import {
     WINDOWS_BOTTOM_BAR,
     WINDOWS_MUTED_INK,
@@ -36,6 +40,7 @@
     pages,
     shown,
     spread,
+    spreads,
     previous,
     next,
     direction,
@@ -51,6 +56,7 @@
     pages: readonly BookPage[];
     shown: number;
     spread: Spread;
+    spreads: readonly Spread[];
     previous: SeriesNeighbour | null;
     next: SeriesNeighbour | null;
     direction: ReadingDirection;
@@ -180,9 +186,14 @@
     {/if}
     {#if !hidesSlider}
       <span
-        class="shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
+        class="grid shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
       >
-        {spreadPosition(spread, count)}
+        <span class="invisible col-start-1 row-start-1" aria-hidden="true">
+          {widestSpreadPosition(spreads, count)}
+        </span>
+        <span class="col-start-1 row-start-1">
+          {spreadPosition(spread, count)}
+        </span>
       </span>
       <PageSlider
         {shown}

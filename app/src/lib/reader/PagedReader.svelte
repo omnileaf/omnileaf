@@ -1327,6 +1327,7 @@
           pages={book.pages}
           shown={turner.shown}
           {spread}
+          {spreads}
           previous={named.previous}
           next={named.next}
           direction={reading.direction}

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { spreadAt, spreadsOf } from "./spreads";
+import { spreadAt, spreadsOf, widestSpreadPosition } from "./spreads";
 
 const TALL = { width: 2, height: 3 };
 const WIDE = { width: 4, height: 3 };
@@ -36,4 +36,12 @@ test("finds the spread that holds a page", () => {
   expect([0, 1, 2, 4].map((page) => spreadAt(spreads, page))).toEqual([
     0, 1, 1, 2,
   ]);
+});
+
+test("reserves the page count's digits for every page when pages show alone", () => {
+  expect(widestSpreadPosition([[0], [1]], 120)).toBe("120 / 120");
+});
+
+test("reserves a pair of the page count's digits once any pages pair up", () => {
+  expect(widestSpreadPosition([[0], [1, 2], [3]], 120)).toBe("120–120 / 120");
 });
