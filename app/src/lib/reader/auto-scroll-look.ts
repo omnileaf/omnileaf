@@ -4,7 +4,7 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { type PhonePlatform, phoneOf } from "#lib/page/platform.ts";
 
-import { READER_BUTTON, READER_GLASS, READER_ICON_SIZE } from "./reader-bar.ts";
+import { READER_BUTTON, READER_GLASS } from "./reader-bar.ts";
 
 export interface AutoScrollLook {
   readonly place: string;
@@ -17,7 +17,6 @@ export interface AutoScrollLook {
   readonly speedButton: string;
   readonly stopButton: string;
   readonly hasKitIcons: boolean;
-  readonly iconSize: number;
 }
 
 const GLASS_LOOK: AutoScrollLook = {
@@ -36,10 +35,7 @@ const GLASS_LOOK: AutoScrollLook = {
   speedButton: READER_BUTTON,
   stopButton: READER_BUTTON,
   hasKitIcons: false,
-  iconSize: READER_ICON_SIZE,
 };
-
-const MATERIAL_ICON_SIZE = 24;
 
 const FLOATING_TOOLBAR_LOOK: AutoScrollLook = {
   place: "absolute inset-x-lg inset-be-reader-auto-bar-bottom",
@@ -55,10 +51,9 @@ const FLOATING_TOOLBAR_LOOK: AutoScrollLook = {
   speedButton: variantClasses("secondary", "regular", true, "android"),
   stopButton: cn(
     variantClasses("plain", "regular", true, "android"),
-    "text-muted",
+    "text-foreground",
   ),
   hasKitIcons: true,
-  iconSize: MATERIAL_ICON_SIZE,
 };
 
 const PHONE_LOOKS = {

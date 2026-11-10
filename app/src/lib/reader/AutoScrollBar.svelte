@@ -5,6 +5,7 @@
 
   import type { AutoScrollSpeed } from "./auto-scroll.ts";
   import { autoScrollLook } from "./auto-scroll-look.ts";
+  import { READER_ICON_SIZE } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
@@ -65,14 +66,14 @@
         name="play"
         fallback={Play}
         isKit={look.hasKitIcons}
-        size={look.iconSize}
+        size={READER_ICON_SIZE}
       />
     {:else}
       <ReaderIcon
         name="pause"
         fallback={Pause}
         isKit={look.hasKitIcons}
-        size={look.iconSize}
+        size={READER_ICON_SIZE}
       />
     {/if}
   </button>
@@ -107,7 +108,7 @@
             name="minus"
             fallback={Minus}
             isKit={look.hasKitIcons}
-            size={look.iconSize}
+            size={READER_ICON_SIZE}
           />
         </button>
         <button
@@ -120,7 +121,7 @@
             name="plus"
             fallback={Plus}
             isKit={look.hasKitIcons}
-            size={look.iconSize}
+            size={READER_ICON_SIZE}
           />
         </button>
       {/if}
@@ -134,7 +135,7 @@
           name="x"
           fallback={X}
           isKit={look.hasKitIcons}
-          size={look.iconSize}
+          size={READER_ICON_SIZE}
         />
       </button>
     </div>
