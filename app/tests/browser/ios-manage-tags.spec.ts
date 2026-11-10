@@ -100,8 +100,8 @@ test.describe("Manage tags on an iPhone", { tag: "@native" }, () => {
 
     await swipeAcross(rowOf(page, "Seinen").locator("[data-swiped]"), SWIPE_PX);
 
-    expect(await isUncovered(rename)).toBe(true);
-    expect(await isUncovered(remove)).toBe(true);
+    await expect.poll(() => isUncovered(rename)).toBe(true);
+    await expect.poll(() => isUncovered(remove)).toBe(true);
     await expect(rename).toHaveCSS(
       "background-color",
       await tokenColour(page, "--native-color-button-primary"),
