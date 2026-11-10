@@ -1637,6 +1637,48 @@
   "series_section_volumes": "Volumes",
   "series_section_chapters": "Chapters",
   "series_section_specials": "Specials",
+  "series_volume_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} volume",
+        "countPlural=other": "{formattedCount} volumes"
+      }
+    }
+  ],
+  "series_chapter_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} chapter",
+        "countPlural=other": "{formattedCount} chapters"
+      }
+    }
+  ],
+  "series_special_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formattedCount} special",
+        "countPlural=other": "{formattedCount} specials"
+      }
+    }
+  ],
   "series_section_tab": [
     {
       "declarations": [

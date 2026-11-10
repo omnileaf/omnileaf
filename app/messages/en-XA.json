@@ -1637,6 +1637,48 @@
   "series_section_volumes": "⟦Ṽöļûɱéš···⟧",
   "series_section_chapters": "⟦Çĥáþţéŕš····⟧",
   "series_section_specials": "⟦Šþéçíáļš····⟧",
+  "series_volume_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} ṽöļûɱé··········⟧",
+        "countPlural=other": "⟦{formattedCount} ṽöļûɱéš··········⟧"
+      }
+    }
+  ],
+  "series_chapter_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} çĥáþţéŕ··········⟧",
+        "countPlural=other": "⟦{formattedCount} çĥáþţéŕš··········⟧"
+      }
+    }
+  ],
+  "series_special_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural",
+        "local formattedCount = count: number"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "⟦{formattedCount} šþéçíáļ··········⟧",
+        "countPlural=other": "⟦{formattedCount} šþéçíáļš··········⟧"
+      }
+    }
+  ],
   "series_section_tab": [
     {
       "declarations": [

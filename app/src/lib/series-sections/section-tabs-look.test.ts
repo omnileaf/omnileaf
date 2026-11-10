@@ -9,8 +9,8 @@ test("lets an Android phone's tabs span the page, neither wrapping nor held insi
   expect(look.list).toBe("");
 });
 
-test("puts the search and sort row above an Android phone's tabs", () => {
-  expect(sectionTabsLook("android", "compact").choicesFirst).toBe(true);
+test("heads an Android phone's tabs with the kind's heading and its controls", () => {
+  expect(sectionTabsLook("android", "compact").controls).toBe("heading");
 });
 
 test.each([
@@ -31,6 +31,6 @@ test.each([
 test("puts the search and sort row above an iPhone's tabs", () => {
   const look = sectionTabsLook("ios", "compact");
 
-  expect(look.choicesFirst).toBe(true);
+  expect(look.controls).toBe("choicesFirst");
   expect(look.row).toBe("flex flex-col gap-sm");
 });

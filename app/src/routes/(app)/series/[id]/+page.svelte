@@ -49,6 +49,7 @@
     type SeriesShown,
   } from "#lib/series/series-overview.ts";
   import { EVERY_BOOK_IN_ORDER } from "#lib/series/book-listing.ts";
+  import type { BooksControls } from "#lib/series/books-controls.ts";
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
@@ -105,7 +106,7 @@
     sectionListing(
       listing,
       found?.overview.sections.map(({ section }) => section) ?? [],
-      { platform: data.appInfo.platform, isWide: isWide.current },
+      { platform: data.appInfo.platform, width: width.current },
     ),
   );
   const foundId = $derived(found?.overview.id);
@@ -518,38 +519,41 @@
                 pickedCount = count;
               }}
             >
-              {#if books?.list.kind === "failed"}
-                <p class="text-body text-muted">{m.series_books_failed()}</p>
-              {:else if books?.list.kind === "loaded"}
-                <SeriesBooks
-                  books={screenshotMode.isOn
-                    ? books.list.items.map(standInBook)
-                    : books.list.items}
-                  seriesTitle={overview.title}
-                  bookCount={found.overview.bookCount}
-                  readCount={found.overview.readCount}
-                  bookmarkCount={found.overview.bookmarkCount}
-                  {listing}
-                  onListing={(chosen: SeriesBookListing) => {
-                    listing = chosen;
-                    void books.start();
-                  }}
-                  isComplete={books.list.isComplete}
-                  onNearEnd={() => {
-                    void books.loadMore();
-                  }}
-                  onLoadAll={() => books.loadAll()}
-                  onMark={mark}
-                  onBookmark={bookmarkSelected}
-                  onRemoveBookmarks={removeBookmarks}
-                  onRemove={removeBooks}
-                  onShowInFolder={showFileOf}
-                  platform={data.appInfo.platform}
-                  onPickedCount={(count: number | undefined) => {
-                    pickedCount = count;
-                  }}
-                />
-              {/if}
+              {#snippet children(controls: BooksControls)}
+                {#if books?.list.kind === "failed"}
+                  <p class="text-body text-muted">{m.series_books_failed()}</p>
+                {:else if books?.list.kind === "loaded"}
+                  <SeriesBooks
+                    books={screenshotMode.isOn
+                      ? books.list.items.map(standInBook)
+                      : books.list.items}
+                    seriesTitle={overview.title}
+                    bookCount={found.overview.bookCount}
+                    readCount={found.overview.readCount}
+                    bookmarkCount={found.overview.bookmarkCount}
+                    {listing}
+                    onListing={(chosen: SeriesBookListing) => {
+                      listing = chosen;
+                      void books.start();
+                    }}
+                    isComplete={books.list.isComplete}
+                    onNearEnd={() => {
+                      void books.loadMore();
+                    }}
+                    onLoadAll={() => books.loadAll()}
+                    onMark={mark}
+                    onBookmark={bookmarkSelected}
+                    onRemoveBookmarks={removeBookmarks}
+                    onRemove={removeBooks}
+                    onShowInFolder={showFileOf}
+                    platform={data.appInfo.platform}
+                    onPickedCount={(count: number | undefined) => {
+                      pickedCount = count;
+                    }}
+                    {controls}
+                  />
+                {/if}
+              {/snippet}
             </SeriesSections>
           {/key}
         {/if}
