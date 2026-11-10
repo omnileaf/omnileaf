@@ -24,6 +24,7 @@
     DropdownMenuTrigger,
   } from "#lib/components/ui/dropdown-menu/index.ts";
   import { Item, ItemTitle } from "#lib/components/ui/item/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import type { IconName } from "#lib/icons/names.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
@@ -65,7 +66,7 @@
     title: "",
     rule: "mx-lg my-sm border-native-menu-rule",
     shape: "rounded-native-menu-item",
-    focus: "focus-visible:bg-native-row-pressed",
+    focus: `focus-visible:bg-native-row-pressed ${ROW_FOCUS_RING}`,
   } as const;
 
   let {

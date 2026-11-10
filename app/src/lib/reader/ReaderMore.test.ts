@@ -134,7 +134,7 @@ test("leaves every Android phone More row clear at rest", async () => {
   expect(backgrounds).toEqual(Array(backgrounds.length).fill(CLEAR));
 });
 
-test("tints the keyboard-focused Android phone More row in the tonal row colour", async () => {
+test("tints and rings the keyboard-focused Android phone More row", async () => {
   await openMore("android", PHONE, vi.fn());
 
   await userEvent.tab();
@@ -143,4 +143,10 @@ test("tints the keyboard-focused Android phone More row in the tonal row colour"
   await expect
     .poll(() => getComputedStyle(row).backgroundColor)
     .toBe(resolvedColour("--native-color-row-pressed", "backgroundColor"));
+  const style = getComputedStyle(row);
+  expect([style.outlineStyle, style.outlineWidth, style.outlineColor]).toEqual([
+    "solid",
+    "2px",
+    resolvedColour("--color-accent", "outlineColor"),
+  ]);
 });
