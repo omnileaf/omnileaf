@@ -71,6 +71,7 @@
   } = $props();
 
   const count = $derived(pages.length);
+  const widestPosition = $derived(widestSpreadPosition(spreads, count));
   const chrome = getReaderChrome();
   const floats = $derived(chrome.floats);
   const quickLook = $derived(quickSettingLook(chrome.platform, chrome.width));
@@ -189,9 +190,9 @@
         class="grid shrink-0 text-center text-small font-medium whitespace-nowrap tabular-nums min-inline-reader-count expanded:min-inline-reader-count-wide"
       >
         <span class="invisible col-start-1 row-start-1" aria-hidden="true">
-          {widestSpreadPosition(spreads, count)}
+          {widestPosition}
         </span>
-        <span class="col-start-1 row-start-1">
+        <span class="col-start-1 row-start-1" data-reader-count>
           {spreadPosition(spread, count)}
         </span>
       </span>

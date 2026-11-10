@@ -48,7 +48,10 @@ export function widestSpreadPosition(
   spreads: readonly Spread[],
   count: number,
 ): string {
-  return spreads.some((spread) => spread.length > 1)
-    ? m.reader_position_pair({ first: count, last: count, count })
-    : m.reader_position({ page: count, count });
+  return spreads
+    .map((spread) => spreadPosition(spread, count))
+    .reduce(
+      (widest, label) => (label.length >= widest.length ? label : widest),
+      "",
+    );
 }
