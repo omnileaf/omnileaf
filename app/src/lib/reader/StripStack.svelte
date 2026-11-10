@@ -39,7 +39,7 @@
 
   const animations = getAnimationsSetting();
   const isCropped = $derived(crop !== "whole");
-  let scroller: HTMLDivElement | undefined = $state();
+  let scroller = $state<HTMLDivElement | null>(null);
   let spaceHeight = $state(0);
   let spaceWidth = $state(0);
   let placedWidth = 0;
@@ -56,7 +56,7 @@
   let isDragging = false;
 
   function measure(): void {
-    if (scroller === undefined) {
+    if (scroller === null) {
       return;
     }
     scrollRange = scroller.scrollHeight - scroller.clientHeight;
@@ -69,7 +69,7 @@
   }
 
   export function scrubTo(along: number): void {
-    if (scroller !== undefined) {
+    if (scroller !== null) {
       scroller.scrollTop =
         along * (scroller.scrollHeight - scroller.clientHeight);
     }
@@ -96,7 +96,7 @@
     index: number,
   ): void {
     const element = pageElements[index];
-    if (crop === "whole" || scroller === undefined || element === undefined) {
+    if (crop === "whole" || scroller === null || element === undefined) {
       return;
     }
     loadedSizes.set(page.path, {
@@ -134,7 +134,7 @@
   }
 
   export function place(): StripPlace | undefined {
-    if (scroller === undefined) {
+    if (scroller === null) {
       return undefined;
     }
     const page = pageAt(scroller.scrollTop);
@@ -152,7 +152,7 @@
 
   function scrollToPlace(target: StripPlace): void {
     const element = pageElements[target.page];
-    if (scroller !== undefined && element !== undefined) {
+    if (scroller !== null && element !== undefined) {
       scroller.scrollTop =
         element.offsetTop + element.offsetHeight * target.shareOfPage;
     }
@@ -160,7 +160,7 @@
 
   function reportShown(): void {
     isScrollPending = false;
-    if (scroller === undefined) {
+    if (scroller === null) {
       return;
     }
     const index = pageAt(scroller.scrollTop + scroller.clientHeight / 2);
@@ -189,7 +189,7 @@
 
   /** Scrolls most of a screen down for a positive `step` or up for a negative one, false at that end of the strip. */
   export function scrollByScreen(step: number): boolean {
-    if (scroller === undefined || isAtEnd(step, scroller)) {
+    if (scroller === null || isAtEnd(step, scroller)) {
       return false;
     }
     const isSmooth =
@@ -203,7 +203,7 @@
 
   /** Scrolls down by `pixels`, carrying the fraction a frame can't move over to the next, false at the end of the strip. */
   export function scrollByPixels(pixels: number): boolean {
-    if (scroller === undefined || isAtEnd(1, scroller)) {
+    if (scroller === null || isAtEnd(1, scroller)) {
       return false;
     }
     unscrolled += pixels;
@@ -222,7 +222,7 @@
   $effect(() => {
     const target = shown;
     untrack(() => {
-      if (target === reported || scroller === undefined) {
+      if (target === reported || scroller === null) {
         return;
       }
       reported = target;
