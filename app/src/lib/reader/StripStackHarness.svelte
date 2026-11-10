@@ -23,7 +23,7 @@
 
 {#snippet overlay()}{/snippet}
 
-<div class="relative block-reader-sheet inline-reader-settings">
+<main class="fixed inset-none">
   {#if isShown}
     <StripStack
       {pages}
@@ -37,4 +37,4 @@
       onShownReady={nothing}
     />
   {/if}
-</div>
+</main>

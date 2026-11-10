@@ -31,20 +31,32 @@ function twoFrames(): Promise<void> {
   });
 }
 
-test("goes quietly when it is taken away while a scroll is still being reported", async () => {
-  document.body.replaceChildren();
+async function errorsThrownWhile(
+  work: () => Promise<void>,
+): Promise<unknown[]> {
   const thrown: unknown[] = [];
   const keep = (event: ErrorEvent): void => {
     thrown.push(event.error);
     event.preventDefault();
   };
   window.addEventListener("error", keep);
+  try {
+    await work();
+  } finally {
+    window.removeEventListener("error", keep);
+  }
+  return thrown;
+}
+
+test("goes quietly when it is taken away while a scroll is still being reported", async () => {
+  document.body.replaceChildren();
   const shown = await render(StripStackHarness, { isShown: true });
   await scrolled(strip(), 200);
 
-  await shown.rerender({ isShown: false });
-  await twoFrames();
+  const thrown = await errorsThrownWhile(async () => {
+    await shown.rerender({ isShown: false });
+    await twoFrames();
+  });
 
-  window.removeEventListener("error", keep);
   expect(thrown).toEqual([]);
 });
