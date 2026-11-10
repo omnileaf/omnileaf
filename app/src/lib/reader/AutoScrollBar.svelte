@@ -61,14 +61,11 @@
     toolbar.stop();
   });
 
-  function onFocusIn(event: FocusEvent): void {
-    if (
-      event.target instanceof HTMLElement &&
-      event.target.matches(":focus-visible")
-    ) {
-      toolbar.focused();
-    } else {
-      toolbar.show();
+  function letGoOfTappedButton(event: MouseEvent): void {
+    const tapped =
+      event.target instanceof Element ? event.target.closest("button") : null;
+    if (event.detail > 0 && tapped !== null) {
+      tapped.blur();
     }
   }
 
@@ -78,7 +75,10 @@
           onpointerdown: () => {
             toolbar.show();
           },
-          onfocusin: onFocusIn,
+          onfocusin: () => {
+            toolbar.focused();
+          },
+          onclick: letGoOfTappedButton,
           onfocusout: () => {
             toolbar.blurred();
           },
