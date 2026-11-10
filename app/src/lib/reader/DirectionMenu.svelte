@@ -16,12 +16,16 @@
   import { takeBackWithinScreen } from "#lib/navigation/back-within-screen.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { quickSettingLook } from "#lib/reader/quick-setting.ts";
+  import {
+    type AutoMarkRoom,
+    quickSettingLook,
+  } from "#lib/reader/quick-setting.ts";
   import { getReaderChrome } from "#lib/reader/reader-chrome.svelte.ts";
   import QuickSettingIcon from "#lib/reader/QuickSettingIcon.svelte";
   import {
     DIRECTION_CHOICES,
     type DirectionChoice,
+    type ReadingModeChoice,
     type SeriesReadingDirection,
   } from "#lib/reader/reading-direction.svelte.ts";
 
@@ -33,6 +37,10 @@
     leftToRight: m.reader_direction_automatic_left_to_right,
     rightToLeft: m.reader_direction_automatic_right_to_left,
   } as const;
+  const HIDDEN_AUTO_MARK = {
+    inline: "invisible",
+    behind: "hidden",
+  } as const satisfies Record<AutoMarkRoom, string>;
   const CHOICE_ICON_SIZE = 16;
   const CHOICE_ICONS = {
     automatic: Scan,
@@ -50,7 +58,6 @@
     onOpenChange: (isOpen: boolean) => void;
   } = $props();
 
-  const isAutomatic = $derived(reading.choice === "automatic");
   const chrome = getReaderChrome();
   const look = $derived(quickSettingLook(chrome.platform, chrome.width));
   let isOpen = $state(false);
@@ -79,7 +86,8 @@
   }
 </script>
 
-{#snippet words(showsAutoMark: boolean)}
+{#snippet words(choice: ReadingModeChoice)}
+  {@const showsAutoMark = choice === "automatic"}
   <span class={look.words}>
     <span class="grid min-inline-none">
       {#each ["leftToRight", "rightToLeft"] as const as shown (shown)}
@@ -96,7 +104,10 @@
       {/each}
     </span>
     <span
-      class={[look.autoMark, !showsAutoMark && look.hiddenAutoMark]}
+      class={[
+        look.autoMark,
+        !showsAutoMark && HIDDEN_AUTO_MARK[look.autoMarkRoom],
+      ]}
       aria-hidden={!showsAutoMark}
     >
       {m.reader_direction_auto()}
@@ -113,17 +124,17 @@
       fallback={ArrowLeftRight}
       {look}
     />
-    {#if look.reservesAutoMarkBehind}
+    {#if look.autoMarkRoom === "behind"}
       <span class="grid items-start justify-items-center max-inline-full">
         <span class="invisible col-start-1 row-start-1 grid" aria-hidden="true">
-          {@render words(true)}
+          {@render words("automatic")}
         </span>
         <span class="col-start-1 row-start-1 grid">
-          {@render words(isAutomatic)}
+          {@render words(reading.choice)}
         </span>
       </span>
     {:else}
-      {@render words(isAutomatic)}
+      {@render words(reading.choice)}
     {/if}
     {#if look.hasChevron}
       <ChevronDown
