@@ -547,7 +547,7 @@ test.describe(
       await expect(
         page.getByRole("img", { name: /not in the folder/ }),
       ).toHaveCount(1);
-      await expect(page.getByText(/aren’t in the folder/)).toHaveCount(0);
+      await expect(page.getByText(/keeps the others in place/)).toHaveCount(0);
 
       await kinds(page)
         .getByRole("tab", { name: /Chapters/ })

@@ -42,8 +42,14 @@ export function sectionNote(
   }
 }
 
-const PLATFORMS_WITHOUT_NOTES: readonly Platform[] = ["android"];
+const SHOWS_SECTION_NOTES = {
+  android: false,
+  ios: true,
+  linux: true,
+  macos: true,
+  windows: true,
+} satisfies Record<Platform, boolean>;
 
 export function showsSectionNotes(platform: Platform): boolean {
-  return !PLATFORMS_WITHOUT_NOTES.includes(platform);
+  return SHOWS_SECTION_NOTES[platform];
 }
