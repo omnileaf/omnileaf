@@ -41,6 +41,7 @@
   import BookListingChoices from "./BookListingChoices.svelte";
   import NoShownBooks from "./NoShownBooks.svelte";
   import { hasRowDelete } from "./book-actions";
+  import type { BookRows, SearchPlace } from "./book-listing";
   import { booksMatching } from "./book-search";
   import { type BooksControls, OWN_CONTROLS } from "./books-controls";
   import BookTable from "./BookTable.svelte";
@@ -52,6 +53,20 @@
   type BookId = SeriesBook["id"];
 
   type BarControl = "close" | "done" | "selectAll";
+
+  interface BookListLook {
+    readonly rows: BookRows;
+    readonly searchPlace: SearchPlace;
+  }
+
+  const BOOKS_LOOK: BookListLook = {
+    rows: "books",
+    searchPlace: "besideShown",
+  };
+  const ANDROID_CHAPTERS_LOOK: BookListLook = {
+    rows: "chapterRuns",
+    searchPlace: "inPlaceOfShown",
+  };
 
   interface PhonePicking {
     readonly leading: readonly BarControl[];
@@ -172,8 +187,10 @@
   );
   const isRowDeletable = $derived(hasRowDelete(platform));
   const isBookmarkedFromSheet = $derived(phonePlatform === "android");
-  const isAndroidChapterList = $derived(
-    phonePlatform === "android" && isChaptersOnly(sections),
+  const listLook = $derived(
+    phonePlatform === "android" && isChaptersOnly(sections)
+      ? ANDROID_CHAPTERS_LOOK
+      : BOOKS_LOOK,
   );
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_PICKING[phonePlatform],
@@ -197,6 +214,7 @@
   const search = $derived(
     controls.kind === "above" ? controls.search : ownSearch,
   );
+  let isSearching = $state(false);
   let isShownCrowded = $state(false);
   const shownBooks = $derived(booksMatching(books, search, getLocale()));
   const ids = $derived(shownBooks.map((book) => book.id));
@@ -237,14 +255,6 @@
   }
 
   let endings = 0;
-
-  function clearSearch(): void {
-    if (controls.kind === "above") {
-      controls.onSearch("");
-    } else {
-      ownSearch = "";
-    }
-  }
 
   function focusAfterPicking(): HTMLElement | null {
     if (isWide.current) {
@@ -415,6 +425,17 @@
     }
   }
 
+  function clearSearch(): void {
+    if (controls.kind === "above") {
+      controls.onSearch("");
+      return;
+    }
+    ownSearch = "";
+    if (listLook.searchPlace === "inPlaceOfShown") {
+      isSearching = false;
+    }
+  }
+
   function endPicking(): void {
     void end();
   }
@@ -573,6 +594,8 @@
       onShownCrowded={(isCrowded: boolean) => {
         isShownCrowded = isCrowded;
       }}
+      searchPlace={listLook.searchPlace}
+      bind:isSearching
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}
@@ -637,7 +660,7 @@
     <BookList
       phone={phonePlatform}
       books={shownBooks}
-      hasChapterRuns={isAndroidChapterList}
+      rows={listLook.rows}
       {seriesTitle}
       hasTwoLineTitles={isShownCrowded}
       {isComplete}

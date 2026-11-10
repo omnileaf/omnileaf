@@ -114,3 +114,47 @@ test("counts only an Android phone's chapters as list items, leaving the run hea
 test("keeps an iPhone's chapters in one run without headings", async () => {
   expect(await runHeadingsOn("ios")).toEqual([]);
 });
+
+async function searchOn(platform: Platform) {
+  await page.viewport(PHONE.width, PHONE.height);
+  followCorePlatform(platform);
+  await render(SeriesBooksHarness, {
+    platform,
+    sections: ["chapters"],
+    books: [chapter(2), chapter(1)],
+  });
+  await page.getByRole("button", { name: "Find a book" }).click();
+}
+
+test("puts the search field in place of the Show group on an Android phone's chapters", async () => {
+  await searchOn("android");
+
+  await expect
+    .element(page.getByRole("searchbox", { name: "Find a book" }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .not.toBeInTheDocument();
+});
+
+test("brings an Android phone's Show group back once the search is cleared", async () => {
+  await searchOn("android");
+
+  await page.getByRole("searchbox", { name: "Find a book" }).fill("zzz");
+  await page.getByRole("button", { name: "Clear the search" }).click();
+
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("button", { name: "Find a book" }))
+    .toHaveAttribute("aria-expanded", "false");
+});
+
+test("keeps an iPhone's Show group beside its search field", async () => {
+  await searchOn("ios");
+
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .toBeVisible();
+});
