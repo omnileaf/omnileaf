@@ -64,6 +64,24 @@ test("draws the Android phone light sliders' handle as a 4 by 44 bar", async () 
   expect([box?.width, box?.height]).toEqual(HANDLE);
 });
 
+test.each(["Brightness", "Warmth"])(
+  "centres the Android phone %s handle on its bar's height",
+  async (name) => {
+    await openSliders("android");
+    const slider = page.getByRole("slider", { name }).element();
+    const handle = slider
+      .closest("[data-slider-root]")
+      ?.querySelector("[data-progress-thumb]");
+    const bar = handle?.previousElementSibling?.getBoundingClientRect();
+
+    const box = handle?.getBoundingClientRect();
+    expect((box?.top ?? 0) + (box?.height ?? 0) / 2).toBeCloseTo(
+      (bar?.top ?? 0) + (bar?.height ?? 0) / 2,
+      0,
+    );
+  },
+);
+
 test("keeps the round thumb on an Android tablet", async () => {
   await openSliders("android", TABLET);
 
