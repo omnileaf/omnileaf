@@ -1,34 +1,20 @@
 package app.omnileaf
 
-import androidx.core.graphics.Insets
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SystemInsetsTest {
     @Test
-    fun `leaves the system areas whole while the keyboard is closed`() {
-        val areas = Insets.of(0, 48, 0, 24)
+    fun `marks the page while the keyboard is shown`() {
+        val script = keyboardShownScript(isShown = true)
 
-        val uncovered = areas.aboveKeyboard(Insets.NONE)
-
-        assertEquals(areas, uncovered)
+        assertEquals("document.documentElement.toggleAttribute('data-keyboard-shown',true);", script)
     }
 
     @Test
-    fun `drops the navigation bar the keyboard covers`() {
-        val areas = Insets.of(0, 48, 0, 24)
+    fun `clears the mark once the keyboard is hidden`() {
+        val script = keyboardShownScript(isShown = false)
 
-        val uncovered = areas.aboveKeyboard(Insets.of(0, 0, 0, 900))
-
-        assertEquals(Insets.of(0, 48, 0, 0), uncovered)
-    }
-
-    @Test
-    fun `keeps what a short keyboard leaves of the navigation bar`() {
-        val areas = Insets.of(0, 48, 0, 24)
-
-        val uncovered = areas.aboveKeyboard(Insets.of(0, 0, 0, 10))
-
-        assertEquals(Insets.of(0, 48, 0, 14), uncovered)
+        assertEquals("document.documentElement.toggleAttribute('data-keyboard-shown',false);", script)
     }
 }

@@ -5,6 +5,7 @@ import android.webkit.WebView
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.marginBottom
 import androidx.core.view.updateLayoutParams
 import androidx.webkit.ScriptHandler
 import androidx.webkit.WebViewCompat
@@ -25,16 +26,19 @@ class SystemInsets(
         ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
             val keyboard = insets.getInsets(KEYBOARD)
             makeRoomFor(keyboard)
-            val uncovered = insets.getInsets(SYSTEM_AREAS).aboveKeyboard(keyboard)
-            publish(insetVariablesScript(uncovered, view.resources.displayMetrics.density))
-            ViewCompat.onApplyWindowInsets(view, insets.withoutKeyboard())
+            val aboveKeyboard = insets.inset(0, 0, 0, keyboard.bottom)
+            publish(insetVariablesScript(aboveKeyboard.getInsets(SYSTEM_AREAS), view.resources.displayMetrics.density))
+            webView.evaluateJavascript(keyboardShownScript(insets.isVisible(KEYBOARD)), null)
+            ViewCompat.onApplyWindowInsets(view, aboveKeyboard)
         }
         ViewCompat.requestApplyInsets(webView)
     }
 
-    /** Android 15 draws edge-to-edge apps under the keyboard rather than resizing them, so the page would slide under the status bar. */
+    /** An edge-to-edge window is not resized for the keyboard, so the WebView is shortened to end above it. */
     private fun makeRoomFor(keyboard: Insets) {
-        webView.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = keyboard.bottom }
+        if (webView.marginBottom != keyboard.bottom) {
+            webView.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = keyboard.bottom }
+        }
     }
 
     private fun publish(script: String) {
@@ -46,11 +50,6 @@ class SystemInsets(
     }
 }
 
-internal fun Insets.aboveKeyboard(keyboard: Insets): Insets = Insets.of(left, top, right, maxOf(0, bottom - keyboard.bottom))
-
-private fun WindowInsetsCompat.withoutKeyboard(): WindowInsetsCompat =
-    WindowInsetsCompat.Builder(this).setInsets(KEYBOARD, Insets.NONE).build()
-
 internal fun insetVariablesScript(
     areas: Insets,
     density: Float,
@@ -59,3 +58,6 @@ internal fun insetVariablesScript(
         .joinToString(separator = "") { (side, px) ->
             "document.documentElement.style.setProperty('--system-inset-$side','${px / density}px');"
         }
+
+internal fun keyboardShownScript(isShown: Boolean): String =
+    "document.documentElement.toggleAttribute('data-keyboard-shown',$isShown);"
