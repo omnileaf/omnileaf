@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Minus, Pause, Play, Plus, X } from "@lucide/svelte";
 
+  import { cn } from "#lib/components/cn.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import type { AutoScrollSpeed } from "./auto-scroll.ts";
   import { autoScrollLook } from "./auto-scroll-look.ts";
   import { READER_ICON_SIZE } from "./reader-bar.ts";
   import { getReaderChrome } from "./reader-chrome.svelte.ts";
+  import { ReaderControls } from "./reader-controls.svelte.ts";
   import ReaderIcon from "./ReaderIcon.svelte";
 
   let {
@@ -27,9 +29,36 @@
     onStop: () => void;
   } = $props();
 
+  const TUCK_AFTER_MS = 3000;
   const titleId = $props.id();
   const chrome = getReaderChrome();
   const look = $derived(autoScrollLook(chrome.platform, chrome.width));
+  const toolbar = new ReaderControls(TUCK_AFTER_MS);
+  const isTucked = $derived(look.tucked !== null && !toolbar.isShown);
+
+  $effect(() => {
+    if (isPaused) {
+      toolbar.hold();
+    } else {
+      toolbar.release();
+    }
+  });
+
+  $effect(() => () => {
+    toolbar.stop();
+  });
+
+  function onFocusIn(event: FocusEvent): void {
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.matches(":focus-visible")
+    ) {
+      toolbar.focused();
+    } else {
+      toolbar.show();
+    }
+  }
+
   const roundedSpeed = $derived(Math.round(speed.pagesPerMinute * 2) / 2);
   const state = $derived.by(() => {
     if (isPaused) {
@@ -79,8 +108,18 @@
   </button>
 {/snippet}
 
-<div class={look.place}>
-  <section aria-labelledby={titleId} class={look.bar}>
+<div class={cn(look.place, isTucked && look.tucked)}>
+  <section
+    aria-labelledby={titleId}
+    class={look.bar}
+    onpointerdown={() => {
+      toolbar.show();
+    }}
+    onfocusin={onFocusIn}
+    onfocusout={() => {
+      toolbar.blurred();
+    }}
+  >
     {#if look.leadsWithToggle}
       {@render toggle()}
     {/if}

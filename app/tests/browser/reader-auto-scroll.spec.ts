@@ -25,6 +25,7 @@ const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
 const PAUSE_AHEAD_MS = 500;
 const CONTROLS_GONE_MS = 4000;
+const TOOLBAR_TUCKS_MS = 3500;
 const ANDROID_ROUND_BUTTON_PX = 48;
 const NARROWEST_WIDTHS = [360, 375] as const;
 const NARROW_HEIGHT = 800;
@@ -299,6 +300,15 @@ test.describe("at a set speed", () => {
     expect(overlapping(spans)).toEqual([]);
   });
 
+  test("keeps its toolbar up while it runs", async ({ page }) => {
+    await openStrip(page);
+    await startAutoScroll(page);
+
+    await page.clock.runFor(SIX_SECONDS_MS);
+
+    await expect(bar(page)).toBeVisible();
+  });
+
   test("stops when the reader leaves the long strip", async ({ page }) => {
     await openStrip(page);
     await startAutoScroll(page);
@@ -390,6 +400,62 @@ test.describe(
         [ANDROID_SPEED_BUTTON_PX, ANDROID_SPEED_BUTTON_PX],
         [ANDROID_SPEED_BUTTON_PX, ANDROID_SPEED_BUTTON_PX],
       ]);
+    });
+
+    test("tucks the toolbar away three seconds after auto scroll starts", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+
+      await expect(bar(page)).toBeHidden();
+    });
+
+    test("keeps the toolbar up three seconds after its last touch", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await page.clock.runFor(FEW_SECONDS_MS);
+
+      await bar(page).getByRole("button", { name: "Faster" }).click();
+      await page.clock.runFor(FEW_SECONDS_MS);
+
+      await expect(bar(page)).toBeVisible();
+      await page.clock.runFor(FEW_SECONDS_MS);
+      await expect(bar(page)).toBeHidden();
+    });
+
+    test("brings the toolbar back, paused, at a touch of the page and keeps it up", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+      await expect(bar(page)).toBeHidden();
+
+      await page.getByRole("button", { name: "Scroll down" }).click();
+      await page.clock.runFor(TOOLBAR_TUCKS_MS);
+
+      await expect(bar(page)).toBeVisible();
+      await expect(bar(page)).toContainText("Paused");
     });
 
     test("ends with Stop auto scroll", async ({ page, platform }) => {
