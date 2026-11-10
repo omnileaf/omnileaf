@@ -23,6 +23,7 @@ export interface QuickSettingLook {
   readonly hasChevron: boolean;
   readonly directionName: string;
   readonly autoMark: string;
+  readonly hiddenAutoMark: string;
   readonly hasPill: boolean;
   readonly pill: string;
   readonly words: string;
@@ -46,6 +47,7 @@ const SEGMENT_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  hiddenAutoMark: "invisible",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -67,6 +69,7 @@ const CAPSULE_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  hiddenAutoMark: "invisible",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -84,6 +87,7 @@ const WINDOWS_LOOK: QuickSettingLook = {
   hasChevron: false,
   directionName: "text-center max-medium:sr-only",
   autoMark: "sr-only",
+  hiddenAutoMark: "invisible",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -105,9 +109,10 @@ const STRIP_LOOK: QuickSettingLook = {
   iconSize: 24,
   hasKitIcons: true,
   hasChevron: false,
-  directionName: "truncate",
+  directionName: "truncate text-center",
   autoMark:
     "rounded-auto-mark border border-current px-xs text-reader-thumbnail font-medium tracking-native-tab",
+  hiddenAutoMark: "hidden",
   hasPill: true,
   pill: "flex items-center justify-center rounded-full block-native-reader-quick-pill-block inline-native-reader-quick-pill-inline",
   words:

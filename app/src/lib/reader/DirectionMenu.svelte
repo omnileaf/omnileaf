@@ -104,7 +104,7 @@
         {/each}
       </span>
       <span
-        class={[look.autoMark, !isAutomatic && "invisible"]}
+        class={[look.autoMark, !isAutomatic && look.hiddenAutoMark]}
         aria-hidden={!isAutomatic}
       >
         {m.reader_direction_auto()}
