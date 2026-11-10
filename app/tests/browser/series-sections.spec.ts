@@ -206,6 +206,29 @@ test.describe("a series read across the wide breakpoint", () => {
   });
 });
 
+test.describe("a series' books read tab by tab", () => {
+  const shelf = new SectionShelf(EVERY_KIND);
+  test.use({ platform: "linux", backend: shelf.backend() });
+
+  test("reads the books once when another tab is chosen", async ({ page }) => {
+    test.skip(!isWide(page), "only a wide window shows tabs");
+    await openSeries(page);
+    await expect(covers(page, "Volumes")).toHaveCount(2);
+    const before = shelf.listings.length;
+
+    await kinds(page)
+      .getByRole("tab", { name: /Chapters/ })
+      .click();
+
+    await expect(
+      page
+        .getByRole("table", { name: "Books" })
+        .or(page.getByRole("list", { name: "Books" })),
+    ).toContainText(/chapter 13/);
+    expect(shelf.listings.length - before).toBe(1);
+  });
+});
+
 test.describe("a series whose specials a rescan takes away", () => {
   const shelf = new SectionShelf(EVERY_KIND);
   test.use({ backend: shelf.backend() });

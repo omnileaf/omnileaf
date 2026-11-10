@@ -2,8 +2,10 @@ import type {
   BookSection,
   Platform,
   SeriesBookListing,
+  SortDirection,
 } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
+import type { PhonePlatform } from "#lib/page/platform.ts";
 
 import { sectionTabsLook } from "./section-tabs-look";
 
@@ -12,6 +14,19 @@ export type SectionView = "covers" | "books";
 export type ListingChange = Partial<
   Pick<SeriesBookListing, "section" | "direction" | "shown">
 >;
+
+export function isChaptersOnly(sections: readonly BookSection[]): boolean {
+  return sections.length === 1 && sections[0] === "chapters";
+}
+
+export function firstDirection(
+  sections: readonly BookSection[],
+  phone: PhonePlatform | undefined,
+): SortDirection {
+  return phone === "android" && isChaptersOnly(sections)
+    ? "descending"
+    : "ascending";
+}
 
 export interface SectionScreen {
   readonly platform: Platform;

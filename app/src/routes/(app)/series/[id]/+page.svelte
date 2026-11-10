@@ -64,6 +64,7 @@
     standInOverview,
   } from "#lib/series/series-stand-ins.ts";
   import {
+    firstDirection,
     type ListingChange,
     sectionListing,
   } from "#lib/series-sections/section-listing.ts";
@@ -101,13 +102,21 @@
     DESKTOPS.includes(data.appInfo.platform) && isWide.current,
   );
   const notices = getNotices();
-  let listing: SeriesBookListing = $state({ ...EVERY_BOOK_IN_ORDER });
+  let chosen: { id: string; change: ListingChange } | undefined = $state();
+  const chosenHere = $derived(chosen?.id === data.id ? chosen.change : {});
+  const sections = $derived(
+    found?.overview.sections.map(({ section }) => section) ?? [],
+  );
+  const listing: SeriesBookListing = $derived({
+    ...EVERY_BOOK_IN_ORDER,
+    direction: firstDirection(sections, phone),
+    ...chosenHere,
+  });
   const listed = $derived(
-    sectionListing(
-      listing,
-      found?.overview.sections.map(({ section }) => section) ?? [],
-      { platform: data.appInfo.platform, width: width.current },
-    ),
+    sectionListing(listing, sections, {
+      platform: data.appInfo.platform,
+      width: width.current,
+    }),
   );
   const foundId = $derived(found?.overview.id);
   const overview = $derived(
@@ -123,6 +132,17 @@
   const books = $derived(
     foundId === undefined ? undefined : seriesBookList(foundId, () => listed),
   );
+  const listingKey = $derived(
+    [listed.shown, listed.direction, listed.section, listed.volume].join(":"),
+  );
+  let startedFor: string | undefined;
+
+  function choose(change: ListingChange): void {
+    chosen = { id: data.id, change: { ...chosenHere, ...change } };
+    if (listingKey === startedFor) {
+      void books?.start();
+    }
+  }
 
   let sourcedDetails: SeriesDetails | undefined = $state();
   let keepsDetailEdits = $state(false);
@@ -325,9 +345,11 @@
   });
 
   $effect(() => {
-    const listed = books;
+    const list = books;
+    const key = listingKey;
     untrack(() => {
-      void listed?.start();
+      startedFor = key;
+      void list?.start();
     });
   });
 
@@ -508,10 +530,7 @@
               missingVolumes={found.overview.missingVolumes}
               lastVolume={found.overview.lastVolume}
               listing={listed}
-              onListing={(change: ListingChange) => {
-                listing = { ...listing, ...change };
-                void books?.start();
-              }}
+              onListing={choose}
               {books}
               usesStandIns={screenshotMode.isOn}
               onMark={mark}
@@ -532,10 +551,7 @@
                     readCount={found.overview.readCount}
                     bookmarkCount={found.overview.bookmarkCount}
                     {listing}
-                    onListing={(chosen: SeriesBookListing) => {
-                      listing = chosen;
-                      void books.start();
-                    }}
+                    onListing={choose}
                     isComplete={books.list.isComplete}
                     onNearEnd={() => {
                       void books.loadMore();

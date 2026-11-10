@@ -30,6 +30,7 @@
   } from "#lib/navigation/tab-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
+  import type { ListingChange } from "#lib/series-sections/section-listing.ts";
   import { shortcut } from "#lib/shortcut.ts";
 
   import BookList from "./BookList.svelte";
@@ -126,7 +127,7 @@
     readCount: number;
     bookmarkCount: number;
     listing: SeriesBookListing;
-    onListing: (listing: SeriesBookListing) => void;
+    onListing: (change: ListingChange) => void;
     isComplete: boolean;
     onNearEnd: () => void;
     onLoadAll: () => Promise<void>;
@@ -572,7 +573,7 @@
       shown={listing.shown}
       onClearSearch={clearSearch}
       onShowAll={() => {
-        onListing({ ...listing, shown: "all" });
+        onListing({ shown: "all" });
       }}
     />
   {/if}

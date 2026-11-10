@@ -1,8 +1,10 @@
 import { expect, test } from "vitest";
 
 import type { BookSection, SeriesBookListing } from "#lib/ipc/bindings.ts";
+import type { PhonePlatform } from "#lib/page/platform.ts";
 
 import {
+  firstDirection,
   type SectionScreen,
   sectionListing,
   sectionTabs,
@@ -165,6 +167,20 @@ test("keeps the books list for chapters only and for unsorted books", () => {
     sectionView(IN_ORDER, ["chapters"], LINUX_WINDOW),
     sectionView(IN_ORDER, [], LINUX_WINDOW),
   ]).toEqual(["books", "books"]);
+});
+
+test("lists a series of chapters only newest first on an Android phone", () => {
+  expect(firstDirection(["chapters"], "android")).toBe("descending");
+});
+
+test.each<[readonly BookSection[], PhonePlatform | undefined]>([
+  [["chapters"], "ios"],
+  [["chapters"], undefined],
+  [["volumes"], "android"],
+  [["volumes", "chapters"], "android"],
+  [[], "android"],
+])("lists %j in order on %s", (sections, phone) => {
+  expect(firstDirection(sections, phone)).toBe("ascending");
 });
 
 test("keeps the books list for volumes in a narrow window", () => {
