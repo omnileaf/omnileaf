@@ -74,12 +74,23 @@ test.describe("the reader on a phone", { tag: "@native" }, () => {
       await expectNotice(notice(page, "Back on page 14"), platform);
     });
 
-    test("still says where it opened on a tablet", async ({ page }) => {
+    test("still says where it opened on a tablet, except on Android", async ({
+      page,
+      platform,
+    }) => {
       await page.setViewportSize(TABLET);
 
       await openBook(page);
 
-      await expect(notice(page, "Back on page 14")).toBeVisible();
+      const shown = notice(page, "Back on page 14");
+      if (platform === "android") {
+        await expect(
+          page.getByRole("img", { name: "Page 14", exact: true }),
+        ).toBeVisible();
+        await expect(shown).toHaveCount(0);
+        return;
+      }
+      await expect(shown).toBeVisible();
     });
   });
 

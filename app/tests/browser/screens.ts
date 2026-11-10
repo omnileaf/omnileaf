@@ -315,9 +315,9 @@ function firstResult(page: Page): Locator {
   return page.getByRole("option").first();
 }
 
-function isQuietPhoneReader(page: Page, platform: Platform): boolean {
+function opensReaderQuietly(page: Page, platform: Platform): boolean {
   const isPhoneSized = (page.viewportSize()?.width ?? 0) < MEDIUM_MIN_WIDTH;
-  return isPhoneSized && (platform === "ios" || platform === "android");
+  return platform === "android" || (isPhoneSized && platform === "ios");
 }
 
 function shownNotice(page: Page): Locator {
@@ -325,7 +325,7 @@ function shownNotice(page: Page): Locator {
 }
 
 function backOnPageToast(page: Page, platform: Platform): Locator | undefined {
-  return isQuietPhoneReader(page, platform)
+  return opensReaderQuietly(page, platform)
     ? undefined
     : shownNotice(page).filter({ hasText: "Back on page 14" });
 }

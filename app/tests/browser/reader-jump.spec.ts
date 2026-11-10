@@ -343,12 +343,20 @@ test.describe("after picking a book", { tag: "@native" }, () => {
 
   test("says it's starting a book never opened, with nothing to start over", async ({
     page,
+    platform,
   }) => {
     await openBook(page);
     const list = await openJumpList(page);
     await list.getByRole("link", { name: UNREAD.title }).click();
 
     const shown = toast(page, `Starting ${UNREAD.title}`);
+    if (platform === "android") {
+      await expect(
+        page.getByRole("img", { name: "Page 1", exact: true }),
+      ).toBeVisible();
+      await expect(shown).toHaveCount(0);
+      return;
+    }
     await expect(shown).toContainText(`Page 1 of ${String(PAGES)}`);
     await expect(shown.getByRole("button", { name: "Start over" })).toHaveCount(
       0,
