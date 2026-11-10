@@ -59,13 +59,16 @@ export const NOT_STARTED: WireOpening = {
   startPage: 0,
 };
 
-export function readerBook({ reading, startPage }: WireOpening): WireBook {
+export function readerBook(
+  { reading, startPage }: WireOpening,
+  pageCount = PAGE_COUNT,
+): WireBook {
   return {
     id: BOOK_ID,
     title: BOOK_TITLE,
     series: BOOK_SERIES_ID,
     seriesTitle: BOOK_SERIES_TITLE,
-    pages: Array.from({ length: PAGE_COUNT }, (_, index) => ({
+    pages: Array.from({ length: pageCount }, (_, index) => ({
       path: `page/v1/${BOOK_ID}/1/${String(index)}`,
       thumbnail: `page-thumb/v1/${BOOK_ID}/1/${String(index)}`,
       size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },

@@ -1117,16 +1117,7 @@ test.describe(
     test.use({
       backend: {
         ...readerBackend(DEFAULT_BACKEND),
-        openBook: () => {
-          const book = readerBook(NOT_STARTED);
-          return {
-            ...book,
-            pages: Array.from(
-              { length: LONG_BOOK_PAGES / PAGE_COUNT },
-              () => book.pages,
-            ).flat(),
-          };
-        },
+        openBook: () => readerBook(NOT_STARTED, LONG_BOOK_PAGES),
       },
     });
 
@@ -1148,7 +1139,7 @@ test.describe(
 
       await slider.fill(String(LAST_PAIR_END));
 
-      await expect(bottomBar(page)).toContainText(
+      await expect(page.locator("[data-reader-count]")).toHaveText(
         `${String(LAST_PAIR_END - 1)}–${String(LAST_PAIR_END)} / ${String(LONG_BOOK_PAGES)}`,
       );
       expect((await boxOf(track)).width).toBe(firstWidth);
