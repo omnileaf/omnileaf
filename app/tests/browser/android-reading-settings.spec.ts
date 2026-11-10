@@ -80,7 +80,7 @@ test.describe(
       await expect(right).toContainText("Nothing");
     });
 
-    test("sets the tap guide, the guide again and the resume notice as flush rows with a line of help", async ({
+    test("sets the tap guide and the guide again as flush rows with a line of help, and offers no resume notice", async ({
       page,
     }) => {
       await page.goto("/settings/reading");
@@ -90,7 +90,9 @@ test.describe(
         name: "Show the resume notice",
       });
 
-      for (const row of [guide, again, resume]) {
+      await expect(guide).toBeVisible();
+      await expect(resume).toHaveCount(0);
+      for (const row of [guide, again]) {
         expect((await boxOf(row)).x).toBe(0);
         await expect(row).toHaveCSS("border-top-width", "0px");
       }
@@ -102,8 +104,6 @@ test.describe(
       );
       await expect(guide).toContainText("Off, it never shows.");
       await expect(again).toContainText("even with the guide off");
-      await expect(resume).toContainText("Off, it opens quietly.");
-      await expect(resume).not.toBeChecked();
     });
 
     test("sets Smart features flush, its switches level with the other rows", async ({

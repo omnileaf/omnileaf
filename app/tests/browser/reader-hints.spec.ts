@@ -83,7 +83,31 @@ test.describe("the tap guide", { tag: "@native" }, () => {
   });
 });
 
+test.describe("the resume notice on Android", { tag: "@native" }, () => {
+  test.use({ platform: "android" });
+
+  test("never shows, even when it was turned on before", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("omnileaf.readerHints.resumeNotice", "on");
+    });
+
+    await openBook(page);
+
+    await expect(
+      page.getByRole("img", { name: "Page 14", exact: true }),
+    ).toBeVisible();
+    await expect(resumeNotice(page)).toHaveCount(0);
+  });
+});
+
 test.describe("the resume notice", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(
+      platform === "android",
+      "Android opens a book quietly and has no resume notice setting",
+    );
+  });
+
   test("says where a book opened once it is turned on", async ({ page }) => {
     await page.goto("/settings/reading");
     const resume = setting(page, "Show the resume notice");
