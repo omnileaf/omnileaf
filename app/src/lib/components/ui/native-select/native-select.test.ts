@@ -67,3 +67,13 @@ test("sets the chosen value at 14px in regular weight", async () => {
   expect(style.fontSize).toBe("14px");
   expect(style.fontWeight).toBe("400");
 });
+
+test("shows the value it is given and takes the one picked from the list", async () => {
+  await render(NativeSelectHarness);
+  const field = page.getByRole("combobox", { name: "Rescan folders" });
+  await expect.element(field).toHaveValue("day");
+
+  await field.selectOptions("Every week");
+
+  await expect.element(field).toHaveValue("week");
+});

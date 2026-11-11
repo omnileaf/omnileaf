@@ -22,17 +22,12 @@
   const usesSelect = $derived(currentPlatform() === "windows" || isInspector);
   const labelId = $props.id();
 
-  function isReadState(value: string): value is ReadState {
-    return READ_STATES.some((state) => state === value);
-  }
-
-  function chooseState({
-    currentTarget: { value },
-  }: Event & { currentTarget: HTMLSelectElement }): void {
-    if (isReadState(value)) {
-      onChoose(value);
-    }
-  }
+  const choices = $derived(
+    READ_STATES.map((state) => ({
+      value: state,
+      label: READ_STATE_LABELS[state](),
+    })),
+  );
 </script>
 
 {#if usesSelect}
@@ -44,21 +39,15 @@
       aria-labelledby={labelId}
       value={readStateOf(filter)}
       {...isInspector ? MAC_INSPECTOR.select : {}}
-      onchange={chooseState}
-    >
-      {#each READ_STATES as state (state)}
-        <option value={state}>{READ_STATE_LABELS[state]()}</option>
-      {/each}
-    </NativeSelect>
+      {choices}
+      {onChoose}
+    />
   </div>
 {:else}
   <SettingChoice
     isStacked
     label={m.library_read_state()}
-    choices={READ_STATES.map((state) => ({
-      value: state,
-      label: READ_STATE_LABELS[state](),
-    }))}
+    {choices}
     chosen={readStateOf(filter)}
     {onChoose}
   />

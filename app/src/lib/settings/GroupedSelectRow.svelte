@@ -38,13 +38,6 @@
   } = $props();
 
   const id = $props.id();
-
-  function choose(picked: string): void {
-    const option = options.find((option) => option.value === picked);
-    if (option !== undefined) {
-      onChoose(option.value);
-    }
-  }
 </script>
 
 <section aria-labelledby="{id}-heading" class="flex flex-col gap-xs">
@@ -60,15 +53,8 @@
       iconSize={ARROWS_SIZE}
       class={ARROWS_CIRCLE}
       fieldClass={FLAT_SELECT}
-      onchange={({
-        currentTarget,
-      }: Event & { currentTarget: HTMLSelectElement }) => {
-        choose(currentTarget.value);
-      }}
-    >
-      {#each options as option (option.value)}
-        <option value={option.value}>{option.label}</option>
-      {/each}
-    </NativeSelect>
+      choices={options}
+      {onChoose}
+    />
   </div>
 </section>

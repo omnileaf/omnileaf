@@ -1,37 +1,60 @@
-<script lang="ts">
+<script lang="ts" generics="Value extends string">
   import { ChevronDown } from "@lucide/svelte";
-  import type { WithElementRef } from "bits-ui";
   import type { HTMLSelectAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
 
   const ICON_SIZE = 16;
 
+  interface Choice {
+    readonly value: Value;
+    readonly label: string;
+  }
+
   let {
-    ref = $bindable(null),
     class: className,
     fieldClass,
     icon: Icon = ChevronDown,
     iconSize = ICON_SIZE,
-    children,
+    choices,
+    value,
+    onChoose,
     ...restProps
-  }: WithElementRef<HTMLSelectAttributes, HTMLSelectElement> & {
+  }: Omit<
+    HTMLSelectAttributes,
+    "children" | "value" | "onchange" | "multiple"
+  > & {
     fieldClass?: string;
     icon?: typeof ChevronDown;
     iconSize?: number;
+    choices: readonly Choice[];
+    value: Value;
+    onChoose: (value: Value) => void;
   } = $props();
+
+  function choose(picked: string): void {
+    const choice = choices.find((candidate) => candidate.value === picked);
+    if (choice !== undefined) {
+      onChoose(choice.value);
+    }
+  }
 </script>
 
 <div class={cn("relative flex items-center", className)}>
   <select
-    bind:this={ref}
     class={cn(
       "flex-1 appearance-none rounded-select border border-select-edge bg-select ps-md pe-select-end text-label text-ellipsis block-panel-field min-inline-none macos:shadow-raised windows:border-be-windows-stroke-strong linux:shadow-raised",
       fieldClass,
     )}
+    {value}
+    onchange={({ currentTarget }) => {
+      choose(currentTarget.value);
+    }}
     {...restProps}
   >
-    {@render children?.()}
+    {#each choices as choice (choice.value)}
+      <option value={choice.value}>{choice.label}</option>
+    {/each}
   </select>
   <Icon
     size={iconSize}

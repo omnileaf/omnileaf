@@ -41,15 +41,8 @@
       {value}
       class="desktop:medium:inline-setting-control"
       fieldClass="touch:text-body touch:block-touch-target"
-      onchange={({
-        currentTarget,
-      }: Event & { currentTarget: HTMLSelectElement }) => {
-        onChoose(currentTarget.value);
-      }}
-    >
-      {#each options as option (option.value)}
-        <option value={option.value}>{option.label}</option>
-      {/each}
-    </NativeSelect>
+      choices={options}
+      {onChoose}
+    />
   </div>
 {/if}

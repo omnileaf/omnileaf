@@ -31,10 +31,6 @@
 
   const followsWindows = $derived(colours.choice === "wallpaper");
 
-  function isColoursChoice(value: string): value is ColoursChoice {
-    return COLOURS_CHOICES.some((choice) => choice === value);
-  }
-
   async function openColourSettings(): Promise<void> {
     const opened = await commands.openColourSettings();
     if (opened.status === "error") {
@@ -81,16 +77,12 @@
     aria-describedby={hintId}
     value={colours.choice}
     class="shrink-0 inline-setting-control"
-    onchange={({
-      currentTarget,
-    }: Event & { currentTarget: HTMLSelectElement }) => {
-      if (isColoursChoice(currentTarget.value)) {
-        colours.choose(currentTarget.value);
-      }
+    choices={COLOURS_CHOICES.map((choice) => ({
+      value: choice,
+      label: CHOICE_LABELS[choice](),
+    }))}
+    onChoose={(choice: ColoursChoice) => {
+      colours.choose(choice);
     }}
-  >
-    {#each COLOURS_CHOICES as choice (choice)}
-      <option value={choice}>{CHOICE_LABELS[choice]()}</option>
-    {/each}
-  </NativeSelect>
+  />
 </section>

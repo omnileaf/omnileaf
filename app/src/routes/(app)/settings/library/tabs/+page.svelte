@@ -72,6 +72,15 @@
       : ALL_SERIES,
   );
 
+  const opensOnChoices = $derived([
+    { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
+    ...openable.map(({ key, name }) => ({ value: key, label: name })),
+  ]);
+
+  function chooseOpensOn(choice: string): void {
+    opensOn.choose(choice);
+  }
+
   const opensOnLabel = $derived(
     shownOpensOn === OPENS_ON_LAST_TAB
       ? m.library_opens_on_last()
@@ -219,14 +228,9 @@
       <SettingChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
-        choices={[
-          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
-          ...openable.map(({ key, name }) => ({ value: key, label: name })),
-        ]}
+        choices={opensOnChoices}
         chosen={shownOpensOn}
-        onChoose={(choice: string) => {
-          opensOn.choose(choice);
-        }}
+        onChoose={chooseOpensOn}
       />
       <p class={FLUSH_FOOTER}>
         {m.library_opens_on_help()}
@@ -237,14 +241,9 @@
       <GroupedChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
-        choices={[
-          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
-          ...openable.map(({ key, name }) => ({ value: key, label: name })),
-        ]}
+        choices={opensOnChoices}
         chosen={shownOpensOn}
-        onChoose={(choice: string) => {
-          opensOn.choose(choice);
-        }}
+        onChoose={chooseOpensOn}
       />
       <p class="px-sm text-native-list-sub/native-list-sub text-muted">
         {m.library_opens_on_help()}
@@ -265,17 +264,9 @@
           value={shownOpensOn}
           class="desktop:medium:inline-setting-control"
           fieldClass="touch:text-body touch:block-touch-target"
-          onchange={({
-            currentTarget: { value },
-          }: Event & { currentTarget: HTMLSelectElement }) => {
-            opensOn.choose(value);
-          }}
-        >
-          <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
-          {#each openable as { key, name } (key)}
-            <option value={key}>{name}</option>
-          {/each}
-        </NativeSelect>
+          choices={opensOnChoices}
+          onChoose={chooseOpensOn}
+        />
       </div>
       <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
     </section>

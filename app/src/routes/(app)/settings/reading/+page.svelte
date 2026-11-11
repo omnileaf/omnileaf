@@ -75,13 +75,15 @@
   const endId = `${swipesId}-end`;
   const newSeries = newSeriesReadingMode();
 
-  function chooseNewSeriesMode(value: string): void {
-    const choice = READING_MODE_CHOICES.find(
-      (candidate) => candidate === value,
-    );
-    if (choice !== undefined) {
-      newSeries.choose(choice);
-    }
+  const newSeriesChoices = $derived(
+    READING_MODE_CHOICES.map((choice) => ({
+      value: choice,
+      label: READING_MODE_NAMES[choice](),
+    })),
+  );
+
+  function chooseNewSeriesMode(choice: ReadingModeChoice): void {
+    newSeries.choose(choice);
   }
 </script>
 
@@ -181,14 +183,9 @@
         title={m.reading_mode_new_series()}
         value={READING_MODE_NAMES[newSeries.choice]()}
         help={m.reading_mode_new_series_help()}
-        choices={READING_MODE_CHOICES.map((choice) => ({
-          value: choice,
-          label: READING_MODE_NAMES[choice](),
-        }))}
+        choices={newSeriesChoices}
         chosen={newSeries.choice}
-        onChoose={(choice: ReadingModeChoice) => {
-          newSeries.choose(choice);
-        }}
+        onChoose={chooseNewSeriesMode}
       />
     {:else}
       <section
@@ -202,14 +199,9 @@
           id={modeId}
           aria-describedby="{modeId}-help"
           value={newSeries.choice}
-          onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-            chooseNewSeriesMode(event.currentTarget.value);
-          }}
-        >
-          {#each READING_MODE_CHOICES as choice (choice)}
-            <option value={choice}>{READING_MODE_NAMES[choice]()}</option>
-          {/each}
-        </NativeSelect>
+          choices={newSeriesChoices}
+          onChoose={chooseNewSeriesMode}
+        />
         <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
           {m.reading_mode_new_series_help()}
         </p>
