@@ -3,6 +3,7 @@
 
   import { Button } from "#lib/components/ui/button/index.ts";
   import type { LibraryFilter } from "#lib/ipc/bindings.ts";
+  import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -34,7 +35,7 @@
   <Button
     type="button"
     look="outline"
-    class="mbs-lg flex items-center gap-sm rounded-full px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
+    class="{EMPTY_ACTION_GAP} flex items-center gap-sm rounded-full px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
     onclick={onClear}
   >
     <X size={CLEAR_ICON_SIZE} aria-hidden="true" />

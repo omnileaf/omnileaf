@@ -31,6 +31,7 @@
     actionGroupLook,
   } from "#lib/page/action-group.ts";
   import { EXPANDED_QUERY, WindowWidth } from "#lib/page/breakpoints.ts";
+  import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import PageHeading from "#lib/page/PageHeading.svelte";
   import PageToolbar from "#lib/page/PageToolbar.svelte";
@@ -253,7 +254,7 @@
         title={m.creator_empty({ name: data.name })}
         body={m.creator_empty_body()}
       >
-        <div class={cn(actions.group, "mbs-lg")}>
+        <div class={cn(actions.group, EMPTY_ACTION_GAP)}>
           <a href={resolve("/(app)")} class={actions.other}>
             <Library size={ICON_SIZE} aria-hidden="true" />
             {m.series_back_label()}
