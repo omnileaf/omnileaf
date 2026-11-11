@@ -56,8 +56,13 @@ function placeInFiles(path: string, device: AppleDevice): string {
   return folders(path).slice(-1).join(PLACE_SEPARATOR);
 }
 
+interface AndroidVolume {
+  readonly within: RegExp;
+  readonly name: () => string;
+}
+
 /** Android mounts its internal shared storage at /storage/emulated/0 and each removable card at /storage/ under the card's volume id, which Files shows by name instead. */
-const ANDROID_VOLUMES: readonly { within: RegExp; name: () => string }[] = [
+const ANDROID_VOLUMES: readonly AndroidVolume[] = [
   {
     within: /^\/storage\/emulated\/0(?:\/(.*))?$/,
     name: m.library_android_internal_storage,
