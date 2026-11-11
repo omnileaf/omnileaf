@@ -31,13 +31,29 @@ async function openSliders(
   });
 }
 
-function root(): HTMLElement {
-  const slider = page.getByRole("slider", { name: "Brightness" }).element();
+function root(name = "Brightness"): HTMLElement {
+  const slider = page.getByRole("slider", { name }).element();
   const found = slider.closest("[data-slider-root]");
   if (!(found instanceof HTMLElement)) {
-    throw new Error("the brightness slider drew no root");
+    throw new Error(`the ${name} slider drew no root`);
   }
   return found;
+}
+
+function handleOf(sliderRoot: HTMLElement): HTMLElement {
+  const handle = sliderRoot.querySelector("[data-progress-thumb]");
+  if (!(handle instanceof HTMLElement)) {
+    throw new Error("the slider drew no handle");
+  }
+  return handle;
+}
+
+function barOf(sliderRoot: HTMLElement): HTMLElement {
+  const bar = handleOf(sliderRoot).previousElementSibling;
+  if (!(bar instanceof HTMLElement)) {
+    throw new Error("the slider drew no bar");
+  }
+  return bar;
 }
 
 afterEach(() => {
@@ -63,6 +79,23 @@ test("draws the Android phone light sliders' handle as a 4 by 44 bar", async () 
   const box = handle?.getBoundingClientRect();
   expect([box?.width, box?.height]).toEqual(HANDLE);
 });
+
+test.each(["Brightness", "Warmth"])(
+  "centres the Android phone %s handle on its bar's height",
+  async (name) => {
+    await openSliders("android");
+
+    const sliderRoot = root(name);
+
+    const handle = handleOf(sliderRoot).getBoundingClientRect();
+    const bar = barOf(sliderRoot).getBoundingClientRect();
+
+    expect(handle.top + handle.height / 2).toBeCloseTo(
+      bar.top + bar.height / 2,
+      0,
+    );
+  },
+);
 
 test("keeps the round thumb on an Android tablet", async () => {
   await openSliders("android", TABLET);
