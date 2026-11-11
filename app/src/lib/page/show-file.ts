@@ -40,19 +40,35 @@ export function openedFromLabel(platform: Platform): string {
   return OPENED_FROM[platform]();
 }
 
+function sayIfNotShown(
+  shown: Awaited<ReturnType<typeof commands.showBookInFolder>>,
+  notices: Pick<Notices, "show">,
+): void {
+  if (shown.status === "error") {
+    reportError(shown.error);
+    notices.show({
+      tone: "warning",
+      icon: CircleAlert,
+      title: m.show_file_failed(),
+    });
+  }
+}
+
 export function showBookFile(
   book: BookPlace["id"],
   notices: Pick<Notices, "show">,
 ): void {
   void commands.showBookInFolder(book).then((shown) => {
-    if (shown.status === "error") {
-      reportError(shown.error);
-      notices.show({
-        tone: "warning",
-        icon: CircleAlert,
-        title: m.show_file_failed(),
-      });
-    }
+    sayIfNotShown(shown, notices);
+  });
+}
+
+export function showSeriesFolder(
+  series: BookPlace["series"],
+  notices: Pick<Notices, "show">,
+): void {
+  void commands.showSeriesInFolder(series).then((shown) => {
+    sayIfNotShown(shown, notices);
   });
 }
 

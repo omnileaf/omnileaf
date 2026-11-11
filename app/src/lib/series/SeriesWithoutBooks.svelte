@@ -2,7 +2,6 @@
   import { FolderOpen, FolderSearch, RefreshCw } from "@lucide/svelte";
 
   import { Button } from "#lib/components/ui/button/index.ts";
-  import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { Platform } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -16,7 +15,6 @@
 
   const ICON_SIZE = 16;
   const TOUCH: readonly Platform[] = ["android", "ios"];
-  const ANDROID_SOON_OUTLINE = `${variantClasses("outline", "regular", false, "android")} text-muted`;
 
   let {
     platform,
@@ -84,10 +82,10 @@
           <Icon name="refresh-cw" />
           {m.series_rescan()}
         </Button>
-        <ComingSoonControl label={showFolder} class={ANDROID_SOON_OUTLINE}>
+        <Button type="button" variant="outline" onclick={onShowFolder}>
           <Icon name="folder-open" />
           {showFolder}
-        </ComingSoonControl>
+        </Button>
       </div>
     {:else}
       <div class="mbs-lg flex flex-wrap justify-center gap-sm">

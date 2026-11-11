@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { CommandFailure } from "./fake-backend.ts";
+import { CommandFailure, type FakeBackend } from "./fake-backend.ts";
 import { boxOf, expect, test, tokenColour } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
@@ -291,6 +291,76 @@ test.describe(
 
         expect(box.x).toBe(EMPTY_INSET);
         expect(box.x + box.width).toBe(PIXEL_9_PRO.width - EMPTY_INSET);
+      });
+    });
+  },
+);
+
+test.describe(
+  "showing a series' folder on an Android phone",
+  { tag: "@native" },
+  () => {
+    let shown: string[] = [];
+    let fails = false;
+
+    function showing(books: readonly { state: "read" }[]): FakeBackend {
+      return {
+        ...new FakeShelf(books).backend(),
+        showSeriesInFolder: (series) => {
+          if (fails) {
+            throw new CommandFailure({
+              code: "fileManagerUnavailable",
+              message: "no file manager",
+            });
+          }
+          shown = [...shown, series];
+          return null;
+        },
+      };
+    }
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android's folder");
+      shown = [];
+      fails = false;
+    });
+
+    test.describe("with books", () => {
+      test.use({ backend: showing([READ]) });
+
+      test("shows the folder from the series' More", async ({ page }) => {
+        await openSeries(page);
+
+        await topAppBar(page)
+          .getByRole("button", { name: /^More for / })
+          .click();
+        await page.getByRole("menuitem", { name: "Show the folder" }).click();
+
+        await expect.poll(() => shown).toEqual([SERIES_ID]);
+      });
+
+      test("says so when the folder can't be opened", async ({ page }) => {
+        fails = true;
+        await openSeries(page);
+
+        await topAppBar(page)
+          .getByRole("button", { name: /^More for / })
+          .click();
+        await page.getByRole("menuitem", { name: "Show the folder" }).click();
+
+        await expect(page.getByText("Couldn't open the folder.")).toBeVisible();
+      });
+    });
+
+    test.describe("without books", () => {
+      test.use({ backend: showing([]) });
+
+      test("shows the folder from Show the folder", async ({ page }) => {
+        await openSeries(page);
+
+        await page.getByRole("button", { name: "Show the folder" }).click();
+
+        await expect.poll(() => shown).toEqual([SERIES_ID]);
       });
     });
   },
