@@ -402,6 +402,7 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
       test.skip();
       return;
     }
+    await page.goto("/");
     await openSeries(page);
     await findBook(page).click();
     await searchField(page).fill("zzz");
@@ -413,6 +414,28 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     await expect(searchField(page)).toHaveCount(0);
     await expect(bookRows(page)).toHaveCount(4);
     expect(new URL(page.url()).pathname).toBe(`/series/${SERIES_ID}`);
+  });
+
+  test("leaves no extra Back step behind a book opened from the Android search", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.goto("/");
+    await openSeries(page);
+    await findBook(page).click();
+    await searchField(page).fill(shelf.titleOf(2));
+
+    await bookRows(page).getByRole("link").first().click();
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(2)}$`));
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test("folds the Show choices into a pop-up on an iPhone at the largest text", async ({
