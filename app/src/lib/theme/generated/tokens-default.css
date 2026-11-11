@@ -418,6 +418,7 @@
   --native-spacing-search-token-inline: 9px;
   --native-spacing-search-field-gap: var(--spacing-sm);
   --native-shadow-notice-lift: var(--shadow-toast);
+  --native-shadow-toolbar-lift: none;
   --native-spacing-notice-inline: var(--spacing-md);
   --native-spacing-notice-top: 0px;
   --native-color-info-bar: transparent;

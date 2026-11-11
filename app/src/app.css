@@ -172,6 +172,7 @@
 @custom-variant with-card-action (&:has(> [data-slot="card-action"]));
 @custom-variant while-picking (&:where(main:has([data-picking]) *));
 @custom-variant while-phone-picks (&:where(:root:has(main [data-picking-bar]) *));
+@custom-variant keyboard-shown (&:where(:root[data-keyboard-shown] *));
 
 @theme {
   --*: initial;
@@ -700,6 +701,10 @@
   --spacing-reader-thumbnail-wide: 3.25rem;
   --spacing-reader-strip: 45rem;
   --spacing-reader-auto-bar: 30rem;
+  --spacing-reader-auto-bar-bottom: calc(
+    var(--spacing-safe-bottom) + var(--spacing-lg)
+  );
+  --spacing-reader-auto-bar-end: 1.25rem;
   --spacing-strip-rail-inset: 5.5rem;
   --spacing-strip-rail-track: 0.375rem;
   --spacing-strip-rail-thumb: 3rem;
@@ -1623,7 +1628,7 @@
 }
 
 @utility grid-cols-auto-scroll {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(min-content, 1fr);
 }
 
 @utility grid-cols-sheet-header {

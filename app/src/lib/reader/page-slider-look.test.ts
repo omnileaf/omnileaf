@@ -76,6 +76,18 @@ test("draws Android's handle as a 4 by 44 bar at the page", async () => {
   );
 });
 
+test("centres Android's handle on the track's height", async () => {
+  await openSlider("android", PHONE);
+
+  const bar = track().getBoundingClientRect();
+  const handle = part("[data-progress-thumb]").getBoundingClientRect();
+
+  expect(handle.top + handle.height / 2).toBeCloseTo(
+    bar.top + bar.height / 2,
+    0,
+  );
+});
+
 test("centres Android's handle on the page counted from the right when reading right to left", async () => {
   await openSlider("android", PHONE, "rightToLeft");
   const root = part("[data-slider-root]").getBoundingClientRect();

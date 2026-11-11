@@ -29,6 +29,8 @@ const AUDIO_ANSWER = /-> (\d+)/;
 const MEDIA_SESSION_ANSWER = /volume is (\d+) in range \[(\d+)\.\.(\d+)\]/;
 
 const READER_SETTINGS_LINK = xpath("//main//a[@href='/settings/reading']");
+const NO_NOTICE_SHOWN =
+  "return document.querySelector('[data-sonner-toast]') === null;";
 const VOLUME_KEYS_SWITCH =
   "//main//*[@role='switch'][.//*[normalize-space()='Turn pages with the volume keys']]";
 const SERIES_HEADING = xpath(
@@ -160,6 +162,7 @@ async function turnPagesWithVolumeKeys(isOn: boolean): Promise<void> {
   await (await session.waitFor(mainNavigationLink("Settings"))).click();
   await (await session.waitFor(READER_SETTINGS_LINK)).click();
   await session.waitFor(xpath(VOLUME_KEYS_SWITCH));
+  await session.waitUntil(NO_NOTICE_SHOWN, "the notices gone");
   const toChange = await session.findWithin(
     volumeKeysSwitch(!isOn),
     LOOK_ONCE_MS,
