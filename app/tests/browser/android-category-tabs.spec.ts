@@ -164,6 +164,24 @@ test.describe(
         expect(none.content).toBe("none");
       });
 
+      test("sets the underline on the row's rule at its foot, the row as tall as a tab", async ({
+        page,
+      }) => {
+        await openLibrary(page);
+        const row = tabs(page).locator("xpath=..");
+        const current = tabs(page).getByRole("tab", { name: "All" });
+
+        const rowBox = await boxOf(row);
+        const line = await current.evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const after = getComputedStyle(element, "::after");
+          return box.bottom - Number.parseFloat(after.bottom);
+        });
+
+        expect(rowBox.height).toBeCloseTo(TAB_HEIGHT, 0);
+        expect(line).toBeCloseTo(rowBox.y + rowBox.height, 0);
+      });
+
       test("moves the underline to the tab chosen", async ({ page }) => {
         await openLibrary(page);
         const manga = tabs(page).getByRole("tab", { name: "Manga" });
@@ -224,8 +242,10 @@ test.describe(
         const arrow = page.getByRole("button", { name: "Every category" });
 
         await expect(row).toHaveCSS(
-          "border-bottom-color",
-          await tokenColour(page, "--native-color-tab-rule"),
+          "box-shadow",
+          new RegExp(
+            `^${RegExp.escape(await tokenColour(page, "--native-color-tab-rule"))} 0px -1px 0px 0px inset`,
+          ),
         );
         await expect(arrow).toHaveCSS(
           "color",
