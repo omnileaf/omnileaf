@@ -72,7 +72,7 @@
     </SelectPrimitive.Trigger>
     <SelectMenu
       {choices}
-      labelledBy={labelId}
+      aria-labelledby={labelId}
       class="inline-(--bits-select-anchor-width)"
     />
   </SelectPrimitive.Root>

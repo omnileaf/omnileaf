@@ -9,3 +9,7 @@ export function choiceOf<Value extends string>(
 ): SelectChoice<Value> | undefined {
   return choices.find((choice) => choice.value === picked);
 }
+
+export type SelectName =
+  | { readonly "aria-label": string; readonly "aria-labelledby"?: undefined }
+  | { readonly "aria-labelledby": string; readonly "aria-label"?: undefined };

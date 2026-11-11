@@ -8,7 +8,7 @@
   import { closesOnBack } from "#lib/navigation/overlay-back.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
 
-  import type { SelectChoice } from "./select-choice.ts";
+  import type { SelectChoice, SelectName } from "./select-choice.ts";
 
   const CHECK_SIZE = 20;
   const ANCHOR_GAP_PX = 4;
@@ -16,11 +16,10 @@
 
   let {
     choices,
-    labelledBy,
     class: className,
-  }: {
+    ...name
+  }: SelectName & {
     choices: readonly SelectChoice<Value>[];
-    labelledBy: string;
     class?: ClassValue;
   } = $props();
 
@@ -30,7 +29,7 @@
 <SelectPrimitive.Portal disabled>
   <SelectPrimitive.Content
     {@attach closesOnBack}
-    aria-labelledby={labelledBy}
+    {...name}
     sideOffset={ANCHOR_GAP_PX}
     collisionPadding={SCREEN_EDGE_GAP_PX}
     class={cn(
