@@ -7,6 +7,9 @@ import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 const CHAPTER_COUNT = 30;
 const LONG_PRESS_MS = 500;
 const SCROLL_STEP_PX = 300;
+const LIST_HEADER_HEIGHT = 44;
+const LIST_HEADER_TOP = 16;
+const LIST_HEADER_BOTTOM = 8;
 const EVERY_CHAPTER = chapters(
   ...Array.from({ length: CHAPTER_COUNT }, (_, index) => index + 1),
 );
@@ -85,12 +88,20 @@ async function scrollBy(page: Page, top: number): Promise<boolean> {
   return hasMoved;
 }
 
-async function drawnRowHeights(page: Page): Promise<number[]> {
+async function drawnHeights(
+  page: Page,
+): Promise<{ headings: number[]; rows: number[] }> {
   return bookList(page)
     .locator(":scope > li")
-    .evaluateAll((rows) =>
-      rows.map((row) => Math.round(row.getBoundingClientRect().height)),
-    );
+    .evaluateAll((items) => {
+      const heightOf = (item: Element) =>
+        Math.round(item.getBoundingClientRect().height);
+      const isHeading = (item: Element) => item.querySelector("h3") !== null;
+      return {
+        headings: items.filter(isHeading).map(heightOf),
+        rows: items.filter((item) => !isHeading(item)).map(heightOf),
+      };
+    });
 }
 
 async function hold(page: Page, target: Locator): Promise<void> {
@@ -143,6 +154,22 @@ test.describe(
       }
     });
 
+    test("pads each run heading as Material's list header, 16px above its words and 8px below", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      const heading = runHeadings(page).first();
+
+      await expect(heading).toHaveCSS(
+        "padding-top",
+        `${String(LIST_HEADER_TOP)}px`,
+      );
+      await expect(heading).toHaveCSS(
+        "padding-bottom",
+        `${String(LIST_HEADER_BOTTOM)}px`,
+      );
+    });
+
     test("heads the newest run of twelve chapters above its rows", async ({
       page,
     }) => {
@@ -156,20 +183,25 @@ test.describe(
       expect(heading?.y).toBeLessThan(newest?.y ?? 0);
     });
 
-    test("scrolls through every run with the headings and rows kept even", async ({
+    test("scrolls through every run with each heading a list header and the chapter rows kept even", async ({
       page,
     }) => {
       await openSeries(page);
       const seen = new Set<string>();
-      const heights = new Set<number>();
+      const headingHeights = new Set<number>();
+      const rowHeights = new Set<number>();
 
       do {
         await expect(bookLinks(page).first()).toBeVisible();
         for (const text of await runHeadings(page).allTextContents()) {
           seen.add(text.trim());
         }
-        for (const height of await drawnRowHeights(page)) {
-          heights.add(height);
+        const drawn = await drawnHeights(page);
+        for (const height of drawn.headings) {
+          headingHeights.add(height);
+        }
+        for (const height of drawn.rows) {
+          rowHeights.add(height);
         }
       } while (await scrollBy(page, SCROLL_STEP_PX));
 
@@ -179,7 +211,8 @@ test.describe(
         "Chapters 13–24",
         "Chapters 1–12",
       ]);
-      expect(heights.size).toBe(1);
+      expect([...headingHeights]).toEqual([LIST_HEADER_HEIGHT]);
+      expect(rowHeights.size).toBe(1);
     });
 
     test("keeps the run headings while picking chapters", async ({ page }) => {
