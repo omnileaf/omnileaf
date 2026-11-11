@@ -29,6 +29,7 @@
     DOCKED_ROW,
     FLOATING_BAR,
   } from "#lib/navigation/tab-bar.ts";
+  import { NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import {
@@ -70,6 +71,7 @@
     readonly action: string;
     readonly isIconOnly: boolean;
     readonly isDocked: boolean;
+    readonly overTopBar: string | undefined;
   }
 
   const PHONE_PICKING: Readonly<Record<PhonePlatform, PhonePicking>> = {
@@ -84,6 +86,7 @@
       action: "disabled:text-faint",
       isIconOnly: true,
       isDocked: false,
+      overTopBar: undefined,
     },
     android: {
       leading: ["close"],
@@ -96,6 +99,7 @@
       action: "flex-1 flex-col gap-2xs min-inline-none disabled:text-faint",
       isIconOnly: false,
       isDocked: true,
+      overTopBar: `fixed inset-bs-none inset-x-none z-series-bar flex flex-wrap items-center gap-sm ps-series-bar-start pe-series-bar-end pbs-series-bar-top pbe-sm ${NATIVE_TOP_BAR.scrolled}`,
     },
   };
 
@@ -193,16 +197,25 @@
   );
   let toolbarHeight = $state(0);
   const isPhonePicking = $derived(phone !== undefined && selection.isSelecting);
+  const overTopBar = $derived(isPhonePicking ? phone?.overTopBar : undefined);
+  const isPickingInFlow = $derived(
+    selection.isSelecting && overTopBar === undefined,
+  );
+  const isPhonePickingInFlow = $derived(
+    isPhonePicking && overTopBar === undefined,
+  );
   const notices = getNotices();
   const headingId = $props.id();
-  const showsOwnHeading = $derived(
-    controls.kind === "own" || selection.isSelecting,
-  );
-  const labelledBy = $derived(
-    controls.kind === "above" && !selection.isSelecting
+  const showsOwnHeading = $derived(controls.kind === "own" || isPickingInFlow);
+  const topBarCountId = `${headingId}-picked`;
+  const labelledBy = $derived.by(() => {
+    if (overTopBar !== undefined) {
+      return topBarCountId;
+    }
+    return controls.kind === "above" && !isPickingInFlow
       ? controls.headingId
-      : headingId,
-  );
+      : headingId;
+  });
   const dates = $derived(
     new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }),
   );
@@ -219,6 +232,8 @@
   let section: HTMLElement | undefined = $state();
   let toolbar: HTMLElement | undefined = $state();
   let heading: HTMLElement | null = $state(null);
+  let topBar: HTMLElement | undefined = $state();
+  let topBarCount: HTMLElement | null = $state(null);
   let selectAllBox: HTMLElement | null = $state(null);
 
   const isPicking = $derived(selection.isSelecting || selection.count > 0);
@@ -238,7 +253,7 @@
     outcome = { kind: "none" };
     selection.begin(book.id);
     await tick();
-    heading?.focus();
+    (topBarCount ?? heading)?.focus();
   }
 
   function isFocusHereOrLost(): boolean {
@@ -246,7 +261,9 @@
     return (
       focused === null ||
       focused === document.body ||
-      [section, toolbar].some((part) => part?.contains(focused) === true)
+      [section, toolbar, topBar].some(
+        (part) => part?.contains(focused) === true,
+      )
     );
   }
 
@@ -470,17 +487,17 @@
 >
   {#if showsOwnHeading}
     <div
-      data-picking-bar={isPhonePicking || undefined}
+      data-picking-bar={isPhonePickingInFlow || undefined}
       class={[
         "flex items-center gap-sm min-block-series-back",
-        selection.isSelecting &&
+        isPickingInFlow &&
           "sticky -inset-bs-page-top z-series-bar -mx-page-start px-page-start pbs-series-bar-top pbe-xs",
-        isPhonePicking
+        isPhonePickingInFlow
           ? "flex-wrap bg-native-grouped-ground"
-          : selection.isSelecting && "bg-background",
+          : isPickingInFlow && "bg-background",
       ]}
     >
-      {#if isPhonePicking}
+      {#if isPhonePickingInFlow}
         <BarControls
           controls={phone?.leading ?? []}
           {isPickingAll}
@@ -489,7 +506,7 @@
           onPickAll={pickAllShown}
           onPickNone={pickNone}
         />
-      {:else if selection.isSelecting}
+      {:else if isPickingInFlow}
         <Tooltip
           label={m.series_clear_selection()}
           type="button"
@@ -513,19 +530,22 @@
         bind:this={heading}
         id={headingId}
         tabindex="-1"
-        aria-live={isPhonePicking ? "polite" : undefined}
+        aria-live={isPhonePickingInFlow ? "polite" : undefined}
         class={[
           "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
-          selection.isSelecting && "flex-1",
-          isPhonePicking && ["wrap-break-word max-inline-full", phone?.title],
+          isPickingInFlow && "flex-1",
+          isPhonePickingInFlow && [
+            "wrap-break-word max-inline-full",
+            phone?.title,
+          ],
           isWide.current && "sr-only",
         ]}
       >
-        {selection.isSelecting
+        {isPickingInFlow
           ? m.series_selected_count({ count: selection.count })
           : m.series_books_heading({ count: bookCount })}
       </h2>
-      {#if isPhonePicking}
+      {#if isPhonePickingInFlow}
         <BarControls
           controls={phone?.trailing ?? []}
           {isPickingAll}
@@ -534,7 +554,7 @@
           onPickAll={pickAllShown}
           onPickNone={pickNone}
         />
-      {:else if !selection.isSelecting && !isWide.current}
+      {:else if !isPickingInFlow && !isWide.current}
         <p
           class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
         >
@@ -545,7 +565,7 @@
               })
             : m.series_read_only({ read: readCount })}
         </p>
-      {:else if selection.isSelecting}
+      {:else if isPickingInFlow}
         <Button
           type="button"
           look="outline"
@@ -559,6 +579,37 @@
         </Button>
       {/if}
     </div>
+  {/if}
+  {#if overTopBar !== undefined}
+    <Portal to="main">
+      <div bind:this={topBar} data-picking-bar class={overTopBar}>
+        <BarControls
+          controls={phone?.leading ?? []}
+          {isPickingAll}
+          {isAllPicked}
+          onEnd={endPicking}
+          onPickAll={pickAllShown}
+          onPickNone={pickNone}
+        />
+        <h2
+          bind:this={topBarCount}
+          id={topBarCountId}
+          tabindex="-1"
+          aria-live="polite"
+          class="flex-1 wrap-break-word min-inline-none {NATIVE_TOP_BAR.barTitle}"
+        >
+          {m.series_selected_count({ count: selection.count })}
+        </h2>
+        <BarControls
+          controls={phone?.trailing ?? []}
+          {isPickingAll}
+          {isAllPicked}
+          onEnd={endPicking}
+          onPickAll={pickAllShown}
+          onPickNone={pickNone}
+        />
+      </div>
+    </Portal>
   {/if}
   {#if platform === "windows" && selection.count > 0}
     <WindowsSelectionBar
