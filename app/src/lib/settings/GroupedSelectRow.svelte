@@ -2,6 +2,7 @@
   import { ChevronsUpDown } from "@lucide/svelte";
 
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import type { SelectChoice } from "#lib/components/ui/select-menu/index.ts";
 
   import {
     LIST_HEADING,
@@ -18,11 +19,6 @@
 
   const FLAT_SELECT = `border-0 bg-transparent ps-0 pe-native-group-select-end shadow-none macos:shadow-none ${LIST_TITLE}`;
 
-  interface Option {
-    readonly value: Value;
-    readonly label: string;
-  }
-
   let {
     heading,
     label,
@@ -32,7 +28,7 @@
   }: {
     heading: string;
     label: string;
-    options: readonly Option[];
+    options: readonly SelectChoice<Value>[];
     value: Value;
     onChoose: (value: Value) => void;
   } = $props();

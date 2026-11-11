@@ -1,17 +1,13 @@
 <script lang="ts">
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import type { SelectChoice } from "#lib/components/ui/select-menu/index.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
 
   import SettingChoiceRow from "./SettingChoiceRow.svelte";
 
-  interface Option {
-    readonly value: string;
-    readonly label: string;
-  }
-
   interface Props {
     readonly label: string;
-    readonly options: readonly Option[];
+    readonly options: readonly SelectChoice<string>[];
     readonly value: string;
     readonly onChoose: (value: string) => void;
   }
