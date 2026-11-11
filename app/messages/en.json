@@ -2270,6 +2270,8 @@
   "reader_start_auto_scroll": "Start auto scroll",
   "reader_auto_scroll_your_pace": "Your pace",
   "reader_auto_scroll_paused": "Paused",
+  "reader_auto_scroll_paused_at": "Paused at {percent}",
+  "reader_auto_scroll_chapter_progress": "{percent} of the chapter",
   "reader_tap_play": "Tap Play to resume",
   "reader_space_pauses": "Space pauses",
   "reader_space_resumes": "Space resumes",
