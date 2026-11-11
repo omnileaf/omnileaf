@@ -28,6 +28,8 @@ type PhonePlatform = Extract<Platform, "ios" | "android">;
 
 const ANDROID_SHEET_ROW = 56;
 const ANDROID_SEARCH_BAR = 56;
+const PAGE_SIDE = 16;
+const WRAPPED_GAP = 4;
 const SHORT_SWIPE = 0.25;
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
@@ -460,7 +462,7 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     await expect(bookRows(page)).toHaveCount(3);
   });
 
-  test("wraps the Show choices onto rows on Android at the largest text", async ({
+  test("wraps the Show choices on Android at the largest text into two columns, the last across both", async ({
     page,
     platform,
   }) => {
@@ -471,14 +473,86 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     await setTextScale(page, LARGEST_TEXT_SCALE);
 
     await openSeries(page);
-    const all = await boxOf(
-      showChoices(page).getByRole("radio", { name: "All" }),
-    );
-    const unread = await boxOf(
-      showChoices(page).getByRole("radio", { name: "Unread" }),
-    );
+    const segment = (name: string) =>
+      boxOf(showChoices(page).getByRole("radio", { name }));
+    const [all, unread, bookmarked] = await Promise.all([
+      segment("All"),
+      segment("Unread"),
+      segment("Bookmarked"),
+    ]);
 
-    expect(unread.y).toBeGreaterThan(all.y);
+    expect(unread.y).toBe(all.y);
+    expect(bookmarked.y).toBeGreaterThan(all.y);
+    expect(bookmarked.x).toBe(all.x);
+    expect(bookmarked.x + bookmarked.width).toBeCloseTo(
+      unread.x + unread.width,
+      0,
+    );
+    expect(bookmarked.y - (all.y + all.height)).toBeCloseTo(WRAPPED_GAP, 0);
+    for (const name of ["All", "Unread", "Bookmarked"]) {
+      const corners = await showChoices(page)
+        .getByRole("radio", { name })
+        .evaluate((segment) => {
+          const style = getComputedStyle(segment);
+          return [
+            style.borderStartStartRadius,
+            style.borderStartEndRadius,
+            style.borderEndStartRadius,
+            style.borderEndEndRadius,
+          ].map((radius) => Number.parseFloat(radius));
+        });
+      expect(Math.min(...corners)).toBeGreaterThanOrEqual(all.height / 2);
+    }
+  });
+
+  test("heads Android's books with the count, Find a book and Sort on one row, the Show choices full width below", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openSeries(page);
+
+    const [heading, find, sort, shown, list] = await Promise.all([
+      boxOf(page.getByRole("heading", { level: 2, name: /books$/ })),
+      boxOf(findBook(page)),
+      boxOf(page.getByRole("button", { name: /^Sort: / })),
+      boxOf(showChoices(page)),
+      boxOf(bookList(page)),
+    ]);
+
+    const middleOf = (box: { y: number; height: number }) =>
+      box.y + box.height / 2;
+    expect(middleOf(find)).toBeCloseTo(middleOf(heading), 0);
+    expect(middleOf(sort)).toBeCloseTo(middleOf(heading), 0);
+    expect(find.x).toBeGreaterThan(heading.x + heading.width);
+    expect(shown.y).toBeGreaterThan(heading.y + heading.height);
+    expect(shown.x).toBe(PAGE_SIDE);
+    expect(shown.width).toBe(list.width - 2 * PAGE_SIDE);
+  });
+
+  test("gives Android's search bar the Show choices' full-width row", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openSeries(page);
+    const list = await boxOf(bookList(page));
+
+    await findBook(page).click();
+    const [bar, find] = await Promise.all([
+      boxOf(searchField(page).locator("..")),
+      boxOf(findBook(page)),
+    ]);
+
+    expect(bar.y).toBeGreaterThan(find.y + find.height);
+    expect(bar.x).toBe(PAGE_SIDE);
+    expect(bar.width).toBe(list.width - 2 * PAGE_SIDE);
   });
 
   test("opens a book's More on an iPhone as a menu headed by its page, then the book's own title", async ({

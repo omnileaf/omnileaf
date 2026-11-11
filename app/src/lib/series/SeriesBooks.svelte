@@ -104,6 +104,10 @@
   };
 
   const ICON_SIZE = 18;
+  const BOOKS_HEADING =
+    "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading";
+  const READ_SUMMARY =
+    "text-small text-muted android:max-medium:tracking-native-row-subtitle";
   const ACTION_ICON_SIZE = 20;
   const MARKS = [
     { mark: "read", icon: Eye, glyph: "eye", label: m.series_mark_read },
@@ -206,7 +210,20 @@
   );
   const notices = getNotices();
   const headingId = $props.id();
-  const showsOwnHeading = $derived(controls.kind === "own" || isPickingInFlow);
+  const headsListingChoices = $derived(
+    phonePlatform === "android" && controls.kind === "own",
+  );
+  const showsOwnHeading = $derived(
+    (controls.kind === "own" && !headsListingChoices) || isPickingInFlow,
+  );
+  const readSummary = $derived(
+    bookmarkCount > 0
+      ? m.series_read_and_bookmarked({
+          read: readCount,
+          bookmarked: bookmarkCount,
+        })
+      : m.series_read_only({ read: readCount }),
+  );
   const topBarCountId = `${headingId}-picked`;
   const labelledBy = $derived.by(() => {
     if (overTopBar !== undefined) {
@@ -479,6 +496,15 @@
   )}
 />
 
+{#snippet listingHead()}
+  <div class="flex flex-1 flex-wrap items-baseline gap-x-sm min-inline-none">
+    <h2 bind:this={heading} id={headingId} tabindex="-1" class={BOOKS_HEADING}>
+      {m.series_books_heading({ count: bookCount })}
+    </h2>
+    <p class={READ_SUMMARY}>{readSummary}</p>
+  </div>
+{/snippet}
+
 {#snippet barControls(controls: readonly BarControl[])}
   <BarControls
     {controls}
@@ -536,7 +562,7 @@
         tabindex="-1"
         aria-live={isPhonePickingInFlow ? "polite" : undefined}
         class={[
-          "text-group-title font-semibold max-medium:text-native-books-heading/native-books-heading max-medium:font-native-books-heading max-medium:tracking-native-books-heading",
+          BOOKS_HEADING,
           isPickingInFlow && "flex-1",
           isPhonePickingInFlow && [
             "wrap-break-word max-inline-full",
@@ -552,15 +578,8 @@
       {#if isPhonePickingInFlow}
         {@render barControls(phone?.trailing ?? [])}
       {:else if !isPickingInFlow && !isWide.current}
-        <p
-          class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
-        >
-          {bookmarkCount > 0
-            ? m.series_read_and_bookmarked({
-                read: readCount,
-                bookmarked: bookmarkCount,
-              })
-            : m.series_read_only({ read: readCount })}
+        <p class="flex-1 {READ_SUMMARY}">
+          {readSummary}
         </p>
       {:else if isPickingInFlow}
         <Button
@@ -626,6 +645,7 @@
       }}
       {searchPlace}
       bind:isSearching
+      head={headsListingChoices ? listingHead : undefined}
     />
   {/if}
   {#if isComplete && shownBooks.length === 0}

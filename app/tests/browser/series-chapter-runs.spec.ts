@@ -194,7 +194,7 @@ test.describe(
       await expect(runHeadings(page).first()).toHaveText("Chapters 25–30");
     });
 
-    test("puts the search field, lit, in place of the Show group until Find a book is pressed again", async ({
+    test("puts the search field, lit, in place of the Show group below the heading until Find a book is pressed again", async ({
       page,
     }) => {
       await openSeries(page);
@@ -211,10 +211,7 @@ test.describe(
         "background-color",
         "rgba(0, 0, 0, 0)",
       );
-      expect(field.y + field.height / 2).toBeCloseTo(
-        find.y + find.height / 2,
-        0,
-      );
+      expect(field.y).toBeGreaterThan(find.y + find.height);
       await findBook(page).click();
       await expect(showChoices(page)).toBeVisible();
     });
