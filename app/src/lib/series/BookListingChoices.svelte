@@ -28,8 +28,6 @@
   import { m } from "#lib/paraglide/messages.js";
   import type { ListingChange } from "#lib/series-sections/section-listing.ts";
 
-  import BookSearchBar from "./BookSearchBar.svelte";
-
   import {
     isBooksShown,
     isSortDirection,
@@ -39,6 +37,7 @@
     type SearchPlace,
     SHOWN_OPTIONS,
   } from "./book-listing";
+  import BookSearchBar from "./BookSearchBar.svelte";
 
   interface PhoneTools {
     readonly variant: ButtonVariant;
