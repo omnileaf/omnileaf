@@ -297,14 +297,23 @@ async fn reads_each_page_and_count_of_the_series_with_few_pages_left_on_a_tenth_
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
+async fn counts_the_filtered_series_of_10_000_within_2_ms_and_by_a_crowded_tag_within_4_ms_at_p95()
+{
     let trial = trial_of("a filtered count of 10,000 series");
+    let crowded_trial = trial_within(
+        "a count of the series carrying a tag on a tenth or a fifth of 10,000 series",
+        CROWDED_BUDGET,
+    );
     let folder = ScratchFolder::new("filtered-count-speed");
     let database = Database::open(&library_config(&folder)).unwrap();
     add_generated_library(&database).await;
 
+    let counted = filters()
+        .map(|filter| (trial, filter))
+        .into_iter()
+        .chain(crowded_tags().map(|filter| (crowded_trial, filter)));
     let mut over_budget = Vec::new();
-    for filter in filters().into_iter().chain(crowded_tags()) {
+    for (trial, filter) in counted {
         let outcome = trial
             .run(
                 async |_| (),
