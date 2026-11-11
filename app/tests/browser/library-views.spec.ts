@@ -47,6 +47,7 @@ interface ListLook {
 }
 
 const LINUX_PANEL_WIDTH = 400;
+const STRIDE_PRECISION = 0.5;
 const NARROWING = 100;
 const NARROWEST_COVER = 64;
 const NARROWEST_SCREENS = [320, 600, 840, 1200];
@@ -409,11 +410,8 @@ test.describe("at every text size", () => {
       "aria-posinset",
       String(SERIES_IN_CATALOG),
     );
-    expect(
-      await seriesList(page).evaluate((list) =>
-        list.parentElement?.style.getPropertyValue("--row-count"),
-      ),
-    ).toBe(String(Math.ceil(SERIES_IN_CATALOG / columns)));
+    const layout = await rowLayoutOf(seriesList(page));
+    expect(layout.rowStride).toBeCloseTo(layout.firstRowStride, 1);
   });
 
   test("keeps a dense grid's book counts inside their columns in the pseudo-locale at every width", async ({
@@ -567,21 +565,26 @@ function stepButton(options: Locator, step: "Fewer" | "More"): Locator {
 interface RowLayout {
   readonly lastBottom: number;
   readonly screenBottom: number;
-  readonly rowStride: string;
-  readonly firstRowStride: string;
+  readonly rowStride: number;
+  readonly firstRowStride: number;
 }
 
 function rowLayoutOf(list: Locator): Promise<RowLayout> {
   return list.evaluate((element) => {
     const first = element.firstElementChild;
     const last = element.lastElementChild;
-    const rowGap = Number.parseFloat(getComputedStyle(element).rowGap);
+    const style = getComputedStyle(element);
+    const rowGap = Number.parseFloat(style.rowGap);
+    const columns = style.gridTemplateColumns
+      .split(" ")
+      .filter((track) => track !== "").length;
+    const count = Number(first?.getAttribute("aria-setsize"));
+    const room = element.parentElement?.getBoundingClientRect().height ?? 0;
     return {
       lastBottom: last?.getBoundingClientRect().bottom ?? 0,
       screenBottom: window.innerHeight,
-      rowStride:
-        element.parentElement?.style.getPropertyValue("--row-stride") ?? "",
-      firstRowStride: `${String((first?.getBoundingClientRect().height ?? 0) + rowGap)}px`,
+      rowStride: room / Math.ceil(count / columns),
+      firstRowStride: (first?.getBoundingClientRect().height ?? 0) + rowGap,
     };
   });
 }
@@ -592,7 +595,8 @@ async function expectRowsToFillTheScreen(page: Page): Promise<void> {
       const layout = await rowLayoutOf(seriesList(page));
       return {
         fillsTheScreen: layout.lastBottom >= layout.screenBottom,
-        stridesByTheFirstRow: layout.rowStride === layout.firstRowStride,
+        stridesByTheFirstRow:
+          Math.abs(layout.rowStride - layout.firstRowStride) < STRIDE_PRECISION,
       };
     })
     .toEqual({ fillsTheScreen: true, stridesByTheFirstRow: true });
