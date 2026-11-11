@@ -313,8 +313,8 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_and_by_a_crowded_tag_w
         .into_iter()
         .chain(crowded_tags().map(|filter| (crowded_trial, filter)));
     let mut over_budget = Vec::new();
-    for (trial, filter) in counted {
-        let outcome = trial
+    for (budgeted, filter) in counted {
+        let outcome = budgeted
             .run(
                 async |_| (),
                 async |()| count(&database, filter.clone()).await,
