@@ -1,10 +1,10 @@
 import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
-import type { Platform } from "#lib/ipc/bindings.ts";
+import type { BookSection, Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { book, chapter } from "./book-fixture.ts";
@@ -115,12 +115,15 @@ test("keeps an iPhone's chapters in one run without headings", async () => {
   expect(await runHeadingsOn("ios")).toEqual([]);
 });
 
-async function searchOn(platform: Platform) {
+async function searchOn(
+  platform: Platform,
+  sections: readonly BookSection[] = ["chapters"],
+) {
   await page.viewport(PHONE.width, PHONE.height);
   followCorePlatform(platform);
   await render(SeriesBooksHarness, {
     platform,
-    sections: ["chapters"],
+    sections,
     books: [chapter(2), chapter(1)],
   });
   await page.getByRole("button", { name: "Find a book" }).click();
@@ -157,4 +160,54 @@ test("keeps an iPhone's Show group beside its search field", async () => {
   await expect
     .element(page.getByRole("radiogroup", { name: "Show" }))
     .toBeVisible();
+});
+
+test("puts the search field in place of the Show group on an Android phone's volumes", async () => {
+  await searchOn("android", ["volumes"]);
+
+  await expect
+    .element(page.getByRole("searchbox", { name: "Find a book" }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .not.toBeInTheDocument();
+});
+
+test("closes an Android phone's search with the field's own close, bringing the Show group back", async () => {
+  await searchOn("android", ["volumes"]);
+  await page.getByRole("searchbox", { name: "Find a book" }).fill("zzz");
+
+  await page.getByRole("button", { name: "Close the search" }).click();
+
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("searchbox", { name: "Find a book" }))
+    .not.toBeInTheDocument();
+});
+
+test("closes an Android phone's search with Escape, bringing the Show group back", async () => {
+  await searchOn("android", ["volumes"]);
+
+  await userEvent.keyboard("{Escape}");
+
+  await expect
+    .element(page.getByRole("radiogroup", { name: "Show" }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole("button", { name: "Find a book" }))
+    .toHaveAttribute("aria-expanded", "false");
+});
+
+test("starts a reopened Android phone search empty", async () => {
+  await searchOn("android", ["volumes"]);
+  await page.getByRole("searchbox", { name: "Find a book" }).fill("zzz");
+  await page.getByRole("button", { name: "Close the search" }).click();
+
+  await page.getByRole("button", { name: "Find a book" }).click();
+
+  await expect
+    .element(page.getByRole("searchbox", { name: "Find a book" }))
+    .toHaveValue("");
 });

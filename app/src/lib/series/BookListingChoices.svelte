@@ -28,6 +28,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import type { ListingChange } from "#lib/series-sections/section-listing.ts";
 
+  import BookSearchBar from "./BookSearchBar.svelte";
+
   import {
     isBooksShown,
     isSortDirection,
@@ -55,12 +57,27 @@
   const showLabelId = $props.id();
   let searchField = $state<HTMLInputElement | null>(null);
 
+  let findButton = $state<HTMLButtonElement | null>(null);
+
   async function reveal(): Promise<void> {
+    if (isShownReplaced) {
+      await closeSearch();
+      return;
+    }
     isSearching = !isSearching;
     await tick();
     if (isSearching) {
       searchField?.focus();
     }
+  }
+
+  async function closeSearch(): Promise<void> {
+    isSearching = false;
+    if (search !== "") {
+      onSearch("");
+    }
+    await tick();
+    findButton?.focus();
   }
 
   let {
@@ -131,28 +148,36 @@
 {/snippet}
 
 <div class="flex flex-wrap items-center gap-sm">
-  <InputGroup
-    class={[
-      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:block-touch-target windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
-      isShownReplaced
-        ? "flex-1 min-inline-none"
-        : "max-expanded:order-last max-expanded:inline-full",
-      !isSearching && "max-expanded:hidden",
-    ]}
-  >
-    <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-    <Input
-      bind:ref={searchField}
-      type="search"
-      aria-label={m.series_find_book()}
-      placeholder={m.series_find_book()}
-      value={search}
-      class="text-small text-foreground max-expanded:text-body"
-      oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
-        onSearch(event.currentTarget.value);
+  {#if isShownReplaced}
+    <BookSearchBar
+      bind:field={searchField}
+      {search}
+      {onSearch}
+      onClose={() => {
+        void closeSearch();
       }}
     />
-  </InputGroup>
+  {:else}
+    <InputGroup
+      class={[
+        "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+        !isSearching && "max-expanded:hidden",
+      ]}
+    >
+      <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+      <Input
+        bind:ref={searchField}
+        type="search"
+        aria-label={m.series_find_book()}
+        placeholder={m.series_find_book()}
+        value={search}
+        class="text-small text-foreground max-expanded:text-body"
+        oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
+          onSearch(event.currentTarget.value);
+        }}
+      />
+    </InputGroup>
+  {/if}
   {#if phone !== undefined}
     {#if !isShownReplaced}
       <span id={showLabelId} class="sr-only">{m.series_show()}</span>
@@ -177,6 +202,7 @@
       </div>
     {/if}
     <Button
+      bind:ref={findButton}
       type="button"
       variant={isShownReplaced ? "secondary" : phone.variant}
       iconOnly
