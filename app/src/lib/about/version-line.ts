@@ -1,4 +1,4 @@
-const DETAILS_SEPARATOR = " · ";
+import { m } from "#lib/paraglide/messages.js";
 
 /** Android's WebView names the device in its user agent, as `Android 16; Pixel 8 Build/…`, which Chrome itself has stopped doing. */
 const ANDROID_DEVICE = /\bAndroid [^;)]+; ([^;)]+?)(?: Build\/[^;)]*)?[;)]/;
@@ -25,7 +25,14 @@ export function versionDetails(
   device: string | undefined,
   locale: string,
 ): string {
-  return [version, built && buildDateText(built, locale), device]
-    .filter((part) => part !== undefined)
-    .join(DETAILS_SEPARATOR);
+  const details =
+    built === undefined
+      ? version
+      : m.about_version_details_dated({
+          version,
+          date: buildDateText(built, locale),
+        });
+  return device === undefined
+    ? details
+    : m.about_version_details_on_device({ details, device });
 }
