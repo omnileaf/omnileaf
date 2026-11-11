@@ -104,7 +104,7 @@ test("splits Android's track around the handle with a stop dot at its end", asyn
   );
 });
 
-test("mirrors Android's unfilled track and its stop dot when reading right to left", async () => {
+test("recuts Android's unfilled track and moves its stop dot when reading right to left", async () => {
   await openSlider("android", PHONE);
   const { clipPath, backgroundImage } = getComputedStyle(track(), "::before");
 
