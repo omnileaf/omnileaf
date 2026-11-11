@@ -6,9 +6,9 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { openLibraryPage, useAppSession } from "./app-session.ts";
 import { withAttempts } from "./attempts.ts";
 import {
-  capability,
   copyNewBookInto,
   onMyIphoneOmnileaf,
+  relaunchOnSimulator,
 } from "./ios-app-data.ts";
 import { xpath } from "./webdriver.ts";
 
@@ -37,7 +37,7 @@ beforeAll(async () => {
   const home = await onMyIphoneOmnileaf();
   await rm(join(home, SWIPED_SERIES), { recursive: true, force: true });
   await copyNewBookInto(home, SWIPED_SERIES);
-  await appSession().relaunchApp(capability("appium:bundleId"));
+  await appSession().relaunchApp(relaunchOnSimulator);
 });
 
 afterAll(async () => {

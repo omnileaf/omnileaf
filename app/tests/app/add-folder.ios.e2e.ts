@@ -11,7 +11,7 @@ import {
   openLibraryPage,
   useAppSession,
 } from "./app-session.ts";
-import { capability } from "./ios-app-data.ts";
+import { capability, relaunchOnSimulator } from "./ios-app-data.ts";
 import { SAMPLE_LIBRARY, writeSampleLibrary } from "./sample-library.ts";
 import { type Session, xpath } from "./webdriver.ts";
 
@@ -161,7 +161,7 @@ test(
   async () => {
     await addSampleLibrary();
 
-    await appSession().relaunchApp(capability("appium:bundleId"));
+    await appSession().relaunchApp(relaunchOnSimulator);
 
     await openLibrarySettings();
     await (await appSession().waitFor(RESCAN_SAMPLE_LIBRARY)).click();
