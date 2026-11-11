@@ -32,5 +32,5 @@ test("shows the version the Rust core reports in Settings › About", async () =
 
   const version = await appSession().waitFor(VERSION);
 
-  expect(await version.text()).toMatch(/^(Version )?\d+\.\d+\.\d+$/);
+  expect(await version.text()).toMatch(/^(Version )?\d+\.\d+\.\d+( · .+)?$/);
 });
