@@ -3,6 +3,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  FAKE_APP_VERSION,
   test,
 } from "./fixtures.ts";
 
@@ -47,6 +48,26 @@ test.describe("About on an Android phone", { tag: "@native" }, () => {
     await expect(list).toHaveCSS("border-top-width", "0px");
     await expect(row).toHaveCSS("border-bottom-width", "0px");
     expect((await boxOf(row)).x).toBe(0);
+  });
+
+  test("dates the version under the name, and the version details the same way", async ({
+    page,
+  }) => {
+    await page.goto("/settings/about");
+    const line = page
+      .getByRole("main")
+      .getByText(new RegExp(`^Version ${FAKE_APP_VERSION} · `));
+    await expect(line).toBeVisible();
+
+    const built = (await line.textContent())?.split(" · ")[1] ?? "";
+
+    expect(built).toMatch(/\d{4}/);
+    await expect(
+      page
+        .getByRole("listitem")
+        .filter({ hasText: "Version details" })
+        .getByText(`${FAKE_APP_VERSION} · ${built}`, { exact: true }),
+    ).toBeVisible();
   });
 
   test("names the app in 24px regular type over a round icon", async ({

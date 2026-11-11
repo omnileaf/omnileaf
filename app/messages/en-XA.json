@@ -543,6 +543,7 @@
   "adult_content_footer": "⟦Ƒíŕšţ ļáûñçĥ öƒƒéŕš ţĥé šáɱé çĥöíçé. Íţ áþþļíéš šţŕáíĝĥţ áŵáý.·························⟧",
   "library_no_series": "⟦Ñö šéŕíéš····⟧",
   "app_version": "⟦Ṽéŕšíöñ {version}·······⟧",
+  "app_version_built": "⟦Ṽéŕšíöñ {version} · {date}···········⟧",
   "library_add_folder": "⟦Áðð á ƒöļðéŕ·····⟧",
   "library_scan_finding": "⟦Ƒíñðíñĝ ƀööķš······⟧",
   "library_scan_found_so_far": [

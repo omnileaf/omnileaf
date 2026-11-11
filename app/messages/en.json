@@ -543,6 +543,7 @@
   "adult_content_footer": "First launch offers the same choice. It applies straight away.",
   "library_no_series": "No series",
   "app_version": "Version {version}",
+  "app_version_built": "Version {version} · {date}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
   "library_scan_found_so_far": [
