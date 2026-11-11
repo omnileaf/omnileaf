@@ -13,7 +13,12 @@ import {
 } from "./app-session.ts";
 import { capability } from "./ios-app-data.ts";
 import { SAMPLE_LIBRARY, writeSampleLibrary } from "./sample-library.ts";
-import { type Session, xpath } from "./webdriver.ts";
+import {
+  pollUntil,
+  type Session,
+  type WebElement,
+  xpath,
+} from "./webdriver.ts";
 
 const FILES_APP = "com.apple.DocumentsApp";
 const ON_MY_DEVICE_GROUP = "group.com.apple.FileProvider.LocalStorage";
@@ -22,6 +27,7 @@ const SIMCTL_TIMEOUT_MS = 30_000;
 const PICKER_APPEARS_TIMEOUT_MS = 60_000;
 const PICKER_TIMEOUT_MS = 20_000;
 const SCAN_TIMEOUT_MS = 60_000;
+const LISTING_SETTLES_MS = 3_000;
 const LEFT_OPEN_TIMEOUT_MS = 1_000;
 const PICKER_TEST_TIMEOUT_MS = 220_000;
 
@@ -80,16 +86,24 @@ async function onMyDeviceFolder(): Promise<string> {
   return join(group.trim(), ON_MY_DEVICE_FOLDER);
 }
 
-/** Walks the Files picker to the sample library from wherever it opens, since it reopens where it was last left. */
+async function sampleLibraryInOnMyDevice(
+  session: Session,
+): Promise<WebElement | undefined> {
+  await (await session.waitFor(BROWSE_TAB, PICKER_TIMEOUT_MS)).click();
+  await (await session.waitFor(ON_MY_DEVICE, PICKER_TIMEOUT_MS)).click();
+  return session.findWithin(SAMPLE_LIBRARY_FOLDER, LISTING_SETTLES_MS);
+}
+
+/** The File Provider can list On My iPhone before it has indexed a folder written straight to the Simulator's disk, so the picker opens On My iPhone again until the folder is there. */
 async function pickSampleLibrary(session: Session): Promise<void> {
   await session.inNativeContext(async () => {
-    await (
-      await session.waitFor(BROWSE_TAB, PICKER_APPEARS_TIMEOUT_MS)
-    ).click();
-    await (await session.waitFor(ON_MY_DEVICE, PICKER_TIMEOUT_MS)).click();
-    await (
-      await session.waitFor(SAMPLE_LIBRARY_FOLDER, PICKER_TIMEOUT_MS)
-    ).click();
+    await session.waitFor(BROWSE_TAB, PICKER_APPEARS_TIMEOUT_MS);
+    const folder = await pollUntil(
+      () => sampleLibraryInOnMyDevice(session),
+      PICKER_APPEARS_TIMEOUT_MS,
+      `${SAMPLE_LIBRARY.name} in On My iPhone`,
+    );
+    await folder.click();
     await (await session.waitFor(OPEN_BUTTON, PICKER_TIMEOUT_MS)).click();
   });
 }
