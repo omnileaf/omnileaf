@@ -797,6 +797,7 @@ export const TOKEN_THEME = {
     "series-cover-wide",
     "series-crumb",
     "series-crumb-title",
+    "series-error-lift",
     "series-row",
     "series-row-actions",
     "series-row-actions-macos",

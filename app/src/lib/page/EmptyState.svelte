@@ -67,7 +67,7 @@
   </EmptyTitle>
   <EmptyDescription
     class={android.isOn
-      ? [ROW_SUBTITLE_TYPE, "text-muted", look.prose]
+      ? [ROW_SUBTITLE_TYPE, "mbs-sm text-muted", look.prose]
       : ["text-small", look.prose]}
   >
     {body}

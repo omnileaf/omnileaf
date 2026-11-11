@@ -75,7 +75,7 @@
 
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
   const TRY_AGAIN_ICON_SIZE = 16;
-  const ANDROID_EMPTY_INSET = "px-sm";
+  const ANDROID_FAILED_PLACE = "px-sm pbe-series-error-lift";
   const TRY_AGAIN = {
     look: "outline",
     class:
@@ -603,7 +603,7 @@
         role="alert"
         title={m.series_failed()}
         body={m.library_unchanged()}
-        class={isAndroidPhone ? ANDROID_EMPTY_INSET : undefined}
+        class={isAndroidPhone ? ANDROID_FAILED_PLACE : undefined}
       >
         {#if isAndroidPhone}
           <Button
