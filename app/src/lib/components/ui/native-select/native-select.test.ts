@@ -7,6 +7,7 @@ import "../../../../app.css";
 import { resolvedColour } from "../../../../../tests/components/resolved-colour";
 
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followCorePlatform } from "#lib/page/platform.ts";
 
 import NativeSelectHarness from "./NativeSelectHarness.svelte";
 
@@ -76,4 +77,22 @@ test("shows the value it is given and takes the one picked from the list", async
   await field.selectOptions("Every week");
 
   await expect.element(field).toHaveValue("week");
+});
+
+test("opens the app's own menu on Android and takes the choice picked there", async () => {
+  followCorePlatform("android");
+  await render(NativeSelectHarness);
+  const field = page.getByRole("combobox", { name: "Rescan folders" });
+
+  await field.click();
+  const menu = page.getByRole("listbox", { name: "Rescan folders" });
+  await expect.element(menu).toBeVisible();
+  await expect
+    .element(menu.getByRole("option", { selected: true }))
+    .toHaveTextContent("Every day");
+  await menu.getByRole("option", { name: "Every week" }).click();
+
+  await expect.element(menu).not.toBeInTheDocument();
+  await expect.element(field).toHaveTextContent("Every week");
+  expect(document.querySelector("select")).toBeNull();
 });
