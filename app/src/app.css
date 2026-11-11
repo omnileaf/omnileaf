@@ -1733,8 +1733,8 @@
 
 @utility virtual-rows {
   box-sizing: border-box;
-  block-size: calc(var(--row-count) * var(--row-stride));
-  padding-block-start: calc(var(--first-row) * var(--row-stride));
+  block-size: var(--rows-size);
+  padding-block-start: var(--rows-before);
 }
 
 @utility covers-gap-* {
