@@ -479,6 +479,17 @@
   )}
 />
 
+{#snippet barControls(controls: readonly BarControl[])}
+  <BarControls
+    {controls}
+    {isPickingAll}
+    {isAllPicked}
+    onEnd={endPicking}
+    onPickAll={pickAllShown}
+    onPickNone={pickNone}
+  />
+{/snippet}
+
 <section
   bind:this={section}
   data-picking={selection.isSelecting || undefined}
@@ -498,14 +509,7 @@
       ]}
     >
       {#if isPhonePickingInFlow}
-        <BarControls
-          controls={phone?.leading ?? []}
-          {isPickingAll}
-          {isAllPicked}
-          onEnd={endPicking}
-          onPickAll={pickAllShown}
-          onPickNone={pickNone}
-        />
+        {@render barControls(phone?.leading ?? [])}
       {:else if isPickingInFlow}
         <Tooltip
           label={m.series_clear_selection()}
@@ -546,14 +550,7 @@
           : m.series_books_heading({ count: bookCount })}
       </h2>
       {#if isPhonePickingInFlow}
-        <BarControls
-          controls={phone?.trailing ?? []}
-          {isPickingAll}
-          {isAllPicked}
-          onEnd={endPicking}
-          onPickAll={pickAllShown}
-          onPickNone={pickNone}
-        />
+        {@render barControls(phone?.trailing ?? [])}
       {:else if !isPickingInFlow && !isWide.current}
         <p
           class="flex-1 text-small text-muted android:max-medium:tracking-native-row-subtitle"
@@ -583,14 +580,7 @@
   {#if overTopBar !== undefined}
     <Portal to="main">
       <div bind:this={topBar} data-picking-bar class={overTopBar}>
-        <BarControls
-          controls={phone?.leading ?? []}
-          {isPickingAll}
-          {isAllPicked}
-          onEnd={endPicking}
-          onPickAll={pickAllShown}
-          onPickNone={pickNone}
-        />
+        {@render barControls(phone?.leading ?? [])}
         <h2
           bind:this={topBarCount}
           id={topBarCountId}
@@ -600,14 +590,7 @@
         >
           {m.series_selected_count({ count: selection.count })}
         </h2>
-        <BarControls
-          controls={phone?.trailing ?? []}
-          {isPickingAll}
-          {isAllPicked}
-          onEnd={endPicking}
-          onPickAll={pickAllShown}
-          onPickNone={pickNone}
-        />
+        {@render barControls(phone?.trailing ?? [])}
       </div>
     </Portal>
   {/if}
