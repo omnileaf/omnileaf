@@ -9,8 +9,10 @@ export const SERIES_CHIP =
 
 const WINDOWS_BAR_BUTTON = variantClasses("plain", "regular", true, "windows");
 
-const ANDROID_BAND_CHIP =
-  "android:bg-native-button-secondary android:text-native-on-button-secondary android:block-native-button android:inline-native-button";
+const ANDROID_BAR_BUTTON =
+  "android:native-target android:block-native-button android:inline-native-button";
+
+const ANDROID_BAND_CHIP = `android:bg-native-button-secondary android:text-native-on-button-secondary ${ANDROID_BAR_BUTTON}`;
 
 export type BarPlacement = "band" | "folded";
 
@@ -18,12 +20,12 @@ type AndroidChips = Record<BarPlacement, string>;
 
 const ANDROID_BACK_CHIP = {
   band: ANDROID_BAND_CHIP,
-  folded: "android:text-native-on-top-bar",
+  folded: `android:text-native-on-top-bar ${ANDROID_BAR_BUTTON}`,
 } satisfies AndroidChips;
 
 const ANDROID_MENU_CHIP = {
   band: ANDROID_BAND_CHIP,
-  folded: "",
+  folded: ANDROID_BAR_BUTTON,
 } satisfies AndroidChips;
 
 export function barChip(platform: Platform, width: WidthClass): string {
