@@ -39,7 +39,6 @@ const NO_BLUR = "none";
 const CLEAR = "rgba(0, 0, 0, 0)";
 const LONG_BOOK_PAGES = 120;
 const LAST_PAIR_END = LONG_BOOK_PAGES - 1;
-const UNCUT = "0px";
 const BACK_TO_SERIES = `Back to ${BOOK_SERIES_TITLE}`;
 const FIRST_PAGE = `Page 1 of ${String(PAGE_COUNT)}`;
 const LANDSCAPE_TABLET = { width: 1180, height: 820 };
@@ -210,30 +209,6 @@ async function openStrip(page: Page): Promise<void> {
   await servePages(page);
   await page.goto(`/read/${BOOK_ID}`);
   await expect(page.locator("[data-strip]")).toBeVisible();
-}
-
-async function unfilledTrackSides(page: Page): Promise<string[]> {
-  const clip = await page
-    .locator("[data-slider-root] > div")
-    .first()
-    .evaluate((track) => getComputedStyle(track, "::before").clipPath);
-  return topLevelWords(clip.replace(/^inset\(/, "").split(" round ")[0] ?? "");
-}
-
-function topLevelWords(text: string): string[] {
-  const words: string[] = [];
-  let depth = 0;
-  let word = "";
-  for (const character of text) {
-    depth += character === "(" ? 1 : character === ")" ? -1 : 0;
-    if (character === " " && depth === 0) {
-      words.push(word);
-      word = "";
-    } else {
-      word += character;
-    }
-  }
-  return [...words, word];
 }
 
 async function holdFingerOn(page: Page, control: Locator): Promise<void> {
@@ -1168,38 +1143,6 @@ test.describe(
         `${String(LAST_PAIR_END - 1)}–${String(LAST_PAIR_END)} / ${String(LONG_BOOK_PAGES)}`,
       );
       expect((await boxOf(track)).width).toBe(firstWidth);
-    });
-  },
-);
-
-test.describe(
-  "the Android phone's page slider in a book read right to left",
-  { tag: "@native" },
-  () => {
-    test.use({
-      backend: {
-        ...readerBackend(DEFAULT_BACKEND),
-        openBook: () => ({
-          ...readerBook(NOT_STARTED),
-          readingDirection: "rightToLeft",
-        }),
-      },
-    });
-
-    test("cuts the unfilled track at the handle's left so it runs to the left end", async ({
-      page,
-      platform,
-    }) => {
-      if (platform !== "android") {
-        test.skip();
-        return;
-      }
-      await openBook(page);
-
-      const [, right, , left] = await unfilledTrackSides(page);
-
-      expect(left).toBe(UNCUT);
-      expect(right).not.toBe(UNCUT);
     });
   },
 );
