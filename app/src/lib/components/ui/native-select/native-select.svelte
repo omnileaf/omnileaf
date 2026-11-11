@@ -3,13 +3,12 @@
   import type { HTMLSelectAttributes } from "svelte/elements";
 
   import { cn } from "#lib/components/cn.ts";
+  import {
+    choiceOf,
+    type SelectChoice,
+  } from "#lib/components/ui/select-menu/index.ts";
 
   const ICON_SIZE = 16;
-
-  interface Choice {
-    readonly value: Value;
-    readonly label: string;
-  }
 
   let {
     class: className,
@@ -27,13 +26,13 @@
     fieldClass?: string;
     icon?: typeof ChevronDown;
     iconSize?: number;
-    choices: readonly Choice[];
+    choices: readonly SelectChoice<Value>[];
     value: Value;
     onChoose: (value: Value) => void;
   } = $props();
 
   function choose(picked: string): void {
-    const choice = choices.find((candidate) => candidate.value === picked);
+    const choice = choiceOf(choices, picked);
     if (choice !== undefined) {
       onChoose(choice.value);
     }
