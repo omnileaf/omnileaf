@@ -17,6 +17,11 @@ export function mainNavigationLink(name: string): Locator {
 }
 
 const LIBRARY_LINK = mainNavigationLink("Library");
+const BACK_TO_THE_LIBRARY =
+  "//a[@data-back-link][@aria-label='Back to the library']";
+const WAY_TO_THE_LIBRARY = xpath(
+  `${LIBRARY_LINK.value} | ${BACK_TO_THE_LIBRARY}`,
+);
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
@@ -26,7 +31,7 @@ export const FINISHED_SCAN_REPORT = xpath(
 const ON_LIBRARY_PAGE = "return location.pathname === '/';";
 
 export async function openLibraryPage(session: Session): Promise<void> {
-  await (await session.waitFor(LIBRARY_LINK)).click();
+  await (await session.waitFor(WAY_TO_THE_LIBRARY)).click();
   await session.waitUntil(ON_LIBRARY_PAGE, "the library page");
 }
 

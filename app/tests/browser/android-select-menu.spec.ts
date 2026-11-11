@@ -1,0 +1,174 @@
+import type { Locator, Page } from "@playwright/test";
+
+import {
+  accessibilityViolations,
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  tokenColour,
+} from "./fixtures.ts";
+import { BOOK_ID, readerBackend, servePages } from "./reader-book.ts";
+
+const MENU_ITEM_PX = 48;
+const READER_THEME = "dark";
+const SHORT_WINDOW_PX = 200;
+
+test.use({ backend: readerBackend(DEFAULT_BACKEND) });
+
+async function openReadingSettings(page: Page): Promise<Locator> {
+  await servePages(page);
+  await page.goto(`/read/${BOOK_ID}`);
+  await page
+    .getByRole("button", { name: "Reading settings", exact: true })
+    .click();
+  const sheet = page.getByRole("dialog", { name: "Reading settings" });
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+function readingMode(sheet: Locator): Locator {
+  return sheet.getByRole("combobox", { name: "Reading mode" });
+}
+
+test.describe(
+  "the Reading mode field on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Material's exposed dropdown menu");
+    });
+
+    test("opens the app's own menu under the field, the chosen mode ticked on a tinted pill", async ({
+      page,
+    }) => {
+      const field = readingMode(await openReadingSettings(page));
+
+      await field.click();
+
+      const menu = page.getByRole("listbox", { name: "Reading mode" });
+      const chosen = menu.getByRole("option", { selected: true });
+      await expect(menu).toBeVisible();
+      await expect(menu.getByRole("option")).toHaveCount(4);
+      await expect(chosen).toContainText("Automatic");
+      await expect(chosen.locator("svg")).toBeVisible();
+      await expect(chosen).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-menu-chosen", READER_THEME),
+      );
+      await expect(menu).toHaveCSS(
+        "background-color",
+        await tokenColour(page, "--native-color-menu", READER_THEME),
+      );
+      const fieldBox = await boxOf(field);
+      const menuBox = await boxOf(menu);
+      expect(menuBox.y).toBeGreaterThanOrEqual(fieldBox.y + fieldBox.height);
+      expect((await boxOf(chosen)).height).toBeCloseTo(MENU_ITEM_PX, 0);
+    });
+
+    test("takes the mode chosen from the menu and closes it", async ({
+      page,
+    }) => {
+      const field = readingMode(await openReadingSettings(page));
+      await field.click();
+
+      await page.getByRole("option", { name: "Right to left" }).click();
+
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(field).toContainText("Right to left");
+    });
+
+    test("is chosen from the keyboard as a listbox, starting on the chosen mode", async ({
+      page,
+    }) => {
+      const field = readingMode(await openReadingSettings(page));
+      await field.focus();
+
+      await page.keyboard.press("Enter");
+      await expect(
+        page.getByRole("option", { selected: true }),
+      ).toHaveAttribute("data-highlighted");
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
+
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(field).toHaveText("Left to right");
+    });
+
+    test("picks a mode by its first letter while the menu stays closed", async ({
+      page,
+    }) => {
+      const field = readingMode(await openReadingSettings(page));
+      await field.focus();
+
+      await page.keyboard.press("L");
+
+      await expect(field).toHaveText("Left to right");
+      await expect(page.getByRole("listbox")).toHaveCount(0);
+    });
+
+    test("closes only the menu on Escape, handing focus back to the field", async ({
+      page,
+    }) => {
+      const sheet = await openReadingSettings(page);
+      const field = readingMode(sheet);
+      await field.click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+
+      await page.keyboard.press("Escape");
+
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(sheet).toBeVisible();
+      await expect(field).toBeFocused();
+    });
+
+    test("closes only the menu on Back, then the sheet on the next Back", async ({
+      page,
+    }) => {
+      const sheet = await openReadingSettings(page);
+      await readingMode(sheet).click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+
+      await page.goBack();
+      await expect(page.getByRole("listbox")).toBeHidden();
+      await expect(sheet).toBeVisible();
+      await page.goBack();
+
+      await expect(sheet).toBeHidden();
+      await expect(page).toHaveURL(new RegExp(`/read/${BOOK_ID}$`));
+    });
+
+    test("keeps the option it moves to in view in a short window", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: SHORT_WINDOW_PX });
+      const field = readingMode(await openReadingSettings(page));
+      await field.focus();
+
+      await page.keyboard.press("Enter");
+      const options = page.locator("[data-select-viewport]");
+      expect(
+        await options.evaluate(
+          (element) => element.scrollHeight > element.clientHeight,
+        ),
+      ).toBe(true);
+      await page.keyboard.press("End");
+
+      await expect(
+        page.getByRole("option", { name: "Long strip" }),
+      ).toBeInViewport();
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`has no accessibility violations with the menu open in the ${colorScheme} theme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await readingMode(await openReadingSettings(page)).click();
+        await expect(page.getByRole("listbox")).toBeVisible();
+
+        expect(await accessibilityViolations(page)).toEqual([]);
+      });
+    }
+  },
+);

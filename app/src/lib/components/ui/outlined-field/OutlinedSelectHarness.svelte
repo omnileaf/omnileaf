@@ -3,8 +3,13 @@
 </script>
 
 <div class="bg-background p-lg">
-  <OutlinedSelect label="Reading mode">
-    <option>Paged</option>
-    <option>Long strip</option>
-  </OutlinedSelect>
+  <OutlinedSelect
+    label="Reading mode"
+    choices={[
+      { value: "paged", label: "Paged" },
+      { value: "longStrip", label: "Long strip" },
+    ]}
+    value="paged"
+    onChoose={() => undefined}
+  />
 </div>
