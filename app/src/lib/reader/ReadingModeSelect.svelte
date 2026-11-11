@@ -76,13 +76,12 @@
       data-reading-mode
       label={m.reader_mode()}
       labelClass="bg-native-sheet"
+      choices={modes}
       value={reading.choice}
-      onchange={chooseDirection}
-    >
-      {#each modes as mode (mode.value)}
-        <option value={mode.value}>{mode.label}</option>
-      {/each}
-    </OutlinedSelect>
+      onChoose={(choice: ReadingModeChoice) => {
+        reading.choose(choice);
+      }}
+    />
   </div>
 {:else}
   <div
