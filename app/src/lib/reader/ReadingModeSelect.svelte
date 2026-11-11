@@ -77,12 +77,13 @@
     data-slot="setting-row"
     class="grid grid-cols-setting-grid items-center gap-x-md py-setting-grid-pad min-block-setting-grid-row"
   >
-    <label for="{id}-mode" class="text-small font-medium">
+    <label id="{id}-label" for="{id}-mode" class="text-small font-medium">
       {m.reader_mode()}
     </label>
     <NativeSelect
       data-reading-mode
       id="{id}-mode"
+      aria-labelledby="{id}-label"
       class="inline-setting-control"
       value={reading.choice}
       choices={modes}

@@ -191,12 +191,13 @@
       <section
         class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
       >
-        <label for={modeId} class="font-semibold">
+        <label id="{modeId}-label" for={modeId} class="font-semibold">
           {m.reading_mode_new_series()}
         </label>
         <NativeSelect
           class="expanded:inline-setting-control"
           id={modeId}
+          aria-labelledby="{modeId}-label"
           aria-describedby="{modeId}-help"
           value={newSeries.choice}
           choices={newSeriesChoices}
