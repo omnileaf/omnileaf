@@ -50,10 +50,21 @@ test.describe(
     }) => {
       await page.goto("/");
       await page.getByRole("button", { name: "Get started" }).click();
-      const path = page.locator("code", { hasText: "/storage/emulated/0" });
+      const path = page.locator("code", { hasText: "Internal storage" });
 
       await expect(path).toHaveCSS("border-top-width", "0px");
       await expect(path).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    });
+
+    test("names the home folder by the folders Files shows, under the internal storage", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await page.getByRole("button", { name: "Get started" }).click();
+
+      await expect(page.locator("code")).toHaveText(
+        "Internal storage › Documents › Omnileaf",
+      );
     });
   },
 );
