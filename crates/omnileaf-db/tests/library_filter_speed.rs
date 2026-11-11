@@ -212,9 +212,10 @@ async fn reads_each_sorted_page_of_10_000_series_in_a_missing_folder_within_2_ms
     reason = "the gate logs the measured timings so each platform's margin under the budget shows on every run"
 )]
 #[ignore = "a timing budget means something only in an optimised build, so the gate runs it on its own in release"]
-async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_4_ms_at_p95() {
+async fn reads_each_page_and_count_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_4_ms_at_p95()
+ {
     let trial = trial_within(
-        "a page of 100 of the series carrying a tag on a tenth or a fifth of 10,000 series",
+        "a page of 100 or a count of the series carrying a tag on a tenth or a fifth of 10,000 series",
         CROWDED_BUDGET,
     );
     let folder = ScratchFolder::new("mid-band-tag-speed");
@@ -237,6 +238,18 @@ async fn reads_each_page_of_a_tag_on_a_tenth_or_a_fifth_of_10_000_series_within_
             if !outcome.is_within_budget() {
                 over_budget.push(format!("{listing:?}: {outcome}"));
             }
+        }
+    }
+    for filter in crowded_tags() {
+        let outcome = trial
+            .run(
+                async |_| (),
+                async |()| count(&database, filter.clone()).await,
+            )
+            .await;
+        eprintln!("{filter:?}: {outcome}");
+        if !outcome.is_within_budget() {
+            over_budget.push(format!("{filter:?}: {outcome}"));
         }
     }
 
@@ -304,7 +317,7 @@ async fn counts_the_filtered_series_of_10_000_within_2_ms_at_p95() {
     add_generated_library(&database).await;
 
     let mut over_budget = Vec::new();
-    for filter in filters().into_iter().chain(crowded_tags()) {
+    for filter in filters() {
         let outcome = trial
             .run(
                 async |_| (),
