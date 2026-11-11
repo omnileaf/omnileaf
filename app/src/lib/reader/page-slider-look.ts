@@ -32,7 +32,7 @@ const WINDOWS_LOOK: ProgressSliderLook = {
 export const ANDROID_PHONE_LOOK: ProgressSliderLook = {
   root: "group/slider reader-slider-root relative flex-1 block-native-slider has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-native-focus-ring",
   track:
-    "absolute inset-x-none my-auto block-native-slider-track before:absolute before:inset-none before:rounded-slider-cap before:bg-native-tab-pill before:reader-slider-rest before:content-['']",
+    "absolute inset-x-none my-auto block-native-slider-track before:absolute before:inset-none before:rounded-slider-cap before:bg-native-tab-pill before:content-[''] reader-slider-rest",
   fill: "absolute inset-none rounded-slider-cap bg-native-button-primary reader-slider-fill",
   thumb:
     "absolute inset-y-none block-native-slider inline-native-slider-thumb rounded-slider-join bg-native-button-primary reader-slider-handle",
