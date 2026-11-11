@@ -490,7 +490,8 @@ test.describe("Undo", () => {
     await page.getByRole("switch", { name: "Offer Undo" }).click();
     const select = page.getByRole("combobox", { name: "Keep Undo for" });
     if (await select.isVisible()) {
-      await select.selectOption({ label: "30 seconds" });
+      await select.click();
+      await page.getByRole("option", { name: "30 seconds" }).click();
     } else {
       await page.getByRole("button", { name: /^Keep Undo for/ }).click();
       await page
@@ -508,7 +509,7 @@ test.describe("Undo", () => {
     ).not.toBeChecked();
     const reloaded = page.getByRole("combobox", { name: "Keep Undo for" });
     if (await reloaded.isVisible()) {
-      await expect(reloaded).toHaveValue("30");
+      await expect(reloaded).toHaveText("30 seconds");
     } else {
       await expect(
         page.getByRole("button", { name: /^Keep Undo for/ }),
