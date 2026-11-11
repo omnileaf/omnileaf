@@ -488,6 +488,7 @@
     <SeriesBar
       title={overview?.title}
       isTitleUnderBar={isTitleUnderBar || (hasFailed && isAndroidPhone)}
+      isLoading={shown === undefined}
       bind:height={barHeight}
       onMarkAll={found === undefined ? undefined : markAll}
       onLabel={keepsLabels && found !== undefined
