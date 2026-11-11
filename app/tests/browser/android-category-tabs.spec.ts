@@ -6,6 +6,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  setTextScale,
   settle,
   test,
   tokenColour,
@@ -47,6 +48,8 @@ const HANDLE_WIDTH = 32;
 const HANDLE_HEIGHT = 4;
 const HANDLE_GAP = 22;
 const LAYOUT_ROUNDING_PX = 0.5;
+const NARROWEST_PHONE_WIDTH = 320;
+const LARGE_TEXT_SCALE = 2;
 
 function backendWith(categories: readonly LibraryCategory[]) {
   const inCategory = (category: string) =>
@@ -92,6 +95,20 @@ async function openLibrary(page: Page): Promise<void> {
   await expect(page.getByRole("list", { name: "Series" })).toContainText(
     LIBRARY[0]?.title ?? "",
   );
+}
+
+async function linesOf(button: Locator): Promise<number> {
+  return button.evaluate((element) => {
+    const label = [...element.childNodes].find(
+      (node) => node instanceof Text && node.data.trim() !== "",
+    );
+    if (label === undefined) {
+      return 0;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    return new Set([...range.getClientRects()].map(({ top }) => top)).size;
+  });
 }
 
 async function openEveryCategory(page: Page): Promise<Locator> {
@@ -372,6 +389,39 @@ test.describe("every category on an Android phone", { tag: "@native" }, () => {
       await tokenColour(page, "--native-color-button-secondary"),
     );
     await expect(edit).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  });
+
+  test("keeps New category on one line on the narrowest phone, inside the sheet", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: NARROWEST_PHONE_WIDTH, height: 800 });
+    const sheet = await openEveryCategory(page);
+    const made = sheet.getByRole("button", { name: "New category" });
+
+    const lines = await linesOf(made);
+    const madeBox = await boxOf(made);
+    const sheetBox = await boxOf(sheet);
+
+    expect(lines).toBe(1);
+    expect(madeBox.x + madeBox.width).toBeLessThanOrEqual(
+      sheetBox.x + sheetBox.width - SHEET_INLINE_PADDING + LAYOUT_ROUNDING_PX,
+    );
+  });
+
+  test("stacks Edit over New category, each on one line, when large text no longer fits them side by side", async ({
+    page,
+  }) => {
+    await setTextScale(page, LARGE_TEXT_SCALE);
+    const sheet = await openEveryCategory(page);
+    const edit = sheet.getByRole("button", { name: "Edit" });
+    const made = sheet.getByRole("button", { name: "New category" });
+
+    const editBox = await boxOf(edit);
+    const madeBox = await boxOf(made);
+
+    expect(await linesOf(made)).toBe(1);
+    expect(madeBox.y).toBeGreaterThan(editBox.y + editBox.height - 1);
+    expect(madeBox.width).toBeCloseTo(editBox.width, 0);
   });
 
   test("sets 12px between the list and the buttons", async ({ page }) => {
