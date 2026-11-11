@@ -26,10 +26,9 @@ const ADB_TIMEOUT_MS = 30_000;
 const READ_PAGE_EVERY_MS = 20_000;
 const STAY_AWAKE_SETTING = "stay_on_while_plugged_in";
 const TEST_TIMEOUT_MS = 15 * 60_000;
-const SCHEDULED_CHECKS_LABEL =
-  "Check folders for new books while Omnileaf is open";
-
-const SCHEDULED_CHECKS_SWITCH = `//main//button[@role='switch'][.//*[normalize-space()="${SCHEDULED_CHECKS_LABEL}"]]`;
+const SCHEDULES = { on: "Every day", off: "Off" } as const;
+const RESCAN_FOLDERS_ROW =
+  "//main//button[@aria-haspopup='dialog'][.//*[normalize-space()='Rescan folders']]";
 const ADDED_SERIES_TITLE = xpath(
   `//main//*[normalize-space()='${ADDED_SERIES}']`,
 );
@@ -53,20 +52,26 @@ function settingsRow(label: string): Locator {
   );
 }
 
-function scheduledChecksSwitch(isOn: boolean): Locator {
-  return xpath(`${SCHEDULED_CHECKS_SWITCH}[@aria-checked='${String(isOn)}']`);
+function rescanFoldersRowSaying(schedule: string): string {
+  return `${RESCAN_FOLDERS_ROW}[.//*[normalize-space()='${schedule}']]`;
+}
+
+function scheduleChoice(schedule: string): Locator {
+  return xpath(
+    `//*[@role='dialog']//*[@role='radio'][.//*[normalize-space()='${schedule}']]`,
+  );
 }
 
 async function open(link: Locator): Promise<void> {
   await (await appSession().waitFor(link)).click();
 }
 
-async function isScheduledChecksSwitchOn(): Promise<boolean> {
-  await appSession().waitFor(xpath(SCHEDULED_CHECKS_SWITCH));
-  const isOn = await appSession().run(
-    `return document.evaluate(${JSON.stringify(`boolean(${SCHEDULED_CHECKS_SWITCH}[@aria-checked='true'])`)}, document, null, XPathResult.BOOLEAN_TYPE, null).booleanValue;`,
+async function isRescanScheduled(schedule: string): Promise<boolean> {
+  await appSession().waitFor(xpath(RESCAN_FOLDERS_ROW));
+  const isScheduled = await appSession().run(
+    `return document.evaluate(${JSON.stringify(`boolean(${rescanFoldersRowSaying(schedule)})`)}, document, null, XPathResult.BOOLEAN_TYPE, null).booleanValue;`,
   );
-  return isOn === true;
+  return isScheduled === true;
 }
 
 async function openSection(name: string): Promise<void> {
@@ -77,12 +82,14 @@ async function openSection(name: string): Promise<void> {
 }
 
 async function turnScheduledChecks(isOn: boolean): Promise<void> {
+  const schedule = isOn ? SCHEDULES.on : SCHEDULES.off;
   await openSection("Settings");
-  await open(settingsRow("Advanced"));
-  if ((await isScheduledChecksSwitchOn()) !== isOn) {
-    await open(xpath(SCHEDULED_CHECKS_SWITCH));
+  await open(settingsRow("Library"));
+  if (!(await isRescanScheduled(schedule))) {
+    await open(xpath(RESCAN_FOLDERS_ROW));
+    await open(scheduleChoice(schedule));
   }
-  await appSession().waitFor(scheduledChecksSwitch(isOn));
+  await appSession().waitFor(xpath(rescanFoldersRowSaying(schedule)));
   await openLibraryPage(appSession());
 }
 

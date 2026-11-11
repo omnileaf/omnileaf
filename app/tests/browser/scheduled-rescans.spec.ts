@@ -28,6 +28,10 @@ function scheduledRescansSwitch(page: Page) {
   return page.getByRole("switch", { name: SWITCH_NAME });
 }
 
+function isAndroidPhone(page: Page, platform: Platform): boolean {
+  return platform === "android" && viewportOf(page).width <= PHONE_MAX_WIDTH;
+}
+
 for (const platform of ["ios", "android", "linux"] as const) {
   test.describe(`on ${platform}`, () => {
     testOnlyInItsWebview(platform);
@@ -58,6 +62,10 @@ for (const platform of ["ios", "android", "linux"] as const) {
     test("offers the checks in Advanced with what they mean", async ({
       page,
     }) => {
+      test.skip(
+        isAndroidPhone(page, platform),
+        "an Android phone checks folders from Settings › Library",
+      );
       await page.goto("/settings/advanced");
 
       const checks = scheduledRescansSwitch(page);
@@ -72,6 +80,10 @@ for (const platform of ["ios", "android", "linux"] as const) {
     test("turns the checks over at once and keeps the choice", async ({
       page,
     }) => {
+      test.skip(
+        isAndroidPhone(page, platform),
+        "an Android phone checks folders from Settings › Library",
+      );
       await page.goto("/settings/advanced");
       const wasOn = IS_ON_BY_DEFAULT[platform];
 
@@ -91,6 +103,10 @@ for (const platform of ["ios", "android", "linux"] as const) {
     });
 
     test("spans the pane in a row tall enough to touch", async ({ page }) => {
+      test.skip(
+        isAndroidPhone(page, platform),
+        "an Android phone checks folders from Settings › Library",
+      );
       await page.goto("/settings/advanced");
       const checks = scheduledRescansSwitch(page);
       const isIPhone =
@@ -100,15 +116,8 @@ for (const platform of ["ios", "android", "linux"] as const) {
       const row = await boxOf(rowOfSwitch);
       const pane = await boxOf(rowOfSwitch.locator(".."));
 
-      const runsPastThePane =
-        platform === "android" && viewportOf(page).width <= PHONE_MAX_WIDTH;
-      if (runsPastThePane) {
-        expect(row.x).toBeLessThanOrEqual(pane.x);
-        expect(row.width).toBeGreaterThanOrEqual(pane.width);
-      } else {
-        expect(row.x).toBeCloseTo(pane.x, 0);
-        expect(row.width).toBeCloseTo(pane.width, 0);
-      }
+      expect(row.x).toBeCloseTo(pane.x, 0);
+      expect(row.width).toBeCloseTo(pane.width, 0);
       expect(row.height).toBeGreaterThanOrEqual(TOUCH_TARGET);
     });
   });
