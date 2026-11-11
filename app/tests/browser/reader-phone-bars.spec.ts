@@ -37,6 +37,8 @@ const BACK_TO_LIBRARY = "Back to the library";
 const MORE_ROWS = ["Mark read", "Start over", "Show the file", BACK_TO_LIBRARY];
 const NO_BLUR = "none";
 const CLEAR = "rgba(0, 0, 0, 0)";
+const LONG_BOOK_PAGES = 120;
+const LAST_PAIR_END = LONG_BOOK_PAGES - 1;
 const BACK_TO_SERIES = `Back to ${BOOK_SERIES_TITLE}`;
 const FIRST_PAGE = `Page 1 of ${String(PAGE_COUNT)}`;
 const LANDSCAPE_TABLET = { width: 1180, height: 820 };
@@ -1171,6 +1173,43 @@ test.describe(
         "color",
         await tokenColour(page, "--native-color-on-top-bar", READER_THEME),
       );
+    });
+  },
+);
+
+test.describe(
+  "the Android phone's page slider in a long book",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...readerBackend(DEFAULT_BACKEND),
+        openBook: () => readerBook(NOT_STARTED, LONG_BOOK_PAGES),
+      },
+    });
+
+    test("keeps the slider's track as wide on the first page as on the last pair", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openBook(page);
+      await quickSettings(page)
+        .getByRole("button", { name: "Two pages" })
+        .click();
+      const slider = page.getByRole("slider", { name: "Page" });
+      const track = page.locator("[data-slider-root]");
+      const firstWidth = (await boxOf(track)).width;
+
+      await slider.fill(String(LAST_PAIR_END));
+
+      await expect(page.locator("[data-reader-count]")).toHaveText(
+        `${String(LAST_PAIR_END - 1)}–${String(LAST_PAIR_END)} / ${String(LONG_BOOK_PAGES)}`,
+      );
+      expect((await boxOf(track)).width).toBe(firstWidth);
     });
   },
 );

@@ -116,6 +116,17 @@ test("splits Android's track around the handle with a stop dot at its end", asyn
   );
 });
 
+test("recuts Android's unfilled track and moves its stop dot when reading right to left", async () => {
+  await openSlider("android", PHONE);
+  const { clipPath, backgroundImage } = getComputedStyle(track(), "::before");
+
+  await openSlider("android", PHONE, "rightToLeft");
+  const mirrored = getComputedStyle(track(), "::before");
+
+  expect(mirrored.clipPath).not.toBe(clipPath);
+  expect(mirrored.backgroundImage).not.toBe(backgroundImage);
+});
+
 test("keeps the thin track and round thumb on Android tablets and the desktops", async () => {
   await openSlider("android", TABLET);
   expect(track().getBoundingClientRect().height).toBe(DESKTOP_TRACK_HEIGHT);

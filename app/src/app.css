@@ -1870,14 +1870,16 @@
 }
 
 @utility reader-slider-rest {
-  --dot-at: calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%;
-  @apply reader-slider-end-dot;
-  clip-path: inset(
-    0 0 0 calc(var(--handle) + var(--spacing-sm)) round var(--spacing-2xs)
-      var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs)
-  );
+  &::before {
+    --dot-at: calc(100% - var(--spacing-xs) - var(--spacing-2xs)) 50%;
+    @apply reader-slider-end-dot;
+    clip-path: inset(
+      0 0 0 calc(var(--handle) + var(--spacing-sm)) round var(--spacing-2xs)
+        var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs)
+    );
+  }
 
-  &:where([dir="rtl"], [dir="rtl"] *) {
+  &:where([dir="rtl"], [dir="rtl"] *)::before {
     --dot-at: calc(var(--spacing-xs) + var(--spacing-2xs)) 50%;
     clip-path: inset(
       0 calc(var(--handle) + var(--spacing-sm)) 0 0 round var(--spacing-sm)
