@@ -34,6 +34,7 @@
   } from "#lib/series/swipe-actions.svelte.ts";
   import SmartFeaturesSection from "#lib/reader/SmartFeaturesSection.svelte";
   import {
+    ANDROID_CHOICE_CARD,
     FLUSH_FOOTER,
     FLUSH_LIST_HEADING,
     FLUSH_NOTE,
@@ -65,6 +66,7 @@
   const notices = getNotices();
   const width = new WindowWidth();
   const android = new AndroidPhone();
+  const isAndroid = currentPlatform() === "android";
   const isOnPhone = $derived(isPhone(currentPlatform(), width.current));
 
   const skipUpNext = getSkipUpNextSetting();
@@ -187,6 +189,18 @@
         chosen={newSeries.choice}
         onChoose={chooseNewSeriesMode}
       />
+    {:else if isAndroid}
+      <section class={ANDROID_CHOICE_CARD}>
+        <SettingChoiceRow
+          bleed=""
+          title={m.reading_mode_new_series()}
+          value={READING_MODE_NAMES[newSeries.choice]()}
+          help={m.reading_mode_new_series_help()}
+          choices={newSeriesChoices}
+          chosen={newSeries.choice}
+          onChoose={chooseNewSeriesMode}
+        />
+      </section>
     {:else}
       <section
         class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
