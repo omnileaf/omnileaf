@@ -63,3 +63,19 @@ test("keeps equal columns on one row once the widest segment fits in each", () =
     columnsThatFit({ widths, space, gap: GAP, hasEqualColumns: true }),
   ).toBe(4);
 });
+
+test("puts three segments in two columns once the last may span the second row", () => {
+  const widths = [60, 110, 180];
+
+  expect(
+    columnsThatFit({ widths, space: 250, gap: GAP, spansLastRow: true }),
+  ).toBe(2);
+});
+
+test("stacks segments that may span once two of the others no longer fit side by side", () => {
+  const widths = [60, 130, 180];
+
+  expect(
+    columnsThatFit({ widths, space: 250, gap: GAP, spansLastRow: true }),
+  ).toBe(1);
+});
