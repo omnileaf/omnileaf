@@ -12,6 +12,8 @@ import {
   WINDOWS_TOGGLED_ON,
 } from "./windows-reader-bar.ts";
 
+export type AutoMarkRoom = "inline" | "behind";
+
 export interface QuickSettingLook {
   readonly button: string;
   readonly toggle: string;
@@ -23,6 +25,7 @@ export interface QuickSettingLook {
   readonly hasChevron: boolean;
   readonly directionName: string;
   readonly autoMark: string;
+  readonly autoMarkRoom: AutoMarkRoom;
   readonly hasPill: boolean;
   readonly pill: string;
   readonly words: string;
@@ -46,6 +49,7 @@ const SEGMENT_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  autoMarkRoom: "inline",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -67,6 +71,7 @@ const CAPSULE_LOOK: QuickSettingLook = {
   hasChevron: true,
   directionName: "truncate",
   autoMark: AUTO_MARK,
+  autoMarkRoom: "inline",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -84,6 +89,7 @@ const WINDOWS_LOOK: QuickSettingLook = {
   hasChevron: false,
   directionName: "text-center max-medium:sr-only",
   autoMark: "sr-only",
+  autoMarkRoom: "inline",
   hasPill: false,
   pill: "",
   words: "contents",
@@ -108,6 +114,7 @@ const STRIP_LOOK: QuickSettingLook = {
   directionName: "truncate",
   autoMark:
     "rounded-auto-mark border border-current px-xs text-reader-thumbnail font-medium tracking-native-tab",
+  autoMarkRoom: "behind",
   hasPill: true,
   pill: "flex items-center justify-center rounded-full block-native-reader-quick-pill-block inline-native-reader-quick-pill-inline",
   words:

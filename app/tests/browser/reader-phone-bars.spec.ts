@@ -59,6 +59,8 @@ const GESTURE_BAR_PX = 24;
 const ANDROID_TOP_BAR_PX = 64;
 const ANDROID_BOTTOM_BAR_BLOCK_PX = 8;
 const SQUARE = "0px";
+const CENTRED_WITHIN_PX = 1;
+const EN_XA_LEFT_TO_RIGHT = "⟦Ļéƒţ ţö ŕíĝĥţ······⟧";
 const NO_BORDER = "0px";
 const NO_SHADOW = "none";
 
@@ -112,6 +114,15 @@ function readerActions(page: Page): Locator {
 
 function quickSettings(page: Page): Locator {
   return page.getByRole("group", { name: "Quick settings" });
+}
+
+function textCentreOf(label: Locator): Promise<number> {
+  return label.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const box = range.getBoundingClientRect();
+    return box.left + box.width / 2;
+  });
 }
 
 function controlBars(page: Page): Locator {
@@ -646,6 +657,62 @@ test.describe("the reader's bars on a phone", { tag: "@native" }, () => {
     await page.mouse.down();
 
     await expect(next).not.toHaveCSS("background-image", NO_TINT);
+  });
+
+  for (const choice of ["Left to right", "Right to left"] as const) {
+    test(`centres Android's direction label under its icon once ${choice} is chosen`, async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openBook(page);
+      const direction = quickSettings(page).getByRole("button", {
+        name: /to (left|right)/,
+      });
+
+      await direction.click();
+      await page
+        .getByRole("menuitemradio", { name: choice, exact: true })
+        .click();
+
+      const icon = await boxOf(direction.locator("[data-icon]"));
+      const label = direction
+        .getByText(choice, { exact: true })
+        .filter({ visible: true });
+      await expect
+        .poll(async () =>
+          Math.abs((await textCentreOf(label)) - (icon.x + icon.width / 2)),
+        )
+        .toBeLessThanOrEqual(CENTRED_WITHIN_PX);
+    });
+  }
+
+  test("keeps Android's quick settings strip the same height once a fixed direction drops the AUTO mark, at the largest text in a longer language", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.addInitScript(() => {
+      window.localStorage.setItem("omnileaf.language", "en-XA");
+    });
+    await setTextScale(page, LARGEST_TEXT_SCALE);
+    await openBook(page);
+    const strip = page.getByRole("group", { name: /Ǫûíçķ šéţţíñĝš/ });
+    const automaticHeight = (await boxOf(strip)).height;
+
+    await strip.getByRole("button", { name: EN_XA_LEFT_TO_RIGHT }).click();
+    await page
+      .getByRole("menuitemradio", { name: EN_XA_LEFT_TO_RIGHT, exact: true })
+      .click();
+
+    await expect(page.getByRole("menu")).toBeHidden();
+    expect((await boxOf(strip)).height).toBe(automaticHeight);
   });
 
   test("runs Android's bars edge to edge on the container colour, past the status and gesture bars, as the boards draw them", async ({
