@@ -1,7 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 
 import type { FakeBackend } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, onPlatform, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  onPlatform,
+  setTextScale,
+  test,
+} from "./fixtures.ts";
 import {
   BOOK_ID,
   BOOK_SERIES_ID,
@@ -17,6 +24,13 @@ const SIX_SECONDS_MS = 6000;
 const FEW_SECONDS_MS = 2000;
 const CLOSE_PX = 8;
 const PAUSE_AHEAD_MS = 500;
+const CONTROLS_GONE_MS = 4000;
+const ANDROID_ROUND_BUTTON_PX = 48;
+const NARROWEST_WIDTHS = [360, 375] as const;
+const NARROW_HEIGHT = 800;
+const SMALLEST_IPHONE_WIDTH = 375;
+const VERY_LARGE_TEXT_SCALE = 3;
+const ANDROID_SPEED_BUTTON_PX = 40;
 
 function tallPages(secondsPerPage: number | null): FakeBackend {
   return {
@@ -64,6 +78,12 @@ async function startAutoScroll(page: Page): Promise<void> {
   await expect(bar(page)).toBeVisible();
 }
 
+async function closeReadingSettings(page: Page): Promise<void> {
+  await page
+    .getByRole("button", { name: /^(Done|Close reading settings)$/ })
+    .click();
+}
+
 /** Holds the page's clock still, so only the time the test runs on moves the strip. */
 async function holdTime(page: Page): Promise<void> {
   const now = await page.evaluate(() => Date.now());
@@ -79,6 +99,53 @@ async function pageHeightOf(page: Page): Promise<number> {
     .locator("[data-strip]")
     .getByRole("img", { name: "Page 1", exact: true })
     .evaluate((element) => element.getBoundingClientRect().height);
+}
+
+async function leftEdgesOf(parts: readonly Locator[]): Promise<number[]> {
+  return Promise.all(parts.map(async (part) => (await boxOf(part)).x));
+}
+
+interface Span {
+  readonly start: number;
+  readonly end: number;
+}
+
+async function spansOf(parts: readonly Locator[]): Promise<Span[]> {
+  return Promise.all(
+    parts.map(async (part) => {
+      const { x, width } = await boxOf(part);
+      return { start: x, end: x + width };
+    }),
+  );
+}
+
+async function textSpanOf(part: Locator): Promise<Span> {
+  return part.evaluate((element) => {
+    const text = document.createRange();
+    text.selectNodeContents(element);
+    const { left, right } = text.getBoundingClientRect();
+    return { start: left, end: right };
+  });
+}
+
+function overlapping(spans: readonly Span[]): Span[][] {
+  return spans.flatMap((span, index) => {
+    const next = spans[index + 1];
+    return next !== undefined && span.end > next.start ? [[span, next]] : [];
+  });
+}
+
+function ascending(edges: readonly number[]): number[] {
+  return edges.toSorted((left, right) => left - right);
+}
+
+async function sizesOf(parts: readonly Locator[]): Promise<number[][]> {
+  return Promise.all(
+    parts.map(async (part) => {
+      const { width, height } = await boxOf(part);
+      return [width, height];
+    }),
+  );
 }
 
 test.describe("at a set speed", () => {
@@ -171,7 +238,177 @@ test.describe("at a set speed", () => {
 
     await expect(bar(page)).toContainText("Paused");
   });
+
+  test("stops at Stop auto scroll and puts its toolbar away", async ({
+    page,
+  }) => {
+    await openStrip(page);
+    await startAutoScroll(page);
+
+    await bar(page).getByRole("button", { name: "Stop auto scroll" }).click();
+
+    await expect(bar(page)).toHaveCount(0);
+    const stopped = await scrollTopOf(page);
+    await page.clock.runFor(FEW_SECONDS_MS);
+    expect(await scrollTopOf(page)).toBe(stopped);
+    await expect(page.locator("h1")).toBeFocused();
+  });
+
+  for (const width of NARROWEST_WIDTHS) {
+    test(`fits its readout and buttons side by side in a ${String(width)} px window`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: NARROW_HEIGHT });
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      const spans = [
+        await textSpanOf(
+          bar(page).getByText("2 pages a minute", { exact: true }),
+        ),
+        ...(await spansOf([
+          bar(page).getByRole("button", { name: "Pause" }),
+          bar(page).getByRole("button", { name: "Slower" }),
+          bar(page).getByRole("button", { name: "Faster" }),
+          bar(page).getByRole("button", { name: "Stop auto scroll" }),
+        ])),
+      ];
+      expect(overlapping(spans)).toEqual([]);
+    });
+  }
+
+  test("keeps its readout clear of Pause with very large text", async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: SMALLEST_IPHONE_WIDTH,
+      height: NARROW_HEIGHT,
+    });
+    await setTextScale(page, VERY_LARGE_TEXT_SCALE);
+    await openStrip(page);
+
+    await startAutoScroll(page);
+
+    const spans = [
+      await textSpanOf(
+        bar(page).getByText("2 pages a minute", { exact: true }),
+      ),
+      ...(await spansOf([bar(page).getByRole("button", { name: "Pause" })])),
+    ];
+    expect(overlapping(spans)).toEqual([]);
+  });
+
+  test("stops when the reader leaves the long strip", async ({ page }) => {
+    await openStrip(page);
+    await startAutoScroll(page);
+    await page.keyboard.press("m");
+    await page
+      .getByRole("button", { name: "Reading settings", exact: true })
+      .click();
+
+    await page
+      .getByRole("combobox", { name: "Reading mode" })
+      .selectOption({ label: "Left to right" });
+    await closeReadingSettings(page);
+    await page.clock.runFor(CONTROLS_GONE_MS);
+
+    await expect(
+      page.getByRole("button", { name: "Show the controls" }),
+    ).toBeVisible();
+    await expect(bar(page)).toHaveCount(0);
+  });
 });
+
+test.describe(
+  "the Android phone's floating toolbar",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: tallPages(null) });
+
+    test("leads with the round Pause, then the readout, then Slower and Faster", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      const lefts = await leftEdgesOf([
+        bar(page).getByRole("button", { name: "Pause" }),
+        bar(page).getByText("2 pages a minute", { exact: true }),
+        bar(page).getByRole("button", { name: "Slower" }),
+        bar(page).getByRole("button", { name: "Faster" }),
+      ]);
+      expect(lefts).toEqual(ascending(lefts));
+    });
+
+    test("keeps the round button leading, turned to Play, once a touch pauses it", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+
+      await page.getByRole("button", { name: "Scroll down" }).click();
+
+      const lefts = await leftEdgesOf([
+        bar(page).getByRole("button", { name: "Play" }),
+        bar(page).getByText("Paused", { exact: true }),
+      ]);
+      expect(lefts).toEqual(ascending(lefts));
+    });
+
+    test("draws the round button at 48 dp and Slower and Faster at 40 dp", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      expect(
+        await sizesOf([
+          bar(page).getByRole("button", { name: "Pause" }),
+          bar(page).getByRole("button", { name: "Slower" }),
+          bar(page).getByRole("button", { name: "Faster" }),
+        ]),
+      ).toEqual([
+        [ANDROID_ROUND_BUTTON_PX, ANDROID_ROUND_BUTTON_PX],
+        [ANDROID_SPEED_BUTTON_PX, ANDROID_SPEED_BUTTON_PX],
+        [ANDROID_SPEED_BUTTON_PX, ANDROID_SPEED_BUTTON_PX],
+      ]);
+    });
+
+    test("ends with Stop auto scroll", async ({ page, platform }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      const lefts = await leftEdgesOf([
+        bar(page).getByRole("button", { name: "Faster" }),
+        bar(page).getByRole("button", { name: "Stop auto scroll" }),
+      ]);
+      expect(lefts).toEqual(ascending(lefts));
+    });
+  },
+);
 
 test.describe("once the library knows the reading speed", () => {
   test.use({ backend: tallPages(60) });

@@ -327,6 +327,7 @@
   --native-spacing-search-token: 26px;
   --native-spacing-search-token-inline: 9px;
   --native-spacing-search-field-gap: 6px;
+  --native-shadow-toolbar-lift: none;
   --native-spacing-notice-inline: 8px;
   --native-spacing-notice-top: 54px;
   --native-color-info-bar: transparent;

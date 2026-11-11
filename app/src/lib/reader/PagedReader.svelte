@@ -420,6 +420,17 @@
     autoScroll = autoScroll === "running" ? "paused" : "running";
   }
 
+  function stopAutoScroll(): void {
+    autoScroll = "off";
+    heading?.focus();
+  }
+
+  $effect(() => {
+    if (!isStrip) {
+      autoScroll = "off";
+    }
+  });
+
   function reachStripEnd(): void {
     if (look.pausesAtEnd) {
       autoScroll = "paused";
@@ -1258,28 +1269,19 @@
         />
       </header>
       {#if autoScroll !== "off" && !controls.isShown}
-        <div
-          class="absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-auto-bar"
-        >
-          <AutoScrollBar
-            speed={scrollSpeed}
-            isPaused={autoScroll === "paused"}
-            isTouch={!isPointer(platform)}
-            onToggle={toggleAutoScroll}
-            onSlower={() => {
-              settings.change(
-                "pagesPerMinute",
-                slowerSpeed(look.pagesPerMinute),
-              );
-            }}
-            onFaster={() => {
-              settings.change(
-                "pagesPerMinute",
-                fasterSpeed(look.pagesPerMinute),
-              );
-            }}
-          />
-        </div>
+        <AutoScrollBar
+          speed={scrollSpeed}
+          isPaused={autoScroll === "paused"}
+          isTouch={!isPointer(platform)}
+          onToggle={toggleAutoScroll}
+          onSlower={() => {
+            settings.change("pagesPerMinute", slowerSpeed(look.pagesPerMinute));
+          }}
+          onFaster={() => {
+            settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
+          }}
+          onStop={stopAutoScroll}
+        />
       {/if}
       {#if isStripShown && chrome.spans}
         <div

@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import type { WidthClass } from "#lib/page/breakpoints.ts";
 
+import { autoScrollLook } from "./auto-scroll-look.ts";
 import { jumpListPhoneLook } from "./jump-list-look.ts";
 import { quickSettingLook } from "./quick-setting.ts";
 import { floatsReaderBars, READER_BUTTON, readerButton } from "./reader-bar.ts";
@@ -68,5 +69,14 @@ test.each(SCREENS)(
     const look = jumpListPhoneLook(platform, width);
 
     expect(look !== undefined).toBe(PHONES.has(screen));
+  },
+);
+
+test.each(SCREENS)(
+  "draws auto scroll as Material's floating toolbar on the $screen only if it is an Android phone",
+  ({ platform, width, screen }) => {
+    expect(autoScrollLook(platform, width).leadsWithToggle).toBe(
+      screen === "Android phone",
+    );
   },
 );

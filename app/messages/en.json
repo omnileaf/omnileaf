@@ -2277,6 +2277,7 @@
   "reader_auto_scroll_pause": "Pause",
   "reader_auto_scroll_slower": "Slower",
   "reader_auto_scroll_faster": "Faster",
+  "reader_auto_scroll_stop": "Stop auto scroll",
   "reader_auto_scroll_speed": "Speed",
   "reader_auto_scroll_my_pace": "My pace",
   "reader_auto_scroll_set_speed": "Set speed",
