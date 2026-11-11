@@ -97,11 +97,14 @@ test.each([
   },
 );
 
+async function chooseMode(name: string): Promise<void> {
+  await page.getByRole("combobox", { name: "Reading mode" }).click();
+  await page.getByRole("option", { name, exact: true }).click();
+}
+
 test("greys out My pace on Android when the series has no pace to follow", async () => {
   await openSheet("android", PHONE, false);
-  await page
-    .getByRole("combobox", { name: "Reading mode" })
-    .selectOptions("longStrip");
+  await chooseMode("Long strip");
 
   const myPace = page.getByRole("radio", { name: /^My pace/ });
 
@@ -193,24 +196,27 @@ test("draws Android's Reading mode as a 56px outlined select with its label on t
 test("keeps a long Reading mode label clear of its one chevron", async () => {
   await openSheet("android");
   const select = modeSelect();
-  const style = getComputedStyle(select);
+  const shownMode = select.querySelector("span");
   const field = select.parentElement;
 
-  expect(style.textOverflow).toBe("ellipsis");
-  expect(Number.parseFloat(style.paddingInlineEnd)).toBeGreaterThanOrEqual(34);
+  expect(shownMode).not.toBeNull();
+  expect(shownMode && getComputedStyle(shownMode).textOverflow).toBe(
+    "ellipsis",
+  );
+  expect(
+    Number.parseFloat(getComputedStyle(select).paddingInlineEnd),
+  ).toBeGreaterThanOrEqual(34);
   expect(field?.querySelectorAll("svg")).toHaveLength(1);
 });
 
 test("still changes the reading mode from Android's outlined select", async () => {
   await openSheet("android");
 
-  await page
-    .getByRole("combobox", { name: "Reading mode" })
-    .selectOptions("rightToLeft");
+  await chooseMode("Right to left");
 
   await expect
     .element(page.getByRole("combobox", { name: "Reading mode" }))
-    .toHaveValue("rightToLeft");
+    .toHaveTextContent("Right to left");
 });
 
 test.each([
@@ -226,11 +232,9 @@ test.each([
   },
 );
 
-async function openStripSheet(platform: Platform, size = PHONE): Promise<void> {
-  await openSheet(platform, size);
-  await page
-    .getByRole("combobox", { name: "Reading mode" })
-    .selectOptions("longStrip");
+async function openAndroidStripSheet(): Promise<void> {
+  await openSheet("android");
+  await chooseMode("Long strip");
 }
 
 function modeRow(): HTMLElement {
@@ -240,7 +244,7 @@ function modeRow(): HTMLElement {
 }
 
 test("draws Android's long strip Reading mode as a two-line row with the current mode under its title", async () => {
-  await openStripSheet("android");
+  await openAndroidStripSheet();
 
   const row = modeRow();
   const box = row.getBoundingClientRect();
@@ -257,7 +261,7 @@ test("draws Android's long strip Reading mode as a two-line row with the current
 });
 
 test("changes Android's long strip Reading mode from the choice dialog", async () => {
-  await openStripSheet("android");
+  await openAndroidStripSheet();
 
   await page.getByRole("button", { name: /^Reading mode/ }).click();
   await page
@@ -267,7 +271,7 @@ test("changes Android's long strip Reading mode from the choice dialog", async (
 
   await expect
     .element(page.getByRole("combobox", { name: "Reading mode" }))
-    .toHaveValue("leftToRight");
+    .toHaveTextContent("Left to right");
   await expect
     .element(page.getByRole("dialog", { name: "Reading mode" }))
     .not.toBeInTheDocument();
@@ -280,7 +284,10 @@ test.each([
 ] as const)(
   "keeps %s's long strip reading mode beside its label in the shared select",
   async (platform, size) => {
-    await openStripSheet(platform, size);
+    await openSheet(platform, size);
+    await page
+      .getByRole("combobox", { name: "Reading mode" })
+      .selectOptions("longStrip");
 
     await expect
       .element(page.getByRole("combobox", { name: "Reading mode" }))

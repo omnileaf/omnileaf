@@ -62,7 +62,7 @@ const TAB_BAR_LOOKS = {
   },
   android: {
     ...NATIVE_TABS,
-    bar: DOCKED_BAR,
+    bar: `${DOCKED_BAR} max-medium:keyboard-shown:hidden`,
     row: DOCKED_ROW,
     glassPill: "",
     tab: NATIVE_TAB,

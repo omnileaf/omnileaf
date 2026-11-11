@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { boxOf, expect, test } from "./fixtures.ts";
+import { boxOf, expect, framesPassed, test } from "./fixtures.ts";
 import { chapters, SectionShelf, volumes } from "./series-sections-shelf.ts";
 import { SERIES_ID, SERIES_TITLE } from "./series-shelf.ts";
 
@@ -76,11 +76,13 @@ function runHeadings(page: Page): Locator {
 }
 
 async function scrollBy(page: Page, top: number): Promise<boolean> {
-  return page.getByRole("main").evaluate((main, by) => {
+  const hasMoved = await page.getByRole("main").evaluate((main, by) => {
     const before = main.scrollTop;
     main.scrollBy({ top: by });
     return main.scrollTop > before;
   }, top);
+  await framesPassed(page);
+  return hasMoved;
 }
 
 async function drawnRowHeights(page: Page): Promise<number[]> {
