@@ -8,6 +8,7 @@ import { READER_BUTTON, READER_GLASS } from "./reader-bar.ts";
 
 export interface AutoScrollLook {
   readonly place: string;
+  readonly tucked: string | null;
   readonly bar: string;
   readonly leadsWithToggle: boolean;
   readonly toggle: string;
@@ -22,6 +23,7 @@ export interface AutoScrollLook {
 const GLASS_LOOK: AutoScrollLook = {
   place:
     "absolute inset-x-reader-bar-inline inset-be-reader-bar-bottom expanded:inset-x-lg expanded:inset-be-lg expanded:mx-auto expanded:max-inline-reader-auto-bar",
+  tucked: null,
   bar: cn(
     READER_GLASS,
     "grid grid-cols-auto-scroll items-center gap-sm px-md py-sm",
@@ -38,7 +40,9 @@ const GLASS_LOOK: AutoScrollLook = {
 };
 
 const FLOATING_TOOLBAR_LOOK: AutoScrollLook = {
-  place: "absolute inset-x-lg inset-be-reader-auto-bar-bottom",
+  place:
+    "absolute inset-x-lg inset-be-reader-auto-bar-bottom motion-reader:transition-[opacity,translate,visibility] motion-reader:duration-fade motion-reader:ease-out",
+  tucked: "pointer-events-none invisible translate-y-md opacity-0",
   bar: "flex items-center gap-md rounded-full bg-native-top-bar-scrolled ps-sm pe-reader-auto-bar-end py-sm text-foreground shadow-native-toolbar-lift",
   leadsWithToggle: true,
   toggle: cn(

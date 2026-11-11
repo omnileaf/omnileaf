@@ -263,6 +263,8 @@
   let paged: { place: () => SpreadPlace | undefined } | undefined = $state();
   let autoScroll: "off" | "running" | "paused" = $state("off");
   let isTouchPausing = false;
+  const pausesHintId = $props.id();
+  const zonesPause = $derived.by(() => autoScroll === "running");
   const canUseMyPace = $derived(
     smartFeatures.autoScrollsAtMyPace && book.secondsPerPage !== null,
   );
@@ -441,15 +443,20 @@
   }
 
   function pauseOnTouch(): void {
-    if (autoScroll === "running") {
+    isTouchPausing = autoScroll === "running";
+    if (isTouchPausing) {
       autoScroll = "paused";
-      isTouchPausing = true;
     }
   }
 
   function onStripZone(event: MouseEvent, zone: ReaderAction): void {
-    if (isTouchPausing) {
-      isTouchPausing = false;
+    const isTouchThatPaused = isTouchPausing && isPointerClick(event);
+    isTouchPausing = false;
+    if (isTouchThatPaused) {
+      return;
+    }
+    if (autoScroll === "running") {
+      autoScroll = "paused";
       return;
     }
     onZone(event, zone);
@@ -1011,10 +1018,12 @@
     class="absolute inset-none grid touch-pan-y touch-pinch-zoom grid-strip-zones"
     onpointerdown={pauseOnTouch}
   >
+    <span id={pausesHintId} hidden>{m.reader_auto_scroll_zone_pauses()}</span>
     {#if look.tapToScroll === "topAndBottom"}
       <button
         type="button"
         aria-label={m.reader_scroll_up()}
+        aria-describedby={zonesPause ? pausesHintId : undefined}
         class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
         onclick={(event) => {
           onStripZone(event, "previous");
@@ -1028,6 +1037,7 @@
       aria-label={controls.isShown
         ? m.reader_hide_controls()
         : m.reader_show_controls()}
+      aria-describedby={zonesPause ? pausesHintId : undefined}
       class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
       onclick={(event) => {
         onStripZone(event, "toggleControls");
@@ -1037,6 +1047,7 @@
       <button
         type="button"
         aria-label={m.reader_scroll_down()}
+        aria-describedby={zonesPause ? pausesHintId : undefined}
         class="focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-reader-accent"
         onclick={(event) => {
           onStripZone(event, "next");
@@ -1281,6 +1292,9 @@
             settings.change("pagesPerMinute", fasterSpeed(look.pagesPerMinute));
           }}
           onStop={stopAutoScroll}
+          onReturnFocus={() => {
+            heading?.focus();
+          }}
         />
       {/if}
       {#if isStripShown && chrome.spans}
