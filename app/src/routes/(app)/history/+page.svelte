@@ -36,6 +36,7 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getNotices } from "#lib/notices/notices.ts";
+  import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { whenInView } from "#lib/paging/in-view.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -338,7 +339,7 @@
     >
       <a
         href={resolve("/(app)")}
-        class="mbs-lg flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button"
+        class="{EMPTY_ACTION_GAP} flex items-center gap-sm rounded-full border border-border bg-card px-lg font-medium min-block-touch-target hover:tint-hover active:tint-pressed desktop:min-block-pointer-button"
       >
         {#if platform === "android"}
           <Icon name="library" size={FIELD_ICON_SIZE} />
