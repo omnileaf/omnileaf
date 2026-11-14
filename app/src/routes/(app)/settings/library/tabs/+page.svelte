@@ -33,6 +33,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import {
+    ANDROID_CHOICE_CARD,
     FLUSH_FOOTER,
     FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
@@ -51,6 +52,7 @@
   let keepsLabels = $state(false);
   let isNaming = $state(false);
   const isMac = currentPlatform() === "macos";
+  const isAndroid = currentPlatform() === "android";
   const arranged = $derived(
     arrangedTabs(keptTabs, categories).map((tab) =>
       isMac && tab.id.kind === "all"
@@ -236,6 +238,18 @@
         {m.library_opens_on_help()}
       </p>
     </div>
+  {:else if isAndroid}
+    <section class={["mbs-lg", ANDROID_CHOICE_CARD]}>
+      <SettingChoiceRow
+        bleed=""
+        title={m.library_opens_on()}
+        value={opensOnLabel}
+        help={m.library_opens_on_help()}
+        choices={opensOnChoices}
+        chosen={shownOpensOn}
+        onChoose={chooseOpensOn}
+      />
+    </section>
   {:else if ios.isOn}
     <div class="mbs-lg flex flex-col gap-sm">
       <GroupedChoiceRow

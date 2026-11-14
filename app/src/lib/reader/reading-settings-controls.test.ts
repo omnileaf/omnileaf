@@ -277,20 +277,19 @@ test("changes Android's long strip Reading mode from the choice dialog", async (
     .not.toBeInTheDocument();
 });
 
-test("picks Android's long strip reading mode on a tablet from the app's own menu beside its label", async () => {
+test("turns Android's Reading mode on a tablet into a choice dialog row once the long strip is picked from the menu", async () => {
   await openSheet("android", TABLET);
-  const field = page.getByRole("combobox", { name: "Reading mode" });
 
-  await field.click();
+  await page.getByRole("combobox", { name: "Reading mode" }).click();
   await page
     .getByRole("listbox", { name: "Reading mode" })
     .getByRole("option", { name: "Long strip" })
     .click();
 
-  await expect.element(field).toHaveTextContent("Long strip");
-  expect(
-    page.getByRole("button", { name: /^Reading mode/ }).elements(),
-  ).toHaveLength(0);
+  const row = page.getByRole("button", { name: /^Reading mode/ });
+  await expect.element(row).toHaveAttribute("aria-haspopup", "dialog");
+  expect(row.element().textContent).toContain("Long strip");
+  expect(page.getByRole("combobox").elements()).toHaveLength(0);
 });
 
 test.each([

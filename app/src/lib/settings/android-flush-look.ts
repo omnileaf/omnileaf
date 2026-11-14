@@ -16,3 +16,6 @@ export const FLUSH_LIST_HEADING = `${FLUSH_BLEED} ${FLUSH_HEADING}`;
 export const FLUSH_NOTE = `${FLUSH_BLEED} px-lg pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
 
 export const FLUSH_FOOTER = `${FLUSH_BLEED} px-lg pbs-sm pbe-lg text-native-row-subtitle/native-row-subtitle text-muted`;
+
+export const ANDROID_CHOICE_CARD =
+  "flex flex-col overflow-hidden rounded-card border border-border bg-card";
