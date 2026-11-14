@@ -669,6 +669,10 @@ jobs:
         if: matrix.group == 'rest' || matrix.group == 'screens'
         run: pnpm --dir app test:e2e --test-list "$RUNNER_TEMP/shard-tests.txt"
 
+      - name: Name the processor the interface is timed on
+        if: matrix.group == 'speed'
+        run: lscpu | grep -E '^(Model name|CPU\(s\)):'
+
       - name: Time the interface on its own
         if: matrix.group == 'speed'
         run: env -u PLAYWRIGHT_GROUP pnpm --dir app test:e2e --project speed --no-deps
