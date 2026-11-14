@@ -13,6 +13,7 @@ import {
 } from "./fixtures.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
 
+const EMPTY_NOTE_TO_ACTION = 16;
 const LIBRARY = sampleSeries(12);
 const FEW_CHOICES: LibraryFilterChoices = {
   formats: [],
@@ -724,6 +725,24 @@ test.describe(
         await expect(
           region.getByRole("button", { name: "Clear all filters" }),
         ).toBeVisible();
+      });
+
+      test("sets Clear all filters 16px under its line, as Material's empty state does", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        const region = page.getByRole("region", {
+          name: "No series match these filters",
+        });
+        const clear = region.getByRole("button", { name: "Clear all filters" });
+        await expect(clear).toBeVisible();
+
+        const [line, button] = await Promise.all([
+          boxOf(region.locator('[data-slot="empty-description"]')),
+          boxOf(clear),
+        ]);
+
+        expect(button.y - (line.y + line.height)).toBe(EMPTY_NOTE_TO_ACTION);
       });
     });
 
