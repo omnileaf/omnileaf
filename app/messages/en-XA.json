@@ -2270,6 +2270,8 @@
   "reader_start_auto_scroll": "⟦Šţáŕţ áûţö šçŕöļļ·······⟧",
   "reader_auto_scroll_your_pace": "⟦Ýöûŕ þáçé····⟧",
   "reader_auto_scroll_paused": "⟦Þáûšéð···⟧",
+  "reader_auto_scroll_paused_at": "⟦Þáûšéð áţ {percent}········⟧",
+  "reader_auto_scroll_chapter_progress": "⟦{percent} öƒ ţĥé çĥáþţéŕ··········⟧",
   "reader_tap_play": "⟦Ţáþ Þļáý ţö ŕéšûɱé········⟧",
   "reader_space_pauses": "⟦Šþáçé þáûšéš·····⟧",
   "reader_space_resumes": "⟦Šþáçé ŕéšûɱéš······⟧",
