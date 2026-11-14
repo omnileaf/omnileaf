@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   isWithinSection,
   sectionCurrent,
+  sectionsShown,
   SETTINGS_GROUPS,
   SETTINGS_SECTIONS,
 } from "./sections";
@@ -62,6 +63,7 @@ test("lists every section in the order the Settings nav draws them", () => {
   expect(SETTINGS_SECTIONS.map(({ route }) => route)).toEqual([
     "/(app)/settings/general",
     "/(app)/settings/appearance",
+    "/(app)/settings/navigation",
     "/(app)/settings/library",
     "/(app)/settings/reading",
     "/(app)/settings/privacy",
@@ -69,4 +71,16 @@ test("lists every section in the order the Settings nav draws them", () => {
     "/(app)/settings/advanced",
     "/(app)/settings/about",
   ]);
+});
+
+test("shows Navigation only on an Android phone", () => {
+  const onOtherScreens = sectionsShown(SETTINGS_SECTIONS, false);
+  const onAndroidPhones = sectionsShown(SETTINGS_SECTIONS, true);
+
+  expect(onOtherScreens.map(({ route }) => route)).not.toContain(
+    "/(app)/settings/navigation",
+  );
+  expect(onAndroidPhones.map(({ route }) => route)).toContain(
+    "/(app)/settings/navigation",
+  );
 });

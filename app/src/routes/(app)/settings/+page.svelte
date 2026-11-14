@@ -17,6 +17,7 @@
   import { newSeriesReadingMode } from "#lib/reader/reading-direction.svelte.ts";
   import { languageName } from "#lib/language/language.ts";
   import { getBackGoesUp } from "#lib/navigation/back-goes-up.ts";
+  import { getTapOpenTabSetting } from "#lib/navigation/tap-open-tab.svelte.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import PageNoticeSlot from "#lib/notices/PageNoticeSlot.svelte";
   import PageHeading from "#lib/page/PageHeading.svelte";
@@ -51,6 +52,7 @@
   let { data }: PageProps = $props();
 
   const backGoesUp = getBackGoesUp();
+  const tapOpenTab = getTapOpenTabSetting();
   const theme = getThemeSetting();
   const opensOn = getOpensOnSetting();
   const screenshotMode = getScreenshotMode();
@@ -120,6 +122,11 @@
         }),
       },
     }),
+    "/(app)/settings/navigation": {
+      text: tapOpenTab.isOn
+        ? m.settings_summary_tap_open_tab_on()
+        : m.settings_summary_tap_open_tab_off(),
+    },
     "/(app)/settings/advanced": { text: m.settings_summary_advanced() },
     "/(app)/settings/about": {
       text: m.app_version({ version: data.appInfo.version }),

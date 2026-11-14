@@ -5,7 +5,9 @@ import { finishFirstLaunchIfShown } from "./first-launch.ts";
 import { followSimulatorWindow } from "./simulator-window.ts";
 import {
   type Capabilities,
+  ELEMENT_TIMEOUT_MS,
   type Locator,
+  pollUntil,
   Session,
   xpath,
 } from "./webdriver.ts";
@@ -17,11 +19,7 @@ export function mainNavigationLink(name: string): Locator {
 }
 
 const LIBRARY_LINK = mainNavigationLink("Library");
-const BACK_TO_THE_LIBRARY =
-  "//a[@data-back-link][@aria-label='Back to the library']";
-const WAY_TO_THE_LIBRARY = xpath(
-  `${LIBRARY_LINK.value} | ${BACK_TO_THE_LIBRARY}`,
-);
+const BACK_LINK = xpath("//a[@data-back-link]");
 const SETTINGS_LINK = mainNavigationLink("Settings");
 const LIBRARY_SETTINGS_LINK = xpath("//main//a[@href='/settings/library']");
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
@@ -30,9 +28,23 @@ export const FINISHED_SCAN_REPORT = xpath(
 );
 const ON_LIBRARY_PAGE = "return location.pathname === '/';";
 
+async function stepTowardsTheLibrary(
+  session: Session,
+): Promise<true | undefined> {
+  if ((await session.run(ON_LIBRARY_PAGE)) === true) {
+    return true;
+  }
+  const back = await session.findWithin(BACK_LINK, 0);
+  await (back ?? (await session.waitFor(LIBRARY_LINK))).click();
+  return undefined;
+}
+
 export async function openLibraryPage(session: Session): Promise<void> {
-  await (await session.waitFor(WAY_TO_THE_LIBRARY)).click();
-  await session.waitUntil(ON_LIBRARY_PAGE, "the library page");
+  await pollUntil(
+    () => stepTowardsTheLibrary(session),
+    ELEMENT_TIMEOUT_MS,
+    "the library page",
+  );
 }
 
 async function sessionCapabilities(app: AppUnderTest): Promise<Capabilities> {

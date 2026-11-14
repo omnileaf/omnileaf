@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Compass,
   HardDrive,
   Info,
   Settings,
@@ -22,6 +23,7 @@ export type SettingsRoute =
   | "/(app)/settings/storage"
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
+  | "/(app)/settings/navigation"
   | "/(app)/settings/about";
 
 export type SettingsSubPage =
@@ -59,6 +61,7 @@ export interface SettingsSection {
   readonly iconName?: IconName;
   /** The colour of the section's tile in the iOS Settings list. */
   readonly chip: SectionChip;
+  readonly isAndroidPhoneOnly?: boolean;
 }
 
 export interface ComingSoonSection {
@@ -124,6 +127,15 @@ const READING: SettingsSection = {
   chip: "orange",
 };
 
+const NAVIGATION: SettingsSection = {
+  route: "/(app)/settings/navigation",
+  label: m.navigation_settings_title,
+  icon: Compass,
+  iconName: "compass",
+  chip: "blue",
+  isAndroidPhoneOnly: true,
+};
+
 const PRIVACY: SettingsSection = {
   route: "/(app)/settings/privacy",
   label: m.privacy_title,
@@ -162,7 +174,10 @@ const TRACKERS: ComingSoonSection = {
 };
 
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
-  { heading: m.settings_group_app, sections: [GENERAL, APPEARANCE] },
+  {
+    heading: m.settings_group_app,
+    sections: [GENERAL, APPEARANCE, NAVIGATION],
+  },
   {
     heading: m.settings_group_reading,
     sections: [LIBRARY, READING],
@@ -174,3 +189,12 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] =
   SETTINGS_GROUPS.flatMap(({ sections }) => sections);
+
+export function sectionsShown(
+  sections: readonly SettingsSection[],
+  isAndroidPhone: boolean,
+): readonly SettingsSection[] {
+  return isAndroidPhone
+    ? sections
+    : sections.filter(({ isAndroidPhoneOnly }) => isAndroidPhoneOnly !== true);
+}

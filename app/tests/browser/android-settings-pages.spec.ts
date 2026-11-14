@@ -130,14 +130,20 @@ test.describe(
       );
     });
 
-    test("runs Advanced's Undo heading straight on from its rows", async ({
+    test("runs Advanced's Navigation and Undo headings straight on from the rows above them", async ({
       page,
     }) => {
       await page.goto("/settings/advanced");
       const row = await boxOf(page.getByRole("link", { name: /Animations/ }));
-      const heading = await boxOf(page.getByRole("heading", { name: "Undo" }));
+      const navigation = page.getByRole("heading", { name: "Navigation" });
+      const navigationBox = await boxOf(navigation);
+      const note = await boxOf(
+        page.getByText("Off, tapping the open tab does nothing."),
+      );
+      const undo = await boxOf(page.getByRole("heading", { name: "Undo" }));
 
-      expect(heading.y - (row.y + row.height)).toBeCloseTo(0, 0);
+      expect(navigationBox.y - (row.y + row.height)).toBeCloseTo(0, 0);
+      expect(undo.y - (note.y + note.height)).toBeGreaterThanOrEqual(0);
     });
 
     test("pads a radio row with a hint 4px above and below its words", async ({

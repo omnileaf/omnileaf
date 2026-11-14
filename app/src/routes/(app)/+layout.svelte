@@ -15,13 +15,24 @@
   } from "#lib/library/home-arrival.ts";
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { LibraryFolders } from "#lib/library/library-folders.svelte.ts";
+  import {
+    setTapOpenTabSetting,
+    tapOpenTabSettingForDocument,
+  } from "#lib/navigation/tap-open-tab.svelte.ts";
+  import { getAnimationsSetting } from "#lib/appearance/animations.svelte.ts";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import AppNavigation from "#lib/navigation/AppNavigation.svelte";
+  import { openTabTap } from "#lib/navigation/open-tab-tap.ts";
   import { makeBackGoUp, setBackGoesUp } from "#lib/navigation/back-goes-up.ts";
   import {
     isPaneToggledBy,
     PANE_SHORTCUT,
   } from "#lib/navigation/pane-shortcut.ts";
-  import { sectionOf, showsTopTabBar } from "#lib/navigation/sections.ts";
+  import {
+    isSectionRoot,
+    sectionOf,
+    showsTopTabBar,
+  } from "#lib/navigation/sections.ts";
   import {
     setSidebarSetting,
     sidebarSettingForDocument,
@@ -73,6 +84,28 @@
   setBackGoesUp(makeBackGoUp());
   const quickOpen = new QuickOpenState();
   const sidebar = setSidebarSetting(sidebarSettingForDocument());
+  const tapOpenTab = setTapOpenTabSetting(tapOpenTabSettingForDocument());
+  const animations = getAnimationsSetting();
+  const androidPhone = new AndroidPhone();
+
+  function tapOpenSection(event: MouseEvent): void {
+    const main = document.querySelector("main");
+    const tap = openTabTap({
+      isTurnedOn: tapOpenTab.isOn,
+      isScrolled: (main?.scrollTop ?? 0) > 0,
+      isOnFirstPage: isSectionRoot(page.route.id),
+    });
+    if (tap === "firstPage") {
+      return;
+    }
+    event.preventDefault();
+    if (tap === "scrollToTop") {
+      main?.scrollTo({
+        top: 0,
+        behavior: animations.moves("navigation") ? "smooth" : "auto",
+      });
+    }
+  }
   const storage = setStorageCheck(new StorageCheck(commands, reportError));
   const needsAttention = setNeedsAttention(
     new NeedsAttention(
@@ -215,6 +248,7 @@
           <AppNavigation
             current={sectionOf(page.url.pathname)}
             isCollapsed={isTabBarCollapsed}
+            onOpenTabTap={androidPhone.isOn ? tapOpenSection : undefined}
             attention={isPointer(data.appInfo.platform) &&
             needsAttention.problems.length > 0
               ? attention
