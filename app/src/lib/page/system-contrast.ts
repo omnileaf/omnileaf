@@ -6,7 +6,7 @@ import {
   type SystemContrast,
 } from "#lib/ipc/bindings.ts";
 
-import { type Contrast, followContrast } from "./display-modes";
+import { contrastChoice } from "./contrast-choice.svelte.ts";
 
 type WatchContrast = (
   onChange: (contrast: SystemContrast) => void,
@@ -19,12 +19,6 @@ const FOLLOWS_SYSTEM_CONTRAST = {
   macos: false,
   windows: false,
 } satisfies Record<Platform, boolean>;
-
-const DRAWN_CONTRAST = {
-  standard: undefined,
-  medium: "medium",
-  high: "high",
-} satisfies Record<SystemContrast, Contrast | undefined>;
 
 function watchWithCommand(
   onChange: (contrast: SystemContrast) => void,
@@ -40,6 +34,6 @@ export function followSystemContrast(
     return;
   }
   void watch((contrast) => {
-    followContrast(DRAWN_CONTRAST[contrast]);
+    contrastChoice.followSystem(contrast);
   });
 }

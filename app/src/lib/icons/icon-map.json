@@ -1,4 +1,8 @@
 {
+  "accessibility": {
+    "lucide": "accessibility",
+    "material": "accessibility_new"
+  },
   "activity": {
     "framework7": "waveform_path_ecg",
     "lucide": "activity",
