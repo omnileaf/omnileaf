@@ -498,21 +498,35 @@ test.describe("a file rated 18+", () => {
 });
 
 test.describe("on Android", () => {
+  let shownFolders: string[] = [];
+
   test.use({
     backend: {
       ...EDITING_BACKEND,
       appInfo: onPlatform("android").backend.appInfo,
+      showSeriesInFolder: (series) => {
+        shownFolders = [...shownFolders, series];
+        return null;
+      },
     },
   });
 
-  test("names Show the folder in the ⋯ menu, coming soon", async ({ page }) => {
+  test.beforeEach(() => {
+    shownFolders = [];
+  });
+
+  test("shows the series' folder from Show the folder in the ⋯ menu", async ({
+    page,
+  }) => {
     test.skip(isWide(page), "a wide page has no series bar");
     await page.goto(`/series/${SERIES_ID}`);
     await seriesMenuButton(page).click();
+    const showFolder = page.getByRole("menuitem", { name: "Show the folder" });
+    await expect(showFolder).toBeEnabled();
 
-    await expect(
-      page.getByRole("menuitem", { name: "Show the folder · coming soon" }),
-    ).toBeDisabled();
+    await showFolder.click();
+
+    await expect.poll(() => shownFolders).toEqual([SERIES_ID]);
   });
 });
 
