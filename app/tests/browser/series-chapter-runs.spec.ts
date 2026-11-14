@@ -128,6 +128,49 @@ test.describe(
       await expect(bookLinks(page).first()).toContainText("chapter 30");
     });
 
+    test("keeps In order and the Show choice after leaving the series and opening it again", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await sort(page).click();
+      await page.getByRole("menuitemradio", { name: "In order" }).click();
+      await showChoices(page).getByRole("radio", { name: "Unread" }).click();
+      await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+
+      await page
+        .getByRole("link", { name: "Back to the library" })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/\/$/);
+      await page.evaluate((series) => {
+        const back = document.createElement("a");
+        back.href = `/series/${series}`;
+        document.body.append(back);
+        back.click();
+      }, SERIES_ID);
+
+      await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+      await expect(
+        showChoices(page).getByRole("radio", { name: "Unread" }),
+      ).toBeChecked();
+      await expect(bookLinks(page).first()).toContainText("chapter 01");
+    });
+
+    test("keeps In order after the app opens the series afresh", async ({
+      page,
+    }) => {
+      await openSeries(page);
+      await sort(page).click();
+      await page.getByRole("menuitemradio", { name: "In order" }).click();
+      await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+
+      await page.goto("/");
+      await openSeries(page);
+
+      await expect(sort(page)).toHaveAccessibleName("Sort: In order");
+      await expect(bookLinks(page).first()).toContainText("chapter 01");
+    });
+
     test("keeps In order once it is chosen, across a change of Show", async ({
       page,
     }) => {
