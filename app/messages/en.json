@@ -543,6 +543,9 @@
   "adult_content_footer": "First launch offers the same choice. It applies straight away.",
   "library_no_series": "No series",
   "app_version": "Version {version}",
+  "app_version_built": "Version {version} · {date}",
+  "about_version_details_dated": "{version} · {date}",
+  "about_version_details_on_device": "{details} · {device}",
   "library_add_folder": "Add a folder",
   "library_scan_finding": "Finding books",
   "library_scan_found_so_far": [
