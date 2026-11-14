@@ -516,3 +516,20 @@ test.each<Platform>(["macos", "windows", "android", "linux"])(
     expect(Math.round(panel.height)).toBe(WIDE.height);
   },
 );
+
+test("opens the app's own menu from the Sort by row on an Android tablet and sorts by the pick", async () => {
+  const chosen: LibraryListing[] = [];
+  await openFromMoreOn("android", TABLET, (listing) => chosen.push(listing));
+  const sortBy = page.getByRole("combobox", { name: "Sort by" });
+
+  await sortBy.click();
+  const menu = page.getByRole("listbox", { name: "Sort by" });
+  await expect
+    .element(menu.getByRole("option", { selected: true }))
+    .toHaveTextContent("Title");
+  await menu.getByRole("option", { name: "Recently read" }).click();
+
+  expect(chosen.map((listing) => listing.sort.by)).toEqual(["lastRead"]);
+  await expect.element(menu).not.toBeInTheDocument();
+  expect(document.querySelector("select")).toBeNull();
+});

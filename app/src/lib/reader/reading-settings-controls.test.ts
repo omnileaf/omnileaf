@@ -277,8 +277,23 @@ test("changes Android's long strip Reading mode from the choice dialog", async (
     .not.toBeInTheDocument();
 });
 
+test("picks Android's long strip reading mode on a tablet from the app's own menu beside its label", async () => {
+  await openSheet("android", TABLET);
+  const field = page.getByRole("combobox", { name: "Reading mode" });
+
+  await field.click();
+  await page
+    .getByRole("listbox", { name: "Reading mode" })
+    .getByRole("option", { name: "Long strip" })
+    .click();
+
+  await expect.element(field).toHaveTextContent("Long strip");
+  expect(
+    page.getByRole("button", { name: /^Reading mode/ }).elements(),
+  ).toHaveLength(0);
+});
+
 test.each([
-  ["android", TABLET],
   ["ios", PHONE],
   ["linux", PHONE],
 ] as const)(
