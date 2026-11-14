@@ -73,6 +73,8 @@
     type ListingChange,
     sectionListing,
   } from "#lib/series-sections/section-listing.ts";
+  import { ListingChoices } from "#lib/series-sections/listing-choices.ts";
+  import { browserPreferenceStore } from "#lib/preferences/stored-preference.ts";
   import SeriesSections from "#lib/series-sections/SeriesSections.svelte";
 
   import type { PageProps } from "./$types";
@@ -110,7 +112,10 @@
   );
   const notices = getNotices();
   let chosen: { id: string; change: ListingChange } | undefined = $state();
-  const chosenHere = $derived(chosen?.id === data.id ? chosen.change : {});
+  const listingChoices = new ListingChoices(browserPreferenceStore());
+  const chosenHere = $derived(
+    chosen?.id === data.id ? chosen.change : listingChoices.of(data.id),
+  );
   const sections = $derived(
     found?.overview.sections.map(({ section }) => section) ?? [],
   );
@@ -146,6 +151,7 @@
 
   function choose(change: ListingChange): void {
     chosen = { id: data.id, change: { ...chosenHere, ...change } };
+    listingChoices.keep(data.id, chosen.change);
     if (listingKey === startedFor) {
       void books?.start();
     }
