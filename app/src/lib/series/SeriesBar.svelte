@@ -3,6 +3,7 @@
 
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -15,7 +16,7 @@
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { backChip } from "./series-chip.ts";
+  import { backChip, menuChip } from "./series-chip.ts";
   import SeriesMenu from "./SeriesMenu.svelte";
 
   const BACK_ICON_SIZE = 20;
@@ -25,6 +26,7 @@
   let {
     title,
     isTitleUnderBar,
+    isLoading = false,
     height = $bindable(0),
     onMarkAll,
     onLabel,
@@ -33,6 +35,7 @@
   }: {
     title: string | undefined;
     isTitleUnderBar: boolean;
+    isLoading?: boolean;
     height?: number;
     onMarkAll: ((mark: ReadMark) => Promise<void>) | undefined;
     onLabel: (() => void) | undefined;
@@ -111,5 +114,15 @@
       {showFolder}
       {placement}
     />
+  {:else if isLoading && isAndroidPhone}
+    <Button
+      type="button"
+      look="icon"
+      disabled
+      aria-label={m.series_book_more_short()}
+      class={menuChip(platform, width.current, placement)}
+    >
+      <Icon name="ellipsis" />
+    </Button>
   {/if}
 </header>

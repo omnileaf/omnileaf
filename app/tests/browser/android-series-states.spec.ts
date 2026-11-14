@@ -24,6 +24,7 @@ const BUTTON_HEIGHT = 40;
 const BUTTON_TYPE = "14px";
 const EMPTY_STACK_GAP = 16;
 const EMPTY_INSET = 24;
+const ERROR_LIFT = 64;
 const READ = { state: "read" } as const;
 
 async function openSeries(page: Page): Promise<void> {
@@ -152,6 +153,24 @@ test.describe(
 
         await expectTopAppBarOverHero(page, skeleton);
       });
+
+      test("keeps More in the top app bar, unavailable until the series is read in", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const more = topAppBar(page).getByRole("button", { name: "More" });
+        await expect(
+          page.getByRole("status", { name: "Loading the series" }),
+        ).toBeVisible();
+
+        await expect(more).toBeDisabled();
+        const [bar, button] = await Promise.all([
+          boxOf(topAppBar(page)),
+          boxOf(more),
+        ]);
+        expect(button.y + button.height / 2).toBe(STATUS_BAR + TOP_APP_BAR / 2);
+        expect(button.x + button.width).toBeLessThanOrEqual(bar.width);
+      });
     });
 
     test.describe("a series whose books have gone", () => {
@@ -232,6 +251,33 @@ test.describe(
         await expect(tryAgain).toHaveCSS(
           "background-color",
           await tokenColour(page, "--native-color-button-outline"),
+        );
+      });
+
+      test("spaces the icon, the message, the note and Try again 16px apart, centred a little above the middle", async ({
+        page,
+      }) => {
+        await openSeries(page);
+        const alert = page.getByRole("alert");
+        await expect(alert).toBeVisible();
+
+        const [icon, heading, note, button, bar, navigation] =
+          await Promise.all([
+            boxOf(alert.locator("svg").first()),
+            boxOf(alert.getByRole("heading")),
+            boxOf(alert.getByText("Nothing in your library has changed.")),
+            boxOf(alert.getByRole("button", { name: "Try again" })),
+            boxOf(topAppBar(page)),
+            boxOf(page.getByRole("navigation", { name: "Main" })),
+          ]);
+
+        expect([
+          heading.y - (icon.y + icon.height),
+          note.y - (heading.y + heading.height),
+          button.y - (note.y + note.height),
+        ]).toEqual([EMPTY_STACK_GAP, EMPTY_STACK_GAP, EMPTY_STACK_GAP]);
+        expect((icon.y + button.y + button.height) / 2).toBe(
+          (bar.y + bar.height + navigation.y - ERROR_LIFT) / 2,
         );
       });
 

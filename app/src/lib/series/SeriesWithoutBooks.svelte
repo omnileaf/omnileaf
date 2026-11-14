@@ -79,7 +79,7 @@
         {/each}
       </div>
     {:else if isAndroidPhone}
-      <div class="mbs-lg flex flex-col items-center gap-lg">
+      <div class="mbs-sm flex flex-col items-center gap-lg">
         <Button type="button" variant="primary" onClickPromise={onRescan}>
           <Icon name="refresh-cw" />
           {m.series_rescan()}
