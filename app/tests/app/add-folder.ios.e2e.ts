@@ -11,7 +11,16 @@ import {
   openLibraryPage,
   useAppSession,
 } from "./app-session.ts";
-import { capability } from "./ios-app-data.ts";
+import {
+  cancelPicker,
+  closeAnyPicker,
+  closePickerLeftBy,
+  LEFT_OPEN_TIMEOUT_MS,
+  PICKER_APPEARS_TIMEOUT_MS,
+  PICKER_TIMEOUT_MS,
+  RECENT_TAB,
+} from "./files-picker.ts";
+import { capability, relaunchOnSimulator } from "./ios-app-data.ts";
 import { SAMPLE_LIBRARY, writeSampleLibrary } from "./sample-library.ts";
 import {
   pollUntil,
@@ -24,11 +33,8 @@ const FILES_APP = "com.apple.DocumentsApp";
 const ON_MY_DEVICE_GROUP = "group.com.apple.FileProvider.LocalStorage";
 const ON_MY_DEVICE_FOLDER = "File Provider Storage";
 const SIMCTL_TIMEOUT_MS = 30_000;
-const PICKER_APPEARS_TIMEOUT_MS = 60_000;
-const PICKER_TIMEOUT_MS = 20_000;
 const SCAN_TIMEOUT_MS = 60_000;
 const LISTING_SETTLES_MS = 3_000;
-const LEFT_OPEN_TIMEOUT_MS = 1_000;
 const PICKER_TEST_TIMEOUT_MS = 220_000;
 
 const ADD_FOLDER_BUTTON = xpath("//button[normalize-space()='Add a folder']");
@@ -52,10 +58,6 @@ const SAMPLE_LIBRARY_FOLDER = xpath(
   `//XCUIElementTypeCell[starts-with(@name, '${SAMPLE_LIBRARY.name},')]`,
 );
 const OPEN_BUTTON = xpath("//XCUIElementTypeButton[@name='Open']");
-const RECENT_TAB = xpath(
-  "//XCUIElementTypeButton[@name='Recent' or @name='Recents']",
-);
-const CANCEL_BUTTON = xpath("//XCUIElementTypeButton[@name='Cancel']");
 
 const SCAN_REPORT = `Added ${String(SAMPLE_LIBRARY.books)} books from ${SAMPLE_LIBRARY.name}`;
 
@@ -123,20 +125,6 @@ async function addSampleLibrary(): Promise<string> {
   ).text();
 }
 
-async function closeAnyPicker(
-  session: Session,
-  timeoutMs: number,
-): Promise<void> {
-  await session.inNativeContext(async () => {
-    const recentTab = await session.findWithin(RECENT_TAB, timeoutMs);
-    if (recentTab === undefined) {
-      return;
-    }
-    await recentTab.click();
-    await (await session.waitFor(CANCEL_BUTTON, PICKER_TIMEOUT_MS)).click();
-  });
-}
-
 beforeAll(async () => {
   const onMyDevice = await onMyDeviceFolder();
   await rm(join(onMyDevice, SAMPLE_LIBRARY.name), {
@@ -152,11 +140,7 @@ beforeEach(async () => {
 });
 
 afterEach(async ({ task }) => {
-  const hasFailed = task.result?.state === "fail";
-  await closeAnyPicker(
-    appSession(),
-    hasFailed ? PICKER_APPEARS_TIMEOUT_MS : LEFT_OPEN_TIMEOUT_MS,
-  );
+  await closePickerLeftBy(appSession(), task);
 });
 
 test(
@@ -175,7 +159,7 @@ test(
   async () => {
     await addSampleLibrary();
 
-    await appSession().relaunchApp(capability("appium:bundleId"));
+    await appSession().relaunchApp(relaunchOnSimulator);
 
     await openLibrarySettings();
     await (await appSession().waitFor(RESCAN_SAMPLE_LIBRARY)).click();
@@ -195,13 +179,9 @@ test(
     await (await appSession().waitFor(ADD_FOLDER_BUTTON)).click();
 
     await appSession().inNativeContext(async () => {
-      await (
-        await appSession().waitFor(RECENT_TAB, PICKER_APPEARS_TIMEOUT_MS)
-      ).click();
-      await (
-        await appSession().waitFor(CANCEL_BUTTON, PICKER_TIMEOUT_MS)
-      ).click();
+      await appSession().waitFor(RECENT_TAB, PICKER_APPEARS_TIMEOUT_MS);
     });
+    await cancelPicker(appSession());
 
     await appSession().waitFor(READY_ADD_FOLDER_BUTTON);
     const reports = appSession().waitFor(FINISHED_SCAN_REPORT, 2_000);

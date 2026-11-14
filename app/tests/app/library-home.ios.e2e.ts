@@ -9,6 +9,7 @@ import {
   capability,
   copyNewBookInto,
   onMyIphoneOmnileaf,
+  relaunchOnSimulator,
 } from "./ios-app-data.ts";
 import { xpath } from "./webdriver.ts";
 
@@ -54,7 +55,7 @@ test(
     await rm(join(home, COPIED_SERIES), { recursive: true, force: true });
     await copyNewBookInto(home, COPIED_SERIES);
 
-    await appSession().relaunchApp(capability("appium:bundleId"));
+    await appSession().relaunchApp(relaunchOnSimulator);
     await openLibraryPage(appSession());
 
     const series = await appSession().waitFor(
