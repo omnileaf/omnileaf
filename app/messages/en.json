@@ -1186,6 +1186,8 @@
   "library_home_location_iphone": "On My iPhone › Omnileaf",
   "library_home_location_ipad": "On My iPad › Omnileaf",
   "library_files_icloud_drive": "iCloud Drive",
+  "library_android_internal_storage": "Internal storage",
+  "library_android_sd_card": "SD card",
   "library_files_on_my_iphone": "On My iPhone",
   "library_files_on_my_ipad": "On My iPad",
   "first_launch_drop_title": "Drop folders here",
