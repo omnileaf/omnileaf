@@ -294,18 +294,9 @@ export class Session {
     return answer;
   }
 
-  async relaunchApp(bundleId: string): Promise<void> {
+  async relaunchApp(relaunch: () => Promise<void>): Promise<void> {
     const before = await this.currentContext();
-    await this.runMobileCommand(
-      "terminateApp",
-      { bundleId },
-      RELAUNCH_TIMEOUT_MS,
-    );
-    await this.runMobileCommand(
-      "activateApp",
-      { bundleId },
-      RELAUNCH_TIMEOUT_MS,
-    );
+    await relaunch();
     const webview = await pollUntil(
       () => this.webviewContextOtherThan(before),
       RELAUNCH_TIMEOUT_MS,

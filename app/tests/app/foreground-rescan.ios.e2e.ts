@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
 
 import { openLibraryPage, useAppSession } from "./app-session.ts";
-import { capability, onMyIphoneOmnileaf } from "./ios-app-data.ts";
+import {
+  capability,
+  onMyIphoneOmnileaf,
+  relaunchOnSimulator,
+} from "./ios-app-data.ts";
 import { createSampleLibrary } from "./sample-library.ts";
 import { pollUntil, xpath } from "./webdriver.ts";
 
@@ -46,7 +50,7 @@ async function addOnePageBook(sample: string, series: string): Promise<void> {
 
 beforeAll(async () => {
   await removeAddedSeries();
-  await appSession().relaunchApp(capability("appium:bundleId"));
+  await appSession().relaunchApp(relaunchOnSimulator);
   await openLibraryPage(appSession());
 });
 

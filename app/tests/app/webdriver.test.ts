@@ -547,8 +547,10 @@ test("comes back to the page's context through the older route when a native dri
   expect(switchedTo).toEqual([{ name: "NATIVE_APP" }, { name: "WEBVIEW_1" }]);
 });
 
-test("relaunches the app and goes on in the web view of the new launch, not the old one", async () => {
+test("relaunches the app the way it is given and goes on in the web view of the new launch, not the old one", async () => {
   const switchedTo: unknown[] = [];
+  const driverScripts: unknown[] = [];
+  let relaunches = 0;
   let contextsAsked = 0;
   const server = await serve((route, response, body) => {
     if (route === "POST /session") {
@@ -568,6 +570,7 @@ test("relaunches the app and goes on in the web view of the new launch, not the 
       switchedTo.push(JSON.parse(body));
       reply(response, 200, null);
     } else if (route === "POST /session/relaunch/execute/sync") {
+      driverScripts.push(JSON.parse(body));
       reply(response, 200, null);
     } else {
       reply(response, 404, { error: "no such element", message: "" });
@@ -575,8 +578,13 @@ test("relaunches the app and goes on in the web view of the new launch, not the 
   });
   const session = await Session.start(server, {});
 
-  await session.relaunchApp("app.example");
+  await session.relaunchApp(() => {
+    relaunches += 1;
+    return Promise.resolve();
+  });
 
+  expect(relaunches).toBe(1);
+  expect(driverScripts).toEqual([]);
   expect(switchedTo).toEqual([{ name: "WEBVIEW_2" }]);
 });
 
