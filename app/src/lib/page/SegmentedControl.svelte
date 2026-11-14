@@ -27,6 +27,7 @@
     readonly isSetupRow?: boolean;
     readonly hasWindowsLook?: boolean;
     readonly hasEqualColumns?: boolean;
+    readonly spansLastRow?: boolean;
     readonly onChoose: (option: Option) => void;
     readonly onFit?: ((isOneRow: boolean) => void) | undefined;
     readonly class?: ClassValue;
@@ -70,6 +71,11 @@
       "bg-native-segment-fill font-native-segment text-native-on-segment",
   };
 
+  const PILL_ROWS = {
+    track: "gap-xs",
+    segment: "rounded-full",
+  };
+
   const ANDROID_PHONE_SMALL_FACE =
     "max-medium:gap-sm max-medium:px-lg max-medium:text-native-segment max-medium:leading-native-segment max-medium:tracking-native-segment";
 
@@ -110,6 +116,7 @@
     isSetupRow = false,
     hasWindowsLook = false,
     hasEqualColumns = false,
+    spansLastRow = false,
     onChoose,
     onFit,
     class: className,
@@ -156,6 +163,10 @@
   const columns = $derived(fittedColumns ?? options.length);
   const isOneRow = $derived(columns === options.length);
   const isCrowded = $derived(crowded !== undefined && !isOneRow);
+  const isPillRows = $derived(spansLastRow && !isOneRow);
+  const lastSpan = $derived(
+    isPillRows ? columns - ((options.length - 1) % columns) : 1,
+  );
 
   $effect(() => {
     if (track === null || ruler === undefined) {
@@ -167,7 +178,7 @@
       (fitted) => {
         fittedColumns = fitted;
       },
-      hasEqualMacosColumns,
+      { hasEqualColumns: hasEqualMacosColumns, spansLastRow },
     );
   });
 
@@ -194,7 +205,11 @@
     isOneRow && !hasEqualMacosColumns ? "flex" : "grid",
     hasEqualMacosColumns && isOneRow && EQUAL_COLUMNS.track,
     usesNativeTokens
-      ? [NATIVE_LOOK.track, isMacosSmall && MACOS_SMALL.track]
+      ? [
+          NATIVE_LOOK.track,
+          isMacosSmall && MACOS_SMALL.track,
+          isPillRows && PILL_ROWS.track,
+        ]
       : isWindows
         ? WINDOWS_LOOK.track
         : ["bg-chip", look.track],
@@ -202,9 +217,12 @@
     className,
   ]}
 >
-  {#each options as option (option)}
+  {#each options as option, index (option)}
     <RadioGroupItem
       value={option}
+      style={index === options.length - 1 && lastSpan > 1
+        ? `grid-column: span ${String(lastSpan)}`
+        : undefined}
       disabled={disabledOptions.includes(option)}
       class={[
         "relative flex items-center justify-center transition-control data-disabled:pointer-events-none data-disabled:opacity-50",
@@ -214,7 +232,10 @@
         isMacos && "segment-divider focus-visible:outline-offset-1",
         isMacos && chosen !== option && "hover:bg-native-control-fill-hover",
         usesNativeTokens
-          ? [NATIVE_LOOK.segment, isMacosSmall && MACOS_SMALL.segment]
+          ? [
+              isPillRows ? "min-block-native-segment" : NATIVE_LOOK.segment,
+              isMacosSmall && MACOS_SMALL.segment,
+            ]
           : isWindows
             ? WINDOWS_LOOK.segment
             : look.segment,
@@ -234,6 +255,7 @@
               ? "bg-raised font-semibold text-foreground shadow-raised"
               : "font-medium text-foreground hover:bg-hover",
         isMacosSmall && MACOS_SMALL.corners,
+        isPillRows && PILL_ROWS.segment,
         segmentClass,
       ]}
     >

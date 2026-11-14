@@ -3,6 +3,7 @@ export interface SegmentRoom {
   readonly space: number;
   readonly gap: number;
   readonly hasEqualColumns?: boolean;
+  readonly spansLastRow?: boolean;
 }
 
 export function columnsThatFit({
@@ -10,6 +11,7 @@ export function columnsThatFit({
   space,
   gap,
   hasEqualColumns = false,
+  spansLastRow = false,
 }: SegmentRoom): number {
   const count = widths.length;
   const widest = Math.max(...widths);
@@ -21,13 +23,36 @@ export function columnsThatFit({
   if (spanOf(count, oneRow) <= space) {
     return count;
   }
-  const evenColumns = Array.from(
+  const fewerColumns = Array.from(
     { length: count - 2 },
     (_, index) => count - 1 - index,
-  ).filter((columns) => count % columns === 0);
+  );
+  if (spansLastRow) {
+    return (
+      fewerColumns.find((columns) =>
+        fitsWithLastSpanning(widths, columns, space, gap),
+      ) ?? 1
+    );
+  }
   return (
-    evenColumns.find((columns) => spanOf(columns, columns * widest) <= space) ??
-    1
+    fewerColumns
+      .filter((columns) => count % columns === 0)
+      .find((columns) => spanOf(columns, columns * widest) <= space) ?? 1
+  );
+}
+
+function fitsWithLastSpanning(
+  widths: readonly number[],
+  columns: number,
+  space: number,
+  gap: number,
+): boolean {
+  const column = (space - (columns - 1) * gap) / columns;
+  const lastSpan = columns - ((widths.length - 1) % columns);
+  const last = widths.at(-1) ?? 0;
+  return (
+    widths.slice(0, -1).every((width) => width <= column) &&
+    last <= lastSpan * column + (lastSpan - 1) * gap
   );
 }
 
@@ -36,7 +61,7 @@ export function followFittingColumns(
   track: HTMLElement,
   ruler: HTMLElement,
   onFit: (columns: number) => void,
-  hasEqualColumns = false,
+  layout: Pick<SegmentRoom, "hasEqualColumns" | "spansLastRow"> = {},
 ): () => void {
   const fit = (): void => {
     const rulerWidth = ruler.getBoundingClientRect().width;
@@ -56,7 +81,7 @@ export function followFittingColumns(
         widths,
         space,
         gap: Number.parseFloat(style.columnGap),
-        hasEqualColumns,
+        ...layout,
       }),
     );
   };
