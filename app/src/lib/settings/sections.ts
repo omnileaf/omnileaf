@@ -1,4 +1,5 @@
 import {
+  Accessibility,
   BookOpen,
   Compass,
   HardDrive,
@@ -24,6 +25,7 @@ export type SettingsRoute =
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
   | "/(app)/settings/navigation"
+  | "/(app)/settings/accessibility"
   | "/(app)/settings/about";
 
 export type SettingsSubPage =
@@ -136,6 +138,15 @@ const NAVIGATION: SettingsSection = {
   isAndroidPhoneOnly: true,
 };
 
+const ACCESSIBILITY: SettingsSection = {
+  route: "/(app)/settings/accessibility",
+  label: m.accessibility_title,
+  icon: Accessibility,
+  iconName: "accessibility",
+  chip: "blue",
+  isAndroidPhoneOnly: true,
+};
+
 const PRIVACY: SettingsSection = {
   route: "/(app)/settings/privacy",
   label: m.privacy_title,
@@ -176,7 +187,7 @@ const TRACKERS: ComingSoonSection = {
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   {
     heading: m.settings_group_app,
-    sections: [GENERAL, APPEARANCE, NAVIGATION],
+    sections: [GENERAL, APPEARANCE, ACCESSIBILITY, NAVIGATION],
   },
   {
     heading: m.settings_group_reading,
