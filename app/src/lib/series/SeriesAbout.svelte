@@ -44,7 +44,7 @@
   import type { CoverUrl } from "#lib/library/cover-url.ts";
   import type { ShownCover } from "#lib/library/series-look.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform, isPhone } from "#lib/page/platform.ts";
+  import { currentPlatform, isPhone, phoneOf } from "#lib/page/platform.ts";
   import { WINDOWS_CARD_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -110,6 +110,9 @@
 
   const platform = currentPlatform();
   const width = new WindowWidth();
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
   const detailsRow = $derived(
     isPhone(platform, width.current) ? DETAILS_ROWS[platform] : undefined,
   );
@@ -137,7 +140,9 @@
         ABOUT_COVER,
       ]}
     >
-      {#if cover.kind === "none"}
+      {#if cover.kind === "none" && isAndroidPhone}
+        <Icon name="book" />
+      {:else if cover.kind === "none"}
         <BookImage size={NO_COVER_ICON_SIZE} aria-hidden="true" />
       {/if}
       <CoverImage {cover} {coverUrl} />

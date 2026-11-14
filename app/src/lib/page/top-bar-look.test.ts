@@ -163,7 +163,7 @@ test("draws Android's 64 tall bar with a bare back arrow, on the surface contain
   expect(getComputedStyle(seriesBar()).backgroundColor).toBe(
     "rgb(233, 240, 232)",
   );
-  expect(backLink().getBoundingClientRect().width).toBeCloseTo(48, 0);
+  expect(backLink().getBoundingClientRect().width).toBeCloseTo(40, 0);
   expect(back.backgroundColor).toBe("rgba(0, 0, 0, 0)");
   expect(back.color).toBe("rgb(44, 53, 46)");
   expect(

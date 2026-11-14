@@ -34,6 +34,7 @@
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { phoneOf } from "#lib/page/platform.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import RelatedSeries from "#lib/series/RelatedSeries.svelte";
   import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
@@ -74,6 +75,7 @@
 
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
   const TRY_AGAIN_ICON_SIZE = 16;
+  const ANDROID_EMPTY_INSET = "px-sm";
   const TRY_AGAIN = {
     look: "outline",
     class:
@@ -600,15 +602,28 @@
         role="alert"
         title={m.series_failed()}
         body={m.library_unchanged()}
+        class={isAndroidPhone ? ANDROID_EMPTY_INSET : undefined}
       >
-        <Button
-          type="button"
-          {...data.appInfo.platform === "macos" ? MACOS_TRY_AGAIN : TRY_AGAIN}
-          onclick={readAgain}
-        >
-          <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
-          {m.library_try_again()}
-        </Button>
+        {#if isAndroidPhone}
+          <Button
+            type="button"
+            variant="outline"
+            class="mbs-sm"
+            onclick={readAgain}
+          >
+            <Icon name="refresh-cw" />
+            {m.library_try_again()}
+          </Button>
+        {:else}
+          <Button
+            type="button"
+            {...data.appInfo.platform === "macos" ? MACOS_TRY_AGAIN : TRY_AGAIN}
+            onclick={readAgain}
+          >
+            <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+            {m.library_try_again()}
+          </Button>
+        {/if}
       </EmptyState>
     </div>
   {/if}
