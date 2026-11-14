@@ -262,7 +262,7 @@ for (const { platform, buttonHeight } of PANE_SIZES) {
       const icon = await boxOf(appIcon(page));
 
       await expect(
-        page.getByText(`Version ${FAKE_APP_VERSION}`, { exact: true }),
+        page.getByText(new RegExp(`^Version ${FAKE_APP_VERSION}( · |$)`)),
       ).toBeVisible();
       expect(button.height).toBe(buttonHeight);
       expect(sourceRow.height).toBe(PANE_ROW_HEIGHT);

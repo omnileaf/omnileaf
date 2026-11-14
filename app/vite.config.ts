@@ -3,12 +3,14 @@ import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { playwright } from "@vitest/browser-playwright";
+import { execFileSync } from "node:child_process";
 import { configDefaults, defineConfig } from "vitest/config";
 
 import {
   javascriptLicences,
   type LicencesMode,
 } from "./scripts/javascript-licences.ts";
+import { buildDateOf } from "./scripts/build-date.ts";
 import { sampleLibraryArt } from "./scripts/sample-library-art.ts";
 import { TEST_BROWSER_CONTEXT } from "./tests/browser-context.ts";
 
@@ -27,6 +29,24 @@ const BRANDING = "../branding";
 const NO_VERSION_POLLING = 0;
 
 const phoneDevHost = process.env.TAURI_DEV_HOST;
+
+function lastCommitDate(): string | undefined {
+  try {
+    return execFileSync("git", ["log", "-1", "--format=%cI"], {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+const buildDate = buildDateOf({
+  sourceDateEpoch: process.env.SOURCE_DATE_EPOCH,
+  commitDate: lastCommitDate,
+});
+if (process.env.VITE_BUILD_DATE === undefined && buildDate !== undefined) {
+  process.env.VITE_BUILD_DATE = buildDate;
+}
 const licencesMode: LicencesMode =
   process.env.UPDATE_LICENCES === undefined ? "verify" : "write";
 const phoneAccess =
