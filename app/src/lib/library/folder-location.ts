@@ -56,12 +56,42 @@ function placeInFiles(path: string, device: AppleDevice): string {
   return folders(path).slice(-1).join(PLACE_SEPARATOR);
 }
 
+interface AndroidVolume {
+  readonly within: RegExp;
+  readonly name: () => string;
+}
+
+/** Android mounts its internal shared storage at /storage/emulated/0 and each removable card at /storage/ under the card's volume id, which Files shows by name instead. */
+const ANDROID_VOLUMES: readonly AndroidVolume[] = [
+  {
+    within: /^\/storage\/emulated\/0(?:\/(.*))?$/,
+    name: m.library_android_internal_storage,
+  },
+  {
+    within: /^\/storage\/[0-9A-F]{4}-[0-9A-F]{4}(?:\/(.*))?$/i,
+    name: m.library_android_sd_card,
+  },
+];
+
+function placeOnAndroid(path: string): string {
+  for (const { within, name } of ANDROID_VOLUMES) {
+    const found = within.exec(path);
+    if (found !== null) {
+      return [name(), ...folders(found[1] ?? "")].join(PLACE_SEPARATOR);
+    }
+  }
+  return path;
+}
+
 /** iOS names the home folder by the app's folder in the Files app, since its own path is a private container nobody can browse to. */
 export function folderLocation(
   folder: Pick<LibraryFolder, "kind" | "location">,
   platform: Platform,
   device: AppleDevice = appleDeviceOf(navigator.userAgent),
 ): string {
+  if (platform === "android") {
+    return placeOnAndroid(folder.location);
+  }
   if (platform !== "ios") {
     return folder.location;
   }

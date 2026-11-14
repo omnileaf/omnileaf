@@ -459,6 +459,17 @@ pub(crate) const STEPS: &[Step] = &[
         ],
     },
     Step {
+        name: "kotlin unit tests",
+        group: Group::Android,
+        program: "app/src-tauri/gen/android/gradlew",
+        args: &[
+            "--project-dir",
+            "app/src-tauri/gen/android",
+            ":app:testUniversalDebugUnitTest",
+            ":omnileaf-folder-access:testDebugUnitTest",
+        ],
+    },
+    Step {
         name: "android tests",
         group: Group::Android,
         program: "pnpm",
@@ -801,8 +812,11 @@ mod tests {
     }
 
     #[test]
-    fn the_android_group_checks_the_kotlin_before_running_the_app() {
-        assert_eq!(names_in(Group::Android), ["android lint", "android tests"]);
+    fn the_android_group_checks_and_unit_tests_the_kotlin_before_running_the_app() {
+        assert_eq!(
+            names_in(Group::Android),
+            ["android lint", "kotlin unit tests", "android tests"]
+        );
     }
 
     #[test]

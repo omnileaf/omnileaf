@@ -16,11 +16,18 @@
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { isPhone, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import { yourReportsForDocument } from "#lib/problem-report/your-reports.svelte.ts";
   import { FLUSH_LIST } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
 
   import type { AboutLook } from "#lib/about/look.ts";
+  import {
+    buildDateText,
+    builtOn,
+    deviceNameOf,
+    versionDetails,
+  } from "#lib/about/version-line.ts";
 
   import type { PageProps } from "./$types";
 
@@ -30,6 +37,23 @@
   const opening = new LinkOpening(commands.openProjectLink);
 
   const yourReports = yourReportsForDocument();
+  const built = builtOn(import.meta.env.VITE_BUILD_DATE);
+  const versionLine = $derived(
+    built === undefined
+      ? m.app_version({ version: data.appInfo.version })
+      : m.app_version_built({
+          version: data.appInfo.version,
+          date: buildDateText(built, getLocale()),
+        }),
+  );
+  const versionHint = $derived(
+    versionDetails(
+      data.appInfo.version,
+      built,
+      deviceNameOf(navigator.userAgent),
+      getLocale(),
+    ),
+  );
   const width = new WindowWidth();
   const android = new AndroidPhone();
   const look: AboutLook = $derived(
@@ -77,7 +101,7 @@
       {m.app_name()}
     </h2>
     <p class="text-footnote text-muted select-text">
-      {m.app_version({ version: data.appInfo.version })}
+      {versionLine}
     </p>
   </div>
   <div>
@@ -123,7 +147,7 @@
               icon={Info}
               iconName="info"
               label={m.about_version_details()}
-              hint={data.appInfo.version}
+              hint={versionHint}
               {look}
             />
             <CopyVersionButton {copying} {look} />

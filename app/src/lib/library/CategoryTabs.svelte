@@ -356,6 +356,7 @@
                 : { variant: editPhone.variant, size: editPhone.size }}
               class={[
                 "flex flex-1 items-center justify-center gap-sm",
+                look.sheet.footButton,
                 editPhone === undefined
                   ? "rounded-full text-body min-block-touch-target"
                   : editPhone.fit,
@@ -376,6 +377,7 @@
               : { variant: newPhone.variant, size: newPhone.size }}
             class={[
               "flex flex-1 items-center justify-center gap-sm",
+              look.sheet.footButton,
               newPhone === undefined
                 ? "rounded-full bg-chip text-body font-semibold min-block-touch-target"
                 : newPhone.fit,

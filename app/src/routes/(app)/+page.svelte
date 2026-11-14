@@ -122,6 +122,7 @@
     MAC_INSPECTOR_QUERY,
     WindowWidth,
   } from "#lib/page/breakpoints.ts";
+  import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import CollectionHeading from "#lib/screenshot-mode/CollectionHeading.svelte";
@@ -1203,7 +1204,9 @@
         title={m.library_empty()}
         body={m.library_empty_body()}
       >
-        <div class="mbs-lg flex flex-col items-center gap-md max-inline-prose">
+        <div
+          class="{EMPTY_ACTION_GAP} flex flex-col items-center gap-md max-inline-prose"
+        >
           <AddFolderButton
             bind:element={emptyAddFolder}
             {adding}
@@ -1238,7 +1241,8 @@
             ? { look: "outline" }
             : { variant: tryAgainPhone.variant, size: tryAgainPhone.size }}
           class={[
-            "mbs-lg flex items-center gap-sm",
+            EMPTY_ACTION_GAP,
+            "flex items-center gap-sm",
             tryAgainPhone === undefined
               ? "rounded-shadcn-button px-lg font-medium min-block-touch-target desktop:text-label desktop:min-block-pointer-button"
               : tryAgainPhone.fit,

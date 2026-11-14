@@ -36,8 +36,13 @@ async function chipsIn(
     onMore: vi.fn(),
     onClearAll: vi.fn(),
   };
-  const screen = await render(FilterChips, { chips, ...handlers });
-  screen.container.style.inlineSize = width;
+  const sized = document.createElement("div");
+  sized.style.inlineSize = width;
+  document.body.append(sized);
+  const screen = await render(FilterChips, {
+    target: sized,
+    props: { chips, ...handlers },
+  });
   return { screen, ...handlers };
 }
 

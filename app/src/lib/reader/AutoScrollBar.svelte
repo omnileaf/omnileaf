@@ -3,6 +3,7 @@
 
   import { cn } from "#lib/components/cn.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   import type { AutoScrollSpeed } from "./auto-scroll.ts";
   import { autoScrollLook } from "./auto-scroll-look.ts";
@@ -13,6 +14,7 @@
 
   let {
     speed,
+    chapterProgress,
     isPaused,
     isTouch,
     onToggle,
@@ -22,6 +24,7 @@
     onReturnFocus,
   }: {
     speed: AutoScrollSpeed;
+    chapterProgress: number;
     isPaused: boolean;
     isTouch: boolean;
     onToggle: () => void;
@@ -90,13 +93,27 @@
   );
 
   const roundedSpeed = $derived(Math.round(speed.pagesPerMinute * 2) / 2);
-  const status = $derived.by(() => {
-    if (isPaused) {
-      return m.reader_auto_scroll_paused();
-    }
-    return speed.isMyPace
+  const readsChapterProgress = $derived(chrome.platform === "android");
+  const percent = new Intl.NumberFormat(getLocale(), {
+    style: "percent",
+    roundingMode: "floor",
+  });
+  const speedLine = $derived(
+    speed.isMyPace
       ? m.reader_auto_scroll_your_pace()
-      : m.reader_pages_a_minute({ count: roundedSpeed });
+      : m.reader_pages_a_minute({ count: roundedSpeed }),
+  );
+  const announcement = $derived(
+    isPaused ? m.reader_auto_scroll_paused() : speedLine,
+  );
+  const status = $derived.by(() => {
+    if (!readsChapterProgress) {
+      return announcement;
+    }
+    const through = percent.format(chapterProgress);
+    return isPaused
+      ? m.reader_auto_scroll_paused_at({ percent: through })
+      : m.reader_auto_scroll_chapter_progress({ percent: through });
   });
   const hint = $derived.by(() => {
     if (!isTouch) {
@@ -104,6 +121,9 @@
     }
     if (isPaused) {
       return m.reader_tap_play();
+    }
+    if (readsChapterProgress) {
+      return speedLine;
     }
     return speed.isMyPace
       ? m.reader_about_pages_a_minute({ count: roundedSpeed })
@@ -205,4 +225,4 @@
     </div>
   </section>
 </div>
-<p class="sr-only" aria-live="polite">{status}</p>
+<p class="sr-only" aria-live="polite">{announcement}</p>

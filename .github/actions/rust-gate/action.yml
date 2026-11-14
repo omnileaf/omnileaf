@@ -49,6 +49,21 @@ runs:
         BUDGET_SLACK: ${{ inputs.budget-slack }}
       run: echo "OMNILEAF_BUDGET_SLACK=$BUDGET_SLACK" >> "$GITHUB_ENV"
 
+    - name: Name the processor the timing budgets run on
+      if: inputs.cache-key == 'budgets' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = macOS ]; then
+          sysctl -n machdep.cpu.brand_string
+        else
+          lscpu | grep -E '^(Model name|CPU\(s\)):'
+        fi
+
+    - name: Name the processor the timing budgets run on
+      if: inputs.cache-key == 'budgets' && runner.os == 'Windows'
+      shell: pwsh
+      run: Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name
+
     - name: Run the gate
       shell: bash
       env:

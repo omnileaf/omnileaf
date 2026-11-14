@@ -140,19 +140,15 @@ test.describe("on iOS with series in the library", () => {
   }) => {
     await openWithSystemBody(page, DEFAULT_BODY);
     await expect(page.getByText("Sample Series 0001")).toBeVisible();
-    const rowStride = () =>
+    const room = () =>
       page
         .locator(".virtual-rows")
-        .evaluate((frame) =>
-          Number.parseFloat(
-            getComputedStyle(frame).getPropertyValue("--row-stride"),
-          ),
-        );
-    const atDefault = await rowStride();
+        .evaluate((frame) => frame.getBoundingClientRect().height);
+    const atDefault = await room();
 
     await page.addStyleTag({ content: systemBodySize(DEFAULT_BODY * 2) });
 
-    await expect.poll(rowStride).toBeGreaterThan(atDefault);
+    await expect.poll(room).toBeGreaterThan(atDefault);
   });
 });
 

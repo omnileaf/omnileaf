@@ -384,7 +384,10 @@ test.describe("a series with one creator, a summary and tags", () => {
     );
     await openSeries(page);
     const back = page.getByRole("link", { name: "Back to the library" });
-    const more = page.getByRole("button", { name: `More for ${SERIES_TITLE}` });
+    const more = page.getByRole("button", {
+      name: `More for ${SERIES_TITLE}`,
+      exact: true,
+    });
 
     for (const chip of [back, more]) {
       const box = await boxOf(chip);

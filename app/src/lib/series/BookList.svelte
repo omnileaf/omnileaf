@@ -38,7 +38,7 @@
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
   const CAPSULE_ACT_PAST_OPEN_PX = 48;
-  const RUN_HEADING = `flex items-end block-full ps-native-row-start pbe-sm ${ANDROID_SUBHEADING}`;
+  const RUN_HEADING = `ps-native-row-start pbs-lg pbe-sm ${ANDROID_SUBHEADING}`;
 
   interface PhoneList {
     readonly plate: string;
@@ -126,6 +126,7 @@
     cell: listedRow,
     itemRole: (listed: ChapterRow) =>
       listed.kind === "run" ? "presentation" : "listitem",
+    isHeading: (listed: ChapterRow) => listed.kind === "run",
   });
   const ids = $derived(books.map((book) => book.id));
   const swipeActions = getSwipeActionsSetting();
@@ -461,12 +462,6 @@
   </Card>
 {:else}
   <div data-book-plate class={phone.plate}>
-    <VirtualGrid
-      {...grid}
-      class={[
-        "row-rules grid-cols-1",
-        rows === "chapterRuns" && "auto-rows-fr",
-      ]}
-    />
+    <VirtualGrid {...grid} class="row-rules grid-cols-1" />
   </div>
 {/if}

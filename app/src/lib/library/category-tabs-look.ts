@@ -22,6 +22,7 @@ export interface CategorySheetLook {
   readonly list: string;
   readonly option: string;
   readonly foot: string;
+  readonly footButton: string;
   readonly newVariant: ButtonVariant | undefined;
 }
 
@@ -50,6 +51,7 @@ const SHARED_SHEET: CategorySheetLook = {
   option:
     "flex items-center gap-md rounded-control px-md text-start text-body transition-control min-block-touch-target hover:bg-hover active:bg-pressed",
   foot: "flex gap-sm px-sheet-inline pbs-md pbe-sheet-bottom",
+  footButton: "",
   newVariant: undefined,
 };
 
@@ -86,7 +88,7 @@ const SHARED_PHONE_LOOK: CategoryTabsLook = {
 const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   usesMaterialIcons: true,
   strip: "",
-  row: "-ms-page-start -me-page-end flex items-center border-be border-native-tab-rule",
+  row: "-ms-page-start -me-page-end flex items-center inset-shadow-[0_-1px_0_var(--color-native-tab-rule)]",
   tab: `relative shrink-0 px-lg text-native-tab-label/native-tab-label font-native-tab-label tracking-native-tab-label whitespace-nowrap transition-control min-inline-native-tab-min min-block-touch-target active:bg-native-row-pressed ${ROW_FOCUS_RING}`,
   chosenTab:
     "text-native-on-tab-current after:absolute after:inset-x-lg after:inset-be-none after:rounded-ss-native-tab-indicator after:rounded-se-native-tab-indicator after:bg-native-tab-indicator after:block-native-tab-indicator",
@@ -103,7 +105,9 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
     description: `${ROW_SUBTITLE_TYPE} text-muted`,
     list: "flex flex-col overflow-auto pbe-sm min-block-none row-rules",
     option: `${ITEM_LOOKS.row} aria-checked:bg-native-row-current aria-checked:text-native-on-row-current`,
-    foot: "grid grid-cols-2 gap-sm px-lg pbs-md pbe-native-sheet-foot-bottom",
+    foot: "flex flex-wrap gap-sm px-lg pbs-md pbe-native-sheet-foot-bottom",
+    footButton:
+      "basis-[calc(50%-var(--spacing-sm)/2)] whitespace-nowrap min-inline-max",
     newVariant: "secondary",
   },
 };

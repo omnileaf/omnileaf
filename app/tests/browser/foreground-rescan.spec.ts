@@ -52,7 +52,9 @@ async function settleCommands(page: Page): Promise<void> {
 
 async function openAfterTheLaunchRescan(page: Page): Promise<void> {
   await page.goto("/settings/advanced");
-  await expect(page.getByRole("switch", { name: SWITCH_NAME })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Advanced" }),
+  ).toBeVisible();
   await expect.poll(() => calls.rescans).toBe(1);
 }
 
@@ -73,9 +75,13 @@ for (const platform of ["ios", "android", "linux"] as const) {
       await openAfterTheLaunchRescan(page);
 
       await leaveAndComeBack(page);
-      await settleCommands(page);
 
-      expect(calls.rescans).toBe(RESCANS_ON_RETURN[platform] ? 2 : 1);
+      if (RESCANS_ON_RETURN[platform]) {
+        await expect.poll(() => calls.rescans).toBe(2);
+      } else {
+        await settleCommands(page);
+        expect(calls.rescans).toBe(1);
+      }
     });
   });
 }

@@ -398,7 +398,7 @@ test.describe(
 
       const lefts = await leftEdgesOf([
         bar(page).getByRole("button", { name: "Play" }),
-        bar(page).getByText("Paused", { exact: true }),
+        bar(page).getByText(/^Paused at \d+%$/),
       ]);
       expect(lefts).toEqual(ascending(lefts));
     });
@@ -657,6 +657,73 @@ test.describe(
       await expect(bar(page)).toBeHidden();
     });
 
+    test("reads how far through the chapter it is, with the speed under it", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+
+      await startAutoScroll(page);
+
+      await expect(
+        bar(page).getByText("0% of the chapter", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        bar(page).getByText("2 pages a minute", { exact: true }),
+      ).toBeVisible();
+    });
+
+    test("says where it paused in the chapter and to tap Play", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+      await bar(page).getByRole("button", { name: "Pause" }).click();
+
+      await page.locator("[data-strip]").evaluate((strip) => {
+        strip.scrollTop = (strip.scrollHeight - strip.clientHeight) / 2;
+      });
+
+      await expect(
+        bar(page).getByText("Paused at 50%", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        bar(page).getByText("Tap Play to resume", { exact: true }),
+      ).toBeVisible();
+    });
+
+    test("shows and announces the new speed from Faster, never the chapter percentage", async ({
+      page,
+      platform,
+    }) => {
+      if (platform !== "android") {
+        test.skip();
+        return;
+      }
+      await openStrip(page);
+      await startAutoScroll(page);
+
+      await bar(page).getByRole("button", { name: "Faster" }).click();
+
+      await expect(
+        bar(page).getByText("2.5 pages a minute", { exact: true }),
+      ).toBeVisible();
+      const live = page.locator("[aria-live]").filter({ hasText: "minute" });
+      await expect(live).toHaveText("2.5 pages a minute");
+      await expect(
+        page.locator("[aria-live]").filter({ hasText: "%" }),
+      ).toHaveCount(0);
+    });
+
     test("ends with Stop auto scroll", async ({ page, platform }) => {
       if (platform !== "android") {
         test.skip();
@@ -696,12 +763,14 @@ test.describe("on an Android phone", () => {
     },
   });
 
-  test("says my pace's speed while it runs, and to tap Play once paused", async ({
+  test("says it runs at my pace, and to tap Play once paused", async ({
     page,
   }) => {
     await openStrip(page, { autoScrollSpeed: "myPace" });
     await startAutoScroll(page);
-    await expect(bar(page)).toContainText("About 1 page a minute");
+    await expect(
+      bar(page).getByText("Your pace", { exact: true }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Scroll down" }).click();
 

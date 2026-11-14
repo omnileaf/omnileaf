@@ -110,3 +110,29 @@ test("shows the path of the home folder everywhere but iOS", () => {
 
   expect(locations).toEqual(locations.map(() => CONTAINER));
 });
+
+function onAndroid(path: string): string {
+  return folderLocation({ kind: "home", location: path }, "android");
+}
+
+test("names an Android folder on the internal storage by the folders Files shows above it", () => {
+  expect(onAndroid("/storage/emulated/0/Documents/Omnileaf")).toBe(
+    "Internal storage › Documents › Omnileaf",
+  );
+});
+
+test("names an Android folder on a removable card as on the SD card", () => {
+  expect(onAndroid("/storage/1A2B-3C4D/Backups/Reading/Omnileaf")).toBe(
+    "SD card › Backups › Reading › Omnileaf",
+  );
+});
+
+test("names the top of the Android internal storage on its own", () => {
+  expect(onAndroid("/storage/emulated/0")).toBe("Internal storage");
+});
+
+test("keeps the path of an Android folder outside the shared storage", () => {
+  expect(onAndroid("/data/user/0/app.omnileaf/files/Omnileaf")).toBe(
+    "/data/user/0/app.omnileaf/files/Omnileaf",
+  );
+});

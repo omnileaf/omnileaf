@@ -79,9 +79,10 @@ test("paints the first rows of ten thousand series within the budget from the cl
     timings.push(await openTheLibraryTimed(page));
   }
 
-  test.info().annotations.push({
-    type: "first grid paint",
-    description: `median ${median(timings).toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}`,
-  });
-  expect(median(timings)).toBeLessThanOrEqual(FIRST_GRID_PAINT_BUDGET_MS);
+  const description = `median ${median(timings).toFixed(1)} ms of ${timings.map((ms) => `${ms.toFixed(1)} ms`).join(", ")}, budget ${String(FIRST_GRID_PAINT_BUDGET_MS)} ms`;
+  test.info().annotations.push({ type: "first grid paint", description });
+  process.stdout.write(`first grid paint: ${description}\n`);
+  expect(median(timings), description).toBeLessThanOrEqual(
+    FIRST_GRID_PAINT_BUDGET_MS,
+  );
 });

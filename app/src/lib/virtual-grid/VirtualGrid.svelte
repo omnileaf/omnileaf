@@ -5,6 +5,12 @@
   import { columnsOf, optionId, type Reveal } from "./grid-keys";
   import { rowWindow, type Seen } from "./row-window";
   import { scrollerOf } from "./scroller";
+  import {
+    headingsBefore,
+    offsetOf,
+    type Stack,
+    stackWindow,
+  } from "./stack-window";
 
   interface Listbox {
     readonly id: string;
@@ -28,6 +34,7 @@
     listbox,
     onRevealReady,
     itemRole,
+    isHeading,
   }: {
     items: readonly Item[];
     key: (item: Item) => string;
@@ -44,6 +51,7 @@
     listbox?: Listbox | undefined;
     onRevealReady?: ((reveal: Reveal) => void) | undefined;
     itemRole?: ((item: Item) => "listitem" | "presentation") | undefined;
+    isHeading?: ((item: Item) => boolean) | undefined;
   } = $props();
 
   const ITEMS_BEFORE_MEASURING = 24;
@@ -54,6 +62,14 @@
   interface Measure {
     readonly columns: number;
     readonly rowStride: number;
+    readonly headingStride: number;
+  }
+
+  interface Shown {
+    readonly start: number;
+    readonly end: number;
+    readonly before: number;
+    readonly size: number;
   }
 
   let frame: HTMLDivElement | undefined = $state();
@@ -64,19 +80,38 @@
   const knownTotal = $derived(
     total !== undefined && total >= items.length ? total : undefined,
   );
-  const shown = $derived(
-    measure === undefined
-      ? {
-          firstRow: 0,
-          rows: 0,
-          start: 0,
-          end: Math.min(items.length, ITEMS_BEFORE_MEASURING),
-        }
-      : rowWindow(
-          { count: knownTotal ?? items.length, ...measure },
-          seen,
-          EXTRA_ROWS,
-        ),
+  const count = $derived(knownTotal ?? items.length);
+  const headingCounts = $derived(
+    isHeading === undefined ? undefined : headingsBefore(items.map(isHeading)),
+  );
+  const stack: Stack | undefined = $derived(
+    headingCounts === undefined ||
+      measure === undefined ||
+      measure.columns !== 1
+      ? undefined
+      : {
+          count,
+          heights: { row: measure.rowStride, heading: measure.headingStride },
+          headingsBefore: headingCounts,
+        },
+  );
+  const shown: Shown | undefined = $derived.by(() => {
+    if (measure === undefined) {
+      return undefined;
+    }
+    if (stack !== undefined) {
+      return stackWindow(stack, seen, EXTRA_ROWS);
+    }
+    const rows = rowWindow({ count, ...measure }, seen, EXTRA_ROWS);
+    return {
+      start: rows.start,
+      end: rows.end,
+      before: rows.firstRow * measure.rowStride,
+      size: rows.rows * measure.rowStride,
+    };
+  });
+  const drawn = $derived(
+    shown ?? { start: 0, end: Math.min(items.length, ITEMS_BEFORE_MEASURING) },
   );
 
   const positions = $derived(listedPositions(items));
@@ -101,31 +136,70 @@
   }
 
   function measured(grid: HTMLUListElement): Measure | undefined {
-    const first = grid.firstElementChild;
-    if (first === null) {
+    const rows = measuredRows(grid);
+    if (rows === undefined) {
       return undefined;
     }
+    return {
+      ...rows,
+      headingStride:
+        measuredHeadingStride(grid) ?? measure?.headingStride ?? rows.rowStride,
+    };
+  }
+
+  function rowGapOf(grid: Element | null): number {
+    if (grid === null) {
+      return 0;
+    }
+    const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);
+    return Number.isNaN(rowGap) ? 0 : rowGap;
+  }
+
+  function strideFrom(item: Element, next: Element | null): number {
+    const top = item.getBoundingClientRect().top;
+    return next === null
+      ? item.getBoundingClientRect().height + rowGapOf(item.parentElement)
+      : next.getBoundingClientRect().top - top;
+  }
+
+  function measuredHeadingStride(grid: HTMLUListElement): number | undefined {
+    const heading = grid.querySelector(":scope > [data-heading]");
+    return heading === null
+      ? undefined
+      : strideFrom(heading, heading.nextElementSibling);
+  }
+
+  function rowAfter(first: Element, columns: number): Element | null {
+    let next: Element | null = first;
+    for (let step = 0; step < columns && next !== null; step += 1) {
+      next = next.nextElementSibling;
+    }
+    return next?.hasAttribute("data-heading") === true ? null : next;
+  }
+
+  function measuredRows(
+    grid: HTMLUListElement,
+  ): Pick<Measure, "columns" | "rowStride"> | undefined {
     const columns = columnsOf(grid);
-    const nextRow = grid.children.item(columns);
-    if (nextRow !== null) {
+    const rows = [...grid.querySelectorAll(":scope > :not([data-heading])")];
+    const first = rows[0];
+    if (first === undefined) {
+      return undefined;
+    }
+    const measuredPair = rows
+      .map((row) => ({ row, next: rowAfter(row, columns) }))
+      .find(({ next }) => next !== null);
+    if (measuredPair !== undefined) {
       return {
         columns,
-        rowStride:
-          nextRow.getBoundingClientRect().top -
-          first.getBoundingClientRect().top,
+        rowStride: strideFrom(measuredPair.row, measuredPair.next),
       };
     }
-    const isPartDrawn = grid.childElementCount < (knownTotal ?? items.length);
+    const isPartDrawn = grid.childElementCount < count;
     if (isPartDrawn && measure?.columns === columns) {
       return measure;
     }
-    const rowGap = Number.parseFloat(getComputedStyle(grid).rowGap);
-    return {
-      columns,
-      rowStride:
-        first.getBoundingClientRect().height +
-        (Number.isNaN(rowGap) ? 0 : rowGap),
-    };
+    return { columns, rowStride: strideFrom(first, null) };
   }
 
   function look(): void {
@@ -145,29 +219,40 @@
     return (
       other !== undefined &&
       one.columns === other.columns &&
-      one.rowStride === other.rowStride
+      one.rowStride === other.rowStride &&
+      one.headingStride === other.headingStride
     );
+  }
+
+  function placeOf(index: number, at: Measure): { top: number; size: number } {
+    if (stack !== undefined) {
+      const top = offsetOf(stack, index);
+      return { top, size: offsetOf(stack, index + 1) - top };
+    }
+    return {
+      top: Math.floor(index / at.columns) * at.rowStride,
+      size: at.rowStride,
+    };
   }
 
   async function revealItem(index: number): Promise<HTMLElement | undefined> {
     if (frame === undefined || list === undefined) {
       return undefined;
     }
-    const isDrawn = index >= shown.start && index < shown.end;
+    const isDrawn = index >= drawn.start && index < drawn.end;
     if (measure !== undefined && !isDrawn) {
       const scroller = scrollerOf(frame);
       const view = scroller.getBoundingClientRect();
-      const rowTop =
-        frame.getBoundingClientRect().top +
-        Math.floor(index / measure.columns) * measure.rowStride;
-      const below = rowTop + measure.rowStride - view.bottom;
+      const place = placeOf(index, measure);
+      const rowTop = frame.getBoundingClientRect().top + place.top;
+      const below = rowTop + place.size - view.bottom;
       scroller.scrollBy({
         top: rowTop < view.top ? rowTop - view.top : Math.max(0, below),
       });
       look();
       await tick();
     }
-    const item = list.children.item(index - shown.start);
+    const item = list.children.item(index - drawn.start);
     if (!(item instanceof HTMLElement)) {
       return undefined;
     }
@@ -217,7 +302,7 @@
     if (measure === undefined || isComplete) {
       return;
     }
-    if (shown.end + measure.columns * NEAR_END_ROWS >= items.length) {
+    if (drawn.end + measure.columns * NEAR_END_ROWS >= items.length) {
       onNearEnd?.();
     }
   });
@@ -226,11 +311,12 @@
 <div
   bind:this={frame}
   class="virtual-rows"
-  style:--first-row={measure === undefined ? undefined : shown.firstRow}
-  style:--row-count={measure === undefined ? undefined : shown.rows}
-  style:--row-stride={measure === undefined
+  style:--rows-before={shown === undefined
     ? undefined
-    : `${String(measure.rowStride)}px`}
+    : `${String(shown.before)}px`}
+  style:--rows-size={shown === undefined
+    ? undefined
+    : `${String(shown.size)}px`}
 >
   <ul
     bind:this={list}
@@ -240,7 +326,7 @@
     class={["grid", className]}
     {style}
   >
-    {#each items.slice(shown.start, shown.end) as item, offset (key(item))}
+    {#each items.slice(drawn.start, drawn.end) as item, offset (key(item))}
       <li
         id={listbox === undefined ? undefined : optionId(listbox.id, key(item))}
         role={listbox === undefined
@@ -266,7 +352,8 @@
           : (event) => {
               event.preventDefault();
             }}
-        aria-posinset={positions.at[shown.start + offset]}
+        aria-posinset={positions.at[drawn.start + offset]}
+        data-heading={isHeading?.(item) === true || undefined}
         aria-setsize={isPresentation(item) ? undefined : setSize}
         class={itemClass}
       >

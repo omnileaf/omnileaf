@@ -1282,6 +1282,7 @@
       {#if autoScroll !== "off" && !controls.isShown}
         <AutoScrollBar
           speed={scrollSpeed}
+          chapterProgress={stripProgress}
           isPaused={autoScroll === "paused"}
           isTouch={!isPointer(platform)}
           onToggle={toggleAutoScroll}
