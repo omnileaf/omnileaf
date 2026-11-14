@@ -4,22 +4,20 @@
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+
   import {
     ANDROID_VIEW_SETTING,
     FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
+  const ANDROID_GROUP_BY = "flex flex-col ps-lg pe-lg pbs-sm pbe-md";
+  const ANDROID_HINT = `${ROW_SUBTITLE_TYPE} text-muted`;
   const GROUPINGS: readonly LibraryGrouping[] = [
     "none",
     "category",
     "folder",
     "creator",
-  ];
-
-  const ANDROID_GROUPINGS: readonly LibraryGrouping[] = [
-    "none",
-    "category",
-    "folder",
   ];
 
   const LABELS = {
@@ -52,7 +50,7 @@
   );
 </script>
 
-<div class={android.isOn ? ANDROID_VIEW_SETTING.row : ""}>
+<div class={android.isOn ? ANDROID_GROUP_BY : ""}>
   <p
     id={labelId}
     class={android.isOn
@@ -62,22 +60,19 @@
     {m.library_group_by()}
   </p>
   <SegmentedControl
-    options={android.isOn ? ANDROID_GROUPINGS : GROUPINGS}
+    options={GROUPINGS}
     labels={LABELS}
     {chosen}
     labelledBy={labelId}
-    describedBy={android.isOn ? undefined : hintId}
+    describedBy={hintId}
     size="small"
     hasWindowsLook
     hasEqualColumns
     {onChoose}
-    class={android.isOn
-      ? "ms-auto flex-none max-inline-full"
-      : "mbs-sm large:mbs-icon-gap"}
+    isFullWidth={android.isOn}
+    class={android.isOn ? "order-last mbs-md" : "mbs-sm large:mbs-icon-gap"}
   />
-  {#if !android.isOn}
-    <p id={hintId} class={hintClass}>
-      {m.library_group_creator_hint()}
-    </p>
-  {/if}
+  <p id={hintId} class={android.isOn ? ANDROID_HINT : hintClass}>
+    {m.library_group_creator_hint()}
+  </p>
 </div>

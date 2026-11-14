@@ -89,7 +89,7 @@ test("turns one thing covers show on or off and keeps the rest", () => {
   });
 });
 
-test("draws the Android phone's closest options for a view saved with Covers or Creator", () => {
+test("draws the Android phone's closest display for a view saved with Covers, keeping its Creator grouping", () => {
   const saved = {
     ...VIEW,
     display: "covers",
@@ -98,11 +98,7 @@ test("draws the Android phone's closest options for a view saved with Covers or 
     showsContinueRow: true,
   } satisfies LibraryView;
 
-  expect(viewDrawn(saved, true)).toEqual({
-    ...saved,
-    display: "grid",
-    groupBy: "none",
-  });
+  expect(viewDrawn(saved, true)).toEqual({ ...saved, display: "grid" });
 });
 
 test("draws every option the Android phone offers as saved", () => {

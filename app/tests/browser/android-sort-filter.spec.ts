@@ -583,7 +583,51 @@ test.describe(
         }
       });
 
-      for (const name of ["Display", "Group by"]) {
+      test("sets Group by on its own line, its hint under it and its four choices across the sheet, Creator last", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const sheetBox = await boxOf(sheet);
+        const words = await boxOf(sheet.getByText("Group by", { exact: true }));
+        const hint = await boxOf(
+          sheet.getByText("Creator puts each series under its writer", {
+            exact: false,
+          }),
+        );
+        const group = sheet.getByRole("radiogroup", {
+          name: "Group by",
+          exact: true,
+        });
+        const groupBox = await boxOf(group);
+
+        expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(hint.y).toBeGreaterThanOrEqual(words.y + words.height);
+        expect(groupBox.y).toBeGreaterThanOrEqual(hint.y + hint.height);
+        expect(groupBox.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+        ).toBeCloseTo(SETTING_START, 0);
+        await expect(group.getByRole("radio")).toHaveCount(4);
+        await expect(group.getByRole("radio").last()).toHaveAccessibleName(
+          "Creator",
+        );
+      });
+
+      test("offers Stack series covers as a switch, on until it is turned off", async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const stacks = sheet.getByRole("switch", {
+          name: /^Stack series covers/,
+        });
+
+        await expect(stacks).toBeChecked();
+        await stacks.click();
+
+        await expect(stacks).not.toBeChecked();
+      });
+
+      for (const name of ["Display"]) {
         test(`sets ${name} with its words at the start and its three options at the end of one row, no icons`, async ({
           page,
         }) => {
