@@ -38,7 +38,7 @@ test.describe("Rescan folders on an Android phone", { tag: "@native" }, () => {
     );
   });
 
-  test("says Off until Every day is chosen, and keeps the same setting as Settings > Advanced", async ({
+  test("says Off until Every day is chosen, and keeps Every day once the page opens again", async ({
     page,
   }) => {
     await page.goto("/settings/library");
@@ -65,13 +65,22 @@ test.describe("Rescan folders on an Android phone", { tag: "@native" }, () => {
       .click();
     await expect(rescan).toContainText("Every day");
     await dialogLeftHistory;
+    await page.reload();
+
+    await expect(rescan).toContainText("Every day");
+  });
+
+  test("is the only place to check folders, with no switch for it in Settings > Advanced", async ({
+    page,
+  }) => {
     await page.goto("/settings/advanced");
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Undo" }),
+    ).toBeVisible();
 
     await expect(
-      page.getByRole("switch", {
-        name: /^Check folders for new books/,
-      }),
-    ).toBeChecked();
+      page.getByRole("switch", { name: /^Check folders for new books/ }),
+    ).toHaveCount(0);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

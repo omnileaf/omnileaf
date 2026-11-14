@@ -130,16 +130,18 @@
       }}
     />
   </section>
-  <SettingSwitch
-    bleeds
-    label={m.advanced_scheduled_rescans()}
-    description={m.advanced_scheduled_rescans_help()}
-    isOn={isCheckingFolders}
-    onToggle={() => {
-      scheduledRescans.turn(!isCheckingFolders);
-    }}
-    class={android.isOn ? "" : "rounded-card border border-border bg-card"}
-  />
+  {#if !android.isOn}
+    <SettingSwitch
+      bleeds
+      label={m.advanced_scheduled_rescans()}
+      description={m.advanced_scheduled_rescans_help()}
+      isOn={isCheckingFolders}
+      onToggle={() => {
+        scheduledRescans.turn(!isCheckingFolders);
+      }}
+      class="rounded-card border border-border bg-card"
+    />
+  {/if}
   {#if data.appInfo.isDevelopmentBuild}
     <div class="flex flex-col gap-pane-gap android:max-medium:mbs-pane-gap">
       <div
