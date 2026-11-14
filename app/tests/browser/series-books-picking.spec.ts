@@ -8,6 +8,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  framesPassed,
   LARGEST_TEXT_SCALE,
   setTextScale,
   test,
@@ -27,6 +28,8 @@ const SWIPED_PAST_HALFWAY = 0.7;
 const EASED_BACK_PX = [-11, -14] as const;
 const NUDGED_ON_PX = [11, 16] as const;
 const DRAGGED_TOWARD_START_PX = [-30, -60] as const;
+const STATUS_BAR_INSET = 48;
+const PICKING_SCROLLS = [200, 500, 1200] as const;
 
 let swipes: FakeChannel<BackSwipe> | undefined;
 
@@ -91,6 +94,40 @@ function selectedBooks(page: Page): Locator {
 
 function navigation(page: Page): Locator {
   return page.getByRole("navigation", { name: "Main" });
+}
+
+function pickingBar(page: Page): Locator {
+  return page.locator("[data-picking-bar]");
+}
+
+function showChoices(page: Page): Locator {
+  return page.getByRole("radiogroup", { name: "Show" });
+}
+
+async function coverStatusBar(page: Page): Promise<void> {
+  await page.evaluate((inset) => {
+    document.documentElement.style.setProperty(
+      "--system-inset-top",
+      `${String(inset)}px`,
+    );
+  }, STATUS_BAR_INSET);
+}
+
+async function pageTopOf(target: Locator): Promise<number> {
+  return target.evaluate((element) => {
+    const main = element.closest("main");
+    return element.getBoundingClientRect().top + (main?.scrollTop ?? 0);
+  });
+}
+
+async function isUnderPickingBar(page: Page, y: number): Promise<boolean> {
+  return page.evaluate(
+    (top) =>
+      document
+        .elementFromPoint(innerWidth / 2, top)
+        ?.closest("[data-picking-bar]") != null,
+    y,
+  );
 }
 
 async function startPickingFrom(page: Page, index: number): Promise<void> {
@@ -278,6 +315,44 @@ test.describe(
       ).toBeVisible();
       await bar.getByRole("button", { name: "Clear the selection" }).click();
       await expect(bookCheckbox(page, 1)).toHaveCount(0);
+    });
+
+    test("lays Android's contextual bar over the top app bar, covering the status bar, without moving the page", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform !== "android", "Android's contextual bar");
+      await openSeries(page);
+      await coverStatusBar(page);
+      const before = await pageTopOf(showChoices(page));
+
+      await startPickingFrom(page, 1);
+      const bar = await boxOf(pickingBar(page));
+
+      expect(await pageTopOf(showChoices(page))).toBe(before);
+      expect(bar.y).toBe(0);
+      expect(bar.height).toBeGreaterThan(STATUS_BAR_INSET);
+      expect(await isUnderPickingBar(page, STATUS_BAR_INSET / 2)).toBe(true);
+    });
+
+    test("keeps Android's contextual bar at the top as the page scrolls", async ({
+      page,
+      platform,
+    }) => {
+      test.skip(platform !== "android", "Android's contextual bar");
+      await openSeries(page);
+      await coverStatusBar(page);
+      await startPickingFrom(page, 1);
+
+      for (const top of PICKING_SCROLLS) {
+        await page.getByRole("main").evaluate((main, to) => {
+          main.scrollTo({ top: to });
+        }, top);
+        await framesPassed(page);
+
+        expect((await boxOf(pickingBar(page))).y).toBe(0);
+        expect(await isUnderPickingBar(page, STATUS_BAR_INSET / 2)).toBe(true);
+      }
     });
 
     test("puts the actions in the tab bar's own slot while picking", async ({
