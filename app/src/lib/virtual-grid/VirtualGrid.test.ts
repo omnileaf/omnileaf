@@ -4,6 +4,7 @@ import { render } from "vitest-browser-svelte";
 
 import "../../app.css";
 
+import type { Reveal } from "./grid-keys";
 import VirtualGrid from "./VirtualGrid.svelte";
 
 interface Sample {
@@ -134,11 +135,11 @@ test("fills the screen again once its styles lay items as tall as they are wide 
     .toBeGreaterThanOrEqual(window.innerHeight);
   const first = list.getByRole("listitem").first().element();
   const rowGap = Number.parseFloat(getComputedStyle(list.element()).rowGap);
-  const stride = list
+  const room = list
     .element()
-    .parentElement?.style.getPropertyValue("--row-stride");
-  expect(stride).toBe(
-    `${String(first.getBoundingClientRect().height + rowGap)}px`,
+    .parentElement?.style.getPropertyValue("--rows-size");
+  expect(room).toBe(
+    `${String((TEN_THOUSAND / 8) * (first.getBoundingClientRect().height + rowGap))}px`,
   );
 });
 
@@ -446,4 +447,115 @@ test("reveals the item at an index that comes after a presentation row", async (
   const shown = await reveal()?.(4);
 
   expect(shown?.textContent).toBe("Sample 5");
+});
+
+const ROW_HEIGHT = 72;
+const HEADING_HEIGHT = 44;
+const RUN_LENGTH = 12;
+const RUNS = 300;
+const SCROLLER_HEIGHT = 400;
+
+const isRunHeading = (sample: Sample) =>
+  Number(sample.id) % (RUN_LENGTH + 1) === 0;
+
+const runCell = createRawSnippet((sample: () => Sample) => ({
+  render: () =>
+    isRunHeading(sample())
+      ? `<h3 style="block-size: ${String(HEADING_HEIGHT)}px">${sample().name}</h3>`
+      : `<p style="block-size: ${String(ROW_HEIGHT)}px">${sample().name}</p>`,
+}));
+
+const RUN_ITEMS = samples(RUNS * (RUN_LENGTH + 1));
+
+function expectedTopOf(index: number): number {
+  const headings = Math.ceil(index / (RUN_LENGTH + 1));
+  return headings * HEADING_HEIGHT + (index - headings) * ROW_HEIGHT;
+}
+
+async function renderRuns(
+  onRevealReady?: (reveal: Reveal) => void,
+  baseElement: HTMLElement = document.body,
+) {
+  const screen = await render(
+    VirtualGrid<Sample>,
+    {
+      items: RUN_ITEMS,
+      key: (sample: Sample) => sample.id,
+      label: LABEL,
+      isComplete: true,
+      cell: runCell,
+      class: "grid-cols-1",
+      isHeading: isRunHeading,
+      itemRole: (sample: Sample) =>
+        isRunHeading(sample) ? "presentation" : "listitem",
+      ...(onRevealReady === undefined ? {} : { onRevealReady }),
+    },
+    { baseElement },
+  );
+  const list = screen.getByRole("list", { name: LABEL });
+  await expect.element(list.getByRole("listitem").first()).toBeVisible();
+  await settled();
+  const frame = list.element().parentElement;
+  if (frame === null) {
+    throw new Error("the list has no frame");
+  }
+  return { list, frame };
+}
+
+test("makes room for every row and every shorter heading row", async () => {
+  const { frame } = await renderRuns();
+
+  expect(frame.getBoundingClientRect().height).toBe(
+    expectedTopOf(RUN_ITEMS.length),
+  );
+});
+
+test("lays out a row far down at its own place below the shorter headings", async () => {
+  const { list, frame } = await renderRuns();
+  const far = 2000;
+
+  window.scrollTo(
+    0,
+    frame.getBoundingClientRect().top + window.scrollY + expectedTopOf(far),
+  );
+  await settled();
+
+  const row = list.getByText(`Sample ${String(far + 1)}`, { exact: true });
+  await expect.element(row).toBeInTheDocument();
+  expect(
+    row.element().getBoundingClientRect().top -
+      frame.getBoundingClientRect().top,
+  ).toBe(expectedTopOf(far));
+});
+
+test("keeps each heading row at its own height", async () => {
+  const { list } = await renderRuns();
+
+  const heading = list.getByText("Sample 14", { exact: true }).element();
+
+  expect(heading.closest("li")?.getBoundingClientRect().height).toBe(
+    HEADING_HEIGHT,
+  );
+});
+
+test("brings a row far down into view when revealed", async () => {
+  const scroller = document.createElement("div");
+  scroller.style.cssText = `block-size: ${String(SCROLLER_HEIGHT)}px; overflow-y: auto`;
+  document.body.append(scroller);
+  onTestFinished(() => {
+    scroller.remove();
+  });
+  let reveal: Reveal | undefined;
+  await renderRuns((ready) => {
+    reveal = ready;
+  }, scroller);
+  const far = 3000;
+
+  const revealed = await reveal?.(far);
+
+  expect(revealed?.textContent).toBe(`Sample ${String(far + 1)}`);
+  const view = scroller.getBoundingClientRect();
+  const box = revealed?.getBoundingClientRect();
+  expect(box?.top).toBeGreaterThanOrEqual(view.top);
+  expect(box?.bottom).toBeLessThanOrEqual(view.bottom);
 });
