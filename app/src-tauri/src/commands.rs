@@ -1553,6 +1553,9 @@ async fn show_series_in_folder(
     library: State<'_, Library>,
     series: SeriesId,
 ) -> Result<(), IpcError> {
+    if let Some(shown) = library.series_in_android_tree(series).await? {
+        return show_tree_folder(&app, &shown).await;
+    }
     let Some(file) = library.series_file(series).await? else {
         return Err(LibraryError::SeriesNotFound { id: series }.into());
     };
