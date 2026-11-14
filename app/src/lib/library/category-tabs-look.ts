@@ -86,7 +86,7 @@ const SHARED_PHONE_LOOK: CategoryTabsLook = {
 const ANDROID_PHONE_LOOK: CategoryTabsLook = {
   usesMaterialIcons: true,
   strip: "",
-  row: "-ms-page-start -me-page-end flex items-center border-be border-native-tab-rule",
+  row: "-ms-page-start -me-page-end flex items-center inset-shadow-[0_-1px_0_var(--color-native-tab-rule)]",
   tab: `relative shrink-0 px-lg text-native-tab-label/native-tab-label font-native-tab-label tracking-native-tab-label whitespace-nowrap transition-control min-inline-native-tab-min min-block-touch-target active:bg-native-row-pressed ${ROW_FOCUS_RING}`,
   chosenTab:
     "text-native-on-tab-current after:absolute after:inset-x-lg after:inset-be-none after:rounded-ss-native-tab-indicator after:rounded-se-native-tab-indicator after:bg-native-tab-indicator after:block-native-tab-indicator",
