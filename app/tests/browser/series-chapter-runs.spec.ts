@@ -88,9 +88,10 @@ async function scrollBy(page: Page, top: number): Promise<boolean> {
   return hasMoved;
 }
 
-async function drawnHeights(
+async function settledHeights(
   page: Page,
 ): Promise<{ headings: number[]; rows: number[] }> {
+  await framesPassed(page);
   return bookList(page)
     .locator(":scope > li")
     .evaluateAll((items) => {
@@ -196,7 +197,7 @@ test.describe(
         for (const text of await runHeadings(page).allTextContents()) {
           seen.add(text.trim());
         }
-        const drawn = await drawnHeights(page);
+        const drawn = await settledHeights(page);
         for (const height of drawn.headings) {
           headingHeights.add(height);
         }
