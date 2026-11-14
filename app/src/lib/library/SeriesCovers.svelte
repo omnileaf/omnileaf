@@ -118,9 +118,7 @@
   const platform = currentPlatform();
   const tile = coverTileLook(platform);
   const width = new WindowWidth();
-  const stack = $derived(
-    view.stacksSeriesCovers ? coverStack(platform, width.current) : null,
-  );
+  const stack = $derived(view.stacksSeriesCovers ? coverStack(platform) : null);
   const rowLook = $derived(listRowLook(platform, width.current));
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),

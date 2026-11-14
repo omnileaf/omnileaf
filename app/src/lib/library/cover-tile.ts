@@ -1,6 +1,4 @@
 import type { Platform } from "#lib/ipc/bindings.ts";
-import type { WidthClass } from "#lib/page/breakpoints.ts";
-import { phoneOf } from "#lib/page/platform.ts";
 
 import { ACCENT_COVER_RING, ACCENT_TITLE } from "./accent-selection-look.ts";
 
@@ -307,11 +305,6 @@ export function coverTileLook(platform: Platform): CoverTileLook {
   return COVER_TILE_LOOKS[platform];
 }
 
-export function coverStack(
-  platform: Platform,
-  width: WidthClass,
-): CoverStackLook | null {
-  return phoneOf(platform, width) === "android"
-    ? null
-    : coverTileLook(platform).stack;
+export function coverStack(platform: Platform): CoverStackLook | null {
+  return coverTileLook(platform).stack;
 }
