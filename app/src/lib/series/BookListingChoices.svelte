@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowDownUp, Search } from "@lucide/svelte";
 
-  import { tick } from "svelte";
+  import { type Snippet, tick } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -37,6 +37,7 @@
     type SearchPlace,
     SHOWN_OPTIONS,
   } from "./book-listing";
+  import BookSearchBar from "./BookSearchBar.svelte";
 
   interface PhoneTools {
     readonly variant: ButtonVariant;
@@ -55,12 +56,27 @@
   const showLabelId = $props.id();
   let searchField = $state<HTMLInputElement | null>(null);
 
+  let findButton = $state<HTMLButtonElement | null>(null);
+
   async function reveal(): Promise<void> {
+    if (isShownReplaced) {
+      await closeSearch();
+      return;
+    }
     isSearching = !isSearching;
     await tick();
     if (isSearching) {
       searchField?.focus();
     }
+  }
+
+  async function closeSearch(): Promise<void> {
+    isSearching = false;
+    if (search !== "") {
+      onSearch("");
+    }
+    await tick();
+    findButton?.focus();
   }
 
   let {
@@ -72,6 +88,7 @@
     onShownCrowded,
     searchPlace,
     isSearching = $bindable(false),
+    head,
   }: {
     phone: PhonePlatform | undefined;
     listing: SeriesBookListing;
@@ -81,6 +98,7 @@
     onShownCrowded: (isCrowded: boolean) => void;
     searchPlace: SearchPlace;
     isSearching?: boolean;
+    head?: Snippet | undefined;
   } = $props();
 
   const isShownReplaced = $derived(
@@ -130,135 +148,59 @@
   </DropdownMenu>
 {/snippet}
 
-<div class="flex flex-wrap items-center gap-sm">
-  <InputGroup
-    class={[
-      "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:block-touch-target windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
-      isShownReplaced
-        ? "flex-1 min-inline-none"
-        : "max-expanded:order-last max-expanded:inline-full",
-      !isSearching && "max-expanded:hidden",
-    ]}
-  >
-    <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
-    <Input
-      bind:ref={searchField}
-      type="search"
-      aria-label={m.series_find_book()}
-      placeholder={m.series_find_book()}
-      value={search}
-      class="text-small text-foreground max-expanded:text-body"
-      oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
-        onSearch(event.currentTarget.value);
+{#snippet phoneShown(tools: PhoneTools)}
+  <span id={showLabelId} class="sr-only">{m.series_show()}</span>
+  <div class="relative flex-1 min-inline-none">
+    <SegmentedControl
+      options={SHOWN_OPTIONS}
+      labels={SHOWN_LABELS}
+      chosen={listing.shown}
+      labelledBy={showLabelId}
+      size="small"
+      isFullWidth
+      spansLastRow={phonePlatform === "android"}
+      segmentClass={[
+        "min-inline-native-target",
+        phonePlatform === "android" && "max-medium:px-md",
+      ]}
+      onChoose={chooseShown}
+      crowded={tools.foldsShownWhenCrowded ? shownPopUp : undefined}
+      onFit={(fitsOneRow: boolean) => {
+        onShownCrowded(!fitsOneRow);
       }}
     />
-  </InputGroup>
-  {#if phone !== undefined}
-    {#if !isShownReplaced}
-      <span id={showLabelId} class="sr-only">{m.series_show()}</span>
-      <div class="relative flex-1 min-inline-none">
-        <SegmentedControl
-          options={SHOWN_OPTIONS}
-          labels={SHOWN_LABELS}
-          chosen={listing.shown}
-          labelledBy={showLabelId}
-          size="small"
-          isFullWidth
-          segmentClass={[
-            "min-inline-native-target",
-            phonePlatform === "android" && "max-medium:px-md",
-          ]}
-          onChoose={chooseShown}
-          crowded={phone.foldsShownWhenCrowded ? shownPopUp : undefined}
-          onFit={(fitsOneRow: boolean) => {
-            onShownCrowded(!fitsOneRow);
-          }}
-        />
-      </div>
-    {/if}
-    <Button
-      type="button"
-      variant={isShownReplaced ? "secondary" : phone.variant}
-      iconOnly
-      label={m.series_find_book()}
-      aria-expanded={isSearching}
-      class="shrink-0"
-      onclick={() => {
-        void reveal();
-      }}
-    >
-      <Icon name="search" />
-    </Button>
-  {:else if isNativeDesktop}
-    <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
-      <span id={showLabelId} class="text-small text-muted">
-        {m.series_show()}
-      </span>
-      <SegmentedControl
-        options={SHOWN_OPTIONS}
-        labels={SHOWN_LABELS}
-        chosen={listing.shown}
-        labelledBy={showLabelId}
-        isFullWidth
-        hasWindowsLook
-        hasEqualColumns
-        class="flex-1 min-inline-none"
-        onChoose={chooseShown}
-      />
-    </div>
-    {#if !isWide.current}
-      <Button
-        type="button"
-        variant="secondary"
-        iconOnly
-        label={m.series_find_book()}
-        aria-expanded={isSearching}
-        class="shrink-0"
-        onclick={() => {
-          void reveal();
-        }}
-      >
-        <Icon name="search" />
-      </Button>
-    {/if}
-  {:else}
-    <ToggleGroup
-      aria-label={m.series_show()}
-      class="max-expanded:flex-1"
-      bind:value={() => listing.shown, chooseShown}
-    >
-      {#each SHOWN_OPTIONS as shown (shown)}
-        <ToggleGroupItem
-          value={shown}
-          data-label={SHOWN_LABELS[shown]()}
-          class="max-expanded:grow"
-        >
-          {SHOWN_LABELS[shown]()}
-        </ToggleGroupItem>
-      {/each}
-    </ToggleGroup>
-    {#if !isWide.current}
-      <Tooltip
-        label={m.series_find_book()}
-        type="button"
-        aria-label={m.series_find_book()}
-        aria-expanded={isSearching}
-        onclick={() => {
-          void reveal();
-        }}
-      >
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            look="outline"
-            class="flex shrink-0 items-center justify-center rounded-shadcn-button font-medium shadow-raised block-touch-target inline-touch-target"
-          >
-            <Search size={ICON_SIZE} aria-hidden="true" />
-          </Button>
-        {/snippet}
-      </Tooltip>
-    {/if}
-  {/if}
+  </div>
+{/snippet}
+
+{#snippet phoneFind(tools: PhoneTools)}
+  <Button
+    bind:ref={findButton}
+    type="button"
+    variant={isShownReplaced ? "secondary" : tools.variant}
+    iconOnly
+    label={m.series_find_book()}
+    aria-expanded={isSearching}
+    class="shrink-0"
+    onclick={() => {
+      void reveal();
+    }}
+  >
+    <Icon name="search" />
+  </Button>
+{/snippet}
+
+{#snippet searchBar()}
+  <BookSearchBar
+    bind:field={searchField}
+    {search}
+    {onSearch}
+    onClose={() => {
+      void closeSearch();
+    }}
+  />
+{/snippet}
+
+{#snippet sortMenu()}
   <DropdownMenu>
     {#if phone !== undefined}
       <DropdownMenuTrigger>
@@ -355,4 +297,123 @@
       </DropdownMenuRadioGroup>
     </DropdownMenuContent>
   </DropdownMenu>
-</div>
+{/snippet}
+
+{#if head !== undefined && phone !== undefined}
+  <div class="flex flex-col gap-md">
+    <div class="flex items-center gap-sm min-block-native-target">
+      {@render head()}
+      {@render phoneFind(phone)}
+      {@render sortMenu()}
+    </div>
+    <div class="flex">
+      {#if isShownReplaced}
+        {@render searchBar()}
+      {:else}
+        {@render phoneShown(phone)}
+      {/if}
+    </div>
+  </div>
+{:else}
+  <div class="flex flex-wrap items-center gap-sm">
+    {#if isShownReplaced}
+      {@render searchBar()}
+    {:else}
+      <InputGroup
+        class={[
+          "gap-sm rounded-shadcn-control border border-border bg-background px-md text-muted shadow-raised block-pointer-button inline-series-search focus-within:border-accent max-expanded:order-last max-expanded:block-touch-target max-expanded:inline-full windows:rounded-input-group windows:border-input-group-edge windows:border-be-windows-stroke-strong windows:bg-input-group windows:shadow-none windows:focus-within:border-be-2 windows:focus-within:border-be-accent",
+          !isSearching && "max-expanded:hidden",
+        ]}
+      >
+        <Search size={ICON_SIZE} aria-hidden="true" class="shrink-0" />
+        <Input
+          bind:ref={searchField}
+          type="search"
+          aria-label={m.series_find_book()}
+          placeholder={m.series_find_book()}
+          value={search}
+          class="text-small text-foreground max-expanded:text-body"
+          oninput={(event: Event & { currentTarget: HTMLInputElement }) => {
+            onSearch(event.currentTarget.value);
+          }}
+        />
+      </InputGroup>
+    {/if}
+    {#if phone !== undefined}
+      {#if !isShownReplaced}
+        {@render phoneShown(phone)}
+      {/if}
+      {@render phoneFind(phone)}
+    {:else if isNativeDesktop}
+      <div class="flex items-center gap-sm min-inline-none max-expanded:flex-1">
+        <span id={showLabelId} class="text-small text-muted">
+          {m.series_show()}
+        </span>
+        <SegmentedControl
+          options={SHOWN_OPTIONS}
+          labels={SHOWN_LABELS}
+          chosen={listing.shown}
+          labelledBy={showLabelId}
+          isFullWidth
+          hasWindowsLook
+          hasEqualColumns
+          class="flex-1 min-inline-none"
+          onChoose={chooseShown}
+        />
+      </div>
+      {#if !isWide.current}
+        <Button
+          type="button"
+          variant="secondary"
+          iconOnly
+          label={m.series_find_book()}
+          aria-expanded={isSearching}
+          class="shrink-0"
+          onclick={() => {
+            void reveal();
+          }}
+        >
+          <Icon name="search" />
+        </Button>
+      {/if}
+    {:else}
+      <ToggleGroup
+        aria-label={m.series_show()}
+        class="max-expanded:flex-1"
+        bind:value={() => listing.shown, chooseShown}
+      >
+        {#each SHOWN_OPTIONS as shown (shown)}
+          <ToggleGroupItem
+            value={shown}
+            data-label={SHOWN_LABELS[shown]()}
+            class="max-expanded:grow"
+          >
+            {SHOWN_LABELS[shown]()}
+          </ToggleGroupItem>
+        {/each}
+      </ToggleGroup>
+      {#if !isWide.current}
+        <Tooltip
+          label={m.series_find_book()}
+          type="button"
+          aria-label={m.series_find_book()}
+          aria-expanded={isSearching}
+          onclick={() => {
+            void reveal();
+          }}
+        >
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              look="outline"
+              class="flex shrink-0 items-center justify-center rounded-shadcn-button font-medium shadow-raised block-touch-target inline-touch-target"
+            >
+              <Search size={ICON_SIZE} aria-hidden="true" />
+            </Button>
+          {/snippet}
+        </Tooltip>
+      {/if}
+    {/if}
+    {@render sortMenu()}
+  </div>
+{/if}

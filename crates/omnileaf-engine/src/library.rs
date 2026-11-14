@@ -1538,7 +1538,15 @@ impl Library {
 
     /// The file of a series' first book, to show in its folder; none for a series without books, or one in a folder only Android's documents provider can read.
     pub async fn series_file(&self, id: SeriesId) -> Result<Option<PathBuf>, LibraryError> {
-        let first = self
+        Ok(self
+            .first_book_to_read(id)
+            .await?
+            .as_ref()
+            .and_then(file_to_show))
+    }
+
+    async fn first_book_to_read(&self, id: SeriesId) -> Result<Option<BookToRead>, LibraryError> {
+        Ok(self
             .store
             .database()
             .read(move |connection| {
@@ -1551,8 +1559,14 @@ impl Library {
                     .first()
                     .map_or(Ok(None), |book| book_to_read(connection, book.id))
             })
-            .await?;
-        Ok(first.as_ref().and_then(file_to_show))
+            .await?)
+    }
+
+    pub async fn series_in_android_tree(
+        &self,
+        id: SeriesId,
+    ) -> Result<Option<ShownInTree>, LibraryError> {
+        Ok(self.first_book_to_read(id).await?.and_then(shown_in_tree))
     }
 
     /// The file of a book, to show in its folder; none for a book the library lacks, or one in a folder only Android's documents provider can read.
@@ -1572,17 +1586,7 @@ impl Library {
         Ok(self
             .stored_book_to_read(book.0)
             .await?
-            .and_then(|found| match found.root {
-                RootLocator::AndroidTree(tree) => Some(ShownInTree {
-                    tree,
-                    folder: found
-                        .location
-                        .parent()
-                        .map(Path::to_path_buf)
-                        .unwrap_or_default(),
-                }),
-                RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
-            }))
+            .and_then(shown_in_tree))
     }
 
     pub async fn book_file_name(&self, book: BookId) -> Result<Option<BookFile>, LibraryError> {
@@ -2526,6 +2530,20 @@ impl From<omnileaf_db::Error> for LibraryError {
 pub struct ShownInTree {
     pub tree: AndroidTree,
     pub folder: PathBuf,
+}
+
+fn shown_in_tree(found: BookToRead) -> Option<ShownInTree> {
+    match found.root {
+        RootLocator::AndroidTree(tree) => Some(ShownInTree {
+            tree,
+            folder: found
+                .location
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_default(),
+        }),
+        RootLocator::Path(_) | RootLocator::AppleBookmark { .. } => None,
+    }
 }
 
 fn file_to_show(book: &BookToRead) -> Option<PathBuf> {

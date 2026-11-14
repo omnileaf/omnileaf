@@ -318,3 +318,43 @@ async fn finds_the_tree_and_folder_to_show_for_a_book_in_an_android_folder() {
     assert!(target.folder.is_relative());
     assert_eq!(library.book_in_folder(book).await.unwrap(), None);
 }
+
+#[tokio::test]
+async fn finds_the_tree_and_folder_to_show_for_a_series_in_an_android_folder() {
+    let home = ScratchFolder::new("tree-show-series-home");
+    let tree = TreeOfFolder::new("tree-show-series-comics");
+    let library = open_reading(home.path(), &tree).await;
+    library.add_folder(sample_tree(), |_| {}).await.unwrap();
+    let series = library
+        .series(LibraryListing::default(), None)
+        .await
+        .unwrap()
+        .series
+        .into_iter()
+        .next()
+        .unwrap();
+    let first_book = library
+        .series_books(series.id, SeriesBookListing::default(), None)
+        .await
+        .unwrap()
+        .books
+        .into_iter()
+        .next()
+        .unwrap()
+        .id;
+
+    let target = library
+        .series_in_android_tree(series.id)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let book_target = library
+        .book_in_android_tree(first_book)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(target.tree.uri().as_str(), COMICS_TREE);
+    assert_eq!(target.folder, book_target.folder);
+    assert_eq!(library.series_file(series.id).await.unwrap(), None);
+}

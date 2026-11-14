@@ -34,6 +34,7 @@
   import PageToolbar from "#lib/page/PageToolbar.svelte";
   import { phoneOf } from "#lib/page/platform.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
   import { rescanEveryFolder } from "#lib/library/rescan-folder.ts";
   import RelatedSeries from "#lib/series/RelatedSeries.svelte";
   import SeriesSkeleton from "#lib/series/SeriesSkeleton.svelte";
@@ -53,7 +54,11 @@
   import SeriesBooks from "#lib/series/SeriesBooks.svelte";
   import SeriesAbout from "#lib/series/SeriesAbout.svelte";
   import LabelSeriesDialog from "#lib/library/LabelSeriesDialog.svelte";
-  import { showBookFile, showFolderLabel } from "#lib/page/show-file.ts";
+  import {
+    showBookFile,
+    showFolderLabel,
+    showSeriesFolder,
+  } from "#lib/page/show-file.ts";
   import EditDetailsDialog from "#lib/series/EditDetailsDialog.svelte";
   import type { EditedSeries } from "#lib/series/edited-series.ts";
   import SeriesBand from "#lib/series/SeriesBand.svelte";
@@ -73,7 +78,9 @@
   import type { PageProps } from "./$types";
 
   const DESKTOPS: readonly Platform[] = ["linux", "macos", "windows"];
+  const SHOWS_FOLDERS: readonly Platform[] = [...DESKTOPS, "android"];
   const TRY_AGAIN_ICON_SIZE = 16;
+  const ANDROID_FAILED_PLACE = "px-sm pbe-series-error-lift";
   const TRY_AGAIN = {
     look: "outline",
     class:
@@ -148,7 +155,7 @@
   let keepsDetailEdits = $state(false);
   let keepsLabels = $state(false);
   let isLabelling = $state(false);
-  const isDesktop = $derived(DESKTOPS.includes(data.appInfo.platform));
+  const showsFolders = $derived(SHOWS_FOLDERS.includes(data.appInfo.platform));
   let editedSeries = $state<EditedSeries | undefined>();
   let adultTreatment: AdultTreatment | undefined = $state();
   let barHeight = $state(0);
@@ -408,14 +415,9 @@
   }
 
   function showInFolder(): void {
-    if (foundId === undefined) {
-      return;
+    if (foundId !== undefined) {
+      showSeriesFolder(foundId, notices);
     }
-    void commands.showSeriesInFolder(foundId).then((shown) => {
-      if (shown.status === "error") {
-        reportError(shown.error);
-      }
-    });
   }
 
   $effect(() => {
@@ -486,6 +488,7 @@
     <SeriesBar
       title={overview?.title}
       isTitleUnderBar={isTitleUnderBar || (hasFailed && isAndroidPhone)}
+      isLoading={shown === undefined}
       bind:height={barHeight}
       onMarkAll={found === undefined ? undefined : markAll}
       onLabel={keepsLabels && found !== undefined
@@ -498,7 +501,7 @@
         : undefined}
       showFolder={{
         label: showFolderLabel(data.appInfo.platform),
-        onShow: isDesktop ? showInFolder : undefined,
+        onShow: showsFolders ? showInFolder : undefined,
       }}
     />
   {/if}
@@ -600,15 +603,28 @@
         role="alert"
         title={m.series_failed()}
         body={m.library_unchanged()}
+        class={isAndroidPhone ? ANDROID_FAILED_PLACE : undefined}
       >
-        <Button
-          type="button"
-          {...data.appInfo.platform === "macos" ? MACOS_TRY_AGAIN : TRY_AGAIN}
-          onclick={readAgain}
-        >
-          <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
-          {m.library_try_again()}
-        </Button>
+        {#if isAndroidPhone}
+          <Button
+            type="button"
+            variant="outline"
+            class="mbs-sm"
+            onclick={readAgain}
+          >
+            <Icon name="refresh-cw" />
+            {m.library_try_again()}
+          </Button>
+        {:else}
+          <Button
+            type="button"
+            {...data.appInfo.platform === "macos" ? MACOS_TRY_AGAIN : TRY_AGAIN}
+            onclick={readAgain}
+          >
+            <RefreshCw size={TRY_AGAIN_ICON_SIZE} aria-hidden="true" />
+            {m.library_try_again()}
+          </Button>
+        {/if}
       </EmptyState>
     </div>
   {/if}

@@ -33,6 +33,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import {
+    ANDROID_CHOICE_CARD,
     FLUSH_FOOTER,
     FLUSH_NOTE,
   } from "#lib/settings/android-flush-look.ts";
@@ -51,6 +52,7 @@
   let keepsLabels = $state(false);
   let isNaming = $state(false);
   const isMac = currentPlatform() === "macos";
+  const isAndroid = currentPlatform() === "android";
   const arranged = $derived(
     arrangedTabs(keptTabs, categories).map((tab) =>
       isMac && tab.id.kind === "all"
@@ -71,6 +73,15 @@
       ? opensOn.choice
       : ALL_SERIES,
   );
+
+  const opensOnChoices = $derived([
+    { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
+    ...openable.map(({ key, name }) => ({ value: key, label: name })),
+  ]);
+
+  function chooseOpensOn(choice: string): void {
+    opensOn.choose(choice);
+  }
 
   const opensOnLabel = $derived(
     shownOpensOn === OPENS_ON_LAST_TAB
@@ -219,32 +230,34 @@
       <SettingChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
-        choices={[
-          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
-          ...openable.map(({ key, name }) => ({ value: key, label: name })),
-        ]}
+        choices={opensOnChoices}
         chosen={shownOpensOn}
-        onChoose={(choice: string) => {
-          opensOn.choose(choice);
-        }}
+        onChoose={chooseOpensOn}
       />
       <p class={FLUSH_FOOTER}>
         {m.library_opens_on_help()}
       </p>
     </div>
+  {:else if isAndroid}
+    <section class={["mbs-lg", ANDROID_CHOICE_CARD]}>
+      <SettingChoiceRow
+        bleed=""
+        title={m.library_opens_on()}
+        value={opensOnLabel}
+        help={m.library_opens_on_help()}
+        choices={opensOnChoices}
+        chosen={shownOpensOn}
+        onChoose={chooseOpensOn}
+      />
+    </section>
   {:else if ios.isOn}
     <div class="mbs-lg flex flex-col gap-sm">
       <GroupedChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
-        choices={[
-          { value: OPENS_ON_LAST_TAB, label: m.library_opens_on_last() },
-          ...openable.map(({ key, name }) => ({ value: key, label: name })),
-        ]}
+        choices={opensOnChoices}
         chosen={shownOpensOn}
-        onChoose={(choice: string) => {
-          opensOn.choose(choice);
-        }}
+        onChoose={chooseOpensOn}
       />
       <p class="px-sm text-native-list-sub/native-list-sub text-muted">
         {m.library_opens_on_help()}
@@ -265,17 +278,9 @@
           value={shownOpensOn}
           class="desktop:medium:inline-setting-control"
           fieldClass="touch:text-body touch:block-touch-target"
-          onchange={({
-            currentTarget: { value },
-          }: Event & { currentTarget: HTMLSelectElement }) => {
-            opensOn.choose(value);
-          }}
-        >
-          <option value={OPENS_ON_LAST_TAB}>{m.library_opens_on_last()}</option>
-          {#each openable as { key, name } (key)}
-            <option value={key}>{name}</option>
-          {/each}
-        </NativeSelect>
+          choices={opensOnChoices}
+          onChoose={chooseOpensOn}
+        />
       </div>
       <p class="text-detail text-muted">{m.library_opens_on_help()}</p>
     </section>

@@ -27,6 +27,9 @@ const LONG_BOOK_TITLE =
 type PhonePlatform = Extract<Platform, "ios" | "android">;
 
 const ANDROID_SHEET_ROW = 56;
+const ANDROID_SEARCH_BAR = 56;
+const PAGE_SIDE = 16;
+const WRAPPED_GAP = 4;
 const SHORT_SWIPE = 0.25;
 const COLOR_SCHEMES = ["light", "dark"] as const;
 
@@ -79,6 +82,14 @@ function bookMore(page: Page, index: number): Locator {
 
 function showChoices(page: Page): Locator {
   return page.getByRole("radiogroup", { name: "Show" });
+}
+
+function findBook(page: Page): Locator {
+  return page.getByRole("button", { name: "Find a book" });
+}
+
+function searchField(page: Page): Locator {
+  return page.getByRole("searchbox", { name: "Find a book" });
 }
 
 function swipeAction(page: Page, index: number): Locator {
@@ -356,6 +367,79 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     expect(sort.width).toBeCloseTo(sort.height, 0);
   });
 
+  test("opens Find a book on Android as a lit button and a pill search bar in place of the Show choices", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openSeries(page);
+
+    await findBook(page).click();
+    const bar = searchField(page).locator("..");
+    const { height } = await boxOf(bar);
+
+    await expect(showChoices(page)).toHaveCount(0);
+    await expect(findBook(page)).toHaveAttribute("aria-expanded", "true");
+    await expect(searchField(page)).toBeFocused();
+    expect(height).toBe(ANDROID_SEARCH_BAR);
+    await expect(bar).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-search-view"),
+    );
+    expect(
+      Number.parseFloat(
+        await bar.evaluate((element) => getComputedStyle(element).borderRadius),
+      ),
+    ).toBeGreaterThanOrEqual(height / 2);
+  });
+
+  test("closes the Android search with Back, staying on the series with every book shown", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.goto("/");
+    await openSeries(page);
+    await findBook(page).click();
+    await searchField(page).fill("zzz");
+    await expect(bookRows(page)).toHaveCount(0);
+
+    await page.goBack();
+
+    await expect(showChoices(page)).toBeVisible();
+    await expect(searchField(page)).toHaveCount(0);
+    await expect(bookRows(page)).toHaveCount(4);
+    expect(new URL(page.url()).pathname).toBe(`/series/${SERIES_ID}`);
+  });
+
+  test("leaves no extra Back step behind a book opened from the Android search", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await page.goto("/");
+    await openSeries(page);
+    await findBook(page).click();
+    await searchField(page).fill(shelf.titleOf(2));
+
+    await bookRows(page).getByRole("link").first().click();
+    await expect(page).toHaveURL(new RegExp(`/read/${shelf.idOf(2)}$`));
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}$`));
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/$/);
+  });
+
   test("folds the Show choices into a pop-up on an iPhone at the largest text", async ({
     page,
     platform,
@@ -378,7 +462,7 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     await expect(bookRows(page)).toHaveCount(3);
   });
 
-  test("wraps the Show choices onto rows on Android at the largest text", async ({
+  test("wraps the Show choices on Android at the largest text into two columns, the last across both", async ({
     page,
     platform,
   }) => {
@@ -389,14 +473,86 @@ test.describe("the series' books on a phone", { tag: "@native" }, () => {
     await setTextScale(page, LARGEST_TEXT_SCALE);
 
     await openSeries(page);
-    const all = await boxOf(
-      showChoices(page).getByRole("radio", { name: "All" }),
-    );
-    const unread = await boxOf(
-      showChoices(page).getByRole("radio", { name: "Unread" }),
-    );
+    const segment = (name: string) =>
+      boxOf(showChoices(page).getByRole("radio", { name }));
+    const [all, unread, bookmarked] = await Promise.all([
+      segment("All"),
+      segment("Unread"),
+      segment("Bookmarked"),
+    ]);
 
-    expect(unread.y).toBeGreaterThan(all.y);
+    expect(unread.y).toBe(all.y);
+    expect(bookmarked.y).toBeGreaterThan(all.y);
+    expect(bookmarked.x).toBe(all.x);
+    expect(bookmarked.x + bookmarked.width).toBeCloseTo(
+      unread.x + unread.width,
+      0,
+    );
+    expect(bookmarked.y - (all.y + all.height)).toBeCloseTo(WRAPPED_GAP, 0);
+    for (const name of ["All", "Unread", "Bookmarked"]) {
+      const corners = await showChoices(page)
+        .getByRole("radio", { name })
+        .evaluate((segment) => {
+          const style = getComputedStyle(segment);
+          return [
+            style.borderStartStartRadius,
+            style.borderStartEndRadius,
+            style.borderEndStartRadius,
+            style.borderEndEndRadius,
+          ].map((radius) => Number.parseFloat(radius));
+        });
+      expect(Math.min(...corners)).toBeGreaterThanOrEqual(all.height / 2);
+    }
+  });
+
+  test("heads Android's books with the count, Find a book and Sort on one row, the Show choices full width below", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openSeries(page);
+
+    const [heading, find, sort, shown, list] = await Promise.all([
+      boxOf(page.getByRole("heading", { level: 2, name: /books$/ })),
+      boxOf(findBook(page)),
+      boxOf(page.getByRole("button", { name: /^Sort: / })),
+      boxOf(showChoices(page)),
+      boxOf(bookList(page)),
+    ]);
+
+    const middleOf = (box: { y: number; height: number }) =>
+      box.y + box.height / 2;
+    expect(middleOf(find)).toBeCloseTo(middleOf(heading), 0);
+    expect(middleOf(sort)).toBeCloseTo(middleOf(heading), 0);
+    expect(find.x).toBeGreaterThan(heading.x + heading.width);
+    expect(shown.y).toBeGreaterThan(heading.y + heading.height);
+    expect(shown.x).toBe(PAGE_SIDE);
+    expect(shown.width).toBe(list.width - 2 * PAGE_SIDE);
+  });
+
+  test("gives Android's search bar the Show choices' full-width row", async ({
+    page,
+    platform,
+  }) => {
+    if (platform !== "android") {
+      test.skip();
+      return;
+    }
+    await openSeries(page);
+    const list = await boxOf(bookList(page));
+
+    await findBook(page).click();
+    const [bar, find] = await Promise.all([
+      boxOf(searchField(page).locator("..")),
+      boxOf(findBook(page)),
+    ]);
+
+    expect(bar.y).toBeGreaterThan(find.y + find.height);
+    expect(bar.x).toBe(PAGE_SIDE);
+    expect(bar.width).toBe(list.width - 2 * PAGE_SIDE);
   });
 
   test("opens a book's More on an iPhone as a menu headed by its page, then the book's own title", async ({

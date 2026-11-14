@@ -3,6 +3,7 @@
 
   import { resolve } from "$app/paths";
   import { cn } from "#lib/components/cn.ts";
+  import { Button } from "#lib/components/ui/button/index.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import type { ReadMark } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
@@ -10,18 +11,22 @@
     currentPlatform,
     hasTopTabBar,
     isPhone,
+    phoneOf,
   } from "#lib/page/platform.ts";
   import { backIcon, NATIVE_TOP_BAR } from "#lib/page/top-bar.ts";
   import { m } from "#lib/paraglide/messages.js";
 
-  import { backChip } from "./series-chip.ts";
+  import { backChip, menuChip } from "./series-chip.ts";
   import SeriesMenu from "./SeriesMenu.svelte";
 
   const BACK_ICON_SIZE = 20;
+  const ANDROID_TOP_APP_BAR =
+    "box-content pbs-safe-top min-block-native-top-bar";
 
   let {
     title,
     isTitleUnderBar,
+    isLoading = false,
     height = $bindable(0),
     onMarkAll,
     onLabel,
@@ -30,6 +35,7 @@
   }: {
     title: string | undefined;
     isTitleUnderBar: boolean;
+    isLoading?: boolean;
     height?: number;
     onMarkAll: ((mark: ReadMark) => Promise<void>) | undefined;
     onLabel: (() => void) | undefined;
@@ -43,8 +49,17 @@
   const platform = currentPlatform();
   const width = new WindowWidth();
   const isNative = $derived(isPhone(platform, width.current));
+  const isAndroidPhone = $derived(
+    phoneOf(platform, width.current) === "android",
+  );
   const placement = $derived(isTitleUnderBar ? "folded" : "band");
   const hasTabsAtTop = $derived(hasTopTabBar(platform, width.current));
+  const barBlock = $derived.by(() => {
+    if (hasTabsAtTop) {
+      return "block-top-tab-bar-row pbs-page-top pbe-sm";
+    }
+    return isAndroidPhone ? ANDROID_TOP_APP_BAR : "pbs-series-bar-top pbe-sm";
+  });
   const TODAYS_SCROLLED =
     "border-border bg-background ios:border-ios-separator ios:bg-ios-material ios:backdrop-blur-ios";
   const TODAYS_TITLE = "text-body font-semibold";
@@ -53,8 +68,8 @@
 <header
   bind:clientHeight={height}
   class={[
-    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end pbe-sm motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
-    hasTabsAtTop ? "block-top-tab-bar-row pbs-page-top" : "pbs-series-bar-top",
+    "sticky -inset-bs-page-top z-series-bar -ms-page-start -me-page-end flex items-center gap-sm ps-series-bar-start pe-series-bar-end motion-safe:transition-colors motion-safe:duration-fade while-picking:invisible",
+    barBlock,
     isNative ? NATIVE_TOP_BAR.edge : "border-be",
     isTitleUnderBar
       ? isNative
@@ -99,5 +114,15 @@
       {showFolder}
       {placement}
     />
+  {:else if isLoading && isAndroidPhone}
+    <Button
+      type="button"
+      look="icon"
+      disabled
+      aria-label={m.series_book_more_short()}
+      class={menuChip(platform, width.current, placement)}
+    >
+      <Icon name="ellipsis" />
+    </Button>
   {/if}
 </header>

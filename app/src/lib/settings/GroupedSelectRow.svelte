@@ -2,6 +2,7 @@
   import { ChevronsUpDown } from "@lucide/svelte";
 
   import { NativeSelect } from "#lib/components/ui/native-select/index.ts";
+  import type { SelectChoice } from "#lib/components/ui/select-menu/index.ts";
 
   import {
     LIST_HEADING,
@@ -18,11 +19,6 @@
 
   const FLAT_SELECT = `border-0 bg-transparent ps-0 pe-native-group-select-end shadow-none macos:shadow-none ${LIST_TITLE}`;
 
-  interface Option {
-    readonly value: Value;
-    readonly label: string;
-  }
-
   let {
     heading,
     label,
@@ -32,19 +28,12 @@
   }: {
     heading: string;
     label: string;
-    options: readonly Option[];
+    options: readonly SelectChoice<Value>[];
     value: Value;
     onChoose: (value: Value) => void;
   } = $props();
 
   const id = $props.id();
-
-  function choose(picked: string): void {
-    const option = options.find((option) => option.value === picked);
-    if (option !== undefined) {
-      onChoose(option.value);
-    }
-  }
 </script>
 
 <section aria-labelledby="{id}-heading" class="flex flex-col gap-xs">
@@ -60,15 +49,8 @@
       iconSize={ARROWS_SIZE}
       class={ARROWS_CIRCLE}
       fieldClass={FLAT_SELECT}
-      onchange={({
-        currentTarget,
-      }: Event & { currentTarget: HTMLSelectElement }) => {
-        choose(currentTarget.value);
-      }}
-    >
-      {#each options as option (option.value)}
-        <option value={option.value}>{option.label}</option>
-      {/each}
-    </NativeSelect>
+      choices={options}
+      {onChoose}
+    />
   </div>
 </section>

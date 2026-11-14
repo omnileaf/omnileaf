@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   import {
     Empty,
@@ -19,12 +20,14 @@
     title,
     body,
     role,
+    class: className,
     children,
   }: {
     icon: Glyph;
     title: string;
     body: string;
     role?: "alert";
+    class?: ClassValue | undefined;
     children?: Snippet;
   } = $props();
 
@@ -46,7 +49,7 @@
 <Empty
   aria-labelledby={titleId}
   {role}
-  class="flex-1 justify-center px-xl pbe-empty-lift"
+  class={["flex-1 justify-center px-xl pbe-empty-lift", className]}
 >
   <EmptyMedia
     class={android.isOn
@@ -64,7 +67,7 @@
   </EmptyTitle>
   <EmptyDescription
     class={android.isOn
-      ? [ROW_SUBTITLE_TYPE, "text-muted", look.prose]
+      ? [ROW_SUBTITLE_TYPE, "mbs-sm text-muted", look.prose]
       : ["text-small", look.prose]}
   >
     {body}

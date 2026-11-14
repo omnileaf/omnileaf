@@ -33,17 +33,9 @@
   const footnoteId = `${labelId}-footnote`;
   const isTimedSort = $derived(sort.by === "timeLeft");
 
-  function isSort(value: string): value is LibrarySortBy {
-    return SORTS.some((by) => by === value);
-  }
-
-  function chooseSort({
-    currentTarget: { value },
-  }: Event & { currentTarget: HTMLSelectElement }) {
-    if (isSort(value)) {
-      onSortBy(value);
-    }
-  }
+  const sortChoices = $derived(
+    SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() })),
+  );
 </script>
 
 {#if isAndroidPhone}
@@ -53,7 +45,7 @@
       labelClass="bg-native-sheet"
       class="flex-1"
       aria-describedby={isTimedSort ? footnoteId : undefined}
-      choices={SORTS.map((by) => ({ value: by, label: SORT_LABELS[by]() }))}
+      choices={sortChoices}
       value={sort.by}
       onChoose={onSortBy}
     />
@@ -83,12 +75,9 @@
         {...isInspector
           ? MAC_INSPECTOR.select
           : { fieldClass: "touch:text-body touch:block-touch-target" }}
-        onchange={chooseSort}
-      >
-        {#each SORTS as by (by)}
-          <option value={by}>{SORT_LABELS[by]()}</option>
-        {/each}
-      </NativeSelect>
+        choices={sortChoices}
+        onChoose={onSortBy}
+      />
       <SortDirectionButton
         {sort}
         look={isInspector ? "inspector" : "icon"}

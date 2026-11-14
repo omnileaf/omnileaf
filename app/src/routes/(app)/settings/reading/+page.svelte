@@ -34,6 +34,7 @@
   } from "#lib/series/swipe-actions.svelte.ts";
   import SmartFeaturesSection from "#lib/reader/SmartFeaturesSection.svelte";
   import {
+    ANDROID_CHOICE_CARD,
     FLUSH_FOOTER,
     FLUSH_LIST_HEADING,
     FLUSH_NOTE,
@@ -65,6 +66,7 @@
   const notices = getNotices();
   const width = new WindowWidth();
   const android = new AndroidPhone();
+  const isAndroid = currentPlatform() === "android";
   const isOnPhone = $derived(isPhone(currentPlatform(), width.current));
 
   const skipUpNext = getSkipUpNextSetting();
@@ -75,13 +77,15 @@
   const endId = `${swipesId}-end`;
   const newSeries = newSeriesReadingMode();
 
-  function chooseNewSeriesMode(value: string): void {
-    const choice = READING_MODE_CHOICES.find(
-      (candidate) => candidate === value,
-    );
-    if (choice !== undefined) {
-      newSeries.choose(choice);
-    }
+  const newSeriesChoices = $derived(
+    READING_MODE_CHOICES.map((choice) => ({
+      value: choice,
+      label: READING_MODE_NAMES[choice](),
+    })),
+  );
+
+  function chooseNewSeriesMode(choice: ReadingModeChoice): void {
+    newSeries.choose(choice);
   }
 </script>
 
@@ -181,35 +185,38 @@
         title={m.reading_mode_new_series()}
         value={READING_MODE_NAMES[newSeries.choice]()}
         help={m.reading_mode_new_series_help()}
-        choices={READING_MODE_CHOICES.map((choice) => ({
-          value: choice,
-          label: READING_MODE_NAMES[choice](),
-        }))}
+        choices={newSeriesChoices}
         chosen={newSeries.choice}
-        onChoose={(choice: ReadingModeChoice) => {
-          newSeries.choose(choice);
-        }}
+        onChoose={chooseNewSeriesMode}
       />
+    {:else if isAndroid}
+      <section class={ANDROID_CHOICE_CARD}>
+        <SettingChoiceRow
+          bleed=""
+          title={m.reading_mode_new_series()}
+          value={READING_MODE_NAMES[newSeries.choice]()}
+          help={m.reading_mode_new_series_help()}
+          choices={newSeriesChoices}
+          chosen={newSeries.choice}
+          onChoose={chooseNewSeriesMode}
+        />
+      </section>
     {:else}
       <section
         class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row expanded:grid expanded:grid-cols-setting-grid expanded:items-center expanded:gap-x-md"
       >
-        <label for={modeId} class="font-semibold">
+        <label id="{modeId}-label" for={modeId} class="font-semibold">
           {m.reading_mode_new_series()}
         </label>
         <NativeSelect
           class="expanded:inline-setting-control"
           id={modeId}
+          aria-labelledby="{modeId}-label"
           aria-describedby="{modeId}-help"
           value={newSeries.choice}
-          onchange={(event: Event & { currentTarget: HTMLSelectElement }) => {
-            chooseNewSeriesMode(event.currentTarget.value);
-          }}
-        >
-          {#each READING_MODE_CHOICES as choice (choice)}
-            <option value={choice}>{READING_MODE_NAMES[choice]()}</option>
-          {/each}
-        </NativeSelect>
+          choices={newSeriesChoices}
+          onChoose={chooseNewSeriesMode}
+        />
         <p id="{modeId}-help" class="col-span-full text-footnote text-muted">
           {m.reading_mode_new_series_help()}
         </p>

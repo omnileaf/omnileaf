@@ -45,11 +45,19 @@ const ANDROID_PHONE_LOOK: ReadingSettingsContentLook = {
   smartFeaturesSize: "flat",
 };
 
+const ANDROID_WIDE_LOOK: ReadingSettingsContentLook = {
+  ...TODAYS_LOOK,
+  stripModeField: "row",
+};
+
 export function readingSettingsContentLook(
   platform: Platform,
   width: WidthClass,
 ): ReadingSettingsContentLook {
+  if (platform !== "android") {
+    return TODAYS_LOOK;
+  }
   return phoneOf(platform, width) === "android"
     ? ANDROID_PHONE_LOOK
-    : TODAYS_LOOK;
+    : ANDROID_WIDE_LOOK;
 }
