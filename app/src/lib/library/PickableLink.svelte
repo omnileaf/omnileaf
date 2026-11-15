@@ -42,7 +42,7 @@
     children: Snippet;
   } = $props();
 
-  const longPress = new LongPress(touchChoices.longPressMs);
+  const longPress = new LongPress(() => touchChoices.longPressMs);
   let element: HTMLElement | undefined = $state();
   const choosesOnClick = $derived(picksOnClick && selection !== undefined);
 

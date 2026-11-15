@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Tooltip as TooltipPrimitive } from "bits-ui";
 
+  import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import { Kbd, WINDOWS_PLAIN_KEY } from "#lib/components/ui/kbd/index.ts";
 
-  const LONG_PRESS_MS = 500;
   const TOOLTIP_KEY = `bg-tooltip-key text-on-tooltip-key ${WINDOWS_PLAIN_KEY}`;
   const TRIGGER_GAP_PX = 4;
   const SCREEN_EDGE_GAP_PX = 8;
@@ -33,7 +33,7 @@
     side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
-  const longPress = new LongPress(LONG_PRESS_MS);
+  const longPress = new LongPress(() => touchChoices.longPressMs);
   let open = $state(false);
 
   function press(event: PointerEvent): void {

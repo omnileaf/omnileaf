@@ -109,7 +109,7 @@
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
-  const longPress = new LongPress(touchChoices.longPressMs);
+  const longPress = new LongPress(() => touchChoices.longPressMs);
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
   const listedRows: readonly ChapterRow[] = $derived(
