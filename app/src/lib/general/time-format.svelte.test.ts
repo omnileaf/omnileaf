@@ -71,7 +71,7 @@ test("leaves the clock to the language where the system names none", () => {
 test("names the system clock by the phone's clock over the language's", () => {
   const setting = new TimeFormatSetting(memoryStore());
 
-  setting.followSystemClock("twelveHour");
+  setting.followSystemClock("twentyFourHour");
 
-  expect(setting.isSystemTwelveHour).toBe(true);
+  expect(setting.labels.system).toBe("Follow the system (24-hour)");
 });

@@ -19,13 +19,6 @@
   const CHECK_STROKE = 2.4;
 
   const timeFormat = getTimeFormatSetting();
-  const TIME_FORMAT_LABELS = $derived({
-    system: timeFormat.isSystemTwelveHour
-      ? m.general_time_system_12()
-      : m.general_time_system_24(),
-    twelveHour: m.general_time_12(),
-    twentyFourHour: m.general_time_24(),
-  } satisfies Record<TimeFormat, string>);
 </script>
 
 <GroupedGround>
@@ -56,7 +49,7 @@
           ]}
         >
           <span class="flex flex-1 flex-col gap-2xs">
-            <span>{TIME_FORMAT_LABELS[choice]}</span>
+            <span>{timeFormat.labels[choice]}</span>
           </span>
           {#if isChosen}
             <Check

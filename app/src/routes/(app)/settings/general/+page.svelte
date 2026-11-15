@@ -60,17 +60,10 @@
     lastBook: m.general_opens_last_book(),
   } satisfies Record<OpeningPlace, string>;
 
-  const TIME_FORMAT_LABELS = $derived({
-    system: timeFormat.isSystemTwelveHour
-      ? m.general_time_system_12()
-      : m.general_time_system_24(),
-    twelveHour: m.general_time_12(),
-    twentyFourHour: m.general_time_24(),
-  } satisfies Record<TimeFormat, string>);
   const TIME_FORMAT_CHOICES = $derived(
     TIME_FORMATS.map((format) => ({
       value: format,
-      label: TIME_FORMAT_LABELS[format],
+      label: timeFormat.labels[format],
     })),
   );
 </script>
@@ -101,7 +94,7 @@
           <ValueLinkRow
             route="/(app)/settings/general/time-format"
             label={m.general_time_format()}
-            value={TIME_FORMAT_LABELS[timeFormat.choice]}
+            value={timeFormat.labels[timeFormat.choice]}
           />
         </div>
       </div>
@@ -148,7 +141,7 @@
         </div>
         <SettingChoiceRow
           title={m.general_time_format()}
-          value={TIME_FORMAT_LABELS[timeFormat.choice]}
+          value={timeFormat.labels[timeFormat.choice]}
           choices={TIME_FORMAT_CHOICES}
           chosen={timeFormat.choice}
           onChoose={(format: TimeFormat) => {
@@ -233,7 +226,7 @@
       <SettingRadios
         title={m.general_time_format()}
         options={TIME_FORMATS}
-        labels={TIME_FORMAT_LABELS}
+        labels={timeFormat.labels}
         chosen={timeFormat.choice}
         onChoose={(format: TimeFormat) => {
           timeFormat.choose(format);

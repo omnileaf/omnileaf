@@ -1,6 +1,7 @@
 import { createContext } from "svelte";
 
 import type { SystemClock } from "#lib/ipc/bindings.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import {
   browserPreferenceStore,
@@ -60,14 +61,24 @@ export class TimeFormatSetting {
       : CHOSEN_HOUR_CYCLES[this.choice];
   }
 
-  get isSystemTwelveHour(): boolean {
-    return isTwelveHour(
-      CLOCK_HOUR_CYCLES[this.systemClock] ?? languageHourCycle(),
-    );
+  get labels(): Record<TimeFormat, string> {
+    return {
+      system: this.#isSystemTwelveHour()
+        ? m.general_time_system_12()
+        : m.general_time_system_24(),
+      twelveHour: m.general_time_12(),
+      twentyFourHour: m.general_time_24(),
+    };
   }
 
   followSystemClock(clock: SystemClock): void {
     this.systemClock = clock;
+  }
+
+  #isSystemTwelveHour(): boolean {
+    return isTwelveHour(
+      CLOCK_HOUR_CYCLES[this.systemClock] ?? languageHourCycle(),
+    );
   }
 
   choose(format: TimeFormat): void {
