@@ -1262,8 +1262,8 @@ export function sampleBackend(
       appLock = { ...appLock, lockAfter };
       return null;
     },
-    hideAppContent: (isHidden) => {
-      appLock = { ...appLock, hidesContent: isHidden };
+    hideContentInRecents: (isHidden) => {
+      appLock = { ...appLock, hidesContentInRecents: isHidden };
       return null;
     },
     wallpaperColours: () => null,

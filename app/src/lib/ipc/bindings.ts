@@ -30,7 +30,7 @@ export const commands = {
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
-	hideAppContent: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_app_content", { isHidden })),
+	hideContentInRecents: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_content_in_recents", { isHidden })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -279,8 +279,8 @@ export type AppInfo = {
 export type AppLock = {
 	isOn: boolean,
 	lockAfter: LockAfter,
-	hidesContent: boolean,
-	canHideContent: boolean,
+	hidesContentInRecents: boolean,
+	canHideContentInRecents: boolean,
 };
 
 export type AppLockTurning = "turnedOn" | "notConfirmed" | "noScreenLock";

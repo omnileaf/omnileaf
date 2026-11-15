@@ -21,11 +21,11 @@ class ConfirmingPrompt {
 }
 
 @InvokeArg
-class HiddenContent {
+class HiddenInRecents {
     var isHidden: Boolean = false
 }
 
-private enum class LockTurning(
+internal enum class LockTurning(
     val id: String,
 ) {
     TURNED_ON("turnedOn"),
@@ -33,7 +33,7 @@ private enum class LockTurning(
     NO_SCREEN_LOCK("noScreenLock"),
 }
 
-private fun ScreenLockAnswer.turning(): LockTurning =
+internal fun ScreenLockAnswer.turning(): LockTurning =
     when (this) {
         ScreenLockAnswer.CONFIRMED -> LockTurning.TURNED_ON
         ScreenLockAnswer.REFUSED -> LockTurning.NOT_CONFIRMED
@@ -52,8 +52,8 @@ class AppLockPlugin(
             JSObject()
                 .put("isOn", choices.isOn)
                 .put("lockAfter", choices.lockAfter.id)
-                .put("hidesContent", choices.hidesContent)
-                .put("canHideContent", choices.canHideContent),
+                .put("hidesContentInRecents", choices.hidesContentInRecents)
+                .put("canHideContentInRecents", choices.canHideContentInRecents),
         )
     }
 
@@ -82,8 +82,8 @@ class AppLockPlugin(
     }
 
     @Command
-    fun hideContent(invoke: Invoke) {
-        choices.hideContent(invoke.parseArgs(HiddenContent::class.java).isHidden)
+    fun hideContentInRecents(invoke: Invoke) {
+        choices.hideContentInRecents(invoke.parseArgs(HiddenInRecents::class.java).isHidden)
         invoke.resolve()
     }
 

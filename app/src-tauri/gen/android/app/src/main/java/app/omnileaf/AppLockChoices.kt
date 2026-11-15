@@ -7,7 +7,7 @@ import androidx.core.content.edit
 private const val PREFERENCES = "app_lock"
 private const val IS_ON_KEY = "is_on"
 private const val LOCK_AFTER_KEY = "lock_after"
-private const val HIDES_CONTENT_KEY = "hides_content"
+private const val HIDES_CONTENT_IN_RECENTS_KEY = "hides_content_in_recents"
 
 internal class AppLockChoices(
     context: Context,
@@ -20,11 +20,11 @@ internal class AppLockChoices(
     val lockAfter: LockAfter
         get() = LockAfter.of(preferences.getString(LOCK_AFTER_KEY, null))
 
-    val hidesContent: Boolean
-        get() = canHideContent && preferences.getBoolean(HIDES_CONTENT_KEY, false)
+    val hidesContentInRecents: Boolean
+        get() = canHideContentInRecents && preferences.getBoolean(HIDES_CONTENT_IN_RECENTS_KEY, false)
 
     /** Android 13 added hiding only the recent apps preview; the older secure window flag also blocks screenshots. */
-    val canHideContent: Boolean
+    val canHideContentInRecents: Boolean
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     fun turn(isOn: Boolean) {
@@ -35,7 +35,7 @@ internal class AppLockChoices(
         preferences.edit { putString(LOCK_AFTER_KEY, lockAfter.id) }
     }
 
-    fun hideContent(isHidden: Boolean) {
-        preferences.edit { putBoolean(HIDES_CONTENT_KEY, isHidden) }
+    fun hideContentInRecents(isHidden: Boolean) {
+        preferences.edit { putBoolean(HIDES_CONTENT_IN_RECENTS_KEY, isHidden) }
     }
 }

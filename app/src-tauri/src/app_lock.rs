@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[cfg(target_os = "android")]
-pub(crate) use android::{choose_lock_after, hide_content, plugin, read, turn_off, turn_on};
+pub(crate) use android::{
+    choose_lock_after, hide_content_in_recents, plugin, read, turn_off, turn_on,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -20,8 +22,8 @@ pub(crate) enum LockAfter {
 pub(crate) struct AppLock {
     is_on: bool,
     lock_after: LockAfter,
-    hides_content: bool,
-    can_hide_content: bool,
+    hides_content_in_recents: bool,
+    can_hide_content_in_recents: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -77,7 +79,7 @@ struct ChosenDelay {
 )]
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct HiddenContent {
+struct HiddenInRecents {
     is_hidden: bool,
 }
 
@@ -113,7 +115,7 @@ pub(crate) async fn choose_lock_after(
 
 #[cfg(not(target_os = "android"))]
 #[expect(clippy::unused_async, reason = "only Android waits for its app lock")]
-pub(crate) async fn hide_content(
+pub(crate) async fn hide_content_in_recents(
     _app: &tauri::AppHandle,
     _is_hidden: bool,
 ) -> Result<(), crate::ipc_error::IpcError> {
@@ -131,7 +133,7 @@ mod android {
     };
 
     use super::{
-        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, HiddenContent, LockAfter, Turned,
+        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, HiddenInRecents, LockAfter, Turned,
     };
     use crate::ipc_error::IpcError;
 
@@ -142,7 +144,7 @@ mod android {
     const TURN_ON: &str = "turnOn";
     const TURN_OFF: &str = "turnOff";
     const CHOOSE_LOCK_AFTER: &str = "chooseLockAfter";
-    const HIDE_CONTENT: &str = "hideContent";
+    const HIDE_CONTENT_IN_RECENTS: &str = "hideContentInRecents";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
 
     struct AppLockPlugin(PluginHandle<Wry>);
@@ -195,8 +197,11 @@ mod android {
         ask_soon(app, CHOOSE_LOCK_AFTER, ChosenDelay { lock_after }).await
     }
 
-    pub(crate) async fn hide_content(app: &AppHandle, is_hidden: bool) -> Result<(), IpcError> {
-        ask_soon(app, HIDE_CONTENT, HiddenContent { is_hidden }).await
+    pub(crate) async fn hide_content_in_recents(
+        app: &AppHandle,
+        is_hidden: bool,
+    ) -> Result<(), IpcError> {
+        ask_soon(app, HIDE_CONTENT_IN_RECENTS, HiddenInRecents { is_hidden }).await
     }
 
     async fn ask<T: DeserializeOwned>(
@@ -268,8 +273,8 @@ mod tests {
         let written = serde_json::json!({
             "isOn": true,
             "lockAfter": "fiveMinutes",
-            "hidesContent": false,
-            "canHideContent": true,
+            "hidesContentInRecents": false,
+            "canHideContentInRecents": true,
         });
 
         let lock: AppLock = serde_json::from_value(written).unwrap();
@@ -279,8 +284,8 @@ mod tests {
             AppLock {
                 is_on: true,
                 lock_after: LockAfter::FiveMinutes,
-                hides_content: false,
-                can_hide_content: true,
+                hides_content_in_recents: false,
+                can_hide_content_in_recents: true,
             }
         );
     }
@@ -309,7 +314,7 @@ mod tests {
                 lock_after: LockAfter::OneHour,
             })
             .unwrap(),
-            serde_json::to_value(HiddenContent { is_hidden: true }).unwrap(),
+            serde_json::to_value(HiddenInRecents { is_hidden: true }).unwrap(),
         ];
 
         assert_eq!(

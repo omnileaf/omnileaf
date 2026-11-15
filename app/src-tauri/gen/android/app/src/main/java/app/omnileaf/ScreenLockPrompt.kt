@@ -7,6 +7,7 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
+import app.tauri.Logger
 
 /** Android before 11 can pair the screen lock only with weak biometrics in one prompt. */
 private val UNLOCKS_WITH: Int =
@@ -39,7 +40,8 @@ internal fun FragmentActivity.askForScreenLock(
                 errorCode: Int,
                 errString: CharSequence,
             ) {
-                answer(answerFor(errorCode))
+                Logger.warn("the screen lock prompt ended with error $errorCode: $errString")
+                answer(ScreenLockAnswer.of(errorCode))
             }
         },
     ).authenticate(
@@ -50,10 +52,3 @@ internal fun FragmentActivity.askForScreenLock(
             .build(),
     )
 }
-
-private fun answerFor(errorCode: Int): ScreenLockAnswer =
-    if (errorCode == BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL) {
-        ScreenLockAnswer.NO_SCREEN_LOCK
-    } else {
-        ScreenLockAnswer.REFUSED
-    }

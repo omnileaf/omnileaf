@@ -1244,14 +1244,14 @@ test("keeps the app lock's delay and hidden content once it is turned off again"
   const { backend } = backendFor();
   await backend.turnAppLockOn("Turn on app lock");
   await backend.chooseLockAfter("fiveMinutes");
-  await backend.hideAppContent(true);
+  await backend.hideContentInRecents(true);
 
   await backend.turnAppLockOff();
 
   expect(await backend.appLock()).toEqual({
     ...NEW_APP_LOCK,
     lockAfter: "fiveMinutes",
-    hidesContent: true,
+    hidesContentInRecents: true,
   });
 });
 
