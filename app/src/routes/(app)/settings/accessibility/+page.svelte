@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CircleAlert } from "@lucide/svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import {
@@ -11,6 +12,14 @@
     type LongPressLength,
     touchChoices,
   } from "#lib/accessibility/touch-choices.svelte.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import {
+    Item,
+    ItemContent,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import {
     ANIMATION_GROUPS,
     getAnimationsSetting,
@@ -19,6 +28,7 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import {
+    FLUSH_LIST,
     FLUSH_LIST_HEADING,
     FLUSH_STACKED_ROW,
   } from "#lib/settings/android-flush-look.ts";
@@ -27,6 +37,7 @@
   import SettingWords from "#lib/settings/SettingWords.svelte";
 
   const animations = getAnimationsSetting();
+  const notices = getNotices();
   const systemReducesMotion = new MediaQuery(
     "(prefers-reduced-motion: reduce)",
   );
@@ -51,6 +62,17 @@
     systemReducesMotion.current ||
       ANIMATION_GROUPS.every((group) => !animations.isOn(group)),
   );
+
+  async function openAndroidSettings(): Promise<void> {
+    const opened = await commands.openAccessibilitySettings();
+    if (opened.status === "error") {
+      notices.show({
+        tone: "warning",
+        icon: CircleAlert,
+        title: m.accessibility_open_android_settings_failed(),
+      });
+    }
+  }
 
   function reduceMotion(isReduced: boolean): void {
     for (const group of ANIMATION_GROUPS) {
@@ -140,4 +162,19 @@
       />
     </div>
   </section>
+  <ul class={FLUSH_LIST}>
+    <li>
+      <Item look="row">
+        {#snippet child({ props })}
+          <button type="button" {...props} onclick={openAndroidSettings}>
+            <Icon name="external-link" class="shrink-0" />
+            <ItemContent>
+              <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>
+            </ItemContent>
+            <Icon name="chevron-right" class="shrink-0 rtl:-scale-x-100" />
+          </button>
+        {/snippet}
+      </Item>
+    </li>
+  </ul>
 </div>
