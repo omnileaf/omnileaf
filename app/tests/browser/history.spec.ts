@@ -223,6 +223,12 @@ test.describe("with books read", () => {
     ).toHaveText("20 min");
   });
 
+  test("keeps a full bar under a finished book", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(rowOf(page, 7).getByRole("progressbar")).toHaveCount(1);
+  });
+
   test("says where each book was left and when", async ({ page }) => {
     await openHistory(page);
 

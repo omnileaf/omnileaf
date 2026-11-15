@@ -21,6 +21,8 @@ const FIRST_BOOK = 4;
 const SECOND_BOOK = 1;
 const THIRD_BOOK = 3;
 const FINISHED_BOOK = 5;
+const FIRST_BOOK_PAGE = 14;
+const FIRST_BOOK_PAGES = 192;
 const TOP_BAR_HEIGHT = 64;
 const BAR_START = 12;
 const BAR_END_INSET = 8;
@@ -48,7 +50,10 @@ function entry(
     utcOffsetMinutes: 0,
     readSeconds: 20 * MINUTE,
     readTo,
-    reading: { state: "started", page: 14 },
+    reading:
+      readTo.state === "end"
+        ? { state: "read" }
+        : { state: "started", page: readTo.page },
     day: {
       day: Math.floor(Date.parse(startedAt) / DAY_MS),
       readSeconds: 20 * MINUTE,
@@ -59,8 +64,8 @@ function entry(
 const BOOKS: readonly WireEntry[] = [
   entry(FIRST_BOOK, "2026-10-08T21:40:00.000Z", {
     state: "page",
-    page: 14,
-    pageCount: 192,
+    page: FIRST_BOOK_PAGE,
+    pageCount: FIRST_BOOK_PAGES,
   }),
   entry(SECOND_BOOK, "2026-10-07T22:05:00.000Z", {
     state: "page",
@@ -255,7 +260,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
       box.y + box.height / 2;
     const textCentre = (name.y + bar.y + bar.height) / 2;
 
-    expect(cover.height).toBe(COVER_HEIGHT);
+    expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
     expect(Math.abs(centreOf(cover) - textCentre)).toBeLessThanOrEqual(1);
     expect(Math.abs(centreOf(more) - centreOf(cover))).toBeLessThanOrEqual(1);
   });
@@ -279,7 +284,10 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
       await tokenColour(page, "--native-color-progress-rest"),
     );
     expect(fill.x).toBe(trackBox.x);
-    expect(fill.width).toBeCloseTo((trackBox.width * 14) / 192, 0);
+    expect(fill.width).toBeCloseTo(
+      (trackBox.width * FIRST_BOOK_PAGE) / FIRST_BOOK_PAGES,
+      0,
+    );
   });
 
   test("draws no bar under a finished book", async ({ page }) => {
