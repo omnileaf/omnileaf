@@ -9,7 +9,7 @@ import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { CommandFailure } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
-const TABLET = { width: 900, height: 1100 };
+const TABLET = { width: 820, height: 1180 };
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
@@ -291,7 +291,16 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     const lockToggle = await boxOf(lockSwitch(page));
     const hideToggle = await boxOf(hideContent(page));
     const delay = await boxOf(lockAfter(page));
+    const card = await boxOf(
+      page
+        .locator("section")
+        .filter({ has: lockSwitch(page) })
+        .last(),
+    );
 
+    expect(hideToggle.y + hideToggle.height).toBeLessThanOrEqual(
+      card.y + card.height,
+    );
     expect(hideToggle.x + hideToggle.width).toBeCloseTo(
       lockToggle.x + lockToggle.width,
       0,

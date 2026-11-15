@@ -16,7 +16,7 @@
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
-  import { CARD_SWITCH, SETTING_CARD } from "#lib/settings/setting-row-look.ts";
+  import { CARD_SWITCH, SWITCH_CARD } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
@@ -117,7 +117,7 @@
     {@render lockAfterRow()}
     {@render hideContentSwitch()}
   {:else}
-    <section class={[SETTING_CARD, "flex flex-col"]}>
+    <section class={SWITCH_CARD}>
       {@render lockSwitch()}
       {@render hideContentSwitch()}
     </section>
