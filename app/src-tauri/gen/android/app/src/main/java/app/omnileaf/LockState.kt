@@ -11,11 +11,8 @@ internal class LockState(
     var isCovered = false
         private set
 
-    var isAsking = false
-        private set
-
-    fun left(isChangingScreens: Boolean) {
-        if (!isChangingScreens && !isAsking) {
+    fun left(isStillInTheApp: Boolean) {
+        if (!isStillInTheApp) {
             leftAt = now()
         }
     }
@@ -30,20 +27,14 @@ internal class LockState(
         if (isOn && isDue) {
             isCovered = true
         }
-        return isOn && isCovered
-    }
-
-    fun startAsking(): Boolean {
-        if (!isCovered || isAsking) return false
-        isAsking = true
-        return true
-    }
-
-    fun answered(answer: ScreenLockAnswer) {
-        isAsking = false
-        if (answer == ScreenLockAnswer.CONFIRMED) {
+        if (!isOn) {
             isCovered = false
         }
+        return isCovered
+    }
+
+    fun unlocked() {
+        isCovered = false
     }
 
     private fun isDue(lockAfter: LockAfter): Boolean {

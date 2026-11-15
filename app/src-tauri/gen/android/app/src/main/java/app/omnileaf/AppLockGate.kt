@@ -11,19 +11,14 @@ internal class AppLockGate(
     private val choices = AppLockChoices(activity.applicationContext)
     private val state = AppLocks.state
     private val cover = LockCover(activity, onUnlock = ::ask)
-    private val keepsBackOut =
-        object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() {
-                activity.moveTaskToBack(true)
-            }
-        }
+    private var keepsBackOut: OnBackPressedCallback? = null
+    private var isAsking = false
 
     val isCovering: Boolean
         get() = cover.isShown
 
     fun watch() {
         activity.followRecentsChoice(choices)
-        activity.onBackPressedDispatcher.addCallback(activity, keepsBackOut)
         activity.lifecycle.addObserver(this)
     }
 
@@ -31,26 +26,41 @@ internal class AppLockGate(
         if (state.returned(choices.isOn, choices.lockAfter)) {
             showCover()
             ask()
+        } else {
+            hideCover()
         }
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        state.left(isChangingScreens = activity.isChangingConfigurations)
+        state.left(isStillInTheApp = activity.isChangingConfigurations || isAsking)
     }
 
     private fun showCover() {
+        if (cover.isShown) return
         cover.show(choices.wordsToShow)
-        keepsBackOut.isEnabled = true
+        keepsBackOut =
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    activity.moveTaskToBack(true)
+                }
+            }.also { activity.onBackPressedDispatcher.addCallback(activity, it) }
+    }
+
+    private fun hideCover() {
+        cover.hide()
+        keepsBackOut?.remove()
+        keepsBackOut = null
     }
 
     private fun ask() {
-        if (!state.startAsking()) return
+        if (isAsking || !state.isCovered) return
+        isAsking = true
         activity.askForScreenLock(choices.wordsToShow.prompt) { answer ->
-            state.answered(answer)
+            isAsking = false
             when (answer) {
                 ScreenLockAnswer.CONFIRMED -> {
-                    cover.hide()
-                    keepsBackOut.isEnabled = false
+                    state.unlocked()
+                    hideCover()
                 }
 
                 ScreenLockAnswer.NO_SCREEN_LOCK -> {

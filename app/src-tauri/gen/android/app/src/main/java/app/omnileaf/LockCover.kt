@@ -107,19 +107,14 @@ internal class LockCover(
     private class Behind(
         private val view: View,
     ) {
-        private val importance = view.importantForAccessibility
-        private val focusability = (view as? ViewGroup)?.descendantFocusability
+        private val visibility = view.visibility
 
         fun shutOut() {
-            view.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-            (view as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            view.visibility = View.INVISIBLE
         }
 
         fun letBackIn() {
-            view.importantForAccessibility = importance
-            if (view is ViewGroup && focusability != null) {
-                view.descendantFocusability = focusability
-            }
+            view.visibility = visibility
         }
     }
 }

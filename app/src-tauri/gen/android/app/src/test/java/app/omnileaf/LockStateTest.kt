@@ -27,7 +27,7 @@ class LockStateTest {
     @Test
     fun `stays open after a screen is rebuilt in place`() {
         startedOpen()
-        state.left(isChangingScreens = true)
+        state.left(isStillInTheApp = true)
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
 
@@ -37,7 +37,7 @@ class LockStateTest {
     @Test
     fun `covers a quick return when set to lock immediately`() {
         startedOpen()
-        state.left(isChangingScreens = false)
+        state.left(isStillInTheApp = false)
         clock += 1
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
@@ -48,7 +48,7 @@ class LockStateTest {
     @Test
     fun `waits out the delay before covering`() {
         startedOpen()
-        state.left(isChangingScreens = false)
+        state.left(isStillInTheApp = false)
         clock += 4 * MINUTE_MS
 
         val covers = state.returned(isOn = true, LockAfter.FIVE_MINUTES)
@@ -59,7 +59,7 @@ class LockStateTest {
     @Test
     fun `stays covered when the app is reopened while covered`() {
         state.returned(isOn = true, LockAfter.ONE_MINUTE)
-        state.left(isChangingScreens = false)
+        state.left(isStillInTheApp = false)
 
         val covers = state.returned(isOn = true, LockAfter.ONE_HOUR)
 
@@ -67,20 +67,10 @@ class LockStateTest {
     }
 
     @Test
-    fun `asks once at a time`() {
-        state.returned(isOn = true, LockAfter.ONE_MINUTE)
-
-        val asks = listOf(state.startAsking(), state.startAsking())
-
-        assertEquals(listOf(true, false), asks)
-    }
-
-    @Test
     fun `does not count the screen lock's own screen as leaving`() {
         state.returned(isOn = true, LockAfter.IMMEDIATELY)
-        state.startAsking()
-        state.left(isChangingScreens = false)
-        state.answered(ScreenLockAnswer.CONFIRMED)
+        state.left(isStillInTheApp = true)
+        state.unlocked()
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
 
@@ -88,16 +78,24 @@ class LockStateTest {
     }
 
     @Test
-    fun `uncovers only on a confirmed answer`() {
-        state.returned(isOn = true, LockAfter.ONE_MINUTE)
-        val covered =
-            listOf(ScreenLockAnswer.REFUSED, ScreenLockAnswer.NO_SCREEN_LOCK, ScreenLockAnswer.CONFIRMED).map {
-                state.startAsking()
-                state.answered(it)
-                state.isCovered
-            }
+    fun `stays covered for a rebuilt screen until unlocked`() {
+        state.returned(isOn = true, LockAfter.ONE_HOUR)
+        state.left(isStillInTheApp = true)
 
-        assertEquals(listOf(true, true, false), covered)
+        val coversRebuilt = state.returned(isOn = true, LockAfter.ONE_HOUR)
+        state.unlocked()
+
+        assertEquals(true, coversRebuilt)
+        assertEquals(false, state.isCovered)
+    }
+
+    @Test
+    fun `uncovers once the lock is turned off`() {
+        state.returned(isOn = true, LockAfter.ONE_MINUTE)
+
+        val covers = state.returned(isOn = false, LockAfter.ONE_MINUTE)
+
+        assertEquals(false, covers)
     }
 
     private fun startedOpen() {
