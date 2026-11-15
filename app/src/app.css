@@ -2098,3 +2098,8 @@
 :root[data-still~="sheets"] [data-sonner-toaster] [data-sonner-toast] {
   transition: none;
 }
+
+:root[data-platform="android"][data-tap-targets="larger"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme] {
+  --spacing-touch-target: var(--native-spacing-target);
+}

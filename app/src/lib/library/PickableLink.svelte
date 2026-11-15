@@ -9,7 +9,6 @@
 
   import { isReleaseOfHold, noteHeld } from "./held-pick";
 
-  const LONG_PRESS_MS = 500;
   const FOCUS_RING =
     "rounded-cover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
@@ -42,7 +41,7 @@
     children: Snippet;
   } = $props();
 
-  const longPress = new LongPress(LONG_PRESS_MS);
+  const longPress = new LongPress();
   let element: HTMLElement | undefined = $state();
   const choosesOnClick = $derived(picksOnClick && selection !== undefined);
 

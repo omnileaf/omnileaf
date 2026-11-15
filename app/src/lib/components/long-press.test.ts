@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 test("calls back once a finger has been held for the hold time", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   const onHeld = vi.fn();
   longPress.pressed(press("touch"), onHeld);
 
@@ -31,7 +31,7 @@ test("calls back once a finger has been held for the hold time", () => {
 });
 
 test("doesn't call back for a finger lifted before the hold time", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   const onHeld = vi.fn();
   longPress.pressed(press("touch"), onHeld);
 
@@ -43,7 +43,7 @@ test("doesn't call back for a finger lifted before the hold time", () => {
 });
 
 test("doesn't call back for a mouse button held down", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   const onHeld = vi.fn();
   longPress.pressed(press("mouse"), onHeld);
 
@@ -53,7 +53,7 @@ test("doesn't call back for a mouse button held down", () => {
 });
 
 test("swallows the click a long press ends with", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   longPress.pressed(press("touch"), () => undefined);
   vi.advanceTimersByTime(HELD_MS);
   const ending = click();
@@ -64,7 +64,7 @@ test("swallows the click a long press ends with", () => {
 });
 
 test("lets through the click after a tap", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   longPress.pressed(press("touch"), () => undefined);
   longPress.released();
   const tap = click();
@@ -75,7 +75,7 @@ test("lets through the click after a tap", () => {
 });
 
 test("lets through the next press's click when a long press ended without one", () => {
-  const longPress = new LongPress(HELD_MS);
+  const longPress = new LongPress(() => HELD_MS);
   longPress.pressed(press("touch"), () => undefined);
   vi.advanceTimersByTime(HELD_MS);
   longPress.pointerWentDown();
@@ -84,4 +84,18 @@ test("lets through the next press's click when a long press ended without one", 
   longPress.clicked(nextTap);
 
   expect(nextTap.defaultPrevented).toBe(false);
+});
+
+test("waits as long as the hold time asked for when the press starts", () => {
+  let heldMs = HELD_MS;
+  const longPress = new LongPress(() => heldMs);
+  const onHeld = vi.fn();
+  heldMs = HELD_MS * 2;
+  longPress.pressed(press("touch"), onHeld);
+
+  vi.advanceTimersByTime(HELD_MS);
+  expect(onHeld).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(HELD_MS);
+
+  expect(onHeld).toHaveBeenCalledOnce();
 });

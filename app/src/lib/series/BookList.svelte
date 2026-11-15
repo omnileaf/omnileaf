@@ -33,7 +33,6 @@
 
   type BookId = SeriesBook["id"];
 
-  const LONG_PRESS_MS = 500;
   const SWIPE_ICON_SIZE = 20;
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
@@ -109,7 +108,7 @@
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
-  const longPress = new LongPress(LONG_PRESS_MS);
+  const longPress = new LongPress();
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
   const listedRows: readonly ChapterRow[] = $derived(
