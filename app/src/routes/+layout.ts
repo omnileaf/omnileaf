@@ -1,6 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
+import { followSystemBoldText } from "#lib/accessibility/bold-text-choice.svelte.ts";
 import { textSizeChoice } from "#lib/accessibility/text-size-choice.svelte.ts";
 import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import { rememberLockWords } from "#lib/app-lock/app-lock.ts";
@@ -31,6 +32,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followSystemTextSize(appInfo.platform);
   followSystemContrast(appInfo.platform);
   textSizeChoice.markDocument();
+  void followSystemBoldText(appInfo.platform);
   touchChoices.markDocument();
   void rememberLockWords();
   if (libraryProblem !== null) {
