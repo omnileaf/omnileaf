@@ -160,6 +160,7 @@ function volumeKeysSwitch(isOn: boolean): Locator {
 async function turnPagesWithVolumeKeys(isOn: boolean): Promise<void> {
   const session = appSession();
   await (await session.waitFor(mainNavigationLink("Settings"))).click();
+  await session.waitUntil(NO_NOTICE_SHOWN, "the notices gone");
   await (await session.waitFor(READER_SETTINGS_LINK)).click();
   await session.waitFor(xpath(VOLUME_KEYS_SWITCH));
   await session.waitUntil(NO_NOTICE_SHOWN, "the notices gone");

@@ -1,10 +1,15 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { pagesListLook } from "#lib/settings/pages-list-look.ts";
-  import { SETTINGS_SECTIONS, sectionCurrent } from "#lib/settings/sections.ts";
+  import {
+    SETTINGS_SECTIONS,
+    sectionCurrent,
+    sectionsShown,
+  } from "#lib/settings/sections.ts";
 
   import type { LayoutProps } from "./$types";
 
@@ -13,6 +18,7 @@
   const ICON_SIZE = 18;
 
   const look = pagesListLook(currentPlatform());
+  const android = new AndroidPhone();
 </script>
 
 <div
@@ -26,7 +32,7 @@
     {/if}
     <nav aria-label={m.settings_sections_label()} class={look.nav}>
       <ul class={look.list}>
-        {#each SETTINGS_SECTIONS as section (section.route)}
+        {#each sectionsShown(SETTINGS_SECTIONS, android.isOn) as section (section.route)}
           {@const current = sectionCurrent(
             page.url.pathname,
             resolve(section.route),

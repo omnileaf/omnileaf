@@ -10,6 +10,7 @@
   import CrashTestList from "#lib/crash-tests/CrashTestList.svelte";
   import { commands } from "#lib/ipc/bindings.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
+  import TapOpenTabChoice from "#lib/navigation/TapOpenTabChoice.svelte";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { getScheduledRescansSetting } from "#lib/scheduled-rescans/scheduled-rescans.svelte.ts";
@@ -48,6 +49,7 @@
         });
   });
   const undoHeadingId = $props.id();
+  const navigationHeadingId = `${undoHeadingId}-navigation`;
   const android = new AndroidPhone();
   const isCheckingFolders = $derived(
     scheduledRescans.isOnFor(data.appInfo.platform),
@@ -69,6 +71,14 @@
       },
     ]}
   />
+  {#if android.isOn}
+    <section aria-labelledby={navigationHeadingId} class="flex flex-col">
+      <h2 id={navigationHeadingId} class={FLUSH_LIST_HEADING}>
+        {m.navigation_settings_title()}
+      </h2>
+      <TapOpenTabChoice />
+    </section>
+  {/if}
   <section
     aria-labelledby={undoHeadingId}
     class={[

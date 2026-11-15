@@ -25,6 +25,7 @@
     type SectionSummary,
     type SettingsRoute,
     SETTINGS_GROUPS,
+    sectionsShown,
   } from "./sections";
 
   let {
@@ -74,7 +75,7 @@
           : `${headingId}-${String(index)}`}
         class={android.isOn ? FLUSH_LIST : [TODAYS_LIST, GROUP_PLATE]}
       >
-        {#each group.sections as section (section.route)}
+        {#each sectionsShown(group.sections, android.isOn) as section (section.route)}
           {@const summary = summaries[section.route]}
           <li
             class="relative ios:not-last:after:absolute ios:not-last:after:inset-s-ios-separator ios:not-last:after:inset-e-none ios:not-last:after:inset-be-none ios:not-last:after:border-be ios:not-last:after:border-ios-separator"
