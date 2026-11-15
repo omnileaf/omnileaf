@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { LibraryGrouping } from "#lib/ipc/bindings.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -11,8 +11,6 @@
     FILTER_SETTING_LABEL_TYPE,
   } from "./filter-sheet-look";
 
-  const ANDROID_GROUP_BY = "flex flex-col ps-lg pe-lg pbs-sm pbe-md";
-  const ANDROID_HINT = `${ROW_SUBTITLE_TYPE} text-muted`;
   const GROUPINGS: readonly LibraryGrouping[] = [
     "none",
     "category",
@@ -50,7 +48,7 @@
   );
 </script>
 
-<div class={android.isOn ? ANDROID_GROUP_BY : ""}>
+<div class={android.isOn ? ANDROID_VIEW_SETTING.stacked : ""}>
   <p
     id={labelId}
     class={android.isOn
@@ -81,7 +79,7 @@
 </div>
 
 {#snippet hint()}
-  <p id={hintId} class={android.isOn ? ANDROID_HINT : hintClass}>
+  <p id={hintId} class={android.isOn ? ROW_SUBTITLE_MUTED_TYPE : hintClass}>
     {m.library_group_creator_hint()}
   </p>
 {/snippet}

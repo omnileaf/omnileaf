@@ -4,6 +4,8 @@ export const ROW_TITLE_TYPE =
 export const ROW_SUBTITLE_TYPE =
   "text-native-row-subtitle leading-native-row-subtitle tracking-native-row-subtitle";
 
+export const ROW_SUBTITLE_MUTED_TYPE = `${ROW_SUBTITLE_TYPE} text-muted`;
+
 const ABOUT_ROW =
   "flex inline-full items-center px-list-row text-start transition-control hover:bg-hover active:bg-pressed";
 
