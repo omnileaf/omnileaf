@@ -2007,6 +2007,14 @@ mod tests {
                     (book(number).as_bytes(), volume),
                 )
                 .unwrap();
+            for statement in [
+                "INSERT INTO book_person (book_id, role, name) VALUES (?1, 'writer', 'Aiko Tanaka')",
+                "INSERT INTO book_tag (book_id, kind, name) VALUES (?1, 'tag', 'storms')",
+            ] {
+                connection
+                    .execute(statement, [book(number).as_bytes()])
+                    .unwrap();
+            }
         }
 
         drop(Database::open(&scratch.config).unwrap());
@@ -2022,6 +2030,14 @@ mod tests {
             .collect::<Result<_, _>>()
             .unwrap();
         assert_eq!(kept, [Some(3), None]);
+        let count =
+            |query: &str| -> i64 { connection.query_row(query, [], |row| row.get(0)).unwrap() };
+        assert_eq!(count("SELECT count(*) FROM book_person"), 2);
+        assert_eq!(count("SELECT count(*) FROM book_tag"), 2);
+        assert_eq!(
+            count("SELECT book_count FROM series_tag WHERE name = 'storms'"),
+            2
+        );
     }
 
     #[test]
