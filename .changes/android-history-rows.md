@@ -2,4 +2,4 @@
 type: fix
 area: library
 ---
-History on Android phones sits closer under its top bar, draws smaller covers, shows progress as one bar across the row, and leaves finished books without one.
+On Android, History rows now use the regular row type, a vertical-dots button and a menu that opens beside it instead of a bottom sheet.
