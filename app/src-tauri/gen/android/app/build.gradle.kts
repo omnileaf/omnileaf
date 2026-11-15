@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.process)
     testImplementation(libs.junit)
+    testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
 }

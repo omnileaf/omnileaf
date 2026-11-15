@@ -7,6 +7,10 @@ import {
   rememberLockWords,
 } from "./app-lock.ts";
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 test("says the app lock is off", () => {
   expect(appLockSummary(NEW_APP_LOCK)).toBe("Off");
 });
@@ -64,10 +68,6 @@ test("tells a failed read apart from a missing app lock", async () => {
   );
 
   expect(reading).toEqual({ kind: "failed", error });
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
 });
 
 test("hands the lock screen its words", async () => {

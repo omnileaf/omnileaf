@@ -31,3 +31,12 @@ class LockWordsTest {
         assertEquals(listOf(false, false, false), blanks)
     }
 }
+
+class LockWordsKeptTest {
+    @Test
+    fun `reads back the words it kept`() {
+        val kept = LockWords.fromJson(HANDED.toJson())
+
+        assertEquals(HANDED, kept)
+    }
+}
