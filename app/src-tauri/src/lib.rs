@@ -43,6 +43,7 @@ mod share_sign_in;
 mod storage;
 mod system_app_language;
 mod system_bars;
+mod system_clock;
 mod system_contrast;
 mod system_settings;
 mod system_sign_in;
@@ -183,6 +184,7 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(power_mode::plugin())
         .plugin(system_contrast::plugin())
         .plugin(system_app_language::plugin())
+        .plugin(system_clock::plugin())
         .plugin(wallpaper_colours::plugin())
         .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())

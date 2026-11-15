@@ -50,6 +50,7 @@ use crate::{
     storage::StoragePlaces,
     system_app_language::{self, SystemAppLanguage},
     system_bars::{self, Theme, ThemePreference},
+    system_clock::{self, SystemClock},
     system_contrast::{self, SystemContrast},
     system_settings, system_sign_in,
     tray::{TrayItemChosen, TrayMenu},
@@ -73,6 +74,7 @@ macro_rules! app_commands {
             allow_back_swipe,
             watch_system_contrast,
             system_app_language,
+            system_clock,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -466,6 +468,12 @@ async fn watch_system_contrast(
 #[specta::specta]
 async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcError> {
     system_app_language::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn system_clock(app: AppHandle) -> Result<SystemClock, IpcError> {
+    system_clock::read(&app).await
 }
 
 #[tauri::command]

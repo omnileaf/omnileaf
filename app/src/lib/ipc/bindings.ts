@@ -25,6 +25,7 @@ export const commands = {
 	allowBackSwipe: (edge: "left" | "right" | null) => typedError<null, IpcError>(__TAURI_INVOKE("allow_back_swipe", { edge })),
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
 	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
+	systemClock: () => typedError<SystemClock, IpcError>(__TAURI_INVOKE("system_clock")),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -1079,6 +1080,8 @@ export type SystemAppLanguage = {
 	offered: boolean,
 	tag: string | null,
 };
+
+export type SystemClock = "followsLanguage" | "twelveHour" | "twentyFourHour";
 
 export type SystemContrast = "standard" | "medium" | "high";
 
