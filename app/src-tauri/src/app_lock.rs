@@ -41,7 +41,7 @@ pub(crate) struct LockWords {
     expect(dead_code, reason = "only Android shows a lock screen")
 )]
 impl LockWords {
-    fn is_complete(&self) -> bool {
+    fn complete(self) -> Option<Self> {
         [
             &self.title,
             &self.body,
@@ -51,6 +51,7 @@ impl LockWords {
         ]
         .iter()
         .all(|line| !line.trim().is_empty())
+        .then_some(self)
     }
 }
 
@@ -228,9 +229,9 @@ mod android {
     }
 
     pub(crate) async fn remember_words(app: &AppHandle, words: LockWords) -> Result<(), IpcError> {
-        if !words.is_complete() {
-            return Err(IpcError::internal(&AppLockError::IncompleteWords));
-        }
+        let words = words
+            .complete()
+            .ok_or_else(|| IpcError::internal(&AppLockError::IncompleteWords))?;
         ask_soon(app, REMEMBER_WORDS, words).await
     }
 
@@ -401,8 +402,8 @@ mod tests {
         };
 
         assert_eq!(
-            [words().is_complete(), blank_prompt.is_complete()],
-            [true, false]
+            [words().complete(), blank_prompt.complete()],
+            [Some(words()), None]
         );
     }
 
