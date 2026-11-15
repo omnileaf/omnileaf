@@ -228,6 +228,38 @@ async fn reads_the_details_of_unchanged_books_kept_before_details_were() {
 }
 
 #[tokio::test]
+async fn numbers_again_the_unchanged_books_whose_details_were_dropped() {
+    let comics = ScratchFolder::new("rescan-numbers-again");
+    write_book_with(
+        &comics.path().join(SERIES_01).join("v02.cbz"),
+        1,
+        Some("<ComicInfo><Volume>2011</Volume></ComicInfo>"),
+    );
+    let (scanned, _, _) = Scanned::folder("rescan-numbers-again", comics.path()).await;
+    let folder = Rescanned { scanned, comics };
+    folder
+        .writer()
+        .execute_batch(
+            "UPDATE book SET first_number = 2011000, last_number = 2011000, number_source = 'files';
+            DELETE FROM book_details;",
+        )
+        .unwrap();
+
+    folder.changes().await;
+
+    let numbering: String = folder
+        .scanned
+        .connection()
+        .query_row(
+            "SELECT concat_ws(' ', kind, first_number, last_number, number_source) FROM book",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(numbering, "volume 2000 2000 file_name");
+}
+
+#[tokio::test]
 async fn finds_nothing_changed_in_an_unchanged_folder_of_images() {
     let comics = ScratchFolder::new("rescan-images");
     comics.write("Sample Series 01/notes.txt", b"");

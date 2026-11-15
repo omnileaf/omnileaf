@@ -1,0 +1,1 @@
+DELETE FROM book_details WHERE volume BETWEEN 1000 AND 9999;
