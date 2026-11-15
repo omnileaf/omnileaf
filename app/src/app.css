@@ -2069,6 +2069,10 @@
     overflow-wrap: break-word;
   }
 
+  :root:not([data-theme]) body {
+    background-color: transparent;
+  }
+
   :where([tabindex="-1"]):focus {
     outline: none;
   }
