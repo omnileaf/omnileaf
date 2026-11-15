@@ -12,6 +12,7 @@
   import { ModalContent } from "#lib/components/ui/modal/index.ts";
   import { commands, type SeriesLabels } from "#lib/ipc/bindings.ts";
   import {
+    ROW_SUBTITLE_MUTED_TYPE,
     ROW_SUBTITLE_TYPE,
     ROW_TITLE_TYPE,
   } from "#lib/components/ui/item/looks.ts";
@@ -249,7 +250,7 @@
                   {#if choice === "some"}
                     <span
                       class={android.isOn && view !== "wide"
-                        ? `${ROW_SUBTITLE_TYPE} text-muted`
+                        ? ROW_SUBTITLE_MUTED_TYPE
                         : "text-detail text-muted"}
                     >
                       {m.library_in_some({ holding, count })}
