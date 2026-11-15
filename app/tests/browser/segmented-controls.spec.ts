@@ -112,6 +112,22 @@ const CONTROLS: readonly SegmentedControl[] = [
     },
   },
   {
+    name: "View options' Group by",
+    hasIcons: () => false,
+    backend: withSeries,
+    open: async (page, messages) => {
+      await page.goto("/");
+      await pressViewOptions(page, messages);
+      const options = page.getByRole("dialog", {
+        name: messages.library_view_options,
+      });
+      await settle(options);
+      return options.getByRole("radiogroup", {
+        name: messages.library_group_by,
+      });
+    },
+  },
+  {
     name: "Settings > Appearance's Light or dark",
     hasIcons: () => false,
     backend: (platform) => onPlatform(platform).backend,

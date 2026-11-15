@@ -591,9 +591,7 @@ test.describe(
         const label = sheet.getByText("Group by", { exact: true });
         const words = await boxOf(label);
         const hint = await boxOf(
-          sheet.getByText("Creator puts each series under its writer", {
-            exact: false,
-          }),
+          sheet.getByText("Creator puts each series under its writer"),
         );
         const group = sheet.getByRole("radiogroup", {
           name: "Group by",
@@ -614,6 +612,9 @@ test.describe(
           "Creator",
         );
         await expect(group.locator("svg")).toHaveCount(0);
+        await expect(group).toHaveAccessibleDescription(
+          /^Creator puts each series under its writer/,
+        );
       });
 
       test("offers Stack series covers as a switch, on until it is turned off", async ({
@@ -630,7 +631,7 @@ test.describe(
         await expect(stacks).not.toBeChecked();
       });
 
-      test(`sets Display with its words at the start and its three options at the end of one row, no icons`, async ({
+      test("sets Display with its words at the start and its three options at the end of one row, no icons", async ({
         page,
       }) => {
         const sheet = await openView(page);

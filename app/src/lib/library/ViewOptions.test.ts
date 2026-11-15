@@ -406,10 +406,9 @@ test("fits the View options sheet to its content at the bottom on an Android pho
   expect(boxOf(sheet).top).toBeGreaterThanOrEqual(ANDROID_SHEET_TOP_GAP);
 });
 
-test("draws Display as one row of three options and Group by with its four on their own line on an Android phone", async () => {
+test("draws Group by with its four options on their own line on an Android phone", async () => {
   await openOn("android");
 
-  await expectRadios("Display", ["Grid", "Compact", "List"]);
   await expectRadios("Group by", ["None", "Category", "Folder", "Creator"]);
   const groupLabel = boxOf(
     page.getByText("Group by", { exact: true }).element(),
@@ -417,13 +416,21 @@ test("draws Display as one row of three options and Group by with its four on th
   const groups = boxOf(
     page.getByRole("radiogroup", { name: "Group by" }).element(),
   );
+
   expect(groups.top).toBeGreaterThanOrEqual(groupLabel.bottom);
+});
+
+test("draws Display as one row of three options on an Android phone", async () => {
+  await openOn("android");
+
+  await expectRadios("Display", ["Grid", "Compact", "List"]);
   const displayLabel = boxOf(
     page.getByText("Display", { exact: true }).element(),
   );
   const display = boxOf(
     page.getByRole("radiogroup", { name: "Display" }).element(),
   );
+
   expect(display.left).toBeGreaterThanOrEqual(displayLabel.right);
   expect(
     Math.abs(
@@ -435,12 +442,17 @@ test("draws Display as one row of three options and Group by with its four on th
   expect(display.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
 });
 
-test("offers Stack series covers, leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
+test("offers Stack series covers on an Android phone", async () => {
   await openOn("android");
 
   await expect
     .element(page.getByText("Stack series covers", { exact: true }))
     .toBeVisible();
+});
+
+test("leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
+  await openOn("android");
+
   for (const name of [
     "On the library page",
     "Item counts",
