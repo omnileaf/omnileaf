@@ -1,6 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
+import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import {
   FIRST_LAUNCH_ROUTE,
   needsFirstLaunch,
@@ -10,7 +11,6 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
-import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";

@@ -2,14 +2,14 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import {
-    ANIMATION_GROUPS,
-    getAnimationsSetting,
-  } from "#lib/appearance/animations.svelte.ts";
-  import {
     LONG_PRESSES,
     type LongPressLength,
     touchChoices,
   } from "#lib/accessibility/touch-choices.svelte.ts";
+  import {
+    ANIMATION_GROUPS,
+    getAnimationsSetting,
+  } from "#lib/appearance/animations.svelte.ts";
   import { contrastChoice } from "#lib/page/contrast-choice.svelte.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -21,9 +21,10 @@
   const systemReducesMotion = new MediaQuery(
     "(prefers-reduced-motion: reduce)",
   );
-  const motionHeadingId = $props.id();
-  const touchHeadingId = `${motionHeadingId}-touch`;
-  const longPressId = `${motionHeadingId}-long-press`;
+  const pageId = $props.id();
+  const motionHeadingId = `${pageId}-motion`;
+  const touchHeadingId = `${pageId}-touch`;
+  const longPressId = `${pageId}-long-press`;
   const LONG_PRESS_NAMES = {
     short: m.accessibility_long_press_short,
     medium: m.accessibility_long_press_medium,

@@ -14,6 +14,7 @@ const LONG_PRESS_MS = {
   long: 800,
 } satisfies Record<LongPressLength, number>;
 
+const DEFAULT_LONG_PRESS: LongPressLength = "medium";
 const LARGER_TARGETS_KEY = "omnileaf.largerTapTargets";
 const LONG_PRESS_KEY = "omnileaf.longPress";
 const STORED_ON = "on";
@@ -21,7 +22,7 @@ const STORED_OFF = "off";
 const LARGER_TARGETS_MARK = "larger";
 
 function longPressIn(stored: string | null): LongPressLength {
-  return LONG_PRESSES.find((length) => length === stored) ?? "medium";
+  return LONG_PRESSES.find((length) => length === stored) ?? DEFAULT_LONG_PRESS;
 }
 
 function markTargets(hasLargerTargets: boolean): void {
@@ -35,7 +36,7 @@ function markTargets(hasLargerTargets: boolean): void {
 
 export class TouchChoices {
   hasLargerTargets = $state(false);
-  longPress: LongPressLength = $state("medium");
+  longPress: LongPressLength = $state(DEFAULT_LONG_PRESS);
 
   readonly #largerTargets: StoredPreference;
   readonly #longPress: StoredPreference;

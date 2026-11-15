@@ -64,3 +64,20 @@ test("takes the mark away once larger tap targets are turned off", () => {
 
   expect(document.documentElement.dataset.tapTargets).toBeUndefined();
 });
+
+test("falls back to the medium long press for a length it doesn't know", () => {
+  const store = memory();
+  store.setItem("omnileaf.longPress", "forever");
+
+  expect(new TouchChoices(store).longPressMs).toBe(500);
+});
+
+test("marks the document again from the kept choice when the app opens", () => {
+  const store = memory();
+  new TouchChoices(store).chooseLargerTargets(true);
+  delete document.documentElement.dataset.tapTargets;
+
+  new TouchChoices(store).markDocument();
+
+  expect(document.documentElement.dataset.tapTargets).toBe("larger");
+});
