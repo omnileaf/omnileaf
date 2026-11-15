@@ -14,7 +14,6 @@ export async function followSystemBoldText(
   readSystem: typeof commands.systemBoldText = commands.systemBoldText,
   choice = boldTextChoice,
 ): Promise<void> {
-  choice.markDocument();
   if (!FOLLOWS_SYSTEM_BOLD_TEXT[platform] || choice.hasChoice) {
     return;
   }

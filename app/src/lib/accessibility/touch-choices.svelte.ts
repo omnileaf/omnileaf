@@ -57,7 +57,7 @@ export class TouchChoices {
 
   chooseLargerTargets(isLarger: boolean): void {
     this.hasLargerTargets = isLarger;
-    this.#largerTargets.write(isLarger);
+    this.#largerTargets.writeIfPossible(isLarger);
     markTargets(isLarger);
   }
 

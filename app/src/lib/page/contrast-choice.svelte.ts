@@ -44,7 +44,7 @@ export class ContrastChoice {
 
   choose(isHigher: boolean): void {
     this.#chosen = isHigher;
-    this.#stored.write(isHigher);
+    this.#stored.writeIfPossible(isHigher);
     followContrast(this.drawn);
   }
 }

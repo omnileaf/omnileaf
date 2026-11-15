@@ -18,7 +18,7 @@ export class StoredSwitch {
     return stored === STORED_OFF ? false : undefined;
   }
 
-  write(isOn: boolean): void {
+  writeIfPossible(isOn: boolean): void {
     this.#stored.writeIfPossible(isOn ? STORED_ON : STORED_OFF);
   }
 }

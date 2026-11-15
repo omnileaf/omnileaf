@@ -37,7 +37,7 @@ export class BoldTextChoice {
 
   choose(isBold: boolean): void {
     this.#chosen = isBold;
-    this.#stored.write(isBold);
+    this.#stored.writeIfPossible(isBold);
     followBoldText(isBold);
   }
 }

@@ -2,19 +2,9 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { BoldTextChoice } from "#lib/accessibility/bold-text-choice.svelte.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
-import type { PreferenceStore } from "#lib/preferences/stored-preference.ts";
+import { memoryPreferenceStore } from "#lib/preferences/memory-preference-store.ts";
 
 import { followSystemBoldText } from "./system-bold-text.ts";
-
-function memory(): PreferenceStore {
-  const kept = new Map<string, string>();
-  return {
-    getItem: (key) => kept.get(key) ?? null,
-    setItem: (key, value) => {
-      kept.set(key, value);
-    },
-  };
-}
 
 const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos", "windows"];
 
@@ -26,7 +16,7 @@ afterEach(() => {
 });
 
 test("reads the phone's Bold text on Android", async () => {
-  const choice = new BoldTextChoice(memory());
+  const choice = new BoldTextChoice(memoryPreferenceStore());
 
   await followSystemBoldText("android", BOLD, choice);
 
@@ -34,7 +24,7 @@ test("reads the phone's Bold text on Android", async () => {
 });
 
 test.each(ELSEWHERE)("asks nothing on %s", async (platform) => {
-  const choice = new BoldTextChoice(memory());
+  const choice = new BoldTextChoice(memoryPreferenceStore());
   const read = vi.fn(BOLD);
 
   await followSystemBoldText(platform, read, choice);
@@ -43,8 +33,8 @@ test.each(ELSEWHERE)("asks nothing on %s", async (platform) => {
   expect(choice.isBold).toBe(false);
 });
 
-test("asks nothing once the app has its own choice, and marks it straight away", async () => {
-  const store = memory();
+test("asks nothing once the app has its own choice", async () => {
+  const store = memoryPreferenceStore();
   new BoldTextChoice(store).choose(true);
   delete document.documentElement.dataset.boldText;
   const choice = new BoldTextChoice(store);
@@ -53,12 +43,12 @@ test("asks nothing once the app has its own choice, and marks it straight away",
   await followSystemBoldText("android", read, choice);
 
   expect(read).not.toHaveBeenCalled();
-  expect(document.documentElement.dataset.boldText).toBe("");
+  expect(choice.isBold).toBe(true);
 });
 
 test("reports a failed read and keeps text plain", async () => {
   const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
-  const choice = new BoldTextChoice(memory());
+  const choice = new BoldTextChoice(memoryPreferenceStore());
   const error = {
     code: "internal",
     message: "something went wrong inside the app",
