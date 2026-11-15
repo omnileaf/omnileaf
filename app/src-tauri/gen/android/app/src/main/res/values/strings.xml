@@ -5,6 +5,5 @@
     <string name="app_lock_locked_body">Unlock to open your library.</string>
     <string name="app_lock_unlock">Unlock</string>
     <string name="app_lock_unlock_prompt">Unlock Omnileaf</string>
-    <string name="app_lock_no_screen_lock">Set a screen lock on this phone first</string>
-    <string name="app_lock_no_screen_lock_body">Android needs a PIN, pattern or password before Omnileaf can lock.</string>
+    <string name="app_lock_turned_off_no_screen_lock">App lock was turned off because this phone has no screen lock.</string>
 </resources>

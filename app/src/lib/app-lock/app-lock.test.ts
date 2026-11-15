@@ -82,9 +82,7 @@ test("hands the lock screen its words", async () => {
     body: "Unlock to open your library.",
     unlock: "Unlock",
     prompt: "Unlock Omnileaf",
-    noScreenLock: "Set a screen lock on this phone first",
-    noScreenLockBody:
-      "Android needs a PIN, pattern or password before Omnileaf can lock.",
+    turnedOff: "App lock was turned off because this phone has no screen lock.",
   });
 });
 

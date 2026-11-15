@@ -35,12 +35,6 @@ internal class LockCover(
         shown = cover
     }
 
-    fun sayNoScreenLock(words: LockWords) {
-        val cover = shown ?: return
-        cover.title.text = words.noScreenLock
-        cover.body.text = words.noScreenLockBody
-    }
-
     fun hide() {
         val cover = shown ?: return
         decor.removeView(cover.root)
@@ -82,7 +76,7 @@ internal class LockCover(
                 isFocusableInTouchMode = true
                 addView(column, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
             }
-        return Shown(root, title, body, behind)
+        return Shown(root, behind)
     }
 
     private fun text(
@@ -103,8 +97,6 @@ internal class LockCover(
 
     private class Shown(
         val root: View,
-        val title: TextView,
-        val body: TextView,
         val behind: Behind,
     )
 

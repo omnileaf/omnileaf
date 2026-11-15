@@ -33,8 +33,7 @@ pub(crate) struct LockWords {
     body: String,
     unlock: String,
     prompt: String,
-    no_screen_lock: String,
-    no_screen_lock_body: String,
+    turned_off: String,
 }
 
 #[cfg_attr(
@@ -48,8 +47,7 @@ impl LockWords {
             &self.body,
             &self.unlock,
             &self.prompt,
-            &self.no_screen_lock,
-            &self.no_screen_lock_body,
+            &self.turned_off,
         ]
         .iter()
         .all(|line| !line.trim().is_empty())
@@ -379,8 +377,7 @@ mod tests {
                     "body": "Unlock to open your library.",
                     "unlock": "Unlock",
                     "prompt": "Unlock Omnileaf",
-                    "noScreenLock": "Set a screen lock on this phone first",
-                    "noScreenLockBody": "Android needs a PIN, pattern or password before Omnileaf can lock.",
+                    "turnedOff": "App lock was turned off because this phone has no screen lock.",
                 }),
             ]
         );
@@ -392,9 +389,7 @@ mod tests {
             body: "Unlock to open your library.".into(),
             unlock: "Unlock".into(),
             prompt: "Unlock Omnileaf".into(),
-            no_screen_lock: "Set a screen lock on this phone first".into(),
-            no_screen_lock_body:
-                "Android needs a PIN, pattern or password before Omnileaf can lock.".into(),
+            turned_off: "App lock was turned off because this phone has no screen lock.".into(),
         }
     }
 

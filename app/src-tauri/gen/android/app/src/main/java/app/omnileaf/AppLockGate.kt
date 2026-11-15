@@ -1,5 +1,6 @@
 package app.omnileaf
 
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -55,6 +56,14 @@ internal class AppLockGate(
         onCovered(false)
     }
 
+    private fun turnOffForWantOfScreenLock() {
+        choices.turn(isOn = false)
+        activity.followRecentsChoice(choices)
+        state.unlocked()
+        hideCover()
+        Toast.makeText(activity, choices.wordsToShow.turnedOff, Toast.LENGTH_LONG).show()
+    }
+
     private fun ask() {
         if (!state.isCovered || !prompt.open()) return
         activity.askForScreenLock(choices.wordsToShow.prompt) { answer ->
@@ -66,7 +75,7 @@ internal class AppLockGate(
                 }
 
                 ScreenLockAnswer.NO_SCREEN_LOCK -> {
-                    cover.sayNoScreenLock(choices.wordsToShow)
+                    turnOffForWantOfScreenLock()
                 }
 
                 ScreenLockAnswer.REFUSED -> {

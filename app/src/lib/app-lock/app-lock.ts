@@ -65,8 +65,7 @@ export async function rememberLockWords(
     body: m.app_lock_locked_body(),
     unlock: m.app_lock_unlock(),
     prompt: m.app_lock_unlock_prompt(),
-    noScreenLock: m.app_lock_no_screen_lock(),
-    noScreenLockBody: m.app_lock_no_screen_lock_body(),
+    turnedOff: m.app_lock_turned_off_no_screen_lock(),
   });
   if (
     remembered.status === "error" &&

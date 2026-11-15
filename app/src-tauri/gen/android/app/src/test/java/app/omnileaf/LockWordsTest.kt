@@ -9,8 +9,7 @@ private val HANDED =
         body = "Unlock to open your library.",
         unlock = "Unlock",
         prompt = "Unlock Omnileaf",
-        noScreenLock = "Set a screen lock on this phone first",
-        noScreenLockBody = "Android needs a PIN, pattern or password before Omnileaf can lock.",
+        turnedOff = "App lock was turned off because this phone has no screen lock.",
     )
 
 class LockWordsTest {
@@ -25,7 +24,7 @@ class LockWordsTest {
             listOf(
                 HANDED.copy(title = ""),
                 HANDED.copy(prompt = "  "),
-                HANDED.copy(noScreenLockBody = ""),
+                HANDED.copy(turnedOff = ""),
             ).map { it.isComplete }
 
         assertEquals(listOf(false, false, false), blanks)

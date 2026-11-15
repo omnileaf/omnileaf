@@ -1400,6 +1400,7 @@
   "app_lock_locked_body": "Unlock to open your library.",
   "app_lock_unlock": "Unlock",
   "app_lock_unlock_prompt": "Unlock Omnileaf",
+  "app_lock_turned_off_no_screen_lock": "App lock was turned off because this phone has no screen lock.",
   "app_lock_after": "Lock after",
   "app_lock_after_help": "Counts from when you leave Omnileaf. Reading and downloads carry on while it’s locked.",
   "app_lock_only_when_on": "Available when app lock is on.",

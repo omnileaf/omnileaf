@@ -739,8 +739,7 @@ export type LockWords = {
 	body: string,
 	unlock: string,
 	prompt: string,
-	noScreenLock: string,
-	noScreenLockBody: string,
+	turnedOff: string,
 };
 
 export type MissingFolder = {

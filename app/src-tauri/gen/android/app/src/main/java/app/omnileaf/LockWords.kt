@@ -10,8 +10,7 @@ class HandedLockWords {
     lateinit var body: String
     lateinit var unlock: String
     lateinit var prompt: String
-    lateinit var noScreenLock: String
-    lateinit var noScreenLockBody: String
+    lateinit var turnedOff: String
 }
 
 internal data class LockWords(
@@ -19,11 +18,10 @@ internal data class LockWords(
     val body: String,
     val unlock: String,
     val prompt: String,
-    val noScreenLock: String,
-    val noScreenLockBody: String,
+    val turnedOff: String,
 ) {
     val isComplete: Boolean
-        get() = listOf(title, body, unlock, prompt, noScreenLock, noScreenLockBody).none { it.isBlank() }
+        get() = listOf(title, body, unlock, prompt, turnedOff).none { it.isBlank() }
 
     fun toJson(): String =
         JSONObject()
@@ -31,8 +29,7 @@ internal data class LockWords(
             .put(BODY, body)
             .put(UNLOCK, unlock)
             .put(PROMPT, prompt)
-            .put(NO_SCREEN_LOCK, noScreenLock)
-            .put(NO_SCREEN_LOCK_BODY, noScreenLockBody)
+            .put(TURNED_OFF, turnedOff)
             .toString()
 
     companion object {
@@ -40,8 +37,7 @@ internal data class LockWords(
         private const val BODY = "body"
         private const val UNLOCK = "unlock"
         private const val PROMPT = "prompt"
-        private const val NO_SCREEN_LOCK = "noScreenLock"
-        private const val NO_SCREEN_LOCK_BODY = "noScreenLockBody"
+        private const val TURNED_OFF = "turnedOff"
 
         fun fromJson(stored: String): LockWords {
             val words = JSONObject(stored)
@@ -50,8 +46,7 @@ internal data class LockWords(
                 body = words.getString(BODY),
                 unlock = words.getString(UNLOCK),
                 prompt = words.getString(PROMPT),
-                noScreenLock = words.getString(NO_SCREEN_LOCK),
-                noScreenLockBody = words.getString(NO_SCREEN_LOCK_BODY),
+                turnedOff = words.getString(TURNED_OFF),
             )
         }
 
@@ -61,8 +56,7 @@ internal data class LockWords(
                 body = handed.body,
                 unlock = handed.unlock,
                 prompt = handed.prompt,
-                noScreenLock = handed.noScreenLock,
-                noScreenLockBody = handed.noScreenLockBody,
+                turnedOff = handed.turnedOff,
             )
 
         fun builtIn(context: Context): LockWords =
@@ -71,8 +65,7 @@ internal data class LockWords(
                 body = context.getString(R.string.app_lock_locked_body),
                 unlock = context.getString(R.string.app_lock_unlock),
                 prompt = context.getString(R.string.app_lock_unlock_prompt),
-                noScreenLock = context.getString(R.string.app_lock_no_screen_lock),
-                noScreenLockBody = context.getString(R.string.app_lock_no_screen_lock_body),
+                turnedOff = context.getString(R.string.app_lock_turned_off_no_screen_lock),
             )
     }
 }
