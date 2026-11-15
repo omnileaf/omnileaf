@@ -10,9 +10,6 @@ afterEach(() => {
 });
 
 test("leaves the window's own colour showing until the theme is known", () => {
-  delete document.documentElement.dataset.theme;
-  document.documentElement.dataset.platform = "android";
-
   const ground = getComputedStyle(document.body).backgroundColor;
 
   expect(ground).toBe(TRANSPARENT);
