@@ -60,21 +60,19 @@
     lastBook: m.general_opens_last_book(),
   } satisfies Record<OpeningPlace, string>;
 
-  const systemHourCycle = new Intl.DateTimeFormat(getLocale(), {
-    hour: "numeric",
-  }).resolvedOptions().hourCycle;
-  const TIME_FORMAT_LABELS = {
-    system:
-      systemHourCycle === "h11" || systemHourCycle === "h12"
-        ? m.general_time_system_12()
-        : m.general_time_system_24(),
+  const TIME_FORMAT_LABELS = $derived({
+    system: timeFormat.isSystemTwelveHour
+      ? m.general_time_system_12()
+      : m.general_time_system_24(),
     twelveHour: m.general_time_12(),
     twentyFourHour: m.general_time_24(),
-  } satisfies Record<TimeFormat, string>;
-  const TIME_FORMAT_CHOICES = TIME_FORMATS.map((format) => ({
-    value: format,
-    label: TIME_FORMAT_LABELS[format],
-  }));
+  } satisfies Record<TimeFormat, string>);
+  const TIME_FORMAT_CHOICES = $derived(
+    TIME_FORMATS.map((format) => ({
+      value: format,
+      label: TIME_FORMAT_LABELS[format],
+    })),
+  );
 </script>
 
 <GroupedGround>

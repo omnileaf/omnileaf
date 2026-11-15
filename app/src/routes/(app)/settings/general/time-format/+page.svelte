@@ -10,7 +10,6 @@
     TIME_FORMATS,
     type TimeFormat,
   } from "#lib/general/time-format.svelte.ts";
-  import { getLocale } from "#lib/paraglide/runtime.js";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -20,17 +19,13 @@
   const CHECK_STROKE = 2.4;
 
   const timeFormat = getTimeFormatSetting();
-  const systemHourCycle = new Intl.DateTimeFormat(getLocale(), {
-    hour: "numeric",
-  }).resolvedOptions().hourCycle;
-  const TIME_FORMAT_LABELS = {
-    system:
-      systemHourCycle === "h11" || systemHourCycle === "h12"
-        ? m.general_time_system_12()
-        : m.general_time_system_24(),
+  const TIME_FORMAT_LABELS = $derived({
+    system: timeFormat.isSystemTwelveHour
+      ? m.general_time_system_12()
+      : m.general_time_system_24(),
     twelveHour: m.general_time_12(),
     twentyFourHour: m.general_time_24(),
-  } satisfies Record<TimeFormat, string>;
+  } satisfies Record<TimeFormat, string>);
 </script>
 
 <GroupedGround>
