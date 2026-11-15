@@ -10,6 +10,7 @@ import {
   opensOnSettingForDocument,
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
+import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";
@@ -27,6 +28,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followCorePlatform(appInfo.platform);
   followSystemTextSize(appInfo.platform);
   followSystemContrast(appInfo.platform);
+  touchChoices.markDocument();
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }
