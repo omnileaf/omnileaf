@@ -2,9 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import english from "../../messages/en.json" with { type: "json" };
 import { expect, settle } from "./fixtures.ts";
-import { pressViewOptions } from "./library-controls.ts";
-
-type Messages = typeof english;
+import { type Messages, pressViewOptions } from "./library-controls.ts";
 
 export function viewOptionsButton(page: Page): Locator {
   return page.getByRole("main").getByRole("button", { name: "View options" });
