@@ -16,10 +16,12 @@ export interface HistoryEntryLook {
   readonly bar: string;
   readonly barTrack: NativeTrack;
   readonly cover: string;
+  readonly coverSkeleton: string;
   readonly showsFinishedBar: boolean;
 }
 
 const TODAYS_COVER = "rounded-history-cover inline-history-cover";
+const TODAYS_COVER_SKELETON = `${TODAYS_COVER} block-history-cover`;
 
 const TODAYS_LOOK: HistoryEntryLook = {
   title: "line-clamp-2 text-small font-semibold",
@@ -29,24 +31,27 @@ const TODAYS_LOOK: HistoryEntryLook = {
   bar: "inline-history-bar",
   barTrack: "split",
   cover: TODAYS_COVER,
+  coverSkeleton: TODAYS_COVER_SKELETON,
   showsFinishedBar: true,
 };
 
 const ANDROID_LOOK: HistoryEntryLook = {
-  ...TODAYS_LOOK,
   title: `line-clamp-2 ${ROW_TITLE_TYPE}`,
   line: `line-clamp-2 text-muted tabular-nums ${ROW_SUBTITLE_TYPE}`,
   opensMenu: true,
   menuButton:
     "flex block-touch-target inline-touch-target before:block-touch-target before:inline-touch-target",
+  bar: "inline-full",
+  barTrack: "continuous",
+  cover: TODAYS_COVER,
+  coverSkeleton: TODAYS_COVER_SKELETON,
+  showsFinishedBar: false,
 };
 
 const ANDROID_PHONE_LOOK: HistoryEntryLook = {
   ...ANDROID_LOOK,
-  bar: "inline-full",
-  barTrack: "continuous",
   cover: ANDROID_LIST_COVER,
-  showsFinishedBar: false,
+  coverSkeleton: `aspect-cover ${ANDROID_LIST_COVER}`,
 };
 
 const HISTORY_ENTRY_LOOKS = {

@@ -5,13 +5,11 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { WindowWidth } from "#lib/page/breakpoints.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
   import type { HistoryEntryActions } from "./history-entry-actions.ts";
-  import { historyEntryLook } from "./history-entry-look.ts";
+  import type { HistoryEntryLook } from "./history-entry-look.ts";
   import type { HistoryGroupName } from "./history-groups.ts";
   import { historyLine, type WhenFormats } from "./history-line.ts";
   import HistoryEntryMenu from "./HistoryEntryMenu.svelte";
@@ -23,17 +21,16 @@
     formats,
     usesStandIns,
     actions,
+    look,
   }: {
     entry: HistoryEntry;
     group: HistoryGroupName;
     formats: WhenFormats;
     usesStandIns: boolean;
     actions: HistoryEntryActions;
+    look: HistoryEntryLook;
   } = $props();
 
-  const platform = currentPlatform();
-  const width = new WindowWidth();
-  const look = $derived(historyEntryLook(platform, width.current));
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
   const cover = $derived(
     (usesStandIns ? standInLook : realLook)({
