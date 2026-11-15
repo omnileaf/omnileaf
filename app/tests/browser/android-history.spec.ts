@@ -1,63 +1,42 @@
 import type { Page } from "@playwright/test";
 
-import { type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   test,
   tokenColour,
 } from "./fixtures.ts";
+import {
+  entry,
+  seriesTitle,
+  THURSDAY_EVENING,
+  type WireEntry,
+} from "./history-entries.ts";
 
-type WireEntry = Awaited<
-  ReturnType<FakeBackend["readingHistory"]>
->["entries"][number];
-
-const THURSDAY_EVENING = new Date("2026-10-08T22:30:00Z");
-const MINUTE = 60;
-const DAY_MS = 86_400_000;
 const FIRST_BOOK = 4;
 const SECOND_BOOK = 1;
 const THIRD_BOOK = 3;
+const FINISHED_BOOK = 5;
+const FIRST_BOOK_PAGE = 14;
+const FIRST_BOOK_PAGES = 192;
 const TOP_BAR_HEIGHT = 64;
 const BAR_START = 12;
 const BAR_END_INSET = 8;
 const MENU_REACH = 80;
 const HEADING_START = 16;
-const PROGRESS_TRACK_WIDTH = 120;
+const LIST_HEADER_GAP = 16;
+const COVER_HEIGHT = 56;
 const SEARCH_BAR_HEIGHT = 72;
 const PHONE = { width: 390, height: 844 };
-
-function entry(
-  number: number,
-  startedAt: string,
-  readTo: WireEntry["readTo"],
-): WireEntry {
-  const id = String(number).padStart(12, "0");
-  return {
-    book: `0190a3e4-0000-8000-8000-${id}`,
-    bookTitle: `Volume ${String(number)}`,
-    series: `0190a3e4-0000-8000-8001-${id}`,
-    seriesTitle: `Sample Series ${String(number).padStart(2, "0")}`,
-    position: number,
-    cover: null,
-    startedAtMs: Date.parse(startedAt),
-    utcOffsetMinutes: 0,
-    readSeconds: 20 * MINUTE,
-    readTo,
-    reading: { state: "started", page: 14 },
-    day: {
-      day: Math.floor(Date.parse(startedAt) / DAY_MS),
-      readSeconds: 20 * MINUTE,
-    },
-  };
-}
+const TABLET = { width: 820, height: 1180 };
 
 const BOOKS: readonly WireEntry[] = [
   entry(FIRST_BOOK, "2026-10-08T21:40:00.000Z", {
     state: "page",
-    page: 14,
-    pageCount: 192,
+    page: FIRST_BOOK_PAGE,
+    pageCount: FIRST_BOOK_PAGES,
   }),
   entry(SECOND_BOOK, "2026-10-07T22:05:00.000Z", {
     state: "page",
@@ -69,6 +48,7 @@ const BOOKS: readonly WireEntry[] = [
     page: 18,
     pageCount: 40,
   }),
+  entry(FINISHED_BOOK, "2026-10-05T18:30:00.000Z", { state: "end" }),
 ];
 
 test.use({
@@ -78,13 +58,28 @@ test.use({
   },
 });
 
-async function openHistory(page: Page): Promise<void> {
-  await page.setViewportSize(PHONE);
+async function openHistory(page: Page, screen = PHONE): Promise<void> {
+  await page.setViewportSize(screen);
   await page.clock.setFixedTime(THURSDAY_EVENING);
   await page.goto("/history");
   await expect(
     page.getByRole("heading", { level: 1, name: "History" }),
   ).toBeVisible();
+}
+
+async function expectTrackAcrossTheColumn(
+  page: Page,
+  screen: typeof PHONE,
+): Promise<void> {
+  await openHistory(page, screen);
+  const row = page.getByRole("main").getByRole("listitem").first();
+  const column = await boxOf(
+    row.getByText(seriesTitle(FIRST_BOOK), { exact: true }).locator(".."),
+  );
+  const track = await boxOf(row.getByRole("progressbar"));
+
+  expect(track.x).toBe(column.x);
+  expect(track.width).toBe(column.width);
 }
 
 test.describe("History on an Android phone", { tag: "@native" }, () => {
@@ -182,15 +177,108 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     expect(menuBox?.y).toBeLessThan((moreBox?.y ?? 0) + MENU_REACH);
   });
 
-  test("draws each entry's progress track 120px wide", async ({ page }) => {
+  test("spans each entry's progress track across the text column", async ({
+    page,
+  }) => {
+    await expectTrackAcrossTheColumn(page, PHONE);
+  });
+
+  test("ends every row's progress track at the same place, whatever its text", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const tracks = await page
+      .getByRole("main")
+      .getByRole("progressbar")
+      .evaluateAll((bars) =>
+        bars.map((bar) => Math.round(bar.getBoundingClientRect().right)),
+      );
+
+    expect(new Set(tracks).size).toBe(1);
+  });
+
+  test("puts each day heading 16px under the bar or the row above it", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const bar = await boxOf(
+      page.locator("header").filter({
+        has: page.getByRole("heading", { level: 1, name: "History" }),
+      }),
+    );
+    const today = await boxOf(
+      page.getByRole("heading", { level: 2, name: "Today" }),
+    );
+    const yesterday = await boxOf(
+      page.getByRole("heading", { level: 2, name: "Yesterday" }),
+    );
+    const lastToday = await boxOf(
+      page.getByRole("region", { name: "Today" }).getByRole("listitem").last(),
+    );
+
+    expect(today.y - (bar.y + bar.height)).toBe(LIST_HEADER_GAP);
+    expect(yesterday.y - (lastToday.y + lastToday.height)).toBe(
+      LIST_HEADER_GAP,
+    );
+  });
+
+  test("lines up each row's cover, text and more button on one centre with a 56px cover", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const row = page.getByRole("main").getByRole("listitem").first();
+    const cover = await boxOf(row.locator('[data-slot="list-cover"]'));
+    const name = await boxOf(
+      row.getByText("Sample Series 04", { exact: true }),
+    );
+    const bar = await boxOf(row.getByRole("progressbar"));
+    const more = await boxOf(
+      row.getByRole("button", { name: "More for Volume 4" }),
+    );
+    const centreOf = (box: { y: number; height: number }) =>
+      box.y + box.height / 2;
+    const textCentre = (name.y + bar.y + bar.height) / 2;
+
+    expect(cover.x).toBe(HEADING_START);
+    expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
+    expect(Math.abs(centreOf(cover) - textCentre)).toBeLessThanOrEqual(1);
+    expect(Math.abs(centreOf(more) - centreOf(cover))).toBeLessThanOrEqual(1);
+  });
+
+  test("fills one continuous track from its start up to the page reached", async ({
+    page,
+  }) => {
     await openHistory(page);
     const track = page
       .getByRole("main")
       .getByRole("listitem")
       .first()
       .getByRole("progressbar");
+    const trackBox = await boxOf(track);
+    const parts = track.locator("> div");
+    const fill = await boxOf(parts.first());
 
-    expect((await track.boundingBox())?.width).toBe(PROGRESS_TRACK_WIDTH);
+    await expect(parts).toHaveCount(1);
+    await expect(track).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-progress-rest"),
+    );
+    expect(fill.x).toBe(trackBox.x);
+    expect(fill.width).toBeCloseTo(
+      (trackBox.width * FIRST_BOOK_PAGE) / FIRST_BOOK_PAGES,
+      0,
+    );
+  });
+
+  test("draws no bar under a finished book", async ({ page }) => {
+    await openHistory(page);
+    const finished = page
+      .getByRole("main")
+      .getByRole("listitem")
+      .filter({ hasText: "Sample Series 05" });
+
+    await expect(finished).toBeVisible();
+    await expect(finished.getByRole("progressbar")).toHaveCount(0);
   });
 
   test("opens the search as a flat 72px bar with no fill behind the field", async ({
@@ -204,5 +292,62 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
 
     await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     expect((await bar.boundingBox())?.height).toBe(SEARCH_BAR_HEIGHT);
+  });
+});
+
+test.describe("History on an Android tablet", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's History rows");
+  });
+
+  test("draws one continuous track and no bar under a finished book", async ({
+    page,
+  }) => {
+    await openHistory(page, TABLET);
+    const rows = page.getByRole("main").getByRole("listitem");
+    const track = rows.first().getByRole("progressbar");
+
+    const finished = rows.filter({ hasText: seriesTitle(FINISHED_BOOK) });
+
+    await expect(track.locator("> div")).toHaveCount(1);
+    await expect(finished).toBeVisible();
+    await expect(finished.getByRole("progressbar")).toHaveCount(0);
+  });
+
+  test("spans the progress track across the text column", async ({ page }) => {
+    await expectTrackAcrossTheColumn(page, TABLET);
+  });
+});
+
+test.describe("History loading on an Android phone", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      readingHistory: () => new Promise(() => undefined),
+    },
+  });
+
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's History rows");
+  });
+
+  test("draws its skeleton rows where the loaded rows will sit", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const bar = await boxOf(
+      page.locator("header").filter({
+        has: page.getByRole("heading", { level: 1, name: "History" }),
+      }),
+    );
+    const loading = page.getByRole("status", { name: "Loading History" });
+    const status = await boxOf(loading);
+    const cover = await boxOf(
+      loading.locator('[data-slot="skeleton"]').first(),
+    );
+
+    expect(status.y).toBe(bar.y + bar.height);
+    expect(cover.x).toBe(HEADING_START);
+    expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
   });
 });

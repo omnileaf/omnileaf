@@ -25,6 +25,7 @@
   } from "#lib/history/history-groups.ts";
   import { readingTime } from "#lib/history/reading-time.ts";
   import { whenFormats } from "#lib/history/history-line.ts";
+  import { historyEntryLook } from "#lib/history/history-entry-look.ts";
   import { historyList } from "#lib/history/history-list.svelte.ts";
   import {
     deviceLocale,
@@ -37,6 +38,7 @@
   import { listenForLibraryChanges } from "#lib/library/library-changes.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { EMPTY_ACTION_GAP } from "#lib/page/empty-action.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import EmptyState from "#lib/page/EmptyState.svelte";
   import { whenInView } from "#lib/paging/in-view.ts";
   import { m } from "#lib/paraglide/messages.js";
@@ -67,6 +69,8 @@
   const timeFormat = getTimeFormatSetting();
   const formats = $derived(whenFormats(getLocale(), timeFormat.hourCycle));
   const platform = $derived(data.appInfo.platform);
+  const width = new WindowWidth();
+  const entryLook = $derived(historyEntryLook(platform, width.current));
   const headingId = $props.id();
   const android = new AndroidPhone();
 
@@ -310,13 +314,13 @@
   <div
     role="status"
     aria-label={m.history_loading()}
-    class="mbs-lg flex flex-col gap-md"
+    class="mbs-lg flex flex-col gap-md android:max-medium:mbs-none android:max-medium:gap-none"
   >
     {#each { length: SKELETON_ROWS }, row (row)}
-      <div class="flex items-center gap-md ps-xs">
-        <Skeleton
-          class="shrink-0 rounded-history-cover block-history-cover inline-history-cover"
-        />
+      <div
+        class="flex items-center gap-md ps-xs android:ps-none android:max-medium:py-sm"
+      >
+        <Skeleton class={["shrink-0", entryLook.coverSkeleton]} />
         <div class="flex flex-1 flex-col gap-xs">
           <Skeleton class="block-sm inline-3/5" />
           <Skeleton class="block-sm inline-4/5" />
@@ -353,7 +357,7 @@
 {:else}
   <div
     role="presentation"
-    class="mbs-md flex flex-col gap-md large:mbs-lg"
+    class="mbs-md flex flex-col gap-md large:mbs-lg android:max-medium:mbs-none android:max-medium:gap-none"
     onkeydown={moveThroughEntries}
   >
     {#each groups as group, index (group.name)}
@@ -384,6 +388,7 @@
               {formats}
               usesStandIns={screenshotMode.isOn}
               {actions}
+              look={entryLook}
             />
           {/each}
         </ul>

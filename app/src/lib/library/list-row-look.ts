@@ -43,9 +43,11 @@ const PHONE: ListRowLook = {
 const NATIVE_LIST_COVER =
   "rounded-list-cover box-border! inline-native-list-cover";
 
+export const ANDROID_LIST_COVER = `${NATIVE_LIST_COVER} border-0!`;
+
 const ANDROID_PHONE: ListRowLook = {
   ...PHONE,
-  cover: `${NATIVE_LIST_COVER} border-0!`,
+  cover: ANDROID_LIST_COVER,
   unread:
     "px-sm py-xs text-native-tab/native-tab font-native-tab tracking-native-tab bg-native-cover-badge text-native-on-cover-badge",
 };

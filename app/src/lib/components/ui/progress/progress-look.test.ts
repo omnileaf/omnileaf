@@ -6,12 +6,18 @@ import "../../../../app.css";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import Progress from "./progress.svelte";
+import type { NativeTrack } from "./tracks.ts";
 
-async function renderBar(value: number, max = 100): Promise<HTMLElement> {
+async function renderBar(
+  value: number,
+  max = 100,
+  track: NativeTrack = "split",
+): Promise<HTMLElement> {
   document.documentElement.dataset.theme = "light";
   const screen = await render(Progress, {
     value,
     max,
+    track,
     "aria-label": "Reading",
   });
   const bar = screen.getByRole("progressbar", { name: "Reading" }).element();
@@ -63,6 +69,19 @@ test("draws Android's fill and the rest of the track as two pills with a gap", a
     "rgb(208, 232, 215)",
   );
   expect((restBox?.left ?? 0) - (fillBox?.right ?? 0)).toBeCloseTo(4, 0);
+});
+
+test("draws Android's continuous bar as one fill inside the rest of the track", async () => {
+  followCorePlatform("android");
+  const bar = await renderBar(32, 100, "continuous");
+
+  const parts = partsOf(bar);
+  const box = bar.getBoundingClientRect();
+
+  expect(parts).toHaveLength(1);
+  expect(getComputedStyle(bar).backgroundColor).toBe("rgb(208, 232, 215)");
+  expect(parts[0]?.left).toBeCloseTo(box.left, 0);
+  expect(parts[0]?.width).toBeCloseTo(box.width * 0.32, 0);
 });
 
 test("fills the whole native bar when there was nothing to do", async () => {

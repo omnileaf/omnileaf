@@ -13,62 +13,22 @@ import {
   test,
   viewportOf,
 } from "./fixtures.ts";
+import {
+  bookId,
+  bookTitle,
+  entry,
+  MINUTE,
+  seriesId,
+  seriesTitle,
+  THURSDAY_EVENING,
+  type WireEntry,
+} from "./history-entries.ts";
 
-type WireEntry = Awaited<
-  ReturnType<FakeBackend["readingHistory"]>
->["entries"][number];
-
-const THURSDAY_EVENING = new Date("2026-10-08T22:30:00Z");
-const MINUTE = 60;
-const DAY_MS = 86_400_000;
 const ENTRIES_PER_PAGE = 50;
 const REMOVED_MARK = 1_790_000_000_000;
 const CLEARED_MARK = 1_780_000_000_000;
 const UNBROKEN_TITLE =
   "Sample_Series_Scanned_From_The_Collectors_Edition_Box_Set_Volumes_01_To_24";
-
-function bookId(number: number): string {
-  return `0190a3e4-0000-8000-8000-${String(number).padStart(12, "0")}`;
-}
-
-function seriesId(number: number): string {
-  return `0190a3e4-0000-8000-8001-${String(number).padStart(12, "0")}`;
-}
-
-function seriesTitle(number: number): string {
-  return `Sample Series ${String(number).padStart(2, "0")}`;
-}
-
-function bookTitle(number: number): string {
-  return `Volume ${String(number)}`;
-}
-
-function entry(
-  number: number,
-  startedAt: string,
-  readTo: WireEntry["readTo"],
-): WireEntry {
-  return {
-    book: bookId(number),
-    bookTitle: bookTitle(number),
-    series: seriesId(number),
-    seriesTitle: seriesTitle(number),
-    position: number,
-    cover: null,
-    startedAtMs: Date.parse(startedAt),
-    utcOffsetMinutes: 0,
-    readSeconds: 20 * MINUTE,
-    readTo,
-    reading:
-      readTo.state === "end"
-        ? { state: "read" }
-        : { state: "started", page: readTo.page },
-    day: {
-      day: Math.floor(Date.parse(startedAt) / DAY_MS),
-      readSeconds: 20 * MINUTE,
-    },
-  };
-}
 
 const BOOKS: readonly WireEntry[] = [
   entry(4, "2026-10-08T21:40:00.000Z", {
@@ -221,6 +181,12 @@ test.describe("with books read", () => {
         .getByRole("region", { name: "This week" })
         .getByTestId("group-total"),
     ).toHaveText("20 min");
+  });
+
+  test("keeps a full bar under a finished book", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(rowOf(page, 7).getByRole("progressbar")).toHaveCount(1);
   });
 
   test("says where each book was left and when", async ({ page }) => {
@@ -552,5 +518,19 @@ test.describe("with Screenshot mode on", () => {
     await expect(rows(page).first()).toContainText(/9:40\sPM/);
     expect(await page.content()).not.toContain("Sample Series");
     expect(coverRequests).toBe(0);
+  });
+});
+
+test.describe("History on an iPhone", { tag: "@native" }, () => {
+  test.use({ backend: booksBackend(BOOKS) });
+
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "ios", "iOS's History rows");
+  });
+
+  test("keeps a full bar under a finished book", async ({ page }) => {
+    await openHistory(page);
+
+    await expect(rowOf(page, 7).getByRole("progressbar")).toHaveCount(1);
   });
 });

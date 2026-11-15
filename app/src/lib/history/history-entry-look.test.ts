@@ -1,38 +1,36 @@
-import { afterEach, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { expect, test } from "vitest";
 
-import "../../app.css";
-
-import { followCorePlatform } from "#lib/page/platform.ts";
+import { ANDROID_LIST_COVER } from "#lib/library/list-row-look.ts";
 
 import { historyEntryLook } from "./history-entry-look.ts";
 
-const PHONE = { width: 390, height: 844 };
-const TABLET = { width: 820, height: 1180 };
-const PHONE_TRACK = 120;
-const TODAYS_TRACK = 56;
+test.each(["compact", "medium"] as const)(
+  "leaves finished books without a bar on a %s Android screen, in one continuous track",
+  (widthClass) => {
+    const look = historyEntryLook("android", widthClass);
 
-async function trackWidthOn(screen: {
-  width: number;
-  height: number;
-}): Promise<number> {
-  followCorePlatform("android");
-  await page.viewport(screen.width, screen.height);
-  const track = document.createElement("div");
-  track.className = historyEntryLook("android").bar;
-  document.body.append(track);
-  return track.getBoundingClientRect().width;
-}
+    expect([look.showsFinishedBar, look.barTrack]).toEqual([
+      false,
+      "continuous",
+    ]);
+  },
+);
 
-afterEach(() => {
-  delete document.documentElement.dataset.platform;
-  document.body.replaceChildren();
+test("gives an Android phone's rows and skeleton the list cover, and a tablet's today's cover", () => {
+  const phone = historyEntryLook("android", "compact");
+  const tablet = historyEntryLook("android", "medium");
+  const todays = historyEntryLook("ios", "medium");
+
+  expect(phone.cover).toBe(ANDROID_LIST_COVER);
+  expect(phone.coverSkeleton).toContain(ANDROID_LIST_COVER);
+  expect([tablet.cover, tablet.coverSkeleton]).toEqual([
+    todays.cover,
+    todays.coverSkeleton,
+  ]);
 });
 
-test("draws Android's History progress track 120 wide on a phone", async () => {
-  expect(await trackWidthOn(PHONE)).toBe(PHONE_TRACK);
-});
+test("keeps an iPhone's finished books' bars on the split track", () => {
+  const look = historyEntryLook("ios", "compact");
 
-test("keeps Android's History progress track as it was on a tablet", async () => {
-  expect(await trackWidthOn(TABLET)).toBe(TODAYS_TRACK);
+  expect([look.showsFinishedBar, look.barTrack]).toEqual([true, "split"]);
 });

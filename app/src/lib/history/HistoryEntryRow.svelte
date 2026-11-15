@@ -5,12 +5,11 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
-  import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
 
   import type { HistoryEntryActions } from "./history-entry-actions.ts";
-  import { historyEntryLook } from "./history-entry-look.ts";
+  import type { HistoryEntryLook } from "./history-entry-look.ts";
   import type { HistoryGroupName } from "./history-groups.ts";
   import { historyLine, type WhenFormats } from "./history-line.ts";
   import HistoryEntryMenu from "./HistoryEntryMenu.svelte";
@@ -22,15 +21,16 @@
     formats,
     usesStandIns,
     actions,
+    look,
   }: {
     entry: HistoryEntry;
     group: HistoryGroupName;
     formats: WhenFormats;
     usesStandIns: boolean;
     actions: HistoryEntryActions;
+    look: HistoryEntryLook;
   } = $props();
 
-  const look = historyEntryLook(currentPlatform());
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
   const cover = $derived(
     (usesStandIns ? standInLook : realLook)({
@@ -59,24 +59,23 @@
     data-history-book={listed.book}
     class="flex flex-1 items-center gap-md rounded-control py-xs ps-xs min-inline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent android:ps-none"
   >
-    <ListCover
-      {cover}
-      {coverUrl}
-      class="shrink-0 rounded-history-cover inline-history-cover"
-    />
-    <span class="flex flex-col gap-2xs min-inline-none">
+    <ListCover {cover} {coverUrl} class={["shrink-0", look.cover]} />
+    <span class="flex flex-1 flex-col gap-2xs min-inline-none">
       <span class={look.title}>
         {entry.seriesTitle}
       </span>
       <span class={look.line}>
         {historyLine(entry, group, formats)}
       </span>
-      <Progress
-        aria-label={reached.label}
-        max={reached.max}
-        value={reached.value}
-        class={["block-progress-compact", look.bar]}
-      />
+      {#if entry.readTo.state === "page" || look.showsFinishedBar}
+        <Progress
+          aria-label={reached.label}
+          max={reached.max}
+          value={reached.value}
+          track={look.barTrack}
+          class={["block-progress-compact", look.bar]}
+        />
+      {/if}
     </span>
   </a>
   {#if !look.opensMenu}
