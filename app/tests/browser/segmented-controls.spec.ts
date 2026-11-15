@@ -12,6 +12,7 @@ import {
   pressViewOptions,
 } from "./library-controls.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
+import { openViewOptions } from "./view-options.ts";
 
 type Messages = typeof english;
 
@@ -99,11 +100,7 @@ async function viewOptionsGroup(
   name: string,
 ): Promise<Locator> {
   await page.goto("/");
-  await pressViewOptions(page, messages);
-  const options = page.getByRole("dialog", {
-    name: messages.library_view_options,
-  });
-  await settle(options);
+  const options = await openViewOptions(page, messages);
   return options.getByRole("radiogroup", { name });
 }
 
