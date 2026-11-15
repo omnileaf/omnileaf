@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 
 import { BoldTextChoice } from "#lib/accessibility/bold-text-choice.svelte.ts";
+import type { Platform } from "#lib/ipc/bindings.ts";
 import type { PreferenceStore } from "#lib/preferences/stored-preference.ts";
 
 import { followSystemBoldText } from "./system-bold-text.ts";
@@ -14,6 +15,8 @@ function memory(): PreferenceStore {
     },
   };
 }
+
+const ELSEWHERE: readonly Platform[] = ["ios", "linux", "macos", "windows"];
 
 const BOLD = () => Promise.resolve({ status: "ok", data: true } as const);
 
@@ -30,11 +33,11 @@ test("reads the phone's Bold text on Android", async () => {
   expect(choice.isBold).toBe(true);
 });
 
-test("asks nothing off Android", async () => {
+test.each(ELSEWHERE)("asks nothing on %s", async (platform) => {
   const choice = new BoldTextChoice(memory());
   const read = vi.fn(BOLD);
 
-  await followSystemBoldText("ios", read, choice);
+  await followSystemBoldText(platform, read, choice);
 
   expect(read).not.toHaveBeenCalled();
   expect(choice.isBold).toBe(false);
