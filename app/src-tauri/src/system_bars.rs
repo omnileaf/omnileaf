@@ -68,14 +68,14 @@ struct PageBackground {
 )]
 impl PageBackground {
     const LIGHT: Self = Self {
-        red: 0xff,
-        green: 0xff,
-        blue: 0xff,
+        red: 0xf7,
+        green: 0xfa,
+        blue: 0xf5,
     };
     const DARK: Self = Self {
-        red: 0x0a,
-        green: 0x0a,
-        blue: 0x0a,
+        red: 0x0b,
+        green: 0x0f,
+        blue: 0x0c,
     };
 
     fn for_theme(theme: Theme) -> Self {
@@ -308,42 +308,15 @@ mod tests {
 
     const THEME_CSS: &str = include_str!("../../src/theme.css");
     const DARK_THEME_RULE: &str = "[data-theme=\"dark\"] {";
-    const BACKGROUND_TOKEN: &str = "--background:";
-    const CHANNEL_MAX: f64 = 255.0;
+    const ANDROID_WINDOW_TOKEN: &str = "--android-palette-window:";
     const ANDROID_COLORS: &str = include_str!("../gen/android/app/src/main/res/values/colors.xml");
-
-    /// The theme writes its grounds as greys in OKLCH, whose lightness cubed is the linear sRGB of every channel.
-    fn hex_of_grey(oklch: &str) -> String {
-        let inner = oklch
-            .strip_prefix("oklch(")
-            .and_then(|rest| rest.strip_suffix(')'))
-            .expect("the page background is an oklch colour");
-        let mut parts = inner.split_whitespace();
-        let lightness: f64 = parts
-            .next()
-            .expect("the colour has a lightness")
-            .parse()
-            .expect("the lightness is a number");
-        assert_eq!(parts.next(), Some("0"), "the page background is a grey");
-        let linear = lightness.powi(3);
-        let encoded = if linear <= 0.003_130_8 {
-            12.92 * linear
-        } else {
-            1.055 * linear.powf(1.0 / 2.4) - 0.055
-        };
-        let distance = |channel: u8| (f64::from(channel) / CHANNEL_MAX - encoded).abs();
-        let channel = (0..=u8::MAX)
-            .min_by(|one, other| distance(*one).total_cmp(&distance(*other)))
-            .expect("a channel is nearest");
-        format!("#{channel:02x}{channel:02x}{channel:02x}")
-    }
 
     fn first_background_token(css: &str) -> String {
         let (_, rest) = css
-            .split_once(BACKGROUND_TOKEN)
-            .expect("the theme defines a page background");
+            .split_once(ANDROID_WINDOW_TOKEN)
+            .expect("the theme defines Android's window colour");
         let (value, _) = rest.split_once(';').expect("the token ends");
-        hex_of_grey(value.trim())
+        value.trim().to_owned()
     }
 
     fn interface_backgrounds() -> (String, String) {
