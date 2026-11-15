@@ -49,6 +49,17 @@ test.describe(
       await expect.poll(() => accessibilitySettingsOpened).toBe(1);
     });
 
+    test("rings the link when the keyboard reaches it", async ({ page }) => {
+      await openAccessibility(page);
+      const link = page.getByRole("button", {
+        name: "Open Android accessibility settings",
+      });
+
+      await link.focus();
+
+      await expect(link).toHaveCSS("outline-style", "solid");
+    });
+
     test("says Android's settings didn't open", async ({ page }) => {
       opensSettings = false;
       await openAccessibility(page);
