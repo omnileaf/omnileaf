@@ -14,8 +14,8 @@
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import {
-    FLUSH_BLEED,
     FLUSH_LIST_HEADING,
+    FLUSH_STACKED_ROW,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
@@ -29,7 +29,6 @@
   const motionHeadingId = `${pageId}-motion`;
   const touchHeadingId = `${pageId}-touch`;
   const longPressId = `${pageId}-long-press`;
-  const SEGMENTED_ROW = `${FLUSH_BLEED} flex flex-col gap-md ps-lg pe-xl py-sm text-body`;
   const LONG_PRESS_NAMES = {
     short: m.accessibility_long_press_short,
     medium: m.accessibility_long_press_medium,
@@ -86,7 +85,7 @@
         touchChoices.chooseLargerTargets(!touchChoices.hasLargerTargets);
       }}
     />
-    <div class={SEGMENTED_ROW}>
+    <div class={FLUSH_STACKED_ROW}>
       <SettingWords
         id={longPressId}
         look="android"

@@ -37,6 +37,15 @@ function targetSizes(page: Page): Promise<number[]> {
   );
 }
 
+async function boxOf(
+  shown: Locator,
+): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
+  await expect(shown).toBeVisible();
+  const box = await shown.boundingBox();
+  expect(box).not.toBeNull();
+  return box ?? { x: 0, y: 0, width: 0, height: 0 };
+}
+
 function seriesList(page: Page): Locator {
   return page.getByRole("list", { name: "Series" });
 }
@@ -82,20 +91,22 @@ test.describe(
       ).toBeChecked();
     });
 
-    test("lines Long press takes up with the switch rows above it", async ({
+    test("lines Long press takes up with the switch rows above it, with even edges", async ({
       page,
     }) => {
       await openAccessibility(page);
       const section = page.getByRole("region", { name: "Touch" });
 
-      const switchLabel = await section
-        .getByText("Larger tap targets")
-        .boundingBox();
-      const choiceLabel = await section
-        .getByText("Long press takes")
-        .boundingBox();
+      const switchLabel = await boxOf(section.getByText("Larger tap targets"));
+      const choiceLabel = await boxOf(section.getByText("Long press takes"));
+      const lengths = await boxOf(
+        section.getByRole("radiogroup", { name: "Long press takes" }),
+      );
+      const pageWidth = page.viewportSize()?.width ?? 0;
 
-      expect(choiceLabel?.x).toBe(switchLabel?.x);
+      expect(choiceLabel.x).toBe(switchLabel.x);
+      expect(lengths.x).toBe(switchLabel.x);
+      expect(pageWidth - (lengths.x + lengths.width)).toBe(lengths.x);
     });
 
     test("grows the tap targets from 48px to 56px once Larger tap targets is on, and keeps them after a reload", async ({

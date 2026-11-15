@@ -11,6 +11,8 @@ export const ANDROID_LIST_HEADING =
 
 export const FLUSH_HEADING = `${ANDROID_LIST_HEADING} px-lg`;
 
+export const FLUSH_STACKED_ROW = `${FLUSH_BLEED} flex flex-col gap-md px-lg py-sm text-body`;
+
 export const FLUSH_LIST_HEADING = `${FLUSH_BLEED} ${FLUSH_HEADING}`;
 
 export const FLUSH_NOTE = `${FLUSH_BLEED} px-lg pbe-sm text-native-row-subtitle/native-row-subtitle text-muted`;
