@@ -2,7 +2,6 @@ package app.omnileaf
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.webkit.WebView
@@ -18,7 +17,12 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
     internal val handedDocuments = HandedDocuments()
-    private val appLock by lazy { AppLockGate(this) { isCovered -> backNavigation?.standDown(isCovered) } }
+    private val appLock by lazy {
+        AppLockGate(this) { isCovered ->
+            backNavigation?.followCover(isCovered)
+            if (isCovered) webView?.evaluateJavascript(CLOSE_OPEN_PICKERS, null)
+        }
+    }
 
     internal var backNavigation: BackNavigation? = null
         private set
@@ -48,14 +52,15 @@ class MainActivity : TauriActivity() {
         turnScreen(newConfig)
     }
 
+    /** AndroidX's Activity Result API and startActivity still launch every screen through this deprecated override. */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun startActivityForResult(
         intent: Intent,
         requestCode: Int,
         options: Bundle?,
     ) {
-        AppLocks.state.openingOwnScreen()
         super.startActivityForResult(intent, requestCode, options)
+        if (isOwnScreen(intent.action)) appLock.openedOwnScreen()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean =
@@ -67,7 +72,7 @@ class MainActivity : TauriActivity() {
         backNavigation =
             BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })
                 .also {
-                    it.standDown(appLock.isCovering)
+                    it.followCover(appLock.isCovering)
                     onBackPressedDispatcher.addCallback(this, it)
                 }
         webView.setBackgroundColor(startingBackground)
@@ -99,6 +104,9 @@ class MainActivity : TauriActivity() {
         requestedOrientation = orientation.requestedOn(configuration)
     }
 }
+
+/** Chromium draws an open select's options in a window of its own, above anything drawn over the page. */
+private const val CLOSE_OPEN_PICKERS = "document.activeElement?.blur()"
 
 private val Intent.isFromRecents: Boolean
     get() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0

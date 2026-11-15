@@ -39,11 +39,11 @@ class BackNavigationTest {
     fun `stands down while the app lock covers the page`() {
         back.followHistory(canGoBack = true)
 
-        back.standDown(isCovered = true)
+        back.followCover(isCovered = true)
         val whileCovered = back.isEnabled
         back.followHistory(canGoBack = true)
         val afterHistoryMoves = back.isEnabled
-        back.standDown(isCovered = false)
+        back.followCover(isCovered = false)
 
         assertFalse(whileCovered)
         assertFalse(afterHistoryMoves)

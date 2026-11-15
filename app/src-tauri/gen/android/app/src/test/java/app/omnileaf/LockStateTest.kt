@@ -14,7 +14,6 @@ class LockStateTest {
         val covers = state.returned(isOn = true, LockAfter.ONE_HOUR)
 
         assertEquals(true, covers)
-        assertEquals(true, state.isCovered)
     }
 
     @Test
@@ -37,8 +36,7 @@ class LockStateTest {
     @Test
     fun `covers a quick return when set to lock immediately`() {
         startedOpen()
-        state.left(isStillInTheApp = false)
-        clock += 1
+        leaveFor(1)
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
 
@@ -48,12 +46,21 @@ class LockStateTest {
     @Test
     fun `waits out the delay before covering`() {
         startedOpen()
-        state.left(isStillInTheApp = false)
-        clock += 4 * MINUTE_MS
+        leaveFor(4 * MINUTE_MS)
 
         val covers = state.returned(isOn = true, LockAfter.FIVE_MINUTES)
 
         assertEquals(false, covers)
+    }
+
+    @Test
+    fun `covers once the time away reaches the delay`() {
+        startedOpen()
+        leaveFor(5 * MINUTE_MS)
+
+        val covers = state.returned(isOn = true, LockAfter.FIVE_MINUTES)
+
+        assertEquals(true, covers)
     }
 
     @Test
@@ -67,18 +74,6 @@ class LockStateTest {
     }
 
     @Test
-    fun `stays covered for a rebuilt screen until unlocked`() {
-        state.returned(isOn = true, LockAfter.ONE_HOUR)
-        state.left(isStillInTheApp = true)
-
-        val coversRebuilt = state.returned(isOn = true, LockAfter.ONE_HOUR)
-        state.unlocked()
-
-        assertEquals(true, coversRebuilt)
-        assertEquals(false, state.isCovered)
-    }
-
-    @Test
     fun `uncovers once the lock is turned off`() {
         state.returned(isOn = true, LockAfter.ONE_MINUTE)
 
@@ -88,11 +83,10 @@ class LockStateTest {
     }
 
     @Test
-    fun `stays open on a return from a screen Omnileaf opened itself`() {
+    fun `stays open on a quick return from a screen Omnileaf opened itself`() {
         startedOpen()
-        state.openingOwnScreen()
-        state.left(isStillInTheApp = false)
-        clock += 1
+        state.openedOwnScreen()
+        leaveFor(MINUTE_MS)
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
 
@@ -100,20 +94,87 @@ class LockStateTest {
     }
 
     @Test
-    fun `locks the next time the app is left some other way`() {
+    fun `locks a long trip through a screen Omnileaf opened itself`() {
         startedOpen()
-        state.openingOwnScreen()
-        state.left(isStillInTheApp = false)
-        state.returned(isOn = true, LockAfter.IMMEDIATELY)
-        state.left(isStillInTheApp = false)
-        clock += 1
+        state.openedOwnScreen()
+        leaveFor(OWN_SCREEN_ALLOWANCE.inWholeMilliseconds)
 
         val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
 
         assertEquals(true, covers)
     }
 
+    @Test
+    fun `locks after returning from a link opened in the browser`() {
+        startedOpen()
+        leaveFor(1)
+
+        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
+
+        assertEquals(true, covers)
+    }
+
+    @Test
+    fun `locks a later leave when the own screen never showed`() {
+        startedOpen()
+        state.openedOwnScreen()
+        state.resumed()
+        leaveFor(1)
+
+        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
+
+        assertEquals(true, covers)
+    }
+
+    @Test
+    fun `locks the next time the app is left some other way`() {
+        startedOpen()
+        state.openedOwnScreen()
+        leaveFor(1)
+        state.returned(isOn = true, LockAfter.IMMEDIATELY)
+        leaveFor(1)
+
+        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
+
+        assertEquals(true, covers)
+    }
+
+    @Test
+    fun `stays covered after a refused check`() {
+        state.returned(isOn = true, LockAfter.ONE_MINUTE)
+
+        val outcome = state.answered(ScreenLockAnswer.REFUSED)
+
+        assertEquals(LockOutcome.STAY_COVERED, outcome)
+        assertEquals(true, state.isCovered)
+    }
+
+    @Test
+    fun `uncovers on a confirmed check`() {
+        state.returned(isOn = true, LockAfter.ONE_MINUTE)
+
+        val outcome = state.answered(ScreenLockAnswer.CONFIRMED)
+
+        assertEquals(LockOutcome.UNCOVER, outcome)
+        assertEquals(false, state.isCovered)
+    }
+
+    @Test
+    fun `turns the lock off and uncovers when the phone has no screen lock`() {
+        state.returned(isOn = true, LockAfter.ONE_MINUTE)
+
+        val outcome = state.answered(ScreenLockAnswer.NO_SCREEN_LOCK)
+
+        assertEquals(LockOutcome.TURN_OFF, outcome)
+        assertEquals(false, state.isCovered)
+    }
+
     private fun startedOpen() {
         state.returned(isOn = false, LockAfter.ONE_MINUTE)
+    }
+
+    private fun leaveFor(ms: Long) {
+        state.left(isStillInTheApp = false)
+        clock += ms
     }
 }

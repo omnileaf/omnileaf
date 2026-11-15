@@ -59,7 +59,7 @@ internal class BackNavigation(
         takeBackWhenItCan()
     }
 
-    fun standDown(isCovered: Boolean) {
+    fun followCover(isCovered: Boolean) {
         this.isCovered = isCovered
         takeBackWhenItCan()
     }
