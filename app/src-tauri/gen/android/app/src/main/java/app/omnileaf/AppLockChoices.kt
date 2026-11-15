@@ -1,16 +1,21 @@
 package app.omnileaf
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.content.edit
-import app.tauri.Logger
-import org.json.JSONException
 
 private const val PREFERENCES = "app_lock"
 private const val IS_ON_KEY = "is_on"
 private const val LOCK_AFTER_KEY = "lock_after"
 private const val HIDES_CONTENT_IN_RECENTS_KEY = "hides_content_in_recents"
-private const val WORDS_KEY = "words"
+private const val TITLE_KEY = "words_title"
+private const val BODY_KEY = "words_body"
+private const val UNLOCK_KEY = "words_unlock"
+private const val PROMPT_KEY = "words_prompt"
+private const val TURNED_OFF_KEY = "words_turned_off"
+private val WORD_KEYS = listOf(TITLE_KEY, BODY_KEY, UNLOCK_KEY, PROMPT_KEY, TURNED_OFF_KEY)
+private val RECENTS_KEYS = setOf(IS_ON_KEY, HIDES_CONTENT_IN_RECENTS_KEY)
 
 internal class AppLockChoices(
     private val context: Context,
@@ -42,20 +47,36 @@ internal class AppLockChoices(
         preferences.edit { putBoolean(HIDES_CONTENT_IN_RECENTS_KEY, isHidden) }
     }
 
-    val wordsToShow: LockWords
-        get() = storedWords()?.takeIf { it.isComplete } ?: LockWords.builtIn(context)
+    fun wordsToShow(): LockWords = storedWords()?.takeIf { it.isComplete } ?: LockWords.builtIn(context)
 
     fun remember(words: LockWords) {
-        preferences.edit { putString(WORDS_KEY, words.toJson()) }
+        preferences.edit {
+            putString(TITLE_KEY, words.title)
+            putString(BODY_KEY, words.body)
+            putString(UNLOCK_KEY, words.unlock)
+            putString(PROMPT_KEY, words.prompt)
+            putString(TURNED_OFF_KEY, words.turnedOff)
+        }
+    }
+
+    fun onRecentsChoiceChanged(follow: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener =
+        SharedPreferences
+            .OnSharedPreferenceChangeListener { _, key ->
+                if (key in RECENTS_KEYS) follow()
+            }.also(preferences::registerOnSharedPreferenceChangeListener)
+
+    fun stopFollowing(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
     private fun storedWords(): LockWords? {
-        val stored = preferences.getString(WORDS_KEY, null) ?: return null
-        return try {
-            LockWords.fromJson(stored)
-        } catch (unreadable: JSONException) {
-            Logger.warn("the app lock's kept words could not be read: ${unreadable.message}")
-            null
-        }
+        val stored = WORD_KEYS.associateWith { preferences.getString(it, null) ?: return null }
+        return LockWords(
+            title = stored.getValue(TITLE_KEY),
+            body = stored.getValue(BODY_KEY),
+            unlock = stored.getValue(UNLOCK_KEY),
+            prompt = stored.getValue(PROMPT_KEY),
+            turnedOff = stored.getValue(TURNED_OFF_KEY),
+        )
     }
 }

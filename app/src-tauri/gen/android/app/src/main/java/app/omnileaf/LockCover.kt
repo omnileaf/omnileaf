@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.StyleRes
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -82,7 +83,7 @@ internal class LockCover(
     private fun text(
         themed: ContextThemeWrapper,
         words: String,
-        appearance: Int,
+        @StyleRes appearance: Int,
     ): TextView =
         TextView(themed).apply {
             text = words

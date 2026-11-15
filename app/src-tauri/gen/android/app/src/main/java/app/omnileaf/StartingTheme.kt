@@ -41,7 +41,7 @@ fun Activity.keepSplashScreenTheme(theme: StartingTheme) {
 }
 
 @StyleRes
-fun StartingTheme.style(): Int =
+internal fun StartingTheme.style(): Int =
     when (this) {
         StartingTheme.DEVICE -> R.style.Theme_omnileaf_app
         StartingTheme.LIGHT -> R.style.Theme_omnileaf_app_Light

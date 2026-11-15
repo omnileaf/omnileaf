@@ -8,7 +8,6 @@ core = "1.13.1"
 coroutines = "1.9.0"
 detekt = "1.23.8"
 espresso = "3.5.0"
-json = "20240303"
 junit = "4.13.2"
 kotlin = "2.2.10"
 ktlint = "1.8.0"
@@ -29,7 +28,6 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-junit" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
-json = { module = "org.json:json", version.ref = "json" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
