@@ -13,9 +13,13 @@
   import { contrastChoice } from "#lib/page/contrast-choice.svelte.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { FLUSH_LIST_HEADING } from "#lib/settings/android-flush-look.ts";
+  import {
+    FLUSH_BLEED,
+    FLUSH_LIST_HEADING,
+  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
+  import SettingWords from "#lib/settings/SettingWords.svelte";
 
   const animations = getAnimationsSetting();
   const systemReducesMotion = new MediaQuery(
@@ -25,6 +29,7 @@
   const motionHeadingId = `${pageId}-motion`;
   const touchHeadingId = `${pageId}-touch`;
   const longPressId = `${pageId}-long-press`;
+  const SEGMENTED_ROW = `${FLUSH_BLEED} flex flex-col gap-md ps-lg pe-xl py-sm text-body`;
   const LONG_PRESS_NAMES = {
     short: m.accessibility_long_press_short,
     medium: m.accessibility_long_press_medium,
@@ -81,15 +86,18 @@
         touchChoices.chooseLargerTargets(!touchChoices.hasLargerTargets);
       }}
     />
-    <div class="flex flex-col gap-md px-lg py-sm">
-      <span id={longPressId} class="text-body">
-        {m.accessibility_long_press()}
-      </span>
+    <div class={SEGMENTED_ROW}>
+      <SettingWords
+        id={longPressId}
+        look="android"
+        label={m.accessibility_long_press()}
+        description={undefined}
+      />
       <SegmentedControl
         options={LONG_PRESSES}
         labels={LONG_PRESS_NAMES}
         chosen={touchChoices.longPress}
-        labelledBy={longPressId}
+        labelledBy="{longPressId}-label"
         isFullWidth
         onChoose={(length: LongPressLength) => {
           touchChoices.chooseLongPress(length);

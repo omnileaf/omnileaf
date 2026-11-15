@@ -82,6 +82,22 @@ test.describe(
       ).toBeChecked();
     });
 
+    test("lines Long press takes up with the switch rows above it", async ({
+      page,
+    }) => {
+      await openAccessibility(page);
+      const section = page.getByRole("region", { name: "Touch" });
+
+      const switchLabel = await section
+        .getByText("Larger tap targets")
+        .boundingBox();
+      const choiceLabel = await section
+        .getByText("Long press takes")
+        .boundingBox();
+
+      expect(choiceLabel?.x).toBe(switchLabel?.x);
+    });
+
     test("grows the tap targets from 48px to 56px once Larger tap targets is on, and keeps them after a reload", async ({
       page,
     }) => {
