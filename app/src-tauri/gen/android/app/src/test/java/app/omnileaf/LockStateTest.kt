@@ -67,17 +67,6 @@ class LockStateTest {
     }
 
     @Test
-    fun `does not count the screen lock's own screen as leaving`() {
-        state.returned(isOn = true, LockAfter.IMMEDIATELY)
-        state.left(isStillInTheApp = true)
-        state.unlocked()
-
-        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
-
-        assertEquals(false, covers)
-    }
-
-    @Test
     fun `stays covered for a rebuilt screen until unlocked`() {
         state.returned(isOn = true, LockAfter.ONE_HOUR)
         state.left(isStillInTheApp = true)

@@ -23,15 +23,14 @@ internal class LockCover(
     private var shown: Shown? = null
 
     val isShown: Boolean
-        get() = shown != null
+        get() = shown?.root?.isAttachedToWindow == true
 
     fun show(words: LockWords) {
-        if (shown != null) return
-        val content = activity.findViewById<ViewGroup>(android.R.id.content)
+        if (isShown) return
         val cover = coverWith(words)
-        val behind = (0 until content.childCount).map { Behind(content.getChildAt(it)) }
-        content.addView(cover.root, FrameLayout.LayoutParams(MATCH, MATCH))
-        behind.forEach(Behind::shutOut)
+        val behind = Behind(activity.findViewById(android.R.id.content))
+        (activity.window.decorView as ViewGroup).addView(cover.root, FrameLayout.LayoutParams(MATCH, MATCH))
+        behind.shutOut()
         cover.root.requestFocus()
         WindowCompat.getInsetsController(activity.window, cover.root).hide(WindowInsetsCompat.Type.ime())
         shown = cover.copy(behind = behind)
@@ -45,8 +44,8 @@ internal class LockCover(
 
     fun hide() {
         val cover = shown ?: return
-        activity.findViewById<ViewGroup>(android.R.id.content).removeView(cover.root)
-        cover.behind.forEach(Behind::letBackIn)
+        (activity.window.decorView as ViewGroup).removeView(cover.root)
+        cover.behind?.letBackIn()
         shown = null
     }
 
@@ -101,7 +100,7 @@ internal class LockCover(
         val root: View,
         val title: TextView,
         val body: TextView,
-        val behind: List<Behind> = emptyList(),
+        val behind: Behind? = null,
     )
 
     private class Behind(

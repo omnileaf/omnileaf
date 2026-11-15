@@ -7,12 +7,13 @@ import androidx.lifecycle.LifecycleOwner
 
 internal class AppLockGate(
     private val activity: FragmentActivity,
+    private val onCovered: (Boolean) -> Unit,
 ) : DefaultLifecycleObserver {
     private val choices = AppLockChoices(activity.applicationContext)
     private val state = AppLocks.state
     private val cover = LockCover(activity, onUnlock = ::ask)
     private var keepsBackOut: OnBackPressedCallback? = null
-    private var isAsking = false
+    private val prompt = LockPrompt()
 
     val isCovering: Boolean
         get() = cover.isShown
@@ -32,7 +33,7 @@ internal class AppLockGate(
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        state.left(isStillInTheApp = activity.isChangingConfigurations || isAsking)
+        state.left(prompt.isStillInTheApp(activity.isChangingConfigurations))
     }
 
     private fun showCover() {
@@ -44,19 +45,20 @@ internal class AppLockGate(
                     activity.moveTaskToBack(true)
                 }
             }.also { activity.onBackPressedDispatcher.addCallback(activity, it) }
+        onCovered(true)
     }
 
     private fun hideCover() {
         cover.hide()
         keepsBackOut?.remove()
         keepsBackOut = null
+        onCovered(false)
     }
 
     private fun ask() {
-        if (isAsking || !state.isCovered) return
-        isAsking = true
+        if (!state.isCovered || !prompt.open()) return
         activity.askForScreenLock(choices.wordsToShow.prompt) { answer ->
-            isAsking = false
+            prompt.close()
             when (answer) {
                 ScreenLockAnswer.CONFIRMED -> {
                     state.unlocked()

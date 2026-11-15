@@ -18,7 +18,7 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
     internal val handedDocuments = HandedDocuments()
-    private val appLock by lazy { AppLockGate(this) }
+    private val appLock by lazy { AppLockGate(this) { isCovered -> backNavigation?.standDown(isCovered) } }
 
     internal var backNavigation: BackNavigation? = null
         private set
@@ -56,7 +56,10 @@ class MainActivity : TauriActivity() {
         this.webView = webView
         backNavigation =
             BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })
-                .also { onBackPressedDispatcher.addCallback(this, it) }
+                .also {
+                    it.standDown(appLock.isCovering)
+                    onBackPressedDispatcher.addCallback(this, it)
+                }
         webView.setBackgroundColor(startingBackground)
     }
 
