@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { CircleAlert } from "@lucide/svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import {
@@ -37,6 +36,7 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import SettingWords from "#lib/settings/SettingWords.svelte";
+  import { openSettingsOrWarn } from "#lib/settings/open-settings.ts";
 
   const animations = getAnimationsSetting();
   const notices = getNotices();
@@ -64,17 +64,6 @@
     systemReducesMotion.current ||
       ANIMATION_GROUPS.every((group) => !animations.isOn(group)),
   );
-
-  async function openAndroidSettings(): Promise<void> {
-    const opened = await commands.openAccessibilitySettings();
-    if (opened.status === "error") {
-      notices.show({
-        tone: "warning",
-        icon: CircleAlert,
-        title: m.accessibility_open_android_settings_failed(),
-      });
-    }
-  }
 
   function reduceMotion(isReduced: boolean): void {
     for (const group of ANIMATION_GROUPS) {
@@ -168,7 +157,16 @@
     <li>
       <Item look="row" class={ROW_FOCUS_RING}>
         {#snippet child({ props })}
-          <button type="button" {...props} onclick={openAndroidSettings}>
+          <button
+            type="button"
+            {...props}
+            onclick={() =>
+              openSettingsOrWarn(
+                commands.openAccessibilitySettings,
+                notices,
+                m.accessibility_open_android_settings_failed(),
+              )}
+          >
             <Icon name="external-link" class="shrink-0" />
             <ItemContent>
               <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>

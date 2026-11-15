@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleAlert, Palette } from "@lucide/svelte";
+  import { Palette } from "@lucide/svelte";
   import type { ClassValue } from "svelte/elements";
 
   import { Button } from "#lib/components/ui/button/index.ts";
@@ -8,6 +8,7 @@
   import { getNotices } from "#lib/notices/notices.ts";
   import { GROUP_PLATE } from "#lib/page/plates.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { openSettingsOrWarn } from "#lib/settings/open-settings.ts";
 
   import {
     COLOURS_CHOICES,
@@ -31,15 +32,12 @@
 
   const followsWindows = $derived(colours.choice === "wallpaper");
 
-  async function openColourSettings(): Promise<void> {
-    const opened = await commands.openColourSettings();
-    if (opened.status === "error") {
-      notices.show({
-        tone: "warning",
-        icon: CircleAlert,
-        title: m.appearance_windows_colour_settings_failed(),
-      });
-    }
+  function openColourSettings(): Promise<void> {
+    return openSettingsOrWarn(
+      commands.openColourSettings,
+      notices,
+      m.appearance_windows_colour_settings_failed(),
+    );
   }
 </script>
 
