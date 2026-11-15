@@ -1,6 +1,5 @@
 import type { Page } from "@playwright/test";
 
-import { type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
   boxOf,
@@ -9,14 +8,8 @@ import {
   test,
   tokenColour,
 } from "./fixtures.ts";
+import { entry, THURSDAY_EVENING, type WireEntry } from "./history-entries.ts";
 
-type WireEntry = Awaited<
-  ReturnType<FakeBackend["readingHistory"]>
->["entries"][number];
-
-const THURSDAY_EVENING = new Date("2026-10-08T22:30:00Z");
-const MINUTE = 60;
-const DAY_MS = 86_400_000;
 const FIRST_BOOK = 4;
 const SECOND_BOOK = 1;
 const THIRD_BOOK = 3;
@@ -32,34 +25,7 @@ const LIST_HEADER_GAP = 16;
 const COVER_HEIGHT = 56;
 const SEARCH_BAR_HEIGHT = 72;
 const PHONE = { width: 390, height: 844 };
-
-function entry(
-  number: number,
-  startedAt: string,
-  readTo: WireEntry["readTo"],
-): WireEntry {
-  const id = String(number).padStart(12, "0");
-  return {
-    book: `0190a3e4-0000-8000-8000-${id}`,
-    bookTitle: `Volume ${String(number)}`,
-    series: `0190a3e4-0000-8000-8001-${id}`,
-    seriesTitle: `Sample Series ${String(number).padStart(2, "0")}`,
-    position: number,
-    cover: null,
-    startedAtMs: Date.parse(startedAt),
-    utcOffsetMinutes: 0,
-    readSeconds: 20 * MINUTE,
-    readTo,
-    reading:
-      readTo.state === "end"
-        ? { state: "read" }
-        : { state: "started", page: readTo.page },
-    day: {
-      day: Math.floor(Date.parse(startedAt) / DAY_MS),
-      readSeconds: 20 * MINUTE,
-    },
-  };
-}
+const TABLET = { width: 820, height: 1180 };
 
 const BOOKS: readonly WireEntry[] = [
   entry(FIRST_BOOK, "2026-10-08T21:40:00.000Z", {
@@ -87,8 +53,8 @@ test.use({
   },
 });
 
-async function openHistory(page: Page): Promise<void> {
-  await page.setViewportSize(PHONE);
+async function openHistory(page: Page, screen = PHONE): Promise<void> {
+  await page.setViewportSize(screen);
   await page.clock.setFixedTime(THURSDAY_EVENING);
   await page.goto("/history");
   await expect(
@@ -312,5 +278,24 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
 
     await expect(group).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     expect((await bar.boundingBox())?.height).toBe(SEARCH_BAR_HEIGHT);
+  });
+});
+
+test.describe("History on an Android tablet", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's History rows");
+  });
+
+  test("draws one continuous track and no bar under a finished book", async ({
+    page,
+  }) => {
+    await openHistory(page, TABLET);
+    const rows = page.getByRole("main").getByRole("listitem");
+    const track = rows.first().getByRole("progressbar");
+
+    await expect(track.locator("> div")).toHaveCount(1);
+    await expect(
+      rows.filter({ hasText: "Sample Series 05" }).getByRole("progressbar"),
+    ).toHaveCount(0);
   });
 });

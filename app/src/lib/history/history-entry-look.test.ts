@@ -3,25 +3,25 @@ import { page } from "vitest/browser";
 
 import "../../app.css";
 
+import type { WidthClass } from "#lib/page/breakpoints.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import { historyEntryLook } from "./history-entry-look.ts";
 
-const PHONE = { width: 390, height: 844 };
-const TABLET = { width: 820, height: 1180 };
-const TODAYS_TRACK = 56;
+interface Screen {
+  readonly width: number;
+  readonly height: number;
+  readonly widthClass: WidthClass;
+}
 
-async function trackWidthOn(screen: {
-  width: number;
-  height: number;
-}): Promise<number> {
+const PHONE: Screen = { width: 390, height: 844, widthClass: "compact" };
+const TABLET: Screen = { width: 820, height: 1180, widthClass: "medium" };
+
+async function trackWidthOn(screen: Screen): Promise<number> {
   followCorePlatform("android");
   await page.viewport(screen.width, screen.height);
   const track = document.createElement("div");
-  track.className = historyEntryLook(
-    "android",
-    screen.width < TABLET.width ? "compact" : "medium",
-  ).bar;
+  track.className = historyEntryLook("android", screen.widthClass).bar;
   document.body.append(track);
   return track.getBoundingClientRect().width;
 }
@@ -31,22 +31,27 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws Android's History progress track across its whole column on a phone", async () => {
-  expect(await trackWidthOn(PHONE)).toBe(document.body.clientWidth);
-});
+test.each([PHONE, TABLET])(
+  "draws Android's History progress track across its whole column at $width wide",
+  async (screen) => {
+    expect(await trackWidthOn(screen)).toBe(document.body.clientWidth);
+  },
+);
 
-test("keeps Android's History progress track as it was on a tablet", async () => {
-  expect(await trackWidthOn(TABLET)).toBe(TODAYS_TRACK);
-});
+test.each([PHONE.widthClass, TABLET.widthClass])(
+  "leaves finished books without a bar on a $0 Android screen, in one continuous track",
+  (widthClass) => {
+    const look = historyEntryLook("android", widthClass);
 
-test("keeps finished books' bars and the split track on an Android tablet", () => {
-  const look = historyEntryLook("android", "medium");
+    expect([look.showsFinishedBar, look.barTrack]).toEqual([
+      false,
+      "continuous",
+    ]);
+  },
+);
+
+test("keeps an iPhone's finished books' bars on the split track", () => {
+  const look = historyEntryLook("ios", PHONE.widthClass);
 
   expect([look.showsFinishedBar, look.barTrack]).toEqual([true, "split"]);
-});
-
-test("leaves finished books without a bar on an Android phone, in one continuous track", () => {
-  const look = historyEntryLook("android", "compact");
-
-  expect([look.showsFinishedBar, look.barTrack]).toEqual([false, "continuous"]);
 });
