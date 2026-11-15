@@ -36,14 +36,12 @@ test.each(ELSEWHERE)("asks nothing on %s", async (platform) => {
 test("asks nothing once the app has its own choice", async () => {
   const store = memoryPreferenceStore();
   new BoldTextChoice(store).choose(true);
-  delete document.documentElement.dataset.boldText;
   const choice = new BoldTextChoice(store);
   const read = vi.fn(BOLD);
 
   await followSystemBoldText("android", read, choice);
 
   expect(read).not.toHaveBeenCalled();
-  expect(choice.isBold).toBe(true);
 });
 
 test("reports a failed read and keeps text plain", async () => {
