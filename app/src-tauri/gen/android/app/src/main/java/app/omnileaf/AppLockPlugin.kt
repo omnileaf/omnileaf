@@ -1,12 +1,6 @@
 package app.omnileaf
 
 import android.app.Activity
-import android.os.Build
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
-import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
@@ -18,12 +12,12 @@ import app.tauri.plugin.PluginManager
 
 @InvokeArg
 class ChosenDelay {
-    var lockAfter: String = LockAfter.DEFAULT.id
+    lateinit var lockAfter: String
 }
 
 @InvokeArg
 class ConfirmingPrompt {
-    var title: String = ""
+    lateinit var title: String
 }
 
 @InvokeArg
@@ -39,19 +33,18 @@ private enum class LockTurning(
     NO_SCREEN_LOCK("noScreenLock"),
 }
 
-/** Android before 11 can pair the screen lock only with weak biometrics in one prompt. */
-private val UNLOCKS_WITH: Int =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-    } else {
-        BIOMETRIC_WEAK or DEVICE_CREDENTIAL
+private fun ScreenLockAnswer.turning(): LockTurning =
+    when (this) {
+        ScreenLockAnswer.CONFIRMED -> LockTurning.TURNED_ON
+        ScreenLockAnswer.REFUSED -> LockTurning.NOT_CONFIRMED
+        ScreenLockAnswer.NO_SCREEN_LOCK -> LockTurning.NO_SCREEN_LOCK
     }
 
 @TauriPlugin
 class AppLockPlugin(
-    private val activity: Activity,
+    activity: Activity,
 ) : Plugin(activity) {
-    private val choices by lazy { AppLockChoices(activity) }
+    private val choices = AppLockChoices(activity.applicationContext)
 
     @Command
     fun read(invoke: Invoke) {
@@ -66,14 +59,14 @@ class AppLockPlugin(
 
     @Command
     fun turnOn(invoke: Invoke) {
-        val shownActivity =
-            PluginManager.activity as? FragmentActivity
-                ?: return invoke.reject("no activity is showing the app")
-        if (BiometricManager.from(shownActivity).canAuthenticate(UNLOCKS_WITH) != BiometricManager.BIOMETRIC_SUCCESS) {
-            return resolve(invoke, LockTurning.NO_SCREEN_LOCK)
-        }
         val title = invoke.parseArgs(ConfirmingPrompt::class.java).title
-        shownActivity.runOnUiThread { confirm(shownActivity, title, invoke) }
+        val shownActivity = PluginManager.activity as? FragmentActivity
+        when {
+            title.isBlank() -> invoke.reject("the prompt to turn the app lock on needs a title")
+            shownActivity == null -> invoke.reject("no activity is showing the app")
+            !shownActivity.hasScreenLock() -> resolve(invoke, LockTurning.NO_SCREEN_LOCK)
+            else -> shownActivity.runOnUiThread { confirm(shownActivity, title, invoke) }
+        }
     }
 
     @Command
@@ -99,31 +92,12 @@ class AppLockPlugin(
         title: String,
         invoke: Invoke,
     ) {
-        val prompt =
-            BiometricPrompt(
-                shownActivity,
-                shownActivity.mainExecutor,
-                object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        choices.turn(isOn = true)
-                        resolve(invoke, LockTurning.TURNED_ON)
-                    }
-
-                    override fun onAuthenticationError(
-                        errorCode: Int,
-                        errString: CharSequence,
-                    ) {
-                        resolve(invoke, LockTurning.NOT_CONFIRMED)
-                    }
-                },
-            )
-        prompt.authenticate(
-            BiometricPrompt.PromptInfo
-                .Builder()
-                .setTitle(title)
-                .setAllowedAuthenticators(UNLOCKS_WITH)
-                .build(),
-        )
+        shownActivity.askForScreenLock(title) { answer ->
+            if (answer == ScreenLockAnswer.CONFIRMED) {
+                choices.turn(isOn = true)
+            }
+            resolve(invoke, answer.turning())
+        }
     }
 
     private fun resolve(
