@@ -1943,7 +1943,7 @@
     },
     {
       "name": "lzma-rust2",
-      "version": "0.23.0",
+      "version": "0.25.0",
       "licence": "Apache-2.0",
       "texts": [
         11
@@ -2931,7 +2931,7 @@
     },
     {
       "name": "sevenz-rust2",
-      "version": "0.24.2",
+      "version": "0.25.0",
       "licence": "Apache-2.0",
       "texts": [
         11
