@@ -23,17 +23,16 @@ internal class LockCover(
     private var shown: Shown? = null
 
     val isShown: Boolean
-        get() = shown?.root?.isAttachedToWindow == true
+        get() = shown != null
 
     fun show(words: LockWords) {
         if (isShown) return
-        val cover = coverWith(words)
-        val behind = Behind(activity.findViewById(android.R.id.content))
-        (activity.window.decorView as ViewGroup).addView(cover.root, FrameLayout.LayoutParams(MATCH, MATCH))
-        behind.shutOut()
+        val cover = coverWith(words, Behind(activity.findViewById(android.R.id.content)))
+        decor.addView(cover.root, FrameLayout.LayoutParams(MATCH, MATCH))
+        cover.behind.shutOut()
         cover.root.requestFocus()
         WindowCompat.getInsetsController(activity.window, cover.root).hide(WindowInsetsCompat.Type.ime())
-        shown = cover.copy(behind = behind)
+        shown = cover
     }
 
     fun sayNoScreenLock(words: LockWords) {
@@ -44,12 +43,18 @@ internal class LockCover(
 
     fun hide() {
         val cover = shown ?: return
-        (activity.window.decorView as ViewGroup).removeView(cover.root)
-        cover.behind?.letBackIn()
+        decor.removeView(cover.root)
+        cover.behind.letBackIn()
         shown = null
     }
 
-    private fun coverWith(words: LockWords): Shown {
+    private val decor: ViewGroup
+        get() = activity.window.decorView as ViewGroup
+
+    private fun coverWith(
+        words: LockWords,
+        behind: Behind,
+    ): Shown {
         val theme = RememberedTheme(activity).theme()
         val themed = ContextThemeWrapper(activity, theme.style())
         val gap = (GAP_DP * activity.resources.displayMetrics.density).toInt()
@@ -77,7 +82,7 @@ internal class LockCover(
                 isFocusableInTouchMode = true
                 addView(column, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
             }
-        return Shown(root, title, body)
+        return Shown(root, title, body, behind)
     }
 
     private fun text(
@@ -96,11 +101,11 @@ internal class LockCover(
             topMargin = top
         }
 
-    private data class Shown(
+    private class Shown(
         val root: View,
         val title: TextView,
         val body: TextView,
-        val behind: Behind? = null,
+        val behind: Behind,
     )
 
     private class Behind(
