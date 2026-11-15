@@ -55,9 +55,12 @@ test.describe(
         name: "Open Android accessibility settings",
       });
 
+      await page.keyboard.press("Shift");
       await link.focus();
 
+      await expect(link).toBeFocused();
       await expect(link).toHaveCSS("outline-style", "solid");
+      await expect(link).toHaveCSS("outline-offset", "-2px");
     });
 
     test("says Android's settings didn't open", async ({ page }) => {
