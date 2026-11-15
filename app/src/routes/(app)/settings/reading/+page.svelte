@@ -42,6 +42,7 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingActionRow from "#lib/settings/SettingActionRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
+  import { CARD_SWITCH, SETTING_CARD } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
 
@@ -53,9 +54,6 @@
     { side: "towardEnd", label: m.reading_swipe_right },
     { side: "towardStart", label: m.reading_swipe_left },
   ] as const satisfies readonly { side: SwipeSide; label: () => string }[];
-
-  const CARD_SWITCH = "-mx-list-row inline-auto";
-  const CARD = "rounded-card border border-border bg-card p-list-row";
 
   const guideRows: Snippet = tapGuideRows;
   const switches: Snippet = deviceSwitches;
@@ -277,7 +275,7 @@
   <SmartFeaturesSection
     heading="h2"
     size="regular"
-    class={android.isOn ? "" : CARD}
+    class={android.isOn ? "" : SETTING_CARD}
   />
   {#if android.isOn}
     <div class="flex flex-col">

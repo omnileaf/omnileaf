@@ -5,3 +5,8 @@ export const ANDROID_ROW =
   "flex items-center gap-lg ps-lg pe-xl py-sm text-start text-body min-block-native-row-two";
 
 export const TINTED = "hover:tint-hover active:tint-pressed";
+
+export const SETTING_CARD =
+  "rounded-card border border-border bg-card p-list-row";
+
+export const CARD_SWITCH = "-mx-list-row inline-auto";
