@@ -3,6 +3,7 @@ import {
   type PreferenceStore,
   StoredPreference,
 } from "#lib/preferences/stored-preference.ts";
+import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
 
 export const LONG_PRESSES = ["short", "medium", "long"] as const;
 
@@ -17,8 +18,6 @@ const LONG_PRESS_MS = {
 const DEFAULT_LONG_PRESS: LongPressLength = "medium";
 const LARGER_TARGETS_KEY = "omnileaf.largerTapTargets";
 const LONG_PRESS_KEY = "omnileaf.longPress";
-const STORED_ON = "on";
-const STORED_OFF = "off";
 const LARGER_TARGETS_MARK = "larger";
 
 function longPressIn(stored: string | null): LongPressLength {
@@ -38,13 +37,13 @@ export class TouchChoices {
   hasLargerTargets = $state(false);
   longPress: LongPressLength = $state(DEFAULT_LONG_PRESS);
 
-  readonly #largerTargets: StoredPreference;
+  readonly #largerTargets: StoredSwitch;
   readonly #longPress: StoredPreference;
 
   constructor(store: PreferenceStore | undefined) {
-    this.#largerTargets = new StoredPreference(store, LARGER_TARGETS_KEY);
+    this.#largerTargets = new StoredSwitch(store, LARGER_TARGETS_KEY);
     this.#longPress = new StoredPreference(store, LONG_PRESS_KEY);
-    this.hasLargerTargets = this.#largerTargets.read() === STORED_ON;
+    this.hasLargerTargets = this.#largerTargets.read() ?? false;
     this.longPress = longPressIn(this.#longPress.read());
   }
 
@@ -58,7 +57,7 @@ export class TouchChoices {
 
   chooseLargerTargets(isLarger: boolean): void {
     this.hasLargerTargets = isLarger;
-    this.#largerTargets.writeIfPossible(isLarger ? STORED_ON : STORED_OFF);
+    this.#largerTargets.write(isLarger);
     markTargets(isLarger);
   }
 

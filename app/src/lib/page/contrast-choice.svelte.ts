@@ -2,14 +2,12 @@ import type { SystemContrast } from "#lib/ipc/bindings.ts";
 import {
   browserPreferenceStore,
   type PreferenceStore,
-  StoredPreference,
 } from "#lib/preferences/stored-preference.ts";
+import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
 
 import { type Contrast, followContrast } from "./display-modes";
 
 const PREFERENCE_KEY = "omnileaf.higherContrast";
-const STORED_ON = "on";
-const STORED_OFF = "off";
 
 const DRAWN_CONTRAST = {
   standard: undefined,
@@ -17,22 +15,15 @@ const DRAWN_CONTRAST = {
   high: "high",
 } satisfies Record<SystemContrast, Contrast | undefined>;
 
-function choiceIn(stored: string | null): boolean | undefined {
-  if (stored === STORED_ON) {
-    return true;
-  }
-  return stored === STORED_OFF ? false : undefined;
-}
-
 export class ContrastChoice {
   system: SystemContrast = $state("standard");
   #chosen: boolean | undefined = $state();
 
-  readonly #stored: StoredPreference;
+  readonly #stored: StoredSwitch;
 
   constructor(store: PreferenceStore | undefined) {
-    this.#stored = new StoredPreference(store, PREFERENCE_KEY);
-    this.#chosen = choiceIn(this.#stored.read());
+    this.#stored = new StoredSwitch(store, PREFERENCE_KEY);
+    this.#chosen = this.#stored.read();
   }
 
   get isHigher(): boolean {
@@ -53,7 +44,7 @@ export class ContrastChoice {
 
   choose(isHigher: boolean): void {
     this.#chosen = isHigher;
-    this.#stored.writeIfPossible(isHigher ? STORED_ON : STORED_OFF);
+    this.#stored.write(isHigher);
     followContrast(this.drawn);
   }
 }
