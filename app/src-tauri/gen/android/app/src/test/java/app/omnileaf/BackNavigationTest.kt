@@ -36,6 +36,21 @@ class BackNavigationTest {
         }
 
     @Test
+    fun `stands down while the app lock covers the page`() {
+        back.followHistory(canGoBack = true)
+
+        back.standDown(isCovered = true)
+        val whileCovered = back.isEnabled
+        back.followHistory(canGoBack = true)
+        val afterHistoryMoves = back.isEnabled
+        back.standDown(isCovered = false)
+
+        assertFalse(whileCovered)
+        assertFalse(afterHistoryMoves)
+        assertTrue(back.isEnabled)
+    }
+
+    @Test
     fun `leaves back to Android until the page has somewhere to go back to`() {
         val isTaken = back.isEnabled
 
