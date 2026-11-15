@@ -16,6 +16,7 @@
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
+  import { CARD_SWITCH, SETTING_CARD } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
@@ -52,6 +53,55 @@
   const lock = $derived(setting.lock);
 </script>
 
+{#snippet lockSwitch()}
+  <SettingSwitch
+    bleeds={android.isOn}
+    class={android.isOn ? "" : CARD_SWITCH}
+    label={m.app_lock_switch()}
+    description={m.app_lock_switch_help()}
+    isOn={lock.isOn}
+    disabled={setting.isAsking}
+    onToggle={() => {
+      void (lock.isOn
+        ? setting.turnOff()
+        : setting.turnOn(m.app_lock_confirm_title()));
+    }}
+  />
+{/snippet}
+
+{#snippet lockAfterRow()}
+  <SettingChoiceRow
+    bleed={android.isOn ? FLUSH_BLEED : ""}
+    title={m.app_lock_after()}
+    value={LOCK_DELAY_NAMES[lock.lockAfter]()}
+    help={lock.isOn ? m.app_lock_after_help() : m.app_lock_only_when_on()}
+    choices={delayChoices}
+    chosen={lock.lockAfter}
+    disabled={!lock.isOn}
+    onChoose={(lockAfter: LockAfter) => {
+      void setting.chooseLockAfter(lockAfter);
+    }}
+  />
+{/snippet}
+
+{#snippet hideContentSwitch()}
+  {#if lock.canHideContentInRecents}
+    <SettingSwitch
+      bleeds={android.isOn}
+      class={android.isOn ? "" : CARD_SWITCH}
+      label={m.app_lock_hide_content()}
+      description={lock.isOn
+        ? m.app_lock_hide_content_help()
+        : m.app_lock_only_when_on()}
+      isOn={lock.hidesContentInRecents}
+      disabled={!lock.isOn}
+      onToggle={() => {
+        void setting.hideContentInRecents(!lock.hidesContentInRecents);
+      }}
+    />
+  {/if}
+{/snippet}
+
 <SectionHeading
   title={m.app_lock_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
@@ -62,48 +112,17 @@
     !android.isOn && "gap-xl",
   ]}
 >
-  <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
-    <SettingSwitch
-      bleeds={android.isOn}
-      label={m.app_lock_switch()}
-      description={m.app_lock_switch_help()}
-      isOn={lock.isOn}
-      disabled={setting.isAsking}
-      onToggle={() => {
-        void (lock.isOn
-          ? setting.turnOff()
-          : setting.turnOn(m.app_lock_confirm_title()));
-      }}
-    />
-  </section>
-  <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
-    <SettingChoiceRow
-      bleed={android.isOn ? FLUSH_BLEED : ""}
-      title={m.app_lock_after()}
-      value={LOCK_DELAY_NAMES[lock.lockAfter]()}
-      help={lock.isOn ? m.app_lock_after_help() : m.app_lock_only_when_on()}
-      choices={delayChoices}
-      chosen={lock.lockAfter}
-      disabled={!lock.isOn}
-      onChoose={(lockAfter: LockAfter) => {
-        void setting.chooseLockAfter(lockAfter);
-      }}
-    />
-  </section>
-  {#if lock.canHideContentInRecents}
-    <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
-      <SettingSwitch
-        bleeds={android.isOn}
-        label={m.app_lock_hide_content()}
-        description={lock.isOn
-          ? m.app_lock_hide_content_help()
-          : m.app_lock_only_when_on()}
-        isOn={lock.hidesContentInRecents}
-        disabled={!lock.isOn}
-        onToggle={() => {
-          void setting.hideContentInRecents(!lock.hidesContentInRecents);
-        }}
-      />
+  {#if android.isOn}
+    {@render lockSwitch()}
+    {@render lockAfterRow()}
+    {@render hideContentSwitch()}
+  {:else}
+    <section class={[SETTING_CARD, "flex flex-col"]}>
+      {@render lockSwitch()}
+      {@render hideContentSwitch()}
+    </section>
+    <section class={ANDROID_CHOICE_CARD}>
+      {@render lockAfterRow()}
     </section>
   {/if}
 </div>

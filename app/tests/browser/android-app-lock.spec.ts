@@ -7,7 +7,9 @@ import type {
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { CommandFailure } from "./fake-backend.ts";
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+
+const TABLET = { width: 900, height: 1100 };
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
@@ -270,6 +272,31 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
 
     await expect(lockSwitch(page)).not.toBeChecked();
     expect(promptTitles).toEqual([]);
+  });
+});
+
+test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's app lock");
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    failingCode = null;
+  });
+
+  test("lines up both switches in one card, with Lock after in its own", async ({
+    page,
+  }) => {
+    await page.setViewportSize(TABLET);
+    await openAppLock(page);
+
+    const lockToggle = await boxOf(lockSwitch(page));
+    const hideToggle = await boxOf(hideContent(page));
+    const delay = await boxOf(lockAfter(page));
+
+    expect(hideToggle.x + hideToggle.width).toBeCloseTo(
+      lockToggle.x + lockToggle.width,
+      0,
+    );
+    expect(delay.y).toBeGreaterThan(hideToggle.y + hideToggle.height);
   });
 });
 
