@@ -2,6 +2,7 @@
   import { Eye, EyeOff } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
+  import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
@@ -33,7 +34,6 @@
 
   type BookId = SeriesBook["id"];
 
-  const LONG_PRESS_MS = 500;
   const SWIPE_ICON_SIZE = 20;
   const CAPSULE_GAP_PX = 8;
   const CAPSULE_WIDEST_REVEAL_PX = 156;
@@ -109,7 +109,7 @@
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
-  const longPress = new LongPress(LONG_PRESS_MS);
+  const longPress = new LongPress(touchChoices.longPressMs);
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
   const listedRows: readonly ChapterRow[] = $derived(
