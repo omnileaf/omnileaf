@@ -1,14 +1,21 @@
 <script lang="ts">
+  import type { LibraryGrouping } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
+
+  const NAMED_GROUPINGS: Partial<
+    Record<LibraryGrouping, (inputs: { series: string }) => string>
+  > = {
+    creator: m.library_series_by_creator,
+  };
 
   let {
     count,
     hidden = 0,
-    grouping,
+    groupBy = "none",
   }: {
     count: number;
     hidden?: number;
-    grouping?: string | undefined;
+    groupBy?: LibraryGrouping;
   } = $props();
 
   const series = $derived(
@@ -27,7 +34,5 @@
 <p
   class="text-small text-muted max-medium:text-native-collection-count/native-collection-count max-medium:font-native-collection-count max-medium:tracking-native-collection-count in-toolbar:truncate"
 >
-  {grouping === undefined
-    ? shown
-    : m.library_series_grouped({ series: shown, grouping })}
+  {NAMED_GROUPINGS[groupBy]?.({ series: shown }) ?? shown}
 </p>

@@ -98,8 +98,7 @@
   "library_category_all": "⟦Áļļ··⟧",
   "missing_folder_title": "⟦{name} íšñ’ţ ţĥéŕé········⟧",
   "library_series_and_hidden": "⟦{series} · {hidden}········⟧",
-  "library_series_grouped": "⟦{series} · {grouping}·········⟧",
-  "library_grouped_by_creator": "⟦ƀý çŕéáţöŕ····⟧",
+  "library_series_by_creator": "⟦{series} · ƀý çŕéáţöŕ·········⟧",
   "missing_folder_body": [
     {
       "declarations": [

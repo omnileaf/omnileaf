@@ -5,11 +5,12 @@
   import { cn } from "#lib/components/cn.ts";
   import { variantClasses } from "#lib/components/ui/button/looks.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { IpcError } from "#lib/ipc/bindings.ts";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
+  import { creatorRoute } from "./creator-route";
   import CreatorHeadingLink from "./CreatorHeadingLink.svelte";
   import { librarySeriesList, type ListSeries } from "./library-series.svelte";
   import SeriesCovers from "./SeriesCovers.svelte";
@@ -39,7 +40,6 @@
   } = $props();
 
   const ANDROID_HEAD = "flex items-center gap-sm pbs-lg pbe-lg -me-md";
-  const ANDROID_COUNT = `${ROW_SUBTITLE_TYPE} text-muted`;
   const HEADING_TYPE =
     "text-native-group-heading/native-group-heading font-native-group-heading tracking-native-group-heading";
   const ANDROID_OPEN = cn(
@@ -74,17 +74,15 @@
       <div class={ANDROID_HEAD}>
         <div class="flex flex-1 flex-col min-inline-none">
           <h2 id={headingId} class={HEADING_TYPE}>{name}</h2>
-          {@render seriesCount(ANDROID_COUNT)}
+          {@render seriesCount(ROW_SUBTITLE_MUTED_TYPE)}
         </div>
         {#if creator !== undefined}
           <a
-            href={resolve("/(app)/creator/[name]", {
-              name: encodeURIComponent(creator),
-            })}
+            href={resolve("/(app)/creator/[name]", creatorRoute(creator))}
             aria-label={m.library_open_creator({ name: creator })}
             class={ANDROID_OPEN}
           >
-            <Icon name="chevron-right" />
+            <Icon name="chevron-right" class="rtl:-scale-x-100" />
           </a>
         {/if}
       </div>

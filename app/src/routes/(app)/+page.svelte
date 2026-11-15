@@ -993,9 +993,7 @@
     <SeriesCount
       count={seriesCount.count}
       hidden={hiddenSeries}
-      grouping={androidPhone.isOn && groupBy === "creator"
-        ? m.library_grouped_by_creator()
-        : undefined}
+      groupBy={androidPhone.isOn ? groupBy : "none"}
     />
   {/if}
 {/snippet}
