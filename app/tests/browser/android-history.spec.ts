@@ -199,6 +199,20 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     expect(track.width).toBe(column.width);
   });
 
+  test("ends every row's progress track at the same place, whatever its text", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const tracks = await page
+      .getByRole("main")
+      .getByRole("progressbar")
+      .evaluateAll((bars) =>
+        bars.map((bar) => Math.round(bar.getBoundingClientRect().right)),
+      );
+
+    expect(new Set(tracks).size).toBe(1);
+  });
+
   test("puts each day heading 16px under the bar or the row above it", async ({
     page,
   }) => {

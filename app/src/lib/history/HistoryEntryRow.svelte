@@ -64,7 +64,7 @@
       {coverUrl}
       class={["shrink-0 rounded-history-cover", look.cover]}
     />
-    <span class="flex flex-col gap-2xs min-inline-none">
+    <span class="flex flex-1 flex-col gap-2xs min-inline-none">
       <span class={look.title}>
         {entry.seriesTitle}
       </span>
