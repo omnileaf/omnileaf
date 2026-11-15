@@ -56,8 +56,13 @@
   title={m.app_lock_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
 />
-<div class="mbs-pane-gap flex flex-col android:max-medium:mbs-none">
-  <div class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
+<div
+  class={[
+    "mbs-pane-gap flex flex-col android:max-medium:mbs-none",
+    !android.isOn && "gap-xl",
+  ]}
+>
+  <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
     <SettingSwitch
       bleeds={android.isOn}
       label={m.app_lock_switch()}
@@ -70,6 +75,8 @@
           : setting.turnOn(m.app_lock_confirm_title()));
       }}
     />
+  </section>
+  <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
     <SettingChoiceRow
       bleed={android.isOn ? FLUSH_BLEED : ""}
       title={m.app_lock_after()}
@@ -82,7 +89,9 @@
         void setting.chooseLockAfter(lockAfter);
       }}
     />
-    {#if lock.canHideContentInRecents}
+  </section>
+  {#if lock.canHideContentInRecents}
+    <section class={android.isOn ? "flex flex-col" : ANDROID_CHOICE_CARD}>
       <SettingSwitch
         bleeds={android.isOn}
         label={m.app_lock_hide_content()}
@@ -95,6 +104,6 @@
           void setting.hideContentInRecents(!lock.hidesContentInRecents);
         }}
       />
-    {/if}
-  </div>
+    </section>
+  {/if}
 </div>

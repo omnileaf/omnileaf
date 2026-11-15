@@ -241,6 +241,17 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(hideContent(page)).not.toBeChecked();
   });
 
+  test("says the App lock page couldn't be opened when the lock can't be read", async ({
+    page,
+  }) => {
+    failingCode = "internal";
+
+    await page.goto("/settings/privacy/app-lock");
+
+    await expect(page.getByText("This page couldn't be opened")).toBeVisible();
+    await expect(lockSwitch(page)).toHaveCount(0);
+  });
+
   test("hides App lock while Android doesn't offer it", async ({ page }) => {
     failingCode = "appLockUnavailable";
     await page.goto("/settings/privacy");
