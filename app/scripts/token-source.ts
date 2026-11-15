@@ -38,7 +38,6 @@ export const MODES = [
   "tap-targets-larger",
   "text-size-larger",
   "text-size-largest",
-  "bold-text",
 ] as const;
 
 export type Mode = (typeof MODES)[number];
@@ -52,7 +51,6 @@ const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
   "tap-targets-larger": ["android"],
   "text-size-larger": ["android"],
   "text-size-largest": ["android"],
-  "bold-text": ["android"],
 };
 
 export interface ModeValue {

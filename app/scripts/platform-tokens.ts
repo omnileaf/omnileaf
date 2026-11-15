@@ -81,7 +81,6 @@ const MODE_ATTRIBUTE = {
   "tap-targets-larger": '[data-tap-targets="larger"]',
   "text-size-larger": '[data-text-size="larger"]',
   "text-size-largest": '[data-text-size="largest"]',
-  "bold-text": "[data-bold-text]",
 } satisfies Record<Mode, string>;
 
 function modeBlocks(tokens: readonly Token[], platform: Platform): string[] {
