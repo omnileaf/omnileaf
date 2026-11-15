@@ -67,6 +67,21 @@ async function openHistory(page: Page, screen = PHONE): Promise<void> {
   ).toBeVisible();
 }
 
+async function expectTrackAcrossTheColumn(
+  page: Page,
+  screen: typeof PHONE,
+): Promise<void> {
+  await openHistory(page, screen);
+  const row = page.getByRole("main").getByRole("listitem").first();
+  const column = await boxOf(
+    row.getByText(seriesTitle(FIRST_BOOK), { exact: true }).locator(".."),
+  );
+  const track = await boxOf(row.getByRole("progressbar"));
+
+  expect(track.x).toBe(column.x);
+  expect(track.width).toBe(column.width);
+}
+
 test.describe("History on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's top app bar");
@@ -165,14 +180,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
   test("spans each entry's progress track across the text column", async ({
     page,
   }) => {
-    await openHistory(page);
-    const row = page.getByRole("main").getByRole("listitem").first();
-    const name = row.getByText("Sample Series 04", { exact: true });
-    const column = await boxOf(name.locator(".."));
-    const track = await boxOf(row.getByRole("progressbar"));
-
-    expect(track.x).toBe(column.x);
-    expect(track.width).toBe(column.width);
+    await expectTrackAcrossTheColumn(page, PHONE);
   });
 
   test("ends every row's progress track at the same place, whatever its text", async ({
@@ -307,15 +315,7 @@ test.describe("History on an Android tablet", { tag: "@native" }, () => {
   });
 
   test("spans the progress track across the text column", async ({ page }) => {
-    await openHistory(page, TABLET);
-    const row = page.getByRole("main").getByRole("listitem").first();
-    const column = await boxOf(
-      row.getByText(seriesTitle(FIRST_BOOK), { exact: true }).locator(".."),
-    );
-    const track = await boxOf(row.getByRole("progressbar"));
-
-    expect(track.x).toBe(column.x);
-    expect(track.width).toBe(column.width);
+    await expectTrackAcrossTheColumn(page, TABLET);
   });
 });
 
@@ -342,7 +342,9 @@ test.describe("History loading on an Android phone", { tag: "@native" }, () => {
     );
     const loading = page.getByRole("status", { name: "Loading History" });
     const status = await boxOf(loading);
-    const cover = await boxOf(loading.locator("> div > :first-child").first());
+    const cover = await boxOf(
+      loading.locator('[data-slot="skeleton"]').first(),
+    );
 
     expect(status.y).toBe(bar.y + bar.height);
     expect(cover.x).toBe(HEADING_START);

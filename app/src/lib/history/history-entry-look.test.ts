@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 
+import { ANDROID_LIST_COVER } from "#lib/library/list-row-look.ts";
+
 import { historyEntryLook } from "./history-entry-look.ts";
 
 test.each(["compact", "medium"] as const)(
@@ -14,13 +16,17 @@ test.each(["compact", "medium"] as const)(
   },
 );
 
-test("gives an Android phone's skeleton the cover its rows draw, and a tablet today's", () => {
+test("gives an Android phone's rows and skeleton the list cover, and a tablet's today's cover", () => {
   const phone = historyEntryLook("android", "compact");
   const tablet = historyEntryLook("android", "medium");
+  const todays = historyEntryLook("ios", "medium");
 
-  expect(phone.coverSkeleton).toContain(phone.cover);
-  expect(tablet.coverSkeleton).toContain(tablet.cover);
-  expect(phone.cover).not.toBe(tablet.cover);
+  expect(phone.cover).toBe(ANDROID_LIST_COVER);
+  expect(phone.coverSkeleton).toContain(ANDROID_LIST_COVER);
+  expect([tablet.cover, tablet.coverSkeleton]).toEqual([
+    todays.cover,
+    todays.coverSkeleton,
+  ]);
 });
 
 test("keeps an iPhone's finished books' bars on the split track", () => {
