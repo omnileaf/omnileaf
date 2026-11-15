@@ -1063,3 +1063,13 @@
   --native-color-on-notice: var(--android-wallpaper-dark-inverse-on-surface);
   --native-color-on-notice-action: var(--android-wallpaper-dark-inverse-primary);
 }
+
+:root[data-platform="android"][data-tap-targets="larger"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme="light"] {
+  --native-spacing-target: 56px;
+}
+
+:root[data-platform="android"][data-tap-targets="larger"][data-theme="dark"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme="dark"] {
+  --native-spacing-target: 56px;
+}

@@ -34,6 +34,7 @@ export const MODES = [
   "contrast-more",
   "transparency-reduced",
   "colours-wallpaper",
+  "tap-targets-larger",
 ] as const;
 
 export type Mode = (typeof MODES)[number];
@@ -44,6 +45,7 @@ const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
   "contrast-more": ["ios", "macos"],
   "transparency-reduced": ["ios", "windows"],
   "colours-wallpaper": ["android", "windows"],
+  "tap-targets-larger": ["android"],
 };
 
 export interface ModeValue {

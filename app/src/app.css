@@ -2099,8 +2099,7 @@
   transition: none;
 }
 
-:root[data-platform][data-tap-targets="larger"],
-:root[data-platform][data-tap-targets="larger"] [data-theme] {
+:root[data-platform="android"][data-tap-targets="larger"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme] {
   --spacing-touch-target: 3.5rem;
-  --native-spacing-target: 56px;
 }
