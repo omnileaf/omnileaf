@@ -1417,6 +1417,8 @@
   "accessibility_text": "Text",
   "accessibility_text_size": "Interface text size",
   "accessibility_text_size_help": "Starts from your phone’s font size.",
+  "accessibility_bold_text": "Bold text",
+  "accessibility_bold_text_help": "Starts from your phone’s Bold text setting.",
   "accessibility_text_size_system": "System",
   "accessibility_text_size_larger": "Larger",
   "accessibility_text_size_largest": "Largest",
