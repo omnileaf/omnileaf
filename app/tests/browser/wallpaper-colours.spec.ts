@@ -8,6 +8,7 @@ import { BLUE_WALLPAPER as SAMPLE } from "../sample-wallpaper.ts";
 import {
   accessibilityViolations,
   expect,
+  leaveAndComeBack,
   onPlatform,
   test,
   testOnlyInItsWebview,
@@ -92,18 +93,6 @@ function tabPill(page: Page): Promise<string> {
     const colour = getComputedStyle(probe).color;
     probe.remove();
     return colour;
-  });
-}
-
-async function leaveAndComeBack(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    for (const state of ["hidden", "visible"]) {
-      Object.defineProperty(document, "visibilityState", {
-        value: state,
-        configurable: true,
-      });
-      document.dispatchEvent(new Event("visibilitychange"));
-    }
   });
 }
 

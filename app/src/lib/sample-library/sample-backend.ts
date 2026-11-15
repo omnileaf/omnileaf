@@ -1245,6 +1245,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
+    systemClock: () => "followsLanguage",
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,

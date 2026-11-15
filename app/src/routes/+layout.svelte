@@ -81,6 +81,7 @@
     setTimeFormatSetting,
     timeFormatSettingForDocument,
   } from "#lib/general/time-format.svelte.ts";
+  import { followSystemClock } from "#lib/general/system-clock.ts";
   import {
     ANIMATIONS_PREFERENCE_KEY,
     animationsSettingForDocument,
@@ -130,7 +131,7 @@
   setSkipUpNextSetting(skipUpNextSettingForDocument());
   const smartFeatures = setSmartFeatures(smartFeaturesForDocument());
   setOpensOnSetting(opensOnSettingForDocument());
-  setTimeFormatSetting(timeFormatSettingForDocument());
+  const timeFormat = setTimeFormatSetting(timeFormatSettingForDocument());
   const animations = setAnimationsSetting(animationsSettingForDocument());
   setSwipeActionsSetting(swipeActionsSettingForDocument());
   const undo = setUndoSetting(undoSettingForDocument());
@@ -176,6 +177,10 @@
     void followSystemAppLanguage(data.appInfo.platform, language);
   }
 
+  function followPhoneClock(): void {
+    void followSystemClock(data.appInfo.platform, timeFormat);
+  }
+
   const rereadsColoursOnFocus = $derived(data.appInfo.platform === "windows");
 
   function followFocus(): void {
@@ -190,6 +195,7 @@
     if (document.visibilityState === "visible") {
       followColours();
       followSystemLanguage();
+      followPhoneClock();
     }
     if (rescansOnReturn && document.visibilityState === "visible") {
       void rescanOnReturn();
@@ -213,6 +219,8 @@
   $effect(followColours);
 
   $effect(followSystemLanguage);
+
+  $effect(followPhoneClock);
 
   $effect(() => {
     const root = document.documentElement;
