@@ -103,6 +103,7 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     migration!("0067_index_the_sessions_that_moved_forward"),
     migration!("0068_search_the_titles_of_each_book"),
     migration!("0069_key_reading_sessions_by_profile"),
+    migration!("0070_read_again_the_books_whose_comic_info_volume_is_a_year"),
 ];
 
 pub(crate) fn pending(
@@ -1977,6 +1978,69 @@ mod tests {
                 indexed("file_name", "Chapter 12"),
                 indexed("comic_info", "The Lantern Keeper"),
             ]
+        );
+    }
+
+    #[test]
+    fn reads_again_the_books_whose_comic_info_volume_is_a_year() {
+        let scratch = ScratchLibrary::new("volume-year-upgrade");
+        drop(Database::open_with(&scratch.config, &MIGRATIONS[..69]).unwrap());
+        let connection = Connection::open(&scratch.config.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO series (id, source_id, natural_key, title, title_key, added_at_ms)
+                 VALUES (zeroblob(16), ?1, 'sample series 01', 'Sample Series 01', x'', 0)",
+                [SourceId::local().as_bytes()],
+            )
+            .unwrap();
+        for (number, volume) in [(1, Some(2011)), (2, Some(3)), (3, None)] {
+            connection
+                .execute(
+                    "INSERT INTO book (id, series_local_id, title, reading_order_key, added_at_ms)
+                     VALUES (?1, 1, 'Volume', ?2, 0)",
+                    (book(number).as_bytes(), [u8::try_from(number).unwrap()]),
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO book_details (book_id, volume) VALUES (?1, ?2)",
+                    (book(number).as_bytes(), volume),
+                )
+                .unwrap();
+            for statement in [
+                "INSERT INTO book_person (book_id, role, name) VALUES (?1, 'writer', 'Aiko Tanaka')",
+                "INSERT INTO book_tag (book_id, kind, name) VALUES (?1, 'tag', 'storms')",
+            ] {
+                connection
+                    .execute(statement, [book(number).as_bytes()])
+                    .unwrap();
+            }
+        }
+
+        drop(Database::open(&scratch.config).unwrap());
+
+        let kept: Vec<Option<i64>> = connection
+            .prepare(
+                "SELECT book_details.volume FROM book_details
+                JOIN book ON book.id = book_details.book_id ORDER BY book.reading_order_key",
+            )
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(kept, [Some(3), None]);
+        let count =
+            |query: &str| -> i64 { connection.query_row(query, [], |row| row.get(0)).unwrap() };
+        assert_eq!(count("SELECT count(*) FROM book_person"), 2);
+        assert_eq!(count("SELECT count(*) FROM book_tag"), 2);
+        assert_eq!(
+            count("SELECT book_count FROM series_tag WHERE name = 'storms'"),
+            2
+        );
+        assert_eq!(
+            count("SELECT book_count FROM series_person WHERE name = 'Aiko Tanaka'"),
+            2
         );
     }
 
