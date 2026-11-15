@@ -56,11 +56,15 @@ internal class BackNavigation(
     /** Android plays its back-to-home preview only while no enabled callback would take the gesture. */
     fun followHistory(canGoBack: Boolean) {
         this.canGoBack = canGoBack
-        isEnabled = canGoBack && !isCovered
+        takeBackWhenItCan()
     }
 
     fun standDown(isCovered: Boolean) {
         this.isCovered = isCovered
+        takeBackWhenItCan()
+    }
+
+    private fun takeBackWhenItCan() {
         isEnabled = canGoBack && !isCovered
     }
 

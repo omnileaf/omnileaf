@@ -1,8 +1,7 @@
 package app.omnileaf
 
 internal class LockPrompt {
-    var isOpen = false
-        private set
+    private var isOpen = false
 
     fun open(): Boolean {
         if (isOpen) return false
