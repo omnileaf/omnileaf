@@ -29,6 +29,12 @@ pub(crate) enum SystemSettingsError {
     )]
     #[error("only Windows has a page of colour settings to open")]
     NoColourSettings,
+    #[cfg_attr(
+        target_os = "android",
+        expect(dead_code, reason = "only Android has a page of accessibility settings")
+    )]
+    #[error("only Android has a page of accessibility settings to open")]
+    NoAccessibilitySettings,
     #[cfg(any(target_os = "macos", windows, target_os = "ios"))]
     #[error("open the system's settings")]
     Opener(#[from] tauri_plugin_opener::Error),
@@ -63,6 +69,20 @@ pub(crate) fn open_colours<R: Runtime>(_app: &AppHandle<R>) -> Result<(), System
 }
 
 #[cfg(target_os = "android")]
+pub(crate) fn open_accessibility<R: Runtime>(
+    app: &AppHandle<R>,
+) -> Result<(), SystemSettingsError> {
+    Ok(android::open_accessibility_settings(app)?)
+}
+
+#[cfg(not(target_os = "android"))]
+pub(crate) fn open_accessibility<R: Runtime>(
+    _app: &AppHandle<R>,
+) -> Result<(), SystemSettingsError> {
+    Err(SystemSettingsError::NoAccessibilitySettings)
+}
+
+#[cfg(target_os = "android")]
 mod android {
     use tauri::{
         AppHandle, Manager, Runtime,
@@ -73,6 +93,7 @@ mod android {
     const ANDROID_PACKAGE: &str = "app.omnileaf";
     const ANDROID_PLUGIN_CLASS: &str = "AppSettingsPlugin";
     const OPEN_APP_SETTINGS: &str = "openAppSettings";
+    const OPEN_ACCESSIBILITY_SETTINGS: &str = "openAccessibilitySettings";
 
     struct AppSettingsPlugin<R: Runtime>(PluginHandle<R>);
 
@@ -80,7 +101,7 @@ mod android {
     pub(crate) enum AppSettingsError {
         #[error("the app settings plugin is not registered")]
         NotRegistered,
-        #[error("ask Android to show the app's settings")]
+        #[error("ask Android to show its settings")]
         Open(#[from] PluginInvokeError),
     }
 
@@ -101,6 +122,15 @@ mod android {
             .try_state::<AppSettingsPlugin<R>>()
             .ok_or(AppSettingsError::NotRegistered)?;
         Ok(plugin.0.run_mobile_plugin(OPEN_APP_SETTINGS, ())?)
+    }
+
+    pub(super) fn open_accessibility_settings<R: Runtime>(
+        app: &AppHandle<R>,
+    ) -> Result<(), AppSettingsError> {
+        let plugin = app
+            .try_state::<AppSettingsPlugin<R>>()
+            .ok_or(AppSettingsError::NotRegistered)?;
+        Ok(plugin.0.run_mobile_plugin(OPEN_ACCESSIBILITY_SETTINGS, ())?)
     }
 }
 
@@ -124,5 +154,17 @@ mod tests {
         let opened = open_colours(app.handle());
 
         assert!(matches!(opened, Err(SystemSettingsError::NoColourSettings)));
+    }
+
+    #[test]
+    fn has_no_accessibility_settings_to_open_on_linux() {
+        let app = tauri::test::mock_app();
+
+        let opened = open_accessibility(app.handle());
+
+        assert!(matches!(
+            opened,
+            Err(SystemSettingsError::NoAccessibilitySettings)
+        ));
     }
 }

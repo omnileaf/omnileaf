@@ -204,6 +204,7 @@ macro_rules! app_commands {
             watch_icon_actions,
             open_system_settings,
             open_colour_settings,
+            open_accessibility_settings,
             screen_reader_is_running,
             comic_files_default_viewer,
             make_omnileaf_the_comic_viewer,
@@ -1551,6 +1552,13 @@ async fn screen_reader_is_running() -> bool {
 #[specta::specta]
 async fn open_colour_settings(app: AppHandle) -> Result<(), IpcError> {
     system_settings::open_colours(&app)
+        .map_err(|error| IpcError::system_settings_unavailable(&error))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_accessibility_settings(app: AppHandle) -> Result<(), IpcError> {
+    system_settings::open_accessibility(&app)
         .map_err(|error| IpcError::system_settings_unavailable(&error))
 }
 

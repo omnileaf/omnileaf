@@ -279,6 +279,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchOpenWith: () => null,
   openSystemSettings: () => null,
   openColourSettings: () => null,
+  openAccessibilitySettings: () => null,
   screenReaderIsRunning: () => false,
   comicFilesDefaultViewer: () => "somethingElse",
   makeOmnileafTheComicViewer: () => null,
