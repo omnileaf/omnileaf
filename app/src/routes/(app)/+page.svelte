@@ -990,7 +990,13 @@
 
 {#snippet shownCount()}
   {#if seriesCount.count !== undefined}
-    <SeriesCount count={seriesCount.count} hidden={hiddenSeries} />
+    <SeriesCount
+      count={seriesCount.count}
+      hidden={hiddenSeries}
+      grouping={androidPhone.isOn && groupBy === "creator"
+        ? m.library_grouped_by_creator()
+        : undefined}
+    />
   {/if}
 {/snippet}
 

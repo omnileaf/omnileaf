@@ -129,6 +129,18 @@ test.describe(
       await expect(page).toHaveURL(/\/creator\/Author%20A$/);
     });
 
+    test("says the library is grouped by creator under its title", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      await expect(
+        page
+          .getByRole("main")
+          .getByText("6 series · by creator", { exact: true }),
+      ).toBeVisible();
+    });
+
     test("sets the covers 16px under the count and the next group 40px under the covers", async ({
       page,
     }) => {

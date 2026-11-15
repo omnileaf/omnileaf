@@ -98,6 +98,8 @@
   "library_category_all": "All",
   "missing_folder_title": "{name} isn’t there",
   "library_series_and_hidden": "{series} · {hidden}",
+  "library_series_grouped": "{series} · {grouping}",
+  "library_grouped_by_creator": "by creator",
   "missing_folder_body": [
     {
       "declarations": [
