@@ -31,10 +31,13 @@ pub(crate) enum SystemSettingsError {
     NoColourSettings,
     #[cfg_attr(
         target_os = "android",
-        expect(dead_code, reason = "only Android has a page of accessibility settings")
+        expect(
+            dead_code,
+            reason = "only Android has a page of accessibility settings"
+        )
     )]
     #[error("only Android has a page of accessibility settings to open")]
-    NoAccessibilitySettings,
+    AccessibilitySettingsAndroidOnly,
     #[cfg(any(target_os = "macos", windows, target_os = "ios"))]
     #[error("open the system's settings")]
     Opener(#[from] tauri_plugin_opener::Error),
@@ -79,7 +82,7 @@ pub(crate) fn open_accessibility<R: Runtime>(
 pub(crate) fn open_accessibility<R: Runtime>(
     _app: &AppHandle<R>,
 ) -> Result<(), SystemSettingsError> {
-    Err(SystemSettingsError::NoAccessibilitySettings)
+    Err(SystemSettingsError::AccessibilitySettingsAndroidOnly)
 }
 
 #[cfg(target_os = "android")]
@@ -130,7 +133,9 @@ mod android {
         let plugin = app
             .try_state::<AppSettingsPlugin<R>>()
             .ok_or(AppSettingsError::NotRegistered)?;
-        Ok(plugin.0.run_mobile_plugin(OPEN_ACCESSIBILITY_SETTINGS, ())?)
+        Ok(plugin
+            .0
+            .run_mobile_plugin(OPEN_ACCESSIBILITY_SETTINGS, ())?)
     }
 }
 
@@ -164,7 +169,7 @@ mod tests {
 
         assert!(matches!(
             opened,
-            Err(SystemSettingsError::NoAccessibilitySettings)
+            Err(SystemSettingsError::AccessibilitySettingsAndroidOnly)
         ));
     }
 }
