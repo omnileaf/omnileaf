@@ -2,6 +2,8 @@ use omnileaf_db::catalog::{BookDetails, BookNumber, NumberRange, Numbering, Sour
 use omnileaf_formats::{self as formats, BookName, read_book_name};
 
 const THOUSANDTHS_PER_VOLUME: u32 = 1_000;
+/// Taggers fed from Comic Vine write the year a run started into the `ComicInfo` `<Volume>`, so a four-digit volume is a year, not a volume number.
+const YEARS_IN_VOLUME: std::ops::RangeInclusive<u32> = 1_000..=9_999;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Shelf {
@@ -24,7 +26,9 @@ impl FileNumbers {
                 .number
                 .as_deref()
                 .and_then(|number| read_book_name(number, None).number),
-            volume: details.volume,
+            volume: details
+                .volume
+                .filter(|volume| !YEARS_IN_VOLUME.contains(volume)),
         }
     }
 

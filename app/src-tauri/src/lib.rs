@@ -43,6 +43,7 @@ mod share_sign_in;
 mod storage;
 mod system_app_language;
 mod system_bars;
+mod system_clock;
 mod system_contrast;
 mod system_settings;
 mod system_sign_in;
@@ -154,20 +155,7 @@ pub fn run() {
         .manage(full_screen::FullScreenWatch::default())
         .on_window_event(full_screen::keep_keys_on_leaving);
     #[cfg(target_os = "android")]
-    let app = app
-        .plugin(omnileaf_folder_access::init())
-        .plugin(system_bars::plugin())
-        .plugin(power_mode::plugin())
-        .plugin(system_contrast::plugin())
-        .plugin(system_app_language::plugin())
-        .plugin(wallpaper_colours::plugin())
-        .plugin(back_navigation::plugin())
-        .plugin(screen_orientation::plugin())
-        .plugin(system_settings::plugin())
-        .plugin(report_downloads::plugin())
-        .plugin(icon_actions::plugin())
-        .plugin(volume_keys::plugin())
-        .plugin(open_with::plugin());
+    let app = with_android_plugins(app);
     #[cfg(target_os = "ios")]
     let app = app
         .plugin(omnileaf_folder_access::init())
@@ -187,6 +175,24 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             files_to_open::request_when_opened(app, &event);
         });
+}
+
+#[cfg(target_os = "android")]
+fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    app.plugin(omnileaf_folder_access::init())
+        .plugin(system_bars::plugin())
+        .plugin(power_mode::plugin())
+        .plugin(system_contrast::plugin())
+        .plugin(system_app_language::plugin())
+        .plugin(system_clock::plugin())
+        .plugin(wallpaper_colours::plugin())
+        .plugin(back_navigation::plugin())
+        .plugin(screen_orientation::plugin())
+        .plugin(system_settings::plugin())
+        .plugin(report_downloads::plugin())
+        .plugin(icon_actions::plugin())
+        .plugin(volume_keys::plugin())
+        .plugin(open_with::plugin())
 }
 
 fn open_library(app: &App, config: &RuntimeConfig) -> Result<Option<HomeArrival>, Box<dyn Error>> {

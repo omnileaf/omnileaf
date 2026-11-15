@@ -45,6 +45,7 @@
   --native-spacing-button: 40px;
   --native-spacing-button-inline: 16px;
   --native-spacing-target: 48px;
+  --native-scale-text: 1;
   --native-text-button: calc(0.875rem * var(--text-scale));
   --native-text-button-small: calc(0.875rem * var(--text-scale));
   --native-leading-button: calc(1.25 / 0.875);
@@ -313,10 +314,10 @@
   --native-text-group-footer: calc(0.75rem * var(--text-scale));
   --native-leading-group-footer: calc(16 / 12);
   --native-tracking-group-footer: 0.4px;
-  --native-text-group-heading: var(--text-lead);
-  --native-leading-group-heading: var(--text-lead--line-height);
-  --native-weight-group-heading: var(--font-weight-bold);
-  --native-tracking-group-heading: 0;
+  --native-text-group-heading: calc(1rem * var(--text-scale));
+  --native-leading-group-heading: 1.5;
+  --native-weight-group-heading: 500;
+  --native-tracking-group-heading: 0.15px;
   --native-spacing-search-scope-gap: var(--spacing-sm);
   --native-spacing-search-scope-bar-block: var(--spacing-sm);
   --native-spacing-search-scope-bar-inline: var(--spacing-lg);
@@ -1061,4 +1062,34 @@
   --native-color-notice: var(--android-wallpaper-dark-inverse-surface);
   --native-color-on-notice: var(--android-wallpaper-dark-inverse-on-surface);
   --native-color-on-notice-action: var(--android-wallpaper-dark-inverse-primary);
+}
+
+:root[data-platform="android"][data-tap-targets="larger"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme="light"] {
+  --native-spacing-target: 56px;
+}
+
+:root[data-platform="android"][data-tap-targets="larger"][data-theme="dark"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme="dark"] {
+  --native-spacing-target: 56px;
+}
+
+:root[data-platform="android"][data-text-size="larger"],
+:root[data-platform="android"][data-text-size="larger"] [data-theme="light"] {
+  --native-scale-text: 1.15;
+}
+
+:root[data-platform="android"][data-text-size="larger"][data-theme="dark"],
+:root[data-platform="android"][data-text-size="larger"] [data-theme="dark"] {
+  --native-scale-text: 1.15;
+}
+
+:root[data-platform="android"][data-text-size="largest"],
+:root[data-platform="android"][data-text-size="largest"] [data-theme="light"] {
+  --native-scale-text: 1.3;
+}
+
+:root[data-platform="android"][data-text-size="largest"][data-theme="dark"],
+:root[data-platform="android"][data-text-size="largest"] [data-theme="dark"] {
+  --native-scale-text: 1.3;
 }

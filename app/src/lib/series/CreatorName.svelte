@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import { creatorRoute } from "#lib/library/creator-route.ts";
 
   let {
     name,
@@ -16,7 +17,7 @@
   const href = $derived(
     resolve(
       `/(app)/creator/[name]?${new URLSearchParams({ from }).toString()}`,
-      { name: encodeURIComponent(name) },
+      creatorRoute(name),
     ),
   );
 </script>

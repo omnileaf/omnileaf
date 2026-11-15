@@ -1,5 +1,5 @@
 <script lang="ts" generics="Option extends string">
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
 
   import { FILTER_SETTING_LABEL_TYPE } from "./filter-sheet-look";
@@ -34,7 +34,7 @@
   <div class={["flex flex-1 flex-col gap-2xs", "min-inline-none"]}>
     <span id="{id}-label" class={FILTER_SETTING_LABEL_TYPE}>{label}</span>
     {#if hint !== undefined}
-      <span class="{ROW_SUBTITLE_TYPE} text-muted">{hint}</span>
+      <span class={ROW_SUBTITLE_MUTED_TYPE}>{hint}</span>
     {/if}
   </div>
   <SegmentedControl

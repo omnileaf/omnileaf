@@ -2069,6 +2069,10 @@
     overflow-wrap: break-word;
   }
 
+  :root:not([data-theme]) body {
+    background-color: transparent;
+  }
+
   :where([tabindex="-1"]):focus {
     outline: none;
   }
@@ -2093,4 +2097,13 @@
 
 :root[data-still~="sheets"] [data-sonner-toaster] [data-sonner-toast] {
   transition: none;
+}
+
+:root[data-platform="android"][data-tap-targets="larger"],
+:root[data-platform="android"][data-tap-targets="larger"] [data-theme] {
+  --spacing-touch-target: var(--native-spacing-target);
+}
+
+:root[data-platform="android"][data-text-size] {
+  --text-scale: var(--native-scale-text);
 }

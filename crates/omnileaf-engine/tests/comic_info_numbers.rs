@@ -63,6 +63,70 @@ async fn numbers_a_volume_by_its_comic_info_volume_and_ignores_its_comic_info_nu
 }
 
 #[tokio::test]
+async fn numbers_a_volume_by_its_name_when_its_comic_info_volume_is_a_year() {
+    let books = [(
+        "Sample Series 04 v02.cbz",
+        "<ComicInfo><Volume>2011</Volume></ComicInfo>",
+    )];
+
+    let numbered = numbered("comic-info-volume-year", &books).await;
+
+    assert_eq!(
+        numbered,
+        owned_pairs(&[("Sample Series 04 v02", "volume 2000 2000 file_name")])
+    );
+}
+
+#[tokio::test]
+async fn counts_only_four_digit_comic_info_volumes_as_years() {
+    let books = [
+        (
+            "Sample Series 04 v01.cbz",
+            "<ComicInfo><Volume>999</Volume></ComicInfo>",
+        ),
+        (
+            "Sample Series 04 v02.cbz",
+            "<ComicInfo><Volume>1000</Volume></ComicInfo>",
+        ),
+        (
+            "Sample Series 04 v03.cbz",
+            "<ComicInfo><Volume>9999</Volume></ComicInfo>",
+        ),
+        (
+            "Sample Series 04 v04.cbz",
+            "<ComicInfo><Volume>10000</Volume></ComicInfo>",
+        ),
+    ];
+
+    let numbered = numbered("comic-info-volume-year-edges", &books).await;
+
+    assert_eq!(
+        numbered,
+        owned_pairs(&[
+            ("Sample Series 04 v01", "volume 999000 999000 files"),
+            ("Sample Series 04 v02", "volume 2000 2000 file_name"),
+            ("Sample Series 04 v03", "volume 3000 3000 file_name"),
+            ("Sample Series 04 v04", "volume 10000000 10000000 files"),
+        ])
+    );
+}
+
+#[tokio::test]
+async fn leaves_a_chapter_out_of_a_volume_when_its_comic_info_volume_is_a_year() {
+    let books = [(
+        "Sample Series 04 c005.cbz",
+        "<ComicInfo><Number>5</Number><Volume>1987</Volume></ComicInfo>",
+    )];
+
+    let numbered = numbered("comic-info-chapter-year", &books).await;
+
+    assert_eq!(
+        numbered,
+        owned_pairs(&[("Sample Series 04 c005", "chapter 5000 5000 files")])
+    );
+}
+
+#[tokio::test]
 async fn numbers_a_chapter_by_its_comic_info_number_and_volume() {
     let books = [
         (

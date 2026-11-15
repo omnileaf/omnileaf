@@ -406,30 +406,54 @@ test("fits the View options sheet to its content at the bottom on an Android pho
   expect(boxOf(sheet).top).toBeGreaterThanOrEqual(ANDROID_SHEET_TOP_GAP);
 });
 
-test("draws Display and Group by as one row of three options on an Android phone", async () => {
+test("draws Group by with its four options on their own line on an Android phone", async () => {
+  await openOn("android");
+
+  await expectRadios("Group by", ["None", "Category", "Folder", "Creator"]);
+  const groupLabel = boxOf(
+    page.getByText("Group by", { exact: true }).element(),
+  );
+  const groups = boxOf(
+    page.getByRole("radiogroup", { name: "Group by" }).element(),
+  );
+
+  expect(groups.top).toBeGreaterThanOrEqual(groupLabel.bottom);
+});
+
+test("draws Display as one row of three options on an Android phone", async () => {
   await openOn("android");
 
   await expectRadios("Display", ["Grid", "Compact", "List"]);
-  await expectRadios("Group by", ["None", "Category", "Folder"]);
-  for (const name of ["Display", "Group by"]) {
-    const label = boxOf(page.getByText(name, { exact: true }).element());
-    const control = boxOf(page.getByRole("radiogroup", { name }).element());
+  const displayLabel = boxOf(
+    page.getByText("Display", { exact: true }).element(),
+  );
+  const display = boxOf(
+    page.getByRole("radiogroup", { name: "Display" }).element(),
+  );
 
-    expect(control.left).toBeGreaterThanOrEqual(label.right);
-    expect(
-      Math.abs(
-        control.top + control.height / 2 - (label.top + label.height / 2),
-      ),
-    ).toBeLessThan(1);
-    expect(control.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
-  }
+  expect(display.left).toBeGreaterThanOrEqual(displayLabel.right);
+  expect(
+    Math.abs(
+      display.top +
+        display.height / 2 -
+        (displayLabel.top + displayLabel.height / 2),
+    ),
+  ).toBeLessThan(1);
+  expect(display.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
+});
+
+test("offers Stack series covers on an Android phone", async () => {
+  await openOn("android");
+
+  await expect
+    .element(page.getByText("Stack series covers", { exact: true }))
+    .toBeVisible();
 });
 
 test("leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
   await openOn("android");
 
   for (const name of [
-    "Stack series covers",
     "On the library page",
     "Item counts",
     "Continue reading row",
@@ -475,11 +499,11 @@ async function expectOneChecked(group: string, name: string): Promise<void> {
     .toBeInTheDocument();
 }
 
-test("checks Grid and None on an Android phone for a view saved with Covers and Creator", async () => {
+test("checks Grid and Creator on an Android phone for a view saved with Covers and Creator", async () => {
   await openOn("android", PHONE, SAVED_ON_A_WIDER_WINDOW);
 
   await expectOneChecked("Display", "Grid");
-  await expectOneChecked("Group by", "None");
+  await expectOneChecked("Group by", "Creator");
 });
 
 for (const [platform, size] of [

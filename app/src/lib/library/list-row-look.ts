@@ -1,5 +1,5 @@
 import {
-  ROW_SUBTITLE_TYPE,
+  ROW_SUBTITLE_MUTED_TYPE,
   ROW_TITLE_TYPE,
 } from "#lib/components/ui/item/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
@@ -36,7 +36,7 @@ const PHONE: ListRowLook = {
   cover: COVER,
   link: `${LINK} transition-control active:bg-native-row-selected active:[--secondary-text:var(--native-color-on-row-selected-muted)]`,
   title: `line-clamp-2 wrap-break-word ${ROW_TITLE_TYPE}`,
-  meta: `${ROW_SUBTITLE_TYPE} text-muted`,
+  meta: ROW_SUBTITLE_MUTED_TYPE,
   unread: UNREAD,
 };
 

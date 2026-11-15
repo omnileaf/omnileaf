@@ -20,6 +20,7 @@ const KINDS = [
   "tracking",
   "shadow",
   "blur",
+  "scale",
 ] as const;
 
 export type Kind = (typeof KINDS)[number];
@@ -34,6 +35,9 @@ export const MODES = [
   "contrast-more",
   "transparency-reduced",
   "colours-wallpaper",
+  "tap-targets-larger",
+  "text-size-larger",
+  "text-size-largest",
 ] as const;
 
 export type Mode = (typeof MODES)[number];
@@ -44,6 +48,9 @@ const MODE_PLATFORM: Record<Mode, readonly Platform[]> = {
   "contrast-more": ["ios", "macos"],
   "transparency-reduced": ["ios", "windows"],
   "colours-wallpaper": ["android", "windows"],
+  "tap-targets-larger": ["android"],
+  "text-size-larger": ["android"],
+  "text-size-largest": ["android"],
 };
 
 export interface ModeValue {

@@ -206,6 +206,23 @@ test("opens a writer's page from their heading", async ({ page }) => {
   await expect(page).toHaveURL(/\/creator\/Author%20B$/);
 });
 
+test("turns the chevron after a writer's name in a right-to-left layout", async ({
+  page,
+}) => {
+  await openGroupedBy(page, "creator");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await page.evaluate(() => {
+    document.documentElement.dir = "rtl";
+  });
+
+  await expect(
+    group(page, "Author B")
+      .getByRole("heading")
+      .getByRole("link", { name: "Author B" })
+      .locator("svg"),
+  ).toHaveCSS("scale", "-1 1");
+});
+
 test("leaves the series naming nobody without a link", async ({ page }) => {
   await openGroupedBy(page, "creator");
 

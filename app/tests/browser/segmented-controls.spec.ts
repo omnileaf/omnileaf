@@ -8,19 +8,23 @@ import { expect, framesPassed, onPlatform, settle, test } from "./fixtures.ts";
 import { goToStep } from "./first-launch-steps.ts";
 import {
   foldsIntoMore,
+  type Messages,
   openLibraryMore,
   pressViewOptions,
 } from "./library-controls.ts";
 import { pagedSeries, sampleSeries } from "./series-catalog.ts";
-
-type Messages = typeof english;
+import { openViewOptions, viewOptions } from "./view-options.ts";
 
 const COMPACT_BELOW = 600;
+
+const isAndroidPhone = (platform: string, width: number): boolean =>
+  platform === "android" && width < COMPACT_BELOW;
 
 interface SegmentedControl {
   readonly name: string;
   readonly hasIcons: (platform: string, width: number) => boolean;
   readonly isSegmented?: (platform: string, width: number) => boolean;
+  readonly mayWrap?: (platform: string, width: number) => boolean;
   readonly backend: (platform: Platform) => FakeBackend;
   readonly open: (page: Page, messages: Messages) => Promise<Locator>;
 }
@@ -93,23 +97,32 @@ async function settingsGroup(
   return page.getByRole("radiogroup", { name });
 }
 
+async function viewOptionsGroup(
+  page: Page,
+  messages: Messages,
+  name: string,
+): Promise<Locator> {
+  await page.goto("/");
+  const options = await openViewOptions(page, messages);
+  return options.getByRole("radiogroup", { name });
+}
+
 const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
     hasIcons: (platform, width) =>
-      platform !== "ios" && (platform !== "android" || width >= COMPACT_BELOW),
+      platform !== "ios" && !isAndroidPhone(platform, width),
     backend: withSeries,
-    open: async (page, messages) => {
-      await page.goto("/");
-      await pressViewOptions(page, messages);
-      const options = page.getByRole("dialog", {
-        name: messages.library_view_options,
-      });
-      await settle(options);
-      return options.getByRole("radiogroup", {
-        name: messages.library_view_display,
-      });
-    },
+    open: (page, messages) =>
+      viewOptionsGroup(page, messages, messages.library_view_display),
+  },
+  {
+    name: "View options' Group by",
+    hasIcons: () => false,
+    mayWrap: isAndroidPhone,
+    backend: withSeries,
+    open: (page, messages) =>
+      viewOptionsGroup(page, messages, messages.library_group_by),
   },
   {
     name: "Settings > Appearance's Light or dark",
@@ -125,8 +138,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "Settings > Privacy's Crash reports",
     hasIcons: () => false,
-    isSegmented: (platform, width) =>
-      platform !== "android" || width >= COMPACT_BELOW,
+    isSegmented: (platform, width) => !isAndroidPhone(platform, width),
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(page, "/settings/privacy", messages.privacy_crash_reports),
@@ -335,7 +347,8 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                 if (
                   scale === 1 &&
                   language === "en" &&
-                  ONE_ROW_WIDTHS.includes(width)
+                  ONE_ROW_WIDTHS.includes(width) &&
+                  control.mayWrap?.(platform, width) !== true
                 ) {
                   expect(rows).toHaveLength(1);
                 }
@@ -509,9 +522,7 @@ for (const { platform, project, screenWidth, groupName } of WRAPPING_CASES) {
       }
 
       const firstFrame = await rowsInFirstFrame(page, groupName, folded);
-      await settle(
-        page.getByRole("dialog", { name: english.library_view_options }),
-      );
+      await settle(viewOptions(page));
       const settled = rowsOf(
         await segmentsOf(wrappingGroup(page, groupName)),
       ).length;
@@ -531,15 +542,12 @@ for (const { platform, project, screenWidth, groupName } of WRAPPING_CASES) {
       await addStyle(page, CLASSIC_SCROLLBARS);
       const errors = await listenForErrors(page);
       await page.goto("/");
-      await pressViewOptions(page);
-      await settle(
-        page.getByRole("dialog", { name: english.library_view_options }),
-      );
+      const options = await openViewOptions(page);
       const rows = rowsOf(await segmentsOf(wrappingGroup(page, groupName)));
       const rowStep = (rows[1]?.[0]?.y ?? 0) - (rows[0]?.[0]?.y ?? 0);
-      const wrappedHeight = await page
-        .getByRole("dialog", { name: english.library_view_options })
-        .evaluate((dialog) => dialog.scrollHeight);
+      const wrappedHeight = await options.evaluate(
+        (dialog) => dialog.scrollHeight,
+      );
       await page.keyboard.press("Escape");
       const { width } = page.viewportSize() ?? { width: 0 };
       await page.setViewportSize({

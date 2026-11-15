@@ -44,6 +44,7 @@
   --native-spacing-button: 34px;
   --native-spacing-button-inline: 14px;
   --native-spacing-target: 44px;
+  --native-scale-text: 1;
   --native-text-button: calc(0.9375rem * var(--text-scale));
   --native-text-button-small: calc(0.9375rem * var(--text-scale));
   --native-leading-button: calc(1.25 / 0.9375);

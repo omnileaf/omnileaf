@@ -228,6 +228,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
+  systemClock: () => "followsLanguage",
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,
@@ -366,6 +367,18 @@ async function probedColour(
     },
     [css, inTheme] as const,
   );
+}
+
+export async function leaveAndComeBack(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    for (const state of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", {
+        value: state,
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
 }
 
 export async function boxOf(locator: Locator): Promise<Box> {

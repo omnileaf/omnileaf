@@ -1,7 +1,7 @@
 import {
   ITEM_LOOKS,
   ROW_FOCUS_RING,
-  ROW_SUBTITLE_TYPE,
+  ROW_SUBTITLE_MUTED_TYPE,
 } from "#lib/components/ui/item/looks.ts";
 import {
   ACCENT_COVER_RING,
@@ -60,7 +60,7 @@ export const NATIVE_SEARCH_LOOK: SearchLook = {
     "text-native-row-title/native-row-title tracking-native-row-title font-native-group-header text-muted",
   title:
     "truncate text-native-row-title/native-row-title font-native-row-title tracking-native-row-title",
-  line: `${ROW_SUBTITLE_TYPE} text-muted`,
+  line: ROW_SUBTITLE_MUTED_TYPE,
 };
 
 export const ANDROID_SEARCH_LOOK: SearchLook = {
@@ -180,7 +180,7 @@ export const ANDROID_START_LOOK: StartLook = {
   lead: "flex shrink-0 items-center justify-center text-muted",
   iconSize: 24,
   filterSection: "flex flex-col",
-  example: `${ROW_SUBTITLE_TYPE} pbe-sm text-muted`,
+  example: `${ROW_SUBTITLE_MUTED_TYPE} pbe-sm`,
   filters: "flex flex-wrap gap-sm pbe-sm",
   word: TODAYS_WORD,
   soonWord: `${TODAYS_WORD_BOX} text-muted`,
