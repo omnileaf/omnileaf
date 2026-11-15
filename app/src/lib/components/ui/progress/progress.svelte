@@ -7,7 +7,7 @@
   import { cn } from "#lib/components/cn.ts";
   import { currentPlatform, hasNativeLook } from "#lib/page/platform.ts";
 
-  type NativeTrack = "split" | "continuous";
+  import type { NativeTrack } from "./tracks.ts";
 
   let {
     ref = $bindable(null),
