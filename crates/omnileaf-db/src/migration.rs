@@ -2038,6 +2038,10 @@ mod tests {
             count("SELECT book_count FROM series_tag WHERE name = 'storms'"),
             2
         );
+        assert_eq!(
+            count("SELECT book_count FROM series_person WHERE name = 'Aiko Tanaka'"),
+            2
+        );
     }
 
     #[test]
