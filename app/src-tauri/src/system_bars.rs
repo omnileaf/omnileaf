@@ -311,7 +311,7 @@ mod tests {
     const ANDROID_WINDOW_TOKEN: &str = "--android-palette-window:";
     const ANDROID_COLORS: &str = include_str!("../gen/android/app/src/main/res/values/colors.xml");
 
-    fn first_background_token(css: &str) -> String {
+    fn first_android_window_colour(css: &str) -> String {
         let (_, rest) = css
             .split_once(ANDROID_WINDOW_TOKEN)
             .expect("the theme defines Android's window colour");
@@ -319,11 +319,14 @@ mod tests {
         value.trim().to_owned()
     }
 
-    fn interface_backgrounds() -> (String, String) {
+    fn android_window_colours() -> (String, String) {
         let (light, dark) = THEME_CSS
             .split_once(DARK_THEME_RULE)
             .expect("the theme has a dark side");
-        (first_background_token(light), first_background_token(dark))
+        (
+            first_android_window_colour(light),
+            first_android_window_colour(dark),
+        )
     }
 
     fn android_color(name: &str) -> &'static str {
@@ -357,8 +360,8 @@ mod tests {
     }
 
     #[test]
-    fn a_light_theme_paints_the_interfaces_light_page_background() {
-        let (light, _) = interface_backgrounds();
+    fn a_light_theme_paints_the_android_light_window_colour() {
+        let (light, _) = android_window_colours();
 
         let background = PageBackground::for_theme(Theme::Light);
 
@@ -366,8 +369,8 @@ mod tests {
     }
 
     #[test]
-    fn a_dark_theme_paints_the_interfaces_dark_page_background() {
-        let (_, dark) = interface_backgrounds();
+    fn a_dark_theme_paints_the_android_dark_window_colour() {
+        let (_, dark) = android_window_colours();
 
         let background = PageBackground::for_theme(Theme::Dark);
 
@@ -375,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn android_starts_a_light_theme_on_the_interfaces_light_page_background() {
+    fn android_starts_a_light_theme_on_its_light_window_colour() {
         let background = PageBackground::for_theme(Theme::Light);
 
         let starting_window = android_color("page_background_light");
@@ -384,7 +387,7 @@ mod tests {
     }
 
     #[test]
-    fn android_starts_a_dark_theme_on_the_interfaces_dark_page_background() {
+    fn android_starts_a_dark_theme_on_its_dark_window_colour() {
         let background = PageBackground::for_theme(Theme::Dark);
 
         let starting_window = android_color("page_background_dark");
