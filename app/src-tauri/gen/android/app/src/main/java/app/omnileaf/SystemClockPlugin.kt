@@ -14,7 +14,7 @@ class SystemClockPlugin(
 ) : Plugin(activity) {
     @Command
     fun read(invoke: Invoke) {
-        val clock = SystemClock.of(DateFormat.is24HourFormat(activity))
+        val clock = HourClock.of(DateFormat.is24HourFormat(activity))
         invoke.resolve(JSObject().put("clock", clock.id))
     }
 }

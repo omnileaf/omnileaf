@@ -1,6 +1,6 @@
 package app.omnileaf
 
-internal enum class SystemClock(
+internal enum class HourClock(
     val id: String,
 ) {
     TWELVE_HOUR("twelveHour"),
@@ -8,6 +8,6 @@ internal enum class SystemClock(
     ;
 
     companion object {
-        fun of(isTwentyFourHour: Boolean): SystemClock = if (isTwentyFourHour) TWENTY_FOUR_HOUR else TWELVE_HOUR
+        fun of(isTwentyFourHour: Boolean): HourClock = if (isTwentyFourHour) TWENTY_FOUR_HOUR else TWELVE_HOUR
     }
 }
