@@ -1093,3 +1093,79 @@
 :root[data-platform="android"][data-text-size="largest"] [data-theme="dark"] {
   --native-scale-text: 1.3;
 }
+
+:root[data-platform="android"][data-bold-text],
+:root[data-platform="android"][data-bold-text] [data-theme="light"] {
+  --native-weight-button: 800;
+  --native-weight-button-large: 800;
+  --native-weight-segment: 800;
+  --native-weight-segment-selected: 800;
+  --native-weight-row-title: 700;
+  --native-weight-page-title: 700;
+  --native-weight-large-title: 700;
+  --native-weight-bar-button: 800;
+  --native-weight-tile-title: 700;
+  --native-weight-bar-title: 700;
+  --native-weight-title-bar-title: 700;
+  --native-weight-tab: 800;
+  --native-weight-search-field: 700;
+  --native-weight-group-header: 800;
+  --native-weight-group-heading: 800;
+  --native-weight-notice-title: 700;
+  --native-weight-notice-body: 700;
+  --native-weight-notice-label: 800;
+  --native-weight-end-title: 700;
+  --native-weight-end-stat: 700;
+  --native-weight-end-book: 700;
+  --native-weight-end-card-title: 700;
+  --native-weight-end-stat-label: 800;
+  --native-weight-tab-label: 800;
+  --native-weight-empty-title: 800;
+  --native-weight-empty-body: 700;
+  --native-weight-command-label: 700;
+  --native-weight-first-launch-title: 700;
+  --native-weight-first-launch-lede: 700;
+  --native-weight-first-launch-note: 700;
+  --native-weight-tile-meta: 700;
+  --native-weight-collection-count: 800;
+  --native-weight-continue-title: 800;
+  --native-weight-books-heading: 800;
+}
+
+:root[data-platform="android"][data-bold-text][data-theme="dark"],
+:root[data-platform="android"][data-bold-text] [data-theme="dark"] {
+  --native-weight-button: 800;
+  --native-weight-button-large: 800;
+  --native-weight-segment: 800;
+  --native-weight-segment-selected: 800;
+  --native-weight-row-title: 700;
+  --native-weight-page-title: 700;
+  --native-weight-large-title: 700;
+  --native-weight-bar-button: 800;
+  --native-weight-tile-title: 700;
+  --native-weight-bar-title: 700;
+  --native-weight-title-bar-title: 700;
+  --native-weight-tab: 800;
+  --native-weight-search-field: 700;
+  --native-weight-group-header: 800;
+  --native-weight-group-heading: 800;
+  --native-weight-notice-title: 700;
+  --native-weight-notice-body: 700;
+  --native-weight-notice-label: 800;
+  --native-weight-end-title: 700;
+  --native-weight-end-stat: 700;
+  --native-weight-end-book: 700;
+  --native-weight-end-card-title: 700;
+  --native-weight-end-stat-label: 800;
+  --native-weight-tab-label: 800;
+  --native-weight-empty-title: 800;
+  --native-weight-empty-body: 700;
+  --native-weight-command-label: 700;
+  --native-weight-first-launch-title: 700;
+  --native-weight-first-launch-lede: 700;
+  --native-weight-first-launch-note: 700;
+  --native-weight-tile-meta: 700;
+  --native-weight-collection-count: 800;
+  --native-weight-continue-title: 800;
+  --native-weight-books-heading: 800;
+}

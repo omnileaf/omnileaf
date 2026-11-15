@@ -4,6 +4,8 @@ import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const BOLD_REGULAR_WEIGHT = "700";
 const PLAIN_REGULAR_WEIGHT = "400";
+const BOLD_ROW_TITLE_WEIGHT = "700";
+const PLAIN_ROW_TITLE_WEIGHT = "400";
 
 let isSystemBold = false;
 
@@ -28,6 +30,12 @@ function bodyWeight(page: Page): Promise<string> {
   return page.evaluate(() => getComputedStyle(document.body).fontWeight);
 }
 
+function rowTitleWeight(page: Page): Promise<string> {
+  return page
+    .getByText("Open Android accessibility settings", { exact: true })
+    .evaluate((title) => getComputedStyle(title).fontWeight);
+}
+
 test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
   test.beforeEach(({ platform }) => {
     test.skip(platform !== "android", "Android's settings");
@@ -39,7 +47,7 @@ test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
     await openAccessibility(page);
 
     await expect(boldText(page)).toBeChecked();
-    expect(await bodyWeight(page)).toBe(BOLD_REGULAR_WEIGHT);
+    await expect.poll(() => bodyWeight(page)).toBe(BOLD_REGULAR_WEIGHT);
   });
 
   test("bolds the interface once chosen, and keeps it after a reload", async ({
@@ -53,7 +61,8 @@ test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
     await page.reload();
 
     await expect(boldText(page)).toBeChecked();
-    expect(await bodyWeight(page)).toBe(BOLD_REGULAR_WEIGHT);
+    await expect.poll(() => bodyWeight(page)).toBe(BOLD_REGULAR_WEIGHT);
+    await expect.poll(() => rowTitleWeight(page)).toBe(BOLD_ROW_TITLE_WEIGHT);
   });
 
   test("keeps plain text once chosen, even with the phone's Bold text on", async ({
@@ -66,6 +75,7 @@ test.describe("Bold text on an Android phone", { tag: "@native" }, () => {
     await page.reload();
 
     await expect(boldText(page)).not.toBeChecked();
-    expect(await bodyWeight(page)).toBe(PLAIN_REGULAR_WEIGHT);
+    await expect.poll(() => bodyWeight(page)).toBe(PLAIN_REGULAR_WEIGHT);
+    await expect.poll(() => rowTitleWeight(page)).toBe(PLAIN_ROW_TITLE_WEIGHT);
   });
 });
