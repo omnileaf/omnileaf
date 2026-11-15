@@ -1249,7 +1249,12 @@ export function sampleBackend(
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
     systemClock: () => "followsLanguage",
-    appLock: () => appLock,
+    appLock: () => {
+      if (scenario.platform !== "android") {
+        throw failure("appLockUnavailable", "the app lock isn't offered here");
+      }
+      return appLock;
+    },
     turnAppLockOn: () => {
       appLock = { ...appLock, isOn: true };
       return "turnedOn";

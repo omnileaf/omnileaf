@@ -1235,13 +1235,13 @@ test("remembers the library's tabs as they were set", async () => {
 });
 
 test("starts with the app lock off, waiting a minute", async () => {
-  const { backend } = backendFor();
+  const { backend } = backendFor("platform=android");
 
   expect(await backend.appLock()).toEqual(NEW_APP_LOCK);
 });
 
 test("keeps the app lock's delay and hiding content in recents once it is turned off again", async () => {
-  const { backend } = backendFor();
+  const { backend } = backendFor("platform=android");
   await backend.turnAppLockOn("Turn on app lock");
   await backend.chooseLockAfter("fiveMinutes");
   await backend.hideContentInRecents(true);
@@ -1253,6 +1253,17 @@ test("keeps the app lock's delay and hiding content in recents once it is turned
     lockAfter: "fiveMinutes",
     hidesContentInRecents: true,
   });
+});
+
+test("offers no app lock off Android", () => {
+  const { backend } = backendFor("platform=ios");
+
+  expect(() => backend.appLock()).toThrow(
+    new CommandFailure({
+      code: "appLockUnavailable",
+      message: "the app lock isn't offered here",
+    }),
+  );
 });
 
 test("suggests the words of a chapter title close to a search, naming its series", async () => {

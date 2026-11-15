@@ -146,6 +146,7 @@ mod android {
     const CHOOSE_LOCK_AFTER: &str = "chooseLockAfter";
     const HIDE_CONTENT_IN_RECENTS: &str = "hideContentInRecents";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
+    const LOCKS_THE_APP: bool = false;
 
     struct AppLockPlugin(PluginHandle<Wry>);
 
@@ -172,6 +173,9 @@ mod android {
     }
 
     pub(crate) async fn read(app: &AppHandle) -> Result<AppLock, IpcError> {
+        if !LOCKS_THE_APP {
+            return Err(IpcError::app_lock_unavailable());
+        }
         ask_soon(app, READ, ()).await
     }
 
