@@ -17,6 +17,9 @@ import { openViewOptions, viewOptions } from "./view-options.ts";
 
 const COMPACT_BELOW = 600;
 
+const isAndroidPhone = (platform: string, width: number): boolean =>
+  platform === "android" && width < COMPACT_BELOW;
+
 interface SegmentedControl {
   readonly name: string;
   readonly hasIcons: (platform: string, width: number) => boolean;
@@ -108,7 +111,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
     hasIcons: (platform, width) =>
-      platform !== "ios" && (platform !== "android" || width >= COMPACT_BELOW),
+      platform !== "ios" && !isAndroidPhone(platform, width),
     backend: withSeries,
     open: (page, messages) =>
       viewOptionsGroup(page, messages, messages.library_view_display),
@@ -116,8 +119,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Group by",
     hasIcons: () => false,
-    mayWrap: (platform, width) =>
-      platform === "android" && width < COMPACT_BELOW,
+    mayWrap: isAndroidPhone,
     backend: withSeries,
     open: (page, messages) =>
       viewOptionsGroup(page, messages, messages.library_group_by),
@@ -136,8 +138,7 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "Settings > Privacy's Crash reports",
     hasIcons: () => false,
-    isSegmented: (platform, width) =>
-      platform !== "android" || width >= COMPACT_BELOW,
+    isSegmented: (platform, width) => !isAndroidPhone(platform, width),
     backend: (platform) => onPlatform(platform).backend,
     open: (page, messages) =>
       settingsGroup(page, "/settings/privacy", messages.privacy_crash_reports),
