@@ -304,7 +304,3 @@ const COVER_TILE_LOOKS = {
 export function coverTileLook(platform: Platform): CoverTileLook {
   return COVER_TILE_LOOKS[platform];
 }
-
-export function coverStack(platform: Platform): CoverStackLook | null {
-  return coverTileLook(platform).stack;
-}
