@@ -21,7 +21,8 @@ const TAILWIND_NAME = {
   tracking: "tracking-native",
   shadow: "shadow-native",
   blur: "blur-native",
-} satisfies Record<Kind, string>;
+  scale: undefined,
+} satisfies Record<Kind, string | undefined>;
 
 type Scope = "every" | "light" | "dark";
 
@@ -78,6 +79,8 @@ const MODE_ATTRIBUTE = {
   "transparency-reduced": '[data-transparency="reduced"]',
   "colours-wallpaper": '[data-colours="wallpaper"]',
   "tap-targets-larger": '[data-tap-targets="larger"]',
+  "text-size-larger": '[data-text-size="larger"]',
+  "text-size-largest": '[data-text-size="largest"]',
 } satisfies Record<Mode, string>;
 
 function modeBlocks(tokens: readonly Token[], platform: Platform): string[] {
@@ -128,10 +131,12 @@ function indexFile(
     .join("\n");
   const theme = block(
     "@theme inline",
-    tokens.map(
-      (token) =>
-        `  --${TAILWIND_NAME[token.kind]}-${token.name}: var(${nativeName(token)});`,
-    ),
+    tokens.flatMap((token) => {
+      const tailwindName = TAILWIND_NAME[token.kind];
+      return tailwindName === undefined
+        ? []
+        : [`  --${tailwindName}-${token.name}: var(${nativeName(token)});`];
+    }),
   );
   const stilled = tokens.flatMap((token) =>
     token.reducedMotion === undefined

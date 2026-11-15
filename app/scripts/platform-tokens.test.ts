@@ -259,6 +259,44 @@ test("exposes blurs under Tailwind's blur name", () => {
   );
 });
 
+test("keeps scales out of Tailwind's theme, which would make them transform utilities", () => {
+  const text = {
+    name: "text",
+    kind: "scale",
+    value: { default: "1", android: "1" },
+  };
+
+  const files = render(text);
+
+  expect(files.get("index.css")).not.toContain("native-scale-text");
+  expect(files.get("tokens-android.css")).toContain(
+    "  --native-scale-text: 1;\n",
+  );
+});
+
+test("writes a text size mode under the document's text size mark", () => {
+  const text = {
+    name: "text",
+    kind: "scale",
+    value: {
+      default: "1",
+      android: "1",
+      "android-light-text-size-larger": "1.15",
+      "android-dark-text-size-larger": "1.15",
+    },
+  };
+
+  const files = render(text);
+
+  expect(files.get("tokens-android.css")).toContain(
+    `:root[data-platform="android"][data-text-size="larger"],
+:root[data-platform="android"][data-text-size="larger"] [data-theme="light"] {
+  --native-scale-text: 1.15;
+}
+`,
+  );
+});
+
 test("imports the defaults before every platform file", () => {
   const files = render(ACCENT, MOVE);
 

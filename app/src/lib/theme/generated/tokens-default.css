@@ -54,6 +54,7 @@
   --native-spacing-button: var(--spacing-shadcn-button);
   --native-spacing-button-inline: var(--spacing-lg);
   --native-spacing-target: var(--spacing-touch-target);
+  --native-scale-text: 1;
   --native-text-button: var(--text-label);
   --native-text-button-small: var(--text-label);
   --native-leading-button: var(--text-label--line-height);
