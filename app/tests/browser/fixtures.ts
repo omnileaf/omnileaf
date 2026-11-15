@@ -369,6 +369,18 @@ async function probedColour(
   );
 }
 
+export async function leaveAndComeBack(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    for (const state of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", {
+        value: state,
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
+}
+
 export async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
   if (box === null) {
