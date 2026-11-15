@@ -53,13 +53,15 @@ test.describe("on android", () => {
     },
   });
 
-  test("keeps a group's heading bold in lead type", async ({ page }) => {
+  test("sets a group's heading in Material title type", async ({ page }) => {
     await page.goto("/");
     const heading = page
       .getByRole("region", { name: "Comics", exact: true })
       .getByRole("heading", { level: 2 });
 
-    await expect(heading).toHaveCSS("font-size", "15px");
-    await expect(heading).toHaveCSS("font-weight", "700");
+    await expect(heading).toHaveCSS("font-size", "16px");
+    await expect(heading).toHaveCSS("line-height", "24px");
+    await expect(heading).toHaveCSS("font-weight", "500");
+    await expect(heading).toHaveCSS("letter-spacing", "0.15px");
   });
 });

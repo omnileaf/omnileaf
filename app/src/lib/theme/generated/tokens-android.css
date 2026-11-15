@@ -313,10 +313,10 @@
   --native-text-group-footer: calc(0.75rem * var(--text-scale));
   --native-leading-group-footer: calc(16 / 12);
   --native-tracking-group-footer: 0.4px;
-  --native-text-group-heading: var(--text-lead);
-  --native-leading-group-heading: var(--text-lead--line-height);
-  --native-weight-group-heading: var(--font-weight-bold);
-  --native-tracking-group-heading: 0;
+  --native-text-group-heading: calc(1rem * var(--text-scale));
+  --native-leading-group-heading: 1.5;
+  --native-weight-group-heading: 500;
+  --native-tracking-group-heading: 0.15px;
   --native-spacing-search-scope-gap: var(--spacing-sm);
   --native-spacing-search-scope-bar-block: var(--spacing-sm);
   --native-spacing-search-scope-bar-inline: var(--spacing-lg);
