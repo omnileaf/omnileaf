@@ -3,6 +3,7 @@ import { redirect } from "@sveltejs/kit";
 import { resolve } from "$app/paths";
 import { textSizeChoice } from "#lib/accessibility/text-size-choice.svelte.ts";
 import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
+import { rememberLockWords } from "#lib/app-lock/app-lock.ts";
 import {
   FIRST_LAUNCH_ROUTE,
   needsFirstLaunch,
@@ -31,6 +32,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followSystemContrast(appInfo.platform);
   textSizeChoice.markDocument();
   touchChoices.markDocument();
+  void rememberLockWords(appInfo.platform);
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }

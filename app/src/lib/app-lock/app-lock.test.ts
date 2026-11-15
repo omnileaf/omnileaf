@@ -1,6 +1,11 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
-import { appLockSummary, NEW_APP_LOCK, readAppLock } from "./app-lock.ts";
+import {
+  appLockSummary,
+  NEW_APP_LOCK,
+  readAppLock,
+  rememberLockWords,
+} from "./app-lock.ts";
 
 test("says the app lock is off", () => {
   expect(appLockSummary(NEW_APP_LOCK)).toBe("Off");
@@ -59,4 +64,29 @@ test("tells a failed read apart from a missing app lock", async () => {
   );
 
   expect(reading).toEqual({ kind: "failed", error });
+});
+
+test("hands Android the words its lock screen shows", async () => {
+  const remember = vi.fn(() =>
+    Promise.resolve({ status: "ok", data: null } as const),
+  );
+
+  await rememberLockWords("android", remember);
+
+  expect(remember).toHaveBeenCalledWith({
+    title: "Omnileaf is locked",
+    body: "Unlock to open your library.",
+    unlock: "Unlock",
+    prompt: "Unlock Omnileaf",
+  });
+});
+
+test("hands the lock screen's words to no other platform", async () => {
+  const remember = vi.fn(() =>
+    Promise.resolve({ status: "ok", data: null } as const),
+  );
+
+  await rememberLockWords("ios", remember);
+
+  expect(remember).not.toHaveBeenCalled();
 });
