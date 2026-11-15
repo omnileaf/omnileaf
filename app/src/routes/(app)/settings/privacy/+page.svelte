@@ -87,7 +87,7 @@
 <div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
   <SettingsEntries
     entries={[
-      ...(data.appLock === null
+      ...(data.appLock.kind === "unavailable"
         ? []
         : [
             {
@@ -95,7 +95,9 @@
               icon: Lock,
               iconName: "lock",
               label: m.app_lock_title(),
-              summary: appLockSummary(data.appLock),
+              ...(data.appLock.kind === "read"
+                ? { summary: appLockSummary(data.appLock.lock) }
+                : {}),
             } as const,
           ]),
       {

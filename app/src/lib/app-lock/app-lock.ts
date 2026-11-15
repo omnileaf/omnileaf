@@ -1,8 +1,8 @@
 import {
   type AppLock,
   commands,
+  type IpcError,
   type LockAfter,
-  type Platform,
 } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
@@ -40,14 +40,19 @@ export function appLockSummary(lock: AppLock): string {
     : m.app_lock_on_after({ delay: LOCK_DELAY_NAMES[lock.lockAfter]() });
 }
 
-export async function readAppLock(platform: Platform): Promise<AppLock | null> {
-  if (platform !== "android") {
-    return null;
+export type AppLockReading =
+  | { readonly kind: "read"; readonly lock: AppLock }
+  | { readonly kind: "unavailable" }
+  | { readonly kind: "failed"; readonly error: IpcError };
+
+export async function readAppLock(
+  readLock: typeof commands.appLock = commands.appLock,
+): Promise<AppLockReading> {
+  const read = await readLock();
+  if (read.status === "ok") {
+    return { kind: "read", lock: read.data };
   }
-  const read = await commands.appLock();
-  if (read.status === "error") {
-    reportError(read.error);
-    return null;
-  }
-  return read.data;
+  return read.error.code === "appLockUnavailable"
+    ? { kind: "unavailable" }
+    : { kind: "failed", error: read.error };
 }

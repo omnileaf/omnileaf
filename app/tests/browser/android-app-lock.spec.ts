@@ -1,19 +1,36 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { AppLock, AppLockTurning } from "../../src/lib/ipc/bindings.ts";
+import type {
+  AppLock,
+  AppLockTurning,
+  IpcErrorCode,
+} from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
+import { CommandFailure } from "./fake-backend.ts";
 import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
+const NOT_CHANGED = "Couldn't change the app lock. Try again.";
+
 let lock: AppLock = NEW_APP_LOCK;
 let turning: AppLockTurning = "turnedOn";
 let promptTitles: string[] = [];
+let failingCode: IpcErrorCode | null = null;
+
+function failIfAsked(): void {
+  if (failingCode !== null) {
+    throw new CommandFailure({ code: failingCode, message: "not changed" });
+  }
+}
 
 test.use({
   backend: {
     ...DEFAULT_BACKEND,
-    appLock: () => lock,
+    appLock: () => {
+      failIfAsked();
+      return lock;
+    },
     turnAppLockOn: (promptTitle) => {
       promptTitles.push(promptTitle);
       if (turning === "turnedOn") {
@@ -22,14 +39,17 @@ test.use({
       return turning;
     },
     turnAppLockOff: () => {
+      failIfAsked();
       lock = { ...lock, isOn: false };
       return null;
     },
     chooseLockAfter: (lockAfter) => {
+      failIfAsked();
       lock = { ...lock, lockAfter };
       return null;
     },
     hideContentInRecents: (isHidden) => {
+      failIfAsked();
       lock = { ...lock, hidesContentInRecents: isHidden };
       return null;
     },
@@ -41,6 +61,15 @@ async function openAppLock(page: Page): Promise<void> {
   await expect(
     page.getByRole("heading", { level: 1, name: "App lock" }),
   ).toBeVisible();
+}
+
+function firstEntry(page: Page): Locator {
+  return page
+    .getByRole("main")
+    .getByRole("list")
+    .first()
+    .getByRole("link")
+    .first();
 }
 
 function lockSwitch(page: Page): Locator {
@@ -63,15 +92,25 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     lock = NEW_APP_LOCK;
     turning = "turnedOn";
     promptTitles = [];
+    failingCode = null;
   });
 
   test("leads Privacy and security with App lock, off", async ({ page }) => {
     await page.goto("/settings/privacy");
 
-    const first = page.getByRole("link").filter({ hasText: "App lock" });
+    const first = firstEntry(page);
 
+    await expect(first).toContainText("App lock");
     await expect(first).toContainText("Off");
-    await expect(page.getByRole("link").nth(1)).not.toContainText("App lock");
+  });
+
+  test("keeps App lock in Privacy and security when it can't be read, so the lock can still be turned off", async ({
+    page,
+  }) => {
+    failingCode = "internal";
+    await page.goto("/settings/privacy");
+
+    await expect(firstEntry(page)).toContainText("App lock");
   });
 
   test("keeps Lock after and Hide content disabled, saying why, while the lock is off", async ({
@@ -107,6 +146,8 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await openAppLock(page);
 
     await lockSwitch(page).click();
+    await expect.poll(() => promptTitles).toEqual(["Turn on app lock"]);
+    await expect(lockSwitch(page)).toBeEnabled();
 
     await expect(lockSwitch(page)).not.toBeChecked();
     await expect(
@@ -160,6 +201,56 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(hideContent(page)).toHaveCount(0);
   });
 
+  test("keeps the lock on and says so when it can't be turned off", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+    failingCode = "internal";
+
+    await lockSwitch(page).click();
+
+    await expect(page.getByText(NOT_CHANGED)).toBeVisible();
+    await expect(lockSwitch(page)).toBeChecked();
+  });
+
+  test("keeps the old delay and says so when a new one can't be kept", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+    failingCode = "internal";
+
+    await lockAfter(page).click();
+    await page.getByRole("radio", { name: "15 minutes" }).click();
+
+    await expect(page.getByText(NOT_CHANGED)).toBeVisible();
+    await expect(lockAfter(page)).toContainText("1 minute");
+  });
+
+  test("keeps content shown and says so when hiding it can't be kept", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+    failingCode = "internal";
+
+    await hideContent(page).click();
+
+    await expect(page.getByText(NOT_CHANGED)).toBeVisible();
+    await expect(hideContent(page)).not.toBeChecked();
+  });
+
+  test("hides App lock while Android doesn't offer it", async ({ page }) => {
+    failingCode = "appLockUnavailable";
+    await page.goto("/settings/privacy");
+    await expect(page.getByText("Screenshot mode")).toBeVisible();
+
+    await expect(page.getByText("App lock")).toHaveCount(0);
+    await page.goto("/settings/privacy/app-lock");
+    await expect(page.getByText("This page doesn't exist")).toBeVisible();
+  });
+
   test("turns the lock off without asking", async ({ page }) => {
     lock = { ...NEW_APP_LOCK, isOn: true };
     await openAppLock(page);
@@ -172,11 +263,21 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
 });
 
 test.describe("Privacy and security elsewhere", () => {
-  test("leaves App lock out", async ({ page, platform }) => {
+  test.beforeEach(({ platform }) => {
     test.skip(platform === "android", "only Android has an app lock");
+    failingCode = "appLockUnavailable";
+  });
+
+  test("leaves App lock out", async ({ page }) => {
     await page.goto("/settings/privacy");
 
     await expect(page.getByText("Permissions").first()).toBeVisible();
     await expect(page.getByText("App lock")).toHaveCount(0);
+  });
+
+  test("has no App lock page", async ({ page }) => {
+    await page.goto("/settings/privacy/app-lock");
+
+    await expect(page.getByText("This page doesn't exist")).toBeVisible();
   });
 });
