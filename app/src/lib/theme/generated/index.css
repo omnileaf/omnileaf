@@ -59,6 +59,7 @@
   --spacing-native-button: var(--native-spacing-button);
   --spacing-native-button-inline: var(--native-spacing-button-inline);
   --spacing-native-target: var(--native-spacing-target);
+  --scale-native-text: var(--native-scale-text);
   --text-native-button: var(--native-text-button);
   --text-native-button-small: var(--native-text-button-small);
   --leading-native-button: var(--native-leading-button);

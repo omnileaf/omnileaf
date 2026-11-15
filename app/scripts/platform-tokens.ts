@@ -21,6 +21,7 @@ const TAILWIND_NAME = {
   tracking: "tracking-native",
   shadow: "shadow-native",
   blur: "blur-native",
+  scale: "scale-native",
 } satisfies Record<Kind, string>;
 
 type Scope = "every" | "light" | "dark";
@@ -78,6 +79,8 @@ const MODE_ATTRIBUTE = {
   "transparency-reduced": '[data-transparency="reduced"]',
   "colours-wallpaper": '[data-colours="wallpaper"]',
   "tap-targets-larger": '[data-tap-targets="larger"]',
+  "text-size-larger": '[data-text-size="larger"]',
+  "text-size-largest": '[data-text-size="largest"]',
 } satisfies Record<Mode, string>;
 
 function modeBlocks(tokens: readonly Token[], platform: Platform): string[] {
