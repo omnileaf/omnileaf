@@ -1395,7 +1395,7 @@
   "tap_open_tab": "Tap the open tab again",
   "tap_open_tab_help": "Goes back to the first page of the open section.",
   "tap_open_tab_off_note": "Off, tapping the open tab does nothing. Back still goes one step.",
-  "tap_open_tab_on_note": "On, one tap goes to the section’s first page, and the next tap scrolls it to the top.",
+  "tap_open_tab_on_note": "On, one tap scrolls the page to the top, and the next goes to the section’s first page.",
   "settings_summary_tap_open_tab_on": "Tap the open tab again is on",
   "settings_summary_tap_open_tab_off": "Tap the open tab again is off",
   "animations_title": "Animations",

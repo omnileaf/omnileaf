@@ -68,6 +68,22 @@ test.describe(
       ).toBeVisible();
     });
 
+    test("says the first tap scrolls to the top and the next goes to the first page once it is on", async ({
+      page,
+    }) => {
+      await page.goto("/settings/navigation");
+
+      await page
+        .getByRole("switch", { name: "Tap the open tab again" })
+        .click();
+
+      await expect(
+        page.getByText(
+          "On, one tap scrolls the page to the top, and the next goes to the section’s first page.",
+        ),
+      ).toBeVisible();
+    });
+
     test("is the same switch in Settings › Advanced", async ({ page }) => {
       await page.goto("/settings/navigation");
       await page
