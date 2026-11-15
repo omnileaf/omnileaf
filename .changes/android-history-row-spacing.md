@@ -2,4 +2,4 @@
 type: fix
 area: library
 ---
-History on Android phones sits closer under its top bar, draws smaller covers, shows progress as one bar across the row, and leaves finished books without one.
+On Android, History shows progress as one bar across each row and leaves finished books without one. On phones it also sits closer under its top bar, with smaller covers.
