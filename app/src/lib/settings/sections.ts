@@ -39,6 +39,7 @@ export type SettingsSubPage =
   | "/(app)/settings/library/adult-content"
   | "/(app)/settings/library/tags"
   | "/(app)/settings/library/tabs"
+  | "/(app)/settings/privacy/app-lock"
   | "/(app)/settings/privacy/permissions"
   | "/(app)/settings/privacy/screenshot-mode";
 
