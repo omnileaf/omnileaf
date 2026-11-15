@@ -93,39 +93,35 @@ async function settingsGroup(
   return page.getByRole("radiogroup", { name });
 }
 
+async function viewOptionsGroup(
+  page: Page,
+  messages: Messages,
+  name: string,
+): Promise<Locator> {
+  await page.goto("/");
+  await pressViewOptions(page, messages);
+  const options = page.getByRole("dialog", {
+    name: messages.library_view_options,
+  });
+  await settle(options);
+  return options.getByRole("radiogroup", { name });
+}
+
 const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Display",
     hasIcons: (platform, width) =>
       platform !== "ios" && (platform !== "android" || width >= COMPACT_BELOW),
     backend: withSeries,
-    open: async (page, messages) => {
-      await page.goto("/");
-      await pressViewOptions(page, messages);
-      const options = page.getByRole("dialog", {
-        name: messages.library_view_options,
-      });
-      await settle(options);
-      return options.getByRole("radiogroup", {
-        name: messages.library_view_display,
-      });
-    },
+    open: (page, messages) =>
+      viewOptionsGroup(page, messages, messages.library_view_display),
   },
   {
     name: "View options' Group by",
     hasIcons: () => false,
     backend: withSeries,
-    open: async (page, messages) => {
-      await page.goto("/");
-      await pressViewOptions(page, messages);
-      const options = page.getByRole("dialog", {
-        name: messages.library_view_options,
-      });
-      await settle(options);
-      return options.getByRole("radiogroup", {
-        name: messages.library_group_by,
-      });
-    },
+    open: (page, messages) =>
+      viewOptionsGroup(page, messages, messages.library_group_by),
   },
   {
     name: "Settings > Appearance's Light or dark",
