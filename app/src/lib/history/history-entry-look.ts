@@ -2,7 +2,11 @@ import {
   ROW_SUBTITLE_TYPE,
   ROW_TITLE_TYPE,
 } from "#lib/components/ui/item/looks.ts";
+import type { NativeTrack } from "#lib/components/ui/progress/index.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { ANDROID_LIST_COVER } from "#lib/library/list-row-look.ts";
+import type { WidthClass } from "#lib/page/breakpoints.ts";
+import { phoneOf } from "#lib/page/platform.ts";
 
 export interface HistoryEntryLook {
   readonly title: string;
@@ -10,10 +14,12 @@ export interface HistoryEntryLook {
   readonly opensMenu: boolean;
   readonly menuButton: string;
   readonly bar: string;
-  readonly barTrack: "split" | "continuous";
+  readonly barTrack: NativeTrack;
   readonly cover: string;
-  readonly barsFinishedBooks: boolean;
+  readonly showsFinishedBar: boolean;
 }
+
+const TODAYS_COVER = "rounded-history-cover inline-history-cover";
 
 const TODAYS_LOOK: HistoryEntryLook = {
   title: "line-clamp-2 text-small font-semibold",
@@ -22,20 +28,25 @@ const TODAYS_LOOK: HistoryEntryLook = {
   menuButton: "hidden large:flex",
   bar: "inline-history-bar",
   barTrack: "split",
-  cover: "inline-history-cover",
-  barsFinishedBooks: true,
+  cover: TODAYS_COVER,
+  showsFinishedBar: true,
 };
 
 const ANDROID_LOOK: HistoryEntryLook = {
+  ...TODAYS_LOOK,
   title: `line-clamp-2 ${ROW_TITLE_TYPE}`,
   line: `line-clamp-2 text-muted tabular-nums ${ROW_SUBTITLE_TYPE}`,
   opensMenu: true,
   menuButton:
     "flex block-touch-target inline-touch-target before:block-touch-target before:inline-touch-target",
-  bar: "inline-history-bar max-medium:inline-full",
+};
+
+const ANDROID_PHONE_LOOK: HistoryEntryLook = {
+  ...ANDROID_LOOK,
+  bar: "inline-full",
   barTrack: "continuous",
-  cover: "inline-history-cover max-medium:inline-native-history-cover",
-  barsFinishedBooks: false,
+  cover: ANDROID_LIST_COVER,
+  showsFinishedBar: false,
 };
 
 const HISTORY_ENTRY_LOOKS = {
@@ -46,6 +57,11 @@ const HISTORY_ENTRY_LOOKS = {
   windows: TODAYS_LOOK,
 } satisfies Record<Platform, HistoryEntryLook>;
 
-export function historyEntryLook(platform: Platform): HistoryEntryLook {
-  return HISTORY_ENTRY_LOOKS[platform];
+export function historyEntryLook(
+  platform: Platform,
+  width: WidthClass,
+): HistoryEntryLook {
+  return phoneOf(platform, width) === "android"
+    ? ANDROID_PHONE_LOOK
+    : HISTORY_ENTRY_LOOKS[platform];
 }

@@ -353,7 +353,7 @@
 {:else}
   <div
     role="presentation"
-    class="mbs-md flex flex-col gap-md large:mbs-lg android:mbs-none android:gap-none"
+    class="mbs-md flex flex-col gap-md large:mbs-lg android:max-medium:mbs-none android:max-medium:gap-none"
     onkeydown={moveThroughEntries}
   >
     {#each groups as group, index (group.name)}

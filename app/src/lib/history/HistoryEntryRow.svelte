@@ -5,6 +5,7 @@
   import { coverUrl } from "#lib/library/cover-url.ts";
   import ListCover from "#lib/library/ListCover.svelte";
   import { realLook, standInLook } from "#lib/library/series-look.ts";
+  import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { standInHistoryEntry } from "#lib/series/series-stand-ins.ts";
@@ -30,7 +31,9 @@
     actions: HistoryEntryActions;
   } = $props();
 
-  const look = historyEntryLook(currentPlatform());
+  const platform = currentPlatform();
+  const width = new WindowWidth();
+  const look = $derived(historyEntryLook(platform, width.current));
   const entry = $derived(usesStandIns ? standInHistoryEntry(listed) : listed);
   const cover = $derived(
     (usesStandIns ? standInLook : realLook)({
@@ -59,11 +62,7 @@
     data-history-book={listed.book}
     class="flex flex-1 items-center gap-md rounded-control py-xs ps-xs min-inline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-accent android:ps-none"
   >
-    <ListCover
-      {cover}
-      {coverUrl}
-      class={["shrink-0 rounded-history-cover", look.cover]}
-    />
+    <ListCover {cover} {coverUrl} class={["shrink-0", look.cover]} />
     <span class="flex flex-1 flex-col gap-2xs min-inline-none">
       <span class={look.title}>
         {entry.seriesTitle}
@@ -71,7 +70,7 @@
       <span class={look.line}>
         {historyLine(entry, group, formats)}
       </span>
-      {#if entry.readTo.state === "page" || look.barsFinishedBooks}
+      {#if entry.readTo.state === "page" || look.showsFinishedBar}
         <Progress
           aria-label={reached.label}
           max={reached.max}

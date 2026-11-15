@@ -469,7 +469,6 @@ export const TOKEN_THEME = {
     "native-group-select-end",
     "native-group-select-inset",
     "native-hairline",
-    "native-history-cover",
     "native-icon",
     "native-icon-button-inset",
     "native-icon-button-small-inset",
