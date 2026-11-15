@@ -267,6 +267,7 @@ mod tests {
                 is_rated_adult: false,
                 is_marked_adult: false,
                 bookmark_count: BOOKMARKED_BOOKS,
+                missing_books: 0,
             },
             None,
             seconds_per_page,

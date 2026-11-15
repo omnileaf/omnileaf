@@ -234,6 +234,7 @@ mod tests {
             page_count: Some(PAGE_COUNT),
             numbering: None,
             is_bookmarked: false,
+            is_connected: true,
         }
     }
 

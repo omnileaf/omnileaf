@@ -486,6 +486,7 @@ mod tests {
                 is_rated_adult: false,
                 is_marked_adult: false,
                 bookmark_count: 0,
+                missing_books: 0,
             },
             None,
             Some(seconds_per_page),

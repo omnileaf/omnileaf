@@ -10,13 +10,14 @@ use std::path::PathBuf;
 use omnileaf_db::{
     Database,
     catalog::{
-        BookDetails, BookFile, NewRoot, NewSeries, PageRequest, PageSize, RootId, RootKind,
-        RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root,
+        BookDetails, BookFile, BookListing, NewRoot, NewSeries, PageRequest, PageSize, RootId,
+        RootKind, RootLocator, ScannedBook, SeriesListing, SeriesOrder, SeriesSort, add_root,
         hidden_series_count, library_root, mark_root_available, mark_root_unavailable,
-        record_scanned_books, series_count, series_page, show_root_while_missing,
+        record_scanned_books, series_books, series_count, series_overview, series_page,
+        show_root_while_missing, up_next,
     },
 };
-use omnileaf_sync_proto::{Fingerprint, ImageEntry};
+use omnileaf_sync_proto::{Fingerprint, ImageEntry, SeriesId};
 use support::{ScratchFolder, library_config};
 
 const ADDED_AT_MS: i64 = 1_780_000_000_000;
@@ -127,12 +128,56 @@ impl Shelf {
             .collect()
     }
 
+    async fn book_connections(&self, series: &str) -> Vec<(String, bool)> {
+        let series = series_id(series);
+        let request = PageRequest {
+            after: None,
+            size: PageSize::try_from(50).unwrap(),
+        };
+        let page = self
+            .database
+            .read(move |connection| {
+                series_books(connection, series, BookListing::IN_ORDER, &request)
+            })
+            .await
+            .unwrap();
+        page.items
+            .into_iter()
+            .map(|book| (book.title, book.is_connected))
+            .collect()
+    }
+
+    async fn up_next_connection(&self, series: &str) -> (String, bool) {
+        let series = series_id(series);
+        let book = self
+            .database
+            .read(move |connection| up_next(connection, series))
+            .await
+            .unwrap()
+            .unwrap();
+        (book.title, book.is_connected)
+    }
+
+    async fn missing_books(&self, series: &str) -> u32 {
+        let series = series_id(series);
+        self.database
+            .read(move |connection| series_overview(connection, series))
+            .await
+            .unwrap()
+            .unwrap()
+            .missing_books
+    }
+
     async fn hidden(&self, root: Option<RootId>) -> u32 {
         self.database
             .read(move |connection| hidden_series_count(connection, root))
             .await
             .unwrap()
     }
+}
+
+fn series_id(title: &str) -> SeriesId {
+    NewSeries::local(title, ADDED_AT_MS).unwrap().id()
 }
 
 async fn add(database: &Database, path: &str) -> RootId {
@@ -314,4 +359,88 @@ async fn leaves_the_series_of_a_hidden_missing_folder_out_of_the_listing() {
             connection("Sea Stories", true),
         ]
     );
+}
+
+#[tokio::test]
+async fn lists_every_book_as_connected_while_every_folder_is_there() {
+    let shelf = Shelf::open("book-connected-all").await;
+
+    assert_eq!(
+        shelf.book_connections("Lantern Market").await,
+        [connection("Volume 02", true), connection("Volume 03", true)]
+    );
+}
+
+#[tokio::test]
+async fn marks_a_book_whose_every_file_is_in_an_away_folder() {
+    let shelf = Shelf::open("book-away").await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.book_connections("Lantern Market").await,
+        [
+            connection("Volume 02", false),
+            connection("Volume 03", true)
+        ]
+    );
+}
+
+#[tokio::test]
+async fn keeps_a_book_connected_while_another_of_its_files_is_in_a_folder_still_there() {
+    let shelf = Shelf::open("book-in-two-folders").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.book_connections("Harbour Gate").await,
+        [connection("Volume 01", true)]
+    );
+}
+
+#[tokio::test]
+async fn marks_the_book_up_next_whose_every_file_is_in_an_away_folder() {
+    let shelf = Shelf::open("book-up-next-away").await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        shelf.up_next_connection("Harbour Gate").await,
+        connection("Volume 01", false)
+    );
+}
+
+#[tokio::test]
+async fn counts_no_missing_book_while_every_folder_is_there() {
+    let shelf = Shelf::open("missing-books-none").await;
+
+    assert_eq!(shelf.missing_books("Lantern Market").await, 0);
+}
+
+#[tokio::test]
+async fn counts_the_books_of_each_series_whose_every_file_is_in_an_away_folder() {
+    let shelf = Shelf::open("missing-books-counted").await;
+    shelf.shelve(shelf.comics, "Lantern Market", 5).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(
+        [
+            shelf.missing_books("Harbour Gate").await,
+            shelf.missing_books("Lantern Market").await,
+            shelf.missing_books("Sea Stories").await,
+        ],
+        [1, 2, 0]
+    );
+}
+
+#[tokio::test]
+async fn leaves_a_book_with_a_file_still_there_out_of_the_missing_count() {
+    let shelf = Shelf::open("missing-books-two-folders").await;
+    shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
+
+    shelf.go_missing(shelf.comics).await;
+
+    assert_eq!(shelf.missing_books("Harbour Gate").await, 0);
 }
