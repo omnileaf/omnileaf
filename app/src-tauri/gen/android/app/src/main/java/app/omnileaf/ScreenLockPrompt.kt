@@ -6,6 +6,7 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import app.tauri.Logger
 
@@ -32,7 +33,7 @@ internal fun FragmentActivity.askForScreenLock(
     }
     BiometricPrompt(
         this,
-        mainExecutor,
+        ContextCompat.getMainExecutor(this),
         object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 answer(ScreenLockAnswer.CONFIRMED)
