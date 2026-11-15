@@ -1394,6 +1394,8 @@
   "accessibility_text_size_system": "System",
   "accessibility_text_size_larger": "Larger",
   "accessibility_text_size_largest": "Largest",
+  "accessibility_open_android_settings": "Open Android accessibility settings",
+  "accessibility_open_android_settings_failed": "Android’s accessibility settings didn’t open",
   "accessibility_motion_and_contrast": "Motion and contrast",
   "accessibility_reduce_motion": "Reduce motion",
   "accessibility_reduce_motion_help": "Pages and panels change without sliding. Starts from your phone’s Remove animations setting.",

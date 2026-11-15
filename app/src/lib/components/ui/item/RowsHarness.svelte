@@ -20,6 +20,14 @@
     </Item>
   </li>
   <li>
+    <Item look="row" aria-label="Chevron everywhere">
+      <ItemContent>
+        <ItemTitle>Open the system's settings</ItemTitle>
+      </ItemContent>
+      <ItemChevron shownOn="everywhere" />
+    </Item>
+  </li>
+  <li>
     <Item look="row" aria-label="Two lines">
       <ItemContent>
         <ItemTitle>Storage</ItemTitle>

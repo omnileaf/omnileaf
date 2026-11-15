@@ -2,7 +2,6 @@
   import {
     Bell,
     Camera,
-    CircleAlert,
     ExternalLink,
     Folder,
     Settings,
@@ -26,6 +25,7 @@
   } from "#lib/permissions/permissions.ts";
   import { FLUSH_LIST, FLUSH_NOTE } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
+  import { openSettingsOrWarn } from "#lib/settings/open-settings.ts";
 
   import type { PageProps } from "./$types";
 
@@ -91,15 +91,12 @@
     },
   ]);
 
-  async function openSystemSettings(): Promise<void> {
-    const opened = await commands.openSystemSettings();
-    if (opened.status === "error") {
-      notices.show({
-        tone: "warning",
-        icon: CircleAlert,
-        title: m.permissions_open_failed(),
-      });
-    }
+  function openSystemSettings(): Promise<void> {
+    return openSettingsOrWarn(
+      commands.openSystemSettings,
+      notices,
+      m.permissions_open_failed(),
+    );
   }
 </script>
 

@@ -15,18 +15,31 @@
     ANIMATION_GROUPS,
     getAnimationsSetting,
   } from "#lib/appearance/animations.svelte.ts";
+  import { Icon } from "#lib/components/ui/icon/index.ts";
+  import {
+    Item,
+    ItemChevron,
+    ItemContent,
+    ItemTitle,
+  } from "#lib/components/ui/item/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
+  import { commands } from "#lib/ipc/bindings.ts";
+  import { getNotices } from "#lib/notices/notices.ts";
   import { contrastChoice } from "#lib/page/contrast-choice.svelte.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import {
+    FLUSH_LIST,
     FLUSH_LIST_HEADING,
     FLUSH_STACKED_ROW,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import SettingWords from "#lib/settings/SettingWords.svelte";
+  import { openSettingsOrWarn } from "#lib/settings/open-settings.ts";
 
   const animations = getAnimationsSetting();
+  const notices = getNotices();
   const systemReducesMotion = new MediaQuery(
     "(prefers-reduced-motion: reduce)",
   );
@@ -51,6 +64,14 @@
     systemReducesMotion.current ||
       ANIMATION_GROUPS.every((group) => !animations.isOn(group)),
   );
+
+  function openAndroidSettings(): Promise<void> {
+    return openSettingsOrWarn(
+      commands.openAccessibilitySettings,
+      notices,
+      m.accessibility_open_android_settings_failed(),
+    );
+  }
 
   function reduceMotion(isReduced: boolean): void {
     for (const group of ANIMATION_GROUPS) {
@@ -140,4 +161,19 @@
       />
     </div>
   </section>
+  <ul class={FLUSH_LIST}>
+    <li>
+      <Item look="row" class={ROW_FOCUS_RING}>
+        {#snippet child({ props })}
+          <button type="button" {...props} onclick={openAndroidSettings}>
+            <Icon name="external-link" class="shrink-0" />
+            <ItemContent>
+              <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>
+            </ItemContent>
+            <ItemChevron shownOn="everywhere" />
+          </button>
+        {/snippet}
+      </Item>
+    </li>
+  </ul>
 </div>

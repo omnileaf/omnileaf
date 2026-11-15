@@ -149,6 +149,14 @@ test("draws no dividers and no chevron on Android", async () => {
   expect(slot(one, "item-chevron").display).toBe("none");
 });
 
+test("keeps the chevron on Android for a row that asks for it everywhere", async () => {
+  await renderRows("android");
+
+  const row = element("Chevron everywhere");
+
+  expect(slot(row, "item-chevron").display).not.toBe("none");
+});
+
 test("keeps today's full-width divider and chevron on Linux", async () => {
   await renderRows("linux");
 
