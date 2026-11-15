@@ -87,6 +87,32 @@ class LockStateTest {
         assertEquals(false, covers)
     }
 
+    @Test
+    fun `stays open on a return from a screen Omnileaf opened itself`() {
+        startedOpen()
+        state.openingOwnScreen()
+        state.left(isStillInTheApp = false)
+        clock += 1
+
+        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
+
+        assertEquals(false, covers)
+    }
+
+    @Test
+    fun `locks the next time the app is left some other way`() {
+        startedOpen()
+        state.openingOwnScreen()
+        state.left(isStillInTheApp = false)
+        state.returned(isOn = true, LockAfter.IMMEDIATELY)
+        state.left(isStillInTheApp = false)
+        clock += 1
+
+        val covers = state.returned(isOn = true, LockAfter.IMMEDIATELY)
+
+        assertEquals(true, covers)
+    }
+
     private fun startedOpen() {
         state.returned(isOn = false, LockAfter.ONE_MINUTE)
     }

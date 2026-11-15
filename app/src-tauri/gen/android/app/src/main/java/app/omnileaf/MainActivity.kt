@@ -48,6 +48,16 @@ class MainActivity : TauriActivity() {
         turnScreen(newConfig)
     }
 
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun startActivityForResult(
+        intent: Intent,
+        requestCode: Int,
+        options: Bundle?,
+    ) {
+        AppLocks.state.openingOwnScreen()
+        super.startActivityForResult(intent, requestCode, options)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean =
         (!appLock.isCovering && volumeKeys.handle(event.toKeyPress())) || super.dispatchKeyEvent(event)
 
@@ -83,12 +93,6 @@ class MainActivity : TauriActivity() {
         if (savedInstanceState != null || intent.isFromRecents) return
         intent.chosenIconAction()?.let(ChosenIconActions::choose)
         intent.handedDocument()?.let(handedDocuments::receive)
-    }
-
-    private fun showTheAppBehindTheNavigationButtons() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-        }
     }
 
     private fun turnScreen(configuration: Configuration) {

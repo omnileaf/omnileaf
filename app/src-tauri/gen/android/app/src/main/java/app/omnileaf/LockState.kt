@@ -7,12 +7,13 @@ internal class LockState(
 ) {
     private var leftAt: Long? = null
     private var hasStarted = false
+    private var isOpeningOwnScreen = false
 
     var isCovered = false
         private set
 
     fun left(isStillInTheApp: Boolean) {
-        if (!isStillInTheApp) {
+        if (!isStillInTheApp && !isOpeningOwnScreen) {
             leftAt = now()
         }
     }
@@ -23,6 +24,7 @@ internal class LockState(
     ): Boolean {
         val isDue = isDue(lockAfter)
         leftAt = null
+        isOpeningOwnScreen = false
         hasStarted = true
         if (isOn && isDue) {
             isCovered = true
@@ -35,6 +37,10 @@ internal class LockState(
 
     fun unlocked() {
         isCovered = false
+    }
+
+    fun openingOwnScreen() {
+        isOpeningOwnScreen = true
     }
 
     private fun isDue(lockAfter: LockAfter): Boolean {
