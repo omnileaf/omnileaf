@@ -21,7 +21,7 @@ interface SegmentedControl {
   readonly name: string;
   readonly hasIcons: (platform: string, width: number) => boolean;
   readonly isSegmented?: (platform: string, width: number) => boolean;
-  readonly mayWrap?: (platform: string) => boolean;
+  readonly mayWrap?: (platform: string, width: number) => boolean;
   readonly backend: (platform: Platform) => FakeBackend;
   readonly open: (page: Page, messages: Messages) => Promise<Locator>;
 }
@@ -116,7 +116,8 @@ const CONTROLS: readonly SegmentedControl[] = [
   {
     name: "View options' Group by",
     hasIcons: () => false,
-    mayWrap: (platform) => platform === "android",
+    mayWrap: (platform, width) =>
+      platform === "android" && width < COMPACT_BELOW,
     backend: withSeries,
     open: (page, messages) =>
       viewOptionsGroup(page, messages, messages.library_group_by),
@@ -346,7 +347,7 @@ for (const [platform, { project, target }] of Object.entries(PLATFORMS)) {
                   scale === 1 &&
                   language === "en" &&
                   ONE_ROW_WIDTHS.includes(width) &&
-                  control.mayWrap?.(platform) !== true
+                  control.mayWrap?.(platform, width) !== true
                 ) {
                   expect(rows).toHaveLength(1);
                 }
