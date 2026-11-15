@@ -65,6 +65,14 @@
       ANIMATION_GROUPS.every((group) => !animations.isOn(group)),
   );
 
+  function openAndroidSettings(): Promise<void> {
+    return openSettingsOrWarn(
+      commands.openAccessibilitySettings,
+      notices,
+      m.accessibility_open_android_settings_failed(),
+    );
+  }
+
   function reduceMotion(isReduced: boolean): void {
     for (const group of ANIMATION_GROUPS) {
       animations.turn(group, !isReduced);
@@ -157,16 +165,7 @@
     <li>
       <Item look="row" class={ROW_FOCUS_RING}>
         {#snippet child({ props })}
-          <button
-            type="button"
-            {...props}
-            onclick={() =>
-              openSettingsOrWarn(
-                commands.openAccessibilitySettings,
-                notices,
-                m.accessibility_open_android_settings_failed(),
-              )}
-          >
+          <button type="button" {...props} onclick={openAndroidSettings}>
             <Icon name="external-link" class="shrink-0" />
             <ItemContent>
               <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>

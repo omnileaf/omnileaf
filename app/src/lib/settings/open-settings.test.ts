@@ -1,13 +1,16 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
-import type { Notice } from "#lib/notices/notices.ts";
+import type { IpcError } from "#lib/ipc/bindings.ts";
+import type { Notice, Notices } from "#lib/notices/notices.ts";
 
 import { openSettingsOrWarn } from "./open-settings.ts";
 
-function shownNotices(): {
-  readonly shown: Notice[];
-  show(notice: Notice): void;
-} {
+const NOT_OPENED: IpcError = {
+  code: "systemSettingsUnavailable",
+  message: "the system's settings could not be opened",
+};
+
+function shownNotices(): Pick<Notices, "show"> & { readonly shown: Notice[] } {
   const shown: Notice[] = [];
   return {
     shown,
@@ -16,6 +19,10 @@ function shownNotices(): {
     },
   };
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 test("says nothing once the settings open", async () => {
   const notices = shownNotices();
@@ -30,17 +37,11 @@ test("says nothing once the settings open", async () => {
 });
 
 test("warns with the given title when the settings don't open", async () => {
+  vi.spyOn(window, "reportError").mockReturnValue(undefined);
   const notices = shownNotices();
 
   await openSettingsOrWarn(
-    () =>
-      Promise.resolve({
-        status: "error",
-        error: {
-          code: "systemSettingsUnavailable",
-          message: "the system's settings could not be opened",
-        },
-      }),
+    () => Promise.resolve({ status: "error", error: NOT_OPENED }),
     notices,
     "The settings didn’t open",
   );
@@ -51,4 +52,16 @@ test("warns with the given title when the settings don't open", async () => {
       title: "The settings didn’t open",
     }),
   ]);
+});
+
+test("reports why the settings didn't open", async () => {
+  const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
+
+  await openSettingsOrWarn(
+    () => Promise.resolve({ status: "error", error: NOT_OPENED }),
+    shownNotices(),
+    "The settings didn’t open",
+  );
+
+  expect(reported).toHaveBeenCalledWith(NOT_OPENED);
 });

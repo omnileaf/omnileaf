@@ -1,23 +1,16 @@
 import { CircleAlert } from "@lucide/svelte";
 
-import type { IpcError } from "#lib/ipc/bindings.ts";
-import type { Notice } from "#lib/notices/notices.ts";
-
-export type SettingsOpened =
-  | { readonly status: "ok"; readonly data: null }
-  | { readonly status: "error"; readonly error: IpcError };
-
-export interface Warner {
-  show(notice: Notice): void;
-}
+import type { commands } from "#lib/ipc/bindings.ts";
+import type { Notices } from "#lib/notices/notices.ts";
 
 export async function openSettingsOrWarn(
-  open: () => Promise<SettingsOpened>,
-  notices: Warner,
+  open: typeof commands.openSystemSettings,
+  notices: Pick<Notices, "show">,
   failedTitle: string,
 ): Promise<void> {
   const opened = await open();
   if (opened.status === "error") {
+    reportError(opened.error);
     notices.show({ tone: "warning", icon: CircleAlert, title: failedTitle });
   }
 }
