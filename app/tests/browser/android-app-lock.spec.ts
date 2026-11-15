@@ -291,16 +291,10 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     const lockToggle = await boxOf(lockSwitch(page));
     const hideToggle = await boxOf(hideContent(page));
     const delay = await boxOf(lockAfter(page));
-    const card = await boxOf(
-      page
-        .locator("section")
-        .filter({ has: lockSwitch(page) })
-        .last(),
-    );
+    const card = page.locator("section").filter({ has: lockSwitch(page) });
 
-    expect(hideToggle.y + hideToggle.height).toBeLessThanOrEqual(
-      card.y + card.height,
-    );
+    await expect(card.filter({ has: hideContent(page) })).toHaveCount(1);
+    expect(hideToggle.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
     expect(hideToggle.x + hideToggle.width).toBeCloseTo(
       lockToggle.x + lockToggle.width,
       0,

@@ -4,6 +4,8 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 import { FLUSH_HEADING, FLUSH_LIST } from "./android-flush-look.ts";
 import { LIST_HEADING } from "./grouped-rows-look.ts";
 
+import { SWITCH_CARD } from "./setting-row-look.ts";
+
 export interface RadiosLook {
   readonly section: string;
   readonly heading: string;
@@ -22,8 +24,7 @@ const ACCENT_DOT =
   "rounded-full bg-accent block-radio-dot inline-radio-dot android:bg-native-button-primary";
 
 const TODAYS_LOOK: RadiosLook = {
-  section:
-    "flex flex-col gap-sm rounded-card border border-border bg-card p-list-row",
+  section: SWITCH_CARD,
   heading: "font-semibold",
   group: "flex flex-col divide-y divide-border",
   row: "flex items-start gap-md rounded-control py-sm text-start transition-control inline-full hover:tint-hover focus-visible:outline-offset-2 active:tint-pressed touch:min-block-touch-target",
