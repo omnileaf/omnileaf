@@ -8,7 +8,12 @@ import {
   test,
   tokenColour,
 } from "./fixtures.ts";
-import { entry, THURSDAY_EVENING, type WireEntry } from "./history-entries.ts";
+import {
+  entry,
+  seriesTitle,
+  THURSDAY_EVENING,
+  type WireEntry,
+} from "./history-entries.ts";
 
 const FIRST_BOOK = 4;
 const SECOND_BOOK = 1;
@@ -226,6 +231,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
       box.y + box.height / 2;
     const textCentre = (name.y + bar.y + bar.height) / 2;
 
+    expect(cover.x).toBe(HEADING_START);
     expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
     expect(Math.abs(centreOf(cover) - textCentre)).toBeLessThanOrEqual(1);
     expect(Math.abs(centreOf(more) - centreOf(cover))).toBeLessThanOrEqual(1);
@@ -293,9 +299,53 @@ test.describe("History on an Android tablet", { tag: "@native" }, () => {
     const rows = page.getByRole("main").getByRole("listitem");
     const track = rows.first().getByRole("progressbar");
 
+    const finished = rows.filter({ hasText: seriesTitle(FINISHED_BOOK) });
+
     await expect(track.locator("> div")).toHaveCount(1);
-    await expect(
-      rows.filter({ hasText: "Sample Series 05" }).getByRole("progressbar"),
-    ).toHaveCount(0);
+    await expect(finished).toBeVisible();
+    await expect(finished.getByRole("progressbar")).toHaveCount(0);
+  });
+
+  test("spans the progress track across the text column", async ({ page }) => {
+    await openHistory(page, TABLET);
+    const row = page.getByRole("main").getByRole("listitem").first();
+    const column = await boxOf(
+      row.getByText(seriesTitle(FIRST_BOOK), { exact: true }).locator(".."),
+    );
+    const track = await boxOf(row.getByRole("progressbar"));
+
+    expect(track.x).toBe(column.x);
+    expect(track.width).toBe(column.width);
+  });
+});
+
+test.describe("History loading on an Android phone", { tag: "@native" }, () => {
+  test.use({
+    backend: {
+      ...DEFAULT_BACKEND,
+      readingHistory: () => new Promise(() => undefined),
+    },
+  });
+
+  test.beforeEach(({ platform }) => {
+    test.skip(platform !== "android", "Android's History rows");
+  });
+
+  test("draws its skeleton rows where the loaded rows will sit", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const bar = await boxOf(
+      page.locator("header").filter({
+        has: page.getByRole("heading", { level: 1, name: "History" }),
+      }),
+    );
+    const loading = page.getByRole("status", { name: "Loading History" });
+    const status = await boxOf(loading);
+    const cover = await boxOf(loading.locator("> div > :first-child").first());
+
+    expect(status.y).toBe(bar.y + bar.height);
+    expect(cover.x).toBe(HEADING_START);
+    expect(cover.height).toBeCloseTo(COVER_HEIGHT, 0);
   });
 });
