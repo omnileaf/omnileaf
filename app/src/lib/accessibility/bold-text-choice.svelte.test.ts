@@ -1,12 +1,8 @@
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, expect, test } from "vitest";
 
 import type { PreferenceStore } from "#lib/preferences/stored-preference.ts";
 
-import {
-  BoldTextChoice,
-  boldTextChoice,
-  followSystemBoldText,
-} from "./bold-text-choice.svelte.ts";
+import { BoldTextChoice } from "./bold-text-choice.svelte.ts";
 
 function memory(): PreferenceStore {
   const kept = new Map<string, string>();
@@ -20,7 +16,6 @@ function memory(): PreferenceStore {
 
 afterEach(() => {
   delete document.documentElement.dataset.boldText;
-  vi.restoreAllMocks();
 });
 
 test("starts from the phone's Bold text", () => {
@@ -61,36 +56,12 @@ test("marks the document for bold text once it is chosen", () => {
   expect(document.documentElement.dataset.boldText).toBe("");
 });
 
-test("reads the phone's Bold text on Android", async () => {
-  await followSystemBoldText("android", () =>
-    Promise.resolve({ status: "ok", data: true }),
-  );
+test("marks a kept choice straight away", () => {
+  const store = memory();
+  new BoldTextChoice(store).choose(true);
+  delete document.documentElement.dataset.boldText;
 
-  expect(boldTextChoice.isBold).toBe(true);
-});
+  new BoldTextChoice(store).markDocument();
 
-test("keeps text plain off Android without asking", async () => {
-  const read = vi.fn(() =>
-    Promise.resolve({ status: "ok", data: true } as const),
-  );
-
-  await followSystemBoldText("ios", read);
-
-  expect(read).not.toHaveBeenCalled();
-  expect(boldTextChoice.isBold).toBe(false);
-});
-
-test("reports a failed read and keeps text plain", async () => {
-  const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
-  const error = {
-    code: "internal",
-    message: "something went wrong inside the app",
-  } as const;
-
-  await followSystemBoldText("android", () =>
-    Promise.resolve({ status: "error", error }),
-  );
-
-  expect(reported).toHaveBeenCalledWith(error);
-  expect(boldTextChoice.isBold).toBe(false);
+  expect(document.documentElement.dataset.boldText).toBe("");
 });
