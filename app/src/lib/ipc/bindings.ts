@@ -30,7 +30,7 @@ export const commands = {
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
-	hideContentInRecents: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_content_in_recents", { isHidden })),
+	hideAppContent: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_app_content", { isHidden })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,

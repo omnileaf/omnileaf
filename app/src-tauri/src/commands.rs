@@ -80,7 +80,7 @@ macro_rules! app_commands {
             turn_app_lock_on,
             turn_app_lock_off,
             choose_lock_after,
-            hide_content_in_recents,
+            hide_app_content,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -512,7 +512,7 @@ async fn choose_lock_after(app: AppHandle, lock_after: LockAfter) -> Result<(), 
 
 #[tauri::command]
 #[specta::specta]
-async fn hide_content_in_recents(app: AppHandle, is_hidden: bool) -> Result<(), IpcError> {
+async fn hide_app_content(app: AppHandle, is_hidden: bool) -> Result<(), IpcError> {
     app_lock::hide_content(&app, is_hidden).await
 }
 

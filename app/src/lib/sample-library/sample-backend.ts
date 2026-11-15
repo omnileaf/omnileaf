@@ -21,6 +21,7 @@ import {
 } from "#lib/ipc/bindings.ts";
 import { assertNever } from "#lib/assert-never.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
+import { NEW_APP_LOCK } from "#lib/app-lock/app-lock.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
@@ -711,12 +712,7 @@ export function sampleBackend(
     (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
     detailEdits.get(series.number)?.isMarkedAdult === true;
   let screenshotMode = false;
-  let appLock: AppLock = {
-    isOn: false,
-    lockAfter: "oneMinute",
-    hidesContent: false,
-    canHideContent: true,
-  };
+  let appLock: AppLock = NEW_APP_LOCK;
   const hidesAdult = (): boolean =>
     screenshotMode || adultContent.treatment === "hide";
   const isHiddenByScreenshotMode = (series: SampleSeries): boolean =>
@@ -1266,7 +1262,7 @@ export function sampleBackend(
       appLock = { ...appLock, lockAfter };
       return null;
     },
-    hideContentInRecents: (isHidden) => {
+    hideAppContent: (isHidden) => {
       appLock = { ...appLock, hidesContent: isHidden };
       return null;
     },

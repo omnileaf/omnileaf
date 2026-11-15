@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 
+import { NEW_APP_LOCK } from "#lib/app-lock/app-lock.ts";
 import { type LibraryFilter, type LibraryListing } from "#lib/ipc/bindings.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
 
@@ -1231,6 +1232,27 @@ test("remembers the library's tabs as they were set", async () => {
   await backend.setLibraryTabs(tabs);
 
   expect(await backend.libraryTabs()).toEqual(tabs);
+});
+
+test("starts with the app lock off, waiting a minute", async () => {
+  const { backend } = backendFor();
+
+  expect(await backend.appLock()).toEqual(NEW_APP_LOCK);
+});
+
+test("keeps the app lock's delay and hidden content once it is turned off again", async () => {
+  const { backend } = backendFor();
+  await backend.turnAppLockOn("Turn on app lock");
+  await backend.chooseLockAfter("fiveMinutes");
+  await backend.hideAppContent(true);
+
+  await backend.turnAppLockOff();
+
+  expect(await backend.appLock()).toEqual({
+    ...NEW_APP_LOCK,
+    lockAfter: "fiveMinutes",
+    hidesContent: true,
+  });
 });
 
 test("suggests the words of a chapter title close to a search, naming its series", async () => {
