@@ -51,6 +51,7 @@ use crate::{
     storage::StoragePlaces,
     system_app_language::{self, SystemAppLanguage},
     system_bars::{self, Theme, ThemePreference},
+    system_bold_text,
     system_clock::{self, SystemClock},
     system_contrast::{self, SystemContrast},
     system_settings, system_sign_in,
@@ -82,6 +83,7 @@ macro_rules! app_commands {
             remember_app_lock_words,
             choose_lock_after,
             hide_content_in_recents,
+            system_bold_text,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -521,6 +523,12 @@ async fn choose_lock_after(app: AppHandle, lock_after: LockAfter) -> Result<(), 
 #[specta::specta]
 async fn hide_content_in_recents(app: AppHandle, is_hidden: bool) -> Result<(), IpcError> {
     app_lock::hide_content_in_recents(&app, is_hidden).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn system_bold_text(app: AppHandle) -> Result<bool, IpcError> {
+    system_bold_text::read(&app).await
 }
 
 #[tauri::command]

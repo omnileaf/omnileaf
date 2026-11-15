@@ -32,6 +32,7 @@ export const commands = {
 	rememberAppLockWords: (words: LockWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_app_lock_words", { words })),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
 	hideContentInRecents: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_content_in_recents", { isHidden })),
+	systemBoldText: () => typedError<boolean, IpcError>(__TAURI_INVOKE("system_bold_text")),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,

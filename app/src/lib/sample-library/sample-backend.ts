@@ -1248,6 +1248,7 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
+    systemBoldText: () => false,
     systemClock: () => "followsLanguage",
     appLock: () => {
       if (scenario.platform !== "android") {
