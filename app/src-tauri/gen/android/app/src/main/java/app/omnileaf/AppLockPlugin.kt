@@ -71,7 +71,11 @@ class AppLockPlugin(
 
     @Command
     fun rememberWords(invoke: Invoke) {
-        choices.remember(invoke.parseArgs(LockWords::class.java))
+        val words = LockWords.from(invoke.parseArgs(HandedLockWords::class.java))
+        if (!words.isComplete) {
+            return invoke.reject("the lock screen needs all of its words")
+        }
+        choices.remember(words)
         invoke.resolve()
     }
 

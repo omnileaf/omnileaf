@@ -1,69 +1,65 @@
 package app.omnileaf
 
-import android.os.SystemClock
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class AppLockGate(
     private val activity: FragmentActivity,
 ) : DefaultLifecycleObserver {
     private val choices = AppLockChoices(activity.applicationContext)
+    private val state = AppLocks.state
     private val cover = LockCover(activity, onUnlock = ::ask)
-    private var leftAt: Long? = null
-    private var hasStarted = false
-    private var isAsking = false
+    private val keepsBackOut =
+        object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                activity.moveTaskToBack(true)
+            }
+        }
+
+    val isCovering: Boolean
+        get() = cover.isShown
 
     fun watch() {
         activity.followRecentsChoice(choices)
-        val process = ProcessLifecycleOwner.get().lifecycle
-        process.addObserver(this)
-        activity.lifecycle.addObserver(
-            object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) {
-                    process.removeObserver(this@AppLockGate)
-                }
-            },
-        )
+        activity.onBackPressedDispatcher.addCallback(activity, keepsBackOut)
+        activity.lifecycle.addObserver(this)
     }
 
     override fun onStart(owner: LifecycleOwner) {
-        if (!hasStarted) {
-            hasStarted = true
-            lockIfDue(awayFor = null)
-            return
-        }
-        val left = leftAt ?: return
-        leftAt = null
-        lockIfDue((SystemClock.elapsedRealtime() - left).milliseconds)
-    }
-
-    override fun onStop(owner: LifecycleOwner) {
-        if (!isAsking && !cover.isShown) {
-            leftAt = SystemClock.elapsedRealtime()
-        }
-    }
-
-    private fun lockIfDue(awayFor: Duration?) {
-        val isFree = choices.isOn && !cover.isShown && !isAsking
-        val words = choices.words?.takeIf { isFree } ?: return
-        if (locksOnReturn(choices.lockAfter, awayFor)) {
-            cover.show(words)
+        if (state.returned(choices.isOn, choices.lockAfter)) {
+            showCover()
             ask()
         }
     }
 
+    override fun onStop(owner: LifecycleOwner) {
+        state.left(isChangingScreens = activity.isChangingConfigurations)
+    }
+
+    private fun showCover() {
+        cover.show(choices.wordsToShow)
+        keepsBackOut.isEnabled = true
+    }
+
     private fun ask() {
-        val words = choices.words ?: return cover.hide()
-        if (isAsking) return
-        isAsking = true
-        activity.askForScreenLock(words.prompt) { answer ->
-            isAsking = false
-            if (answer == ScreenLockAnswer.CONFIRMED) {
-                cover.hide()
+        if (!state.startAsking()) return
+        activity.askForScreenLock(choices.wordsToShow.prompt) { answer ->
+            state.answered(answer)
+            when (answer) {
+                ScreenLockAnswer.CONFIRMED -> {
+                    cover.hide()
+                    keepsBackOut.isEnabled = false
+                }
+
+                ScreenLockAnswer.NO_SCREEN_LOCK -> {
+                    cover.sayNoScreenLock(choices.wordsToShow)
+                }
+
+                ScreenLockAnswer.REFUSED -> {
+                    Unit
+                }
             }
         }
     }

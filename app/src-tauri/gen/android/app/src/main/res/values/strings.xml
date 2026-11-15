@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">"Omnileaf"</string>
     <string name="main_activity_title">"Omnileaf"</string>
+    <string name="app_lock_locked_title">Omnileaf is locked</string>
+    <string name="app_lock_locked_body">Unlock to open your library.</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_unlock_prompt">Unlock Omnileaf</string>
+    <string name="app_lock_no_screen_lock">Set a screen lock on this phone first</string>
+    <string name="app_lock_no_screen_lock_body">Android needs a PIN, pattern or password before Omnileaf can lock.</string>
 </resources>

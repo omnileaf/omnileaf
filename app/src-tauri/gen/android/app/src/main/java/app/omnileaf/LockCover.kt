@@ -1,8 +1,6 @@
 package app.omnileaf
 
 import android.app.Activity
-import android.content.Context
-import android.content.res.Configuration
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -10,18 +8,19 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.color.MaterialColors
 
-private const val TITLE_SIZE_SP = 24f
-private const val BODY_SIZE_SP = 16f
 private const val GAP_DP = 16
+private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
+private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
 internal class LockCover(
     private val activity: Activity,
     private val onUnlock: () -> Unit,
 ) {
-    private var shown: View? = null
+    private var shown: Shown? = null
 
     val isShown: Boolean
         get() = shown != null
@@ -30,31 +29,39 @@ internal class LockCover(
         if (shown != null) return
         val content = activity.findViewById<ViewGroup>(android.R.id.content)
         val cover = coverWith(words)
-        content.addView(cover, FrameLayout.LayoutParams(MATCH, MATCH))
-        hideBehind(content, cover, isHidden = true)
-        shown = cover
+        val behind = (0 until content.childCount).map { Behind(content.getChildAt(it)) }
+        content.addView(cover.root, FrameLayout.LayoutParams(MATCH, MATCH))
+        behind.forEach(Behind::shutOut)
+        cover.root.requestFocus()
+        WindowCompat.getInsetsController(activity.window, cover.root).hide(WindowInsetsCompat.Type.ime())
+        shown = cover.copy(behind = behind)
+    }
+
+    fun sayNoScreenLock(words: LockWords) {
+        val cover = shown ?: return
+        cover.title.text = words.noScreenLock
+        cover.body.text = words.noScreenLockBody
     }
 
     fun hide() {
         val cover = shown ?: return
-        val content = activity.findViewById<ViewGroup>(android.R.id.content)
-        content.removeView(cover)
-        hideBehind(content, cover, isHidden = false)
+        activity.findViewById<ViewGroup>(android.R.id.content).removeView(cover.root)
+        cover.behind.forEach(Behind::letBackIn)
         shown = null
     }
 
-    private fun coverWith(words: LockWords): View {
-        val themed = ContextThemeWrapper(activity, RememberedTheme(activity).theme().coverStyle(activity))
-        val onSurface = MaterialColors.getColor(themed, com.google.android.material.R.attr.colorOnSurface, 0)
-        val onSurfaceVariant =
-            MaterialColors.getColor(themed, com.google.android.material.R.attr.colorOnSurfaceVariant, 0)
+    private fun coverWith(words: LockWords): Shown {
+        val theme = RememberedTheme(activity).theme()
+        val themed = ContextThemeWrapper(activity, theme.style())
         val gap = (GAP_DP * activity.resources.displayMetrics.density).toInt()
+        val title = text(themed, words.title, com.google.android.material.R.style.TextAppearance_Material3_HeadlineSmall)
+        val body = text(themed, words.body, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
         val column =
             LinearLayout(themed).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
-                addView(text(themed, words.title, TITLE_SIZE_SP, onSurface))
-                addView(text(themed, words.body, BODY_SIZE_SP, onSurfaceVariant), spaced(gap))
+                addView(title)
+                addView(body, spaced(gap))
                 addView(
                     MaterialButton(themed).apply {
                         text = words.unlock
@@ -63,24 +70,25 @@ internal class LockCover(
                     spaced(gap * 2),
                 )
             }
-        return FrameLayout(themed).apply {
-            setBackgroundColor(activity.getColor(RememberedTheme(activity).theme().pageBackground()))
-            isClickable = true
-            isFocusable = true
-            addView(column, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
-        }
+        val root =
+            FrameLayout(themed).apply {
+                setBackgroundColor(activity.getColor(theme.pageBackground()))
+                isClickable = true
+                isFocusable = true
+                isFocusableInTouchMode = true
+                addView(column, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
+            }
+        return Shown(root, title, body)
     }
 
     private fun text(
-        context: Context,
+        themed: ContextThemeWrapper,
         words: String,
-        sizeSp: Float,
-        color: Int,
+        appearance: Int,
     ): TextView =
-        TextView(context).apply {
+        TextView(themed).apply {
             text = words
-            textSize = sizeSp
-            setTextColor(color)
+            setTextAppearance(appearance)
             gravity = Gravity.CENTER
         }
 
@@ -89,38 +97,29 @@ internal class LockCover(
             topMargin = top
         }
 
-    private fun hideBehind(
-        content: ViewGroup,
-        cover: View,
-        isHidden: Boolean,
+    private data class Shown(
+        val root: View,
+        val title: TextView,
+        val body: TextView,
+        val behind: List<Behind> = emptyList(),
+    )
+
+    private class Behind(
+        private val view: View,
     ) {
-        val importance =
-            if (isHidden) View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
-        for (index in 0 until content.childCount) {
-            val child = content.getChildAt(index)
-            if (child != cover) child.importantForAccessibility = importance
-        }
-    }
-}
+        private val importance = view.importantForAccessibility
+        private val focusability = (view as? ViewGroup)?.descendantFocusability
 
-private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
-private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
-
-private fun StartingTheme.coverStyle(activity: Activity): Int =
-    when (this) {
-        StartingTheme.LIGHT -> {
-            R.style.Theme_omnileaf_app_Light
+        fun shutOut() {
+            view.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            (view as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         }
 
-        StartingTheme.DARK -> {
-            R.style.Theme_omnileaf_app_Dark
-        }
-
-        StartingTheme.DEVICE -> {
-            if (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES) {
-                R.style.Theme_omnileaf_app_Dark
-            } else {
-                R.style.Theme_omnileaf_app_Light
+        fun letBackIn() {
+            view.importantForAccessibility = importance
+            if (view is ViewGroup && focusability != null) {
+                view.descendantFocusability = focusability
             }
         }
     }
+}

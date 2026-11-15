@@ -48,7 +48,8 @@ class MainActivity : TauriActivity() {
         turnScreen(newConfig)
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = volumeKeys.handle(event.toKeyPress()) || super.dispatchKeyEvent(event)
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        (!appLock.isCovering && volumeKeys.handle(event.toKeyPress())) || super.dispatchKeyEvent(event)
 
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
