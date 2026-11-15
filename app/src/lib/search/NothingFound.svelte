@@ -8,7 +8,7 @@
     EmptyMedia,
     EmptyTitle,
   } from "#lib/components/ui/empty/index.ts";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
+  import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { SpellingSuggestion } from "#lib/ipc/bindings.ts";
   import { WindowWidth } from "#lib/page/breakpoints.ts";
   import { currentPlatform, phoneOf } from "#lib/page/platform.ts";
@@ -24,7 +24,7 @@
   const NATIVE_HINT = `${NATIVE_TYPE} font-native-empty-body`;
   const ANDROID_TITLE =
     "text-native-empty/native-empty tracking-native-empty font-normal text-foreground";
-  const ANDROID_HINT = `${ROW_SUBTITLE_TYPE} text-muted`;
+  const ANDROID_HINT = ROW_SUBTITLE_MUTED_TYPE;
   const NATIVE_SUGGESTION = "text-accent underline underline-offset-2";
   const SOURCES_ICON_SIZE = 16;
   const SUGGESTION_SPOT = "\u0000";

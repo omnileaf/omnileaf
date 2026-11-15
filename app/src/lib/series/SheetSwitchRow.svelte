@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ROW_FOCUS_RING,
-    ROW_SUBTITLE_TYPE,
+    ROW_SUBTITLE_MUTED_TYPE,
   } from "#lib/components/ui/item/looks.ts";
   import { Switch } from "#lib/components/ui/switch/index.ts";
 
@@ -29,7 +29,7 @@
 <div class={SHEET_SWITCH_ROW}>
   <span class={SHEET_SWITCH_WORDS}>
     <span id="{id}-label" class={SHEET_ROW_TITLE}>{label}</span>
-    <span id="{id}-description" class={[ROW_SUBTITLE_TYPE, "text-muted"]}>
+    <span id="{id}-description" class={ROW_SUBTITLE_MUTED_TYPE}>
       {description}
     </span>
   </span>

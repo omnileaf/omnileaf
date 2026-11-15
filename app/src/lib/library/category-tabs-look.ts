@@ -2,7 +2,7 @@ import type { ButtonVariant } from "#lib/components/ui/button/looks.ts";
 import {
   ITEM_LOOKS,
   ROW_FOCUS_RING,
-  ROW_SUBTITLE_TYPE,
+  ROW_SUBTITLE_MUTED_TYPE,
 } from "#lib/components/ui/item/looks.ts";
 import { WINDOWS_SELECTOR_BAR_LOOK } from "#lib/components/ui/tabs/looks.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
@@ -102,7 +102,7 @@ const ANDROID_PHONE_LOOK: CategoryTabsLook = {
     hasBadge: false,
     title:
       "pbe-xs text-native-bar-title/native-bar-title font-native-bar-title tracking-native-bar-title text-balance wrap-anywhere",
-    description: `${ROW_SUBTITLE_TYPE} text-muted`,
+    description: ROW_SUBTITLE_MUTED_TYPE,
     list: "flex flex-col overflow-auto pbe-sm min-block-none row-rules",
     option: `${ITEM_LOOKS.row} aria-checked:bg-native-row-current aria-checked:text-native-on-row-current`,
     foot: "flex flex-wrap gap-sm px-lg pbs-md pbe-native-sheet-foot-bottom",
