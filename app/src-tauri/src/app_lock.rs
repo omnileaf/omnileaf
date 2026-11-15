@@ -33,6 +33,27 @@ pub(crate) struct LockWords {
     body: String,
     unlock: String,
     prompt: String,
+    no_screen_lock: String,
+    no_screen_lock_body: String,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android shows a lock screen")
+)]
+impl LockWords {
+    fn is_complete(&self) -> bool {
+        [
+            &self.title,
+            &self.body,
+            &self.unlock,
+            &self.prompt,
+            &self.no_screen_lock,
+            &self.no_screen_lock_body,
+        ]
+        .iter()
+        .all(|line| !line.trim().is_empty())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -113,7 +134,7 @@ pub(crate) async fn remember_words(
     _app: &tauri::AppHandle,
     _words: LockWords,
 ) -> Result<(), crate::ipc_error::IpcError> {
-    Ok(())
+    Err(crate::ipc_error::IpcError::app_lock_unavailable())
 }
 
 #[cfg(not(target_os = "android"))]
@@ -179,6 +200,8 @@ mod android {
         TimedOut,
         #[error("the prompt to turn the app lock on needs a title")]
         UntitledPrompt,
+        #[error("the lock screen needs all of its words")]
+        IncompleteWords,
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -207,6 +230,9 @@ mod android {
     }
 
     pub(crate) async fn remember_words(app: &AppHandle, words: LockWords) -> Result<(), IpcError> {
+        if !words.is_complete() {
+            return Err(IpcError::internal(&AppLockError::IncompleteWords));
+        }
         ask_soon(app, REMEMBER_WORDS, words).await
     }
 
@@ -339,6 +365,7 @@ mod tests {
             })
             .unwrap(),
             serde_json::to_value(HiddenInRecents { is_hidden: true }).unwrap(),
+            serde_json::to_value(words()).unwrap(),
         ];
 
         assert_eq!(
@@ -347,7 +374,40 @@ mod tests {
                 serde_json::json!({ "title": "Turn on app lock" }),
                 serde_json::json!({ "lockAfter": "oneHour" }),
                 serde_json::json!({ "isHidden": true }),
+                serde_json::json!({
+                    "title": "Omnileaf is locked",
+                    "body": "Unlock to open your library.",
+                    "unlock": "Unlock",
+                    "prompt": "Unlock Omnileaf",
+                    "noScreenLock": "Set a screen lock on this phone first",
+                    "noScreenLockBody": "Android needs a PIN, pattern or password before Omnileaf can lock.",
+                }),
             ]
+        );
+    }
+
+    fn words() -> LockWords {
+        LockWords {
+            title: "Omnileaf is locked".into(),
+            body: "Unlock to open your library.".into(),
+            unlock: "Unlock".into(),
+            prompt: "Unlock Omnileaf".into(),
+            no_screen_lock: "Set a screen lock on this phone first".into(),
+            no_screen_lock_body:
+                "Android needs a PIN, pattern or password before Omnileaf can lock.".into(),
+        }
+    }
+
+    #[test]
+    fn takes_lock_words_only_when_every_line_has_text() {
+        let blank_prompt = LockWords {
+            prompt: "  ".into(),
+            ..words()
+        };
+
+        assert_eq!(
+            [words().is_complete(), blank_prompt.is_complete()],
+            [true, false]
         );
     }
 

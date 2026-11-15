@@ -66,27 +66,37 @@ test("tells a failed read apart from a missing app lock", async () => {
   expect(reading).toEqual({ kind: "failed", error });
 });
 
-test("hands Android the words its lock screen shows", async () => {
+test("hands the lock screen its words", async () => {
   const remember = vi.fn(() =>
     Promise.resolve({ status: "ok", data: null } as const),
   );
 
-  await rememberLockWords("android", remember);
+  await rememberLockWords(remember);
 
   expect(remember).toHaveBeenCalledWith({
     title: "Omnileaf is locked",
     body: "Unlock to open your library.",
     unlock: "Unlock",
     prompt: "Unlock Omnileaf",
+    noScreenLock: "Set a screen lock on this phone first",
+    noScreenLockBody:
+      "Android needs a PIN, pattern or password before Omnileaf can lock.",
   });
 });
 
-test("hands the lock screen's words to no other platform", async () => {
-  const remember = vi.fn(() =>
-    Promise.resolve({ status: "ok", data: null } as const),
+test("reports nothing where no lock screen is offered", async () => {
+  const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
+
+  await rememberLockWords(() =>
+    Promise.resolve({
+      status: "error",
+      error: {
+        code: "appLockUnavailable",
+        message: "the app lock isn't offered here",
+      },
+    }),
   );
 
-  await rememberLockWords("ios", remember);
-
-  expect(remember).not.toHaveBeenCalled();
+  expect(reported).not.toHaveBeenCalled();
+  reported.mockRestore();
 });

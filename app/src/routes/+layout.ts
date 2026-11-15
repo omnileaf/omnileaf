@@ -32,7 +32,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followSystemContrast(appInfo.platform);
   textSizeChoice.markDocument();
   touchChoices.markDocument();
-  void rememberLockWords(appInfo.platform);
+  void rememberLockWords();
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }

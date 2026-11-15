@@ -3,7 +3,6 @@ import {
   commands,
   type IpcError,
   type LockAfter,
-  type Platform,
 } from "#lib/ipc/bindings.ts";
 import { m } from "#lib/paraglide/messages.js";
 
@@ -59,19 +58,20 @@ export async function readAppLock(
 }
 
 export async function rememberLockWords(
-  platform: Platform,
   remember: typeof commands.rememberAppLockWords = commands.rememberAppLockWords,
 ): Promise<void> {
-  if (platform !== "android") {
-    return;
-  }
   const remembered = await remember({
     title: m.app_lock_locked_title(),
     body: m.app_lock_locked_body(),
     unlock: m.app_lock_unlock(),
     prompt: m.app_lock_unlock_prompt(),
+    noScreenLock: m.app_lock_no_screen_lock(),
+    noScreenLockBody: m.app_lock_no_screen_lock_body(),
   });
-  if (remembered.status === "error") {
+  if (
+    remembered.status === "error" &&
+    remembered.error.code !== "appLockUnavailable"
+  ) {
     reportError(remembered.error);
   }
 }
