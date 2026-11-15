@@ -17,6 +17,8 @@ private val UNLOCKS_WITH: Int =
         BIOMETRIC_WEAK or DEVICE_CREDENTIAL
     }
 
+private val DISMISSED_BY_USER = setOf(BiometricPrompt.ERROR_USER_CANCELED, BiometricPrompt.ERROR_NEGATIVE_BUTTON)
+
 internal fun FragmentActivity.hasScreenLock(): Boolean =
     BiometricManager.from(this).canAuthenticate(UNLOCKS_WITH) == BiometricManager.BIOMETRIC_SUCCESS
 
@@ -40,8 +42,11 @@ internal fun FragmentActivity.askForScreenLock(
                 errorCode: Int,
                 errString: CharSequence,
             ) {
-                Logger.warn("the screen lock prompt ended with error $errorCode: $errString")
-                answer(ScreenLockAnswer.of(errorCode))
+                val screenLockAnswer = ScreenLockAnswer.of(errorCode)
+                if (screenLockAnswer == ScreenLockAnswer.REFUSED && errorCode !in DISMISSED_BY_USER) {
+                    Logger.warn("the screen lock prompt ended with error $errorCode: $errString")
+                }
+                answer(screenLockAnswer)
             }
         },
     ).authenticate(
