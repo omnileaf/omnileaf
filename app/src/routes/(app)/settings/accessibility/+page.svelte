@@ -2,6 +2,11 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import {
+    TEXT_SIZES,
+    type TextSize,
+    textSizeChoice,
+  } from "#lib/accessibility/text-size-choice.svelte.ts";
+  import {
     LONG_PRESSES,
     type LongPressLength,
     touchChoices,
@@ -26,9 +31,16 @@
     "(prefers-reduced-motion: reduce)",
   );
   const pageId = $props.id();
+  const textHeadingId = `${pageId}-text`;
+  const textSizeId = `${pageId}-text-size`;
   const motionHeadingId = `${pageId}-motion`;
   const touchHeadingId = `${pageId}-touch`;
   const longPressId = `${pageId}-long-press`;
+  const TEXT_SIZE_NAMES = {
+    system: m.accessibility_text_size_system,
+    larger: m.accessibility_text_size_larger,
+    largest: m.accessibility_text_size_largest,
+  } satisfies Record<TextSize, () => string>;
   const LONG_PRESS_NAMES = {
     short: m.accessibility_long_press_short,
     medium: m.accessibility_long_press_medium,
@@ -49,6 +61,30 @@
 
 <SectionHeading title={m.accessibility_title()} />
 <div class="mbs-pane-gap flex flex-col android:max-medium:mbs-none">
+  <section aria-labelledby={textHeadingId} class="flex flex-col">
+    <h2 id={textHeadingId} class={FLUSH_LIST_HEADING}>
+      {m.accessibility_text()}
+    </h2>
+    <div class={FLUSH_STACKED_ROW}>
+      <SettingWords
+        id={textSizeId}
+        look="android"
+        label={m.accessibility_text_size()}
+        description={m.accessibility_text_size_help()}
+      />
+      <SegmentedControl
+        options={TEXT_SIZES}
+        labels={TEXT_SIZE_NAMES}
+        chosen={textSizeChoice.size}
+        labelledBy="{textSizeId}-label"
+        describedBy="{textSizeId}-description"
+        isFullWidth
+        onChoose={(size: TextSize) => {
+          textSizeChoice.choose(size);
+        }}
+      />
+    </div>
+  </section>
   <section aria-labelledby={motionHeadingId} class="flex flex-col">
     <h2 id={motionHeadingId} class={FLUSH_LIST_HEADING}>
       {m.accessibility_motion_and_contrast()}
