@@ -4,10 +4,9 @@ use specta::Type;
 #[cfg(target_os = "android")]
 pub(crate) use android::{plugin, read};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum SystemClock {
-    #[default]
     FollowsLanguage,
     TwelveHour,
     TwentyFourHour,
@@ -21,7 +20,7 @@ pub(crate) enum SystemClock {
 pub(crate) async fn read(
     _app: &tauri::AppHandle,
 ) -> Result<SystemClock, crate::ipc_error::IpcError> {
-    Ok(SystemClock::default())
+    Ok(SystemClock::FollowsLanguage)
 }
 
 #[cfg_attr(
@@ -113,12 +112,5 @@ mod tests {
         let reading: ClockReading = serde_json::from_value(sent).unwrap();
 
         assert_eq!(reading.clock, SystemClock::TwelveHour);
-    }
-
-    #[test]
-    fn leaves_the_clock_to_the_language_where_no_setting_names_one() {
-        let clock = SystemClock::default();
-
-        assert_eq!(clock, SystemClock::FollowsLanguage);
     }
 }
