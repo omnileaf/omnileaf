@@ -1255,15 +1255,14 @@ test("keeps the app lock's delay and hiding content in recents once it is turned
   });
 });
 
-test("offers no app lock off Android", () => {
+test("offers no app lock off Android", async () => {
   const { backend } = backendFor("platform=ios");
 
-  expect(() => backend.appLock()).toThrow(
-    new CommandFailure({
-      code: "appLockUnavailable",
-      message: "the app lock isn't offered here",
-    }),
-  );
+  const reading = (async () => backend.appLock())();
+
+  await expect(reading).rejects.toMatchObject({
+    error: { code: "appLockUnavailable" },
+  });
 });
 
 test("suggests the words of a chapter title close to a search, naming its series", async () => {

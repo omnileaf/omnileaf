@@ -45,7 +45,7 @@ export class AppLockSetting {
     this.isAsking = true;
     try {
       const turned = await this.changes.turnOn(promptTitle);
-      if (this.#isChanged(turned)) {
+      if (this.#changedElseReported(turned)) {
         this.#follow(turned.data);
       }
     } finally {
@@ -54,19 +54,25 @@ export class AppLockSetting {
   }
 
   async turnOff(): Promise<void> {
-    if (this.#isChanged(await this.changes.turnOff())) {
+    if (this.#changedElseReported(await this.changes.turnOff())) {
       this.lock = { ...this.lock, isOn: false };
     }
   }
 
   async chooseLockAfter(lockAfter: LockAfter): Promise<void> {
-    if (this.#isChanged(await this.changes.chooseLockAfter(lockAfter))) {
+    if (
+      this.#changedElseReported(await this.changes.chooseLockAfter(lockAfter))
+    ) {
       this.lock = { ...this.lock, lockAfter };
     }
   }
 
   async hideContentInRecents(isHidden: boolean): Promise<void> {
-    if (this.#isChanged(await this.changes.hideContentInRecents(isHidden))) {
+    if (
+      this.#changedElseReported(
+        await this.changes.hideContentInRecents(isHidden),
+      )
+    ) {
       this.lock = { ...this.lock, hidesContentInRecents: isHidden };
     }
   }
@@ -79,9 +85,9 @@ export class AppLockSetting {
     }
   }
 
-  #isChanged<Data>(
+  #changedElseReported<Data>(
     answered: Answered<Data>,
-  ): answered is { readonly status: "ok"; readonly data: Data } {
+  ): answered is Extract<Answered<Data>, { status: "ok" }> {
     if (answered.status === "error") {
       this.answers.onFailure(answered.error);
       return false;

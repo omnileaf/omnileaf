@@ -73,6 +73,23 @@ test("asks for a screen lock first on a phone without one", async () => {
   expect(told.onNoScreenLock).toHaveBeenCalledOnce();
 });
 
+test("leaves the lock off and reports why when turning it on fails", async () => {
+  const told = answers();
+  const setting = new AppLockSetting(
+    NEW_APP_LOCK,
+    changes({
+      turnOn: () => Promise.resolve({ status: "error", error: NOT_CHANGED }),
+    }),
+    told,
+  );
+
+  await setting.turnOn("Turn on app lock");
+
+  expect(setting.lock.isOn).toBe(false);
+  expect(setting.isAsking).toBe(false);
+  expect(told.onFailure).toHaveBeenCalledWith(NOT_CHANGED);
+});
+
 test("stops asking even when turning the lock on throws", async () => {
   const setting = new AppLockSetting(
     NEW_APP_LOCK,
@@ -122,11 +139,12 @@ test("keeps the old delay when the new one can't be kept", async () => {
 });
 
 test("hides content in recents once chosen, and keeps it shown when that fails", async () => {
+  const told = answers();
   const hidden = new AppLockSetting(NEW_APP_LOCK, changes(), answers());
   const shown = new AppLockSetting(
     NEW_APP_LOCK,
     changes({ hideContentInRecents: failed }),
-    answers(),
+    told,
   );
 
   await hidden.hideContentInRecents(true);
@@ -134,4 +152,5 @@ test("hides content in recents once chosen, and keeps it shown when that fails",
 
   expect(hidden.lock.hidesContentInRecents).toBe(true);
   expect(shown.lock.hidesContentInRecents).toBe(false);
+  expect(told.onFailure).toHaveBeenCalledWith(NOT_CHANGED);
 });
