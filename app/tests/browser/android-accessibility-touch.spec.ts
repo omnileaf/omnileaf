@@ -1,6 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+  viewportOf,
+} from "./fixtures.ts";
 import { sampleSeries } from "./series-catalog.ts";
 
 const LIBRARY = sampleSeries(6);
@@ -35,15 +41,6 @@ function targetSizes(page: Page): Promise<number[]> {
       return size;
     }),
   );
-}
-
-async function boxOf(
-  shown: Locator,
-): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
-  await expect(shown).toBeVisible();
-  const box = await shown.boundingBox();
-  expect(box).not.toBeNull();
-  return box ?? { x: 0, y: 0, width: 0, height: 0 };
 }
 
 function seriesList(page: Page): Locator {
@@ -102,7 +99,7 @@ test.describe(
       const lengths = await boxOf(
         section.getByRole("radiogroup", { name: "Long press takes" }),
       );
-      const pageWidth = page.viewportSize()?.width ?? 0;
+      const pageWidth = viewportOf(page).width;
 
       expect(choiceLabel.x).toBe(switchLabel.x);
       expect(lengths.x).toBe(switchLabel.x);
