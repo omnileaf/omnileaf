@@ -12,6 +12,7 @@ kotlin = "2.2.10"
 ktlint = "1.8.0"
 lifecycle = "2.10.0"
 material = "1.12.0"
+org-json = "20250517"
 spotless = "8.10.4"
 webkit = "1.14.0"
 
@@ -31,4 +32,5 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
+org-json = { module = "org.json:json", version.ref = "org-json" }
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
