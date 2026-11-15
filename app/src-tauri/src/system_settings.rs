@@ -20,7 +20,7 @@ const SETTINGS_URL: &str = "app-settings:";
     target_os = "linux",
     expect(
         clippy::enum_variant_names,
-        reason = "on Linux every variant names a settings page the desktop lacks"
+        reason = "on Linux every variant names a settings page or app the desktop lacks"
     )
 )]
 pub(crate) enum SystemSettingsError {
