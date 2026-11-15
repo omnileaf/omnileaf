@@ -63,6 +63,36 @@ async fn numbers_a_volume_by_its_comic_info_volume_and_ignores_its_comic_info_nu
 }
 
 #[tokio::test]
+async fn numbers_a_volume_by_its_name_when_its_comic_info_volume_is_a_year() {
+    let books = [(
+        "Sample Series 04 v02.cbz",
+        "<ComicInfo><Volume>2011</Volume></ComicInfo>",
+    )];
+
+    let numbered = numbered("comic-info-volume-year", &books).await;
+
+    assert_eq!(
+        numbered,
+        owned_pairs(&[("Sample Series 04 v02", "volume 2000 2000 file_name")])
+    );
+}
+
+#[tokio::test]
+async fn leaves_a_chapter_out_of_a_volume_when_its_comic_info_volume_is_a_year() {
+    let books = [(
+        "Sample Series 04 c005.cbz",
+        "<ComicInfo><Number>5</Number><Volume>1987</Volume></ComicInfo>",
+    )];
+
+    let numbered = numbered("comic-info-chapter-year", &books).await;
+
+    assert_eq!(
+        numbered,
+        owned_pairs(&[("Sample Series 04 c005", "chapter 5000 5000 files")])
+    );
+}
+
+#[tokio::test]
 async fn numbers_a_chapter_by_its_comic_info_number_and_volume() {
     let books = [
         (
