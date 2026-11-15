@@ -78,6 +78,7 @@ class AppLockPlugin(
     @Command
     fun turnOff(invoke: Invoke) {
         choices.turn(isOn = false)
+        followRecents()
         invoke.resolve()
     }
 
@@ -90,6 +91,7 @@ class AppLockPlugin(
     @Command
     fun hideContentInRecents(invoke: Invoke) {
         choices.hideContentInRecents(invoke.parseArgs(HiddenInRecents::class.java).isHidden)
+        followRecents()
         invoke.resolve()
     }
 
@@ -101,9 +103,15 @@ class AppLockPlugin(
         shownActivity.askForScreenLock(title) { answer ->
             if (answer == ScreenLockAnswer.CONFIRMED) {
                 choices.turn(isOn = true)
+                followRecents()
             }
             resolve(invoke, answer.turning())
         }
+    }
+
+    private fun followRecents() {
+        val shownActivity = PluginManager.activity ?: return
+        shownActivity.runOnUiThread { shownActivity.followRecentsChoice(choices) }
     }
 
     private fun resolve(

@@ -18,6 +18,7 @@ internal class AppLockGate(
     private var isAsking = false
 
     fun watch() {
+        activity.followRecentsChoice(choices)
         val process = ProcessLifecycleOwner.get().lifecycle
         process.addObserver(this)
         activity.lifecycle.addObserver(
