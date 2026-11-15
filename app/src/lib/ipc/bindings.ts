@@ -26,6 +26,11 @@ export const commands = {
 	watchSystemContrast: (onChange: Channel<SystemContrast>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_contrast", { onChange })),
 	systemAppLanguage: () => typedError<SystemAppLanguage, IpcError>(__TAURI_INVOKE("system_app_language")),
 	systemClock: () => typedError<SystemClock, IpcError>(__TAURI_INVOKE("system_clock")),
+	appLock: () => typedError<AppLock, IpcError>(__TAURI_INVOKE("app_lock")),
+	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),
+	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
+	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
+	hideContentInRecents: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_content_in_recents", { isHidden })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
@@ -270,6 +275,15 @@ export type AppInfo = {
 	isDevelopmentBuild: boolean,
 	windowBackdrop: WindowBackdrop,
 };
+
+export type AppLock = {
+	isOn: boolean,
+	lockAfter: LockAfter,
+	hidesContent: boolean,
+	canHideContent: boolean,
+};
+
+export type AppLockTurning = "turnedOn" | "notConfirmed" | "noScreenLock";
 
 export type BackSwipe = { kind: "moved"; progress: number | null } | { kind: "released"; progress: number | null; velocity: number | null } | { kind: "cancelled" };
 
@@ -579,7 +593,7 @@ export type IpcError = {
 	message: string,
 };
 
-export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "internal";
+export type IpcErrorCode = "folderPickerUnavailable" | "folderChooserMissing" | "folderUnreadable" | "folderNotFound" | "folderAlreadyInLibrary" | "homeFolderKept" | "clipboardUnavailable" | "browserUnavailable" | "fileManagerUnavailable" | "systemSettingsUnavailable" | "defaultViewerUnavailable" | "noCrashReport" | "crashReportUnavailable" | "developmentBuildOnly" | "seriesNotFound" | "searchTooLong" | "cursorForAnotherList" | "bookNotFound" | "bookUnreadable" | "bookTypeUnsupported" | "fileTypeRead" | "bookmarksNotKept" | "labelsNotKept" | "detailsNotKept" | "reportNotSaved" | "relayUnreachable" | "relayRateLimited" | "relayBusy" | "replyAddressInvalid" | "reportRefused" | "appLockUnavailable" | "internal";
 
 export type LabelChanges = {
 	categoriesAdded: (string & { readonly __brand: "CategoryId" })[],
@@ -716,6 +730,8 @@ export type LibraryWriter = {
 	name: string,
 	seriesCount: number,
 };
+
+export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "fifteenMinutes" | "thirtyMinutes" | "oneHour";
 
 export type MissingFolder = {
 	folder: LibraryFolder,

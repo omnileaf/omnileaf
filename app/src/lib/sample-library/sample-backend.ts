@@ -1,5 +1,6 @@
 import {
   type AdultContent,
+  type AppLock,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
@@ -710,6 +711,12 @@ export function sampleBackend(
     (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
     detailEdits.get(series.number)?.isMarkedAdult === true;
   let screenshotMode = false;
+  let appLock: AppLock = {
+    isOn: false,
+    lockAfter: "oneMinute",
+    hidesContent: false,
+    canHideContent: true,
+  };
   const hidesAdult = (): boolean =>
     screenshotMode || adultContent.treatment === "hide";
   const isHiddenByScreenshotMode = (series: SampleSeries): boolean =>
@@ -1246,6 +1253,23 @@ export function sampleBackend(
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
     systemClock: () => "followsLanguage",
+    appLock: () => appLock,
+    turnAppLockOn: () => {
+      appLock = { ...appLock, isOn: true };
+      return "turnedOn";
+    },
+    turnAppLockOff: () => {
+      appLock = { ...appLock, isOn: false };
+      return null;
+    },
+    chooseLockAfter: (lockAfter) => {
+      appLock = { ...appLock, lockAfter };
+      return null;
+    },
+    hideContentInRecents: (isHidden) => {
+      appLock = { ...appLock, hidesContent: isHidden };
+      return null;
+    },
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,
