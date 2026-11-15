@@ -98,6 +98,7 @@
   "library_category_all": "⟦Áļļ··⟧",
   "missing_folder_title": "⟦{name} íšñ’ţ ţĥéŕé········⟧",
   "library_series_and_hidden": "⟦{series} · {hidden}········⟧",
+  "library_series_by_creator": "⟦{series} · ƀý çŕéáţöŕ·········⟧",
   "missing_folder_body": [
     {
       "declarations": [
@@ -478,6 +479,7 @@
   "library_suggested_tags": "⟦Šûĝĝéšţéð····⟧",
   "library_labels_done": "⟦Ðöñé··⟧",
   "library_open_series": "⟦Öþéñ šéŕíéš·····⟧",
+  "library_open_creator": "⟦Öþéñ {name}·····⟧",
   "library_labels_menu": "⟦Çáţéĝöŕíéš áñð ţáĝš…········⟧",
   "library_select": "⟦Šéļéçţ···⟧",
   "library_select_cover": "⟦Šéļéçţ {title}······⟧",

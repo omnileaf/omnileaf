@@ -990,7 +990,11 @@
 
 {#snippet shownCount()}
   {#if seriesCount.count !== undefined}
-    <SeriesCount count={seriesCount.count} hidden={hiddenSeries} />
+    <SeriesCount
+      count={seriesCount.count}
+      hidden={hiddenSeries}
+      groupBy={androidPhone.isOn ? groupBy : "none"}
+    />
   {/if}
 {/snippet}
 
@@ -1311,7 +1315,7 @@
             class="relative flex-1 touch-pan-y"
           >
             {#if groups.length > 0}
-              <div class="flex flex-col gap-xl">
+              <div class="flex flex-col gap-xl android:max-medium:gap-sm">
                 {#each groups as group (group.key)}
                   <SeriesGroup
                     name={group.name}

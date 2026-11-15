@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import english from "../../messages/en.json" with { type: "json" };
 import { expect } from "./fixtures.ts";
 
-type Messages = typeof english;
+export type Messages = typeof english;
 
 export async function foldsIntoMore(page: Page): Promise<boolean> {
   await expect(

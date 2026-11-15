@@ -24,6 +24,7 @@ export const ANDROID_FILTER_CHIP = {
 
 export const ANDROID_VIEW_SETTING = {
   row: "flex flex-wrap items-center justify-between gap-md ps-lg pe-xl min-block-touch-target",
+  stacked: "flex flex-col ps-lg pe-lg pbs-sm pbe-md",
   words: "",
 } as const;
 

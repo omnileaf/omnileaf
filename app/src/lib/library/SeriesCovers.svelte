@@ -69,7 +69,7 @@
   import { seriesSelection } from "./series-selection";
   import SeriesLink from "./SeriesLink.svelte";
   import { coverLook } from "./cover-look";
-  import { coverStack, coverTileLook } from "./cover-tile";
+  import { coverTileLook } from "./cover-tile";
   import { SCREEN_SIZES, viewDrawn } from "./library-view";
   import type { CoverUrl } from "./cover-url";
   import { realLook, standInLook } from "./series-look";
@@ -118,9 +118,7 @@
   const platform = currentPlatform();
   const tile = coverTileLook(platform);
   const width = new WindowWidth();
-  const stack = $derived(
-    view.stacksSeriesCovers ? coverStack(platform, width.current) : null,
-  );
+  const stack = $derived(view.stacksSeriesCovers ? tile.stack : null);
   const rowLook = $derived(listRowLook(platform, width.current));
   const isIosPhone = $derived(
     platform === "ios" && isPhone(platform, width.current),

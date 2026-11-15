@@ -25,7 +25,6 @@ export function viewDrawn(
   return {
     ...view,
     display: view.display === "covers" ? "grid" : view.display,
-    groupBy: view.groupBy === "creator" ? "none" : view.groupBy,
   };
 }
 

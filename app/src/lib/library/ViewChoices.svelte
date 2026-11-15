@@ -122,7 +122,7 @@
         }}
       />
     {/if}
-    {#if canStackCovers && !isMaterial}
+    {#if canStackCovers}
       <ViewSwitchRow
         {usesItemRow}
         label={m.library_stack_covers()}
