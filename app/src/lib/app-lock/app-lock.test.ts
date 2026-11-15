@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import {
   appLockSummary,
@@ -66,6 +66,10 @@ test("tells a failed read apart from a missing app lock", async () => {
   expect(reading).toEqual({ kind: "failed", error });
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 test("hands the lock screen its words", async () => {
   const remember = vi.fn(() =>
     Promise.resolve({ status: "ok", data: null } as const),
@@ -98,5 +102,16 @@ test("reports nothing where no lock screen is offered", async () => {
   );
 
   expect(reported).not.toHaveBeenCalled();
-  reported.mockRestore();
+});
+
+test("reports words the phone turns down", async () => {
+  const reported = vi.spyOn(window, "reportError").mockReturnValue(undefined);
+  const error = {
+    code: "internal",
+    message: "something went wrong inside the app",
+  } as const;
+
+  await rememberLockWords(() => Promise.resolve({ status: "error", error }));
+
+  expect(reported).toHaveBeenCalledWith(error);
 });

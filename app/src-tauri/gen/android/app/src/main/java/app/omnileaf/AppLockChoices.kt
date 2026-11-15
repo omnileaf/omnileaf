@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.core.content.edit
 import app.tauri.Logger
-import org.json.JSONObject
+import org.json.JSONException
 
 private const val PREFERENCES = "app_lock"
 private const val IS_ON_KEY = "is_on"
@@ -46,30 +46,16 @@ internal class AppLockChoices(
         get() = storedWords()?.takeIf { it.isComplete } ?: LockWords.builtIn(context)
 
     fun remember(words: LockWords) {
-        val stored =
-            JSONObject()
-                .put("title", words.title)
-                .put("body", words.body)
-                .put("unlock", words.unlock)
-                .put("prompt", words.prompt)
-                .put("noScreenLock", words.noScreenLock)
-                .put("noScreenLockBody", words.noScreenLockBody)
-        preferences.edit { putString(WORDS_KEY, stored.toString()) }
+        preferences.edit { putString(WORDS_KEY, words.toJson()) }
     }
 
     private fun storedWords(): LockWords? {
         val stored = preferences.getString(WORDS_KEY, null) ?: return null
-        return runCatching {
-            val words = JSONObject(stored)
-            LockWords(
-                title = words.getString("title"),
-                body = words.getString("body"),
-                unlock = words.getString("unlock"),
-                prompt = words.getString("prompt"),
-                noScreenLock = words.getString("noScreenLock"),
-                noScreenLockBody = words.getString("noScreenLockBody"),
-            )
-        }.onFailure { Logger.warn("the app lock's kept words could not be read: ${it.message}") }
-            .getOrNull()
+        return try {
+            LockWords.fromJson(stored)
+        } catch (unreadable: JSONException) {
+            Logger.warn("the app lock's kept words could not be read: ${unreadable.message}")
+            null
+        }
     }
 }
