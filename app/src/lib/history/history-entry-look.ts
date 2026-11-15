@@ -10,6 +10,8 @@ export interface HistoryEntryLook {
   readonly opensMenu: boolean;
   readonly menuButton: string;
   readonly bar: string;
+  readonly cover: string;
+  readonly barsFinishedBooks: boolean;
 }
 
 const TODAYS_LOOK: HistoryEntryLook = {
@@ -18,6 +20,8 @@ const TODAYS_LOOK: HistoryEntryLook = {
   opensMenu: false,
   menuButton: "hidden large:flex",
   bar: "inline-history-bar",
+  cover: "inline-history-cover",
+  barsFinishedBooks: true,
 };
 
 const ANDROID_LOOK: HistoryEntryLook = {
@@ -27,6 +31,8 @@ const ANDROID_LOOK: HistoryEntryLook = {
   menuButton:
     "flex block-touch-target inline-touch-target before:block-touch-target before:inline-touch-target",
   bar: "inline-history-bar max-medium:inline-native-history-bar",
+  cover: "inline-history-cover max-medium:inline-native-history-cover",
+  barsFinishedBooks: false,
 };
 
 const HISTORY_ENTRY_LOOKS = {

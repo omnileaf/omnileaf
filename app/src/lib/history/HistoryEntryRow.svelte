@@ -62,7 +62,7 @@
     <ListCover
       {cover}
       {coverUrl}
-      class="shrink-0 rounded-history-cover inline-history-cover"
+      class={["shrink-0 rounded-history-cover", look.cover]}
     />
     <span class="flex flex-col gap-2xs min-inline-none">
       <span class={look.title}>
@@ -71,12 +71,14 @@
       <span class={look.line}>
         {historyLine(entry, group, formats)}
       </span>
-      <Progress
-        aria-label={reached.label}
-        max={reached.max}
-        value={reached.value}
-        class={["block-progress-compact", look.bar]}
-      />
+      {#if entry.readTo.state === "page" || look.barsFinishedBooks}
+        <Progress
+          aria-label={reached.label}
+          max={reached.max}
+          value={reached.value}
+          class={["block-progress-compact", look.bar]}
+        />
+      {/if}
     </span>
   </a>
   {#if !look.opensMenu}

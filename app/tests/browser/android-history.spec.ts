@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { type FakeBackend } from "./fake-backend.ts";
 import {
   accessibilityViolations,
+  boxOf,
   DEFAULT_BACKEND,
   expect,
   test,
@@ -19,12 +20,15 @@ const DAY_MS = 86_400_000;
 const FIRST_BOOK = 4;
 const SECOND_BOOK = 1;
 const THIRD_BOOK = 3;
+const FINISHED_BOOK = 5;
 const TOP_BAR_HEIGHT = 64;
 const BAR_START = 12;
 const BAR_END_INSET = 8;
 const MENU_REACH = 80;
 const HEADING_START = 16;
 const PROGRESS_TRACK_WIDTH = 120;
+const LIST_HEADER_GAP = 16;
+const COVER_HEIGHT = 56;
 const SEARCH_BAR_HEIGHT = 72;
 const PHONE = { width: 390, height: 844 };
 
@@ -69,6 +73,7 @@ const BOOKS: readonly WireEntry[] = [
     page: 18,
     pageCount: 40,
   }),
+  entry(FINISHED_BOOK, "2026-10-05T18:30:00.000Z", { state: "end" }),
 ];
 
 test.use({
@@ -191,6 +196,80 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
       .getByRole("progressbar");
 
     expect((await track.boundingBox())?.width).toBe(PROGRESS_TRACK_WIDTH);
+  });
+
+  test("puts each day heading 16px under the bar or the row above it", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const bar = await boxOf(
+      page.locator("header").filter({
+        has: page.getByRole("heading", { level: 1, name: "History" }),
+      }),
+    );
+    const today = await boxOf(
+      page.getByRole("heading", { level: 2, name: "Today" }),
+    );
+    const yesterday = await boxOf(
+      page.getByRole("heading", { level: 2, name: "Yesterday" }),
+    );
+    const lastToday = await boxOf(
+      page.getByRole("region", { name: "Today" }).getByRole("listitem").last(),
+    );
+
+    expect(today.y - (bar.y + bar.height)).toBe(LIST_HEADER_GAP);
+    expect(yesterday.y - (lastToday.y + lastToday.height)).toBe(
+      LIST_HEADER_GAP,
+    );
+  });
+
+  test("lines up each row's cover, text and more button on one centre with a 56px cover", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const row = page.getByRole("main").getByRole("listitem").first();
+    const cover = await boxOf(row.locator('[data-slot="list-cover"]'));
+    const name = await boxOf(
+      row.getByText("Sample Series 04", { exact: true }),
+    );
+    const bar = await boxOf(row.getByRole("progressbar"));
+    const more = await boxOf(
+      row.getByRole("button", { name: "More for Volume 4" }),
+    );
+    const centreOf = (box: { y: number; height: number }) =>
+      box.y + box.height / 2;
+    const textCentre = (name.y + bar.y + bar.height) / 2;
+
+    expect(cover.height).toBe(COVER_HEIGHT);
+    expect(Math.abs(centreOf(cover) - textCentre)).toBeLessThanOrEqual(1);
+    expect(Math.abs(centreOf(more) - centreOf(cover))).toBeLessThanOrEqual(1);
+  });
+
+  test("fills the track from its start up to the page reached", async ({
+    page,
+  }) => {
+    await openHistory(page);
+    const track = page
+      .getByRole("main")
+      .getByRole("listitem")
+      .first()
+      .getByRole("progressbar");
+    const trackBox = await boxOf(track);
+    const fill = await boxOf(track.locator("> div").first());
+
+    expect(fill.x).toBe(trackBox.x);
+    expect(fill.width).toBeCloseTo((PROGRESS_TRACK_WIDTH * 14) / 192, 0);
+  });
+
+  test("draws no bar under a finished book", async ({ page }) => {
+    await openHistory(page);
+    const finished = page
+      .getByRole("main")
+      .getByRole("listitem")
+      .filter({ hasText: "Sample Series 05" });
+
+    await expect(finished).toBeVisible();
+    await expect(finished.getByRole("progressbar")).toHaveCount(0);
   });
 
   test("opens the search as a flat 72px bar with no fill behind the field", async ({
