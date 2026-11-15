@@ -317,7 +317,9 @@
     class="mbs-lg flex flex-col gap-md android:max-medium:mbs-none android:max-medium:gap-none"
   >
     {#each { length: SKELETON_ROWS }, row (row)}
-      <div class="flex items-center gap-md ps-xs android:max-medium:py-sm">
+      <div
+        class="flex items-center gap-md ps-xs android:ps-none android:max-medium:py-sm"
+      >
         <Skeleton class={["shrink-0", entryLook.coverSkeleton]} />
         <div class="flex flex-1 flex-col gap-xs">
           <Skeleton class="block-sm inline-3/5" />
