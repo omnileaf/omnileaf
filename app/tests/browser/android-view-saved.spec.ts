@@ -38,13 +38,12 @@ test.describe(
       test.skip(platform !== "android", "Android's phone options");
     });
 
-    test("draws the series ungrouped, as None would", async ({ page }) => {
+    test("keeps grouping the series by creator", async ({ page }) => {
       await page.goto("/");
 
-      await expect(page.getByRole("list", { name: "Series" })).toBeVisible();
       await expect(
         page.getByRole("region", { name: WRITER, exact: true }),
-      ).toHaveCount(0);
+      ).toBeVisible();
     });
   },
 );
