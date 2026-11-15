@@ -24,7 +24,7 @@
       <ItemContent>
         <ItemTitle>Open the system's settings</ItemTitle>
       </ItemContent>
-      <ItemChevron look="everywhere" />
+      <ItemChevron shownOn="everywhere" />
     </Item>
   </li>
   <li>

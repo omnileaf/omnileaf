@@ -173,7 +173,7 @@
             <ItemContent>
               <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>
             </ItemContent>
-            <ItemChevron look="everywhere" />
+            <ItemChevron shownOn="everywhere" />
           </button>
         {/snippet}
       </Item>

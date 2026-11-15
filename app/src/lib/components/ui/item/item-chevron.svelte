@@ -1,15 +1,16 @@
 <script lang="ts">
   import { Icon } from "#lib/components/ui/icon/index.ts";
 
-  type ChevronLook = "platform" | "everywhere";
+  type ChevronPlatforms = "platform" | "everywhere";
 
-  let { look = "platform" }: { readonly look?: ChevronLook } = $props();
+  let { shownOn = "platform" }: { readonly shownOn?: ChevronPlatforms } =
+    $props();
 </script>
 
 <Icon
   name="chevron-right"
   class={[
     "shrink-0 text-muted rtl:-scale-x-100",
-    look === "platform" && "android:hidden",
+    shownOn === "platform" && "android:hidden",
   ]}
 />
