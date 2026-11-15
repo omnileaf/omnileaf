@@ -17,26 +17,25 @@ class AppSettingsPlugin(
 ) : Plugin(activity) {
     @Command
     fun openAppSettings(invoke: Invoke) {
-        val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
-        val appDetails =
+        show(invoke) { shownActivity ->
             Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.fromParts("package", shownActivity.packageName, null),
             )
-        show(shownActivity, appDetails, invoke)
+        }
     }
 
     @Command
     fun openAccessibilitySettings(invoke: Invoke) {
-        val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
-        show(shownActivity, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), invoke)
+        show(invoke) { Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) }
     }
 
     private fun show(
-        shownActivity: Activity,
-        settings: Intent,
         invoke: Invoke,
+        settingsFor: (Activity) -> Intent,
     ) {
+        val shownActivity = PluginManager.activity ?: return invoke.reject("no activity is showing the app")
+        val settings = settingsFor(shownActivity)
         try {
             shownActivity.startActivity(settings)
             invoke.resolve()

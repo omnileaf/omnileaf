@@ -42,7 +42,7 @@ pub(crate) enum SystemSettingsError {
     #[error("open the system's settings")]
     Opener(#[from] tauri_plugin_opener::Error),
     #[cfg(target_os = "android")]
-    #[error("open the app's page in Android's settings")]
+    #[error("open a page of Android's settings")]
     Android(#[from] android::AppSettingsError),
 }
 
@@ -121,21 +121,20 @@ mod android {
     pub(super) fn open_app_settings<R: Runtime>(
         app: &AppHandle<R>,
     ) -> Result<(), AppSettingsError> {
-        let plugin = app
-            .try_state::<AppSettingsPlugin<R>>()
-            .ok_or(AppSettingsError::NotRegistered)?;
-        Ok(plugin.0.run_mobile_plugin(OPEN_APP_SETTINGS, ())?)
+        show(app, OPEN_APP_SETTINGS)
     }
 
     pub(super) fn open_accessibility_settings<R: Runtime>(
         app: &AppHandle<R>,
     ) -> Result<(), AppSettingsError> {
+        show(app, OPEN_ACCESSIBILITY_SETTINGS)
+    }
+
+    fn show<R: Runtime>(app: &AppHandle<R>, command: &str) -> Result<(), AppSettingsError> {
         let plugin = app
             .try_state::<AppSettingsPlugin<R>>()
             .ok_or(AppSettingsError::NotRegistered)?;
-        Ok(plugin
-            .0
-            .run_mobile_plugin(OPEN_ACCESSIBILITY_SETTINGS, ())?)
+        Ok(plugin.0.run_mobile_plugin(command, ())?)
     }
 }
 
