@@ -6,6 +6,18 @@
   forced-color-adjust: none;
 }
 
+[data-icon="accessibility"] {
+  --icon: url("./lucide/accessibility.svg");
+}
+
+:root[data-platform="ios"] [data-icon="accessibility"] {
+  --icon: url("./lucide/light/accessibility.svg");
+}
+
+:root[data-platform="android"] [data-icon="accessibility"] {
+  --icon: url("./material-symbols/accessibility_new.svg");
+}
+
 [data-icon="activity"] {
   --icon: url("./lucide/activity.svg");
 }

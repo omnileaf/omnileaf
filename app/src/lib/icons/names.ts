@@ -1,4 +1,5 @@
 export const ICON_NAMES = [
+  "accessibility",
   "activity",
   "app-window",
   "arrow-down",

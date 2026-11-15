@@ -63,6 +63,7 @@ test("lists every section in the order the Settings nav draws them", () => {
   expect(SETTINGS_SECTIONS.map(({ route }) => route)).toEqual([
     "/(app)/settings/general",
     "/(app)/settings/appearance",
+    "/(app)/settings/accessibility",
     "/(app)/settings/navigation",
     "/(app)/settings/library",
     "/(app)/settings/reading",
