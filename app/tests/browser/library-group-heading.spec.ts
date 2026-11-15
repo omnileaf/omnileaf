@@ -68,14 +68,15 @@ test.describe("on android", () => {
     await expect(heading).toHaveCSS("font-weight", "500");
     await expect(heading).toHaveCSS("letter-spacing", "0.15px");
   });
+
   test("names no grouping under the Library title when grouped by folder", async ({
     page,
   }) => {
     await page.goto("/");
-    await expect(
-      page.getByRole("region", { name: "Comics", exact: true }),
-    ).toBeVisible();
 
+    await expect(
+      page.getByRole("main").getByText("6 series", { exact: true }),
+    ).toHaveCount(2);
     await expect(page.getByText(/· by /)).toHaveCount(0);
   });
 });
