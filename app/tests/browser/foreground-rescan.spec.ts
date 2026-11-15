@@ -2,7 +2,13 @@ import type { Page } from "@playwright/test";
 
 import type { Platform } from "../../src/lib/ipc/bindings.ts";
 import type { FakeBackend } from "./fake-backend.ts";
-import { expect, onPlatform, test, testOnlyInItsWebview } from "./fixtures.ts";
+import {
+  expect,
+  leaveAndComeBack,
+  onPlatform,
+  test,
+  testOnlyInItsWebview,
+} from "./fixtures.ts";
 
 const SWITCH_NAME = "Check folders for new books while Omnileaf is open";
 
@@ -30,18 +36,6 @@ function counting(platform: Platform): FakeBackend {
       calls.schedules.push(isOn);
     },
   };
-}
-
-async function leaveAndComeBack(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    for (const state of ["hidden", "visible"]) {
-      Object.defineProperty(document, "visibilityState", {
-        value: state,
-        configurable: true,
-      });
-      document.dispatchEvent(new Event("visibilitychange"));
-    }
-  });
 }
 
 async function settleCommands(page: Page): Promise<void> {
