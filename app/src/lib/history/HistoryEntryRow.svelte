@@ -76,6 +76,7 @@
           aria-label={reached.label}
           max={reached.max}
           value={reached.value}
+          track={look.barTrack}
           class={["block-progress-compact", look.bar]}
         />
       {/if}

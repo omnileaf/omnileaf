@@ -9,7 +9,6 @@ import { historyEntryLook } from "./history-entry-look.ts";
 
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 820, height: 1180 };
-const PHONE_TRACK = 120;
 const TODAYS_TRACK = 56;
 
 async function trackWidthOn(screen: {
@@ -29,8 +28,8 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-test("draws Android's History progress track 120 wide on a phone", async () => {
-  expect(await trackWidthOn(PHONE)).toBe(PHONE_TRACK);
+test("draws Android's History progress track across its whole column on a phone", async () => {
+  expect(await trackWidthOn(PHONE)).toBe(document.body.clientWidth);
 });
 
 test("keeps Android's History progress track as it was on a tablet", async () => {

@@ -26,7 +26,6 @@ const BAR_START = 12;
 const BAR_END_INSET = 8;
 const MENU_REACH = 80;
 const HEADING_START = 16;
-const PROGRESS_TRACK_WIDTH = 120;
 const LIST_HEADER_GAP = 16;
 const COVER_HEIGHT = 56;
 const SEARCH_BAR_HEIGHT = 72;
@@ -187,15 +186,17 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     expect(menuBox?.y).toBeLessThan((moreBox?.y ?? 0) + MENU_REACH);
   });
 
-  test("draws each entry's progress track 120px wide", async ({ page }) => {
+  test("spans each entry's progress track across the text column", async ({
+    page,
+  }) => {
     await openHistory(page);
-    const track = page
-      .getByRole("main")
-      .getByRole("listitem")
-      .first()
-      .getByRole("progressbar");
+    const row = page.getByRole("main").getByRole("listitem").first();
+    const name = row.getByText("Sample Series 04", { exact: true });
+    const column = await boxOf(name.locator(".."));
+    const track = await boxOf(row.getByRole("progressbar"));
 
-    expect((await track.boundingBox())?.width).toBe(PROGRESS_TRACK_WIDTH);
+    expect(track.x).toBe(column.x);
+    expect(track.width).toBe(column.width);
   });
 
   test("puts each day heading 16px under the bar or the row above it", async ({
@@ -245,7 +246,7 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
     expect(Math.abs(centreOf(more) - centreOf(cover))).toBeLessThanOrEqual(1);
   });
 
-  test("fills the track from its start up to the page reached", async ({
+  test("fills one continuous track from its start up to the page reached", async ({
     page,
   }) => {
     await openHistory(page);
@@ -255,10 +256,16 @@ test.describe("History on an Android phone", { tag: "@native" }, () => {
       .first()
       .getByRole("progressbar");
     const trackBox = await boxOf(track);
-    const fill = await boxOf(track.locator("> div").first());
+    const parts = track.locator("> div");
+    const fill = await boxOf(parts.first());
 
+    await expect(parts).toHaveCount(1);
+    await expect(track).toHaveCSS(
+      "background-color",
+      await tokenColour(page, "--native-color-progress-rest"),
+    );
     expect(fill.x).toBe(trackBox.x);
-    expect(fill.width).toBeCloseTo((PROGRESS_TRACK_WIDTH * 14) / 192, 0);
+    expect(fill.width).toBeCloseTo((trackBox.width * 14) / 192, 0);
   });
 
   test("draws no bar under a finished book", async ({ page }) => {
