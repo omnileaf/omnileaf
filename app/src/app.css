@@ -2103,3 +2103,11 @@
 :root[data-platform="android"][data-tap-targets="larger"] [data-theme] {
   --spacing-touch-target: var(--native-spacing-target);
 }
+
+:root[data-platform="android"][data-text-size="larger"] {
+  --text-scale: 1.15;
+}
+
+:root[data-platform="android"][data-text-size="largest"] {
+  --text-scale: 1.3;
+}

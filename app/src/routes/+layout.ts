@@ -1,6 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
+import { textSizeChoice } from "#lib/accessibility/text-size-choice.svelte.ts";
 import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
 import {
   FIRST_LAUNCH_ROUTE,
@@ -28,6 +29,7 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followCorePlatform(appInfo.platform);
   followSystemTextSize(appInfo.platform);
   followSystemContrast(appInfo.platform);
+  textSizeChoice.markDocument();
   touchChoices.markDocument();
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
