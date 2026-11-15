@@ -105,6 +105,17 @@ class LockStateTest {
     }
 
     @Test
+    fun `stays open on an own trip shorter than a longer chosen delay`() {
+        startedOpen()
+        state.openedOwnScreen()
+        leaveFor(10 * MINUTE_MS)
+
+        val covers = state.returned(isOn = true, LockAfter.FIFTEEN_MINUTES)
+
+        assertEquals(false, covers)
+    }
+
+    @Test
     fun `locks after returning from a link opened in the browser`() {
         startedOpen()
         leaveFor(1)

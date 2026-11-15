@@ -15,18 +15,16 @@ internal enum class LockOutcome {
 internal class LockState(
     private val now: () -> Long,
 ) {
-    private var leftAt: Long? = null
+    private var away: Away? = null
     private var hasStarted = false
     private var isOwnScreenOpening = false
-    private var isOwnScreenTrip = false
 
     var isCovered = false
         private set
 
     fun left(isStillInTheApp: Boolean) {
         if (isStillInTheApp) return
-        leftAt = now()
-        isOwnScreenTrip = isOwnScreenOpening
+        away = Away(at = now(), isOwnScreenTrip = isOwnScreenOpening)
         isOwnScreenOpening = false
     }
 
@@ -35,8 +33,7 @@ internal class LockState(
         lockAfter: LockAfter,
     ): Boolean {
         val isDue = isDue(lockAfter)
-        leftAt = null
-        isOwnScreenTrip = false
+        away = null
         hasStarted = true
         isCovered = isOn && (isCovered || isDue)
         return isCovered
@@ -63,10 +60,15 @@ internal class LockState(
 
     private fun isDue(lockAfter: LockAfter): Boolean {
         if (!hasStarted) return true
-        val left = leftAt ?: return false
-        return (now() - left).milliseconds >= delayFor(lockAfter)
+        val trip = away ?: return false
+        return (now() - trip.at).milliseconds >= trip.delayFor(lockAfter)
     }
 
-    private fun delayFor(lockAfter: LockAfter): Duration =
-        if (isOwnScreenTrip) maxOf(lockAfter.delay, OWN_SCREEN_ALLOWANCE) else lockAfter.delay
+    private data class Away(
+        val at: Long,
+        val isOwnScreenTrip: Boolean,
+    ) {
+        fun delayFor(lockAfter: LockAfter): Duration =
+            if (isOwnScreenTrip) maxOf(lockAfter.delay, OWN_SCREEN_ALLOWANCE) else lockAfter.delay
+    }
 }

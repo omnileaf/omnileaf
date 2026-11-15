@@ -59,7 +59,7 @@ internal class AppLockChoices(
         }
     }
 
-    fun onRecentsChoiceChanged(follow: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener =
+    fun startFollowingRecentsChoice(follow: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener =
         SharedPreferences
             .OnSharedPreferenceChangeListener { _, key ->
                 if (key in RECENTS_KEYS) follow()

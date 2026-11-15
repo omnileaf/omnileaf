@@ -20,7 +20,7 @@ class MainActivity : TauriActivity() {
     private val appLock by lazy {
         AppLockGate(this) { isCovered ->
             backNavigation?.followCover(isCovered)
-            if (isCovered) webView?.evaluateJavascript(CLOSE_OPEN_PICKERS, null)
+            if (isCovered) webView?.evaluateJavascript(BLUR_FOCUSED_FIELD, null)
         }
     }
 
@@ -106,7 +106,7 @@ class MainActivity : TauriActivity() {
 }
 
 /** Chromium draws an open select's options in a window of its own, above anything drawn over the page. */
-private const val CLOSE_OPEN_PICKERS = "document.activeElement?.blur()"
+private const val BLUR_FOCUSED_FIELD = "document.activeElement?.blur()"
 
 private val Intent.isFromRecents: Boolean
     get() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0

@@ -23,7 +23,7 @@ internal class AppLockGate(
 
     fun watch() {
         activity.followRecentsChoice(choices)
-        recentsListener = choices.onRecentsChoiceChanged { activity.followRecentsChoice(choices) }
+        recentsListener = choices.startFollowingRecentsChoice { activity.followRecentsChoice(choices) }
         activity.lifecycle.addObserver(this)
     }
 
