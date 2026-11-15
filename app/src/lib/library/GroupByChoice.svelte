@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
   import type { LibraryGrouping } from "#lib/ipc/bindings.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   import { AndroidPhone } from "./android-phone.svelte";
-  import { ROW_SUBTITLE_TYPE } from "#lib/components/ui/item/looks.ts";
 
   import {
     ANDROID_VIEW_SETTING,
@@ -59,6 +59,9 @@
   >
     {m.library_group_by()}
   </p>
+  {#if android.isOn}
+    {@render hint()}
+  {/if}
   <SegmentedControl
     options={GROUPINGS}
     labels={LABELS}
@@ -70,9 +73,15 @@
     hasEqualColumns
     {onChoose}
     isFullWidth={android.isOn}
-    class={android.isOn ? "order-last mbs-md" : "mbs-sm large:mbs-icon-gap"}
+    class={android.isOn ? "mbs-md" : "mbs-sm large:mbs-icon-gap"}
   />
+  {#if !android.isOn}
+    {@render hint()}
+  {/if}
+</div>
+
+{#snippet hint()}
   <p id={hintId} class={android.isOn ? ANDROID_HINT : hintClass}>
     {m.library_group_creator_hint()}
   </p>
-</div>
+{/snippet}

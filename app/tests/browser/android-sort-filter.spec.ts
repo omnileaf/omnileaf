@@ -588,7 +588,8 @@ test.describe(
       }) => {
         const sheet = await openView(page);
         const sheetBox = await boxOf(sheet);
-        const words = await boxOf(sheet.getByText("Group by", { exact: true }));
+        const label = sheet.getByText("Group by", { exact: true });
+        const words = await boxOf(label);
         const hint = await boxOf(
           sheet.getByText("Creator puts each series under its writer", {
             exact: false,
@@ -607,10 +608,12 @@ test.describe(
         expect(
           sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
         ).toBeCloseTo(SETTING_START, 0);
+        await expect(label).toHaveCSS("font-weight", HEADING_WEIGHT);
         await expect(group.getByRole("radio")).toHaveCount(4);
         await expect(group.getByRole("radio").last()).toHaveAccessibleName(
           "Creator",
         );
+        await expect(group.locator("svg")).toHaveCount(0);
       });
 
       test("offers Stack series covers as a switch, on until it is turned off", async ({
@@ -627,29 +630,30 @@ test.describe(
         await expect(stacks).not.toBeChecked();
       });
 
-      for (const name of ["Display"]) {
-        test(`sets ${name} with its words at the start and its three options at the end of one row, no icons`, async ({
-          page,
-        }) => {
-          const sheet = await openView(page);
-          const sheetBox = await boxOf(sheet);
-          const words = await boxOf(sheet.getByText(name, { exact: true }));
-          const group = sheet.getByRole("radiogroup", { name, exact: true });
-          const groupBox = await boxOf(group);
-
-          expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
-          expect(
-            sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
-          ).toBeCloseTo(SETTING_END, 0);
-          expect(groupBox.y).toBeLessThan(words.y + words.height);
-          await expect(group.getByRole("radio")).toHaveCount(3);
-          await expect(group.locator("svg")).toHaveCount(0);
-          await expect(sheet.getByText(name, { exact: true })).toHaveCSS(
-            "font-weight",
-            HEADING_WEIGHT,
-          );
+      test(`sets Display with its words at the start and its three options at the end of one row, no icons`, async ({
+        page,
+      }) => {
+        const sheet = await openView(page);
+        const sheetBox = await boxOf(sheet);
+        const words = await boxOf(sheet.getByText("Display", { exact: true }));
+        const group = sheet.getByRole("radiogroup", {
+          name: "Display",
+          exact: true,
         });
-      }
+        const groupBox = await boxOf(group);
+
+        expect(words.x - sheetBox.x).toBeCloseTo(SETTING_START, 0);
+        expect(
+          sheetBox.x + sheetBox.width - (groupBox.x + groupBox.width),
+        ).toBeCloseTo(SETTING_END, 0);
+        expect(groupBox.y).toBeLessThan(words.y + words.height);
+        await expect(group.getByRole("radio")).toHaveCount(3);
+        await expect(group.locator("svg")).toHaveCount(0);
+        await expect(sheet.getByText("Display", { exact: true })).toHaveCSS(
+          "font-weight",
+          HEADING_WEIGHT,
+        );
+      });
 
       test("sets Covers per row with its words at the start and its group at the end of one row", async ({
         page,

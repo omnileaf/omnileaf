@@ -418,18 +418,21 @@ test("draws Display as one row of three options and Group by with its four on th
     page.getByRole("radiogroup", { name: "Group by" }).element(),
   );
   expect(groups.top).toBeGreaterThanOrEqual(groupLabel.bottom);
-  for (const name of ["Display"]) {
-    const label = boxOf(page.getByText(name, { exact: true }).element());
-    const control = boxOf(page.getByRole("radiogroup", { name }).element());
-
-    expect(control.left).toBeGreaterThanOrEqual(label.right);
-    expect(
-      Math.abs(
-        control.top + control.height / 2 - (label.top + label.height / 2),
-      ),
-    ).toBeLessThan(1);
-    expect(control.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
-  }
+  const displayLabel = boxOf(
+    page.getByText("Display", { exact: true }).element(),
+  );
+  const display = boxOf(
+    page.getByRole("radiogroup", { name: "Display" }).element(),
+  );
+  expect(display.left).toBeGreaterThanOrEqual(displayLabel.right);
+  expect(
+    Math.abs(
+      display.top +
+        display.height / 2 -
+        (displayLabel.top + displayLabel.height / 2),
+    ),
+  ).toBeLessThan(1);
+  expect(display.height).toBeLessThanOrEqual(ANDROID_SETTING_ROW_HEIGHT);
 });
 
 test("offers Stack series covers, leaves the desktop-only switches out of View options and shows the covers marks on an Android phone", async () => {
