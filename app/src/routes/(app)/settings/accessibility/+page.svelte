@@ -12,18 +12,19 @@
     type LongPressLength,
     touchChoices,
   } from "#lib/accessibility/touch-choices.svelte.ts";
+  import {
+    ANIMATION_GROUPS,
+    getAnimationsSetting,
+  } from "#lib/appearance/animations.svelte.ts";
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     Item,
     ItemContent,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
+  import { ROW_FOCUS_RING } from "#lib/components/ui/item/looks.ts";
   import { commands } from "#lib/ipc/bindings.ts";
   import { getNotices } from "#lib/notices/notices.ts";
-  import {
-    ANIMATION_GROUPS,
-    getAnimationsSetting,
-  } from "#lib/appearance/animations.svelte.ts";
   import { contrastChoice } from "#lib/page/contrast-choice.svelte.ts";
   import SegmentedControl from "#lib/page/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -164,14 +165,17 @@
   </section>
   <ul class={FLUSH_LIST}>
     <li>
-      <Item look="row">
+      <Item look="row" class={ROW_FOCUS_RING}>
         {#snippet child({ props })}
           <button type="button" {...props} onclick={openAndroidSettings}>
             <Icon name="external-link" class="shrink-0" />
             <ItemContent>
               <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>
             </ItemContent>
-            <Icon name="chevron-right" class="shrink-0 rtl:-scale-x-100" />
+            <Icon
+              name="chevron-right"
+              class="shrink-0 text-muted rtl:-scale-x-100"
+            />
           </button>
         {/snippet}
       </Item>
