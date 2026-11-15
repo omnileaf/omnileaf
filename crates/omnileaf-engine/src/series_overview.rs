@@ -20,6 +20,7 @@ pub struct SeriesOverview {
     pub book_count: u32,
     pub read_count: u32,
     pub bookmark_count: u32,
+    pub connection: SeriesConnection,
     pub cover: Option<CoverPath>,
     pub folder: Option<String>,
     /// The book reading goes on from, absent once every book is read.
@@ -37,6 +38,28 @@ pub struct SeriesOverview {
     pub missing_volumes: Vec<NumberRange>,
     /// Absent when the series holds no volume and no chapter filed inside one.
     pub last_volume: Option<BookNumber>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SeriesConnection {
+    Connected,
+    PartlyConnected { missing_books: u32 },
+    NotConnected,
+}
+
+impl SeriesConnection {
+    const fn of(book_count: u32, missing_books: u32) -> Self {
+        match missing_books {
+            0 => Self::Connected,
+            missing_books if missing_books >= book_count => Self::NotConnected,
+            missing_books => Self::PartlyConnected { missing_books },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -146,6 +169,7 @@ impl SeriesOverview {
             book_count: overview.book_count,
             read_count: overview.read_count,
             bookmark_count: overview.bookmark_count,
+            connection: SeriesConnection::of(overview.book_count, overview.missing_books),
             cover: overview.cover.map(CoverPath),
             folder: overview
                 .folder
@@ -300,6 +324,29 @@ mod tests {
                 source: catalog::ValueSource::FileName,
             },
         }
+    }
+
+    #[test]
+    fn counts_a_series_with_no_book_away_as_connected() {
+        assert_eq!(SeriesConnection::of(8, 0), SeriesConnection::Connected);
+    }
+
+    #[test]
+    fn counts_a_series_with_some_books_away_as_partly_connected() {
+        assert_eq!(
+            SeriesConnection::of(8, 3),
+            SeriesConnection::PartlyConnected { missing_books: 3 }
+        );
+    }
+
+    #[test]
+    fn counts_a_series_with_every_book_away_as_not_connected() {
+        assert_eq!(SeriesConnection::of(8, 8), SeriesConnection::NotConnected);
+    }
+
+    #[test]
+    fn counts_a_series_with_no_books_as_connected() {
+        assert_eq!(SeriesConnection::of(0, 0), SeriesConnection::Connected);
     }
 
     #[test]

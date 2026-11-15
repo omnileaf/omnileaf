@@ -914,6 +914,7 @@ export type SeriesBook = {
 	isNew: boolean,
 	/**  Whether the book's file was moved or deleted; never, while the library keeps no book without its file. */
 	isFileMissing: boolean,
+	isConnected: boolean,
 	/**  Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again. */
 	kind: BookKind | null,
 	numbers: NumberRange | null,
@@ -935,6 +936,8 @@ export type SeriesBookPage = {
 	books: SeriesBook[],
 	next: string & { readonly __brand: "BookCursor" } | null,
 };
+
+export type SeriesConnection = { state: "connected" } | { state: "partlyConnected"; missingBooks: number } | { state: "notConnected" };
 
 export type SeriesCreator = {
 	name: string,
@@ -984,6 +987,7 @@ export type SeriesOverview = {
 	bookCount: number,
 	readCount: number,
 	bookmarkCount: number,
+	connection: SeriesConnection,
 	cover: string & { readonly __brand: "CoverPath" } | null,
 	folder: string | null,
 	/**  The book reading goes on from, absent once every book is read. */

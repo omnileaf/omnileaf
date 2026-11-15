@@ -29,6 +29,7 @@ pub struct SeriesBook {
     pub is_new: bool,
     /// Whether the book's file was moved or deleted; never, while the library keeps no book without its file.
     pub is_file_missing: bool,
+    pub is_connected: bool,
     /// Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again.
     pub kind: Option<BookKind>,
     pub numbers: Option<NumberRange>,
@@ -126,6 +127,7 @@ impl From<BookSummary> for SeriesBook {
             is_bookmarked: book.is_bookmarked,
             is_new: false,
             is_file_missing: false,
+            is_connected: book.is_connected,
             kind: numbering.map(|numbering| numbering.kind().into()),
             numbers: numbering
                 .and_then(|numbering| numbering.number())
@@ -254,6 +256,16 @@ mod tests {
         });
 
         assert_eq!((book.is_bookmarked, book.is_new), (true, false));
+    }
+
+    #[test]
+    fn crosses_whether_a_book_is_connected() {
+        let book = SeriesBook::from(BookSummary {
+            is_connected: false,
+            ..sample_summary()
+        });
+
+        assert!(!book.is_connected);
     }
 
     #[test]

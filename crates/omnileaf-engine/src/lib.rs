@@ -185,8 +185,8 @@ pub use series_details::{
     SourcedLanguage, SourcedYear,
 };
 pub use series_overview::{
-    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesCreator, SeriesOverview,
-    SeriesSection,
+    CreatorRole, CreatorSeries, RelatedReason, RelatedSeries, SeriesConnection, SeriesCreator,
+    SeriesOverview, SeriesSection,
 };
 pub use series_volume::SeriesVolume;
 pub use skipped_types::SkippedType;
