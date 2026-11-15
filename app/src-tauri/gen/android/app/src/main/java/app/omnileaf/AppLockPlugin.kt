@@ -70,6 +70,12 @@ class AppLockPlugin(
     }
 
     @Command
+    fun rememberWords(invoke: Invoke) {
+        choices.remember(invoke.parseArgs(LockWords::class.java))
+        invoke.resolve()
+    }
+
+    @Command
     fun turnOff(invoke: Invoke) {
         choices.turn(isOn = false)
         invoke.resolve()

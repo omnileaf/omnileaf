@@ -18,6 +18,7 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
     internal val handedDocuments = HandedDocuments()
+    private val appLock by lazy { AppLockGate(this) }
 
     internal var backNavigation: BackNavigation? = null
         private set
@@ -33,6 +34,7 @@ class MainActivity : TauriActivity() {
         turnScreen(resources.configuration)
         showPageBackground(startingBackground)
         super.onCreate(savedInstanceState)
+        appLock.watch()
     }
 
     override fun onNewIntent(intent: Intent) {
