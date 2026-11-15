@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Tooltip as TooltipPrimitive } from "bits-ui";
 
-  import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import { Kbd, WINDOWS_PLAIN_KEY } from "#lib/components/ui/kbd/index.ts";
 
@@ -33,7 +32,7 @@
     side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
-  const longPress = new LongPress(() => touchChoices.longPressMs);
+  const longPress = new LongPress();
   let open = $state(false);
 
   function press(event: PointerEvent): void {

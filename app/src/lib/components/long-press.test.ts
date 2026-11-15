@@ -94,6 +94,8 @@ test("waits as long as the hold time asked for when the press starts", () => {
   longPress.pressed(press("touch"), onHeld);
 
   vi.advanceTimersByTime(HELD_MS);
-
   expect(onHeld).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(HELD_MS);
+
+  expect(onHeld).toHaveBeenCalledOnce();
 });

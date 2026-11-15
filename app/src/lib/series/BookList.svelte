@@ -2,7 +2,6 @@
   import { Eye, EyeOff } from "@lucide/svelte";
 
   import { resolve } from "$app/paths";
-  import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
   import { LongPress } from "#lib/components/long-press.ts";
   import { Button } from "#lib/components/ui/button/index.ts";
   import { Card } from "#lib/components/ui/card/index.ts";
@@ -109,7 +108,7 @@
   const phone = $derived(
     phonePlatform === undefined ? undefined : PHONE_LISTS[phonePlatform],
   );
-  const longPress = new LongPress(() => touchChoices.longPressMs);
+  const longPress = new LongPress();
   let menuFor: BookId | undefined = $state();
   let isContextMenu = $state(false);
   const listedRows: readonly ChapterRow[] = $derived(
