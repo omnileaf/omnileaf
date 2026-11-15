@@ -16,6 +16,13 @@ const COLOUR_SETTINGS_URL: &str = "ms-settings:colors";
 const SETTINGS_URL: &str = "app-settings:";
 
 #[derive(Debug, thiserror::Error)]
+#[cfg_attr(
+    target_os = "linux",
+    expect(
+        clippy::enum_variant_names,
+        reason = "on Linux every variant names a settings page the desktop lacks"
+    )
+)]
 pub(crate) enum SystemSettingsError {
     #[cfg_attr(
         not(target_os = "linux"),
@@ -37,7 +44,7 @@ pub(crate) enum SystemSettingsError {
         )
     )]
     #[error("only Android has a page of accessibility settings to open")]
-    AccessibilitySettingsAndroidOnly,
+    NoAccessibilitySettings,
     #[cfg(any(target_os = "macos", windows, target_os = "ios"))]
     #[error("open the system's settings")]
     Opener(#[from] tauri_plugin_opener::Error),
@@ -82,7 +89,7 @@ pub(crate) fn open_accessibility<R: Runtime>(
 pub(crate) fn open_accessibility<R: Runtime>(
     _app: &AppHandle<R>,
 ) -> Result<(), SystemSettingsError> {
-    Err(SystemSettingsError::AccessibilitySettingsAndroidOnly)
+    Err(SystemSettingsError::NoAccessibilitySettings)
 }
 
 #[cfg(target_os = "android")]
@@ -168,7 +175,7 @@ mod tests {
 
         assert!(matches!(
             opened,
-            Err(SystemSettingsError::AccessibilitySettingsAndroidOnly)
+            Err(SystemSettingsError::NoAccessibilitySettings)
         ));
     }
 }
