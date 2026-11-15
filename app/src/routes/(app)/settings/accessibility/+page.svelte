@@ -19,6 +19,7 @@
   import { Icon } from "#lib/components/ui/icon/index.ts";
   import {
     Item,
+    ItemChevron,
     ItemContent,
     ItemTitle,
   } from "#lib/components/ui/item/index.ts";
@@ -172,10 +173,7 @@
             <ItemContent>
               <ItemTitle>{m.accessibility_open_android_settings()}</ItemTitle>
             </ItemContent>
-            <Icon
-              name="chevron-right"
-              class="shrink-0 text-muted rtl:-scale-x-100"
-            />
+            <ItemChevron look="everywhere" />
           </button>
         {/snippet}
       </Item>
