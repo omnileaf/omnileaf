@@ -3,7 +3,6 @@ import type { Platform } from "#lib/ipc/bindings.ts";
 
 import { FLUSH_HEADING, FLUSH_LIST } from "./android-flush-look.ts";
 import { LIST_HEADING } from "./grouped-rows-look.ts";
-
 import { SWITCH_CARD } from "./setting-row-look.ts";
 
 export interface RadiosLook {
