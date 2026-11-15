@@ -60,7 +60,7 @@
     lastBook: m.general_opens_last_book(),
   } satisfies Record<OpeningPlace, string>;
 
-  const TIME_FORMAT_CHOICES = $derived(
+  const timeFormatChoices = $derived(
     TIME_FORMATS.map((format) => ({
       value: format,
       label: timeFormat.labels[format],
@@ -142,7 +142,7 @@
         <SettingChoiceRow
           title={m.general_time_format()}
           value={timeFormat.labels[timeFormat.choice]}
-          choices={TIME_FORMAT_CHOICES}
+          choices={timeFormatChoices}
           chosen={timeFormat.choice}
           onChoose={(format: TimeFormat) => {
             timeFormat.choose(format);
@@ -172,7 +172,7 @@
       <GroupedSelectRow
         heading={m.general_dates_and_numbers()}
         label={m.general_time_format()}
-        options={TIME_FORMAT_CHOICES}
+        options={timeFormatChoices}
         value={timeFormat.choice}
         onChoose={(format: TimeFormat) => {
           timeFormat.choose(format);

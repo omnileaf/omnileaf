@@ -45,7 +45,7 @@ function isTimeFormat(stored: string | null): stored is TimeFormat {
 /** Whether times show on the system's clock, or on a 12-hour or 24-hour one. */
 export class TimeFormatSetting {
   choice: TimeFormat = $state("system");
-  systemClock: SystemClock = $state("followsLanguage");
+  #systemClock: SystemClock = $state("followsLanguage");
 
   readonly #stored: StoredPreference;
 
@@ -57,7 +57,7 @@ export class TimeFormatSetting {
 
   get hourCycle(): Intl.LocaleHourCycleKey | undefined {
     return this.choice === "system"
-      ? CLOCK_HOUR_CYCLES[this.systemClock]
+      ? CLOCK_HOUR_CYCLES[this.#systemClock]
       : CHOSEN_HOUR_CYCLES[this.choice];
   }
 
@@ -72,12 +72,12 @@ export class TimeFormatSetting {
   }
 
   followSystemClock(clock: SystemClock): void {
-    this.systemClock = clock;
+    this.#systemClock = clock;
   }
 
   #isSystemTwelveHour(): boolean {
     return isTwelveHour(
-      CLOCK_HOUR_CYCLES[this.systemClock] ?? languageHourCycle(),
+      CLOCK_HOUR_CYCLES[this.#systemClock] ?? languageHourCycle(),
     );
   }
 
