@@ -409,9 +409,25 @@ test("gives up a click on a match the page removed as it moved on", async () => 
 
   await element.clickUnlessStale();
 
+  expect(requests).toContain("POST /session/replaced/element/old/click");
   expect(
     requests.filter((route) => route === "POST /session/replaced/elements"),
   ).toHaveLength(1);
+});
+
+test("reports a click the page refused for a reason other than removing the match", async () => {
+  const session = await Session.start(
+    await serverShowing(PAGE_WITH_A_HIDDEN_DUPLICATE, {
+      "POST /session/duplicates/element/shown/click":
+        "element click intercepted",
+    }),
+    {},
+  );
+  const element = await session.waitFor(xpath("//a"));
+
+  const click = element.clickUnlessStale();
+
+  await expect(click).rejects.toThrow("element click intercepted");
 });
 
 test("waits until a script run in the page says what it waits for holds", async () => {
