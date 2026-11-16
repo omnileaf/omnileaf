@@ -13,7 +13,6 @@ const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
 const FRONT_MATTER_FENCE: &str = "---";
 const UNRELEASED: &str = "unreleased";
-const HEADLINE_TYPE: &str = "feat";
 const USER_FACING_IN_APP: &[&str] = &["app/src/", "app/src-tauri/src/", "app/messages/"];
 const USER_FACING_IN_CRATE: &[&str] = &["src", "android"];
 const TEST_FILE_ENDINGS: &[&str] = &[".test.ts", ".spec.ts"];
@@ -27,6 +26,7 @@ pub(crate) struct Heading {
 
 #[derive(Deserialize)]
 struct ConfigFile {
+    headline: String,
     types: Vec<Heading>,
     areas: Vec<Heading>,
 }
@@ -34,6 +34,7 @@ struct ConfigFile {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(try_from = "ConfigFile")]
 pub(crate) struct Config {
+    headline: String,
     types: Vec<Heading>,
     areas: Vec<Heading>,
 }
@@ -43,13 +44,15 @@ impl TryFrom<ConfigFile> for Config {
 
     fn try_from(file: ConfigFile) -> Result<Self, Self::Error> {
         let config = Self {
+            headline: file.headline,
             types: file.types,
             areas: file.areas,
         };
-        match config.type_position(HEADLINE_TYPE) {
+        match config.type_position(&config.headline) {
             Some(_) => Ok(config),
             None => Err(format!(
-                "the types must include `{HEADLINE_TYPE}`, which heads the release notes"
+                "the headline `{}` must be one of the types",
+                config.headline
             )),
         }
     }
@@ -378,17 +381,17 @@ fn contributors(fragments: &[Fragment]) -> Vec<&str> {
     logins
 }
 
-fn headline(fragments_in_report_order: &[Fragment]) -> Option<&str> {
+fn headline<'a>(fragments_in_report_order: &'a [Fragment], config: &Config) -> Option<&'a str> {
     fragments_in_report_order
         .iter()
-        .find(|fragment| fragment.kind == HEADLINE_TYPE)
+        .find(|fragment| fragment.kind == config.headline)
         .or_else(|| fragments_in_report_order.first())
         .map(|fragment| fragment.summary.as_str())
 }
 
 pub(crate) fn render_markdown(fragments: Vec<Fragment>, config: &Config) -> String {
     let fragments = in_report_order(fragments, config);
-    let mut sections: Vec<String> = headline(&fragments)
+    let mut sections: Vec<String> = headline(&fragments, config)
         .map(str::to_owned)
         .into_iter()
         .collect();
@@ -555,6 +558,7 @@ mod tests {
     use super::*;
 
     const CONFIG_JSON: &str = r#"{
+        "headline": "feat",
         "types": [
             {"id": "breaking", "heading": "Breaking changes"},
             {"id": "sec", "heading": "Security"},
@@ -945,12 +949,32 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
-    fn refuses_a_config_without_the_headline_type() {
-        let without_feat = CONFIG_JSON.replace(r#"{"id": "feat", "heading": "New"},"#, "");
+    fn heads_the_markdown_with_the_type_the_config_names() {
+        let fix_first: Config = serde_json::from_str(
+            &CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "fix""#),
+        )
+        .unwrap();
+        let fragments = vec![
+            valid("feat", "reader", &[], "Pages turn faster."),
+            valid("fix", "library", &[], "Scans finish."),
+        ];
 
-        let error = serde_json::from_str::<Config>(&without_feat).unwrap_err();
+        let markdown = render_markdown(fragments, &fix_first);
 
-        assert!(error.to_string().contains("`feat`"), "{error}");
+        assert!(
+            markdown.starts_with("Scans finish.\n\n## New\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn refuses_a_headline_that_is_not_a_type() {
+        let unknown_headline =
+            CONFIG_JSON.replace(r#""headline": "feat""#, r#""headline": "chore""#);
+
+        let error = serde_json::from_str::<Config>(&unknown_headline).unwrap_err();
+
+        assert!(error.to_string().contains("`chore`"), "{error}");
     }
 
     #[test]
