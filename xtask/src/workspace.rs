@@ -92,4 +92,18 @@ mod tests {
 
         assert_eq!(root, Path::new(BUILT_MANIFEST_DIR).join(".."));
     }
+
+    #[test]
+    fn reads_the_policy_lines_without_blanks_and_a_missing_list_as_empty() {
+        let scratch = omnileaf_testkit::ScratchFolder::new("policy");
+        scratch.write(
+            &format!("{POLICY_LISTS}/allowed-hosts.txt"),
+            b"  example.com  \n\nomnileaf.app\n",
+        );
+
+        let policy = policy(scratch.path()).unwrap();
+
+        assert_eq!(policy.allowed_hosts, ["example.com", "omnileaf.app"]);
+        assert_eq!(policy.forbidden_phrases, Vec::<String>::new());
+    }
 }
