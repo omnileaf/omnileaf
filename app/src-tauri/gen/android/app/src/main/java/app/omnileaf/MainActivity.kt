@@ -2,7 +2,6 @@ package app.omnileaf
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.webkit.WebView
@@ -18,6 +17,12 @@ class MainActivity : TauriActivity() {
     private var orientation: ScreenOrientation = ScreenOrientation.PortraitOnPhones
     internal val volumeKeys = VolumeKeyCapture()
     internal val handedDocuments = HandedDocuments()
+    private val appLock by lazy {
+        AppLockGate(this) { isCovered ->
+            backNavigation?.followCover(isCovered)
+            if (isCovered) webView?.evaluateJavascript(BLUR_FOCUSED_FIELD, null)
+        }
+    }
 
     internal var backNavigation: BackNavigation? = null
         private set
@@ -33,6 +38,7 @@ class MainActivity : TauriActivity() {
         turnScreen(resources.configuration)
         showPageBackground(startingBackground)
         super.onCreate(savedInstanceState)
+        appLock.watch()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -46,14 +52,29 @@ class MainActivity : TauriActivity() {
         turnScreen(newConfig)
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = volumeKeys.handle(event.toKeyPress()) || super.dispatchKeyEvent(event)
+    /** AndroidX's Activity Result API and startActivity still launch every screen through this deprecated override. */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun startActivityForResult(
+        intent: Intent,
+        requestCode: Int,
+        options: Bundle?,
+    ) {
+        super.startActivityForResult(intent, requestCode, options)
+        if (isOwnScreen(intent.action)) appLock.openedOwnScreen()
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        (!appLock.isCovering && volumeKeys.handle(event.toKeyPress())) || super.dispatchKeyEvent(event)
 
     override fun onWebViewCreate(webView: WebView) {
         SystemInsets(webView).attach()
         this.webView = webView
         backNavigation =
             BackNavigation(WebViewHistory(webView), leaveTheApp = { finishAffinity() })
-                .also { onBackPressedDispatcher.addCallback(this, it) }
+                .also {
+                    it.followCover(appLock.isCovering)
+                    onBackPressedDispatcher.addCallback(this, it)
+                }
         webView.setBackgroundColor(startingBackground)
     }
 
@@ -62,6 +83,7 @@ class MainActivity : TauriActivity() {
     ) {
         window.setBackgroundDrawable(color.toDrawable())
         webView?.setBackgroundColor(color)
+        colourRecentsCard(color)
     }
 
     fun orient(orientation: ScreenOrientation) {
@@ -79,16 +101,13 @@ class MainActivity : TauriActivity() {
         intent.handedDocument()?.let(handedDocuments::receive)
     }
 
-    private fun showTheAppBehindTheNavigationButtons() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-        }
-    }
-
     private fun turnScreen(configuration: Configuration) {
         requestedOrientation = orientation.requestedOn(configuration)
     }
 }
+
+/** Chromium draws an open select's options in a window of its own, above anything drawn over the page. */
+private const val BLUR_FOCUSED_FIELD = "document.activeElement?.blur()"
 
 private val Intent.isFromRecents: Boolean
     get() = (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0

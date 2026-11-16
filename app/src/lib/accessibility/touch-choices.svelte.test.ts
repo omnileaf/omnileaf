@@ -1,25 +1,15 @@
 import { afterEach, expect, test } from "vitest";
 
-import type { PreferenceStore } from "#lib/preferences/stored-preference.ts";
+import { memoryPreferenceStore } from "#lib/preferences/memory-preference-store.ts";
 
 import { TouchChoices } from "./touch-choices.svelte.ts";
-
-function memory(): PreferenceStore {
-  const kept = new Map<string, string>();
-  return {
-    getItem: (key) => kept.get(key) ?? null,
-    setItem: (key, value) => {
-      kept.set(key, value);
-    },
-  };
-}
 
 afterEach(() => {
   delete document.documentElement.dataset.tapTargets;
 });
 
 test("holds a long press for half a second until another length is chosen", () => {
-  const choices = new TouchChoices(memory());
+  const choices = new TouchChoices(memoryPreferenceStore());
 
   expect(choices.longPress).toBe("medium");
   expect(choices.longPressMs).toBe(500);
@@ -30,7 +20,7 @@ test.each([
   ["medium", 500],
   ["long", 800],
 ] as const)("holds a %s long press for %i ms", (length, heldMs) => {
-  const choices = new TouchChoices(memory());
+  const choices = new TouchChoices(memoryPreferenceStore());
 
   choices.chooseLongPress(length);
 
@@ -38,7 +28,7 @@ test.each([
 });
 
 test("keeps the long press length for the next launch", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   new TouchChoices(store).chooseLongPress("long");
 
   const next = new TouchChoices(store);
@@ -47,7 +37,7 @@ test("keeps the long press length for the next launch", () => {
 });
 
 test("marks the document for larger tap targets once they are chosen, and keeps them", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   const choices = new TouchChoices(store);
 
   choices.chooseLargerTargets(true);
@@ -57,7 +47,7 @@ test("marks the document for larger tap targets once they are chosen, and keeps 
 });
 
 test("takes the mark away once larger tap targets are turned off", () => {
-  const choices = new TouchChoices(memory());
+  const choices = new TouchChoices(memoryPreferenceStore());
   choices.chooseLargerTargets(true);
 
   choices.chooseLargerTargets(false);
@@ -66,14 +56,14 @@ test("takes the mark away once larger tap targets are turned off", () => {
 });
 
 test("falls back to the medium long press for a length it doesn't know", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   store.setItem("omnileaf.longPress", "forever");
 
   expect(new TouchChoices(store).longPressMs).toBe(500);
 });
 
 test("marks the document again from the kept choice when the app opens", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   new TouchChoices(store).chooseLargerTargets(true);
   delete document.documentElement.dataset.tapTargets;
 

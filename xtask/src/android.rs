@@ -17,6 +17,10 @@ const MODEL_FIELD: &str = "model:";
 const TRANSPORT_FIELD: &str = "transport_id:";
 const BLUETOOTH_NAME_FIELD: &str = "name:";
 
+const MIN_SDK: u32 = 26;
+pub(crate) const LINT_CC: &str = "CC_aarch64_linux_android";
+pub(crate) const LINT_AR: &str = "AR_aarch64_linux_android";
+
 pub(crate) const LIST_ATTACHED: &[&str] = &["devices", "-l"];
 
 #[derive(Debug, PartialEq, Eq)]
@@ -81,6 +85,12 @@ pub(crate) enum NdkSearch {
     Found(Ndk),
     NdkHomeNotAFolder(PathBuf),
     NoneInstalled,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct LintCompilers {
+    pub(crate) cc: PathBuf,
+    pub(crate) ar: PathBuf,
 }
 
 #[derive(Debug)]
@@ -200,6 +210,29 @@ fn search_ndk(ndk_home: Option<PathBuf>, sdk: &Path) -> NdkSearch {
 }
 
 impl Ndk {
+    /// The NDK ships one prebuilt toolchain per host, under a folder named for the host, with `.cmd` wrappers on Windows.
+    pub(crate) fn lint_compilers(&self, os: &str) -> Option<LintCompilers> {
+        let (host, clang_suffix, exe_suffix) = match os {
+            "linux" => ("linux-x86_64", "", ""),
+            "macos" => ("darwin-x86_64", "", ""),
+            "windows" => ("windows-x86_64", ".cmd", ".exe"),
+            _ => return None,
+        };
+        let bin = self
+            .path
+            .join("toolchains")
+            .join("llvm")
+            .join("prebuilt")
+            .join(host)
+            .join("bin");
+        Some(LintCompilers {
+            cc: bin.join(format!(
+                "aarch64-linux-android{MIN_SDK}-clang{clang_suffix}"
+            )),
+            ar: bin.join(format!("llvm-ar{exe_suffix}")),
+        })
+    }
+
     fn at(path: PathBuf) -> Self {
         let revision = fs::read_to_string(path.join(NDK_SOURCE_PROPERTIES))
             .ok()
@@ -264,6 +297,84 @@ mod tests {
                 .find(|(name, _)| *name == key)
                 .map(|(_, value)| OsString::from(value))
         }
+    }
+
+    #[test]
+    fn lints_with_the_ndk_clang_for_the_oldest_android_the_app_supports() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        let compilers = ndk.lint_compilers("linux");
+
+        let bin = PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/linux-x86_64/bin");
+        assert_eq!(
+            compilers,
+            Some(LintCompilers {
+                cc: bin.join("aarch64-linux-android26-clang"),
+                ar: bin.join("llvm-ar"),
+            })
+        );
+    }
+
+    #[test]
+    fn finds_the_ndk_clang_on_a_mac() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        let compilers = ndk.lint_compilers("macos");
+
+        assert!(compilers.is_some_and(|found| {
+            found
+                .cc
+                .starts_with("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin")
+        }));
+    }
+
+    #[test]
+    fn lints_through_the_ndk_cmd_wrappers_on_windows() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        let compilers = ndk.lint_compilers("windows");
+
+        let bin =
+            PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/windows-x86_64/bin");
+        assert_eq!(
+            compilers,
+            Some(LintCompilers {
+                cc: bin.join("aarch64-linux-android26-clang.cmd"),
+                ar: bin.join("llvm-ar.exe"),
+            })
+        );
+    }
+
+    #[test]
+    fn lints_for_the_oldest_android_the_app_declares() {
+        let config: serde_json::Value = serde_json::from_str(
+            &fs::read_to_string(crate::workspace::root().join(crate::fresh::TAURI_CONFIG)).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            config["bundle"]["android"]["minSdkVersion"].as_u64(),
+            Some(u64::from(MIN_SDK))
+        );
+    }
+
+    #[test]
+    fn has_no_ndk_clang_to_lint_with_on_other_hosts() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        assert_eq!(ndk.lint_compilers("freebsd"), None);
     }
 
     #[test]

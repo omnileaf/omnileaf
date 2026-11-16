@@ -1,5 +1,6 @@
 import {
   type AdultContent,
+  type AppLock,
   type BookFileState,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
@@ -22,6 +23,7 @@ import {
 } from "#lib/ipc/bindings.ts";
 import { assertNever } from "#lib/assert-never.ts";
 import { CommandFailure, type FakeBackend } from "#lib/ipc/fake-backend.ts";
+import { NEW_APP_LOCK } from "#lib/app-lock/app-lock.ts";
 import { NEW_ADULT_CONTENT } from "#lib/library/adult-content.ts";
 import { NEW_LIBRARY_LISTING } from "#lib/library/library-listing.ts";
 import { NEW_LIBRARY_TABS } from "#lib/library/library-tabs.ts";
@@ -712,6 +714,7 @@ export function sampleBackend(
     (adultContent.countsAgeRatings && ADULT_SERIES.has(series.number)) ||
     detailEdits.get(series.number)?.isMarkedAdult === true;
   let screenshotMode = false;
+  let appLock: AppLock = NEW_APP_LOCK;
   const hidesAdult = (): boolean =>
     screenshotMode || adultContent.treatment === "hide";
   const isHiddenByScreenshotMode = (series: SampleSeries): boolean =>
@@ -1260,7 +1263,27 @@ export function sampleBackend(
     allowBackSwipe: () => null,
     watchSystemContrast: () => null,
     systemAppLanguage: () => ({ offered: false, tag: null }),
+    systemBoldText: () => false,
     systemClock: () => "followsLanguage",
+    appLock: () => {
+      if (scenario.platform !== "android") {
+        throw failure("appLockUnavailable", "the app lock isn't offered here");
+      }
+      return appLock;
+    },
+    turnAppLockOn: () => {
+      appLock = { ...appLock, isOn: true };
+      return "turnedOn";
+    },
+    rememberAppLockWords: () => null,
+    turnAppLockOff: () => {
+      appLock = { ...appLock, isOn: false };
+      return null;
+    },
+    chooseLockAfter: (lockAfter) => {
+      appLock = { ...appLock, lockAfter };
+      return null;
+    },
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,

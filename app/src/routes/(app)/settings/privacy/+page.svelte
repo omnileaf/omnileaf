@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { ScanEye, ShieldCheck } from "@lucide/svelte";
+  import { Lock, ScanEye, ShieldCheck } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { appLockSummary } from "#lib/app-lock/app-lock.ts";
   import {
     CRASH_REPORT_CHOICES,
     type CrashReportChoice,
@@ -86,6 +87,19 @@
 <div class="mbs-pane-gap flex flex-col gap-lg android:max-medium:mbs-none">
   <SettingsEntries
     entries={[
+      ...(data.appLock.kind === "unavailable"
+        ? []
+        : [
+            {
+              route: "/(app)/settings/privacy/app-lock",
+              icon: Lock,
+              iconName: "lock",
+              label: m.app_lock_title(),
+              ...(data.appLock.kind === "read"
+                ? { summary: appLockSummary(data.appLock.lock) }
+                : {}),
+            } as const,
+          ]),
       {
         route: "/(app)/settings/privacy/screenshot-mode",
         icon: ScanEye,

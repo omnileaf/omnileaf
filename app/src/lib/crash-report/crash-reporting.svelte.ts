@@ -66,6 +66,7 @@ const SEND_OUTCOMES = {
   relayBusy: "notSent",
   replyAddressInvalid: "notSent",
   reportRefused: "notSent",
+  appLockUnavailable: "notSent",
   internal: "notSent",
 } as const satisfies Record<IpcErrorCode, SendFailure | undefined>;
 

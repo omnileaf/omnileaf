@@ -25,19 +25,28 @@
 </script>
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   interface Props {
     readonly id: string;
     readonly label: string;
     readonly description: string | undefined;
     readonly look?: WordsLook;
+    readonly class?: ClassValue;
   }
 
-  let { id, label, description, look = "todays" }: Props = $props();
+  let {
+    id,
+    label,
+    description,
+    look = "todays",
+    class: className,
+  }: Props = $props();
 
   const classes = $derived(WORDS_LOOKS[look]);
 </script>
 
-<span class={classes.words}>
+<span class={[classes.words, className]}>
   <span id="{id}-label" class={classes.label}>{label}</span>
   {#if description !== undefined}
     <span id="{id}-description" class={classes.description}>{description}</span>

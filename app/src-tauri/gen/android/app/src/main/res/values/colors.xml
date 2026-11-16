@@ -3,6 +3,14 @@
     <color name="page_background_light">#f7faf5</color>
     <color name="page_background_dark">#0b0f0c</color>
     <color name="page_background">@color/page_background_light</color>
+    <color name="primary_light">#326a4d</color>
+    <color name="primary_dark">#78d99f</color>
+    <color name="on_primary_light">#e6ffed</color>
+    <color name="on_primary_dark">#00391d</color>
+    <color name="on_surface_light">#2c352e</color>
+    <color name="on_surface_dark">#dee8df</color>
+    <color name="on_surface_muted_light">#58615a</color>
+    <color name="on_surface_muted_dark">#a4aea5</color>
     <color name="shortcut_icon_light">#737373</color>
     <color name="shortcut_icon_dark">#a1a1a1</color>
     <color name="shortcut_icon">@color/shortcut_icon_light</color>

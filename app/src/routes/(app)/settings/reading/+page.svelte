@@ -42,6 +42,11 @@
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingActionRow from "#lib/settings/SettingActionRow.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
+  import {
+    CARD_SWITCH,
+    SETTING_CARD,
+    SWITCH_CARD,
+  } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
   import { getSkipUpNextSetting } from "#lib/up-next/skip-up-next.svelte.ts";
 
@@ -53,9 +58,6 @@
     { side: "towardEnd", label: m.reading_swipe_right },
     { side: "towardStart", label: m.reading_swipe_left },
   ] as const satisfies readonly { side: SwipeSide; label: () => string }[];
-
-  const CARD_SWITCH = "-mx-list-row inline-auto";
-  const CARD = "rounded-card border border-border bg-card p-list-row";
 
   const guideRows: Snippet = tapGuideRows;
   const switches: Snippet = deviceSwitches;
@@ -241,10 +243,7 @@
       {@render switches()}
     </div>
   {:else}
-    <section
-      aria-labelledby={tapZonesId}
-      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-    >
+    <section aria-labelledby={tapZonesId} class={SWITCH_CARD}>
       <h2 id={tapZonesId} class="font-semibold">{m.reader_tap_zones()}</h2>
       <SegmentedControl
         options={TAP_ZONES}
@@ -266,10 +265,7 @@
       {@render skipSwitch()}
     </div>
   {:else}
-    <section
-      aria-labelledby={endId}
-      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-    >
+    <section aria-labelledby={endId} class={SWITCH_CARD}>
       <h2 id={endId} class="font-semibold">{m.reader_end_of_book()}</h2>
       {@render skipSwitch()}
     </section>
@@ -277,7 +273,7 @@
   <SmartFeaturesSection
     heading="h2"
     size="regular"
-    class={android.isOn ? "" : CARD}
+    class={android.isOn ? "" : SETTING_CARD}
   />
   {#if android.isOn}
     <div class="flex flex-col">
@@ -299,10 +295,7 @@
       <p class={FLUSH_FOOTER}>{m.reading_swipes_help()}</p>
     </div>
   {:else}
-    <section
-      aria-labelledby={swipesId}
-      class="flex flex-col gap-sm rounded-card border border-border bg-card p-list-row"
-    >
+    <section aria-labelledby={swipesId} class={SWITCH_CARD}>
       <h2 id={swipesId} class="font-semibold">{m.reading_swipes()}</h2>
       <p id="{swipesId}-hint" class="text-footnote text-muted">
         {m.reading_swipes_help()}

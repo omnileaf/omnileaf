@@ -1,8 +1,10 @@
 import { redirect } from "@sveltejs/kit";
 
 import { resolve } from "$app/paths";
+import { boldTextChoice } from "#lib/accessibility/bold-text-choice.svelte.ts";
 import { textSizeChoice } from "#lib/accessibility/text-size-choice.svelte.ts";
 import { touchChoices } from "#lib/accessibility/touch-choices.svelte.ts";
+import { rememberLockWords } from "#lib/app-lock/app-lock.ts";
 import {
   FIRST_LAUNCH_ROUTE,
   needsFirstLaunch,
@@ -13,6 +15,7 @@ import {
 } from "#lib/general/opens-on.svelte.ts";
 import { commands } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
+import { followSystemBoldText } from "#lib/page/system-bold-text.ts";
 import { followSystemContrast } from "#lib/page/system-contrast.ts";
 import { followSystemTextSize } from "#lib/page/system-text-size.ts";
 
@@ -30,7 +33,10 @@ export const load: LayoutLoad = async ({ url, untrack }) => {
   followSystemTextSize(appInfo.platform);
   followSystemContrast(appInfo.platform);
   textSizeChoice.markDocument();
+  boldTextChoice.markDocument();
+  void followSystemBoldText(appInfo.platform);
   touchChoices.markDocument();
+  void rememberLockWords();
   if (libraryProblem !== null) {
     return { appInfo, libraryProblem, homeArrival, isFirstLaunch: false };
   }

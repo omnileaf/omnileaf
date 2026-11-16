@@ -1229,6 +1229,11 @@
   --color-backdrop: var(--muted);
   --color-step-off: var(--border);
   --color-cover-edge: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --color-disabled-container: color-mix(
+    in oklab,
+    var(--foreground) 10%,
+    transparent
+  );
   --color-cover-sheet-far: color-mix(
     in oklab,
     var(--foreground) 8%,
@@ -2106,4 +2111,16 @@
 
 :root[data-platform="android"][data-text-size] {
   --text-scale: var(--native-scale-text);
+}
+
+:root[data-platform="android"][data-bold-text] {
+  --font-weight-regular: 700;
+  --font-weight-medium: 800;
+  --font-weight-semibold: 900;
+  --font-weight-bold: 900;
+  --font-weight-extrabold: 900;
+}
+
+:root[data-platform="android"][data-bold-text] body {
+  font-weight: var(--font-weight-regular);
 }
