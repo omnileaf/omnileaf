@@ -551,15 +551,13 @@ impl CreditedNotes {
         format!(
             "{SECTION_HEADING}{}\n\n{}",
             self.notes.version,
-            joined_sections(&self.sections(config))
+            self.sections(config).join("\n\n")
         )
     }
 
     fn matches_its_changelog_section(&self, changelog: &str, config: &Config) -> bool {
-        version_section(changelog, &self.notes.version).is_some_and(|section| {
-            changelog[section].trim_end_matches('\n')
-                == self.changelog_section(config).trim_end_matches('\n')
-        })
+        version_section(changelog, &self.notes.version)
+            .is_some_and(|section| changelog[section] == self.changelog_section(config))
     }
 
     fn rewrite_its_changelog_section(
@@ -570,12 +568,11 @@ impl CreditedNotes {
         let version = &self.notes.version;
         let section = version_section(changelog, version)
             .ok_or_else(|| archive_violation(version, Problem::NotInChangelog(version.clone())))?;
-        let old_text = changelog[section.clone()].trim_end_matches('\n');
         Ok(format!(
             "{}{}{}",
             &changelog[..section.start],
-            self.changelog_section(config).trim_end_matches('\n'),
-            &changelog[section.start + old_text.len()..]
+            self.changelog_section(config),
+            &changelog[section.end..]
         ))
     }
 
@@ -670,8 +667,8 @@ fn insert_above_the_latest_release(changelog: &str, section: &str) -> String {
         .find(|(_, line)| is_release_heading(line))
         .map(|(at, _)| at);
     match latest_release {
-        Some(at) => format!("{}{section}\n{}", &changelog[..at], &changelog[at..]),
-        None => format!("{}\n\n{section}", changelog.trim_end()),
+        Some(at) => format!("{}{section}\n\n{}", &changelog[..at], &changelog[at..]),
+        None => format!("{}\n\n{section}\n", changelog.trim_end()),
     }
 }
 
@@ -714,7 +711,8 @@ fn version_section(changelog: &str, version: &str) -> Option<Range<usize>> {
     let end = lines_with_offsets(changelog)
         .find(|&(at, line)| at > start && is_release_heading(line))
         .map_or(changelog.len(), |(at, _)| at);
-    Some(start..end)
+    let text = changelog[start..end].trim_end_matches('\n');
+    Some(start..start + text.len())
 }
 
 fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Result<Release> {
