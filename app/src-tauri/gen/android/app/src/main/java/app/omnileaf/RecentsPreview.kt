@@ -11,7 +11,7 @@ internal fun Activity.followRecentsChoice(choices: AppLockChoices) {
     }
 }
 
-/** Android colours the recent apps card from the task description, which falls back to the theme's primary colour. */
+/** Android draws the recent apps card and its bar strips from the task description, else from the theme's primary. */
 internal fun Activity.colourRecentsCard(
     @ColorInt background: Int,
 ) {
@@ -21,6 +21,8 @@ internal fun Activity.colourRecentsCard(
                 .Builder()
                 .setPrimaryColor(background)
                 .setBackgroundColor(background)
+                .setStatusBarColor(background)
+                .setNavigationBarColor(background)
                 .build(),
         )
     } else {
