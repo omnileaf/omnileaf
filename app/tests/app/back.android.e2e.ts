@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
 import { afterAll, beforeAll, expect, test } from "vitest";
 
-import { ANDROID_APP_ID } from "./android-settings.ts";
+import { ANDROID_APP_ID, adbShell } from "./android-settings.ts";
 import {
   clickWhenShown,
   mainNavigationLink,
@@ -15,10 +12,7 @@ import { pollUntil } from "./webdriver.ts";
 
 const BACK_KEY = 4;
 const NEW_SCREEN_TIMEOUT_MS = 30_000;
-const ADB_TIMEOUT_MS = 30_000;
 const RIGHT_TO_LEFT_LANGUAGE = "ar";
-
-const run = promisify(execFile);
 
 const appSession = useAppSession();
 
@@ -46,10 +40,7 @@ async function newWindow(
 }
 
 async function localeCommand(...args: readonly string[]): Promise<string> {
-  const { stdout } = await run("adb", ["shell", "cmd", "locale", ...args], {
-    timeout: ADB_TIMEOUT_MS,
-  });
-  return stdout.trim();
+  return adbShell("cmd", "locale", ...args);
 }
 
 async function appLanguages(): Promise<string> {
