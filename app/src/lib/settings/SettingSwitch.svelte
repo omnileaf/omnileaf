@@ -9,7 +9,12 @@
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
   import { LIST_ROW } from "./grouped-rows-look.ts";
-  import { ANDROID_ROW, ROW, TINTED } from "./setting-row-look.ts";
+  import {
+    ANDROID_ROW,
+    DISABLED_ROW,
+    ROW,
+    TINTED,
+  } from "./setting-row-look.ts";
   import SettingWords, { type WordsLook } from "./SettingWords.svelte";
 
   interface Props {
@@ -47,10 +52,10 @@
   );
   const rowLook = $derived(
     look === "android"
-      ? [ANDROID_ROW, bleeds ? FLUSH_BLEED : "inline-full", TINTED]
+      ? [ANDROID_ROW, bleeds ? FLUSH_BLEED : "inline-full", !disabled && TINTED]
       : look === "grouped"
         ? [GROUPED_ROW, GROUPED_PRESSED]
-        : [ROW, TINTED],
+        : [ROW, !disabled && TINTED],
   );
   const togglesFromSwitchAlone = $derived(
     platform === "ios" && isPhone(platform, width.current),
@@ -78,7 +83,7 @@
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[rowLook, ROW_FOCUS_RING, disabled && "text-muted", className]}
+    class={[rowLook, ROW_FOCUS_RING, disabled && DISABLED_ROW, className]}
   >
     <SettingWords {id} {label} {description} {look} />
   </Switch>

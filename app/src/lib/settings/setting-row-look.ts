@@ -6,6 +6,8 @@ export const ANDROID_ROW =
 
 export const TINTED = "hover:tint-hover active:tint-pressed";
 
+export const DISABLED_ROW = "opacity-38";
+
 export const SETTING_CARD =
   "rounded-card border border-border bg-card p-list-row";
 
