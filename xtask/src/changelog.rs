@@ -119,6 +119,8 @@ pub(crate) enum Problem {
     EmptySummary,
     LongSummary(usize),
     EmDash,
+    MalformedArchive(String),
+    OtherVersion(String),
 }
 
 impl fmt::Display for Problem {
@@ -178,6 +180,13 @@ impl fmt::Display for Problem {
             Self::EmDash => write!(
                 formatter,
                 "the summary holds an em-dash; use a comma or a full stop"
+            ),
+            Self::MalformedArchive(error) => {
+                write!(formatter, "the archive is not release notes JSON: {error}")
+            }
+            Self::OtherVersion(version) => write!(
+                formatter,
+                "the archive holds the notes of {version}, not of the version in its name"
             ),
         }
     }
@@ -353,26 +362,75 @@ impl Folder {
         Ok(notes)
     }
 
+    fn released(&self) -> PathBuf {
+        self.path.join(RELEASED)
+    }
+
     fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
-        let name = format!("{version}{ARCHIVE_EXTENSION}");
+        let name = archive_name(version);
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
-        let text = files::read_if_present(&self.path.join(RELEASED).join(&name))
+        let text = files::read_if_present(&self.released().join(&name))
             .with_context(|| format!("read {shown}"))?
             .ok_or_else(|| {
                 anyhow::anyhow!("{shown} is missing, so {version} has no release notes")
             })?;
-        let notes: CreditedNotes =
-            serde_json::from_str(&text).with_context(|| format!("parse {shown}"))?;
-        anyhow::ensure!(
-            notes.notes.version == version,
-            "{shown} holds the notes of {}, not {version}",
-            notes.notes.version
-        );
-        notes.check(&self.config).map_err(|problem| Violation {
-            file: format!("{RELEASED}/{name}"),
-            problem,
-        })?;
+        Ok(self
+            .parse_archive(version, &text)
+            .map_err(|problem| archive_violation(version, problem))?)
+    }
+
+    fn parse_archive(&self, version: &str, text: &str) -> Result<CreditedNotes, Problem> {
+        let notes: CreditedNotes = serde_json::from_str(text)
+            .map_err(|error| Problem::MalformedArchive(error.to_string()))?;
+        if notes.notes.version != version {
+            return Err(Problem::OtherVersion(notes.notes.version));
+        }
+        notes.check(&self.config)?;
         Ok(notes)
+    }
+
+    fn archived_versions(&self) -> anyhow::Result<Vec<String>> {
+        let released = self.released();
+        let entries = match fs::read_dir(&released) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(error) => {
+                return Err(error).with_context(|| format!("list {}", released.display()));
+            }
+        };
+        let mut versions = Vec::new();
+        for entry in entries {
+            let name = file_name(&entry?.path());
+            if let Some(version) = name.strip_suffix(ARCHIVE_EXTENSION) {
+                versions.push(version.to_owned());
+            }
+        }
+        versions.sort();
+        Ok(versions)
+    }
+
+    fn archive_violations(&self) -> anyhow::Result<Vec<Violation>> {
+        let mut violations = Vec::new();
+        for version in self.archived_versions()? {
+            let path = self.released().join(archive_name(&version));
+            let text =
+                fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
+            if let Err(problem) = self.parse_archive(&version, &text) {
+                violations.push(archive_violation(&version, problem));
+            }
+        }
+        Ok(violations)
+    }
+}
+
+fn archive_name(version: &str) -> String {
+    format!("{version}{ARCHIVE_EXTENSION}")
+}
+
+fn archive_violation(version: &str, problem: Problem) -> Violation {
+    Violation {
+        file: format!("{RELEASED}/{}", archive_name(version)),
+        problem,
     }
 }
 
@@ -430,7 +488,10 @@ fn read_fragments(folder: &Folder) -> (Vec<Fragment>, Vec<Violation>) {
 }
 
 pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Violation>> {
-    Ok(read_fragments(&read_folder(root)?).1)
+    let folder = read_folder(root)?;
+    let mut violations = read_fragments(&folder).1;
+    violations.extend(folder.archive_violations()?);
+    Ok(violations)
 }
 
 fn in_report_order(mut fragments: Vec<Fragment>, config: &Config) -> Vec<Fragment> {
@@ -1214,13 +1275,6 @@ Contributors: @hubot, @octocat
         "contributors": ["octocat"]
     }"#;
 
-    fn archive_violation(file: &str, problem: Problem) -> Violation {
-        Violation {
-            file: format!("{RELEASED}/{file}"),
-            problem,
-        }
-    }
-
     fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
             &format!("{FOLDER}/{RELEASED}/{version}.json"),
@@ -1352,10 +1406,12 @@ Contributors: @hubot, @octocat
 
         let error = notes_in(&scratch, "1.2.1", Format::Markdown).unwrap_err();
 
-        assert!(error.to_string().contains("1.2.0"), "{error}");
-        assert!(
-            error.to_string().contains(".changes/released/1.2.1.json"),
-            "{error}"
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation(
+                "1.2.1",
+                Problem::OtherVersion("1.2.0".to_owned())
+            ))
         );
     }
 
@@ -1381,14 +1437,14 @@ Contributors: @hubot, @octocat
         assert_eq!(
             unknown_area.downcast_ref::<Violation>(),
             Some(&archive_violation(
-                "1.2.0.json",
+                "1.2.0",
                 Problem::UnknownArea("kitchen".to_owned())
             ))
         );
         assert_eq!(
             unknown_type.downcast_ref::<Violation>(),
             Some(&archive_violation(
-                "1.1.0.json",
+                "1.1.0",
                 Problem::UnknownType("chore".to_owned())
             ))
         );
@@ -1407,7 +1463,7 @@ Contributors: @hubot, @octocat
 
         assert_eq!(
             error.downcast_ref::<Violation>(),
-            Some(&archive_violation("1.2.0.json", Problem::EmDash))
+            Some(&archive_violation("1.2.0", Problem::EmDash))
         );
     }
 
@@ -1425,9 +1481,51 @@ Contributors: @hubot, @octocat
         assert_eq!(
             error.downcast_ref::<Violation>(),
             Some(&archive_violation(
-                "1.2.0.json",
+                "1.2.0",
                 Problem::BadLogin("@octocat".to_owned())
             ))
+        );
+    }
+
+    #[test]
+    fn reports_every_bad_archive_beside_the_bad_fragments() {
+        let scratch = scratch_repo(&[("a.md", "x")]);
+        archive(&scratch, "1.0.0", &ARCHIVED_JSON.replace("1.2.0", "1.0.0"));
+        archive(&scratch, "1.1.0", ARCHIVED_JSON);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace(r#""area": "library""#, r#""area": "kitchen""#),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [
+                Violation {
+                    file: "a.md".to_owned(),
+                    problem: Problem::NoFrontMatter
+                },
+                archive_violation("1.1.0", Problem::OtherVersion("1.2.0".to_owned())),
+                archive_violation("1.2.0", Problem::UnknownArea("kitchen".to_owned())),
+            ]
+        );
+    }
+
+    #[test]
+    fn reports_an_archive_that_is_not_json() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", "{ not json");
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert!(
+            matches!(
+                violations.as_slice(),
+                [Violation { file, problem: Problem::MalformedArchive(_) }] if file == "released/1.2.0.json"
+            ),
+            "{violations:?}"
         );
     }
 
