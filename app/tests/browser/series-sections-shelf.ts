@@ -104,6 +104,7 @@ export class SectionShelf {
       isBookmarked: false,
       isNew: false,
       isFileMissing: false,
+      isConnected: true,
       kind: book.kind,
       numbers: book.numbers ?? null,
       volume: book.volume ?? null,
@@ -148,6 +149,7 @@ export class SectionShelf {
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
           bookmarkCount: 0,
+          connection: { state: "connected" },
           cover: null,
           folder: SERIES_FOLDER,
           upNext: null,

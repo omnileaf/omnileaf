@@ -26,6 +26,7 @@
       isBookmarked,
       isNew: false,
       isFileMissing: false,
+      isConnected: true,
       kind: "volume",
       numbers: { first: position, last: position },
       volume: null,

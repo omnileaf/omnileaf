@@ -12,6 +12,7 @@ import {
   type LibraryView,
   type Platform,
   type RemovalFailure,
+  type SeriesConnection,
   type SeriesFormat,
   type SignInOutcome,
   type SmartFilter,
@@ -730,6 +731,10 @@ export function sampleBackend(
     MISSING_FOLDER_SERIES.has(series.number);
   const isConnected = (series: SampleSeries): boolean =>
     missingFolder.isFound || !MISSING_FOLDER_SERIES.has(series.number);
+  const connectionOf = (series: SampleSeries): SeriesConnection =>
+    isConnected(series) || booksOf(series).length === 0
+      ? { state: "connected" }
+      : { state: "notConnected" };
   const hasBooksToFind = (series: SampleSeries): boolean =>
     !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
@@ -1027,6 +1032,7 @@ export function sampleBackend(
       isBookmarked: book.isBookmarked,
       isNew: book.isNew,
       isFileMissing: book.file === "missing",
+      isConnected: isConnected(series),
       ...numberingOf(book.title),
     };
   }
@@ -1730,6 +1736,7 @@ export function sampleBackend(
         readCount: booksOf(series).filter(isRead).length,
         bookmarkCount: booksOf(series).filter((book) => book.isBookmarked)
           .length,
+        connection: connectionOf(series),
         cover: coverOf(series),
         folder: LIBRARY_FOLDER_NAME,
         upNext: booksOf(series).length === 0 ? null : upNextOf(series),

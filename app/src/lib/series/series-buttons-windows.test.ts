@@ -26,6 +26,7 @@ const BOOK: SeriesBook = {
   isBookmarked: false,
   isNew: false,
   isFileMissing: false,
+  isConnected: true,
   kind: null,
   numbers: null,
   volume: null,

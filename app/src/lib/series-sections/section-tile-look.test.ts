@@ -46,6 +46,7 @@ function volume(
       isBookmarked: false,
       isNew: false,
       isFileMissing: false,
+      isConnected: true,
       kind: "volume",
       numbers: { first, last: first },
       volume: null,
