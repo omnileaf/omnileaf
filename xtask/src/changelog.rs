@@ -6,7 +6,10 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::pre_push::{changed_files, git};
+use crate::{
+    files,
+    pre_push::{changed_files, git},
+};
 
 pub(crate) const FOLDER: &str = ".changes";
 const CONFIG: &str = "config.json";
@@ -333,13 +336,11 @@ impl Folder {
     fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
         let name = format!("{version}{ARCHIVE_EXTENSION}");
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
-        let text = match fs::read_to_string(self.path.join(RELEASED).join(&name)) {
-            Ok(text) => text,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                anyhow::bail!("{shown} is missing, so {version} has no release notes")
-            }
-            Err(error) => return Err(error).with_context(|| format!("read {shown}")),
-        };
+        let text = files::read_if_present(&self.path.join(RELEASED).join(&name))
+            .with_context(|| format!("read {shown}"))?
+            .ok_or_else(|| {
+                anyhow::anyhow!("{shown} is missing, so {version} has no release notes")
+            })?;
         serde_json::from_str(&text).with_context(|| format!("parse {shown}"))
     }
 }
