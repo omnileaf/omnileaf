@@ -1443,14 +1443,29 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
-    fn reads_the_fragments_without_the_released_folder() {
+    fn does_not_check_the_released_folder_as_a_fragment() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
-        let folder = read_folder(scratch.path()).unwrap();
+        let violations = check(&folder_in(&scratch));
 
-        assert_eq!(check(&folder), []);
-        assert_eq!(folder.files.len(), 1);
+        assert_eq!(violations, []);
+    }
+
+    #[test]
+    fn leaves_the_released_folder_out_of_the_unreleased_notes() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let json = notes(&folder_in(&scratch), None, Format::Json).unwrap();
+
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&json).unwrap(),
+            serde_json::json!({
+                "version": "unreleased",
+                "entries": [{"type": "fix", "area": "reader", "summary": "Done."}]
+            })
+        );
     }
 
     #[test]
