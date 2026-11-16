@@ -5,17 +5,16 @@ import android.app.ActivityManager
 import android.os.Build
 import android.view.WindowManager
 import androidx.annotation.ColorInt
-import androidx.annotation.RequiresApi
 
 internal fun Activity.protectRecents(isLockOn: Boolean) {
     when (RecentsProtection.of(isLockOn, Build.VERSION.SDK_INT)) {
         RecentsProtection.NONE -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) showRecentsScreenshot(true)
+            showRecentsScreenshot(true)
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
         RecentsProtection.PLAIN_CARD -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) showRecentsScreenshot(false)
+            showRecentsScreenshot(false)
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
@@ -25,9 +24,10 @@ internal fun Activity.protectRecents(isLockOn: Boolean) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun Activity.showRecentsScreenshot(isShown: Boolean) {
-    setRecentsScreenshotEnabled(isShown)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        setRecentsScreenshotEnabled(isShown)
+    }
 }
 
 /** Android draws the recent apps card and its bar strips from the task description, else from the theme. */
