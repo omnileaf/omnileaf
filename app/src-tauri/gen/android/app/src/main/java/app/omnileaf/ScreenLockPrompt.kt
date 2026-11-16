@@ -1,22 +1,14 @@
 package app.omnileaf
 
-import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import app.tauri.Logger
 
-/** Android before 11 can pair the screen lock only with weak biometrics in one prompt. */
-private val UNLOCKS_WITH: Int =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-    } else {
-        BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-    }
+private const val UNLOCKS_WITH: Int = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
 private val DISMISSED_BY_USER = setOf(BiometricPrompt.ERROR_USER_CANCELED, BiometricPrompt.ERROR_NEGATIVE_BUTTON)
 

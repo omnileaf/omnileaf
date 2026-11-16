@@ -7,7 +7,6 @@ import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
-import org.json.JSONObject
 
 @TauriPlugin
 class WallpaperColoursPlugin(
@@ -19,11 +18,9 @@ class WallpaperColoursPlugin(
             when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN -> roleColours() + inverseRoleColours()
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> paletteTones() + roleColours()
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> paletteTones()
-                else -> null
+                else -> paletteTones()
             }
-        val scheme = resources?.let { wallpaperScheme(it, activity::getColor) }
-        invoke.resolve(JSObject().put("colours", scheme?.toJson() ?: JSONObject.NULL))
+        invoke.resolve(JSObject().put("colours", wallpaperScheme(resources, activity::getColor).toJson()))
     }
 }
 
