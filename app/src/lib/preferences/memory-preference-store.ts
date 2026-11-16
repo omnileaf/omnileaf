@@ -1,11 +1,14 @@
-import type { PreferenceStore } from "./stored-preference.ts";
+import type { ForgettingPreferenceStore } from "./stored-preference.ts";
 
-export function memoryPreferenceStore(): PreferenceStore {
+export function memoryPreferenceStore(): ForgettingPreferenceStore {
   const kept = new Map<string, string>();
   return {
     getItem: (key) => kept.get(key) ?? null,
     setItem: (key, value) => {
       kept.set(key, value);
+    },
+    removeItem: (key) => {
+      kept.delete(key);
     },
   };
 }

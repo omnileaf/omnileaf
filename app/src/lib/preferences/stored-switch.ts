@@ -1,12 +1,16 @@
-import { type PreferenceStore, StoredPreference } from "./stored-preference.ts";
+import {
+  type ForgettingPreferenceStore,
+  type PreferenceStore,
+  StoredPreference,
+} from "./stored-preference.ts";
 
 const STORED_ON = "on";
 const STORED_OFF = "off";
 
-export class StoredSwitch {
-  readonly #stored: StoredPreference;
+export class StoredSwitch<Store extends PreferenceStore = PreferenceStore> {
+  readonly #stored: StoredPreference<Store>;
 
-  constructor(store: PreferenceStore | undefined, key: string) {
+  constructor(store: Store | undefined, key: string) {
     this.#stored = new StoredPreference(store, key);
   }
 
@@ -20,5 +24,9 @@ export class StoredSwitch {
 
   writeIfPossible(isOn: boolean): void {
     this.#stored.writeIfPossible(isOn ? STORED_ON : STORED_OFF);
+  }
+
+  forgetIfPossible(this: StoredSwitch<ForgettingPreferenceStore>): void {
+    this.#stored.forgetIfPossible();
   }
 }

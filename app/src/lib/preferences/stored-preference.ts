@@ -3,10 +3,14 @@ export interface PreferenceStore {
   setItem(key: string, value: string): void;
 }
 
+export interface ForgettingPreferenceStore extends PreferenceStore {
+  removeItem(key: string): void;
+}
+
 /** The web view's storage can refuse reads and writes, so a refusal reads as nothing stored. */
-export class StoredPreference {
+export class StoredPreference<Store extends PreferenceStore = PreferenceStore> {
   constructor(
-    private readonly store: PreferenceStore | undefined,
+    private readonly store: Store | undefined,
     private readonly key: string,
   ) {}
 
@@ -25,9 +29,18 @@ export class StoredPreference {
       return;
     }
   }
+
+  forgetIfPossible(this: StoredPreference<ForgettingPreferenceStore>): void {
+    try {
+      this.store?.removeItem(this.key);
+    } catch {
+      return;
+    }
+  }
 }
 
-export function browserPreferenceStore(): PreferenceStore | undefined {
+export function browserPreferenceStore():
+  ForgettingPreferenceStore | undefined {
   try {
     return window.localStorage;
   } catch {
