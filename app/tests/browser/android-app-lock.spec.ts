@@ -110,6 +110,18 @@ function startAppLock(page: Page): Locator {
   return page.getByRole("radiogroup", { name: "Start app lock" });
 }
 
+function timesCard(page: Page): Locator {
+  return page.locator("section").filter({ has: startAppLock(page) });
+}
+
+async function cardLookOf(card: Locator): Promise<readonly string[]> {
+  return card.evaluate((element) => {
+    const { backgroundColor, borderRadius, borderWidth } =
+      getComputedStyle(element);
+    return [backgroundColor, borderRadius, borderWidth];
+  });
+}
+
 function time(page: Page, name: string): Locator {
   return startAppLock(page).getByRole("radio", { name, exact: true });
 }
@@ -429,6 +441,7 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     await expect(card).toHaveCount(1);
     await expect(card.filter({ has: startAppLock(page) })).toHaveCount(0);
     expect(times.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
+    expect(await cardLookOf(timesCard(page))).toEqual(await cardLookOf(card));
   });
 
   test("hides Start app lock on a tablet while the lock is off", async ({
