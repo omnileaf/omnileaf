@@ -148,25 +148,22 @@ function expectSameColour(
 function linesIn(page: Page): Promise<Lines> {
   return page.getByRole("main").evaluate((main, labelLength) => {
     const groups = [...main.querySelectorAll("[data-settings-group]")];
-    const lined = groups
-      .map((group) => getComputedStyle(group))
-      .flatMap((style, index) =>
-        style.borderImageSource === "none"
-          ? []
-          : [
-              {
-                label: (groups[index]?.textContent ?? "")
-                  .trim()
-                  .slice(0, labelLength),
-                edges: [
-                  style.borderTopWidth,
-                  style.borderRightWidth,
-                  style.borderBottomWidth,
-                  style.borderLeftWidth,
-                ],
-              },
-            ],
-      );
+    const lined = groups.flatMap((group) => {
+      const style = getComputedStyle(group);
+      return style.borderImageSource === "none"
+        ? []
+        : [
+            {
+              label: group.textContent.trim().slice(0, labelLength),
+              edges: [
+                style.borderTopWidth,
+                style.borderRightWidth,
+                style.borderBottomWidth,
+                style.borderLeftWidth,
+              ],
+            },
+          ];
+    });
     return { lined, groups: groups.length };
   }, LABEL_LENGTH);
 }
