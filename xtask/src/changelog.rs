@@ -27,6 +27,7 @@ const RELEASED: &str = "released";
 const NOT_FRAGMENTS: &[&str] = &[CONFIG, README, RELEASED];
 const CHANGELOG: &str = "CHANGELOG.md";
 const SECTION_HEADING: &str = "## ";
+const ENTRY_MARK: &str = "- **";
 const FRAGMENT_EXTENSION: &str = ".md";
 const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
@@ -558,7 +559,7 @@ impl CreditedNotes {
                 .filter(|entry| entry.kind == kind.id)
                 .map(|entry| {
                     format!(
-                        "- **{}:** {}",
+                        "{ENTRY_MARK}{}:** {}",
                         heading_of(&config.areas, &entry.area),
                         entry.summary
                     )
