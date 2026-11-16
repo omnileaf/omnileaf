@@ -56,3 +56,21 @@ export async function readAppLock(
     ? { kind: "unavailable" }
     : { kind: "failed", error: read.error };
 }
+
+export async function rememberLockWords(
+  remember: typeof commands.rememberAppLockWords = commands.rememberAppLockWords,
+): Promise<void> {
+  const remembered = await remember({
+    title: m.app_lock_locked_title(),
+    body: m.app_lock_locked_body(),
+    unlock: m.app_lock_unlock(),
+    prompt: m.app_lock_unlock_prompt(),
+    turnedOff: m.app_lock_turned_off_no_screen_lock(),
+  });
+  if (
+    remembered.status === "error" &&
+    remembered.error.code !== "appLockUnavailable"
+  ) {
+    reportError(remembered.error);
+  }
+}

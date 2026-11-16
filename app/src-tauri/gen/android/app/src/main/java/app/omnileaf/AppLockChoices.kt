@@ -1,6 +1,7 @@
 package app.omnileaf
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.content.edit
 
@@ -8,9 +9,16 @@ private const val PREFERENCES = "app_lock"
 private const val IS_ON_KEY = "is_on"
 private const val LOCK_AFTER_KEY = "lock_after"
 private const val HIDES_CONTENT_IN_RECENTS_KEY = "hides_content_in_recents"
+private const val TITLE_KEY = "words_title"
+private const val BODY_KEY = "words_body"
+private const val UNLOCK_KEY = "words_unlock"
+private const val PROMPT_KEY = "words_prompt"
+private const val TURNED_OFF_KEY = "words_turned_off"
+private val WORD_KEYS = listOf(TITLE_KEY, BODY_KEY, UNLOCK_KEY, PROMPT_KEY, TURNED_OFF_KEY)
+private val RECENTS_KEYS = setOf(IS_ON_KEY, HIDES_CONTENT_IN_RECENTS_KEY)
 
 internal class AppLockChoices(
-    context: Context,
+    private val context: Context,
 ) {
     private val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
@@ -37,5 +45,38 @@ internal class AppLockChoices(
 
     fun hideContentInRecents(isHidden: Boolean) {
         preferences.edit { putBoolean(HIDES_CONTENT_IN_RECENTS_KEY, isHidden) }
+    }
+
+    fun wordsToShow(): LockWords = storedWords()?.takeIf { it.isComplete } ?: LockWords.builtIn(context)
+
+    fun remember(words: LockWords) {
+        preferences.edit {
+            putString(TITLE_KEY, words.title)
+            putString(BODY_KEY, words.body)
+            putString(UNLOCK_KEY, words.unlock)
+            putString(PROMPT_KEY, words.prompt)
+            putString(TURNED_OFF_KEY, words.turnedOff)
+        }
+    }
+
+    fun startFollowingRecentsChoice(follow: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener =
+        SharedPreferences
+            .OnSharedPreferenceChangeListener { _, key ->
+                if (key in RECENTS_KEYS) follow()
+            }.also(preferences::registerOnSharedPreferenceChangeListener)
+
+    fun stopFollowing(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    private fun storedWords(): LockWords? {
+        val stored = WORD_KEYS.associateWith { preferences.getString(it, null) ?: return null }
+        return LockWords(
+            title = stored.getValue(TITLE_KEY),
+            body = stored.getValue(BODY_KEY),
+            unlock = stored.getValue(UNLOCK_KEY),
+            prompt = stored.getValue(PROMPT_KEY),
+            turnedOff = stored.getValue(TURNED_OFF_KEY),
+        )
     }
 }

@@ -29,6 +29,7 @@ export const commands = {
 	appLock: () => typedError<AppLock, IpcError>(__TAURI_INVOKE("app_lock")),
 	turnAppLockOn: (promptTitle: string) => typedError<AppLockTurning, IpcError>(__TAURI_INVOKE("turn_app_lock_on", { promptTitle })),
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
+	rememberAppLockWords: (words: LockWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_app_lock_words", { words })),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
 	hideContentInRecents: (isHidden: boolean) => typedError<null, IpcError>(__TAURI_INVOKE("hide_content_in_recents", { isHidden })),
 	wallpaperColours: () => typedError<{
@@ -732,6 +733,14 @@ export type LibraryWriter = {
 };
 
 export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "fifteenMinutes" | "thirtyMinutes" | "oneHour";
+
+export type LockWords = {
+	title: string,
+	body: string,
+	unlock: string,
+	prompt: string,
+	turnedOff: string,
+};
 
 export type MissingFolder = {
 	folder: LibraryFolder,

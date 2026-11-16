@@ -236,6 +236,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
     });
   },
   turnAppLockOn: () => "turnedOn",
+  rememberAppLockWords: () => null,
   turnAppLockOff: () => null,
   chooseLockAfter: () => null,
   hideContentInRecents: () => null,

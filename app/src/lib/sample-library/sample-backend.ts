@@ -1259,6 +1259,7 @@ export function sampleBackend(
       appLock = { ...appLock, isOn: true };
       return "turnedOn";
     },
+    rememberAppLockWords: () => null,
     turnAppLockOff: () => {
       appLock = { ...appLock, isOn: false };
       return null;

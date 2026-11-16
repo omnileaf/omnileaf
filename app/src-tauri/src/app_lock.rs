@@ -3,7 +3,7 @@ use specta::Type;
 
 #[cfg(target_os = "android")]
 pub(crate) use android::{
-    choose_lock_after, hide_content_in_recents, plugin, read, turn_off, turn_on,
+    choose_lock_after, hide_content_in_recents, plugin, read, remember_words, turn_off, turn_on,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -24,6 +24,35 @@ pub(crate) struct AppLock {
     lock_after: LockAfter,
     hides_content_in_recents: bool,
     can_hide_content_in_recents: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LockWords {
+    title: String,
+    body: String,
+    unlock: String,
+    prompt: String,
+    turned_off: String,
+}
+
+#[cfg_attr(
+    not(any(target_os = "android", test)),
+    expect(dead_code, reason = "only Android shows a lock screen")
+)]
+impl LockWords {
+    fn complete(self) -> Option<Self> {
+        [
+            &self.title,
+            &self.body,
+            &self.unlock,
+            &self.prompt,
+            &self.turned_off,
+        ]
+        .iter()
+        .all(|line| !line.trim().is_empty())
+        .then_some(self)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -100,6 +129,15 @@ pub(crate) async fn turn_on(
 
 #[cfg(not(target_os = "android"))]
 #[expect(clippy::unused_async, reason = "only Android waits for its app lock")]
+pub(crate) async fn remember_words(
+    _app: &tauri::AppHandle,
+    _words: LockWords,
+) -> Result<(), crate::ipc_error::IpcError> {
+    Err(crate::ipc_error::IpcError::app_lock_unavailable())
+}
+
+#[cfg(not(target_os = "android"))]
+#[expect(clippy::unused_async, reason = "only Android waits for its app lock")]
 pub(crate) async fn turn_off(_app: &tauri::AppHandle) -> Result<(), crate::ipc_error::IpcError> {
     Err(crate::ipc_error::IpcError::app_lock_unavailable())
 }
@@ -133,7 +171,8 @@ mod android {
     };
 
     use super::{
-        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, HiddenInRecents, LockAfter, Turned,
+        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, HiddenInRecents, LockAfter,
+        LockWords, Turned,
     };
     use crate::ipc_error::IpcError;
 
@@ -143,10 +182,10 @@ mod android {
     const READ: &str = "read";
     const TURN_ON: &str = "turnOn";
     const TURN_OFF: &str = "turnOff";
+    const REMEMBER_WORDS: &str = "rememberWords";
     const CHOOSE_LOCK_AFTER: &str = "chooseLockAfter";
     const HIDE_CONTENT_IN_RECENTS: &str = "hideContentInRecents";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
-    const LOCKS_THE_APP: bool = false;
 
     struct AppLockPlugin(PluginHandle<Wry>);
 
@@ -160,6 +199,8 @@ mod android {
         TimedOut,
         #[error("the prompt to turn the app lock on needs a title")]
         UntitledPrompt,
+        #[error("the lock screen needs all of its words")]
+        IncompleteWords,
     }
 
     pub(crate) fn plugin() -> TauriPlugin<Wry> {
@@ -173,9 +214,6 @@ mod android {
     }
 
     pub(crate) async fn read(app: &AppHandle) -> Result<AppLock, IpcError> {
-        if !LOCKS_THE_APP {
-            return Err(IpcError::app_lock_unavailable());
-        }
         ask_soon(app, READ, ()).await
     }
 
@@ -188,6 +226,13 @@ mod android {
         ask::<Turned>(app, TURN_ON, prompt)
             .await
             .map(|turned| turned.turning)
+    }
+
+    pub(crate) async fn remember_words(app: &AppHandle, words: LockWords) -> Result<(), IpcError> {
+        let words = words
+            .complete()
+            .ok_or_else(|| IpcError::internal(&AppLockError::IncompleteWords))?;
+        ask_soon(app, REMEMBER_WORDS, words).await
     }
 
     pub(crate) async fn turn_off(app: &AppHandle) -> Result<(), IpcError> {
@@ -319,6 +364,7 @@ mod tests {
             })
             .unwrap(),
             serde_json::to_value(HiddenInRecents { is_hidden: true }).unwrap(),
+            serde_json::to_value(words()).unwrap(),
         ];
 
         assert_eq!(
@@ -327,7 +373,37 @@ mod tests {
                 serde_json::json!({ "title": "Turn on app lock" }),
                 serde_json::json!({ "lockAfter": "oneHour" }),
                 serde_json::json!({ "isHidden": true }),
+                serde_json::json!({
+                    "title": "Omnileaf is locked",
+                    "body": "Unlock to open your library.",
+                    "unlock": "Unlock",
+                    "prompt": "Unlock Omnileaf",
+                    "turnedOff": "App lock was turned off because this phone has no screen lock.",
+                }),
             ]
+        );
+    }
+
+    fn words() -> LockWords {
+        LockWords {
+            title: "Omnileaf is locked".into(),
+            body: "Unlock to open your library.".into(),
+            unlock: "Unlock".into(),
+            prompt: "Unlock Omnileaf".into(),
+            turned_off: "App lock was turned off because this phone has no screen lock.".into(),
+        }
+    }
+
+    #[test]
+    fn takes_lock_words_only_when_every_line_has_text() {
+        let blank_prompt = LockWords {
+            prompt: "  ".into(),
+            ..words()
+        };
+
+        assert_eq!(
+            [words().complete(), blank_prompt.complete()],
+            [Some(words()), None]
         );
     }
 

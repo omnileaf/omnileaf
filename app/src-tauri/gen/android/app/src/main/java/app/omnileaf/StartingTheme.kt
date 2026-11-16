@@ -40,11 +40,14 @@ fun Activity.keepSplashScreenTheme(theme: StartingTheme) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @StyleRes
-private fun StartingTheme.splashScreenStyle(): Int =
+internal fun StartingTheme.style(): Int =
     when (this) {
-        StartingTheme.DEVICE -> Resources.ID_NULL
+        StartingTheme.DEVICE -> R.style.Theme_omnileaf_app
         StartingTheme.LIGHT -> R.style.Theme_omnileaf_app_Light
         StartingTheme.DARK -> R.style.Theme_omnileaf_app_Dark
     }
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@StyleRes
+private fun StartingTheme.splashScreenStyle(): Int = if (this == StartingTheme.DEVICE) Resources.ID_NULL else style()
