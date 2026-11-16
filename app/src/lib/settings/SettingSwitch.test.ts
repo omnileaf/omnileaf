@@ -87,7 +87,7 @@ test("toggles from its switch alone on an iPhone, not from its words", async () 
 async function renderOn(
   platform: Parameters<typeof followCorePlatform>[0],
   width: number,
-  grouped: boolean,
+  { grouped = false, disabled = false } = {},
 ): Promise<void> {
   await page.viewport(width, PHONE.height);
   followCorePlatform(platform);
@@ -97,6 +97,7 @@ async function renderOn(
     isOn: false,
     onToggle: () => undefined,
     grouped,
+    disabled,
   });
 }
 
@@ -109,7 +110,7 @@ function wordsOf(text: string): HTMLElement {
 }
 
 test("keeps the Android phone row's padding, gap and plain label", async () => {
-  await renderOn("android", PHONE.width, false);
+  await renderOn("android", PHONE.width);
 
   const row = getComputedStyle(page.getByRole("switch").element());
 
@@ -124,7 +125,7 @@ test("keeps the Android phone row's padding, gap and plain label", async () => {
 });
 
 test("keeps the iPhone row's padding, gap and medium label", async () => {
-  await renderOn("ios", PHONE.width, false);
+  await renderOn("ios", PHONE.width);
 
   const row = getComputedStyle(wordsOf(LABEL).parentElement ?? document.body);
 
@@ -137,7 +138,7 @@ test("keeps the iPhone row's padding, gap and medium label", async () => {
 });
 
 test("keeps the desktop row's padding, gap and medium label", async () => {
-  await renderOn("windows", 700, false);
+  await renderOn("windows", 700);
 
   const row = getComputedStyle(page.getByRole("switch").element());
 
@@ -148,7 +149,7 @@ test("keeps the desktop row's padding, gap and medium label", async () => {
 });
 
 test("draws a grouped row on the Mac 42px tall with 6px above and below its words", async () => {
-  await renderOn("macos", 1280, true);
+  await renderOn("macos", 1280, { grouped: true });
 
   const row = getComputedStyle(page.getByRole("switch").element());
   const label = getComputedStyle(page.getByText(LABEL).element());
@@ -161,16 +162,30 @@ test("draws a grouped row on the Mac 42px tall with 6px above and below its word
 });
 
 test("disables the switch on an iPhone when the row is disabled", async () => {
-  await page.viewport(PHONE.width, PHONE.height);
-  followCorePlatform("ios");
-  const screen = await render(SettingSwitch, {
-    label: LABEL,
-    isOn: false,
-    disabled: true,
-    onToggle: () => undefined,
-  });
+  await renderOn("ios", PHONE.width, { disabled: true });
 
   await expect
-    .element(screen.getByRole("switch", { name: LABEL }))
+    .element(page.getByRole("switch", { name: LABEL }))
     .toBeDisabled();
+});
+
+test("dims only the words of a disabled Android row, to Material's disabled level", async () => {
+  await renderOn("android", PHONE.width, { disabled: true });
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(getComputedStyle(wordsOf(LABEL)).opacity).toBe("0.38");
+  expect(row.opacity).toBe("1");
+});
+
+test("mutes a disabled row on the Mac without dimming its words", async () => {
+  await renderOn("macos", 1280, { disabled: true });
+  const muted = document.createElement("span");
+  muted.style.color = "var(--color-muted)";
+  document.body.append(muted);
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(getComputedStyle(wordsOf(LABEL)).opacity).toBe("1");
+  expect(row.color).toBe(getComputedStyle(muted).color);
 });

@@ -13,6 +13,7 @@
   import {
     ANDROID_CHOICE_CARD,
     FLUSH_BLEED,
+    FLUSH_FOOTER,
   } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
@@ -73,8 +74,10 @@
   <SettingChoiceRow
     bleed={android.isOn ? FLUSH_BLEED : ""}
     title={m.app_lock_after()}
-    value={LOCK_DELAY_NAMES[lock.lockAfter]()}
-    help={lock.isOn ? m.app_lock_after_help() : m.app_lock_only_when_on()}
+    value={lock.isOn
+      ? LOCK_DELAY_NAMES[lock.lockAfter]()
+      : m.app_lock_only_when_on()}
+    help={android.isOn || !lock.isOn ? undefined : m.app_lock_after_help()}
     choices={delayChoices}
     chosen={lock.lockAfter}
     disabled={!lock.isOn}
@@ -114,7 +117,12 @@
 >
   {#if android.isOn}
     {@render lockSwitch()}
-    {@render lockAfterRow()}
+    <section class="flex flex-col">
+      {@render lockAfterRow()}
+      {#if lock.isOn}
+        <p class={FLUSH_FOOTER}>{m.app_lock_after_help()}</p>
+      {/if}
+    </section>
     {@render hideContentSwitch()}
   {:else}
     <section class={SWITCH_CARD}>

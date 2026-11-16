@@ -10,6 +10,20 @@ import { CommandFailure } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
+const DIMMED = "0.38";
+const DISABLED_TRACKS = [
+  {
+    isHidden: false,
+    fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
+    border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
+  },
+  {
+    isHidden: true,
+    fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
+    border: "rgba(0, 0, 0, 0)",
+  },
+] as const;
+const NOTE_GAP_PX = 16;
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
@@ -18,6 +32,7 @@ const NOT_CHANGED = "Couldn't change the app lock. Try again.";
 let lock: AppLock = NEW_APP_LOCK;
 let turning: AppLockTurning = "turnedOn";
 let promptTitles: string[] = [];
+let changes: string[] = [];
 let failingCode: IpcErrorCode | null = null;
 
 function failIfAsked(): void {
@@ -46,11 +61,13 @@ test.use({
       return null;
     },
     chooseLockAfter: (lockAfter) => {
+      changes.push(`lockAfter ${lockAfter}`);
       failIfAsked();
       lock = { ...lock, lockAfter };
       return null;
     },
     hideContentInRecents: (isHidden) => {
+      changes.push(`hide ${String(isHidden)}`);
       failIfAsked();
       lock = { ...lock, hidesContentInRecents: isHidden };
       return null;
@@ -94,6 +111,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     lock = NEW_APP_LOCK;
     turning = "turnedOn";
     promptTitles = [];
+    changes = [];
     failingCode = null;
   });
 
@@ -124,6 +142,73 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(lockAfter(page)).toBeDisabled();
     await expect(hideContent(page)).toBeDisabled();
     await expect(page.getByText(ONLY_WHEN_ON)).toHaveCount(2);
+  });
+
+  test("dims Lock after and Hide content while the lock is off, and ignores taps on them", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, hidesContentInRecents: true };
+    await openAppLock(page);
+    const words = [
+      page.getByText("Lock after", { exact: true }).locator(".."),
+      page
+        .getByText("Hide content in the recent apps screen", { exact: true })
+        .locator(".."),
+    ];
+
+    for (const row of words) {
+      await expect(row).toHaveCSS("opacity", DIMMED);
+    }
+    for (const row of [lockAfter(page), hideContent(page)]) {
+      const resting = await row.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      await row.hover({ force: true });
+      await expect(row).toHaveCSS("background-color", resting);
+      await row.click({ force: true });
+    }
+    await lockSwitch(page).click();
+    await expect(lockSwitch(page)).toBeChecked();
+
+    expect(changes).toEqual([]);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("draws a disabled switch in the disabled colours, on and off", async ({
+    page,
+  }) => {
+    for (const { isHidden, fill, border } of DISABLED_TRACKS) {
+      lock = { ...NEW_APP_LOCK, hidesContentInRecents: isHidden };
+      await openAppLock(page);
+
+      const track = hideContent(page)
+        .locator("span[aria-hidden='true']")
+        .last();
+
+      await expect(hideContent(page)).toBeChecked({ checked: isHidden });
+      await expect(track).toHaveCSS("background-color", fill);
+      await expect(track).toHaveCSS("border-top-color", border);
+    }
+  });
+
+  test("puts the delay's note under Lock after, apart from the rows around it", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+
+    const delay = await boxOf(lockAfter(page));
+    const noteText = page.getByText(/^Counts from when you leave Omnileaf/);
+    const note = await boxOf(noteText);
+    const hide = await boxOf(hideContent(page));
+
+    await expect(lockAfter(page)).not.toContainText("Counts from");
+    expect(note.y).toBeGreaterThanOrEqual(delay.y + delay.height);
+    expect(hide.y).toBeGreaterThanOrEqual(note.y + note.height);
+    await expect(noteText).toHaveCSS(
+      "padding-bottom",
+      `${String(NOTE_GAP_PX)}px`,
+    );
   });
 
   test("turns the lock on once the phone confirms it, and names it on Privacy and security", async ({

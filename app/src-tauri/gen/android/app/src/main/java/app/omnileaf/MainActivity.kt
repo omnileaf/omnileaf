@@ -83,6 +83,7 @@ class MainActivity : TauriActivity() {
     ) {
         window.setBackgroundDrawable(color.toDrawable())
         webView?.setBackgroundColor(color)
+        colourRecentsCard(color)
     }
 
     fun orient(orientation: ScreenOrientation) {

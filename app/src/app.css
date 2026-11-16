@@ -1229,6 +1229,11 @@
   --color-backdrop: var(--muted);
   --color-step-off: var(--border);
   --color-cover-edge: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --color-disabled-container: color-mix(
+    in oklab,
+    var(--foreground) 10%,
+    transparent
+  );
   --color-cover-sheet-far: color-mix(
     in oklab,
     var(--foreground) 8%,

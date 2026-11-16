@@ -3,6 +3,7 @@
 
   import { FLUSH_BLEED } from "./android-flush-look.ts";
   import ChoiceDialog, { type Choice } from "./ChoiceDialog.svelte";
+  import { DISABLED_ROW, TINTED } from "./setting-row-look.ts";
 
   let {
     title,
@@ -45,13 +46,15 @@
   class={[
     bleed,
     "flex items-center gap-lg py-sm ps-lg pe-xl text-start transition-control min-block-native-row-two",
-    disabled ? "text-muted" : "hover:tint-hover active:tint-pressed",
+    !disabled && TINTED,
   ]}
   onclick={() => {
     isOpen = true;
   }}
 >
-  <span class="flex flex-1 flex-col min-inline-none">
+  <span
+    class={["flex flex-1 flex-col min-inline-none", disabled && DISABLED_ROW]}
+  >
     <span class="text-body tracking-native-row-title">{title}</span>
     <span
       lang={valueLang}
