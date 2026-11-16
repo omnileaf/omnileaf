@@ -26,6 +26,10 @@ export function followContrast(contrast: Contrast | undefined): void {
   markRoot("data-contrast", contrast);
 }
 
+export function followBoldText(isBold: boolean): void {
+  markRoot("data-bold-text", isBold ? "" : undefined);
+}
+
 export interface ThemeMatch {
   readonly status: "ok" | "error";
 }

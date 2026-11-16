@@ -1,25 +1,15 @@
 import { afterEach, expect, test } from "vitest";
 
-import type { PreferenceStore } from "#lib/preferences/stored-preference.ts";
+import { memoryPreferenceStore } from "#lib/preferences/memory-preference-store.ts";
 
 import { TextSizeChoice } from "./text-size-choice.svelte.ts";
-
-function memory(): PreferenceStore {
-  const kept = new Map<string, string>();
-  return {
-    getItem: (key) => kept.get(key) ?? null,
-    setItem: (key, value) => {
-      kept.set(key, value);
-    },
-  };
-}
 
 afterEach(() => {
   delete document.documentElement.dataset.textSize;
 });
 
 test("follows the phone's text size until another size is chosen", () => {
-  const choice = new TextSizeChoice(memory());
+  const choice = new TextSizeChoice(memoryPreferenceStore());
 
   choice.markDocument();
 
@@ -30,7 +20,7 @@ test("follows the phone's text size until another size is chosen", () => {
 test.each(["larger", "largest"] as const)(
   "marks the document for %s text once it is chosen, and keeps it",
   (size) => {
-    const store = memory();
+    const store = memoryPreferenceStore();
     const choice = new TextSizeChoice(store);
 
     choice.choose(size);
@@ -41,7 +31,7 @@ test.each(["larger", "largest"] as const)(
 );
 
 test("takes the mark away once the phone's size is chosen again", () => {
-  const choice = new TextSizeChoice(memory());
+  const choice = new TextSizeChoice(memoryPreferenceStore());
   choice.choose("largest");
 
   choice.choose("system");
@@ -50,14 +40,14 @@ test("takes the mark away once the phone's size is chosen again", () => {
 });
 
 test("follows the phone's text size for a size it doesn't know", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   store.setItem("omnileaf.textSize", "huge");
 
   expect(new TextSizeChoice(store).size).toBe("system");
 });
 
 test("marks the document again from the kept choice when the app opens", () => {
-  const store = memory();
+  const store = memoryPreferenceStore();
   new TextSizeChoice(store).choose("larger");
   delete document.documentElement.dataset.textSize;
 
