@@ -86,7 +86,7 @@
     }}
   />
   {#if android.isOn}
-    <div class="mbs-xl">
+    <div data-settings-group>
       <div class={FLUSH_LIST}>
         <RescanSchedule
           schedule={scheduledRescans}
@@ -96,7 +96,7 @@
       <p class={FLUSH_FOOTER}>{m.advanced_scheduled_rescans_help()}</p>
     </div>
   {/if}
-  <div class="mbs-xl">
+  <div data-settings-group class="mbs-xl">
     <SettingsEntries
       entries={[
         {

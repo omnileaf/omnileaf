@@ -55,8 +55,34 @@ interface PageLines {
 const PAGE_LINES: readonly PageLines[] = [
   { route: "/settings", lines: 3 },
   { route: "/settings/appearance", lines: 1 },
+  { route: "/settings/library", lines: 3 },
   { route: "/settings/privacy", lines: 1 },
   { route: "/settings/about/report", lines: 1 },
+];
+
+interface LineAbove {
+  readonly route: string;
+  readonly above: (page: Page) => Locator;
+  readonly group: (page: Page) => Locator;
+  readonly gap: number;
+}
+
+const GAP_ABOVE_LINE = 8;
+
+const LINES_ABOVE: readonly LineAbove[] = [
+  {
+    route: "/settings/library",
+    above: (page) =>
+      page.getByText(
+        "New books show up without a rescan. Turn off to save battery.",
+      ),
+    group: (page) =>
+      page
+        .getByRole("list")
+        .filter({ has: page.getByRole("link", { name: /^Library tabs/ }) })
+        .locator("xpath=.."),
+    gap: GAP_ABOVE_LINE,
+  },
 ];
 
 interface EdgeProbe {
@@ -204,6 +230,20 @@ test.describe(
     test.beforeEach(({ platform }) => {
       test.skip(platform !== "android", "Android phone settings");
     });
+
+    for (const { route, above, group, gap } of LINES_ABOVE) {
+      test(`draws a line on ${route} ${String(gap)}px under the group above`, async ({
+        page,
+      }) => {
+        await page.goto(route);
+
+        const upper = await boxOf(above(page));
+        const lower = await boxOf(group(page));
+
+        expect(lower.y - (upper.y + upper.height)).toBeCloseTo(gap, 0);
+        await expect(group(page)).toHaveCSS("border-top-width", "1px");
+      });
+    }
 
     for (const theme of THEMES) {
       for (const direction of DIRECTIONS) {
