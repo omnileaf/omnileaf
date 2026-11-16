@@ -78,6 +78,20 @@ impl Config {
     fn area_position(&self, id: &str) -> Option<usize> {
         self.areas.iter().position(|area| area.id == id)
     }
+
+    fn check_type(&self, kind: &str) -> Result<(), Problem> {
+        match self.type_position(kind) {
+            Some(_) => Ok(()),
+            None => Err(Problem::UnknownType(kind.to_owned())),
+        }
+    }
+
+    fn check_area(&self, area: &str) -> Result<(), Problem> {
+        match self.area_position(area) {
+            Some(_) => Ok(()),
+            None => Err(Problem::UnknownArea(area.to_owned())),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -277,13 +291,9 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     let (front_matter, summary) = split_front_matter(text)?;
     let keys = read_keys(&front_matter)?;
     let kind = keys.kind.ok_or(Problem::Missing("type"))?;
-    if config.type_position(kind).is_none() {
-        return Err(Problem::UnknownType(kind.to_owned()));
-    }
+    config.check_type(kind)?;
     let area = keys.area.ok_or(Problem::Missing("area"))?;
-    if config.area_position(area).is_none() {
-        return Err(Problem::UnknownArea(area.to_owned()));
-    }
+    config.check_area(area)?;
     let credit = keys
         .credit
         .map(parse_credit)
@@ -294,6 +304,16 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     {
         return Err(Problem::BadPullRequest(pr.to_owned()));
     }
+    check_summary(&summary)?;
+    Ok(Fragment {
+        kind: kind.to_owned(),
+        area: area.to_owned(),
+        credit,
+        summary,
+    })
+}
+
+fn check_summary(summary: &str) -> Result<(), Problem> {
     if summary.is_empty() {
         return Err(Problem::EmptySummary);
     }
@@ -304,12 +324,7 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     if summary.contains('\u{2014}') {
         return Err(Problem::EmDash);
     }
-    Ok(Fragment {
-        kind: kind.to_owned(),
-        area: area.to_owned(),
-        credit,
-        summary,
-    })
+    Ok(())
 }
 
 pub(crate) struct Folder {
@@ -344,7 +359,23 @@ impl Folder {
             .ok_or_else(|| {
                 anyhow::anyhow!("{shown} is missing, so {version} has no release notes")
             })?;
-        serde_json::from_str(&text).with_context(|| format!("parse {shown}"))
+        let notes: CreditedNotes =
+            serde_json::from_str(&text).with_context(|| format!("parse {shown}"))?;
+        anyhow::ensure!(
+            notes.notes.version == version,
+            "{shown} holds the notes of {}, not {version}",
+            notes.notes.version
+        );
+        notes.check(&self.config).map_err(|problem| {
+            anyhow::anyhow!(
+                "{}",
+                Violation {
+                    file: format!("{RELEASED}/{name}"),
+                    problem,
+                }
+            )
+        })?;
+        Ok(notes)
     }
 }
 
@@ -469,6 +500,22 @@ impl CreditedNotes {
                     })
                     .collect(),
             },
+        }
+    }
+
+    fn check(&self, config: &Config) -> Result<(), Problem> {
+        for entry in &self.notes.entries {
+            config.check_type(&entry.kind)?;
+            config.check_area(&entry.area)?;
+            check_summary(&entry.summary)?;
+        }
+        match self
+            .contributors
+            .iter()
+            .find(|login| !is_github_login(login))
+        {
+            Some(login) => Err(Problem::BadLogin(login.clone())),
+            None => Ok(()),
         }
     }
 
@@ -1294,6 +1341,80 @@ Contributors: @hubot, @octocat
         assert!(
             error.to_string().contains(".changes/released/1.2.0.json"),
             "{error}"
+        );
+    }
+
+    #[test]
+    fn refuses_an_archive_that_names_another_version() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.1", ARCHIVED_JSON);
+
+        let error = notes_in(&scratch, "1.2.1", Format::Markdown).unwrap_err();
+
+        assert!(error.to_string().contains("1.2.0"), "{error}");
+        assert!(
+            error.to_string().contains(".changes/released/1.2.1.json"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn refuses_an_archived_entry_the_config_no_longer_lists() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace(r#""area": "library""#, r#""area": "kitchen""#),
+        );
+        archive(
+            &scratch,
+            "1.1.0",
+            &ARCHIVED_JSON
+                .replace("1.2.0", "1.1.0")
+                .replace(r#""type": "fix""#, r#""type": "chore""#),
+        );
+
+        let unknown_area = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
+        let unknown_type = notes_in(&scratch, "1.1.0", Format::Markdown).unwrap_err();
+
+        assert_eq!(
+            unknown_area.to_string(),
+            ".changes/released/1.2.0.json: area `kitchen` is not in .changes/config.json"
+        );
+        assert_eq!(
+            unknown_type.to_string(),
+            ".changes/released/1.1.0.json: type `chore` is not in .changes/config.json"
+        );
+    }
+
+    #[test]
+    fn refuses_an_archived_summary_that_breaks_the_summary_rules() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace("Scans finish.", "Scans \u{2014} finish."),
+        );
+
+        let error = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
+
+        assert!(error.to_string().contains("em-dash"), "{error}");
+    }
+
+    #[test]
+    fn refuses_an_archived_contributor_that_is_not_a_login() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace("\"octocat\"", "\"@octocat\""),
+        );
+
+        let error = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            ".changes/released/1.2.0.json: `@octocat` is not a GitHub login; leave out the @"
         );
     }
 
