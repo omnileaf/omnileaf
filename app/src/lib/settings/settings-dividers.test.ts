@@ -9,6 +9,7 @@ import { BLUE_WALLPAPER } from "../../../tests/sample-wallpaper";
 
 import { followWallpaperColours } from "#lib/appearance/wallpaper-colours.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
+import { followContrast } from "#lib/page/display-modes.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
 import SettingsDividersHarness from "./SettingsDividersHarness.svelte";
@@ -110,6 +111,41 @@ for (const theme of THEMES) {
 
     expectLineInSettingsRule("second-group");
   });
+}
+
+function expectSettingsRuleToMatch(colour: string): void {
+  const rule = resolvedColour("--native-color-settings-rule", "color");
+
+  expect(rule).toBe(resolvedColour(colour, "color"));
+}
+
+for (const theme of THEMES) {
+  for (const contrast of [undefined, ...RAISED_CONTRASTS]) {
+    test(`gives the settings rule Android's menu rule colour at ${contrast ?? "default"} Colour contrast in the ${theme} theme`, () => {
+      document.documentElement.dataset.theme = theme;
+      followContrast(contrast);
+      followCorePlatform("android");
+
+      expectSettingsRuleToMatch("--native-color-menu-rule");
+    });
+  }
+
+  test(`gives the settings rule Android's menu rule colour with wallpaper Colours in the ${theme} theme`, async () => {
+    await showBlueWallpaper();
+    document.documentElement.dataset.theme = theme;
+    followCorePlatform("android");
+
+    expectSettingsRuleToMatch("--native-color-menu-rule");
+  });
+
+  for (const platform of ["ios", "macos", "windows"] as const) {
+    test(`gives the settings rule the border colour on ${platform} in the ${theme} theme`, () => {
+      document.documentElement.dataset.theme = theme;
+      followCorePlatform(platform);
+
+      expectSettingsRuleToMatch("--border");
+    });
+  }
 }
 
 test("draws the line above a group wrapped in an unmarked block", async () => {
