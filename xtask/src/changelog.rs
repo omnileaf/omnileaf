@@ -1492,13 +1492,15 @@ Contributors: @hubot, @octocat
     #[test]
     fn says_how_to_restore_a_release_that_stops_half_way() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
-        with_changelog(&scratch, "# Changelog\n");
-        let changelog = scratch.path().join(CHANGELOG);
-        let mut read_only = fs::metadata(&changelog).unwrap().permissions();
-        read_only.set_readonly(true);
-        fs::set_permissions(&changelog, read_only).unwrap();
+        let release = plan_release(
+            &read_folder(scratch.path()).unwrap(),
+            "1.2.0",
+            "# Changelog\n",
+        )
+        .unwrap();
+        fs::remove_file(scratch.path().join(FOLDER).join("a.md")).unwrap();
 
-        let error = release(scratch.path(), "1.2.0").unwrap_err();
+        let error = write_release(scratch.path(), &release).unwrap_err();
 
         assert!(released_file(&scratch, "1.2.0").exists());
         assert_eq!(
