@@ -415,7 +415,7 @@ test.describe(
 
     test("draws no line under the intro on Licences", async ({ page }) => {
       await page.goto("/settings/about/licences");
-      const first = page.locator("main section").first();
+      const first = page.getByRole("main").getByRole("region").first();
 
       await expect(first).toHaveCSS("border-image-source", "none");
       await expect(first).toHaveCSS("border-top-width", "0px");
