@@ -23,8 +23,10 @@ const LARGER_FONT_SCALE = "1.3";
 const PROMPT_TIMEOUT_MS = 15_000;
 const REDRAW_TIMEOUT_MS = 15_000;
 const LOCK_SCREEN_OFF = "true";
-const SCREEN_LOCK_PROMPT = /mCurrentFocus=.*BiometricPrompt/;
 const STOPPED_APP = /mResumed=false mStopped=true/;
+const FOCUSED_WINDOW = /mCurrentFocus=Window\{[^}]*\}/;
+const HOME_COMPONENT = /^\s*([\w.]+)\/[\w.$]+\s*$/;
+const RESOLVER_PACKAGE = "android";
 const PIN_ENTRY = xpath(
   "//*[@resource-id='com.android.systemui:id/lockPassword' or @resource-id='com.android.systemui:id/key_enter']",
 );
@@ -76,11 +78,6 @@ afterAll(async () => {
   }
 });
 
-async function isScreenLockAsking(): Promise<true | undefined> {
-  const windows = await adbShell("dumpsys", "window");
-  return SCREEN_LOCK_PROMPT.test(windows) ? true : undefined;
-}
-
 async function answerScreenLock(): Promise<void> {
   await appSession().inNativeContext(() =>
     appSession().waitFor(PIN_ENTRY, PROMPT_TIMEOUT_MS),
@@ -119,19 +116,48 @@ async function turnLockOff(): Promise<void> {
   }
 }
 
-async function isAppStopped(): Promise<true | undefined> {
-  const activities = await adbShell("dumpsys", "activity", ANDROID_APP_ID);
-  return STOPPED_APP.test(activities) ? true : undefined;
+async function homePackage(): Promise<string> {
+  const resolved = await adbShell(
+    "cmd",
+    "package",
+    "resolve-activity",
+    "--brief",
+    "-a",
+    "android.intent.action.MAIN",
+    "-c",
+    "android.intent.category.HOME",
+  );
+  const home = HOME_COMPONENT.exec(resolved.split("\n").at(-1) ?? "")?.[1];
+  if (home === undefined || home === RESOLVER_PACKAGE) {
+    throw new Error(`read no home screen from "${resolved}"`);
+  }
+  return home;
 }
 
+async function isAppStopped(): Promise<boolean> {
+  const activities = await adbShell("dumpsys", "activity", ANDROID_APP_ID);
+  return STOPPED_APP.test(activities);
+}
+
+async function isHomeFocused(home: string): Promise<boolean> {
+  const windows = await adbShell("dumpsys", "window", "displays");
+  const focused = FOCUSED_WINDOW.exec(windows)?.[0] ?? "";
+  return focused.includes(` ${home}/`);
+}
+
+/** Android cancels a screen lock prompt that opens while the home screen is still the top task, so the app comes back only once home has settled. */
 async function leaveAndComeBack(): Promise<void> {
+  const home = await homePackage();
   await pressKey(HOME_KEY);
-  await pollUntil(isAppStopped, PROMPT_TIMEOUT_MS, "Android to stop the app");
-  await adbShell("am", "start", "-n", `${ANDROID_APP_ID}/.MainActivity`);
   await pollUntil(
-    isScreenLockAsking,
+    async () =>
+      (await isAppStopped()) && (await isHomeFocused(home)) ? true : undefined,
     PROMPT_TIMEOUT_MS,
-    "the lock to ask on coming back",
+    "the app stopped behind a settled home screen",
+  );
+  await adbShell("am", "start", "-n", `${ANDROID_APP_ID}/.MainActivity`);
+  await appSession().inNativeContext(() =>
+    appSession().waitFor(PIN_ENTRY, PROMPT_TIMEOUT_MS),
   );
   await pressKey(BACK_KEY);
 }
