@@ -102,9 +102,9 @@ enum Fragments {
         #[arg(long)]
         skip: bool,
     },
-    /// Print the release notes the fragments make.
+    /// Print the release notes, headed by a one-line headline: a full release's from its archive in `.changes/released`, which it must have, and a pre-release's or the unreleased notes from the fragments.
     Notes {
-        /// The version the notes are for; `unreleased` when left out.
+        /// The version the notes are for, such as 1.2.0 or 1.2.0-rc.1; the unreleased notes when left out.
         #[arg(long)]
         version: Option<String>,
         /// What to print: markdown for the release page, json for the app's What's new notice.
