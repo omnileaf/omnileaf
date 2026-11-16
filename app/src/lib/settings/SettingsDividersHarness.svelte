@@ -4,8 +4,8 @@
   const SCOPE = ["flex flex-col", pagesListLook("android").page];
 </script>
 
-<div class={SCOPE} data-testid="page">
-  <p data-testid="opening-note">Choose how books open.</p>
+<div class={SCOPE}>
+  <p>Choose how books open.</p>
   <section data-settings-group data-testid="first-group">
     <h2>Text</h2>
     <ul data-settings-group data-testid="first-inner-list">
@@ -25,15 +25,15 @@
     <li>Clear cache</li>
   </ul>
   <p data-settings-end data-testid="footer">Cached pages come back.</p>
-  <div data-testid="unmarked-wrapper">
+  <div>
     <div data-settings-group data-testid="wrapped-group">
       <h2>Navigation</h2>
     </div>
   </div>
 </div>
 
-<div class={SCOPE} data-testid="switch-page">
-  <div data-testid="main-switch">Screenshot mode</div>
+<div class={SCOPE}>
+  <div>Screenshot mode</div>
   <ul data-settings-group data-testid="group-after-switch">
     <li>Hide covers</li>
   </ul>
