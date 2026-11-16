@@ -532,6 +532,11 @@ mod tests {
         release(scratch.path(), "0.1.0").unwrap();
 
         assert!(released_file(&scratch, "0.1.0").exists());
+        assert_eq!(
+            changelog_in(&scratch),
+            "# Changelog\n\n## 0.1.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 0.1.0-rc.1\n\nTried out.\n"
+        );
+        assert_eq!(check(scratch.path()).unwrap(), []);
     }
 
     #[test]
