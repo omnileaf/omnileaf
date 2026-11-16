@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ROW_SUBTITLE_MUTED_TYPE } from "#lib/components/ui/item/looks.ts";
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { m } from "#lib/paraglide/messages.js";
   import { FLUSH_BLEED } from "#lib/settings/android-flush-look.ts";
@@ -8,7 +9,7 @@
 
 {#if android.isOn}
   <div
-    class="{FLUSH_BLEED} flex flex-col items-center gap-lg px-xl pbs-lg pbe-lock-note-end text-center text-native-row-subtitle/native-row-subtitle tracking-native-row-subtitle text-muted"
+    class="{FLUSH_BLEED} flex flex-col items-center gap-lg px-xl pbs-lg pbe-lock-note-end text-center {ROW_SUBTITLE_MUTED_TYPE}"
   >
     <svg
       viewBox="0 0 80 80"
