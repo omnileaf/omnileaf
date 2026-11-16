@@ -69,7 +69,7 @@ interface LineAbove {
 }
 
 const GAP_ABOVE_LINE = 8;
-const GAP_ABOVE_REPORT_LINE = 20;
+const GAP_ABOVE_REPORT_LINE = 16;
 
 function waysToSend(page: Page): Locator {
   return page.getByRole("region", { name: "Other ways to send it" });
