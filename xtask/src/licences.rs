@@ -3,6 +3,7 @@ use std::{env, fs, io, path::Path, process::Command};
 use anyhow::Context;
 
 use crate::{
+    files,
     licence_catalogue::{catalogue, with_vendored_notices},
     process,
 };
@@ -33,19 +34,14 @@ pub(crate) fn regenerate(root: &Path, mode: Mode) -> anyhow::Result<()> {
         }
         Mode::Check => {
             anyhow::ensure!(
-                committed(&path)?.as_deref() == Some(generated.as_str()),
+                files::read_if_present(&path)
+                    .with_context(|| format!("read {}", path.display()))?
+                    .as_deref()
+                    == Some(generated.as_str()),
                 "{RUST_CATALOGUE} is out of date; run `cargo xtask licences`"
             );
             Ok(())
         }
-    }
-}
-
-fn committed(path: &Path) -> anyhow::Result<Option<String>> {
-    match fs::read_to_string(path) {
-        Ok(text) => Ok(Some(text)),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(error).with_context(|| format!("read {}", path.display())),
     }
 }
 

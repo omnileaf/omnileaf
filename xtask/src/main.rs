@@ -13,6 +13,7 @@ mod dev;
 mod device_choice;
 mod devices;
 mod doctor;
+mod files;
 mod fixtures;
 mod fresh;
 mod fuzz_seeds;
