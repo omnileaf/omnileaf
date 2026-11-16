@@ -3,6 +3,7 @@ mod version;
 
 use std::{
     fmt, fs, io,
+    ops::Range,
     path::{Path, PathBuf},
 };
 
@@ -554,6 +555,13 @@ impl CreditedNotes {
         )
     }
 
+    fn matches_its_changelog_section(&self, changelog: &str, config: &Config) -> bool {
+        version_section(changelog, &self.notes.version).is_some_and(|section| {
+            changelog[section].trim_end_matches('\n')
+                == self.changelog_section(config).trim_end_matches('\n')
+        })
+    }
+
     fn sections(&self, config: &Config) -> Vec<String> {
         let mut sections = Vec::new();
         for kind in &config.types {
@@ -651,12 +659,44 @@ fn insert_above_the_first_section(changelog: &str, section: &str) -> String {
     }
 }
 
-fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
-    let heading = format!("{SECTION_HEADING}{version}");
-    changelog.lines().map(str::trim_end).find(|line| {
-        line.strip_prefix(heading.as_str())
-            .is_some_and(|rest| rest.is_empty() || rest.starts_with(' '))
+fn lines_with_offsets(text: &str) -> impl Iterator<Item = (usize, &str)> {
+    text.split_inclusive('\n').scan(0, |offset, line| {
+        let at = *offset;
+        *offset += line.len();
+        Some((at, line.trim_end()))
     })
+}
+
+fn is_heading_of(line: &str, version: &str) -> bool {
+    line.strip_prefix(SECTION_HEADING)
+        .and_then(|rest| rest.strip_prefix(version))
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with(' '))
+}
+
+fn is_release_heading(line: &str) -> bool {
+    line.strip_prefix(SECTION_HEADING)
+        .and_then(|rest| rest.split(' ').next())
+        .is_some_and(|word| parse_version(word).is_ok())
+}
+
+fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
+    lines_with_offsets(changelog)
+        .map(|(_, line)| line)
+        .find(|line| is_heading_of(line, version))
+}
+
+fn version_section(changelog: &str, version: &str) -> Option<Range<usize>> {
+    let mut starts = lines_with_offsets(changelog)
+        .filter(|(_, line)| is_heading_of(line, version))
+        .map(|(at, _)| at);
+    let start = starts.next()?;
+    if starts.next().is_some() {
+        return None;
+    }
+    let end = lines_with_offsets(changelog)
+        .find(|&(at, line)| at > start && is_release_heading(line))
+        .map_or(changelog.len(), |(at, _)| at);
+    Some(start..end)
 }
 
 fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Result<Release> {

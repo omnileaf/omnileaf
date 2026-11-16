@@ -72,7 +72,9 @@ impl Folder {
         let mut violations = Vec::new();
         for version in self.archived_versions()? {
             let problem = match self.load_archive(&version)? {
-                Ok(notes) if changelog.contains(&notes.changelog_section(&self.config)) => continue,
+                Ok(notes) if notes.matches_its_changelog_section(changelog, &self.config) => {
+                    continue;
+                }
                 Ok(_) => Problem::NotInChangelog(version.clone()),
                 Err(problem) => problem,
             };
@@ -367,6 +369,70 @@ mod tests {
             &ARCHIVED_CHANGELOG.replace("Scans finish.", "Scans finish sooner."),
         );
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            )]
+        );
+    }
+
+    #[test]
+    fn reports_an_entry_added_to_the_last_list_of_a_changelog_section() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace(r#"["octocat"]"#, "[]"),
+        );
+        with_changelog(
+            &scratch,
+            "# Changelog\n\n## 1.2.0\n\n## New\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n- **Reader:** The page stays put.\n",
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            )]
+        );
+    }
+
+    #[test]
+    fn reports_a_paragraph_added_after_the_contributors_of_a_changelog_section() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(
+            &scratch,
+            &format!("{ARCHIVED_CHANGELOG}\nThanks to everyone who tried it out.\n"),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            )]
+        );
+    }
+
+    #[test]
+    fn reports_a_version_with_two_changelog_sections() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(
+            &scratch,
+            &format!("{ARCHIVED_CHANGELOG}\n## 1.2.0\n\nAn older draft.\n"),
+        );
 
         let violations = check(scratch.path()).unwrap();
 
