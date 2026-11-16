@@ -102,7 +102,7 @@ enum Fragments {
         #[arg(long)]
         skip: bool,
     },
-    /// Print the release notes, headed by a one-line headline: a full release's from its archive in `.changes/released`, which it must have, and a pre-release's or the unreleased notes from the fragments.
+    /// Print the release notes under a one-line headline, reading a full release from its archive in `.changes/released` and a pre-release or the unreleased notes from the fragments.
     Notes {
         /// The version the notes are for, such as 1.2.0 or 1.2.0-rc.1; the unreleased notes when left out.
         #[arg(long)]
