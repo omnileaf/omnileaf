@@ -126,7 +126,7 @@ pub(super) fn archive_violation(version: &str, problem: Problem) -> Violation {
 mod tests {
     use super::*;
     use crate::changelog::{
-        CHANGELOG, Format, check, release,
+        Format, check, release,
         tests::{
             ARCHIVED_CHANGELOG, ARCHIVED_JSON, EMPTY_ARCHIVE_JSON, archive, fragment_text,
             notes_in, scratch_repo, with_changelog,
@@ -297,10 +297,7 @@ mod tests {
     #[test]
     fn reports_every_bad_archive_beside_the_bad_fragments() {
         let scratch = scratch_repo(&[("a.md", "x")]);
-        scratch.write(
-            CHANGELOG,
-            ARCHIVED_CHANGELOG.replace("1.2.0", "1.0.0").as_bytes(),
-        );
+        with_changelog(&scratch, &ARCHIVED_CHANGELOG.replace("1.2.0", "1.0.0"));
         archive(&scratch, "1.0.0", &ARCHIVED_JSON.replace("1.2.0", "1.0.0"));
         archive(&scratch, "1.1.0", ARCHIVED_JSON);
         archive(
