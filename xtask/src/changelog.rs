@@ -208,7 +208,7 @@ impl fmt::Display for Problem {
             ),
             Self::NotInChangelog(version) => write!(
                 formatter,
-                "{CHANGELOG} has no `{SECTION_HEADING}{version}` section that matches the archive; edit the two together"
+                "{CHANGELOG} needs exactly one `{SECTION_HEADING}{version}` section that matches the archive as {FOLDER}/{CONFIG} renders it; once it has one, `cargo xtask changes changelog` rewrites it from the archive"
             ),
         }
     }
@@ -1485,6 +1485,18 @@ Contributors: @hubot, @octocat
                 "1.2.0",
                 Problem::NotInChangelog("1.2.0".to_owned())
             )]
+        );
+    }
+
+    #[test]
+    fn names_the_config_and_the_rewrite_step_when_a_changelog_section_differs() {
+        let violation = archive_violation("1.2.0", Problem::NotInChangelog("1.2.0".to_owned()));
+
+        let message = violation.to_string();
+
+        assert_eq!(
+            message,
+            ".changes/released/1.2.0.json: CHANGELOG.md needs exactly one `## 1.2.0` section that matches the archive as .changes/config.json renders it; once it has one, `cargo xtask changes changelog` rewrites it from the archive"
         );
     }
 
