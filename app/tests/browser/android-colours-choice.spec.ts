@@ -150,7 +150,7 @@ test.describe("the Colours choice on Android", { tag: "@native" }, () => {
     );
   });
 
-  test("hides the choice below Android 12, where there are no wallpaper colours", async ({
+  test("hides the choice when Android gives no wallpaper colours", async ({
     page,
   }) => {
     wallpaper = null;
