@@ -19,7 +19,7 @@ use std::{
 
 use books::write_book;
 use omnileaf_engine::{
-    FolderProblem, LibraryListing, NetworkShare, RescanOutcome, SeriesBookListing,
+    BookFileState, FolderProblem, LibraryListing, NetworkShare, RescanOutcome, SeriesBookListing,
     SeriesConnection, SeriesId, ShareAddress, ShareLookup, ShareSignIn, UnreachableShare,
 };
 use scanned::Scanned;
@@ -102,7 +102,7 @@ impl Shelf {
 }
 
 impl Shelf {
-    async fn series_connection(&self, title: &str) -> (SeriesConnection, Vec<bool>) {
+    async fn series_connection(&self, title: &str) -> (SeriesConnection, Vec<BookFileState>) {
         let library = &self.scanned.library;
         let page = library
             .series(LibraryListing::default(), None)
@@ -121,7 +121,7 @@ impl Shelf {
             .unwrap();
         (
             overview.connection,
-            books.books.iter().map(|book| book.is_connected).collect(),
+            books.books.iter().map(|book| book.file).collect(),
         )
     }
 
@@ -426,7 +426,7 @@ async fn shows_a_series_and_its_books_as_connected_while_their_folder_is_there()
 
     assert_eq!(
         shelf.series_connection(SERIES_01).await,
-        (SeriesConnection::Connected, vec![true])
+        (SeriesConnection::Connected, vec![BookFileState::Present])
     );
 }
 
@@ -444,6 +444,9 @@ async fn shows_a_series_of_a_missing_folder_and_its_books_as_not_connected() {
 
     assert_eq!(
         shelf.series_connection(SERIES_01).await,
-        (SeriesConnection::NotConnected, vec![false])
+        (
+            SeriesConnection::NotConnected,
+            vec![BookFileState::NotConnected]
+        )
     );
 }

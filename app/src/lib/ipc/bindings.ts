@@ -284,6 +284,10 @@ export type BookFile = {
 	fileType: FileType | null,
 };
 
+export type BookFileState = { kind: "present" } | 
+/**  Moved or deleted; never, while the library keeps no book without its file. */
+{ kind: "missing" } | { kind: "notConnected" };
+
 export type BookKind = "volume" | "chapter" | "special";
 
 export type BookPage = {
@@ -912,9 +916,7 @@ export type SeriesBook = {
 	isBookmarked: boolean,
 	/**  Whether the library found the book since its series was last looked at. */
 	isNew: boolean,
-	/**  Whether the book's file was moved or deleted; never, while the library keeps no book without its file. */
-	isFileMissing: boolean,
-	isConnected: boolean,
+	file: BookFileState,
 	/**  Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again. */
 	kind: BookKind | null,
 	numbers: NumberRange | null,

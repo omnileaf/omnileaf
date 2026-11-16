@@ -1317,19 +1317,19 @@ async function connectionsOfSeries(backend: FakeBackend, number: number) {
   );
   return [
     overview.connection,
-    new Set(page.books.map((book) => book.isConnected)),
+    new Set(page.books.map((book) => book.file.kind)),
   ];
 }
 
-test("tells a series of a missing folder and its books apart from one connected", async () => {
+test("tells a series of a missing folder and its books apart from one connected with a missing file", async () => {
   const { backend } = backendFor("?missing=folder");
 
   expect([
     await connectionsOfSeries(backend, 3),
     await connectionsOfSeries(backend, 4),
   ]).toEqual([
-    [{ kind: "notConnected" }, new Set([false])],
-    [{ kind: "connected" }, new Set([true])],
+    [{ kind: "notConnected" }, new Set(["notConnected"])],
+    [{ kind: "connected" }, new Set(["present", "missing"])],
   ]);
 });
 

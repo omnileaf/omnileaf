@@ -44,8 +44,7 @@ function bookAt(index: number, change: Partial<WireBook> = {}): WireBook {
     pageCount: PAGES,
     isBookmarked: false,
     isNew: false,
-    isFileMissing: false,
-    isConnected: true,
+    file: { kind: "present" },
     kind: null,
     numbers: null,
     volume: null,
@@ -63,7 +62,7 @@ function shelfOf(books: readonly WireBook[]): FakeBackend {
 }
 
 const PICKED = bookAt(3);
-const MISSING = bookAt(4, { isFileMissing: true });
+const MISSING = bookAt(4, { file: { kind: "missing" } });
 const UNREAD = bookAt(5);
 const READ = bookAt(0);
 const LAST = bookAt(7);

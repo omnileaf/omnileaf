@@ -9,10 +9,6 @@ use crate::{
     ipc_brand::branded_string,
 };
 
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "each is a fact of its own about the book"
-)]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBook {
@@ -31,15 +27,22 @@ pub struct SeriesBook {
     pub is_bookmarked: bool,
     /// Whether the library found the book since its series was last looked at.
     pub is_new: bool,
-    /// Whether the book's file was moved or deleted; never, while the library keeps no book without its file.
-    pub is_file_missing: bool,
-    pub is_connected: bool,
+    pub file: BookFileState,
     /// Absent, like the numbers, volume and section, for a book found before the library read numbers from names, until it is scanned again.
     pub kind: Option<BookKind>,
     pub numbers: Option<NumberRange>,
     /// The volume a chapter is read inside.
     pub volume: Option<BookNumber>,
     pub section: Option<BookSection>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum BookFileState {
+    Present,
+    /// Moved or deleted; never, while the library keeps no book without its file.
+    Missing,
+    NotConnected,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
@@ -130,8 +133,11 @@ impl From<BookSummary> for SeriesBook {
             page_count: book.page_count,
             is_bookmarked: book.is_bookmarked,
             is_new: false,
-            is_file_missing: false,
-            is_connected: book.is_connected,
+            file: if book.is_connected {
+                BookFileState::Present
+            } else {
+                BookFileState::NotConnected
+            },
             kind: numbering.map(|numbering| numbering.kind().into()),
             numbers: numbering
                 .and_then(|numbering| numbering.number())
@@ -263,20 +269,27 @@ mod tests {
     }
 
     #[test]
-    fn crosses_whether_a_book_is_connected() {
+    fn crosses_a_book_whose_every_file_is_in_a_missing_folder_as_not_connected() {
         let book = SeriesBook::from(BookSummary {
             is_connected: false,
             ..sample_summary()
         });
 
-        assert!(!book.is_connected);
+        assert_eq!(book.file, BookFileState::NotConnected);
     }
 
     #[test]
-    fn says_no_books_file_is_missing_while_the_library_keeps_none_without_one() {
+    fn crosses_a_connected_book_s_file_as_present_while_the_library_keeps_none_missing() {
         let book = SeriesBook::from(sample_summary());
 
-        assert!(!book.is_file_missing);
+        assert_eq!(book.file, BookFileState::Present);
+    }
+
+    #[test]
+    fn tells_the_interface_a_book_s_file_state_by_its_kind() {
+        let json = serde_json::to_value(BookFileState::NotConnected).unwrap();
+
+        assert_eq!(json, serde_json::json!({ "kind": "notConnected" }));
     }
 
     #[test]

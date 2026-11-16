@@ -1,5 +1,6 @@
 import {
   type AdultContent,
+  type BookFileState,
   DEFAULT_LIBRARY_VIEW,
   type DetailEdits,
   type FileOutcome,
@@ -735,6 +736,15 @@ export function sampleBackend(
     isConnected(series) || booksOf(series).length === 0
       ? { kind: "connected" }
       : { kind: "notConnected" };
+  const wireFileState = (
+    series: SampleSeries,
+    book: SampleBook,
+  ): BookFileState => {
+    if (!isConnected(series)) {
+      return { kind: "notConnected" };
+    }
+    return book.file === "missing" ? { kind: "missing" } : { kind: "present" };
+  };
   const hasBooksToFind = (series: SampleSeries): boolean =>
     !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
@@ -1031,8 +1041,7 @@ export function sampleBackend(
       pageCount: book.pageCount,
       isBookmarked: book.isBookmarked,
       isNew: book.isNew,
-      isFileMissing: book.file === "missing",
-      isConnected: isConnected(series),
+      file: wireFileState(series, book),
       ...numberingOf(book.title),
     };
   }
