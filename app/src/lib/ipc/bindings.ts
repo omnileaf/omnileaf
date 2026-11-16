@@ -730,7 +730,7 @@ export type LibraryWriter = {
 	seriesCount: number,
 };
 
-export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "fifteenMinutes" | "thirtyMinutes" | "oneHour";
+export type LockAfter = "immediately" | "oneMinute" | "fiveMinutes" | "thirtyMinutes";
 
 export type LockWords = {
 	title: string,
