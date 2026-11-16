@@ -1466,6 +1466,35 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
+    fn skips_a_section_marker_inside_an_introduction_line() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(
+            &scratch,
+            "# Changelog\n\nEach release has a `## ` heading.\n\n## 1.1.0\n\nOlder.\n",
+        );
+
+        release(scratch.path(), "1.2.0").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            "# Changelog\n\nEach release has a `## ` heading.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 1.1.0\n\nOlder.\n"
+        );
+    }
+
+    #[test]
+    fn puts_the_release_section_first_in_a_changelog_that_starts_with_a_section() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "## 1.1.0\n\nOlder.\n");
+
+        release(scratch.path(), "1.2.0").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            "## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 1.1.0\n\nOlder.\n"
+        );
+    }
+
+    #[test]
     fn adds_the_first_release_section_below_the_changelog_introduction() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
         with_changelog(&scratch, "# Changelog\n\nWhat changed.\n");
