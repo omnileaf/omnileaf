@@ -62,16 +62,30 @@ const PAGE_LINES: readonly PageLines[] = [
 
 interface LineAbove {
   readonly route: string;
+  readonly between: string;
   readonly above: (page: Page) => Locator;
   readonly group: (page: Page) => Locator;
   readonly gap: number;
 }
 
 const GAP_ABOVE_LINE = 8;
+const GAP_ABOVE_REPORT_LINE = 20;
+
+function waysToSend(page: Page): Locator {
+  return page.getByRole("region", { name: "Other ways to send it" });
+}
 
 const LINES_ABOVE: readonly LineAbove[] = [
   {
     route: "/settings/library",
+    between: "Home folder and Folders",
+    above: (page) => page.getByRole("region", { name: "Home folder" }),
+    group: (page) => page.getByRole("region", { name: "Folders" }),
+    gap: GAP_ABOVE_LINE,
+  },
+  {
+    route: "/settings/library",
+    between: "Scheduled rescans and Library tabs",
     above: (page) =>
       page.getByText(
         "New books show up without a rescan. Turn off to save battery.",
@@ -83,6 +97,13 @@ const LINES_ABOVE: readonly LineAbove[] = [
         .locator("xpath=.."),
     gap: GAP_ABOVE_LINE,
   },
+  {
+    route: "/settings/about/report",
+    between: "Send and Other ways to send it",
+    above: (page) => waysToSend(page).locator("xpath=preceding-sibling::*[1]"),
+    group: waysToSend,
+    gap: GAP_ABOVE_REPORT_LINE,
+  },
 ];
 
 interface EdgeProbe {
@@ -93,8 +114,7 @@ interface EdgeProbe {
 const EDGE_PROBES: readonly EdgeProbe[] = [
   {
     route: "/settings/about/report",
-    group: (page) =>
-      page.getByRole("region", { name: "Other ways to send it" }),
+    group: waysToSend,
   },
 ];
 
@@ -231,8 +251,8 @@ test.describe(
       test.skip(platform !== "android", "Android phone settings");
     });
 
-    for (const { route, above, group, gap } of LINES_ABOVE) {
-      test(`draws a line on ${route} ${String(gap)}px under the group above`, async ({
+    for (const { route, between, above, group, gap } of LINES_ABOVE) {
+      test(`draws the line between ${between} on ${route} ${String(gap)}px under the group above`, async ({
         page,
       }) => {
         await page.goto(route);
