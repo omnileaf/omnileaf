@@ -6,7 +6,7 @@ use std::{
     process::Command,
 };
 
-use crate::policy::Policy;
+use crate::{files, policy::Policy};
 
 const POLICY_LISTS: &str = "policy";
 const BUILT_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -61,16 +61,15 @@ pub(crate) fn policy(root: &Path) -> io::Result<Policy> {
 }
 
 fn read_list(path: &Path) -> io::Result<Vec<String>> {
-    match fs::read_to_string(path) {
-        Ok(content) => Ok(content
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(str::to_owned)
-            .collect()),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
-        Err(error) => Err(error),
-    }
+    let Some(content) = files::read_if_present(path)? else {
+        return Ok(Vec::new());
+    };
+    Ok(content
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_owned)
+        .collect())
 }
 
 #[cfg(test)]
