@@ -229,7 +229,7 @@
     {/if}
   </div>
   {#if android.isOn}
-    <div data-settings-group class="mbs-lg flex flex-col">
+    <div data-settings-group class="flex flex-col">
       <SettingChoiceRow
         title={m.library_opens_on()}
         value={opensOnLabel}
