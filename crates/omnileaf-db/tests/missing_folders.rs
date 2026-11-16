@@ -372,8 +372,8 @@ async fn lists_every_book_as_connected_while_every_folder_is_there() {
 }
 
 #[tokio::test]
-async fn marks_a_book_whose_every_file_is_in_an_away_folder() {
-    let shelf = Shelf::open("book-away").await;
+async fn marks_a_book_whose_every_file_is_in_a_missing_folder() {
+    let shelf = Shelf::open("book-in-missing-folder").await;
 
     shelf.go_missing(shelf.comics).await;
 
@@ -400,8 +400,8 @@ async fn keeps_a_book_connected_while_another_of_its_files_is_in_a_folder_still_
 }
 
 #[tokio::test]
-async fn marks_the_book_up_next_whose_every_file_is_in_an_away_folder() {
-    let shelf = Shelf::open("book-up-next-away").await;
+async fn marks_the_book_up_next_whose_every_file_is_in_a_missing_folder() {
+    let shelf = Shelf::open("book-up-next-in-missing-folder").await;
 
     shelf.go_missing(shelf.comics).await;
 
@@ -419,7 +419,7 @@ async fn counts_no_missing_book_while_every_folder_is_there() {
 }
 
 #[tokio::test]
-async fn counts_the_books_of_each_series_whose_every_file_is_in_an_away_folder() {
+async fn counts_the_books_of_each_series_whose_every_file_is_in_a_missing_folder() {
     let shelf = Shelf::open("missing-books-counted").await;
     shelf.shelve(shelf.comics, "Lantern Market", 5).await;
 
