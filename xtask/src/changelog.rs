@@ -1431,7 +1431,6 @@ Contributors: @hubot, @octocat
                 &fragment_text("type: feat\narea: library", "Section tabs."),
             ),
         ]);
-        with_changelog(&scratch, "# Changelog\n");
 
         release(scratch.path(), "1.2.0").unwrap();
 
@@ -1460,7 +1459,6 @@ Contributors: @hubot, @octocat
             "a.md",
             &fragment_text("type: fix\narea: reader\ncredit: [octocat]", "Done."),
         )]);
-        with_changelog(&scratch, "# Changelog\n");
         release(scratch.path(), "1.2.0").unwrap();
 
         let markdown = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap();
@@ -1569,7 +1567,6 @@ Contributors: @hubot, @octocat
     #[test]
     fn refuses_to_release_a_version_already_archived() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
-        with_changelog(&scratch, "# Changelog\n");
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
         let error = release(scratch.path(), "1.2.0").unwrap_err();
@@ -1620,7 +1617,6 @@ Contributors: @hubot, @octocat
             ("a.md", &fragment_text("type: fix\narea: reader", "Done.")),
             ("b.md", "x"),
         ]);
-        with_changelog(&scratch, "# Changelog\n");
 
         let error = release(scratch.path(), "1.2.0").unwrap_err();
 
@@ -1631,7 +1627,6 @@ Contributors: @hubot, @octocat
     #[test]
     fn refuses_to_release_without_fragments() {
         let scratch = scratch_repo(&[]);
-        with_changelog(&scratch, "# Changelog\n");
 
         let error = release(scratch.path(), "1.2.0").unwrap_err();
 
@@ -1642,7 +1637,6 @@ Contributors: @hubot, @octocat
     #[test]
     fn refuses_to_archive_a_pre_release_or_a_version_that_is_not_semver() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
-        with_changelog(&scratch, "# Changelog\n");
 
         let pre_release = release(scratch.path(), "1.2.0-rc.1").unwrap_err();
         let not_semver = release(scratch.path(), "../1.2.0").unwrap_err();
