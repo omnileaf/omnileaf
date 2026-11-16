@@ -616,6 +616,7 @@ pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyho
 }
 
 struct Release {
+    version: String,
     archive_path: PathBuf,
     archive: String,
     changelog: String,
@@ -656,6 +657,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         notes.changelog_section(&folder.config)
     );
     Ok(Release {
+        version: version.to_owned(),
         archive_path,
         archive: json::pretty(&notes)?,
         changelog: insert_above_the_first_section(changelog, &section),
@@ -671,6 +673,16 @@ fn write_release(root: &Path, release: &Release) -> anyhow::Result<()> {
     fs::File::create_new(archive_path)
         .and_then(|mut file| io::Write::write_all(&mut file, release.archive.as_bytes()))
         .with_context(|| format!("write {}", archive_path.display()))?;
+    finish_release(root, release).with_context(|| {
+        format!(
+            "{version} is half released: put it back with `git restore {CHANGELOG} {FOLDER}` and remove {FOLDER}/{RELEASED}/{archive}, then release it again",
+            version = release.version,
+            archive = archive_name(&release.version),
+        )
+    })
+}
+
+fn finish_release(root: &Path, release: &Release) -> anyhow::Result<()> {
     let changelog_path = root.join(CHANGELOG);
     fs::write(&changelog_path, &release.changelog)
         .with_context(|| format!("write {}", changelog_path.display()))?;
@@ -1475,6 +1487,24 @@ Contributors: @hubot, @octocat
         assert!(error.to_string().contains(CHANGELOG), "{error}");
         assert!(!released_file(&scratch, "1.2.0").exists());
         assert!(scratch.path().join(FOLDER).join("a.md").exists());
+    }
+
+    #[test]
+    fn says_how_to_restore_a_release_that_stops_half_way() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "# Changelog\n");
+        let changelog = scratch.path().join(CHANGELOG);
+        let mut read_only = fs::metadata(&changelog).unwrap().permissions();
+        read_only.set_readonly(true);
+        fs::set_permissions(&changelog, read_only).unwrap();
+
+        let error = release(scratch.path(), "1.2.0").unwrap_err();
+
+        assert!(released_file(&scratch, "1.2.0").exists());
+        assert_eq!(
+            error.to_string(),
+            "1.2.0 is half released: put it back with `git restore CHANGELOG.md .changes` and remove .changes/released/1.2.0.json, then release it again"
+        );
     }
 
     #[test]
