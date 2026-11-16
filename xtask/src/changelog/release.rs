@@ -298,6 +298,25 @@ mod tests {
         assert_eq!(changelog_in(&scratch), ARCHIVED_CHANGELOG);
     }
 
+    #[test]
+    fn refuses_to_rewrite_from_an_archive_not_named_for_a_release() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "v1.2.0",
+            &ARCHIVED_JSON.replace("1.2.0", "v1.2.0"),
+        );
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
+
+        let error = rewrite(scratch.path()).unwrap_err();
+
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation("v1.2.0", Problem::NotAReleaseName))
+        );
+        assert_eq!(changelog_in(&scratch), ARCHIVED_CHANGELOG);
+    }
+
     fn released_file(scratch: &omnileaf_testkit::ScratchFolder, version: &str) -> PathBuf {
         scratch
             .path()
