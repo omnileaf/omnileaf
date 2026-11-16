@@ -458,7 +458,7 @@ pub(crate) const STEPS: &[Step] = &[
             "omnileaf-folder-access",
             "--package",
             "omnileaf-formats",
-            "--lib",
+            "--all-targets",
             "--no-deps",
             "--target",
             "aarch64-linux-android",

@@ -87,6 +87,12 @@ pub(crate) enum NdkSearch {
     NoneInstalled,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct LintCompilers {
+    pub(crate) cc: PathBuf,
+    pub(crate) ar: PathBuf,
+}
+
 #[derive(Debug)]
 pub(crate) struct Ndk {
     pub(crate) path: PathBuf,
@@ -204,11 +210,12 @@ fn search_ndk(ndk_home: Option<PathBuf>, sdk: &Path) -> NdkSearch {
 }
 
 impl Ndk {
-    /// The NDK ships one prebuilt toolchain per host, under a folder named for the host's OS.
-    pub(crate) fn lint_compilers(&self, os: &str) -> Option<(PathBuf, PathBuf)> {
-        let host = match os {
-            "linux" => "linux-x86_64",
-            "macos" => "darwin-x86_64",
+    /// The NDK ships one prebuilt toolchain per host, under a folder named for the host, with `.cmd` wrappers on Windows.
+    pub(crate) fn lint_compilers(&self, os: &str) -> Option<LintCompilers> {
+        let (host, script, program) = match os {
+            "linux" => ("linux-x86_64", "", ""),
+            "macos" => ("darwin-x86_64", "", ""),
+            "windows" => ("windows-x86_64", ".cmd", ".exe"),
             _ => return None,
         };
         let bin = self
@@ -218,10 +225,10 @@ impl Ndk {
             .join("prebuilt")
             .join(host)
             .join("bin");
-        Some((
-            bin.join(format!("aarch64-linux-android{MIN_SDK}-clang")),
-            bin.join("llvm-ar"),
-        ))
+        Some(LintCompilers {
+            cc: bin.join(format!("aarch64-linux-android{MIN_SDK}-clang{script}")),
+            ar: bin.join(format!("llvm-ar{program}")),
+        })
     }
 
     fn at(path: PathBuf) -> Self {
@@ -302,10 +309,10 @@ mod tests {
         let bin = PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/linux-x86_64/bin");
         assert_eq!(
             compilers,
-            Some((
-                bin.join("aarch64-linux-android26-clang"),
-                bin.join("llvm-ar")
-            ))
+            Some(LintCompilers {
+                cc: bin.join("aarch64-linux-android26-clang"),
+                ar: bin.join("llvm-ar"),
+            })
         );
     }
 
@@ -318,9 +325,47 @@ mod tests {
 
         let compilers = ndk.lint_compilers("macos");
 
-        assert!(compilers.is_some_and(|(cc, _)| {
-            cc.starts_with("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin")
+        assert!(compilers.is_some_and(|found| {
+            found
+                .cc
+                .starts_with("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin")
         }));
+    }
+
+    #[test]
+    fn lints_through_the_ndk_cmd_wrappers_on_windows() {
+        let ndk = Ndk {
+            path: PathBuf::from("/sdk/ndk/30.0.16248370"),
+            revision: None,
+        };
+
+        let compilers = ndk.lint_compilers("windows");
+
+        let bin =
+            PathBuf::from("/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/windows-x86_64/bin");
+        assert_eq!(
+            compilers,
+            Some(LintCompilers {
+                cc: bin.join("aarch64-linux-android26-clang.cmd"),
+                ar: bin.join("llvm-ar.exe"),
+            })
+        );
+    }
+
+    #[test]
+    fn lints_for_the_oldest_android_the_app_declares() {
+        let config: serde_json::Value = serde_json::from_str(
+            &fs::read_to_string(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/src-tauri/tauri.conf.json"),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            config["bundle"]["android"]["minSdkVersion"].as_u64(),
+            Some(u64::from(MIN_SDK))
+        );
     }
 
     #[test]
