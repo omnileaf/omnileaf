@@ -653,12 +653,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         "{version} is already released in {}",
         shown_archive_path(version)
     );
-    let fragments = valid_fragments(folder)?;
-    anyhow::ensure!(
-        !fragments.is_empty(),
-        "{FOLDER} has no fragments, so {version} would have no release notes"
-    );
-    let notes = CreditedNotes::gather(version, fragments, &folder.config);
+    let notes = folder.notes_to_release(version)?;
     let section = format!(
         "{SECTION_HEADING}{version}\n\n{}",
         notes.changelog_section(&folder.config)
