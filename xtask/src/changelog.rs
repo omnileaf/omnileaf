@@ -83,6 +83,10 @@ impl Config {
         self.types.iter().position(|kind| kind.id == id)
     }
 
+    fn has_type_heading(&self, heading: &str) -> bool {
+        self.types.iter().any(|kind| kind.heading == heading)
+    }
+
     fn area_position(&self, id: &str) -> Option<usize> {
         self.areas.iter().position(|area| area.id == id)
     }

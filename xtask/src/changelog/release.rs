@@ -7,7 +7,8 @@ use std::{
 use anyhow::Context;
 
 use super::{
-    CHANGELOG, Config, CreditedNotes, FOLDER, Folder, Problem, SECTION_HEADING, Violation,
+    CHANGELOG, Config, CreditedNotes, ENTRY_MARK, FOLDER, Folder, Problem, SECTION_HEADING,
+    Violation,
     archive::{archive_violation, shown_archive_path},
     read_folder,
     version::{Version, is_version, parse_version},
@@ -24,7 +25,7 @@ impl CreditedNotes {
     }
 
     pub(super) fn matches_its_changelog_section(&self, changelog: &str, config: &Config) -> bool {
-        version_section(changelog, &self.notes.version)
+        version_section(changelog, &self.notes.version, config)
             .is_some_and(|section| changelog[section] == self.changelog_section(config))
     }
 
@@ -34,7 +35,7 @@ impl CreditedNotes {
         config: &Config,
     ) -> Result<String, Violation> {
         let version = &self.notes.version;
-        let section = version_section(changelog, version)
+        let section = version_section(changelog, version, config)
             .ok_or_else(|| archive_violation(version, Problem::NotInChangelog(version.clone())))?;
         Ok(format!(
             "{}{}{}",
@@ -91,7 +92,36 @@ fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
         .find(|line| is_heading_of(line, version))
 }
 
-fn version_section(changelog: &str, version: &str) -> Option<Range<usize>> {
+fn opens_an_entry_list(lines_below: &[(usize, &str)]) -> bool {
+    lines_below
+        .iter()
+        .map(|(_, line)| line)
+        .find(|line| !line.is_empty())
+        .is_some_and(|line| line.starts_with(ENTRY_MARK))
+}
+
+fn ends_a_release_section(line: &str, lines_below: &[(usize, &str)], config: &Config) -> bool {
+    if is_release_heading(line) {
+        return true;
+    }
+    line.strip_prefix(SECTION_HEADING).is_some_and(|heading| {
+        !config.has_type_heading(heading) && !opens_an_entry_list(lines_below)
+    })
+}
+
+fn section_end(changelog: &str, start: usize, config: &Config) -> usize {
+    let lines: Vec<(usize, &str)> = lines_with_offsets(changelog).collect();
+    let mut rest = lines.as_slice();
+    while let Some((&(at, line), lines_below)) = rest.split_first() {
+        if at > start && ends_a_release_section(line, lines_below, config) {
+            return at;
+        }
+        rest = lines_below;
+    }
+    changelog.len()
+}
+
+fn version_section(changelog: &str, version: &str, config: &Config) -> Option<Range<usize>> {
     let mut starts = lines_with_offsets(changelog)
         .filter(|(_, line)| is_heading_of(line, version))
         .map(|(at, _)| at);
@@ -99,9 +129,7 @@ fn version_section(changelog: &str, version: &str) -> Option<Range<usize>> {
     if starts.next().is_some() {
         return None;
     }
-    let end = lines_with_offsets(changelog)
-        .find(|&(at, line)| at > start && is_release_heading(line))
-        .map_or(changelog.len(), |(at, _)| at);
+    let end = section_end(changelog, start, config);
     let text = changelog[start..end].trim_end_matches('\n');
     Some(start..start + text.len())
 }
@@ -267,6 +295,24 @@ mod tests {
     }
 
     #[test]
+    fn rewrites_a_released_section_and_keeps_the_heading_below_it() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(
+            &scratch,
+            &format!("{ARCHIVED_CHANGELOG}\n## Older releases\n\nSee the git history.\n"),
+        );
+        rename_the_new_heading(&scratch);
+
+        rewrite(scratch.path()).unwrap();
+
+        assert_eq!(
+            changelog_in(&scratch),
+            "# Changelog\n\n## 1.2.0\n\n## What's new\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n\n## Older releases\n\nSee the git history.\n"
+        );
+    }
+
+    #[test]
     fn refuses_to_rewrite_a_version_without_one_changelog_section() {
         let scratch = scratch_repo(&[]);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
@@ -399,6 +445,30 @@ mod tests {
             changelog_in(&scratch),
             "# Changelog\n\nWhat changed.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** The page stays put.\n\n## 1.1.0\n\nOlder.\n"
         );
+    }
+
+    #[test]
+    fn releases_above_the_latest_release_and_keeps_the_heading_below_the_last_one() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        archive(&scratch, "1.1.0", &ARCHIVED_JSON.replace("1.2.0", "1.1.0"));
+        let older = "## Older releases\n\nSee the git history.\n";
+        with_changelog(
+            &scratch,
+            &format!("{}\n{older}", ARCHIVED_CHANGELOG.replace("1.2.0", "1.1.0")),
+        );
+
+        release(scratch.path(), "1.2.0").unwrap();
+
+        assert_eq!(
+            changelog_in(&scratch),
+            format!(
+                "# Changelog\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n{}\n{older}",
+                ARCHIVED_CHANGELOG
+                    .trim_start_matches("# Changelog\n\n")
+                    .replace("1.2.0", "1.1.0")
+            )
+        );
+        assert_eq!(check(scratch.path()).unwrap(), []);
     }
 
     #[test]

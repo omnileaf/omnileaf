@@ -423,6 +423,40 @@ mod tests {
     }
 
     #[test]
+    fn passes_a_released_section_followed_by_a_heading_that_is_not_a_release() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(
+            &scratch,
+            &format!("{ARCHIVED_CHANGELOG}\n## Older releases\n\nSee the git history.\n"),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(violations, []);
+    }
+
+    #[test]
+    fn reports_a_type_heading_without_entries_added_to_a_changelog_section() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(
+            &scratch,
+            &format!("{ARCHIVED_CHANGELOG}\n## Security\n\nNothing this time.\n"),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            )]
+        );
+    }
+
+    #[test]
     fn reports_a_version_with_two_changelog_sections() {
         let scratch = scratch_repo(&[]);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
