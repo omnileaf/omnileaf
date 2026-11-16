@@ -1269,10 +1269,6 @@ export function sampleBackend(
       appLock = { ...appLock, lockAfter };
       return null;
     },
-    hideContentInRecents: (isHidden) => {
-      appLock = { ...appLock, hidesContentInRecents: isHidden };
-      return null;
-    },
     wallpaperColours: () => null,
     accentColours: () => null,
     captureVolumeKeys: () => null,

@@ -2,4 +2,4 @@
 type: fix
 area: settings
 ---
-Settings that can't be used right now look dimmed on Android, and App lock's settings are better spaced. The lock screen shows the app icon and uses Omnileaf's colours, and the recent apps card is plain.
+Settings that can't be used right now look dimmed on Android, and App lock's settings are better spaced. The lock screen shows the app icon and uses Omnileaf's colours.

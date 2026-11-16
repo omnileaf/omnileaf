@@ -14,7 +14,6 @@ export interface AppLockChanges {
   readonly turnOn: (promptTitle: string) => Promise<Answered<AppLockTurning>>;
   readonly turnOff: () => Promise<Answered<null>>;
   readonly chooseLockAfter: (lockAfter: LockAfter) => Promise<Answered<null>>;
-  readonly hideContentInRecents: (isHidden: boolean) => Promise<Answered<null>>;
 }
 
 export interface AppLockAnswers {
@@ -26,7 +25,6 @@ export const APP_LOCK_CHANGES: AppLockChanges = {
   turnOn: commands.turnAppLockOn,
   turnOff: commands.turnAppLockOff,
   chooseLockAfter: commands.chooseLockAfter,
-  hideContentInRecents: commands.hideContentInRecents,
 };
 
 export class AppLockSetting {
@@ -64,16 +62,6 @@ export class AppLockSetting {
       this.#changedElseReported(await this.changes.chooseLockAfter(lockAfter))
     ) {
       this.lock = { ...this.lock, lockAfter };
-    }
-  }
-
-  async hideContentInRecents(isHidden: boolean): Promise<void> {
-    if (
-      this.#changedElseReported(
-        await this.changes.hideContentInRecents(isHidden),
-      )
-    ) {
-      this.lock = { ...this.lock, hidesContentInRecents: isHidden };
     }
   }
 

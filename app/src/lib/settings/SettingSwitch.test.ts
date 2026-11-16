@@ -87,14 +87,14 @@ test("toggles from its switch alone on an iPhone, not from its words", async () 
 async function renderOn(
   platform: Parameters<typeof followCorePlatform>[0],
   width: number,
-  { grouped = false, disabled = false } = {},
+  { grouped = false, disabled = false, isOn = false } = {},
 ): Promise<void> {
   await page.viewport(width, PHONE.height);
   followCorePlatform(platform);
   await render(SettingSwitch, {
     label: LABEL,
     description: DESCRIPTION,
-    isOn: false,
+    isOn,
     onToggle: () => undefined,
     grouped,
     disabled,
@@ -189,3 +189,35 @@ test("mutes a disabled row on the Mac without dimming its words", async () => {
   expect(getComputedStyle(wordsOf(LABEL)).opacity).toBe("1");
   expect(row.color).toBe(getComputedStyle(muted).color);
 });
+
+const DISABLED_TRACKS = [
+  {
+    isOn: false,
+    fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
+    border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
+  },
+  {
+    isOn: true,
+    fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
+    border: "rgba(0, 0, 0, 0)",
+  },
+] as const;
+
+test.each(DISABLED_TRACKS)(
+  "draws a disabled Android switch, on $isOn, in the disabled colours",
+  async ({ isOn, fill, border }) => {
+    await renderOn("android", PHONE.width, { disabled: true, isOn });
+
+    const track = getComputedStyle(
+      page
+        .getByRole("switch")
+        .element()
+        .querySelector(":scope > span[aria-hidden='true']") ?? document.body,
+    );
+
+    expect([track.backgroundColor, track.borderTopColor]).toEqual([
+      fill,
+      border,
+    ]);
+  },
+);

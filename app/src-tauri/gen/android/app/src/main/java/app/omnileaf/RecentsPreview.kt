@@ -3,15 +3,34 @@ package app.omnileaf
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Build
+import android.view.WindowManager
 import androidx.annotation.ColorInt
 
-internal fun Activity.followRecentsChoice(choices: AppLockChoices) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        setRecentsScreenshotEnabled(!(choices.isOn && choices.hidesContentInRecents))
+internal fun Activity.protectRecents(isLockOn: Boolean) {
+    when (RecentsProtection.of(isLockOn, Build.VERSION.SDK_INT)) {
+        RecentsProtection.NONE -> {
+            showRecentsScreenshot(true)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
+        RecentsProtection.PLAIN_CARD -> {
+            showRecentsScreenshot(false)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
+        RecentsProtection.SECURE_WINDOW -> {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
 }
 
-/** Android colours the recent apps card from the task description, which falls back to the theme's primary colour. */
+private fun Activity.showRecentsScreenshot(isShown: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        setRecentsScreenshotEnabled(isShown)
+    }
+}
+
+/** Android draws the recent apps card and its bar strips from the task description, else from the theme. */
 internal fun Activity.colourRecentsCard(
     @ColorInt background: Int,
 ) {
@@ -21,6 +40,8 @@ internal fun Activity.colourRecentsCard(
                 .Builder()
                 .setPrimaryColor(background)
                 .setBackgroundColor(background)
+                .setStatusBarColor(background)
+                .setNavigationBarColor(background)
                 .build(),
         )
     } else {

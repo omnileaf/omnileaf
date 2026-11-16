@@ -1410,8 +1410,6 @@
   "app_lock_fifteen_minutes": "15 minutes",
   "app_lock_thirty_minutes": "30 minutes",
   "app_lock_one_hour": "1 hour",
-  "app_lock_hide_content": "Hide content in the recent apps screen",
-  "app_lock_hide_content_help": "Shows a plain card in the recent apps screen.",
   "app_lock_change_failed": "Couldn't change the app lock. Try again.",
   "accessibility_title": "Accessibility",
   "accessibility_text": "Text",

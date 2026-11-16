@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[cfg(target_os = "android")]
-pub(crate) use android::{
-    choose_lock_after, hide_content_in_recents, plugin, read, remember_words, turn_off, turn_on,
-};
+pub(crate) use android::{choose_lock_after, plugin, read, remember_words, turn_off, turn_on};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -22,8 +20,6 @@ pub(crate) enum LockAfter {
 pub(crate) struct AppLock {
     is_on: bool,
     lock_after: LockAfter,
-    hides_content_in_recents: bool,
-    can_hide_content_in_recents: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -102,16 +98,6 @@ struct ChosenDelay {
     lock_after: LockAfter,
 }
 
-#[cfg_attr(
-    not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android asks its app lock natively")
-)]
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct HiddenInRecents {
-    is_hidden: bool,
-}
-
 #[cfg(not(target_os = "android"))]
 #[expect(clippy::unused_async, reason = "only Android waits for its app lock")]
 pub(crate) async fn read(_app: &tauri::AppHandle) -> Result<AppLock, crate::ipc_error::IpcError> {
@@ -151,15 +137,6 @@ pub(crate) async fn choose_lock_after(
     Err(crate::ipc_error::IpcError::app_lock_unavailable())
 }
 
-#[cfg(not(target_os = "android"))]
-#[expect(clippy::unused_async, reason = "only Android waits for its app lock")]
-pub(crate) async fn hide_content_in_recents(
-    _app: &tauri::AppHandle,
-    _is_hidden: bool,
-) -> Result<(), crate::ipc_error::IpcError> {
-    Err(crate::ipc_error::IpcError::app_lock_unavailable())
-}
-
 #[cfg(target_os = "android")]
 mod android {
     use std::time::Duration;
@@ -171,8 +148,7 @@ mod android {
     };
 
     use super::{
-        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, HiddenInRecents, LockAfter,
-        LockWords, Turned,
+        AppLock, AppLockTurning, ChosenDelay, ConfirmingPrompt, LockAfter, LockWords, Turned,
     };
     use crate::ipc_error::IpcError;
 
@@ -184,7 +160,6 @@ mod android {
     const TURN_OFF: &str = "turnOff";
     const REMEMBER_WORDS: &str = "rememberWords";
     const CHOOSE_LOCK_AFTER: &str = "chooseLockAfter";
-    const HIDE_CONTENT_IN_RECENTS: &str = "hideContentInRecents";
     const PLUGIN_TIMEOUT: Duration = Duration::from_secs(2);
 
     struct AppLockPlugin(PluginHandle<Wry>);
@@ -244,13 +219,6 @@ mod android {
         lock_after: LockAfter,
     ) -> Result<(), IpcError> {
         ask_soon(app, CHOOSE_LOCK_AFTER, ChosenDelay { lock_after }).await
-    }
-
-    pub(crate) async fn hide_content_in_recents(
-        app: &AppHandle,
-        is_hidden: bool,
-    ) -> Result<(), IpcError> {
-        ask_soon(app, HIDE_CONTENT_IN_RECENTS, HiddenInRecents { is_hidden }).await
     }
 
     async fn ask<T: DeserializeOwned>(
@@ -322,8 +290,6 @@ mod tests {
         let written = serde_json::json!({
             "isOn": true,
             "lockAfter": "fiveMinutes",
-            "hidesContentInRecents": false,
-            "canHideContentInRecents": true,
         });
 
         let lock: AppLock = serde_json::from_value(written).unwrap();
@@ -333,8 +299,6 @@ mod tests {
             AppLock {
                 is_on: true,
                 lock_after: LockAfter::FiveMinutes,
-                hides_content_in_recents: false,
-                can_hide_content_in_recents: true,
             }
         );
     }
@@ -363,7 +327,6 @@ mod tests {
                 lock_after: LockAfter::OneHour,
             })
             .unwrap(),
-            serde_json::to_value(HiddenInRecents { is_hidden: true }).unwrap(),
             serde_json::to_value(words()).unwrap(),
         ];
 
@@ -372,7 +335,6 @@ mod tests {
             [
                 serde_json::json!({ "title": "Turn on app lock" }),
                 serde_json::json!({ "lockAfter": "oneHour" }),
-                serde_json::json!({ "isHidden": true }),
                 serde_json::json!({
                     "title": "Omnileaf is locked",
                     "body": "Unlock to open your library.",

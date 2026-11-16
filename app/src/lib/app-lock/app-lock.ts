@@ -9,8 +9,6 @@ import { m } from "#lib/paraglide/messages.js";
 export const NEW_APP_LOCK: AppLock = {
   isOn: false,
   lockAfter: "oneMinute",
-  hidesContentInRecents: false,
-  canHideContentInRecents: true,
 };
 
 export const LOCK_DELAYS = [
