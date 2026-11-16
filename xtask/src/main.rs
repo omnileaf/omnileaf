@@ -18,6 +18,7 @@ mod fixtures;
 mod fresh;
 mod fuzz_seeds;
 mod icons;
+mod json;
 mod licence_catalogue;
 mod licences;
 mod lint_comments;

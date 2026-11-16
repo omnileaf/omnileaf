@@ -10,7 +10,10 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use self::version::{Version, parse_version};
-use crate::pre_push::{changed_files, git};
+use crate::{
+    json,
+    pre_push::{changed_files, git},
+};
 
 pub(crate) const FOLDER: &str = ".changes";
 const CONFIG: &str = "config.json";
@@ -585,7 +588,7 @@ pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyho
     };
     match format {
         Format::Markdown => Ok(notes.markdown(&folder.config)),
-        Format::Json => Ok(serde_json::to_string_pretty(&notes.notes)? + "\n"),
+        Format::Json => Ok(json::pretty(&notes.notes)?),
     }
 }
 

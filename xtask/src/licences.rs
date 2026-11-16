@@ -3,7 +3,7 @@ use std::{env, fs, io, path::Path, process::Command};
 use anyhow::Context;
 
 use crate::{
-    files,
+    files, json,
     licence_catalogue::{catalogue, with_vendored_notices},
     process,
 };
@@ -25,7 +25,7 @@ pub(crate) fn regenerate(root: &Path, mode: Mode) -> anyhow::Result<()> {
     let report = cargo_about_report(root)?;
     let catalogue =
         with_vendored_notices(catalogue(&report).context("list the Rust crates' licences")?);
-    let generated = format!("{}\n", serde_json::to_string_pretty(&catalogue)?);
+    let generated = json::pretty(&catalogue)?;
     let path = root.join(RUST_CATALOGUE);
     match mode {
         Mode::Write => {
