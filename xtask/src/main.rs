@@ -93,7 +93,7 @@ impl Narrowing {
 
 #[derive(Subcommand)]
 enum Fragments {
-    /// Check every fragment in `.changes` and every archive in `.changes/released`.
+    /// Check every fragment in `.changes`, every archive in `.changes/released` and that CHANGELOG.md holds each archive's section.
     Check,
     /// Fail when the change since a commit touches what people see and adds no fragment.
     Require {
