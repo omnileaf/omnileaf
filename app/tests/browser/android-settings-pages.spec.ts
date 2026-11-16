@@ -144,16 +144,20 @@ test.describe(
       const row = await boxOf(page.getByRole("link", { name: /Animations/ }));
       const navigation = page.getByRole("heading", { name: "Navigation" });
       const navigationBox = await boxOf(navigation);
-      const note = await boxOf(
-        page.getByText("Off, tapping the open tab does nothing."),
+      const navigationSection = await boxOf(
+        page.getByRole("region", { name: "Navigation" }),
       );
+      const undoSection = page.getByRole("region", { name: "Undo" });
       const undo = await boxOf(page.getByRole("heading", { name: "Undo" }));
 
       expect(navigationBox.y - (row.y + row.height)).toBeCloseTo(
         GAP_AND_LINE_ABOVE_GROUP,
         0,
       );
-      expect(undo.y - (note.y + note.height)).toBeGreaterThanOrEqual(0);
+      await expect(undoSection).toHaveCSS("border-top-width", "1px");
+      expect(
+        undo.y - (navigationSection.y + navigationSection.height),
+      ).toBeCloseTo(GAP_AND_LINE_ABOVE_GROUP, 0);
     });
 
     test("pads a radio row with a hint 4px above and below its words", async ({
