@@ -458,6 +458,8 @@ pub(crate) const STEPS: &[Step] = &[
             "omnileaf-folder-access",
             "--package",
             "omnileaf-formats",
+            "--features",
+            "omnileaf-formats/rar",
             "--all-targets",
             "--no-deps",
             "--target",

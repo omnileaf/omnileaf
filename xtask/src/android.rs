@@ -212,7 +212,7 @@ fn search_ndk(ndk_home: Option<PathBuf>, sdk: &Path) -> NdkSearch {
 impl Ndk {
     /// The NDK ships one prebuilt toolchain per host, under a folder named for the host, with `.cmd` wrappers on Windows.
     pub(crate) fn lint_compilers(&self, os: &str) -> Option<LintCompilers> {
-        let (host, script, program) = match os {
+        let (host, clang_suffix, exe_suffix) = match os {
             "linux" => ("linux-x86_64", "", ""),
             "macos" => ("darwin-x86_64", "", ""),
             "windows" => ("windows-x86_64", ".cmd", ".exe"),
@@ -226,8 +226,10 @@ impl Ndk {
             .join(host)
             .join("bin");
         Some(LintCompilers {
-            cc: bin.join(format!("aarch64-linux-android{MIN_SDK}-clang{script}")),
-            ar: bin.join(format!("llvm-ar{program}")),
+            cc: bin.join(format!(
+                "aarch64-linux-android{MIN_SDK}-clang{clang_suffix}"
+            )),
+            ar: bin.join(format!("llvm-ar{exe_suffix}")),
         })
     }
 
@@ -355,10 +357,7 @@ mod tests {
     #[test]
     fn lints_for_the_oldest_android_the_app_declares() {
         let config: serde_json::Value = serde_json::from_str(
-            &fs::read_to_string(
-                Path::new(env!("CARGO_MANIFEST_DIR")).join("../app/src-tauri/tauri.conf.json"),
-            )
-            .unwrap(),
+            &fs::read_to_string(crate::workspace::root().join(crate::fresh::TAURI_CONFIG)).unwrap(),
         )
         .unwrap();
 
