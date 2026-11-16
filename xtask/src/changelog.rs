@@ -195,6 +195,8 @@ impl fmt::Display for Violation {
     }
 }
 
+impl std::error::Error for Violation {}
+
 fn is_slug_file(name: &str) -> bool {
     name.strip_suffix(FRAGMENT_EXTENSION).is_some_and(|slug| {
         !slug.is_empty()
@@ -366,14 +368,9 @@ impl Folder {
             "{shown} holds the notes of {}, not {version}",
             notes.notes.version
         );
-        notes.check(&self.config).map_err(|problem| {
-            anyhow::anyhow!(
-                "{}",
-                Violation {
-                    file: format!("{RELEASED}/{name}"),
-                    problem,
-                }
-            )
+        notes.check(&self.config).map_err(|problem| Violation {
+            file: format!("{RELEASED}/{name}"),
+            problem,
         })?;
         Ok(notes)
     }
@@ -1220,6 +1217,13 @@ Contributors: @hubot, @octocat
         "contributors": ["octocat"]
     }"#;
 
+    fn archive_violation(file: &str, problem: Problem) -> Violation {
+        Violation {
+            file: format!("{RELEASED}/{file}"),
+            problem,
+        }
+    }
+
     fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
             &format!("{FOLDER}/{RELEASED}/{version}.json"),
@@ -1378,12 +1382,18 @@ Contributors: @hubot, @octocat
         let unknown_type = notes_in(&scratch, "1.1.0", Format::Markdown).unwrap_err();
 
         assert_eq!(
-            unknown_area.to_string(),
-            ".changes/released/1.2.0.json: area `kitchen` is not in .changes/config.json"
+            unknown_area.downcast_ref::<Violation>(),
+            Some(&archive_violation(
+                "1.2.0.json",
+                Problem::UnknownArea("kitchen".to_owned())
+            ))
         );
         assert_eq!(
-            unknown_type.to_string(),
-            ".changes/released/1.1.0.json: type `chore` is not in .changes/config.json"
+            unknown_type.downcast_ref::<Violation>(),
+            Some(&archive_violation(
+                "1.1.0.json",
+                Problem::UnknownType("chore".to_owned())
+            ))
         );
     }
 
@@ -1398,7 +1408,10 @@ Contributors: @hubot, @octocat
 
         let error = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
 
-        assert!(error.to_string().contains("em-dash"), "{error}");
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation("1.2.0.json", Problem::EmDash))
+        );
     }
 
     #[test]
@@ -1413,8 +1426,11 @@ Contributors: @hubot, @octocat
         let error = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
 
         assert_eq!(
-            error.to_string(),
-            ".changes/released/1.2.0.json: `@octocat` is not a GitHub login; leave out the @"
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation(
+                "1.2.0.json",
+                Problem::BadLogin("@octocat".to_owned())
+            ))
         );
     }
 
