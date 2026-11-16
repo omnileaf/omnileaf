@@ -1393,6 +1393,7 @@
   "app_lock_on_after": "Fingerprint, face or screen lock · after {delay}",
   "app_lock_switch": "Lock Omnileaf",
   "app_lock_switch_help": "Asks for your fingerprint, face or screen lock when you open it.",
+  "app_lock_note": "Omnileaf asks for your fingerprint, face or screen lock when you open it or come back to it. Downloads and sync carry on while it’s locked, and the recent apps screen shows a plain card.",
   "app_lock_confirm_title": "Turn on app lock",
   "app_lock_no_screen_lock": "Set a screen lock on this phone first",
   "app_lock_no_screen_lock_body": "Android needs a PIN, pattern or password before Omnileaf can lock.",
