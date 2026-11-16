@@ -66,6 +66,11 @@ pub(crate) enum IpcErrorCode {
     RelayBusy,
     ReplyAddressInvalid,
     ReportRefused,
+    #[cfg_attr(
+        target_os = "android",
+        expect(dead_code, reason = "only Android has an app lock")
+    )]
+    AppLockUnavailable,
     Internal,
 }
 
@@ -160,6 +165,14 @@ impl IpcError {
         Self {
             code: IpcErrorCode::ReplyAddressInvalid,
             message: "the email address for a reply isn't valid",
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    pub(crate) fn app_lock_unavailable() -> Self {
+        Self {
+            code: IpcErrorCode::AppLockUnavailable,
+            message: "only Android has an app lock",
         }
     }
 

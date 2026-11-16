@@ -3,6 +3,7 @@ activity = "1.10.1"
 android-gradle-plugin = "9.3.1"
 androidx-test-junit = "1.1.4"
 appcompat = "1.7.1"
+biometric = "1.1.0"
 core = "1.13.1"
 coroutines = "1.9.0"
 detekt = "1.23.8"
@@ -20,6 +21,7 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }

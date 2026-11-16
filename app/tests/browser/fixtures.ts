@@ -17,6 +17,7 @@ import {
   type Platform,
   type Theme,
 } from "../../src/lib/ipc/bindings.ts";
+import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { NEW_ADULT_CONTENT } from "../../src/lib/library/adult-content.ts";
 import { NEW_LIBRARY_TABS } from "../../src/lib/library/library-tabs.ts";
 import { NEW_LIBRARY_LISTING } from "../../src/lib/library/library-listing.ts";
@@ -229,6 +230,11 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
   systemClock: () => "followsLanguage",
+  appLock: () => NEW_APP_LOCK,
+  turnAppLockOn: () => "turnedOn",
+  turnAppLockOff: () => null,
+  chooseLockAfter: () => null,
+  hideContentInRecents: () => null,
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,

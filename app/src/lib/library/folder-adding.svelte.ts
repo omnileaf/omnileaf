@@ -84,6 +84,7 @@ const FAILURES = {
   relayBusy: ADDING_FAILED,
   replyAddressInvalid: ADDING_FAILED,
   reportRefused: ADDING_FAILED,
+  appLockUnavailable: ADDING_FAILED,
   internal: ADDING_FAILED,
 } satisfies Record<IpcErrorCode, Failure>;
 
