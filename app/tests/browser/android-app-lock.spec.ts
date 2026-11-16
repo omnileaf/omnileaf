@@ -10,6 +10,8 @@ import { CommandFailure } from "./fake-backend.ts";
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
+const DIMMED = "0.38";
+const NOTE_GAP_PX = 16;
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
@@ -124,6 +126,41 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(lockAfter(page)).toBeDisabled();
     await expect(hideContent(page)).toBeDisabled();
     await expect(page.getByText(ONLY_WHEN_ON)).toHaveCount(2);
+  });
+
+  test("dims Lock after and Hide content while the lock is off, and ignores taps on them", async ({
+    page,
+  }) => {
+    await openAppLock(page);
+
+    for (const row of [lockAfter(page), hideContent(page)]) {
+      await expect(row).toHaveCSS("opacity", DIMMED);
+      await row.click({ force: true });
+    }
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(hideContent(page)).not.toBeChecked();
+    await expect(lockSwitch(page)).toHaveCSS("opacity", "1");
+  });
+
+  test("puts the delay's note under Lock after, apart from the rows around it", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+
+    const delay = await boxOf(lockAfter(page));
+    const noteText = page.getByText(/^Counts from when you leave Omnileaf/);
+    const note = await boxOf(noteText);
+    const hide = await boxOf(hideContent(page));
+
+    await expect(lockAfter(page)).not.toContainText("Counts from");
+    expect(note.y).toBeGreaterThanOrEqual(delay.y + delay.height);
+    expect(hide.y).toBeGreaterThanOrEqual(note.y + note.height);
+    await expect(noteText).toHaveCSS(
+      "padding-bottom",
+      `${String(NOTE_GAP_PX)}px`,
+    );
   });
 
   test("turns the lock on once the phone confirms it, and names it on Privacy and security", async ({
