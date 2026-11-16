@@ -1,25 +1,21 @@
 import { followBoldText } from "#lib/page/display-modes.ts";
+import { ChoiceOverSystem } from "#lib/preferences/choice-over-system.svelte.ts";
 import {
   browserPreferenceStore,
   type ForgettingPreferenceStore,
 } from "#lib/preferences/stored-preference.ts";
-import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
 
 const BOLD_TEXT_KEY = "omnileaf.boldText";
 
 export class BoldTextChoice {
-  system = $state(false);
-  #chosen: boolean | undefined = $state();
-
-  readonly #stored: StoredSwitch<ForgettingPreferenceStore>;
+  readonly #choice: ChoiceOverSystem;
 
   constructor(store: ForgettingPreferenceStore | undefined) {
-    this.#stored = new StoredSwitch(store, BOLD_TEXT_KEY);
-    this.#chosen = this.#stored.read();
+    this.#choice = new ChoiceOverSystem(store, BOLD_TEXT_KEY);
   }
 
   get isBold(): boolean {
-    return this.#chosen ?? this.system;
+    return this.#choice.isOn;
   }
 
   markDocument(): void {
@@ -27,26 +23,13 @@ export class BoldTextChoice {
   }
 
   followSystem(isSystemBold: boolean): void {
-    this.system = isSystemBold;
-    if (this.#chosen === isSystemBold) {
-      this.#forgetChoice();
-    }
+    this.#choice.followSystem(isSystemBold);
     followBoldText(this.isBold);
   }
 
   choose(isBold: boolean): void {
-    if (isBold === this.system) {
-      this.#forgetChoice();
-    } else {
-      this.#chosen = isBold;
-      this.#stored.writeIfPossible(isBold);
-    }
-    followBoldText(isBold);
-  }
-
-  #forgetChoice(): void {
-    this.#chosen = undefined;
-    this.#stored.forgetIfPossible();
+    this.#choice.choose(isBold);
+    followBoldText(this.isBold);
   }
 }
 
