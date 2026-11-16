@@ -152,9 +152,7 @@ fn write_release(root: &Path, release: &Release) -> anyhow::Result<()> {
 }
 
 fn finish_release(root: &Path, release: &Release) -> anyhow::Result<()> {
-    let changelog_path = root.join(CHANGELOG);
-    fs::write(&changelog_path, &release.changelog)
-        .with_context(|| format!("write {}", changelog_path.display()))?;
+    write_changelog(root, &release.changelog)?;
     for path in &release.used {
         fs::remove_file(path).with_context(|| format!("remove {}", path.display()))?;
     }
@@ -164,6 +162,11 @@ fn finish_release(root: &Path, release: &Release) -> anyhow::Result<()> {
 pub(super) fn read_changelog(root: &Path) -> anyhow::Result<String> {
     let path = root.join(CHANGELOG);
     fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))
+}
+
+fn write_changelog(root: &Path, text: &str) -> anyhow::Result<()> {
+    let path = root.join(CHANGELOG);
+    fs::write(&path, text).with_context(|| format!("write {}", path.display()))
 }
 
 pub(crate) fn release(root: &Path, version: &str) -> anyhow::Result<()> {
@@ -180,8 +183,7 @@ pub(crate) fn rewrite(root: &Path) -> anyhow::Result<()> {
         let notes = folder.archived_notes(&version)?;
         changelog = notes.rewrite_its_changelog_section(&changelog, &folder.config)?;
     }
-    let path = root.join(CHANGELOG);
-    fs::write(&path, changelog).with_context(|| format!("write {}", path.display()))
+    write_changelog(root, &changelog)
 }
 
 #[cfg(test)]
