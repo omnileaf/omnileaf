@@ -665,12 +665,11 @@ struct Release {
     used: Vec<PathBuf>,
 }
 
-fn insert_above_the_first_section(changelog: &str, section: &str) -> String {
-    let first_section = changelog
-        .match_indices(SECTION_HEADING)
-        .map(|(at, _)| at)
-        .find(|&at| at == 0 || changelog[..at].ends_with('\n'));
-    match first_section {
+fn insert_above_the_latest_release(changelog: &str, section: &str) -> String {
+    let latest_release = lines_with_offsets(changelog)
+        .find(|(_, line)| is_release_heading(line))
+        .map(|(at, _)| at);
+    match latest_release {
         Some(at) => format!("{}{section}\n{}", &changelog[..at], &changelog[at..]),
         None => format!("{}\n\n{section}", changelog.trim_end()),
     }
@@ -739,7 +738,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         version: version.to_owned(),
         archive_path,
         archive: json::pretty(&notes)?,
-        changelog: insert_above_the_first_section(changelog, &section),
+        changelog: insert_above_the_latest_release(changelog, &section),
         used: folder.fragment_paths(),
     })
 }
@@ -1676,6 +1675,23 @@ Contributors: @hubot, @octocat
             fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
             "# Changelog\n\nEach release has a `## ` heading.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 1.1.0\n\nOlder.\n"
         );
+    }
+
+    #[test]
+    fn keeps_an_introduction_heading_above_the_releases_and_passes_the_check() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(
+            &scratch,
+            "# Changelog\n\n## About this file\n\nSome text.\n",
+        );
+
+        release(scratch.path(), "1.0.0").unwrap();
+
+        assert_eq!(
+            changelog_in(&scratch),
+            "# Changelog\n\n## About this file\n\nSome text.\n\n## 1.0.0\n\n## Fixed\n\n- **Reader:** Done.\n"
+        );
+        assert_eq!(check(scratch.path()).unwrap(), []);
     }
 
     #[test]
