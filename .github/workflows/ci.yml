@@ -743,6 +743,13 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
 
+      - name: Lint the app's Android-only Rust
+        run: |
+          ndk_bin="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_x86_64_linux_android="$ndk_bin/x86_64-linux-android26-clang"
+          export AR_x86_64_linux_android="$ndk_bin/llvm-ar"
+          cargo clippy --locked --package omnileaf-app --lib --no-deps --target x86_64-linux-android -- --deny warnings
+
       - name: Install Appium
         run: npm install --global appium@3.8.0 && appium driver install uiautomator2@8.7.0
 
