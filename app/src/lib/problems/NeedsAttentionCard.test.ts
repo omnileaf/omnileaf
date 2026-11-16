@@ -27,3 +27,15 @@ test("opens needs attention when chosen", async () => {
 
   expect(opened).toBe(1);
 });
+
+test("marks itself as the end of a settings group, never a group", async () => {
+  const screen = await render(NeedsAttentionCard, {
+    count: 1,
+    onOpen: () => undefined,
+  });
+
+  const card = screen.getByRole("button").element().parentElement;
+
+  expect(card).toHaveAttribute("data-settings-end");
+  expect(card).not.toHaveAttribute("data-settings-group");
+});

@@ -140,7 +140,7 @@
   ></div>
   <PageHeading title={m.settings_title()} />
   <PageNoticeSlot />
-  <div class="mbs-lg flex flex-col gap-xl">
+  <div class="mbs-lg flex flex-col gap-xl android:max-medium:gap-sm">
     {#if needsAttention.problems.length > 0}
       <NeedsAttentionCard
         count={needsAttention.problems.length}

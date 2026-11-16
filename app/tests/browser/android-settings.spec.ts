@@ -86,7 +86,7 @@ test.describe(
       );
     });
 
-    test("draws the crash reports choice as three flat radio rows under the accent heading, with the note below them", async ({
+    test("draws the crash reports choice as three flat radio rows under the accent heading, a line above it and the note below it", async ({
       page,
     }) => {
       await page.goto("/settings/privacy");
@@ -98,7 +98,7 @@ test.describe(
       await expect(ask).toHaveAccessibleDescription(
         "You see a report before it's sent.",
       );
-      await expect(group).toHaveCSS("border-top-width", "0px");
+      await expect(group).toHaveCSS("border-top-width", "1px");
       expect((await boxOf(ask)).height).toBeGreaterThanOrEqual(ROW_MIN);
       await expect(
         group.getByRole("heading", { name: "Crash reports" }),

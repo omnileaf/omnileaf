@@ -86,6 +86,7 @@
 </script>
 
 <section
+  data-settings-group
   aria-labelledby={headingId}
   class={[
     placement !== "setup-row" && "flex flex-col gap-sm",

@@ -176,3 +176,19 @@ for (const theme of ["light", "dark"] as const) {
     expect(style.color).toBe(resolvedColour("--color-accent", "color"));
   });
 }
+
+test("marks itself as a settings group", async () => {
+  followCorePlatform("android");
+  await page.viewport(ANDROID_PHONE_WIDTH, 800);
+  await render(SettingRadios, {
+    title: "Time format",
+    options: ["clock", "words"],
+    labels: { clock: "Clock", words: "Words" },
+    chosen: "clock",
+    onChoose: () => undefined,
+  });
+
+  const group = page.getByRole("radiogroup").element().closest("section");
+
+  expect(group).toHaveAttribute("data-settings-group");
+});
