@@ -321,6 +321,15 @@ impl Folder {
         ))
     }
 
+    fn notes_to_release(&self, version: &str) -> anyhow::Result<CreditedNotes> {
+        let notes = self.unreleased_notes(version)?;
+        anyhow::ensure!(
+            !notes.notes.entries.is_empty(),
+            "{FOLDER} has no fragments, so {version} would have no release notes"
+        );
+        Ok(notes)
+    }
+
     fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
         let name = format!("{version}{ARCHIVE_EXTENSION}");
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
@@ -578,7 +587,7 @@ pub(crate) fn notes(
 ) -> anyhow::Result<String> {
     let notes = match version.map(parse_version).transpose()? {
         Some(Version::Full(version)) => folder.archived_notes(version)?,
-        Some(Version::PreRelease(version)) => folder.unreleased_notes(version)?,
+        Some(Version::PreRelease(version)) => folder.notes_to_release(version)?,
         None => folder.unreleased_notes(UNRELEASED)?,
     };
     match format {
@@ -1274,6 +1283,28 @@ Contributors: @hubot, @octocat
 
         assert!(json.contains("Not yet out."), "{json}");
         assert!(json.contains("\"version\": \"1.3.0-rc.1\""), "{json}");
+    }
+
+    #[test]
+    fn refuses_the_notes_of_a_pre_release_without_fragments() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let error = notes_in(&scratch, "1.3.0-rc.1", Format::Markdown).unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            ".changes has no fragments, so 1.3.0-rc.1 would have no release notes"
+        );
+    }
+
+    #[test]
+    fn writes_empty_unreleased_notes_without_fragments() {
+        let scratch = scratch_repo(&[]);
+
+        let markdown = notes(&folder_in(&scratch), None, Format::Markdown).unwrap();
+
+        assert_eq!(markdown, "");
     }
 
     #[test]
