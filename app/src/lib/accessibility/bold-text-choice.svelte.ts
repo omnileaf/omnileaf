@@ -28,13 +28,25 @@ export class BoldTextChoice {
 
   followSystem(isSystemBold: boolean): void {
     this.system = isSystemBold;
+    if (this.#chosen === isSystemBold) {
+      this.#forgetChoice();
+    }
     followBoldText(this.isBold);
   }
 
   choose(isBold: boolean): void {
-    this.#chosen = isBold;
-    this.#stored.writeIfPossible(isBold);
+    if (isBold === this.system) {
+      this.#forgetChoice();
+    } else {
+      this.#chosen = isBold;
+      this.#stored.writeIfPossible(isBold);
+    }
     followBoldText(isBold);
+  }
+
+  #forgetChoice(): void {
+    this.#chosen = undefined;
+    this.#stored.forgetIfPossible();
   }
 }
 
