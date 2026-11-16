@@ -94,7 +94,7 @@ test("draws the line above a group that follows a block holding a group", async 
 test("draws the line above a group that follows a padded block", async () => {
   await settingsPage("android", PHONE_WIDTH);
 
-  const line = lineAbove("group-after-padded-block");
+  const line = lineAbove("group-after-end-only");
 
   expect(line).toBe(LINE);
 });
@@ -133,11 +133,9 @@ for (const [name, platform, width] of [
   test(`draws no lines on ${name}`, async () => {
     await settingsPage(platform, width);
 
-    const lines = [
-      "second-group",
-      "group-after-padded-block",
-      "wrapped-group",
-    ].map(lineAbove);
+    const lines = ["second-group", "group-after-end-only", "wrapped-group"].map(
+      lineAbove,
+    );
 
     expect(lines).toEqual([NO_LINE, NO_LINE, NO_LINE]);
   });

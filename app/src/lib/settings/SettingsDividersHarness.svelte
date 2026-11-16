@@ -49,3 +49,10 @@
     <h2>Crash reports</h2>
   </section>
 </div>
+
+<div class={SCOPE}>
+  <div data-settings-end class="p-lg">2.1 GB used</div>
+  <ul data-settings-group data-testid="group-after-end-only">
+    <li>Clear cache</li>
+  </ul>
+</div>
