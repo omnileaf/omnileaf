@@ -338,7 +338,7 @@ fn check_summary(summary: &str) -> Result<(), Problem> {
     Ok(())
 }
 
-pub(crate) struct Folder {
+struct Folder {
     config: Config,
     files: Vec<(String, String)>,
     path: PathBuf,
@@ -434,7 +434,7 @@ fn archive_violation(version: &str, problem: Problem) -> Violation {
     }
 }
 
-pub(crate) fn read_folder(root: &Path) -> anyhow::Result<Folder> {
+fn read_folder(root: &Path) -> anyhow::Result<Folder> {
     let folder = root.join(FOLDER);
     let config_path = folder.join(CONFIG);
     let config = serde_json::from_slice(
@@ -647,11 +647,8 @@ fn valid_fragments(folder: &Folder) -> anyhow::Result<Vec<Fragment>> {
     Ok(fragments)
 }
 
-pub(crate) fn notes(
-    folder: &Folder,
-    version: Option<&str>,
-    format: Format,
-) -> anyhow::Result<String> {
+pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyhow::Result<String> {
+    let folder = read_folder(root)?;
     let notes = match version.map(parse_version).transpose()? {
         Some(Version::Full(version)) => folder.archived_notes(version)?,
         Some(Version::PreRelease(version)) => folder.notes_to_release(version)?,
@@ -775,10 +772,6 @@ mod tests {
             scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
         }
         scratch
-    }
-
-    fn folder_in(scratch: &omnileaf_testkit::ScratchFolder) -> Folder {
-        read_folder(scratch.path()).unwrap()
     }
 
     fn markdown_of(fragments: Vec<Fragment>) -> String {
@@ -1227,9 +1220,8 @@ Contributors: @hubot, @octocat
                 ),
             ),
         ]);
-        let folder = folder_in(&scratch);
 
-        let json = notes(&folder, None, Format::Json).unwrap();
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
 
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(
@@ -1254,10 +1246,9 @@ Contributors: @hubot, @octocat
             "a.md",
             &fragment_text("type: fix\narea: reader\ncredit: [octocat]", "Done."),
         )]);
-        let folder = folder_in(&scratch);
 
-        let markdown = notes(&folder, None, Format::Markdown).unwrap();
-        let json = notes(&folder, Some("2.0.0-rc.1"), Format::Json).unwrap();
+        let markdown = notes(scratch.path(), None, Format::Markdown).unwrap();
+        let json = notes(scratch.path(), Some("2.0.0-rc.1"), Format::Json).unwrap();
 
         assert_eq!(
             markdown,
@@ -1287,7 +1278,7 @@ Contributors: @hubot, @octocat
         version: &str,
         format: Format,
     ) -> anyhow::Result<String> {
-        notes(&read_folder(scratch.path())?, Some(version), format)
+        notes(scratch.path(), Some(version), format)
     }
 
     #[test]
@@ -1366,7 +1357,7 @@ Contributors: @hubot, @octocat
     fn writes_empty_unreleased_notes_without_fragments() {
         let scratch = scratch_repo(&[]);
 
-        let markdown = notes(&folder_in(&scratch), None, Format::Markdown).unwrap();
+        let markdown = notes(scratch.path(), None, Format::Markdown).unwrap();
 
         assert_eq!(markdown, "");
     }
@@ -1533,7 +1524,7 @@ Contributors: @hubot, @octocat
     fn records_the_version_as_unreleased_when_none_is_given() {
         let scratch = scratch_repo(&[]);
 
-        let json = notes(&folder_in(&scratch), None, Format::Json).unwrap();
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
 
         assert!(json.contains("\"version\": \"unreleased\""));
     }
@@ -1541,9 +1532,8 @@ Contributors: @hubot, @octocat
     #[test]
     fn refuses_to_assemble_notes_from_a_bad_fragment() {
         let scratch = scratch_repo(&[("a.md", "x")]);
-        let folder = folder_in(&scratch);
 
-        let error = notes(&folder, None, Format::Markdown).unwrap_err();
+        let error = notes(scratch.path(), None, Format::Markdown).unwrap_err();
 
         assert!(error.to_string().contains(".changes/a.md"), "{error}");
     }
@@ -1609,7 +1599,7 @@ Contributors: @hubot, @octocat
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
-        let json = notes(&folder_in(&scratch), None, Format::Json).unwrap();
+        let json = notes(scratch.path(), None, Format::Json).unwrap();
 
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(&json).unwrap(),

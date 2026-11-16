@@ -514,8 +514,7 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
             changelog::require(&changed, skip).map_err(|missing| anyhow::anyhow!("{missing}"))
         }
         Fragments::Notes { version, format } => {
-            let notes =
-                changelog::notes(&changelog::read_folder(&root)?, version.as_deref(), format)?;
+            let notes = changelog::notes(&root, version.as_deref(), format)?;
             print_text(&notes);
             Ok(())
         }
