@@ -1,3 +1,5 @@
+mod version;
+
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -6,6 +8,7 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
+use self::version::{Version, parse_version};
 use crate::{
     files,
     pre_push::{changed_files, git},
@@ -524,48 +527,6 @@ pub(crate) enum Format {
     Json,
 }
 
-enum Version<'a> {
-    Full(&'a str),
-    PreRelease(&'a str),
-}
-
-fn is_version_number(part: &str) -> bool {
-    !part.is_empty()
-        && part.bytes().all(|byte| byte.is_ascii_digit())
-        && (part == "0" || !part.starts_with('0'))
-}
-
-fn is_pre_release_identifier(identifier: &str) -> bool {
-    let is_numeric = identifier.bytes().all(|byte| byte.is_ascii_digit());
-    if is_numeric {
-        return is_version_number(identifier);
-    }
-    identifier
-        .bytes()
-        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
-}
-
-fn is_pre_release_label(label: &str) -> bool {
-    label.split('.').all(is_pre_release_identifier)
-}
-
-fn parse_version(version: &str) -> anyhow::Result<Version<'_>> {
-    let (core, label) = version
-        .split_once('-')
-        .map_or((version, None), |(core, label)| (core, Some(label)));
-    let parts: Vec<&str> = core.split('.').collect();
-    anyhow::ensure!(
-        parts.len() == 3
-            && parts.iter().all(|part| is_version_number(part))
-            && label.is_none_or(is_pre_release_label),
-        "`{version}` is not a version such as 1.2.0 or 1.2.0-rc.1"
-    );
-    Ok(match label {
-        None => Version::Full(version),
-        Some(_) => Version::PreRelease(version),
-    })
-}
-
 fn valid_fragments(folder: &Folder) -> anyhow::Result<Vec<Fragment>> {
     let (fragments, violations) = read_fragments(folder);
     anyhow::ensure!(
@@ -684,7 +645,7 @@ mod tests {
         serde_json::from_str(CONFIG_JSON).unwrap()
     }
 
-    fn fragment_text(front_matter: &str, summary: &str) -> String {
+    pub(super) fn fragment_text(front_matter: &str, summary: &str) -> String {
         format!("---\n{front_matter}\n---\n{summary}\n")
     }
 
@@ -701,7 +662,7 @@ mod tests {
         }
     }
 
-    fn scratch_repo(fragments: &[(&str, &str)]) -> omnileaf_testkit::ScratchFolder {
+    pub(super) fn scratch_repo(fragments: &[(&str, &str)]) -> omnileaf_testkit::ScratchFolder {
         let scratch = omnileaf_testkit::ScratchFolder::new("repo");
         scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
         scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
@@ -1219,7 +1180,7 @@ Contributors: @hubot, @octocat
         );
     }
 
-    fn notes_in(
+    pub(super) fn notes_in(
         scratch: &omnileaf_testkit::ScratchFolder,
         version: &str,
         format: Format,
@@ -1321,48 +1282,6 @@ Contributors: @hubot, @octocat
             error.to_string().contains(".changes/released/1.3.0.json"),
             "{error}"
         );
-    }
-
-    #[test]
-    fn refuses_notes_for_a_version_that_is_not_semver() {
-        let scratch = scratch_repo(&[]);
-
-        for version in [
-            "1.2",
-            "v1.2.0",
-            "1.02.0",
-            "1.2.0+build",
-            "1.2.0.0",
-            "",
-            "../1.2.0",
-            "1.2.0-",
-            "1.2.0-rc.01",
-            "1.2.0-00",
-        ] {
-            let error = notes_in(&scratch, version, Format::Json).unwrap_err();
-
-            assert!(
-                error.to_string().contains("not a version"),
-                "{version}: {error}"
-            );
-        }
-    }
-
-    #[test]
-    fn takes_a_pre_release_label_with_a_zero_or_a_word_that_starts_with_one() {
-        let scratch = scratch_repo(&[(
-            "a.md",
-            &fragment_text("type: fix\narea: reader", "Not yet out."),
-        )]);
-
-        for version in ["1.2.0-rc.0", "1.2.0-0a.1"] {
-            let json = notes_in(&scratch, version, Format::Json).unwrap();
-
-            assert!(
-                json.contains(&format!("\"version\": \"{version}\"")),
-                "{json}"
-            );
-        }
     }
 
     #[test]
