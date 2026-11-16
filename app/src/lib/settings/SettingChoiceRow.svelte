@@ -46,13 +46,15 @@
   class={[
     bleed,
     "flex items-center gap-lg py-sm ps-lg pe-xl text-start transition-control min-block-native-row-two",
-    disabled ? DISABLED_ROW : TINTED,
+    !disabled && TINTED,
   ]}
   onclick={() => {
     isOpen = true;
   }}
 >
-  <span class="flex flex-1 flex-col min-inline-none">
+  <span
+    class={["flex flex-1 flex-col min-inline-none", disabled && DISABLED_ROW]}
+  >
     <span class="text-body tracking-native-row-title">{title}</span>
     <span
       lang={valueLang}

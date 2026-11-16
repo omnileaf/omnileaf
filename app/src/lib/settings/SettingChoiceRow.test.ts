@@ -56,5 +56,9 @@ test("keeps its choices closed and dims its words while it is disabled", async (
 
   await expect.element(row).toBeDisabled();
   expect(screen.getByRole("dialog").elements()).toEqual([]);
-  expect(getComputedStyle(row.element()).opacity).toBe("0.38");
+  expect(
+    getComputedStyle(
+      screen.getByText(PROPS.title).element().parentElement ?? row.element(),
+    ).opacity,
+  ).toBe("0.38");
 });

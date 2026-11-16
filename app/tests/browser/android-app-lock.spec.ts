@@ -11,6 +11,7 @@ import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
 const DIMMED = "0.38";
+const SWITCH_ON = "rgb(50, 106, 77)";
 const NOTE_GAP_PX = 16;
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
@@ -20,6 +21,7 @@ const NOT_CHANGED = "Couldn't change the app lock. Try again.";
 let lock: AppLock = NEW_APP_LOCK;
 let turning: AppLockTurning = "turnedOn";
 let promptTitles: string[] = [];
+let changes: string[] = [];
 let failingCode: IpcErrorCode | null = null;
 
 function failIfAsked(): void {
@@ -48,11 +50,13 @@ test.use({
       return null;
     },
     chooseLockAfter: (lockAfter) => {
+      changes.push(`lockAfter ${lockAfter}`);
       failIfAsked();
       lock = { ...lock, lockAfter };
       return null;
     },
     hideContentInRecents: (isHidden) => {
+      changes.push(`hide ${String(isHidden)}`);
       failIfAsked();
       lock = { ...lock, hidesContentInRecents: isHidden };
       return null;
@@ -96,6 +100,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     lock = NEW_APP_LOCK;
     turning = "turnedOn";
     promptTitles = [];
+    changes = [];
     failingCode = null;
   });
 
@@ -131,16 +136,43 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
   test("dims Lock after and Hide content while the lock is off, and ignores taps on them", async ({
     page,
   }) => {
+    lock = { ...NEW_APP_LOCK, hidesContentInRecents: true };
     await openAppLock(page);
+    const words = [
+      page.getByText("Lock after", { exact: true }).locator(".."),
+      page
+        .getByText("Hide content in the recent apps screen", { exact: true })
+        .locator(".."),
+    ];
 
-    for (const row of [lockAfter(page), hideContent(page)]) {
+    for (const row of words) {
       await expect(row).toHaveCSS("opacity", DIMMED);
+    }
+    for (const row of [lockAfter(page), hideContent(page)]) {
+      const resting = await row.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      await row.hover({ force: true });
+      await expect(row).toHaveCSS("background-color", resting);
       await row.click({ force: true });
     }
+    await lockSwitch(page).click();
+    await expect(lockSwitch(page)).toBeChecked();
 
+    expect(changes).toEqual([]);
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(hideContent(page)).not.toBeChecked();
-    await expect(lockSwitch(page)).toHaveCSS("opacity", "1");
+  });
+
+  test("draws a disabled switch without the on colour, even when it is on", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, hidesContentInRecents: true };
+    await openAppLock(page);
+
+    const track = hideContent(page).locator("span[aria-hidden='true']").last();
+
+    await expect(hideContent(page)).toBeChecked();
+    await expect(track).not.toHaveCSS("background-color", SWITCH_ON);
   });
 
   test("puts the delay's note under Lock after, apart from the rows around it", async ({

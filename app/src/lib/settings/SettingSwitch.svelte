@@ -83,8 +83,19 @@
     aria-describedby={description === undefined
       ? undefined
       : `${id}-description`}
-    class={[rowLook, ROW_FOCUS_RING, disabled && DISABLED_ROW, className]}
+    class={[
+      rowLook,
+      ROW_FOCUS_RING,
+      disabled && look !== "android" && "text-muted",
+      className,
+    ]}
   >
-    <SettingWords {id} {label} {description} {look} />
+    <SettingWords
+      {id}
+      {label}
+      {description}
+      {look}
+      class={[disabled && look === "android" && DISABLED_ROW]}
+    />
   </Switch>
 {/if}
