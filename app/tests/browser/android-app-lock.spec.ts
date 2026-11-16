@@ -299,6 +299,7 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     const delay = await boxOf(lockAfter(page));
     const card = page.locator("section").filter({ has: lockSwitch(page) });
 
+    await expect(card).toHaveCount(1);
     await expect(card.filter({ has: lockAfter(page) })).toHaveCount(0);
     expect(delay.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
   });
