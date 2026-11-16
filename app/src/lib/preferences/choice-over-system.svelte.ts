@@ -12,6 +12,10 @@ export class ChoiceOverSystem {
     this.#chosen = this.#stored.read();
   }
 
+  get chosen(): boolean | undefined {
+    return this.#chosen;
+  }
+
   get isOn(): boolean {
     return this.#chosen ?? this.#isSystemOn;
   }
