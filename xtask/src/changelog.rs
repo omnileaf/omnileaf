@@ -309,7 +309,7 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
 pub(crate) struct Folder {
     config: Config,
     files: Vec<(String, String)>,
-    released: PathBuf,
+    path: PathBuf,
 }
 
 impl Folder {
@@ -324,7 +324,7 @@ impl Folder {
     fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
         let name = format!("{version}{ARCHIVE_EXTENSION}");
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
-        let text = match fs::read_to_string(self.released.join(&name)) {
+        let text = match fs::read_to_string(self.path.join(RELEASED).join(&name)) {
             Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 anyhow::bail!("{shown} is missing, so {version} has no release notes")
@@ -359,7 +359,7 @@ pub(crate) fn read_folder(root: &Path) -> anyhow::Result<Folder> {
     Ok(Folder {
         config,
         files,
-        released: folder.join(RELEASED),
+        path: folder,
     })
 }
 
@@ -686,15 +686,18 @@ mod tests {
         }
     }
 
-    fn folder(files: &[(&str, &str)]) -> Folder {
-        Folder {
-            config: config(),
-            files: files
-                .iter()
-                .map(|(name, text)| ((*name).to_owned(), (*text).to_owned()))
-                .collect(),
-            released: PathBuf::from(FOLDER).join(RELEASED),
+    fn scratch_repo(fragments: &[(&str, &str)]) -> omnileaf_testkit::ScratchFolder {
+        let scratch = omnileaf_testkit::ScratchFolder::new("repo");
+        scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
+        scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
+        for (name, text) in fragments {
+            scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
         }
+        scratch
+    }
+
+    fn folder_in(scratch: &omnileaf_testkit::ScratchFolder) -> Folder {
+        read_folder(scratch.path()).unwrap()
     }
 
     fn markdown_of(fragments: Vec<Fragment>) -> String {
@@ -928,7 +931,8 @@ mod tests {
 
     #[test]
     fn names_the_file_and_the_problem_in_a_violation() {
-        let folder = folder(&[("a.md", "Just text.\n")]);
+        let scratch = scratch_repo(&[("a.md", "Just text.\n")]);
+        let folder = folder_in(&scratch);
 
         let violations = check(&folder);
 
@@ -943,10 +947,11 @@ mod tests {
 
     #[test]
     fn passes_a_folder_of_valid_fragments() {
-        let folder = folder(&[(
+        let scratch = scratch_repo(&[(
             "a.md",
             &fragment_text("type: fix\narea: reader", "The page stays put."),
         )]);
+        let folder = folder_in(&scratch);
 
         assert_eq!(check(&folder), []);
     }
@@ -954,7 +959,8 @@ mod tests {
     #[test]
     fn reports_every_bad_fragment() {
         let good = fragment_text("type: fix\narea: reader", "Done.");
-        let folder = folder(&[("a.md", "x"), ("b.md", &good), ("c.txt", &good)]);
+        let scratch = scratch_repo(&[("a.md", "x"), ("b.md", &good), ("c.txt", &good)]);
+        let folder = folder_in(&scratch);
 
         let violations = check(&folder);
 
@@ -1112,7 +1118,7 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn writes_json_entries_in_report_order_without_credit() {
-        let folder = folder(&[
+        let scratch = scratch_repo(&[
             (
                 "a.md",
                 &fragment_text(
@@ -1143,6 +1149,7 @@ Contributors: @hubot, @octocat
                 ),
             ),
         ]);
+        let folder = folder_in(&scratch);
 
         let json = notes(&folder, None, Format::Json).unwrap();
 
@@ -1165,10 +1172,11 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn assembles_notes_from_the_folder_in_either_format() {
-        let folder = folder(&[(
+        let scratch = scratch_repo(&[(
             "a.md",
             &fragment_text("type: fix\narea: reader\ncredit: [octocat]", "Done."),
         )]);
+        let folder = folder_in(&scratch);
 
         let markdown = notes(&folder, None, Format::Markdown).unwrap();
         let json = notes(&folder, Some("2.0.0-rc.1"), Format::Json).unwrap();
@@ -1188,16 +1196,6 @@ Contributors: @hubot, @octocat
         ],
         "contributors": ["octocat"]
     }"#;
-
-    fn scratch_repo(fragments: &[(&str, &str)]) -> omnileaf_testkit::ScratchFolder {
-        let scratch = omnileaf_testkit::ScratchFolder::new("repo");
-        scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
-        scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
-        for (name, text) in fragments {
-            scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
-        }
-        scratch
-    }
 
     fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
@@ -1326,14 +1324,17 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn records_the_version_as_unreleased_when_none_is_given() {
-        let json = notes(&folder(&[]), None, Format::Json).unwrap();
+        let scratch = scratch_repo(&[]);
+
+        let json = notes(&folder_in(&scratch), None, Format::Json).unwrap();
 
         assert!(json.contains("\"version\": \"unreleased\""));
     }
 
     #[test]
     fn refuses_to_assemble_notes_from_a_bad_fragment() {
-        let folder = folder(&[("a.md", "x")]);
+        let scratch = scratch_repo(&[("a.md", "x")]);
+        let folder = folder_in(&scratch);
 
         let error = notes(&folder, None, Format::Markdown).unwrap_err();
 
