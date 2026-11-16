@@ -202,15 +202,36 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     ).toBeVisible();
   });
 
+  test("offers four times to lock after", async ({ page }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+
+    await lockAfter(page).click();
+    const dialog = page.getByRole("dialog", { name: "Lock after" });
+
+    await expect(dialog.getByRole("radio")).toHaveText([
+      "Immediately",
+      "1 minute",
+      "5 minutes",
+      "30 minutes",
+    ]);
+    await expect(
+      dialog.getByRole("radio", { name: "15 minutes", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      dialog.getByRole("radio", { name: "1 hour", exact: true }),
+    ).toHaveCount(0);
+  });
+
   test("locks after the delay chosen", async ({ page }) => {
     lock = { ...NEW_APP_LOCK, isOn: true };
     await openAppLock(page);
 
     await lockAfter(page).click();
-    await page.getByRole("radio", { name: "15 minutes" }).click();
+    await page.getByRole("radio", { name: "30 minutes" }).click();
 
-    await expect(lockAfter(page)).toContainText("15 minutes");
-    expect(lock.lockAfter).toBe("fifteenMinutes");
+    await expect(lockAfter(page)).toContainText("30 minutes");
+    expect(lock.lockAfter).toBe("thirtyMinutes");
   });
 
   test("offers no switch for hiding content in the recent apps screen", async ({
@@ -244,7 +265,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     failingCode = "internal";
 
     await lockAfter(page).click();
-    await page.getByRole("radio", { name: "15 minutes" }).click();
+    await page.getByRole("radio", { name: "30 minutes" }).click();
 
     await expect(page.getByText(NOT_CHANGED)).toBeVisible();
     await expect(lockAfter(page)).toContainText("1 minute");

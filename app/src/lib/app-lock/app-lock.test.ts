@@ -2,6 +2,8 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import {
   appLockSummary,
+  LOCK_DELAY_NAMES,
+  LOCK_DELAYS,
   NEW_APP_LOCK,
   readAppLock,
   rememberLockWords,
@@ -9,6 +11,12 @@ import {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+test("offers the four times to lock after, shortest first", () => {
+  const names = LOCK_DELAYS.map((delay) => LOCK_DELAY_NAMES[delay]());
+
+  expect(names).toEqual(["Immediately", "1 minute", "5 minutes", "30 minutes"]);
 });
 
 test("says the app lock is off", () => {

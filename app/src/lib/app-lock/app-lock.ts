@@ -15,9 +15,7 @@ export const LOCK_DELAYS = [
   "immediately",
   "oneMinute",
   "fiveMinutes",
-  "fifteenMinutes",
   "thirtyMinutes",
-  "oneHour",
 ] as const satisfies readonly LockAfter[];
 
 export const LOCK_DELAY_NAMES = {
