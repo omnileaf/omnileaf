@@ -13,6 +13,7 @@ const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
 const FRONT_MATTER_FENCE: &str = "---";
 const UNRELEASED: &str = "unreleased";
+const HEADLINE_TYPE: &str = "feat";
 const USER_FACING_IN_APP: &[&str] = &["app/src/", "app/src-tauri/src/", "app/messages/"];
 const USER_FACING_IN_CRATE: &[&str] = &["src", "android"];
 const TEST_FILE_ENDINGS: &[&str] = &[".test.ts", ".spec.ts"];
@@ -24,10 +25,34 @@ pub(crate) struct Heading {
     heading: String,
 }
 
+#[derive(Deserialize)]
+struct ConfigFile {
+    types: Vec<Heading>,
+    areas: Vec<Heading>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
+#[serde(try_from = "ConfigFile")]
 pub(crate) struct Config {
     types: Vec<Heading>,
     areas: Vec<Heading>,
+}
+
+impl TryFrom<ConfigFile> for Config {
+    type Error = String;
+
+    fn try_from(file: ConfigFile) -> Result<Self, Self::Error> {
+        let config = Self {
+            types: file.types,
+            areas: file.areas,
+        };
+        match config.type_position(HEADLINE_TYPE) {
+            Some(_) => Ok(config),
+            None => Err(format!(
+                "the types must include `{HEADLINE_TYPE}`, which heads the release notes"
+            )),
+        }
+    }
 }
 
 impl Config {
@@ -353,9 +378,20 @@ fn contributors(fragments: &[Fragment]) -> Vec<&str> {
     logins
 }
 
+fn headline(fragments_in_report_order: &[Fragment]) -> Option<&str> {
+    fragments_in_report_order
+        .iter()
+        .find(|fragment| fragment.kind == HEADLINE_TYPE)
+        .or_else(|| fragments_in_report_order.first())
+        .map(|fragment| fragment.summary.as_str())
+}
+
 pub(crate) fn render_markdown(fragments: Vec<Fragment>, config: &Config) -> String {
     let fragments = in_report_order(fragments, config);
-    let mut sections = Vec::new();
+    let mut sections: Vec<String> = headline(&fragments)
+        .map(str::to_owned)
+        .into_iter()
+        .collect();
     for kind in &config.types {
         let lines: Vec<String> = fragments
             .iter()
@@ -857,6 +893,8 @@ mod tests {
         assert_eq!(
             markdown,
             "\
+Section tabs on Android.
+
 ## Breaking changes
 
 - **Library:** Old folders need adding again.
@@ -877,10 +915,44 @@ Contributors: @hubot, @octocat
     }
 
     #[test]
+    fn heads_the_markdown_with_the_first_new_entry() {
+        let markdown = render_markdown(release(), &config());
+
+        assert!(
+            markdown.starts_with("Section tabs on Android.\n\n## Breaking changes\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn heads_the_markdown_with_the_first_entry_when_nothing_is_new() {
+        let fragments = vec![
+            valid("fix", "reader", &[], "The page stays put."),
+            valid("sec", "library", &[], "Archives stay inside."),
+        ];
+
+        let markdown = render_markdown(fragments, &config());
+
+        assert!(
+            markdown.starts_with("Archives stay inside.\n\n## Security\n"),
+            "{markdown}"
+        );
+    }
+
+    #[test]
+    fn refuses_a_config_without_the_headline_type() {
+        let without_feat = CONFIG_JSON.replace(r#"{"id": "feat", "heading": "New"},"#, "");
+
+        let error = serde_json::from_str::<Config>(&without_feat).unwrap_err();
+
+        assert!(error.to_string().contains("`feat`"), "{error}");
+    }
+
+    #[test]
     fn leaves_out_a_type_nobody_used() {
         let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
 
-        assert_eq!(markdown, "## Fixed\n\n- **Reader:** Done.\n");
+        assert_eq!(markdown, "Done.\n\n## Fixed\n\n- **Reader:** Done.\n");
     }
 
     #[test]
@@ -943,7 +1015,7 @@ Contributors: @hubot, @octocat
 
         assert_eq!(
             markdown,
-            "## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
+            "Done.\n\n## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
         );
         assert!(json.contains("\"version\": \"2.0.0\""));
     }
