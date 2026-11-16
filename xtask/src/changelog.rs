@@ -121,6 +121,7 @@ pub(crate) enum Problem {
     EmDash,
     MalformedArchive(String),
     OtherVersion(String),
+    NoEntries,
 }
 
 impl fmt::Display for Problem {
@@ -184,6 +185,7 @@ impl fmt::Display for Problem {
             Self::MalformedArchive(error) => {
                 write!(formatter, "the archive is not release notes JSON: {error}")
             }
+            Self::NoEntries => write!(formatter, "the archive has no entries"),
             Self::OtherVersion(version) => write!(
                 formatter,
                 "the archive holds the notes of {version}, not of the version in its name"
@@ -562,6 +564,9 @@ impl CreditedNotes {
     }
 
     fn check(&self, config: &Config) -> Result<(), Problem> {
+        if self.notes.entries.is_empty() {
+            return Err(Problem::NoEntries);
+        }
         for entry in &self.notes.entries {
             config.check_type(&entry.kind)?;
             config.check_area(&entry.area)?;
@@ -1502,6 +1507,31 @@ Contributors: @hubot, @octocat
                 archive_violation("1.2.0", Problem::UnknownArea("kitchen".to_owned())),
             ]
         );
+    }
+
+    const EMPTY_ARCHIVE_JSON: &str = r#"{"version": "1.2.0", "entries": [], "contributors": []}"#;
+
+    #[test]
+    fn refuses_the_notes_of_an_archive_without_entries() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", EMPTY_ARCHIVE_JSON);
+
+        let error = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap_err();
+
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation("1.2.0", Problem::NoEntries))
+        );
+    }
+
+    #[test]
+    fn reports_an_archive_without_entries() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", EMPTY_ARCHIVE_JSON);
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(violations, [archive_violation("1.2.0", Problem::NoEntries)]);
     }
 
     #[test]
