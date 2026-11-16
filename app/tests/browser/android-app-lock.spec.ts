@@ -7,9 +7,22 @@ import type {
 } from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { CommandFailure } from "./fake-backend.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  accessibilityViolations,
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  test,
+} from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
+const PAGE_GUTTER_PX = 16;
+const CARD_RADIUS = "28px";
+const CARD_ROW_PX = 56;
+const TIMES_GAP_PX = 12;
+const LIGHT_SURFACE_FIELD = "rgb(219, 229, 220)";
+const DARK_SURFACE_FIELD = "rgb(31, 39, 33)";
+const NOTE = /^Omnileaf asks for your fingerprint, face or screen lock/;
 const ONLY_WHEN_ON = "Available when app lock is on.";
 
 const NOT_CHANGED = "Couldn't change the app lock. Try again.";
@@ -85,6 +98,14 @@ function lockAfter(page: Page): Locator {
   return page.getByRole("button", { name: /^Lock after/ });
 }
 
+function note(page: Page): Locator {
+  return page.getByText(NOTE);
+}
+
+function switchCard(page: Page): Locator {
+  return page.locator("section").filter({ has: lockSwitch(page) });
+}
+
 function startAppLock(page: Page): Locator {
   return page.getByRole("radiogroup", { name: "Start app lock" });
 }
@@ -121,11 +142,75 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(firstEntry(page)).toContainText("App lock");
   });
 
-  test("hides Start app lock and its times while the lock is off", async ({
+  test("opens with a note saying downloads and sync carry on while it's locked", async ({
     page,
   }) => {
     await openAppLock(page);
 
+    const words = await boxOf(note(page));
+    const art = await boxOf(note(page).locator("..").locator("svg"));
+    const toggle = await boxOf(lockSwitch(page));
+    const width = page.viewportSize()?.width ?? 0;
+
+    await expect(note(page)).toContainText(
+      "Downloads and sync carry on while it’s locked",
+    );
+    expect(words.y + words.height).toBeLessThanOrEqual(toggle.y);
+    expect(art.y + art.height).toBeLessThanOrEqual(words.y);
+    expect(art.x + art.width / 2).toBeCloseTo(width / 2, 0);
+  });
+
+  test("puts Lock Omnileaf alone in a rounded card 16px in from each edge", async ({
+    page,
+  }) => {
+    await openAppLock(page);
+
+    const card = await boxOf(switchCard(page));
+    const row = await boxOf(lockSwitch(page));
+    const width = page.viewportSize()?.width ?? 0;
+
+    await expect(switchCard(page)).toHaveCSS("border-radius", CARD_RADIUS);
+    await expect(switchCard(page)).toHaveCSS(
+      "background-color",
+      LIGHT_SURFACE_FIELD,
+    );
+    await expect(switchCard(page).getByRole("switch")).toHaveCount(1);
+    expect(card.x).toBeCloseTo(PAGE_GUTTER_PX, 0);
+    expect(width - (card.x + card.width)).toBeCloseTo(PAGE_GUTTER_PX, 0);
+    expect(row.height).toBeCloseTo(CARD_ROW_PX, 0);
+    await expect(lockSwitch(page)).not.toHaveAttribute("aria-describedby");
+  });
+
+  test("draws the switch card on the dark surface", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAppLock(page);
+
+    await expect(switchCard(page)).toHaveCSS(
+      "background-color",
+      DARK_SURFACE_FIELD,
+    );
+  });
+
+  test("sets Start app lock's heading 12px under the switch card", async ({
+    page,
+  }) => {
+    lock = { ...NEW_APP_LOCK, isOn: true };
+    await openAppLock(page);
+
+    const card = await boxOf(switchCard(page));
+    const heading = await boxOf(
+      page.getByRole("heading", { name: "Start app lock" }),
+    );
+
+    expect(heading.y - (card.y + card.height)).toBeCloseTo(TIMES_GAP_PX, 0);
+  });
+
+  test("shows only the note and the switch while the lock is off", async ({
+    page,
+  }) => {
+    await openAppLock(page);
+
+    await expect(note(page)).toBeVisible();
     await expect(lockSwitch(page)).not.toBeChecked();
     await expect(page.getByRole("switch")).toHaveCount(1);
     await expect(page.getByRole("radiogroup")).toHaveCount(0);
@@ -246,8 +331,24 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await openAppLock(page);
 
     await expect(page.getByRole("switch")).toHaveCount(1);
-    await expect(page.getByText(/recent apps/i)).toHaveCount(0);
+    await expect(page.getByText(/hide content/i)).toHaveCount(0);
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    for (const isOn of [false, true]) {
+      test(`has no accessibility violations in the ${colorScheme} theme with the lock ${isOn ? "on" : "off"}`, async ({
+        page,
+      }) => {
+        lock = { ...NEW_APP_LOCK, isOn };
+        await page.emulateMedia({ colorScheme });
+        await openAppLock(page);
+
+        const violations = await accessibilityViolations(page);
+
+        expect(violations).toEqual([]);
+      });
+    }
+  }
 
   test("keeps the lock on and says so when it can't be turned off", async ({
     page,
@@ -323,7 +424,7 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
 
     const lockToggle = await boxOf(lockSwitch(page));
     const times = await boxOf(startAppLock(page));
-    const card = page.locator("section").filter({ has: lockSwitch(page) });
+    const card = switchCard(page);
 
     await expect(card).toHaveCount(1);
     await expect(card.filter({ has: startAppLock(page) })).toHaveCount(0);

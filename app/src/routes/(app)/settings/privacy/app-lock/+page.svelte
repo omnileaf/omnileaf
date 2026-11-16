@@ -2,6 +2,7 @@
   import { CircleAlert } from "@lucide/svelte";
 
   import { LOCK_DELAYS } from "#lib/app-lock/app-lock.ts";
+  import AppLockNote from "#lib/app-lock/AppLockNote.svelte";
   import {
     APP_LOCK_CHANGES,
     AppLockSetting,
@@ -12,7 +13,12 @@
   import { m } from "#lib/paraglide/messages.js";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
   import SettingRadios from "#lib/settings/SettingRadios.svelte";
-  import { CARD_SWITCH, SWITCH_CARD } from "#lib/settings/setting-row-look.ts";
+  import {
+    ANDROID_CARD_SWITCH,
+    ANDROID_SWITCH_CARD,
+    CARD_SWITCH,
+    SWITCH_CARD,
+  } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
   import type { PageProps } from "./$types";
@@ -45,39 +51,6 @@
   const lock = $derived(setting.lock);
 </script>
 
-{#snippet lockSwitch()}
-  <SettingSwitch
-    bleeds={android.isOn}
-    class={android.isOn ? "" : CARD_SWITCH}
-    label={m.app_lock_switch()}
-    description={m.app_lock_switch_help()}
-    isOn={lock.isOn}
-    disabled={setting.isAsking}
-    onToggle={() => {
-      void (lock.isOn
-        ? setting.turnOff()
-        : setting.turnOn(m.app_lock_confirm_title()));
-    }}
-  />
-{/snippet}
-
-{#snippet startAppLock()}
-  <SettingRadios
-    title={m.app_lock_start()}
-    options={LOCK_DELAYS}
-    labels={{
-      immediately: m.app_lock_immediately(),
-      oneMinute: m.app_lock_start_one_minute(),
-      fiveMinutes: m.app_lock_start_five_minutes(),
-      thirtyMinutes: m.app_lock_start_thirty_minutes(),
-    }}
-    chosen={lock.lockAfter}
-    onChoose={(lockAfter: LockAfter) => {
-      void setting.chooseLockAfter(lockAfter);
-    }}
-  />
-{/snippet}
-
 <SectionHeading
   title={m.app_lock_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
@@ -88,14 +61,36 @@
     !android.isOn && "gap-xl",
   ]}
 >
-  {#if android.isOn}
-    {@render lockSwitch()}
-  {:else}
-    <section class={SWITCH_CARD}>
-      {@render lockSwitch()}
-    </section>
-  {/if}
+  <AppLockNote />
+  <section class={android.isOn ? ANDROID_SWITCH_CARD : SWITCH_CARD}>
+    <SettingSwitch
+      class={android.isOn ? ANDROID_CARD_SWITCH : CARD_SWITCH}
+      label={m.app_lock_switch()}
+      isOn={lock.isOn}
+      disabled={setting.isAsking}
+      onToggle={() => {
+        void (lock.isOn
+          ? setting.turnOff()
+          : setting.turnOn(m.app_lock_confirm_title()));
+      }}
+    />
+  </section>
   {#if lock.isOn}
-    {@render startAppLock()}
+    <div class={[android.isOn && "pbs-md"]}>
+      <SettingRadios
+        title={m.app_lock_start()}
+        options={LOCK_DELAYS}
+        labels={{
+          immediately: m.app_lock_immediately(),
+          oneMinute: m.app_lock_start_one_minute(),
+          fiveMinutes: m.app_lock_start_five_minutes(),
+          thirtyMinutes: m.app_lock_start_thirty_minutes(),
+        }}
+        chosen={lock.lockAfter}
+        onChoose={(lockAfter: LockAfter) => {
+          void setting.chooseLockAfter(lockAfter);
+        }}
+      />
+    </div>
   {/if}
 </div>
