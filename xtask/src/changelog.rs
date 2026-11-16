@@ -129,6 +129,7 @@ pub(crate) enum Problem {
     MalformedArchive(String),
     OtherVersion(String),
     NoEntries,
+    NotInChangelog(String),
 }
 
 impl fmt::Display for Problem {
@@ -203,6 +204,10 @@ impl fmt::Display for Problem {
             Self::OtherVersion(version) => write!(
                 formatter,
                 "the archive holds the notes of {version}, not of the version in its name"
+            ),
+            Self::NotInChangelog(version) => write!(
+                formatter,
+                "{CHANGELOG} has no `{SECTION_HEADING}{version}` section that matches the archive; edit the two together"
             ),
         }
     }
@@ -449,8 +454,9 @@ fn read_fragments(folder: &Folder) -> (Vec<Fragment>, Vec<Violation>) {
 
 pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Violation>> {
     let folder = read_folder(root)?;
+    let changelog = read_changelog(root)?;
     let mut violations = read_fragments(&folder).1;
-    violations.extend(folder.archive_violations()?);
+    violations.extend(folder.archive_violations(&changelog)?);
     Ok(violations)
 }
 
@@ -541,7 +547,11 @@ impl CreditedNotes {
     }
 
     fn changelog_section(&self, config: &Config) -> String {
-        joined_sections(&self.sections(config))
+        format!(
+            "{SECTION_HEADING}{}\n\n{}",
+            self.notes.version,
+            joined_sections(&self.sections(config))
+        )
     }
 
     fn sections(&self, config: &Config) -> Vec<String> {
@@ -667,10 +677,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         );
     }
     let notes = folder.notes_to_release(version)?;
-    let section = format!(
-        "{SECTION_HEADING}{version}\n\n{}",
-        notes.changelog_section(&folder.config)
-    );
+    let section = notes.changelog_section(&folder.config);
     Ok(Release {
         version: version.to_owned(),
         archive_path,
@@ -707,11 +714,14 @@ fn finish_release(root: &Path, release: &Release) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn read_changelog(root: &Path) -> anyhow::Result<String> {
+    let path = root.join(CHANGELOG);
+    fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))
+}
+
 pub(crate) fn release(root: &Path, version: &str) -> anyhow::Result<()> {
     let folder = read_folder(root)?;
-    let changelog_path = root.join(CHANGELOG);
-    let changelog = fs::read_to_string(&changelog_path)
-        .with_context(|| format!("read {}", changelog_path.display()))?;
+    let changelog = read_changelog(root)?;
     let release = plan_release(&folder, version, &changelog)?;
     write_release(root, &release)
 }
@@ -824,6 +834,7 @@ mod tests {
         let scratch = omnileaf_testkit::ScratchFolder::new("repo");
         scratch.write(&format!("{FOLDER}/{CONFIG}"), CONFIG_JSON.as_bytes());
         scratch.write(&format!("{FOLDER}/{README}"), b"# Fragments\n");
+        scratch.write(CHANGELOG, b"# Changelog\n");
         for (name, text) in fragments {
             scratch.write(&format!("{FOLDER}/{name}"), text.as_bytes());
         }
@@ -1313,6 +1324,8 @@ Contributors: @hubot, @octocat
         assert!(json.contains("\"version\": \"2.0.0-rc.1\""));
     }
 
+    pub(super) const ARCHIVED_CHANGELOG: &str = "# Changelog\n\n## 1.2.0\n\n## New\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n";
+
     pub(super) const ARCHIVED_JSON: &str = r#"{
         "version": "1.2.0",
         "entries": [
@@ -1391,7 +1404,7 @@ Contributors: @hubot, @octocat
         assert!(error.to_string().contains(".changes/a.md"), "{error}");
     }
 
-    fn with_changelog(scratch: &omnileaf_testkit::ScratchFolder, text: &str) {
+    pub(super) fn with_changelog(scratch: &omnileaf_testkit::ScratchFolder, text: &str) {
         scratch.write(CHANGELOG, text.as_bytes());
     }
 
@@ -1524,6 +1537,7 @@ Contributors: @hubot, @octocat
     #[test]
     fn leaves_everything_as_it_was_when_the_changelog_is_missing() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        fs::remove_file(scratch.path().join(CHANGELOG)).unwrap();
 
         let error = release(scratch.path(), "1.2.0").unwrap_err();
 
@@ -1692,6 +1706,7 @@ Contributors: @hubot, @octocat
     #[test]
     fn does_not_check_the_released_folder_as_a_fragment() {
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
         let violations = check(scratch.path()).unwrap();
