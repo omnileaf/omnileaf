@@ -1328,8 +1328,8 @@ test("tells a series of a missing folder and its books apart from one connected"
     await connectionsOfSeries(backend, 3),
     await connectionsOfSeries(backend, 4),
   ]).toEqual([
-    [{ state: "notConnected" }, new Set([false])],
-    [{ state: "connected" }, new Set([true])],
+    [{ kind: "notConnected" }, new Set([false])],
+    [{ kind: "connected" }, new Set([true])],
   ]);
 });
 

@@ -122,7 +122,7 @@ export class FakeShelf {
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
           bookmarkCount: this.#books.filter((book) => book.isBookmarked).length,
-          connection: { state: "connected" },
+          connection: { kind: "connected" },
           cover: null,
           folder: SERIES_FOLDER,
           upNext: this.#upNext() ?? null,

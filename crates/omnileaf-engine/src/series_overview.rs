@@ -42,7 +42,7 @@ pub struct SeriesOverview {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(
-    tag = "state",
+    tag = "kind",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
@@ -366,6 +366,18 @@ mod tests {
     #[test]
     fn shows_a_series_with_every_book_not_connected_as_not_connected() {
         assert_eq!(connection_of(8, 8), SeriesConnection::NotConnected);
+    }
+
+    #[test]
+    fn tells_the_interface_a_series_connection_by_its_kind() {
+        let connection = connection_of(8, 3);
+
+        let json = serde_json::to_value(connection).unwrap();
+
+        assert_eq!(
+            json,
+            serde_json::json!({ "kind": "partlyConnected", "booksNotConnected": 3 })
+        );
     }
 
     #[test]

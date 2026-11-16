@@ -93,7 +93,7 @@ const SEARCHING_BACKEND: FakeBackend = {
       bookCount: series.bookCount,
       readCount: 0,
       bookmarkCount: 0,
-      connection: { state: "connected" },
+      connection: { kind: "connected" },
       cover: null,
       folder: null,
       upNext: null,

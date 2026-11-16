@@ -149,7 +149,7 @@ export class SectionShelf {
           readCount: this.#books.filter((book) => book.reading.state === "read")
             .length,
           bookmarkCount: 0,
-          connection: { state: "connected" },
+          connection: { kind: "connected" },
           cover: null,
           folder: SERIES_FOLDER,
           upNext: null,

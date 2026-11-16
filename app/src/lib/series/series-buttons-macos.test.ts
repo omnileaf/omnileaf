@@ -42,7 +42,7 @@ const OVERVIEW: SeriesOverview = {
   bookCount: 3,
   readCount: 1,
   bookmarkCount: 0,
-  connection: { state: "connected" },
+  connection: { kind: "connected" },
   cover: null,
   folder: null,
   upNext: BOOK,

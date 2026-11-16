@@ -71,7 +71,7 @@ function overview(): SeriesOverview {
     bookCount: 8,
     readCount: 2,
     bookmarkCount: 0,
-    connection: { state: "connected" },
+    connection: { kind: "connected" },
     cover: null,
     folder: null,
     upNext: seriesBook(3),

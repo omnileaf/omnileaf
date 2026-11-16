@@ -733,8 +733,8 @@ export function sampleBackend(
     missingFolder.isFound || !MISSING_FOLDER_SERIES.has(series.number);
   const connectionOf = (series: SampleSeries): SeriesConnection =>
     isConnected(series) || booksOf(series).length === 0
-      ? { state: "connected" }
-      : { state: "notConnected" };
+      ? { kind: "connected" }
+      : { kind: "notConnected" };
   const hasBooksToFind = (series: SampleSeries): boolean =>
     !isOutOfReach(series) && booksOf(series).length > 0;
   const facts: SeriesFacts = {
