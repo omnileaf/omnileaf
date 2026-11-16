@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 
+import english from "../../messages/en.json" with { type: "json" };
 import { expect, test } from "./fixtures.ts";
 import { FakeShelf, SERIES_ID } from "./series-shelf.ts";
 
@@ -50,12 +51,12 @@ test.describe(
       test.skip(platform !== "android", "Android's navigation bar");
     });
 
-    test("is a switch in Settings › Navigation, off until turned on", async ({
+    test("is a switch in Settings › Advanced, off until turned on", async ({
       page,
     }) => {
       await page.goto("/settings");
 
-      await page.getByRole("link", { name: /^Navigation/ }).click();
+      await page.getByRole("link", { name: /^Advanced/ }).click();
       const choice = page.getByRole("switch", {
         name: "Tap the open tab again",
       });
@@ -71,7 +72,7 @@ test.describe(
     test("says the first tap scrolls to the top and the next goes to the first page once it is on", async ({
       page,
     }) => {
-      await page.goto("/settings/navigation");
+      await page.goto("/settings/advanced");
 
       await page
         .getByRole("switch", { name: "Tap the open tab again" })
@@ -84,17 +85,38 @@ test.describe(
       ).toBeVisible();
     });
 
-    test("is the same switch in Settings › Advanced", async ({ page }) => {
-      await page.goto("/settings/navigation");
-      await page
-        .getByRole("switch", { name: "Tap the open tab again" })
-        .click();
+    test("keeps the switch on in Settings › Advanced for someone who turned it on", async ({
+      page,
+    }) => {
+      await turnOn(page);
 
       await page.goto("/settings/advanced");
 
       await expect(
         page.getByRole("switch", { name: "Tap the open tab again" }),
       ).toBeChecked();
+    });
+
+    test("leaves Navigation out of the Settings list", async ({ page }) => {
+      await page.goto("/settings");
+      await expect(page.getByRole("link", { name: /^Advanced/ })).toBeVisible();
+
+      await expect(page.getByRole("link", { name: /^Navigation/ })).toHaveCount(
+        0,
+      );
+    });
+
+    test("answers the old Settings › Navigation address with the missing page and a way to the library", async ({
+      page,
+    }) => {
+      await page.goto("/settings/navigation");
+
+      await expect(
+        page.getByRole("heading", { name: english.problem_page_missing_title }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: english.problem_go_to_library }),
+      ).toBeVisible();
     });
 
     test("leaves a page inside the open section where it is while off", async ({

@@ -1,7 +1,6 @@
 import {
   Accessibility,
   BookOpen,
-  Compass,
   HardDrive,
   Info,
   Settings,
@@ -24,7 +23,6 @@ export type SettingsRoute =
   | "/(app)/settings/storage"
   | "/(app)/settings/general"
   | "/(app)/settings/advanced"
-  | "/(app)/settings/navigation"
   | "/(app)/settings/accessibility"
   | "/(app)/settings/about";
 
@@ -130,15 +128,6 @@ const READING: SettingsSection = {
   chip: "orange",
 };
 
-const NAVIGATION: SettingsSection = {
-  route: "/(app)/settings/navigation",
-  label: m.navigation_settings_title,
-  icon: Compass,
-  iconName: "compass",
-  chip: "blue",
-  isAndroidPhoneOnly: true,
-};
-
 const ACCESSIBILITY: SettingsSection = {
   route: "/(app)/settings/accessibility",
   label: m.accessibility_title,
@@ -188,7 +177,7 @@ const TRACKERS: ComingSoonSection = {
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   {
     heading: m.settings_group_app,
-    sections: [GENERAL, APPEARANCE, ACCESSIBILITY, NAVIGATION],
+    sections: [GENERAL, APPEARANCE, ACCESSIBILITY],
   },
   {
     heading: m.settings_group_reading,
