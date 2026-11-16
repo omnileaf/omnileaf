@@ -1,9 +1,17 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
-import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
+import {
+  boxOf,
+  DEFAULT_BACKEND,
+  expect,
+  pixelOf,
+  test,
+  tokenColour,
+  viewportOf,
+} from "./fixtures.ts";
 
 const BACKEND = {
   ...DEFAULT_BACKEND,
@@ -50,6 +58,69 @@ const PAGE_LINES: readonly PageLines[] = [
   { route: "/settings/privacy", lines: 1 },
   { route: "/settings/about/report", lines: 1 },
 ];
+
+interface EdgeProbe {
+  readonly route: string;
+  readonly group: (page: Page) => Locator;
+}
+
+const EDGE_PROBES: readonly EdgeProbe[] = [
+  {
+    route: "/settings/about/report",
+    group: (page) =>
+      page.getByRole("region", { name: "Other ways to send it" }),
+  },
+];
+
+interface LineEnds {
+  readonly start: readonly number[];
+  readonly end: readonly number[];
+}
+
+const THEMES = ["light", "dark"] as const;
+const DIRECTIONS = ["ltr", "rtl"] as const;
+const LINE_WIDTH = 1;
+const COLOUR_TOLERANCE = 2;
+
+async function lineEnds(page: Page, group: Locator): Promise<LineEnds> {
+  await group.scrollIntoViewIfNeeded();
+  const top = (await boxOf(group)).y;
+  const { width } = viewportOf(page);
+  const strip = await page.screenshot({
+    clip: { x: 0, y: top, width, height: LINE_WIDTH },
+    animations: "disabled",
+    caret: "hide",
+  });
+  return page.evaluate(async (png) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${png}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.drawImage(image, 0, 0);
+    const row = Math.floor(image.height / 2);
+    const pixelAt = (column: number) => [
+      ...context.getImageData(column, row, 1, 1).data,
+    ];
+    return { start: pixelAt(0), end: pixelAt(image.width - 1) };
+  }, strip.toString("base64"));
+}
+
+function expectSameColour(
+  pixel: readonly number[],
+  colour: readonly number[],
+): void {
+  expect(pixel).toHaveLength(colour.length);
+  for (const [channel, value] of colour.entries()) {
+    expect(pixel[channel]).toBeGreaterThanOrEqual(value - COLOUR_TOLERANCE);
+    expect(pixel[channel]).toBeLessThanOrEqual(value + COLOUR_TOLERANCE);
+  }
+}
 
 function linesIn(page: Page): Promise<Lines> {
   return page.getByRole("main").evaluate((main, labelLength) => {
@@ -121,6 +192,51 @@ test.describe(
       expect(drawn.lined).toHaveLength(drawn.groups - 1);
       expectOnlyTheLine(drawn);
     });
+  },
+);
+
+test.describe(
+  "where the lines between settings groups sit on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({ backend: BACKEND });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android phone settings");
+    });
+
+    for (const theme of THEMES) {
+      for (const direction of DIRECTIONS) {
+        for (const { route, group } of EDGE_PROBES) {
+          test(`reaches both screen edges on ${route} without scrolling the page sideways, ${theme} and ${direction}`, async ({
+            page,
+          }) => {
+            await page.emulateMedia({ colorScheme: theme });
+            await page.goto(route);
+            await page.evaluate((dir) => {
+              document.documentElement.dir = dir;
+            }, direction);
+            await expect(group(page)).toHaveCSS("border-top-width", "1px");
+
+            const { start, end } = await lineEnds(page, group(page));
+            const separator = await pixelOf(
+              page,
+              await tokenColour(page, "--color-border"),
+            );
+            const main = await page
+              .getByRole("main")
+              .evaluate((element) => [
+                element.scrollWidth,
+                element.clientWidth,
+              ]);
+
+            expectSameColour(start, separator);
+            expectSameColour(end, separator);
+            expect(main[0]).toBe(main[1]);
+          });
+        }
+      }
+    }
   },
 );
 

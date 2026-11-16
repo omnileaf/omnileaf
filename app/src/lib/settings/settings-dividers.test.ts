@@ -60,6 +60,7 @@ for (const theme of THEMES) {
   test(`draws a 1px line in the separator colour 8px above a group that follows another group in the ${theme} theme`, async () => {
     await settingsPage("android", PHONE_WIDTH, theme);
 
+    const separator = resolvedColour("--color-border", "color");
     const style = getComputedStyle(block("second-group"));
     const gap =
       block("second-group").getBoundingClientRect().top -
@@ -67,8 +68,8 @@ for (const theme of THEMES) {
 
     expect(style.borderTopWidth).toBe(LINE);
     expect(style.borderTopStyle).toBe("solid");
-    expect(style.borderTopColor).toBe(
-      resolvedColour("--color-border", "color"),
+    expect(style.borderImageSource).toBe(
+      `linear-gradient(${separator}, ${separator})`,
     );
     expect(gap).toBeCloseTo(GAP_ABOVE_LINE, 1);
   });
