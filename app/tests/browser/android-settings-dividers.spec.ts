@@ -257,16 +257,16 @@ test.describe(
               page,
               await tokenColour(page, "--color-border"),
             );
-            const main = await page
+            const { scrollWidth, clientWidth } = await page
               .getByRole("main")
-              .evaluate((element) => [
-                element.scrollWidth,
-                element.clientWidth,
-              ]);
+              .evaluate((main) => ({
+                scrollWidth: main.scrollWidth,
+                clientWidth: main.clientWidth,
+              }));
 
             expectSameColour(start, separator);
             expectSameColour(end, separator);
-            expect(main[0]).toBe(main[1]);
+            expect(scrollWidth).toBe(clientWidth);
           });
         }
       }
