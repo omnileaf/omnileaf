@@ -371,90 +371,103 @@ fn heading_of<'a>(headings: &'a [Heading], id: &'a str) -> &'a str {
         .map_or(id, |heading| heading.heading.as_str())
 }
 
-fn contributors(fragments: &[Fragment]) -> Vec<&str> {
-    let mut logins: Vec<&str> = fragments
+fn contributors(fragments: &[Fragment]) -> Vec<String> {
+    let mut logins: Vec<String> = fragments
         .iter()
-        .flat_map(|fragment| fragment.credit.iter().map(String::as_str))
+        .flat_map(|fragment| fragment.credit.iter().cloned())
         .collect();
     logins.sort_unstable();
     logins.dedup();
     logins
 }
 
-fn headline<'a>(fragments_in_report_order: &'a [Fragment], config: &Config) -> Option<&'a str> {
-    fragments_in_report_order
-        .iter()
-        .find(|fragment| fragment.kind == config.headline)
-        .or_else(|| fragments_in_report_order.first())
-        .map(|fragment| fragment.summary.as_str())
+#[derive(Serialize)]
+struct Entry {
+    #[serde(rename = "type")]
+    kind: String,
+    area: String,
+    summary: String,
 }
 
-pub(crate) fn render_markdown(fragments: Vec<Fragment>, config: &Config) -> String {
-    let fragments = in_report_order(fragments, config);
-    let mut sections: Vec<String> = headline(&fragments, config)
-        .map(str::to_owned)
-        .into_iter()
-        .collect();
-    for kind in &config.types {
-        let lines: Vec<String> = fragments
-            .iter()
-            .filter(|fragment| fragment.kind == kind.id)
-            .map(|fragment| {
-                format!(
-                    "- **{}:** {}",
-                    heading_of(&config.areas, &fragment.area),
-                    fragment.summary
-                )
-            })
-            .collect();
-        if !lines.is_empty() {
-            sections.push(format!("## {}\n\n{}", kind.heading, lines.join("\n")));
+#[derive(Serialize)]
+struct Notes {
+    version: String,
+    entries: Vec<Entry>,
+}
+
+#[derive(Serialize)]
+struct CreditedNotes {
+    #[serde(flatten)]
+    notes: Notes,
+    contributors: Vec<String>,
+}
+
+impl CreditedNotes {
+    fn gather(version: &str, fragments: Vec<Fragment>, config: &Config) -> Self {
+        let fragments = in_report_order(fragments, config);
+        Self {
+            contributors: contributors(&fragments),
+            notes: Notes {
+                version: version.to_owned(),
+                entries: fragments
+                    .into_iter()
+                    .map(|fragment| Entry {
+                        kind: fragment.kind,
+                        area: fragment.area,
+                        summary: fragment.summary,
+                    })
+                    .collect(),
+            },
         }
     }
-    let credited = contributors(&fragments);
-    if !credited.is_empty() {
-        let handles: Vec<String> = credited.iter().map(|login| format!("@{login}")).collect();
-        sections.push(format!("Contributors: {}", handles.join(", ")));
-    }
-    if sections.is_empty() {
-        String::new()
-    } else {
-        sections.join("\n\n") + "\n"
-    }
-}
 
-#[derive(Serialize)]
-struct Entry<'a> {
-    #[serde(rename = "type")]
-    kind: &'a str,
-    area: &'a str,
-    summary: &'a str,
-}
-
-#[derive(Serialize)]
-struct Notes<'a> {
-    version: &'a str,
-    entries: Vec<Entry<'a>>,
-}
-
-pub(crate) fn render_json(
-    version: &str,
-    fragments: Vec<Fragment>,
-    config: &Config,
-) -> serde_json::Result<String> {
-    let fragments = in_report_order(fragments, config);
-    let notes = Notes {
-        version,
-        entries: fragments
+    fn headline(&self, config: &Config) -> Option<&str> {
+        let entries = &self.notes.entries;
+        entries
             .iter()
-            .map(|fragment| Entry {
-                kind: &fragment.kind,
-                area: &fragment.area,
-                summary: &fragment.summary,
-            })
-            .collect(),
-    };
-    serde_json::to_string_pretty(&notes).map(|json| json + "\n")
+            .find(|entry| entry.kind == config.headline)
+            .or_else(|| entries.first())
+            .map(|entry| entry.summary.as_str())
+    }
+
+    fn markdown(&self, config: &Config) -> String {
+        let mut sections: Vec<String> = self
+            .headline(config)
+            .map(str::to_owned)
+            .into_iter()
+            .collect();
+        for kind in &config.types {
+            let lines: Vec<String> = self
+                .notes
+                .entries
+                .iter()
+                .filter(|entry| entry.kind == kind.id)
+                .map(|entry| {
+                    format!(
+                        "- **{}:** {}",
+                        heading_of(&config.areas, &entry.area),
+                        entry.summary
+                    )
+                })
+                .collect();
+            if !lines.is_empty() {
+                sections.push(format!("## {}\n\n{}", kind.heading, lines.join("\n")));
+            }
+        }
+        if !self.contributors.is_empty() {
+            let handles: Vec<String> = self
+                .contributors
+                .iter()
+                .map(|login| format!("@{login}"))
+                .collect();
+            sections.push(format!("Contributors: {}", handles.join(", ")));
+        }
+        if sections.is_empty() {
+            String::new()
+        } else {
+            sections.join("\n\n") + "\n"
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -463,11 +476,7 @@ pub(crate) enum Format {
     Json,
 }
 
-pub(crate) fn notes(
-    folder: &Folder,
-    version: Option<&str>,
-    format: Format,
-) -> anyhow::Result<String> {
+fn valid_fragments(folder: &Folder) -> anyhow::Result<Vec<Fragment>> {
     let (fragments, violations) = read_fragments(folder);
     anyhow::ensure!(
         violations.is_empty(),
@@ -479,13 +488,22 @@ pub(crate) fn notes(
             .collect::<Vec<_>>()
             .join("\n")
     );
+    Ok(fragments)
+}
+
+pub(crate) fn notes(
+    folder: &Folder,
+    version: Option<&str>,
+    format: Format,
+) -> anyhow::Result<String> {
+    let notes = CreditedNotes::gather(
+        version.unwrap_or(UNRELEASED),
+        valid_fragments(folder)?,
+        &folder.config,
+    );
     match format {
-        Format::Markdown => Ok(render_markdown(fragments, &folder.config)),
-        Format::Json => Ok(render_json(
-            version.unwrap_or(UNRELEASED),
-            fragments,
-            &folder.config,
-        )?),
+        Format::Markdown => Ok(notes.markdown(&folder.config)),
+        Format::Json => Ok(serde_json::to_string_pretty(&notes.notes)? + "\n"),
     }
 }
 
@@ -601,6 +619,10 @@ mod tests {
                 .map(|(name, text)| ((*name).to_owned(), (*text).to_owned()))
                 .collect(),
         }
+    }
+
+    fn markdown_of(fragments: Vec<Fragment>) -> String {
+        CreditedNotes::gather(UNRELEASED, fragments, &config()).markdown(&config())
     }
 
     fn paths(paths: &[&str]) -> Vec<String> {
@@ -892,7 +914,7 @@ mod tests {
 
     #[test]
     fn groups_markdown_by_type_in_config_order_with_the_area_in_bold() {
-        let markdown = render_markdown(release(), &config());
+        let markdown = markdown_of(release());
 
         assert_eq!(
             markdown,
@@ -925,7 +947,7 @@ Contributors: @hubot, @octocat
             valid("feat", "reader", &[], "Pages turn faster."),
         ];
 
-        let markdown = render_markdown(fragments, &config());
+        let markdown = markdown_of(fragments);
 
         assert!(
             markdown.starts_with("Pages turn faster.\n\n## Security\n"),
@@ -940,7 +962,7 @@ Contributors: @hubot, @octocat
             valid("sec", "library", &[], "Archives stay inside."),
         ];
 
-        let markdown = render_markdown(fragments, &config());
+        let markdown = markdown_of(fragments);
 
         assert!(
             markdown.starts_with("Archives stay inside.\n\n## Security\n"),
@@ -959,7 +981,8 @@ Contributors: @hubot, @octocat
             valid("fix", "library", &[], "Scans finish."),
         ];
 
-        let markdown = render_markdown(fragments, &fix_first);
+        let markdown =
+            CreditedNotes::gather(UNRELEASED, fragments, &fix_first).markdown(&fix_first);
 
         assert!(
             markdown.starts_with("Scans finish.\n\n## New\n"),
@@ -979,14 +1002,14 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn leaves_out_a_type_nobody_used() {
-        let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
+        let markdown = markdown_of(vec![valid("fix", "reader", &[], "Done.")]);
 
         assert_eq!(markdown, "Done.\n\n## Fixed\n\n- **Reader:** Done.\n");
     }
 
     #[test]
     fn writes_no_contributors_line_without_credit() {
-        let markdown = render_markdown(vec![valid("fix", "reader", &[], "Done.")], &config());
+        let markdown = markdown_of(vec![valid("fix", "reader", &[], "Done.")]);
 
         assert!(!markdown.contains("Contributors"));
     }
@@ -998,7 +1021,7 @@ Contributors: @hubot, @octocat
             valid("fix", "library", &["octocat", "amy"], "Two."),
         ];
 
-        let markdown = render_markdown(fragments, &config());
+        let markdown = markdown_of(fragments);
 
         assert_eq!(
             markdown.lines().last(),
@@ -1008,12 +1031,14 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn writes_nothing_for_no_fragments() {
-        assert_eq!(render_markdown(Vec::new(), &config()), "");
+        assert_eq!(markdown_of(Vec::new()), "");
     }
 
     #[test]
     fn writes_json_entries_in_report_order_without_credit() {
-        let json = render_json("1.2.0", release(), &config()).unwrap();
+        let json =
+            serde_json::to_string(&CreditedNotes::gather("1.2.0", release(), &config()).notes)
+                .unwrap();
 
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(
