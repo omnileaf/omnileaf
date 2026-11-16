@@ -347,6 +347,27 @@ mod tests {
     }
 
     #[test]
+    fn reports_an_empty_archived_summary_without_naming_front_matter() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace("Scans finish.", ""),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation("1.2.0", Problem::EmptySummary)]
+        );
+        assert_eq!(
+            violations[0].to_string(),
+            ".changes/released/1.2.0.json: the summary is empty"
+        );
+    }
+
+    #[test]
     fn reports_an_archived_summary_that_is_not_one_line() {
         for summary in [
             "Scans finish.\\n- **Reader:** Pages turn.",

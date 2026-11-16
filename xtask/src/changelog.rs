@@ -172,7 +172,7 @@ impl fmt::Display for Problem {
             Self::BadPullRequest(value) => {
                 write!(formatter, "pr `{value}` must be a pull request number")
             }
-            Self::EmptySummary => write!(formatter, "the summary below the front matter is empty"),
+            Self::EmptySummary => write!(formatter, "the summary is empty"),
             Self::LongSummary(length) => write!(
                 formatter,
                 "the summary is {length} characters; keep it to {MAX_SUMMARY_CHARACTERS}"
