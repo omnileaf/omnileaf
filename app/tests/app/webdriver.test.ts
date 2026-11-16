@@ -328,10 +328,15 @@ test("passes over a match that is removed while it is checked", async () => {
   expect(await element.text()).toBe("About Version 1.2.3");
 });
 
+interface Replacement {
+  readonly requests?: string[];
+  readonly replacements?: readonly string[];
+}
+
 function serverReplacingItsElementOnce(
   staleRoute: string,
   answers: Readonly<Record<string, unknown>>,
-  requests: string[] = [],
+  { requests = [], replacements = ["new"] }: Replacement = {},
 ): Promise<URL> {
   let lookups = 0;
   return serve((route, response) => {
@@ -340,7 +345,12 @@ function serverReplacingItsElementOnce(
       reply(response, 200, { sessionId: "replaced" });
     } else if (route === "POST /session/replaced/elements") {
       lookups += 1;
-      reply(response, 200, [{ [ELEMENT_KEY]: lookups === 1 ? "old" : "new" }]);
+      const ids = lookups === 1 ? ["old"] : replacements;
+      reply(
+        response,
+        200,
+        ids.map((id) => ({ [ELEMENT_KEY]: id })),
+      );
     } else if (route.endsWith("/displayed")) {
       reply(response, 200, true);
     } else if (route === staleRoute) {
@@ -374,7 +384,7 @@ test("clicks the match that replaced one removed after it was found", async () =
     await serverReplacingItsElementOnce(
       "POST /session/replaced/element/old/click",
       { "POST /session/replaced/element/new/click": null },
-      requests,
+      { requests },
     ),
     {},
   );

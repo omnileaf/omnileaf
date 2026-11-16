@@ -81,6 +81,10 @@ export function xpath(value: string): Locator {
   return { using: "xpath", value };
 }
 
+function isStaleElement(error: unknown): boolean {
+  return error instanceof WebDriverError && error.code === STALE_ELEMENT;
+}
+
 function property(value: unknown, key: string): unknown {
   return isRecord(value) ? value[key] : undefined;
 }
@@ -443,9 +447,7 @@ export class Session {
       try {
         return await action(id);
       } catch (error) {
-        if (!(
-          error instanceof WebDriverError && error.code === STALE_ELEMENT
-        )) {
+        if (!isStaleElement(error)) {
           throw error;
         }
         id = await this.waitForId(locator, ELEMENT_TIMEOUT_MS);
@@ -480,7 +482,7 @@ export class Session {
       );
       return shown === true;
     } catch (error) {
-      if (error instanceof WebDriverError && error.code === STALE_ELEMENT) {
+      if (isStaleElement(error)) {
         return false;
       }
       throw error;
