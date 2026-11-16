@@ -1235,13 +1235,13 @@ test("remembers the library's tabs as they were set", async () => {
 });
 
 test("starts with the app lock off, waiting a minute", async () => {
-  const { backend } = backendFor();
+  const { backend } = backendFor("platform=android");
 
   expect(await backend.appLock()).toEqual(NEW_APP_LOCK);
 });
 
 test("keeps the app lock's delay and hiding content in recents once it is turned off again", async () => {
-  const { backend } = backendFor();
+  const { backend } = backendFor("platform=android");
   await backend.turnAppLockOn("Turn on app lock");
   await backend.chooseLockAfter("fiveMinutes");
   await backend.hideContentInRecents(true);
@@ -1252,6 +1252,16 @@ test("keeps the app lock's delay and hiding content in recents once it is turned
     ...NEW_APP_LOCK,
     lockAfter: "fiveMinutes",
     hidesContentInRecents: true,
+  });
+});
+
+test("offers no app lock off Android", async () => {
+  const { backend } = backendFor("platform=ios");
+
+  const reading = (async () => backend.appLock())();
+
+  await expect(reading).rejects.toMatchObject({
+    error: { code: "appLockUnavailable" },
   });
 });
 
