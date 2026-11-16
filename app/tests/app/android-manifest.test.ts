@@ -81,3 +81,10 @@ test("offers generic rar types where a provider or a share may report a comic ar
     );
   }
 });
+
+test("keeps the page open when Android's Bold text changes", async () => {
+  const manifest = await readFile(MANIFEST, "utf8");
+  const handled = /android:configChanges="([^"]*)"/.exec(manifest)?.[1] ?? "";
+
+  expect(handled.split("|")).toContain("fontWeightAdjustment");
+});
