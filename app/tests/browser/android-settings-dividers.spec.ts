@@ -1,7 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
+import type { SystemContrast } from "../../src/lib/ipc/bindings.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
+import type { FakeChannel } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
@@ -20,6 +22,8 @@ const BACKEND = {
   appLock: () => NEW_APP_LOCK,
   wallpaperColours: () => BLUE_WALLPAPER,
 };
+
+let contrasts: FakeChannel<SystemContrast> | undefined;
 
 const GAP_UNDER_CARD = 16;
 const LABEL_LENGTH = 40;
@@ -270,6 +274,50 @@ test.describe(
           });
         }
       }
+    }
+  },
+);
+
+test.describe(
+  "the line between settings groups at high Colour contrast on an Android phone",
+  { tag: "@native" },
+  () => {
+    test.use({
+      backend: {
+        ...BACKEND,
+        watchSystemContrast: (channel) => {
+          contrasts = channel;
+          return null;
+        },
+      },
+    });
+
+    test.beforeEach(({ platform }) => {
+      test.skip(platform !== "android", "Android phone settings");
+      contrasts = undefined;
+    });
+
+    for (const { route, group } of EDGE_PROBES) {
+      test(`colours the line on ${route} edge to edge in the settings rule colour`, async ({
+        page,
+      }) => {
+        await page.goto(route);
+        await expect.poll(() => contrasts).toBeDefined();
+        await contrasts?.send("high");
+        await expect(page.locator("html")).toHaveAttribute(
+          "data-contrast",
+          "high",
+        );
+
+        const { start, end } = await lineEnds(page, group(page));
+        const separator = await pixelOf(
+          page,
+          await tokenColour(page, "--native-color-settings-rule"),
+        );
+
+        expectSameColour(start, separator);
+        expectSameColour(end, separator);
+      });
     }
   },
 );
