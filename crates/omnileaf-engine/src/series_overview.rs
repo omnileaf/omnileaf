@@ -276,28 +276,48 @@ mod tests {
     const SECONDS_PER_PAGE: u32 = 12;
     const BOOKMARKED_BOOKS: u32 = 3;
 
+    fn catalog_overview() -> catalog::SeriesOverview {
+        catalog::SeriesOverview {
+            id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
+            title: "Sample Series 04".to_owned(),
+            file_title: "Sample Series 04".to_owned(),
+            title_source: None,
+            year: None,
+            language: None,
+            book_count: 8,
+            read_count: 2,
+            cover: None,
+            folder: None,
+            pages_left: Some(PAGES_LEFT),
+            is_rated_adult: false,
+            is_marked_adult: false,
+            bookmark_count: BOOKMARKED_BOOKS,
+            books_not_connected: 0,
+        }
+    }
+
     fn overview_with(pages_left: Option<u32>, seconds_per_page: Option<u32>) -> SeriesOverview {
         SeriesOverview::new(
             catalog::SeriesOverview {
-                id: omnileaf_sync_proto::SeriesId::local("Sample Series 04").unwrap(),
-                title: "Sample Series 04".to_owned(),
-                file_title: "Sample Series 04".to_owned(),
-                title_source: None,
-                year: None,
-                language: None,
-                book_count: 8,
-                read_count: 2,
-                cover: None,
-                folder: None,
                 pages_left,
-                is_rated_adult: false,
-                is_marked_adult: false,
-                bookmark_count: BOOKMARKED_BOOKS,
-                books_not_connected: 0,
+                ..catalog_overview()
             },
             None,
             seconds_per_page,
         )
+    }
+
+    fn connection_of(book_count: u32, books_not_connected: u32) -> SeriesConnection {
+        SeriesOverview::new(
+            catalog::SeriesOverview {
+                book_count,
+                books_not_connected,
+                ..catalog_overview()
+            },
+            None,
+            None,
+        )
+        .connection
     }
 
     fn sample_overview() -> SeriesOverview {
@@ -329,14 +349,14 @@ mod tests {
     }
 
     #[test]
-    fn counts_a_series_with_no_book_away_as_connected() {
-        assert_eq!(SeriesConnection::of(8, 0), SeriesConnection::Connected);
+    fn shows_a_series_with_every_book_connected_as_connected() {
+        assert_eq!(connection_of(8, 0), SeriesConnection::Connected);
     }
 
     #[test]
-    fn counts_a_series_with_some_books_away_as_partly_connected() {
+    fn shows_a_series_with_some_books_not_connected_as_partly_connected_with_their_count() {
         assert_eq!(
-            SeriesConnection::of(8, 3),
+            connection_of(8, 3),
             SeriesConnection::PartlyConnected {
                 books_not_connected: 3
             }
@@ -344,13 +364,13 @@ mod tests {
     }
 
     #[test]
-    fn counts_a_series_with_every_book_away_as_not_connected() {
-        assert_eq!(SeriesConnection::of(8, 8), SeriesConnection::NotConnected);
+    fn shows_a_series_with_every_book_not_connected_as_not_connected() {
+        assert_eq!(connection_of(8, 8), SeriesConnection::NotConnected);
     }
 
     #[test]
-    fn counts_a_series_with_no_books_as_connected() {
-        assert_eq!(SeriesConnection::of(0, 0), SeriesConnection::Connected);
+    fn shows_a_series_with_no_books_as_connected() {
+        assert_eq!(connection_of(0, 0), SeriesConnection::Connected);
     }
 
     #[test]
