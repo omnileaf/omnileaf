@@ -1,7 +1,6 @@
 package app.omnileaf
 
 import android.app.Activity
-import android.content.res.ColorStateList
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -9,12 +8,13 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.ColorRes
+import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.color.MaterialColors
 
 private const val GAP_DP = 16
 private const val ICON_DP = 72
@@ -56,14 +56,23 @@ internal class LockCover(
     ): Shown {
         val theme = RememberedTheme(activity).theme()
         val themed = ContextThemeWrapper(activity, theme.style())
-        val colours = theme.lockColours()
         val density = activity.resources.displayMetrics.density
         val gap = (GAP_DP * density).toInt()
         val iconSize = (ICON_DP * density).toInt()
         val title =
-            text(themed, words.title, com.google.android.material.R.style.TextAppearance_Material3_HeadlineSmall, colours.onSurface)
+            text(
+                themed,
+                words.title,
+                com.google.android.material.R.style.TextAppearance_Material3_HeadlineSmall,
+                com.google.android.material.R.attr.colorOnSurface,
+            )
         val body =
-            text(themed, words.body, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge, colours.onSurfaceMuted)
+            text(
+                themed,
+                words.body,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
+            )
         val column =
             LinearLayout(themed).apply {
                 orientation = LinearLayout.VERTICAL
@@ -77,7 +86,7 @@ internal class LockCover(
                 )
                 addView(title, spaced(gap))
                 addView(body, spaced(gap))
-                addView(unlockButton(themed, words, colours), spaced(gap * 2))
+                addView(unlockButton(themed, words), spaced(gap * 2))
             }
         val root =
             FrameLayout(themed).apply {
@@ -93,15 +102,10 @@ internal class LockCover(
     private fun unlockButton(
         themed: ContextThemeWrapper,
         words: LockWords,
-        colours: LockColours,
     ): MaterialButton =
         MaterialButton(themed).apply {
             text = words.unlock
             setIconResource(R.drawable.ic_lock)
-            backgroundTintList = ColorStateList.valueOf(activity.getColor(colours.primary))
-            val onPrimary = ColorStateList.valueOf(activity.getColor(colours.onPrimary))
-            setTextColor(onPrimary)
-            iconTint = onPrimary
             setOnClickListener { onUnlock() }
         }
 
@@ -109,12 +113,12 @@ internal class LockCover(
         themed: ContextThemeWrapper,
         words: String,
         @StyleRes appearance: Int,
-        @ColorRes colour: Int,
+        @AttrRes colour: Int,
     ): TextView =
         TextView(themed).apply {
             text = words
             setTextAppearance(appearance)
-            setTextColor(activity.getColor(colour))
+            setTextColor(MaterialColors.getColor(this, colour))
             gravity = Gravity.CENTER
         }
 

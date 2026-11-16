@@ -3,6 +3,8 @@ import { expect, test } from "vitest";
 import nativeColours from "../../../src-tauri/gen/android/app/src/main/res/values/colors.xml?raw";
 import themeCss from "../../theme.css?raw";
 
+const HEX = /^#[0-9a-f]{6}$/;
+
 const NATIVE_TO_PALETTE = {
   page_background: "window",
   primary: "primary",

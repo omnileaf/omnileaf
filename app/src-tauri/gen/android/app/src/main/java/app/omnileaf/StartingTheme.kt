@@ -51,30 +51,3 @@ internal fun StartingTheme.style(): Int =
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @StyleRes
 private fun StartingTheme.splashScreenStyle(): Int = if (this == StartingTheme.DEVICE) Resources.ID_NULL else style()
-
-internal data class LockColours(
-    @param:ColorRes val onSurface: Int,
-    @param:ColorRes val onSurfaceMuted: Int,
-    @param:ColorRes val primary: Int,
-    @param:ColorRes val onPrimary: Int,
-)
-
-internal fun StartingTheme.lockColours(): LockColours =
-    when (this) {
-        StartingTheme.DEVICE -> {
-            LockColours(R.color.on_surface, R.color.on_surface_muted, R.color.primary, R.color.on_primary)
-        }
-
-        StartingTheme.LIGHT -> {
-            LockColours(
-                R.color.on_surface_light,
-                R.color.on_surface_muted_light,
-                R.color.primary_light,
-                R.color.on_primary_light,
-            )
-        }
-
-        StartingTheme.DARK -> {
-            LockColours(R.color.on_surface_dark, R.color.on_surface_muted_dark, R.color.primary_dark, R.color.on_primary_dark)
-        }
-    }
