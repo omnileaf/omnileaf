@@ -11,7 +11,7 @@ class LockStateTest {
 
     @Test
     fun `covers a fresh start while the lock is on`() {
-        val covers = state.returned(isOn = true, LockAfter.ONE_HOUR)
+        val covers = state.returned(isOn = true, LockAfter.THIRTY_MINUTES)
 
         assertEquals(true, covers)
     }
@@ -68,7 +68,7 @@ class LockStateTest {
         state.returned(isOn = true, LockAfter.ONE_MINUTE)
         state.left(isStillInTheApp = false)
 
-        val covers = state.returned(isOn = true, LockAfter.ONE_HOUR)
+        val covers = state.returned(isOn = true, LockAfter.THIRTY_MINUTES)
 
         assertEquals(true, covers)
     }
@@ -110,7 +110,7 @@ class LockStateTest {
         state.openedOwnScreen()
         leaveFor(10 * MINUTE_MS)
 
-        val covers = state.returned(isOn = true, LockAfter.FIFTEEN_MINUTES)
+        val covers = state.returned(isOn = true, LockAfter.THIRTY_MINUTES)
 
         assertEquals(false, covers)
     }
