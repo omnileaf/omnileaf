@@ -328,7 +328,7 @@ test("passes over a match that is removed while it is checked", async () => {
   expect(await element.text()).toBe("About Version 1.2.3");
 });
 
-interface Replacement {
+interface ReplacingServerOptions {
   readonly requests?: string[];
   readonly replacements?: readonly string[];
 }
@@ -336,7 +336,7 @@ interface Replacement {
 function serverReplacingItsElementOnce(
   staleRoute: string,
   answers: Readonly<Record<string, unknown>>,
-  { requests = [], replacements = ["new"] }: Replacement = {},
+  { requests = [], replacements = ["new"] }: ReplacingServerOptions = {},
 ): Promise<URL> {
   let lookups = 0;
   return serve((route, response) => {
@@ -407,7 +407,7 @@ test("gives up a click on a match the page removed as it moved on", async () => 
   );
   const element = await session.waitFor(xpath("//a"));
 
-  await element.clickUnlessGone();
+  await element.clickUnlessStale();
 
   expect(
     requests.filter((route) => route === "POST /session/replaced/elements"),

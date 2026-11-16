@@ -38,7 +38,7 @@ async function stepTowardsTheLibrary(
   if (back === undefined) {
     await (await session.waitFor(LIBRARY_LINK)).click();
   } else {
-    await back.clickUnlessGone();
+    await back.clickUnlessStale();
   }
   return undefined;
 }

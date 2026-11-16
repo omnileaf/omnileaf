@@ -37,7 +37,7 @@ export interface WebElement {
   /** Collapses whitespace, since the desktop driver returns raw `textContent` where the standard returns rendered text. */
   text(): Promise<string>;
   click(): Promise<void>;
-  clickUnlessGone(): Promise<void>;
+  clickUnlessStale(): Promise<void>;
 }
 
 export class WebDriverError extends Error {
@@ -458,11 +458,11 @@ export class Session {
     return {
       text: () => use((element) => this.textOf(element)),
       click: () => use((element) => this.clickOn(element)),
-      clickUnlessGone: () => this.clickUnlessGone(id),
+      clickUnlessStale: () => this.clickUnlessStale(id),
     };
   }
 
-  private async clickUnlessGone(element: string): Promise<void> {
+  private async clickUnlessStale(element: string): Promise<void> {
     try {
       await this.clickOn(element);
     } catch (error) {
