@@ -64,7 +64,6 @@ test("lists every section in the order the Settings nav draws them", () => {
     "/(app)/settings/general",
     "/(app)/settings/appearance",
     "/(app)/settings/accessibility",
-    "/(app)/settings/navigation",
     "/(app)/settings/library",
     "/(app)/settings/reading",
     "/(app)/settings/privacy",
@@ -74,14 +73,14 @@ test("lists every section in the order the Settings nav draws them", () => {
   ]);
 });
 
-test("shows Navigation only on an Android phone", () => {
+test("shows Accessibility only on an Android phone", () => {
   const onOtherScreens = sectionsShown(SETTINGS_SECTIONS, false);
   const onAndroidPhones = sectionsShown(SETTINGS_SECTIONS, true);
 
   expect(onOtherScreens.map(({ route }) => route)).not.toContain(
-    "/(app)/settings/navigation",
+    "/(app)/settings/accessibility",
   );
   expect(onAndroidPhones.map(({ route }) => route)).toContain(
-    "/(app)/settings/navigation",
+    "/(app)/settings/accessibility",
   );
 });
