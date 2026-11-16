@@ -255,7 +255,7 @@ test.describe(
             const { start, end } = await lineEnds(page, group(page));
             const separator = await pixelOf(
               page,
-              await tokenColour(page, "--color-border"),
+              await tokenColour(page, "--native-color-settings-rule"),
             );
             const { scrollWidth, clientWidth } = await page
               .getByRole("main")

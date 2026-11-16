@@ -1572,9 +1572,12 @@
       :is([data-settings-group], [data-settings-end]) *
     ) {
     margin-block-start: var(--spacing-sm);
-    border-block-start: 1px solid var(--color-border);
-    border-image: linear-gradient(var(--color-border), var(--color-border)) 1 /
-      1px 0 0 / 0 100vw;
+    border-block-start: 1px solid var(--native-color-settings-rule);
+    border-image: linear-gradient(
+        var(--native-color-settings-rule),
+        var(--native-color-settings-rule)
+      )
+      1 / 1px 0 0 / 0 100vw;
   }
 }
 

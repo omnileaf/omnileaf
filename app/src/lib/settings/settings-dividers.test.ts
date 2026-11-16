@@ -5,7 +5,9 @@ import { render } from "vitest-browser-svelte";
 import "../../app.css";
 
 import { resolvedColour } from "../../../tests/components/resolved-colour";
+import { BLUE_WALLPAPER } from "../../../tests/sample-wallpaper";
 
+import { followWallpaperColours } from "#lib/appearance/wallpaper-colours.ts";
 import type { Platform } from "#lib/ipc/bindings.ts";
 import { followCorePlatform } from "#lib/page/platform.ts";
 
@@ -15,6 +17,7 @@ const PHONE_WIDTH = 390;
 const TABLET_WIDTH = 820;
 const HEIGHT = 800;
 const THEMES = ["light", "dark"] as const;
+const RAISED_CONTRASTS = ["medium", "high"] as const;
 const LINE = "1px";
 const NO_LINE = "0px";
 const GAP_ABOVE_LINE = 8;
@@ -42,7 +45,26 @@ function lineAbove(testId: string): string {
   return getComputedStyle(block(testId)).borderTopWidth;
 }
 
-afterEach(() => {
+function showBlueWallpaper(): Promise<void> {
+  return followWallpaperColours("android", "wallpaper", {
+    wallpaperColours: () =>
+      Promise.resolve({ status: "ok", data: BLUE_WALLPAPER }),
+    accentColours: () => Promise.resolve(null),
+  });
+}
+
+function expectLineInSettingsRule(testId: string): void {
+  const rule = resolvedColour("--native-color-settings-rule", "color");
+
+  const style = getComputedStyle(block(testId));
+
+  expect(style.borderTopColor).toBe(rule);
+  expect(style.borderImageSource).toBe(`linear-gradient(${rule}, ${rule})`);
+}
+
+afterEach(async () => {
+  await followWallpaperColours("android", "omnileaf");
+  delete document.documentElement.dataset.contrast;
   delete document.documentElement.dataset.platform;
   delete document.documentElement.dataset.theme;
   document.body.replaceChildren();
@@ -57,10 +79,9 @@ test("draws no line above a page's first group, after its opening note", async (
 });
 
 for (const theme of THEMES) {
-  test(`draws a 1px line in the separator colour 8px above a group that follows another group in the ${theme} theme`, async () => {
+  test(`draws a 1px line in the settings rule colour 8px above a group that follows another group in the ${theme} theme`, async () => {
     await settingsPage("android", PHONE_WIDTH, theme);
 
-    const separator = resolvedColour("--color-border", "color");
     const style = getComputedStyle(block("second-group"));
     const gap =
       block("second-group").getBoundingClientRect().top -
@@ -68,10 +89,26 @@ for (const theme of THEMES) {
 
     expect(style.borderTopWidth).toBe(LINE);
     expect(style.borderTopStyle).toBe("solid");
-    expect(style.borderImageSource).toBe(
-      `linear-gradient(${separator}, ${separator})`,
-    );
+    expectLineInSettingsRule("second-group");
     expect(gap).toBeCloseTo(GAP_ABOVE_LINE, 1);
+  });
+
+  for (const contrast of RAISED_CONTRASTS) {
+    test(`colours the line as the settings rule at ${contrast} Colour contrast in the ${theme} theme`, async () => {
+      document.documentElement.dataset.contrast = contrast;
+
+      await settingsPage("android", PHONE_WIDTH, theme);
+
+      expectLineInSettingsRule("second-group");
+    });
+  }
+
+  test(`colours the line as the settings rule with wallpaper Colours in the ${theme} theme`, async () => {
+    await showBlueWallpaper();
+
+    await settingsPage("android", PHONE_WIDTH, theme);
+
+    expectLineInSettingsRule("second-group");
   });
 }
 
