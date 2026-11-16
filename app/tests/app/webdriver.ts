@@ -37,6 +37,7 @@ export interface WebElement {
   /** Collapses whitespace, since the desktop driver returns raw `textContent` where the standard returns rendered text. */
   text(): Promise<string>;
   click(): Promise<void>;
+  clickUnlessStale(): Promise<void>;
 }
 
 export class WebDriverError extends Error {
@@ -79,6 +80,10 @@ class NotReadyError extends Error {
 
 export function xpath(value: string): Locator {
   return { using: "xpath", value };
+}
+
+function isStaleElement(error: unknown): boolean {
+  return error instanceof WebDriverError && error.code === STALE_ELEMENT;
 }
 
 function property(value: unknown, key: string): unknown {
@@ -443,9 +448,7 @@ export class Session {
       try {
         return await action(id);
       } catch (error) {
-        if (!(
-          error instanceof WebDriverError && error.code === STALE_ELEMENT
-        )) {
+        if (!isStaleElement(error)) {
           throw error;
         }
         id = await this.waitForId(locator, ELEMENT_TIMEOUT_MS);
@@ -455,7 +458,18 @@ export class Session {
     return {
       text: () => use((element) => this.textOf(element)),
       click: () => use((element) => this.clickOn(element)),
+      clickUnlessStale: () => this.clickUnlessStale(id),
     };
+  }
+
+  private async clickUnlessStale(element: string): Promise<void> {
+    try {
+      await this.clickOn(element);
+    } catch (error) {
+      if (!isStaleElement(error)) {
+        throw error;
+      }
+    }
   }
 
   private async findShown(locator: Locator): Promise<string | undefined> {
@@ -480,7 +494,7 @@ export class Session {
       );
       return shown === true;
     } catch (error) {
-      if (error instanceof WebDriverError && error.code === STALE_ELEMENT) {
+      if (isStaleElement(error)) {
         return false;
       }
       throw error;

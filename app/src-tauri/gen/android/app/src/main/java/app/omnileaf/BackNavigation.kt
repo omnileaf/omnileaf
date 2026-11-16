@@ -50,10 +50,22 @@ internal class BackNavigation(
     private val leaveTheApp: () -> Unit = {},
 ) : OnBackPressedCallback(false) {
     private var gestures: BackGestures? = null
+    private var canGoBack = false
+    private var isCovered = false
 
     /** Android plays its back-to-home preview only while no enabled callback would take the gesture. */
     fun followHistory(canGoBack: Boolean) {
-        isEnabled = canGoBack
+        this.canGoBack = canGoBack
+        takeBackWhenItCan()
+    }
+
+    fun followCover(isCovered: Boolean) {
+        this.isCovered = isCovered
+        takeBackWhenItCan()
+    }
+
+    private fun takeBackWhenItCan() {
+        isEnabled = canGoBack && !isCovered
     }
 
     fun watch(gestures: BackGestures) {

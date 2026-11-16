@@ -1,7 +1,9 @@
 import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 import type { Page, Locator } from "@playwright/test";
 
-test.use({ backend: { ...DEFAULT_BACKEND } });
+import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
+
+test.use({ backend: { ...DEFAULT_BACKEND, appLock: () => NEW_APP_LOCK } });
 
 const TITLE_BAR_HEIGHT = 44;
 const LANGUAGE_GAP = 8;
@@ -19,7 +21,11 @@ const PAGE_STARTS: readonly PageStart[] = [
   },
   {
     route: "/settings/privacy",
-    first: (page) => page.getByRole("link", { name: /Screenshot mode/ }),
+    first: (page) => page.getByRole("link", { name: /App lock/ }),
+  },
+  {
+    route: "/settings/privacy/app-lock",
+    first: (page) => page.getByRole("switch", { name: "Lock Omnileaf" }),
   },
   {
     route: "/settings/advanced",

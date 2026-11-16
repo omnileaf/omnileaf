@@ -203,12 +203,21 @@ export function shiftsOnHover(page: Page): Promise<string[]> {
   });
 }
 
+async function closeAndBlur(page: Page): Promise<void> {
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+}
+
 /** Opens each menu, list and popover on the screen and names whatever moves behind it, such as a page that loses its scrollbar. */
 export function shiftsOnOpening(page: Page): Promise<string[]> {
   return shiftsWhile(page, {
     controls: POPUP_TRIGGERS,
     verb: "opening",
     act: (control) => control.click({ timeout: ACTION_TIMEOUT_MS }),
-    undo: (shown) => shown.keyboard.press("Escape"),
+    undo: closeAndBlur,
   });
 }

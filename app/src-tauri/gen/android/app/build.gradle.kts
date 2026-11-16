@@ -94,6 +94,7 @@ rust {
 dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)

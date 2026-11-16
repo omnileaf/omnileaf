@@ -27,6 +27,7 @@ use tauri_specta::{Builder, Commands, collect_commands, collect_events};
 #[cfg(debug_assertions)]
 use crate::crash_reporting::developer_crashes;
 use crate::{
+    app_lock::{self, AppLock, AppLockTurning, LockAfter, LockWords},
     back_navigation, back_swipe,
     crash_reporting::{CrashReportOffer, CrashReporting},
     default_viewer::{self, DefaultViewer},
@@ -75,6 +76,12 @@ macro_rules! app_commands {
             watch_system_contrast,
             system_app_language,
             system_clock,
+            app_lock,
+            turn_app_lock_on,
+            turn_app_lock_off,
+            remember_app_lock_words,
+            choose_lock_after,
+            hide_content_in_recents,
             wallpaper_colours,
             accent_colours,
             capture_volume_keys,
@@ -475,6 +482,45 @@ async fn system_app_language(app: AppHandle) -> Result<SystemAppLanguage, IpcErr
 #[specta::specta]
 async fn system_clock(app: AppHandle) -> Result<SystemClock, IpcError> {
     system_clock::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn app_lock(app: AppHandle) -> Result<AppLock, IpcError> {
+    app_lock::read(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn turn_app_lock_on(
+    app: AppHandle,
+    prompt_title: String,
+) -> Result<AppLockTurning, IpcError> {
+    app_lock::turn_on(&app, &prompt_title).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remember_app_lock_words(app: AppHandle, words: LockWords) -> Result<(), IpcError> {
+    app_lock::remember_words(&app, words).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn turn_app_lock_off(app: AppHandle) -> Result<(), IpcError> {
+    app_lock::turn_off(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn choose_lock_after(app: AppHandle, lock_after: LockAfter) -> Result<(), IpcError> {
+    app_lock::choose_lock_after(&app, lock_after).await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn hide_content_in_recents(app: AppHandle, is_hidden: bool) -> Result<(), IpcError> {
+    app_lock::hide_content_in_recents(&app, is_hidden).await
 }
 
 #[tauri::command]

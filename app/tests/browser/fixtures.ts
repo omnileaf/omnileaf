@@ -229,6 +229,17 @@ export const DEFAULT_BACKEND: FakeBackend = {
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
   systemClock: () => "followsLanguage",
+  appLock: () => {
+    throw new CommandFailure({
+      code: "appLockUnavailable",
+      message: "the app lock isn't offered here",
+    });
+  },
+  turnAppLockOn: () => "turnedOn",
+  rememberAppLockWords: () => null,
+  turnAppLockOff: () => null,
+  chooseLockAfter: () => null,
+  hideContentInRecents: () => null,
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,
