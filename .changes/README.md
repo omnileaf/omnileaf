@@ -27,8 +27,9 @@ Sections now show as tabs on Android, so you can switch between them with one ta
 
 ## Commands
 
-- `cargo xtask changes check` checks every fragment against the rules above, and every released archive in `released/`: that its file name is a full release version such as `1.2.0.json`, that its version matches its file name, that it has at least one entry, that its entries and contributors follow the same rules as a fragment, and that `CHANGELOG.md` holds its `## 1.2.0` section as the release step wrote it.
+- `cargo xtask changes check` checks every fragment against the rules above, and every released archive in `released/`: that its file name is a full release version such as `1.2.0.json`, that its version matches its file name, that it has at least one entry, that its entries and contributors follow the same rules as a fragment, and that `CHANGELOG.md` holds exactly one `## 1.2.0` section, which matches the archive as `config.json` renders it.
 - `cargo xtask changes require --base origin/main` fails when your branch changes what people see and adds no fragment.
 - `cargo xtask changes notes --version 1.2.0 --format markdown` prints the release notes; `--format json` prints what the app's What's new notice bundles, which never holds a login. The Markdown starts with a headline line, the first summary of the `headline` type in `config.json` (`feat`) or, without one, the first entry, since the app's update banner shows the first line. A full release such as 1.2.0 is read from its archive, `released/1.2.0.json`, and fails when there is none; a pre-release such as 1.2.0-rc.1, or no `--version`, is read from the fragments in this folder, and a pre-release fails when there are none.
+- `cargo xtask changes changelog` rewrites each released version's `CHANGELOG.md` section from its archive, with the headings and type order in `config.json`.
 
-To add a type or an area, to change a heading or to pick the type that heads the notes, edit `config.json`.
+To add a type or an area, to change a heading or to pick the type that heads the notes, edit `config.json`. After changing a heading or the order of the types, run `cargo xtask changes changelog` so the released sections of `CHANGELOG.md` follow.
