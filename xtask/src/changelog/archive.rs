@@ -348,19 +348,29 @@ mod tests {
 
     #[test]
     fn reports_an_archived_summary_that_is_not_one_line() {
-        let scratch = scratch_repo(&[]);
-        archive(
-            &scratch,
-            "1.2.0",
-            &ARCHIVED_JSON.replace("Scans finish.", "Scans finish.\\n- **Reader:** Pages turn."),
-        );
+        for summary in [
+            "Scans finish.\\n- **Reader:** Pages turn.",
+            "Scans\\rfinish.",
+            "Scans\\tfinish.",
+            "Scans  finish.",
+            " Scans finish.",
+            "Scans finish. ",
+        ] {
+            let scratch = scratch_repo(&[]);
+            archive(
+                &scratch,
+                "1.2.0",
+                &ARCHIVED_JSON.replace("Scans finish.", summary),
+            );
 
-        let violations = check(scratch.path()).unwrap();
+            let violations = check(scratch.path()).unwrap();
 
-        assert_eq!(
-            violations,
-            [archive_violation("1.2.0", Problem::NotOneLine)]
-        );
+            assert_eq!(
+                violations,
+                [archive_violation("1.2.0", Problem::NotOneLine)],
+                "{summary:?}"
+            );
+        }
     }
 
     #[test]
