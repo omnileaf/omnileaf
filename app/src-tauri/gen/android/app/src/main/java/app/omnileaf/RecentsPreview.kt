@@ -24,7 +24,14 @@ internal fun Activity.colourRecentsCard(
                 .build(),
         )
     } else {
-        @Suppress("DEPRECATION")
-        setTaskDescription(ActivityManager.TaskDescription(null, null, background))
+        colourRecentsCardBeforeTiramisu(background)
     }
+}
+
+/** TaskDescription.Builder arrives in Android 13, so older versions take the deprecated constructor. */
+@Suppress("DEPRECATION")
+private fun Activity.colourRecentsCardBeforeTiramisu(
+    @ColorInt background: Int,
+) {
+    setTaskDescription(ActivityManager.TaskDescription(null, null, background))
 }
