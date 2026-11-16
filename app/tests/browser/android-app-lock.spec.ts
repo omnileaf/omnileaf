@@ -12,20 +12,16 @@ import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 const TABLET = { width: 820, height: 1180 };
 const DIMMED = "0.38";
 const DISABLED_TRACKS = [
-  [
-    false,
-    {
-      fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
-      border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
-    },
-  ],
-  [
-    true,
-    {
-      fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
-      border: "rgba(0, 0, 0, 0)",
-    },
-  ],
+  {
+    isHidden: false,
+    fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
+    border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
+  },
+  {
+    isHidden: true,
+    fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
+    border: "rgba(0, 0, 0, 0)",
+  },
 ] as const;
 const NOTE_GAP_PX = 16;
 
@@ -181,7 +177,7 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
   test("draws a disabled switch in the disabled colours, on and off", async ({
     page,
   }) => {
-    for (const [isHidden, colours] of DISABLED_TRACKS) {
+    for (const { isHidden, fill, border } of DISABLED_TRACKS) {
       lock = { ...NEW_APP_LOCK, hidesContentInRecents: isHidden };
       await openAppLock(page);
 
@@ -190,8 +186,8 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
         .last();
 
       await expect(hideContent(page)).toBeChecked({ checked: isHidden });
-      await expect(track).toHaveCSS("background-color", colours.fill);
-      await expect(track).toHaveCSS("border-top-color", colours.border);
+      await expect(track).toHaveCSS("background-color", fill);
+      await expect(track).toHaveCSS("border-top-color", border);
     }
   });
 
