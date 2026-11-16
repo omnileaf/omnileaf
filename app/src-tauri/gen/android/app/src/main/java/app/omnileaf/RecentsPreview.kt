@@ -3,15 +3,28 @@ package app.omnileaf
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Build
+import android.view.WindowManager
 import androidx.annotation.ColorInt
+import androidx.annotation.RequiresApi
 
-internal fun Activity.followRecentsChoice(choices: AppLockChoices) {
+internal fun Activity.protectRecents(isLockOn: Boolean) {
+    val protection = RecentsProtection.of(isLockOn, Build.VERSION.SDK_INT)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        setRecentsScreenshotEnabled(!(choices.isOn && choices.hidesContentInRecents))
+        showRecentsScreenshot(protection != RecentsProtection.PLAIN_CARD)
+    }
+    if (protection == RecentsProtection.SECURE_WINDOW) {
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    } else {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 }
 
-/** Android draws the recent apps card and its bar strips from the task description, else from the theme's primary. */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+private fun Activity.showRecentsScreenshot(isShown: Boolean) {
+    setRecentsScreenshotEnabled(isShown)
+}
+
+/** Android draws the recent apps card and its bar strips from the task description, else from the theme. */
 internal fun Activity.colourRecentsCard(
     @ColorInt background: Int,
 ) {

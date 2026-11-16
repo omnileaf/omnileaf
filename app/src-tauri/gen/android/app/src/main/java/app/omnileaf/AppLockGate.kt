@@ -22,8 +22,8 @@ internal class AppLockGate(
         get() = cover.isShown
 
     fun watch() {
-        activity.followRecentsChoice(choices)
-        recentsListener = choices.startFollowingRecentsChoice { activity.followRecentsChoice(choices) }
+        activity.protectRecents(choices.isOn)
+        recentsListener = choices.startFollowingIsOn(activity::protectRecents)
         activity.lifecycle.addObserver(this)
     }
 

@@ -20,11 +20,6 @@ class ConfirmingPrompt {
     lateinit var title: String
 }
 
-@InvokeArg
-class HiddenInRecents {
-    var isHidden: Boolean = false
-}
-
 internal enum class LockTurning(
     val id: String,
 ) {
@@ -51,9 +46,7 @@ class AppLockPlugin(
         invoke.resolve(
             JSObject()
                 .put("isOn", choices.isOn)
-                .put("lockAfter", choices.lockAfter.id)
-                .put("hidesContentInRecents", choices.hidesContentInRecents)
-                .put("canHideContentInRecents", choices.canHideContentInRecents),
+                .put("lockAfter", choices.lockAfter.id),
         )
     }
 
@@ -88,12 +81,6 @@ class AppLockPlugin(
     @Command
     fun chooseLockAfter(invoke: Invoke) {
         choices.chooseLockAfter(LockAfter.of(invoke.parseArgs(ChosenDelay::class.java).lockAfter))
-        invoke.resolve()
-    }
-
-    @Command
-    fun hideContentInRecents(invoke: Invoke) {
-        choices.hideContentInRecents(invoke.parseArgs(HiddenInRecents::class.java).isHidden)
         invoke.resolve()
     }
 
