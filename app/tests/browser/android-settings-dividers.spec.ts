@@ -180,6 +180,13 @@ const LINES_ABOVE: readonly LineAbove[] = [
     gap: GAP_ABOVE_LINE,
   },
   {
+    route: "/settings/advanced",
+    between: "Navigation and Undo",
+    above: (page) => page.getByRole("region", { name: "Navigation" }),
+    group: (page) => page.getByRole("region", { name: "Undo" }),
+    gap: GAP_ABOVE_LINE,
+  },
+  {
     route: "/settings/privacy/screenshot-mode",
     between: "the switches and Turn it on quickly",
     above: (page) => blockBefore(turnItOnQuickly(page)),
@@ -205,6 +212,7 @@ const LINES_ABOVE: readonly LineAbove[] = [
 const HEADINGS_ON_LINES = [
   { route: "/settings/accessibility", heading: "Motion and contrast" },
   { route: "/settings/advanced", heading: "Navigation" },
+  { route: "/settings/advanced", heading: "Undo" },
 ] as const;
 
 interface EdgeProbe {
