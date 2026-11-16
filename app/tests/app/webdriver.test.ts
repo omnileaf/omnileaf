@@ -395,6 +395,25 @@ test("clicks the match that replaced one removed after it was found", async () =
   expect(requests).toContain("POST /session/replaced/element/new/click");
 });
 
+test("gives up a click on a match the page removed as it moved on", async () => {
+  const requests: string[] = [];
+  const session = await Session.start(
+    await serverReplacingItsElementOnce(
+      "POST /session/replaced/element/old/click",
+      {},
+      { requests, replacements: [] },
+    ),
+    {},
+  );
+  const element = await session.waitFor(xpath("//a"));
+
+  await element.clickUnlessGone();
+
+  expect(
+    requests.filter((route) => route === "POST /session/replaced/elements"),
+  ).toHaveLength(1);
+});
+
 test("waits until a script run in the page says what it waits for holds", async () => {
   const FALSE_ANSWERS = 2;
   let runs = 0;
