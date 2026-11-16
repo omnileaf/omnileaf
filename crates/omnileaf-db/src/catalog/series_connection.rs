@@ -9,33 +9,48 @@ use crate::{
 const SOME_FOLDER_IS_MISSING: &str =
     "SELECT EXISTS (SELECT 1 FROM library_root WHERE unavailable_since_ms IS NOT NULL)";
 
-const IS_NOT_CONNECTED: &str = "SELECT
-    count(*) > 0 AND count(library_root.unavailable_since_ms) = count(*)
-    FROM series
-    JOIN book ON book.series_local_id = series.local_id
-    JOIN book_file ON book_file.book_id = book.id
-    JOIN library_root ON library_root.id = book_file.root_id
-    WHERE series.id = ?1";
+macro_rules! is_every_file_in_a_missing_folder {
+    () => {
+        "count(*) > 0 AND count(library_root.unavailable_since_ms) = count(*)"
+    };
+}
 
-macro_rules! is_every_file_away {
+macro_rules! join_file_folder {
+    () => {
+        " JOIN library_root ON library_root.id = book_file.root_id"
+    };
+}
+
+macro_rules! is_book_not_connected {
     ($book:literal) => {
         concat!(
-            "SELECT count(*) > 0 AND count(library_root.unavailable_since_ms) = count(*)
-            FROM book_file
-            JOIN library_root ON library_root.id = book_file.root_id
-            WHERE book_file.book_id = ",
+            "SELECT ",
+            is_every_file_in_a_missing_folder!(),
+            " FROM book_file",
+            join_file_folder!(),
+            " WHERE book_file.book_id = ",
             $book
         )
     };
 }
 
-const IS_BOOK_NOT_CONNECTED: &str = is_every_file_away!("?1");
+const IS_NOT_CONNECTED: &str = concat!(
+    "SELECT ",
+    is_every_file_in_a_missing_folder!(),
+    " FROM series
+    JOIN book ON book.series_local_id = series.local_id
+    JOIN book_file ON book_file.book_id = book.id",
+    join_file_folder!(),
+    " WHERE series.id = ?1"
+);
+
+const IS_BOOK_NOT_CONNECTED: &str = is_book_not_connected!("?1");
 
 const BOOKS_NOT_CONNECTED: &str = concat!(
     "SELECT count(*) FROM book
     WHERE book.series_local_id = (SELECT local_id FROM series WHERE id = ?1)
         AND (",
-    is_every_file_away!("book.id"),
+    is_book_not_connected!("book.id"),
     ")"
 );
 
