@@ -683,16 +683,18 @@ fn lines_with_offsets(text: &str) -> impl Iterator<Item = (usize, &str)> {
     })
 }
 
-fn is_heading_of(line: &str, version: &str) -> bool {
+fn release_heading_version(line: &str) -> Option<&str> {
     line.strip_prefix(SECTION_HEADING)
-        .and_then(|rest| rest.strip_prefix(version))
-        .is_some_and(|rest| rest.is_empty() || rest.starts_with(' '))
+        .and_then(|rest| rest.split(' ').next())
+        .filter(|word| is_version(word))
+}
+
+fn is_heading_of(line: &str, version: &str) -> bool {
+    release_heading_version(line) == Some(version)
 }
 
 fn is_release_heading(line: &str) -> bool {
-    line.strip_prefix(SECTION_HEADING)
-        .and_then(|rest| rest.split(' ').next())
-        .is_some_and(is_version)
+    release_heading_version(line).is_some()
 }
 
 fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
