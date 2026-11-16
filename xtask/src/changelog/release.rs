@@ -15,7 +15,7 @@ use super::{
 use crate::json;
 
 impl CreditedNotes {
-    pub(super) fn changelog_section(&self, config: &Config) -> String {
+    fn changelog_section(&self, config: &Config) -> String {
         format!(
             "{SECTION_HEADING}{}\n\n{}",
             self.notes.version,
@@ -28,7 +28,7 @@ impl CreditedNotes {
             .is_some_and(|section| changelog[section] == self.changelog_section(config))
     }
 
-    pub(super) fn rewrite_its_changelog_section(
+    fn rewrite_its_changelog_section(
         &self,
         changelog: &str,
         config: &Config,
