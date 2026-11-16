@@ -27,11 +27,13 @@ impl Folder {
 
     fn load_archive(&self, version: &str) -> anyhow::Result<Result<CreditedNotes, Problem>> {
         let shown = shown_archive_path(version);
-        let text = files::read_if_present(&self.archive_path(version))
+        let Some(text) = files::read_if_present(&self.archive_path(version))
             .with_context(|| format!("read {shown}"))?
-            .ok_or_else(|| anyhow::anyhow!(
-                    "{shown} is missing, so {version} has no release notes; run `cargo xtask changes release --version {version}` and commit the result before tagging"
-                ))?;
+        else {
+            anyhow::bail!(
+                "{shown} is missing, so {version} has no release notes; run `cargo xtask changes release --version {version}` and commit the result before tagging"
+            );
+        };
         Ok(self.parse_archive(version, &text))
     }
 
