@@ -381,6 +381,21 @@ async function probedColour(
   );
 }
 
+export async function pixelOf(page: Page, colour: string): Promise<number[]> {
+  return page.evaluate((value) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.fillStyle = value;
+    context.fillRect(0, 0, 1, 1);
+    return [...context.getImageData(0, 0, 1, 1).data];
+  }, colour);
+}
+
 export async function leaveAndComeBack(page: Page): Promise<void> {
   await page.evaluate(() => {
     for (const state of ["hidden", "visible"]) {
