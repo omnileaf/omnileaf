@@ -525,13 +525,18 @@ fn is_version_number(part: &str) -> bool {
         && (part == "0" || !part.starts_with('0'))
 }
 
+fn is_pre_release_identifier(identifier: &str) -> bool {
+    let is_numeric = identifier.bytes().all(|byte| byte.is_ascii_digit());
+    if is_numeric {
+        return is_version_number(identifier);
+    }
+    identifier
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+}
+
 fn is_pre_release_label(label: &str) -> bool {
-    label.split('.').all(|identifier| {
-        !identifier.is_empty()
-            && identifier
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
-    })
+    label.split('.').all(is_pre_release_identifier)
 }
 
 fn parse_version(version: &str) -> anyhow::Result<Version<'_>> {
@@ -1299,12 +1304,31 @@ Contributors: @hubot, @octocat
             "",
             "../1.2.0",
             "1.2.0-",
+            "1.2.0-rc.01",
+            "1.2.0-00",
         ] {
             let error = notes_in(&scratch, version, Format::Json).unwrap_err();
 
             assert!(
                 error.to_string().contains("not a version"),
                 "{version}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn takes_a_pre_release_label_with_a_zero_or_a_word_that_starts_with_one() {
+        let scratch = scratch_repo(&[(
+            "a.md",
+            &fragment_text("type: fix\narea: reader", "Not yet out."),
+        )]);
+
+        for version in ["1.2.0-rc.0", "1.2.0-0a.1"] {
+            let json = notes_in(&scratch, version, Format::Json).unwrap();
+
+            assert!(
+                json.contains(&format!("\"version\": \"{version}\"")),
+                "{json}"
             );
         }
     }
