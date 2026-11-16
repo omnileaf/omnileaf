@@ -26,8 +26,7 @@ impl Folder {
     }
 
     fn load_archive(&self, version: &str) -> anyhow::Result<Result<CreditedNotes, Problem>> {
-        let name = archive_name(version);
-        let shown = format!("{FOLDER}/{RELEASED}/{name}");
+        let shown = shown_archive_path(version);
         let text = files::read_if_present(&self.archive_path(version))
             .with_context(|| format!("read {shown}"))?
             .ok_or_else(|| anyhow::anyhow!(
@@ -101,8 +100,12 @@ impl CreditedNotes {
     }
 }
 
-pub(super) fn archive_name(version: &str) -> String {
+fn archive_name(version: &str) -> String {
     format!("{version}{ARCHIVE_EXTENSION}")
+}
+
+pub(super) fn shown_archive_path(version: &str) -> String {
+    format!("{FOLDER}/{RELEASED}/{}", archive_name(version))
 }
 
 pub(super) fn archive_violation(version: &str, problem: Problem) -> Violation {

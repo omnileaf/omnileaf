@@ -10,7 +10,7 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use self::{
-    archive::archive_name,
+    archive::shown_archive_path,
     version::{Version, parse_version},
 };
 use crate::{
@@ -643,8 +643,8 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
     let archive_path = folder.archive_path(version);
     anyhow::ensure!(
         !archive_path.exists(),
-        "{version} is already released in {FOLDER}/{RELEASED}/{}",
-        archive_name(version)
+        "{version} is already released in {}",
+        shown_archive_path(version)
     );
     let fragments = valid_fragments(folder)?;
     anyhow::ensure!(
@@ -675,9 +675,9 @@ fn write_release(root: &Path, release: &Release) -> anyhow::Result<()> {
         .with_context(|| format!("write {}", archive_path.display()))?;
     finish_release(root, release).with_context(|| {
         format!(
-            "{version} is half released: put it back with `git restore {CHANGELOG} {FOLDER}` and remove {FOLDER}/{RELEASED}/{archive}, then release it again",
+            "{version} is half released: put it back with `git restore {CHANGELOG} {FOLDER}` and remove {archive}, then release it again",
             version = release.version,
-            archive = archive_name(&release.version),
+            archive = shown_archive_path(&release.version),
         )
     })
 }
