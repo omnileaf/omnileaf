@@ -119,6 +119,8 @@ enum Fragments {
         #[arg(long)]
         version: String,
     },
+    /// Rewrite each released version's section of CHANGELOG.md from its archive in `.changes/released`, with the headings and type order in `.changes/config.json`.
+    Changelog,
 }
 
 #[derive(Subcommand)]
@@ -526,6 +528,7 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
             Ok(())
         }
         Fragments::Release { version } => changelog::release(&root, &version),
+        Fragments::Changelog => changelog::rewrite(&root),
     }
 }
 

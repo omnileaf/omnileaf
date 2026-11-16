@@ -11,7 +11,7 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use self::{
-    archive::shown_archive_path,
+    archive::{archive_violation, shown_archive_path},
     version::{Version, parse_version},
 };
 use crate::{
@@ -562,6 +562,23 @@ impl CreditedNotes {
         })
     }
 
+    fn rewrite_its_changelog_section(
+        &self,
+        changelog: &str,
+        config: &Config,
+    ) -> Result<String, Violation> {
+        let version = &self.notes.version;
+        let section = version_section(changelog, version)
+            .ok_or_else(|| archive_violation(version, Problem::NotInChangelog(version.clone())))?;
+        let old_text = changelog[section.clone()].trim_end_matches('\n');
+        Ok(format!(
+            "{}{}{}",
+            &changelog[..section.start],
+            self.changelog_section(config).trim_end_matches('\n'),
+            &changelog[section.start + old_text.len()..]
+        ))
+    }
+
     fn sections(&self, config: &Config) -> Vec<String> {
         let mut sections = Vec::new();
         for kind in &config.types {
@@ -764,6 +781,17 @@ pub(crate) fn release(root: &Path, version: &str) -> anyhow::Result<()> {
     let changelog = read_changelog(root)?;
     let release = plan_release(&folder, version, &changelog)?;
     write_release(root, &release)
+}
+
+pub(crate) fn rewrite(root: &Path) -> anyhow::Result<()> {
+    let folder = read_folder(root)?;
+    let mut changelog = read_changelog(root)?;
+    for version in folder.archived_versions()? {
+        let notes = folder.archived_notes(&version)?;
+        changelog = notes.rewrite_its_changelog_section(&changelog, &folder.config)?;
+    }
+    let path = root.join(CHANGELOG);
+    fs::write(&path, changelog).with_context(|| format!("write {}", path.display()))
 }
 
 fn is_user_facing(path: &str) -> bool {
@@ -1375,6 +1403,9 @@ Contributors: @hubot, @octocat
         "contributors": ["octocat"]
     }"#;
 
+    pub(super) const EMPTY_ARCHIVE_JSON: &str =
+        r#"{"version": "1.2.0", "entries": [], "contributors": []}"#;
+
     pub(super) fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
             &format!("{FOLDER}/{RELEASED}/{version}.json"),
@@ -1424,6 +1455,95 @@ Contributors: @hubot, @octocat
         let markdown = notes(scratch.path(), None, Format::Markdown).unwrap();
 
         assert_eq!(markdown, "");
+    }
+
+    fn rename_the_new_heading(scratch: &omnileaf_testkit::ScratchFolder) {
+        scratch.write(
+            &format!("{FOLDER}/{CONFIG}"),
+            CONFIG_JSON
+                .replace(r#""heading": "New""#, r#""heading": "What's new""#)
+                .as_bytes(),
+        );
+    }
+
+    fn changelog_in(scratch: &omnileaf_testkit::ScratchFolder) -> String {
+        fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap()
+    }
+
+    #[test]
+    fn reports_a_released_section_once_the_config_renames_its_heading() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
+        rename_the_new_heading(&scratch);
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            )]
+        );
+    }
+
+    #[test]
+    fn rewrites_each_released_section_from_its_archive() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        archive(&scratch, "1.1.0", &ARCHIVED_JSON.replace("1.2.0", "1.1.0"));
+        with_changelog(
+            &scratch,
+            &format!(
+                "{ARCHIVED_CHANGELOG}\n{}\n## 1.0.0\n\nWritten by hand.\n",
+                ARCHIVED_CHANGELOG
+                    .trim_start_matches("# Changelog\n\n")
+                    .replace("1.2.0", "1.1.0")
+            ),
+        );
+        rename_the_new_heading(&scratch);
+
+        rewrite(scratch.path()).unwrap();
+
+        assert_eq!(
+            changelog_in(&scratch),
+            "# Changelog\n\n## 1.2.0\n\n## What's new\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n\n## 1.1.0\n\n## What's new\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n\n## 1.0.0\n\nWritten by hand.\n"
+        );
+    }
+
+    #[test]
+    fn refuses_to_rewrite_a_version_without_one_changelog_section() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        let changelog = format!("{ARCHIVED_CHANGELOG}\n## 1.2.0\n\nAn older draft.\n");
+        with_changelog(&scratch, &changelog);
+
+        let error = rewrite(scratch.path()).unwrap_err();
+
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation(
+                "1.2.0",
+                Problem::NotInChangelog("1.2.0".to_owned())
+            ))
+        );
+        assert_eq!(changelog_in(&scratch), changelog);
+    }
+
+    #[test]
+    fn refuses_to_rewrite_from_a_bad_archive() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", EMPTY_ARCHIVE_JSON);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
+
+        let error = rewrite(scratch.path()).unwrap_err();
+
+        assert_eq!(
+            error.downcast_ref::<Violation>(),
+            Some(&archive_violation("1.2.0", Problem::NoEntries))
+        );
+        assert_eq!(changelog_in(&scratch), ARCHIVED_CHANGELOG);
     }
 
     #[test]

@@ -48,7 +48,7 @@ impl Folder {
         Ok(notes)
     }
 
-    fn archived_versions(&self) -> anyhow::Result<Vec<String>> {
+    pub(super) fn archived_versions(&self) -> anyhow::Result<Vec<String>> {
         let released = self.released();
         let entries = match fs::read_dir(&released) {
             Ok(entries) => entries,
@@ -126,12 +126,10 @@ mod tests {
     use crate::changelog::{
         CHANGELOG, Format, check, release,
         tests::{
-            ARCHIVED_CHANGELOG, ARCHIVED_JSON, archive, fragment_text, notes_in, scratch_repo,
-            with_changelog,
+            ARCHIVED_CHANGELOG, ARCHIVED_JSON, EMPTY_ARCHIVE_JSON, archive, fragment_text,
+            notes_in, scratch_repo, with_changelog,
         },
     };
-
-    const EMPTY_ARCHIVE_JSON: &str = r#"{"version": "1.2.0", "entries": [], "contributors": []}"#;
 
     #[test]
     fn takes_the_notes_of_a_released_version_from_its_archive() {
