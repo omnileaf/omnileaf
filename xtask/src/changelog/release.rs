@@ -1,5 +1,6 @@
 use std::{
-    fs, io,
+    collections::HashSet,
+    fmt, fs, io,
     ops::Range,
     path::{Path, PathBuf},
 };
@@ -7,8 +8,8 @@ use std::{
 use anyhow::Context;
 
 use super::{
-    CHANGELOG, Config, CreditedNotes, ENTRY_MARK, FOLDER, Folder, Problem, SECTION_HEADING,
-    Violation,
+    CHANGELOG, Config, CreditedNotes, ENTRY_AREA_END, ENTRY_MARK, FOLDER, Folder, Problem,
+    SECTION_HEADING, Violation,
     archive::{archive_violation, shown_archive_path},
     read_folder,
     version::{Version, is_version, parse_version},
@@ -204,13 +205,101 @@ pub(crate) fn release(root: &Path, version: &str) -> anyhow::Result<()> {
     write_release(root, &release)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct DroppedHeading {
+    line_number: usize,
+    line: String,
+}
+
+impl fmt::Display for DroppedHeading {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "rewriting {CHANGELOG} would drop line {}, `{}`, which reads as part of the released section above it; nothing was written",
+            self.line_number, self.line
+        )
+    }
+}
+
+impl std::error::Error for DroppedHeading {}
+
+fn entry_summary(line: &str) -> Option<&str> {
+    line.strip_prefix(ENTRY_MARK)?
+        .split_once(ENTRY_AREA_END)
+        .map(|(_, summary)| summary)
+}
+
+fn heads_archived_entries(lines_below: &[&str], archived_summaries: &HashSet<&str>) -> bool {
+    let mut entries = lines_below
+        .iter()
+        .skip_while(|line| line.is_empty())
+        .take_while(|line| line.starts_with(ENTRY_MARK))
+        .peekable();
+    entries.peek().is_some()
+        && entries.all(|line| {
+            entry_summary(line).is_some_and(|summary| archived_summaries.contains(summary))
+        })
+}
+
+fn headings_not_rendered_from_an_archive<'a>(
+    changelog: &'a str,
+    archived_summaries: &HashSet<&str>,
+) -> Vec<(usize, &'a str)> {
+    let lines: Vec<&str> = changelog.lines().map(str::trim_end).collect();
+    let mut headings = Vec::new();
+    let mut rest = lines.as_slice();
+    let mut line_number = 0;
+    while let Some((&line, lines_below)) = rest.split_first() {
+        line_number += 1;
+        if line.starts_with(SECTION_HEADING)
+            && !heads_archived_entries(lines_below, archived_summaries)
+        {
+            headings.push((line_number, line));
+        }
+        rest = lines_below;
+    }
+    headings
+}
+
+fn ensure_every_heading_kept(
+    before: &str,
+    after: &str,
+    archived_summaries: &HashSet<&str>,
+) -> Result<(), DroppedHeading> {
+    let mut kept: Vec<&str> = headings_not_rendered_from_an_archive(after, archived_summaries)
+        .into_iter()
+        .map(|(_, line)| line)
+        .collect();
+    for (line_number, line) in headings_not_rendered_from_an_archive(before, archived_summaries) {
+        let Some(at) = kept.iter().position(|heading| *heading == line) else {
+            return Err(DroppedHeading {
+                line_number,
+                line: line.to_owned(),
+            });
+        };
+        kept.remove(at);
+    }
+    Ok(())
+}
+
 pub(crate) fn rewrite(root: &Path) -> anyhow::Result<()> {
     let folder = read_folder(root)?;
-    let mut changelog = read_changelog(root)?;
-    for version in folder.archived_versions()? {
-        let notes = folder.archived_notes(&version)?;
+    let before = read_changelog(root)?;
+    let archived = folder
+        .archived_versions()?
+        .iter()
+        .map(|version| folder.archived_notes(version))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    let mut changelog = before.clone();
+    for notes in &archived {
         changelog = notes.rewrite_its_changelog_section(&changelog, &folder.config)?;
     }
+    let archived_summaries = archived
+        .iter()
+        .flat_map(|notes| &notes.notes.entries)
+        .map(|entry| entry.summary.as_str())
+        .collect();
+    ensure_every_heading_kept(&before, &changelog, &archived_summaries)?;
     write_changelog(root, &changelog)
 }
 
@@ -310,6 +399,52 @@ mod tests {
             changelog_in(&scratch),
             "# Changelog\n\n## 1.2.0\n\n## What's new\n\n- **Reader:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n\n## Older releases\n\nSee the git history.\n"
         );
+    }
+
+    #[test]
+    fn rewrites_a_released_section_once_the_config_renames_both_its_type_and_area() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        with_changelog(&scratch, ARCHIVED_CHANGELOG);
+        scratch.write(
+            &format!("{FOLDER}/{CONFIG}"),
+            CONFIG_JSON
+                .replace(r#""heading": "New""#, r#""heading": "What's new""#)
+                .replace(r#""heading": "Reader""#, r#""heading": "Reading""#)
+                .as_bytes(),
+        );
+
+        rewrite(scratch.path()).unwrap();
+
+        assert_eq!(
+            changelog_in(&scratch),
+            "# Changelog\n\n## 1.2.0\n\n## What's new\n\n- **Reading:** Pages turn faster.\n\n## Fixed\n\n- **Library:** Scans finish.\n\nContributors: @octocat\n"
+        );
+    }
+
+    #[test]
+    fn refuses_to_rewrite_over_a_heading_with_entries_below_the_last_release() {
+        let scratch = scratch_repo(&[]);
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+        let changelog = format!(
+            "{ARCHIVED_CHANGELOG}\n## Older releases\n\n- **Library:** Folders open again.\n"
+        );
+        with_changelog(&scratch, &changelog);
+
+        let error = rewrite(scratch.path()).unwrap_err();
+
+        assert_eq!(
+            error.downcast_ref::<DroppedHeading>(),
+            Some(&DroppedHeading {
+                line_number: 15,
+                line: "## Older releases".to_owned(),
+            })
+        );
+        assert_eq!(
+            error.to_string(),
+            "rewriting CHANGELOG.md would drop line 15, `## Older releases`, which reads as part of the released section above it; nothing was written"
+        );
+        assert_eq!(changelog_in(&scratch), changelog);
     }
 
     #[test]
