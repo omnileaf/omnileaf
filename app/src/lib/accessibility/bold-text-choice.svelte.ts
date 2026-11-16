@@ -22,10 +22,6 @@ export class BoldTextChoice {
     return this.#chosen ?? this.system;
   }
 
-  get hasChoice(): boolean {
-    return this.#chosen !== undefined;
-  }
-
   markDocument(): void {
     followBoldText(this.isBold);
   }

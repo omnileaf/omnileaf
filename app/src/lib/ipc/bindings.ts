@@ -31,7 +31,7 @@ export const commands = {
 	turnAppLockOff: () => typedError<null, IpcError>(__TAURI_INVOKE("turn_app_lock_off")),
 	rememberAppLockWords: (words: LockWords) => typedError<null, IpcError>(__TAURI_INVOKE("remember_app_lock_words", { words })),
 	chooseLockAfter: (lockAfter: LockAfter) => typedError<null, IpcError>(__TAURI_INVOKE("choose_lock_after", { lockAfter })),
-	systemBoldText: () => typedError<boolean, IpcError>(__TAURI_INVOKE("system_bold_text")),
+	watchSystemBoldText: (onChange: Channel<boolean>) => typedError<null, IpcError>(__TAURI_INVOKE("watch_system_bold_text", { onChange })),
 	wallpaperColours: () => typedError<{
 	light: ColourRoles,
 	dark: ColourRoles,
