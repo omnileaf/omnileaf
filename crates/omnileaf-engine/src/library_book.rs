@@ -9,6 +9,10 @@ use crate::{
     ipc_brand::branded_string,
 };
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each is a fact of its own about the book"
+)]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SeriesBook {
