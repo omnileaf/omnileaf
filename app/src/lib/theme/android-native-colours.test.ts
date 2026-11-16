@@ -32,6 +32,10 @@ test.each(Object.entries(NATIVE_TO_PALETTE))(
   (native, palette) => {
     const [light, dark] = paletteColours(palette);
 
+    expect([light, dark]).toEqual([
+      expect.stringMatching(HEX),
+      expect.stringMatching(HEX),
+    ]);
     expect([
       nativeColour(`${native}_light`),
       nativeColour(`${native}_dark`),
