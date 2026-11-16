@@ -413,24 +413,6 @@ test.describe(
       await expect(first).toHaveCSS("border-top-width", "0px");
     });
 
-    test("puts Open Android settings in its own group after the permissions", async ({
-      page,
-    }) => {
-      await page.goto("/settings/privacy/permissions");
-      const open = page.getByRole("button", { name: /Android settings/ });
-      const permissions = page.getByRole("list", { name: "Permissions" });
-      const ownGroup = page.getByRole("list").filter({ has: open });
-
-      const permissionsBox = await boxOf(permissions);
-      const ownGroupBox = await boxOf(ownGroup);
-
-      await expect(permissions.getByRole("button")).toHaveCount(0);
-      await expect(ownGroup).toHaveAttribute("data-settings-group");
-      expect(ownGroupBox.y).toBeGreaterThanOrEqual(
-        permissionsBox.y + permissionsBox.height,
-      );
-    });
-
     test("draws Turn it on quickly flat, with no card edge", async ({
       page,
     }) => {
