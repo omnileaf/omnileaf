@@ -119,6 +119,7 @@ pub(crate) enum Problem {
     EmptySummary,
     LongSummary(usize),
     EmDash,
+    NotOneLine,
     MalformedArchive(String),
     OtherVersion(String),
     NoEntries,
@@ -182,6 +183,9 @@ impl fmt::Display for Problem {
                 formatter,
                 "the summary holds an em-dash; use a comma or a full stop"
             ),
+            Self::NotOneLine => {
+                write!(formatter, "the summary must be one line with single spaces")
+            }
             Self::MalformedArchive(error) => {
                 write!(formatter, "the archive is not release notes JSON: {error}")
             }
@@ -240,10 +244,7 @@ fn split_front_matter(text: &str) -> Result<(Vec<&str>, String), Problem> {
     for line in lines.by_ref() {
         if line.trim_end() == FRONT_MATTER_FENCE {
             let summary = lines.collect::<Vec<_>>().join(" ");
-            return Ok((
-                front_matter,
-                summary.split_whitespace().collect::<Vec<_>>().join(" "),
-            ));
+            return Ok((front_matter, single_spaced(&summary)));
         }
         front_matter.push(line);
     }
@@ -326,9 +327,20 @@ pub(crate) fn parse(name: &str, text: &str, config: &Config) -> Result<Fragment,
     })
 }
 
+fn single_spaced(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn is_one_line(summary: &str) -> bool {
+    single_spaced(summary) == summary
+}
+
 fn check_summary(summary: &str) -> Result<(), Problem> {
     if summary.is_empty() {
         return Err(Problem::EmptySummary);
+    }
+    if !is_one_line(summary) {
+        return Err(Problem::NotOneLine);
     }
     let length = summary.chars().count();
     if length > MAX_SUMMARY_CHARACTERS {
@@ -1532,6 +1544,23 @@ Contributors: @hubot, @octocat
         let violations = check(scratch.path()).unwrap();
 
         assert_eq!(violations, [archive_violation("1.2.0", Problem::NoEntries)]);
+    }
+
+    #[test]
+    fn reports_an_archived_summary_that_is_not_one_line() {
+        let scratch = scratch_repo(&[]);
+        archive(
+            &scratch,
+            "1.2.0",
+            &ARCHIVED_JSON.replace("Scans finish.", "Scans finish.\\n- **Reader:** Pages turn."),
+        );
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [archive_violation("1.2.0", Problem::NotOneLine)]
+        );
     }
 
     #[test]
