@@ -7,7 +7,9 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  pixelAt,
   pixelOf,
+  screenshotPixels,
   test,
   tokenColour,
   viewportOf,
@@ -132,29 +134,17 @@ async function lineEnds(page: Page, group: Locator): Promise<LineEnds> {
   await group.scrollIntoViewIfNeeded();
   const top = (await boxOf(group)).y;
   const { width } = viewportOf(page);
-  const strip = await page.screenshot({
-    clip: { x: 0, y: top, width, height: LINE_WIDTH },
-    animations: "disabled",
-    caret: "hide",
+  const strip = await screenshotPixels(page, {
+    x: 0,
+    y: top,
+    width,
+    height: LINE_WIDTH,
   });
-  return page.evaluate(async (png) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${png}`;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (context === null) {
-      throw new Error("no 2d canvas");
-    }
-    context.drawImage(image, 0, 0);
-    const row = Math.floor(image.height / 2);
-    const pixelAt = (column: number) => [
-      ...context.getImageData(column, row, 1, 1).data,
-    ];
-    return { start: pixelAt(0), end: pixelAt(image.width - 1) };
-  }, strip.toString("base64"));
+  const row = Math.floor(strip.height / 2);
+  return {
+    start: pixelAt(strip, 0, row),
+    end: pixelAt(strip, strip.width - 1, row),
+  };
 }
 
 function expectSameColour(

@@ -396,6 +396,42 @@ export async function pixelOf(page: Page, colour: string): Promise<number[]> {
   }, colour);
 }
 
+const RGBA_CHANNELS = 4;
+
+export interface Pixels {
+  readonly width: number;
+  readonly height: number;
+  readonly rgba: readonly number[];
+}
+
+export async function screenshotPixels(page: Page, clip: Box): Promise<Pixels> {
+  const png = await page.screenshot({
+    clip,
+    animations: "disabled",
+    caret: "hide",
+  });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) {
+      throw new Error("no 2d canvas");
+    }
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, image.width, image.height);
+    return { width: image.width, height: image.height, rgba: [...data] };
+  }, png.toString("base64"));
+}
+
+export function pixelAt(pixels: Pixels, x: number, y: number): number[] {
+  const start = (y * pixels.width + x) * RGBA_CHANNELS;
+  return pixels.rgba.slice(start, start + RGBA_CHANNELS);
+}
+
 export async function leaveAndComeBack(page: Page): Promise<void> {
   await page.evaluate(() => {
     for (const state of ["hidden", "visible"]) {
