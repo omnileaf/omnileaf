@@ -385,6 +385,13 @@ impl Folder {
         );
         Ok(notes)
     }
+
+    fn fragment_paths(&self) -> Vec<PathBuf> {
+        self.files
+            .iter()
+            .map(|(name, _)| self.path.join(name))
+            .collect()
+    }
 }
 
 fn read_folder(root: &Path) -> anyhow::Result<Folder> {
@@ -620,7 +627,7 @@ struct Release {
     archive_path: PathBuf,
     archive: String,
     changelog: String,
-    used: Vec<String>,
+    used: Vec<PathBuf>,
 }
 
 fn insert_above_the_first_section(changelog: &str, section: &str) -> String {
@@ -661,7 +668,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         archive_path,
         archive: json::pretty(&notes)?,
         changelog: insert_above_the_first_section(changelog, &section),
-        used: folder.files.iter().map(|(name, _)| name.clone()).collect(),
+        used: folder.fragment_paths(),
     })
 }
 
@@ -686,9 +693,8 @@ fn finish_release(root: &Path, release: &Release) -> anyhow::Result<()> {
     let changelog_path = root.join(CHANGELOG);
     fs::write(&changelog_path, &release.changelog)
         .with_context(|| format!("write {}", changelog_path.display()))?;
-    for name in &release.used {
-        let path = root.join(FOLDER).join(name);
-        fs::remove_file(&path).with_context(|| format!("remove {}", path.display()))?;
+    for path in &release.used {
+        fs::remove_file(path).with_context(|| format!("remove {}", path.display()))?;
     }
     Ok(())
 }
