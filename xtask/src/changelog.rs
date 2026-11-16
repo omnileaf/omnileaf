@@ -860,6 +860,7 @@ pub(crate) fn changed_since_merge_base(root: &Path, base: &str) -> anyhow::Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::changelog::archive::archive_name;
 
     const CONFIG_JSON: &str = r#"{
         "headline": "feat",
@@ -1407,7 +1408,7 @@ Contributors: @hubot, @octocat
 
     pub(super) fn archive(scratch: &omnileaf_testkit::ScratchFolder, version: &str, json: &str) {
         scratch.write(
-            &format!("{FOLDER}/{RELEASED}/{version}.json"),
+            &format!("{FOLDER}/{RELEASED}/{}", archive_name(version)),
             json.as_bytes(),
         );
     }
@@ -1584,7 +1585,7 @@ Contributors: @hubot, @octocat
             .path()
             .join(FOLDER)
             .join(RELEASED)
-            .join(format!("{version}.json"))
+            .join(archive_name(version))
     }
 
     #[test]
@@ -1656,7 +1657,7 @@ Contributors: @hubot, @octocat
         release(scratch.path(), "1.2.0").unwrap();
 
         assert_eq!(
-            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            changelog_in(&scratch),
             "# Changelog\n\nWhat changed.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** The page stays put.\n\n## 1.1.0\n\nOlder.\n"
         );
     }
@@ -1672,7 +1673,7 @@ Contributors: @hubot, @octocat
         release(scratch.path(), "1.2.0").unwrap();
 
         assert_eq!(
-            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            changelog_in(&scratch),
             "# Changelog\n\nEach release has a `## ` heading.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 1.1.0\n\nOlder.\n"
         );
     }
@@ -1702,7 +1703,7 @@ Contributors: @hubot, @octocat
         release(scratch.path(), "1.2.0").unwrap();
 
         assert_eq!(
-            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            changelog_in(&scratch),
             "## 1.2.0\n\n## Fixed\n\n- **Reader:** Done.\n\n## 1.1.0\n\nOlder.\n"
         );
     }
@@ -1715,7 +1716,7 @@ Contributors: @hubot, @octocat
         release(scratch.path(), "1.0.0").unwrap();
 
         assert_eq!(
-            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            changelog_in(&scratch),
             "# Changelog\n\nWhat changed.\n\n## 1.0.0\n\n## Fixed\n\n- **Reader:** Done.\n"
         );
     }
@@ -1781,10 +1782,7 @@ Contributors: @hubot, @octocat
                     "CHANGELOG.md already has a section for 0.1.0; remove `{heading}` and its notes, then release 0.1.0 again"
                 )
             );
-            assert_eq!(
-                fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
-                changelog
-            );
+            assert_eq!(changelog_in(&scratch), changelog);
             assert!(!released_file(&scratch, "0.1.0").exists());
         }
     }

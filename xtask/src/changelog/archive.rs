@@ -105,7 +105,7 @@ impl CreditedNotes {
     }
 }
 
-fn archive_name(version: &str) -> String {
+pub(super) fn archive_name(version: &str) -> String {
     format!("{version}{ARCHIVE_EXTENSION}")
 }
 
