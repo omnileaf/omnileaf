@@ -22,7 +22,7 @@ const GAP_ABOVE_LINE = 8;
 async function settingsPage(
   platform: Platform,
   width: number,
-  theme = "light",
+  theme: (typeof THEMES)[number] = "light",
 ): Promise<void> {
   document.documentElement.dataset.theme = theme;
   followCorePlatform(platform);
