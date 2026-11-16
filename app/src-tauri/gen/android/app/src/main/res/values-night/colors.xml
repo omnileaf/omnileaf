@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="page_background">@color/page_background_dark</color>
+    <color name="primary">@color/primary_dark</color>
+    <color name="on_primary">@color/on_primary_dark</color>
+    <color name="on_surface">@color/on_surface_dark</color>
+    <color name="on_surface_muted">@color/on_surface_muted_dark</color>
     <color name="shortcut_icon">@color/shortcut_icon_dark</color>
 </resources>
