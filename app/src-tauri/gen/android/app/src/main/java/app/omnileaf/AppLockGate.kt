@@ -1,6 +1,7 @@
 package app.omnileaf
 
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.FragmentActivity
@@ -17,6 +18,7 @@ internal class AppLockGate(
     private val prompt = LockPrompt()
     private var keepsBackOut: OnBackPressedCallback? = null
     private var recentsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private var drawnFor = Configuration(activity.resources.configuration)
 
     val isCovering: Boolean
         get() = cover.isShown
@@ -25,6 +27,12 @@ internal class AppLockGate(
         activity.protectRecents(choices.isOn)
         recentsListener = choices.startFollowingIsOn(activity::protectRecents)
         activity.lifecycle.addObserver(this)
+    }
+
+    fun followConfiguration(configuration: Configuration) {
+        val changes = drawnFor.diff(configuration)
+        drawnFor = Configuration(configuration)
+        if (changesWhatTheCoverDraws(changes)) cover.redraw(choices.wordsToShow())
     }
 
     fun openedOwnScreen() {
