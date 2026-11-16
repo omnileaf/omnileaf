@@ -937,7 +937,7 @@ export type SeriesBookPage = {
 	next: string & { readonly __brand: "BookCursor" } | null,
 };
 
-export type SeriesConnection = { state: "connected" } | { state: "partlyConnected"; missingBooks: number } | { state: "notConnected" };
+export type SeriesConnection = { state: "connected" } | { state: "partlyConnected"; booksNotConnected: number } | { state: "notConnected" };
 
 export type SeriesCreator = {
 	name: string,

@@ -158,14 +158,14 @@ impl Shelf {
         (book.title, book.is_connected)
     }
 
-    async fn missing_books(&self, series: &str) -> u32 {
+    async fn books_not_connected(&self, series: &str) -> u32 {
         let series = series_id(series);
         self.database
             .read(move |connection| series_overview(connection, series))
             .await
             .unwrap()
             .unwrap()
-            .missing_books
+            .books_not_connected
     }
 
     async fn hidden(&self, root: Option<RootId>) -> u32 {
@@ -412,35 +412,35 @@ async fn marks_the_book_up_next_whose_every_file_is_in_a_missing_folder() {
 }
 
 #[tokio::test]
-async fn counts_no_missing_book_while_every_folder_is_there() {
-    let shelf = Shelf::open("missing-books-none").await;
+async fn counts_no_book_not_connected_while_every_folder_is_there() {
+    let shelf = Shelf::open("books-not-connected-none").await;
 
-    assert_eq!(shelf.missing_books("Lantern Market").await, 0);
+    assert_eq!(shelf.books_not_connected("Lantern Market").await, 0);
 }
 
 #[tokio::test]
 async fn counts_the_books_of_each_series_whose_every_file_is_in_a_missing_folder() {
-    let shelf = Shelf::open("missing-books-counted").await;
+    let shelf = Shelf::open("books-not-connected-counted").await;
     shelf.shelve(shelf.comics, "Lantern Market", 5).await;
 
     shelf.go_missing(shelf.comics).await;
 
     assert_eq!(
         [
-            shelf.missing_books("Harbour Gate").await,
-            shelf.missing_books("Lantern Market").await,
-            shelf.missing_books("Sea Stories").await,
+            shelf.books_not_connected("Harbour Gate").await,
+            shelf.books_not_connected("Lantern Market").await,
+            shelf.books_not_connected("Sea Stories").await,
         ],
         [1, 2, 0]
     );
 }
 
 #[tokio::test]
-async fn leaves_a_book_with_a_file_still_there_out_of_the_missing_count() {
-    let shelf = Shelf::open("missing-books-two-folders").await;
+async fn leaves_a_book_with_a_file_still_there_out_of_the_books_not_connected() {
+    let shelf = Shelf::open("books-not-connected-two-folders").await;
     shelf.shelve(shelf.manga, "Harbour Gate", 1).await;
 
     shelf.go_missing(shelf.comics).await;
 
-    assert_eq!(shelf.missing_books("Harbour Gate").await, 0);
+    assert_eq!(shelf.books_not_connected("Harbour Gate").await, 0);
 }

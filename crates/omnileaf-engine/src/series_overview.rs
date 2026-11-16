@@ -48,16 +48,18 @@ pub struct SeriesOverview {
 )]
 pub enum SeriesConnection {
     Connected,
-    PartlyConnected { missing_books: u32 },
+    PartlyConnected { books_not_connected: u32 },
     NotConnected,
 }
 
 impl SeriesConnection {
-    const fn of(book_count: u32, missing_books: u32) -> Self {
-        match missing_books {
+    const fn of(book_count: u32, books_not_connected: u32) -> Self {
+        match books_not_connected {
             0 => Self::Connected,
-            missing_books if missing_books >= book_count => Self::NotConnected,
-            missing_books => Self::PartlyConnected { missing_books },
+            books_not_connected if books_not_connected >= book_count => Self::NotConnected,
+            books_not_connected => Self::PartlyConnected {
+                books_not_connected,
+            },
         }
     }
 }
@@ -169,7 +171,7 @@ impl SeriesOverview {
             book_count: overview.book_count,
             read_count: overview.read_count,
             bookmark_count: overview.bookmark_count,
-            connection: SeriesConnection::of(overview.book_count, overview.missing_books),
+            connection: SeriesConnection::of(overview.book_count, overview.books_not_connected),
             cover: overview.cover.map(CoverPath),
             folder: overview
                 .folder
@@ -291,7 +293,7 @@ mod tests {
                 is_rated_adult: false,
                 is_marked_adult: false,
                 bookmark_count: BOOKMARKED_BOOKS,
-                missing_books: 0,
+                books_not_connected: 0,
             },
             None,
             seconds_per_page,
@@ -335,7 +337,9 @@ mod tests {
     fn counts_a_series_with_some_books_away_as_partly_connected() {
         assert_eq!(
             SeriesConnection::of(8, 3),
-            SeriesConnection::PartlyConnected { missing_books: 3 }
+            SeriesConnection::PartlyConnected {
+                books_not_connected: 3
+            }
         );
     }
 

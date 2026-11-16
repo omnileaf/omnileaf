@@ -53,7 +53,7 @@ pub struct SeriesOverview {
     pub is_marked_adult: bool,
     /// The books with a bookmarked page.
     pub bookmark_count: u32,
-    pub missing_books: u32,
+    pub books_not_connected: u32,
 }
 
 /// None for a series missing from the catalog or holding no books, which the library doesn't show.
@@ -71,7 +71,7 @@ pub fn series_overview(
         return Ok(None);
     };
     Ok(Some(SeriesOverview {
-        missing_books: books_not_connected(connection, series)?,
+        books_not_connected: books_not_connected(connection, series)?,
         ..overview
     }))
 }
@@ -110,7 +110,7 @@ fn overview(row: &Row<'_>) -> rusqlite::Result<SeriesOverview> {
         is_rated_adult: row.get("is_rated_adult")?,
         is_marked_adult: row.get("is_marked_adult")?,
         bookmark_count: row.get("bookmark_count")?,
-        missing_books: 0,
+        books_not_connected: 0,
     })
 }
 
