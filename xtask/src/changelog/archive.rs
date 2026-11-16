@@ -4,7 +4,7 @@ use anyhow::Context;
 
 use super::{
     Config, CreditedNotes, FOLDER, Folder, Problem, RELEASED, Violation, check_summary, file_name,
-    is_github_login,
+    is_github_login, version::is_full_version,
 };
 use crate::files;
 
@@ -33,6 +33,9 @@ impl Folder {
     }
 
     fn parse_archive(&self, version: &str, text: &str) -> Result<CreditedNotes, Problem> {
+        if !is_full_version(version) {
+            return Err(Problem::NotAReleaseName);
+        }
         let notes: CreditedNotes = serde_json::from_str(text)
             .map_err(|error| Problem::MalformedArchive(error.to_string()))?;
         if notes.notes.version != version {
@@ -323,6 +326,24 @@ mod tests {
         let violations = check(scratch.path()).unwrap();
 
         assert_eq!(violations, [archive_violation("1.2.0", Problem::NoEntries)]);
+    }
+
+    #[test]
+    fn reports_an_archive_whose_name_is_not_a_full_release_version() {
+        let scratch = scratch_repo(&[]);
+        for version in ["v1.2.0", "1.2.0-rc.1"] {
+            archive(&scratch, version, &ARCHIVED_JSON.replace("1.2.0", version));
+        }
+
+        let violations = check(scratch.path()).unwrap();
+
+        assert_eq!(
+            violations,
+            [
+                archive_violation("1.2.0-rc.1", Problem::NotAReleaseName),
+                archive_violation("v1.2.0", Problem::NotAReleaseName),
+            ]
+        );
     }
 
     #[test]

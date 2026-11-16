@@ -117,6 +117,7 @@ pub(crate) enum Problem {
     LongSummary(usize),
     EmDash,
     NotOneLine,
+    NotAReleaseName,
     MalformedArchive(String),
     OtherVersion(String),
     NoEntries,
@@ -183,6 +184,10 @@ impl fmt::Display for Problem {
             Self::NotOneLine => {
                 write!(formatter, "the summary must be one line with single spaces")
             }
+            Self::NotAReleaseName => write!(
+                formatter,
+                "the file name must be a full release version such as 1.2.0.json"
+            ),
             Self::MalformedArchive(error) => {
                 write!(formatter, "the archive is not release notes JSON: {error}")
             }
