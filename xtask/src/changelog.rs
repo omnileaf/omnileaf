@@ -641,6 +641,14 @@ fn insert_above_the_first_section(changelog: &str, section: &str) -> String {
     }
 }
 
+fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
+    let heading = format!("{SECTION_HEADING}{version}");
+    changelog.lines().map(str::trim_end).find(|line| {
+        line.strip_prefix(heading.as_str())
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with(' '))
+    })
+}
+
 fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Result<Release> {
     let Version::Full(version) = parse_version(version)? else {
         anyhow::bail!(
@@ -653,6 +661,11 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
         "{version} is already released in {}",
         shown_archive_path(version)
     );
+    if let Some(heading) = version_heading(changelog, version) {
+        anyhow::bail!(
+            "{CHANGELOG} already has a section for {version}; remove `{heading}` and its notes, then release {version} again"
+        );
+    }
     let notes = folder.notes_to_release(version)?;
     let section = format!(
         "{SECTION_HEADING}{version}\n\n{}",
@@ -1549,6 +1562,42 @@ Contributors: @hubot, @octocat
 
         assert!(error.to_string().contains("already released"), "{error}");
         assert!(scratch.path().join(FOLDER).join("a.md").exists());
+    }
+
+    #[test]
+    fn refuses_to_release_a_version_the_changelog_already_has_a_section_for() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+
+        for heading in ["## 0.1.0 (unreleased)", "## 0.1.0"] {
+            let changelog = format!(
+                "# Changelog\n\nWhat changed.\n\n{heading}\n\nThe first release.\n\n## Security\n\n- **Platform:** Archives stay inside.\n"
+            );
+            with_changelog(&scratch, &changelog);
+
+            let error = release(scratch.path(), "0.1.0").unwrap_err();
+
+            assert_eq!(
+                error.to_string(),
+                format!(
+                    "CHANGELOG.md already has a section for 0.1.0; remove `{heading}` and its notes, then release 0.1.0 again"
+                )
+            );
+            assert_eq!(
+                fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+                changelog
+            );
+            assert!(!released_file(&scratch, "0.1.0").exists());
+        }
+    }
+
+    #[test]
+    fn releases_a_version_whose_pre_release_has_a_changelog_section() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "# Changelog\n\n## 0.1.0-rc.1\n\nTried out.\n");
+
+        release(scratch.path(), "0.1.0").unwrap();
+
+        assert!(released_file(&scratch, "0.1.0").exists());
     }
 
     #[test]
