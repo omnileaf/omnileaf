@@ -8,14 +8,20 @@ import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 
 internal fun Activity.protectRecents(isLockOn: Boolean) {
-    val protection = RecentsProtection.of(isLockOn, Build.VERSION.SDK_INT)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        showRecentsScreenshot(protection != RecentsProtection.PLAIN_CARD)
-    }
-    if (protection == RecentsProtection.SECURE_WINDOW) {
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-    } else {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    when (RecentsProtection.of(isLockOn, Build.VERSION.SDK_INT)) {
+        RecentsProtection.NONE -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) showRecentsScreenshot(true)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
+        RecentsProtection.PLAIN_CARD -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) showRecentsScreenshot(false)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
+        RecentsProtection.SECURE_WINDOW -> {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
 }
 
