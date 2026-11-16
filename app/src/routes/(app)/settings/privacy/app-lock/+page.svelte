@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CircleAlert } from "@lucide/svelte";
 
-  import { LOCK_DELAY_NAMES, LOCK_DELAYS } from "#lib/app-lock/app-lock.ts";
+  import { LOCK_DELAYS } from "#lib/app-lock/app-lock.ts";
   import {
     APP_LOCK_CHANGES,
     AppLockSetting,
@@ -10,13 +10,8 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { getNotices } from "#lib/notices/notices.ts";
   import { m } from "#lib/paraglide/messages.js";
-  import {
-    ANDROID_CHOICE_CARD,
-    FLUSH_BLEED,
-    FLUSH_FOOTER,
-  } from "#lib/settings/android-flush-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
-  import SettingChoiceRow from "#lib/settings/SettingChoiceRow.svelte";
+  import SettingRadios from "#lib/settings/SettingRadios.svelte";
   import { CARD_SWITCH, SWITCH_CARD } from "#lib/settings/setting-row-look.ts";
   import SettingSwitch from "#lib/settings/SettingSwitch.svelte";
 
@@ -47,10 +42,6 @@
     }),
   );
 
-  const delayChoices = LOCK_DELAYS.map((delay) => ({
-    value: delay,
-    label: LOCK_DELAY_NAMES[delay](),
-  }));
   const lock = $derived(setting.lock);
 </script>
 
@@ -70,17 +61,17 @@
   />
 {/snippet}
 
-{#snippet lockAfterRow()}
-  <SettingChoiceRow
-    bleed={android.isOn ? FLUSH_BLEED : ""}
-    title={m.app_lock_after()}
-    value={lock.isOn
-      ? LOCK_DELAY_NAMES[lock.lockAfter]()
-      : m.app_lock_only_when_on()}
-    help={android.isOn || !lock.isOn ? undefined : m.app_lock_after_help()}
-    choices={delayChoices}
+{#snippet startAppLock()}
+  <SettingRadios
+    title={m.app_lock_start()}
+    options={LOCK_DELAYS}
+    labels={{
+      immediately: m.app_lock_immediately(),
+      oneMinute: m.app_lock_start_one_minute(),
+      fiveMinutes: m.app_lock_start_five_minutes(),
+      thirtyMinutes: m.app_lock_start_thirty_minutes(),
+    }}
     chosen={lock.lockAfter}
-    disabled={!lock.isOn}
     onChoose={(lockAfter: LockAfter) => {
       void setting.chooseLockAfter(lockAfter);
     }}
@@ -99,18 +90,12 @@
 >
   {#if android.isOn}
     {@render lockSwitch()}
-    <section class="flex flex-col">
-      {@render lockAfterRow()}
-      {#if lock.isOn}
-        <p class={FLUSH_FOOTER}>{m.app_lock_after_help()}</p>
-      {/if}
-    </section>
   {:else}
     <section class={SWITCH_CARD}>
       {@render lockSwitch()}
     </section>
-    <section class={ANDROID_CHOICE_CARD}>
-      {@render lockAfterRow()}
-    </section>
+  {/if}
+  {#if lock.isOn}
+    {@render startAppLock()}
   {/if}
 </div>
