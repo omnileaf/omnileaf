@@ -15,6 +15,10 @@ impl Folder {
         self.path.join(RELEASED)
     }
 
+    pub(super) fn archive_path(&self, version: &str) -> PathBuf {
+        self.released().join(archive_name(version))
+    }
+
     pub(super) fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
         Ok(self
             .load_archive(version)?
@@ -24,11 +28,11 @@ impl Folder {
     fn load_archive(&self, version: &str) -> anyhow::Result<Result<CreditedNotes, Problem>> {
         let name = archive_name(version);
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
-        let text = files::read_if_present(&self.released().join(&name))
+        let text = files::read_if_present(&self.archive_path(version))
             .with_context(|| format!("read {shown}"))?
-            .ok_or_else(|| {
-                anyhow::anyhow!("{shown} is missing, so {version} has no release notes")
-            })?;
+            .ok_or_else(|| anyhow::anyhow!(
+                    "{shown} is missing, so {version} has no release notes; run `cargo xtask changes release --version {version}` and commit the result before tagging"
+                ))?;
         Ok(self.parse_archive(version, &text))
     }
 
@@ -97,7 +101,7 @@ impl CreditedNotes {
     }
 }
 
-fn archive_name(version: &str) -> String {
+pub(super) fn archive_name(version: &str) -> String {
     format!("{version}{ARCHIVE_EXTENSION}")
 }
 

@@ -9,7 +9,10 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use self::version::{Version, parse_version};
+use self::{
+    archive::archive_name,
+    version::{Version, parse_version},
+};
 use crate::{
     json,
     pre_push::{changed_files, git},
@@ -20,6 +23,8 @@ const CONFIG: &str = "config.json";
 const README: &str = "README.md";
 const RELEASED: &str = "released";
 const NOT_FRAGMENTS: &[&str] = &[CONFIG, README, RELEASED];
+const CHANGELOG: &str = "CHANGELOG.md";
+const SECTION_HEADING: &str = "## ";
 const FRAGMENT_EXTENSION: &str = ".md";
 const MAX_SUMMARY_CHARACTERS: usize = 300;
 const MAX_LOGIN_CHARACTERS: usize = 39;
@@ -539,7 +544,11 @@ impl CreditedNotes {
                 })
                 .collect();
             if !lines.is_empty() {
-                sections.push(format!("## {}\n\n{}", kind.heading, lines.join("\n")));
+                sections.push(format!(
+                    "{SECTION_HEADING}{}\n\n{}",
+                    kind.heading,
+                    lines.join("\n")
+                ));
             }
         }
         if !self.contributors.is_empty() {
@@ -590,6 +599,81 @@ pub(crate) fn notes(root: &Path, version: Option<&str>, format: Format) -> anyho
         Format::Markdown => Ok(notes.markdown(&folder.config)),
         Format::Json => Ok(json::pretty(&notes.notes)?),
     }
+}
+
+struct Release {
+    archive_path: PathBuf,
+    archive: String,
+    changelog: String,
+    used: Vec<String>,
+}
+
+fn insert_above_the_first_section(changelog: &str, section: &str) -> String {
+    let first_section = changelog
+        .match_indices(SECTION_HEADING)
+        .map(|(at, _)| at)
+        .find(|&at| at == 0 || changelog[..at].ends_with('\n'));
+    match first_section {
+        Some(at) => format!("{}{section}\n{}", &changelog[..at], &changelog[at..]),
+        None => format!("{}\n\n{section}", changelog.trim_end()),
+    }
+}
+
+fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Result<Release> {
+    let Version::Full(version) = parse_version(version)? else {
+        anyhow::bail!(
+            "`{version}` is a pre-release; only full releases are archived, and a pre-release takes its notes from the fragments"
+        );
+    };
+    let archive_path = folder.archive_path(version);
+    anyhow::ensure!(
+        !archive_path.exists(),
+        "{version} is already released in {FOLDER}/{RELEASED}/{}",
+        archive_name(version)
+    );
+    let fragments = valid_fragments(folder)?;
+    anyhow::ensure!(
+        !fragments.is_empty(),
+        "{FOLDER} has no fragments, so {version} would have no release notes"
+    );
+    let notes = CreditedNotes::gather(version, fragments, &folder.config);
+    let section = format!(
+        "{SECTION_HEADING}{version}\n\n{}",
+        notes.markdown(&folder.config)
+    );
+    Ok(Release {
+        archive_path,
+        archive: json::pretty(&notes)?,
+        changelog: insert_above_the_first_section(changelog, &section),
+        used: folder.files.iter().map(|(name, _)| name.clone()).collect(),
+    })
+}
+
+fn write_release(root: &Path, release: &Release) -> anyhow::Result<()> {
+    let archive_path = &release.archive_path;
+    if let Some(released) = archive_path.parent() {
+        fs::create_dir_all(released).with_context(|| format!("create {}", released.display()))?;
+    }
+    fs::File::create_new(archive_path)
+        .and_then(|mut file| io::Write::write_all(&mut file, release.archive.as_bytes()))
+        .with_context(|| format!("write {}", archive_path.display()))?;
+    let changelog_path = root.join(CHANGELOG);
+    fs::write(&changelog_path, &release.changelog)
+        .with_context(|| format!("write {}", changelog_path.display()))?;
+    for name in &release.used {
+        let path = root.join(FOLDER).join(name);
+        fs::remove_file(&path).with_context(|| format!("remove {}", path.display()))?;
+    }
+    Ok(())
+}
+
+pub(crate) fn release(root: &Path, version: &str) -> anyhow::Result<()> {
+    let folder = read_folder(root)?;
+    let changelog_path = root.join(CHANGELOG);
+    let changelog = fs::read_to_string(&changelog_path)
+        .with_context(|| format!("read {}", changelog_path.display()))?;
+    let release = plan_release(&folder, version, &changelog)?;
+    write_release(root, &release)
 }
 
 fn is_user_facing(path: &str) -> bool {
@@ -982,7 +1066,7 @@ mod tests {
         );
     }
 
-    fn release() -> Vec<Fragment> {
+    fn mixed_fragments() -> Vec<Fragment> {
         vec![
             valid("fix", "reader", &["octocat"], "The page stays put."),
             valid("feat", "reader", &[], "Pages turn faster."),
@@ -999,7 +1083,7 @@ mod tests {
 
     #[test]
     fn groups_markdown_by_type_in_config_order_with_the_area_in_bold() {
-        let markdown = markdown_of(release());
+        let markdown = markdown_of(mixed_fragments());
 
         assert_eq!(
             markdown,
@@ -1265,6 +1349,173 @@ Contributors: @hubot, @octocat
         let error = notes(scratch.path(), None, Format::Markdown).unwrap_err();
 
         assert!(error.to_string().contains(".changes/a.md"), "{error}");
+    }
+
+    fn with_changelog(scratch: &omnileaf_testkit::ScratchFolder, text: &str) {
+        scratch.write(CHANGELOG, text.as_bytes());
+    }
+
+    fn released_file(scratch: &omnileaf_testkit::ScratchFolder, version: &str) -> PathBuf {
+        scratch
+            .path()
+            .join(FOLDER)
+            .join(RELEASED)
+            .join(format!("{version}.json"))
+    }
+
+    #[test]
+    fn archives_the_release_notes_and_removes_the_fragments_it_used() {
+        let scratch = scratch_repo(&[
+            (
+                "a.md",
+                &fragment_text(
+                    "type: fix\narea: reader\ncredit: [octocat]",
+                    "The page stays put.",
+                ),
+            ),
+            (
+                "b.md",
+                &fragment_text("type: feat\narea: library", "Section tabs."),
+            ),
+        ]);
+        with_changelog(&scratch, "# Changelog\n");
+
+        release(scratch.path(), "1.2.0").unwrap();
+
+        let archive = fs::read_to_string(released_file(&scratch, "1.2.0")).unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&archive).unwrap(),
+            serde_json::json!({
+                "version": "1.2.0",
+                "entries": [
+                    {"type": "feat", "area": "library", "summary": "Section tabs."},
+                    {"type": "fix", "area": "reader", "summary": "The page stays put."}
+                ],
+                "contributors": ["octocat"]
+            })
+        );
+        let folder = scratch.path().join(FOLDER);
+        assert!(!folder.join("a.md").exists());
+        assert!(!folder.join("b.md").exists());
+        assert!(folder.join(CONFIG).exists());
+        assert!(folder.join(README).exists());
+    }
+
+    #[test]
+    fn keeps_the_contributors_of_a_released_version_in_its_notes() {
+        let scratch = scratch_repo(&[(
+            "a.md",
+            &fragment_text("type: fix\narea: reader\ncredit: [octocat]", "Done."),
+        )]);
+        with_changelog(&scratch, "# Changelog\n");
+        release(scratch.path(), "1.2.0").unwrap();
+
+        let markdown = notes_in(&scratch, "1.2.0", Format::Markdown).unwrap();
+        let json = notes_in(&scratch, "1.2.0", Format::Json).unwrap();
+
+        assert_eq!(
+            markdown,
+            "Done.\n\n## Fixed\n\n- **Reader:** Done.\n\nContributors: @octocat\n"
+        );
+        assert!(!json.contains("octocat"), "{json}");
+    }
+
+    #[test]
+    fn puts_the_release_section_above_the_latest_release_in_the_changelog() {
+        let scratch = scratch_repo(&[(
+            "a.md",
+            &fragment_text("type: fix\narea: reader", "The page stays put."),
+        )]);
+        with_changelog(
+            &scratch,
+            "# Changelog\n\nWhat changed.\n\n## 1.1.0\n\nOlder.\n",
+        );
+
+        release(scratch.path(), "1.2.0").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            "# Changelog\n\nWhat changed.\n\n## 1.2.0\n\nThe page stays put.\n\n## Fixed\n\n- **Reader:** The page stays put.\n\n## 1.1.0\n\nOlder.\n"
+        );
+    }
+
+    #[test]
+    fn adds_the_first_release_section_below_the_changelog_introduction() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "# Changelog\n\nWhat changed.\n");
+
+        release(scratch.path(), "1.0.0").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
+            "# Changelog\n\nWhat changed.\n\n## 1.0.0\n\nDone.\n\n## Fixed\n\n- **Reader:** Done.\n"
+        );
+    }
+
+    #[test]
+    fn leaves_everything_as_it_was_when_the_changelog_is_missing() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+
+        let error = release(scratch.path(), "1.2.0").unwrap_err();
+
+        assert!(error.to_string().contains(CHANGELOG), "{error}");
+        assert!(!released_file(&scratch, "1.2.0").exists());
+        assert!(scratch.path().join(FOLDER).join("a.md").exists());
+    }
+
+    #[test]
+    fn refuses_to_release_a_version_already_archived() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "# Changelog\n");
+        archive(&scratch, "1.2.0", ARCHIVED_JSON);
+
+        let error = release(scratch.path(), "1.2.0").unwrap_err();
+
+        assert!(error.to_string().contains("already released"), "{error}");
+        assert!(scratch.path().join(FOLDER).join("a.md").exists());
+    }
+
+    #[test]
+    fn refuses_to_release_while_a_fragment_is_invalid() {
+        let scratch = scratch_repo(&[
+            ("a.md", &fragment_text("type: fix\narea: reader", "Done.")),
+            ("b.md", "x"),
+        ]);
+        with_changelog(&scratch, "# Changelog\n");
+
+        let error = release(scratch.path(), "1.2.0").unwrap_err();
+
+        assert!(error.to_string().contains(".changes/b.md"), "{error}");
+        assert!(!released_file(&scratch, "1.2.0").exists());
+    }
+
+    #[test]
+    fn refuses_to_release_without_fragments() {
+        let scratch = scratch_repo(&[]);
+        with_changelog(&scratch, "# Changelog\n");
+
+        let error = release(scratch.path(), "1.2.0").unwrap_err();
+
+        assert!(error.to_string().contains("no fragments"), "{error}");
+        assert!(!released_file(&scratch, "1.2.0").exists());
+    }
+
+    #[test]
+    fn refuses_to_archive_a_pre_release_or_a_version_that_is_not_semver() {
+        let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
+        with_changelog(&scratch, "# Changelog\n");
+
+        let pre_release = release(scratch.path(), "1.2.0-rc.1").unwrap_err();
+        let not_semver = release(scratch.path(), "../1.2.0").unwrap_err();
+
+        assert!(
+            pre_release.to_string().contains("pre-release"),
+            "{pre_release}"
+        );
+        assert!(
+            not_semver.to_string().contains("not a version"),
+            "{not_semver}"
+        );
     }
 
     #[test]
