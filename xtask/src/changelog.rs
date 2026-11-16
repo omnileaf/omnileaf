@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use self::{
     archive::{archive_violation, shown_archive_path},
-    version::{Version, parse_version},
+    version::{Version, is_version, parse_version},
 };
 use crate::{
     json,
@@ -692,7 +692,7 @@ fn is_heading_of(line: &str, version: &str) -> bool {
 fn is_release_heading(line: &str) -> bool {
     line.strip_prefix(SECTION_HEADING)
         .and_then(|rest| rest.split(' ').next())
-        .is_some_and(|word| parse_version(word).is_ok())
+        .is_some_and(is_version)
 }
 
 fn version_heading<'a>(changelog: &'a str, version: &str) -> Option<&'a str> {
