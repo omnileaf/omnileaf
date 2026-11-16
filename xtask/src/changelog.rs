@@ -1036,15 +1036,45 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn writes_json_entries_in_report_order_without_credit() {
-        let json =
-            serde_json::to_string(&CreditedNotes::gather("1.2.0", release(), &config()).notes)
-                .unwrap();
+        let folder = folder(&[
+            (
+                "a.md",
+                &fragment_text(
+                    "type: fix\narea: reader\ncredit: [octocat]",
+                    "The page stays put.",
+                ),
+            ),
+            (
+                "b.md",
+                &fragment_text("type: feat\narea: reader", "Pages turn faster."),
+            ),
+            (
+                "c.md",
+                &fragment_text(
+                    "type: breaking\narea: library\ncredit: [hubot, octocat]",
+                    "Old folders need adding again.",
+                ),
+            ),
+            (
+                "d.md",
+                &fragment_text("type: fix\narea: library", "Scans finish."),
+            ),
+            (
+                "e.md",
+                &fragment_text(
+                    "type: feat\narea: library\ncredit: [hubot]",
+                    "Section tabs on Android.",
+                ),
+            ),
+        ]);
+
+        let json = notes(&folder, None, Format::Json).unwrap();
 
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(
             value,
             serde_json::json!({
-                "version": "1.2.0",
+                "version": "unreleased",
                 "entries": [
                     {"type": "breaking", "area": "library", "summary": "Old folders need adding again."},
                     {"type": "feat", "area": "library", "summary": "Section tabs on Android."},
