@@ -524,11 +524,21 @@ impl CreditedNotes {
     }
 
     fn markdown(&self, config: &Config) -> String {
-        let mut sections: Vec<String> = self
-            .headline(config)
-            .map(str::to_owned)
-            .into_iter()
-            .collect();
+        let headline = self.headline(config).map(str::to_owned);
+        joined_sections(
+            &headline
+                .into_iter()
+                .chain(self.sections(config))
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    fn changelog_section(&self, config: &Config) -> String {
+        joined_sections(&self.sections(config))
+    }
+
+    fn sections(&self, config: &Config) -> Vec<String> {
+        let mut sections = Vec::new();
         for kind in &config.types {
             let lines: Vec<String> = self
                 .notes
@@ -559,11 +569,15 @@ impl CreditedNotes {
                 .collect();
             sections.push(format!("Contributors: {}", handles.join(", ")));
         }
-        if sections.is_empty() {
-            String::new()
-        } else {
-            sections.join("\n\n") + "\n"
-        }
+        sections
+    }
+}
+
+fn joined_sections(sections: &[String]) -> String {
+    if sections.is_empty() {
+        String::new()
+    } else {
+        sections.join("\n\n") + "\n"
     }
 }
 
@@ -639,7 +653,7 @@ fn plan_release(folder: &Folder, version: &str, changelog: &str) -> anyhow::Resu
     let notes = CreditedNotes::gather(version, fragments, &folder.config);
     let section = format!(
         "{SECTION_HEADING}{version}\n\n{}",
-        notes.markdown(&folder.config)
+        notes.changelog_section(&folder.config)
     );
     Ok(Release {
         archive_path,
@@ -1435,7 +1449,7 @@ Contributors: @hubot, @octocat
 
         assert_eq!(
             fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
-            "# Changelog\n\nWhat changed.\n\n## 1.2.0\n\nThe page stays put.\n\n## Fixed\n\n- **Reader:** The page stays put.\n\n## 1.1.0\n\nOlder.\n"
+            "# Changelog\n\nWhat changed.\n\n## 1.2.0\n\n## Fixed\n\n- **Reader:** The page stays put.\n\n## 1.1.0\n\nOlder.\n"
         );
     }
 
@@ -1448,7 +1462,7 @@ Contributors: @hubot, @octocat
 
         assert_eq!(
             fs::read_to_string(scratch.path().join(CHANGELOG)).unwrap(),
-            "# Changelog\n\nWhat changed.\n\n## 1.0.0\n\nDone.\n\n## Fixed\n\n- **Reader:** Done.\n"
+            "# Changelog\n\nWhat changed.\n\n## 1.0.0\n\n## Fixed\n\n- **Reader:** Done.\n"
         );
     }
 
