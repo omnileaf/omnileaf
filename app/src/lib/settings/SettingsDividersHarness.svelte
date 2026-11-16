@@ -17,6 +17,11 @@
   </section>
   <ul data-settings-group data-testid="second-group">
     <li>Reduce motion</li>
+    <li>
+      <ul data-settings-group data-testid="inner-list-after-group">
+        <li>Reduce transparency</li>
+      </ul>
+    </li>
   </ul>
   <div data-settings-end class="p-lg" data-testid="padded-block">
     2.1 GB used
@@ -55,4 +60,38 @@
   <ul data-settings-group data-testid="group-after-end-only">
     <li>Clear cache</li>
   </ul>
+</div>
+
+<div class={SCOPE}>
+  <div>
+    <div data-settings-end class="p-lg">2.1 GB used</div>
+  </div>
+  <ul data-settings-group data-testid="group-after-block-holding-end">
+    <li>Clear cache</li>
+  </ul>
+</div>
+
+<div class={SCOPE}>
+  <div>
+    <div data-settings-end class="p-lg">2.1 GB used</div>
+  </div>
+  <div>
+    <ul data-settings-group data-testid="wrapped-group-after-block-holding-end">
+      <li>Clear cache</li>
+    </ul>
+  </div>
+</div>
+
+<div class={SCOPE}>
+  <ul data-settings-group>
+    <li>Cached pages</li>
+  </ul>
+  <div data-settings-end class="p-lg">
+    <ul data-settings-group data-testid="group-inside-padded-block">
+      <li>Covers</li>
+    </ul>
+    <ul data-settings-group data-testid="second-group-inside-padded-block">
+      <li>Thumbnails</li>
+    </ul>
+  </div>
 </div>

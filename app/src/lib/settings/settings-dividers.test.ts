@@ -148,9 +148,35 @@ test("never draws a line above a padded block or a footer", async () => {
 test("never draws a line inside a group", async () => {
   await settingsPage("android", PHONE_WIDTH);
 
-  const lines = [lineAbove("first-inner-list"), lineAbove("second-inner-list")];
+  const lines = [
+    "first-inner-list",
+    "second-inner-list",
+    "inner-list-after-group",
+  ].map(lineAbove);
 
   expect(lineAbove("second-group")).toBe(LINE);
+  expect(lines).toEqual([NO_LINE, NO_LINE, NO_LINE]);
+});
+
+test("draws the line above a group that follows a block holding a padded block", async () => {
+  await settingsPage("android", PHONE_WIDTH);
+
+  const lines = [
+    "group-after-block-holding-end",
+    "wrapped-group-after-block-holding-end",
+  ].map(lineAbove);
+
+  expect(lines).toEqual([LINE, LINE]);
+});
+
+test("never draws a line above a group inside a padded block", async () => {
+  await settingsPage("android", PHONE_WIDTH);
+
+  const lines = [
+    "group-inside-padded-block",
+    "second-group-inside-padded-block",
+  ].map(lineAbove);
+
   expect(lines).toEqual([NO_LINE, NO_LINE]);
 });
 
