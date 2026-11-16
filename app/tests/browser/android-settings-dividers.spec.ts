@@ -1,12 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-import type { MissingFolder } from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  MISSING_COMICS,
   pixelAt,
   pixelOf,
   screenshotPixels,
@@ -20,19 +20,6 @@ const BACKEND = {
   appLock: () => NEW_APP_LOCK,
   wallpaperColours: () => BLUE_WALLPAPER,
 };
-
-const MISSING_COMICS = {
-  folder: {
-    id: "5a4d1e00-0000-4000-8002-000000000002",
-    kind: "linked",
-    name: "Comics",
-    location: "/media/Comics",
-    isAvailable: false,
-  },
-  problem: { kind: "missing" },
-  hiddenSeries: 41,
-  isShownAnyway: false,
-} as MissingFolder;
 
 const GAP_UNDER_CARD = 16;
 const LABEL_LENGTH = 40;

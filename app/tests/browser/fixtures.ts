@@ -14,6 +14,8 @@ import {
 import {
   type AppInfo,
   DEFAULT_LIBRARY_VIEW,
+  type LibraryFolder,
+  type MissingFolder,
   type Platform,
   type Theme,
 } from "../../src/lib/ipc/bindings.ts";
@@ -60,6 +62,22 @@ export const NOTHING_READ_THIS_WEEK = {
   booksFinished: 0,
   daysInARow: 0,
 } as const;
+
+const COMICS_FOLDER_ID =
+  "5a4d1e00-0000-4000-8002-000000000002" as LibraryFolder["id"];
+
+export const MISSING_COMICS: MissingFolder = {
+  folder: {
+    id: COMICS_FOLDER_ID,
+    kind: "linked",
+    name: "Comics",
+    location: "/media/Comics",
+    isAvailable: false,
+  },
+  problem: { kind: "missing" },
+  hiddenSeries: 41,
+  isShownAnyway: false,
+};
 
 export const DEFAULT_BACKEND: FakeBackend = {
   appInfo: () => fakeAppInfo("linux"),
