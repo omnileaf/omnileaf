@@ -736,8 +736,8 @@ jobs:
       - name: Install interface dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install the pinned toolchain with the emulator's Android target
-        run: rustup toolchain install && rustup target add x86_64-linux-android
+      - name: Install the pinned toolchain with the emulator's and the lint's Android targets
+        run: rustup toolchain install && rustup target add x86_64-linux-android aarch64-linux-android
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:

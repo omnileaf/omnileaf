@@ -33,7 +33,7 @@ fn folder_dialog<R: tauri::Runtime>(
 #[cfg(not(target_os = "android"))]
 pub(crate) fn pick_folder_near(
     window: &Window,
-    _lost: Option<TreeUri>,
+    _lost: Option<&TreeUri>,
 ) -> Result<Option<RootLocator>, IpcError> {
     pick_folder(window)
 }
@@ -41,14 +41,14 @@ pub(crate) fn pick_folder_near(
 #[cfg(target_os = "android")]
 pub(crate) fn pick_folder_near(
     window: &Window,
-    lost: Option<TreeUri>,
+    lost: Option<&TreeUri>,
 ) -> Result<Option<RootLocator>, IpcError> {
     use omnileaf_folder_access::FolderAccess;
     use tauri::Manager;
 
     window
         .state::<FolderAccess<tauri::Wry>>()
-        .pick_folder_near(lost.as_ref())
+        .pick_folder_near(lost)
         .map_err(|error| IpcError::internal(&error))
 }
 

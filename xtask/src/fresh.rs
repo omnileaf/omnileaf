@@ -17,7 +17,7 @@ use crate::{
     test_device::{self, NoTestDevice, Pick},
 };
 
-const TAURI_CONFIG: &str = "app/src-tauri/tauri.conf.json";
+pub(crate) const TAURI_CONFIG: &str = "app/src-tauri/tauri.conf.json";
 const XCRUN: &str = "xcrun";
 const DESKTOP_DEV_DATA: &str = "target/dev-data";
 

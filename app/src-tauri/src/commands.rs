@@ -346,7 +346,7 @@ async fn relocate_library_folder(
     on_progress: Channel<ScanProgress>,
 ) -> Result<Option<FolderRescan>, IpcError> {
     let lost = library.folder_tree(id).await?;
-    let picked = off_the_runtime(move || pick_folder_near(&window, lost)).await?;
+    let picked = off_the_runtime(move || pick_folder_near(&window, lost.as_ref())).await?;
     let Some(folder) = picked else {
         return Ok(None);
     };

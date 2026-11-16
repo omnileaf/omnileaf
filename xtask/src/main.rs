@@ -384,11 +384,19 @@ fn ready_for_android_tests(chosen: Option<&str>) -> anyhow::Result<Process> {
     let process = Process::in_workspace();
     let toolchain = android::Toolchain::locate(|key| std::env::var_os(key), std::env::consts::OS)
         .context("find the Android SDK; cargo xtask doctor shows how to install it")?;
+    let android::NdkSearch::Found(ndk) = &toolchain.ndk else {
+        anyhow::bail!("find the Android NDK; cargo xtask doctor shows how to install it");
+    };
+    let compilers = ndk
+        .lint_compilers(std::env::consts::OS)
+        .context("find the NDK's clang, which ships only for Linux, macOS and Windows hosts")?;
     let device = test_device::ready_android(&process, &toolchain, chosen)?;
     test_device::build_android_app(&workspace::root(), device.target)?;
     Ok(process
         .with_step_env(test_device::ANDROID_SERIAL, device.serial)
-        .with_step_env(android::ANDROID_HOME, toolchain.sdk))
+        .with_step_env(android::ANDROID_HOME, toolchain.sdk)
+        .with_step_env(android::LINT_CC, compilers.cc)
+        .with_step_env(android::LINT_AR, compilers.ar))
 }
 
 fn take_screenshot(chosen: Option<&str>) -> anyhow::Result<()> {
