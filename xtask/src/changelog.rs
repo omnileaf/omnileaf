@@ -916,10 +916,15 @@ Contributors: @hubot, @octocat
 
     #[test]
     fn heads_the_markdown_with_the_first_new_entry() {
-        let markdown = render_markdown(release(), &config());
+        let fragments = vec![
+            valid("sec", "library", &[], "Archives stay inside."),
+            valid("feat", "reader", &[], "Pages turn faster."),
+        ];
+
+        let markdown = render_markdown(fragments, &config());
 
         assert!(
-            markdown.starts_with("Section tabs on Android.\n\n## Breaking changes\n"),
+            markdown.starts_with("Pages turn faster.\n\n## Security\n"),
             "{markdown}"
         );
     }
