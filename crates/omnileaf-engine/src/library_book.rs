@@ -40,7 +40,6 @@ pub struct SeriesBook {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum BookFileState {
     Present,
-    /// Moved or deleted; never, while the library keeps no book without its file.
     Missing,
     NotConnected,
 }

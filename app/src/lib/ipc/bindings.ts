@@ -297,9 +297,7 @@ export type BookFile = {
 	fileType: FileType | null,
 };
 
-export type BookFileState = { kind: "present" } | 
-/**  Moved or deleted; never, while the library keeps no book without its file. */
-{ kind: "missing" } | { kind: "notConnected" };
+export type BookFileState = { kind: "present" } | { kind: "missing" } | { kind: "notConnected" };
 
 export type BookKind = "volume" | "chapter" | "special";
 
