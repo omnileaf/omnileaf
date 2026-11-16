@@ -101,7 +101,7 @@ fn rgb_of([red, green, blue, _unused]: [u8; PALETTE_ENTRY_BYTES]) -> u32 {
     expect(dead_code, reason = "only Android reads colours from its wallpaper")
 )]
 struct WallpaperReply {
-    colours: Option<WallpaperColours>,
+    colours: WallpaperColours,
 }
 
 #[cfg(not(target_os = "android"))]
@@ -156,10 +156,13 @@ mod android {
     }
 
     pub(crate) async fn read(app: &AppHandle) -> Result<Option<WallpaperColours>, IpcError> {
-        ask(app).await.map_err(|error| IpcError::internal(&error))
+        ask(app)
+            .await
+            .map(Some)
+            .map_err(|error| IpcError::internal(&error))
     }
 
-    async fn ask(app: &AppHandle) -> Result<Option<WallpaperColours>, WallpaperColoursError> {
+    async fn ask(app: &AppHandle) -> Result<WallpaperColours, WallpaperColoursError> {
         let plugin = app
             .try_state::<WallpaperColoursPlugin>()
             .ok_or(WallpaperColoursError::NotRegistered)?;
@@ -231,11 +234,12 @@ mod tests {
     }
 
     #[test]
-    fn reads_no_colours_where_android_has_none() {
-        let reply: WallpaperReply =
-            serde_json::from_value(serde_json::json!({ "colours": null })).unwrap();
+    fn refuses_a_reply_without_colours() {
+        let sent = serde_json::json!({ "colours": null });
 
-        assert_eq!(reply.colours, None);
+        let reply = serde_json::from_value::<WallpaperReply>(sent);
+
+        assert!(reply.is_err());
     }
 
     #[test]
