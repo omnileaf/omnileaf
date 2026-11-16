@@ -6,7 +6,7 @@ use crate::{
     catalog::{
         Cover, Numbering, RootLocator, Sourced, ValueSource, cover::stored_cover,
         numbering::stored_numbering, root::stored_locator, series_connection::books_not_connected,
-        stored_id::stored_id,
+        staged_rows::snapshot, stored_id::stored_id,
     },
 };
 
@@ -62,6 +62,7 @@ pub fn series_overview(
     connection: &Connection,
     series: SeriesId,
 ) -> Result<Option<SeriesOverview>, Error> {
+    let _snapshot = snapshot(connection)?;
     let Some(overview) = connection
         .prepare(OVERVIEW_OF_SERIES)?
         .query_row([series.as_bytes()], overview)
