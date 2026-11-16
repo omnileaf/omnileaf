@@ -33,7 +33,7 @@ interface LinedGroup {
 
 interface Lines {
   readonly lined: readonly LinedGroup[];
-  readonly groups: number;
+  readonly groupCount: number;
 }
 
 interface PageLines {
@@ -164,7 +164,7 @@ function linesIn(page: Page): Promise<Lines> {
             },
           ];
     });
-    return { lined, groups: groups.length };
+    return { lined, groupCount: groups.length };
   }, LABEL_LENGTH);
 }
 
@@ -204,12 +204,12 @@ test.describe(
     }) => {
       await page.goto("/settings/about/licences");
       await expect
-        .poll(async () => (await linesIn(page)).groups)
+        .poll(async () => (await linesIn(page)).groupCount)
         .toBeGreaterThan(1);
 
       const drawn = await linesIn(page);
 
-      expect(drawn.lined).toHaveLength(drawn.groups - 1);
+      expect(drawn.lined).toHaveLength(drawn.groupCount - 1);
       expectOnlyTheLine(drawn);
     });
   },
