@@ -191,6 +191,7 @@ async function unlockButtonWidth(): Promise<number> {
 
 test(
   "redraws the lock cover for a larger font size without leaving the page",
+  { timeout: TEST_TIMEOUT_MS },
   async () => {
     await fontScale.put(DEFAULT_FONT_SCALE);
     await openAppLockSettings();
@@ -211,5 +212,4 @@ test(
     await unlockIfCovered();
     await expectStillOn(appSession(), windowsBefore, "App lock");
   },
-  { timeout: TEST_TIMEOUT_MS },
 );
