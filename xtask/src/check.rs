@@ -446,6 +446,28 @@ pub(crate) const STEPS: &[Step] = &[
         args: &["--recursive", "run", "test:app"],
     },
     Step {
+        name: "android rust lint",
+        group: Group::Android,
+        program: "cargo",
+        args: &[
+            "clippy",
+            "--locked",
+            "--package",
+            "omnileaf-app",
+            "--package",
+            "omnileaf-folder-access",
+            "--package",
+            "omnileaf-formats",
+            "--lib",
+            "--no-deps",
+            "--target",
+            "aarch64-linux-android",
+            "--",
+            "--deny",
+            "warnings",
+        ],
+    },
+    Step {
         name: "android lint",
         group: Group::Android,
         program: "app/src-tauri/gen/android/gradlew",
@@ -815,7 +837,12 @@ mod tests {
     fn the_android_group_checks_and_unit_tests_the_kotlin_before_running_the_app() {
         assert_eq!(
             names_in(Group::Android),
-            ["android lint", "kotlin unit tests", "android tests"]
+            [
+                "android rust lint",
+                "android lint",
+                "kotlin unit tests",
+                "android tests"
+            ]
         );
     }
 
