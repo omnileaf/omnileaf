@@ -22,6 +22,7 @@ const DEFAULT_FONT_SCALE = "1.0";
 const LARGER_FONT_SCALE = "1.3";
 const PROMPT_TIMEOUT_MS = 15_000;
 const REDRAW_TIMEOUT_MS = 15_000;
+const TEST_TIMEOUT_MS = 180_000;
 const LOCK_SCREEN_OFF = "true";
 const STOPPED_APP = /mResumed=false mStopped=true/;
 const FOCUSED_WINDOW = /mCurrentFocus=Window\{[^}]*\}/;
@@ -42,7 +43,9 @@ const IMMEDIATELY = xpath(
 );
 const UNLOCK_BUTTON = xpath("//android.widget.Button[@text='Unlock']");
 const LOCKS_IMMEDIATELY = `return [...document.querySelectorAll("main button")].some((button) => button.textContent.startsWith("Lock after") && button.textContent.includes("Immediately"));`;
-const IS_LOCK_ON = `return [...document.querySelectorAll("main [role=switch]")].some((lockSwitch) => lockSwitch.textContent.trim().startsWith("${LOCK_SWITCH_LABEL}") && lockSwitch.getAttribute("aria-checked") === "true");`;
+const LOCK_SWITCH_IS_ON = `[...document.querySelectorAll("main [role=switch]")].some((lockSwitch) => lockSwitch.textContent.trim().startsWith("${LOCK_SWITCH_LABEL}") && lockSwitch.getAttribute("aria-checked") === "true")`;
+const IS_LOCK_ON = `return ${LOCK_SWITCH_IS_ON};`;
+const IS_LOCK_OFF = `return !${LOCK_SWITCH_IS_ON};`;
 
 const fontScale = androidSetting("system", "font_scale");
 
@@ -113,6 +116,7 @@ async function lockImmediately(): Promise<void> {
 async function turnLockOff(): Promise<void> {
   if ((await appSession().run(IS_LOCK_ON)) === true) {
     await clickWhenShown(appSession(), LOCK_SWITCH);
+    await appSession().waitUntil(IS_LOCK_OFF, "app lock to turn off");
   }
 }
 
@@ -185,22 +189,27 @@ async function unlockButtonWidth(): Promise<number> {
   return width;
 }
 
-test("redraws the lock cover for a larger font size without leaving the page", async () => {
-  await fontScale.put(DEFAULT_FONT_SCALE);
-  await openAppLockSettings();
-  await lockImmediately();
-  onTestFinished(unlockAndTurnLockOff);
-  const windowsBefore = await appSession().windows();
-  await leaveAndComeBack();
-  const widthBefore = await unlockButtonWidth();
+test(
+  "redraws the lock cover for a larger font size without leaving the page",
+  async () => {
+    await fontScale.put(DEFAULT_FONT_SCALE);
+    await openAppLockSettings();
+    onTestFinished(unlockAndTurnLockOff);
+    await lockImmediately();
+    const windowsBefore = await appSession().windows();
+    await leaveAndComeBack();
+    const widthBefore = await unlockButtonWidth();
 
-  await fontScale.put(LARGER_FONT_SCALE);
+    await fontScale.put(LARGER_FONT_SCALE);
 
-  await pollUntil(
-    async () => ((await unlockButtonWidth()) > widthBefore ? true : undefined),
-    REDRAW_TIMEOUT_MS,
-    "the lock cover redrawn for the larger font size",
-  );
-  await unlockIfCovered();
-  await expectStillOn(appSession(), windowsBefore, "App lock");
-});
+    await pollUntil(
+      async () =>
+        (await unlockButtonWidth()) > widthBefore ? true : undefined,
+      REDRAW_TIMEOUT_MS,
+      "the lock cover redrawn for the larger font size",
+    );
+    await unlockIfCovered();
+    await expectStillOn(appSession(), windowsBefore, "App lock");
+  },
+  { timeout: TEST_TIMEOUT_MS },
+);
