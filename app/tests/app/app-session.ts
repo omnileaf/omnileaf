@@ -18,6 +18,29 @@ export function mainNavigationLink(name: string): Locator {
   return xpath(`${MAIN_NAVIGATION}//a[normalize-space()='${name}']`);
 }
 
+export function settingsRow(label: string): Locator {
+  return xpath(
+    `//main//a[not(ancestor::nav)][starts-with(normalize-space(), '${label}')]`,
+  );
+}
+
+export async function clickWhenShown(
+  session: Session,
+  target: Locator,
+): Promise<void> {
+  await (await session.waitFor(target)).click();
+}
+
+export async function shownPage(
+  session: Session,
+  title: string,
+): Promise<string> {
+  const heading = await session.waitFor(
+    xpath(`//main//h1[normalize-space()='${title}']`),
+  );
+  return heading.text();
+}
+
 const LIBRARY_LINK = mainNavigationLink("Library");
 const BACK_LINK = xpath("//a[@data-back-link]");
 const SETTINGS_LINK = mainNavigationLink("Settings");
