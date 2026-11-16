@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MediaQuery } from "svelte/reactivity";
 
+  import { boldTextChoice } from "#lib/accessibility/bold-text-choice.svelte.ts";
   import {
     TEXT_SIZES,
     type TextSize,
@@ -105,6 +106,15 @@
         }}
       />
     </div>
+    <SettingSwitch
+      bleeds
+      label={m.accessibility_bold_text()}
+      description={m.accessibility_bold_text_help()}
+      isOn={boldTextChoice.isBold}
+      onToggle={() => {
+        boldTextChoice.choose(!boldTextChoice.isBold);
+      }}
+    />
   </section>
   <section aria-labelledby={motionHeadingId} class="flex flex-col">
     <h2 id={motionHeadingId} class={FLUSH_LIST_HEADING}>

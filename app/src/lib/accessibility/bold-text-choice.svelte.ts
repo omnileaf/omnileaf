@@ -1,0 +1,45 @@
+import { followBoldText } from "#lib/page/display-modes.ts";
+import {
+  browserPreferenceStore,
+  type PreferenceStore,
+} from "#lib/preferences/stored-preference.ts";
+import { StoredSwitch } from "#lib/preferences/stored-switch.ts";
+
+const BOLD_TEXT_KEY = "omnileaf.boldText";
+
+export class BoldTextChoice {
+  system = $state(false);
+  #chosen: boolean | undefined = $state();
+
+  readonly #stored: StoredSwitch;
+
+  constructor(store: PreferenceStore | undefined) {
+    this.#stored = new StoredSwitch(store, BOLD_TEXT_KEY);
+    this.#chosen = this.#stored.read();
+  }
+
+  get isBold(): boolean {
+    return this.#chosen ?? this.system;
+  }
+
+  get hasChoice(): boolean {
+    return this.#chosen !== undefined;
+  }
+
+  markDocument(): void {
+    followBoldText(this.isBold);
+  }
+
+  followSystem(isSystemBold: boolean): void {
+    this.system = isSystemBold;
+    followBoldText(this.isBold);
+  }
+
+  choose(isBold: boolean): void {
+    this.#chosen = isBold;
+    this.#stored.writeIfPossible(isBold);
+    followBoldText(isBold);
+  }
+}
+
+export const boldTextChoice = new BoldTextChoice(browserPreferenceStore());

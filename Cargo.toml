@@ -61,13 +61,13 @@ png = "0.18.1"
 proptest = "1.11.0"
 quick-xml = "0.42.0"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "json", "http2"] }
-rusqlite = { version = "0.41.1", default-features = false, features = ["bundled", "cache", "fallible_uint", "functions", "hooks"] }
+rusqlite = { version = "0.42.0", default-features = false, features = ["bundled", "cache", "fallible_uint", "functions", "hooks"] }
 rustix = { version = "1.1.5", features = ["fs"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.1"
-sevenz-rust2 = { version = "0.24.0", default-features = false }
+sevenz-rust2 = { version = "0.25.0", default-features = false }
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-typescript = "=0.0.12"
 tauri = "2.12.0"

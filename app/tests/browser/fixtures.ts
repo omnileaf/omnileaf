@@ -228,6 +228,7 @@ export const DEFAULT_BACKEND: FakeBackend = {
   allowBackSwipe: () => null,
   watchSystemContrast: () => null,
   systemAppLanguage: () => ({ offered: false, tag: null }),
+  systemBoldText: () => false,
   systemClock: () => "followsLanguage",
   appLock: () => {
     throw new CommandFailure({

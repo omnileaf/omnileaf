@@ -5,6 +5,7 @@ import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  settle,
   test,
 } from "./fixtures.ts";
 import type { FakeBackend } from "./fake-backend.ts";
@@ -67,6 +68,7 @@ test.describe(
       await expect(row).toHaveAttribute("aria-haspopup", "dialog");
       await expect(row).toContainText("Automatic (long strip)");
       await expect(sheet.getByRole("combobox")).toHaveCount(0);
+      await settle(sheet);
       expect((await boxOf(row)).height).toBeGreaterThanOrEqual(TWO_LINE_ROW_PX);
       expect((await boxOf(row)).x).toBe((await boxOf(sheet)).x);
       expect((await boxOf(row.getByText("Reading mode"))).x).toBe(
