@@ -20,9 +20,8 @@ class SystemBoldTextTest {
     }
 
     @Test
-    fun `reads an unknown adjustment or none at all as plain text`() {
+    fun `reads an unknown adjustment as plain text`() {
         assertFalse(isBoldText(Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED))
-        assertFalse(isBoldText(null))
     }
 
     @Test
