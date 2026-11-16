@@ -87,24 +87,6 @@
   />
 {/snippet}
 
-{#snippet hideContentSwitch()}
-  {#if lock.canHideContentInRecents}
-    <SettingSwitch
-      bleeds={android.isOn}
-      class={android.isOn ? "" : CARD_SWITCH}
-      label={m.app_lock_hide_content()}
-      description={lock.isOn
-        ? m.app_lock_hide_content_help()
-        : m.app_lock_only_when_on()}
-      isOn={lock.hidesContentInRecents}
-      disabled={!lock.isOn}
-      onToggle={() => {
-        void setting.hideContentInRecents(!lock.hidesContentInRecents);
-      }}
-    />
-  {/if}
-{/snippet}
-
 <SectionHeading
   title={m.app_lock_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
@@ -123,11 +105,9 @@
         <p class={FLUSH_FOOTER}>{m.app_lock_after_help()}</p>
       {/if}
     </section>
-    {@render hideContentSwitch()}
   {:else}
     <section class={SWITCH_CARD}>
       {@render lockSwitch()}
-      {@render hideContentSwitch()}
     </section>
     <section class={ANDROID_CHOICE_CARD}>
       {@render lockAfterRow()}

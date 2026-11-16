@@ -240,7 +240,6 @@ export const DEFAULT_BACKEND: FakeBackend = {
   rememberAppLockWords: () => null,
   turnAppLockOff: () => null,
   chooseLockAfter: () => null,
-  hideContentInRecents: () => null,
   wallpaperColours: () => null,
   accentColours: () => null,
   captureVolumeKeys: () => null,

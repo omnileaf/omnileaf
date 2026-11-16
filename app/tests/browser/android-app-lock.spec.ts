@@ -11,18 +11,6 @@ import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
 const DIMMED = "0.38";
-const DISABLED_TRACKS = [
-  {
-    isHidden: false,
-    fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
-    border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
-  },
-  {
-    isHidden: true,
-    fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
-    border: "rgba(0, 0, 0, 0)",
-  },
-] as const;
 const NOTE_GAP_PX = 16;
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
@@ -66,12 +54,6 @@ test.use({
       lock = { ...lock, lockAfter };
       return null;
     },
-    hideContentInRecents: (isHidden) => {
-      changes.push(`hide ${String(isHidden)}`);
-      failIfAsked();
-      lock = { ...lock, hidesContentInRecents: isHidden };
-      return null;
-    },
   },
 });
 
@@ -97,12 +79,6 @@ function lockSwitch(page: Page): Locator {
 
 function lockAfter(page: Page): Locator {
   return page.getByRole("button", { name: /^Lock after/ });
-}
-
-function hideContent(page: Page): Locator {
-  return page.getByRole("switch", {
-    name: "Hide content in the recent apps screen",
-  });
 }
 
 test.describe("App lock on an Android phone", { tag: "@native" }, () => {
@@ -133,62 +109,34 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(firstEntry(page)).toContainText("App lock");
   });
 
-  test("keeps Lock after and Hide content disabled, saying why, while the lock is off", async ({
+  test("keeps Lock after disabled, saying why, while the lock is off", async ({
     page,
   }) => {
     await openAppLock(page);
 
     await expect(lockSwitch(page)).not.toBeChecked();
     await expect(lockAfter(page)).toBeDisabled();
-    await expect(hideContent(page)).toBeDisabled();
-    await expect(page.getByText(ONLY_WHEN_ON)).toHaveCount(2);
+    await expect(page.getByText(ONLY_WHEN_ON)).toHaveCount(1);
   });
 
-  test("dims Lock after and Hide content while the lock is off, and ignores taps on them", async ({
+  test("dims Lock after while the lock is off, and ignores taps on it", async ({
     page,
   }) => {
-    lock = { ...NEW_APP_LOCK, hidesContentInRecents: true };
     await openAppLock(page);
-    const words = [
-      page.getByText("Lock after", { exact: true }).locator(".."),
-      page
-        .getByText("Hide content in the recent apps screen", { exact: true })
-        .locator(".."),
-    ];
+    const words = page.getByText("Lock after", { exact: true }).locator("..");
+    const resting = await lockAfter(page).evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
 
-    for (const row of words) {
-      await expect(row).toHaveCSS("opacity", DIMMED);
-    }
-    for (const row of [lockAfter(page), hideContent(page)]) {
-      const resting = await row.evaluate(
-        (element) => getComputedStyle(element).backgroundColor,
-      );
-      await row.hover({ force: true });
-      await expect(row).toHaveCSS("background-color", resting);
-      await row.click({ force: true });
-    }
+    await expect(words).toHaveCSS("opacity", DIMMED);
+    await lockAfter(page).hover({ force: true });
+    await expect(lockAfter(page)).toHaveCSS("background-color", resting);
+    await lockAfter(page).click({ force: true });
     await lockSwitch(page).click();
     await expect(lockSwitch(page)).toBeChecked();
 
     expect(changes).toEqual([]);
     await expect(page.getByRole("dialog")).toHaveCount(0);
-  });
-
-  test("draws a disabled switch in the disabled colours, on and off", async ({
-    page,
-  }) => {
-    for (const { isHidden, fill, border } of DISABLED_TRACKS) {
-      lock = { ...NEW_APP_LOCK, hidesContentInRecents: isHidden };
-      await openAppLock(page);
-
-      const track = hideContent(page)
-        .locator("span[aria-hidden='true']")
-        .last();
-
-      await expect(hideContent(page)).toBeChecked({ checked: isHidden });
-      await expect(track).toHaveCSS("background-color", fill);
-      await expect(track).toHaveCSS("border-top-color", border);
-    }
   });
 
   test("puts the delay's note under Lock after, apart from the rows around it", async ({
@@ -200,11 +148,9 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     const delay = await boxOf(lockAfter(page));
     const noteText = page.getByText(/^Counts from when you leave Omnileaf/);
     const note = await boxOf(noteText);
-    const hide = await boxOf(hideContent(page));
 
     await expect(lockAfter(page)).not.toContainText("Counts from");
     expect(note.y).toBeGreaterThanOrEqual(delay.y + delay.height);
-    expect(hide.y).toBeGreaterThanOrEqual(note.y + note.height);
     await expect(noteText).toHaveCSS(
       "padding-bottom",
       `${String(NOTE_GAP_PX)}px`,
@@ -267,25 +213,14 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     expect(lock.lockAfter).toBe("fifteenMinutes");
   });
 
-  test("hides content in the recent apps screen once chosen", async ({
+  test("offers no switch for hiding content in the recent apps screen", async ({
     page,
   }) => {
     lock = { ...NEW_APP_LOCK, isOn: true };
     await openAppLock(page);
 
-    await hideContent(page).click();
-
-    await expect(hideContent(page)).toBeChecked();
-    expect(lock.hidesContentInRecents).toBe(true);
-  });
-
-  test("leaves out Hide content where Android can't hide only the recents card", async ({
-    page,
-  }) => {
-    lock = { ...NEW_APP_LOCK, canHideContentInRecents: false };
-    await openAppLock(page);
-
-    await expect(hideContent(page)).toHaveCount(0);
+    await expect(page.getByRole("switch")).toHaveCount(1);
+    await expect(page.getByText(/recent apps/i)).toHaveCount(0);
   });
 
   test("keeps the lock on and says so when it can't be turned off", async ({
@@ -313,19 +248,6 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
 
     await expect(page.getByText(NOT_CHANGED)).toBeVisible();
     await expect(lockAfter(page)).toContainText("1 minute");
-  });
-
-  test("keeps content shown and says so when hiding it can't be kept", async ({
-    page,
-  }) => {
-    lock = { ...NEW_APP_LOCK, isOn: true };
-    await openAppLock(page);
-    failingCode = "internal";
-
-    await hideContent(page).click();
-
-    await expect(page.getByText(NOT_CHANGED)).toBeVisible();
-    await expect(hideContent(page)).not.toBeChecked();
   });
 
   test("says the App lock page couldn't be opened when the lock can't be read", async ({
@@ -367,24 +289,18 @@ test.describe("App lock on an Android tablet", { tag: "@native" }, () => {
     failingCode = null;
   });
 
-  test("lines up both switches in one card, with Lock after in its own", async ({
+  test("puts the lock switch in one card, with Lock after in its own below", async ({
     page,
   }) => {
     await page.setViewportSize(TABLET);
     await openAppLock(page);
 
     const lockToggle = await boxOf(lockSwitch(page));
-    const hideToggle = await boxOf(hideContent(page));
     const delay = await boxOf(lockAfter(page));
     const card = page.locator("section").filter({ has: lockSwitch(page) });
 
-    await expect(card.filter({ has: hideContent(page) })).toHaveCount(1);
-    expect(hideToggle.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
-    expect(hideToggle.x + hideToggle.width).toBeCloseTo(
-      lockToggle.x + lockToggle.width,
-      0,
-    );
-    expect(delay.y).toBeGreaterThan(hideToggle.y + hideToggle.height);
+    await expect(card.filter({ has: lockAfter(page) })).toHaveCount(0);
+    expect(delay.y).toBeGreaterThan(lockToggle.y + lockToggle.height);
   });
 });
 

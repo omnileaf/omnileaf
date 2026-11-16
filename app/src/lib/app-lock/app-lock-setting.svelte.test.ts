@@ -22,7 +22,6 @@ function changes(overrides: Partial<AppLockChanges> = {}): AppLockChanges {
     turnOn: () => Promise.resolve({ status: "ok", data: "turnedOn" }),
     turnOff: done,
     chooseLockAfter: done,
-    hideContentInRecents: done,
     ...overrides,
   };
 }
@@ -135,22 +134,5 @@ test("keeps the old delay when the new one can't be kept", async () => {
   await setting.chooseLockAfter("oneHour");
 
   expect(setting.lock.lockAfter).toBe("oneMinute");
-  expect(told.onFailure).toHaveBeenCalledWith(NOT_CHANGED);
-});
-
-test("hides content in recents once chosen, and keeps it shown when that fails", async () => {
-  const told = answers();
-  const hidden = new AppLockSetting(NEW_APP_LOCK, changes(), answers());
-  const shown = new AppLockSetting(
-    NEW_APP_LOCK,
-    changes({ hideContentInRecents: failed }),
-    told,
-  );
-
-  await hidden.hideContentInRecents(true);
-  await shown.hideContentInRecents(true);
-
-  expect(hidden.lock.hidesContentInRecents).toBe(true);
-  expect(shown.lock.hidesContentInRecents).toBe(false);
   expect(told.onFailure).toHaveBeenCalledWith(NOT_CHANGED);
 });

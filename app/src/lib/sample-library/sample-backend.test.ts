@@ -1240,18 +1240,16 @@ test("starts with the app lock off, waiting a minute", async () => {
   expect(await backend.appLock()).toEqual(NEW_APP_LOCK);
 });
 
-test("keeps the app lock's delay and hiding content in recents once it is turned off again", async () => {
+test("keeps the app lock's delay once it is turned off again", async () => {
   const { backend } = backendFor("platform=android");
   await backend.turnAppLockOn("Turn on app lock");
   await backend.chooseLockAfter("fiveMinutes");
-  await backend.hideContentInRecents(true);
 
   await backend.turnAppLockOff();
 
   expect(await backend.appLock()).toEqual({
     ...NEW_APP_LOCK,
     lockAfter: "fiveMinutes",
-    hidesContentInRecents: true,
   });
 });
 
