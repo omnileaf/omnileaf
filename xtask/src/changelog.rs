@@ -381,6 +381,12 @@ impl Folder {
     }
 
     fn archived_notes(&self, version: &str) -> anyhow::Result<CreditedNotes> {
+        Ok(self
+            .load_archive(version)?
+            .map_err(|problem| archive_violation(version, problem))?)
+    }
+
+    fn load_archive(&self, version: &str) -> anyhow::Result<Result<CreditedNotes, Problem>> {
         let name = archive_name(version);
         let shown = format!("{FOLDER}/{RELEASED}/{name}");
         let text = files::read_if_present(&self.released().join(&name))
@@ -388,9 +394,7 @@ impl Folder {
             .ok_or_else(|| {
                 anyhow::anyhow!("{shown} is missing, so {version} has no release notes")
             })?;
-        Ok(self
-            .parse_archive(version, &text)
-            .map_err(|problem| archive_violation(version, problem))?)
+        Ok(self.parse_archive(version, &text))
     }
 
     fn parse_archive(&self, version: &str, text: &str) -> Result<CreditedNotes, Problem> {
@@ -426,10 +430,7 @@ impl Folder {
     fn archive_violations(&self) -> anyhow::Result<Vec<Violation>> {
         let mut violations = Vec::new();
         for version in self.archived_versions()? {
-            let path = self.released().join(archive_name(&version));
-            let text =
-                fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
-            if let Err(problem) = self.parse_archive(&version, &text) {
+            if let Err(problem) = self.load_archive(&version)? {
                 violations.push(archive_violation(&version, problem));
             }
         }
