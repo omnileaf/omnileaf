@@ -82,6 +82,14 @@ test("draws the line above a group wrapped in an unmarked block", async () => {
   expect(line).toBe(LINE);
 });
 
+test("draws the line above a group that follows a block holding a group", async () => {
+  await settingsPage("android", PHONE_WIDTH);
+
+  const line = lineAbove("group-after-block-holding-group");
+
+  expect(line).toBe(LINE);
+});
+
 test("draws the line above a group that follows a padded block", async () => {
   await settingsPage("android", PHONE_WIDTH);
 

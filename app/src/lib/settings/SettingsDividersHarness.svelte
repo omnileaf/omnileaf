@@ -38,3 +38,14 @@
     <li>Hide covers</li>
   </ul>
 </div>
+
+<div class={SCOPE}>
+  <div>
+    <ul data-settings-group>
+      <li>App lock</li>
+    </ul>
+  </div>
+  <section data-settings-group data-testid="group-after-block-holding-group">
+    <h2>Crash reports</h2>
+  </section>
+</div>
