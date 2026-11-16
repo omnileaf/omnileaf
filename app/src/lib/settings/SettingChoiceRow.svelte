@@ -13,6 +13,7 @@
     chosen,
     dialogTitle = title,
     bleed = FLUSH_BLEED,
+    disabled = false,
     onChoose,
     ...rest
   }: {
@@ -24,6 +25,7 @@
     chosen: Value;
     dialogTitle?: string;
     bleed?: string;
+    disabled?: boolean;
     onChoose: (value: Value) => void;
   } & DataAttributes = $props();
 
@@ -39,7 +41,12 @@
   {...rest}
   type="button"
   aria-haspopup="dialog"
-  class="{bleed} flex items-center gap-lg py-sm ps-lg pe-xl text-start transition-control min-block-native-row-two hover:tint-hover active:tint-pressed"
+  {disabled}
+  class={[
+    bleed,
+    "flex items-center gap-lg py-sm ps-lg pe-xl text-start transition-control min-block-native-row-two",
+    disabled ? "text-muted" : "hover:tint-hover active:tint-pressed",
+  ]}
   onclick={() => {
     isOpen = true;
   }}

@@ -1,3 +1,4 @@
+mod app_lock;
 mod back_navigation;
 mod back_swipe;
 mod commands;
@@ -188,6 +189,7 @@ fn with_android_plugins(app: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
         .plugin(wallpaper_colours::plugin())
         .plugin(back_navigation::plugin())
         .plugin(screen_orientation::plugin())
+        .plugin(app_lock::plugin())
         .plugin(system_settings::plugin())
         .plugin(report_downloads::plugin())
         .plugin(icon_actions::plugin())

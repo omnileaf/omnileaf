@@ -45,6 +45,7 @@ const SHOWN_ON_FAILURE = {
   relayBusy: FAILED,
   replyAddressInvalid: FAILED,
   reportRefused: FAILED,
+  appLockUnavailable: FAILED,
   internal: FAILED,
 } satisfies Record<IpcErrorCode, BookProblem | typeof UNSUPPORTED>;
 

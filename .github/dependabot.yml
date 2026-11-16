@@ -30,6 +30,9 @@ updates:
     groups:
       npm:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "@playwright/test"
+        versions: ["1.65.x"]
     commit-message:
       prefix: build
       include: scope

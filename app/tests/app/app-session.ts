@@ -35,7 +35,11 @@ async function stepTowardsTheLibrary(
     return true;
   }
   const back = await session.findWithin(BACK_LINK, 0);
-  await (back ?? (await session.waitFor(LIBRARY_LINK))).click();
+  if (back === undefined) {
+    await (await session.waitFor(LIBRARY_LINK)).click();
+  } else {
+    await back.clickUnlessStale();
+  }
   return undefined;
 }
 

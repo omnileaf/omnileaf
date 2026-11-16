@@ -940,7 +940,7 @@
     },
     {
       "name": "flate2",
-      "version": "1.1.10",
+      "version": "1.1.11",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         30
@@ -2062,6 +2062,14 @@
       ]
     },
     {
+      "name": "nix",
+      "version": "0.32.0",
+      "licence": "MIT",
+      "texts": [
+        135
+      ]
+    },
+    {
       "name": "nom",
       "version": "8.0.0",
       "licence": "MIT",
@@ -2071,7 +2079,7 @@
     },
     {
       "name": "notify",
-      "version": "8.2.1",
+      "version": "8.2.2",
       "licence": "CC0-1.0",
       "texts": [
         52
@@ -3227,7 +3235,7 @@
     },
     {
       "name": "tauri-plugin-opener",
-      "version": "2.7.2",
+      "version": "2.7.3",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         44
@@ -3694,7 +3702,7 @@
     },
     {
       "name": "uuid",
-      "version": "1.29.0",
+      "version": "1.29.2",
       "licence": "Apache-2.0 OR MIT",
       "texts": [
         30
@@ -3799,7 +3807,7 @@
     },
     {
       "name": "webpki-roots",
-      "version": "1.0.11",
+      "version": "1.0.12",
       "licence": "CDLA-Permissive-2.0",
       "texts": [
         53
@@ -3951,7 +3959,7 @@
     },
     {
       "name": "windows-sys",
-      "version": "0.60.2",
+      "version": "0.59.0",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -3975,7 +3983,7 @@
     },
     {
       "name": "windows-targets",
-      "version": "0.53.5",
+      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -3999,7 +4007,7 @@
     },
     {
       "name": "windows_x86_64_gnu",
-      "version": "0.53.1",
+      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -4015,7 +4023,7 @@
     },
     {
       "name": "windows_x86_64_msvc",
-      "version": "0.53.1",
+      "version": "0.52.6",
       "licence": "MIT OR Apache-2.0",
       "texts": [
         7
@@ -4223,7 +4231,7 @@
     },
     {
       "name": "zip",
-      "version": "9.4.2",
+      "version": "9.6.0",
       "licence": "MIT",
       "texts": [
         132
