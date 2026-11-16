@@ -506,7 +506,7 @@ fn work_with_fragments(fragments: Fragments) -> anyhow::Result<()> {
     let root = workspace::root();
     match fragments {
         Fragments::Check => {
-            let violations = changelog::check(&changelog::read_folder(&root)?);
+            let violations = changelog::check(&root)?;
             report(&violations, "changelog fragment")
         }
         Fragments::Require { base, skip } => {

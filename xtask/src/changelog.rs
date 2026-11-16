@@ -429,8 +429,8 @@ fn read_fragments(folder: &Folder) -> (Vec<Fragment>, Vec<Violation>) {
     (fragments, violations)
 }
 
-pub(crate) fn check(folder: &Folder) -> Vec<Violation> {
-    read_fragments(folder).1
+pub(crate) fn check(root: &Path) -> anyhow::Result<Vec<Violation>> {
+    Ok(read_fragments(&read_folder(root)?).1)
 }
 
 fn in_report_order(mut fragments: Vec<Fragment>, config: &Config) -> Vec<Fragment> {
@@ -952,9 +952,8 @@ mod tests {
     #[test]
     fn names_the_file_and_the_problem_in_a_violation() {
         let scratch = scratch_repo(&[("a.md", "Just text.\n")]);
-        let folder = folder_in(&scratch);
 
-        let violations = check(&folder);
+        let violations = check(scratch.path()).unwrap();
 
         assert_eq!(
             violations
@@ -971,18 +970,16 @@ mod tests {
             "a.md",
             &fragment_text("type: fix\narea: reader", "The page stays put."),
         )]);
-        let folder = folder_in(&scratch);
 
-        assert_eq!(check(&folder), []);
+        assert_eq!(check(scratch.path()).unwrap(), []);
     }
 
     #[test]
     fn reports_every_bad_fragment() {
         let good = fragment_text("type: fix\narea: reader", "Done.");
         let scratch = scratch_repo(&[("a.md", "x"), ("b.md", &good), ("c.txt", &good)]);
-        let folder = folder_in(&scratch);
 
-        let violations = check(&folder);
+        let violations = check(scratch.path()).unwrap();
 
         assert_eq!(
             violations,
@@ -1504,7 +1501,7 @@ Contributors: @hubot, @octocat
         let scratch = scratch_repo(&[("a.md", &fragment_text("type: fix\narea: reader", "Done."))]);
         archive(&scratch, "1.2.0", ARCHIVED_JSON);
 
-        let violations = check(&folder_in(&scratch));
+        let violations = check(scratch.path()).unwrap();
 
         assert_eq!(violations, []);
     }
