@@ -12,6 +12,7 @@
   import { AndroidPhone } from "#lib/library/android-phone.svelte.ts";
   import { currentPlatform, isPointer } from "#lib/page/platform.ts";
   import { m } from "#lib/paraglide/messages.js";
+  import { FLUSH_FOOTER } from "#lib/settings/android-flush-look.ts";
   import GroupedGround from "#lib/settings/GroupedGround.svelte";
   import { LIST_LINE, LIST_PLATE } from "#lib/settings/grouped-rows-look.ts";
   import SectionHeading from "#lib/settings/SectionHeading.svelte";
@@ -50,7 +51,7 @@
   {#if content.reading.kind === "read"}
     {@const chosen = content.reading.value}
     <div
-      class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none macos:gap-lg"
+      class="mbs-pane-gap flex flex-col gap-pane-gap android:max-medium:mbs-none android:max-medium:gap-none macos:gap-lg"
     >
       <div class="flex flex-col gap-sm macos:gap-lg">
         <p
@@ -66,7 +67,7 @@
           }}
         />
       </div>
-      <div>
+      <div data-settings-group>
         <SettingSwitch
           bleeds
           label={m.adult_content_age_ratings()}
@@ -88,7 +89,7 @@
         {/if}
       </div>
       {#if android.isOn}
-        <p class="text-native-row-subtitle/native-row-subtitle text-muted">
+        <p class={FLUSH_FOOTER}>
           {m.adult_content_footer()}
         </p>
       {/if}

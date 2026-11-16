@@ -100,6 +100,40 @@
   }
 </script>
 
+{#snippet systemSettingsRow(label: string)}
+  <li>
+    <button
+      type="button"
+      class={[
+        ROW,
+        "text-start transition-control inline-full hover:bg-hover active:bg-pressed",
+      ]}
+      onclick={openSystemSettings}
+    >
+      <span aria-hidden="true" class={TILE}>
+        <Settings size={ICON_SIZE} />
+      </span>
+      <span class="flex grow basis-permission-reason flex-col gap-2xs">
+        <span
+          class="font-semibold android:max-medium:font-regular desktop:text-callout"
+        >
+          {label}
+        </span>
+        <span
+          class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
+        >
+          {m.permissions_open_help()}
+        </span>
+      </span>
+      <ExternalLink
+        size={ICON_SIZE}
+        aria-hidden="true"
+        class="shrink-0 text-muted"
+      />
+    </button>
+  </li>
+{/snippet}
+
 <SectionHeading
   title={m.permissions_title()}
   parent={{ route: "/(app)/settings/privacy", title: m.privacy_title() }}
@@ -111,6 +145,7 @@
     {m.permissions_intro()}
   </p>
   <ul
+    data-settings-group
     aria-label={m.permissions_title()}
     class={android.isOn
       ? FLUSH_LIST
@@ -164,38 +199,13 @@
         {/if}
       </li>
     {/each}
-    {#if settingsLabel !== undefined}
-      <li>
-        <button
-          type="button"
-          class={[
-            ROW,
-            "text-start transition-control inline-full hover:bg-hover active:bg-pressed",
-          ]}
-          onclick={openSystemSettings}
-        >
-          <span aria-hidden="true" class={TILE}>
-            <Settings size={ICON_SIZE} />
-          </span>
-          <span class="flex grow basis-permission-reason flex-col gap-2xs">
-            <span
-              class="font-semibold android:max-medium:font-regular desktop:text-callout"
-            >
-              {settingsLabel}
-            </span>
-            <span
-              class="text-detail text-muted android:max-medium:text-native-row-subtitle/native-row-subtitle"
-            >
-              {m.permissions_open_help()}
-            </span>
-          </span>
-          <ExternalLink
-            size={ICON_SIZE}
-            aria-hidden="true"
-            class="shrink-0 text-muted"
-          />
-        </button>
-      </li>
+    {#if !android.isOn && settingsLabel !== undefined}
+      {@render systemSettingsRow(settingsLabel)}
     {/if}
   </ul>
+  {#if android.isOn && settingsLabel !== undefined}
+    <ul data-settings-group class={FLUSH_LIST}>
+      {@render systemSettingsRow(settingsLabel)}
+    </ul>
+  {/if}
 </div>

@@ -1,13 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 
+import type { LibraryTag, SystemContrast } from "../../src/lib/ipc/bindings.ts";
 import { NEW_APP_LOCK } from "../../src/lib/app-lock/app-lock.ts";
-import type { SystemContrast } from "../../src/lib/ipc/bindings.ts";
 import { BLUE_WALLPAPER } from "../sample-wallpaper.ts";
 import type { FakeChannel } from "./fake-backend.ts";
 import {
   boxOf,
   DEFAULT_BACKEND,
   expect,
+  keepReports,
   MISSING_COMICS,
   pixelAt,
   pixelOf,
@@ -17,10 +18,17 @@ import {
   viewportOf,
 } from "./fixtures.ts";
 
+const TAGS: readonly LibraryTag[] = [{ name: "Seinen", seriesCount: 1 }];
+
+const KEPT_REPORTS = [
+  { code: "R-2QX9", madeAtMs: Date.UTC(2026, 9, 15, 18, 5) },
+];
+
 const BACKEND = {
   ...DEFAULT_BACKEND,
   appLock: () => NEW_APP_LOCK,
   wallpaperColours: () => BLUE_WALLPAPER,
+  libraryTags: () => [...TAGS],
 };
 
 let contrasts: FakeChannel<SystemContrast> | undefined;
@@ -43,14 +51,48 @@ interface Lines {
 interface PageLines {
   readonly route: string;
   readonly lines: number;
+  readonly settled?: (page: Page) => Locator;
 }
 
 const PAGE_LINES: readonly PageLines[] = [
   { route: "/settings", lines: 3 },
+  { route: "/settings/general", lines: 2 },
   { route: "/settings/appearance", lines: 1 },
+  { route: "/settings/accessibility", lines: 3 },
   { route: "/settings/library", lines: 3 },
+  { route: "/settings/library/tabs", lines: 1 },
+  { route: "/settings/library/adult-content", lines: 1 },
+  {
+    route: "/settings/library/tags",
+    lines: 0,
+    settled: (page) =>
+      page.getByRole("list", { name: "Tags" }).getByRole("listitem"),
+  },
+  { route: "/settings/reading", lines: 3 },
   { route: "/settings/privacy", lines: 1 },
+  {
+    route: "/settings/privacy/app-lock",
+    lines: 0,
+    settled: (page) => page.getByRole("switch", { name: "Lock Omnileaf" }),
+  },
+  { route: "/settings/privacy/screenshot-mode", lines: 1 },
+  { route: "/settings/privacy/permissions", lines: 1 },
+  { route: "/settings/storage", lines: 1 },
+  { route: "/settings/advanced", lines: 2 },
+  { route: "/settings/advanced/animations", lines: 0 },
+  { route: "/settings/general/language", lines: 0 },
+  {
+    route: "/settings/about",
+    lines: 0,
+    settled: (page) => page.getByRole("link", { name: /^Your reports/ }),
+  },
   { route: "/settings/about/report", lines: 1 },
+  {
+    route: "/settings/about/reports",
+    lines: 0,
+    settled: (page) =>
+      page.getByRole("list", { name: "Your reports" }).getByRole("listitem"),
+  },
 ];
 
 interface LineAbove {
@@ -66,6 +108,32 @@ const GAP_ABOVE_REPORT_LINE = 16;
 
 function waysToSend(page: Page): Locator {
   return page.getByRole("region", { name: "Other ways to send it" });
+}
+
+function turnItOnQuickly(page: Page): Locator {
+  return page.getByRole("region", { name: "Turn it on quickly" });
+}
+
+function groupHolding(page: Page, control: Locator): Locator {
+  return page.locator("[data-settings-group]").filter({ has: control });
+}
+
+function ageRatings(page: Page): Locator {
+  return groupHolding(
+    page,
+    page.getByRole("switch", { name: "Use age ratings from book details" }),
+  );
+}
+
+function opensOn(page: Page): Locator {
+  return groupHolding(
+    page,
+    page.getByRole("button", { name: /^The library opens on/ }),
+  );
+}
+
+function blockBefore(group: Locator): Locator {
+  return group.locator("xpath=preceding-sibling::*[1]");
 }
 
 const LINES_ABOVE: readonly LineAbove[] = [
@@ -93,11 +161,51 @@ const LINES_ABOVE: readonly LineAbove[] = [
   {
     route: "/settings/about/report",
     between: "Send and Other ways to send it",
-    above: (page) => waysToSend(page).locator("xpath=preceding-sibling::*[1]"),
+    above: (page) => blockBefore(waysToSend(page)),
     group: waysToSend,
     gap: GAP_ABOVE_REPORT_LINE,
   },
+  {
+    route: "/settings/accessibility",
+    between: "Text and Motion and contrast",
+    above: (page) => page.getByRole("region", { name: "Text" }),
+    group: (page) => page.getByRole("region", { name: "Motion and contrast" }),
+    gap: GAP_ABOVE_LINE,
+  },
+  {
+    route: "/settings/advanced",
+    between: "Animations and Navigation",
+    above: (page) => page.getByRole("list").filter({ hasText: "Animations" }),
+    group: (page) => page.getByRole("region", { name: "Navigation" }),
+    gap: GAP_ABOVE_LINE,
+  },
+  {
+    route: "/settings/privacy/screenshot-mode",
+    between: "the switches and Turn it on quickly",
+    above: (page) => blockBefore(turnItOnQuickly(page)),
+    group: turnItOnQuickly,
+    gap: GAP_ABOVE_LINE,
+  },
+  {
+    route: "/settings/library/adult-content",
+    between: "the choice and Use age ratings",
+    above: (page) => blockBefore(ageRatings(page)),
+    group: ageRatings,
+    gap: GAP_ABOVE_LINE,
+  },
+  {
+    route: "/settings/library/tabs",
+    between: "the tabs and The library opens on",
+    above: (page) => blockBefore(opensOn(page)),
+    group: opensOn,
+    gap: GAP_ABOVE_LINE,
+  },
 ];
+
+const HEADINGS_ON_LINES = [
+  { route: "/settings/accessibility", heading: "Motion and contrast" },
+  { route: "/settings/advanced", heading: "Navigation" },
+] as const;
 
 interface EdgeProbe {
   readonly route: string;
@@ -108,6 +216,21 @@ const EDGE_PROBES: readonly EdgeProbe[] = [
   {
     route: "/settings/about/report",
     group: waysToSend,
+  },
+  {
+    route: "/settings/accessibility",
+    group: (page) => page.getByRole("region", { name: "Motion and contrast" }),
+  },
+  {
+    route: "/settings/library",
+    group: (page) => page.getByRole("region", { name: "Folders" }),
+  },
+  {
+    route: "/settings/storage",
+    group: (page) =>
+      page
+        .locator("section")
+        .filter({ has: page.getByText("Cached pages", { exact: true }) }),
   },
 ];
 
@@ -188,15 +311,19 @@ test.describe(
   () => {
     test.use({ backend: BACKEND });
 
-    test.beforeEach(({ platform }) => {
+    test.beforeEach(async ({ page, platform }) => {
       test.skip(platform !== "android", "Android phone settings");
+      await keepReports(page, KEPT_REPORTS);
     });
 
-    for (const { route, lines } of PAGE_LINES) {
+    for (const { route, lines, settled } of PAGE_LINES) {
       test(`draws ${String(lines)} full-width lines between the groups on ${route}`, async ({
         page,
       }) => {
         await page.goto(route);
+        if (settled !== undefined) {
+          await expect(settled(page)).toBeVisible();
+        }
 
         await expect.poll(() => linedCount(page)).toBe(lines);
         expectOnlyTheLine(await linesIn(page));
@@ -242,6 +369,80 @@ test.describe(
         await expect(group(page)).toHaveCSS("border-top-width", "1px");
       });
     }
+
+    for (const { route, heading } of HEADINGS_ON_LINES) {
+      test(`sets ${heading} on ${route} straight under its line`, async ({
+        page,
+      }) => {
+        await page.goto(route);
+
+        const group = await boxOf(page.getByRole("region", { name: heading }));
+        const title = await boxOf(
+          page.getByRole("heading", { name: heading, exact: true }),
+        );
+
+        expect(title.y - group.y).toBeCloseTo(LINE_WIDTH, 0);
+      });
+    }
+
+    test("leaves Reading mode and Tap zones in one group", async ({ page }) => {
+      await page.goto("/settings/reading");
+      const mode = await boxOf(
+        page.getByRole("button", { name: /^Reading mode/ }),
+      );
+      const zones = await boxOf(
+        page.getByRole("button", { name: /^Tap zones/ }),
+      );
+
+      expect(zones.y - (mode.y + mode.height)).toBeCloseTo(0, 0);
+    });
+
+    test("draws no line under the intro on Permissions", async ({ page }) => {
+      await page.goto("/settings/privacy/permissions");
+      const list = page.getByRole("list", { name: "Permissions" });
+
+      await expect(list).toHaveCSS("border-image-source", "none");
+      await expect(list).toHaveCSS("border-top-width", "0px");
+    });
+
+    test("draws no line under the intro on Licences", async ({ page }) => {
+      await page.goto("/settings/about/licences");
+      const first = page.locator("main section").first();
+
+      await expect(first).toHaveCSS("border-image-source", "none");
+      await expect(first).toHaveCSS("border-top-width", "0px");
+    });
+
+    test("puts Open Android settings in its own group after the permissions", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy/permissions");
+      const open = page.getByRole("button", { name: /Android settings/ });
+      const permissions = page.getByRole("list", { name: "Permissions" });
+      const ownGroup = page.getByRole("list").filter({ has: open });
+
+      const permissionsBox = await boxOf(permissions);
+      const ownGroupBox = await boxOf(ownGroup);
+
+      await expect(permissions.getByRole("button")).toHaveCount(0);
+      await expect(ownGroup).toHaveAttribute("data-settings-group");
+      expect(ownGroupBox.y).toBeGreaterThanOrEqual(
+        permissionsBox.y + permissionsBox.height,
+      );
+    });
+
+    test("draws Turn it on quickly flat, with no card edge", async ({
+      page,
+    }) => {
+      await page.goto("/settings/privacy/screenshot-mode");
+      const section = turnItOnQuickly(page);
+
+      for (const edge of ["right", "bottom", "left"]) {
+        await expect(section).toHaveCSS(`border-${edge}-width`, "0px");
+      }
+      await expect(section).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(section).toHaveCSS("border-top-width", "1px");
+    });
 
     for (const theme of THEMES) {
       for (const direction of DIRECTIONS) {

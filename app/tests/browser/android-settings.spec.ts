@@ -5,6 +5,7 @@ import {
   expect,
   test,
   tokenColour,
+  viewportOf,
 } from "./fixtures.ts";
 
 test.use({ backend: { ...DEFAULT_BACKEND } });
@@ -292,6 +293,26 @@ test.describe(
       await expect(note).toHaveCSS("font-size", "14px");
       await expect(note).toHaveCSS("line-height", "20px");
     });
+
+    test("runs the footnote across the screen, its words 16px in and 8px under the age ratings", async ({
+      page,
+    }) => {
+      await page.goto("/settings/library/adult-content");
+      const note = page.getByText(
+        "First launch offers the same choice. It applies straight away.",
+      );
+      const row = await boxOf(
+        page.getByRole("switch", { name: "Use age ratings from book details" }),
+      );
+
+      const noteBox = await boxOf(note);
+
+      expect(noteBox.x).toBeCloseTo(0, 0);
+      expect(noteBox.width).toBeCloseTo(viewportOf(page).width, 0);
+      expect(noteBox.y - (row.y + row.height)).toBeCloseTo(0, 0);
+      await expect(note).toHaveCSS("padding-inline-start", "16px");
+      await expect(note).toHaveCSS("padding-block-start", "8px");
+    });
   },
 );
 
@@ -453,7 +474,7 @@ test.describe("Storage on an Android phone", { tag: "@native" }, () => {
     expect((await boxOf(clear)).height).toBe(40);
   });
 
-  test("sets the meter and the cache rows flush at 16px with no line between them", async ({
+  test("sets the meter and the cache rows flush at 16px with no line between the rows", async ({
     page,
   }) => {
     await page.goto("/settings/storage");
