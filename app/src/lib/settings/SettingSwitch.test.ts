@@ -174,3 +174,41 @@ test("disables the switch on an iPhone when the row is disabled", async () => {
     .element(screen.getByRole("switch", { name: LABEL }))
     .toBeDisabled();
 });
+
+async function renderDisabledOn(
+  platform: Parameters<typeof followCorePlatform>[0],
+  width: number,
+): Promise<void> {
+  await page.viewport(width, PHONE.height);
+  followCorePlatform(platform);
+  await render(SettingSwitch, {
+    label: LABEL,
+    description: DESCRIPTION,
+    isOn: false,
+    disabled: true,
+    onToggle: () => undefined,
+  });
+}
+
+test("dims only the words of a disabled Android row, to Material's disabled level", async () => {
+  await renderDisabledOn("android", PHONE.width);
+
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(getComputedStyle(wordsOf(LABEL)).opacity).toBe("0.38");
+  expect(row.opacity).toBe("1");
+});
+
+test("mutes a disabled row on the Mac without dimming its words", async () => {
+  await renderOn("macos", 1280, false);
+  const enabledColour = getComputedStyle(
+    page.getByRole("switch").element(),
+  ).color;
+  document.body.replaceChildren();
+
+  await renderDisabledOn("macos", 1280);
+  const row = getComputedStyle(page.getByRole("switch").element());
+
+  expect(getComputedStyle(wordsOf(LABEL)).opacity).toBe("1");
+  expect(row.color).not.toBe(enabledColour);
+});

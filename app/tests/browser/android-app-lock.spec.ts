@@ -11,7 +11,22 @@ import { boxOf, DEFAULT_BACKEND, expect, test } from "./fixtures.ts";
 
 const TABLET = { width: 820, height: 1180 };
 const DIMMED = "0.38";
-const SWITCH_ON = "rgb(50, 106, 77)";
+const DISABLED_TRACKS = [
+  [
+    false,
+    {
+      fill: "oklab(0.911795 -0.0136874 0.00846565 / 0.1)",
+      border: "oklab(0.578859 -0.0148621 0.00807488 / 0.1)",
+    },
+  ],
+  [
+    true,
+    {
+      fill: "oklab(0.318045 -0.0153013 0.00817601 / 0.1)",
+      border: "rgba(0, 0, 0, 0)",
+    },
+  ],
+] as const;
 const NOTE_GAP_PX = 16;
 
 const ONLY_WHEN_ON = "Available when app lock is on.";
@@ -163,16 +178,21 @@ test.describe("App lock on an Android phone", { tag: "@native" }, () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
-  test("draws a disabled switch without the on colour, even when it is on", async ({
+  test("draws a disabled switch in the disabled colours, on and off", async ({
     page,
   }) => {
-    lock = { ...NEW_APP_LOCK, hidesContentInRecents: true };
-    await openAppLock(page);
+    for (const [isHidden, colours] of DISABLED_TRACKS) {
+      lock = { ...NEW_APP_LOCK, hidesContentInRecents: isHidden };
+      await openAppLock(page);
 
-    const track = hideContent(page).locator("span[aria-hidden='true']").last();
+      const track = hideContent(page)
+        .locator("span[aria-hidden='true']")
+        .last();
 
-    await expect(hideContent(page)).toBeChecked();
-    await expect(track).not.toHaveCSS("background-color", SWITCH_ON);
+      await expect(hideContent(page)).toBeChecked({ checked: isHidden });
+      await expect(track).toHaveCSS("background-color", colours.fill);
+      await expect(track).toHaveCSS("border-top-color", colours.border);
+    }
   });
 
   test("puts the delay's note under Lock after, apart from the rows around it", async ({
