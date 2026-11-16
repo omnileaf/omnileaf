@@ -29,6 +29,6 @@ Sections now show as tabs on Android, so you can switch between them with one ta
 
 - `cargo xtask changes check` checks every fragment.
 - `cargo xtask changes require --base origin/main` fails when your branch changes what people see and adds no fragment.
-- `cargo xtask changes notes --version 1.2.0 --format markdown` prints the release notes; `--format json` prints what the app's What's new notice bundles. The Markdown starts with a headline line, the first summary of the `headline` type in `config.json` (`feat`) or, without one, the first entry, since the app's update banner shows the first line.
+- `cargo xtask changes notes --version 1.2.0 --format markdown` prints the release notes; `--format json` prints what the app's What's new notice bundles. The Markdown starts with a headline line, the first summary of the `headline` type in `config.json` (`feat`) or, without one, the first entry, since the app's update banner shows the first line. A full release such as 1.2.0 is read from its archive, `released/1.2.0.json`, and fails when there is none; a pre-release such as 1.2.0-rc.1, or no `--version`, is read from the fragments in this folder, and a pre-release fails when there are none.
 
 To add a type or an area, to change a heading or to pick the type that heads the notes, edit `config.json`.
