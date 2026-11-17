@@ -121,16 +121,21 @@
     return isFreshLaunch && homeArrival === "moved" ? "home" : undefined;
   }
 
-  async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
-    await goto(resolve(FIRST_LAUNCH_ROUTE), {
+  function pushFirstLaunchState(state: typeof page.state): Promise<void> {
+    return goto(resolve(FIRST_LAUNCH_ROUTE), { shallow: true, state });
+  }
+
+  function replaceFirstLaunchState(state: typeof page.state): Promise<void> {
+    return goto(resolve(FIRST_LAUNCH_ROUTE), {
       shallow: true,
       replace: true,
-      state: { firstLaunchStep: "welcome" },
+      state,
     });
-    await goto(resolve(FIRST_LAUNCH_ROUTE), {
-      shallow: true,
-      state: { firstLaunchStep: resumed },
-    });
+  }
+
+  async function resumeAt(resumed: FirstLaunchStep): Promise<void> {
+    await replaceFirstLaunchState({ firstLaunchStep: "welcome" });
+    await pushFirstLaunchState({ firstLaunchStep: resumed });
     resumingAt = undefined;
   }
 
@@ -184,10 +189,7 @@
   async function next(): Promise<void> {
     const after = stepAfter(step);
     if (after !== undefined) {
-      await goto(resolve(FIRST_LAUNCH_ROUTE), {
-        shallow: true,
-        state: { firstLaunchStep: after },
-      });
+      await pushFirstLaunchState({ firstLaunchStep: after });
     }
   }
 
