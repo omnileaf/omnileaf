@@ -8,9 +8,14 @@ import {
   setTextScale,
   test,
 } from "./fixtures.ts";
-import { openLongStrip, tallStripBackend } from "./reader-book.ts";
+import {
+  BOOK_SERIES_ID,
+  openLongStrip,
+  tallStripBackend,
+} from "./reader-book.ts";
 
 const LOOK_KEY = "omnileaf.readerSettings.all";
+const SERIES_LOOK_KEY = `omnileaf.readerSettings.series.${BOOK_SERIES_ID}`;
 const SECONDS_PER_PAGE = 60;
 const HALF_A_MINUTE_MS = 30_000;
 const FOUR_SECONDS_MS = 4000;
@@ -190,10 +195,13 @@ test.describe("at a set speed", () => {
 
     await expect(bar(page)).toContainText("2 screens a minute");
     const stored = await page.evaluate(
-      (key) => localStorage.getItem(key),
-      LOOK_KEY,
+      (keys) => keys.map((key) => localStorage.getItem(key) ?? "{}"),
+      [LOOK_KEY, SERIES_LOOK_KEY],
     );
-    expect(JSON.parse(stored ?? "{}")).toMatchObject({ screensPerMinute: 2 });
+    expect(stored.map((look) => JSON.parse(look) as object)).toEqual([
+      {},
+      { screensPerMinute: 2 },
+    ]);
   });
 
   test("keeps scrolling with reduced motion, since you started it", async ({

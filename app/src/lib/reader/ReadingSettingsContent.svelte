@@ -146,7 +146,7 @@
           >
             <p id="{id}-rate" class="text-small font-medium">
               {m.reader_auto_scroll_rate_value({
-                count: look.screensPerMinute,
+                count: settings.speed,
               })}
             </p>
             <Slider
@@ -157,9 +157,9 @@
               max={SCREENS_PER_MINUTE.fastest}
               step={SCREENS_PER_MINUTE.step}
               bind:value={
-                () => look.screensPerMinute,
+                () => settings.speed,
                 (screens: number) => {
-                  settings.change("screensPerMinute", screens);
+                  settings.changeSpeed(screens);
                 }
               }
             />

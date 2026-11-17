@@ -1287,16 +1287,10 @@
           isTouch={!isPointer(platform)}
           onToggle={toggleAutoScroll}
           onSlower={() => {
-            settings.change(
-              "screensPerMinute",
-              slowerSpeed(look.screensPerMinute),
-            );
+            settings.changeSpeed(slowerSpeed(settings.speed));
           }}
           onFaster={() => {
-            settings.change(
-              "screensPerMinute",
-              fasterSpeed(look.screensPerMinute),
-            );
+            settings.changeSpeed(fasterSpeed(settings.speed));
           }}
           onStop={stopAutoScroll}
           onReturnFocus={() => {

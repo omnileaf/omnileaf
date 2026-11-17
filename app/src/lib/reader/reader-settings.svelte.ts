@@ -37,6 +37,8 @@ export interface ReaderLook {
   readonly pausesAtEnd: boolean;
 }
 
+type ScopedLookKey = Exclude<keyof ReaderLook, "screensPerMinute">;
+
 export const PAGE_LAYOUTS: readonly PageLayout[] = ["automatic", "one", "two"];
 export const PAGE_FITS: readonly PageFit[] = ["screen", "width", "height"];
 export const READER_BACKGROUNDS: readonly ReaderBackground[] = [
@@ -76,6 +78,7 @@ export const DEFAULT_LOOK: ReaderLook = {
 const ALL_KEY = "omnileaf.readerSettings.all";
 const SERIES_KEY_PREFIX = "omnileaf.readerSettings.series.";
 const SCOPE_KEY_PREFIX = "omnileaf.readerSettings.scope.";
+const SPEED_SAVED_FOR_KEY_PREFIX = "omnileaf.readerSettings.speedSavedFor.";
 const PERCENT = { lowest: 0, highest: 100 };
 export const SCREENS_PER_MINUTE = { slowest: 1, fastest: 12, step: 1 } as const;
 
@@ -155,12 +158,14 @@ function lookIn(text: string | null): Partial<ReaderLook> {
 /** How the reader shows one series' books, set for that series or shared by every series. */
 export class ReaderSettings {
   scope: SettingsScope = $state("all");
+  speedSavedFor: SettingsScope = $state("series");
 
   #shared: ReaderLook = $state(DEFAULT_LOOK);
   #own: Partial<ReaderLook> = $state({});
   readonly #sharedStored: StoredPreference;
   readonly #ownStored: StoredPreference;
   readonly #scopeStored: StoredPreference;
+  readonly #speedSavedForStored: StoredPreference;
 
   constructor(store: PreferenceStore | undefined, series: string) {
     this.#sharedStored = new StoredPreference(store, ALL_KEY);
@@ -172,30 +177,78 @@ export class ReaderSettings {
       store,
       `${SCOPE_KEY_PREFIX}${series}`,
     );
+    this.#speedSavedForStored = new StoredPreference(
+      store,
+      `${SPEED_SAVED_FOR_KEY_PREFIX}${series}`,
+    );
     this.#shared = { ...DEFAULT_LOOK, ...lookIn(this.#sharedStored.read()) };
     this.#own = lookIn(this.#ownStored.read());
     this.scope = this.#scopeStored.read() === "series" ? "series" : "all";
+    this.speedSavedFor =
+      this.#speedSavedForStored.read() === "all" ? "all" : "series";
   }
 
   get look(): ReaderLook {
-    return this.scope === "series"
-      ? { ...this.#shared, ...this.#own }
-      : this.#shared;
+    const look =
+      this.scope === "series"
+        ? { ...this.#shared, ...this.#own }
+        : this.#shared;
+    return { ...look, screensPerMinute: this.speed };
   }
 
-  change<Key extends keyof ReaderLook>(key: Key, value: ReaderLook[Key]): void {
+  change<Key extends ScopedLookKey>(key: Key, value: ReaderLook[Key]): void {
     if (this.scope === "series") {
-      this.#own = { ...this.#own, [key]: value };
-      this.#ownStored.writeIfPossible(JSON.stringify(this.#own));
+      this.#keepOwn({ ...this.#own, [key]: value });
     } else {
-      this.#shared = { ...this.#shared, [key]: value };
-      this.#sharedStored.writeIfPossible(JSON.stringify(this.#shared));
+      this.#keepShared({ ...this.#shared, [key]: value });
     }
   }
 
   applyTo(scope: SettingsScope): void {
     this.scope = scope;
     this.#scopeStored.writeIfPossible(scope);
+  }
+
+  get speed(): number {
+    return this.#own.screensPerMinute ?? this.#shared.screensPerMinute;
+  }
+
+  get defaultSpeed(): number {
+    return this.#shared.screensPerMinute;
+  }
+
+  saveSpeedFor(scope: SettingsScope): void {
+    this.speedSavedFor = scope;
+    this.#speedSavedForStored.writeIfPossible(scope);
+    this.changeSpeed(this.speed);
+  }
+
+  changeSpeed(screensPerMinute: number): void {
+    if (this.speedSavedFor === "series") {
+      this.#keepOwn({ ...this.#own, screensPerMinute });
+    } else {
+      this.#keepShared({ ...this.#shared, screensPerMinute });
+      this.useDefaultSpeed();
+    }
+  }
+
+  useDefaultSpeed(): void {
+    if (this.#own.screensPerMinute === undefined) {
+      return;
+    }
+    const own = { ...this.#own };
+    delete own.screensPerMinute;
+    this.#keepOwn(own);
+  }
+
+  #keepOwn(own: Partial<ReaderLook>): void {
+    this.#own = own;
+    this.#ownStored.writeIfPossible(JSON.stringify(own));
+  }
+
+  #keepShared(shared: ReaderLook): void {
+    this.#shared = shared;
+    this.#sharedStored.writeIfPossible(JSON.stringify(shared));
   }
 }
 
