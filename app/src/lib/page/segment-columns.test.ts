@@ -79,3 +79,31 @@ test("stacks segments that may span once two of the others no longer fit side by
     columnsThatFit({ widths, space: 250, gap: GAP, spansLastRow: true }),
   ).toBe(1);
 });
+
+test("wraps segments that may span once three of the widest no longer fit on one row, though their own widths would", () => {
+  const widths = [50, 80, 130];
+
+  expect(
+    columnsThatFit({
+      widths,
+      space: 300,
+      gap: GAP,
+      fitsOneRowByWidest: true,
+      spansLastRow: true,
+    }),
+  ).toBe(2);
+});
+
+test("keeps segments that may span on one row while three of the widest fit", () => {
+  const widths = [50, 80, 130];
+
+  expect(
+    columnsThatFit({
+      widths,
+      space: 398,
+      gap: GAP,
+      fitsOneRowByWidest: true,
+      spansLastRow: true,
+    }),
+  ).toBe(3);
+});
