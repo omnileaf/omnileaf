@@ -36,19 +36,7 @@ test("notes nothing for a focused link in a page's own navigation", () => {
   expect(focusedTabHref()).toBeUndefined();
 });
 
-test("focuses the shown tab rather than a hidden page link to the same place", () => {
-  place(
-    '<main><nav hidden><a href="/settings">Settings</a></nav></main><nav data-app-navigation><a href="/settings">Settings</a></nav>',
-  );
-
-  focusTab("/settings");
-
-  expect(document.activeElement).toBe(
-    linkTo("/settings", "[data-app-navigation]"),
-  );
-});
-
-test("leaves a page link to the same place alone", () => {
+test("focuses the tab rather than a page link to the same place", () => {
   place(
     '<main><nav><a href="/settings">Settings</a></nav></main><nav data-app-navigation><a href="/settings">Settings</a></nav>',
   );

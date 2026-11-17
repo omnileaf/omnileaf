@@ -14,9 +14,6 @@ export function focusedTabHref(): string | undefined {
 export function focusTab(href: string): void {
   const tab = Array.from(
     document.querySelectorAll<HTMLAnchorElement>(`${APP_NAVIGATION} a`),
-  ).find(
-    (link) =>
-      link.getAttribute("href") === href && link.getClientRects().length > 0,
-  );
+  ).find((link) => link.getAttribute("href") === href);
   tab?.focus();
 }
